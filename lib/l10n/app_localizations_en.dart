@@ -49,16 +49,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fontSectionSubtitle =>
-      'Supports system default and MiSans. Falls back automatically if MiSans is unavailable.';
+      'Inter is built in; other options use fonts already on your phone.';
+
+  @override
+  String get fontSectionFootnote =>
+      'Brand fonts aren\'t bundled; they work only if already on your system. On Xiaomi, usually only MiSans is obvious. No change means auto fallback—you usually don\'t need to install fonts.';
 
   @override
   String get fontModeLabel => 'Font';
 
   @override
-  String get fontModeSystem => 'Phone Default';
+  String get fontModeSystem => 'App Default (Inter)';
 
   @override
-  String get fontModeMiSans => 'Prefer MiSans';
+  String get fontModeSansSerif => 'System Sans';
+
+  @override
+  String get fontModeMiSans => 'MiSans';
+
+  @override
+  String get fontModeHarmonyOS => 'HarmonyOS Sans';
+
+  @override
+  String get fontModeOppoSans => 'OPPO Sans';
+
+  @override
+  String get fontModePingFang => 'PingFang SC';
+
+  @override
+  String get fontModeNotoSans => 'Noto Sans';
+
+  @override
+  String get fontModeSerif => 'Serif';
+
+  @override
+  String get fontModeSongti => 'Songti';
+
+  @override
+  String get fontModeMonospace => 'Monospace';
 
   @override
   String get languageSectionTitle => 'App Language';
@@ -131,6 +159,112 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dataTransferEntrySubtitle =>
       'Export a complete timetable file for others to import directly';
+
+  @override
+  String get coupleTimetableEntryTitle => 'Couple Timetable';
+
+  @override
+  String get coupleTimetableEntryBound => 'Linked';
+
+  @override
+  String get coupleTimetableModeEnableTooltip => 'Couple timetable on';
+
+  @override
+  String get coupleTimetableModeDisableTooltip => 'Couple timetable off';
+
+  @override
+  String get coupleTimetableTitle => 'Couple Timetable';
+
+  @override
+  String get coupleTimetableIntro =>
+      'Export your timetable for your partner, or import their shared file. After binding, open the overlay view to compare schedules.';
+
+  @override
+  String get coupleTimetableBoundTitle => 'Partner timetable linked';
+
+  @override
+  String get coupleTimetableUnboundTitle => 'No partner timetable yet';
+
+  @override
+  String get coupleTimetablePartnerNameLabel => 'Partner name';
+
+  @override
+  String coupleTimetableLastImportedAt(String time) {
+    return 'Last imported: $time';
+  }
+
+  @override
+  String get coupleTimetableExportForPartner =>
+      'Export my timetable for partner';
+
+  @override
+  String get coupleTimetableImportPartner => 'Import partner timetable';
+
+  @override
+  String get coupleTimetableUnlink => 'Unlink';
+
+  @override
+  String get coupleTimetableOpenOverlay => 'Open overlay view';
+
+  @override
+  String get coupleTimetableImportSuccess => 'Partner timetable imported';
+
+  @override
+  String get coupleTimetableImportUpdated => 'Partner timetable updated';
+
+  @override
+  String get coupleTimetableUnlinkConfirmTitle => 'Unlink partner timetable?';
+
+  @override
+  String get coupleTimetableUnlinkConfirmMessage =>
+      'This removes the locally stored partner timetable and closes the overlay view.';
+
+  @override
+  String get coupleTimetableUnlinkSuccess => 'Partner timetable unlinked';
+
+  @override
+  String get coupleTimetablePrivacyHint =>
+      'Your partner only sees the timetable content included in the exported file.';
+
+  @override
+  String get coupleTimetableOverlayTitle => 'Couple overlay';
+
+  @override
+  String get coupleTimetableLegendMine => 'Mine';
+
+  @override
+  String get coupleTimetableLegendPartner => 'Partner';
+
+  @override
+  String get coupleTimetableLegendTogether => 'Together';
+
+  @override
+  String get coupleTimetableLegendFree => 'Shared free';
+
+  @override
+  String get coupleTimetableSharedFreeTitle => 'Shared free time today';
+
+  @override
+  String get coupleTimetableNoSharedFree => 'No shared free time today';
+
+  @override
+  String get coupleTimetablePartnerReadOnlyBadge =>
+      'Partner timetable (read-only)';
+
+  @override
+  String get coupleTimetableNotBoundMessage =>
+      'Import a partner timetable before opening the overlay view.';
+
+  @override
+  String get coupleTimetableShareText =>
+      'Here is my timetable. Import it in Qingyu Timetable > Couple Timetable to view together.';
+
+  @override
+  String get coupleTimetableShareSubject => 'Qingyu Timetable · Couple share';
+
+  @override
+  String get partnerImportRequiresSingleProfile =>
+      'Please import a single-profile backup, not a full backup';
 
   @override
   String get cloudSyncEntryTitle => 'Cloud Sync (WEBDAV)';
@@ -2264,6 +2398,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get diagnosticsRawFilteredHint =>
       'The raw view follows the current level filter and only shows matching log blocks.';
+
+  @override
+  String get diagnosticsTimeSortAscending => 'Oldest first';
+
+  @override
+  String get diagnosticsTimeSortDescending => 'Newest first';
+
+  @override
+  String get diagnosticsDisplayOptionsTitle => 'View & sort';
+
+  @override
+  String get diagnosticsStreamingHint =>
+      'Live updates are on. New logs appear automatically.';
 
   @override
   String get diagnosticsEmptyTitle => 'No Logs Yet';
@@ -5370,6 +5517,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courseActionEvenWeekShort => 'Even week';
+
+  @override
+  String get courseActionConflictExpandHint =>
+      'Expand to see other conflicting courses and switch actions';
+
+  @override
+  String get courseActionConflictCollapseHint =>
+      'Tap to collapse the conflict list';
+
+  @override
+  String get courseActionConflictSwitchAction => 'Switch';
 
   @override
   String get suspendSheetTitle => 'Suspend';

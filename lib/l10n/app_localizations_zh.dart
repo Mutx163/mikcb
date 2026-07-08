@@ -48,16 +48,44 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fontSectionTitle => '应用字体';
 
   @override
-  String get fontSectionSubtitle => '支持系统默认字体和 MiSans。MiSans 不可用时会自动回退。';
+  String get fontSectionSubtitle => '内置 Inter 默认；也可选用系统已安装的字体。';
+
+  @override
+  String get fontSectionFootnote =>
+      '厂商字体未内置，需系统已预装才生效。小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装。';
 
   @override
   String get fontModeLabel => '字体选择';
 
   @override
-  String get fontModeSystem => '手机默认字体';
+  String get fontModeSystem => '应用默认（Inter）';
 
   @override
-  String get fontModeMiSans => 'MiSans（优先）';
+  String get fontModeSansSerif => '系统无衬线';
+
+  @override
+  String get fontModeMiSans => 'MiSans';
+
+  @override
+  String get fontModeHarmonyOS => '鸿蒙黑体';
+
+  @override
+  String get fontModeOppoSans => 'OPPO Sans';
+
+  @override
+  String get fontModePingFang => '苹方';
+
+  @override
+  String get fontModeNotoSans => 'Noto Sans';
+
+  @override
+  String get fontModeSerif => '衬线体';
+
+  @override
+  String get fontModeSongti => '宋体';
+
+  @override
+  String get fontModeMonospace => '等宽体';
 
   @override
   String get languageSectionTitle => '应用语言';
@@ -123,6 +151,105 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dataTransferEntrySubtitle => '导出完整课表文件，给别人直接导入使用';
+
+  @override
+  String get coupleTimetableEntryTitle => '情侣课表';
+
+  @override
+  String get coupleTimetableEntryBound => '已绑定';
+
+  @override
+  String get coupleTimetableModeEnableTooltip => '开启情侣课表';
+
+  @override
+  String get coupleTimetableModeDisableTooltip => '关闭情侣课表';
+
+  @override
+  String get coupleTimetableTitle => '情侣课表';
+
+  @override
+  String get coupleTimetableIntro =>
+      '导出你的课表发给 TA，或导入 TA 分享的课表文件。导入后可在叠加视图中查看双方课程。';
+
+  @override
+  String get coupleTimetableBoundTitle => '已绑定对方课表';
+
+  @override
+  String get coupleTimetableUnboundTitle => '尚未绑定对方课表';
+
+  @override
+  String get coupleTimetablePartnerNameLabel => '对方名称';
+
+  @override
+  String coupleTimetableLastImportedAt(String time) {
+    return '上次导入：$time';
+  }
+
+  @override
+  String get coupleTimetableExportForPartner => '导出我的课表给对方';
+
+  @override
+  String get coupleTimetableImportPartner => '导入对方课表';
+
+  @override
+  String get coupleTimetableUnlink => '解除绑定';
+
+  @override
+  String get coupleTimetableOpenOverlay => '进入叠加视图';
+
+  @override
+  String get coupleTimetableImportSuccess => '已导入对方课表';
+
+  @override
+  String get coupleTimetableImportUpdated => '已更新对方课表';
+
+  @override
+  String get coupleTimetableUnlinkConfirmTitle => '解除情侣课表绑定？';
+
+  @override
+  String get coupleTimetableUnlinkConfirmMessage => '解除后将删除本地保存的对方课表，叠加视图也会关闭。';
+
+  @override
+  String get coupleTimetableUnlinkSuccess => '已解除绑定';
+
+  @override
+  String get coupleTimetablePrivacyHint => '对方只能看到你导出文件中包含的课表内容。';
+
+  @override
+  String get coupleTimetableOverlayTitle => '情侣叠加';
+
+  @override
+  String get coupleTimetableLegendMine => '我的课';
+
+  @override
+  String get coupleTimetableLegendPartner => 'TA的课';
+
+  @override
+  String get coupleTimetableLegendTogether => '一起上课';
+
+  @override
+  String get coupleTimetableLegendFree => '共同空闲';
+
+  @override
+  String get coupleTimetableSharedFreeTitle => '今日共同空闲';
+
+  @override
+  String get coupleTimetableNoSharedFree => '今天没有共同空闲时段';
+
+  @override
+  String get coupleTimetablePartnerReadOnlyBadge => '对方课表（只读）';
+
+  @override
+  String get coupleTimetableNotBoundMessage => '请先导入对方课表后再查看叠加视图。';
+
+  @override
+  String get coupleTimetableShareText => '这是我的课表，导入到轻屿课表的情侣课表即可一起查看。';
+
+  @override
+  String get coupleTimetableShareSubject => '轻屿课表 · 情侣课表分享';
+
+  @override
+  String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
 
   @override
   String get cloudSyncEntryTitle => '云同步';
@@ -2131,6 +2258,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get diagnosticsRawFilteredHint => '原文视图会跟随当前等级筛选，只显示对应日志块。';
+
+  @override
+  String get diagnosticsTimeSortAscending => '正序';
+
+  @override
+  String get diagnosticsTimeSortDescending => '倒序';
+
+  @override
+  String get diagnosticsDisplayOptionsTitle => '查看与排序';
+
+  @override
+  String get diagnosticsStreamingHint => '实时更新中，新日志会自动追加显示。';
 
   @override
   String get diagnosticsEmptyTitle => '暂无日志';
@@ -5081,6 +5220,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseActionEvenWeekShort => '双周';
 
   @override
+  String get courseActionConflictExpandHint => '展开查看其他冲突课程，点击可切换操作对象';
+
+  @override
+  String get courseActionConflictCollapseHint => '点击收起冲突课程列表';
+
+  @override
+  String get courseActionConflictSwitchAction => '切换';
+
+  @override
   String get suspendSheetTitle => '停课';
 
   @override
@@ -7829,16 +7977,44 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get fontSectionTitle => '應用字體';
 
   @override
-  String get fontSectionSubtitle => '支持系統預設字體和 MiSans。MiSans 不可用時會自動回退。';
+  String get fontSectionSubtitle => '內建 Inter 預設；也可選用系統已安裝的字體。';
+
+  @override
+  String get fontSectionFootnote =>
+      '廠商字體未內建，需系統已預裝才生效。小米通常只有 MiSans 明顯；沒變化時會自動回退，一般不必自行安裝。';
 
   @override
   String get fontModeLabel => '字體選擇';
 
   @override
-  String get fontModeSystem => '手機預設字體';
+  String get fontModeSystem => '應用預設（Inter）';
 
   @override
-  String get fontModeMiSans => 'MiSans（優先）';
+  String get fontModeSansSerif => '系統無襯線';
+
+  @override
+  String get fontModeMiSans => 'MiSans';
+
+  @override
+  String get fontModeHarmonyOS => '鴻蒙黑體';
+
+  @override
+  String get fontModeOppoSans => 'OPPO Sans';
+
+  @override
+  String get fontModePingFang => '蘋方';
+
+  @override
+  String get fontModeNotoSans => 'Noto Sans';
+
+  @override
+  String get fontModeSerif => '襯線體';
+
+  @override
+  String get fontModeSongti => '宋體';
+
+  @override
+  String get fontModeMonospace => '等寬體';
 
   @override
   String get languageSectionTitle => '應用語言';
@@ -9904,6 +10080,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get diagnosticsRawFilteredHint => '原文視圖會跟隨目前等級篩選，只顯示對應日誌區塊。';
+
+  @override
+  String get diagnosticsTimeSortAscending => '正序';
+
+  @override
+  String get diagnosticsTimeSortDescending => '倒序';
+
+  @override
+  String get diagnosticsDisplayOptionsTitle => '檢視與排序';
+
+  @override
+  String get diagnosticsStreamingHint => '即時更新中，新日誌會自動追加顯示。';
 
   @override
   String get diagnosticsEmptyTitle => '暫無日誌';
@@ -12742,6 +12930,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseActionEvenWeekShort => '雙周';
 
   @override
+  String get courseActionConflictExpandHint => '展開查看其他衝突課程，點擊可切換操作對象';
+
+  @override
+  String get courseActionConflictCollapseHint => '點擊收起衝突課程列表';
+
+  @override
+  String get courseActionConflictSwitchAction => '切換';
+
+  @override
   String get suspendSheetTitle => '停課';
 
   @override
@@ -15534,16 +15731,44 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get fontSectionTitle => '應用字體';
 
   @override
-  String get fontSectionSubtitle => '支持系統預設字體和 MiSans。MiSans 不可用時會自動回退。';
+  String get fontSectionSubtitle => '內建 Inter 預設；也可選用系統已安裝的字體。';
+
+  @override
+  String get fontSectionFootnote =>
+      '廠商字體未內建，需系統已預裝才生效。小米通常只有 MiSans 明顯；沒變化時會自動回退，一般不必自行安裝。';
 
   @override
   String get fontModeLabel => '字體選擇';
 
   @override
-  String get fontModeSystem => '手機預設字體';
+  String get fontModeSystem => '應用預設（Inter）';
 
   @override
-  String get fontModeMiSans => 'MiSans（優先）';
+  String get fontModeSansSerif => '系統無襯線';
+
+  @override
+  String get fontModeMiSans => 'MiSans';
+
+  @override
+  String get fontModeHarmonyOS => '鴻蒙黑體';
+
+  @override
+  String get fontModeOppoSans => 'OPPO Sans';
+
+  @override
+  String get fontModePingFang => '蘋方';
+
+  @override
+  String get fontModeNotoSans => 'Noto Sans';
+
+  @override
+  String get fontModeSerif => '襯線體';
+
+  @override
+  String get fontModeSongti => '宋體';
+
+  @override
+  String get fontModeMonospace => '等寬體';
 
   @override
   String get languageSectionTitle => '應用語言';
@@ -17609,6 +17834,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get diagnosticsRawFilteredHint => '原文視圖會跟隨目前等級篩選，只顯示對應日誌區塊。';
+
+  @override
+  String get diagnosticsTimeSortAscending => '正序';
+
+  @override
+  String get diagnosticsTimeSortDescending => '倒序';
+
+  @override
+  String get diagnosticsDisplayOptionsTitle => '檢視與排序';
+
+  @override
+  String get diagnosticsStreamingHint => '即時更新中，新日誌會自動追加顯示。';
 
   @override
   String get diagnosticsEmptyTitle => '暫無日誌';
@@ -20445,6 +20682,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseActionEvenWeekShort => '雙周';
+
+  @override
+  String get courseActionConflictExpandHint => '展開查看其他衝突課程，點擊可切換操作對象';
+
+  @override
+  String get courseActionConflictCollapseHint => '點擊收起衝突課程列表';
+
+  @override
+  String get courseActionConflictSwitchAction => '切換';
 
   @override
   String get suspendSheetTitle => '停課';

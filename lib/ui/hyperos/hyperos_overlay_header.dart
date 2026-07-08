@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 
+import '../app_fonts.dart';
 import 'hyperos_theme.dart';
 
 /// Nested settings header safe for blur overlay stacks.
@@ -83,7 +84,10 @@ class HyperosOverlayNestedHeader extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           softWrap: false,
-                          style: resolved.titleTextStyle,
+                          style: applyAppFontStyle(
+                            context,
+                            resolved.titleTextStyle,
+                          ),
                           textAlign: TextAlign.center,
                           textHeightBehavior: const TextHeightBehavior(
                             applyHeightToFirstAscent: false,

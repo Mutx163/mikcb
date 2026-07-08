@@ -50,6 +50,20 @@ String appThemeModeLabel(AppLocalizations l10n, AppThemeMode mode) =>
       AppThemeMode.dark => l10n.themeModeDark,
     };
 
+String appFontModeLabel(AppLocalizations l10n, AppFontMode mode) =>
+    switch (mode) {
+      AppFontMode.system => l10n.fontModeSystem,
+      AppFontMode.sansSerif => l10n.fontModeSansSerif,
+      AppFontMode.miSans => l10n.fontModeMiSans,
+      AppFontMode.harmonyOS => l10n.fontModeHarmonyOS,
+      AppFontMode.oppoSans => l10n.fontModeOppoSans,
+      AppFontMode.pingFang => l10n.fontModePingFang,
+      AppFontMode.notoSans => l10n.fontModeNotoSans,
+      AppFontMode.serif => l10n.fontModeSerif,
+      AppFontMode.songti => l10n.fontModeSongti,
+      AppFontMode.monospace => l10n.fontModeMonospace,
+    };
+
 String homeTitleStyleLabel(AppLocalizations l10n, HomeTitleStyle style) =>
     switch (style) {
       HomeTitleStyle.classic => l10n.homeTitleStyleClassicLabel,

@@ -133,6 +133,9 @@ class _ScheduleEntryData {
 }
 
 class _AddCourseScreenState extends State<AddCourseScreen> {
+  static const _reuseCourseActionWidth = 108.0;
+  static const _shortNameActionWidth = 76.0;
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _shortNameController = TextEditingController();
@@ -438,39 +441,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
           ),
           ..._withSpacing([
-            FormField<String>(
-              validator: (value) {
-                final name = (value ?? _nameController.text).trim();
-                if (name.isEmpty) {
-                  return l10n.pleaseEnterCourseName;
-                }
-                return null;
-              },
-              builder: (field) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: HyperosTextField(
-                        controller: _nameController,
-                        label: l10n.courseNameLabel,
-                        helper: field.hasError
-                            ? field.errorText
-                            : l10n.courseNameHelper,
-                        textInputAction: TextInputAction.next,
-                        onChanged: field.didChange,
-                      ),
-                    ),
-                    if (widget.course == null)
-                      IconButton(
-                        tooltip: l10n.reuseExistingCourseLabel,
-                        icon: const Icon(Icons.auto_awesome_motion_rounded),
-                        onPressed: () => _showCourseTemplateSheet(provider),
-                      ),
-                  ],
-                );
-              },
-            ),
+            _buildCourseNameField(provider, l10n),
             _buildShortNameField(l10n),
             HyperosSelectTile<CourseNature>(
               label: l10n.courseNatureLabel,
@@ -609,6 +580,76 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
+  Widget _buildCourseNameField(
+    TimetableProvider provider,
+    AppLocalizations l10n,
+  ) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+    final showReuseAction = widget.course == null;
+
+    return FormField<String>(
+      validator: (value) {
+        final name = (value ?? _nameController.text).trim();
+        if (name.isEmpty) {
+          return l10n.pleaseEnterCourseName;
+        }
+        return null;
+      },
+      builder: (field) {
+        final helperText = field.hasError
+            ? field.errorText
+            : l10n.courseNameHelper;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.courseNameLabel,
+              style: typo.sm.copyWith(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: HyperosTextField(
+                    controller: _nameController,
+                    textInputAction: TextInputAction.next,
+                    onChanged: field.didChange,
+                  ),
+                ),
+                if (showReuseAction) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: _reuseCourseActionWidth,
+                    child: HyperosButton(
+                      label: l10n.reuseExistingCourseLabel,
+                      variant: HyperosButtonVariant.secondary,
+                      dense: true,
+                      expand: true,
+                      fitLabel: true,
+                      onPressed: () => _showCourseTemplateSheet(provider),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (helperText != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                helperText,
+                style: typo.xs2.copyWith(
+                  color: colors.mutedForeground,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildShortNameField(AppLocalizations l10n) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
@@ -631,10 +672,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            HyperosButton(
-              label: l10n.courseShortNameAutoFillAction,
-              variant: HyperosButtonVariant.secondary,
-              onPressed: _autofillShortNameFromCourseName,
+            SizedBox(
+              width: _shortNameActionWidth,
+              child: HyperosButton(
+                label: l10n.courseShortNameAutoFillAction,
+                variant: HyperosButtonVariant.secondary,
+                dense: true,
+                expand: true,
+                fitLabel: true,
+                onPressed: _autofillShortNameFromCourseName,
+              ),
             ),
           ],
         ),

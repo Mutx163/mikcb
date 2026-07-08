@@ -17,6 +17,7 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../models/timetable_settings.dart';
+import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../utils/app_toast.dart';
@@ -90,6 +91,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   int? _dayViewTransitionSourceDayOfWeek;
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
+  bool _coupleOverlayEnabled = false;
+
+  bool _isCoupleOverlayActive(TimetableProvider provider) =>
+      _coupleOverlayEnabled && provider.hasPartnerBinding;
 
   Color _colorFromHex(String hexColor, Color fallback) {
     return parseHexColorOrFallback(hexColor, fallback: fallback);
@@ -268,6 +273,25 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               title: _buildProfileSwitcherTrigger(provider),
               suffixes: [
+                if (provider.hasPartnerBinding)
+                  FHeaderAction(
+                    icon: Icon(
+                      _isCoupleOverlayActive(provider)
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_outline_rounded,
+                      color: _isCoupleOverlayActive(provider)
+                          ? const Color(0xFFE91E63)
+                          : null,
+                    ),
+                    semanticsLabel: _isCoupleOverlayActive(provider)
+                        ? l10n.coupleTimetableModeDisableTooltip
+                        : l10n.coupleTimetableModeEnableTooltip,
+                    onPress: () {
+                      setState(() {
+                        _coupleOverlayEnabled = !_coupleOverlayEnabled;
+                      });
+                    },
+                  ),
                 FHeaderAction(
                   icon: Stack(
                     clipBehavior: Clip.none,
@@ -1264,7 +1288,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
     final cardInset = _resolveCourseCardInset(settings);
     final dayWidth = (availableWidth - timeColumnWidth) / visibleDays.length;
-    final conflictMap = provider.courseConflictMapForWeek(week);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
     final unifiedChromeBlur = homePageUsesUnifiedChromeBlur(
@@ -1305,11 +1328,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                 dayOfWeek,
                 settings,
               );
-              final displayItems = _buildDayCourseDisplayItems(
-                courses: dayCourses,
-                week: week,
+              final displayItems = _buildHomeDayDisplayItems(
+                provider: provider,
                 settings: settings,
-                conflictMap: conflictMap,
+                week: week,
+                dayOfWeek: dayOfWeek,
+                myCourses: dayCourses,
               );
               return SizedBox(
                 width: dayWidth,
@@ -1324,6 +1348,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   provider,
                   dayIndex: dayIndex,
                   dayCount: visibleDays.length,
+                  coupleOverlayActive: _isCoupleOverlayActive(provider),
                 ),
               );
             }).toList(),
@@ -1654,9 +1679,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                       target.week,
                       target.dayOfWeek,
                     );
-                    final conflictMap = provider.courseConflictMapForWeek(
-                      target.week,
-                    );
                     final courses = _getCoursesForDay(
                       provider.courses,
                       target.week,
@@ -1690,11 +1712,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                               .map((course) => course.id)
                               .toSet()
                         : const <String>{};
-                    final displayItems = _buildDayCourseDisplayItems(
-                      courses: courses,
-                      week: target.week,
+                    final displayItems = _buildHomeDayDisplayItems(
+                      provider: provider,
                       settings: settings,
-                      conflictMap: conflictMap,
+                      week: target.week,
+                      dayOfWeek: target.dayOfWeek,
+                      myCourses: courses,
                       currentCourseIds: currentCourseIds,
                     );
                     final agendaItems = _buildDayAgendaItems(
@@ -2274,11 +2297,12 @@ class _TimetableScreenState extends State<TimetableScreen>
               .map((course) => course.id)
               .toSet()
         : const <String>{};
-    final displayItems = _buildDayCourseDisplayItems(
-      courses: courses,
-      week: week,
+    final displayItems = _buildHomeDayDisplayItems(
+      provider: provider,
       settings: settings,
-      conflictMap: provider.courseConflictMapForWeek(week),
+      week: week,
+      dayOfWeek: dayOfWeek,
+      myCourses: courses,
       currentCourseIds: currentCourseIds,
     );
     final agendaItems = _buildDayAgendaItems(
@@ -3392,12 +3416,31 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider, {
     required int dayIndex,
     required int dayCount,
+    bool coupleOverlayActive = false,
   }) {
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
 
     final date = _dateForWeekDay(settings, week, dayOfWeek);
     final isDayHoliday = date != null && provider.isHoliday(date);
+    final sharedFreeIntervals = coupleOverlayActive
+        ? CoupleTimetableLogic.sharedFreeIntervalsForDay(
+            myCourses: provider.courses,
+            partnerCourses: provider.partnerCourses,
+            dayOfWeek: dayOfWeek,
+            week: week,
+            sections: settings.sections,
+          )
+        : const <MinuteInterval>[];
+    final occupiedSections = <int>{
+      for (final item in displayItems)
+        for (
+          var section = item.course.startSection;
+          section <= item.course.endSection;
+          section++
+        )
+          section,
+    };
 
     for (
       var sectionIndex = 0;
@@ -3419,6 +3462,29 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: const SizedBox.expand(),
         ),
       );
+
+      if (coupleOverlayActive &&
+          !occupiedSections.contains(section) &&
+          CoupleTimetableLogic.isSectionInFreeSlot(
+            section,
+            sharedFreeIntervals,
+            settings.sections,
+          )) {
+        courseCards.add(
+          Positioned(
+            top: sectionIndex * sectionHeight,
+            left: 1,
+            right: 1,
+            height: sectionHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+        );
+      }
 
       for (final item in startingCourses) {
         courseCards.add(
@@ -3456,7 +3522,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 showDescription: settings.courseCardShowDescription,
                 verticalAlign: settings.courseCardVerticalAlign,
                 horizontalAlign: settings.courseCardHorizontalAlign,
-                onTap: () => _showCourseActions(item.course, week),
+                onTap: item.isPartnerCourse
+                    ? null
+                    : () => _showCourseActions(item.course, week),
                 compactTitleFontSize: settings.courseCardFontSize,
                 compactSubtitleFontSize: (settings.courseCardFontSize - 1)
                     .clamp(7.0, 14.0),
@@ -3510,6 +3578,141 @@ class _TimetableScreenState extends State<TimetableScreen>
     int section,
   ) {
     return items.where((item) => item.course.startSection == section).toList();
+  }
+
+  List<_DayCourseDisplayItem> _buildHomeDayDisplayItems({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+    required List<Course> myCourses,
+    Set<String> currentCourseIds = const <String>{},
+  }) {
+    final conflictMap = provider.courseConflictMapForWeek(week);
+    if (!_isCoupleOverlayActive(provider)) {
+      return _buildDayCourseDisplayItems(
+        courses: myCourses,
+        week: week,
+        settings: settings,
+        conflictMap: conflictMap,
+        currentCourseIds: currentCourseIds,
+      );
+    }
+
+    final partnerCourses = _getCoursesForDay(
+      provider.partnerCourses,
+      week,
+      dayOfWeek,
+      settings,
+    );
+    return _buildCoupleDayCourseDisplayItems(
+      myCourses: myCourses,
+      partnerCourses: partnerCourses,
+      week: week,
+      settings: settings,
+      conflictMap: conflictMap,
+      currentCourseIds: currentCourseIds,
+    );
+  }
+
+  List<_DayCourseDisplayItem> _buildCoupleDayCourseDisplayItems({
+    required List<Course> myCourses,
+    required List<Course> partnerCourses,
+    required int week,
+    required TimetableSettings settings,
+    required Map<String, List<Course>> conflictMap,
+    Set<String> currentCourseIds = const <String>{},
+  }) {
+    final usedPartnerIds = <String>{};
+    final items = <_DayCourseDisplayItem>[];
+
+    for (final course in myCourses) {
+      final isCurrentWeekCourse = course.isInWeek(week);
+      if (!isCurrentWeekCourse &&
+          _hasCurrentWeekOverlap(myCourses, course, week)) {
+        continue;
+      }
+      if (!isCurrentWeekCourse &&
+          !_isPreferredNonCurrentCourse(myCourses, course, week)) {
+        continue;
+      }
+
+      var kind = CoupleCourseKind.mine;
+      for (final partner in partnerCourses) {
+        if (CoupleTimetableLogic.isTogetherClass(
+          course,
+          partner,
+          week: week,
+        )) {
+          kind = CoupleCourseKind.together;
+          usedPartnerIds.add(partner.id);
+          break;
+        }
+      }
+
+      items.add(
+        _DayCourseDisplayItem(
+          course: course,
+          isCurrentWeekCourse: isCurrentWeekCourse,
+          isConflicting: conflictMap.containsKey(course.id),
+          isCurrentCourse: currentCourseIds.contains(course.id),
+          opacity: !isCurrentWeekCourse
+              ? 0.62
+              : (conflictMap.containsKey(course.id)
+                    ? settings.timetableConflictCourseOpacity
+                    : 1),
+          coupleKind: kind,
+        ),
+      );
+    }
+
+    for (final course in partnerCourses) {
+      if (usedPartnerIds.contains(course.id)) {
+        continue;
+      }
+      final isCurrentWeekCourse = course.isInWeek(week);
+      if (!isCurrentWeekCourse &&
+          _hasCurrentWeekOverlap(partnerCourses, course, week)) {
+        continue;
+      }
+      if (!isCurrentWeekCourse &&
+          !_isPreferredNonCurrentCourse(partnerCourses, course, week)) {
+        continue;
+      }
+
+      items.add(
+        _DayCourseDisplayItem(
+          course: course,
+          isCurrentWeekCourse: isCurrentWeekCourse,
+          isConflicting: false,
+          isCurrentCourse: false,
+          opacity: isCurrentWeekCourse ? 1 : 0.62,
+          coupleKind: CoupleCourseKind.partner,
+          isPartnerCourse: true,
+        ),
+      );
+    }
+
+    return items..sort((left, right) {
+      final startCompare = left.course.startSection.compareTo(
+        right.course.startSection,
+      );
+      if (startCompare != 0) {
+        return startCompare;
+      }
+      final leftCurrent = left.isCurrentWeekCourse;
+      final rightCurrent = right.isCurrentWeekCourse;
+      if (leftCurrent != rightCurrent) {
+        return leftCurrent ? 1 : -1;
+      }
+      final endCompare = left.course.endSection.compareTo(
+        right.course.endSection,
+      );
+      if (endCompare != 0) {
+        return endCompare;
+      }
+      return left.course.id.compareTo(right.course.id);
+    });
   }
 
   List<_DayCourseDisplayItem> _buildDayCourseDisplayItems({
@@ -3570,6 +3773,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     _DayCourseDisplayItem item, {
     required TimetableSettings settings,
   }) {
+    if (item.coupleKind != null) {
+      return CoupleTimetableLogic.colorHexForKind(item.coupleKind!);
+    }
     if (!item.isCurrentWeekCourse) {
       return '#94A3B8';
     }
@@ -3583,6 +3789,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     bool showConflictBadge,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    if (item.coupleKind == CoupleCourseKind.together) {
+      return l10n.coupleTimetableLegendTogether;
+    }
+    if (item.coupleKind == CoupleCourseKind.partner) {
+      return l10n.coupleTimetableLegendPartner;
+    }
     if (!item.isCurrentWeekCourse) {
       return l10n.nonCurrentWeekLabel;
     }
@@ -3598,6 +3810,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     final l10n = AppLocalizations.of(context)!;
     final labels = <String>[];
+    if (item.coupleKind == CoupleCourseKind.together) {
+      labels.add(l10n.coupleTimetableLegendTogether);
+    }
     if (item.isCurrentCourse) {
       labels.add(l10n.ongoingCourseBadge);
     }
@@ -4801,6 +5016,8 @@ class _DayCourseDisplayItem {
   final bool isConflicting;
   final bool isCurrentCourse;
   final double opacity;
+  final CoupleCourseKind? coupleKind;
+  final bool isPartnerCourse;
 
   const _DayCourseDisplayItem({
     required this.course,
@@ -4808,6 +5025,8 @@ class _DayCourseDisplayItem {
     required this.isConflicting,
     required this.isCurrentCourse,
     required this.opacity,
+    this.coupleKind,
+    this.isPartnerCourse = false,
   });
 }
 

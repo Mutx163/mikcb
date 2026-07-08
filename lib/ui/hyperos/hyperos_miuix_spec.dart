@@ -619,4 +619,7 @@ abstract final class HyperosMiuixAnim {
   static const criticalDampingRatio = 1.0;
   static const standardSpringPeriod = 0.4;
   static const slowerSpringPeriodHighVelocity = 0.55;
+
+  /// Max rubber-band blank gap at top/bottom, as a fraction of viewport height.
+  static const maxOverscrollFraction = 0.5;
 }

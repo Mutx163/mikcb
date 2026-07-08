@@ -11,6 +11,7 @@ import '../models/exam.dart';
 import '../models/holiday_entry.dart';
 import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
+import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_navigation.dart';
@@ -22,6 +23,7 @@ import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
+import '../services/partner_timetable_service.dart';
 import '../services/storage_service.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
@@ -108,6 +110,7 @@ class TimetableProvider with ChangeNotifier {
   final IcsImportService _icsImportService;
   final MiuiLiveActivitiesService _liveActivitiesService;
   final DataTransferService _dataTransferService;
+  final PartnerTimetableService _partnerTimetableService;
   final HomeWidgetService _homeWidgetService;
   final HomeWidgetSnapshotService _homeWidgetSnapshotService;
   final HolidayService _holidayService;
@@ -135,6 +138,7 @@ class TimetableProvider with ChangeNotifier {
   HolidayData? _holidayData;
   List<String> _teacherRecords = [];
   List<String> _locationRecords = [];
+  PartnerTimetableBinding? _partnerBinding;
 
   List<Course> get courses => List.unmodifiable(_courses);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
@@ -304,7 +308,24 @@ class TimetableProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
   DataTransferService get dataTransferService => _dataTransferService;
-  TimetableProfile? get activeProfile => _getProfileById(_activeProfileId);
+  PartnerTimetableBinding? get partnerBinding => _partnerBinding;
+  bool get hasPartnerBinding => _partnerBinding != null;
+  TimetableProfile? get partnerProfile =>
+      _getProfileById(PartnerTimetableService.partnerProfileId);
+  List<Course> get partnerCourses =>
+      partnerProfile?.courses ?? const <Course>[];
+  TimetableProfile? get activeProfile {
+    final profile = _getProfileById(_activeProfileId);
+    if (profile != null && !profile.isPartnerImported) {
+      return profile;
+    }
+    for (final candidate in _profiles) {
+      if (!candidate.isPartnerImported) {
+        return candidate;
+      }
+    }
+    return null;
+  }
   TimeScheme? get activeTimeScheme =>
       _getTimeSchemeById(_settings.activeTimeSchemeId);
   int get maxUsedSection => _courses.isEmpty
@@ -318,6 +339,7 @@ class TimetableProvider with ChangeNotifier {
     IcsImportService? icsImportService,
     MiuiLiveActivitiesService? liveActivitiesService,
     DataTransferService? dataTransferService,
+    PartnerTimetableService? partnerTimetableService,
     HomeWidgetService? homeWidgetService,
     HomeWidgetSnapshotService? homeWidgetSnapshotService,
     HolidayService? holidayService,
@@ -329,6 +351,8 @@ class TimetableProvider with ChangeNotifier {
        _liveActivitiesService =
            liveActivitiesService ?? MiuiLiveActivitiesService(),
        _dataTransferService = dataTransferService ?? DataTransferService(),
+       _partnerTimetableService =
+           partnerTimetableService ?? PartnerTimetableService(),
        _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
        _homeWidgetSnapshotService =
            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
@@ -351,15 +375,28 @@ class TimetableProvider with ChangeNotifier {
     final profilesFuture = _storageService.getProfiles();
     final timeSchemesFuture = _storageService.getTimeSchemes();
     final activeProfileIdFuture = _storageService.getActiveProfileId();
+    final partnerBindingFuture = _storageService.getPartnerTimetableBinding();
     await Future.wait([
       profilesFuture,
       timeSchemesFuture,
       activeProfileIdFuture,
+      partnerBindingFuture,
     ]);
 
     _profiles = await profilesFuture;
     _timeSchemes = await timeSchemesFuture;
     _activeProfileId = await activeProfileIdFuture;
+    _partnerBinding = await partnerBindingFuture;
+
+    if (_activeProfileId != null) {
+      final storedActive = _getProfileById(_activeProfileId);
+      if (storedActive?.isPartnerImported == true) {
+        final fallback = _profiles
+            .where((profile) => !profile.isPartnerImported)
+            .firstOrNull;
+        _activeProfileId = fallback?.id;
+      }
+    }
 
     // --- 非关键数据：后台加载，不阻塞首帧 ---
     unawaited(_loadDeferredData());
@@ -899,7 +936,7 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     final targetProfile = _getProfileById(profileId);
-    if (targetProfile == null) {
+    if (targetProfile == null || targetProfile.isPartnerImported) {
       return;
     }
 
@@ -936,7 +973,7 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final index = _profiles.indexWhere((profile) => profile.id == profileId);
-    if (index == -1) {
+    if (index == -1 || _profiles[index].isPartnerImported) {
       return false;
     }
 
@@ -2165,5 +2202,40 @@ class TimetableProvider with ChangeNotifier {
 
   void updateCurrentDayOfWeek() {
     unawaited(syncTemporalContext());
+  }
+
+  Future<PartnerImportResult> importPartnerTimetable(
+    String content, {
+    String? partnerName,
+  }) async {
+    await initialize();
+    final result = await _partnerTimetableService.importFromContent(
+      content,
+      partnerName: partnerName,
+    );
+    _profiles = await _storageService.getProfiles();
+    _partnerBinding = result.binding;
+    notifyUserDataChangedForSync();
+    notifyListeners();
+    return result;
+  }
+
+  Future<void> unlinkPartner() async {
+    await initialize();
+    await _partnerTimetableService.unlink();
+    _profiles = await _storageService.getProfiles();
+    _partnerBinding = null;
+    if (_activeProfileId == PartnerTimetableService.partnerProfileId) {
+      final fallback = _profiles
+          .where((profile) => !profile.isPartnerImported)
+          .firstOrNull;
+      if (fallback != null) {
+        _activeProfileId = fallback.id;
+        _applyProfileState(fallback);
+        await _storageService.setActiveProfileId(fallback.id);
+      }
+    }
+    notifyUserDataChangedForSync();
+    notifyListeners();
   }
 }

@@ -39,35 +39,48 @@ class TimetableProfilesScreen extends StatelessWidget {
                       index: index,
                       profile: profiles[index],
                       isActive: profiles[index].id == activeProfileId,
-                      canDelete: profiles.length > 1,
-                      onSwitch: () => _switchProfile(
-                        context,
-                        profiles[index].id,
-                        profiles[index].name,
-                      ),
-                      onRename: () => _renameProfile(
-                        context,
-                        profiles[index].id,
-                        profiles[index].name,
-                      ),
-                      onDuplicate: () async {
-                        await provider.switchProfile(profiles[index].id);
-                        await provider.duplicateActiveProfile();
-                        if (context.mounted) {
-                          showAppToast(
-                            context,
-                            message: l10n.copiedCurrentTimetable,
-                            kind: AppToastKind.success,
-                          );
-                        }
-                      },
-                      onClear: profiles[index].id == activeProfileId
+                      canDelete:
+                          profiles.length > 1 &&
+                          !profiles[index].isPartnerImported,
+                      isPartnerImported: profiles[index].isPartnerImported,
+                      onSwitch: profiles[index].isPartnerImported
+                          ? () {}
+                          : () => _switchProfile(
+                              context,
+                              profiles[index].id,
+                              profiles[index].name,
+                            ),
+                      onRename: profiles[index].isPartnerImported
+                          ? () {}
+                          : () => _renameProfile(
+                              context,
+                              profiles[index].id,
+                              profiles[index].name,
+                            ),
+                      onDuplicate: profiles[index].isPartnerImported
+                          ? () {}
+                          : () async {
+                              await provider.switchProfile(profiles[index].id);
+                              await provider.duplicateActiveProfile();
+                              if (context.mounted) {
+                                showAppToast(
+                                  context,
+                                  message: l10n.copiedCurrentTimetable,
+                                  kind: AppToastKind.success,
+                                );
+                              }
+                            },
+                      onClear:
+                          profiles[index].id == activeProfileId &&
+                              !profiles[index].isPartnerImported
                           ? () => _clearActiveProfileCourses(
                               context,
                               profiles[index].name,
                             )
                           : null,
-                      onDelete: profiles.length > 1
+                      onDelete:
+                          profiles.length > 1 &&
+                              !profiles[index].isPartnerImported
                           ? () => _deleteProfile(
                               context,
                               profiles[index].id,
@@ -237,6 +250,7 @@ class _TimetableProfileTile extends StatelessWidget {
     required this.profile,
     required this.isActive,
     required this.canDelete,
+    this.isPartnerImported = false,
     required this.onSwitch,
     required this.onRename,
     required this.onDuplicate,
@@ -248,6 +262,7 @@ class _TimetableProfileTile extends StatelessWidget {
   final TimetableProfile profile;
   final bool isActive;
   final bool canDelete;
+  final bool isPartnerImported;
   final VoidCallback onSwitch;
   final VoidCallback onRename;
   final VoidCallback onDuplicate;
@@ -308,16 +323,19 @@ class _TimetableProfileTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    l10n.coursesAndWeekSummary(
-                      profile.courses.length,
-                      profile.currentWeek,
-                    ),
+                    isPartnerImported
+                        ? l10n.coupleTimetablePartnerReadOnlyBadge
+                        : l10n.coursesAndWeekSummary(
+                            profile.courses.length,
+                            profile.currentWeek,
+                          ),
                     style: HyperosTypography.listDetail(context),
                   ),
                 ],
               ),
             ),
-            PopupMenuButton<String>(
+            if (!isPartnerImported)
+              PopupMenuButton<String>(
               tooltip: l10n.moreActionsTooltip,
               onSelected: (value) {
                 switch (value) {
@@ -368,7 +386,7 @@ class _TimetableProfileTile extends StatelessWidget {
                 ),
               ],
             ),
-            if (!isActive) ...[
+            if (!isPartnerImported && !isActive) ...[
               SizedBox(width: HyperosTokens.titleChevronGap),
               const HyperosChevron(),
             ],

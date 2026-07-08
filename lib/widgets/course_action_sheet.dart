@@ -37,7 +37,7 @@ Future<void> showCourseActionSheet(
   );
 }
 
-class CourseActionSheetBody extends StatelessWidget {
+class CourseActionSheetBody extends StatefulWidget {
   const CourseActionSheetBody({
     super.key,
     required this.previewCourses,
@@ -58,33 +58,309 @@ class CourseActionSheetBody extends StatelessWidget {
   final CourseActionHandler onSuspend;
 
   @override
+  State<CourseActionSheetBody> createState() => _CourseActionSheetBodyState();
+}
+
+class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
+  final _scrollController = ScrollController();
+  int _selectedIndex = 0;
+  bool _conflictsExpanded = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _selectCourse(int index) {
+    if (index == _selectedIndex) {
+      return;
+    }
+    setState(() {
+      _selectedIndex = index;
+      _conflictsExpanded = false;
+    });
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
+    final selectedCourse = widget.previewCourses[_selectedIndex];
+    final otherConflictIndexes = <int>[
+      for (var index = 0; index < widget.previewCourses.length; index++)
+        if (index != _selectedIndex) index,
+    ];
+
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
     return HyperosSheetFrame(
       frosted: true,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var index = 0; index < previewCourses.length; index++) ...[
-              _CourseActionSheetContent(
-                course: previewCourses[index],
-                week: week,
-                hasConflict: hasConflicts,
-                onEdit: onEdit,
-                onReschedule: onReschedule,
-                onDelete: onDelete,
-                onSuspend: onSuspend,
+      maxHeight: maxHeight,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _CourseActionSheetContent(
+                    key: ValueKey(
+                      'course-action-selected-${selectedCourse.id}',
+                    ),
+                    course: selectedCourse,
+                    week: widget.week,
+                    hasConflict: widget.hasConflicts,
+                    onEdit: widget.onEdit,
+                    onReschedule: widget.onReschedule,
+                    onDelete: widget.onDelete,
+                    onSuspend: widget.onSuspend,
+                  ),
+                  if (otherConflictIndexes.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _ConflictCoursesPanel(
+                      courses: widget.previewCourses,
+                      otherIndexes: otherConflictIndexes,
+                      week: widget.week,
+                      expanded: _conflictsExpanded,
+                      onToggleExpanded: () {
+                        setState(() => _conflictsExpanded = !_conflictsExpanded);
+                      },
+                      onSelect: _selectCourse,
+                    ),
+                  ],
+                ],
               ),
-              if (index != previewCourses.length - 1) ...[
-                const SizedBox(height: 20),
-                Divider(color: colors.border, height: 1),
-                const SizedBox(height: 20),
-              ],
-            ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ConflictCoursesPanel extends StatelessWidget {
+  const _ConflictCoursesPanel({
+    required this.courses,
+    required this.otherIndexes,
+    required this.week,
+    required this.expanded,
+    required this.onToggleExpanded,
+    required this.onSelect,
+  });
+
+  final List<Course> courses;
+  final List<int> otherIndexes;
+  final int week;
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    final muted = typo.xs2.copyWith(color: colors.mutedForeground);
+    final accent = colors.destructive;
+    final previewNames = otherIndexes
+        .map((index) => courses[index].name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    final previewLine = _conflictPreviewLine(previewNames);
+    final subtitle = expanded
+        ? l10n.courseActionConflictCollapseHint
+        : (previewLine ?? l10n.courseActionConflictExpandHint);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HyperosFrostedSurface(
+          borderRadius: BorderRadius.circular(12),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onToggleExpanded,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 17,
+                        color: accent,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.conflictCountLabel(otherIndexes.length),
+                            style: typo.sm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: muted.copyWith(height: 1.3),
+                            maxLines: expanded ? 2 : 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 20,
+                      color: colors.mutedForeground,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (expanded) ...[
+          const SizedBox(height: 8),
+          for (var itemIndex = 0; itemIndex < otherIndexes.length; itemIndex++) ...[
+            if (itemIndex > 0) const SizedBox(height: 8),
+            _ConflictCourseCompactRow(
+              course: courses[otherIndexes[itemIndex]],
+              week: week,
+              onTap: () => onSelect(otherIndexes[itemIndex]),
+            ),
           ],
+        ],
+      ],
+    );
+  }
+}
+
+String? _conflictPreviewLine(List<String> names) {
+  if (names.isEmpty) {
+    return null;
+  }
+  if (names.length == 1) {
+    return names.first;
+  }
+  if (names.length == 2) {
+    return '${names[0]} · ${names[1]}';
+  }
+  return '${names[0]} · ${names[1]}…';
+}
+
+class _ConflictCourseCompactRow extends StatelessWidget {
+  const _ConflictCourseCompactRow({
+    required this.course,
+    required this.week,
+    required this.onTap,
+  });
+
+  final Course course;
+  final int week;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    final courseColor = parseHexColorOrFallback(
+      course.color,
+      fallback: colors.primary,
+    );
+    final scheduleLine =
+        '${_weekdayLabel(l10n, course.dayOfWeek)} · ${l10n.sectionRangeLabel(course.startSection, course.endSection)} · ${course.startTime}-${course.endTime}';
+    final muted = typo.xs2.copyWith(color: colors.mutedForeground);
+
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: courseColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        course.name,
+                        style: typo.sm.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        scheduleLine,
+                        style: muted,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (course.location.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          course.location.trim(),
+                          style: muted,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.courseActionConflictSwitchAction,
+                  style: typo.xs2.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -93,6 +369,7 @@ class CourseActionSheetBody extends StatelessWidget {
 
 class _CourseActionSheetContent extends StatelessWidget {
   const _CourseActionSheetContent({
+    super.key,
     required this.course,
     required this.week,
     required this.hasConflict,

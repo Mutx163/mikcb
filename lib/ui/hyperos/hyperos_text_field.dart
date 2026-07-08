@@ -77,55 +77,59 @@ class HyperosTextField extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        TextField(
-          controller: controller,
-          focusNode: focusNode,
-          enabled: enabled,
-          autofocus: autofocus,
-          obscureText: obscureText,
-          maxLines: maxLines,
-          minLines: minLines,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          inputFormatters: inputFormatters,
-          onChanged: onChanged,
-          onSubmitted: onSubmitted,
-          style: TextStyle(
-            fontSize: HyperosMiuixTextField.labelFontSizeNormal,
-            color: enabled ? onSurface : disabled,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: summary),
-            filled: true,
-            fillColor: enabled ? fill : fill.withValues(alpha: 0.5),
-            contentPadding: HyperosMiuixTextField.insideMargin,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                HyperosMiuixTextField.cornerRadius,
-              ),
-              borderSide: BorderSide(color: outline, width: 1),
+        SizedBox(
+          width: double.infinity,
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            enabled: enabled,
+            autofocus: autofocus,
+            obscureText: obscureText,
+            maxLines: maxLines,
+            minLines: minLines,
+            keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            inputFormatters: inputFormatters,
+            onChanged: onChanged,
+            onSubmitted: onSubmitted,
+            scrollPadding: EdgeInsets.zero,
+            style: TextStyle(
+              fontSize: HyperosMiuixTextField.labelFontSizeNormal,
+              color: enabled ? onSurface : disabled,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                HyperosMiuixTextField.cornerRadius,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: summary),
+              filled: true,
+              fillColor: enabled ? fill : fill.withValues(alpha: 0.5),
+              contentPadding: HyperosMiuixTextField.insideMargin,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(
+                  HyperosMiuixTextField.cornerRadius,
+                ),
+                borderSide: BorderSide(color: outline, width: 1),
               ),
-              borderSide: BorderSide(color: outline, width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                HyperosMiuixTextField.cornerRadius,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(
+                  HyperosMiuixTextField.cornerRadius,
+                ),
+                borderSide: BorderSide(color: outline, width: 1),
               ),
-              borderSide: BorderSide(
-                color: primary,
-                width: HyperosMiuixTextField.borderWidth,
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(
+                  HyperosMiuixTextField.cornerRadius,
+                ),
+                borderSide: BorderSide(
+                  color: primary,
+                  width: HyperosMiuixTextField.borderWidth,
+                ),
               ),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                HyperosMiuixTextField.cornerRadius,
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(
+                  HyperosMiuixTextField.cornerRadius,
+                ),
+                borderSide: BorderSide(color: outline.withValues(alpha: 0.5)),
               ),
-              borderSide: BorderSide(color: outline.withValues(alpha: 0.5)),
             ),
           ),
         ),

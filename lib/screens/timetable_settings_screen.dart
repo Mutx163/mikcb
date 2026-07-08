@@ -34,9 +34,12 @@ import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../services/android_animation_scale_service.dart';
 import '../services/bundled_assets.dart';
+import '../services/live_testing_fixture_service.dart';
+import '../services/live_testing_trigger.dart';
 import '../widgets/bundled_asset_image.dart';
 import 'about_screen.dart';
 import 'course_overview_screen.dart';
+import 'couple_timetable_settings_screen.dart';
 import 'data_transfer_screen.dart';
 import 'cloud_sync_screen.dart';
 import 'lan_edit_screen.dart';
@@ -47,8 +50,6 @@ import 'time_scheme_management_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'user_guide_screen.dart';
-
-bool _liveUpdateTestInFlight = false;
 
 class TimetableSettingsScreen extends StatelessWidget {
   const TimetableSettingsScreen({super.key});
@@ -104,6 +105,14 @@ class TimetableSettingsScreen extends StatelessWidget {
             context,
             settings: const RouteSettings(name: '/settings/data-transfer'),
             builder: (_) => const DataTransferScreen(),
+          );
+        }
+
+        void openCoupleTimetable() {
+          HyperosNavigation.push(
+            context,
+            settings: const RouteSettings(name: '/settings/couple-timetable'),
+            builder: (_) => const CoupleTimetableSettingsScreen(),
           );
         }
 
@@ -325,6 +334,15 @@ class TimetableSettingsScreen extends StatelessWidget {
                             ? null
                             : provider.activeTimeScheme?.name,
                         onTap: () => _openTimeSchemeQuickSwitcher(context),
+                      ),
+                      HyperosListTile(
+                        icon: Icons.favorite_outline_rounded,
+                        iconAccent: HyperosIconColors.purple,
+                        title: l10n.coupleTimetableEntryTitle,
+                        details: provider.hasPartnerBinding
+                            ? l10n.coupleTimetableEntryBound
+                            : null,
+                        onTap: openCoupleTimetable,
                       ),
                       HyperosListTile(
                         icon: Icons.swap_horiz_rounded,
@@ -645,10 +663,11 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           children: [
             HyperosSelectTile<AppFontMode>(
               label: l10n.fontModeLabel,
-              subtitle: l10n.fontSectionSubtitle,
+              sheetDescription: l10n.fontSectionFootnote,
+              useSheetForPopup: true,
               items: {
                 for (final v in AppFontMode.values)
-                  _fontModeLabel(context, v): v,
+                  appFontModeLabel(l10n, v): v,
               },
               value: _draft.appFontMode,
               onChanged: (value) {
@@ -1137,14 +1156,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       });
     }
   }
-}
-
-String _fontModeLabel(BuildContext context, AppFontMode mode) {
-  final l10n = AppLocalizations.of(context)!;
-  return switch (mode) {
-    AppFontMode.system => l10n.fontModeSystem,
-    AppFontMode.miSans => l10n.fontModeMiSans,
-  };
 }
 
 String _foruiThemeLabel(ForuiTheme theme) {
@@ -1760,6 +1771,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   bool _autoRefreshEnabled = true;
   DateTime? _lastDebugStatusUpdatedAt;
   bool _holidayOverrideEnabled = false;
+  int _fixtureLeadMinutes = 1;
+  bool _installingFixtureGrid = false;
+  bool _clearingFixtureGrid = false;
 
   @override
   void initState() {
@@ -1830,9 +1844,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         context,
         builder: (context) => LiveDiagnosticsLogViewerScreen(
           title: l10n.liveDiagnosticsViewerTitle,
-          loadRawLog: () async {
-            return await _liveService.readLiveDiagnosticsText() ?? '';
-          },
+          watchRawLog: () => _liveService.watchLiveDiagnosticsText(),
           onLoadEmpty: () {
             if (!context.mounted) {
               return;
@@ -1986,6 +1998,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
 
   List<_LiveTestingSection> _liveTestingSections() => [
     if (!kReleaseMode) _LiveTestingSection.holidayOverride,
+    if (!kReleaseMode) _LiveTestingSection.quickFixtures,
     _LiveTestingSection.notification,
     _LiveTestingSection.islandStatus,
     if (_debugStatus != null) ...[
@@ -2054,6 +2067,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           const HyperosSectionGap(),
         ],
       ),
+      _LiveTestingSection.quickFixtures => _buildQuickFixtureSection(context, l10n),
       _LiveTestingSection.notification => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -2381,10 +2395,247 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       ),
     };
   }
+
+  Widget _buildQuickFixtureSection(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final provider = context.watch<TimetableProvider>();
+    final now = DateTime.now();
+    final currentHour = LiveTestingFixtureService.hourSlotFor(now);
+    final nextHour = LiveTestingFixtureService.nextHourSlotFor(now);
+    final fixtureCount = provider.courses
+        .where(LiveTestingFixtureService.isFixtureCourse)
+        .length;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        HyperosControlCard(
+          title: '快捷测试课表',
+          subtitle:
+              '仅调试版可用。会创建「${LiveTestingFixtureService.timeSchemeName}」时间模板（24 个节次），并在今天生成 00:00–23:00 各一门测试课；测试课 ID 以 ${LiveTestingFixtureService.courseIdPrefix} 开头，可一键清除。',
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '课前提醒：$fixtureCount/24 个测试时段已安装',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text('多少分钟后上课', style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final minutes
+                        in LiveTestingFixtureService.supportedLeadMinutes)
+                      ChoiceChip(
+                        label: Text('$minutes 分钟'),
+                        selected: _fixtureLeadMinutes == minutes,
+                        onSelected: (selected) {
+                          if (!selected) return;
+                          setState(() => _fixtureLeadMinutes = minutes);
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    HyperosButton(
+                      label:
+                          _installingFixtureGrid ? '安装中…' : '安装 24 小时测试课表',
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _installingFixtureGrid
+                          ? null
+                          : () => _installQuickFixtureGrid(context),
+                    ),
+                    HyperosButton(
+                      label: _clearingFixtureGrid ? '清除中…' : '清除测试课表',
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _clearingFixtureGrid || fixtureCount == 0
+                          ? null
+                          : () => _clearQuickFixtureGrid(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    HyperosButton(
+                      label:
+                          '当前时段（${currentHour.toString().padLeft(2, '0')}:00）',
+                      variant: HyperosButtonVariant.primary,
+                      onPressed: () => _triggerQuickFixtureSlot(
+                        context,
+                        hour: currentHour,
+                        source: 'quick_fixture_current_slot',
+                      ),
+                    ),
+                    HyperosButton(
+                      label:
+                          '下一时段（${nextHour.toString().padLeft(2, '0')}:00）',
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: () => _triggerQuickFixtureSlot(
+                        context,
+                        hour: nextHour,
+                        source: 'quick_fixture_next_slot',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '点选时段：把该时段测试课设为 $_fixtureLeadMinutes 分钟后上课并发送超级岛测试',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 24,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1.8,
+                  ),
+                  itemBuilder: (context, index) {
+                    final installed =
+                        LiveTestingFixtureService.findFixtureForHour(
+                          provider,
+                          index,
+                        ) !=
+                        null;
+                    final isCurrent = index == currentHour;
+                    final color = tryParseHexColor(
+                      LiveTestingFixtureService.colorForHour(index),
+                    );
+                    return Material(
+                      color: (color ?? theme.colorScheme.primaryContainer)
+                          .withValues(alpha: isCurrent ? 0.95 : 0.55),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _triggerQuickFixtureSlot(
+                          context,
+                          hour: index,
+                          source: 'quick_fixture_grid',
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index.toString().padLeft(2, '0')}:00'
+                            '${installed ? '\n已装' : ''}'
+                            '${isCurrent ? '\n现在' : ''}',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: isCurrent
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+      ],
+    );
+  }
+
+  Future<void> _installQuickFixtureGrid(BuildContext context) async {
+    if (_installingFixtureGrid) return;
+    setState(() => _installingFixtureGrid = true);
+    try {
+      final provider = context.read<TimetableProvider>();
+      final count = await LiveTestingFixtureService.installTwentyFourHourGrid(
+        provider,
+      );
+      if (!context.mounted) return;
+      showAppToast(
+        context,
+        message: '已安装 $count 个测试时段（今天星期${DateTime.now().weekday}）',
+        kind: AppToastKind.success,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showAppToast(
+        context,
+        message: '安装测试课表失败：$e',
+        kind: AppToastKind.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _installingFixtureGrid = false);
+      }
+    }
+  }
+
+  Future<void> _clearQuickFixtureGrid(BuildContext context) async {
+    if (_clearingFixtureGrid) return;
+    setState(() => _clearingFixtureGrid = true);
+    try {
+      final provider = context.read<TimetableProvider>();
+      final count = await LiveTestingFixtureService.removeAllFixtureCourses(
+        provider,
+      );
+      if (!context.mounted) return;
+      showAppToast(
+        context,
+        message: '已清除 $count 门测试课',
+        kind: AppToastKind.success,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showAppToast(
+        context,
+        message: '清除测试课表失败：$e',
+        kind: AppToastKind.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _clearingFixtureGrid = false);
+      }
+    }
+  }
+
+  Future<void> _triggerQuickFixtureSlot(
+    BuildContext context, {
+    required int hour,
+    required String source,
+  }) async {
+    final provider = context.read<TimetableProvider>();
+    final lead = Duration(minutes: _fixtureLeadMinutes);
+    final result = await triggerLiveUpdateTestForHourSlot(
+      context: context,
+      provider: provider,
+      hour: hour,
+      lead: lead,
+      source: source,
+    );
+    if (!context.mounted) return;
+    _showLiveTestingTriggerResult(context, result);
+    if (result.status == LiveTestingTriggerStatus.success) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!context.mounted) return;
+      await _refreshDebugStatus(showLoading: true);
+    }
+  }
 }
 
 enum _LiveTestingSection {
   holidayOverride,
+  quickFixtures,
   notification,
   islandStatus,
   debugEnvironment,
@@ -2545,39 +2796,31 @@ Future<void> _triggerUmengTestAnr(BuildContext context) async {
   await UmengAnalyticsService.triggerTestAnr();
 }
 
-Future<void> _showTestOptions(BuildContext context) async {
-  if (_liveUpdateTestInFlight) {
-    if (!context.mounted) return;
-    final locale = Localizations.localeOf(context);
-    showAppToast(
-      context,
-      message: locale.languageCode == 'zh'
-          ? '测试进行中，请勿重复点击，约 8 秒后查看超级岛'
-          : 'Test in progress. Please wait about 8 seconds before tapping again.',
-      kind: AppToastKind.warning,
-    );
-    return;
-  }
-  _liveUpdateTestInFlight = true;
+void _showLiveTestingTriggerResult(
+  BuildContext context,
+  LiveTestingTriggerResult result,
+) {
+  if (result.message == null) return;
+  showAppToast(
+    context,
+    message: result.message!,
+    kind: switch (result.status) {
+      LiveTestingTriggerStatus.success => AppToastKind.success,
+      LiveTestingTriggerStatus.inFlight => AppToastKind.warning,
+      LiveTestingTriggerStatus.error => AppToastKind.error,
+    },
+  );
+}
 
+Future<void> _showTestOptions(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
   const beforeClassLead = Duration(seconds: 8);
-  const totalCourseDuration = Duration(minutes: 3);
-
-  String formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
 
   final provider = context.read<TimetableProvider>();
   await provider.initialize();
   final liveService = MiuiLiveActivitiesService();
   await liveService.initialize();
-  await liveService.recordDiagnosticEvent(
-    'live_update_test_requested',
-    AppLogMessages.liveUpdateTestRequested,
-    extras: {'from': 'settings_screen', 'currentWeek': provider.currentWeek},
-  );
 
   final selection = provider.getTestLiveActivityCourseSelection(now: now);
   if (selection == null) {
@@ -2586,19 +2829,14 @@ Future<void> _showTestOptions(BuildContext context) async {
       AppLogMessages.liveUpdateTestNoSelection,
       extras: {'weekday': now.weekday},
     );
-    _liveUpdateTestInFlight = false;
     if (!context.mounted) return;
     showAppToast(
       context,
-      message: AppLocalizations.of(context)!.liveTestingNoCourseAvailable,
+      message: l10n.liveTestingNoCourseAvailable,
       kind: AppToastKind.warning,
     );
     return;
   }
-  final settings = provider.settings;
-  final displaySettings = settings.beforeClassDisplaySettings;
-  final start = now.add(beforeClassLead);
-  final end = start.add(totalCourseDuration);
 
   final baseCourse = selection.currentCourse;
   final previewNextCourse = selection.nextCourse;
@@ -2613,6 +2851,8 @@ Future<void> _showTestOptions(BuildContext context) async {
     },
   );
 
+  final start = now.add(beforeClassLead);
+  final end = start.add(LiveTestingFixtureService.defaultCourseDuration);
   final testCourse = Course(
     id: 'test_auto_id',
     name: baseCourse.name,
@@ -2624,137 +2864,24 @@ Future<void> _showTestOptions(BuildContext context) async {
     endSection: baseCourse.endSection,
     startWeek: baseCourse.startWeek,
     endWeek: baseCourse.endWeek,
-    startTime: formatTime(start),
-    endTime: formatTime(end),
+    startTime: LiveTestingFixtureService.formatClock(start),
+    endTime: LiveTestingFixtureService.formatClock(end),
     color: baseCourse.color,
     note: l10n.liveTestingTestCourseNote,
   );
 
-  if (!context.mounted) {
-    _liveUpdateTestInFlight = false;
-    return;
-  }
+  if (!context.mounted) return;
 
-  try {
-    provider.suspendLiveActivitySyncFor(
-      end.difference(now) + const Duration(seconds: 20),
-    );
-    await liveService.recordDiagnosticEvent(
-      'live_update_test_suspend_sync',
-      AppLogMessages.liveUpdateTestSuspendSync,
-      extras: {
-        'untilMillis': end
-            .add(const Duration(seconds: 20))
-            .millisecondsSinceEpoch,
-      },
-    );
-    final progressMilestones = provider.buildLiveProgressMilestones(
-      baseCourse,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
-    );
-    final progressBreakOffsetsMillis = provider
-        .buildLiveProgressBreakOffsetsMillis(
-          baseCourse,
-          startAtMillis: start.millisecondsSinceEpoch,
-          endAtMillis: end.millisecondsSinceEpoch,
-        );
-    await liveService.recordDiagnosticEvent(
-      'live_update_test_starting',
-      AppLogMessages.liveUpdateTestStarting,
-      extras: {
-        'courseName': testCourse.name,
-        'startAtMillis': start.millisecondsSinceEpoch,
-        'endAtMillis': end.millisecondsSinceEpoch,
-        'milestoneCount': progressMilestones.length,
-      },
-    );
-    await liveService.startLiveUpdate(
-      testCourse,
-      previewNextCourse,
-      stage: LiveActivityStage.beforeClass.name,
-      beforeClassLeadMillis: beforeClassLead.inMilliseconds,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
-      endReminderLeadMillis: 0,
-      endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
-      promoteDuringClass: settings.livePromoteDuringClass,
-      showNotificationDuringClass: settings.liveShowDuringClassNotification,
-      enableBeforeClass: true,
-      enableDuringClass: true,
-      enableBeforeEnd: false,
-      showCountdown: displaySettings.showCountdown,
-      countdownTextStyle: displaySettings.countdownTextStyle,
-      showStageText: displaySettings.showStageText,
-      showCourseNameInIsland: displaySettings.showCourseName,
-      showLocationInIsland: displaySettings.showLocation,
-      useShortNameInIsland: displaySettings.useShortName,
-      hidePrefixText: displaySettings.hidePrefixText,
-      duringClassTimeDisplayMode: displaySettings.duringClassTimeDisplayMode,
-      enableMiuiIslandLabelImage: displaySettings.enableMiuiIslandLabelImage,
-      miuiIslandLabelStyle: displaySettings.miuiIslandLabelStyle,
-      miuiIslandLabelContent: displaySettings.miuiIslandLabelContent,
-      miuiIslandLabelFontColor: displaySettings.miuiIslandLabelFontColor,
-      miuiIslandLabelFontWeight: displaySettings.miuiIslandLabelFontWeight,
-      miuiIslandLabelRenderQuality:
-          displaySettings.miuiIslandLabelRenderQuality,
-      miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
-      miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
-      miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
-      miuiIslandLabelLogoPath: displaySettings.miuiIslandLabelLogoPath,
-      miuiIslandLabelLogoCornerRadius:
-          displaySettings.miuiIslandLabelLogoCornerRadius,
-      miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
-      miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
-      beforeClassQuickAction: settings.liveBeforeClassQuickAction,
-      progressBreakOffsetsMillis: progressBreakOffsetsMillis,
-      progressMilestoneLabels: progressMilestones
-          .map((milestone) => milestone['label'] as String)
-          .toList(),
-      progressMilestoneTimeTexts: progressMilestones
-          .map((milestone) => milestone['timeText'] as String)
-          .toList(),
-    );
-    await liveService.recordDiagnosticEvent(
-      'live_update_test_started',
-      AppLogMessages.liveUpdateTestStarted,
-      extras: {
-        'courseName': testCourse.name,
-        'stage': LiveActivityStage.beforeClass.name,
-      },
-    );
-    if (!context.mounted) return;
-    final locale = Localizations.localeOf(context);
-    final homeHint = locale.languageCode == 'zh'
-        ? '请按 Home 键回到桌面查看超级岛（停留在应用内时系统通常不会弹出）。'
-        : 'Press Home and watch the island; it usually will not pop while the app stays open.';
-    showAppToast(
-      context,
-      message: '${AppLocalizations.of(context)!.liveTestingNotificationSent}\n$homeHint',
-      kind: AppToastKind.success,
-    );
-  } catch (e, stackTrace) {
-    _liveUpdateTestInFlight = false;
-    await UmengAnalyticsService.reportDiagnostic(
-      'live_update_test_failed',
-      AppLogMessages.liveUpdateTestFailed,
-      error: e,
-      stackTrace: stackTrace,
-      dedupeKey: 'live_update_test_failed',
-    );
-    if (!context.mounted) return;
-    showAppToast(
-      context,
-      message: AppLocalizations.of(context)!.sendFailedWithError('$e'),
-      kind: AppToastKind.error,
-    );
-  } finally {
-    unawaited(
-      Future<void>.delayed(const Duration(seconds: 12), () {
-        _liveUpdateTestInFlight = false;
-      }),
-    );
-  }
+  final result = await triggerLiveUpdateTest(
+    context: context,
+    provider: provider,
+    testCourse: testCourse,
+    previewNextCourse: previewNextCourse,
+    beforeClassLead: beforeClassLead,
+    source: 'settings_screen',
+  );
+  if (!context.mounted) return;
+  _showLiveTestingTriggerResult(context, result);
 }
 
 class _LayoutSettingsScreen extends StatefulWidget {

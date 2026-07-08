@@ -397,13 +397,9 @@ class _AboutScreenState extends State<AboutScreen> {
           settings: const RouteSettings(name: '/about/app-logs'),
           builder: (_) => LiveDiagnosticsLogViewerScreen(
             title: l10n.aboutAppLogsTitle,
-            loadRawLog: () async {
-              final nativeRawLog = await MiuiLiveActivitiesService()
-                  .readLiveDiagnosticsText();
-              return AppLogService.instance.readMergedLogsText(
-                nativeRawLog: nativeRawLog,
-              );
-            },
+            watchRawLog: () => AppLogService.instance.watchMergedLogsText(
+              loadNativeRawLog: MiuiLiveActivitiesService().readLiveDiagnosticsText,
+            ),
             isRecordingEnabled: settings.liveEnableLocalDiagnostics,
             onRecordingChanged: (value) =>
                 _updateLiveDiagnosticsPreference(value),
@@ -1063,13 +1059,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         HyperosPageRoute(
           builder: (_) => LiveDiagnosticsLogViewerScreen(
             title: AppLocalizations.of(context)!.aboutAppLogsTitle,
-            loadRawLog: () async {
-              final nativeRawLog = await MiuiLiveActivitiesService()
-                  .readLiveDiagnosticsText();
-              return AppLogService.instance.readMergedLogsText(
-                nativeRawLog: nativeRawLog,
-              );
-            },
+            watchRawLog: () => AppLogService.instance.watchMergedLogsText(
+              loadNativeRawLog: MiuiLiveActivitiesService().readLiveDiagnosticsText,
+            ),
             isRecordingEnabled: settings.liveEnableLocalDiagnostics,
             onRecordingChanged: _updateLiveDiagnosticsPreference,
             onExport: _exportLiveDiagnostics,

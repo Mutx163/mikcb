@@ -3,6 +3,23 @@ import 'exam.dart';
 import 'schedule_item.dart';
 import 'timetable_settings.dart';
 
+enum TimetableProfileKind {
+  normal,
+  partnerImported;
+
+  String get value => switch (this) {
+    TimetableProfileKind.normal => 'normal',
+    TimetableProfileKind.partnerImported => 'partnerImported',
+  };
+
+  static TimetableProfileKind fromValue(String? value) {
+    return TimetableProfileKind.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => TimetableProfileKind.normal,
+    );
+  }
+}
+
 int clampCurrentWeekToSettings(int week, TimetableSettings settings) {
   final maxWeek = settings.semesterWeekCount < 1
       ? 1
@@ -26,6 +43,7 @@ class TimetableProfile {
   final int currentWeek;
   final DateTime createdAt;
   final DateTime lastUsedAt;
+  final TimetableProfileKind profileKind;
 
   const TimetableProfile({
     required this.id,
@@ -37,7 +55,11 @@ class TimetableProfile {
     required this.currentWeek,
     required this.createdAt,
     required this.lastUsedAt,
+    this.profileKind = TimetableProfileKind.normal,
   });
+
+  bool get isPartnerImported =>
+      profileKind == TimetableProfileKind.partnerImported;
 
   Map<String, dynamic> toJson() {
     return {
@@ -50,6 +72,7 @@ class TimetableProfile {
       'currentWeek': currentWeek,
       'createdAt': createdAt.toIso8601String(),
       'lastUsedAt': lastUsedAt.toIso8601String(),
+      'profileKind': profileKind.value,
     };
   }
 
@@ -87,6 +110,7 @@ class TimetableProfile {
       lastUsedAt:
           DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??
           DateTime.now(),
+      profileKind: TimetableProfileKind.fromValue(json['profileKind'] as String?),
     );
   }
 
@@ -100,6 +124,7 @@ class TimetableProfile {
     int? currentWeek,
     DateTime? createdAt,
     DateTime? lastUsedAt,
+    TimetableProfileKind? profileKind,
   }) {
     return TimetableProfile(
       id: id ?? this.id,
@@ -111,6 +136,7 @@ class TimetableProfile {
       currentWeek: currentWeek ?? this.currentWeek,
       createdAt: createdAt ?? this.createdAt,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      profileKind: profileKind ?? this.profileKind,
     );
   }
 }

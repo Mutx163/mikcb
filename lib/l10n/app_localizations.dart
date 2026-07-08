@@ -185,8 +185,14 @@ abstract class AppLocalizations {
   /// No description provided for @fontSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'支持系统默认字体和 MiSans。MiSans 不可用时会自动回退。'**
+  /// **'内置 Inter 默认；也可选用系统已安装的字体。'**
   String get fontSectionSubtitle;
+
+  /// No description provided for @fontSectionFootnote.
+  ///
+  /// In zh, this message translates to:
+  /// **'厂商字体未内置，需系统已预装才生效。小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装。'**
+  String get fontSectionFootnote;
 
   /// No description provided for @fontModeLabel.
   ///
@@ -197,14 +203,62 @@ abstract class AppLocalizations {
   /// No description provided for @fontModeSystem.
   ///
   /// In zh, this message translates to:
-  /// **'手机默认字体'**
+  /// **'应用默认（Inter）'**
   String get fontModeSystem;
+
+  /// No description provided for @fontModeSansSerif.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统无衬线'**
+  String get fontModeSansSerif;
 
   /// No description provided for @fontModeMiSans.
   ///
   /// In zh, this message translates to:
-  /// **'MiSans（优先）'**
+  /// **'MiSans'**
   String get fontModeMiSans;
+
+  /// No description provided for @fontModeHarmonyOS.
+  ///
+  /// In zh, this message translates to:
+  /// **'鸿蒙黑体'**
+  String get fontModeHarmonyOS;
+
+  /// No description provided for @fontModeOppoSans.
+  ///
+  /// In zh, this message translates to:
+  /// **'OPPO Sans'**
+  String get fontModeOppoSans;
+
+  /// No description provided for @fontModePingFang.
+  ///
+  /// In zh, this message translates to:
+  /// **'苹方'**
+  String get fontModePingFang;
+
+  /// No description provided for @fontModeNotoSans.
+  ///
+  /// In zh, this message translates to:
+  /// **'Noto Sans'**
+  String get fontModeNotoSans;
+
+  /// No description provided for @fontModeSerif.
+  ///
+  /// In zh, this message translates to:
+  /// **'衬线体'**
+  String get fontModeSerif;
+
+  /// No description provided for @fontModeSongti.
+  ///
+  /// In zh, this message translates to:
+  /// **'宋体'**
+  String get fontModeSongti;
+
+  /// No description provided for @fontModeMonospace.
+  ///
+  /// In zh, this message translates to:
+  /// **'等宽体'**
+  String get fontModeMonospace;
 
   /// No description provided for @languageSectionTitle.
   ///
@@ -331,6 +385,198 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'导出完整课表文件，给别人直接导入使用'**
   String get dataTransferEntrySubtitle;
+
+  /// No description provided for @coupleTimetableEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'情侣课表'**
+  String get coupleTimetableEntryTitle;
+
+  /// No description provided for @coupleTimetableEntryBound.
+  ///
+  /// In zh, this message translates to:
+  /// **'已绑定'**
+  String get coupleTimetableEntryBound;
+
+  /// No description provided for @coupleTimetableModeEnableTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启情侣课表'**
+  String get coupleTimetableModeEnableTooltip;
+
+  /// No description provided for @coupleTimetableModeDisableTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭情侣课表'**
+  String get coupleTimetableModeDisableTooltip;
+
+  /// No description provided for @coupleTimetableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'情侣课表'**
+  String get coupleTimetableTitle;
+
+  /// No description provided for @coupleTimetableIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出你的课表发给 TA，或导入 TA 分享的课表文件。导入后可在叠加视图中查看双方课程。'**
+  String get coupleTimetableIntro;
+
+  /// No description provided for @coupleTimetableBoundTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'已绑定对方课表'**
+  String get coupleTimetableBoundTitle;
+
+  /// No description provided for @coupleTimetableUnboundTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未绑定对方课表'**
+  String get coupleTimetableUnboundTitle;
+
+  /// No description provided for @coupleTimetablePartnerNameLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'对方名称'**
+  String get coupleTimetablePartnerNameLabel;
+
+  /// No description provided for @coupleTimetableLastImportedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次导入：{time}'**
+  String coupleTimetableLastImportedAt(String time);
+
+  /// No description provided for @coupleTimetableExportForPartner.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出我的课表给对方'**
+  String get coupleTimetableExportForPartner;
+
+  /// No description provided for @coupleTimetableImportPartner.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入对方课表'**
+  String get coupleTimetableImportPartner;
+
+  /// No description provided for @coupleTimetableUnlink.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除绑定'**
+  String get coupleTimetableUnlink;
+
+  /// No description provided for @coupleTimetableOpenOverlay.
+  ///
+  /// In zh, this message translates to:
+  /// **'进入叠加视图'**
+  String get coupleTimetableOpenOverlay;
+
+  /// No description provided for @coupleTimetableImportSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已导入对方课表'**
+  String get coupleTimetableImportSuccess;
+
+  /// No description provided for @coupleTimetableImportUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'已更新对方课表'**
+  String get coupleTimetableImportUpdated;
+
+  /// No description provided for @coupleTimetableUnlinkConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除情侣课表绑定？'**
+  String get coupleTimetableUnlinkConfirmTitle;
+
+  /// No description provided for @coupleTimetableUnlinkConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'解除后将删除本地保存的对方课表，叠加视图也会关闭。'**
+  String get coupleTimetableUnlinkConfirmMessage;
+
+  /// No description provided for @coupleTimetableUnlinkSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已解除绑定'**
+  String get coupleTimetableUnlinkSuccess;
+
+  /// No description provided for @coupleTimetablePrivacyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'对方只能看到你导出文件中包含的课表内容。'**
+  String get coupleTimetablePrivacyHint;
+
+  /// No description provided for @coupleTimetableOverlayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'情侣叠加'**
+  String get coupleTimetableOverlayTitle;
+
+  /// No description provided for @coupleTimetableLegendMine.
+  ///
+  /// In zh, this message translates to:
+  /// **'我的课'**
+  String get coupleTimetableLegendMine;
+
+  /// No description provided for @coupleTimetableLegendPartner.
+  ///
+  /// In zh, this message translates to:
+  /// **'TA的课'**
+  String get coupleTimetableLegendPartner;
+
+  /// No description provided for @coupleTimetableLegendTogether.
+  ///
+  /// In zh, this message translates to:
+  /// **'一起上课'**
+  String get coupleTimetableLegendTogether;
+
+  /// No description provided for @coupleTimetableLegendFree.
+  ///
+  /// In zh, this message translates to:
+  /// **'共同空闲'**
+  String get coupleTimetableLegendFree;
+
+  /// No description provided for @coupleTimetableSharedFreeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日共同空闲'**
+  String get coupleTimetableSharedFreeTitle;
+
+  /// No description provided for @coupleTimetableNoSharedFree.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天没有共同空闲时段'**
+  String get coupleTimetableNoSharedFree;
+
+  /// No description provided for @coupleTimetablePartnerReadOnlyBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'对方课表（只读）'**
+  String get coupleTimetablePartnerReadOnlyBadge;
+
+  /// No description provided for @coupleTimetableNotBoundMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先导入对方课表后再查看叠加视图。'**
+  String get coupleTimetableNotBoundMessage;
+
+  /// No description provided for @coupleTimetableShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是我的课表，导入到轻屿课表的情侣课表即可一起查看。'**
+  String get coupleTimetableShareText;
+
+  /// No description provided for @coupleTimetableShareSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表 · 情侣课表分享'**
+  String get coupleTimetableShareSubject;
+
+  /// No description provided for @partnerImportRequiresSingleProfile.
+  ///
+  /// In zh, this message translates to:
+  /// **'请导入单课表备份文件，不支持全量备份'**
+  String get partnerImportRequiresSingleProfile;
 
   /// No description provided for @cloudSyncEntryTitle.
   ///
@@ -3957,6 +4203,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'原文视图会跟随当前等级筛选，只显示对应日志块。'**
   String get diagnosticsRawFilteredHint;
+
+  /// No description provided for @diagnosticsTimeSortAscending.
+  ///
+  /// In zh, this message translates to:
+  /// **'正序'**
+  String get diagnosticsTimeSortAscending;
+
+  /// No description provided for @diagnosticsTimeSortDescending.
+  ///
+  /// In zh, this message translates to:
+  /// **'倒序'**
+  String get diagnosticsTimeSortDescending;
+
+  /// No description provided for @diagnosticsDisplayOptionsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看与排序'**
+  String get diagnosticsDisplayOptionsTitle;
+
+  /// No description provided for @diagnosticsStreamingHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时更新中，新日志会自动追加显示。'**
+  String get diagnosticsStreamingHint;
 
   /// No description provided for @diagnosticsEmptyTitle.
   ///
@@ -9232,6 +9502,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'双周'**
   String get courseActionEvenWeekShort;
+
+  /// No description provided for @courseActionConflictExpandHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开查看其他冲突课程，点击可切换操作对象'**
+  String get courseActionConflictExpandHint;
+
+  /// No description provided for @courseActionConflictCollapseHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击收起冲突课程列表'**
+  String get courseActionConflictCollapseHint;
+
+  /// No description provided for @courseActionConflictSwitchAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换'**
+  String get courseActionConflictSwitchAction;
 
   /// No description provided for @suspendSheetTitle.
   ///

@@ -231,6 +231,7 @@ Future<T?> showHyperosSelectSheet<T>({
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
                       title,
@@ -241,7 +242,7 @@ Future<T?> showHyperosSelectSheet<T>({
                       const SizedBox(height: 8),
                       Text(
                         description,
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.start,
                         style: HyperosTypography.sectionDescription(
                           sheetContext,
                         ),

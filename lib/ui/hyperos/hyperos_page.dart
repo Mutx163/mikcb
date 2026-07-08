@@ -726,6 +726,70 @@ class HyperosListView extends StatefulWidget {
 }
 
 class _HyperosListViewState extends State<HyperosListView> {
+  EdgeInsets _resolveListPadding(BuildContext context) {
+    final base = (widget.padding ?? HyperosTokens.listPadding).resolve(
+      Directionality.of(context),
+    );
+    // Initial content sits below the overlay header; scrolling still passes
+    // rows under the frosted bar once this padding scrolls away.
+    if (!widget.includeHeaderInset) {
+      return base;
+    }
+    final headerInset = HyperosBlurredHeaderScope.insetOf(context);
+    if (headerInset <= 0) {
+      return base;
+    }
+    return EdgeInsets.fromLTRB(
+      base.left,
+      base.top + headerInset,
+      base.right,
+      base.bottom,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final children = widget.children;
+    final resolvedItemCount = children?.length ?? widget.itemCount!;
+    final resolvedItemBuilder =
+        widget.itemBuilder ?? (context, index) => children![index];
+
+    final listKey = widget.pageStorageKey ?? _pageStorageKeyFromRoute(context);
+
+    return _HyperosListScrollHost(
+      child: ListView.builder(
+        key: listKey,
+        physics: const HyperosOverscrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: _resolveListPadding(context),
+        itemCount: resolvedItemCount,
+        itemBuilder: resolvedItemBuilder,
+      ),
+    );
+  }
+
+  PageStorageKey<String>? _pageStorageKeyFromRoute(BuildContext context) {
+    final name = ModalRoute.of(context)?.settings.name;
+    if (name == null || name.isEmpty) {
+      return null;
+    }
+    return PageStorageKey<String>('hyperos-list-$name');
+  }
+}
+
+/// Owns scroll highlight state so [HyperosListView] items are not rebuilt on
+/// every scroll start/end (avoids TextField width jitter in form rows).
+class _HyperosListScrollHost extends StatefulWidget {
+  const _HyperosListScrollHost({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HyperosListScrollHost> createState() => _HyperosListScrollHostState();
+}
+
+class _HyperosListScrollHostState extends State<_HyperosListScrollHost> {
   bool _isUserScrolling = false;
   int _pressHighlightGeneration = 0;
 
@@ -762,60 +826,16 @@ class _HyperosListViewState extends State<HyperosListView> {
     return false;
   }
 
-  EdgeInsets _resolveListPadding(BuildContext context) {
-    final base = (widget.padding ?? HyperosTokens.listPadding).resolve(
-      Directionality.of(context),
-    );
-    // Initial content sits below the overlay header; scrolling still passes
-    // rows under the frosted bar once this padding scrolls away.
-    if (!widget.includeHeaderInset) {
-      return base;
-    }
-    final headerInset = HyperosBlurredHeaderScope.insetOf(context);
-    if (headerInset <= 0) {
-      return base;
-    }
-    return EdgeInsets.fromLTRB(
-      base.left,
-      base.top + headerInset,
-      base.right,
-      base.bottom,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final children = widget.children;
-    final resolvedItemCount = children?.length ?? widget.itemCount!;
-    final resolvedItemBuilder =
-        widget.itemBuilder ?? (context, index) => children![index];
-
-    final listKey = widget.pageStorageKey ?? _pageStorageKeyFromRoute(context);
-
     return HyperosListScrollScope(
       isUserScrolling: _isUserScrolling,
       pressHighlightGeneration: _pressHighlightGeneration,
       child: NotificationListener<ScrollNotification>(
         onNotification: _handleScroll,
-        child: ListView.builder(
-          key: listKey,
-          physics: const HyperosOverscrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          padding: _resolveListPadding(context),
-          itemCount: resolvedItemCount,
-          itemBuilder: resolvedItemBuilder,
-        ),
+        child: widget.child,
       ),
     );
-  }
-
-  PageStorageKey<String>? _pageStorageKeyFromRoute(BuildContext context) {
-    final name = ModalRoute.of(context)?.settings.name;
-    if (name == null || name.isEmpty) {
-      return null;
-    }
-    return PageStorageKey<String>('hyperos-list-$name');
   }
 }
 

@@ -221,6 +221,47 @@ class MiuiLiveActivitiesService {
     return UmengAnalyticsService.readLiveDiagnosticsText();
   }
 
+  Stream<String> watchLiveDiagnosticsText({
+    Duration interval = const Duration(seconds: 1),
+  }) {
+    late final StreamController<String> controller;
+    Timer? pollTimer;
+    var closed = false;
+    String? lastEmitted;
+
+    Future<void> poll() async {
+      if (closed) {
+        return;
+      }
+      try {
+        final text = await readLiveDiagnosticsText();
+        final normalized = text ?? '';
+        if (closed || normalized == lastEmitted) {
+          return;
+        }
+        lastEmitted = normalized;
+        controller.add(normalized);
+      } catch (error, stackTrace) {
+        if (!closed) {
+          controller.addError(error, stackTrace);
+        }
+      }
+    }
+
+    controller = StreamController<String>(
+      onListen: () {
+        poll();
+        pollTimer = Timer.periodic(interval, (_) => poll());
+      },
+      onCancel: () {
+        closed = true;
+        pollTimer?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
   Future<bool> clearLiveDiagnostics() async {
     return UmengAnalyticsService.clearLiveDiagnostics();
   }

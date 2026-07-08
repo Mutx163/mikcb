@@ -170,6 +170,7 @@ abstract final class HyperosTheme {
   /// Header content style for pages that wrap [FHeader] in
   /// [HyperosBlurredHeaderShell] (blur + tint live on the shell).
   static FHeaderStyleDelta nestedHeaderStyle(BuildContext context) {
+    final appFont = DefaultTextStyle.of(context).style;
     return FHeaderStyleDelta.delta(
       decoration: DecorationDelta.boxDelta(color: Colors.transparent),
       backgroundFilter: null,
@@ -178,6 +179,8 @@ abstract final class HyperosTheme {
         fontWeight: FontWeight.w400,
         height: 1.2,
         color: HyperosColors.primaryText(context),
+        fontFamily: appFont.fontFamily,
+        fontFamilyFallback: appFont.fontFamilyFallback,
       ),
       padding: EdgeInsetsGeometryDelta.value(
         const EdgeInsets.fromLTRB(4, 0, 4, 4),

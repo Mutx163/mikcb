@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_overscroll.dart';
 
 void main() {
@@ -23,9 +24,25 @@ void main() {
       );
     }
 
-    test('does not hard-cap overscroll via boundary conditions', () {
-      expect(physics.applyBoundaryConditions(metrics(pixels: 0), -20), 0);
-      expect(physics.applyBoundaryConditions(metrics(pixels: 0), -800), 0);
+    test('caps overscroll at half viewport via boundary conditions', () {
+      const viewport = 400.0;
+      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+
+      expect(
+        physics.applyBoundaryConditions(metrics(pixels: 0), -maxOverscroll - 1),
+        -1,
+      );
+      expect(
+        physics.applyBoundaryConditions(
+          metrics(pixels: 100, maxScrollExtent: 100),
+          100 + maxOverscroll + 1,
+        ),
+        1,
+      );
+      expect(
+        physics.applyBoundaryConditions(metrics(pixels: 0), -maxOverscroll),
+        0,
+      );
     });
 
     test('applies friction while overscrolling deeper', () {
@@ -61,20 +78,55 @@ void main() {
       expect(second.abs(), lessThan(first.abs()));
     });
 
-    test('allows continued overscroll beyond one viewport with resistance', () {
+    test('stops overscroll at half viewport with resistance', () {
       const pull = HyperosOverscrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       );
+      const viewport = 400.0;
+      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+
       var pixels = 0.0;
       for (var i = 0; i < 40; i++) {
-        final delta = pull.applyPhysicsToUserOffset(
-          metrics(pixels: pixels),
-          -80,
+        final metricsAt = metrics(
+          pixels: pixels,
+          viewportDimension: viewport,
         );
-        expect(delta, lessThan(0));
-        pixels += delta;
+        final delta = pull.applyPhysicsToUserOffset(metricsAt, -80);
+        if (delta == 0) {
+          break;
+        }
+        var next = pixels + delta;
+        final over = pull.applyBoundaryConditions(metricsAt, next);
+        if (over != 0) {
+          next -= over;
+        }
+        pixels = next;
       }
-      expect(pixels, lessThan(-400));
+      expect(pixels, -maxOverscroll);
+    });
+
+    test('returns zero delta when already at max overscroll', () {
+      const viewport = 400.0;
+      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+
+      expect(
+        physics.applyPhysicsToUserOffset(
+          metrics(pixels: -maxOverscroll, viewportDimension: viewport),
+          -40,
+        ),
+        0,
+      );
+      expect(
+        physics.applyPhysicsToUserOffset(
+          metrics(
+            pixels: 100 + maxOverscroll,
+            maxScrollExtent: 100,
+            viewportDimension: viewport,
+          ),
+          40,
+        ),
+        0,
+      );
     });
 
     test('returns bouncing simulation when out of range', () {

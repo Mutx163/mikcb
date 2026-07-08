@@ -72,6 +72,8 @@ String localizeServiceMessage(
       return l10n.serviceMsgImportNoProfilesInBackup;
     case 'unrecognized_mikcb_data_file':
       return l10n.serviceMsgUnrecognizedMikcbDataFile;
+    case 'partner_import_requires_single_profile':
+      return l10n.partnerImportRequiresSingleProfile;
     case 'missing_settings_data':
       return l10n.serviceMsgMissingSettingsData;
     case 'unrecognized_mikcb_full_backup':

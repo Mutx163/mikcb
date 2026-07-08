@@ -29,6 +29,8 @@ class AppLogService {
   bool _loggingEnabled = false;
   PackageInfo? _packageInfo;
   Future<void> _writeQueue = Future<void>.value();
+  final StreamController<void> _logChangeController =
+      StreamController<void>.broadcast();
 
   Future<void> initialize() async {
     if (_initialized) {
@@ -184,6 +186,7 @@ class AppLogService {
         );
         await file.parent.create(recursive: true);
         await file.writeAsString(payload, mode: FileMode.append, flush: true);
+        _notifyLogChanged();
       } catch (_) {
         // Logging must never break app flow.
       }
@@ -230,6 +233,65 @@ class AppLogService {
     return '$header\n$mergedBody'.trim();
   }
 
+  Stream<String> watchMergedLogsText({
+    Future<String?> Function()? loadNativeRawLog,
+    Duration nativePollInterval = const Duration(seconds: 1),
+  }) {
+    late final StreamController<String> controller;
+    Timer? nativePollTimer;
+    Timer? debounceTimer;
+    StreamSubscription<void>? logChangeSub;
+    var closed = false;
+    String? lastEmitted;
+
+    Future<void> emit() async {
+      if (closed) {
+        return;
+      }
+      try {
+        final nativeRaw = loadNativeRawLog != null
+            ? await loadNativeRawLog()
+            : null;
+        final text = await readMergedLogsText(nativeRawLog: nativeRaw);
+        if (closed || text == lastEmitted) {
+          return;
+        }
+        lastEmitted = text;
+        controller.add(text);
+      } catch (error, stackTrace) {
+        if (!closed) {
+          controller.addError(error, stackTrace);
+        }
+      }
+    }
+
+    void scheduleEmit() {
+      debounceTimer?.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 150), emit);
+    }
+
+    controller = StreamController<String>(
+      onListen: () {
+        scheduleEmit();
+        logChangeSub = _logChangeController.stream.listen((_) => scheduleEmit());
+        if (loadNativeRawLog != null) {
+          nativePollTimer = Timer.periodic(
+            nativePollInterval,
+            (_) => scheduleEmit(),
+          );
+        }
+      },
+      onCancel: () {
+        closed = true;
+        debounceTimer?.cancel();
+        nativePollTimer?.cancel();
+        logChangeSub?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
   Future<String?> exportMergedLogsFile({String? nativeRawLog}) async {
     final text = await readMergedLogsText(nativeRawLog: nativeRawLog);
     final exportDir = await getTemporaryDirectory();
@@ -254,7 +316,14 @@ class AppLogService {
       }
     });
     await _writeQueue;
+    _notifyLogChanged();
     return cleared;
+  }
+
+  void _notifyLogChanged() {
+    if (!_logChangeController.isClosed) {
+      _logChangeController.add(null);
+    }
   }
 
   @visibleForTesting
@@ -265,6 +334,9 @@ class AppLogService {
     _packageInfo = null;
     _writeQueue = Future<void>.value();
   }
+
+  @visibleForTesting
+  void notifyLogChangedForTesting() => _notifyLogChanged();
 
   bool _shouldRecord({required bool force}) {
     if (force && !_loggingEnabled) {

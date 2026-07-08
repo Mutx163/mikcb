@@ -48,17 +48,44 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fontSectionTitle => 'アプリフォント';
 
   @override
-  String get fontSectionSubtitle =>
-      'システムデフォルトフォントとMiSansに対応。MiSansが利用できない場合は自動的にフォールバック。';
+  String get fontSectionSubtitle => 'Inter を標準とし、端末に入っているフォントも選べます。';
+
+  @override
+  String get fontSectionFootnote =>
+      'メーカーフォントは同梱されず、端末に入っている場合のみ有効です。Xiaomi では MiSans だけ目立ちやすいです。変化がなければ自動代替で、通常は自分でインストール不要です。';
 
   @override
   String get fontModeLabel => 'フォント選択';
 
   @override
-  String get fontModeSystem => '端末デフォルトフォント';
+  String get fontModeSystem => 'アプリ標準（Inter）';
 
   @override
-  String get fontModeMiSans => 'MiSans（優先）';
+  String get fontModeSansSerif => 'システムサンセリフ';
+
+  @override
+  String get fontModeMiSans => 'MiSans';
+
+  @override
+  String get fontModeHarmonyOS => 'HarmonyOS Sans';
+
+  @override
+  String get fontModeOppoSans => 'OPPO Sans';
+
+  @override
+  String get fontModePingFang => 'PingFang SC';
+
+  @override
+  String get fontModeNotoSans => 'Noto Sans';
+
+  @override
+  String get fontModeSerif => 'セリフ体';
+
+  @override
+  String get fontModeSongti => '宋体';
+
+  @override
+  String get fontModeMonospace => '等幅';
 
   @override
   String get languageSectionTitle => 'アプリ言語';
@@ -124,6 +151,105 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get dataTransferEntrySubtitle => '時間割ファイルをエクスポートして、他の人が直接インポート可能';
+
+  @override
+  String get coupleTimetableEntryTitle => '情侣课表';
+
+  @override
+  String get coupleTimetableEntryBound => '已绑定';
+
+  @override
+  String get coupleTimetableModeEnableTooltip => '开启情侣课表';
+
+  @override
+  String get coupleTimetableModeDisableTooltip => '关闭情侣课表';
+
+  @override
+  String get coupleTimetableTitle => '情侣课表';
+
+  @override
+  String get coupleTimetableIntro =>
+      '导出你的课表发给 TA，或导入 TA 分享的课表文件。导入后可在叠加视图中查看双方课程。';
+
+  @override
+  String get coupleTimetableBoundTitle => '已绑定对方课表';
+
+  @override
+  String get coupleTimetableUnboundTitle => '尚未绑定对方课表';
+
+  @override
+  String get coupleTimetablePartnerNameLabel => '对方名称';
+
+  @override
+  String coupleTimetableLastImportedAt(String time) {
+    return '上次导入：$time';
+  }
+
+  @override
+  String get coupleTimetableExportForPartner => '导出我的课表给对方';
+
+  @override
+  String get coupleTimetableImportPartner => '导入对方课表';
+
+  @override
+  String get coupleTimetableUnlink => '解除绑定';
+
+  @override
+  String get coupleTimetableOpenOverlay => '进入叠加视图';
+
+  @override
+  String get coupleTimetableImportSuccess => '已导入对方课表';
+
+  @override
+  String get coupleTimetableImportUpdated => '已更新对方课表';
+
+  @override
+  String get coupleTimetableUnlinkConfirmTitle => '解除情侣课表绑定？';
+
+  @override
+  String get coupleTimetableUnlinkConfirmMessage => '解除后将删除本地保存的对方课表，叠加视图也会关闭。';
+
+  @override
+  String get coupleTimetableUnlinkSuccess => '已解除绑定';
+
+  @override
+  String get coupleTimetablePrivacyHint => '对方只能看到你导出文件中包含的课表内容。';
+
+  @override
+  String get coupleTimetableOverlayTitle => '情侣叠加';
+
+  @override
+  String get coupleTimetableLegendMine => '我的课';
+
+  @override
+  String get coupleTimetableLegendPartner => 'TA的课';
+
+  @override
+  String get coupleTimetableLegendTogether => '一起上课';
+
+  @override
+  String get coupleTimetableLegendFree => '共同空闲';
+
+  @override
+  String get coupleTimetableSharedFreeTitle => '今日共同空闲';
+
+  @override
+  String get coupleTimetableNoSharedFree => '今天没有共同空闲时段';
+
+  @override
+  String get coupleTimetablePartnerReadOnlyBadge => '对方课表（只读）';
+
+  @override
+  String get coupleTimetableNotBoundMessage => '请先导入对方课表后再查看叠加视图。';
+
+  @override
+  String get coupleTimetableShareText => '这是我的课表，导入到轻屿课表的情侣课表即可一起查看。';
+
+  @override
+  String get coupleTimetableShareSubject => '轻屿课表 · 情侣课表分享';
+
+  @override
+  String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
 
   @override
   String get cloudSyncEntryTitle => 'クラウド同期（WEBDAV）';
@@ -2167,6 +2293,18 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get diagnosticsRawFilteredHint =>
       '原文ビューは現在のレベルフィルターに連携し、対応するログブロックのみ表示。';
+
+  @override
+  String get diagnosticsTimeSortAscending => '昇順';
+
+  @override
+  String get diagnosticsTimeSortDescending => '降順';
+
+  @override
+  String get diagnosticsDisplayOptionsTitle => '表示と並び順';
+
+  @override
+  String get diagnosticsStreamingHint => 'リアルタイム更新中。新しいログが自動的に表示されます。';
 
   @override
   String get diagnosticsEmptyTitle => 'ログなし';
@@ -5156,6 +5294,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get courseActionEvenWeekShort => '偶数週';
+
+  @override
+  String get courseActionConflictExpandHint => '他の競合授業を表示して、操作対象を切り替えます';
+
+  @override
+  String get courseActionConflictCollapseHint => 'タップして競合リストを閉じる';
+
+  @override
+  String get courseActionConflictSwitchAction => '切替';
 
   @override
   String get suspendSheetTitle => '授業停止';

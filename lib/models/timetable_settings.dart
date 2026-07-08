@@ -17,7 +17,18 @@ enum WidgetBackgroundStyle { glass, solid, gradient }
 
 enum AppThemeMode { system, light, dark }
 
-enum AppFontMode { system, miSans }
+enum AppFontMode {
+  system,
+  sansSerif,
+  miSans,
+  harmonyOS,
+  oppoSans,
+  pingFang,
+  notoSans,
+  serif,
+  songti,
+  monospace,
+}
 
 enum ForuiTheme {
   neutral,
@@ -199,7 +210,15 @@ extension AppThemeModeX on AppThemeMode {
 extension AppFontModeX on AppFontMode {
   String get value => switch (this) {
     AppFontMode.system => 'system',
+    AppFontMode.sansSerif => 'sans_serif',
     AppFontMode.miSans => 'mi_sans',
+    AppFontMode.harmonyOS => 'harmony_os',
+    AppFontMode.oppoSans => 'oppo_sans',
+    AppFontMode.pingFang => 'ping_fang',
+    AppFontMode.notoSans => 'noto_sans',
+    AppFontMode.serif => 'serif',
+    AppFontMode.songti => 'songti',
+    AppFontMode.monospace => 'monospace',
   };
 
   static AppFontMode fromValue(String? value) {

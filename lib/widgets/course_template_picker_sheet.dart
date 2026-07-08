@@ -45,41 +45,87 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBackground = isDark
+        ? HyperosMiuixDarkColors.surfaceContainer
+        : HyperosMiuixLightColors.surfaceContainer;
+    const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
+    const bottomInsetBase =
+        HyperosMiuixBasicComponent.selectSheetBottomMargin;
+    final bottomInset =
+        bottomInsetBase + MediaQuery.paddingOf(context).bottom;
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.52;
 
-    return HyperosSheet(
-      title: title,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxListHeight),
-            child: SingleChildScrollView(
-              child: HyperosChoiceGroup(
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        horizontalInset,
+        0,
+        horizontalInset,
+        bottomInset,
+      ),
+      child: Material(
+        color: sheetBackground,
+        borderRadius: BorderRadius.circular(
+          HyperosMiuixDialog.minBottomCornerRadius,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final group in courseGroups)
-                    _buildCourseTile(
-                      context,
-                      group: group,
-                      isSelected: group.courses.any(
-                        (course) => course.id == selectedCourseId,
-                      ),
-                      onPress: () =>
-                          Navigator.pop(context, group.courses.first),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: HyperosTypography.sheetTitle(context),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle!,
+                      textAlign: TextAlign.center,
+                      style: HyperosTypography.sectionDescription(context),
                     ),
+                  ],
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          HyperosButton(
-            label: l10n.cancelAction,
-            variant: HyperosButtonVariant.secondary,
-            expand: true,
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxListHeight),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final group in courseGroups)
+                      _buildCourseTile(
+                        context,
+                        group: group,
+                        isSelected: group.courses.any(
+                          (course) => course.id == selectedCourseId,
+                        ),
+                        onPress: () =>
+                            Navigator.pop(context, group.courses.first),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: HyperosButton(
+                label: l10n.cancelAction,
+                variant: HyperosButtonVariant.secondary,
+                expand: true,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -97,6 +143,7 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
     );
 
     return HyperosChoiceTile(
+      variant: HyperosChoiceVariant.dialog,
       prefix: Container(
         width: 36,
         height: 36,
@@ -115,13 +162,6 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
       subtitle: group.teacher.isNotEmpty
           ? Text(group.teacher, maxLines: 1, overflow: TextOverflow.ellipsis)
           : null,
-      trailing: isSelected
-          ? null
-          : Icon(
-              Icons.chevron_right_rounded,
-              color: HyperosColors.secondaryText(context),
-              size: 20,
-            ),
       selected: isSelected,
       highlightSelectedText: true,
       onTap: onPress,
