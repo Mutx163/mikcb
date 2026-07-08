@@ -103,6 +103,21 @@ class HyperosSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final activeController = controller;
+    if (activeController == null || onClear == null) {
+      return _buildField(context, showClear: false);
+    }
+    // Rebuild on text changes so the clear button appears/disappears without
+    // relying on the parent widget rebuilding.
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: activeController,
+      builder: (context, value, _) {
+        return _buildField(context, showClear: value.text.isNotEmpty);
+      },
+    );
+  }
+
+  Widget _buildField(BuildContext context, {required bool showClear}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fill = isDark
         ? HyperosMiuixDarkColors.secondaryVariant
@@ -144,10 +159,7 @@ class HyperosSearchBar extends StatelessWidget {
             minWidth: 0,
             minHeight: 0,
           ),
-          suffixIcon:
-              onClear != null &&
-                  controller != null &&
-                  controller!.text.isNotEmpty
+          suffixIcon: showClear
               ? IconButton(
                   icon: Icon(Icons.close_rounded, color: actions, size: 20),
                   onPressed: onClear,

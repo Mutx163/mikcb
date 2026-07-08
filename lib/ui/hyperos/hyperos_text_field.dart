@@ -92,7 +92,6 @@ class HyperosTextField extends StatelessWidget {
             inputFormatters: inputFormatters,
             onChanged: onChanged,
             onSubmitted: onSubmitted,
-            scrollPadding: EdgeInsets.zero,
             style: TextStyle(
               fontSize: HyperosMiuixTextField.labelFontSizeNormal,
               color: enabled ? onSurface : disabled,

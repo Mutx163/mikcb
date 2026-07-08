@@ -63,12 +63,16 @@ class HyperosBadge extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         child,
-        Positioned(
-          top: alignment.y < 0 ? -4 : null,
-          bottom: alignment.y > 0 ? -4 : null,
-          left: alignment.x < 0 ? -4 : null,
-          right: alignment.x > 0 ? -4 : null,
-          child: badge,
+        // Align handles any alignment (including centered edges); the translate
+        // nudges corner badges 4dp outside the child like the HyperOS overlay.
+        Positioned.fill(
+          child: Align(
+            alignment: alignment,
+            child: Transform.translate(
+              offset: Offset(4 * alignment.x, 4 * alignment.y),
+              child: badge,
+            ),
+          ),
         ),
       ],
     );

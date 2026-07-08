@@ -747,7 +747,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   Widget _buildStatusSection(AppLocalizations l10n, WebdavSyncStatus status) {
     return HyperosControlCard(
       title: l10n.cloudSyncStatusTitle,
-      plainTitle: true,
       child: HyperosControlCardInset(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

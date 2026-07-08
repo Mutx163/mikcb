@@ -2427,7 +2427,6 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
         children: [
           HyperosControlCard(
             title: l10n.aboutDevelopersTitle,
-            plainTitle: true,
             child: HyperosControlCardInset(
               child: _ContributorRow(
                 name: 'Mutx163',
@@ -2439,7 +2438,6 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
           HyperosControlCard(
             title: l10n.aboutWarehouseMaintainersTitle,
             subtitle: l10n.aboutWarehouseMaintainersIntro,
-            plainTitle: true,
             child: HyperosControlCardInset(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2486,7 +2484,6 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
           HyperosControlCard(
             title: l10n.aboutParticipateWarehouseTitle,
             subtitle: l10n.aboutParticipateWarehouseSubtitle,
-            plainTitle: true,
             child: HyperosControlCardInset(
               child: Wrap(
                 spacing: 10,

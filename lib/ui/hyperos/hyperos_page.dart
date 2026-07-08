@@ -159,6 +159,10 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   double _measuredOverlayHeaderHeight = 0;
   bool _overlayHeaderMeasurePending = false;
 
+  /// Context of the vertical scrollable that last emitted a body scroll
+  /// notification; used to resync frost against the correct scrollable.
+  BuildContext? _lastBodyScrollContext;
+
   @override
   void initState() {
     super.initState();
@@ -336,6 +340,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
     if (notification is ScrollStartNotification ||
         notification is ScrollUpdateNotification ||
         notification is ScrollEndNotification) {
+      if (notification.metrics.axis == Axis.vertical) {
+        _lastBodyScrollContext = notification.context;
+      }
       _tryEnableBlurOnUserScroll();
       _syncHeaderFrostForScroll(notification.metrics.pixels);
     }
@@ -372,14 +379,30 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   }
 
   double? _findBodyScrollPixels() {
+    // Prefer the scrollable that actually drove the frost state via scroll
+    // notifications — a DFS can hit the wrong one on pages with multiple
+    // scrollables (e.g. preview + settings list) and desync the header frost.
+    final lastContext = _lastBodyScrollContext;
+    if (lastContext is StatefulElement && lastContext.mounted) {
+      final state = lastContext.state;
+      if (state is ScrollableState && state.position.hasPixels) {
+        return state.position.pixels;
+      }
+    }
+
     ScrollPosition? found;
     void visit(Element element) {
       if (found != null) {
         return;
       }
       if (element is StatefulElement && element.state is ScrollableState) {
-        found = (element.state as ScrollableState).position;
-        return;
+        final position = (element.state as ScrollableState).position;
+        // Header frost tracks vertical body scroll only; skip horizontal
+        // scrollables (chip rows, carousels) but keep searching inside them.
+        if (position.axis == Axis.vertical) {
+          found = position;
+          return;
+        }
       }
       element.visitChildren(visit);
     }

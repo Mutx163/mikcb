@@ -38,10 +38,16 @@ import 'hyperos_widgets.dart';
 }
 
 /// Global rect of [anchorKey]'s render box (for anchored select popups).
-Rect hyperosSelectPopupAnchorRect(BuildContext context, GlobalKey anchorKey) {
-  final box = anchorKey.currentContext!.findRenderObject()! as RenderBox;
-  final topLeft = box.localToGlobal(Offset.zero);
-  return topLeft & box.size;
+///
+/// Returns null when the anchor is not mounted / laid out yet; callers should
+/// fall back to a sheet or skip opening instead of crashing.
+Rect? hyperosSelectPopupAnchorRect(BuildContext context, GlobalKey anchorKey) {
+  final renderObject = anchorKey.currentContext?.findRenderObject();
+  if (renderObject is! RenderBox || !renderObject.hasSize) {
+    return null;
+  }
+  final topLeft = renderObject.localToGlobal(Offset.zero);
+  return topLeft & renderObject.size;
 }
 
 /// Opens an anchored HyperOS dropdown popup (Miuix `OverlayDropdownPopup`).
@@ -50,12 +56,12 @@ Rect hyperosSelectPopupAnchorRect(BuildContext context, GlobalKey anchorKey) {
 /// right-aligned to [anchorRect] and appears just below the row.
 Future<T?> showHyperosSelectPopup<T>({
   required BuildContext context,
-  required Rect anchorRect,
+  required Rect? anchorRect,
   required Map<String, T> items,
   required T? currentValue,
 }) {
   final entries = items.entries.toList(growable: false);
-  if (entries.isEmpty) {
+  if (entries.isEmpty || anchorRect == null) {
     return Future.value();
   }
 
@@ -192,13 +198,15 @@ Future<T?> showHyperosSelectSheet<T>({
   String? cancelLabel,
 }) {
   final entries = items.entries.toList(growable: false);
-  final maxListHeight = MediaQuery.sizeOf(context).height * 0.55;
   final resolvedCancelLabel =
       cancelLabel ?? AppLocalizations.of(context)!.cancelAction;
 
   return showHyperosSheet<T>(
     context: context,
     builder: (sheetContext) {
+      // Resolve inside the builder so rotation / keyboard metrics changes
+      // re-evaluate instead of using a snapshot taken when the sheet opened.
+      final maxListHeight = MediaQuery.sizeOf(sheetContext).height * 0.55;
       final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
       final sheetBackground = isDark
           ? HyperosMiuixDarkColors.surfaceContainer
@@ -341,28 +349,14 @@ double hyperosSelectPopupEstimatedHeight(int itemCount) {
   }
 
   top = top.clamp(safeTop, safeBottom);
-  final maxHeight = (safeBottom - top).clamp(
-    HyperosMiuixBasicComponent.minHeight,
-    estimatedPopupHeight,
-  );
+  // Never claim more height than the space actually available — forcing a
+  // minimum here would push the popup past the safe area on tiny leftovers.
+  final available = (safeBottom - top).clamp(0.0, double.infinity);
+  final maxHeight = available < estimatedPopupHeight
+      ? available
+      : estimatedPopupHeight;
 
   return (top: top, maxHeight: maxHeight);
-}
-
-/// @deprecated Use [hyperosSelectPopupAnchorRect].
-RelativeRect hyperosSelectPopupPositionBelow(
-  BuildContext context,
-  GlobalKey anchorKey, {
-  double verticalGap = 4,
-}) {
-  final rect = hyperosSelectPopupAnchorRect(context, anchorKey);
-  final screen = MediaQuery.sizeOf(context);
-  return RelativeRect.fromLTRB(
-    rect.left,
-    rect.bottom + verticalGap,
-    screen.width - rect.right,
-    screen.height - rect.bottom - verticalGap,
-  );
 }
 
 /// Pressable select row: label + current value + up/down arrow.
@@ -405,13 +399,15 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
   bool _menuOpen = false;
 
   Future<void> _openSelector(BuildContext context) async {
-    if (!widget.enabled || widget.onChanged == null) {
+    if (_menuOpen || !widget.enabled || widget.onChanged == null) {
       return;
     }
 
+    final anchorRect = hyperosSelectPopupAnchorRect(context, _anchorKey);
     final useSheet =
         widget.useSheetForPopup ||
-        widget.items.length > widget.sheetItemThreshold;
+        widget.items.length > widget.sheetItemThreshold ||
+        anchorRect == null;
 
     setState(() => _menuOpen = true);
 
@@ -426,7 +422,6 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           currentValue: widget.value,
         );
       } else {
-        final anchorRect = hyperosSelectPopupAnchorRect(context, _anchorKey);
         selected = await showHyperosSelectPopup<T>(
           context: context,
           anchorRect: anchorRect,

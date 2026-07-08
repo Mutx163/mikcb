@@ -42,12 +42,23 @@ class HyperosNavigationBar extends StatelessWidget {
         ? HyperosMiuixDarkColors.onSurfaceVariantActions
         : HyperosMiuixLightColors.onSurfaceVariantActions;
 
+    // Grow the bar with system font scaling so labels are not clipped by the
+    // fixed Miuix height when accessibility text sizes are enabled.
+    final scaledLabel = MediaQuery.textScalerOf(
+      context,
+    ).scale(HyperosMiuixNavigationBar.labelFontSize);
+    final labelGrowth =
+        (scaledLabel - HyperosMiuixNavigationBar.labelFontSize).clamp(
+          0.0,
+          double.infinity,
+        );
+
     return Material(
       color: background,
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: HyperosMiuixNavigationBar.itemHeight,
+          height: HyperosMiuixNavigationBar.itemHeight + labelGrowth * 1.5,
           child: Row(
             children: [
               for (var i = 0; i < destinations.length; i++)
@@ -91,28 +102,34 @@ class _HyperosNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? selectedColor : unselectedColor;
 
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            selected ? destination.selectedIcon : destination.icon,
-            size: HyperosMiuixNavigationBar.iconSize,
-            color: color,
-          ),
-          SizedBox(height: HyperosMiuixNavigationBar.iconTopPadding / 4),
-          Text(
-            destination.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: HyperosMiuixNavigationBar.labelFontSize,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              selected ? destination.selectedIcon : destination.icon,
+              size: HyperosMiuixNavigationBar.iconSize,
               color: color,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             ),
-          ),
-        ],
+            SizedBox(height: HyperosMiuixNavigationBar.iconTopPadding / 4),
+            Text(
+              destination.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: HyperosMiuixNavigationBar.labelFontSize,
+                color: color,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

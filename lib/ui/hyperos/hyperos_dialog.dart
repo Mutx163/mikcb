@@ -210,6 +210,10 @@ Future<bool?> showHyperosConfirmDialog({
   bool barrierDismissible = true,
   bool useRootNavigator = false,
 }) {
+  // Pop the same navigator the dialog is pushed on — resolving via the caller
+  // context would target the nearest navigator even when useRootNavigator is
+  // true, closing the wrong route once nested navigators exist.
+  final navigator = Navigator.of(context, rootNavigator: useRootNavigator);
   return showHyperosDialog<bool>(
     context: context,
     title: title,
@@ -220,13 +224,13 @@ Future<bool?> showHyperosConfirmDialog({
     actions: [
       HyperosDialogAction(
         label: cancelLabel,
-        onPressed: () => Navigator.of(context).pop(false),
+        onPressed: () => navigator.pop(false),
       ),
       HyperosDialogAction(
         label: confirmLabel,
         isPrimary: !destructive,
         isDestructive: destructive,
-        onPressed: () => Navigator.of(context).pop(true),
+        onPressed: () => navigator.pop(true),
       ),
     ],
   );

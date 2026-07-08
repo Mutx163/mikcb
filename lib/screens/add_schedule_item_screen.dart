@@ -129,7 +129,6 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           children: [
             HyperosControlCard(
               title: l10n.scheduleInfoSectionTitle,
-              plainTitle: true,
               child: HyperosControlCardInset(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +171,6 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
             const SizedBox(height: _sectionSpacing),
             HyperosControlCard(
               title: l10n.scheduleTimeSectionTitle,
-              plainTitle: true,
               child: HyperosControlCardInset(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

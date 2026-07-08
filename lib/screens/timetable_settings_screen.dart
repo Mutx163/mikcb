@@ -1261,7 +1261,6 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
             subtitle: hasModifications
                 ? l10n.themeBasedOnModified(checkpointName)
                 : checkpointName,
-            plainTitle: true,
             child: hasModifications
                 ? HyperosControlCardInset(
                     child: Wrap(
@@ -3082,7 +3081,6 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       ),
       4 => HyperosControlCard(
         title: l10n.homeWidgetHeightAdjustTitle,
-        plainTitle: true,
         child: HyperosControlCardInset(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

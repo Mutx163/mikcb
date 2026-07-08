@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 void main() {
@@ -55,7 +56,7 @@ void main() {
   });
 
   group('HyperosSlider', () {
-    testWidgets('renders with Miuix track height', (tester) async {
+    testWidgets('renders HyperOS volume-style capsule track', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(body: HyperosSlider(value: 0.5, onChanged: (_) {})),
@@ -64,6 +65,22 @@ void main() {
 
       final box = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(box.height, HyperosMiuixSlider.minHeight);
+
+      final sliderTheme = tester.widget<SliderTheme>(
+        find.descendant(
+          of: find.byType(HyperosSlider),
+          matching: find.byType(SliderTheme),
+        ),
+      );
+      expect(sliderTheme.data.trackHeight, HyperosMiuixSlider.minHeight);
+      expect(
+        sliderTheme.data.thumbShape,
+        isA<RoundSliderThumbShape>().having(
+          (shape) => shape.enabledThumbRadius,
+          'enabledThumbRadius',
+          HyperosMiuixSlider.thumbRadius,
+        ),
+      );
     });
 
     testWidgets('hides division tick marks when divisions is set', (
@@ -90,6 +107,161 @@ void main() {
         ),
       );
       expect(sliderTheme.data.tickMarkShape, SliderTickMarkShape.noTickMark);
+    });
+
+    testWidgets('adds card bottom inset when last tile in HyperosControlCard', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosControlCard(
+              subtitle: 'Speed',
+              edgeToEdge: true,
+              child: HyperosSliderTile(
+                title: 'Transition',
+                value: 0.5,
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final padding = tester.widget<Padding>(
+        find.ancestor(
+          of: find.byType(HyperosSlider),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Padding &&
+                widget.padding == _sliderTilePaddingForTest(
+                  bottom: HyperosControlCardScope.defaultBodyBottomInset,
+                ),
+          ),
+        ),
+      );
+      expect(
+        padding.padding,
+        _sliderTilePaddingForTest(
+          bottom: HyperosControlCardScope.defaultBodyBottomInset,
+        ),
+      );
+    });
+
+    testWidgets('omits card bottom inset between stacked slider tiles', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosControlCard(
+              edgeToEdge: true,
+              child: HyperosControlCardRows(
+                children: [
+                  HyperosSliderTile(
+                    title: 'First',
+                    value: 0.2,
+                    onChanged: (_) {},
+                  ),
+                  HyperosSliderTile(
+                    title: 'Last',
+                    value: 0.8,
+                    onChanged: (_) {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final paddings = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(HyperosControlCard),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is Padding &&
+                    widget.child is Column &&
+                    find
+                        .descendant(
+                          of: find.byWidget(widget),
+                          matching: find.byType(HyperosSlider),
+                        )
+                        .evaluate()
+                        .isNotEmpty,
+              ),
+            ),
+          )
+          .toList(growable: false);
+
+      expect(paddings, hasLength(2));
+      expect(paddings.first.padding, _sliderTilePaddingForTest());
+      expect(
+        paddings.last.padding,
+        _sliderTilePaddingForTest(
+          bottom: HyperosControlCardScope.defaultBodyBottomInset,
+        ),
+      );
+    });
+
+    testWidgets('shows chevron when slider tile supports tap editing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: HyperosSliderTile(
+              title: 'Font size',
+              value: 9,
+              valueLabel: '9.0',
+              min: 7,
+              max: 12,
+              divisions: 10,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(HyperosChevron), findsOneWidget);
+    });
+
+    testWidgets('tap editing dialog updates slider value', (tester) async {
+      var value = 9.0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: HyperosSliderTile(
+                  title: 'Font size',
+                  value: value,
+                  min: 7,
+                  max: 12,
+                  divisions: 10,
+                  onChanged: (next) => setState(() => value = next),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Font size'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      await tester.enterText(find.byType(TextField), '10.3');
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      expect(value, 10.5);
     });
   });
 
@@ -302,4 +474,13 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
+}
+
+EdgeInsets _sliderTilePaddingForTest({double bottom = 0}) {
+  return EdgeInsets.fromLTRB(
+    HyperosControlCardScope.defaultHorizontalPadding,
+    0,
+    HyperosControlCardScope.defaultHorizontalPadding,
+    bottom,
+  );
 }

@@ -530,7 +530,9 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
   void _handleTapDown(TapDownDetails details) {
     if (_phase == _PressPhase.flash) {
       _flashTimer?.cancel();
-      _phase = _PressPhase.idle;
+      // setState so the flash highlight clears even when _enterPending bails
+      // out early (e.g. the list is still scrolling).
+      setState(() => _phase = _PressPhase.idle);
     }
     _enterPending(details.globalPosition);
   }

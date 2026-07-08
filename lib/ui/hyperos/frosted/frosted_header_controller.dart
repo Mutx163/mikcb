@@ -52,6 +52,7 @@ class FrostedHeaderController extends ChangeNotifier {
 
   GlobalKey? _boundaryKey;
   bool _captureEnabled = false;
+  bool _disposed = false;
   bool _isUserScrolling = false;
   bool _isCapturingSnapshot = false;
   DateTime? _lastPreviewAt;
@@ -104,7 +105,7 @@ class FrostedHeaderController extends ChangeNotifier {
   }
 
   set captureEnabled(bool value) {
-    if (_captureEnabled == value) {
+    if (_disposed || _captureEnabled == value) {
       return;
     }
     _captureEnabled = value;
@@ -423,6 +424,12 @@ class FrostedHeaderController extends ChangeNotifier {
       allowBlur: allowBlur,
       throttleScrollBlur: _shouldThrottleScrollBlur(),
     );
+    if (!willBlur && _blurredImage != null) {
+      // Blur throttled and a frosted frame is already on screen — cropping a
+      // preview here would only leak it (never applied, never released).
+      _releaseImage(stripWithBleed);
+      return;
+    }
     final previewStrip = await FrostedCapture.cropTopToVisible(
       stripWithBleed,
       visibleHeightLogical: visibleHeightLogical,
@@ -457,8 +464,8 @@ class FrostedHeaderController extends ChangeNotifier {
       return;
     }
 
-    if (_blurredImage == null) {
-      _applyPreview(previewStrip);
+    if (!identical(_previewImage, previewStrip)) {
+      _releaseImage(previewStrip);
     }
     if (!identical(previewStrip, stripWithBleed)) {
       _releaseImage(stripWithBleed);
@@ -593,6 +600,10 @@ class FrostedHeaderController extends ChangeNotifier {
 
   @override
   void dispose() {
+    // Gate in-flight async continuations (capture / crop / blur awaits and
+    // post-frame callbacks) so they bail out before notifyListeners.
+    _disposed = true;
+    _captureEnabled = false;
     _idleTimer?.cancel();
     _blurGeneration++;
     _disposeCaches();

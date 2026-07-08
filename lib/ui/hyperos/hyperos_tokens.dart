@@ -20,16 +20,6 @@ abstract final class HyperosTokens {
   static const accent = HyperosMiuixSpec.primary;
   static const error = HyperosMiuixSpec.error;
 
-  static const switchOffTrack = HyperosMiuixLightColors.secondary;
-  static const switchOffThumb = HyperosMiuixLightColors.onSecondary;
-  static const switchDisabledOnTrack = HyperosMiuixLightColors.disabledPrimary;
-  static const switchDisabledOnThumb =
-      HyperosMiuixLightColors.disabledOnPrimary;
-  static const switchDisabledOffTrack =
-      HyperosMiuixLightColors.disabledSecondary;
-  static const switchDisabledOffThumb =
-      HyperosMiuixLightColors.disabledOnSecondary;
-
   static HyperosLayoutTuning get _t =>
       HyperosLayoutTuningController.instance.values;
 

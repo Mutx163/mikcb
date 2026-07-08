@@ -408,7 +408,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
     return HyperosControlCard(
-      plainTitle: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -705,7 +704,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           ? l10n.scheduleEntryTitle(1).replaceFirst(RegExp(r'\s?1$'), '')
           : l10n.scheduleEntrySingleTitle,
       subtitle: l10n.scheduleEntryCardSubtitle,
-      plainTitle: true,
       child: HyperosControlCardInset(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

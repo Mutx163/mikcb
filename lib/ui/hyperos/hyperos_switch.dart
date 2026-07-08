@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'hyperos_miuix_spec.dart';
-import 'hyperos_tokens.dart';
 
 /// HyperOS / Miuix-style switch (49×28 track, 20 thumb).
 ///
@@ -22,16 +21,37 @@ class HyperosSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onChanged != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final trackColor = value
-        ? (enabled ? HyperosTokens.accent : HyperosTokens.switchDisabledOnTrack)
+        ? (enabled
+              ? (isDark
+                    ? HyperosMiuixDarkColors.primary
+                    : HyperosMiuixLightColors.primary)
+              : (isDark
+                    ? HyperosMiuixDarkColors.disabledPrimary
+                    : HyperosMiuixLightColors.disabledPrimary))
         : (enabled
-              ? HyperosTokens.switchOffTrack
-              : HyperosTokens.switchDisabledOffTrack);
+              ? (isDark
+                    ? HyperosMiuixDarkColors.secondary
+                    : HyperosMiuixLightColors.secondary)
+              : (isDark
+                    ? HyperosMiuixDarkColors.disabledSecondary
+                    : HyperosMiuixLightColors.disabledSecondary));
     final thumbColor = value
-        ? (enabled ? Colors.white : HyperosTokens.switchDisabledOnThumb)
+        ? (enabled
+              ? (isDark
+                    ? HyperosMiuixDarkColors.onPrimary
+                    : HyperosMiuixLightColors.onPrimary)
+              : (isDark
+                    ? HyperosMiuixDarkColors.disabledOnPrimary
+                    : HyperosMiuixLightColors.disabledOnPrimary))
         : (enabled
-              ? HyperosTokens.switchOffThumb
-              : HyperosTokens.switchDisabledOffThumb);
+              ? (isDark
+                    ? HyperosMiuixDarkColors.onSecondary
+                    : HyperosMiuixLightColors.onSecondary)
+              : (isDark
+                    ? HyperosMiuixDarkColors.disabledOnSecondary
+                    : HyperosMiuixLightColors.disabledOnSecondary));
     final thumbLeft = value
         ? HyperosMiuixSwitch.thumbOnInset
         : HyperosMiuixSwitch.thumbOffInset;

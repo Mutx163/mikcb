@@ -47,17 +47,39 @@ class _HyperosNumberPickerState extends State<HyperosNumberPicker> {
   @override
   void didUpdateWidget(HyperosNumberPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.min != widget.min ||
+    final rangeChanged =
+        oldWidget.min != widget.min ||
         oldWidget.max != widget.max ||
-        oldWidget.step != widget.step) {
+        oldWidget.step != widget.step;
+    if (rangeChanged) {
+      // Value indices shift when the list is rebuilt, so the wheel must be
+      // resynced even when [widget.value] itself did not change.
       _values = _buildValues();
     }
-    if (oldWidget.value != widget.value) {
-      final index = _indexForValue(widget.value);
-      if (_controller.hasClients && _controller.selectedItem != index) {
+    if (rangeChanged || oldWidget.value != widget.value) {
+      _syncControllerToValue();
+    }
+  }
+
+  void _syncControllerToValue() {
+    final index = _indexForValue(widget.value);
+    if (_controller.hasClients) {
+      if (_controller.selectedItem != index) {
         _controller.jumpToItem(index);
       }
+      return;
     }
+    // Controller not attached yet (first frame / rebuild window) — retry after
+    // layout so an external value change is not silently dropped.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients) {
+        return;
+      }
+      final postIndex = _indexForValue(widget.value);
+      if (_controller.selectedItem != postIndex) {
+        _controller.jumpToItem(postIndex);
+      }
+    });
   }
 
   @override
@@ -75,9 +97,23 @@ class _HyperosNumberPickerState extends State<HyperosNumberPicker> {
     return values;
   }
 
+  /// Index of [value], or the nearest legal value when [value] is not in the
+  /// list (e.g. value=5 with step=2) so wheel and highlight stay consistent.
   int _indexForValue(int value) {
     final index = _values.indexOf(value);
-    return index >= 0 ? index : 0;
+    if (index >= 0) {
+      return index;
+    }
+    var nearest = 0;
+    var nearestDistance = (_values[0] - value).abs();
+    for (var i = 1; i < _values.length; i++) {
+      final distance = (_values[i] - value).abs();
+      if (distance < nearestDistance) {
+        nearest = i;
+        nearestDistance = distance;
+      }
+    }
+    return nearest;
   }
 
   String _labelFor(int value) =>
@@ -98,6 +134,7 @@ class _HyperosNumberPickerState extends State<HyperosNumberPicker> {
 
     final itemHeight = HyperosMiuixNumberPicker.itemHeight;
     final height = itemHeight * widget.visibleItemCount;
+    final selectedIndex = _indexForValue(widget.value);
 
     return SizedBox(
       height: height,
@@ -137,7 +174,7 @@ class _HyperosNumberPickerState extends State<HyperosNumberPicker> {
               childCount: _values.length,
               builder: (context, index) {
                 final v = _values[index];
-                final selected = v == widget.value;
+                final selected = index == selectedIndex;
                 return Center(
                   child: Text(
                     _labelFor(v),

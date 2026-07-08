@@ -19,11 +19,17 @@ class HyperosPopupMenuItem<T> {
 }
 
 /// Shows a Miuix-styled anchored list popup (ListPopup / OverlayListPopup).
+///
+/// No-ops when [position] is null (anchor not mounted, see
+/// [hyperosPopupPositionBelow]).
 Future<T?> showHyperosListPopup<T>({
   required BuildContext context,
-  required RelativeRect position,
+  required RelativeRect? position,
   required List<HyperosPopupMenuItem<T>> items,
 }) {
+  if (position == null) {
+    return Future.value();
+  }
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final surface = isDark
       ? HyperosMiuixDarkColors.surfaceContainer
@@ -64,14 +70,20 @@ Future<T?> showHyperosListPopup<T>({
 }
 
 /// Anchor helper — positions popup below [anchorKey]'s render box.
-RelativeRect hyperosPopupPositionBelow(
+///
+/// Returns null when the anchor is not mounted / laid out yet; pass the result
+/// straight to [showHyperosListPopup], which no-ops on null.
+RelativeRect? hyperosPopupPositionBelow(
   BuildContext context,
   GlobalKey anchorKey, {
   double verticalGap = 4,
 }) {
-  final box = anchorKey.currentContext!.findRenderObject()! as RenderBox;
-  final topLeft = box.localToGlobal(Offset.zero);
-  final size = box.size;
+  final renderObject = anchorKey.currentContext?.findRenderObject();
+  if (renderObject is! RenderBox || !renderObject.hasSize) {
+    return null;
+  }
+  final topLeft = renderObject.localToGlobal(Offset.zero);
+  final size = renderObject.size;
   final screen = MediaQuery.sizeOf(context);
 
   return RelativeRect.fromLTRB(
