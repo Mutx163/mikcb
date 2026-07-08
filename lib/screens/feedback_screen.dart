@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,8 +27,10 @@ class FeedbackScreen extends StatelessWidget {
           HyperosListGroup(
             children: [
               _FeedbackChannelTile(
-                icon: Icons.bug_report_outlined,
-                iconAccent: HyperosIconColors.orange,
+                brandBadge: const _FeedbackBrandBadge.svg(
+                  assetPath: 'assets/branding/github.svg',
+                  color: Color(0xFF181717),
+                ),
                 title: l10n.githubIssueTitle,
                 subtitle: l10n.githubIssueSubtitle,
                 onTap: () => _openUrl(_issuesUrl),
@@ -38,8 +41,11 @@ class FeedbackScreen extends StatelessWidget {
                 ),
               ),
               _FeedbackChannelTile(
-                icon: Icons.forum_outlined,
-                iconAccent: HyperosIconColors.red,
+                brandBadge: const _FeedbackBrandBadge.svg(
+                  assetPath: 'assets/branding/xiaohongshu.svg',
+                  color: Colors.white,
+                  backgroundColor: Color(0xFFFF2442),
+                ),
                 title: l10n.feedbackXiaohongshuTitle,
                 subtitle: l10n.feedbackXiaohongshuSubtitle(_xiaohongshuId),
                 onTap: () => _copyText(
@@ -54,8 +60,10 @@ class FeedbackScreen extends StatelessWidget {
                 ),
               ),
               _FeedbackChannelTile(
-                icon: Icons.verified_user_outlined,
-                iconAccent: HyperosIconColors.green,
+                brandBadge: const _FeedbackBrandBadge.png(
+                  assetPath: 'assets/branding/coolapk.png',
+                  backgroundColor: Color(0xFF4CAF50),
+                ),
                 title: l10n.feedbackCoolapkTitle,
                 subtitle: l10n.feedbackCoolapkSubtitle(_coolapkId),
                 onTap: () => _copyText(
@@ -70,8 +78,10 @@ class FeedbackScreen extends StatelessWidget {
                 ),
               ),
               _FeedbackChannelTile(
-                icon: Icons.groups_outlined,
-                iconAccent: HyperosIconColors.blue,
+                brandBadge: const _FeedbackBrandBadge.svg(
+                  assetPath: 'assets/branding/qq.svg',
+                  color: Color(0xFF12B7F5),
+                ),
                 title: l10n.feedbackQqGroupTitle,
                 subtitle: l10n.feedbackQqGroupSubtitle(_qqGroupId),
                 onTap: () => _copyText(
@@ -123,20 +133,18 @@ EdgeInsets _feedbackRowPadding(BuildContext context) {
 
 class _FeedbackChannelTile extends StatelessWidget {
   const _FeedbackChannelTile({
-    required this.icon,
+    required this.brandBadge,
     required this.title,
     required this.subtitle,
     required this.onTap,
     required this.onCopy,
-    this.iconAccent,
   });
 
-  final IconData icon;
+  final Widget brandBadge;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
   final VoidCallback onCopy;
-  final Color? iconAccent;
 
   @override
   Widget build(BuildContext context) {
@@ -152,10 +160,7 @@ class _FeedbackChannelTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            HyperosIconBadge(
-              icon: icon,
-              accent: iconAccent ?? HyperosIconColors.blue,
-            ),
+            brandBadge,
             const SizedBox(width: HyperosTokens.rowContentGap),
             Expanded(
               child: Column(
@@ -184,6 +189,70 @@ class _FeedbackChannelTile extends StatelessWidget {
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: row,
+    );
+  }
+}
+
+class _FeedbackBrandBadge extends StatelessWidget {
+  const _FeedbackBrandBadge.svg({
+    required this.assetPath,
+    required this.color,
+    this.backgroundColor,
+  }) : _isSvg = true;
+
+  const _FeedbackBrandBadge.png({required this.assetPath, this.backgroundColor})
+    : _isSvg = false,
+      color = null;
+
+  final String assetPath;
+  final Color? color;
+  final Color? backgroundColor;
+  final bool _isSvg;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedBackgroundColor =
+        backgroundColor ?? (isDark ? const Color(0xFF1E1E1E) : Colors.white);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.08);
+
+    final iconSize = _isSvg
+        ? HyperosTokens.iconGlyphSize
+        : HyperosTokens.iconBadgeSize - 8;
+    final iconWidget = _isSvg
+        ? SvgPicture.asset(
+            assetPath,
+            width: iconSize,
+            height: iconSize,
+            colorFilter: color == null
+                ? null
+                : ColorFilter.mode(color!, BlendMode.srcIn),
+          )
+        : Image.asset(
+            assetPath,
+            width: iconSize,
+            height: iconSize,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              size: HyperosTokens.iconGlyphSize,
+              color: HyperosColors.actionIcon(context),
+            ),
+          );
+
+    return Container(
+      width: HyperosTokens.iconBadgeSize,
+      height: HyperosTokens.iconBadgeSize,
+      decoration: BoxDecoration(
+        color: resolvedBackgroundColor,
+        borderRadius: BorderRadius.circular(HyperosTokens.iconBadgeRadius),
+        border: Border.all(color: borderColor),
+      ),
+      alignment: Alignment.center,
+      child: iconWidget,
     );
   }
 }
