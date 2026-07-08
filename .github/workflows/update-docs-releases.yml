@@ -4,6 +4,9 @@ on:
   release:
     # 监听发布新版本、编辑已发布版本（如从预发布改为正式版）、撤销发布等行为
     types: [published, edited, unpublished, deleted, prereleased, released]
+  schedule:
+    # 防止 GitHub release 事件偶发漏触发，定时重建官网静态版本数据
+    - cron: "17 */6 * * *"
   workflow_dispatch: # 允许在 Actions 面板手动触发
 
 concurrency:
@@ -26,11 +29,11 @@ jobs:
 
       - name: Fetch Latest Releases and Generate JSON
         run: |
-          echo "Fetching latest 8 releases from GitHub API..."
+          echo "Fetching latest releases from GitHub API..."
           mkdir -p docs/releases
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github.v3+json" \
-               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=8" > /tmp/releases.json
+               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100" > /tmp/releases.json
           node <<'EOF'
           const fs = require("fs");
 
@@ -76,6 +79,100 @@ jobs:
             };
           }
 
+          function cleanReleaseLine(line) {
+            return String(line || "")
+              .replace(/^[-*+]\s+/, "")
+              .replace(/^#{1,6}\s+/, "")
+              .replace(/`([^`]+)`/g, "$1")
+              .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+              .replace(/\*\*([^*]+)\*\*/g, "$1")
+              .replace(/__([^_]+)__/g, "$1")
+              .trim();
+          }
+
+          function extractLatestVersionSection(rawBody) {
+            const body = String(rawBody || "");
+            const sections = body.split(/^#{2,}\s*v[\d.]+.*$/im);
+            if (sections.length > 1) {
+              const lastSection = sections[sections.length - 1].trim();
+              if (lastSection) {
+                return lastSection;
+              }
+            }
+            return body;
+          }
+
+          function normalizeChangeType(raw) {
+            const heading = String(raw || "").trim();
+            if (/新增|feature|new/i.test(heading)) return "新增";
+            if (/修复|fix/i.test(heading)) return "修复";
+            if (/测试|test/i.test(heading)) return "测试";
+            if (/移除|删除|remove/i.test(heading)) return "移除";
+            if (/调整|change|adjust/i.test(heading)) return "调整";
+            return "优化";
+          }
+
+          function extractHighlights(body) {
+            const latestSection = extractLatestVersionSection(body);
+            const lines = latestSection.split(/\r?\n/);
+            const highlights = [];
+            let currentType = "更新";
+
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line || line === "---") {
+                continue;
+              }
+
+              const headingMatch = line.match(/^#{2,6}\s+(.+)$/);
+              if (headingMatch) {
+                currentType = normalizeChangeType(headingMatch[1]);
+                continue;
+              }
+
+              if (/^[-*+]\s+/.test(line)) {
+                const text = cleanReleaseLine(line);
+                if (text) {
+                  highlights.push({
+                    type: normalizeChangeType(currentType),
+                    text,
+                  });
+                }
+              }
+            }
+
+            return highlights.slice(0, 8);
+          }
+
+          function buildDescription(body) {
+            const firstHighlights = extractHighlights(body).slice(0, 3);
+            if (!firstHighlights.length) {
+              return "查看 Release 页面了解更多更新内容。";
+            }
+            const preview = firstHighlights.map((item) => item.text).join(" · ");
+            return preview.length > 180 ? `${preview.slice(0, 180).trim()}…` : preview;
+          }
+
+          function simplifyFeedRelease(release) {
+            if (!release) {
+              return null;
+            }
+
+            const simplified = simplifyRelease(release, release.prerelease ? "预发布" : "正式版");
+            return {
+              channelLabel: simplified.channelLabel,
+              version: simplified.version,
+              title: simplified.title,
+              prerelease: release.prerelease === true,
+              publishedAt: simplified.publishedAt,
+              description: buildDescription(simplified.body),
+              highlights: extractHighlights(simplified.body),
+              releaseUrl: simplified.releaseUrl,
+              downloadUrl: simplified.downloadUrl,
+              assetName: simplified.assetName,
+            };
+          }
+
           const published = Array.isArray(releases)
             ? releases.filter((release) => !release?.draft && pickDownloadAsset(release?.assets))
             : [];
@@ -92,6 +189,17 @@ jobs:
             "docs/releases/latest.json",
             `${JSON.stringify(payload, null, 2)}\n`
           );
+
+          const feed = {
+            generatedAt: new Date().toISOString(),
+            releaseCount: published.length,
+            releases: published.slice(0, 8).map(simplifyFeedRelease).filter(Boolean),
+          };
+
+          fs.writeFileSync(
+            "docs/releases/feed.json",
+            `${JSON.stringify(feed, null, 2)}\n`
+          );
           EOF
 
       - name: Commit and Push changes
@@ -99,6 +207,6 @@ jobs:
         with:
           branch: ${{ github.event.repository.default_branch }}
           commit_message: "chore(docs): auto-update releases json"
-          file_pattern: docs/releases/latest.json
+          file_pattern: docs/releases/latest.json docs/releases/feed.json
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"

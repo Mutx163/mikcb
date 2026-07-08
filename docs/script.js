@@ -587,6 +587,7 @@ if ("IntersectionObserver" in window && navSectionLinks.length) {
 
 const repoApiUrl = "https://api.github.com/repos/Mutx163/mikcb";
 const releasesApiUrl = "./releases/latest.json";
+const releaseFeedApiUrl = "./releases/feed.json";
 const fallbackReleasePage = "https://github.com/Mutx163/mikcb/releases";
 const defaultMirrorPrefix = "https://ghfast.top/";
 const globalMirrorProbeKey = "mikcb-docs-fastest-mirror:__global__";
@@ -631,6 +632,7 @@ const heroStars = document.getElementById("hero-stars");
 const trustStars = document.getElementById("trust-stars");
 const trustReleases = document.getElementById("trust-releases");
 const latestStableHighlights = document.getElementById("latest-stable-highlights");
+const releaseTimeline = document.getElementById("release-timeline");
 
 let releaseLoaded = false;
 let releaseLoadedAt = 0;
@@ -705,11 +707,24 @@ function cleanReleaseLine(line) {
     .trim();
 }
 
+// 累计式 Release 说明会包含多个「## vX.Y」分段，这里只取最后一个版本的段落。
+function extractLatestVersionSection(rawBody) {
+  const body = String(rawBody || "");
+  const versionSections = body.split(/^#{2,}\s*v[\d.]+.*$/im);
+  if (versionSections.length > 1) {
+    const lastSection = versionSections[versionSections.length - 1].trim();
+    if (lastSection) {
+      return lastSection;
+    }
+  }
+  return body;
+}
+
 function buildReleaseDescription(rawBody, releaseHints = []) {
   const normalizedHints = releaseHints
     .map((item) => cleanReleaseLine(item).toLowerCase())
     .filter(Boolean);
-  const lines = String(rawBody || "")
+  const lines = extractLatestVersionSection(rawBody)
     .split(/\r?\n/)
     .map(cleanReleaseLine)
     .filter((line) => {
@@ -872,7 +887,7 @@ function formatCompactCount(value) {
 }
 
 function extractReleaseHighlights(rawBody, fallbackDescription) {
-  const lines = String(rawBody || "")
+  const lines = extractLatestVersionSection(rawBody)
     .split(/\r?\n/)
     .map((line) => line.replace(/^[-*]\s*/, "").trim())
     .filter(Boolean)
@@ -901,6 +916,139 @@ function renderLatestStableHighlights(releaseData) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatReleaseDate(raw) {
+  if (!raw) {
+    return "";
+  }
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeChangeType(type) {
+  const label = String(type || "").trim();
+  if (/新增|feature|new/i.test(label)) {
+    return { label: "新增", className: "chip-new" };
+  }
+  if (/修复|fix/i.test(label)) {
+    return { label: "修复", className: "chip-fix" };
+  }
+  if (/测试|test/i.test(label)) {
+    return { label: "测试", className: "chip-test" };
+  }
+  if (/移除|删除|remove/i.test(label)) {
+    return { label: "移除", className: "chip-remove" };
+  }
+  if (/调整|change|adjust/i.test(label)) {
+    return { label: "调整", className: "chip-change" };
+  }
+  return { label: "优化", className: "chip-opt" };
+}
+
+function stripRepeatedChangePrefix(text, typeLabel) {
+  const normalizedText = String(text || "").trim();
+  const normalizedType = String(typeLabel || "").trim();
+  if (!normalizedText || !normalizedType) {
+    return normalizedText;
+  }
+
+  const escapedType = normalizedType.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return normalizedText.replace(
+    new RegExp(`^${escapedType}\\s*[：:]?\\s*`),
+    ""
+  );
+}
+
+function renderReleaseTimeline(feed) {
+  if (!releaseTimeline) {
+    return;
+  }
+
+  const releases = Array.isArray(feed?.releases) ? feed.releases : [];
+  const visibleReleases = releases.filter(Boolean).slice(0, 6);
+  if (!visibleReleases.length) {
+    releaseTimeline.innerHTML =
+      '<article class="tl-item reveal is-visible" data-spotlight>' +
+      '<div class="tl-node"><span class="tl-dot tl-dot-live"></span></div>' +
+      '<div class="tl-card"><header class="tl-head"><h3>暂时无法读取更新日志</h3>' +
+      '<span class="tl-badge">稍后重试</span></header>' +
+      '<p class="tl-status">可以先打开 GitHub Releases 查看完整更新内容。</p></div></article>';
+    return;
+  }
+
+  releaseTimeline.innerHTML = visibleReleases
+    .map((release, index) => {
+      const version = normalizeVersion(release.version || release.tagName || release.title);
+      const dateLabel = formatReleaseDate(release.publishedAt);
+      const changes = Array.isArray(release.highlights) ? release.highlights.slice(0, 5) : [];
+      const isLatest = index === 0;
+      const isMajor = /^2\.0$/.test(version);
+      const channelLabel = release.prerelease ? "预发布" : "正式版";
+      const badgeClass = isLatest
+        ? "tl-badge-new"
+        : release.prerelease
+          ? "tl-badge-feature"
+          : isMajor
+            ? "tl-badge-major"
+            : "";
+      const dotClass = isLatest ? "tl-dot-live" : isMajor ? "tl-dot-major" : "";
+      const cardClass = isMajor ? " tl-card-major" : "";
+      const badgeText = isLatest ? `最新 · ${channelLabel}` : channelLabel;
+      const listHtml = changes.length
+        ? changes
+            .map((item) => {
+              const type = normalizeChangeType(item.type);
+              return `<li><i class="chip ${type.className}">${type.label}</i>${escapeHtml(
+                stripRepeatedChangePrefix(item.text, type.label)
+              )}</li>`;
+            })
+            .join("")
+        : `<li><i class="chip chip-opt">更新</i>${escapeHtml(
+            release.description || "查看 Release 页面了解更多"
+          )}</li>`;
+
+      return (
+        '<article class="tl-item reveal is-visible" data-spotlight>' +
+        `<div class="tl-node"><span class="tl-dot ${dotClass}"></span></div>` +
+        `<div class="tl-card${cardClass}">` +
+        '<header class="tl-head">' +
+        `<h3>v${escapeHtml(version)}</h3>` +
+        `<span class="tl-badge ${badgeClass}">${escapeHtml(badgeText)}</span>` +
+        (dateLabel ? `<time>${escapeHtml(dateLabel)}</time>` : "") +
+        "</header>" +
+        `<ul class="tl-list">${listHtml}</ul>` +
+        "</div></article>"
+      );
+    })
+    .join("");
+}
+
+async function loadReleaseTimeline() {
+  if (!releaseTimeline) {
+    return;
+  }
+  try {
+    const response = await fetch(releaseFeedApiUrl, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    renderReleaseTimeline(await response.json());
+  } catch (error) {
+    renderReleaseTimeline({ releases: [] });
+  }
+}
+
 function renderTrustSignals({
   stars = 0,
   releaseCount = 0,
@@ -914,7 +1062,7 @@ function renderTrustSignals({
   if (trustStars) {
     trustStars.textContent = showStars ? formatCompactCount(stars) : "—";
   }
-  if (trustReleases) {
+  if (trustReleases && Number(releaseCount) > 0) {
     trustReleases.textContent = formatCompactCount(releaseCount);
   }
 }
@@ -1487,6 +1635,7 @@ async function loadLatestRelease() {
 }
 
 void loadTrustSignals([]);
+void loadReleaseTimeline();
 
 function openReleaseModal(triggerContext = {}) {
   if (!releaseModal || !releaseDialog) {

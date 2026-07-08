@@ -1,0 +1,254 @@
+{
+  "generatedAt": "2026-07-08T12:33:59.279904Z",
+  "releaseCount": 19,
+  "releases": [
+    {
+      "channelLabel": "正式版",
+      "version": "2.0.4",
+      "title": "v2.0.4",
+      "prerelease": false,
+      "publishedAt": "2026-07-08T09:46:37Z",
+      "description": "优化节假日设置页：官方节假日名称统一走本地化映射，历史英文缓存名称可自动回退为当前语言文案 · 优化节假日更新日志区：移除固定高度造成的空白感，滚动手感改为更稳定的无阻尼风格 · 优化「添加假期」弹窗样式：日期行与按钮层级对齐 HyperOS 组件规范，提升可读性与可点击性",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "优化节假日设置页：官方节假日名称统一走本地化映射，历史英文缓存名称可自动回退为当前语言文案"
+        },
+        {
+          "type": "优化",
+          "text": "优化节假日更新日志区：移除固定高度造成的空白感，滚动手感改为更稳定的无阻尼风格"
+        },
+        {
+          "type": "优化",
+          "text": "优化「添加假期」弹窗样式：日期行与按钮层级对齐 HyperOS 组件规范，提升可读性与可点击性"
+        },
+        {
+          "type": "优化",
+          "text": "优化「外观与配色 > 文字颜色」布局：修复内容整体右移与缩进异常，恢复与同页设置项对齐"
+        },
+        {
+          "type": "优化",
+          "text": "优化超级岛显示设置（上课前/课中下课）：修复「展开态大图标」等单行选择项视觉偏上、卡片高度异常与交互不统一问题"
+        },
+        {
+          "type": "优化",
+          "text": "优化图片操作区交互一致性：替换局部 IconButton 删除入口为同体系 HyperOS 按钮样式"
+        },
+        {
+          "type": "优化",
+          "text": "优化 HyperOS 过滚动阻尼参数，改善列表拖拽回弹手感"
+        },
+        {
+          "type": "优化",
+          "text": "优化 overlay 子页顶部毛玻璃：修复路由 settle 期间重复调度导致模糊长期不生效的问题"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.4",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.4/mikcb-2.0.4-arm64-v8a.apk",
+      "assetName": "mikcb-2.0.4-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "预发布",
+      "version": "2.0",
+      "title": "v2.0",
+      "prerelease": true,
+      "publishedAt": "2026-07-06T17:36:25Z",
+      "description": "新增 WEBDAV 云同步：支持坚果云及自定义 WEBDAV 服务，可在手机、平板之间同步课表、仓库账号与相关设置，支持手动/自动同步与冲突处理 · 新增 HyperOS 视觉体系：课表、设置、添加课程/考试/日程、导入、关于、统计、用户引导、Live 诊断、局域网编辑等界面统一小米 HyperOS 风格组件 · 新增课表首页背景与区域毛玻璃：支持自定…",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增 WEBDAV 云同步：支持坚果云及自定义 WEBDAV 服务，可在手机、平板之间同步课表、仓库账号与相关设置，支持手动/自动同步与冲突处理"
+        },
+        {
+          "type": "新增",
+          "text": "新增 HyperOS 视觉体系：课表、设置、添加课程/考试/日程、导入、关于、统计、用户引导、Live 诊断、局域网编辑等界面统一小米 HyperOS 风格组件"
+        },
+        {
+          "type": "新增",
+          "text": "新增课表首页背景与区域毛玻璃：支持自定义背景图，顶栏与内容区按 HyperOS 规范分层模糊"
+        },
+        {
+          "type": "新增",
+          "text": "新增 Android 12+ 分层启动画面，减少冷启动闪屏"
+        },
+        {
+          "type": "新增",
+          "text": "新增关于页第三方免责声明：特此声明，本应用由第三方开发者独立开发，仅用于学习研究用途，不属于小米官方软件，与小米科技有限责任公司无任何隶属、合作或授权关系；如涉及内容侵权，请权利方联系作者，我们将第一时间下架并删除相关内容"
+        },
+        {
+          "type": "新增",
+          "text": "新增学期账单式课程统计：总览、成就徽章、数据故事、每日课时分布、必修/选修比例、课程排名，支持分享长图"
+        },
+        {
+          "type": "新增",
+          "text": "新增局域网浏览器编辑课表：手机开本地 Web 服务，电脑浏览器改课表；Android 前台保活维持连接"
+        },
+        {
+          "type": "新增",
+          "text": "新增表格导入课程：CSV 模板导入、周次表达式、教务系统快捷导入宏"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0/mikcb-2.0-arm64-v8a.apk",
+      "assetName": "mikcb-2.0-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "正式版",
+      "version": "1.3.2",
+      "title": "v1.3.2",
+      "prerelease": false,
+      "publishedAt": "2026-07-05T11:40:59Z",
+      "description": "优化课表选周弹窗：统一 Forui 底部 Sheet 风格，与学期周数、课表切换等选择界面视觉一致",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "优化课表选周弹窗：统一 Forui 底部 Sheet 风格，与学期周数、课表切换等选择界面视觉一致"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3.2",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3.2/mikcb-1.3.2-arm64-v8a.apk",
+      "assetName": "mikcb-1.3.2-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "正式版",
+      "version": "1.3.1",
+      "title": "v1.3.1",
+      "prerelease": false,
+      "publishedAt": "2026-07-05T09:46:01Z",
+      "description": "优化主页课表顶部布局，紧凑化应用栏与星期栏间距，更充分利用屏幕空间 · 优化课程总览入口：课表设置中新增课程总览入口，列表改为紧凑型 Forui 行布局与排序 Sheet",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "优化主页课表顶部布局，紧凑化应用栏与星期栏间距，更充分利用屏幕空间"
+        },
+        {
+          "type": "优化",
+          "text": "优化课程总览入口：课表设置中新增课程总览入口，列表改为紧凑型 Forui 行布局与排序 Sheet"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3.1",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3.1/mikcb-1.3.1-arm64-v8a.apk",
+      "assetName": "mikcb-1.3.1-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "正式版",
+      "version": "1.3",
+      "title": "v1.3",
+      "prerelease": false,
+      "publishedAt": "2026-07-05T08:16:43Z",
+      "description": "新增学期账单式课程统计：总览、成就徽章、数据故事、每日课时分布、必修/选修比例、课程排名，支持分享长图 · 新增局域网浏览器编辑课表：手机开本地 Web 服务，电脑浏览器改课表；Android 前台保活维持连接 · 新增表格导入课程：CSV 模板导入、周次表达式、教务系统快捷导入宏",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增学期账单式课程统计：总览、成就徽章、数据故事、每日课时分布、必修/选修比例、课程排名，支持分享长图"
+        },
+        {
+          "type": "新增",
+          "text": "新增局域网浏览器编辑课表：手机开本地 Web 服务，电脑浏览器改课表；Android 前台保活维持连接"
+        },
+        {
+          "type": "新增",
+          "text": "新增表格导入课程：CSV 模板导入、周次表达式、教务系统快捷导入宏"
+        },
+        {
+          "type": "新增",
+          "text": "新增统一 Forui 提示：普通 Toast、轻量短提示、带操作按钮提示（如撤销主题、切换镜像源）"
+        },
+        {
+          "type": "新增",
+          "text": "新增共用选择 Sheet：主题、学期周数、时段方案、课程颜色等，设置页与添加课程页复用"
+        },
+        {
+          "type": "新增",
+          "text": "课程简称新增「取前两字」快捷填充"
+        },
+        {
+          "type": "新增",
+          "text": "课程操作菜单补充编辑/调课/停课/删除次级操作与单双周标识"
+        },
+        {
+          "type": "优化",
+          "text": "全面迁移至 Forui 设计体系：课表、设置、添加课程/考试/日程、导入、关于、统计、用户引导、Live 诊断等界面统一新视觉"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3/mikcb-1.3-arm64-v8a.apk",
+      "assetName": "mikcb-1.3-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "正式版",
+      "version": "1.2.1.15",
+      "title": "v1.2.1.15",
+      "prerelease": false,
+      "publishedAt": "2026-06-27T07:31:50Z",
+      "description": "优化超级岛在课程最后一周结束后，不再于下一周同一时刻误弹 · 优化应用启动时自动同步并结束已过期的超级岛提醒",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "优化超级岛在课程最后一周结束后，不再于下一周同一时刻误弹"
+        },
+        {
+          "type": "优化",
+          "text": "优化应用启动时自动同步并结束已过期的超级岛提醒"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.15",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.15/mikcb-1.2.1.15-arm64-v8a.apk",
+      "assetName": "mikcb-1.2.1.15-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "预发布",
+      "version": "1.2.1.14",
+      "title": "v1.2.1.14",
+      "prerelease": true,
+      "publishedAt": "2026-06-06T16:09:34Z",
+      "description": "新增导入流程调试日志，便于排查快捷导入问题 · 优化快捷导入录制按钮位置，移至每个适配器卡片内与\"网页登录导入\"同级显示 · 优化快捷导入登录弹窗稳定性，自动检测登录表单并填充已记住的密码",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "新增导入流程调试日志，便于排查快捷导入问题"
+        },
+        {
+          "type": "优化",
+          "text": "优化快捷导入录制按钮位置，移至每个适配器卡片内与\"网页登录导入\"同级显示"
+        },
+        {
+          "type": "优化",
+          "text": "优化快捷导入登录弹窗稳定性，自动检测登录表单并填充已记住的密码"
+        },
+        {
+          "type": "优化",
+          "text": "优化宏回放导入流程，脚本完成与课程数据到达之间的状态过渡更平滑"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.14",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.14/mikcb-1.2.1.14-arm64-v8a.apk",
+      "assetName": "mikcb-1.2.1.14-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "正式版",
+      "version": "1.2.1.12",
+      "title": "v1.2.1.12",
+      "prerelease": false,
+      "publishedAt": "2026-06-03T15:10:00Z",
+      "description": "修复 CI 构建流程中因 AGP 8.9.1 与 --split-per-abi 不兼容导致产出空 APK 的问题 · 优化构建产物大小，使用 --target-platform 精简 APK 体积 · 增强工作流错误检测，避免静默吞失败",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "修复 CI 构建流程中因 AGP 8.9.1 与 --split-per-abi 不兼容导致产出空 APK 的问题"
+        },
+        {
+          "type": "优化",
+          "text": "优化构建产物大小，使用 --target-platform 精简 APK 体积"
+        },
+        {
+          "type": "优化",
+          "text": "增强工作流错误检测，避免静默吞失败"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.12",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.12/mikcb-1.2.1.12-arm64-v8a.apk",
+      "assetName": "mikcb-1.2.1.12-arm64-v8a.apk"
+    }
+  ]
+}
