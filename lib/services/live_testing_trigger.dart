@@ -69,6 +69,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
     provider.suspendLiveActivitySyncFor(
       end.difference(now) + const Duration(seconds: 20),
     );
+    await liveService.suspendScheduleTriggers(
+      end.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
+    );
     await liveService.recordDiagnosticEvent(
       'live_update_test_suspend_sync',
       AppLogMessages.liveUpdateTestSuspendSync,

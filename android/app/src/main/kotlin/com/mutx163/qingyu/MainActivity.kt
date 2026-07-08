@@ -287,6 +287,15 @@ class MainActivity : FlutterActivity() {
                         stopLiveUpdateService()
                         result.success(true)
                     }
+                    "suspendScheduleTriggers" -> {
+                        val untilMillis = (call.arguments as? Number)?.toLong()
+                        if (untilMillis != null) {
+                            LiveUpdateScheduler.suspendScheduleTriggers(this, untilMillis)
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Missing suspend deadline", null)
+                        }
+                    }
 
                     "getPendingExternalImport" -> {
                         val pending = pendingExternalImport
@@ -1193,8 +1202,14 @@ class MainActivity : FlutterActivity() {
             category = "live_update_stop_requested",
             message = DiagnosticLogMessages.LIVE_UPDATE_STOP_REQUESTED,
         )
-        LiveUpdateScheduler.cancelPendingTriggers(applicationContext)
         stopService(Intent(this, LiveUpdateService::class.java))
+        // Re-arm the next future trigger instead of cancelling it outright.
+        // Flutter calls stopLiveUpdate on every refresh without an active
+        // course; dropping the exact alarm here would leave only the 15-min
+        // WorkManager backup, delaying the next before-class reminder.
+        // (reschedule cancels the old alarm itself and honors holiday /
+        // suspension state; with a cleared snapshot it is a no-op.)
+        LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = false)
     }
 
     private fun startLanEditForegroundService() {
@@ -1588,6 +1603,7 @@ class LiveUpdateService : Service() {
     private var miuiIslandExpandedIconPath: String? = null
     private var startAtMillis = 0L
     private var endAtMillis = 0L
+    private var beforeClassLeadMillis = 0L
     private var endReminderLeadMillis = 600_000L
     private var liveClassReminderStartMinutes = 0
     private var enableBeforeClass = true
@@ -1706,6 +1722,10 @@ class LiveUpdateService : Service() {
                 intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
             miuiIslandExpandedIconPath =
                 intent?.getStringExtra("miuiIslandExpandedIconPath")?.takeIf { it.isNotBlank() }
+            beforeClassLeadMillis =
+                intent?.getLongExtra("beforeClassLeadMillis", 0L)
+                    ?.coerceAtLeast(0L)
+                    ?: 0L
             endReminderLeadMillis =
                 intent?.getLongExtra("endReminderLeadMillis", 600_000L)
                     ?.coerceAtLeast(0L)
@@ -2237,6 +2257,12 @@ class LiveUpdateService : Service() {
 
     private fun resolveStage(now: Long): String? {
         if (now >= endAtMillis) {
+            return null
+        }
+        // Do not show the before-class stage earlier than its window start.
+        // (leadMillis == 0 means the caller did not supply a window; keep the
+        // legacy behavior of trusting the start intent in that case.)
+        if (beforeClassLeadMillis > 0L && now < startAtMillis - beforeClassLeadMillis) {
             return null
         }
 

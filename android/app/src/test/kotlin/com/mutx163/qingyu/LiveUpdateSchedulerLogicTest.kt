@@ -6,8 +6,112 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
+import java.util.TimeZone
 
 class LiveUpdateSchedulerLogicTest {
+    @Test
+    fun legacyHolidayFlagActiveOnlyOnMatchingDate() {
+        assertFalse(
+            liveSchedulerIsLegacyHolidayFlagActive(
+                isHoliday = false,
+                isHolidayDate = "2026-04-13",
+                year = 2026,
+                month = 4,
+                dayOfMonth = 13,
+            ),
+        )
+        assertFalse(
+            liveSchedulerIsLegacyHolidayFlagActive(
+                isHoliday = true,
+                isHolidayDate = null,
+                year = 2026,
+                month = 4,
+                dayOfMonth = 13,
+            ),
+        )
+        assertTrue(
+            liveSchedulerIsLegacyHolidayFlagActive(
+                isHoliday = true,
+                isHolidayDate = "2026-04-13",
+                year = 2026,
+                month = 4,
+                dayOfMonth = 13,
+            ),
+        )
+        assertFalse(
+            liveSchedulerIsLegacyHolidayFlagActive(
+                isHoliday = true,
+                isHolidayDate = "2026-04-13",
+                year = 2026,
+                month = 4,
+                dayOfMonth = 14,
+            ),
+        )
+    }
+
+    @Test
+    fun weekCalculationSurvivesDstTransitionInEuropeBerlin() {
+        val previousTimeZone = TimeZone.getDefault()
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
+            val semesterStart = calendarOf(2026, Calendar.MARCH, 2, 8, 0).timeInMillis
+            val week5Monday = calendarOf(2026, Calendar.MARCH, 30, 8, 0).timeInMillis
+
+            assertEquals(
+                5,
+                liveSchedulerCalculateWeekForDate(
+                    semesterStartMillis = semesterStart,
+                    currentWeek = 1,
+                    dateMillis = week5Monday,
+                ),
+            )
+        } finally {
+            TimeZone.setDefault(previousTimeZone)
+        }
+    }
+
+    @Test
+    fun findActiveSelectionHonorsBlockedUntilBetweenConsecutiveClasses() {
+        val semesterStart = calendarOf(2026, Calendar.MARCH, 2, 8, 0).timeInMillis
+        val snapshot = LiveSchedulerTestSnapshot(
+            currentWeek = 5,
+            semesterStartMillis = semesterStart,
+            courses = listOf(
+                LiveSchedulerTestCourse(
+                    id = "course-a",
+                    dayOfWeek = 1,
+                    startSection = 1,
+                    endSection = 2,
+                    startTime = "08:00",
+                    endTime = "09:40",
+                    startWeek = 1,
+                    endWeek = 16,
+                ),
+                LiveSchedulerTestCourse(
+                    id = "course-b",
+                    dayOfWeek = 1,
+                    startSection = 3,
+                    endSection = 4,
+                    startTime = "09:50",
+                    endTime = "11:30",
+                    startWeek = 1,
+                    endWeek = 16,
+                ),
+            ),
+        )
+        val mondayDuringFirstClass = calendarOf(2026, Calendar.MARCH, 30, 9, 0).timeInMillis
+        val mondayBeforeSecondClass = calendarOf(2026, Calendar.MARCH, 30, 9, 45).timeInMillis
+
+        assertEquals(
+            LiveSchedulerActiveSelection("course-a", "duringClass"),
+            liveSchedulerFindActiveSelection(snapshot, mondayDuringFirstClass),
+        )
+        assertEquals(
+            LiveSchedulerActiveSelection("course-b", "beforeClass"),
+            liveSchedulerFindActiveSelection(snapshot, mondayBeforeSecondClass),
+        )
+    }
+
     @Test
     fun customWeeksOverrideRangeAndParity() {
         assertFalse(

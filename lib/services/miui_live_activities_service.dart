@@ -325,6 +325,7 @@ class MiuiLiveActivitiesService {
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
+    bool validateAgainstSchedule = false,
   }) async {
     await initialize();
     try {
@@ -334,6 +335,7 @@ class MiuiLiveActivitiesService {
         autoDismissAfterStartMinutes: autoDismissAfterStartMinutes,
         stage: stage,
         beforeClassLeadMillis: beforeClassLeadMillis,
+        validateAgainstSchedule: validateAgainstSchedule,
         startAtMillis: startAtMillis,
         endAtMillis: endAtMillis,
         endReminderLeadMillis: endReminderLeadMillis,
@@ -466,11 +468,13 @@ class MiuiLiveActivitiesService {
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
+    bool validateAgainstSchedule = false,
   }) {
     final data = <String, dynamic>{
       'autoDismissAfterStartMinutes': autoDismissAfterStartMinutes,
       'stage': stage,
       'beforeClassLeadMillis': beforeClassLeadMillis,
+      'validateAgainstSchedule': validateAgainstSchedule,
       'startAtMillis': startAtMillis,
       'endAtMillis': endAtMillis,
       'endReminderLeadMillis': endReminderLeadMillis,
@@ -542,6 +546,7 @@ class MiuiLiveActivitiesService {
     List<String> holidayDates = const [],
     bool holidayOverrideEnabled = false,
     bool enableHolidayMarking = true,
+    String? isHolidayDate,
   }) async {
     await initialize();
     try {
@@ -550,6 +555,7 @@ class MiuiLiveActivitiesService {
         'semesterStartMillis': semesterStartDate?.millisecondsSinceEpoch,
         'endReminderLeadMillis': endReminderLeadMillis,
         'isHoliday': isHoliday,
+        'isHolidayDate': isHolidayDate,
         'holidayDates': holidayDates,
         'holidayOverrideEnabled': holidayOverrideEnabled,
         'enableHolidayMarking': enableHolidayMarking,
@@ -596,6 +602,23 @@ class MiuiLiveActivitiesService {
         stackTrace: stackTrace,
       );
       appDebugLog('MiuiLive', '清空课表快照失败：$e');
+      return false;
+    }
+  }
+
+  Future<bool> suspendScheduleTriggers(int untilMillis) async {
+    await initialize();
+    try {
+      await _channel.invokeMethod('suspendScheduleTriggers', untilMillis);
+      return true;
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_suspend_triggers_failed',
+        AppLogMessages.liveUpdateSnapshotSyncFailed,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      appDebugLog('MiuiLive', '挂起课表调度失败：$e');
       return false;
     }
   }
@@ -662,6 +685,7 @@ class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
+    bool validateAgainstSchedule = false,
   }) async {
     startLiveUpdateCallCount++;
   }
@@ -677,7 +701,13 @@ class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
     List<String> holidayDates = const [],
     bool holidayOverrideEnabled = false,
     bool enableHolidayMarking = true,
+    String? isHolidayDate,
   }) async {
+    return true;
+  }
+
+  @override
+  Future<bool> suspendScheduleTriggers(int untilMillis) async {
     return true;
   }
 

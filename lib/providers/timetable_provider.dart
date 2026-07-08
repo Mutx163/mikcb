@@ -1358,7 +1358,17 @@ class TimetableProvider with ChangeNotifier {
   int? getWeekIndex(DateTime date, DateTime semesterStart) {
     final alignedStart = _startOfWeek(semesterStart);
     final alignedTarget = _startOfWeek(date);
-    final diffDays = alignedTarget.difference(alignedStart).inDays;
+    final diffDays = DateTime.utc(
+      alignedTarget.year,
+      alignedTarget.month,
+      alignedTarget.day,
+    ).difference(
+      DateTime.utc(
+        alignedStart.year,
+        alignedStart.month,
+        alignedStart.day,
+      ),
+    ).inDays;
     if (diffDays < 0) return null;
     return (diffDays ~/ 7) + 1;
   }

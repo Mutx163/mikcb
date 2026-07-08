@@ -242,7 +242,7 @@ LiveActivityCourseSelection? _liveGetTestActivityCourseSelection(
   DateTime? now,
 }) {
   final currentTime = now ?? DateTime.now();
-  final targetWeek = host._calculateWeekForDate(currentTime);
+  final targetWeek = host._calculateCalendarWeekForDate(currentTime);
   final immediateSelection = host.getLiveActivityCourseSelection(
     now: currentTime,
     allowUpcomingFallback: true,
@@ -460,6 +460,8 @@ Future<void> _liveUpdateActivity(
       displayCourse,
       displayNextCourse,
       stage: selection.stage.name,
+      validateAgainstSchedule: true,
+      beforeClassLeadMillis: settings.liveShowBeforeClassMinutes * 60000,
       liveClassReminderStartMinutes: settings.liveClassReminderStartMinutes,
       endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
       promoteDuringClass:
@@ -527,7 +529,10 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
   final displayCourses = host._courses
       .map(host.resolveCourseDisplayName)
       .toList(growable: false);
-  final todayIsHoliday = host.isHoliday(DateTime.now());
+  final now = DateTime.now();
+  final todayKey =
+      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  final todayIsHoliday = host.isHoliday(now);
   final holidayDates = _liveBuildHolidayDatesForSnapshot(host);
   final snapshotSignature = jsonEncode({
     'profileId': activeProfile.id,
@@ -535,6 +540,7 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
     'semesterStartDate':
         host._settings.semesterStartDate?.millisecondsSinceEpoch,
     'isHoliday': todayIsHoliday,
+    'isHolidayDate': todayKey,
     'holidayDates': holidayDates,
     'holidayOverrideEnabled': host._settings.holidayOverrideEnabled,
     'enableHolidayMarking': host._settings.enableHolidayMarking,
@@ -553,6 +559,7 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
     endReminderLeadMillis:
         TimetableProvider._liveEndReminderWindow.inMilliseconds,
     isHoliday: todayIsHoliday,
+    isHolidayDate: todayKey,
     holidayDates: holidayDates,
     holidayOverrideEnabled: host._settings.holidayOverrideEnabled,
     enableHolidayMarking: host._settings.enableHolidayMarking,

@@ -125,7 +125,9 @@ internal object BeforeClassQuickActionRestore {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             !manager.isNotificationPolicyAccessGranted
         ) {
-            return false
+            // Permission was revoked; retry will never succeed — treat as handled
+            // so pending restore state can clear instead of blocking forever.
+            return true
         }
         val savedFilter = prefs.getInt(
             KEY_SAVED_DND_FILTER,

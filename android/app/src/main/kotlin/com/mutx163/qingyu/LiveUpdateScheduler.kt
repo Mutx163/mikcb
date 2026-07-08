@@ -62,6 +62,29 @@ internal fun liveSchedulerCourseIsActiveInWeek(
     )
 }
 
+/**
+ * The legacy snapshot-level `isHoliday` flag captures Flutter's full holiday
+ * semantics (including adjusted workdays) but only for the day the snapshot
+ * was synced. It must never be applied to later days, otherwise one holiday
+ * sync would suppress the island for every following day until the app is
+ * reopened.
+ */
+internal fun liveSchedulerIsLegacyHolidayFlagActive(
+    isHoliday: Boolean,
+    isHolidayDate: String?,
+    year: Int,
+    month: Int,
+    dayOfMonth: Int,
+): Boolean {
+    if (!isHoliday) {
+        return false
+    }
+    if (isHolidayDate.isNullOrBlank()) {
+        return false
+    }
+    return isHolidayDate == String.format("%04d-%02d-%02d", year, month, dayOfMonth)
+}
+
 internal fun liveSchedulerIsDateHoliday(
     holidayDates: Set<String>,
     holidayOverrideEnabled: Boolean,
@@ -394,8 +417,11 @@ internal fun liveSchedulerCalculateWeekForDate(
         set(Calendar.MILLISECOND, 0)
         add(Calendar.DAY_OF_YEAR, -(get(Calendar.DAY_OF_WEEK).toWeekday() - 1))
     }
-    val diffDays =
-        ((normalizedDate.timeInMillis - normalizedStart.timeInMillis) / 86_400_000L).toInt()
+    // Round instead of truncate so a DST transition inside the range
+    // (23h/25h day) cannot shift the whole diff down by one day.
+    val diffDays = Math.round(
+        (normalizedDate.timeInMillis - normalizedStart.timeInMillis) / 86_400_000.0
+    ).toInt()
     val week = (diffDays / 7) + 1
     if (week < 1) {
         return 0
@@ -520,6 +546,8 @@ private data class NativeScheduleSnapshot(
     val semesterStartMillis: Long?,
     val endReminderLeadMillis: Long,
     val isHoliday: Boolean,
+    /** Date (yyyy-MM-dd) the [isHoliday] flag was computed for; flag is only valid on that day. */
+    val isHolidayDate: String?,
     val holidayDates: Set<String>,
     val holidayOverrideEnabled: Boolean,
     val enableHolidayMarking: Boolean,
@@ -625,7 +653,17 @@ object LiveUpdateScheduler {
     private const val PREFS_NAME = "live_update_scheduler"
     private const val KEY_SNAPSHOT_JSON = "snapshot_json"
     private const val KEY_SNAPSHOT_VERSION = "snapshot_version"
+    private const val KEY_SUSPEND_UNTIL_MILLIS = "suspend_until_millis"
     private const val REQUEST_CODE_TRIGGER = 2002
+
+    /** Retry delay when an in-window foreground-service start is blocked;
+     *  the exact alarm callback grants a temporary FGS-start exemption. */
+    private const val FGS_RETRY_DELAY_MILLIS = 60_000L
+
+    /** Upper bound for the week lookahead scan so a corrupt/huge endWeek
+     *  cannot make [findNextSelection] loop over thousands of weeks. */
+    private const val MAX_LOOKAHEAD_WEEKS = 104
+
     const val ACTION_TRIGGER = "com.mutx163.qingyu.ACTION_TRIGGER_LIVE_UPDATE"
 
     fun syncSnapshot(context: Context, snapshotJson: String) {
@@ -659,7 +697,11 @@ object LiveUpdateScheduler {
                 "snapshotLength" to snapshotJson.length
             )
         )
-        reschedule(context, allowImmediateStart = false)
+        // Allow immediate start: syncing inside an already-open before-class
+        // window must show the island right away. Otherwise resolveNextTrigger
+        // only finds future triggers and the reminder is silently skipped
+        // until the next stage boundary.
+        reschedule(context, allowImmediateStart = true)
         // WorkManager backup: ensures live update can still trigger
         // when AlarmManager is suppressed (e.g. MIUI + accessibility).
         LiveUpdateRefreshWorker.ensureScheduled(context)
@@ -692,6 +734,23 @@ object LiveUpdateScheduler {
             message = DiagnosticLogMessages.LIVE_UPDATE_ALARM_TRIGGERED,
         )
         reschedule(context, allowImmediateStart = true, stopStaleSessions = true)
+    }
+
+    /** Pause scheduler-driven session management until [untilMillis] (used by live-update tests). */
+    fun suspendScheduleTriggers(context: Context, untilMillis: Long) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putLong(KEY_SUSPEND_UNTIL_MILLIS, untilMillis)
+            .apply()
+        cancelScheduledAlarm(context)
+        if (untilMillis > System.currentTimeMillis()) {
+            scheduleAlarm(context, untilMillis)
+        }
+    }
+
+    private fun suspendedUntilMillis(context: Context): Long {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getLong(KEY_SUSPEND_UNTIL_MILLIS, 0L)
     }
 
     /** Whether the persisted schedule snapshot still has a course to show right now. */
@@ -800,7 +859,12 @@ object LiveUpdateScheduler {
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
-            validateAgainstSchedule = false,
+            // Production Flutter starts pass true so the ticker keeps
+            // re-validating against the schedule snapshot after the app goes
+            // to the background. Test sessions omit the flag (false) because
+            // their fixture course is intentionally absent from the snapshot.
+            validateAgainstSchedule =
+                data["validateAgainstSchedule"] as? Boolean ?: false,
         )
         return buildServiceIntent(context, payload)
     }
@@ -811,6 +875,13 @@ object LiveUpdateScheduler {
         stopStaleSessions: Boolean = false,
     ): Boolean {
         cancelScheduledAlarm(context)
+        val suspendUntil = suspendedUntilMillis(context)
+        if (suspendUntil > System.currentTimeMillis()) {
+            // A live-update test session owns the island right now; defer any
+            // scheduler-driven start/stop so it cannot overwrite the test.
+            scheduleAlarm(context, suspendUntil)
+            return false
+        }
         val snapshot = loadSnapshot(context) ?: run {
             if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
@@ -828,7 +899,9 @@ object LiveUpdateScheduler {
         }
         // Check if today is a holiday (uses both legacy isHoliday flag and full date list)
         val nowCalendar = Calendar.getInstance()
-        if (snapshot.isHoliday || isDateHoliday(snapshot, nowCalendar)) {
+        if (isLegacyHolidayFlagActive(snapshot, nowCalendar) ||
+            isDateHoliday(snapshot, nowCalendar)
+        ) {
             if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
             }
@@ -852,8 +925,17 @@ object LiveUpdateScheduler {
                         "stage" to activeSelection.stage,
                     )
                 )
-                startForegroundService(context, selectionToPayload(snapshot, activeSelection))
-                return true
+                val started = startForegroundService(
+                    context,
+                    selectionToPayload(snapshot, activeSelection),
+                )
+                if (!started) {
+                    // FGS start can be blocked in the background. Schedule an
+                    // exact alarm retry: its broadcast grants a temporary
+                    // FGS-start exemption, so the session is not lost.
+                    scheduleAlarm(context, now + FGS_RETRY_DELAY_MILLIS)
+                }
+                return started
             }
             if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
@@ -1172,6 +1254,7 @@ object LiveUpdateScheduler {
             semesterStartMillis = json.optLong("semesterStartMillis").takeIf { it > 0L },
             endReminderLeadMillis = json.optLong("endReminderLeadMillis", 600_000L),
             isHoliday = json.optBoolean("isHoliday", false),
+            isHolidayDate = json.optString("isHolidayDate").takeIf { it.isNotBlank() },
             holidayDates = holidayDates,
             holidayOverrideEnabled = json.optBoolean("holidayOverrideEnabled", false),
             enableHolidayMarking = json.optBoolean("enableHolidayMarking", true),
@@ -1278,10 +1361,25 @@ object LiveUpdateScheduler {
             return false
         }
         val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
-        if (snapshot.isHoliday || isDateHoliday(snapshot, nowCalendar)) {
+        if (isLegacyHolidayFlagActive(snapshot, nowCalendar) ||
+            isDateHoliday(snapshot, nowCalendar)
+        ) {
             return false
         }
         return findActiveSelection(context, snapshot, nowMillis) != null
+    }
+
+    private fun isLegacyHolidayFlagActive(
+        snapshot: NativeScheduleSnapshot,
+        dateCalendar: Calendar,
+    ): Boolean {
+        return liveSchedulerIsLegacyHolidayFlagActive(
+            isHoliday = snapshot.isHoliday,
+            isHolidayDate = snapshot.isHolidayDate,
+            year = dateCalendar.get(Calendar.YEAR),
+            month = dateCalendar.get(Calendar.MONTH) + 1,
+            dayOfMonth = dateCalendar.get(Calendar.DAY_OF_MONTH),
+        )
     }
 
     private fun findActiveSelection(
@@ -1362,7 +1460,8 @@ object LiveUpdateScheduler {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val maxWeek = snapshot.courses.maxOfOrNull { it.endWeek } ?: targetWeek
+        val maxWeek = (snapshot.courses.maxOfOrNull { it.endWeek } ?: targetWeek)
+            .coerceAtMost(targetWeek + MAX_LOOKAHEAD_WEEKS)
 
         var bestSelection: ScheduledSelection? = null
 
@@ -1949,8 +2048,8 @@ object LiveUpdateScheduler {
         )
     }
 
-    private fun startForegroundService(context: Context, payload: LiveUpdatePayload) {
-        try {
+    private fun startForegroundService(context: Context, payload: LiveUpdatePayload): Boolean {
+        return try {
             UmengDiagnosticReporter.record(
                 context = context.applicationContext,
                 category = "live_update_payload_selected",
@@ -1972,6 +2071,7 @@ object LiveUpdateScheduler {
                 )
             )
             ContextCompat.startForegroundService(context, buildServiceIntent(context, payload))
+            true
         } catch (e: Exception) {
             Log.w(TAG, DiagnosticLogMessages.LOG_START_LIVE_UPDATE_SERVICE_FAILED, e)
             UmengDiagnosticReporter.report(
@@ -1985,6 +2085,7 @@ object LiveUpdateScheduler {
                     "stage" to payload.stage,
                 )
             )
+            false
         }
     }
 }
