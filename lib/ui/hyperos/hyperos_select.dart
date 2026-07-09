@@ -319,7 +319,7 @@ double hyperosSelectPopupEstimatedHeight(int itemCount) {
     final verticalPadding = isEdge
         ? HyperosMiuixDropdown.firstLastVerticalPadding * 2
         : HyperosMiuixDropdown.middleVerticalPadding * 2;
-    height += verticalPadding + HyperosMiuixTypography.body1;
+    height += verticalPadding + HyperosMiuixSpec.settingsRowMinHeight;
   }
   return height;
 }

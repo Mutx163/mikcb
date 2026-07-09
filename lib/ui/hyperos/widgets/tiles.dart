@@ -515,11 +515,14 @@ class HyperosChoiceTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (prefix != null)
-            prefix!
-          else
-            HyperosColorDot(color: iconAccent ?? HyperosIconColors.blue),
-          const SizedBox(width: HyperosTokens.rowContentGap),
+          if (variant != HyperosChoiceVariant.popup &&
+              variant != HyperosChoiceVariant.dialog) ...[
+            if (prefix != null)
+              prefix!
+            else
+              HyperosColorDot(color: iconAccent ?? HyperosIconColors.blue),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
