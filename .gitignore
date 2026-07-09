@@ -73,6 +73,8 @@ pi.ico
 stderr.txt
 layout_dump.json
 package-lock.json
+_grep.ps1
+_layout.json
 
 # 审查输出
 reviews/
