@@ -450,7 +450,7 @@ class HyperosActionTile extends StatelessWidget {
   }
 }
 
-enum HyperosChoiceVariant { radio, checkmark, dialog }
+enum HyperosChoiceVariant { radio, checkmark, dialog, popup }
 
 /// Miuix-styled choice row: colored circle, title, optional subtitle, trailing
 /// radio / checkmark indicator. Tapping the row selects when enabled.
@@ -464,6 +464,8 @@ class HyperosChoiceTile extends StatelessWidget {
     this.enabled = true,
     this.iconAccent,
     this.variant = HyperosChoiceVariant.radio,
+    this.highlightSelectedText = false,
+    this.isFirstInPopup = false,
   });
 
   final String title;
@@ -473,6 +475,8 @@ class HyperosChoiceTile extends StatelessWidget {
   final bool enabled;
   final Color? iconAccent;
   final HyperosChoiceVariant variant;
+  final bool highlightSelectedText;
+  final bool isFirstInPopup;
 
   @override
   Widget build(BuildContext context) {
@@ -650,6 +654,8 @@ class HyperosNavTile extends StatelessWidget {
     this.onTap,
     this.details,
     this.iconAccent,
+    this.enabled = true,
+    this.holdHighlightThroughTransition = true,
   });
 
   final IconData? icon;
@@ -657,6 +663,8 @@ class HyperosNavTile extends StatelessWidget {
   final String? details;
   final VoidCallback? onTap;
   final Color? iconAccent;
+  final bool enabled;
+  final bool holdHighlightThroughTransition;
 
   @override
   Widget build(BuildContext context) {

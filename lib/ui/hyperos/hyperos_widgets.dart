@@ -7,4 +7,4 @@ library hyperos_widgets;
 export 'widgets/cards.dart';
 export 'widgets/indicators.dart';
 export 'widgets/layout.dart';
-export 'widgets/tiles.dart';
+export 'widgets/tiles.dart' hide HyperosSummaryCard, HyperosCard;
