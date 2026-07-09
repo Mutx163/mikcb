@@ -467,6 +467,7 @@ class HyperosChoiceTile extends StatelessWidget {
     this.highlightSelectedText = false,
     this.isFirstInPopup = false,
     this.isLastInPopup = false,
+    this.showDivider = false,
   });
 
   final String title;
@@ -479,6 +480,7 @@ class HyperosChoiceTile extends StatelessWidget {
   final bool highlightSelectedText;
   final bool isFirstInPopup;
   final bool isLastInPopup;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
