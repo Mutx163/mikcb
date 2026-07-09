@@ -470,6 +470,7 @@ class HyperosChoiceTile extends StatelessWidget {
     this.showDivider = false,
     this.trailing,
     this.prefix,
+    this.dividerIndent,
   });
 
   final String title;
@@ -485,6 +486,7 @@ class HyperosChoiceTile extends StatelessWidget {
   final bool showDivider;
   final Widget? trailing;
   final Widget? prefix;
+  final double? dividerIndent;
 
   @override
   Widget build(BuildContext context) {
