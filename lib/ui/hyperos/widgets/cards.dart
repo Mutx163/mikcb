@@ -11,11 +11,13 @@ class HyperosCard extends StatelessWidget {
     super.key,
     this.title,
     this.subtitle,
+    this.padding,
     required this.child,
   });
 
   final String? title;
   final String? subtitle;
+  final EdgeInsetsGeometry? padding;
   final Widget child;
 
   @override
@@ -30,7 +32,7 @@ class HyperosCard extends StatelessWidget {
         shape: HyperosTheme.cardShape(),
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: padding ?? EdgeInsets.fromLTRB(
             16,
             hasTitle || hasSubtitle ? 16 : 0,
             16,
