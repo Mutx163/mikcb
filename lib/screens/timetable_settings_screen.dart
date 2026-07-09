@@ -3083,37 +3083,35 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       ),
       4 => HyperosControlCard(
         title: l10n.homeWidgetHeightAdjustTitle,
-        child: HyperosControlCardInset(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              HyperosSliderTile(
-                title: _widgetHeightAdjustmentLabel(l10n),
-                value: _draft.widgetHeightAdjustment,
-                min: _defaultWidgetHeightAdjustment - 16,
-                max: _defaultWidgetHeightAdjustment + 16,
-                divisions: 32,
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(widgetHeightAdjustment: value),
-                  debounce: true,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HyperosSliderTile(
+              title: _widgetHeightAdjustmentLabel(l10n),
+              value: _draft.widgetHeightAdjustment,
+              min: _defaultWidgetHeightAdjustment - 16,
+              max: _defaultWidgetHeightAdjustment + 16,
+              divisions: 32,
+              onChanged: (value) => _updateDraft(
+                _draft.copyWith(widgetHeightAdjustment: value),
+                debounce: true,
               ),
-              const SizedBox(height: 12),
-              HyperosSliderTile(
-                title: l10n.homeWidgetCornerRadiusTitle,
-                valueLabel: '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
-                value: _draft.widgetCornerRadius,
-                min: _defaultWidgetCornerRadius - 14,
-                max: _defaultWidgetCornerRadius + 14,
-                divisions: 28,
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(widgetCornerRadius: value),
-                  debounce: true,
-                ),
+            ),
+            const SizedBox(height: 12),
+            HyperosSliderTile(
+              title: l10n.homeWidgetCornerRadiusTitle,
+              valueLabel: '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
+              value: _draft.widgetCornerRadius,
+              min: _defaultWidgetCornerRadius - 14,
+              max: _defaultWidgetCornerRadius + 14,
+              divisions: 28,
+              onChanged: (value) => _updateDraft(
+                _draft.copyWith(widgetCornerRadius: value),
+                debounce: true,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       _ => const SizedBox.shrink(),
