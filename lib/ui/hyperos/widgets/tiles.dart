@@ -466,6 +466,7 @@ class HyperosChoiceTile extends StatelessWidget {
     this.variant = HyperosChoiceVariant.radio,
     this.highlightSelectedText = false,
     this.isFirstInPopup = false,
+    this.isLastInPopup = false,
   });
 
   final String title;
@@ -477,6 +478,7 @@ class HyperosChoiceTile extends StatelessWidget {
   final HyperosChoiceVariant variant;
   final bool highlightSelectedText;
   final bool isFirstInPopup;
+  final bool isLastInPopup;
 
   @override
   Widget build(BuildContext context) {
