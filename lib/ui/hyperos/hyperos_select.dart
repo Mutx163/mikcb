@@ -24,17 +24,15 @@ import 'hyperos_widgets.dart';
       ? HyperosTokens.chevronRowPadding(isFirst: isFirst, isLast: isLast)
       : HyperosTokens.chevronRowPadding(isFirst: true, isLast: true);
 
-  var footerExtend = 0.0;
   if (cardScope != null && isLast) {
-    footerExtend = cardScope.bodyBottomInset;
-    padding = padding.copyWith(bottom: padding.bottom + footerExtend);
+    padding = padding.copyWith(bottom: padding.bottom + cardScope.bodyBottomInset);
   }
 
   final baseMinHeight = twoLine
       ? HyperosTokens.listRowTwoLineMinHeight
       : HyperosTokens.listRowMinHeight;
 
-  return (minHeight: baseMinHeight + footerExtend, padding: padding);
+  return (minHeight: baseMinHeight, padding: padding);
 }
 
 /// Global rect of [anchorKey]'s render box (for anchored select popups).
