@@ -723,12 +723,12 @@ class HyperosNavTile extends StatelessWidget {
 class HyperosDangerTile extends StatelessWidget {
   const HyperosDangerTile({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     this.onTap,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final VoidCallback? onTap;
 
@@ -745,8 +745,10 @@ class HyperosDangerTile extends StatelessWidget {
       padding: hyperosRowPadding(context),
       child: Row(
         children: [
-          HyperosIconBadge(icon: icon, accent: dangerColor),
-          const SizedBox(width: HyperosTokens.rowContentGap),
+          if (icon != null) ...[
+            HyperosIconBadge(icon: icon!, accent: dangerColor),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+          ],
           Expanded(
             child: Text(
               title,
