@@ -477,7 +477,6 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
