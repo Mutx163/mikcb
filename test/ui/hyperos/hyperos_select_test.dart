@@ -375,7 +375,7 @@ void main() {
       final highlightRect = tester.getRect(
         find.byWidgetPredicate(
           (widget) => widget is ColoredBox && widget.color.a > 0,
-        ),
+        ).first,
       );
 
       expect(highlightRect.width, cardWidth);

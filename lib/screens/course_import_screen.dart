@@ -984,6 +984,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       onBack: () => Navigator.pop(context),
       title: Text(l10n.aiImportTitle),
       childPad: false,
+      resizeToAvoidBottomInset: true,
       child: Material(
         type: MaterialType.transparency,
         child: SafeArea(

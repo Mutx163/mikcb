@@ -239,7 +239,7 @@ void main() {
     expect(
       find.descendant(
         of: find.widgetWithText(HyperosChoiceTile, '单周'),
-        matching: find.byIcon(Icons.check_rounded),
+        matching: find.byIcon(Icons.check),
       ),
       findsOneWidget,
     );
