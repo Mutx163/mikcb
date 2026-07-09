@@ -3658,113 +3658,111 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 }
               },
             ),
-            HyperosControlCardInset(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 浅色模式颜色设置
-                  _buildModeColorSettings(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 浅色模式颜色设置
+                _buildModeColorSettings(
+                  context,
+                  l10n: l10n,
+                  modeLabel: l10n.themeModeLight,
+                  containerColor: Theme.of(
                     context,
-                    l10n: l10n,
-                    modeLabel: l10n.themeModeLight,
-                    containerColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerLow,
-                    titleColor: _draft.courseCardTitleColorLight,
-                    detailColor: _draft.courseCardDetailColorLight,
-                    weekdayColor: _draft.weekdayBarFontColorLight,
-                    timeAxisColor: _draft.timeAxisFontColorLight,
-                    accentColor: _draft.weekdayBarAccentColorLight,
-                    onTitleColorChanged: (color) {
-                      if (_draft.linkCourseCardColors) {
-                        _updateDraft(
-                          _draft.copyWith(
-                            courseCardTitleColorLight: color,
-                            courseCardDetailColorLight: color,
-                          ),
-                        );
-                      } else {
-                        _updateDraft(
-                          _draft.copyWith(courseCardTitleColorLight: color),
-                        );
-                      }
-                    },
-                    onDetailColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(courseCardDetailColorLight: color),
-                    ),
-                    onWeekdayColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(weekdayBarFontColorLight: color),
-                    ),
-                    onTimeAxisColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(timeAxisFontColorLight: color),
-                    ),
-                    onAccentColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(weekdayBarAccentColorLight: color),
-                    ),
-                    defaultTitleColor:
-                        TimetableSettings.defaultCourseCardTitleColor,
-                    defaultDetailColor:
-                        TimetableSettings.defaultCourseCardDetailColor,
-                    defaultWeekdayColor:
-                        TimetableSettings.defaultWeekdayBarFontColorLight,
-                    defaultTimeAxisColor:
-                        TimetableSettings.defaultTimeAxisFontColorLight,
-                    defaultAccentColor:
-                        TimetableSettings.defaultWeekdayBarAccentColorLight,
+                  ).colorScheme.surfaceContainerLow,
+                  titleColor: _draft.courseCardTitleColorLight,
+                  detailColor: _draft.courseCardDetailColorLight,
+                  weekdayColor: _draft.weekdayBarFontColorLight,
+                  timeAxisColor: _draft.timeAxisFontColorLight,
+                  accentColor: _draft.weekdayBarAccentColorLight,
+                  onTitleColorChanged: (color) {
+                    if (_draft.linkCourseCardColors) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          courseCardTitleColorLight: color,
+                          courseCardDetailColorLight: color,
+                        ),
+                      );
+                    } else {
+                      _updateDraft(
+                        _draft.copyWith(courseCardTitleColorLight: color),
+                      );
+                    }
+                  },
+                  onDetailColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(courseCardDetailColorLight: color),
                   ),
-                  const SizedBox(height: 12),
-                  // 深色模式颜色设置
-                  _buildModeColorSettings(
+                  onWeekdayColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(weekdayBarFontColorLight: color),
+                  ),
+                  onTimeAxisColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(timeAxisFontColorLight: color),
+                  ),
+                  onAccentColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(weekdayBarAccentColorLight: color),
+                  ),
+                  defaultTitleColor:
+                      TimetableSettings.defaultCourseCardTitleColor,
+                  defaultDetailColor:
+                      TimetableSettings.defaultCourseCardDetailColor,
+                  defaultWeekdayColor:
+                      TimetableSettings.defaultWeekdayBarFontColorLight,
+                  defaultTimeAxisColor:
+                      TimetableSettings.defaultTimeAxisFontColorLight,
+                  defaultAccentColor:
+                      TimetableSettings.defaultWeekdayBarAccentColorLight,
+                ),
+                const SizedBox(height: 12),
+                // 深色模式颜色设置
+                _buildModeColorSettings(
+                  context,
+                  l10n: l10n,
+                  modeLabel: l10n.themeModeDark,
+                  containerColor: Theme.of(
                     context,
-                    l10n: l10n,
-                    modeLabel: l10n.themeModeDark,
-                    containerColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHigh,
-                    titleColor: _draft.courseCardTitleColorDark,
-                    detailColor: _draft.courseCardDetailColorDark,
-                    weekdayColor: _draft.weekdayBarFontColorDark,
-                    timeAxisColor: _draft.timeAxisFontColorDark,
-                    accentColor: _draft.weekdayBarAccentColorDark,
-                    onTitleColorChanged: (color) {
-                      if (_draft.linkCourseCardColors) {
-                        _updateDraft(
-                          _draft.copyWith(
-                            courseCardTitleColorDark: color,
-                            courseCardDetailColorDark: color,
-                          ),
-                        );
-                      } else {
-                        _updateDraft(
-                          _draft.copyWith(courseCardTitleColorDark: color),
-                        );
-                      }
-                    },
-                    onDetailColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(courseCardDetailColorDark: color),
-                    ),
-                    onWeekdayColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(weekdayBarFontColorDark: color),
-                    ),
-                    onTimeAxisColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(timeAxisFontColorDark: color),
-                    ),
-                    onAccentColorChanged: (color) => _updateDraft(
-                      _draft.copyWith(weekdayBarAccentColorDark: color),
-                    ),
-                    defaultTitleColor:
-                        TimetableSettings.defaultCourseCardTitleColor,
-                    defaultDetailColor:
-                        TimetableSettings.defaultCourseCardDetailColor,
-                    defaultWeekdayColor:
-                        TimetableSettings.defaultWeekdayBarFontColorDark,
-                    defaultTimeAxisColor:
-                        TimetableSettings.defaultTimeAxisFontColorDark,
-                    defaultAccentColor:
-                        TimetableSettings.defaultWeekdayBarAccentColorDark,
+                  ).colorScheme.surfaceContainerHigh,
+                  titleColor: _draft.courseCardTitleColorDark,
+                  detailColor: _draft.courseCardDetailColorDark,
+                  weekdayColor: _draft.weekdayBarFontColorDark,
+                  timeAxisColor: _draft.timeAxisFontColorDark,
+                  accentColor: _draft.weekdayBarAccentColorDark,
+                  onTitleColorChanged: (color) {
+                    if (_draft.linkCourseCardColors) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          courseCardTitleColorDark: color,
+                          courseCardDetailColorDark: color,
+                        ),
+                      );
+                    } else {
+                      _updateDraft(
+                        _draft.copyWith(courseCardTitleColorDark: color),
+                      );
+                    }
+                  },
+                  onDetailColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(courseCardDetailColorDark: color),
                   ),
-                ],
-              ),
+                  onWeekdayColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(weekdayBarFontColorDark: color),
+                  ),
+                  onTimeAxisColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(timeAxisFontColorDark: color),
+                  ),
+                  onAccentColorChanged: (color) => _updateDraft(
+                    _draft.copyWith(weekdayBarAccentColorDark: color),
+                  ),
+                  defaultTitleColor:
+                      TimetableSettings.defaultCourseCardTitleColor,
+                  defaultDetailColor:
+                      TimetableSettings.defaultCourseCardDetailColor,
+                  defaultWeekdayColor:
+                      TimetableSettings.defaultWeekdayBarFontColorDark,
+                  defaultTimeAxisColor:
+                      TimetableSettings.defaultTimeAxisFontColorDark,
+                  defaultAccentColor:
+                      TimetableSettings.defaultWeekdayBarAccentColorDark,
+                ),
+              ],
             ),
           ],
         ),
