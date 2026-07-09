@@ -31,9 +31,12 @@ flutter run -d android --flavor dev
 ### 发版前必跑（与 CI / Release 一致）
 
 ```bash
+dart format .      # 含文件末尾换行；勿用脚本手改 .dart 格式
 flutter analyze    # 严格模式，warning 也会失败
 flutter test
 ```
+
+AI / 协作者约定见 [.cursor/rules/dart-source-editing.mdc](./.cursor/rules/dart-source-editing.mdc)（Cursor 会自动注入）。
 
 可选本地集成测试：
 

@@ -6,9 +6,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../../models/timetable_settings.dart';
-import '../../../services/frosted_blur_service.dart';
 import '../hyperos_theme.dart';
+import 'frosted_appearance.dart';
 import 'frosted_capture.dart';
 
 class _BackdropRequest {
@@ -31,9 +30,17 @@ class _BackdropRequest {
   }
 }
 
+typedef FrostedImageBlur =
+    Future<ui.Image?> Function(
+      ui.Image source, {
+      required double sigmaPx,
+      required bool disposeSource,
+    });
+
 /// Schedules downsampled captures and supplies cached blur images for CFH headers.
 class FrostedHeaderController extends ChangeNotifier {
-  FrostedHeaderController();
+  FrostedHeaderController({FrostedImageBlur? blurImage})
+    : _blurImage = blurImage;
 
   /// Fast crop refresh while scrolling (target ~60fps feel).
   static const _scrollUpdateThrottle = Duration(milliseconds: 16);
@@ -46,9 +53,9 @@ class FrostedHeaderController extends ChangeNotifier {
 
   static const _idleDebounce = Duration(milliseconds: 100);
 
-  /// Keep in sync with [TimetableSettings.defaultFrostedSheetBlurSigma].
-  static const _blurSigmaLogical =
-      TimetableSettings.defaultFrostedSheetBlurSigma;
+  static const _blurSigmaLogical = kDefaultFrostedSheetBlurSigma;
+
+  final FrostedImageBlur? _blurImage;
 
   GlobalKey? _boundaryKey;
   bool _captureEnabled = false;
@@ -488,7 +495,13 @@ class FrostedHeaderController extends ChangeNotifier {
     required ui.Image previewStrip,
   }) async {
     final sigmaPx = _blurSigmaLogical * FrostedCapture.headerPixelRatio;
-    final blurredFull = await FrostedBlurService.blurImage(
+    final blur = _blurImage;
+    if (blur == null) {
+      _releaseImage(stripWithBleed);
+      _flushPendingIfScrolling();
+      return;
+    }
+    final blurredFull = await blur(
       stripWithBleed,
       sigmaPx: sigmaPx,
       disposeSource: false,

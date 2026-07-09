@@ -23,7 +23,7 @@ class HyperosRootPage extends StatelessWidget {
     this.backgroundColor,
     this.headerDecoration,
     this.headerStyle,
-    this.resizeToAvoidBottomInset = true,
+    this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
   });
 
@@ -38,6 +38,9 @@ class HyperosRootPage extends StatelessWidget {
   final Color? backgroundColor;
   final BoxDecoration? headerDecoration;
   final FHeaderStyleDelta? headerStyle;
+
+  /// Defaults to false so modal sheets/dialogs handle keyboard insets themselves
+  /// without lifting the page behind them. Enable on inline form subpages.
   final bool resizeToAvoidBottomInset;
 
   /// When false, the header stacks above content (no blur overlay). Use for
@@ -78,6 +81,7 @@ class HyperosSubpage extends StatelessWidget {
     this.headerExtension,
     this.childPad = false,
     this.overlayHeader = true,
+    this.resizeToAvoidBottomInset = false,
   });
 
   final Widget title;
@@ -94,11 +98,16 @@ class HyperosSubpage extends StatelessWidget {
   /// Set false only when the body must not scroll under the bar.
   final bool overlayHeader;
 
+  /// Defaults to false so modal sheets/dialogs handle keyboard insets themselves
+  /// without lifting the page behind them. Enable on inline form subpages.
+  final bool resizeToAvoidBottomInset;
+
   @override
   Widget build(BuildContext context) {
     return _HyperosBlurredPage(
       childPad: childPad,
       overlayHeader: overlayHeader,
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       headerExtension: headerExtension,
       header: HyperosOverlayNestedHeader(
         prefixes:
@@ -120,7 +129,7 @@ class _HyperosBlurredPage extends StatefulWidget {
     this.headerExtension,
     this.backgroundColor,
     this.headerDecoration,
-    this.resizeToAvoidBottomInset = true,
+    this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
   });
 
@@ -146,6 +155,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   static const scrollFrostThreshold = 0.5;
 
   bool _blurSettled = false;
+
   /// True while post-frame settle callbacks are outstanding (not yet settled).
   bool _blurSettlePending = false;
   bool _contentUnderHeader = false;

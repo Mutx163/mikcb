@@ -970,6 +970,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
       description: 'HyperosSheet + HyperosChoiceGroup',
       items: _selectItemMap(l10n),
       currentValue: _selectValue,
+      cancelLabel: l10n.cancelAction,
     );
     if (!mounted || picked == null) return;
     setState(() => _selectValue = picked);

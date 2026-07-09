@@ -3,11 +3,9 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../../models/timetable_settings.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
 export 'frosted/frosted_appearance.dart';
-export 'frosted/frosted_sheet_settings_preview.dart';
 export 'frosted/frosted_header_background.dart'
     show FrostedHeaderBackground, HyperosFrostedSurface;
 import 'hyperos_miuix_spec.dart';
@@ -69,7 +67,7 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
 /// Layout helpers for HyperOS frosted top app bars.
 abstract final class HyperosBlurredHeader {
   /// Fallback blur sigma when no [FrostedAppearanceScope] is available.
-  static const blurSigma = TimetableSettings.defaultFrostedSheetBlurSigma;
+  static const blurSigma = kDefaultFrostedSheetBlurSigma;
 
   /// Tint-only scrim while blur is paused (route transition).
   static const lightTintOnlyAlpha = 0.58;

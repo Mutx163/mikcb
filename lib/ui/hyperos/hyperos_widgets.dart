@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../services/android_animation_scale_service.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_switch.dart';
@@ -499,10 +499,9 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
     setState(() => _phase = _PressPhase.idle);
   }
 
-  Duration get _postTapHighlightDuration =>
-      AndroidAnimationScaleService.scaledDuration(
-        HyperosMiuixNavigation.transitionDurationMs,
-      );
+  Duration get _postTapHighlightDuration => HyperosMotionScope.of(
+    context,
+  ).scaledDuration(HyperosMiuixNavigation.transitionDurationMs);
 
   void _holdHighlightThroughTransition() {
     _flashTimer?.cancel();

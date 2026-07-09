@@ -108,6 +108,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     final l10n = AppLocalizations.of(context)!;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
+      resizeToAvoidBottomInset: true,
       title: Text(_isEditing ? l10n.editScheduleTitle : l10n.addScheduleTitle),
       suffixes: [
         if (_isEditing)

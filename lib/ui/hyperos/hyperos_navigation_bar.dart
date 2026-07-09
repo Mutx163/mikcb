@@ -47,11 +47,8 @@ class HyperosNavigationBar extends StatelessWidget {
     final scaledLabel = MediaQuery.textScalerOf(
       context,
     ).scale(HyperosMiuixNavigationBar.labelFontSize);
-    final labelGrowth =
-        (scaledLabel - HyperosMiuixNavigationBar.labelFontSize).clamp(
-          0.0,
-          double.infinity,
-        );
+    final labelGrowth = (scaledLabel - HyperosMiuixNavigationBar.labelFontSize)
+        .clamp(0.0, double.infinity);
 
     return Material(
       color: background,

@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../models/timetable_settings.dart';
-import '../../../utils/home_page_background.dart';
-import '../hyperos_blurred_header.dart';
+import '../models/timetable_settings.dart';
+import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../utils/home_page_background.dart';
 
 /// Overlap between adjacent home frosted bands to hide backdrop seams.
 const homePageFrostedRegionSeamOverlap = 4.0;

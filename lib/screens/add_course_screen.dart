@@ -374,11 +374,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required int currentValue,
     required ValueChanged<int> onSelected,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final selected = await showHyperosSelectSheet<int>(
       context: context,
       title: title,
       items: items,
       currentValue: currentValue,
+      cancelLabel: l10n.cancelAction,
     );
     if (!mounted || selected == null || selected == currentValue) {
       return;

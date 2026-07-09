@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../services/android_animation_scale_service.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 
@@ -16,15 +16,17 @@ final RouteObserver<ModalRoute<void>> hyperosRouteObserver =
 abstract final class HyperosNavigation {
   static const Curve transitionCurve = HyperosMiuixNavigation.transitionCurve;
 
+  static Duration transitionDurationOf(BuildContext context) =>
+      HyperosMotionScope.of(
+        context,
+      ).scaledDuration(HyperosMiuixNavigation.transitionDurationMs);
+
   static Duration get transitionDuration =>
-      AndroidAnimationScaleService.scaledDuration(
-        HyperosMiuixNavigation.transitionDurationMs,
-      );
+      HyperosMotionPlatform.transitionDuration;
 
   /// Persists user speed preference and refreshes active route controllers.
-  static void applyUserTransitionSpeed(double speed) {
-    AndroidAnimationScaleService.setUserTransitionSpeed(speed);
-    HyperosPageRoute.syncTransitionDurations();
+  static void applyUserTransitionSpeed(BuildContext context, double speed) {
+    HyperosMotionScope.of(context).applyUserTransitionSpeed(speed);
   }
 
   /// Theme hook for apps that still construct [MaterialPageRoute] somewhere.
@@ -200,7 +202,7 @@ class _HyperosTransitionPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cornerRadius = AndroidAnimationScaleService.displayCornerRadiusDp;
+    final cornerRadius = HyperosMotionScope.of(context).displayCornerRadiusDp;
     final surface = HyperosColors.scaffoldBackground(context);
 
     return AnimatedBuilder(
@@ -265,7 +267,8 @@ class HyperosPageRoute<T> extends PageRoute<T> {
   Duration get transitionDuration => HyperosNavigation.transitionDuration;
 
   @override
-  Duration get reverseTransitionDuration => HyperosNavigation.transitionDuration;
+  Duration get reverseTransitionDuration =>
+      HyperosNavigation.transitionDuration;
 
   @override
   bool get maintainState => true;

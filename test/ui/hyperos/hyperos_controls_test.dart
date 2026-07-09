@@ -258,7 +258,7 @@ void main() {
 
       expect(find.byType(TextField), findsOneWidget);
       await tester.enterText(find.byType(TextField), '10.3');
-      await tester.tap(find.text('Confirm'));
+      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
       expect(value, 10.5);

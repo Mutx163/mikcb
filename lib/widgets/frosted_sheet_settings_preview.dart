@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
-import '../../../models/timetable_settings.dart';
-import '../../../providers/timetable_provider.dart';
-import '../../../widgets/timetable_week_preview.dart';
-import '../hyperos_blurred_header.dart';
-import '../hyperos_controls.dart';
-import '../hyperos_page.dart';
-import '../hyperos_theme.dart';
+import '../models/timetable_settings.dart';
+import '../providers/timetable_provider.dart';
+import '../ui/hyperos/hyperos.dart';
+import 'timetable_week_preview.dart';
 
 /// Live + interactive frosted sheet preview for appearance settings.
 class FrostedSheetSettingsPreview extends StatelessWidget {

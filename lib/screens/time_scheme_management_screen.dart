@@ -622,6 +622,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
+      resizeToAvoidBottomInset: true,
       title: Text(l10n.editTimeSchemeTitle),
       suffixes: [
         FHeaderAction(

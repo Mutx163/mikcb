@@ -153,10 +153,18 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
 
     // ScrollPosition applies `pixels -= return`; deepening top uses offset > 0.
     if (overscrollPastStart >= maxOverscroll && offset > 0) {
-      return finish('cap-top', 0, overscrollPast: overscrollPastStart.toDouble());
+      return finish(
+        'cap-top',
+        0,
+        overscrollPast: overscrollPastStart.toDouble(),
+      );
     }
     if (overscrollPastEnd >= maxOverscroll && offset < 0) {
-      return finish('cap-bottom', 0, overscrollPast: overscrollPastEnd.toDouble());
+      return finish(
+        'cap-bottom',
+        0,
+        overscrollPast: overscrollPastEnd.toDouble(),
+      );
     }
 
     final wouldOverscrollPastStart =
@@ -320,8 +328,8 @@ bool hyperosHandleOverscrollSnapBack(ScrollNotification notification) {
   final ScrollPosition? position = metrics is ScrollPosition
       ? metrics
       : notification.context
-          ?.findAncestorStateOfType<ScrollableState>()
-          ?.position;
+            ?.findAncestorStateOfType<ScrollableState>()
+            ?.position;
   if (position == null || !position.hasPixels) {
     return false;
   }

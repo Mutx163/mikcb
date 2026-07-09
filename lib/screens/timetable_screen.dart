@@ -22,7 +22,7 @@ import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
-import '../ui/hyperos/frosted/home_page_region_blur.dart';
+import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';

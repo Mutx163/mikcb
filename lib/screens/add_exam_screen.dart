@@ -80,6 +80,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
+      resizeToAvoidBottomInset: true,
       title: Text(_isEditing ? l10n.editExam : l10n.addExam),
       suffixes: [
         if (_isEditing)

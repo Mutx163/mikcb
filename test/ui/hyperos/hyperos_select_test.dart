@@ -310,6 +310,7 @@ void main() {
                     title: 'Pick one',
                     items: const {'Light': 'light', 'Dark': 'dark'},
                     currentValue: 'light',
+                    cancelLabel: 'Cancel',
                   );
                 },
                 child: const Text('open'),

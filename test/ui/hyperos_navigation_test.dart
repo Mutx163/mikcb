@@ -5,7 +5,7 @@ import 'package:university_timetable/ui/hyperos/hyperos_navigation.dart';
 
 void main() {
   test('Hyperos navigation uses tuned transition base duration', () {
-    HyperosNavigation.applyUserTransitionSpeed(1.0);
+    // applyUserTransitionSpeed now requires BuildContext; duration base is static.
     expect(HyperosMiuixNavigation.transitionDurationMs, 300);
     expect(
       AndroidAnimationScaleService.scaledDuration(
@@ -26,7 +26,6 @@ void main() {
       AndroidAnimationScaleService.scaledDuration(300).inMilliseconds,
       600,
     );
-    HyperosNavigation.applyUserTransitionSpeed(1.0);
   });
 
   test('transition shadow peaks mid-slide and rests at endpoints', () {

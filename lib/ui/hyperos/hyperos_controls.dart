@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:university_timetable/l10n/app_localizations.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
@@ -457,6 +456,8 @@ Future<double?> showHyperosSliderValueDialog({
   required double min,
   required double max,
   required int? divisions,
+  required String cancelLabel,
+  required String confirmLabel,
   String? helper,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -469,6 +470,7 @@ Future<double?> showHyperosSliderValueDialog({
     isScrollControlled: true,
     isDismissible: true,
     enableDrag: true,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     barrierColor: dimming,
     builder: (sheetContext) {
@@ -482,6 +484,8 @@ Future<double?> showHyperosSliderValueDialog({
           min: min,
           max: max,
           divisions: divisions,
+          cancelLabel: cancelLabel,
+          confirmLabel: confirmLabel,
           helper: helper,
         ),
       );
@@ -496,6 +500,8 @@ class _HyperosSliderValueSheetBody extends StatefulWidget {
     required this.min,
     required this.max,
     required this.divisions,
+    required this.cancelLabel,
+    required this.confirmLabel,
     this.helper,
   });
 
@@ -504,6 +510,8 @@ class _HyperosSliderValueSheetBody extends StatefulWidget {
   final double min;
   final double max;
   final int? divisions;
+  final String cancelLabel;
+  final String confirmLabel;
   final String? helper;
 
   @override
@@ -533,7 +541,9 @@ class _HyperosSliderValueSheetBodyState
   void _submit() {
     final parsed = double.tryParse(_controller.text.trim());
     if (parsed == null) {
-      setState(() => _errorText = widget.helper ?? '${widget.min} - ${widget.max}');
+      setState(
+        () => _errorText = widget.helper ?? '${widget.min} - ${widget.max}',
+      );
       return;
     }
     final normalized = _hyperosNormalizeSliderValue(
@@ -547,7 +557,6 @@ class _HyperosSliderValueSheetBodyState
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final background = isDark
         ? HyperosMiuixDarkColors.surfaceContainer
@@ -587,7 +596,10 @@ class _HyperosSliderValueSheetBodyState
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
-                  helper: _errorText ?? widget.helper ?? '${widget.min} - ${widget.max}',
+                  helper:
+                      _errorText ??
+                      widget.helper ??
+                      '${widget.min} - ${widget.max}',
                   onSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: 20),
@@ -595,7 +607,7 @@ class _HyperosSliderValueSheetBodyState
                   children: [
                     Expanded(
                       child: HyperosButton(
-                        label: l10n.cancelAction,
+                        label: widget.cancelLabel,
                         variant: HyperosButtonVariant.secondary,
                         expand: true,
                         onPressed: () => Navigator.of(context).pop(),
@@ -604,7 +616,7 @@ class _HyperosSliderValueSheetBodyState
                     const SizedBox(width: 12),
                     Expanded(
                       child: HyperosButton(
-                        label: l10n.confirmAction,
+                        label: widget.confirmLabel,
                         expand: true,
                         onPressed: _submit,
                       ),
@@ -654,6 +666,9 @@ class HyperosSliderTile extends StatelessWidget {
     if (!enabled || onChanged == null) {
       return;
     }
+    final materialL10n = MaterialLocalizations.of(context);
+    final cancelLabel = materialL10n.cancelButtonLabel;
+    final confirmLabel = materialL10n.okButtonLabel;
     final result = await showHyperosSliderValueDialog(
       context: context,
       title: dialogTitle ?? title ?? valueLabel ?? 'Slider',
@@ -661,6 +676,8 @@ class HyperosSliderTile extends StatelessWidget {
       min: min,
       max: max,
       divisions: divisions,
+      cancelLabel: cancelLabel,
+      confirmLabel: confirmLabel,
       helper: dialogHelper,
     );
     if (result == null || result == value) {
@@ -683,12 +700,36 @@ class HyperosSliderTile extends StatelessWidget {
     );
     final titleStyle = HyperosTypography.listTitle(context);
     final rowEnabled = tapToEdit && enabled && onChanged != null;
-    final displayValue = valueLabel ?? _hyperosSliderInputText(value);
+    // When [title] already embeds the value (common in settings cards), only
+    // show a separate trailing label when [valueLabel] is provided explicitly.
+    final displayValue =
+        valueLabel ?? (title == null ? _hyperosSliderInputText(value) : '');
     final row = Row(
       children: [
-        if (title != null) Expanded(child: Text(title!, style: titleStyle)),
+        if (title != null)
+          Expanded(
+            child: Text(
+              title!,
+              style: titleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          )
+        else
+          const Spacer(),
         if (displayValue.isNotEmpty) ...[
-          Text(displayValue, style: labelStyle),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: HyperosMiuixDropdown.maxItemTextWidth,
+            ),
+            child: Text(
+              displayValue,
+              style: labelStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+            ),
+          ),
           if (rowEnabled)
             Padding(
               padding: const EdgeInsets.only(

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/timetable_settings.dart';
+/// Default frosted-glass tuning (aligned with app timetable defaults).
+const kDefaultFrostedBlurEnabled = true;
+const kDefaultFrostedSheetBlurSigma = 15.0;
+const kDefaultFrostedSheetTintAlpha = 0.70;
+const kDefaultFrostedSheetBarrierAlpha = 0.20;
 
 /// User-tunable frosted glass appearance for home sheets and related surfaces.
 class FrostedAppearance {
@@ -8,23 +12,14 @@ class FrostedAppearance {
     required this.sheetBlurSigma,
     required this.sheetTintAlpha,
     required this.sheetBarrierAlpha,
-    this.blurEnabled = TimetableSettings.defaultFrostedBlurEnabled,
+    this.blurEnabled = kDefaultFrostedBlurEnabled,
   });
 
   static const defaults = FrostedAppearance(
-    sheetBlurSigma: TimetableSettings.defaultFrostedSheetBlurSigma,
-    sheetTintAlpha: TimetableSettings.defaultFrostedSheetTintAlpha,
-    sheetBarrierAlpha: TimetableSettings.defaultFrostedSheetBarrierAlpha,
+    sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
+    sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
+    sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
   );
-
-  factory FrostedAppearance.fromSettings(TimetableSettings settings) {
-    return FrostedAppearance(
-      sheetBlurSigma: settings.frostedSheetBlurSigma,
-      sheetTintAlpha: settings.frostedSheetTintAlpha,
-      sheetBarrierAlpha: settings.frostedSheetBarrierAlpha,
-      blurEnabled: settings.frostedBlurEnabled,
-    );
-  }
 
   /// BackdropFilter sigma for frosted panels (logical pixels).
   final double sheetBlurSigma;
@@ -37,6 +32,23 @@ class FrostedAppearance {
 
   /// Global backdrop blur master switch.
   final bool blurEnabled;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrostedAppearance &&
+          blurEnabled == other.blurEnabled &&
+          sheetBlurSigma == other.sheetBlurSigma &&
+          sheetTintAlpha == other.sheetTintAlpha &&
+          sheetBarrierAlpha == other.sheetBarrierAlpha;
+
+  @override
+  int get hashCode => Object.hash(
+    blurEnabled,
+    sheetBlurSigma,
+    sheetTintAlpha,
+    sheetBarrierAlpha,
+  );
 }
 
 /// Provides [FrostedAppearance] to frosted HyperOS widgets.
@@ -58,11 +70,7 @@ class FrostedAppearanceScope extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(FrostedAppearanceScope oldWidget) {
-    return appearance.sheetBlurSigma != oldWidget.appearance.sheetBlurSigma ||
-        appearance.sheetTintAlpha != oldWidget.appearance.sheetTintAlpha ||
-        appearance.sheetBarrierAlpha !=
-            oldWidget.appearance.sheetBarrierAlpha ||
-        appearance.blurEnabled != oldWidget.appearance.blurEnabled;
+  bool updateShouldNotify(covariant FrostedAppearanceScope oldWidget) {
+    return appearance != oldWidget.appearance;
   }
 }

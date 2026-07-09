@@ -459,11 +459,13 @@ class _CourseRescheduleSheetBodyState
     required int current,
     required ValueChanged<int> onSelected,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final selected = await showHyperosSelectSheet<int>(
       context: context,
       title: title,
       items: items,
       currentValue: current,
+      cancelLabel: l10n.cancelAction,
     );
     if (!mounted || selected == null || selected == current) {
       return;

@@ -35,6 +35,10 @@ import 'services/frosted_blur_service.dart';
 import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
+import 'ui/hyperos/hyperos_layout_debug_tuning.dart';
+import 'ui/hyperos/hyperos_motion.dart';
+import 'ui/hyperos_app_bridge.dart';
+import 'ui/hyperos_motion_bridge.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -346,6 +350,7 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
       AndroidAnimationScaleService.ensureInitialized(),
       FrostedBlurService.probeNativeSupport(),
     ]);
+    configureHyperosMotionFromAndroid();
     if (!kReleaseMode) {
       registerHyperosLayoutDebugTuning();
       await loadDebugTuningPreferencesIfNeeded();
@@ -434,10 +439,10 @@ class MyApp extends StatelessWidget {
                 builder: (context, child) {
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
-                  final frostedAppearance = FrostedAppearance.fromSettings(
-                    context.watch<TimetableProvider>().settings,
-                  );
-                  return FrostedAppearanceScope(
+                  final frostedAppearance =
+                      context.watch<TimetableProvider>().settings.frostedAppearance;
+                  return HyperosMotionHost(
+                    child: FrostedAppearanceScope(
                     appearance: frostedAppearance,
                     child: FTheme(
                       data: isDark ? foruiDark : foruiLight,
@@ -451,6 +456,7 @@ class MyApp extends StatelessWidget {
                         ),
                       ),
                     ),
+                  ),
                   );
                 },
                 home: const AppEntryScreen(),
@@ -495,7 +501,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(AndroidAnimationScaleService.refresh());
+      unawaited(refreshHyperosMotionFromAndroid());
       unawaited(_cloudSyncCoordinator.maybePullRemote());
     }
   }

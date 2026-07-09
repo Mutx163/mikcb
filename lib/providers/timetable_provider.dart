@@ -15,7 +15,7 @@ import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
-import '../ui/hyperos/hyperos_navigation.dart';
+import '../ui/hyperos_motion_bridge.dart';
 import '../services/app_analytics.dart';
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
@@ -551,9 +551,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _syncNativeRuntimePreferences() async {
-    HyperosNavigation.applyUserTransitionSpeed(
-      _settings.pageTransitionSpeed,
-    );
+    applyHyperosUserTransitionSpeed(_settings.pageTransitionSpeed);
     await AppLogService.instance.updateLoggingEnabled(
       _settings.liveEnableLocalDiagnostics,
     );

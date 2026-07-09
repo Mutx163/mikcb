@@ -28,6 +28,8 @@ import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
 import '../ui/debug/debug.dart';
+import '../ui/hyperos_app_bridge.dart';
+import '../widgets/frosted_sheet_settings_preview.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
@@ -537,7 +539,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return FrostedAppearanceScope(
-      appearance: FrostedAppearance.fromSettings(_draft),
+      appearance: _draft.frostedAppearance,
       child: HyperosSubpage(
         onBack: () => Navigator.pop(context),
         title: Text(l10n.appearanceTitle),
@@ -3303,7 +3305,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     );
   }
 
-  static const _layoutSectionCount = 14;
+  static const _layoutSectionCount = 15;
 
   Widget _buildLayoutSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
@@ -3335,7 +3337,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      1 => HyperosControlCard(
+      1 => const HyperosSectionGap(),
+      2 => HyperosControlCard(
         subtitle: l10n.pageTransitionSpeedSubtitle,
         edgeToEdge: true,
         child: HyperosSliderTile(
@@ -3352,7 +3355,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             ).inMilliseconds,
           ),
           onChanged: (value) {
-            HyperosNavigation.applyUserTransitionSpeed(value);
+            HyperosNavigation.applyUserTransitionSpeed(context, value);
             _updateDraft(
               _draft.copyWith(pageTransitionSpeed: value),
               debounce: true,
@@ -3360,8 +3363,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           },
         ),
       ),
-      2 => const HyperosSectionGap(),
-      3 => HyperosControlCard(
+      3 => const HyperosSectionGap(),
+      4 => HyperosControlCard(
         subtitle: l10n.layoutEntrySubtitle,
         edgeToEdge: true,
         child: Column(
@@ -3501,9 +3504,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ],
         ),
       ),
-      4 => const HyperosSectionGap(),
-      5 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
-      6 => HyperosListGroup(
+      5 => const HyperosSectionGap(),
+      6 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
+      7 => HyperosListGroup(
         children: [
           HyperosSwitchTile(
             title: l10n.showCourseNameTitle,
@@ -3578,11 +3581,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      7 => HyperosSectionDescription(
+      8 => HyperosSectionDescription(
         text: l10n.layoutCourseCardDisplaySubtitle,
       ),
-      8 => const HyperosSectionGap(),
-      9 => HyperosControlCard(
+      9 => const HyperosSectionGap(),
+      10 => HyperosControlCard(
         edgeToEdge: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3613,8 +3616,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ],
         ),
       ),
-      10 => const HyperosSectionGap(),
-      11 => HyperosControlCard(
+      11 => const HyperosSectionGap(),
+      12 => HyperosControlCard(
         title: l10n.layoutConflictOpacityLabel(
           (_draft.timetableConflictCourseOpacity * 100).round(),
         ),
@@ -3630,8 +3633,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ),
       ),
-      12 => const HyperosSectionGap(),
-      13 => HyperosControlCard(
+      13 => const HyperosSectionGap(),
+      14 => HyperosControlCard(
         title: l10n.textColorTitle,
         subtitle: l10n.textColorSubtitle,
         edgeToEdge: true,

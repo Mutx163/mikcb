@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:university_timetable/l10n/app_localizations.dart';
+
 import 'package:flutter/services.dart';
 
 import 'hyperos_controls.dart';
@@ -107,7 +107,8 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
     final screen = MediaQuery.sizeOf(context);
     const margin = 12.0;
     final safeTop = MediaQuery.paddingOf(context).top + margin;
-    final safeBottom = screen.height - MediaQuery.paddingOf(context).bottom - margin;
+    final safeBottom =
+        screen.height - MediaQuery.paddingOf(context).bottom - margin;
     final estimatedHeight = hyperosSelectPopupEstimatedHeight(entries.length);
     final layout = hyperosSelectPopupLayout(
       anchorRect: anchorRect,
@@ -195,11 +196,10 @@ Future<T?> showHyperosSelectSheet<T>({
   required Map<String, T> items,
   required T? currentValue,
   String? description,
-  String? cancelLabel,
+  required String cancelLabel,
 }) {
   final entries = items.entries.toList(growable: false);
-  final resolvedCancelLabel =
-      cancelLabel ?? AppLocalizations.of(context)!.cancelAction;
+  final resolvedCancelLabel = cancelLabel;
 
   return showHyperosSheet<T>(
     context: context,
@@ -420,6 +420,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           description: widget.sheetDescription,
           items: widget.items,
           currentValue: widget.value,
+          cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
         );
       } else {
         selected = await showHyperosSelectPopup<T>(
