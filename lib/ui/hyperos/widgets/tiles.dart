@@ -186,7 +186,7 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
     final cardScope = HyperosControlCardScope.maybeOf(context);
     final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
     final clipHighlightBottom =
-        _showHighlight && cardScope != null && (cardRowScope?.isLast ?? true);
+        _showHighlight && cardScope != null && cardRowScope != null && cardRowScope.isLast;
 
     Widget highlighted = ColoredBox(
       color: _showHighlight ? highlight : bg,
