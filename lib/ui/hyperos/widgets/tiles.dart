@@ -459,7 +459,7 @@ class HyperosChoiceTile extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
-    required this.selected,
+    this.selected = false,
     this.onTap,
     this.enabled = true,
     this.iconAccent,
