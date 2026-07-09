@@ -59,11 +59,21 @@ class HyperosCard extends StatelessWidget {
   }
 }
 
-/// Summary card: white rounded card with a single summary line.
+/// Summary card: white rounded card with optional leading, title, subtitle.
 class HyperosSummaryCard extends StatelessWidget {
-  const HyperosSummaryCard({super.key, required this.summary, this.onTap});
+  const HyperosSummaryCard({
+    super.key,
+    this.leading,
+    this.title,
+    this.subtitle,
+    this.summary,
+    this.onTap,
+  });
 
-  final String summary;
+  final Widget? leading;
+  final String? title;
+  final String? subtitle;
+  final String? summary;
   final VoidCallback? onTap;
 
   @override
@@ -75,13 +85,45 @@ class HyperosSummaryCard extends StatelessWidget {
       onTap: onTap,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
-      child: hyperosListRowShell(
-        padding: hyperosRowPadding(context),
-        child: Text(
-          summary,
-          style: HyperosTypography.listTitle(context),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            if (leading != null) ...[
+              leading!,
+              const SizedBox(width: 16),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (summary != null)
+                    Text(
+                      summary!,
+                      style: HyperosTypography.listTitle(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  if (title != null)
+                    Text(
+                      title!,
+                      style: HyperosTypography.listTitle(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: HyperosTypography.listDetail(context),
+                      softWrap: true,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

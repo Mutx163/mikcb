@@ -450,7 +450,7 @@ class HyperosActionTile extends StatelessWidget {
   }
 }
 
-enum HyperosChoiceVariant { radio, checkmark }
+enum HyperosChoiceVariant { radio, checkmark, dialog }
 
 /// Miuix-styled choice row: colored circle, title, optional subtitle, trailing
 /// radio / checkmark indicator. Tapping the row selects when enabled.
