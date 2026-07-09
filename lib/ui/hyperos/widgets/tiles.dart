@@ -645,14 +645,14 @@ class HyperosSummaryCard extends StatelessWidget {
 class HyperosNavTile extends StatelessWidget {
   const HyperosNavTile({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     this.onTap,
     this.details,
     this.iconAccent,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String? details;
   final VoidCallback? onTap;
@@ -669,11 +669,13 @@ class HyperosNavTile extends StatelessWidget {
       padding: hyperosChevronRowPadding(context),
       child: Row(
         children: [
-          HyperosIconBadge(
-            icon: icon,
-            accent: iconAccent ?? HyperosIconColors.blue,
-          ),
-          const SizedBox(width: HyperosTokens.rowContentGap),
+          if (icon != null) ...[
+            HyperosIconBadge(
+              icon: icon!,
+              accent: iconAccent ?? HyperosIconColors.blue,
+            ),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+          ],
           Expanded(
             child: Text(
               title,
