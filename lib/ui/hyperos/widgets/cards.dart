@@ -72,6 +72,9 @@ class HyperosSummaryCard extends StatelessWidget {
     this.onTap,
   });
 
+  static const double leadingSize = 44;
+  static const double leadingRadius = 12;
+
   final Widget? leading;
   final String? title;
   final String? subtitle;
