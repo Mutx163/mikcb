@@ -267,9 +267,11 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 const SizedBox(height: 4),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal:
-                        HyperosControlCardScope.defaultHorizontalPadding,
+                  padding: const EdgeInsets.fromLTRB(
+                    HyperosControlCardScope.defaultHorizontalPadding,
+                    0,
+                    HyperosControlCardScope.defaultHorizontalPadding,
+                    HyperosControlCardScope.defaultBodyBottomInset,
                   ),
                   child: Text(
                     l10n.duringEndTimeDisplayHelp,
