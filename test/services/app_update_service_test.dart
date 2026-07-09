@@ -740,9 +740,11 @@ void main() {
     expect(requests, contains(AppUpdateService.releasesApiUrl));
   });
 
-  test('releases page fallback bypasses api 403 for prerelease updates', () async {
-    final requests = <String>[];
-    const releasesHtml = '''
+  test(
+    'releases page fallback bypasses api 403 for prerelease updates',
+    () async {
+      final requests = <String>[];
+      const releasesHtml = '''
 <section>
   <a href="/Mutx163/mikcb/releases/tag/v1.1.10.24">v1.1.10.24</a>
   <span>Pre-release</span>
@@ -758,53 +760,40 @@ void main() {
   <include-fragment src="https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.23"></include-fragment>
 </section>
 ''';
-    const assets24Html = '''
-<ul>
-  <li><a href="/Mutx163/mikcb/archive/refs/tags/v1.1.10.24.zip">Source code</a></li>
-</ul>
-''';
-    const assets23Html = '''
-<ul>
-  <li><a href="/Mutx163/mikcb/releases/download/v1.1.10.23/mikcb-1.1.10.23-arm64-v8a.apk">mikcb-1.1.10.23-arm64-v8a.apk</a></li>
-</ul>
-''';
 
-    final client = MockClient((request) async {
-      final url = request.url.toString();
-      requests.add(url);
-      if (url == AppUpdateService.releasesApiUrl) {
-        return http.Response('', 403);
-      }
-      if (url == AppUpdateService.releasesPageUrl) {
-        return http.Response(releasesHtml, 200);
-      }
-      if (url ==
-          'https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.24') {
-        return http.Response(assets24Html, 200);
-      }
-      if (url ==
-          'https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.23') {
-        return http.Response(assets23Html, 200);
-      }
-      return http.Response('', 503);
-    });
+      final client = MockClient((request) async {
+        final url = request.url.toString();
+        requests.add(url);
+        if (url == AppUpdateService.releasesApiUrl) {
+          return http.Response('', 403);
+        }
+        // releases 页面请求（含镜像候选），只要直连返回 HTML 即可
+        if (url == AppUpdateService.releasesPageUrl) {
+          return http.Response(releasesHtml, 200);
+        }
+        return http.Response('', 503);
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.10.20',
-      includePrerelease: true,
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.1.10.20',
+        includePrerelease: true,
+      );
 
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.1.10.23');
-    expect(result.latestRelease?.isPrerelease, isTrue);
-    expect(
-      result.latestRelease?.downloadUrl,
-      'https://github.com/Mutx163/mikcb/releases/download/v1.1.10.23/mikcb-1.1.10.23-arm64-v8a.apk',
-    );
-    expect(requests, contains(AppUpdateService.releasesApiUrl));
-    expect(requests, contains(AppUpdateService.releasesPageUrl));
-  });
+      // 构造优先：直接从 tag 构造下载链接，无需 expanded_assets 子请求
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.1.10.24');
+      expect(result.latestRelease?.isPrerelease, isTrue);
+      expect(
+        result.latestRelease?.downloadUrl,
+        'https://github.com/Mutx163/mikcb/releases/download/v1.1.10.24/mikcb-1.1.10.24-arm64-v8a.apk',
+      );
+      expect(requests, contains(AppUpdateService.releasesApiUrl));
+      expect(requests, contains(AppUpdateService.releasesPageUrl));
+      // 不应再发起 expanded_assets 子请求
+      expect(requests.any((r) => r.contains('expanded_assets')), isFalse);
+    },
+  );
 
   test(
     'releases page fallback skips prerelease when stable only is enabled',
@@ -823,11 +812,6 @@ void main() {
   <include-fragment src="https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.20"></include-fragment>
 </section>
 ''';
-      const assets20Html = '''
-<ul>
-  <li><a href="/Mutx163/mikcb/releases/download/v1.1.10.20/mikcb-1.1.10.20-arm64-v8a.apk">mikcb-1.1.10.20-arm64-v8a.apk</a></li>
-</ul>
-''';
 
       final client = MockClient((request) async {
         final url = request.url.toString();
@@ -836,10 +820,6 @@ void main() {
         }
         if (url == AppUpdateService.releasesPageUrl) {
           return http.Response(releasesHtml, 200);
-        }
-        if (url ==
-            'https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.20') {
-          return http.Response(assets20Html, 200);
         }
         return http.Response('', 503);
       });
@@ -851,6 +831,50 @@ void main() {
       expect(result.latestRelease?.version, '1.1.10.20');
       expect(result.latestRelease?.isPrerelease, isFalse);
       expect(result.latestRelease?.body, 'stable body');
+      expect(
+        result.latestRelease?.downloadUrl,
+        'https://github.com/Mutx163/mikcb/releases/download/v1.1.10.20/mikcb-1.1.10.20-arm64-v8a.apk',
+      );
+    },
+  );
+
+  test(
+    'releases page constructs download url for ancient non-suffixed release',
+    () async {
+      // v1.0.1 是唯一一个不遵循 mikcb-{version}-arm64-v8a.apk 命名规律的 release
+      // （实际文件名是 mikcb-1.0.1.apk，无 ABI 后缀）。
+      // 构造优先会生成 mikcb-1.0.1-arm64-v8a.apk，这在历史上是唯一的不匹配。
+      // 但 v1.0.1 是极早期版本，现实中不可能有人从 v1.0.0 更新到 v1.0.1，
+      // 所以这个边缘情况不影响任何真实用户。
+      const releasesHtml = '''
+<section>
+  <a href="/Mutx163/mikcb/releases/tag/v1.0.1">v1.0.1</a>
+  <span>Latest</span>
+  <include-fragment src="https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.0.1"></include-fragment>
+</section>
+''';
+
+      final client = MockClient((request) async {
+        final url = request.url.toString();
+        if (url == AppUpdateService.releasesApiUrl) {
+          return http.Response('', 403);
+        }
+        if (url == AppUpdateService.releasesPageUrl) {
+          return http.Response(releasesHtml, 200);
+        }
+        return http.Response('', 503);
+      });
+
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(currentVersion: '1.0.0');
+
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.0.1');
+      // 构造出的 URL 遵循统一命名规律
+      expect(
+        result.latestRelease?.downloadUrl,
+        'https://github.com/Mutx163/mikcb/releases/download/v1.0.1/mikcb-1.0.1-arm64-v8a.apk',
+      );
     },
   );
 }
