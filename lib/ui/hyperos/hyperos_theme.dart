@@ -56,6 +56,78 @@ abstract final class HyperosColors {
         : HyperosTokens.sectionLabelColor;
   }
 
+  // --- PR3: 新增语义颜色 ---
+
+  /// Primary accent color (buttons, active indicators).
+  static Color primary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.primary
+        : HyperosMiuixLightColors.primary;
+  }
+
+  /// Surface container for sheets, popups, toolbars.
+  static Color surfaceContainer(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.surfaceContainer
+        : HyperosMiuixLightColors.surfaceContainer;
+  }
+
+  /// Highest surface container for elevated elements.
+  static Color surfaceContainerHighest(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.surfaceContainerHighest
+        : HyperosMiuixLightColors.surfaceContainerHighest;
+  }
+
+  /// Error / destructive color.
+  static Color error(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.error
+        : HyperosMiuixLightColors.error;
+  }
+
+  /// On-error color (text/icon on error background).
+  static Color onError(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onError
+        : HyperosMiuixLightColors.onError;
+  }
+
+  /// Outline / divider color.
+  static Color outline(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.outline
+        : HyperosMiuixLightColors.outline;
+  }
+
+  /// Divider line color.
+  static Color dividerLine(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.dividerLine
+        : HyperosMiuixLightColors.dividerLine;
+  }
+
+  /// Slider background color.
+  static Color sliderBackground(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.sliderBackground
+        : HyperosMiuixLightColors.sliderBackground;
+  }
+
+  /// On-surface color (text on surface).
+  static Color onSurface(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSurface
+        : HyperosMiuixLightColors.onSurface;
+  }
+
+  /// Window dimming color for modal barriers.
+  static Color windowDimming(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.windowDimming
+        : HyperosMiuixLightColors.windowDimming;
+  }
+
   /// Status bar icons/background aligned to a solid page or header color.
   static SystemUiOverlayStyle systemOverlayForBackground(Color background) {
     final light = background.computeLuminance() > 0.5;
