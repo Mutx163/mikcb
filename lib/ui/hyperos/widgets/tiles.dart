@@ -496,7 +496,9 @@ class HyperosChoiceTile extends StatelessWidget {
     final primaryText = HyperosColors.primaryText(context);
     final titleStyle = HyperosTypography.listTitle(context).copyWith(
       color: effectiveEnabled
-          ? primaryText
+          ? (selected && highlightSelectedText
+              ? HyperosColors.primary(context)
+              : primaryText)
           : primaryText.withValues(alpha: 0.45),
     );
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
