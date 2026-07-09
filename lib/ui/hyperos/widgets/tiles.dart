@@ -186,7 +186,10 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
     final cardScope = HyperosControlCardScope.maybeOf(context);
     final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
     final clipHighlightBottom =
-        _showHighlight && cardScope != null && cardRowScope != null && cardRowScope.isLast;
+        _showHighlight &&
+        cardScope != null &&
+        cardRowScope != null &&
+        cardRowScope.isLast;
 
     Widget highlighted = ColoredBox(
       color: _showHighlight ? highlight : bg,
@@ -471,6 +474,7 @@ class HyperosChoiceTile extends StatelessWidget {
     this.trailing,
     this.prefix,
     this.dividerIndent,
+    this.titleStyle,
   });
 
   final String title;
@@ -488,19 +492,28 @@ class HyperosChoiceTile extends StatelessWidget {
   final Widget? prefix;
   final double? dividerIndent;
 
+  /// Optional override merged on top of the default list-title style.
+  ///
+  /// Callers use this to render each option in its own font family so users
+  /// can preview the typeface directly inside the select list.
+  final TextStyle? titleStyle;
+
   @override
   Widget build(BuildContext context) {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
     final effectiveEnabled = enabled && onTap != null;
     final primaryText = HyperosColors.primaryText(context);
-    final titleStyle = HyperosTypography.listTitle(context).copyWith(
+    final baseTitleStyle = HyperosTypography.listTitle(context).copyWith(
       color: effectiveEnabled
           ? (selected && highlightSelectedText
-              ? HyperosColors.primary(context)
-              : primaryText)
+                ? HyperosColors.primary(context)
+                : primaryText)
           : primaryText.withValues(alpha: 0.45),
     );
+    final resolvedTitleStyle = titleStyle != null
+        ? baseTitleStyle.merge(titleStyle)
+        : baseTitleStyle;
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
       color: effectiveEnabled
           ? HyperosColors.secondaryText(context)
@@ -533,7 +546,7 @@ class HyperosChoiceTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: titleStyle,
+                  style: resolvedTitleStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -551,10 +564,7 @@ class HyperosChoiceTile extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 6),
-            trailing!,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 6), trailing!],
           if (selected) ...[
             const SizedBox(width: 6),
             HyperosSelectedCheckmark(
@@ -591,90 +601,7 @@ class HyperosChoiceGroup extends StatelessWidget {
   Widget build(BuildContext context) => HyperosListGroup(children: children);
 }
 
-/// HyperOS card: white rounded card with optional title, subtitle, and child.
-class HyperosCard extends StatelessWidget {
-  const HyperosCard({
-    super.key,
-    this.title,
-    this.subtitle,
-    required this.child,
-  });
-
-  final String? title;
-  final String? subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasTitle = title != null && title!.isNotEmpty;
-    final hasSubtitle = subtitle != null && subtitle!.isNotEmpty;
-
-    return SizedBox(
-      width: double.infinity,
-      child: Material(
-        color: HyperosColors.card(context),
-        shape: HyperosTheme.cardShape(),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            hasTitle || hasSubtitle ? 16 : 0,
-            16,
-            16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (hasTitle)
-                Text(title!, style: HyperosTypography.title(context)),
-              if (hasTitle && hasSubtitle) const SizedBox(height: 2),
-              if (hasSubtitle)
-                Text(
-                  subtitle!,
-                  style: HyperosTypography.sectionDescription(context),
-                  softWrap: true,
-                ),
-              if (hasTitle || hasSubtitle) const SizedBox(height: 12),
-              child,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Summary card: white rounded card with a single summary line.
-class HyperosSummaryCard extends StatelessWidget {
-  const HyperosSummaryCard({super.key, required this.summary, this.onTap});
-
-  final String summary;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cardColor = HyperosColors.card(context);
-    final highlightColor = HyperosColors.rowHighlight(context);
-
-    return HyperosPressableRow(
-      onTap: onTap,
-      backgroundColor: cardColor,
-      highlightColor: highlightColor,
-      child: hyperosListRowShell(
-        padding: hyperosRowPadding(context),
-        child: Text(
-          summary,
-          style: HyperosTypography.listTitle(context),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
-}
-
-/// Navigation row: colored icon badge, title, optional detail, chevron.
+/// Navigation row: colored icon badge, title, optional subtitle, chevron.
 class HyperosNavTile extends StatelessWidget {
   const HyperosNavTile({
     super.key,
@@ -701,11 +628,25 @@ class HyperosNavTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
-    final enabled = onTap != null;
+    final canTap = onTap != null && enabled;
     final primaryText = HyperosColors.primaryText(context);
+
+    final rowHeight = subtitle != null
+        ? HyperosTokens.listRowTwoLineMinHeight
+        : null;
+
+    final titleStyle = HyperosTypography.listTitle(context).copyWith(
+      color: canTap ? primaryText : primaryText.withValues(alpha: 0.45),
+    );
+    final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
+      color: canTap
+          ? HyperosColors.secondaryText(context)
+          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+    );
 
     final row = hyperosListRowShell(
       padding: hyperosChevronRowPadding(context),
+      minHeight: rowHeight,
       child: Row(
         children: [
           if (icon != null) ...[
@@ -716,15 +657,22 @@ class HyperosNavTile extends StatelessWidget {
             const SizedBox(width: HyperosTokens.rowContentGap),
           ],
           Expanded(
-            child: Text(
-              title,
-              style: HyperosTypography.listTitle(context).copyWith(
-                color: enabled
-                    ? primaryText
-                    : primaryText.withValues(alpha: 0.45),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: titleStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(subtitle!, style: subtitleStyle, softWrap: true),
+                ],
+              ],
             ),
           ),
           if (details != null) ...[
@@ -733,14 +681,14 @@ class HyperosNavTile extends StatelessWidget {
             SizedBox(width: HyperosTokens.detailChevronGap),
           ] else
             SizedBox(width: HyperosTokens.titleChevronGap),
-          Opacity(opacity: enabled ? 1 : 0.45, child: const HyperosChevron()),
+          Opacity(opacity: canTap ? 1 : 0.45, child: const HyperosChevron()),
         ],
       ),
     );
 
     return HyperosPressableRow(
-      onTap: onTap,
-      holdHighlightThroughTransition: true,
+      onTap: canTap ? onTap : null,
+      holdHighlightThroughTransition: holdHighlightThroughTransition,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: row,

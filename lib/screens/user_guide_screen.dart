@@ -216,10 +216,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               ? l10n.firstUseGuideTitle
               : l10n.guideAndPermissionsTitle,
         ),
+        headerExtension: _buildProgressBar(l10n),
         child: HyperosBlurredBodyInset(
           child: Column(
             children: [
-              _buildProgressBar(l10n),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -256,18 +256,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             children: [
               Text(
                 '${_currentPage + 1} / $_totalPages',
-                style: typo.xs2.copyWith(
-                  color: colors.mutedForeground,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: typo.xs2.copyWith(color: colors.mutedForeground),
               ),
               const SizedBox(width: 8),
               Text(
                 _buildPageTitle(l10n),
-                style: typo.xs2.copyWith(
-                  color: colors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: typo.xs2.copyWith(color: colors.primary),
               ),
             ],
           ),
@@ -311,17 +305,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        ThirdPartyDisclaimerCard(text: l10n.thirdPartyDisclaimer),
-        const HyperosSectionGap(),
         HyperosCard(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                l10n.welcomeAppName,
-                style: typo.lg.copyWith(fontWeight: FontWeight.w800),
-              ),
+              Text(l10n.welcomeAppName, style: typo.sm),
               const SizedBox(height: 8),
               Text(
                 l10n.welcomeSubtitle,
@@ -331,9 +320,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ),
         const HyperosSectionGap(),
+        ThirdPartyDisclaimerCard(text: l10n.thirdPartyDisclaimer),
+        const HyperosSectionGap(),
         _buildLanguageSelector(l10n),
         const HyperosSectionGap(),
-        HyperosSectionLabel(text: l10n.welcomeTitle),
         HyperosListGroup(
           children: [
             _GuideActionTile(
@@ -499,9 +489,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                         readyCount,
                         countableItems.length,
                       ),
-                      style: context.theme.typography.body.sm.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: context.theme.typography.body.sm,
                     ),
                   ),
                   HyperosButton(
@@ -609,112 +597,87 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             style: typo.sm.copyWith(color: colors.mutedForeground),
           ),
         ),
+        // 短名称建议卡片
         HyperosControlCard(
-          child: HyperosAccordion(
-            items: [
-              HyperosAccordionItem(
-                title: Row(
-                  children: [
-                    Icon(Icons.edit_note_rounded, color: colors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.guideShortNameAdviceTitle,
-                        style: typo.sm.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
+          title: l10n.guideShortNameAdviceTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.guideShortNameAdviceSubtitle, style: typo.sm),
+                const SizedBox(height: 12),
+                _buildShortNameExampleRow(
+                  l10n.guideShortNameRecommended,
+                  l10n.guideShortNameRecommendedExample,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.guideShortNameAdviceSubtitle, style: typo.sm),
-                    const SizedBox(height: 10),
-                    _buildShortNameExampleRow(
-                      l10n.guideShortNameRecommended,
-                      l10n.guideShortNameRecommendedExample,
-                    ),
-                    const SizedBox(height: 4),
-                    _buildShortNameExampleRow(
-                      l10n.guideShortNameNotRecommended,
-                      l10n.guideShortNameNotRecommendedExample,
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: HyperosButton(
-                        label: l10n.guideSetCourseShortNameAction,
-                        variant: HyperosButtonVariant.secondary,
-                        expand: true,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            HyperosPageRoute(
-                              settings: const RouteSettings(
-                                name: '/courses/overview',
-                              ),
-                              builder: (_) => const CourseOverviewScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 6),
+                _buildShortNameExampleRow(
+                  l10n.guideShortNameNotRecommended,
+                  l10n.guideShortNameNotRecommendedExample,
                 ),
-              ),
-              HyperosAccordionItem(
-                title: Row(
-                  children: [
-                    Icon(Icons.import_export_rounded, color: colors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.guideImportMethodsTitle,
-                        style: typo.sm.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: HyperosButton(
+                    label: l10n.guideSetCourseShortNameAction,
+                    variant: HyperosButtonVariant.secondary,
+                    expand: true,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        HyperosPageRoute(
+                          settings: const RouteSettings(
+                            name: '/courses/overview',
+                          ),
+                          builder: (_) => const CourseOverviewScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.guideImportMethodsSubtitle, style: typo.sm),
-                    const SizedBox(height: 10),
-                    _buildNumberedLine('1', l10n.guideImportMethodStep1),
-                    const SizedBox(height: 8),
-                    _buildNumberedLine('2', l10n.guideImportMethodStep2),
-                    const SizedBox(height: 8),
-                    _buildNumberedLine('3', l10n.guideImportMethodStep3),
-                    const SizedBox(height: 10),
-                    Text(l10n.guideImportMethodExtra, style: typo.xs2),
-                  ],
+              ],
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+        // 导入方法卡片
+        HyperosControlCard(
+          title: l10n.guideImportMethodsTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.guideImportMethodsSubtitle, style: typo.sm),
+                const SizedBox(height: 12),
+                _buildNumberedLine('1', l10n.guideImportMethodStep1),
+                const SizedBox(height: 10),
+                _buildNumberedLine('2', l10n.guideImportMethodStep2),
+                const SizedBox(height: 10),
+                _buildNumberedLine('3', l10n.guideImportMethodStep3),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.guideImportMethodExtra,
+                  style: typo.xs2.copyWith(color: colors.mutedForeground),
                 ),
-              ),
-              HyperosAccordionItem(
-                title: Row(
-                  children: [
-                    Icon(Icons.tips_and_updates_rounded, color: colors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.guideFinalTipsTitle,
-                        style: typo.sm.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.guideFinalTip1, style: typo.sm),
-                    const SizedBox(height: 8),
-                    Text(l10n.guideFinalTip2, style: typo.sm),
-                    const SizedBox(height: 8),
-                    Text(l10n.guideFinalTip3, style: typo.sm),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+        // 最终提示卡片
+        HyperosControlCard(
+          title: l10n.guideFinalTipsTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTipItem(Icons.check_circle_outline, l10n.guideFinalTip1),
+                const SizedBox(height: 10),
+                _buildTipItem(Icons.check_circle_outline, l10n.guideFinalTip2),
+                const SizedBox(height: 10),
+                _buildTipItem(Icons.check_circle_outline, l10n.guideFinalTip3),
+              ],
+            ),
           ),
         ),
       ],
@@ -727,12 +690,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       children: [
         SizedBox(
           width: 72,
-          child: Text(
-            label,
-            style: context.theme.typography.body.sm.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          child: Text(label, style: context.theme.typography.body.sm),
         ),
         Expanded(child: Text(example, style: context.theme.typography.body.sm)),
       ],
@@ -744,15 +702,31 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 12,
-          backgroundColor: colors.secondary,
-          foregroundColor: colors.secondaryForeground,
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: colors.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
           child: Text(
             step,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: 11, color: colors.primary),
           ),
         ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: context.theme.typography.body.sm)),
+      ],
+    );
+  }
+
+  Widget _buildTipItem(IconData icon, String text) {
+    final colors = context.theme.colors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: colors.primary),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: context.theme.typography.body.sm)),
       ],
@@ -978,10 +952,9 @@ class _GuidePermissionTile extends StatelessWidget {
               ),
               child: Text(
                 statusLabel,
-                style: HyperosTypography.listDetail(context).copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? enabledColor : disabledColor,
-                ),
+                style: HyperosTypography.listDetail(
+                  context,
+                ).copyWith(color: enabled ? enabledColor : disabledColor),
               ),
             ),
             const SizedBox(width: 8),

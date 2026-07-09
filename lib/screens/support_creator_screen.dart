@@ -22,7 +22,7 @@ class SupportCreatorScreen extends StatefulWidget {
 
 class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   static const _sectionPadding = EdgeInsets.fromLTRB(14, 14, 14, 12);
-  static const _donorSectionPadding = EdgeInsets.fromLTRB(12, 12, 12, 10);
+  static const _donorSectionPadding = EdgeInsets.fromLTRB(14, 14, 14, 12);
   static const _paymentColumnGap = 10.0;
 
   final SupportCreatorService _service = SupportCreatorService();

@@ -25,7 +25,9 @@ import 'hyperos_widgets.dart';
       : HyperosTokens.chevronRowPadding(isFirst: true, isLast: true);
 
   if (cardScope != null && isLast) {
-    padding = padding.copyWith(bottom: padding.bottom + cardScope.bodyBottomInset);
+    padding = padding.copyWith(
+      bottom: padding.bottom + cardScope.bodyBottomInset,
+    );
   }
 
   final baseMinHeight = twoLine
@@ -52,11 +54,16 @@ Rect? hyperosSelectPopupAnchorRect(BuildContext context, GlobalKey anchorKey) {
 ///
 /// Best for short option lists triggered from a settings row. The popup is
 /// right-aligned to [anchorRect] and appears just below the row.
+///
+/// When [itemTitleStyleBuilder] is provided, each option's title is rendered
+/// with the style it returns (merged over the default list-title style). This
+/// is used by the appearance font picker to preview each option's own typeface.
 Future<T?> showHyperosSelectPopup<T>({
   required BuildContext context,
   required Rect? anchorRect,
   required Map<String, T> items,
   required T? currentValue,
+  TextStyle? Function(T value)? itemTitleStyleBuilder,
 }) {
   final entries = items.entries.toList(growable: false);
   if (entries.isEmpty || anchorRect == null) {
@@ -74,6 +81,7 @@ Future<T?> showHyperosSelectPopup<T>({
         anchorRect: anchorRect,
         entries: entries,
         currentValue: currentValue,
+        itemTitleStyleBuilder: itemTitleStyleBuilder,
       );
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {
@@ -90,11 +98,13 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
     required this.anchorRect,
     required this.entries,
     required this.currentValue,
+    required this.itemTitleStyleBuilder,
   });
 
   final Rect anchorRect;
   final List<MapEntry<String, T>> entries;
   final T? currentValue;
+  final TextStyle? Function(T value)? itemTitleStyleBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -169,6 +179,9 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
                             variant: HyperosChoiceVariant.popup,
                             isFirstInPopup: i == 0,
                             isLastInPopup: i == entries.length - 1,
+                            titleStyle: itemTitleStyleBuilder?.call(
+                              entries[i].value,
+                            ),
                             onTap: () {
                               HapticFeedback.selectionClick();
                               Navigator.of(context).pop(entries[i].value);
@@ -195,6 +208,7 @@ Future<T?> showHyperosSelectSheet<T>({
   required T? currentValue,
   String? description,
   required String cancelLabel,
+  TextStyle? Function(T value)? itemTitleStyleBuilder,
 }) {
   final entries = items.entries.toList(growable: false);
   final resolvedCancelLabel = cancelLabel;
@@ -270,6 +284,9 @@ Future<T?> showHyperosSelectSheet<T>({
                           selected: entries[i].value == currentValue,
                           highlightSelectedText: true,
                           variant: HyperosChoiceVariant.dialog,
+                          titleStyle: itemTitleStyleBuilder?.call(
+                            entries[i].value,
+                          ),
                           onTap: () =>
                               Navigator.of(sheetContext).pop(entries[i].value),
                         ),
@@ -371,6 +388,7 @@ class HyperosSelectTile<T> extends StatefulWidget {
     this.useSheetForPopup = false,
     this.sheetItemThreshold = 6,
     this.enabled = true,
+    this.itemTitleStyleBuilder,
   });
 
   final String label;
@@ -387,6 +405,10 @@ class HyperosSelectTile<T> extends StatefulWidget {
   /// Item count above which the bottom sheet is preferred over anchored popup.
   final int sheetItemThreshold;
   final bool enabled;
+
+  /// Per-option title style override. Lets callers render each option in its
+  /// own font (e.g. the font picker previews the actual typeface per entry).
+  final TextStyle? Function(T value)? itemTitleStyleBuilder;
 
   @override
   State<HyperosSelectTile<T>> createState() => _HyperosSelectTileState<T>();
@@ -419,6 +441,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           items: widget.items,
           currentValue: widget.value,
           cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
+          itemTitleStyleBuilder: widget.itemTitleStyleBuilder,
         );
       } else {
         selected = await showHyperosSelectPopup<T>(
@@ -426,6 +449,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           anchorRect: anchorRect,
           items: widget.items,
           currentValue: widget.value,
+          itemTitleStyleBuilder: widget.itemTitleStyleBuilder,
         );
       }
     } finally {

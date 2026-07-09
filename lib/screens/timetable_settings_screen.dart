@@ -27,6 +27,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
+import '../ui/app_fonts.dart';
 import '../ui/debug/debug.dart';
 import '../ui/hyperos_app_bridge.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
@@ -675,6 +676,16 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               value: _draft.appFontMode,
               onChanged: (value) {
                 _updateDraft(_draft.copyWith(appFontMode: value));
+              },
+              itemTitleStyleBuilder: (mode) {
+                final spec = mode.fontSpec;
+                if (spec.fontFamily == null || spec.fontFamily!.isEmpty) {
+                  return null;
+                }
+                return TextStyle(
+                  fontFamily: spec.fontFamily,
+                  fontFamilyFallback: spec.fontFamilyFallback,
+                );
               },
             ),
           ],
@@ -2069,7 +2080,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           const HyperosSectionGap(),
         ],
       ),
-      _LiveTestingSection.quickFixtures => _buildQuickFixtureSection(context, l10n),
+      _LiveTestingSection.quickFixtures => _buildQuickFixtureSection(
+        context,
+        l10n,
+      ),
       _LiveTestingSection.notification => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -2128,126 +2142,128 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               context.watch<TimetableProvider>().settings.semesterStartDate ==
               null;
           return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosControlCard(
-            title: l10n.liveTestingIslandStatusTitle,
-            subtitle: l10n.liveTestingIslandStatusSubtitle,
-            child: HyperosControlCardInset(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (semesterUnset) ...[
-                    Text(
-                      l10n.pleaseSetSemesterStartDate,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HyperosControlCard(
+                title: l10n.liveTestingIslandStatusTitle,
+                subtitle: l10n.liveTestingIslandStatusSubtitle,
+                child: HyperosControlCardInset(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _DebugStatusChip(
-                        icon: serviceRunning
-                            ? Icons.play_circle_outline_rounded
-                            : Icons.stop_circle_outlined,
-                        label: serviceRunning
-                            ? l10n.liveTestingServiceStatusRunning
-                            : l10n.liveTestingServiceStatusStopped,
-                        color: serviceRunning
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.outline,
+                      if (semesterUnset) ...[
+                        Text(
+                          l10n.pleaseSetSemesterStartDate,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _DebugStatusChip(
+                            icon: serviceRunning
+                                ? Icons.play_circle_outline_rounded
+                                : Icons.stop_circle_outlined,
+                            label: serviceRunning
+                                ? l10n.liveTestingServiceStatusRunning
+                                : l10n.liveTestingServiceStatusStopped,
+                            color: serviceRunning
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                          _DebugStatusChip(
+                            icon: isActuallyPromotable
+                                ? Icons.verified_outlined
+                                : Icons.warning_amber_rounded,
+                            label: statusText,
+                            color: isActuallyPromotable
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                        ],
                       ),
-                      _DebugStatusChip(
-                        icon: isActuallyPromotable
-                            ? Icons.verified_outlined
-                            : Icons.warning_amber_rounded,
-                        label: statusText,
-                        color: isActuallyPromotable
-                            ? Colors.green
-                            : Colors.orange,
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.liveTestingNoIslandReasonTitle,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.liveTestingNoIslandReasonTitle,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    notIslandReason.isEmpty
-                        ? l10n.liveTestingNoIslandReasonEmpty
-                        : notIslandReason,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                      const SizedBox(height: 4),
+                      Text(
+                        notIslandReason.isEmpty
+                            ? l10n.liveTestingNoIslandReasonEmpty
+                            : notIslandReason,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            HyperosButton(
-                              label: _loadingDebugStatus
-                                  ? l10n.liveTestingRefreshing
-                                  : l10n.liveTestingRefreshAction,
-                              variant: HyperosButtonVariant.secondary,
-                              loading: _loadingDebugStatus,
-                              onPressed: _loadingDebugStatus
-                                  ? null
-                                  : () =>
-                                        _refreshDebugStatus(showLoading: true),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                HyperosButton(
+                                  label: _loadingDebugStatus
+                                      ? l10n.liveTestingRefreshing
+                                      : l10n.liveTestingRefreshAction,
+                                  variant: HyperosButtonVariant.secondary,
+                                  loading: _loadingDebugStatus,
+                                  onPressed: _loadingDebugStatus
+                                      ? null
+                                      : () => _refreshDebugStatus(
+                                          showLoading: true,
+                                        ),
+                                ),
+                                HyperosButton(
+                                  label: _exportingDiagnostics
+                                      ? l10n.liveTestingExporting
+                                      : l10n.liveTestingExportAction,
+                                  variant: HyperosButtonVariant.secondary,
+                                  loading: _exportingDiagnostics,
+                                  onPressed: _exportingDiagnostics
+                                      ? null
+                                      : _exportLiveDiagnostics,
+                                ),
+                              ],
                             ),
-                            HyperosButton(
-                              label: _exportingDiagnostics
-                                  ? l10n.liveTestingExporting
-                                  : l10n.liveTestingExportAction,
-                              variant: HyperosButtonVariant.secondary,
-                              loading: _exportingDiagnostics,
-                              onPressed: _exportingDiagnostics
-                                  ? null
-                                  : _exportLiveDiagnostics,
+                            const SizedBox(height: 8),
+                            HyperosSwitchTile(
+                              value: _autoRefreshEnabled,
+                              onChanged: (value) {
+                                setState(() {
+                                  _autoRefreshEnabled = value;
+                                });
+                              },
+                              title: l10n.liveTestingAutoRefreshTitle,
+                              subtitle: _autoRefreshEnabled
+                                  ? l10n.liveTestingAutoRefreshOn(
+                                      _autoRefreshInterval.inSeconds,
+                                    )
+                                  : l10n.liveTestingAutoRefreshOff,
+                            ),
+                            Text(
+                              l10n.liveTestingRefreshedAt(refreshedAtText),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        HyperosSwitchTile(
-                          value: _autoRefreshEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _autoRefreshEnabled = value;
-                            });
-                          },
-                          title: l10n.liveTestingAutoRefreshTitle,
-                          subtitle: _autoRefreshEnabled
-                              ? l10n.liveTestingAutoRefreshOn(
-                                  _autoRefreshInterval.inSeconds,
-                                )
-                              : l10n.liveTestingAutoRefreshOff,
-                        ),
-                        Text(
-                          l10n.liveTestingRefreshedAt(refreshedAtText),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          const HyperosSectionGap(),
-        ],
+              const HyperosSectionGap(),
+            ],
           );
         },
       ),
@@ -2398,7 +2414,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     };
   }
 
-  Widget _buildQuickFixtureSection(BuildContext context, AppLocalizations l10n) {
+  Widget _buildQuickFixtureSection(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     final theme = Theme.of(context);
     final provider = context.watch<TimetableProvider>();
     final now = DateTime.now();
@@ -2448,8 +2467,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                   runSpacing: 8,
                   children: [
                     HyperosButton(
-                      label:
-                          _installingFixtureGrid ? '安装中…' : '安装 24 小时测试课表',
+                      label: _installingFixtureGrid ? '安装中…' : '安装 24 小时测试课表',
                       variant: HyperosButtonVariant.secondary,
                       onPressed: _installingFixtureGrid
                           ? null
@@ -2480,8 +2498,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                       ),
                     ),
                     HyperosButton(
-                      label:
-                          '下一时段（${nextHour.toString().padLeft(2, '0')}:00）',
+                      label: '下一时段（${nextHour.toString().padLeft(2, '0')}:00）',
                       variant: HyperosButtonVariant.secondary,
                       onPressed: () => _triggerQuickFixtureSlot(
                         context,
@@ -2571,11 +2588,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       );
     } catch (e) {
       if (!context.mounted) return;
-      showAppToast(
-        context,
-        message: '安装测试课表失败：$e',
-        kind: AppToastKind.error,
-      );
+      showAppToast(context, message: '安装测试课表失败：$e', kind: AppToastKind.error);
     } finally {
       if (mounted) {
         setState(() => _installingFixtureGrid = false);
@@ -2599,11 +2612,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       );
     } catch (e) {
       if (!context.mounted) return;
-      showAppToast(
-        context,
-        message: '清除测试课表失败：$e',
-        kind: AppToastKind.error,
-      );
+      showAppToast(context, message: '清除测试课表失败：$e', kind: AppToastKind.error);
     } finally {
       if (mounted) {
         setState(() => _clearingFixtureGrid = false);

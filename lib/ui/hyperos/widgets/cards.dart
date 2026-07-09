@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../hyperos_theme.dart';
-import '../hyperos_tokens.dart';
-import 'layout.dart';
 import 'tiles.dart';
 
 /// HyperOS card: white rounded card with optional title, subtitle, and child.
@@ -32,12 +30,9 @@ class HyperosCard extends StatelessWidget {
         shape: HyperosTheme.cardShape(),
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: padding ?? EdgeInsets.fromLTRB(
-            16,
-            hasTitle || hasSubtitle ? 16 : 0,
-            16,
-            16,
-          ),
+          padding:
+              padding ??
+              EdgeInsets.fromLTRB(16, hasTitle || hasSubtitle ? 16 : 0, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
@@ -86,49 +81,49 @@ class HyperosSummaryCard extends StatelessWidget {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
 
-    return HyperosPressableRow(
-      onTap: onTap,
-      backgroundColor: cardColor,
-      highlightColor: highlightColor,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(width: 16),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (summary != null)
-                    Text(
-                      summary!,
-                      style: HyperosTypography.listTitle(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  if (title != null)
-                    Text(
-                      title!,
-                      style: HyperosTypography.listTitle(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: HyperosTypography.listDetail(context),
-                      softWrap: true,
-                    ),
+    return ClipRRect(
+      borderRadius: HyperosTheme.cardBorderRadius,
+      child: HyperosPressableRow(
+        onTap: onTap,
+        backgroundColor: cardColor,
+        highlightColor: highlightColor,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              if (leading != null) ...[leading!, const SizedBox(width: 16)],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (summary != null)
+                      Text(
+                        summary!,
+                        style: HyperosTypography.listTitle(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (title != null)
+                      Text(
+                        title!,
+                        style: HyperosTypography.listTitle(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: HyperosTypography.listDetail(context),
+                        softWrap: true,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
