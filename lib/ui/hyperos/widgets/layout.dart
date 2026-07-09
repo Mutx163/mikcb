@@ -68,7 +68,7 @@ Widget hyperosListRowShell({
   final targetHeight = minHeight ?? HyperosTokens.listRowMinHeight;
   final padded = Padding(
     padding: padding,
-    child: Align(alignment: Alignment.centerLeft, child: child),
+    child: child,
   );
   // Two-line rows use min height so subtitle ellipsis survives narrow widths
   // (e.g. HyperosPageRoute shared-axis transition) without bottom overflow.
