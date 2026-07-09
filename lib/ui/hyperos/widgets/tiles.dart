@@ -472,7 +472,7 @@ class HyperosChoiceTile extends StatelessWidget {
   });
 
   final String title;
-  final String? subtitle;
+  final Widget? subtitle;
   final bool selected;
   final VoidCallback? onTap;
   final bool enabled;
@@ -527,11 +527,22 @@ class HyperosChoiceTile extends StatelessWidget {
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: subtitleStyle, softWrap: true),
+                  if (subtitle is String)
+                    Text(
+                      subtitle as String,
+                      style: subtitleStyle,
+                      softWrap: true,
+                    )
+                  else
+                    subtitle!,
                 ],
               ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            trailing!,
+          ],
           if (selected) ...[
             const SizedBox(width: 6),
             HyperosSelectedCheckmark(
