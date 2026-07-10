@@ -455,8 +455,11 @@ class HyperosActionTile extends StatelessWidget {
 
 enum HyperosChoiceVariant { radio, checkmark, dialog, popup }
 
-/// Miuix-styled choice row: colored circle, title, optional subtitle, trailing
-/// radio / checkmark indicator. Tapping the row selects when enabled.
+/// Miuix-styled choice row: optional leading [prefix], title, optional subtitle,
+/// trailing checkmark when [selected]. Tapping the row selects when enabled.
+///
+/// Pure single-choice lists (download channel, week mode, sort, …) should omit
+/// [prefix]. Theme / color pickers pass an explicit [prefix] (e.g. color dot).
 class HyperosChoiceTile extends StatelessWidget {
   const HyperosChoiceTile({
     super.key,
@@ -482,6 +485,8 @@ class HyperosChoiceTile extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
   final bool enabled;
+
+  /// Kept for API compatibility; leading accent dots must be passed via [prefix].
   final Color? iconAccent;
   final HyperosChoiceVariant variant;
   final bool highlightSelectedText;
@@ -520,22 +525,24 @@ class HyperosChoiceTile extends StatelessWidget {
           : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
     );
 
-    final rowHeight = subtitle != null
-        ? HyperosTokens.listRowTwoLineMinHeight
-        : null;
+    final padding = _paddingForVariant(context);
+    final isPopup = variant == HyperosChoiceVariant.popup;
+    // Popup rows: total height = content min height + vertical padding so
+    // [hyperosSelectPopupEstimatedHeight] matches laid-out size.
+    final rowHeight = isPopup
+        ? HyperosMiuixSpec.settingsRowMinHeight + padding.vertical
+        : (subtitle != null ? HyperosTokens.listRowTwoLineMinHeight : null);
 
     final row = hyperosListRowShell(
-      padding: _paddingForVariant(context),
+      padding: padding,
       minHeight: rowHeight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (variant != HyperosChoiceVariant.popup &&
+          if (prefix != null &&
+              variant != HyperosChoiceVariant.popup &&
               variant != HyperosChoiceVariant.dialog) ...[
-            if (prefix != null)
-              prefix!
-            else
-              HyperosColorDot(color: iconAccent ?? HyperosIconColors.blue),
+            prefix!,
             const SizedBox(width: HyperosTokens.rowContentGap),
           ],
           Expanded(
@@ -552,14 +559,10 @@ class HyperosChoiceTile extends StatelessWidget {
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  if (subtitle is String)
-                    Text(
-                      subtitle as String,
-                      style: subtitleStyle,
-                      softWrap: true,
-                    )
-                  else
-                    subtitle!,
+                  DefaultTextStyle.merge(
+                    style: subtitleStyle,
+                    child: subtitle!,
+                  ),
                 ],
               ],
             ),
@@ -579,16 +582,54 @@ class HyperosChoiceTile extends StatelessWidget {
       onTap: effectiveEnabled ? onTap : null,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
-      child: row,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          row,
+          if (showDivider)
+            HyperosInsetDivider(
+              indent: dividerIndent ?? HyperosMiuixSpec.settingsRowPadding.left,
+            ),
+        ],
+      ),
     );
+  }
+
+  /// Settings-list rows use [HyperosListTileScope]; popup rows use the
+  /// explicit [isFirstInPopup] / [isLastInPopup] flags from the select body.
+  EdgeInsets _paddingForVariant(BuildContext context) {
+    if (variant == HyperosChoiceVariant.popup) {
+      return _popupChoiceRowPadding(
+        isFirst: isFirstInPopup,
+        isLast: isLastInPopup,
+      );
+    }
+    final scope = HyperosListTileScope.maybeOf(context);
+    final isFirst = scope?.isFirst ?? true;
+    final isLast = scope?.isLast ?? true;
+    return HyperosTokens.chevronRowPadding(isFirst: isFirst, isLast: isLast);
   }
 }
 
-EdgeInsets _paddingForVariant(BuildContext context) {
-  final scope = HyperosListTileScope.maybeOf(context);
-  final isFirst = scope?.isFirst ?? true;
-  final isLast = scope?.isLast ?? true;
-  return HyperosTokens.chevronRowPadding(isFirst: isFirst, isLast: isLast);
+/// Vertical/horizontal insets for Miuix dropdown popup choice rows.
+///
+/// Edge rows use [HyperosMiuixDropdown.firstLastVerticalPadding]; middle rows
+/// use [HyperosMiuixDropdown.middleVerticalPadding]. Must stay in lockstep with
+/// [hyperosSelectPopupEstimatedHeight].
+EdgeInsets _popupChoiceRowPadding({
+  required bool isFirst,
+  required bool isLast,
+}) {
+  return EdgeInsets.only(
+    left: HyperosMiuixDropdown.insideHorizontalPadding,
+    right: HyperosMiuixDropdown.insideHorizontalPadding,
+    top: isFirst
+        ? HyperosMiuixDropdown.firstLastVerticalPadding
+        : HyperosMiuixDropdown.middleVerticalPadding,
+    bottom: isLast
+        ? HyperosMiuixDropdown.firstLastVerticalPadding
+        : HyperosMiuixDropdown.middleVerticalPadding,
+  );
 }
 
 /// Groups [HyperosChoiceTile] rows into a white rounded card.

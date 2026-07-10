@@ -330,11 +330,16 @@ double hyperosSelectPopupEstimatedHeight(int itemCount) {
   }
   var height = 0.0;
   for (var i = 0; i < itemCount; i++) {
-    final isEdge = i == 0 || i == itemCount - 1;
-    final verticalPadding = isEdge
-        ? HyperosMiuixDropdown.firstLastVerticalPadding * 2
-        : HyperosMiuixDropdown.middleVerticalPadding * 2;
-    height += verticalPadding + HyperosMiuixSpec.settingsRowMinHeight;
+    // Match [_popupChoiceRowPadding] / HyperosChoiceTile popup layout:
+    // first row top and last row bottom use firstLast; all other edges use middle.
+    final topPadding = i == 0
+        ? HyperosMiuixDropdown.firstLastVerticalPadding
+        : HyperosMiuixDropdown.middleVerticalPadding;
+    final bottomPadding = i == itemCount - 1
+        ? HyperosMiuixDropdown.firstLastVerticalPadding
+        : HyperosMiuixDropdown.middleVerticalPadding;
+    height +=
+        topPadding + bottomPadding + HyperosMiuixSpec.settingsRowMinHeight;
   }
   return height;
 }

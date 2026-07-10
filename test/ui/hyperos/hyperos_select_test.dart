@@ -23,7 +23,10 @@ void main() {
         safeBottom: safeBottom,
       );
 
-      expect(layout.top + layout.maxHeight, lessThanOrEqualTo(safeBottom + 0.01));
+      expect(
+        layout.top + layout.maxHeight,
+        lessThanOrEqualTo(safeBottom + 0.01),
+      );
       expect(layout.top, lessThan(anchor.top));
     });
   });
@@ -339,6 +342,53 @@ void main() {
     });
   });
 
+  group('HyperosChoiceTile leading prefix', () {
+    testWidgets('radio choice rows omit default blue color dots', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosChoiceGroup(
+              children: [
+                HyperosChoiceTile(
+                  title: 'GitHub',
+                  selected: true,
+                  onTap: () {},
+                ),
+                HyperosChoiceTile(
+                  title: 'Domestic',
+                  selected: false,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(HyperosColorDot), findsNothing);
+      expect(find.byType(HyperosSelectedCheckmark), findsOneWidget);
+    });
+
+    testWidgets('explicit prefix still renders color dots', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosChoiceTile(
+              title: 'Theme',
+              prefix: const HyperosColorDot(color: HyperosIconColors.blue),
+              selected: true,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(HyperosColorDot), findsOneWidget);
+    });
+  });
+
   group('HyperosChoiceTile dialog variant', () {
     testWidgets('selected background spans card width', (tester) async {
       const cardWidth = 320.0;
@@ -373,12 +423,134 @@ void main() {
       );
 
       final highlightRect = tester.getRect(
-        find.byWidgetPredicate(
-          (widget) => widget is ColoredBox && widget.color.a > 0,
-        ).first,
+        find
+            .byWidgetPredicate(
+              (widget) => widget is ColoredBox && widget.color.a > 0,
+            )
+            .first,
       );
 
       expect(highlightRect.width, cardWidth);
+    });
+  });
+
+  group('HyperosChoiceTile showDivider', () {
+    testWidgets('renders inset divider when showDivider is true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosChoiceTile(
+              title: 'Channel A',
+              selected: true,
+              showDivider: true,
+              dividerIndent: 44,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(HyperosInsetDivider), findsOneWidget);
+      final divider = tester.widget<HyperosInsetDivider>(
+        find.byType(HyperosInsetDivider),
+      );
+      expect(divider.indent, 44);
+    });
+
+    testWidgets('omits divider when showDivider is false', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosChoiceTile(
+              title: 'Channel A',
+              selected: true,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(HyperosInsetDivider), findsNothing);
+    });
+  });
+
+  group('HyperosChoiceTile popup edge padding', () {
+    testWidgets('first and last rows use larger vertical padding', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HyperosChoiceTile(
+                  title: 'First',
+                  variant: HyperosChoiceVariant.popup,
+                  isFirstInPopup: true,
+                  isLastInPopup: false,
+                  onTap: () {},
+                ),
+                HyperosChoiceTile(
+                  title: 'Middle',
+                  variant: HyperosChoiceVariant.popup,
+                  isFirstInPopup: false,
+                  isLastInPopup: false,
+                  onTap: () {},
+                ),
+                HyperosChoiceTile(
+                  title: 'Last',
+                  variant: HyperosChoiceVariant.popup,
+                  isFirstInPopup: false,
+                  isLastInPopup: true,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final tiles = find.byType(HyperosChoiceTile);
+      expect(tiles, findsNWidgets(3));
+      final firstTileHeight = tester.getSize(tiles.at(0)).height;
+      final middleTileHeight = tester.getSize(tiles.at(1)).height;
+      final lastTileHeight = tester.getSize(tiles.at(2)).height;
+
+      const content = HyperosMiuixSpec.settingsRowMinHeight;
+      const firstLast = HyperosMiuixDropdown.firstLastVerticalPadding;
+      const middle = HyperosMiuixDropdown.middleVerticalPadding;
+      // First: firstLast top + middle bottom; last: middle top + firstLast bottom.
+      final expectedFirst = content + firstLast + middle;
+      final expectedMiddle = content + middle + middle;
+      final expectedLast = content + middle + firstLast;
+
+      expect(firstTileHeight, closeTo(expectedFirst, 0.5));
+      expect(middleTileHeight, closeTo(expectedMiddle, 0.5));
+      expect(lastTileHeight, closeTo(expectedLast, 0.5));
+      expect(firstTileHeight, greaterThan(middleTileHeight));
+      expect(lastTileHeight, greaterThan(middleTileHeight));
+    });
+
+    test('popup height estimate matches edge/middle padding model', () {
+      const content = HyperosMiuixSpec.settingsRowMinHeight;
+      const firstLast = HyperosMiuixDropdown.firstLastVerticalPadding;
+      const middle = HyperosMiuixDropdown.middleVerticalPadding;
+
+      // Single row: both top and bottom are firstLast.
+      expect(
+        hyperosSelectPopupEstimatedHeight(1),
+        content + firstLast + firstLast,
+      );
+      // Three rows: first (firstLast+middle), middle (middle*2), last (middle+firstLast).
+      expect(
+        hyperosSelectPopupEstimatedHeight(3),
+        (content + firstLast + middle) +
+            (content + middle + middle) +
+            (content + middle + firstLast),
+      );
     });
   });
 }
