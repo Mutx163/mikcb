@@ -134,9 +134,10 @@ void main() {
           matching: find.byWidgetPredicate(
             (widget) =>
                 widget is Padding &&
-                widget.padding == _sliderTilePaddingForTest(
-                  bottom: HyperosControlCardScope.defaultBodyBottomInset,
-                ),
+                widget.padding ==
+                    _sliderTilePaddingForTest(
+                      bottom: HyperosControlCardScope.defaultBodyBottomInset,
+                    ),
           ),
         ),
       );
@@ -262,6 +263,49 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(value, 10.5);
+    });
+
+    testWidgets('tap editing formats conflict-style opacity without long tails', (
+      tester,
+    ) async {
+      // 0.2..1.0 with 16 divisions => step 0.05. Default-like 0.72 should open as 0.7.
+      var value = 0.72;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: HyperosSliderTile(
+                  title: 'Conflict opacity',
+                  value: value,
+                  min: 0.2,
+                  max: 1.0,
+                  divisions: 16,
+                  onChanged: (next) => setState(() => value = next),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Conflict opacity'));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      final shown = field.controller?.text ?? '';
+      expect(shown, '0.7');
+      expect(shown.contains('00000'), isFalse);
+
+      await tester.enterText(find.byType(TextField), '0.73');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(value, 0.75);
+      expect(value.toString().contains('00000'), isFalse);
     });
   });
 

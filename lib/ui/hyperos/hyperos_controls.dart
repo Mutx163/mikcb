@@ -378,11 +378,22 @@ class HyperosSlider extends StatelessWidget {
           trackShape: const _HyperosCapsuleTrackShape(),
         ),
         child: Slider(
+          // Keep raw clamped value for display so off-grid stored values
+          // (e.g. legacy 0.72) stay consistent with parent labels until edited.
           value: value.clamp(lo, hi),
           min: lo,
           max: hi,
           divisions: divisions,
-          onChanged: enabled ? onChanged : null,
+          onChanged: enabled && onChanged != null
+              ? (rawValue) => onChanged!(
+                  _hyperosNormalizeSliderValue(
+                    rawValue,
+                    min: lo,
+                    max: hi,
+                    divisions: divisions,
+                  ),
+                )
+              : null,
           padding: EdgeInsets.zero,
         ),
       ),
@@ -411,11 +422,24 @@ EdgeInsets _hyperosSliderTilePadding(BuildContext context) {
   );
 }
 
-String _hyperosSliderInputText(double value) {
-  if (value == value.roundToDouble()) {
+String _hyperosSliderInputText(
+  double value, {
+  double min = 0,
+  double max = 1,
+  int? divisions,
+}) {
+  final precision = _hyperosSliderPrecision(min, max, divisions);
+  if (precision <= 0 || value == value.roundToDouble()) {
     return value.round().toString();
   }
-  return value.toString();
+  final fixed = value.toStringAsFixed(precision);
+  // Drop trailing zeros so "0.70" becomes "0.7", never binary noise.
+  if (!fixed.contains('.')) {
+    return fixed;
+  }
+  return fixed
+      .replaceFirst(RegExp(r'0+$'), '')
+      .replaceFirst(RegExp(r'\.$'), '');
 }
 
 int _hyperosSliderPrecision(double min, double max, int? divisions) {
@@ -429,7 +453,9 @@ int _hyperosSliderPrecision(double min, double max, int? divisions) {
     return 0;
   }
   final trimmed = stepText.replaceFirst(RegExp(r'0+$'), '');
-  return trimmed.length - dot - 1;
+  final digits = trimmed.length - dot - 1;
+  // Cap so UI never shows long floating-point tails.
+  return digits.clamp(0, 4);
 }
 
 double _hyperosNormalizeSliderValue(
@@ -438,15 +464,19 @@ double _hyperosNormalizeSliderValue(
   required double max,
   required int? divisions,
 }) {
-  final clamped = rawValue.clamp(min, max);
-  if (divisions == null || divisions <= 0 || max <= min) {
-    return clamped;
+  final lo = min <= max ? min : max;
+  final hi = min <= max ? max : min;
+  final clamped = rawValue.clamp(lo, hi);
+  if (divisions == null || divisions <= 0 || hi <= lo) {
+    final precision = _hyperosSliderPrecision(lo, hi, null);
+    return double.parse(clamped.toStringAsFixed(precision));
   }
 
-  final step = (max - min) / divisions;
-  final snapped = (((clamped - min) / step).round() * step) + min;
-  final precision = _hyperosSliderPrecision(min, max, divisions);
-  return double.parse(snapped.toStringAsFixed(precision));
+  final step = (hi - lo) / divisions;
+  final snapped = (((clamped - lo) / step).round() * step) + lo;
+  final precision = _hyperosSliderPrecision(lo, hi, divisions);
+  final normalized = double.parse(snapped.toStringAsFixed(precision));
+  return normalized.clamp(lo, hi);
 }
 
 Future<double?> showHyperosSliderValueDialog({
@@ -527,8 +557,19 @@ class _HyperosSliderValueSheetBodyState
   @override
   void initState() {
     super.initState();
+    final displayValue = _hyperosNormalizeSliderValue(
+      widget.value,
+      min: widget.min,
+      max: widget.max,
+      divisions: widget.divisions,
+    );
     _controller = TextEditingController(
-      text: _hyperosSliderInputText(widget.value),
+      text: _hyperosSliderInputText(
+        displayValue,
+        min: widget.min,
+        max: widget.max,
+        divisions: widget.divisions,
+      ),
     );
   }
 
@@ -703,7 +744,15 @@ class HyperosSliderTile extends StatelessWidget {
     // When [title] already embeds the value (common in settings cards), only
     // show a separate trailing label when [valueLabel] is provided explicitly.
     final displayValue =
-        valueLabel ?? (title == null ? _hyperosSliderInputText(value) : '');
+        valueLabel ??
+        (title == null
+            ? _hyperosSliderInputText(
+                value,
+                min: min,
+                max: max,
+                divisions: divisions,
+              )
+            : '');
     final row = Row(
       children: [
         if (title != null)
