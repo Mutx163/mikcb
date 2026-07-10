@@ -9,7 +9,7 @@ void main() {
     expect(settings.timetableShowCurrentWeekCourses, isTrue);
     expect(settings.timetableShowNonCurrentWeekCourses, isFalse);
     expect(settings.showConflictBadgeOnTimetable, isTrue);
-    expect(settings.timetableConflictCourseOpacity, 0.72);
+    expect(settings.timetableConflictCourseOpacity, 0.70);
     expect(settings.liveHidePrefixText, isTrue);
     expect(settings.courseCardShowName, isTrue);
     expect(settings.courseCardShowTeacher, isTrue);
@@ -96,7 +96,7 @@ void main() {
     expect(restored.timetableShowCurrentWeekCourses, isTrue);
     expect(restored.timetableShowNonCurrentWeekCourses, isFalse);
     expect(restored.showConflictBadgeOnTimetable, isTrue);
-    expect(restored.timetableConflictCourseOpacity, 0.72);
+    expect(restored.timetableConflictCourseOpacity, 0.70);
     expect(restored.liveHidePrefixText, isTrue);
     expect(restored.courseCardShowName, isTrue);
     expect(restored.courseCardShowTeacher, isTrue);

@@ -1120,7 +1120,7 @@ class TimetableSettings {
     this.timetableShowCurrentWeekCourses = true,
     this.timetableShowNonCurrentWeekCourses = false,
     this.showConflictBadgeOnTimetable = true,
-    this.timetableConflictCourseOpacity = 0.72,
+    this.timetableConflictCourseOpacity = 0.70,
     this.courseCardShowName = true,
     this.courseCardShowTeacher = true,
     this.courseCardShowLocation = true,
@@ -1282,7 +1282,7 @@ class TimetableSettings {
       timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses: false,
       showConflictBadgeOnTimetable: true,
-      timetableConflictCourseOpacity: 0.72,
+      timetableConflictCourseOpacity: 0.70,
       courseCardShowName: true,
       courseCardShowTeacher: true,
       courseCardShowLocation: true,
@@ -1602,7 +1602,7 @@ class TimetableSettings {
       showConflictBadgeOnTimetable:
           json['showConflictBadgeOnTimetable'] as bool? ?? true,
       timetableConflictCourseOpacity:
-          ((json['timetableConflictCourseOpacity'] as num?)?.toDouble() ?? 0.72)
+          ((json['timetableConflictCourseOpacity'] as num?)?.toDouble() ?? 0.70)
               .clamp(0.2, 1.0),
       courseCardShowName: json['courseCardShowName'] as bool? ?? true,
       courseCardShowTeacher: json['courseCardShowTeacher'] as bool? ?? true,
