@@ -489,9 +489,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     required FTypography typo,
     required Widget child,
   }) {
-    return HyperosCard(
-      child: Padding(padding: _donorSectionPadding, child: child),
-    );
+    return HyperosCard(padding: _donorSectionPadding, child: child);
   }
 
   Widget _buildDonorCard(
@@ -596,16 +594,10 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     }
 
     return HyperosCard(
-      child: Padding(
-        padding: _donorSectionPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            buildHeader(),
-            const SizedBox(height: 12),
-            buildDonorList(),
-          ],
-        ),
+      padding: _donorSectionPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [buildHeader(), const SizedBox(height: 12), buildDonorList()],
       ),
     );
   }
