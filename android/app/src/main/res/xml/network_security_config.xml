@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release: cleartext (HTTP) denied by default.
+  Custom HTTP WebDAV and campus HTTP portals must use HTTPS in release builds.
+  Debug builds override this via src/debug/res/xml/network_security_config.xml.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>
