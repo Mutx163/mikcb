@@ -17,6 +17,46 @@ class WebdavConnectionParams {
   });
 }
 
+class WebdavGetBytesResult {
+  final Uint8List? bytes;
+  final bool isFailed;
+  final String? errorMessage;
+
+  const WebdavGetBytesResult._({
+    this.bytes,
+    this.isFailed = false,
+    this.errorMessage,
+  });
+
+  const WebdavGetBytesResult.ok(Uint8List bytes)
+    : this._(bytes: bytes, isFailed: false);
+
+  const WebdavGetBytesResult.notFound() : this._(bytes: null, isFailed: false);
+
+  const WebdavGetBytesResult.failed(String message)
+    : this._(bytes: null, isFailed: true, errorMessage: message);
+}
+
+class WebdavRemoteMetaResult {
+  final AppSyncSnapshotMeta? meta;
+  final bool isFailed;
+  final String? errorMessage;
+
+  const WebdavRemoteMetaResult._({
+    this.meta,
+    this.isFailed = false,
+    this.errorMessage,
+  });
+
+  const WebdavRemoteMetaResult.ok(AppSyncSnapshotMeta meta)
+    : this._(meta: meta, isFailed: false);
+
+  const WebdavRemoteMetaResult.notFound() : this._(meta: null, isFailed: false);
+
+  const WebdavRemoteMetaResult.failed(String message)
+    : this._(meta: null, isFailed: true, errorMessage: message);
+}
+
 class WebdavClientService {
   const WebdavClientService();
 
@@ -64,10 +104,33 @@ class WebdavClientService {
     required WebdavClient client,
     required String remotePath,
   }) async {
+    final result = await getBytesResult(client: client, remotePath: remotePath);
+    return result.bytes;
+  }
+
+  /// Distinguishes missing remote file (not found) from transport/auth errors.
+  Future<WebdavGetBytesResult> getBytesResult({
+    required WebdavClient client,
+    required String remotePath,
+  }) async {
     try {
-      return await client.get(remotePath);
-    } catch (_) {
-      return null;
+      final bytes = await client.get(remotePath);
+      if (bytes.isEmpty) {
+        return const WebdavGetBytesResult.notFound();
+      }
+      return WebdavGetBytesResult.ok(bytes);
+    } catch (error) {
+      final message = error.toString().toLowerCase();
+      final looksMissing =
+          message.contains('404') ||
+          message.contains('not found') ||
+          message.contains('not_found') ||
+          message.contains('does not exist') ||
+          message.contains('no such file');
+      if (looksMissing) {
+        return const WebdavGetBytesResult.notFound();
+      }
+      return WebdavGetBytesResult.failed(error.toString());
     }
   }
 
@@ -75,15 +138,40 @@ class WebdavClientService {
     required WebdavClient client,
     required String remotePath,
   }) async {
-    final bytes = await getBytes(client: client, remotePath: remotePath);
-    if (bytes == null || bytes.isEmpty) {
-      return null;
+    final result = await getRemoteMetaResult(
+      client: client,
+      remotePath: remotePath,
+    );
+    return result.meta;
+  }
+
+  Future<WebdavRemoteMetaResult> getRemoteMetaResult({
+    required WebdavClient client,
+    required String remotePath,
+  }) async {
+    final bytesResult = await getBytesResult(
+      client: client,
+      remotePath: remotePath,
+    );
+    if (bytesResult.isFailed) {
+      return WebdavRemoteMetaResult.failed(
+        bytesResult.errorMessage ?? 'remote_meta_unavailable',
+      );
     }
-    final decoded = jsonDecode(utf8.decode(bytes));
-    if (decoded is! Map) {
-      return null;
+    if (bytesResult.bytes == null || bytesResult.bytes!.isEmpty) {
+      return const WebdavRemoteMetaResult.notFound();
     }
-    return AppSyncSnapshotMeta.fromJson(Map<String, dynamic>.from(decoded));
+    try {
+      final decoded = jsonDecode(utf8.decode(bytesResult.bytes!));
+      if (decoded is! Map) {
+        return const WebdavRemoteMetaResult.failed('remote_meta_invalid');
+      }
+      return WebdavRemoteMetaResult.ok(
+        AppSyncSnapshotMeta.fromJson(Map<String, dynamic>.from(decoded)),
+      );
+    } catch (error) {
+      return WebdavRemoteMetaResult.failed(error.toString());
+    }
   }
 
   Future<void> deleteRemoteFile({

@@ -28,6 +28,45 @@ void main() {
     expect(choice, SyncConflictChoice.keepLocal);
   });
 
+  test('background conflict resolver never silently keeps local', () {
+    final choice = resolveSyncConflictForBackground(
+      SyncConflictInfo(
+        localExportedAt: DateTime.utc(2026, 7, 5, 13),
+        remoteExportedAt: DateTime.utc(2026, 7, 5, 12),
+        localHash: 'local',
+        remoteHash: 'remote',
+      ),
+    );
+    expect(choice, SyncConflictChoice.keepRemote);
+  });
+
+  test('content hash ignores exportedAt and deviceId', () {
+    final base = <String, dynamic>{
+      'app': 'mikcb',
+      'schemaVersion': AppSyncSnapshotService.schemaVersion,
+      'backupType': AppSyncSnapshotService.backupType,
+      'activeProfileId': 'p1',
+      'profiles': const <dynamic>[],
+      'timeSchemes': const <dynamic>[],
+      'teacherRecords': const <String>[],
+      'locationRecords': const <String>[],
+      'warehouse': const <String, dynamic>{},
+      'customHolidays': const <dynamic>[],
+      'partnerTimetableBinding': null,
+    };
+    final a = AppSyncSnapshotService.computeContentSha256({
+      ...base,
+      'exportedAt': '2026-07-05T12:00:00.000Z',
+      'deviceId': 'device-a',
+    });
+    final b = AppSyncSnapshotService.computeContentSha256({
+      ...base,
+      'exportedAt': '2026-07-05T18:00:00.000Z',
+      'deviceId': 'device-b',
+    });
+    expect(a, b);
+  });
+
   test('webdav first sync treats divergent snapshots as conflict', () {
     expect(
       webdavPullHasSyncConflict(

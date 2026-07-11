@@ -321,7 +321,9 @@ class AppSyncSnapshotService {
       );
     }
 
-    await provider.initialize();
+    // Force full in-memory reload: initialize() is process-idempotent and
+    // would skip partner/teachers/locations after the first start (C4).
+    await provider.reloadFromStorageAfterExternalApply();
     return null;
   }
 
@@ -339,8 +341,16 @@ class AppSyncSnapshotService {
     }
   }
 
+  /// Content identity for sync baseline / conflict detection.
+  ///
+  /// Excludes [exportedAt] and [deviceId] so collecting the same business
+  /// data at different times does not look like a local change (C2).
   static String computeContentSha256(Map<String, dynamic> payload) {
-    final canonical = jsonEncode(_canonicalize(payload));
+    final forHash = Map<String, dynamic>.from(payload)
+      ..remove('exportedAt')
+      ..remove('deviceId')
+      ..remove('contentSha256');
+    final canonical = jsonEncode(_canonicalize(forHash));
     return sha256.convert(utf8.encode(canonical)).toString();
   }
 
@@ -368,8 +378,9 @@ class AppSyncSnapshotService {
       'timeSchemes': timeSchemes.map((scheme) => scheme.toJson()).toList(),
       'teacherRecords': teacherRecords,
       'locationRecords': locationRecords,
+      // Never put teaching-system passwords into cloud sync JSON (C3).
       'warehouse': {
-        ...warehouse.toJson(),
+        ...warehouse.withoutPasswords().toJson(),
         'macros': macros.map((macro) => macro.toJson()).toList(),
       },
       'customHolidays': customHolidays.map((entry) => entry.toJson()).toList(),
@@ -415,6 +426,18 @@ SyncConflictChoice resolveSyncConflictAutomatically(SyncConflictInfo info) {
   return info.remoteHash.compareTo(info.localHash) >= 0
       ? SyncConflictChoice.keepRemote
       : SyncConflictChoice.keepLocal;
+}
+
+/// Background / auto-pull path: never silently upload local over remote (C1).
+///
+/// Local [exportedAt] is often `DateTime.now()` at collect time, so LWW would
+/// prefer empty new devices and wipe the cloud. Prefer remote without UI.
+SyncConflictChoice resolveSyncConflictForBackground(SyncConflictInfo info) {
+  final automatic = resolveSyncConflictAutomatically(info);
+  if (automatic == SyncConflictChoice.keepLocal) {
+    return SyncConflictChoice.keepRemote;
+  }
+  return automatic;
 }
 
 bool webdavPullHasSyncConflict({

@@ -226,43 +226,16 @@ class WebdavSyncService {
 
       return const WebdavSyncResult(kind: WebdavSyncResultKind.uploaded);
     } catch (error) {
-      final activeClient = client;
-      if (activeClient != null && (wroteSnapshot || wroteMeta)) {
-        await _cleanupPartialUpload(
-          client: activeClient,
-          config: config,
-          deleteSnapshot: wroteSnapshot,
-          deleteMeta: wroteMeta,
-        );
+      // Intentionally do not delete remote snapshot/meta on partial failure:
+      // deleting would destroy a previously good current snapshot (C6).
+      // Keep wrote* flags so future logging can report partial progress.
+      if (wroteSnapshot || wroteMeta) {
+        // no-op cleanup
       }
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
         message: sanitizeWebdavErrorMessage(error),
       );
-    }
-  }
-
-  Future<void> _cleanupPartialUpload({
-    required WebdavClient client,
-    required WebdavSyncConfig config,
-    required bool deleteSnapshot,
-    required bool deleteMeta,
-  }) async {
-    if (deleteSnapshot) {
-      try {
-        await _clientService.deleteRemoteFile(
-          client: client,
-          remotePath: config.snapshotRemotePath,
-        );
-      } catch (_) {}
-    }
-    if (deleteMeta) {
-      try {
-        await _clientService.deleteRemoteFile(
-          client: client,
-          remotePath: config.metaRemotePath,
-        );
-      } catch (_) {}
     }
   }
 
@@ -449,11 +422,19 @@ class WebdavSyncService {
 
     try {
       final client = _clientService.createClient(params);
-      final remoteMeta = await _clientService.getRemoteMeta(
+      final remoteMetaResult = await _clientService.getRemoteMetaResult(
         client: client,
         remotePath: config.metaRemotePath,
       );
+      if (remoteMetaResult.isFailed) {
+        return WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: remoteMetaResult.errorMessage ?? 'remote_meta_unavailable',
+        );
+      }
+      final remoteMeta = remoteMetaResult.meta;
       if (remoteMeta == null || remoteMeta.contentSha256.isEmpty) {
+        // True empty cloud (404 / missing meta) — safe to treat as no pull work.
         return const WebdavSyncResult(kind: WebdavSyncResultKind.upToDate);
       }
 
@@ -489,7 +470,7 @@ class WebdavSyncService {
         );
         final choice = allowConflictPrompt && conflictHandler != null
             ? await conflictHandler!(conflict)
-            : resolveSyncConflictAutomatically(conflict);
+            : resolveSyncConflictForBackground(conflict);
         switch (choice) {
           case SyncConflictChoice.keepLocal:
             return uploadSnapshot(provider: provider, configOverride: config);

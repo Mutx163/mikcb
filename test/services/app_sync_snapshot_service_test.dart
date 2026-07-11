@@ -71,7 +71,7 @@ void main() {
         'teacherRecords': snapshot.teacherRecords,
         'locationRecords': snapshot.locationRecords,
         'warehouse': {
-          ...snapshot.warehouse.toJson(),
+          ...snapshot.warehouse.withoutPasswords().toJson(),
           'macros': snapshot.macros.map((macro) => macro.toJson()).toList(),
         },
         'customHolidays': snapshot.customHolidays
@@ -106,6 +106,8 @@ void main() {
         parsed.warehouse.rememberedLogins.single.login.username,
         'student',
       );
+      // Cloud sync JSON must strip teaching-system passwords (C3).
+      expect(parsed.warehouse.rememberedLogins.single.login.password, isEmpty);
       expect(
         parsed.warehouse.customImportUrls['demo'],
         'https://example.com/login',

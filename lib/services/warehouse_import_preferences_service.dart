@@ -169,6 +169,26 @@ class WarehouseSyncBundle {
         .toList(),
   };
 
+  /// Cloud sync must not carry teaching-system passwords in plaintext.
+  WarehouseSyncBundle withoutPasswords() {
+    return WarehouseSyncBundle(
+      rememberedLogins: rememberedLogins
+          .map(
+            (entry) => WarehouseRememberedLoginEntry(
+              adapterId: entry.adapterId,
+              login: WarehouseRememberedLogin(
+                username: entry.login.username,
+                password: '',
+              ),
+            ),
+          )
+          .toList(),
+      customImportUrls: customImportUrls,
+      recentSchoolIds: recentSchoolIds,
+      customDebugRecords: customDebugRecords,
+    );
+  }
+
   factory WarehouseSyncBundle.fromJson(Map<String, dynamic> json) {
     final rawUrls = json['customImportUrls'];
     final customImportUrls = rawUrls is Map
