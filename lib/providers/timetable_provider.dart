@@ -382,6 +382,18 @@ class TimetableProvider with ChangeNotifier {
     return _initializationFuture ??= _init();
   }
 
+  /// Re-read profiles/binding/teachers after an external snapshot apply (C4).
+  ///
+  /// [initialize] is process-idempotent; cloud restore must force a full load.
+  Future<void> reloadFromStorageAfterExternalApply() async {
+    _initializationFuture = null;
+    await initialize();
+    // Deferred teacher/location load is unawaited in _init; wait here so UI
+    // sees storage-consistent records immediately after restore.
+    await _loadDeferredData();
+    notifyListeners();
+  }
+
   Future<void> _init() async {
     await _storageService.init();
 
@@ -990,9 +1002,20 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final isActive = _profiles[index].id == _activeProfileId;
+    if (isActive) {
+      final hasNormalFallback = _profiles
+          .where((profile) => profile.id != profileId && !profile.isPartnerImported)
+          .isNotEmpty;
+      if (!hasNormalFallback) {
+        // Keep at least one non-partner profile as the working set.
+        return false;
+      }
+    }
     _profiles.removeAt(index);
     if (isActive) {
-      final fallbackProfile = _profiles.first;
+      final fallbackProfile = _profiles
+          .where((profile) => !profile.isPartnerImported)
+          .first;
       _activeProfileId = fallbackProfile.id;
       _applyProfileState(fallbackProfile);
       _currentLiveCourseId = null;

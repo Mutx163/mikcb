@@ -1569,21 +1569,25 @@ class TimetableSettings {
 
   factory TimetableSettings.fromJson(Map<String, dynamic> json) {
     final rawSections = json['sections'] as List<dynamic>? ?? const [];
-    if (rawSections.isEmpty) {
-      return TimetableSettings.defaults();
-    }
+    // Empty sections fall back to defaults only for the section list; other
+    // fields must still parse so a corrupt sections array does not wipe theme /
+    // semester / live settings.
+    final resolvedSections = rawSections.isEmpty
+        ? TimetableSettings.defaults().sections
+        : rawSections
+              .map(
+                (item) => SectionTime.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
+              .toList();
     final rawAppUpdateMirrorUrlPrefix =
         json['appUpdateMirrorUrlPrefix'] as String? ??
         defaultAppUpdateMirrorUrlPrefix;
     final rawAppUpdateMirrorPreset = json['appUpdateMirrorPreset'] as String?;
 
     return TimetableSettings(
-      sections: rawSections
-          .map(
-            (item) =>
-                SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
+      sections: resolvedSections,
       activeTimeSchemeId: json['activeTimeSchemeId'] as String?,
       sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
       compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,

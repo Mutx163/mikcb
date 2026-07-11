@@ -95,28 +95,54 @@ class Course {
   }
 
   factory Course.fromJson(Map<String, dynamic> json) {
+    int readInt(String key, {int? fallback}) {
+      final raw = json[key];
+      if (raw is num) {
+        return raw.toInt();
+      }
+      if (raw is String) {
+        return int.tryParse(raw) ?? fallback ?? 0;
+      }
+      if (fallback != null) {
+        return fallback;
+      }
+      throw FormatException('Course.$key must be a number');
+    }
+
+    List<int>? readIntList(String key) {
+      final raw = json[key];
+      if (raw is! List) {
+        return null;
+      }
+      return raw.map((item) {
+        if (item is num) {
+          return item.toInt();
+        }
+        if (item is String) {
+          return int.tryParse(item) ?? 0;
+        }
+        return 0;
+      }).toList();
+    }
+
     return Course(
       id: json['id'] as String,
       name: json['name'] as String,
       shortName: json['shortName'] as String?,
       teacher: json['teacher'] as String,
       location: json['location'] as String,
-      dayOfWeek: json['dayOfWeek'] as int,
-      startSection: json['startSection'] as int,
-      endSection: json['endSection'] as int,
+      dayOfWeek: readInt('dayOfWeek'),
+      startSection: readInt('startSection'),
+      endSection: readInt('endSection'),
       startTime: json['startTime'] as String,
       endTime: json['endTime'] as String,
       color: json['color'] as String? ?? '#2196F3',
-      startWeek: json['startWeek'] as int? ?? 1,
-      endWeek: json['endWeek'] as int? ?? 16,
+      startWeek: readInt('startWeek', fallback: 1),
+      endWeek: readInt('endWeek', fallback: 16),
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
-      customWeeks: (json['customWeeks'] as List<dynamic>?)
-          ?.map((item) => item as int)
-          .toList(),
-      suspendedWeeks: (json['suspendedWeeks'] as List<dynamic>?)
-          ?.map((item) => item as int)
-          .toList(),
+      customWeeks: readIntList('customWeeks'),
+      suspendedWeeks: readIntList('suspendedWeeks'),
       courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
       description: json['description'] as String? ?? json['note'] as String?,
       note: json['note'] as String?,
@@ -214,21 +240,25 @@ class Course {
 
   List<int> get activeWeeks {
     final custom = normalizedCustomWeeks;
-    if (custom != null) {
-      return custom;
-    }
-
     final weeks = <int>[];
-    for (var week = startWeek; week <= endWeek; week++) {
-      if (isOddWeek && week.isEven) {
-        continue;
+    if (custom != null) {
+      weeks.addAll(custom);
+    } else {
+      for (var week = startWeek; week <= endWeek; week++) {
+        if (isOddWeek && week.isEven) {
+          continue;
+        }
+        if (isEvenWeek && week.isOdd) {
+          continue;
+        }
+        weeks.add(week);
       }
-      if (isEvenWeek && week.isOdd) {
-        continue;
-      }
-      weeks.add(week);
     }
-    return weeks;
+    final suspended = normalizedSuspendedWeeks;
+    if (suspended == null || suspended.isEmpty) {
+      return weeks;
+    }
+    return weeks.where((week) => !suspended.contains(week)).toList();
   }
 
   String weekDescription(AppLocalizations l10n) =>
