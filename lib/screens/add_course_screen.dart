@@ -10,6 +10,7 @@ import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
+import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
 import '../widgets/about_info_sheet.dart';
 import '../widgets/course_color_picker_sheet.dart';
@@ -55,6 +56,8 @@ class _ScheduleEntryData {
   bool isEvenWeek;
   _WeekSelectionMode weekSelectionMode;
   Set<int> selectedCustomWeeks;
+  List<int>? suspendedWeeks;
+  String? note;
   String? timeSchemeIdOverride;
 
   _ScheduleEntryData({
@@ -70,6 +73,8 @@ class _ScheduleEntryData {
     this.isEvenWeek = false,
     this.weekSelectionMode = _WeekSelectionMode.range,
     Set<int>? selectedCustomWeeks,
+    this.suspendedWeeks,
+    this.note,
     this.timeSchemeIdOverride,
   }) : selectedCustomWeeks = selectedCustomWeeks ?? <int>{};
 
@@ -90,6 +95,8 @@ class _ScheduleEntryData {
           ? _WeekSelectionMode.custom
           : _WeekSelectionMode.range,
       selectedCustomWeeks: customWeeks?.toSet() ?? <int>{},
+      suspendedWeeks: course.normalizedSuspendedWeeks,
+      note: course.note,
       timeSchemeIdOverride: course.timeSchemeIdOverride,
     );
   }
@@ -125,8 +132,10 @@ class _ScheduleEntryData {
       isOddWeek: customWeeks == null ? isOddWeek : false,
       isEvenWeek: customWeeks == null ? isEvenWeek : false,
       customWeeks: customWeeks,
+      suspendedWeeks: suspendedWeeks,
       courseNature: courseNature,
       description: description,
+      note: note,
       timeSchemeIdOverride: timeSchemeIdOverride,
     );
   }
@@ -159,17 +168,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     l10n.weekdaySun,
   ];
 
-  final List<String> _colors = const [
-    '#2196F3',
-    '#4CAF50',
-    '#FF9800',
-    '#E91E63',
-    '#9C27B0',
-    '#00BCD4',
-    '#FF5722',
-    '#795548',
-    '#607D8B',
-  ];
+  final List<String> _colors = kPresetCourseColorHexes;
 
   Color _parseColor(String colorHex) {
     return parseHexColorOrFallback(colorHex, fallback: const Color(0xFF2196F3));
@@ -773,8 +772,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             title: l10n.selectTeacherTitle,
             suggestions: provider.uniqueTeachers,
             controller: _entryTeacherControllers[index],
-            onConfirmed: () =>
-                entry.teacher = _entryTeacherControllers[index].text,
+            onConfirmed: () {
+              setState(() {
+                entry.teacher = _entryTeacherControllers[index].text;
+              });
+            },
           ),
         ),
         trailing: _buildCompactPickerField(
@@ -786,8 +788,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             title: l10n.selectLocationTitle,
             suggestions: provider.uniqueLocations,
             controller: _entryLocationControllers[index],
-            onConfirmed: () =>
-                entry.location = _entryLocationControllers[index].text,
+            onConfirmed: () {
+              setState(() {
+                entry.location = _entryLocationControllers[index].text;
+              });
+            },
           ),
         ),
       ),

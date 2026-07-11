@@ -395,6 +395,10 @@ int _findSoftImportedCourseMatchIndex(
         imported.name.trim().toLowerCase()) {
       continue;
     }
+    // Require same weekday so multi-slot same-name courses are not merged.
+    if (existing.dayOfWeek != imported.dayOfWeek) {
+      continue;
+    }
     if (existing.sectionCount != imported.sectionCount) {
       continue;
     }

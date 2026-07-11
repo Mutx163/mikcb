@@ -748,6 +748,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unifiedCourseCardColorSubtitle => '关闭后继续使用每门课程自己的颜色';
 
   @override
+  String get importRandomCourseColorTitle => '随机课程颜色';
+
+  @override
+  String get importRandomCourseColorSubtitle => '开启后按课程名与教师分配预设色，避免整批同一蓝色';
+
+  @override
   String get courseImportTitle => '导入课程';
 
   @override
@@ -7445,6 +7451,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logLanEditCurrentWeekSet => '局域网编辑：已设置当前周次';
 
   @override
+  String get logLanEditProfileSwitched => '局域网编辑：已切换课表';
+
+  @override
   String get logLanEditSpreadsheetImported => '局域网编辑：已导入表格';
 
   @override
@@ -8632,6 +8641,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get unifiedCourseCardColorSubtitle => '關閉後繼續使用每門課程自己的顏色';
+
+  @override
+  String get importRandomCourseColorTitle => '隨機課程顏色';
+
+  @override
+  String get importRandomCourseColorSubtitle => '開啟後依課程名與教師分配預設色，避免整批同一藍色';
 
   @override
   String get courseImportTitle => '匯入課程';
@@ -15202,6 +15217,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logLanEditCurrentWeekSet => '局域网编辑：已设置当前周次';
 
   @override
+  String get logLanEditProfileSwitched => '局域网编辑：已切换课表';
+
+  @override
   String get logLanEditSpreadsheetImported => '局域网编辑：已导入表格';
 
   @override
@@ -16389,6 +16407,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get unifiedCourseCardColorSubtitle => '關閉後繼續使用每門課程自己的顏色';
+
+  @override
+  String get importRandomCourseColorTitle => '隨機課程顏色';
+
+  @override
+  String get importRandomCourseColorSubtitle => '開啟後依課程名與教師分配預設色，避免整批同一藍色';
 
   @override
   String get courseImportTitle => '匯入課程';
@@ -22957,6 +22981,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logLanEditCurrentWeekSet => '局域网编辑：已设置当前周次';
+
+  @override
+  String get logLanEditProfileSwitched => '局域网编辑：已切换课表';
 
   @override
   String get logLanEditSpreadsheetImported => '局域网编辑：已导入表格';

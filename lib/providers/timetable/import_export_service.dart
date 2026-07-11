@@ -110,7 +110,11 @@ Future<int> _timetableImportParsedCourses(
   final int effectiveImportedCount;
   if (replaceExisting) {
     final dedupedImportedCourses = dedupeImportedCourses(importedCourses);
-    mergedCourses = dedupedImportedCourses;
+    // Preserve local metadata (color/shortName/note/…) for matching courses.
+    mergedCourses = replaceImportedCoursesPreservingLocalFields(
+      existingCourses: host._courses,
+      importedCourses: dedupedImportedCourses,
+    );
     effectiveImportedCount = dedupedImportedCourses.length;
     syncResult = null;
   } else {

@@ -756,6 +756,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get unifiedCourseCardColorSubtitle => 'オフにすると各授業の個別カラーを使用';
 
   @override
+  String get importRandomCourseColorTitle => '授業カラーをランダム';
+
+  @override
+  String get importRandomCourseColorSubtitle =>
+      'オンにすると授業名と教員でプリセット色を割り当て、一括で同じ青になるのを防ぎます';
+
+  @override
   String get courseImportTitle => '授業インポート';
 
   @override
@@ -7613,6 +7620,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get logLanEditCurrentWeekSet => 'LAN edit: current week set';
+
+  @override
+  String get logLanEditProfileSwitched =>
+      'LAN edit: timetable profile switched';
 
   @override
   String get logLanEditSpreadsheetImported => 'LAN edit: spreadsheet imported';

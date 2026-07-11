@@ -1484,6 +1484,18 @@ abstract class AppLocalizations {
   /// **'关闭后继续使用每门课程自己的颜色'**
   String get unifiedCourseCardColorSubtitle;
 
+  /// No description provided for @importRandomCourseColorTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'随机课程颜色'**
+  String get importRandomCourseColorTitle;
+
+  /// No description provided for @importRandomCourseColorSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后按课程名与教师分配预设色，避免整批同一蓝色'**
+  String get importRandomCourseColorSubtitle;
+
   /// No description provided for @courseImportTitle.
   ///
   /// In zh, this message translates to:
@@ -13394,6 +13406,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'局域网编辑：已设置当前周次'**
   String get logLanEditCurrentWeekSet;
+
+  /// No description provided for @logLanEditProfileSwitched.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已切换课表'**
+  String get logLanEditProfileSwitched;
 
   /// No description provided for @logLanEditSpreadsheetImported.
   ///

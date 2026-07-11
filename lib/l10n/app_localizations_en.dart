@@ -798,6 +798,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'If disabled, each course keeps its own color.';
 
   @override
+  String get importRandomCourseColorTitle => 'Random course colors';
+
+  @override
+  String get importRandomCourseColorSubtitle =>
+      'When on, assign preset colors by course name and teacher instead of one default blue';
+
+  @override
   String get courseImportTitle => 'Import Courses';
 
   @override
@@ -7862,6 +7869,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logLanEditCurrentWeekSet => 'LAN edit: current week set';
+
+  @override
+  String get logLanEditProfileSwitched =>
+      'LAN edit: timetable profile switched';
 
   @override
   String get logLanEditSpreadsheetImported => 'LAN edit: spreadsheet imported';

@@ -756,6 +756,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unifiedCourseCardColorSubtitle => '끄면 각 수업의 개별 색상을 계속 사용합니다';
 
   @override
+  String get importRandomCourseColorTitle => '수업 색상 무작위';
+
+  @override
+  String get importRandomCourseColorSubtitle =>
+      '켜면 수업명과 교수로 프리셋 색을 배정하여 전부 같은 파란색이 되지 않게 합니다';
+
+  @override
   String get courseImportTitle => '수업 가져오기';
 
   @override
@@ -7646,6 +7653,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get logLanEditCurrentWeekSet => 'LAN edit: current week set';
+
+  @override
+  String get logLanEditProfileSwitched =>
+      'LAN edit: timetable profile switched';
 
   @override
   String get logLanEditSpreadsheetImported => 'LAN edit: spreadsheet imported';

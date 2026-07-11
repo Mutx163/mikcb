@@ -105,7 +105,7 @@ void main() {
   });
 
   test(
-    'syncImportedCourses treats rescheduled course as same course and keeps local fields',
+    'syncImportedCourses does not soft-match across different weekdays',
     () {
       final existing = [
         _course(
@@ -142,12 +142,57 @@ void main() {
         importedCourses: imported,
       );
 
+      expect(result.addedCount, 1);
+      expect(result.updatedCount, 0);
+      expect(result.mergedCourses, hasLength(2));
+      expect(result.mergedCourses.map((c) => c.dayOfWeek).toSet(), {1, 3});
+    },
+  );
+
+  test(
+    'syncImportedCourses soft-matches same weekday and keeps local fields',
+    () {
+      final existing = [
+        _course(
+          id: 'a',
+          name: '高等数学',
+          day: 1,
+          start: 1,
+          end: 2,
+          weeks: [1, 2, 3, 4, 5, 6],
+          teacher: '张老师',
+          location: 'A101',
+          shortName: '高数',
+          color: '#FF0000',
+          note: '验收备注',
+          description: '课程简介',
+          timeSchemeIdOverride: 'scheme_a',
+        ),
+      ];
+      final imported = [
+        _course(
+          id: 'b',
+          name: '高等数学',
+          day: 1,
+          start: 3,
+          end: 4,
+          weeks: [1, 2, 3, 4, 5, 6],
+          teacher: '张老师',
+          location: 'B202',
+        ),
+      ];
+
+      final result = syncImportedCourses(
+        existingCourses: existing,
+        importedCourses: imported,
+      );
+
       expect(result.addedCount, 0);
       expect(result.updatedCount, 1);
       expect(result.mergedCourses, hasLength(1));
       final merged = result.mergedCourses.first;
       expect(merged.id, 'a');
-      expect(merged.dayOfWeek, 3);
+      expect(merged.dayOfWeek, 1);
       expect(merged.startSection, 3);
       expect(merged.endSection, 4);
       expect(merged.location, 'B202');
@@ -269,7 +314,7 @@ void main() {
   );
 
   test(
-    'syncImportedCourses keeps local-only courses and merges imported updates',
+    'syncImportedCourses keeps local-only courses and merges same-day imported updates',
     () {
       final existing = [
         _course(
@@ -296,7 +341,7 @@ void main() {
         _course(
           id: 'new-a',
           name: '高等数学',
-          day: 3,
+          day: 1,
           start: 3,
           end: 4,
           weeks: [1, 2, 3, 4, 5, 6],
@@ -352,7 +397,7 @@ void main() {
         _course(
           id: 'new-a',
           name: '高等数学',
-          day: 3,
+          day: 1,
           start: 3,
           end: 4,
           weeks: [1, 2, 3, 4, 5, 6],
@@ -369,7 +414,7 @@ void main() {
       expect(replaced, hasLength(1));
       expect(replaced.single.id, 'a');
       expect(replaced.single.name, '高等数学');
-      expect(replaced.single.dayOfWeek, 3);
+      expect(replaced.single.dayOfWeek, 1);
       expect(replaced.single.startSection, 3);
       expect(replaced.single.endSection, 4);
       expect(replaced.single.location, 'B202');
