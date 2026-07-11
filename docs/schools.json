@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-10T05:40:51+00:00",
+  "updatedAt": "2026-07-11T04:44:05+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 121,
-    "schools": 116,
+    "total": 123,
+    "schools": 118,
     "generic": 5
   },
   "schools": [
@@ -62,6 +62,13 @@
       "name": "北方工业大学",
       "initial": "B",
       "resourceFolder": "NCUT",
+      "category": "school"
+    },
+    {
+      "id": "CZIMT",
+      "name": "常州机电职业技术学院",
+      "initial": "C",
+      "resourceFolder": "CZIMT",
       "category": "school"
     },
     {
@@ -825,6 +832,13 @@
       "name": "中国石油大学（北京）克拉玛依校区",
       "initial": "Z",
       "resourceFolder": "CUPK",
+      "category": "school"
+    },
+    {
+      "id": "CJLU",
+      "name": "中国计量大学",
+      "initial": "Z",
+      "resourceFolder": "CJLU",
       "category": "school"
     },
     {
