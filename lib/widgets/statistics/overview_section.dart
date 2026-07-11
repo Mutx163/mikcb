@@ -48,7 +48,10 @@ class OverviewSection extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Divider(height: 1, color: HyperosTokens.divider),
+            child: Divider(
+              height: 1,
+              color: HyperosColors.dividerLine(context),
+            ),
           ),
           IntrinsicHeight(
             child: Row(
@@ -130,7 +133,7 @@ class _VerticalDivider extends StatelessWidget {
     return Container(
       width: 1,
       margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: HyperosTokens.divider,
+      color: HyperosColors.dividerLine(context),
     );
   }
 }

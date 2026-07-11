@@ -875,7 +875,7 @@ class _AiWorkflowGuideCard extends StatelessWidget {
                 Icon(
                   Icons.lightbulb_outline_rounded,
                   size: 18,
-                  color: HyperosTokens.accent,
+                  color: HyperosColors.primary(context),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -900,7 +900,7 @@ class _AiWorkflowStepList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = HyperosTokens.accent;
+    final accent = HyperosColors.primary(context);
 
     return Column(
       children: [
@@ -946,7 +946,7 @@ class _AiWorkflowStepList extends StatelessWidget {
                   width: 2,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: HyperosTokens.divider,
+                    color: HyperosColors.dividerLine(context),
                     borderRadius: BorderRadius.circular(1),
                   ),
                 ),
@@ -1871,10 +1871,12 @@ class _WarehouseCourseImportScreenState
                         selectTextStyle: HyperosTypography.listDetail(context)
                             .copyWith(
                               fontSize: HyperosMiuixTypography.footnote2,
-                              color: HyperosTokens.accent,
+                              color: HyperosColors.primary(context),
                             ),
                         selectItemDecoration: BoxDecoration(
-                          color: HyperosTokens.accent.withValues(alpha: 0.12),
+                          color: HyperosColors.primary(
+                            context,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         indexHintDecoration: BoxDecoration(
@@ -1883,7 +1885,7 @@ class _WarehouseCourseImportScreenState
                         ),
                         indexHintTextStyle: HyperosTypography.title(
                           context,
-                        ).copyWith(color: HyperosTokens.accent),
+                        ).copyWith(color: HyperosColors.primary(context)),
                       ),
                       indexHintBuilder: (context, tag) => Container(
                         width: 72,
@@ -1897,7 +1899,7 @@ class _WarehouseCourseImportScreenState
                           tag,
                           style: HyperosTypography.title(
                             context,
-                          ).copyWith(color: HyperosTokens.accent),
+                          ).copyWith(color: HyperosColors.primary(context)),
                         ),
                       ),
                       itemBuilder: (context, index) {
@@ -2157,9 +2159,10 @@ class _WarehouseCustomDebugRecordsScreenState
                                 const SizedBox(height: 8),
                                 Text(
                                   record.importUrl,
-                                  style: HyperosTypography.listDetail(
-                                    context,
-                                  ).copyWith(color: HyperosTokens.accent),
+                                  style: HyperosTypography.listDetail(context)
+                                      .copyWith(
+                                        color: HyperosColors.primary(context),
+                                      ),
                                 ),
                                 const SizedBox(height: 6),
                                 _importListDetail(
@@ -3601,9 +3604,9 @@ class _WarehouseAdapterWebLoginScreenState
                           children: [
                             HyperosTag(
                               label: _useDesktopMode ? '🖥️' : '📱',
-                              backgroundColor: HyperosTokens.accent.withValues(
-                                alpha: 0.12,
-                              ),
+                              backgroundColor: HyperosColors.primary(
+                                context,
+                              ).withValues(alpha: 0.12),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -3619,8 +3622,9 @@ class _WarehouseAdapterWebLoginScreenState
                             if (_isUsingLocalDebugScript)
                               HyperosTag(
                                 label: effectiveDebugScriptName,
-                                backgroundColor: HyperosTokens.accent
-                                    .withValues(alpha: 0.12),
+                                backgroundColor: HyperosColors.primary(
+                                  context,
+                                ).withValues(alpha: 0.12),
                               ),
                           ],
                         ),
@@ -3665,7 +3669,7 @@ class _WarehouseAdapterWebLoginScreenState
                                       : ''),
                               style: HyperosTypography.listDetail(
                                 context,
-                              ).copyWith(color: HyperosTokens.accent),
+                              ).copyWith(color: HyperosColors.primary(context)),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -3959,6 +3963,21 @@ class _WarehouseAdapterWebLoginScreenState
               adapter: widget.adapter,
               options: widget.fetchOptions,
             );
+      if (script.trim().isEmpty) {
+        _debugImportLog('execute import script rejected: empty script');
+        if (!mounted) {
+          return;
+        }
+        final emptyScriptMessage = l10n.courseImportScriptFailed;
+        _cancelImportTimeout();
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = emptyScriptMessage;
+        });
+        _showMacroReplayImportError(emptyScriptMessage);
+        _showLightTip(context, emptyScriptMessage);
+        return;
+      }
       final wrappedScript =
           '''
 (() => {
@@ -4074,6 +4093,12 @@ class _WarehouseAdapterWebLoginScreenState
     }
   }
 
+  /// Privileged bridge ops that mutate timetable data may only run while an
+  /// import script (manual or macro replay) is actively executing.
+  bool get _isPrivilegedBridgeContextActive =>
+      _isExecutingImport ||
+      (_isMacroReplay && _playbackState == PlaybackUiState.executingImport);
+
   Future<void> _handleBridgeMessage(String rawMessage) async {
     Map<String, dynamic>? message;
     try {
@@ -4108,9 +4133,21 @@ class _WarehouseAdapterWebLoginScreenState
         await _showScriptSingleSelectionDialog(message);
         break;
       case 'saveCourseConfig':
+        if (!_isPrivilegedBridgeContextActive) {
+          _debugImportLog(
+            'bridge saveCourseConfig ignored outside import execution',
+          );
+          break;
+        }
         await _handleSaveCourseConfig(message);
         break;
       case 'savePresetTimeSlots':
+        if (!_isPrivilegedBridgeContextActive) {
+          _debugImportLog(
+            'bridge savePresetTimeSlots ignored outside import execution',
+          );
+          break;
+        }
         await _handleSavePresetTimeSlots(message);
         break;
       case 'error':
@@ -4128,6 +4165,10 @@ class _WarehouseAdapterWebLoginScreenState
         _showLightTip(context, errorMessage);
         break;
       case 'courses':
+        if (!_isPrivilegedBridgeContextActive) {
+          _debugImportLog('bridge courses ignored outside import execution');
+          break;
+        }
         final payload = (message['payload'] as String?) ?? '[]';
         _debugImportLog(
           'bridge courses -> handle payloadLength=${payload.length}',
@@ -5162,7 +5203,7 @@ class _ImportInitialBadge extends StatelessWidget {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: HyperosTokens.accent.withValues(alpha: 0.12),
+        color: HyperosColors.primary(context).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
@@ -5170,7 +5211,7 @@ class _ImportInitialBadge extends StatelessWidget {
         text,
         style: HyperosTypography.listDetail(
           context,
-        ).copyWith(color: HyperosTokens.accent),
+        ).copyWith(color: HyperosColors.primary(context)),
       ),
     );
   }
@@ -5540,14 +5581,14 @@ class _GuideLine extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: HyperosTokens.accent.withValues(alpha: 0.12),
+            color: HyperosColors.primary(context).withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
           child: Text(
             title.replaceAll('步骤 ', ''),
             style: HyperosTypography.listDetail(
               context,
-            ).copyWith(color: HyperosTokens.accent),
+            ).copyWith(color: HyperosColors.primary(context)),
           ),
         ),
         const SizedBox(width: 12),

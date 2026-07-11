@@ -22,13 +22,8 @@ class HyperosBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!show) return child;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final badgeColor = isDark
-        ? HyperosMiuixDarkColors.error
-        : HyperosMiuixLightColors.error;
-    final textColor = isDark
-        ? HyperosMiuixDarkColors.onError
-        : HyperosMiuixLightColors.onError;
+    final badgeColor = HyperosColors.error(context);
+    final textColor = HyperosColors.onError(context);
 
     final hasLabel = label != null && label!.isNotEmpty;
     final badge = hasLabel
@@ -96,10 +91,7 @@ class HyperosTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultBg = isDark
-        ? HyperosMiuixDarkColors.secondaryContainer
-        : HyperosMiuixLightColors.secondaryContainer;
+    final defaultBg = HyperosColors.secondaryContainer(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

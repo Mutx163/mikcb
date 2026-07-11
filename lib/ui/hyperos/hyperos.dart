@@ -24,6 +24,7 @@ export 'hyperos_page.dart';
 export 'hyperos_progress.dart';
 export 'hyperos_pull_to_refresh.dart';
 export 'hyperos_select.dart';
+export 'hyperos_sheet.dart';
 export 'hyperos_snackbar.dart';
 export 'hyperos_switch.dart';
 export 'hyperos_tab_row.dart';

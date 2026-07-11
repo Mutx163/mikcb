@@ -36,6 +36,10 @@ class HyperosLayoutTuning {
 
   double get iconBadgeRadius => iconBadgeSize * 7 / 26;
 
+  /// Active tuning: controller values when debug has overridden defaults.
+  static HyperosLayoutTuning get current =>
+      HyperosLayoutTuningController.instance.values;
+
   static const defaults = HyperosLayoutTuning(
     cardRadius: HyperosMiuixSpec.settingsGroupRadius,
     iconBadgeSize: 26,
@@ -102,6 +106,10 @@ class HyperosLayoutTuning {
 }
 
 /// In-memory tuning state; notifies listeners so tuned screens update live.
+///
+/// Prefer reading layout values through [HyperosLayoutTuningScope] /
+/// [HyperosLayoutTuning.current] so widgets rebuild when values change.
+/// The controller remains for debug panels that call [apply]/[patch].
 class HyperosLayoutTuningController extends ChangeNotifier {
   HyperosLayoutTuningController._();
 
@@ -122,5 +130,57 @@ class HyperosLayoutTuningController extends ChangeNotifier {
 
   void patch(HyperosLayoutTuning Function(HyperosLayoutTuning current) patch) {
     apply(patch(values));
+  }
+}
+
+/// Injects live [HyperosLayoutTuning] into the tree (debug / hand-off).
+///
+/// When absent, [HyperosLayoutTuning.current] falls back to the controller
+/// singleton (or [HyperosLayoutTuning.defaults] if untouched).
+class HyperosLayoutTuningScope extends InheritedWidget {
+  const HyperosLayoutTuningScope({
+    super.key,
+    required this.tuning,
+    required super.child,
+  });
+
+  final HyperosLayoutTuning tuning;
+
+  static HyperosLayoutTuning of(BuildContext context) {
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<HyperosLayoutTuningScope>();
+    return scope?.tuning ?? HyperosLayoutTuning.current;
+  }
+
+  static HyperosLayoutTuning? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<HyperosLayoutTuningScope>()
+        ?.tuning;
+  }
+
+  @override
+  bool updateShouldNotify(covariant HyperosLayoutTuningScope oldWidget) {
+    return tuning != oldWidget.tuning;
+  }
+}
+
+/// Rebuilds when [HyperosLayoutTuningController] changes and exposes values
+/// via [HyperosLayoutTuningScope].
+class HyperosLayoutTuningHost extends StatelessWidget {
+  const HyperosLayoutTuningHost({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: HyperosLayoutTuningController.instance,
+      builder: (context, _) {
+        return HyperosLayoutTuningScope(
+          tuning: HyperosLayoutTuningController.instance.values,
+          child: child,
+        );
+      },
+    );
   }
 }

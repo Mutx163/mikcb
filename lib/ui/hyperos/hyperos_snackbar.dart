@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 SnackBar _buildHyperosSnackBar({
   required BuildContext context,
@@ -11,17 +12,9 @@ SnackBar _buildHyperosSnackBar({
     milliseconds: HyperosMiuixSnackbar.durationShortMs,
   ),
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final background = isDark
-      ? HyperosMiuixDarkColors.surfaceContainerHighest
-      : HyperosMiuixLightColors.onSurface;
-  final actionColor = isDark
-      ? HyperosMiuixDarkColors.primary
-      : HyperosMiuixLightColors.primary;
-
   return SnackBar(
     behavior: SnackBarBehavior.floating,
-    backgroundColor: background,
+    backgroundColor: HyperosColors.inverseSurface(context),
     elevation: HyperosMiuixSnackbar.shadowRadius,
     margin: const EdgeInsets.fromLTRB(
       HyperosMiuixSnackbar.outerPaddingHorizontal,
@@ -37,7 +30,7 @@ SnackBar _buildHyperosSnackBar({
     action: actionLabel != null && onAction != null
         ? SnackBarAction(
             label: actionLabel,
-            textColor: actionColor,
+            textColor: HyperosColors.primary(context),
             onPressed: onAction,
           )
         : null,
@@ -45,21 +38,15 @@ SnackBar _buildHyperosSnackBar({
 }
 
 TextStyle _messageStyle(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
   return TextStyle(
     fontSize: HyperosMiuixTypography.body2,
     fontWeight: FontWeight.w500,
-    color: isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onPrimary,
+    color: HyperosColors.onInverseSurface(context),
   );
 }
 
 TextStyle _descriptionStyle(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final onBackground = isDark
-      ? HyperosMiuixDarkColors.onSurface
-      : HyperosMiuixLightColors.onPrimary;
+  final onBackground = HyperosColors.onInverseSurface(context);
   return TextStyle(
     fontSize: HyperosMiuixTypography.footnote1,
     height: 1.45,
@@ -101,10 +88,7 @@ void showHyperosRichSnackBar(
     milliseconds: HyperosMiuixSnackbar.durationShortMs,
   ),
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final defaultIconColor = isDark
-      ? HyperosMiuixDarkColors.onSurface
-      : HyperosMiuixLightColors.onPrimary;
+  final defaultIconColor = HyperosColors.onInverseSurface(context);
 
   final content = Row(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,9 +137,7 @@ class HyperosSnackBar extends SnackBar {
     required BuildContext context,
   }) : super(
          behavior: SnackBarBehavior.floating,
-         backgroundColor: Theme.of(context).brightness == Brightness.dark
-             ? HyperosMiuixDarkColors.surfaceContainerHighest
-             : HyperosMiuixLightColors.onSurface,
+         backgroundColor: HyperosColors.inverseSurface(context),
          elevation: HyperosMiuixSnackbar.shadowRadius,
          margin: const EdgeInsets.fromLTRB(
            HyperosMiuixSnackbar.outerPaddingHorizontal,
@@ -172,9 +154,7 @@ class HyperosSnackBar extends SnackBar {
          action: actionLabel != null && onAction != null
              ? SnackBarAction(
                  label: actionLabel,
-                 textColor: Theme.of(context).brightness == Brightness.dark
-                     ? HyperosMiuixDarkColors.primary
-                     : HyperosMiuixLightColors.primary,
+                 textColor: HyperosColors.primary(context),
                  onPressed: onAction,
                )
              : null,

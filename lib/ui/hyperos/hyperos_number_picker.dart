@@ -121,16 +121,9 @@ class _HyperosNumberPickerState extends State<HyperosNumberPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final summary = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
-    final divider = isDark
-        ? HyperosMiuixDarkColors.dividerLine
-        : HyperosMiuixLightColors.dividerLine;
+    final primary = HyperosColors.primary(context);
+    final summary = HyperosColors.onSurfaceVariantSummary(context);
+    final divider = HyperosColors.dividerLine(context);
 
     final itemHeight = HyperosMiuixNumberPicker.itemHeight;
     final height = itemHeight * widget.visibleItemCount;
@@ -215,21 +208,16 @@ class HyperosNumberPickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final summary = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
+    final summary = HyperosColors.onSurfaceVariantSummary(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: HyperosTypography.title(context).copyWith(
-            color: isDark
-                ? HyperosMiuixDarkColors.onSurface
-                : HyperosMiuixLightColors.onSurface,
-          ),
+          style: HyperosTypography.title(
+            context,
+          ).copyWith(color: HyperosColors.onSurface(context)),
         ),
         if (subtitle != null) ...[
           const SizedBox(height: 2),

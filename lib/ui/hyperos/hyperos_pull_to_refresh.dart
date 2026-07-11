@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS pull-to-refresh wrapper (primary accent indicator).
 class HyperosRefreshIndicator extends StatelessWidget {
@@ -17,16 +17,9 @@ class HyperosRefreshIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-
     return RefreshIndicator(
-      color: color,
-      backgroundColor: isDark
-          ? HyperosMiuixDarkColors.surfaceContainer
-          : HyperosMiuixLightColors.surfaceContainer,
+      color: HyperosColors.primary(context),
+      backgroundColor: HyperosColors.surfaceContainer(context),
       displacement: displacement,
       onRefresh: onRefresh,
       child: child,

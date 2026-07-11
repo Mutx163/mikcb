@@ -13,8 +13,7 @@ import '../logging/diagnostics_log_parser.dart';
 import '../services/diagnostics_log_viewer_preferences.dart';
 import '../utils/app_toast.dart';
 
-export '../logging/diagnostics_log_parser.dart'
-    show DiagnosticsLogLevel;
+export '../logging/diagnostics_log_parser.dart' show DiagnosticsLogLevel;
 
 enum DiagnosticsLogViewMode { structured, raw }
 
@@ -200,7 +199,9 @@ class _LiveDiagnosticsLogViewerScreenState
 
   Future<void> _applyLoadedLog(String loaded) async {
     final body = extractDiagnosticsLogBody(loaded);
-    if (body.trim().isEmpty && _parsed.entries.isEmpty && widget.onLoadEmpty != null) {
+    if (body.trim().isEmpty &&
+        _parsed.entries.isEmpty &&
+        widget.onLoadEmpty != null) {
       widget.onLoadEmpty!();
       return;
     }
@@ -299,7 +300,8 @@ class _LiveDiagnosticsLogViewerScreenState
       _parsing = false;
       _rebuildVisibleEntries();
     });
-    final shouldFollowLatest = _stickToLatest &&
+    final shouldFollowLatest =
+        _stickToLatest &&
         (isFirstEmission ||
             (_isStreaming && _parsed.entries.length > previousCount));
     if (shouldFollowLatest) {
@@ -343,8 +345,7 @@ class _LiveDiagnosticsLogViewerScreenState
     }
     final position = _structuredScrollController.position;
     if (_latestAtBottom) {
-      _stickToLatest =
-          position.pixels >= position.maxScrollExtent - 48;
+      _stickToLatest = position.pixels >= position.maxScrollExtent - 48;
     } else {
       _stickToLatest = position.pixels <= 48;
     }
@@ -356,8 +357,7 @@ class _LiveDiagnosticsLogViewerScreenState
     }
     final position = _rawScrollController.position;
     if (_latestAtBottom) {
-      _stickToLatest =
-          position.pixels >= position.maxScrollExtent - 48;
+      _stickToLatest = position.pixels >= position.maxScrollExtent - 48;
     } else {
       _stickToLatest = position.pixels <= 48;
     }
@@ -466,14 +466,17 @@ class _LiveDiagnosticsLogViewerScreenState
       FHeaderAction(
         icon: const Icon(Icons.copy_all_rounded),
         semanticsLabel: l10n.appLogsCopyAction,
-        onPress: _parsed.entries.isEmpty ? null : () => _copyLogs(filteredRawText),
+        onPress: _parsed.entries.isEmpty
+            ? null
+            : () => _copyLogs(filteredRawText),
       ),
       FHeaderAction(
         icon: _exporting
             ? const HyperosCircularProgress(size: 18, strokeWidth: 2)
             : const Icon(Icons.ios_share_rounded),
         semanticsLabel: l10n.appLogsExportAction,
-        onPress: widget.onExport == null || _exporting || _parsed.entries.isEmpty
+        onPress:
+            widget.onExport == null || _exporting || _parsed.entries.isEmpty
             ? null
             : () => _exportLogs(filteredRawText),
       ),
@@ -497,7 +500,7 @@ class _LiveDiagnosticsLogViewerScreenState
             Icon(
               Icons.error_outline_rounded,
               size: 40,
-              color: HyperosTokens.error,
+              color: HyperosColors.error(context),
             ),
             const SizedBox(height: 12),
             Text(
@@ -600,9 +603,7 @@ class _LiveDiagnosticsLogViewerScreenState
                               _displayOptionsSummary(l10n),
                               style: HyperosTypography.listDetail(context)
                                   .copyWith(
-                                    color: HyperosColors.secondaryText(
-                                      context,
-                                    ),
+                                    color: HyperosColors.secondaryText(context),
                                   ),
                             ),
                           ],
@@ -652,9 +653,7 @@ class _LiveDiagnosticsLogViewerScreenState
                         l10n.diagnosticsTimeSortDescending,
                       ],
                       selectedIndex:
-                          _timeSort == DiagnosticsLogTimeSort.ascending
-                          ? 0
-                          : 1,
+                          _timeSort == DiagnosticsLogTimeSort.ascending ? 0 : 1,
                       onChanged: (index) {
                         _setTimeSort(
                           index == 0
@@ -689,9 +688,9 @@ class _LiveDiagnosticsLogViewerScreenState
                 _visibleEntries.length,
                 _parsed.entries.length,
               ),
-              style: HyperosTypography.listDetail(context).copyWith(
-                color: HyperosColors.secondaryText(context),
-              ),
+              style: HyperosTypography.listDetail(
+                context,
+              ).copyWith(color: HyperosColors.secondaryText(context)),
             ),
           ),
         SingleChildScrollView(
@@ -704,8 +703,7 @@ class _LiveDiagnosticsLogViewerScreenState
                 _LevelFilterChip(
                   label:
                       '${_levelLabel(l10n, DiagnosticsLogLevel.values[i])} ${_levelCounts[DiagnosticsLogLevel.values[i]] ?? 0}',
-                  selected:
-                      _selectedLevel == DiagnosticsLogLevel.values[i],
+                  selected: _selectedLevel == DiagnosticsLogLevel.values[i],
                   onPress: () {
                     setState(() {
                       _selectedLevel = DiagnosticsLogLevel.values[i];
@@ -746,9 +744,9 @@ class _LiveDiagnosticsLogViewerScreenState
             Text(
               l10n.diagnosticsEmptySubtitle,
               textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(context).copyWith(
-                color: HyperosColors.secondaryText(context),
-              ),
+              style: HyperosTypography.listDetail(
+                context,
+              ).copyWith(color: HyperosColors.secondaryText(context)),
             ),
           ],
         ),
@@ -851,9 +849,9 @@ class _LiveDiagnosticsLogViewerScreenState
             Text(
               l10n.diagnosticsNoMatchingSubtitle,
               textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(context).copyWith(
-                color: HyperosColors.secondaryText(context),
-              ),
+              style: HyperosTypography.listDetail(
+                context,
+              ).copyWith(color: HyperosColors.secondaryText(context)),
             ),
           ],
         ),
@@ -985,12 +983,10 @@ class _LevelFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final background = selected
-        ? HyperosTokens.accent.withValues(alpha: isDark ? 0.22 : 0.12)
-        : (isDark
-              ? HyperosMiuixDarkColors.surface
-              : HyperosMiuixLightColors.surface);
+        ? HyperosColors.primary(context).withValues(alpha: isDark ? 0.22 : 0.12)
+        : HyperosColors.surface(context);
     final textColor = selected
-        ? HyperosTokens.accent
+        ? HyperosColors.primary(context)
         : HyperosColors.secondaryText(context);
 
     return Material(
@@ -1139,10 +1135,7 @@ class _DiagnosticsLogEntryTile extends StatelessWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: BoxDecoration(
-            color: levelColor,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: levelColor, shape: BoxShape.circle),
         ),
         const SizedBox(width: HyperosTokens.rowContentGap),
         Expanded(
@@ -1180,11 +1173,7 @@ class _DiagnosticsLogEntryTile extends StatelessWidget {
                   HyperosMiuixTabRow.contourCornerRadius,
                 ),
               ),
-              child: Icon(
-                _levelIcon(entry.level),
-                color: levelColor,
-                size: 14,
-              ),
+              child: Icon(_levelIcon(entry.level), color: levelColor, size: 14),
             ),
             const SizedBox(width: HyperosTokens.rowContentGap),
             Expanded(
@@ -1194,10 +1183,7 @@ class _DiagnosticsLogEntryTile extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   HyperosTag(label: _levelLabel(l10n, entry.level)),
-                  HyperosTag(
-                    label: _sourceLabel(l10n, entry),
-                    outlined: true,
-                  ),
+                  HyperosTag(label: _sourceLabel(l10n, entry), outlined: true),
                   if (entry.isLevelInferred)
                     HyperosTag(
                       label: l10n.diagnosticsLevelInferred,
@@ -1224,19 +1210,18 @@ class _DiagnosticsLogEntryTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             entry.formattedTime!,
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.secondaryText(context),
-            ),
+            style: HyperosTypography.listDetail(
+              context,
+            ).copyWith(color: HyperosColors.secondaryText(context)),
           ),
         ],
         if (localizedMessage.isNotEmpty) ...[
           const SizedBox(height: 6),
           Text(
             localizedMessage,
-            style: HyperosTypography.listTitle(context).copyWith(
-              fontSize: HyperosMiuixTypography.body2,
-              height: 1.35,
-            ),
+            style: HyperosTypography.listTitle(
+              context,
+            ).copyWith(fontSize: HyperosMiuixTypography.body2, height: 1.35),
           ),
         ],
         if (details.isNotEmpty) ...[
@@ -1315,7 +1300,9 @@ String _levelLabel(AppLocalizations l10n, DiagnosticsLogLevel level) {
 }
 
 String _sourceLabel(AppLocalizations l10n, DiagnosticsLogEntry entry) {
-  return entry.isNativeSource ? l10n.appLogsSourceNative : l10n.appLogsSourceApp;
+  return entry.isNativeSource
+      ? l10n.appLogsSourceNative
+      : l10n.appLogsSourceApp;
 }
 
 IconData _levelIcon(DiagnosticsLogLevel level) {
@@ -1331,10 +1318,10 @@ IconData _levelIcon(DiagnosticsLogLevel level) {
 
 Color _levelColor(BuildContext context, DiagnosticsLogLevel level) {
   return switch (level) {
-    DiagnosticsLogLevel.all => HyperosTokens.accent,
-    DiagnosticsLogLevel.error => HyperosTokens.error,
+    DiagnosticsLogLevel.all => HyperosColors.primary(context),
+    DiagnosticsLogLevel.error => HyperosColors.error(context),
     DiagnosticsLogLevel.warn => const Color(0xFFFF9F0A),
-    DiagnosticsLogLevel.info => HyperosTokens.accent,
+    DiagnosticsLogLevel.info => HyperosColors.primary(context),
     DiagnosticsLogLevel.debug => HyperosColors.actionIcon(context),
     DiagnosticsLogLevel.verbose => HyperosColors.secondaryText(context),
   };

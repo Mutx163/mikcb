@@ -398,7 +398,8 @@ class _AboutScreenState extends State<AboutScreen> {
           builder: (_) => LiveDiagnosticsLogViewerScreen(
             title: l10n.aboutAppLogsTitle,
             watchRawLog: () => AppLogService.instance.watchMergedLogsText(
-              loadNativeRawLog: MiuiLiveActivitiesService().readLiveDiagnosticsText,
+              loadNativeRawLog:
+                  MiuiLiveActivitiesService().readLiveDiagnosticsText,
             ),
             isRecordingEnabled: settings.liveEnableLocalDiagnostics,
             onRecordingChanged: (value) =>
@@ -777,10 +778,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   ? l10n.aboutUpdateAvailableHeadline
                   : l10n.aboutAlreadyLatestHeadline,
               style: result.hasUpdate
-                  ? HyperosTypography.sectionLabel(context).copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    )
+                  ? HyperosTypography.sectionLabel(
+                      context,
+                    ).copyWith(fontSize: 20, fontWeight: FontWeight.w500)
                   : HyperosTypography.sectionLabel(context).copyWith(
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
@@ -883,9 +883,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final colorScheme = theme.colorScheme;
     final release = result.latestRelease;
     final updatedAt = release?.updatedAt;
-    final headerTextStyle = HyperosTypography.listDetail(context).copyWith(
-      color: Theme.of(context).colorScheme.onSurface,
-    );
+    final headerTextStyle = HyperosTypography.listDetail(
+      context,
+    ).copyWith(color: Theme.of(context).colorScheme.onSurface);
     return Material(
       color: HyperosColors.card(context),
       shape: HyperosTheme.cardShape(),
@@ -1060,7 +1060,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           builder: (_) => LiveDiagnosticsLogViewerScreen(
             title: AppLocalizations.of(context)!.aboutAppLogsTitle,
             watchRawLog: () => AppLogService.instance.watchMergedLogsText(
-              loadNativeRawLog: MiuiLiveActivitiesService().readLiveDiagnosticsText,
+              loadNativeRawLog:
+                  MiuiLiveActivitiesService().readLiveDiagnosticsText,
             ),
             isRecordingEnabled: settings.liveEnableLocalDiagnostics,
             onRecordingChanged: _updateLiveDiagnosticsPreference,
@@ -1103,8 +1104,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<bool> _clearLiveDiagnostics() async {
     final clearedAppLogs = await AppLogService.instance.clearAppLogs();
-    final clearedNativeLogs =
-        defaultTargetPlatform != TargetPlatform.android
+    final clearedNativeLogs = defaultTargetPlatform != TargetPlatform.android
         ? true
         : await MiuiLiveActivitiesService().clearLiveDiagnostics();
     final cleared = clearedAppLogs && clearedNativeLogs;
@@ -1460,17 +1460,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       _downloadController = controller;
     });
 
-    final error = await _updateService.downloadAndInstallUpdate(url, (
-      downloadedBytes,
-      totalBytes,
-    ) {
-      if (mounted) {
-        setState(() {
-          _downloadedBytes = downloadedBytes;
-          _downloadTotalBytes = totalBytes;
-        });
-      }
-    }, controller, mirrorUrlPrefix: effectiveMirrorUrlPrefix);
+    final error = await _updateService.downloadAndInstallUpdate(
+      url,
+      (downloadedBytes, totalBytes) {
+        if (mounted) {
+          setState(() {
+            _downloadedBytes = downloadedBytes;
+            _downloadTotalBytes = totalBytes;
+          });
+        }
+      },
+      controller,
+      mirrorUrlPrefix: effectiveMirrorUrlPrefix,
+    );
 
     if (!mounted) {
       return;
@@ -2194,10 +2196,7 @@ class ReleaseNotesMarkdown extends StatelessWidget {
           ? MarkdownListItemCrossAxisAlignment.start
           : MarkdownListItemCrossAxisAlignment.baseline,
       bulletBuilder: plainTypography
-          ? (_) => Text(
-              '·',
-              style: bulletStyle?.copyWith(height: 1.35),
-            )
+          ? (_) => Text('·', style: bulletStyle?.copyWith(height: 1.35))
           : null,
       onTapLink: (text, href, title) => onTapLink?.call(href),
     );
@@ -2206,7 +2205,8 @@ class ReleaseNotesMarkdown extends StatelessWidget {
   static String _stripVersionHeading(String data) {
     final lines = data.split('\n');
     var start = 0;
-    if (lines.isNotEmpty && _versionHeadingPattern.hasMatch(lines.first.trim())) {
+    if (lines.isNotEmpty &&
+        _versionHeadingPattern.hasMatch(lines.first.trim())) {
       start = 1;
       while (start < lines.length && lines[start].trim().isEmpty) {
         start++;
@@ -2231,7 +2231,9 @@ class ReleaseNotesMarkdown extends StatelessWidget {
           ).copyWith(color: onSurface)
         : HyperosTypography.sectionDescription(context);
     final sectionHeader = body.copyWith(fontWeight: FontWeight.w600);
-    final linkColor = usePrimaryTextColor ? onSurface : theme.colorScheme.primary;
+    final linkColor = usePrimaryTextColor
+        ? onSurface
+        : theme.colorScheme.primary;
     return MarkdownStyleSheet(
       p: body,
       pPadding: EdgeInsets.zero,
@@ -2454,7 +2456,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                       ),
                       style: HyperosTypography.listTitle(
                         context,
-                      ).copyWith(color: HyperosTokens.error),
+                      ).copyWith(color: HyperosColors.error(context)),
                     )
                   else if (_maintainers.isEmpty && !_isLoadingMaintainers)
                     Text(
@@ -2588,7 +2590,7 @@ class _AboutHeroMetaDivider extends StatelessWidget {
     return VerticalDivider(
       width: 1,
       thickness: 1,
-      color: HyperosTokens.divider,
+      color: HyperosColors.dividerLine(context),
     );
   }
 }

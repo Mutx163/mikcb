@@ -30,10 +30,7 @@ Future<T?> showHyperosListPopup<T>({
   if (position == null) {
     return Future.value();
   }
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final surface = isDark
-      ? HyperosMiuixDarkColors.surfaceContainer
-      : HyperosMiuixLightColors.surfaceContainer;
+  final surface = HyperosColors.surfaceContainer(context);
 
   return showMenu<T>(
     context: context,
@@ -51,16 +48,10 @@ Future<T?> showHyperosListPopup<T>({
             style: TextStyle(
               fontSize: HyperosMiuixTypography.body1,
               color: items[i].destructive
-                  ? (isDark
-                        ? HyperosMiuixDarkColors.error
-                        : HyperosMiuixLightColors.error)
+                  ? HyperosColors.error(context)
                   : (items[i].enabled
-                        ? (isDark
-                              ? HyperosMiuixDarkColors.onSurface
-                              : HyperosMiuixLightColors.onSurface)
-                        : (isDark
-                              ? HyperosMiuixDarkColors.disabledOnSurface
-                              : HyperosMiuixLightColors.disabledOnSurface)),
+                        ? HyperosColors.onSurface(context)
+                        : HyperosColors.disabledOnSurface(context)),
             ),
             child: Text(items[i].label),
           ),

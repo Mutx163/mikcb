@@ -20,13 +20,8 @@ class HyperosEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onSurface;
-    final summary = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
+    final onSurface = HyperosColors.onSurface(context);
+    final summary = HyperosColors.onSurfaceVariantSummary(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -67,17 +62,12 @@ class HyperosDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark
-        ? HyperosMiuixDarkColors.dividerLine
-        : HyperosMiuixLightColors.dividerLine;
-
     return Divider(
       height: HyperosMiuixDivider.thickness,
       thickness: HyperosMiuixDivider.thickness,
       indent: indent,
       endIndent: endIndent,
-      color: color,
+      color: HyperosColors.dividerLine(context),
     );
   }
 }
@@ -118,19 +108,10 @@ class HyperosSearchBar extends StatelessWidget {
   }
 
   Widget _buildField(BuildContext context, {required bool showClear}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fill = isDark
-        ? HyperosMiuixDarkColors.secondaryVariant
-        : HyperosMiuixLightColors.secondaryVariant;
-    final onSurface = isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onSurface;
-    final summary = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
-    final actions = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantActions
-        : HyperosMiuixLightColors.onSurfaceVariantActions;
+    final fill = HyperosColors.secondaryVariant(context);
+    final onSurface = HyperosColors.onSurface(context);
+    final summary = HyperosColors.onSurfaceVariantSummary(context);
+    final actions = HyperosColors.onSurfaceVariantActions(context);
 
     return SizedBox(
       height: HyperosMiuixSearchBar.inputFieldMinHeight,

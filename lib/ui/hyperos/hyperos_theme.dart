@@ -128,6 +128,163 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.windowDimming;
   }
 
+  // --- State / surface role colors (Miuix light/dark) ---
+
+  static Color secondary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.secondary
+        : HyperosMiuixLightColors.secondary;
+  }
+
+  static Color onPrimary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onPrimary
+        : HyperosMiuixLightColors.onPrimary;
+  }
+
+  static Color onSecondary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSecondary
+        : HyperosMiuixLightColors.onSecondary;
+  }
+
+  static Color secondaryContainer(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.secondaryContainer
+        : HyperosMiuixLightColors.secondaryContainer;
+  }
+
+  static Color secondaryVariant(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.secondaryVariant
+        : HyperosMiuixLightColors.secondaryVariant;
+  }
+
+  static Color onBackground(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onBackground
+        : HyperosMiuixLightColors.onBackground;
+  }
+
+  static Color onSurfaceVariantSummary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
+        : HyperosMiuixLightColors.onSurfaceVariantSummary;
+  }
+
+  static Color onSurfaceVariantActions(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSurfaceVariantActions
+        : HyperosMiuixLightColors.onSurfaceVariantActions;
+  }
+
+  static Color surface(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.surface
+        : HyperosMiuixLightColors.surface;
+  }
+
+  static Color surfaceContainerHigh(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.surfaceContainerHigh
+        : HyperosMiuixLightColors.surfaceContainerHigh;
+  }
+
+  /// Elevated panel background for snackbar / floating toolbar / tooltip.
+  ///
+  /// Asymmetric by design: dark uses [surfaceContainerHighest], light uses
+  /// [surfaceContainer] (or onSurface for inverse tooltips — see
+  /// [inverseSurface]).
+  static Color elevatedSurface(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.surfaceContainerHighest
+        : HyperosMiuixLightColors.surfaceContainer;
+  }
+
+  /// Inverse surface for tooltips / snackbars that sit on dark text in light mode.
+  ///
+  /// Dark: [surfaceContainerHighest]; light: [onSurface] (dark panel).
+  static Color inverseSurface(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.surfaceContainerHighest
+        : HyperosMiuixLightColors.onSurface;
+  }
+
+  /// Text/icon color on [inverseSurface].
+  static Color onInverseSurface(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSurface
+        : HyperosMiuixLightColors.onPrimary;
+  }
+
+  // --- Disabled role colors ---
+
+  static Color disabledPrimary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledPrimary
+        : HyperosMiuixLightColors.disabledPrimary;
+  }
+
+  static Color disabledSecondary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledSecondary
+        : HyperosMiuixLightColors.disabledSecondary;
+  }
+
+  static Color disabledOnPrimary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledOnPrimary
+        : HyperosMiuixLightColors.disabledOnPrimary;
+  }
+
+  static Color disabledOnSecondary(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledOnSecondary
+        : HyperosMiuixLightColors.disabledOnSecondary;
+  }
+
+  static Color disabledPrimaryButton(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledPrimaryButton
+        : HyperosMiuixLightColors.disabledPrimaryButton;
+  }
+
+  static Color disabledOnPrimaryButton(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledOnPrimaryButton
+        : HyperosMiuixLightColors.disabledOnPrimaryButton;
+  }
+
+  static Color disabledPrimarySlider(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledPrimarySlider
+        : HyperosMiuixLightColors.disabledPrimarySlider;
+  }
+
+  static Color disabledOnSurface(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledOnSurface
+        : HyperosMiuixLightColors.disabledOnSurface;
+  }
+
+  static Color onSecondaryVariant(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSecondaryVariant
+        : HyperosMiuixLightColors.onSecondaryVariant;
+  }
+
+  static Color disabledSecondaryVariant(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledSecondaryVariant
+        : HyperosMiuixLightColors.disabledSecondaryVariant;
+  }
+
+  static Color disabledOnSecondaryVariant(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.disabledOnSecondaryVariant
+        : HyperosMiuixLightColors.disabledOnSecondaryVariant;
+  }
+
   /// Status bar icons/background aligned to a solid page or header color.
   static SystemUiOverlayStyle systemOverlayForBackground(Color background) {
     final light = background.computeLuminance() > 0.5;
@@ -188,14 +345,11 @@ abstract final class HyperosTypography {
 
   /// Summary card secondary line (Miuix footnote1 + onSurfaceVariantSummary).
   static TextStyle summarySubtitle(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextStyle(
       fontSize: HyperosMiuixTypography.footnote1,
       fontWeight: FontWeight.w400,
       height: 1.3,
-      color: isDark
-          ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-          : HyperosMiuixLightColors.onSurfaceVariantSummary,
+      color: HyperosColors.onSurfaceVariantSummary(context),
     );
   }
 }

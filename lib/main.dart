@@ -441,22 +441,24 @@ class MyApp extends StatelessWidget {
                       Theme.of(context).brightness == Brightness.dark;
                   final frostedAppearance =
                       context.watch<TimetableProvider>().settings.frostedAppearance;
-                  return HyperosMotionHost(
-                    child: FrostedAppearanceScope(
-                    appearance: frostedAppearance,
-                    child: FTheme(
-                      data: isDark ? foruiDark : foruiLight,
-                      child: FTooltipGroup(
-                        child: ScaffoldMessenger(
-                          child: Scaffold(
-                            backgroundColor: Colors.transparent,
-                            resizeToAvoidBottomInset: false,
-                            body: DebugTuningOverlayHost(child: child!),
+                  return HyperosLayoutTuningHost(
+                    child: HyperosMotionHost(
+                      child: FrostedAppearanceScope(
+                        appearance: frostedAppearance,
+                        child: FTheme(
+                          data: isDark ? foruiDark : foruiLight,
+                          child: FTooltipGroup(
+                            child: ScaffoldMessenger(
+                              child: Scaffold(
+                                backgroundColor: Colors.transparent,
+                                resizeToAvoidBottomInset: false,
+                                body: DebugTuningOverlayHost(child: child!),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
                   );
                 },
                 home: const AppEntryScreen(),

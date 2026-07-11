@@ -45,15 +45,10 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBackground = isDark
-        ? HyperosMiuixDarkColors.surfaceContainer
-        : HyperosMiuixLightColors.surfaceContainer;
+    final sheetBackground = HyperosColors.surfaceContainer(context);
     const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
-    const bottomInsetBase =
-        HyperosMiuixBasicComponent.selectSheetBottomMargin;
-    final bottomInset =
-        bottomInsetBase + MediaQuery.paddingOf(context).bottom;
+    const bottomInsetBase = HyperosMiuixBasicComponent.selectSheetBottomMargin;
+    final bottomInset = bottomInsetBase + MediaQuery.paddingOf(context).bottom;
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.52;
 
     return Padding(

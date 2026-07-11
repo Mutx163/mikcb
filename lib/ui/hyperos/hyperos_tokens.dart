@@ -5,23 +5,40 @@ import 'hyperos_miuix_spec.dart';
 
 /// Design tokens for mikcb HyperOS / MIUI-style surfaces.
 ///
-/// Colors follow Miuix [HyperosMiuixSpec] where applicable; layout defaults
-/// follow HyperOS system Settings overrides in the same file.
+/// Layout sizes/gaps are the primary public API. Color fields below are
+/// **light-mode measured constants** for [HyperosColors] only — UI code must
+/// resolve colors via [HyperosColors], never paint with these directly.
 abstract final class HyperosTokens {
-  // --- Colors ---
+  // --- Light-only color constants (consume via HyperosColors only) ---
 
+  /// Light scaffold gray. Prefer [HyperosColors.scaffoldBackground].
   static const background = HyperosMiuixSpec.settingsBackground;
+
+  /// Light card surface. Prefer [HyperosColors.card].
   static const card = HyperosMiuixSpec.surfaceContainer;
+
+  /// Light primary text. Prefer [HyperosColors.primaryText].
   static const primaryText = HyperosMiuixSpec.settingsPrimaryText;
+
+  /// Light secondary text. Prefer [HyperosColors.secondaryText].
   static const secondaryText = HyperosMiuixSpec.settingsSecondaryText;
+
+  /// Light tertiary action icon. Prefer [HyperosColors.actionIcon].
   static const actionIcon = HyperosMiuixSpec.onSurfaceActions;
+
+  /// Light row press fill. Prefer [HyperosColors.rowHighlight].
   static const pressed = HyperosMiuixSpec.settingsPressed;
+
+  /// Light divider. Prefer [HyperosColors.dividerLine].
   static const divider = HyperosMiuixSpec.dividerLine;
+
+  /// Light accent alias. Prefer [HyperosColors.primary].
   static const accent = HyperosMiuixSpec.primary;
+
+  /// Light error alias. Prefer [HyperosColors.error].
   static const error = HyperosMiuixSpec.error;
 
-  static HyperosLayoutTuning get _t =>
-      HyperosLayoutTuningController.instance.values;
+  static HyperosLayoutTuning get _t => HyperosLayoutTuning.current;
 
   static double get cardRadius => _t.cardRadius;
 

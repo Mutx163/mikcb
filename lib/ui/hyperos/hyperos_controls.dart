@@ -8,89 +8,6 @@ import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 
-/// Marks descendants inside [HyperosControlCard].
-///
-/// The card body is edge-to-edge; interactive rows apply [HyperosTokens.rowPaddingUniform]
-/// themselves. Non-row blocks should wrap in [HyperosControlCardInset].
-class HyperosControlCardScope extends InheritedWidget {
-  const HyperosControlCardScope({
-    super.key,
-    required this.hasHeader,
-    required this.bodyBottomInset,
-    required this.cornerRadius,
-    required super.child,
-  });
-
-  static const defaultHorizontalPadding = 16.0;
-
-  /// Extra bottom inset absorbed by the last full-bleed row (replaces outer card
-  /// padding so press highlight can reach the card's rounded bottom edge).
-  static const defaultBodyBottomInset = 12.0;
-
-  /// Whether [HyperosControlCard] rendered a title/subtitle block above [child].
-  final bool hasHeader;
-  final double bodyBottomInset;
-  final double cornerRadius;
-
-  static HyperosControlCardScope? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<HyperosControlCardScope>();
-  }
-
-  @override
-  bool updateShouldNotify(HyperosControlCardScope oldWidget) {
-    return hasHeader != oldWidget.hasHeader ||
-        bodyBottomInset != oldWidget.bodyBottomInset ||
-        cornerRadius != oldWidget.cornerRadius;
-  }
-}
-
-/// Positions a full-bleed row inside [HyperosControlCard] (first/last padding).
-class HyperosControlCardRowScope extends InheritedWidget {
-  const HyperosControlCardRowScope({
-    super.key,
-    required this.isFirst,
-    required this.isLast,
-    required super.child,
-  });
-
-  final bool isFirst;
-  final bool isLast;
-
-  static HyperosControlCardRowScope? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<HyperosControlCardRowScope>();
-  }
-
-  @override
-  bool updateShouldNotify(HyperosControlCardRowScope oldWidget) {
-    return isFirst != oldWidget.isFirst || isLast != oldWidget.isLast;
-  }
-}
-
-/// Stacks multiple full-bleed rows inside one [HyperosControlCard].
-class HyperosControlCardRows extends StatelessWidget {
-  const HyperosControlCardRows({super.key, required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < children.length; i++)
-          HyperosControlCardRowScope(
-            isFirst: i == 0,
-            isLast: i == children.length - 1,
-            child: children[i],
-          ),
-      ],
-    );
-  }
-}
-
 /// Horizontal inset for non-row content inside [HyperosControlCard] (color chips,
 /// button groups, accordions, helper text).
 class HyperosControlCardInset extends StatelessWidget {
@@ -339,22 +256,11 @@ class HyperosSlider extends StatelessWidget {
     // from value.clamp / Slider asserts during build.
     final lo = min <= max ? min : max;
     final hi = min <= max ? max : min;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final active = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final inactive = isDark
-        ? HyperosMiuixDarkColors.sliderBackground
-        : const Color(0xFFF2F2F2);
-    final disabledActive = isDark
-        ? HyperosMiuixDarkColors.disabledPrimarySlider
-        : HyperosMiuixLightColors.disabledPrimarySlider;
-    final thumb = isDark
-        ? HyperosMiuixDarkColors.onPrimary
-        : HyperosMiuixLightColors.onPrimary;
-    final disabledThumb = isDark
-        ? HyperosMiuixDarkColors.disabledOnPrimary
-        : HyperosMiuixLightColors.disabledOnPrimary;
+    final active = HyperosColors.primary(context);
+    final inactive = HyperosColors.sliderBackground(context);
+    final disabledActive = HyperosColors.disabledPrimarySlider(context);
+    final thumb = HyperosColors.onPrimary(context);
+    final disabledThumb = HyperosColors.disabledOnPrimary(context);
 
     return SizedBox(
       height: HyperosMiuixSlider.minHeight,
@@ -490,11 +396,6 @@ Future<double?> showHyperosSliderValueDialog({
   required String confirmLabel,
   String? helper,
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final dimming = isDark
-      ? HyperosMiuixDarkColors.windowDimming
-      : HyperosMiuixLightColors.windowDimming;
-
   return showModalBottomSheet<double>(
     context: context,
     isScrollControlled: true,
@@ -502,7 +403,7 @@ Future<double?> showHyperosSliderValueDialog({
     enableDrag: true,
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
-    barrierColor: dimming,
+    barrierColor: HyperosColors.windowDimming(context),
     builder: (sheetContext) {
       return Padding(
         padding: EdgeInsets.only(
@@ -598,13 +499,8 @@ class _HyperosSliderValueSheetBodyState
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark
-        ? HyperosMiuixDarkColors.surfaceContainer
-        : HyperosMiuixLightColors.surfaceContainer;
-    final borderColor = isDark
-        ? HyperosMiuixDarkColors.outline
-        : HyperosMiuixLightColors.outline;
+    final background = HyperosColors.surfaceContainer(context);
+    final borderColor = HyperosColors.outline(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -729,15 +625,10 @@ class HyperosSliderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelStyle = HyperosTypography.listDetail(context).copyWith(
       color: enabled
-          ? (isDark
-                ? HyperosMiuixDarkColors.onSurfaceVariantActions
-                : HyperosMiuixLightColors.onSurfaceVariantActions)
-          : (isDark
-                ? HyperosMiuixDarkColors.disabledOnSurface
-                : HyperosMiuixLightColors.disabledOnSurface),
+          ? HyperosColors.onSurfaceVariantActions(context)
+          : HyperosColors.disabledOnSurface(context),
     );
     final titleStyle = HyperosTypography.listTitle(context);
     final rowEnabled = tapToEdit && enabled && onChanged != null;
@@ -858,49 +749,26 @@ class HyperosButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onPressed != null && !loading;
 
     final (bg, fg, disabledBg, disabledFg) = switch (variant) {
       HyperosButtonVariant.primary => (
-        isDark
-            ? HyperosMiuixDarkColors.primary
-            : HyperosMiuixLightColors.primary,
-        isDark
-            ? HyperosMiuixDarkColors.onPrimary
-            : HyperosMiuixLightColors.onPrimary,
-        isDark
-            ? HyperosMiuixDarkColors.disabledPrimaryButton
-            : HyperosMiuixLightColors.disabledPrimaryButton,
-        isDark
-            ? HyperosMiuixDarkColors.disabledOnPrimaryButton
-            : HyperosMiuixLightColors.disabledOnPrimaryButton,
+        HyperosColors.primary(context),
+        HyperosColors.onPrimary(context),
+        HyperosColors.disabledPrimaryButton(context),
+        HyperosColors.disabledOnPrimaryButton(context),
       ),
       HyperosButtonVariant.secondary => (
-        isDark
-            ? HyperosMiuixDarkColors.secondaryVariant
-            : HyperosMiuixLightColors.secondaryVariant,
-        isDark
-            ? HyperosMiuixDarkColors.onSecondaryVariant
-            : HyperosMiuixLightColors.onSecondaryVariant,
-        isDark
-            ? HyperosMiuixDarkColors.disabledSecondaryVariant
-            : HyperosMiuixLightColors.disabledSecondaryVariant,
-        isDark
-            ? HyperosMiuixDarkColors.disabledOnSecondaryVariant
-            : HyperosMiuixLightColors.disabledOnSecondaryVariant,
+        HyperosColors.secondaryVariant(context),
+        HyperosColors.onSecondaryVariant(context),
+        HyperosColors.disabledSecondaryVariant(context),
+        HyperosColors.disabledOnSecondaryVariant(context),
       ),
       HyperosButtonVariant.destructive => (
-        isDark ? HyperosMiuixDarkColors.error : HyperosMiuixLightColors.error,
-        isDark
-            ? HyperosMiuixDarkColors.onError
-            : HyperosMiuixLightColors.onError,
-        isDark
-            ? HyperosMiuixDarkColors.disabledSecondaryVariant
-            : HyperosMiuixLightColors.disabledSecondaryVariant,
-        isDark
-            ? HyperosMiuixDarkColors.disabledOnSecondaryVariant
-            : HyperosMiuixLightColors.disabledOnSecondaryVariant,
+        HyperosColors.error(context),
+        HyperosColors.onError(context),
+        HyperosColors.disabledSecondaryVariant(context),
+        HyperosColors.disabledOnSecondaryVariant(context),
       ),
     };
 
@@ -990,18 +858,11 @@ class HyperosFrostedSheetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onPressed != null;
     final fg = enabled
-        ? (isDark
-              ? HyperosMiuixDarkColors.onSecondaryVariant
-              : HyperosMiuixLightColors.onSecondaryVariant)
-        : (isDark
-              ? HyperosMiuixDarkColors.disabledOnSecondaryVariant
-              : HyperosMiuixLightColors.disabledOnSecondaryVariant);
-    final outline = isDark
-        ? HyperosMiuixDarkColors.outline
-        : HyperosMiuixLightColors.outline;
+        ? HyperosColors.onSecondaryVariant(context)
+        : HyperosColors.disabledOnSecondaryVariant(context);
+    final outline = HyperosColors.outline(context);
     final radius = BorderRadius.circular(HyperosMiuixButton.cornerRadius);
     final fontSize = dense
         ? HyperosMiuixTypography.footnote1

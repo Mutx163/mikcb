@@ -15,6 +15,7 @@ import '../widgets/course_field_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
 import 'cloud_backup_list_screen.dart';
 import 'cloud_backup_ui_helpers.dart';
+
 Widget _buttonLoadingPrefix() {
   return const SizedBox(
     width: 16,
@@ -293,10 +294,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           message: result.kind == WebdavSyncResultKind.backupRestored
               ? l10n.cloudBackupRestoreSuccess
               : l10n.cloudBackupRestoreFailed(
-                  CloudBackupUiHelpers.localizeSyncError(
-                    l10n,
-                    result.message,
-                  ),
+                  CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
                 ),
           kind: result.kind == WebdavSyncResultKind.backupRestored
               ? AppToastKind.success
@@ -327,10 +325,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           message: result.kind == WebdavSyncResultKind.backupDeleted
               ? l10n.cloudBackupDeleteSuccess
               : l10n.cloudBackupDeleteFailed(
-                  CloudBackupUiHelpers.localizeSyncError(
-                    l10n,
-                    result.message,
-                  ),
+                  CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
                 ),
           kind: result.kind == WebdavSyncResultKind.backupDeleted
               ? AppToastKind.success
@@ -469,7 +464,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       icon: Icon(
         Icons.cloud_sync_rounded,
         size: 18,
-        color: HyperosTokens.accent,
+        color: HyperosColors.primary(context),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +485,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       icon: Icon(
         Icons.help_outline_rounded,
         size: 18,
-        color: HyperosTokens.accent,
+        color: HyperosColors.primary(context),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,10 +632,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         else if (previewEntries.isEmpty)
           HyperosListGroup(
             children: [
-              HyperosNavTile(
-                title: l10n.cloudBackupEmpty,
-                enabled: false,
-              ),
+              HyperosNavTile(title: l10n.cloudBackupEmpty, enabled: false),
             ],
           )
         else
@@ -652,7 +644,9 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                       ? l10n.cloudBackupCurrentLabel
                       : formatBackupDateTime(entry.exportedAt),
                   subtitle: buildBackupSubtitle(context, entry),
-                  details: entry.isCurrent ? l10n.cloudBackupCurrentBadge : null,
+                  details: entry.isCurrent
+                      ? l10n.cloudBackupCurrentBadge
+                      : null,
                   onTap: () => _openBackupDetail(entry),
                 ),
               if (_backupEntries.length > 3)
@@ -779,7 +773,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                   l10n,
                   status.lastError,
                 ),
-                valueColor: HyperosTokens.error,
+                valueColor: HyperosColors.error(context),
                 isLast: true,
               ),
           ],
@@ -850,13 +844,15 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                           }
                           var baseUrl = _baseUrlController.text.trim();
                           if (value == WebdavSyncProvider.jianguoyun) {
-                            baseUrl =
-                                WebdavSyncConfig.defaultJianguoyunBaseUrl;
+                            baseUrl = WebdavSyncConfig.defaultJianguoyunBaseUrl;
                             _baseUrlController.text = baseUrl;
                           }
                           unawaited(
                             _saveConfig(
-                              _config.copyWith(provider: value, baseUrl: baseUrl),
+                              _config.copyWith(
+                                provider: value,
+                                baseUrl: baseUrl,
+                              ),
                             ),
                           );
                         },

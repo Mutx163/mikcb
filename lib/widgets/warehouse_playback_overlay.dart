@@ -54,16 +54,15 @@ class PlaybackOverlay extends StatelessWidget {
   }
 
   TextStyle _onScrimTitleStyle(BuildContext context) {
-    return HyperosTypography.listTitle(context).copyWith(
-      color: Colors.white,
-      fontWeight: FontWeight.w700,
-    );
+    return HyperosTypography.listTitle(
+      context,
+    ).copyWith(color: Colors.white, fontWeight: FontWeight.w700);
   }
 
   TextStyle _onScrimBodyStyle(BuildContext context) {
-    return HyperosTypography.listDetail(context).copyWith(
-      color: Colors.white70,
-    );
+    return HyperosTypography.listDetail(
+      context,
+    ).copyWith(color: Colors.white70);
   }
 
   Widget _buildPlayingOverlay(BuildContext context) {
@@ -76,7 +75,10 @@ class PlaybackOverlay extends StatelessWidget {
         children: [
           const HyperosCircularProgress(size: 48, strokeWidth: 3),
           const SizedBox(height: 24),
-          Text(l10n.quickImportPlayingTitle, style: _onScrimTitleStyle(context)),
+          Text(
+            l10n.quickImportPlayingTitle,
+            style: _onScrimTitleStyle(context),
+          ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
             Text(subtitle, style: _onScrimBodyStyle(context)),
@@ -102,9 +104,9 @@ class PlaybackOverlay extends StatelessWidget {
           if (progress.statusLabel(l10n).isNotEmpty)
             Text(
               progress.statusLabel(l10n),
-              style: _onScrimBodyStyle(context).copyWith(
-                fontStyle: FontStyle.italic,
-              ),
+              style: _onScrimBodyStyle(
+                context,
+              ).copyWith(fontStyle: FontStyle.italic),
             ),
           const SizedBox(height: 32),
           HyperosButton(
@@ -299,7 +301,7 @@ class MacroIndicator extends StatelessWidget {
 
     return HyperosTag(
       label: label ?? AppLocalizations.of(context)!.quickImportTooltip,
-      backgroundColor: HyperosTokens.accent.withValues(alpha: 0.12),
+      backgroundColor: HyperosColors.primary(context).withValues(alpha: 0.12),
     );
   }
 }

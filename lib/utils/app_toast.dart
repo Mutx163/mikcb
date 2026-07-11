@@ -18,14 +18,13 @@ IconData _defaultIconForKind(AppToastKind kind) {
 Color _iconColorForKind(BuildContext context, AppToastKind kind) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return switch (kind) {
+    // Success/warning keep custom light-mode brand tints; dark uses HyperOS roles.
     AppToastKind.success =>
-      isDark ? HyperosMiuixDarkColors.primary : const Color(0xFF047857),
+      isDark ? HyperosColors.primary(context) : const Color(0xFF047857),
     AppToastKind.warning =>
-      isDark ? HyperosMiuixDarkColors.error : const Color(0xFFB45309),
-    AppToastKind.error =>
-      isDark ? HyperosMiuixDarkColors.error : HyperosMiuixLightColors.error,
-    AppToastKind.info =>
-      isDark ? HyperosMiuixDarkColors.primary : HyperosMiuixLightColors.primary,
+      isDark ? HyperosColors.error(context) : const Color(0xFFB45309),
+    AppToastKind.error => HyperosColors.error(context),
+    AppToastKind.info => HyperosColors.primary(context),
   };
 }
 

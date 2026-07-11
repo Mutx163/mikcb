@@ -19,17 +19,10 @@ class HyperosCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onChanged != null;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final border = isDark
-        ? HyperosMiuixDarkColors.outline
-        : HyperosMiuixLightColors.outline;
-    final disabled = isDark
-        ? HyperosMiuixDarkColors.disabledOnSurface
-        : HyperosMiuixLightColors.disabledOnSurface;
+    final primary = HyperosColors.primary(context);
+    final border = HyperosColors.outline(context);
+    final disabled = HyperosColors.disabledOnSurface(context);
 
     final size = HyperosMiuixCheckbox.size;
     final radius = size * 0.22;
@@ -64,9 +57,7 @@ class HyperosCheckbox extends StatelessWidget {
               ? Icon(
                   Icons.check_rounded,
                   size: size * 0.72,
-                  color: isDark
-                      ? HyperosMiuixDarkColors.onPrimary
-                      : HyperosMiuixLightColors.onPrimary,
+                  color: HyperosColors.onPrimary(context),
                 )
               : null,
         ),
@@ -92,17 +83,10 @@ class HyperosRadio<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onChanged != null;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final border = isDark
-        ? HyperosMiuixDarkColors.outline
-        : HyperosMiuixLightColors.outline;
-    final disabled = isDark
-        ? HyperosMiuixDarkColors.disabledOnSurface
-        : HyperosMiuixLightColors.disabledOnSurface;
+    final primary = HyperosColors.primary(context);
+    final border = HyperosColors.outline(context);
+    final disabled = HyperosColors.disabledOnSurface(context);
 
     const size = HyperosMiuixCheckbox.size;
     const inner = 10.0;

@@ -34,10 +34,7 @@ class CourseRanking extends StatelessWidget {
     return HyperosListGroup(
       children: [
         for (var index = 0; index < courseRanking.length; index++)
-          _CourseRankingTile(
-            stat: courseRanking[index],
-            rank: index + 1,
-          ),
+          _CourseRankingTile(stat: courseRanking[index], rank: index + 1),
       ],
     );
   }
@@ -144,7 +141,7 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
                   '${widget.stat.totalSections}',
                   style: HyperosTypography.listTitle(context).copyWith(
                     fontWeight: FontWeight.w800,
-                    color: HyperosTokens.accent,
+                    color: HyperosColors.primary(context),
                   ),
                 ),
                 Text(
@@ -278,10 +275,9 @@ class _RankBadge extends StatelessWidget {
           ? Icon(icon, size: 18, color: foreground)
           : Text(
               '$rank',
-              style: HyperosTypography.listTitle(context).copyWith(
-                color: foreground,
-                fontWeight: FontWeight.w700,
-              ),
+              style: HyperosTypography.listTitle(
+                context,
+              ).copyWith(color: foreground, fontWeight: FontWeight.w700),
             ),
     );
   }

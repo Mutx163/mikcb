@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../hyperos_controls.dart';
 import '../hyperos_motion.dart';
 import '../hyperos_miuix_spec.dart';
 import '../hyperos_switch.dart';
@@ -754,10 +753,7 @@ class HyperosDangerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dangerColor = isDark
-        ? HyperosMiuixDarkColors.error
-        : HyperosMiuixLightColors.error;
+    final dangerColor = HyperosColors.error(context);
 
     final row = hyperosListRowShell(
       padding: hyperosRowPadding(context),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS-styled tooltip wrapper.
 class HyperosTooltip extends StatelessWidget {
@@ -19,13 +20,8 @@ class HyperosTooltip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark
-        ? HyperosMiuixDarkColors.surfaceContainerHighest
-        : HyperosMiuixLightColors.onSurface;
-    final textColor = isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onPrimary;
+    final background = HyperosColors.inverseSurface(context);
+    final textColor = HyperosColors.onInverseSurface(context);
 
     return Tooltip(
       message: message,

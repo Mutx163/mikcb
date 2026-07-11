@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS floating action button (primary accent, circular).
 class HyperosFab extends StatelessWidget {
@@ -20,22 +20,13 @@ class HyperosFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onPressed != null;
     final bg = enabled
-        ? (isDark
-              ? HyperosMiuixDarkColors.primary
-              : HyperosMiuixLightColors.primary)
-        : (isDark
-              ? HyperosMiuixDarkColors.disabledPrimaryButton
-              : HyperosMiuixLightColors.disabledPrimaryButton);
+        ? HyperosColors.primary(context)
+        : HyperosColors.disabledPrimaryButton(context);
     final fg = enabled
-        ? (isDark
-              ? HyperosMiuixDarkColors.onPrimary
-              : HyperosMiuixLightColors.onPrimary)
-        : (isDark
-              ? HyperosMiuixDarkColors.disabledOnPrimaryButton
-              : HyperosMiuixLightColors.disabledOnPrimaryButton);
+        ? HyperosColors.onPrimary(context)
+        : HyperosColors.disabledOnPrimaryButton(context);
 
     final size = mini ? 40.0 : 56.0;
     final iconSize = mini ? 22.0 : 26.0;

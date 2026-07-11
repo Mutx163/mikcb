@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS floating pill toolbar (Miuix `FloatingToolbar`).
 class HyperosFloatingToolbar extends StatelessWidget {
@@ -18,13 +19,8 @@ class HyperosFloatingToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark
-        ? HyperosMiuixDarkColors.surfaceContainerHighest
-        : HyperosMiuixLightColors.surfaceContainer;
-    final divider = isDark
-        ? HyperosMiuixDarkColors.dividerLine
-        : HyperosMiuixLightColors.dividerLine;
+    final background = HyperosColors.elevatedSurface(context);
+    final divider = HyperosColors.dividerLine(context);
 
     return Padding(
       padding: padding,

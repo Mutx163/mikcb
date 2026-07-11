@@ -1741,20 +1741,21 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
             });
           },
         ),
-        HyperosListTile(
-          icon: Icons.science_outlined,
-          title: l10n.liveTestingEntryTitle,
-          onTap: () async {
-            await HyperosNavigation.push(
-              context,
-              builder: (_) => const _LiveTestingSettingsScreen(),
-            );
-            if (!mounted) return;
-            setState(() {
-              _draft = context.read<TimetableProvider>().settings;
-            });
-          },
-        ),
+        if (!kReleaseMode)
+          HyperosListTile(
+            icon: Icons.science_outlined,
+            title: l10n.liveTestingEntryTitle,
+            onTap: () async {
+              await HyperosNavigation.push(
+                context,
+                builder: (_) => const _LiveTestingSettingsScreen(),
+              );
+              if (!mounted) return;
+              setState(() {
+                _draft = context.read<TimetableProvider>().settings;
+              });
+            },
+          ),
       ],
     );
   }

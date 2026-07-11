@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS segmented control layout variant.
 enum HyperosTabRowStyle {
@@ -79,22 +80,11 @@ class _ContourTabRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final trackColor = isDark
-        ? HyperosMiuixDarkColors.surface
-        : HyperosMiuixLightColors.surface;
-    final pillColor = isDark
-        ? HyperosMiuixDarkColors.surfaceContainer
-        : HyperosMiuixLightColors.surfaceContainer;
-    final selectedText = isDark
-        ? HyperosMiuixDarkColors.onBackground
-        : HyperosMiuixLightColors.onBackground;
-    final unselectedText = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
-    final disabledText = isDark
-        ? HyperosMiuixDarkColors.disabledOnSurface
-        : HyperosMiuixLightColors.disabledOnSurface;
+    final trackColor = HyperosColors.surface(context);
+    final pillColor = HyperosColors.surfaceContainer(context);
+    final selectedText = HyperosColors.onBackground(context);
+    final unselectedText = HyperosColors.onSurfaceVariantSummary(context);
+    final disabledText = HyperosColors.disabledOnSurface(context);
 
     final padding = HyperosMiuixTabRow.contourPadding;
     final spacing = HyperosMiuixTabRow.contourItemSpacing;
@@ -241,22 +231,11 @@ class _BorderedTabRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final onPrimary = isDark
-        ? HyperosMiuixDarkColors.onPrimary
-        : HyperosMiuixLightColors.onPrimary;
-    final onSurface = isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onSurface;
-    final outline = isDark
-        ? HyperosMiuixDarkColors.outline
-        : HyperosMiuixLightColors.outline;
-    final disabled = isDark
-        ? HyperosMiuixDarkColors.disabledOnSurface
-        : HyperosMiuixLightColors.disabledOnSurface;
+    final primary = HyperosColors.primary(context);
+    final onPrimary = HyperosColors.onPrimary(context);
+    final onSurface = HyperosColors.onSurface(context);
+    final outline = HyperosColors.outline(context);
+    final disabled = HyperosColors.disabledOnSurface(context);
 
     return SizedBox(
       height: HyperosMiuixTabRow.height,

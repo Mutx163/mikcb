@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 
-import '../app_fonts.dart';
 import 'hyperos_theme.dart';
 
 /// Nested settings header safe for blur overlay stacks.
@@ -80,20 +79,28 @@ class HyperosOverlayNestedHeader extends StatelessWidget {
                     IgnorePointer(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: DefaultTextStyle.merge(
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          softWrap: false,
-                          style: applyAppFontStyle(
-                            context,
-                            resolved.titleTextStyle,
-                          ),
-                          textAlign: TextAlign.center,
-                          textHeightBehavior: const TextHeightBehavior(
-                            applyHeightToFirstAscent: false,
-                            applyHeightToLastDescent: false,
-                          ),
-                          child: title,
+                        child: Builder(
+                          builder: (titleContext) {
+                            final appFont =
+                                DefaultTextStyle.of(titleContext).style;
+                            final titleStyle =
+                                resolved.titleTextStyle.copyWith(
+                              fontFamily: appFont.fontFamily,
+                              fontFamilyFallback: appFont.fontFamilyFallback,
+                            );
+                            return DefaultTextStyle.merge(
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: titleStyle,
+                              textAlign: TextAlign.center,
+                              textHeightBehavior: const TextHeightBehavior(
+                                applyHeightToFirstAscent: false,
+                                applyHeightToLastDescent: false,
+                              ),
+                              child: title,
+                            );
+                          },
                         ),
                       ),
                     ),

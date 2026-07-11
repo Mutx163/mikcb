@@ -33,30 +33,34 @@ lib/ui/hyperos/
 
 ### 2.1 Tokens（`HyperosTokens` / `HyperosIconColors`）
 
-| Token | 值（Miuix 源） | 用途 |
-|-------|---------------|------|
-| `background` | `#F7F7F7` | 页面灰底（Miuix `surface`） |
+> **运行时以 `HyperosTokens` + `HyperosMiuixSpec` settings 覆盖为准。**  
+> 下表为 HyperOS 系统设置实测覆盖后的默认值；原始 Miuix 通用值见 Spec。  
+> **颜色请用 `HyperosColors.*(context)`**，不要直接画 `HyperosTokens` 颜色常量（后者为浅色 light-only）。
+
+| Token | 值（settings 覆盖） | 用途 |
+|-------|---------------------|------|
+| `background` | `#F2F2F2` | 页面灰底（settings） |
 | `card` | `#FFFFFF` | 白卡片（`surfaceContainer`） |
-| `primaryText` | `#000000` | 主文字（`onSurface`） |
-| `secondaryText` | `#99000000` | 摘要 60% 黑 |
-| `actionIcon` | `#66000000` | 箭头 40% 黑 |
-| `pressed` | `#E8E8E8` | 行按下高亮 |
-| `divider` | `#E0E0E0` | 分割线 |
-| `accent` | `#3482FF` | 强调色 |
-| `cardRadius` | **16** | 卡片圆角（Miuix `CardDefaults`） |
-| `sectionGap` | **16** | 卡片组间距 |
-| `listPadding` | **16** 四周 | 列表页 padding |
-| 行内 padding | **16** | Miuix `BasicComponentDefaults.InsideMargin` |
-| 图标间距 | **16** | startAction → title |
-| 字→箭间距 | **8** | Miuix `ArrowPreference` end padding |
-| Chevron | **10×16** | Miuix 矢量箭头尺寸 |
+| `primaryText` | `#333333` | 主文字（settings） |
+| `secondaryText` | `#999999` | 次要文字（settings） |
+| `actionIcon` | `#66000000` | 箭头 40% 黑（Miuix actions） |
+| `pressed` | `#E0E0E0` | 行按下高亮 |
+| `divider` | `#E0E0E0` | 分割线（请用 `HyperosColors.dividerLine`） |
+| `accent` | `#3482FF` | 强调色（请用 `HyperosColors.primary`） |
+| `cardRadius` | **24** | 设置组卡片圆角 |
+| `sectionGap` | **12** | 卡片组间距 |
+| `listPadding` | **16, 4, 16, 24** | 列表页 padding |
+| 行内 padding | **16 / 13** | 水平 16、垂直 13（settings 行） |
+| 图标间距 | **12** | 图标 → 标题 |
+| 字→箭间距 | **4**（title）/ body2（detail） | 见 Tokens |
+| Chevron | **7×11** | settings 实测箭头 |
 | Switch | **49×28**, thumb **20** | 见 `HyperosSwitch` |
 
 `HyperosIconColors`：blue / green / orange / purple / teal / red / yellow / indigo / cyan
 
 ### 2.2 主题解析（`HyperosColors` / `HyperosTypography` / `HyperosTheme`）
 
-- 浅色：使用 HyperOS 固定色；深色：回落到 Forui `FColors`
+- 浅色：HyperOS / Miuix light；深色：组件语义色走 `HyperosMiuixDarkColors`，页面壳背景/文字六方法仍可回落 Forui `FColors`
 - 字体：`listTitle` 16/w400、`listDetail` 14、`sectionLabel` 16/w600、`sheetTitle` 20/w600
 - `nestedHeaderStyle`：居中、**不加粗** 20sp 顶栏标题
 - `cardStyle` / `cardShape`：供 `FCard.raw` 等 Forui 容器套 HyperOS 圆角

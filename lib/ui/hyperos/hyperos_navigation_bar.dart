@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// Bottom navigation item for [HyperosNavigationBar].
 class HyperosNavigationDestination {
@@ -31,16 +32,9 @@ class HyperosNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark
-        ? HyperosMiuixDarkColors.surfaceContainer
-        : HyperosMiuixLightColors.surfaceContainer;
-    final selected = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final unselected = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantActions
-        : HyperosMiuixLightColors.onSurfaceVariantActions;
+    final background = HyperosColors.surfaceContainer(context);
+    final selected = HyperosColors.primary(context);
+    final unselected = HyperosColors.onSurfaceVariantActions(context);
 
     // Grow the bar with system font scaling so labels are not clipped by the
     // fixed Miuix height when accessibility text sizes are enabled.

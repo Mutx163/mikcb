@@ -43,25 +43,12 @@ class HyperosTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final onSurface = isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onSurface;
-    final summary = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
-    final fill = isDark
-        ? HyperosMiuixDarkColors.secondaryVariant
-        : HyperosMiuixLightColors.secondaryVariant;
-    final disabled = isDark
-        ? HyperosMiuixDarkColors.disabledOnSurface
-        : HyperosMiuixLightColors.disabledOnSurface;
-    final outline = isDark
-        ? HyperosMiuixDarkColors.outline
-        : HyperosMiuixLightColors.outline;
+    final primary = HyperosColors.primary(context);
+    final onSurface = HyperosColors.onSurface(context);
+    final summary = HyperosColors.onSurfaceVariantSummary(context);
+    final fill = HyperosColors.secondaryVariant(context);
+    final disabled = HyperosColors.disabledOnSurface(context);
+    final outline = HyperosColors.outline(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

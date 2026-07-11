@@ -12,10 +12,10 @@ class HyperosInsetDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(left: indent),
-      child: const Divider(
+      child: Divider(
         height: 0.5,
         thickness: 0.5,
-        color: HyperosTokens.divider,
+        color: HyperosColors.dividerLine(context),
       ),
     );
   }
@@ -43,6 +43,89 @@ class HyperosListTileScope extends InheritedWidget {
   }
 }
 
+/// Marks descendants inside [HyperosControlCard].
+///
+/// The card body is edge-to-edge; interactive rows apply [HyperosTokens.rowPaddingUniform]
+/// themselves. Non-row blocks should wrap in [HyperosControlCardInset].
+class HyperosControlCardScope extends InheritedWidget {
+  const HyperosControlCardScope({
+    super.key,
+    required this.hasHeader,
+    required this.bodyBottomInset,
+    required this.cornerRadius,
+    required super.child,
+  });
+
+  static const defaultHorizontalPadding = 16.0;
+
+  /// Extra bottom inset absorbed by the last full-bleed row (replaces outer card
+  /// padding so press highlight can reach the card's rounded bottom edge).
+  static const defaultBodyBottomInset = 12.0;
+
+  /// Whether [HyperosControlCard] rendered a title/subtitle block above [child].
+  final bool hasHeader;
+  final double bodyBottomInset;
+  final double cornerRadius;
+
+  static HyperosControlCardScope? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<HyperosControlCardScope>();
+  }
+
+  @override
+  bool updateShouldNotify(HyperosControlCardScope oldWidget) {
+    return hasHeader != oldWidget.hasHeader ||
+        bodyBottomInset != oldWidget.bodyBottomInset ||
+        cornerRadius != oldWidget.cornerRadius;
+  }
+}
+
+/// Positions a full-bleed row inside [HyperosControlCard] (first/last padding).
+class HyperosControlCardRowScope extends InheritedWidget {
+  const HyperosControlCardRowScope({
+    super.key,
+    required this.isFirst,
+    required this.isLast,
+    required super.child,
+  });
+
+  final bool isFirst;
+  final bool isLast;
+
+  static HyperosControlCardRowScope? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<HyperosControlCardRowScope>();
+  }
+
+  @override
+  bool updateShouldNotify(HyperosControlCardRowScope oldWidget) {
+    return isFirst != oldWidget.isFirst || isLast != oldWidget.isLast;
+  }
+}
+
+/// Stacks multiple full-bleed rows inside one [HyperosControlCard].
+class HyperosControlCardRows extends StatelessWidget {
+  const HyperosControlCardRows({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < children.length; i++)
+          HyperosControlCardRowScope(
+            isFirst: i == 0,
+            isLast: i == children.length - 1,
+            child: children[i],
+          ),
+      ],
+    );
+  }
+}
+
 EdgeInsets hyperosRowPadding(BuildContext context) {
   final scope = HyperosListTileScope.maybeOf(context);
   return HyperosTokens.rowPadding(
@@ -66,10 +149,7 @@ Widget hyperosListRowShell({
   double? minHeight,
 }) {
   final targetHeight = minHeight ?? HyperosTokens.listRowMinHeight;
-  final padded = Padding(
-    padding: padding,
-    child: child,
-  );
+  final padded = Padding(padding: padding, child: child);
   // Two-line rows use min height so subtitle ellipsis survives narrow widths
   // (e.g. HyperosPageRoute shared-axis transition) without bottom overflow.
   if (minHeight != null && minHeight > HyperosTokens.listRowMinHeight) {

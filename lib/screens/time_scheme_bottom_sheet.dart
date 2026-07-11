@@ -926,10 +926,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       setState(() {
         _sections = List<SectionTime>.from(scheme.sections);
       });
-      showAppToast(
-        context,
-        message: localizeServiceMessage(l10n, message),
-      );
+      showAppToast(context, message: localizeServiceMessage(l10n, message));
       return;
     }
   }
@@ -1025,10 +1022,7 @@ class _TimeSchemeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
+    final primary = HyperosColors.primary(context);
     return HyperosTag(
       label: text,
       backgroundColor: primary.withValues(alpha: 0.12),

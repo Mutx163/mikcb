@@ -97,7 +97,7 @@ class DailyChart extends StatelessWidget {
                                 ? FontWeight.w800
                                 : FontWeight.w500,
                             color: isMax
-                                ? HyperosTokens.accent
+                                ? HyperosColors.primary(context)
                                 : HyperosColors.secondaryText(context),
                           ),
                         ),
@@ -116,9 +116,9 @@ class DailyChart extends StatelessWidget {
                       }
                       return Text(
                         value.toInt().toString(),
-                        style: HyperosTypography.listDetail(context).copyWith(
-                          fontSize: HyperosMiuixTypography.footnote2,
-                        ),
+                        style: HyperosTypography.listDetail(
+                          context,
+                        ).copyWith(fontSize: HyperosMiuixTypography.footnote2),
                       );
                     },
                   ),
@@ -130,7 +130,7 @@ class DailyChart extends StatelessWidget {
                 horizontalInterval: maxAverage > 4 ? null : 1,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
-                    color: HyperosTokens.divider,
+                    color: HyperosColors.dividerLine(context),
                     strokeWidth: 1,
                   );
                 },
@@ -146,10 +146,10 @@ class DailyChart extends StatelessWidget {
                     stat.averageSections > 0;
 
                 final barColor = isMax
-                    ? HyperosTokens.accent
+                    ? HyperosColors.primary(context)
                     : isMin
                     ? HyperosIconColors.teal
-                    : HyperosTokens.accent.withValues(alpha: 0.35);
+                    : HyperosColors.primary(context).withValues(alpha: 0.35);
 
                 return BarChartGroupData(
                   x: index,

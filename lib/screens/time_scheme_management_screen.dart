@@ -1097,10 +1097,7 @@ class _TimeSchemeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
+    final primary = HyperosColors.primary(context);
     return HyperosTag(
       label: text,
       backgroundColor: primary.withValues(alpha: 0.12),

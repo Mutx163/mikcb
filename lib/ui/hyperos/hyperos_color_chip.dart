@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// Selectable color swatch for theme / appearance pickers.
 class HyperosColorChip extends StatelessWidget {
@@ -22,14 +22,9 @@ class HyperosColorChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final outline = selected
-        ? (isDark
-              ? HyperosMiuixDarkColors.onSurface
-              : HyperosMiuixLightColors.onSurface)
-        : (isDark
-              ? HyperosMiuixDarkColors.outline
-              : HyperosMiuixLightColors.outline);
+        ? HyperosColors.onSurface(context)
+        : HyperosColors.outline(context);
 
     return Material(
       color: Colors.transparent,

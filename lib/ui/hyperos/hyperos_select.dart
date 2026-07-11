@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
-import 'hyperos_page.dart';
+import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
@@ -108,10 +108,7 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark
-        ? HyperosMiuixDarkColors.surfaceContainer
-        : HyperosMiuixLightColors.surfaceContainer;
+    final surface = HyperosColors.surfaceContainer(context);
     final screen = MediaQuery.sizeOf(context);
     const margin = 12.0;
     final safeTop = MediaQuery.paddingOf(context).top + margin;
@@ -219,10 +216,7 @@ Future<T?> showHyperosSelectSheet<T>({
       // Resolve inside the builder so rotation / keyboard metrics changes
       // re-evaluate instead of using a snapshot taken when the sheet opened.
       final maxListHeight = MediaQuery.sizeOf(sheetContext).height * 0.55;
-      final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
-      final sheetBackground = isDark
-          ? HyperosMiuixDarkColors.surfaceContainer
-          : HyperosMiuixLightColors.surfaceContainer;
+      final sheetBackground = HyperosColors.surfaceContainer(sheetContext);
 
       // ~1 body1 char side inset; floating select sheet bottom gap (see spec).
       const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
@@ -472,18 +466,13 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
   @override
   Widget build(BuildContext context) {
     final effectiveEnabled = widget.enabled && widget.onChanged != null;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
     final primaryText = HyperosColors.primaryText(context);
     final valueLabel = hyperosSelectLabelFor(widget.items, widget.value);
     final valueColor = effectiveEnabled
-        ? (isDark
-              ? HyperosMiuixDarkColors.onSurfaceVariantActions
-              : HyperosMiuixLightColors.onSurfaceVariantActions)
-        : (isDark
-              ? HyperosMiuixDarkColors.disabledOnSurface
-              : HyperosMiuixLightColors.disabledOnSurface);
+        ? HyperosColors.onSurfaceVariantActions(context)
+        : HyperosColors.disabledOnSurface(context);
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
       color: effectiveEnabled
           ? HyperosColors.secondaryText(context)
@@ -604,12 +593,11 @@ class HyperosDateTile extends StatelessWidget {
       firstDate: firstDate ?? DateTime(1970),
       lastDate: lastDate ?? DateTime(2100),
       builder: (ctx, child) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         return Theme(
           data: Theme.of(ctx).copyWith(
             colorScheme: ColorScheme.fromSeed(
-              seedColor: HyperosMiuixLightColors.primary,
-              brightness: isDark ? Brightness.dark : Brightness.light,
+              seedColor: HyperosColors.primary(ctx),
+              brightness: Theme.of(ctx).brightness,
             ),
           ),
           child: child ?? const SizedBox.shrink(),

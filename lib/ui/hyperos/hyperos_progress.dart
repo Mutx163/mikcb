@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS circular progress indicator (primary accent).
 class HyperosCircularProgress extends StatelessWidget {
@@ -15,10 +15,7 @@ class HyperosCircularProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
+    final color = HyperosColors.primary(context);
 
     return SizedBox(
       width: size,
@@ -37,13 +34,8 @@ class HyperosLinearProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final active = isDark
-        ? HyperosMiuixDarkColors.primary
-        : HyperosMiuixLightColors.primary;
-    final track = isDark
-        ? HyperosMiuixDarkColors.sliderBackground
-        : HyperosMiuixLightColors.sliderBackground;
+    final active = HyperosColors.primary(context);
+    final track = HyperosColors.sliderBackground(context);
 
     return SizedBox(
       height: minHeight,

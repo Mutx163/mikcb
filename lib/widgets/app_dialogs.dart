@@ -91,15 +91,11 @@ Future<String?> showAppTextInputDialog(
   bool useRootNavigator = false,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final dimming = isDark
-      ? HyperosMiuixDarkColors.windowDimming
-      : HyperosMiuixLightColors.windowDimming;
 
   return showDialog<String>(
     context: context,
     useRootNavigator: useRootNavigator,
-    barrierColor: dimming,
+    barrierColor: HyperosColors.windowDimming(context),
     builder: (ctx) => _AppTextInputDialog(
       title: title,
       initialValue: initialValue,
@@ -187,9 +183,7 @@ Future<int?> showAppSingleChoiceDialog(
 
   return showDialog<int>(
     context: context,
-    barrierColor: Theme.of(context).brightness == Brightness.dark
-        ? HyperosMiuixDarkColors.windowDimming
-        : HyperosMiuixLightColors.windowDimming,
+    barrierColor: HyperosColors.windowDimming(context),
     builder: (ctx) {
       return StatefulBuilder(
         builder: (context, setState) {

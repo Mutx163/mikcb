@@ -33,13 +33,14 @@ class AchievementBadge extends StatelessWidget {
               decoration: BoxDecoration(
                 color: unlocked
                     ? accent
-                    : HyperosColors.secondaryText(context)
-                        .withValues(alpha: 0.12),
+                    : HyperosColors.secondaryText(
+                        context,
+                      ).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(_medalRadius),
                 border: unlocked
                     ? null
                     : Border.all(
-                        color: HyperosTokens.divider,
+                        color: HyperosColors.dividerLine(context),
                         width: 0.5,
                       ),
               ),
@@ -49,8 +50,9 @@ class AchievementBadge extends StatelessWidget {
                 size: 20,
                 color: unlocked
                     ? Colors.white
-                    : HyperosColors.secondaryText(context)
-                        .withValues(alpha: 0.55),
+                    : HyperosColors.secondaryText(
+                        context,
+                      ).withValues(alpha: 0.55),
               ),
             ),
             if (!unlocked)
@@ -63,7 +65,9 @@ class AchievementBadge extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: HyperosColors.card(context),
                     shape: BoxShape.circle,
-                    border: Border.all(color: HyperosTokens.divider),
+                    border: Border.all(
+                      color: HyperosColors.dividerLine(context),
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: Icon(

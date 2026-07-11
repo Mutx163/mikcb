@@ -35,13 +35,8 @@ class HyperosDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark
-        ? HyperosMiuixDarkColors.surfaceContainer
-        : HyperosMiuixLightColors.surfaceContainer;
-    final titleColor = isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onSurface;
+    final background = HyperosColors.surfaceContainer(context);
+    final titleColor = HyperosColors.onSurface(context);
 
     final content =
         body ??
@@ -102,8 +97,7 @@ class HyperosDialog extends StatelessWidget {
                   if (actions.isNotEmpty)
                     SizedBox(height: HyperosMiuixDialog.summaryBottomPadding),
                 ],
-                if (actions.isNotEmpty)
-                  _HyperosDialogActions(actions: actions, isDark: isDark),
+                if (actions.isNotEmpty) _HyperosDialogActions(actions: actions),
               ],
             ),
           ),
@@ -114,25 +108,18 @@ class HyperosDialog extends StatelessWidget {
 }
 
 class _HyperosDialogActions extends StatelessWidget {
-  const _HyperosDialogActions({required this.actions, required this.isDark});
+  const _HyperosDialogActions({required this.actions});
 
   final List<HyperosDialogAction> actions;
-  final bool isDark;
 
-  Color _labelColor(HyperosDialogAction action) {
+  Color _labelColor(BuildContext context, HyperosDialogAction action) {
     if (action.isDestructive) {
-      return isDark
-          ? HyperosMiuixDarkColors.error
-          : HyperosMiuixLightColors.error;
+      return HyperosColors.error(context);
     }
     if (action.isPrimary) {
-      return isDark
-          ? HyperosMiuixDarkColors.primary
-          : HyperosMiuixLightColors.primary;
+      return HyperosColors.primary(context);
     }
-    return isDark
-        ? HyperosMiuixDarkColors.onSurface
-        : HyperosMiuixLightColors.onSurface;
+    return HyperosColors.onSurface(context);
   }
 
   @override
@@ -153,7 +140,7 @@ class _HyperosDialogActions extends StatelessWidget {
                   HyperosMiuixButton.minHeight,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                foregroundColor: _labelColor(action),
+                foregroundColor: _labelColor(context, action),
                 textStyle: TextStyle(
                   fontSize: HyperosMiuixTypography.button,
                   fontWeight: action.isPrimary
@@ -179,16 +166,11 @@ Future<T?> showHyperosDialog<T>({
   bool barrierDismissible = true,
   bool useRootNavigator = false,
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final dimming = isDark
-      ? HyperosMiuixDarkColors.windowDimming
-      : HyperosMiuixLightColors.windowDimming;
-
   return showDialog<T>(
     context: context,
     useRootNavigator: useRootNavigator,
     barrierDismissible: barrierDismissible,
-    barrierColor: dimming,
+    barrierColor: HyperosColors.windowDimming(context),
     builder: (ctx) => HyperosDialog(
       title: title,
       body: body,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS / Miuix circular icon button (40×40, full round hit target).
 class HyperosIconButton extends StatelessWidget {
@@ -24,16 +25,9 @@ class HyperosIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onPressed != null;
-    final iconColor =
-        color ??
-        (isDark
-            ? HyperosMiuixDarkColors.onSurface
-            : HyperosMiuixLightColors.onSurface);
-    final splash = isDark
-        ? HyperosMiuixDarkColors.surfaceContainerHigh
-        : HyperosMiuixLightColors.surfaceContainerHigh;
+    final iconColor = color ?? HyperosColors.onSurface(context);
+    final splash = HyperosColors.surfaceContainerHigh(context);
 
     final button = Material(
       color: Colors.transparent,
