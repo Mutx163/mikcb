@@ -6,7 +6,18 @@ import 'spreadsheet_import_service.dart';
 abstract class LanEditHost {
   Future<void> ensureInitialized();
 
+  String? get activeProfileId;
+
   String? get activeProfileName;
+
+  /// Switchable timetable profiles (excludes partner-imported).
+  ///
+  /// Each map includes: `id`, `name`, `courseCount`, `currentWeek`, `isActive`.
+  List<Map<String, dynamic>> listProfilesSummary();
+
+  /// Switches the active profile. Throws [ArgumentError] when the id is
+  /// missing or not switchable (e.g. partner-imported).
+  Future<void> switchProfile(String profileId);
 
   int get currentWeek;
 

@@ -152,7 +152,11 @@
             android:name=".LiveUpdateService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Course live activity and schedule reminders while class is in progress" />
+        </service>
 
         <service
             android:name=".LanEditForegroundService"
@@ -174,6 +178,8 @@
                 android:resource="@xml/keep_alive_accessibility_service" />
         </service>
 
+        <!-- System broadcasts need exported=true; custom ACTION_TRIGGER is only
+             delivered via explicit Component PendingIntent (not in filter). -->
         <receiver
             android:name=".LiveUpdateReceiver"
             android:enabled="true"
@@ -183,7 +189,6 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.TIME_SET"/>
                 <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
-                <action android:name="com.mutx163.qingyu.ACTION_TRIGGER_LIVE_UPDATE"/>
             </intent-filter>
         </receiver>
 

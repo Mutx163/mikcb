@@ -18,6 +18,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.OpenableColumns
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
@@ -1896,10 +1897,17 @@ class LiveUpdateService : Service() {
             ?.takeIf { it.isNotBlank() }
             ?.let { getString(R.string.notification_course_reminder_title, it) }
             ?: getString(R.string.app_display_name)
-        startForeground(
-            NOTIFICATION_ID,
-            buildBootstrapNotification(bootstrapTitle)
-        )
+        val notification = buildBootstrapNotification(bootstrapTitle)
+        // FOREGROUND_SERVICE_TYPE_SPECIAL_USE is API 34+.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
         hasStartedForeground = true
     }
 

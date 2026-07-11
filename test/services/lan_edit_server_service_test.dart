@@ -18,8 +18,52 @@ class _FakeLanEditHost implements LanEditHost {
   int currentWeek = 3;
   bool throwOnUpdate = false;
 
+  String _activeProfileId = 'profile-a';
+  final Map<String, List<Course>> _coursesByProfile = {
+    'profile-a': <Course>[],
+    'profile-b': <Course>[],
+  };
+  final Map<String, String> _namesByProfile = {
+    'profile-a': '测试课表',
+    'profile-b': '第二套课表',
+  };
+  final Map<String, int> _weeksByProfile = {'profile-a': 3, 'profile-b': 5};
+
   @override
-  String? get activeProfileName => '测试课表';
+  String? get activeProfileId => _activeProfileId;
+
+  @override
+  String? get activeProfileName => _namesByProfile[_activeProfileId];
+
+  @override
+  List<Map<String, dynamic>> listProfilesSummary() {
+    return _namesByProfile.entries
+        .map(
+          (entry) => <String, dynamic>{
+            'id': entry.key,
+            'name': entry.value,
+            'courseCount': (_coursesByProfile[entry.key] ?? const []).length,
+            'currentWeek': _weeksByProfile[entry.key] ?? 1,
+            'isActive': entry.key == _activeProfileId,
+          },
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> switchProfile(String profileId) async {
+    final trimmedId = profileId.trim();
+    if (!_namesByProfile.containsKey(trimmedId)) {
+      throw ArgumentError('profile_not_found');
+    }
+    _coursesByProfile[_activeProfileId] = List<Course>.from(courses);
+    _weeksByProfile[_activeProfileId] = currentWeek;
+    _activeProfileId = trimmedId;
+    courses
+      ..clear()
+      ..addAll(_coursesByProfile[trimmedId] ?? const []);
+    currentWeek = _weeksByProfile[trimmedId] ?? 1;
+  }
 
   @override
   Future<void> ensureInitialized() async {}
@@ -127,12 +171,14 @@ class _FakeLanEditHost implements LanEditHost {
 
   @override
   Map<String, dynamic> buildMetaJson() => {
+    'profileId': activeProfileId,
     'profileName': activeProfileName,
     'currentWeek': currentWeek,
     'semesterWeekCount': settings.semesterWeekCount,
     'sectionCount': settings.sectionCount,
     'sections': settings.sections.map((section) => section.toJson()).toList(),
     'presetColors': const ['#2196F3'],
+    'profiles': listProfilesSummary(),
   };
 
   @override
@@ -159,6 +205,7 @@ class _FakeLanEditHost implements LanEditHost {
   @override
   Future<void> setCurrentWeek(int week) async {
     currentWeek = week;
+    _weeksByProfile[_activeProfileId] = week;
   }
 }
 
@@ -182,16 +229,27 @@ Future<_HttpClientResponse> _request({
     request.write(body);
   }
   final response = await request.close();
-  final responseBody = await response.transform(utf8.decoder).join();
+  final bodyBytes = await response.fold<List<int>>(
+    <int>[],
+    (previous, chunk) => previous..addAll(chunk),
+  );
+  final contentType = response.headers.contentType?.mimeType;
   client.close(force: true);
-  return _HttpClientResponse(response.statusCode, responseBody);
+  return _HttpClientResponse(
+    response.statusCode,
+    bodyBytes,
+    contentType: contentType,
+  );
 }
 
 class _HttpClientResponse {
   final int statusCode;
-  final String body;
+  final List<int> bodyBytes;
+  final String? contentType;
 
-  _HttpClientResponse(this.statusCode, this.body);
+  _HttpClientResponse(this.statusCode, this.bodyBytes, {this.contentType});
+
+  String get body => utf8.decode(bodyBytes);
 }
 
 class _SequenceRandom implements Random {
@@ -215,6 +273,10 @@ class _SequenceRandom implements Random {
 }
 
 void main() {
+  // Allow real loopback HttpClient while still loading Flutter assets.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = null;
+
   test('LanEditSession verifies PIN and token', () {
     final session = LanEditSession.create(
       random: _SequenceRandom([123456, 1, 2, 3]),
@@ -549,7 +611,7 @@ void main() {
     }
   });
 
-  test('favicon request returns 204 without 404 noise', () async {
+  test('favicon and logo serve app launcher icon', () async {
     final host = _FakeLanEditHost();
     final session = LanEditSession.create(
       random: _SequenceRandom([678901, 1, 2, 3]),
@@ -558,13 +620,23 @@ void main() {
     await server.start(host: host, session: session);
 
     try {
-      final response = await _request(
+      final favicon = await _request(
         port: server.port!,
         method: 'GET',
         path: '/favicon.ico',
       );
-      expect(response.statusCode, 204);
-      expect(response.body, isEmpty);
+      expect(favicon.statusCode, 200);
+      expect(favicon.contentType, 'image/png');
+      expect(favicon.bodyBytes.length, greaterThan(100));
+
+      final logo = await _request(
+        port: server.port!,
+        method: 'GET',
+        path: '/assets/logo.png',
+      );
+      expect(logo.statusCode, 200);
+      expect(logo.contentType, 'image/png');
+      expect(logo.bodyBytes, favicon.bodyBytes);
     } finally {
       await server.stop();
     }
@@ -1021,6 +1093,92 @@ void main() {
       expect(courses, hasLength(1));
       expect(courses[0]['name'], '新课程');
       expect(host.courses.any((c) => c.name == '旧课程'), isFalse);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('profiles list and switch changes active timetable', () async {
+    final host = _FakeLanEditHost();
+    host.courses.add(
+      Course(
+        id: 'a-1',
+        name: '课表A课程',
+        teacher: '甲',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        color: '#2196F3',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+    final session = LanEditSession.create(
+      random: _SequenceRandom([901234, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final list = await _request(
+        port: server.port!,
+        method: 'GET',
+        path: '/api/v1/profiles',
+        token: token,
+      );
+      expect(list.statusCode, 200);
+      final listBody = jsonDecode(list.body) as Map<String, dynamic>;
+      expect(listBody['activeProfileId'], 'profile-a');
+      final profiles = listBody['profiles'] as List;
+      expect(profiles, hasLength(2));
+
+      final switchResponse = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/profiles/switch',
+        token: token,
+        body: jsonEncode({'profileId': 'profile-b'}),
+      );
+      expect(switchResponse.statusCode, 200);
+      final switchBody =
+          jsonDecode(switchResponse.body) as Map<String, dynamic>;
+      expect(switchBody['profileId'], 'profile-b');
+      expect(switchBody['profileName'], '第二套课表');
+      expect(host.activeProfileId, 'profile-b');
+      expect(host.courses, isEmpty);
+      expect(host.currentWeek, 5);
+
+      final coursesOnB = await _request(
+        port: server.port!,
+        method: 'GET',
+        path: '/api/v1/courses',
+        token: token,
+      );
+      expect(
+        (jsonDecode(coursesOnB.body) as Map<String, dynamic>)['courses'],
+        isEmpty,
+      );
+
+      final missing = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/profiles/switch',
+        token: token,
+        body: jsonEncode({'profileId': 'missing-id'}),
+      );
+      expect(missing.statusCode, 404);
     } finally {
       await server.stop();
     }

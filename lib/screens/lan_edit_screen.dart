@@ -193,7 +193,8 @@ class _LanEditScreenState extends State<LanEditScreen>
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: colors.secondary,
+                            // Always white so dark theme does not wash the QR into gray.
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: QrImageView(
@@ -201,6 +202,15 @@ class _LanEditScreenState extends State<LanEditScreen>
                             version: QrVersions.auto,
                             size: MediaQuery.of(context).size.width * 0.5,
                             gapless: true,
+                            backgroundColor: Colors.white,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: Colors.black,
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ),

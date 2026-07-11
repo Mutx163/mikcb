@@ -21,8 +21,10 @@ internal object BeforeClassQuickActionRestore {
     fun enableSilentMode(context: Context, restoreAtMillis: Long): Boolean {
         val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
         return try {
-            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+            // Capture pre-change ringer mode before applying silent, otherwise
+            // restore would write back SILENT forever.
             markPending(context, restoreAtMillis, ACTION_SILENT)
+            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
             true
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
@@ -41,8 +43,9 @@ internal object BeforeClassQuickActionRestore {
             return false
         }
         return try {
-            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+            // Capture pre-change DND filter before applying NONE.
             markPending(context, restoreAtMillis, ACTION_DO_NOT_DISTURB)
+            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
             true
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_DIRECT_FAILED, e)

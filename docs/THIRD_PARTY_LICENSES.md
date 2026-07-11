@@ -28,11 +28,11 @@
 
 ## Bundled 前端资源（局域网 Web 编辑）
 
-| 组件 | 路径 | 许可 |
-|------|------|------|
-| Tabler Core 1.4.0 | `assets/lan_edit/vendor/tabler.min.{css,js}` | MIT — 见 [NOTICE-tabler.txt](../assets/lan_edit/NOTICE-tabler.txt) |
+局域网 Web 控制台使用自研 shadcn/ui 风格静态 CSS（`assets/lan_edit/lan-timetable.css`），不再捆绑 Tabler Core。
 
-局域网编辑页仅在用户主动开启本地 Web 服务时使用，不默认加载外部 CDN。
+图标字体通过 CDN 加载 `@tabler/icons-webfont`（仅在用户主动开启局域网编辑、用浏览器访问时拉取）。
+
+局域网编辑页仅在用户主动开启本地 Web 服务时使用。
 
 ## 远程服务（非随 APK 打包）
 
@@ -49,4 +49,4 @@
 
 ## 更新
 
-发版时若新增重大第三方依赖，应更新本文件。Last updated: 2026-07-07.
+发版时若新增重大第三方依赖，应更新本文件。Last updated: 2026-07-11.

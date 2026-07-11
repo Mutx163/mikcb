@@ -109,12 +109,6 @@ class LanEditServerService {
   }
 
   Future<void> _serveStatic(HttpRequest request, String path) async {
-    if (path == '/favicon.ico') {
-      request.response.statusCode = 204;
-      await request.response.close();
-      return;
-    }
-
     final assetPath = _mapAssetPath(path);
     if (assetPath == null) {
       request.response.statusCode = 404;
@@ -142,17 +136,18 @@ class LanEditServerService {
     if (path == '/assets/app.js') {
       return 'assets/lan_edit/app.js';
     }
+    if (path == '/assets/i18n.js') {
+      return 'assets/lan_edit/i18n.js';
+    }
     if (path == '/assets/style.css') {
       return 'assets/lan_edit/lan-timetable.css';
     }
     if (path == '/assets/lan-timetable.css') {
       return 'assets/lan_edit/lan-timetable.css';
     }
-    if (path.startsWith('/assets/vendor/')) {
-      final name = path.substring('/assets/vendor/'.length);
-      if (name == 'tabler.min.css' || name == 'tabler.min.js') {
-        return 'assets/lan_edit/vendor/$name';
-      }
+    // App brand mark for login page + browser tab icon.
+    if (path == '/assets/logo.png' || path == '/favicon.ico') {
+      return 'assets/branding/launcher_icon.png';
     }
     return null;
   }
@@ -166,6 +161,9 @@ class LanEditServerService {
     }
     if (assetPath.endsWith('.css')) {
       return ContentType('text', 'css', charset: 'utf-8');
+    }
+    if (assetPath.endsWith('.png')) {
+      return ContentType('image', 'png');
     }
     return ContentType.json;
   }

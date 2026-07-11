@@ -3,21 +3,10 @@ import 'package:uuid/uuid.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/course_color_palette.dart';
 import 'lan_edit_host.dart';
 import 'spreadsheet_import_service.dart';
 import 'week_expression_parser.dart';
-
-const _presetCourseColors = [
-  '#2196F3',
-  '#4CAF50',
-  '#FF9800',
-  '#E91E63',
-  '#9C27B0',
-  '#00BCD4',
-  '#FF5722',
-  '#795548',
-  '#607D8B',
-];
 
 /// Bridges [TimetableProvider] to [LanEditHost] for LAN HTTP handlers.
 class LanEditProviderHost implements LanEditHost {
@@ -29,7 +18,45 @@ class LanEditProviderHost implements LanEditHost {
   Future<void> ensureInitialized() => _provider.initialize();
 
   @override
+  String? get activeProfileId => _provider.activeProfile?.id;
+
+  @override
   String? get activeProfileName => _provider.activeProfile?.name;
+
+  @override
+  List<Map<String, dynamic>> listProfilesSummary() {
+    final activeId = _provider.activeProfile?.id;
+    return _provider.profiles
+        .where((profile) => !profile.isPartnerImported)
+        .map(
+          (profile) => <String, dynamic>{
+            'id': profile.id,
+            'name': profile.name,
+            'courseCount': profile.courses.length,
+            'currentWeek': profile.currentWeek,
+            'isActive': profile.id == activeId,
+          },
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> switchProfile(String profileId) async {
+    final trimmedId = profileId.trim();
+    if (trimmedId.isEmpty) {
+      throw ArgumentError('profile_id_required');
+    }
+    final exists = _provider.profiles.any(
+      (profile) => profile.id == trimmedId && !profile.isPartnerImported,
+    );
+    if (!exists) {
+      throw ArgumentError('profile_not_found');
+    }
+    await _provider.switchProfile(trimmedId);
+    if (_provider.activeProfile?.id != trimmedId) {
+      throw ArgumentError('profile_switch_failed');
+    }
+  }
 
   @override
   int get currentWeek => _provider.currentWeek;
@@ -112,6 +139,9 @@ class LanEditProviderHost implements LanEditHost {
 
   @override
   Future<void> importProfileBackupJson(String content) async {
+    if (_provider.dataTransferService.isFullBackupJson(content)) {
+      throw const FormatException('use_profile_backup_not_full');
+    }
     final error = await _provider.importAppDataBackup(content);
     if (error != null) {
       throw FormatException(error);
@@ -153,13 +183,15 @@ class LanEditProviderHost implements LanEditHost {
   Map<String, dynamic> buildMetaJson() {
     final settings = _provider.settings;
     return {
+      'profileId': activeProfileId,
       'profileName': activeProfileName,
       'currentWeek': currentWeek,
       'semesterWeekCount': settings.semesterWeekCount,
       'sectionCount': settings.sectionCount,
       'sections': settings.sections.map((section) => section.toJson()).toList(),
-      'presetColors': _presetCourseColors,
+      'presetColors': kPresetCourseColorHexes,
       'weekdayLabels': const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      'profiles': listProfilesSummary(),
     };
   }
 

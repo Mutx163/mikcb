@@ -7,7 +7,8 @@ const state = {
   courses: [],
   session: null,
   editingGroupName: null,
-  viewWeek: 1,
+  // null until first successful sync — then defaults to phone currentWeek
+  viewWeek: null,
   loading: false,
   courseSearch: '',
   filterNature: '',
@@ -23,6 +24,7 @@ const editorView = document.getElementById('editor-view');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const profileName = document.getElementById('profile-name');
+const profileSwitcher = document.getElementById('profile-switcher');
 const weekLabel = document.getElementById('week-label');
 const grid = document.getElementById('timetable-grid');
 const modal = document.getElementById('editor-modal');
@@ -124,49 +126,19 @@ function hide(el) {
   if (el) el.classList.add('hidden');
 }
 
-/** Tabler/Bootstrap 5 标准模态框（tabler.min.js 提供 bootstrap.Modal） */
-let _courseBootstrapModal = null;
-function getCourseBootstrapModal() {
-  if (!modal) return null;
-  const BsModal = window.bootstrap?.Modal;
-  if (!BsModal) return null;
-  if (!_courseBootstrapModal) {
-    _courseBootstrapModal = new BsModal(modal, { backdrop: true, keyboard: true });
-  }
-  return _courseBootstrapModal;
-}
-
+/** shadcn 风格 Dialog（纯 CSS + class 切换，无 Bootstrap 依赖） */
 function showCourseModal() {
-  const bs = getCourseBootstrapModal();
-  if (bs) {
-    bs.show();
-    return;
-  }
-  modal.classList.remove('hidden');
-  modal.classList.add('show');
-  modal.style.display = 'block';
-  modal.setAttribute('aria-modal', 'true');
-  document.body.classList.add('modal-open');
-  if (!document.getElementById('lan-modal-backdrop')) {
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop fade show';
-    backdrop.id = 'lan-modal-backdrop';
-    document.body.appendChild(backdrop);
-  }
+  if (!modal) return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 }
 
 function hideCourseModal() {
-  const bs = getCourseBootstrapModal();
-  if (bs) {
-    bs.hide();
-    return;
-  }
-  modal.classList.remove('show');
-  modal.style.display = '';
-  modal.classList.add('hidden');
-  modal.removeAttribute('aria-modal');
-  document.body.classList.remove('modal-open');
-  document.getElementById('lan-modal-backdrop')?.remove();
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
 }
 
 function setError(el, message) {
@@ -182,7 +154,9 @@ function setError(el, message) {
 function setLoading(isLoading, text = t('loadingData')) {
   state.loading = isLoading;
   if (isLoading) {
-    loadingText.textContent = text;
+    if (loadingText) {
+      loadingText.textContent = text;
+    }
     show(loadingOverlay);
   } else {
     hide(loadingOverlay);
@@ -224,8 +198,8 @@ function renderActivityLog() {
   listEl.innerHTML = state.logs.map(log => `
     <div class="log-item">
       <span class="log-time">${log.time}</span>
-      <span class="log-action badge badge-success">${log.action}</span>
-      <span class="log-detail">${log.detail}</span>
+      <span class="log-action badge badge-primary">${escapeHtml(log.action)}</span>
+      <span class="log-detail">${escapeHtml(log.detail)}</span>
     </div>
   `).join('');
 }
@@ -387,7 +361,7 @@ function renderDashboard() {
 
       const typeBadge = course.courseNature === 'elective'
         ? `<span class="badge badge-success">${t('electiveBadge')}</span>`
-        : `<span class="badge badge-danger">${t('requiredBadge')}</span>`;
+        : `<span class="badge badge-destructive">${t('requiredBadge')}</span>`;
 
       item.innerHTML = `
         <div class="item-color-indicator" style="background-color: ${course.color || '#4f46e5'}"></div>
@@ -605,29 +579,29 @@ function renderCoursesTable() {
     }).join('');
 
     const natureBadge = group.courseNature === 'elective'
-      ? '<span class="badge bg-green-lt">选修</span>'
-      : '<span class="badge bg-red-lt">必修</span>';
+      ? '<span class="badge badge-success">选修</span>'
+      : '<span class="badge badge-destructive">必修</span>';
 
     card.className = 'card course-group-card';
     card.innerHTML = `
       <div class="card-header-band" style="background-color: ${group.color || '#4f46e5'}"></div>
       <div class="card-body">
-        <div class="d-flex align-items-start gap-2 mb-2">
+        <div class="flex items-start gap-2 mb-2">
           <label class="form-check mb-0" title="批量删除">
             <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
           </label>
-          <div class="flex-fill">
+          <div class="flex-fill min-w-0">
             <h3 class="card-title mb-0">${escapeHtml(group.name)}</h3>
-            ${group.shortName ? `<div class="text-secondary small">${escapeHtml(group.shortName)}</div>` : ''}
+            ${group.shortName ? `<div class="text-muted text-xs">${escapeHtml(group.shortName)}</div>` : ''}
           </div>
           ${natureBadge}
         </div>
         <div class="card-slots-list">${slotsHtml}</div>
-        ${group.note ? `<p class="text-secondary small mt-2 mb-0"><i class="ti ti-notes me-1"></i>${escapeHtml(group.note)}</p>` : ''}
+        ${group.note ? `<p class="text-muted text-xs mt-2 mb-0"><i class="ti ti-notes me-1"></i>${escapeHtml(group.note)}</p>` : ''}
         <div class="btn-list mt-3">
-          <button type="button" class="btn btn-sm action-edit-btn">编辑</button>
-          <button type="button" class="btn btn-sm action-copy-btn">复制</button>
-          <button type="button" class="btn btn-sm btn-danger action-delete-btn">删除</button>
+          <button type="button" class="btn btn-outline btn-sm action-edit-btn">编辑</button>
+          <button type="button" class="btn btn-outline btn-sm action-copy-btn">复制</button>
+          <button type="button" class="btn btn-destructive btn-sm action-delete-btn">删除</button>
         </div>
       </div>
     `;
@@ -710,7 +684,7 @@ function renderBackupView() {
 }
 
 // 备份导入导出操作
-btnExportBackup.addEventListener('click', async () => {
+btnExportBackup?.addEventListener('click', async () => {
   try {
     setLoading(true, '正在生成备份文件…');
     const data = await api('/api/v1/profile/active');
@@ -738,7 +712,7 @@ btnExportBackup.addEventListener('click', async () => {
   }
 });
 
-btnImportBackup.addEventListener('click', async () => {
+btnImportBackup?.addEventListener('click', async () => {
   const content = state.selectedBackupFileContent;
   if (!content) return;
   
@@ -770,22 +744,22 @@ btnImportBackup.addEventListener('click', async () => {
 });
 
 // 拖拽上传逻辑
-dropZone.addEventListener('click', () => backupFileInput.click());
+dropZone?.addEventListener('click', () => backupFileInput?.click());
 
-backupFileInput.addEventListener('change', (e) => {
+backupFileInput?.addEventListener('change', (e) => {
   handleSelectedFile(e.target.files[0]);
 });
 
-dropZone.addEventListener('dragover', (e) => {
+dropZone?.addEventListener('dragover', (e) => {
   e.preventDefault();
   dropZone.classList.add('dragover');
 });
 
 ['dragleave', 'dragend'].forEach(type => {
-  dropZone.addEventListener(type, () => dropZone.classList.remove('dragover'));
+  dropZone?.addEventListener(type, () => dropZone.classList.remove('dragover'));
 });
 
-dropZone.addEventListener('drop', (e) => {
+dropZone?.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
   if (e.dataTransfer.files.length) {
@@ -893,7 +867,7 @@ function addSlotField(data = {}) {
         <label class="form-label">上课周（表达式，可选）</label>
         <div class="form-inline-row">
           <input type="text" class="field-slot-weekExpression" placeholder="如 1-8、10-16(单)；留空则用起止周+单双周" value="${escapeHtml(formatWeeksForExpression(data.customWeeks) || '')}" />
-          <button type="button" class="btn btn-secondary btn-small btn-preview-week">预览</button>
+          <button type="button" class="btn btn-outline btn-sm btn-preview-week">预览</button>
         </div>
         <p class="field-hint field-slot-week-preview text-muted"></p>
       </div>
@@ -938,6 +912,69 @@ function addSlotField(data = {}) {
   });
 
   scheduleSlotsContainer.appendChild(card);
+}
+
+// 课表档案切换器
+function fillProfileSwitcher(profiles, activeProfileId) {
+  if (!profileSwitcher) return;
+  const list = Array.isArray(profiles) ? profiles : [];
+  const activeId =
+    activeProfileId ||
+    list.find((item) => item?.isActive)?.id ||
+    list[0]?.id ||
+    '';
+
+  profileSwitcher.innerHTML = '';
+  if (!list.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = state.session?.profileName || state.meta?.profileName || t('currentProfileFallback');
+    profileSwitcher.appendChild(option);
+    profileSwitcher.disabled = true;
+    return;
+  }
+
+  list.forEach((profile) => {
+    const option = document.createElement('option');
+    option.value = profile.id || '';
+    const courseCount = Number(profile.courseCount ?? 0);
+    option.textContent = courseCount > 0
+      ? `${profile.name || '未命名'}（${courseCount} 门）`
+      : (profile.name || '未命名');
+    if (profile.id === activeId) {
+      option.selected = true;
+    }
+    profileSwitcher.appendChild(option);
+  });
+  profileSwitcher.disabled = list.length <= 1;
+}
+
+async function switchActiveProfile(profileId) {
+  const targetId = String(profileId || '').trim();
+  if (!targetId) return;
+  const currentId = state.session?.profileId || state.meta?.profileId || '';
+  if (targetId === currentId) return;
+
+  try {
+    setLoading(true, '正在切换课表…');
+    const result = await api('/api/v1/profiles/switch', {
+      method: 'POST',
+      body: JSON.stringify({ profileId: targetId }),
+    });
+    // Force view week to follow the newly activated profile on next load.
+    state.viewWeek = null;
+    showToast(`已切换到「${result.profileName || '课表'}」`, 'success');
+    addActivityLog('切换课表', `当前课表 → ${result.profileName || targetId}`);
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    showToast(error.message, 'error');
+    fillProfileSwitcher(
+      state.session?.profiles || state.meta?.profiles || [],
+      state.session?.profileId || state.meta?.profileId || '',
+    );
+  } finally {
+    setLoading(false);
+  }
 }
 
 // 周次选择器填充
@@ -1064,7 +1101,7 @@ function updateSessionBadge() {
   const remainingMs = new Date(expiresAt).getTime() - Date.now();
   if (remainingMs <= 0) {
     sessionBadge.textContent = t('connectionExpired');
-    sessionBadge.className = 'badge bg-danger';
+    sessionBadge.className = 'badge badge-destructive';
     sessionCountdown.textContent = t('reconnectHint');
     return;
   }
@@ -1073,10 +1110,10 @@ function updateSessionBadge() {
 
   if (minutes < 5) {
     sessionBadge.textContent = t('connectionEnding');
-    sessionBadge.className = 'badge bg-warning';
+    sessionBadge.className = 'badge badge-warning';
   } else {
     sessionBadge.textContent = t('secureConnection');
-    sessionBadge.className = 'badge bg-success';
+    sessionBadge.className = 'badge badge-success';
   }
   sessionCountdown.textContent = minutes > 0
     ? t('countdownMinSec', minutes, seconds)
@@ -1107,12 +1144,19 @@ async function loadEditorData(options = {}) {
     state.courses = coursePayload.courses || [];
     state.session = session;
 
-    if (!state.viewWeek || state.viewWeek < 1) {
-      state.viewWeek = meta.currentWeek;
+    // First open: show the phone's current week (not hard-coded week 1).
+    // Later refreshes keep the user's selected viewWeek.
+    if (state.viewWeek == null || state.viewWeek < 1) {
+      state.viewWeek = meta.currentWeek || 1;
     }
-    state.viewWeek = Math.min(state.viewWeek, meta.semesterWeekCount);
+    const semesterWeekCount = meta.semesterWeekCount || 20;
+    state.viewWeek = Math.min(Math.max(1, state.viewWeek), semesterWeekCount);
 
     profileName.textContent = session.profileName || meta.profileName || t('currentProfileFallback');
+    fillProfileSwitcher(
+      session.profiles || meta.profiles || [],
+      session.profileId || meta.profileId || '',
+    );
     fillWeekPicker();
     updateWeekLabel();
     renderGrid();
@@ -1165,11 +1209,12 @@ function stripPinFromUrl() {
 }
 
 // 导航栏 Tab 切换
-navItems.forEach(item => {
+navItems.forEach((item) => {
   item.addEventListener('click', (e) => {
     e.preventDefault();
     const tabName = item.getAttribute('data-tab');
     setViewTab(tabName);
+    setSidebarOpen(false);
   });
 });
 
@@ -1179,15 +1224,15 @@ function setViewTab(tabName) {
 }
 
 function syncTabsUI() {
-  navItems.forEach(btn => {
-    if (btn.getAttribute('data-tab') === state.activeTab) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
+  navItems.forEach((btn) => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === state.activeTab);
   });
 
-  tabPanels.forEach(panel => {
+  document.querySelectorAll('.mobile-nav-item[data-tab]').forEach((item) => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === state.activeTab);
+  });
+
+  tabPanels.forEach((panel) => {
     if (panel.id === `${state.activeTab}-panel`) {
       panel.classList.remove('hidden');
     } else {
@@ -1205,11 +1250,11 @@ function syncTabsUI() {
 }
 
 // 事件侦听器
-loginForm.addEventListener('submit', async (event) => {
+loginForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   setError(loginError, '');
   try {
-    const pin = document.getElementById('pin-input').value.trim();
+    const pin = document.getElementById('pin-input')?.value.trim() || '';
     await verifyPinAndEnter(pin);
   } catch (error) {
     setError(loginError, error.message);
@@ -1217,7 +1262,7 @@ loginForm.addEventListener('submit', async (event) => {
   }
 });
 
-document.getElementById('logout-btn').addEventListener('click', () => {
+document.getElementById('logout-btn')?.addEventListener('click', () => {
   addActivityLog('安全退出', '主动断开连接');
   state.token = '';
   state.pin = '';
@@ -1232,7 +1277,7 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   showToast(t('loggedOut'), 'info');
 });
 
-document.getElementById('refresh-btn').addEventListener('click', () => {
+document.getElementById('refresh-btn')?.addEventListener('click', () => {
   loadEditorData({ silent: true, notifyRefresh: true }).catch(() => {});
 });
 
@@ -1409,51 +1454,91 @@ btnBatchDeleteCourses?.addEventListener('click', async () => {
   }
 });
 
-document.getElementById('prev-week-btn').addEventListener('click', () => {
+document.getElementById('prev-week-btn')?.addEventListener('click', () => {
   setViewWeek(state.viewWeek - 1);
 });
 
-document.getElementById('next-week-btn').addEventListener('click', () => {
+document.getElementById('next-week-btn')?.addEventListener('click', () => {
   setViewWeek(state.viewWeek + 1);
 });
 
-weekPicker.addEventListener('change', () => {
+weekPicker?.addEventListener('change', () => {
   setViewWeek(Number(weekPicker.value));
 });
 
-courseSearch.addEventListener('input', () => {
+profileSwitcher?.addEventListener('change', () => {
+  switchActiveProfile(profileSwitcher.value);
+});
+
+courseSearch?.addEventListener('input', () => {
   state.courseSearch = courseSearch.value;
   renderCoursesTable();
 });
 
-filterNature.addEventListener('change', () => {
+filterNature?.addEventListener('change', () => {
   state.filterNature = filterNature.value;
   renderCoursesTable();
 });
 
-document.getElementById('quick-add-btn').addEventListener('click', () => {
+document.getElementById('quick-add-btn')?.addEventListener('click', () => {
   state.activeTab = 'courses';
   syncTabsUI();
   openEditor(null);
 });
 
-document.getElementById('btn-add-course').addEventListener('click', () => openEditor(null));
-document.getElementById('cancel-course-btn').addEventListener('click', closeEditor);
-document.getElementById('close-modal-x').addEventListener('click', closeEditor);
+document.getElementById('btn-add-course')?.addEventListener('click', () => openEditor(null));
+document.getElementById('cancel-course-btn')?.addEventListener('click', closeEditor);
+document.getElementById('close-modal-x')?.addEventListener('click', closeEditor);
 
-modal.addEventListener('click', (event) => {
-  if (!window.bootstrap?.Modal && event.target === modal) {
+modal?.addEventListener('click', (event) => {
+  if (event.target === modal) {
     closeEditor();
   }
 });
 
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && modal?.classList.contains('open')) {
+    closeEditor();
+  }
+});
+
+// 移动端侧栏开关
+const appSidebar = document.getElementById('app-sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+
+function setSidebarOpen(open) {
+  appSidebar?.classList.toggle('open', open);
+  sidebarBackdrop?.classList.toggle('open', open);
+  if (sidebarBackdrop) {
+    sidebarBackdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+}
+
+mobileMenuToggle?.addEventListener('click', () => {
+  const isOpen = appSidebar?.classList.contains('open');
+  setSidebarOpen(!isOpen);
+});
+
+sidebarBackdrop?.addEventListener('click', () => setSidebarOpen(false));
+
+document.querySelectorAll('.mobile-nav-item[data-tab]').forEach((item) => {
+  item.addEventListener('click', (event) => {
+    event.preventDefault();
+    const tabName = item.getAttribute('data-tab');
+    if (!tabName) return;
+    setViewTab(tabName);
+    setSidebarOpen(false);
+  });
+});
+
 // 添加动态 slots field 项
-btnAddSlotField.addEventListener('click', () => {
+btnAddSlotField?.addEventListener('click', () => {
   addSlotField();
 });
 
 // 整个课程组的删除操作
-deleteCourseBtn.addEventListener('click', async () => {
+deleteCourseBtn?.addEventListener('click', async () => {
   if (!state.editingGroupName) return;
   if (!window.confirm(`确定要彻底删除课程《${state.editingGroupName}》的全部时间段吗？`)) return;
   try {
@@ -1477,7 +1562,7 @@ deleteCourseBtn.addEventListener('click', async () => {
 });
 
 // 整个课程组的复制操作
-duplicateCourseBtn.addEventListener('click', async () => {
+duplicateCourseBtn?.addEventListener('click', async () => {
   const name = courseForm.name.value.trim() + ' (副本)';
   const shortName = courseForm.shortName.value.trim() || null;
   const courseNature = courseForm.courseNature.value;
@@ -1558,7 +1643,7 @@ duplicateCourseBtn.addEventListener('click', async () => {
 });
 
 // 保存表单（多 slots 协同写入）
-courseForm.addEventListener('submit', async (event) => {
+courseForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   setError(formError, '');
 
@@ -1685,20 +1770,27 @@ courseForm.addEventListener('submit', async (event) => {
 
 // 快捷键绑定
 document.addEventListener('keydown', (event) => {
-  if (modal.classList.contains('show')) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeEditor();
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-      event.preventDefault();
-      courseForm.requestSubmit();
-    }
+  if (!modal?.classList.contains('show')) {
+    return;
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeEditor();
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    courseForm?.requestSubmit();
   }
 });
 
 // 页面初始化自举引导
 async function bootstrap() {
+  try {
+    window.LanEditI18n?.applyDomI18n?.();
+  } catch (_) {
+    // i18n is optional; login must still work if the asset fails to load.
+  }
+
   renderActivityLog();
   const params = new URLSearchParams(window.location.search);
   const urlToken = params.get('token');
@@ -1707,15 +1799,20 @@ async function bootstrap() {
     sessionStorage.setItem('lanEditToken', urlToken);
   }
 
-  const urlPin = params.get('pin');
+  const urlPin = (params.get('pin') || '').trim();
   if (urlPin) {
-    state.pin = urlPin.trim();
-    sessionStorage.setItem('lanEditPin', urlPin.trim());
+    state.pin = urlPin;
+    sessionStorage.setItem('lanEditPin', urlPin);
+    const pinInput = document.getElementById('pin-input');
+    if (pinInput) {
+      pinInput.value = urlPin;
+    }
   }
 
   if (state.token) {
     try {
       await enterEditor();
+      stripPinFromUrl();
       return;
     } catch (_) {
       state.token = '';
@@ -1726,7 +1823,7 @@ async function bootstrap() {
   if (urlPin) {
     setLoading(true, t('autoPinLogin'));
     try {
-      await verifyPinAndEnter(urlPin.trim());
+      await verifyPinAndEnter(urlPin);
       stripPinFromUrl();
       showToast(t('loginSuccess'), 'success');
       return;

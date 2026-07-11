@@ -41,10 +41,11 @@ Future<String?> findPreferredLanIPv4() async {
   }
 }
 
+/// Client IP for rate limiting. Uses the TCP peer only.
+///
+/// Do not trust `X-Forwarded-For`: LAN Edit binds a direct [HttpServer]
+/// with no reverse-proxy allowlist, so clients can forge XFF and bypass
+/// per-IP PIN attempt limits.
 String clientIpFromRequest(HttpRequest request) {
-  final forwarded = request.headers.value('x-forwarded-for');
-  if (forwarded != null && forwarded.isNotEmpty) {
-    return forwarded.split(',').first.trim();
-  }
   return request.connectionInfo?.remoteAddress.address ?? 'unknown';
 }

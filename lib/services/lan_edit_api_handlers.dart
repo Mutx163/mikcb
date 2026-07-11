@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
@@ -47,7 +48,9 @@ class LanEditApiHandlers {
       if (path == '/api/v1/session' && request.method == 'GET') {
         await host.ensureInitialized();
         await _writeJson(request, 200, {
+          'profileId': host.activeProfileId,
           'profileName': host.activeProfileName,
+          'profiles': host.listProfilesSummary(),
           'activeWeek': host.currentWeek,
           'semesterWeekCount': host.semesterWeekCount,
           'serverTime': DateTime.now().toIso8601String(),
@@ -58,6 +61,20 @@ class LanEditApiHandlers {
 
       if (path == '/api/v1/session' && request.method == 'PATCH') {
         await _handlePatchSession(request);
+        return;
+      }
+
+      if (path == '/api/v1/profiles' && request.method == 'GET') {
+        await host.ensureInitialized();
+        await _writeJson(request, 200, {
+          'activeProfileId': host.activeProfileId,
+          'profiles': host.listProfilesSummary(),
+        });
+        return;
+      }
+
+      if (path == '/api/v1/profiles/switch' && request.method == 'POST') {
+        await _handleSwitchProfile(request);
         return;
       }
 
@@ -198,7 +215,12 @@ class LanEditApiHandlers {
         semesterWeekCount: context.semesterWeekCount,
       );
       if (draft.name.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', 'course_name_required');
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'course_name_required',
+        );
         return;
       }
       final created = await host.createCourse(draft);
@@ -247,7 +269,12 @@ class LanEditApiHandlers {
         semesterWeekCount: context.semesterWeekCount,
       );
       if (updated.name.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', 'course_name_required');
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'course_name_required',
+        );
         return;
       }
       await host.updateCourse(updated);
@@ -303,7 +330,12 @@ class LanEditApiHandlers {
       final originalName = body['originalName']?.toString();
       final rawSlots = body['slots'];
       if (rawSlots is! List || rawSlots.isEmpty) {
-        await _writeError(request, 400, 'invalid_request', 'at_least_one_schedule_slot');
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'at_least_one_schedule_slot',
+        );
         return;
       }
 
@@ -340,7 +372,12 @@ class LanEditApiHandlers {
       }
 
       if (slots.first.name.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', 'course_name_required');
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'course_name_required',
+        );
         return;
       }
 
@@ -384,7 +421,12 @@ class LanEditApiHandlers {
       await host.ensureInitialized();
       final body = await _readBody(request);
       if (body.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', 'backup_content_required');
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'backup_content_required',
+        );
         return;
       }
       final count = await host.importMergeBackupJson(body);
@@ -451,6 +493,46 @@ class LanEditApiHandlers {
         extras: {'currentWeek': week},
       );
       await _writeJson(request, 200, {'currentWeek': host.currentWeek});
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleSwitchProfile(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final profileId = body['profileId']?.toString().trim() ?? '';
+      if (profileId.isEmpty) {
+        await _writeError(request, 400, 'invalid_request', 'profileId 不能为空');
+        return;
+      }
+      await host.switchProfile(profileId);
+      lanEditAuditInfo(
+        'lan_edit_profile_switched',
+        AppLogMessages.lanEditProfileSwitched,
+        extras: {
+          'profileId': host.activeProfileId,
+          'profileName': host.activeProfileName,
+        },
+      );
+      await _writeJson(request, 200, {
+        'profileId': host.activeProfileId,
+        'profileName': host.activeProfileName,
+        'profiles': host.listProfilesSummary(),
+        'meta': host.buildMetaJson(),
+      });
+    } on ArgumentError catch (error) {
+      final message = error.message?.toString() ?? '$error';
+      final notFound =
+          message.contains('profile_not_found') ||
+          message.contains('profile_switch_failed');
+      await _writeError(
+        request,
+        notFound ? 404 : 400,
+        notFound ? 'not_found' : 'invalid_request',
+        message,
+      );
     } on FormatException catch (error) {
       await _writeError(request, 400, 'invalid_request', error.message);
     }
@@ -592,8 +674,21 @@ class LanEditApiHandlers {
     return decoded;
   }
 
+  static const int _maxRequestBodyBytes = 5 * 1024 * 1024;
+
   Future<String> _readBody(HttpRequest request) async {
-    return utf8.decodeStream(request);
+    final contentLength = request.contentLength;
+    if (contentLength > _maxRequestBodyBytes) {
+      throw const FormatException('request_body_too_large');
+    }
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in request) {
+      builder.add(chunk);
+      if (builder.length > _maxRequestBodyBytes) {
+        throw const FormatException('request_body_too_large');
+      }
+    }
+    return utf8.decode(builder.takeBytes());
   }
 
   Future<void> _writeJson(
