@@ -78,6 +78,7 @@ _layout.json
 
 # 审查输出
 reviews/
+.adversarial-review/
 progress.md
 .review_changed_files.txt
 .codebuddy/
