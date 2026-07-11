@@ -302,8 +302,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
   Widget _buildNameField(AppLocalizations l10n) {
     return FormField<String>(
+      initialValue: _nameController.text,
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
+        final name = (value ?? _nameController.text).trim();
+        if (name.isEmpty) {
           return l10n.examNameRequired;
         }
         return null;
@@ -792,10 +794,19 @@ class _AddExamScreenState extends State<AddExamScreen> {
   }
 
   void _saveExam() {
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedCourseId == null || _selectedCourseId!.trim().isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.linkCourseRequired,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+
     if (!_hasSelectedDate) {
-      final l10n = AppLocalizations.of(context)!;
       showAppToast(
         context,
         message: l10n.examDateRequired,

@@ -135,8 +135,10 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _withSpacing([
                     FormField<String>(
+                      initialValue: _titleController.text,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final title = (value ?? _titleController.text).trim();
+                        if (title.isEmpty) {
                           return l10n.scheduleTitleRequired;
                         }
                         return null;
