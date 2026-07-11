@@ -3050,7 +3050,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdatesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'检查更新、立即下载，以及测试与诊断入口'**
+  /// **'检查更新与立即下载'**
   String get aboutUpdatesSubtitle;
 
   /// No description provided for @aboutChangelogTitle.

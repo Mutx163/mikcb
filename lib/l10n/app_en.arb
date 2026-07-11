@@ -906,7 +906,7 @@
   "prereleaseIncluded": "Includes prerelease",
   "stableOnly": "Stable only",
   "aboutUpdatesTitle": "App Updates",
-  "aboutUpdatesSubtitle": "Check updates, download now, and open testing / diagnostics tools.",
+  "aboutUpdatesSubtitle": "Check for updates and download the latest release.",
   "aboutChangelogTitle": "Changelog",
   "aboutChangelogSubtitle": "View update notes for all versions",
   "aboutPositioningTitle": "Project Positioning",

@@ -1650,7 +1650,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutUpdatesTitle => 'バージョン更新';
 
   @override
-  String get aboutUpdatesSubtitle => '更新確認、ダウンロード、テストと診断エントリ';
+  String get aboutUpdatesSubtitle => '更新確認とダウンロード';
 
   @override
   String get aboutChangelogTitle => '更新履歴';

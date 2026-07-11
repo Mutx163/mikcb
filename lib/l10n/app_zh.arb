@@ -937,7 +937,7 @@
   "prereleaseIncluded": "含预发布",
   "stableOnly": "正式版",
   "aboutUpdatesTitle": "版本更新",
-  "aboutUpdatesSubtitle": "检查更新、立即下载，以及测试与诊断入口",
+  "aboutUpdatesSubtitle": "检查更新与立即下载",
   "aboutChangelogTitle": "更新日志",
   "aboutChangelogSubtitle": "查看所有版本的更新内容",
   "aboutPositioningTitle": "项目定位",

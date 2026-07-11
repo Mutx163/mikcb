@@ -1627,7 +1627,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutUpdatesTitle => '版本更新';
 
   @override
-  String get aboutUpdatesSubtitle => '检查更新、立即下载，以及测试与诊断入口';
+  String get aboutUpdatesSubtitle => '检查更新与立即下载';
 
   @override
   String get aboutChangelogTitle => '更新日志';
@@ -9522,7 +9522,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutUpdatesTitle => '版本更新';
 
   @override
-  String get aboutUpdatesSubtitle => '檢查更新、立即下載，以及測試與診斷入口';
+  String get aboutUpdatesSubtitle => '檢查更新與立即下載';
 
   @override
   String get aboutChangelogTitle => '更新日誌';
@@ -17288,7 +17288,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutUpdatesTitle => '版本更新';
 
   @override
-  String get aboutUpdatesSubtitle => '檢查更新、立即下載，以及測試與診斷入口';
+  String get aboutUpdatesSubtitle => '檢查更新與立即下載';
 
   @override
   String get aboutChangelogTitle => '更新日誌';

@@ -1720,7 +1720,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutUpdatesSubtitle =>
-      'Check updates, download now, and open testing / diagnostics tools.';
+      'Check for updates and download the latest release.';
 
   @override
   String get aboutChangelogTitle => 'Changelog';

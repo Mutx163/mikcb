@@ -831,7 +831,7 @@
   "prereleaseIncluded": "プレリリース含む",
   "stableOnly": "正式版",
   "aboutUpdatesTitle": "バージョン更新",
-  "aboutUpdatesSubtitle": "更新確認、ダウンロード、テストと診断エントリ",
+  "aboutUpdatesSubtitle": "更新確認とダウンロード",
   "aboutChangelogTitle": "更新履歴",
   "aboutChangelogSubtitle": "全バージョンの更新内容を確認",
   "aboutPositioningTitle": "プロジェクトの位置づけ",

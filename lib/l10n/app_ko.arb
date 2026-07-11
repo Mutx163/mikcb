@@ -831,7 +831,7 @@
   "prereleaseIncluded": "시험판 포함",
   "stableOnly": "정식판",
   "aboutUpdatesTitle": "버전 업데이트",
-  "aboutUpdatesSubtitle": "업데이트 확인, 다운로드, 테스트 및 진단 항목",
+  "aboutUpdatesSubtitle": "업데이트 확인 및 다운로드",
   "aboutChangelogTitle": "업데이트 로그",
   "aboutChangelogSubtitle": "모든 버전의 업데이트 내용 확인",
   "aboutPositioningTitle": "프로젝트 정체성",

@@ -830,7 +830,7 @@
   "prereleaseIncluded": "含預發布",
   "stableOnly": "正式版",
   "aboutUpdatesTitle": "版本更新",
-  "aboutUpdatesSubtitle": "檢查更新、立即下載，以及測試與診斷入口",
+  "aboutUpdatesSubtitle": "檢查更新與立即下載",
   "aboutChangelogTitle": "更新日誌",
   "aboutChangelogSubtitle": "查看所有版本的更新內容",
   "aboutPositioningTitle": "項目定位",

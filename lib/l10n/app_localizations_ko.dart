@@ -1658,7 +1658,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutUpdatesTitle => '버전 업데이트';
 
   @override
-  String get aboutUpdatesSubtitle => '업데이트 확인, 다운로드, 테스트 및 진단 항목';
+  String get aboutUpdatesSubtitle => '업데이트 확인 및 다운로드';
 
   @override
   String get aboutChangelogTitle => '업데이트 로그';
