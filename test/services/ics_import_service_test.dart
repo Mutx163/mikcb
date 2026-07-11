@@ -146,8 +146,10 @@ END:VCALENDAR
     },
   );
 
-  test('parseWakeUpSchedule returns empty result when DTSTART is unparseable', () {
-    const content = '''
+  test(
+    'parseWakeUpSchedule returns empty result when DTSTART is unparseable',
+    () {
+      const content = '''
 BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
@@ -159,7 +161,35 @@ END:VEVENT
 END:VCALENDAR
 ''';
 
+      final result = IcsImportService().parseWakeUpSchedule(content);
+      expect(result.courses, isEmpty);
+    },
+  );
+
+  test('marks biweekly INTERVAL=2 course as odd or even weeks', () {
+    const content = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//YZune//WakeUpSchedule//EN
+BEGIN:VEVENT
+SUMMARY:双周实验[16][必修]
+DTSTART;TZID=/Asia/Shanghai:20260302T082000
+DTEND;TZID=/Asia/Shanghai:20260302T100000
+RRULE:FREQ=WEEKLY;UNTIL=20260524T160000Z;INTERVAL=2
+LOCATION:B201 李老师
+DESCRIPTION:第1 - 2节\\nB201\\n李老师
+END:VEVENT
+END:VCALENDAR
+''';
+
     final result = IcsImportService().parseWakeUpSchedule(content);
-    expect(result.courses, isEmpty);
+    final course = result.courses.single;
+
+    expect(course.startWeek, 1);
+    expect(course.isOddWeek, isTrue);
+    expect(course.isEvenWeek, isFalse);
+    expect(course.isInWeek(1), isTrue);
+    expect(course.isInWeek(2), isFalse);
+    expect(course.isInWeek(3), isTrue);
   });
 }

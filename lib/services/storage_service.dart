@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -47,9 +48,11 @@ class StorageService {
     _timeSchemesListCache = null;
     _timeSchemesEnsured = false;
   }
+
   bool _hidePrefixMigrated = false;
 
   Future<void>? _initFuture;
+  Future<void> _profilesWriteChain = Future<void>.value();
 
   /// 仅用于测试：重置缓存的初始化状态
   @visibleForTesting
@@ -60,6 +63,7 @@ class StorageService {
     _timeSchemesListCache = null;
     _profilesEnsured = false;
     _timeSchemesEnsured = false;
+    _profilesWriteChain = Future<void>.value();
   }
 
   Future<void> init() async {
@@ -467,12 +471,24 @@ class StorageService {
   }
 
   Future<void> saveProfiles(List<TimetableProfile> profiles) async {
-    if (_prefs == null) await init();
-    final payload = jsonEncode(
-      profiles.map((profile) => profile.toJson()).toList(),
-    );
-    await _prefs?.setString(_profilesKey, payload);
-    _profilesListCache = List<TimetableProfile>.from(profiles);
+    // Serialize concurrent profile writes so a later read-modify-write cannot
+    // flush an older snapshot over a newer one.
+    final previousWrite = _profilesWriteChain;
+    final writeCompleter = Completer<void>();
+    _profilesWriteChain = writeCompleter.future;
+    await previousWrite.catchError((_) {});
+    try {
+      if (_prefs == null) await init();
+      final payload = jsonEncode(
+        profiles.map((profile) => profile.toJson()).toList(),
+      );
+      await _prefs?.setString(_profilesKey, payload);
+      _profilesListCache = List<TimetableProfile>.from(profiles);
+      writeCompleter.complete();
+    } catch (error, stackTrace) {
+      writeCompleter.completeError(error, stackTrace);
+      rethrow;
+    }
   }
 
   Future<String?> getActiveProfileId() async {

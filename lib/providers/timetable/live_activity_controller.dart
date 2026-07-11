@@ -530,13 +530,16 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
       .map(host.resolveCourseDisplayName)
       .toList(growable: false);
   final now = DateTime.now();
+  // Use calendar week (not UI browse week) so native schedule matches live
+  // course selection even when the user has scrolled the timetable.
+  final scheduleWeek = host._calculateCalendarWeekForDate(now);
   final todayKey =
       '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   final todayIsHoliday = host.isHoliday(now);
   final holidayDates = _liveBuildHolidayDatesForSnapshot(host);
   final snapshotSignature = jsonEncode({
     'profileId': activeProfile.id,
-    'currentWeek': host._currentWeek,
+    'currentWeek': scheduleWeek,
     'semesterStartDate':
         host._settings.semesterStartDate?.millisecondsSinceEpoch,
     'isHoliday': todayIsHoliday,
@@ -554,7 +557,7 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
   final synced = await host._liveActivitiesService.syncScheduleSnapshot(
     courses: displayCourses,
     settings: host._settings,
-    currentWeek: host._currentWeek,
+    currentWeek: scheduleWeek,
     semesterStartDate: host._settings.semesterStartDate,
     endReminderLeadMillis:
         TimetableProvider._liveEndReminderWindow.inMilliseconds,

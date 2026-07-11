@@ -90,6 +90,43 @@ class Exam {
     };
   }
 
+  /// Normalizes free-form time text into `HH:mm`, or returns [fallback].
+  static String normalizeTimeOfDay(String? raw, {String fallback = '08:30'}) {
+    final value = (raw ?? '').trim();
+    final match = RegExp(r'^(\d{1,2}):(\d{1,2})$').firstMatch(value);
+    if (match == null) {
+      return fallback;
+    }
+    final hour = int.tryParse(match.group(1)!);
+    final minute = int.tryParse(match.group(2)!);
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return fallback;
+    }
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  static (int hour, int minute) parseTimeOfDayParts(
+    String raw, {
+    int fallbackHour = 0,
+    int fallbackMinute = 0,
+  }) {
+    final normalized = normalizeTimeOfDay(
+      raw,
+      fallback:
+          '${fallbackHour.toString().padLeft(2, '0')}:${fallbackMinute.toString().padLeft(2, '0')}',
+    );
+    final parts = normalized.split(':');
+    return (
+      int.tryParse(parts[0]) ?? fallbackHour,
+      int.tryParse(parts[1]) ?? fallbackMinute,
+    );
+  }
+
   factory Exam.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
     return Exam(
@@ -97,8 +134,14 @@ class Exam {
       courseId: json['courseId'] as String,
       name: json['name'] as String? ?? '',
       dateTime: DateTime.tryParse(json['dateTime'] as String? ?? '') ?? now,
-      startTime: json['startTime'] as String? ?? '08:30',
-      endTime: json['endTime'] as String? ?? '10:30',
+      startTime: normalizeTimeOfDay(
+        json['startTime'] as String?,
+        fallback: '08:30',
+      ),
+      endTime: normalizeTimeOfDay(
+        json['endTime'] as String?,
+        fallback: '10:30',
+      ),
       location: json['location'] as String?,
       seatNumber: json['seatNumber'] as String?,
       note: json['note'] as String?,
@@ -169,12 +212,17 @@ class Exam {
   /// 考试是否已过期
   bool get isExpired {
     final now = DateTime.now();
+    final endParts = parseTimeOfDayParts(
+      endTime,
+      fallbackHour: 23,
+      fallbackMinute: 59,
+    );
     final examEnd = DateTime(
       dateTime.year,
       dateTime.month,
       dateTime.day,
-      int.parse(endTime.split(':')[0]),
-      int.parse(endTime.split(':')[1]),
+      endParts.$1,
+      endParts.$2,
     );
     return now.isAfter(examEnd);
   }

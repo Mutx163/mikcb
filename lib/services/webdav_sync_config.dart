@@ -70,8 +70,34 @@ class WebdavSyncConfig {
   String get historyIndexRemotePath =>
       '$historyRemoteFolder$historyIndexFileName';
 
-  String historyBackupRemotePath(String fileName) =>
-      '$historyRemoteFolder$fileName';
+  /// Builds a remote history path for [fileName].
+  ///
+  /// Rejects path traversal (`..`, `/`, `\`) and returns only the basename
+  /// under [historyRemoteFolder].
+  String historyBackupRemotePath(String fileName) {
+    final sanitized = sanitizeHistoryBackupFileName(fileName);
+    return '$historyRemoteFolder$sanitized';
+  }
+
+  /// Returns a safe single-segment file name for history backups.
+  static String sanitizeHistoryBackupFileName(String fileName) {
+    final trimmed = fileName.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('backup_file_name_required');
+    }
+    final withoutSlashes = trimmed
+        .replaceAll('\\', '/')
+        .split('/')
+        .where((segment) => segment.isNotEmpty)
+        .last;
+    if (withoutSlashes.isEmpty ||
+        withoutSlashes == '.' ||
+        withoutSlashes == '..' ||
+        withoutSlashes.contains('..')) {
+      throw ArgumentError('backup_file_name_invalid');
+    }
+    return withoutSlashes;
+  }
 
   WebdavSyncConfig copyWith({
     bool? enabled,
@@ -148,7 +174,8 @@ class WebdavSyncConfig {
       maxBackupCount:
           (json['maxBackupCount'] as num?)?.toInt() ?? defaultMaxBackupCount,
       maxBackupAgeDays:
-          (json['maxBackupAgeDays'] as num?)?.toInt() ?? defaultMaxBackupAgeDays,
+          (json['maxBackupAgeDays'] as num?)?.toInt() ??
+          defaultMaxBackupAgeDays,
       manualBackupProtected: json['manualBackupProtected'] as bool? ?? true,
     );
   }

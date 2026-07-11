@@ -68,6 +68,41 @@ class Course {
     this.timeSchemeIdOverride,
   });
 
+  /// Clamps [dayOfWeek] to Monday–Sunday (1–7).
+  static int normalizeDayOfWeek(int dayOfWeek) {
+    if (dayOfWeek < 1) {
+      return 1;
+    }
+    if (dayOfWeek > 7) {
+      return 7;
+    }
+    return dayOfWeek;
+  }
+
+  /// Clamps section indexes so both stay in range and end >= start.
+  static ({int startSection, int endSection}) normalizeSections({
+    required int startSection,
+    required int endSection,
+    int maxSection = 24,
+  }) {
+    final safeMaxSection = maxSection < 1 ? 1 : maxSection;
+    final normalizedStart = startSection.clamp(1, safeMaxSection);
+    final normalizedEnd = endSection.clamp(normalizedStart, safeMaxSection);
+    return (startSection: normalizedStart, endSection: normalizedEnd);
+  }
+
+  /// Clamps week range so both stay in range and end >= start.
+  static ({int startWeek, int endWeek}) normalizeWeeks({
+    required int startWeek,
+    required int endWeek,
+    int maxWeek = 30,
+  }) {
+    final safeMaxWeek = maxWeek < 1 ? 1 : maxWeek;
+    final normalizedStart = startWeek.clamp(1, safeMaxWeek);
+    final normalizedEnd = endWeek.clamp(normalizedStart, safeMaxWeek);
+    return (startWeek: normalizedStart, endWeek: normalizedEnd);
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -125,20 +160,29 @@ class Course {
       }).toList();
     }
 
+    final sections = normalizeSections(
+      startSection: readInt('startSection', fallback: 1),
+      endSection: readInt('endSection', fallback: 1),
+    );
+    final weeks = normalizeWeeks(
+      startWeek: readInt('startWeek', fallback: 1),
+      endWeek: readInt('endWeek', fallback: 16),
+    );
+
     return Course(
       id: json['id'] as String,
       name: json['name'] as String,
       shortName: json['shortName'] as String?,
       teacher: json['teacher'] as String,
       location: json['location'] as String,
-      dayOfWeek: readInt('dayOfWeek'),
-      startSection: readInt('startSection'),
-      endSection: readInt('endSection'),
+      dayOfWeek: normalizeDayOfWeek(readInt('dayOfWeek', fallback: 1)),
+      startSection: sections.startSection,
+      endSection: sections.endSection,
       startTime: json['startTime'] as String,
       endTime: json['endTime'] as String,
       color: json['color'] as String? ?? '#2196F3',
-      startWeek: readInt('startWeek', fallback: 1),
-      endWeek: readInt('endWeek', fallback: 16),
+      startWeek: weeks.startWeek,
+      endWeek: weeks.endWeek,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
       customWeeks: readIntList('customWeeks'),

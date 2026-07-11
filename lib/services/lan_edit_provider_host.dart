@@ -238,17 +238,27 @@ class LanEditProviderHost implements LanEditHost {
     required int semesterWeekCount,
     String? existingId,
   }) {
-    final startSection = (json['startSection'] as num?)?.toInt() ?? 1;
-    final endSection = (json['endSection'] as num?)?.toInt() ?? startSection;
     final safeSections = sections.isEmpty
         ? TimetableSettings.defaults().sections
         : sections;
-    final startIndex = (startSection - 1).clamp(0, safeSections.length - 1);
-    final endIndex = (endSection - 1).clamp(0, safeSections.length - 1);
+    final normalizedSections = Course.normalizeSections(
+      startSection: (json['startSection'] as num?)?.toInt() ?? 1,
+      endSection:
+          (json['endSection'] as num?)?.toInt() ??
+          ((json['startSection'] as num?)?.toInt() ?? 1),
+      maxSection: safeSections.length,
+    );
+    final startIndex = normalizedSections.startSection - 1;
+    final endIndex = normalizedSections.endSection - 1;
     final startTime =
         json['startTime'] as String? ?? safeSections[startIndex].startTime;
     final endTime =
         json['endTime'] as String? ?? safeSections[endIndex].endTime;
+    final normalizedWeeks = Course.normalizeWeeks(
+      startWeek: (json['startWeek'] as num?)?.toInt() ?? 1,
+      endWeek: (json['endWeek'] as num?)?.toInt() ?? semesterWeekCount,
+      maxWeek: semesterWeekCount < 1 ? 1 : semesterWeekCount,
+    );
 
     return Course(
       id: existingId ?? (json['id'] as String?) ?? const Uuid().v4(),
@@ -256,14 +266,16 @@ class LanEditProviderHost implements LanEditHost {
       shortName: json['shortName'] as String?,
       teacher: (json['teacher'] as String?)?.trim() ?? '',
       location: (json['location'] as String?)?.trim() ?? '',
-      dayOfWeek: (json['dayOfWeek'] as num?)?.toInt() ?? 1,
-      startSection: startSection,
-      endSection: endSection,
+      dayOfWeek: Course.normalizeDayOfWeek(
+        (json['dayOfWeek'] as num?)?.toInt() ?? 1,
+      ),
+      startSection: normalizedSections.startSection,
+      endSection: normalizedSections.endSection,
       startTime: startTime,
       endTime: endTime,
       color: json['color'] as String? ?? '#2196F3',
-      startWeek: (json['startWeek'] as num?)?.toInt() ?? 1,
-      endWeek: (json['endWeek'] as num?)?.toInt() ?? semesterWeekCount,
+      startWeek: normalizedWeeks.startWeek,
+      endWeek: normalizedWeeks.endWeek,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
       customWeeks: (json['customWeeks'] as List<dynamic>?)

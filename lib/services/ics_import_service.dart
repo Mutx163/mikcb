@@ -185,9 +185,15 @@ class IcsImportService {
         teacher = line2;
       }
     }
+    final startWeek = _weekIndex(startDateTime, semesterStart);
     final endWeek =
         _parseEndWeek(event['RRULE'], semesterStart, startDateTime) ??
-        _weekIndex(startDateTime, semesterStart);
+        startWeek;
+    final weeklyInterval = _parseWeeklyInterval(event['RRULE'] ?? '');
+    // INTERVAL=2 means every other week; mark odd/even from the first week.
+    final isBiweekly = weeklyInterval == 2;
+    final isOddWeek = isBiweekly && startWeek.isOdd;
+    final isEvenWeek = isBiweekly && startWeek.isEven;
 
     return Course(
       id: 'ics-${startDateTime.millisecondsSinceEpoch}-$index',
@@ -201,8 +207,10 @@ class IcsImportService {
       endSection: endSection,
       startTime: _formatTime(startDateTime),
       endTime: _formatTime(endDateTime),
-      startWeek: _weekIndex(startDateTime, semesterStart),
+      startWeek: startWeek,
       endWeek: endWeek,
+      isOddWeek: isOddWeek,
+      isEvenWeek: isEvenWeek,
     );
   }
 

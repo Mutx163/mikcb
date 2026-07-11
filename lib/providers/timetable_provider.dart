@@ -324,6 +324,7 @@ class TimetableProvider with ChangeNotifier {
       togetherColorHex: binding?.togetherColorHex,
     );
   }
+
   TimetableProfile? get partnerProfile =>
       _getProfileById(PartnerTimetableService.partnerProfileId);
   List<Course> get partnerCourses =>
@@ -340,6 +341,7 @@ class TimetableProvider with ChangeNotifier {
     }
     return null;
   }
+
   TimeScheme? get activeTimeScheme =>
       _getTimeSchemeById(_settings.activeTimeSchemeId);
   int get maxUsedSection => _courses.isEmpty
@@ -693,6 +695,7 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> _persistActiveProfileState({
     bool touchLastUsedAt = false,
+    bool notifySync = true,
   }) async {
     final activeProfile = this.activeProfile;
     if (activeProfile == null) {
@@ -718,7 +721,9 @@ class TimetableProvider with ChangeNotifier {
     if (_activeProfileId != null) {
       await _storageService.setActiveProfileId(_activeProfileId!);
     }
-    notifyUserDataChangedForSync();
+    if (notifySync) {
+      notifyUserDataChangedForSync();
+    }
   }
 
   Future<void> _persistTimeSchemes() async {
@@ -1004,7 +1009,9 @@ class TimetableProvider with ChangeNotifier {
     final isActive = _profiles[index].id == _activeProfileId;
     if (isActive) {
       final hasNormalFallback = _profiles
-          .where((profile) => profile.id != profileId && !profile.isPartnerImported)
+          .where(
+            (profile) => profile.id != profileId && !profile.isPartnerImported,
+          )
           .isNotEmpty;
       if (!hasNormalFallback) {
         // Keep at least one non-partner profile as the working set.
@@ -1379,17 +1386,16 @@ class TimetableProvider with ChangeNotifier {
   int? getWeekIndex(DateTime date, DateTime semesterStart) {
     final alignedStart = _startOfWeek(semesterStart);
     final alignedTarget = _startOfWeek(date);
-    final diffDays = DateTime.utc(
-      alignedTarget.year,
-      alignedTarget.month,
-      alignedTarget.day,
-    ).difference(
-      DateTime.utc(
-        alignedStart.year,
-        alignedStart.month,
-        alignedStart.day,
-      ),
-    ).inDays;
+    final diffDays =
+        DateTime.utc(alignedTarget.year, alignedTarget.month, alignedTarget.day)
+            .difference(
+              DateTime.utc(
+                alignedStart.year,
+                alignedStart.month,
+                alignedStart.day,
+              ),
+            )
+            .inDays;
     if (diffDays < 0) return null;
     return (diffDays ~/ 7) + 1;
   }
@@ -1569,10 +1575,9 @@ class TimetableProvider with ChangeNotifier {
     final originalCourse = _courses[index];
     if (!originalCourse.isInWeek(sourceWeek)) {
       throw ArgumentError(
-        encodeServiceMessage(
-          'course_not_scheduled_week',
-          {'sourceWeek': sourceWeek},
-        ),
+        encodeServiceMessage('course_not_scheduled_week', {
+          'sourceWeek': sourceWeek,
+        }),
       );
     }
 
@@ -1629,10 +1634,9 @@ class TimetableProvider with ChangeNotifier {
     final originalCourse = _courses[index];
     if (!originalCourse.isInWeek(sourceWeek)) {
       throw ArgumentError(
-        encodeServiceMessage(
-          'course_not_scheduled_week',
-          {'sourceWeek': sourceWeek},
-        ),
+        encodeServiceMessage('course_not_scheduled_week', {
+          'sourceWeek': sourceWeek,
+        }),
       );
     }
     if (targetWeek < 1 || targetWeek > _settings.semesterWeekCount) {
@@ -1745,10 +1749,9 @@ class TimetableProvider with ChangeNotifier {
         settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
 
     if (sectionConfigChanged && settings.sectionCount < maxUsedSection) {
-      return encodeServiceMessage(
-        'section_count_below_usage',
-        {'requiredMaxSection': maxUsedSection},
-      );
+      return encodeServiceMessage('section_count_below_usage', {
+        'requiredMaxSection': maxUsedSection,
+      });
     }
 
     final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);

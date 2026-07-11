@@ -9,10 +9,33 @@ void main() {
     expect(config.snapshotRemotePath, '/Apps/qingyu-sync/snapshot.mikcb');
     expect(config.metaRemotePath, '/Apps/qingyu-sync/snapshot.meta.json');
     expect(config.historyRemoteFolder, '/Apps/qingyu-sync/history/');
-    expect(config.historyIndexRemotePath, '/Apps/qingyu-sync/history/index.json');
+    expect(
+      config.historyIndexRemotePath,
+      '/Apps/qingyu-sync/history/index.json',
+    );
     expect(
       config.historyBackupRemotePath('20260707-183045-abcdef12.mikcb'),
       '/Apps/qingyu-sync/history/20260707-183045-abcdef12.mikcb',
+    );
+  });
+
+  test('historyBackupRemotePath rejects path traversal', () {
+    const config = WebdavSyncConfig(remoteFolder: 'Apps/qingyu-sync');
+    expect(
+      config.historyBackupRemotePath('../secret.mikcb'),
+      '/Apps/qingyu-sync/history/secret.mikcb',
+    );
+    expect(
+      config.historyBackupRemotePath('nested/../safe.mikcb'),
+      '/Apps/qingyu-sync/history/safe.mikcb',
+    );
+    expect(
+      () => config.historyBackupRemotePath('..'),
+      throwsA(isA<ArgumentError>()),
+    );
+    expect(
+      () => config.historyBackupRemotePath(''),
+      throwsA(isA<ArgumentError>()),
     );
   });
 

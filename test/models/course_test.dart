@@ -96,4 +96,26 @@ void main() {
 
     expect(course.weekDescription(l10n), '第2-6周');
   });
+
+  test('fromJson clamps out-of-range day, sections, and weeks', () {
+    final course = Course.fromJson({
+      'id': 'course-bounds',
+      'name': '边界课',
+      'teacher': '老师',
+      'location': 'A1',
+      'dayOfWeek': 9,
+      'startSection': 0,
+      'endSection': -3,
+      'startTime': '08:00',
+      'endTime': '09:40',
+      'startWeek': 0,
+      'endWeek': 99,
+    });
+
+    expect(course.dayOfWeek, 7);
+    expect(course.startSection, 1);
+    expect(course.endSection, 1);
+    expect(course.startWeek, 1);
+    expect(course.endWeek, 30);
+  });
 }
