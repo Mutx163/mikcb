@@ -93,7 +93,7 @@ Future<T?> showHyperosSelectPopup<T>({
   );
 }
 
-class _HyperosSelectPopupBody<T> extends StatelessWidget {
+class _HyperosSelectPopupBody<T> extends StatefulWidget {
   const _HyperosSelectPopupBody({
     required this.anchorRect,
     required this.entries,
@@ -107,6 +107,43 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
   final TextStyle? Function(T value)? itemTitleStyleBuilder;
 
   @override
+  State<_HyperosSelectPopupBody<T>> createState() =>
+      _HyperosSelectPopupBodyState<T>();
+}
+
+class _HyperosSelectPopupBodyState<T>
+    extends State<_HyperosSelectPopupBody<T>> {
+  final _scrollController = ScrollController();
+  final _itemKeys = <int, GlobalKey>{};
+
+  int? get _selectedIndex {
+    for (var i = 0; i < widget.entries.length; i++) {
+      if (widget.entries[i].value == widget.currentValue) return i;
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelected() {
+    final index = _selectedIndex;
+    if (index == null || !_scrollController.hasClients) return;
+    final key = _itemKeys[index];
+    final context = key?.currentContext;
+    if (context == null) return;
+    Scrollable.ensureVisible(
+      context,
+      alignment: 0.5,
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final surface = HyperosColors.surfaceContainer(context);
     final screen = MediaQuery.sizeOf(context);
@@ -114,9 +151,10 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
     final safeTop = MediaQuery.paddingOf(context).top + margin;
     final safeBottom =
         screen.height - MediaQuery.paddingOf(context).bottom - margin;
-    final estimatedHeight = hyperosSelectPopupEstimatedHeight(entries.length);
+    final estimatedHeight =
+        hyperosSelectPopupEstimatedHeight(widget.entries.length);
     final layout = hyperosSelectPopupLayout(
-      anchorRect: anchorRect,
+      anchorRect: widget.anchorRect,
       estimatedPopupHeight: estimatedHeight,
       screenHeight: screen.height,
       safeTop: safeTop,
@@ -124,7 +162,8 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
     );
 
     // Right edge of popup aligns with anchor row (HyperOS anchored dropdown).
-    final anchorRight = anchorRect.right.clamp(margin, screen.width - margin);
+    final anchorRight =
+        widget.anchorRect.right.clamp(margin, screen.width - margin);
 
     return Stack(
       children: [
@@ -163,25 +202,39 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
                   HyperosMiuixDropdown.popupCornerRadius,
                 ),
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   child: IntrinsicWidth(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        for (var i = 0; i < entries.length; i++)
-                          HyperosChoiceTile(
-                            title: entries[i].key,
-                            selected: entries[i].value == currentValue,
-                            highlightSelectedText: true,
-                            variant: HyperosChoiceVariant.popup,
-                            isFirstInPopup: i == 0,
-                            isLastInPopup: i == entries.length - 1,
-                            titleStyle: itemTitleStyleBuilder?.call(
-                              entries[i].value,
-                            ),
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              Navigator.of(context).pop(entries[i].value);
+                        for (var i = 0; i < widget.entries.length; i++)
+                          Builder(
+                            builder: (tileContext) {
+                              _itemKeys[i] = GlobalKey();
+                              return KeyedSubtree(
+                                key: _itemKeys[i],
+                                child: HyperosChoiceTile(
+                                  title: widget.entries[i].key,
+                                  selected:
+                                      widget.entries[i].value ==
+                                      widget.currentValue,
+                                  highlightSelectedText: true,
+                                  variant: HyperosChoiceVariant.popup,
+                                  isFirstInPopup: i == 0,
+                                  isLastInPopup:
+                                      i == widget.entries.length - 1,
+                                  titleStyle:
+                                      widget.itemTitleStyleBuilder?.call(
+                                    widget.entries[i].value,
+                                  ),
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    Navigator.of(context)
+                                        .pop(widget.entries[i].value);
+                                  },
+                                ),
+                              );
                             },
                           ),
                       ],
@@ -194,6 +247,14 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollToSelected();
+    });
   }
 }
 
@@ -268,24 +329,13 @@ Future<T?> showHyperosSelectSheet<T>({
               const SizedBox(height: 12),
               ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: maxListHeight),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < entries.length; i++)
-                        HyperosChoiceTile(
-                          title: entries[i].key,
-                          selected: entries[i].value == currentValue,
-                          highlightSelectedText: true,
-                          variant: HyperosChoiceVariant.dialog,
-                          titleStyle: itemTitleStyleBuilder?.call(
-                            entries[i].value,
-                          ),
-                          onTap: () =>
-                              Navigator.of(sheetContext).pop(entries[i].value),
-                        ),
-                    ],
-                  ),
+                child: _AutoScrollChoiceList<T>(
+                  entries: entries,
+                  currentValue: currentValue,
+                  itemTitleStyleBuilder: itemTitleStyleBuilder,
+                  variant: HyperosChoiceVariant.dialog,
+                  onSelected: (value) =>
+                      Navigator.of(sheetContext).pop(value),
                 ),
               ),
               const SizedBox(height: 12),
@@ -304,6 +354,94 @@ Future<T?> showHyperosSelectSheet<T>({
       );
     },
   );
+}
+
+/// Scrollable choice list that auto-scrolls to the currently selected item
+/// when first built. Used by both the anchored popup and the bottom sheet.
+class _AutoScrollChoiceList<T> extends StatefulWidget {
+  const _AutoScrollChoiceList({
+    required this.entries,
+    required this.currentValue,
+    required this.onSelected,
+    this.itemTitleStyleBuilder,
+    this.variant = HyperosChoiceVariant.dialog,
+  });
+
+  final List<MapEntry<String, T>> entries;
+  final T? currentValue;
+  final ValueChanged<T> onSelected;
+  final TextStyle? Function(T value)? itemTitleStyleBuilder;
+  final HyperosChoiceVariant variant;
+
+  @override
+  State<_AutoScrollChoiceList<T>> createState() =>
+      _AutoScrollChoiceListState<T>();
+}
+
+class _AutoScrollChoiceListState<T> extends State<_AutoScrollChoiceList<T>> {
+  final _scrollController = ScrollController();
+  final _itemKeys = <int, GlobalKey>{};
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+  }
+
+  void _scrollToSelected() {
+    if (!_scrollController.hasClients) return;
+    for (var i = 0; i < widget.entries.length; i++) {
+      if (widget.entries[i].value != widget.currentValue) continue;
+      final key = _itemKeys[i];
+      final context = key?.currentContext;
+      if (context == null) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+      return;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < widget.entries.length; i++) ...[
+            Builder(
+              builder: (_) {
+                _itemKeys[i] = GlobalKey();
+                return KeyedSubtree(
+                  key: _itemKeys[i],
+                  child: HyperosChoiceTile(
+                    title: widget.entries[i].key,
+                    selected: widget.entries[i].value == widget.currentValue,
+                    highlightSelectedText: true,
+                    variant: widget.variant,
+                    titleStyle: widget.itemTitleStyleBuilder?.call(
+                      widget.entries[i].value,
+                    ),
+                    onTap: () => widget.onSelected(widget.entries[i].value),
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 String? hyperosSelectLabelFor<T>(Map<String, T> items, T? value) {
