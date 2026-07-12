@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-11T04:44:05+00:00",
+  "updatedAt": "2026-07-12T04:55:41+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 123,
-    "schools": 118,
+    "total": 124,
+    "schools": 119,
     "generic": 5
   },
   "schools": [
@@ -286,6 +286,13 @@
       "name": "甘肃医学院",
       "initial": "G",
       "resourceFolder": "GSMC",
+      "category": "school"
+    },
+    {
+      "id": "GSCMXY",
+      "name": "甘肃财贸职业学院",
+      "initial": "G",
+      "resourceFolder": "GSCMXY",
       "category": "school"
     },
     {
