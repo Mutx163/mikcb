@@ -92,6 +92,33 @@ class MainActivity : FlutterActivity() {
     private var lanEditChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Fix: when launched via ACTION_SEND / ACTION_VIEW from another app (e.g.
+        // a file manager), the caller may NOT set FLAG_ACTIVITY_NEW_TASK, which
+        // causes our Activity to run inside the caller's task.  The Recents
+        // screen then shows the caller's label & icon instead of ours.
+        // Detect this situation (not task root + external intent) and redirect
+        // into our own task before proceeding.
+        if (!isTaskRoot && intent != null &&
+            (intent.action == Intent.ACTION_SEND ||
+             intent.action == Intent.ACTION_SEND_MULTIPLE ||
+             intent.action == Intent.ACTION_VIEW)) {
+            val relaunch = Intent(this, MainActivity::class.java).apply {
+                action = intent.action
+                type = intent.type
+                intent.clipData?.let { clipData = it }
+                putExtras(intent)
+                intent.data?.let { data = it }
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+            }
+            startActivity(relaunch)
+            finish()
+            return
+        }
+
         window.setBackgroundDrawable(
             SplashLayerDrawable(
                 this,
