@@ -429,6 +429,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WEBDAV 주소';
 
   @override
+  String get cloudSyncBaseUrlSecurityNote =>
+      '출시 버전은 HTTPS 암호화 연결만 지원합니다. 데이터 보안을 위해 HTTP 평문 프로토콜은 비활성화되었습니다.';
+
+  @override
   String get cloudSyncRemoteFolderLabel => '원격 폴더';
 
   @override
@@ -991,6 +995,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get copiedQqGroupId => 'QQ 그룹 ID를 복사했습니다';
+
+  @override
+  String get feedbackOpeningChannel => '여는 중…';
+
+  @override
+  String get feedbackOpenChannelFailed => '열 수 없습니다. 정보를 복사했습니다.';
 
   @override
   String get timetableProfilesTitle => '시간표 관리';
@@ -6116,6 +6126,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get syncErrorProviderNotReady => 'Timetable is not ready';
+
+  @override
+  String get syncErrorInsecureUrl =>
+      'HTTPS 암호화 연결만 지원됩니다. HTTP 평문 프로토콜은 비활성화되었습니다.';
 
   @override
   String get syncErrorSyncFailed => '동기화 실패';

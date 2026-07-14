@@ -78,6 +78,7 @@
   "cloudSyncPasswordStoredHint": "已儲存密碼；留空表示繼續使用已儲存的密碼。",
   "cloudSyncAdvancedTitle": "進階設定",
   "cloudSyncBaseUrlLabel": "WEBDAV 網址",
+  "cloudSyncBaseUrlSecurityNote": "正式版僅支援 HTTPS 加密連線，HTTP 明文協定已被停用以保護資料安全。",
   "cloudSyncRemoteFolderLabel": "遠端目錄",
   "cloudSyncStatusTitle": "同步狀態",
   "cloudSyncLastSyncedLabel": "上次同步",
@@ -359,6 +360,8 @@
   "copiedCoolapkId": "已複製酷安號",
   "copyQqGroupId": "複製群號",
   "copiedQqGroupId": "已複製 QQ 群號",
+  "feedbackOpeningChannel": "正在打開…",
+  "feedbackOpenChannelFailed": "無法打開，已複製相關資訊",
   "timetableProfilesTitle": "課表管理",
   "createTimetableTooltip": "新建課表",
   "coursesAndWeekSummary": "{count} 門課程 · 第 {week} 周",
@@ -3396,6 +3399,10 @@
   "syncErrorMissingBackupSnapshot": "備份快照缺失",
   "syncErrorCannotDeleteCurrentBackup": "不能刪除目前備份",
   "syncErrorProviderNotReady": "課表尚未就緒",
+  "syncErrorInsecureUrl": "僅支援 HTTPS 加密連線，HTTP 明文協定已被停用",
+  "@syncErrorInsecureUrl": {
+    "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"
+  },
   "syncErrorSyncFailed": "同步失敗",
   "sectionTimeDisplayHidden": "不显示",
   "sectionTimeDisplayStartOnly": "仅显示上课时间",

@@ -75,6 +75,12 @@ class MainActivity : FlutterActivity() {
         private const val ICS_CHANNEL = "com.mutx163.qingyu/ics_import"
         private const val LAN_EDIT_CHANNEL = "com.mutx163.qingyu/lan_edit"
         private const val FROSTED_BLUR_CHANNEL = "com.mutx163.qingyu/frosted_blur"
+        private const val LAUNCH_URL_CHANNEL = "com.mutx163.qingyu/launch_url"
+
+        /** Schemes allowed for the `launch_url` channel (feedback deep links). */
+        private val ALLOWED_LAUNCH_SCHEMES = setOf(
+            "https", "http", "coolmarket", "xhsdiscover", "mqqopensdkapi", "mqqapi"
+        )
     }
 
     private var notificationManager: NotificationManager? = null
@@ -228,6 +234,41 @@ class MainActivity : FlutterActivity() {
                                 }
                             }
                         }.start()
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // ── Feedback: direct Intent launch (bypasses url_launcher on MIUI) ──
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LAUNCH_URL_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "launch" -> {
+                        val urlString = call.argument<String>("url")
+                        if (urlString.isNullOrEmpty()) {
+                            result.error("INVALID_URL", "url is null or empty", null)
+                            return@setMethodCallHandler
+                        }
+                        val parsed = Uri.parse(urlString)
+                        val scheme = parsed.scheme?.lowercase()
+                        if (scheme == null || scheme !in ALLOWED_LAUNCH_SCHEMES) {
+                            Log.w("MainActivity", "launch_url: blocked scheme '$scheme' for $urlString")
+                            result.success(false)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, parsed).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e: ActivityNotFoundException) {
+                            Log.w("MainActivity", "launch_url: no activity for $urlString", e)
+                            result.success(false)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "launch_url: failed for $urlString", e)
+                            result.success(false)
+                        }
                     }
                     else -> result.notImplemented()
                 }

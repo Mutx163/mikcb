@@ -78,6 +78,7 @@
   "cloudSyncPasswordStoredHint": "비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다.",
   "cloudSyncAdvancedTitle": "고급 설정",
   "cloudSyncBaseUrlLabel": "WEBDAV 주소",
+  "cloudSyncBaseUrlSecurityNote": "출시 버전은 HTTPS 암호화 연결만 지원합니다. 데이터 보안을 위해 HTTP 평문 프로토콜은 비활성화되었습니다.",
   "cloudSyncRemoteFolderLabel": "원격 폴더",
   "cloudSyncStatusTitle": "동기화 상태",
   "cloudSyncLastSyncedLabel": "마지막 동기화",
@@ -360,6 +361,8 @@
   "copiedCoolapkId": "Coolapk ID를 복사했습니다",
   "copyQqGroupId": "QQ 그룹 ID 복사",
   "copiedQqGroupId": "QQ 그룹 ID를 복사했습니다",
+  "feedbackOpeningChannel": "여는 중…",
+  "feedbackOpenChannelFailed": "열 수 없습니다. 정보를 복사했습니다.",
   "timetableProfilesTitle": "시간표 관리",
   "createTimetableTooltip": "새 시간표",
   "coursesAndWeekSummary": "{count}과목 · 제{week}주",
@@ -3396,6 +3399,10 @@
   "syncErrorMissingBackupSnapshot": "Backup snapshot is missing",
   "syncErrorCannotDeleteCurrentBackup": "Cannot delete the current backup",
   "syncErrorProviderNotReady": "Timetable is not ready",
+  "syncErrorInsecureUrl": "HTTPS 암호화 연결만 지원됩니다. HTTP 평문 프로토콜은 비활성화되었습니다.",
+  "@syncErrorInsecureUrl": {
+    "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"
+  },
   "syncErrorSyncFailed": "동기화 실패",
   "sectionTimeDisplayHidden": "Hidden",
   "sectionTimeDisplayStartOnly": "Start time only",

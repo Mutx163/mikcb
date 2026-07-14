@@ -526,56 +526,63 @@ class HyperosChoiceTile extends StatelessWidget {
 
     final padding = _paddingForVariant(context);
     final isPopup = variant == HyperosChoiceVariant.popup;
-    // Popup rows: total height = content min height + vertical padding so
-    // [hyperosSelectPopupEstimatedHeight] matches laid-out size.
+    // Popup rows stay content-sized (padding + title line), matching v2.0.4.
+    // Do not force settings-row min height — that stacks 56dp under the
+    // already-large first/last vertical padding and makes options look bloated.
     final rowHeight = isPopup
-        ? HyperosMiuixSpec.settingsRowMinHeight + padding.vertical
+        ? null
         : (subtitle != null ? HyperosTokens.listRowTwoLineMinHeight : null);
 
-    final row = hyperosListRowShell(
-      padding: padding,
-      minHeight: rowHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (prefix != null &&
-              variant != HyperosChoiceVariant.popup &&
-              variant != HyperosChoiceVariant.dialog) ...[
-            prefix!,
-            const SizedBox(width: HyperosTokens.rowContentGap),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: resolvedTitleStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  DefaultTextStyle.merge(
-                    style: subtitleStyle,
-                    child: subtitle!,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (trailing != null) ...[const SizedBox(width: 6), trailing!],
-          if (selected) ...[
-            const SizedBox(width: 6),
-            HyperosSelectedCheckmark(
-              size: variant == HyperosChoiceVariant.radio ? 20 : 22,
-            ),
-          ],
+    final rowChild = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (prefix != null &&
+            variant != HyperosChoiceVariant.popup &&
+            variant != HyperosChoiceVariant.dialog) ...[
+          prefix!,
+          const SizedBox(width: HyperosTokens.rowContentGap),
         ],
-      ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: resolvedTitleStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                DefaultTextStyle.merge(
+                  style: subtitleStyle,
+                  child: subtitle!,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null) ...[const SizedBox(width: 6), trailing!],
+        if (selected) ...[
+          const SizedBox(width: 6),
+          HyperosSelectedCheckmark(
+            size: variant == HyperosChoiceVariant.radio ? 20 : 22,
+          ),
+        ],
+      ],
     );
+
+    // [hyperosListRowShell] always sizes to list-row min height when
+    // [minHeight] is null — popup must wrap with padding only.
+    final row = isPopup
+        ? Padding(padding: padding, child: rowChild)
+        : hyperosListRowShell(
+            padding: padding,
+            minHeight: rowHeight,
+            child: rowChild,
+          );
 
     return HyperosPressableRow(
       onTap: effectiveEnabled ? onTap : null,

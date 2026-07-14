@@ -2,18 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
+
+/// Native Android channel that fires `startActivity(Intent(ACTION_VIEW, uri))`
+/// directly, bypassing `url_launcher` which returns false-positive on MIUI.
+const _launchChannel = MethodChannel('com.mutx163.qingyu/launch_url');
+
+/// Returns `true` if the native Intent was fired (app or browser opened).
+Future<bool> _nativeLaunchUrl(String url) async {
+  try {
+    final result = await _launchChannel.invokeMethod<bool>('launch', {
+      'url': url,
+    });
+    return result ?? false;
+  } on PlatformException catch (error) {
+    debugPrint('[FeedbackChannel] native launch PlatformException: $error');
+    return false;
+  } on MissingPluginException catch (error) {
+    debugPrint(
+      '[FeedbackChannel] native launch MissingPluginException: $error',
+    );
+    return false;
+  }
+}
 
 class FeedbackScreen extends StatelessWidget {
   const FeedbackScreen({super.key});
 
   static const String _issuesUrl = 'https://github.com/Mutx163/mikcb/issues';
   static const String _xiaohongshuId = '4976443029';
+  static const String _xiaohongshuShareUrl =
+      'https://xhslink.com/m/ALcscDMw39N';
+  static const String _xiaohongshuProfileUrl =
+      'https://www.xiaohongshu.com/user/profile/4976443029';
   static const String _coolapkId = 'Mutx666';
+  static const String _coolapkUrl = 'https://www.coolapk.com/u/739248';
+  static const String _coolapkAppUrl = 'coolmarket://www.coolapk.com/u/739248';
   static const String _qqGroupId = '1077077989';
+  static const String _qqGroupJoinKey = 'TMCg23sigjbqS5nYrBx0kxc7JcuwHN8Q';
+
+  static final String _qqGroupJoinAppUrl =
+      'mqqopensdkapi://bizAgent/qm/qr?url='
+      '${Uri.encodeComponent('http://qm.qq.com/cgi-bin/qm/qr?from=app&p=android&jump_from=webapi&k=$_qqGroupJoinKey')}';
+
+  static final String _qqGroupJoinWebUrl =
+      'https://qm.qq.com/cgi-bin/qm/qr?from=app&p=android&jump_from=webapi&k=$_qqGroupJoinKey';
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +68,11 @@ class FeedbackScreen extends StatelessWidget {
                 ),
                 title: l10n.githubIssueTitle,
                 subtitle: l10n.githubIssueSubtitle,
-                onTap: () => _openUrl(_issuesUrl),
+                onTap: () => _openChannel(
+                  context: context,
+                  urls: const [_issuesUrl],
+                  fallbackCopyValue: _issuesUrl,
+                ),
                 onCopy: () => _copyText(
                   context,
                   _issuesUrl,
@@ -48,10 +87,10 @@ class FeedbackScreen extends StatelessWidget {
                 ),
                 title: l10n.feedbackXiaohongshuTitle,
                 subtitle: l10n.feedbackXiaohongshuSubtitle(_xiaohongshuId),
-                onTap: () => _copyText(
-                  context,
-                  _xiaohongshuId,
-                  successMessage: l10n.copiedXiaohongshuId,
+                onTap: () => _openChannel(
+                  context: context,
+                  urls: const [_xiaohongshuShareUrl, _xiaohongshuProfileUrl],
+                  fallbackCopyValue: _xiaohongshuId,
                 ),
                 onCopy: () => _copyText(
                   context,
@@ -66,10 +105,10 @@ class FeedbackScreen extends StatelessWidget {
                 ),
                 title: l10n.feedbackCoolapkTitle,
                 subtitle: l10n.feedbackCoolapkSubtitle(_coolapkId),
-                onTap: () => _copyText(
-                  context,
-                  _coolapkId,
-                  successMessage: l10n.copiedCoolapkId,
+                onTap: () => _openChannel(
+                  context: context,
+                  urls: const [_coolapkUrl, _coolapkAppUrl],
+                  fallbackCopyValue: _coolapkId,
                 ),
                 onCopy: () => _copyText(
                   context,
@@ -84,10 +123,10 @@ class FeedbackScreen extends StatelessWidget {
                 ),
                 title: l10n.feedbackQqGroupTitle,
                 subtitle: l10n.feedbackQqGroupSubtitle(_qqGroupId),
-                onTap: () => _copyText(
-                  context,
-                  _qqGroupId,
-                  successMessage: l10n.copiedQqGroupId,
+                onTap: () => _openChannel(
+                  context: context,
+                  urls: [_qqGroupJoinAppUrl, _qqGroupJoinWebUrl],
+                  fallbackCopyValue: _qqGroupId,
                 ),
                 onCopy: () => _copyText(
                   context,
@@ -101,26 +140,82 @@ class FeedbackScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      return;
+/// Opens the first working URL in [urls].
+///
+/// Iterates candidate URLs and fires a native `startActivity(Intent(ACTION_VIEW))`
+/// via the `launch_url` platform channel — more reliable than `url_launcher` on
+/// MIUI/OEM ROMs. On success the target app enters the foreground and we return
+/// immediately without polluting the clipboard. If every candidate fails, the
+/// [fallbackCopyValue] is copied and a toast guides the user.
+Future<void> _openChannel({
+  required BuildContext context,
+  required List<String> urls,
+  required String fallbackCopyValue,
+}) async {
+  debugPrint('[FeedbackChannel] tap; urls=${urls.join(' | ')}');
+  if (!context.mounted) {
+    return;
+  }
+  final l10n = AppLocalizations.of(context)!;
+  showAppToast(
+    context,
+    message: l10n.feedbackOpeningChannel,
+    kind: AppToastKind.info,
+    duration: const Duration(seconds: 2),
+  );
+
+  for (final candidateUrl in urls) {
+    if (candidateUrl.isEmpty) {
+      debugPrint('[FeedbackChannel] empty url, skip');
+      continue;
     }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    final launched = await _nativeLaunchUrl(candidateUrl);
+    debugPrint('[FeedbackChannel] native launch=$launched url=$candidateUrl');
+
+    if (!launched) {
+      debugPrint('[FeedbackChannel] native launch failed, try next url');
+      continue;
+    }
+
+    // Native Intent fired successfully — the target app/browser should now
+    // be in the foreground. Do not copy to the clipboard or show a warning:
+    // the user has already left this app. Any "safety net" copy here would
+    // pollute the clipboard on every successful tap and mislead the user
+    // with a yellow warning for a successful action.
+    return;
   }
 
-  Future<void> _copyText(
-    BuildContext context,
-    String value, {
-    required String successMessage,
-  }) async {
-    await Clipboard.setData(ClipboardData(text: value));
-    if (!context.mounted) {
-      return;
-    }
-    showAppToast(context, message: successMessage, kind: AppToastKind.success);
+  // Every URL failed to launch — fall back to copying the value so the user
+  // can paste it manually.
+  debugPrint('[FeedbackChannel] all failed; copy=$fallbackCopyValue');
+  if (!context.mounted) {
+    return;
   }
+  await Clipboard.setData(ClipboardData(text: fallbackCopyValue));
+  if (!context.mounted) {
+    return;
+  }
+  showAppToast(
+    context,
+    message: l10n.feedbackOpenChannelFailed,
+    kind: AppToastKind.warning,
+    duration: const Duration(seconds: 4),
+  );
+}
+
+Future<void> _copyText(
+  BuildContext context,
+  String value, {
+  required String successMessage,
+}) async {
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) {
+    return;
+  }
+  showAppToast(context, message: successMessage, kind: AppToastKind.success);
 }
 
 EdgeInsets _feedbackRowPadding(BuildContext context) {

@@ -184,6 +184,10 @@
   "cloudSyncPasswordStoredHint": "Password saved; leave blank to keep the stored password.",
   "cloudSyncAdvancedTitle": "Advanced",
   "cloudSyncBaseUrlLabel": "WEBDAV URL",
+  "cloudSyncBaseUrlSecurityNote": "Release builds only support HTTPS encrypted connections. HTTP cleartext protocol has been disabled for data security.",
+  "@cloudSyncBaseUrlSecurityNote": {
+    "description": "Security note: explains that release builds only support HTTPS encrypted connections, HTTP cleartext protocol has been disabled"
+  },
   "cloudSyncRemoteFolderLabel": "Remote folder",
   "cloudSyncStatusTitle": "Status",
   "cloudSyncLastSyncedLabel": "Last synced",
@@ -466,6 +470,8 @@
   "copiedCoolapkId": "Coolapk ID copied",
   "copyQqGroupId": "Copy QQ Group ID",
   "copiedQqGroupId": "QQ group ID copied",
+  "feedbackOpeningChannel": "Opening…",
+  "feedbackOpenChannelFailed": "Could not open. Details copied.",
   "timetableProfilesTitle": "Timetable Profiles",
   "createTimetableTooltip": "Create timetable",
   "coursesAndWeekSummary": "{count} courses · Week {week}",
@@ -3571,6 +3577,10 @@
   "syncErrorMissingBackupSnapshot": "Backup snapshot is missing",
   "syncErrorCannotDeleteCurrentBackup": "Cannot delete the current backup",
   "syncErrorProviderNotReady": "Timetable is not ready",
+  "syncErrorInsecureUrl": "Only HTTPS encrypted connections are supported; HTTP cleartext protocol is disabled.",
+  "@syncErrorInsecureUrl": {
+    "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"
+  },
   "syncErrorSyncFailed": "Sync failed",
   "sectionTimeDisplayHidden": "Hidden",
   "sectionTimeDisplayStartOnly": "Start time only",

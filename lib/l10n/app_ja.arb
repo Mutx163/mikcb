@@ -78,6 +78,7 @@
   "cloudSyncPasswordStoredHint": "パスワードを保存済み。空欄のままにすると保存済みのパスワードを使用します。",
   "cloudSyncAdvancedTitle": "詳細設定",
   "cloudSyncBaseUrlLabel": "WEBDAV URL",
+  "cloudSyncBaseUrlSecurityNote": "リリース版はHTTPS暗号化接続のみ対応しています。データ保護のため、HTTP平文プロトコルは無効化されています。",
   "cloudSyncRemoteFolderLabel": "リモートフォルダ",
   "cloudSyncStatusTitle": "同期状態",
   "cloudSyncLastSyncedLabel": "最終同期",
@@ -360,6 +361,8 @@
   "copiedCoolapkId": "Coolapk IDをコピーしました",
   "copyQqGroupId": "QQグループIDをコピー",
   "copiedQqGroupId": "QQグループIDをコピーしました",
+  "feedbackOpeningChannel": "開いています…",
+  "feedbackOpenChannelFailed": "開けませんでした。情報をコピーしました。",
   "timetableProfilesTitle": "時間割管理",
   "createTimetableTooltip": "新規時間割",
   "coursesAndWeekSummary": "{count}科目・第{week}週",
@@ -3396,6 +3399,10 @@
   "syncErrorMissingBackupSnapshot": "Backup snapshot is missing",
   "syncErrorCannotDeleteCurrentBackup": "Cannot delete the current backup",
   "syncErrorProviderNotReady": "Timetable is not ready",
+  "syncErrorInsecureUrl": "HTTPS暗号化接続のみ対応しています。HTTP平文プロトコルは無効です。",
+  "@syncErrorInsecureUrl": {
+    "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"
+  },
   "syncErrorSyncFailed": "同期に失敗しました",
   "sectionTimeDisplayHidden": "Hidden",
   "sectionTimeDisplayStartOnly": "Start time only",

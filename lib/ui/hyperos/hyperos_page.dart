@@ -164,9 +164,20 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   void initState() {
     super.initState();
     void notify() {
-      if (mounted) {
-        setState(() {});
+      if (!mounted) {
+        return;
       }
+      final phase = SchedulerBinding.instance.schedulerPhase;
+      if (phase == SchedulerPhase.idle) {
+        setState(() {});
+        return;
+      }
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {});
+      });
     }
 
     _routeBlurGate = HyperosRouteBlurGate(

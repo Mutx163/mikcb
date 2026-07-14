@@ -16,6 +16,7 @@ String localizeSyncError(AppLocalizations l10n, String? code) {
     'missing_backup_snapshot' => l10n.syncErrorMissingBackupSnapshot,
     'cannot_delete_current_backup' => l10n.syncErrorCannotDeleteCurrentBackup,
     'provider_not_ready' => l10n.syncErrorProviderNotReady,
+    'insecure_url_blocked' => l10n.syncErrorInsecureUrl,
     null || '' || 'sync_failed' => l10n.syncErrorSyncFailed,
     _ => l10n.syncErrorSyncFailed,
   };

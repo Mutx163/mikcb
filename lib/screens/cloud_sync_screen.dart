@@ -46,6 +46,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   bool _creatingBackup = false;
   bool _loadingBackups = false;
   bool _hasStoredPassword = false;
+  bool _isInsecureUrl = false;
   List<CloudBackupEntry> _backupEntries = const [];
 
   WebdavSyncCoordinator get _coordinator => WebdavSyncCoordinator.instance();
@@ -57,7 +58,19 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   void initState() {
     super.initState();
     _coordinator.onConflict = _resolveConflict;
+    _baseUrlController.addListener(_checkUrlSecurity);
     unawaited(_loadConfig());
+  }
+
+  void _checkUrlSecurity() {
+    final url = _baseUrlController.text.trim();
+    final isInsecure =
+        url.isNotEmpty && !url.toLowerCase().startsWith('https://');
+    if (_isInsecureUrl != isInsecure) {
+      setState(() {
+        _isInsecureUrl = isInsecure;
+      });
+    }
   }
 
   @override
@@ -75,25 +88,32 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     setState(() {
       _loadingBackups = true;
     });
-    final result = await _coordinator.fetchBackupList();
-    if (!mounted) {
-      return;
+    try {
+      final result = await _coordinator.fetchBackupList();
+      if (!mounted) {
+        return;
+      }
+      if (result.hasError) {
+        final l10n = AppLocalizations.of(context)!;
+        showAppToast(
+          context,
+          message: CloudBackupUiHelpers.localizeSyncError(
+            l10n,
+            result.errorMessage,
+          ),
+          kind: AppToastKind.error,
+        );
+      }
+      setState(() {
+        _backupEntries = result.entries;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingBackups = false;
+        });
+      }
     }
-    if (result.hasError) {
-      final l10n = AppLocalizations.of(context)!;
-      showAppToast(
-        context,
-        message: CloudBackupUiHelpers.localizeSyncError(
-          l10n,
-          result.errorMessage,
-        ),
-        kind: AppToastKind.error,
-      );
-    }
-    setState(() {
-      _backupEntries = result.entries;
-      _loadingBackups = false;
-    });
   }
 
   static String formatBackupDateTime(DateTime value) =>
@@ -528,6 +548,22 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                   controller: _baseUrlController,
                   label: l10n.cloudSyncBaseUrlLabel,
                   onSubmitted: (_) => _saveAdvancedFields(),
+                ),
+                const SizedBox(height: 4),
+                if (_isInsecureUrl)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4),
+                    child: Text(
+                      l10n.syncErrorInsecureUrl,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                HyperosSectionDescription(
+                  text: l10n.cloudSyncBaseUrlSecurityNote,
                 ),
                 const SizedBox(height: 12),
                 HyperosTextField(

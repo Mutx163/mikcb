@@ -896,6 +896,12 @@ abstract class AppLocalizations {
   /// **'WEBDAV 地址'**
   String get cloudSyncBaseUrlLabel;
 
+  /// 安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用
+  ///
+  /// In zh, this message translates to:
+  /// **'正式版仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用以保护数据安全。'**
+  String get cloudSyncBaseUrlSecurityNote;
+
   /// No description provided for @cloudSyncRemoteFolderLabel.
   ///
   /// In zh, this message translates to:
@@ -1897,6 +1903,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已复制 QQ 群号'**
   String get copiedQqGroupId;
+
+  /// No description provided for @feedbackOpeningChannel.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在打开…'**
+  String get feedbackOpeningChannel;
+
+  /// No description provided for @feedbackOpenChannelFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法打开，已复制相关信息'**
+  String get feedbackOpenChannelFailed;
 
   /// No description provided for @timetableProfilesTitle.
   ///
@@ -10921,6 +10939,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'课表尚未就绪'**
   String get syncErrorProviderNotReady;
+
+  /// Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds
+  ///
+  /// In zh, this message translates to:
+  /// **'仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用'**
+  String get syncErrorInsecureUrl;
 
   /// No description provided for @syncErrorSyncFailed.
   ///

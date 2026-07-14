@@ -151,8 +151,9 @@ class _HyperosSelectPopupBodyState<T>
     final safeTop = MediaQuery.paddingOf(context).top + margin;
     final safeBottom =
         screen.height - MediaQuery.paddingOf(context).bottom - margin;
-    final estimatedHeight =
-        hyperosSelectPopupEstimatedHeight(widget.entries.length);
+    final estimatedHeight = hyperosSelectPopupEstimatedHeight(
+      widget.entries.length,
+    );
     final layout = hyperosSelectPopupLayout(
       anchorRect: widget.anchorRect,
       estimatedPopupHeight: estimatedHeight,
@@ -162,8 +163,10 @@ class _HyperosSelectPopupBodyState<T>
     );
 
     // Right edge of popup aligns with anchor row (HyperOS anchored dropdown).
-    final anchorRight =
-        widget.anchorRect.right.clamp(margin, screen.width - margin);
+    final anchorRight = widget.anchorRect.right.clamp(
+      margin,
+      screen.width - margin,
+    );
 
     return Stack(
       children: [
@@ -172,10 +175,12 @@ class _HyperosSelectPopupBodyState<T>
           right: screen.width - anchorRight,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minWidth: 132,
+              // Right-aligned: larger min/max width expands left by ~6 chars.
+              minWidth: 132 + HyperosMiuixDropdown.popupExtraLeadingWidth,
               maxWidth: (screen.width - margin * 2).clamp(
-                132.0,
+                132.0 + HyperosMiuixDropdown.popupExtraLeadingWidth,
                 HyperosMiuixDropdown.maxItemTextWidth +
+                    HyperosMiuixDropdown.popupExtraLeadingWidth +
                     HyperosMiuixDropdown.insideHorizontalPadding * 2 +
                     HyperosMiuixDropdown.checkIconSize +
                     28,
@@ -222,16 +227,14 @@ class _HyperosSelectPopupBodyState<T>
                                   highlightSelectedText: true,
                                   variant: HyperosChoiceVariant.popup,
                                   isFirstInPopup: i == 0,
-                                  isLastInPopup:
-                                      i == widget.entries.length - 1,
-                                  titleStyle:
-                                      widget.itemTitleStyleBuilder?.call(
-                                    widget.entries[i].value,
-                                  ),
+                                  isLastInPopup: i == widget.entries.length - 1,
+                                  titleStyle: widget.itemTitleStyleBuilder
+                                      ?.call(widget.entries[i].value),
                                   onTap: () {
                                     HapticFeedback.selectionClick();
-                                    Navigator.of(context)
-                                        .pop(widget.entries[i].value);
+                                    Navigator.of(
+                                      context,
+                                    ).pop(widget.entries[i].value);
                                   },
                                 ),
                               );
@@ -334,8 +337,7 @@ Future<T?> showHyperosSelectSheet<T>({
                   currentValue: currentValue,
                   itemTitleStyleBuilder: itemTitleStyleBuilder,
                   variant: HyperosChoiceVariant.dialog,
-                  onSelected: (value) =>
-                      Navigator.of(sheetContext).pop(value),
+                  onSelected: (value) => Navigator.of(sheetContext).pop(value),
                 ),
               ),
               const SizedBox(height: 12),
@@ -462,8 +464,10 @@ double hyperosSelectPopupEstimatedHeight(int itemCount) {
   }
   var height = 0.0;
   for (var i = 0; i < itemCount; i++) {
-    // Match [_popupChoiceRowPadding] / HyperosChoiceTile popup layout:
-    // first row top and last row bottom use firstLast; all other edges use middle.
+    // Match [_popupChoiceRowPadding] / content-sized HyperosChoiceTile popup
+    // rows (v2.0.4): first row top and last row bottom use firstLast; all other
+    // edges use middle. Content height is the list-title line box
+    // (preferenceTitleSize × 1.25), not settings-row min height.
     final topPadding = i == 0
         ? HyperosMiuixDropdown.firstLastVerticalPadding
         : HyperosMiuixDropdown.middleVerticalPadding;
@@ -471,7 +475,9 @@ double hyperosSelectPopupEstimatedHeight(int itemCount) {
         ? HyperosMiuixDropdown.firstLastVerticalPadding
         : HyperosMiuixDropdown.middleVerticalPadding;
     height +=
-        topPadding + bottomPadding + HyperosMiuixSpec.settingsRowMinHeight;
+        topPadding +
+        bottomPadding +
+        HyperosMiuixSpec.preferenceTitleSize * 1.25;
   }
   return height;
 }

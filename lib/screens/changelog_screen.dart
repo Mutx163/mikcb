@@ -181,7 +181,7 @@ class _ChangelogCard extends StatefulWidget {
 }
 
 class _ChangelogCardState extends State<_ChangelogCard> {
-  bool _expanded = false;
+  bool _expanded = true;
 
   @override
   Widget build(BuildContext context) {

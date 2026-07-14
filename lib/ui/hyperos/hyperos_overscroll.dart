@@ -84,10 +84,17 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
     final minBound = _minOverscrollBound(position);
     final maxBound = _maxOverscrollBound(position);
     if (value < minBound) {
-      return value - minBound;
+      final double overscroll = value - minBound;
+      final double delta = value - position.pixels;
+      // Guard against floating-point drift where pixels is already slightly
+      // beyond the boundary.  The framework asserts |overscroll| <= |delta|;
+      // clamp to delta so the assertion is never violated.
+      return overscroll.abs() > delta.abs() ? delta : overscroll;
     }
     if (value > maxBound) {
-      return value - maxBound;
+      final double overscroll = value - maxBound;
+      final double delta = value - position.pixels;
+      return overscroll.abs() > delta.abs() ? delta : overscroll;
     }
     return 0;
   }

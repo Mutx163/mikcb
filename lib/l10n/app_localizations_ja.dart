@@ -428,6 +428,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WEBDAV URL';
 
   @override
+  String get cloudSyncBaseUrlSecurityNote =>
+      'リリース版はHTTPS暗号化接続のみ対応しています。データ保護のため、HTTP平文プロトコルは無効化されています。';
+
+  @override
   String get cloudSyncRemoteFolderLabel => 'リモートフォルダ';
 
   @override
@@ -986,6 +990,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get copiedQqGroupId => 'QQグループIDをコピーしました';
+
+  @override
+  String get feedbackOpeningChannel => '開いています…';
+
+  @override
+  String get feedbackOpenChannelFailed => '開けませんでした。情報をコピーしました。';
 
   @override
   String get timetableProfilesTitle => '時間割管理';
@@ -6083,6 +6093,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get syncErrorProviderNotReady => 'Timetable is not ready';
+
+  @override
+  String get syncErrorInsecureUrl => 'HTTPS暗号化接続のみ対応しています。HTTP平文プロトコルは無効です。';
 
   @override
   String get syncErrorSyncFailed => '同期に失敗しました';

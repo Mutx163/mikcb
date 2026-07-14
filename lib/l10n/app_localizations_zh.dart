@@ -426,6 +426,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WEBDAV 地址';
 
   @override
+  String get cloudSyncBaseUrlSecurityNote =>
+      '正式版仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用以保护数据安全。';
+
+  @override
   String get cloudSyncRemoteFolderLabel => '远程目录';
 
   @override
@@ -969,6 +973,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get copiedQqGroupId => '已复制 QQ 群号';
+
+  @override
+  String get feedbackOpeningChannel => '正在打开…';
+
+  @override
+  String get feedbackOpenChannelFailed => '无法打开，已复制相关信息';
 
   @override
   String get timetableProfilesTitle => '课表管理';
@@ -6001,6 +6011,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncErrorProviderNotReady => '课表尚未就绪';
 
   @override
+  String get syncErrorInsecureUrl => '仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用';
+
+  @override
   String get syncErrorSyncFailed => '同步失败';
 
   @override
@@ -8321,6 +8334,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncBaseUrlLabel => 'WEBDAV 網址';
 
   @override
+  String get cloudSyncBaseUrlSecurityNote =>
+      '正式版僅支援 HTTPS 加密連線，HTTP 明文協定已被停用以保護資料安全。';
+
+  @override
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
 
   @override
@@ -8864,6 +8881,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get copiedQqGroupId => '已複製 QQ 群號';
+
+  @override
+  String get feedbackOpeningChannel => '正在打開…';
+
+  @override
+  String get feedbackOpenChannelFailed => '無法打開，已複製相關資訊';
 
   @override
   String get timetableProfilesTitle => '課表管理';
@@ -13723,6 +13746,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get syncErrorProviderNotReady => '課表尚未就緒';
 
   @override
+  String get syncErrorInsecureUrl => '僅支援 HTTPS 加密連線，HTTP 明文協定已被停用';
+
+  @override
   String get syncErrorSyncFailed => '同步失敗';
 
   @override
@@ -16087,6 +16113,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncBaseUrlLabel => 'WEBDAV 網址';
 
   @override
+  String get cloudSyncBaseUrlSecurityNote =>
+      '正式版僅支援 HTTPS 加密連線，HTTP 明文協定已被停用以保護資料安全。';
+
+  @override
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
 
   @override
@@ -16630,6 +16660,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get copiedQqGroupId => '已複製 QQ 群號';
+
+  @override
+  String get feedbackOpeningChannel => '正在打開…';
+
+  @override
+  String get feedbackOpenChannelFailed => '無法打開，已複製相關資訊';
 
   @override
   String get timetableProfilesTitle => '課表管理';
@@ -21487,6 +21523,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get syncErrorProviderNotReady => '課表尚未就緒';
+
+  @override
+  String get syncErrorInsecureUrl => '僅支援 HTTPS 加密連線，HTTP 明文協定已被停用';
 
   @override
   String get syncErrorSyncFailed => '同步失敗';

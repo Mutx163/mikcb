@@ -454,6 +454,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WEBDAV URL';
 
   @override
+  String get cloudSyncBaseUrlSecurityNote =>
+      'Release builds only support HTTPS encrypted connections. HTTP cleartext protocol has been disabled for data security.';
+
+  @override
   String get cloudSyncRemoteFolderLabel => 'Remote folder';
 
   @override
@@ -1037,6 +1041,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copiedQqGroupId => 'QQ group ID copied';
+
+  @override
+  String get feedbackOpeningChannel => 'Opening…';
+
+  @override
+  String get feedbackOpenChannelFailed => 'Could not open. Details copied.';
 
   @override
   String get timetableProfilesTitle => 'Timetable Profiles';
@@ -6332,6 +6342,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncErrorProviderNotReady => 'Timetable is not ready';
+
+  @override
+  String get syncErrorInsecureUrl =>
+      'Only HTTPS encrypted connections are supported; HTTP cleartext protocol is disabled.';
 
   @override
   String get syncErrorSyncFailed => 'Sync failed';

@@ -15,6 +15,11 @@ class WebdavConnectionParams {
     required this.username,
     required this.password,
   });
+
+  /// 检查URL是否为HTTPS协议
+  static bool isSecureUrl(String url) {
+    return url.trim().toLowerCase().startsWith('https://');
+  }
 }
 
 class WebdavGetBytesResult {

@@ -511,6 +511,14 @@ abstract final class HyperosMiuixDropdown {
   static const firstLastVerticalPadding = 20.0;
   static const middleVerticalPadding = 12.0;
   static const maxItemTextWidth = 216.0;
+
+  /// Extra popup width extending left (~4 list-title characters).
+  ///
+  /// Anchored select popup is right-aligned; this grows the max/min width so
+  /// the left edge moves further left without shifting the right edge.
+  static const popupExtraLeadingWidth =
+      HyperosMiuixSpec.preferenceTitleSize * 4;
+
   static const popupCornerRadius = 20.0;
   static const popupElevation = 6.0;
   static const popupVerticalGap = 2.0;

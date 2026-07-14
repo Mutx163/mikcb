@@ -215,7 +215,10 @@ class FrostedHeaderController extends ChangeNotifier {
       return;
     }
     _isUserScrolling = scrolling;
-    notifyListeners();
+    // Defer notifyListeners() to avoid calling setState() during layout/paint.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _onScrollEnd() {

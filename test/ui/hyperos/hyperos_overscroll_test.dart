@@ -74,6 +74,45 @@ void main() {
       );
     });
 
+    test(
+      'boundary result never exceeds delta when pixels already past boundary',
+      () {
+        // Simulates floating-point drift where pixels is already slightly
+        // beyond the overscroll boundary.  The framework asserts
+        // |applyBoundaryConditions()| <= |delta|; verify we stay within.
+        const viewport = 400.0;
+        final maxOverscroll =
+            viewport * HyperosMiuixAnim.maxOverscrollFraction;
+        final minBound = -maxOverscroll;
+
+        // pixels slightly past minBound due to FP drift
+        final driftedPixels = minBound - 0.0000001;
+        final value = minBound - 5.0;
+
+        final result = physics.applyBoundaryConditions(
+          metrics(pixels: driftedPixels, viewportDimension: viewport),
+          value,
+        );
+        final delta = value - driftedPixels;
+        expect(result.abs(), lessThanOrEqualTo(delta.abs()));
+
+        // Same for the max-bound direction
+        final maxBound = 100.0 + maxOverscroll;
+        final maxDrifted = maxBound + 0.0000001;
+        final maxValue = maxBound + 5.0;
+        final maxResult = physics.applyBoundaryConditions(
+          metrics(
+            pixels: maxDrifted,
+            maxScrollExtent: 100,
+            viewportDimension: viewport,
+          ),
+          maxValue,
+        );
+        final maxDelta = maxValue - maxDrifted;
+        expect(maxResult.abs(), lessThanOrEqualTo(maxDelta.abs()));
+      },
+    );
+
     test('applies friction while overscrolling deeper', () {
       final offset = physics.applyPhysicsToUserOffset(
         metrics(pixels: -40),

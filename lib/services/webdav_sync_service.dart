@@ -85,10 +85,18 @@ class WebdavSyncService {
         password.isEmpty) {
       return null;
     }
+    
+    final baseUrl = config.baseUrl.trim().isEmpty
+        ? WebdavSyncConfig.defaultJianguoyunBaseUrl
+        : config.baseUrl.trim();
+    
+    // 强制HTTPS校验
+    if (!WebdavConnectionParams.isSecureUrl(baseUrl)) {
+      throw StateError('insecure_url_blocked');
+    }
+    
     return WebdavConnectionParams(
-      baseUrl: config.baseUrl.trim().isEmpty
-          ? WebdavSyncConfig.defaultJianguoyunBaseUrl
-          : config.baseUrl.trim(),
+      baseUrl: baseUrl,
       username: config.username.trim(),
       password: password,
     );
@@ -104,11 +112,19 @@ class WebdavSyncService {
         password.isEmpty) {
       throw StateError('missing_credentials');
     }
+    
+    final baseUrl = config.baseUrl.trim().isEmpty
+        ? WebdavSyncConfig.defaultJianguoyunBaseUrl
+        : config.baseUrl.trim();
+    
+    // 强制HTTPS校验
+    if (!WebdavConnectionParams.isSecureUrl(baseUrl)) {
+      throw StateError('insecure_url_blocked');
+    }
+    
     await _clientService.testConnection(
       WebdavConnectionParams(
-        baseUrl: config.baseUrl.trim().isEmpty
-            ? WebdavSyncConfig.defaultJianguoyunBaseUrl
-            : config.baseUrl.trim(),
+        baseUrl: baseUrl,
         username: config.username.trim(),
         password: password,
       ),

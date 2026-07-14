@@ -2,6 +2,34 @@
     <queries>
         <package android:name="com.example.university_timetable" />
         <package android:name="com.example.university_timetable.debug" />
+        <!-- Feedback channel deep links (Coolapk / Xiaohongshu / QQ) -->
+        <package android:name="com.coolapk.market" />
+        <package android:name="com.xingin.xhs" />
+        <package android:name="com.tencent.mobileqq" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="coolmarket" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="xhsdiscover" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mqqopensdkapi" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mqqapi" />
+        </intent>
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET"/>
