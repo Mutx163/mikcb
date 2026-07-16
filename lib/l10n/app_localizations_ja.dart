@@ -3632,7 +3632,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowTimeTitle => '時間を表示';
 
   @override
-  String get layoutShowTimeLabelsTitle => '授業開始/終了テキストを表示';
+  String get layoutShowTimeLabelsTitle => '授業開始と終了テキストを表示';
 
   @override
   String get layoutShowTimeLabelsSubtitle =>

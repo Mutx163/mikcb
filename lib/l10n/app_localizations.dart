@@ -6582,7 +6582,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutShowTimeLabelsTitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示上课/下课字样'**
+  /// **'显示上下课字样'**
   String get layoutShowTimeLabelsTitle;
 
   /// No description provided for @layoutShowTimeLabelsSubtitle.

@@ -1827,7 +1827,7 @@
   "layoutShowTeacherTitle": "顯示老師",
   "layoutShowClassroomTitle": "顯示教室",
   "layoutShowTimeTitle": "顯示時間",
-  "layoutShowTimeLabelsTitle": "顯示上課/下課字样",
+  "layoutShowTimeLabelsTitle": "顯示上下課字樣",
   "layoutShowTimeLabelsSubtitle": "關閉後僅顯示時間點，不顯示“上課”“下課”文字。",
   "layoutShowWeeksTitle": "顯示週數",
   "layoutShowWeeksSubtitle": "例如第 1-16 周、單双周",

@@ -3569,7 +3569,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutShowTimeTitle => '显示时间';
 
   @override
-  String get layoutShowTimeLabelsTitle => '显示上课/下课字样';
+  String get layoutShowTimeLabelsTitle => '显示上下课字样';
 
   @override
   String get layoutShowTimeLabelsSubtitle => '关闭后仅显示时间点，不显示“上课”“下课”文字。';
@@ -11322,7 +11322,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutShowTimeTitle => '顯示時間';
 
   @override
-  String get layoutShowTimeLabelsTitle => '顯示上課/下課字样';
+  String get layoutShowTimeLabelsTitle => '顯示上下課字樣';
 
   @override
   String get layoutShowTimeLabelsSubtitle => '關閉後僅顯示時間點，不顯示“上課”“下課”文字。';
@@ -19100,7 +19100,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutShowTimeTitle => '顯示時間';
 
   @override
-  String get layoutShowTimeLabelsTitle => '顯示上課/下課字样';
+  String get layoutShowTimeLabelsTitle => '顯示上下課字樣';
 
   @override
   String get layoutShowTimeLabelsSubtitle => '關閉後僅顯示時間點，不顯示“上課”“下課”文字。';

@@ -1830,7 +1830,7 @@
   "layoutShowTeacherTitle": "教師を表示",
   "layoutShowClassroomTitle": "教室を表示",
   "layoutShowTimeTitle": "時間を表示",
-  "layoutShowTimeLabelsTitle": "授業開始/終了テキストを表示",
+  "layoutShowTimeLabelsTitle": "授業開始と終了テキストを表示",
   "layoutShowTimeLabelsSubtitle": "オフにすると時間ポイントのみ表示。「授業開始」「授業終了」テキストは非表示。",
   "layoutShowWeeksTitle": "週数を表示",
   "layoutShowWeeksSubtitle": "例：第1-16週、奇数偶数週",

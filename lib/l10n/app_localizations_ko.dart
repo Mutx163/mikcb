@@ -3546,7 +3546,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '켜면 현재 교시 수에 따라 페이지 하단까지 자동 맞춤됩니다. 아래 여백을 유지하지 않습니다.';
 
   @override
-  String get layoutHideWeekendsTitle => '토요일/일요일 숨기기';
+  String get layoutHideWeekendsTitle => '토요일과 일요일 숨기기';
 
   @override
   String get layoutHideWeekendsSubtitle =>
@@ -3656,7 +3656,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowTimeTitle => '시간 표시';
 
   @override
-  String get layoutShowTimeLabelsTitle => '수업 시작/종료 텍스트 표시';
+  String get layoutShowTimeLabelsTitle => '수업 시작과 종료 텍스트 표시';
 
   @override
   String get layoutShowTimeLabelsSubtitle =>

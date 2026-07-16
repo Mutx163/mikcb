@@ -1989,7 +1989,7 @@
   "layoutShowTeacherTitle": "显示老师",
   "layoutShowClassroomTitle": "显示教室",
   "layoutShowTimeTitle": "显示时间",
-  "layoutShowTimeLabelsTitle": "显示上课/下课字样",
+  "layoutShowTimeLabelsTitle": "显示上下课字样",
   "layoutShowTimeLabelsSubtitle": "关闭后仅显示时间点，不显示“上课”“下课”文字。",
   "layoutShowWeeksTitle": "显示周数",
   "layoutShowWeeksSubtitle": "例如第 1-16 周、单双周",

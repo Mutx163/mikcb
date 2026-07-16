@@ -3799,11 +3799,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutShowTimeTitle => 'Show time';
 
   @override
-  String get layoutShowTimeLabelsTitle => 'Show class start/end labels';
+  String get layoutShowTimeLabelsTitle => 'Show start and end labels';
 
   @override
   String get layoutShowTimeLabelsSubtitle =>
-      'When off, only the time points are shown, without the \"start\" / \"end\" labels.';
+      'When off, only the time points are shown, without the \"start\" and \"end\" labels.';
 
   @override
   String get layoutShowWeeksTitle => 'Show weeks';
