@@ -308,8 +308,18 @@ class HyperosSlider extends StatelessWidget {
 }
 
 EdgeInsets _hyperosSliderTilePadding(BuildContext context) {
+  final listScope = HyperosListTileScope.maybeOf(context);
   final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
   final cardScope = HyperosControlCardScope.maybeOf(context);
+
+  // Inside [HyperosListGroup]: use the same first/last row insets as switches
+  // and select tiles so the track is not glued to the card edge.
+  if (listScope != null) {
+    return HyperosTokens.rowPadding(
+      isFirst: listScope.isFirst,
+      isLast: listScope.isLast,
+    );
+  }
 
   // Mirrors [hyperosSelectRowLayout]: when no explicit row scope exists but the
   // tile sits inside a [HyperosControlCard], treat it as the card's last block.
@@ -322,9 +332,9 @@ EdgeInsets _hyperosSliderTilePadding(BuildContext context) {
 
   return EdgeInsets.fromLTRB(
     HyperosControlCardScope.defaultHorizontalPadding,
-    0,
+    cardRowScope?.isFirst == true || cardScope != null ? 12 : 0,
     HyperosControlCardScope.defaultHorizontalPadding,
-    bottom,
+    bottom > 0 ? bottom : 12,
   );
 }
 
