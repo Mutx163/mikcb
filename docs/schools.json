@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-15T04:29:39+00:00",
+  "updatedAt": "2026-07-16T04:41:01+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 125,
-    "schools": 120,
+    "total": 127,
+    "schools": 122,
     "generic": 5
   },
   "schools": [
@@ -307,6 +307,13 @@
       "name": "华东交通大学",
       "initial": "H",
       "resourceFolder": "ECJTU",
+      "category": "school"
+    },
+    {
+      "id": "HUST",
+      "name": "华中科技大学",
+      "initial": "H",
+      "resourceFolder": "HUST",
       "category": "school"
     },
     {
@@ -811,6 +818,13 @@
       "name": "宜宾学院",
       "initial": "Y",
       "resourceFolder": "YIBINU",
+      "category": "school"
+    },
+    {
+      "id": "CSUFT",
+      "name": "中南林业科技大学",
+      "initial": "Z",
+      "resourceFolder": "CSUFT",
       "category": "school"
     },
     {
