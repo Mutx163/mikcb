@@ -1016,9 +1016,9 @@
   "generateAction": "生成",
   "liveSettingsTitle": "スーパーアイランドと通知",
   "liveReminderTimingEntryTitle": "リマインダー時間帯",
-  "liveReminderTimingEntrySubtitle": "授業前・授業中/終了リマインダーの切替、および終了前にスーパーアイランド/フォーカスリマインダーに切り替え",
+  "liveReminderTimingEntrySubtitle": "授業前・授業中と終了リマインダー、およびフォーカス切替タイミング",
   "liveBeforeClassDisplayEntryTitle": "授業前リマインダー表示",
-  "liveDuringEndDisplayEntryTitle": "授業中/終了リマインダー表示",
+  "liveDuringEndDisplayEntryTitle": "授業中と終了リマインダー表示",
   "liveKeepAliveEntryTitle": "バックグラウンド常駐",
   "liveKeepAliveEntrySubtitle": "非表示、バックグラウンド常駐補助サービスと権限エントリ",
   "liveTestingEntryTitle": "テストと診断",
@@ -1036,9 +1036,9 @@
       }
     }
   },
-  "duringClassReminderTitle": "授業中/終了リマインダー",
+  "duringClassReminderTitle": "授業中と終了リマインダー",
   "duringClassReminderSubtitle": "授業開始後から終了前までの表示にのみ影響",
-  "liveClassReminderLeadTitle": "終了前にスーパーアイランド/フォーカスリマインダーに切り替え",
+  "liveClassReminderLeadTitle": "フォーカス切替タイミング",
   "liveClassReminderLeadOptionImmediate": "授業開始と同時に切替",
   "liveClassReminderLeadOptionMinutes": "終了{minutes}分前に切替",
   "@liveClassReminderLeadOptionMinutes": {
@@ -1054,7 +1054,7 @@
   "duringClassStatusNotificationImmediate": "授業開始後もステータスバー通知を保持",
   "duringClassStatusNotificationBeforeEnd": "終了リマインダー開始前まで通常通知テキストを保持",
   "duringClassStatusNotificationPersistent": "授業開始後も通常授業中通知を継続表示し、終了リマインダー前に切替",
-  "enableIslandDisplayTitle": "スーパーアイランド/ダイナミックアイランド表示対応",
+  "enableIslandDisplayTitle": "スーパーアイランドを表示",
   "enableIslandDisplaySubtitle": "オフにするとシステムスーパーアイランドのトリガーを停止",
   "liveTimeThresholdTitle": "時間しきい値",
   "liveTimeThresholdSubtitle": "授業前ポップアップ、終了前のスーパーアイランド/フォーカスリマインダー切替、および秒単位カウントダウンを制御。",
@@ -1479,7 +1479,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "終了{minutes}分前にスーパーアイランド/フォーカスリマインダーに切替、最後の{seconds}秒で秒単位カウントダウンに切替",
+  "liveClassReminderLeadSummaryIsland": "終了{minutes}分前にスーパーアイランドとフォーカスリマインダーに切替、最後の{seconds}秒で秒単位カウントダウンに切替",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1586,7 +1586,7 @@
   "guideImportMethodExtra": "パケットキャプチャ、Webデバッグ、JavaScriptができる場合は、学校教務適応の補充に参加して、より多くの学校が直接インポートできるように歓迎。",
   "guideFinalTipsTitle": "最後にこの3点を確認",
   "guideFinalTip1": "1. HyperOS 3.0.300以上でスーパーアイランドに対応。システムバージョンが不足していても、アプリは通常のリマインダーを送信可能。",
-  "guideFinalTip2": "2. まず設定ページで「授業前ポップアップ」と「授業中/終了間近リマインダー」のしきい値を調整。",
+  "guideFinalTip2": "2. まず設定ページで「授業前ポップアップ」と「授業中と終了間近リマインダー」のしきい値を調整。",
   "guideFinalTip3": "3. システム権限設定完了後、テスト通知で検証。アイランド表示がたまに消える場合は、自動起動と省電力戦略を優先確認。",
   "guidePrivacyHelperRequireConsent": "同意にチェックを入れると、上記のUmeng関連説明、プライバシー内容と免責事項を読み同意したものとみなされます。",
   "guidePrivacyHelperViewOnly": "ここでは初回起動時と同じプライバシー、サードパーティSDKと免責事項を保持。いつでも確認可能。現在のページで再度同意する必要はありません。",

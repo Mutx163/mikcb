@@ -2039,13 +2039,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveReminderTimingEntrySubtitle =>
-      '수업 전/수업 중/종료 알림 스위치, 종료 전 슈퍼아일랜드/포커스 알림 전환 시점';
+      '수업 전, 수업 중과 종료 알림, 그리고 포커스 전환 시점';
 
   @override
   String get liveBeforeClassDisplayEntryTitle => '수업 전 알림 표시';
 
   @override
-  String get liveDuringEndDisplayEntryTitle => '수업 중/종료 알림 표시';
+  String get liveDuringEndDisplayEntryTitle => '수업 중과 종료 알림 표시';
 
   @override
   String get liveKeepAliveEntryTitle => '백그라운드 상주';
@@ -2081,13 +2081,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get duringClassReminderTitle => '수업 중/종료 알림';
+  String get duringClassReminderTitle => '수업 중과 종료 알림';
 
   @override
   String get duringClassReminderSubtitle => '수업 시작 후부터 종료 전까지의 표시에만 영향';
 
   @override
-  String get liveClassReminderLeadTitle => '종료 전 슈퍼아일랜드/포커스 알림 전환 시점';
+  String get liveClassReminderLeadTitle => '포커스 전환 시점';
 
   @override
   String get liveClassReminderLeadOptionImmediate => '수업 시작과 동시에 전환';
@@ -2118,7 +2118,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '수업 시작 후 일반 수업 중 알림을 계속 표시하고 종료 알림 전에 전환';
 
   @override
-  String get enableIslandDisplayTitle => '슈퍼아일랜드/다이내믹아일랜드 표시 지원';
+  String get enableIslandDisplayTitle => '슈퍼아일랜드 표시';
 
   @override
   String get enableIslandDisplaySubtitle => '끄면 시스템 슈퍼아일랜드 트리거를 중단합니다';
@@ -2826,7 +2826,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '종료 $minutes분 전에 슈퍼아일랜드/포커스 알림으로 전환, 마지막 $seconds초에 초 단위 카운트다운으로 전환';
+    return '종료 $minutes분 전에 슈퍼아일랜드와 포커스 알림으로 전환, 마지막 $seconds초에 초 단위 카운트다운으로 전환';
   }
 
   @override
@@ -3170,7 +3170,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guideFinalTip2 =>
-      '2. 먼저 설정 페이지에서 \'수업 전 팝업\'과 \'수업 중/종료 임박 알림\'의 임계값을 조정하세요.';
+      '2. 먼저 설정 페이지에서 \'수업 전 팝업\'과 \'수업 중과 종료 임박 알림\'의 임계값을 조정하세요.';
 
   @override
   String get guideFinalTip3 =>

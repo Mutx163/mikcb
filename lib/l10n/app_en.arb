@@ -1166,9 +1166,9 @@
   "goEnableAction": "Enable Now",
   "liveSettingsTitle": "Island & Notifications",
   "liveReminderTimingEntryTitle": "Reminder Timing",
-  "liveReminderTimingEntrySubtitle": "Before class, during class / before end toggles, and when to switch into highlighted reminders.",
+  "liveReminderTimingEntrySubtitle": "Before class, during class and before-end reminders, plus highlight timing.",
   "liveBeforeClassDisplayEntryTitle": "Before Class Display",
-  "liveDuringEndDisplayEntryTitle": "During Class / Before End Display",
+  "liveDuringEndDisplayEntryTitle": "During Class and Before End Display",
   "liveKeepAliveEntryTitle": "Keep Alive",
   "liveKeepAliveEntrySubtitle": "Hide from recents, accessibility keep-alive helper, and permission shortcuts.",
   "liveTestingEntryTitle": "Testing & Diagnostics",
@@ -1186,7 +1186,7 @@
       }
     }
   },
-  "duringClassReminderTitle": "During Class / Before End Reminder",
+  "duringClassReminderTitle": "During Class and Before End Reminder",
   "duringClassReminderSubtitle": "Only affects the period after class starts and before it ends",
   "liveClassReminderLeadTitle": "Highlight timing",
   "liveClassReminderLeadOptionImmediate": "As soon as class starts",
@@ -1575,7 +1575,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "Switch to the Island / focused reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
+  "liveClassReminderLeadSummaryIsland": "Switch to the Island and focused reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1739,7 +1739,7 @@
   "guideImportMethodExtra": "If you know packet capture, web debugging, or JavaScript, you are also welcome to help add school adapters so more schools can import directly.",
   "guideFinalTipsTitle": "Three final tips",
   "guideFinalTip1": "1. HyperOS 3.0.300 and above is required for the Island. If your system version is lower, the app can still send normal reminders.",
-  "guideFinalTip2": "2. Adjust the before-class popup and in-class / near-end reminder thresholds in Settings first.",
+  "guideFinalTip2": "2. Adjust the before-class popup and in-class and near-end reminder thresholds in Settings first.",
   "guideFinalTip3": "3. After finishing the system permission setup, use a test notification to verify everything. If the Island still disappears occasionally, check auto-start and battery policy first.",
   "guidePrivacyHelperRequireConsent": "By checking the box, you confirm that you have read and agreed to the Umeng-related privacy notes, privacy content, and disclaimer above.",
   "guidePrivacyHelperViewOnly": "This page keeps the same privacy, third-party SDK, and disclaimer information shown during first launch so you can review it at any time. You do not need to agree again here.",

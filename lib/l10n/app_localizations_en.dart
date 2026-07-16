@@ -2116,14 +2116,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveReminderTimingEntrySubtitle =>
-      'Before class, during class / before end toggles, and when to switch into highlighted reminders.';
+      'Before class, during class and before-end reminders, plus highlight timing.';
 
   @override
   String get liveBeforeClassDisplayEntryTitle => 'Before Class Display';
 
   @override
   String get liveDuringEndDisplayEntryTitle =>
-      'During Class / Before End Display';
+      'During Class and Before End Display';
 
   @override
   String get liveKeepAliveEntryTitle => 'Keep Alive';
@@ -2161,7 +2161,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get duringClassReminderTitle => 'During Class / Before End Reminder';
+  String get duringClassReminderTitle => 'During Class and Before End Reminder';
 
   @override
   String get duringClassReminderSubtitle =>
@@ -2934,7 +2934,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return 'Switch to the Island / focused reminder $minutes minutes before class ends, then show second-level countdown in the last ${seconds}s';
+    return 'Switch to the Island and focused reminder $minutes minutes before class ends, then show second-level countdown in the last ${seconds}s';
   }
 
   @override
@@ -3300,7 +3300,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideFinalTip2 =>
-      '2. Adjust the before-class popup and in-class / near-end reminder thresholds in Settings first.';
+      '2. Adjust the before-class popup and in-class and near-end reminder thresholds in Settings first.';
 
   @override
   String get guideFinalTip3 =>

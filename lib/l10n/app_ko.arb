@@ -1016,9 +1016,9 @@
   "generateAction": "생성",
   "liveSettingsTitle": "슈퍼아일랜드 및 알림",
   "liveReminderTimingEntryTitle": "알림 시간대",
-  "liveReminderTimingEntrySubtitle": "수업 전/수업 중/종료 알림 스위치, 종료 전 슈퍼아일랜드/포커스 알림 전환 시점",
+  "liveReminderTimingEntrySubtitle": "수업 전, 수업 중과 종료 알림, 그리고 포커스 전환 시점",
   "liveBeforeClassDisplayEntryTitle": "수업 전 알림 표시",
-  "liveDuringEndDisplayEntryTitle": "수업 중/종료 알림 표시",
+  "liveDuringEndDisplayEntryTitle": "수업 중과 종료 알림 표시",
   "liveKeepAliveEntryTitle": "백그라운드 상주",
   "liveKeepAliveEntrySubtitle": "숨김, 백그라운드 상주 보조 서비스 및 권한 항목",
   "liveTestingEntryTitle": "테스트 및 진단",
@@ -1036,9 +1036,9 @@
       }
     }
   },
-  "duringClassReminderTitle": "수업 중/종료 알림",
+  "duringClassReminderTitle": "수업 중과 종료 알림",
   "duringClassReminderSubtitle": "수업 시작 후부터 종료 전까지의 표시에만 영향",
-  "liveClassReminderLeadTitle": "종료 전 슈퍼아일랜드/포커스 알림 전환 시점",
+  "liveClassReminderLeadTitle": "포커스 전환 시점",
   "liveClassReminderLeadOptionImmediate": "수업 시작과 동시에 전환",
   "liveClassReminderLeadOptionMinutes": "종료 {minutes}분 전에 전환",
   "@liveClassReminderLeadOptionMinutes": {
@@ -1054,7 +1054,7 @@
   "duringClassStatusNotificationImmediate": "수업 시작 후에도 상태바 알림 유지",
   "duringClassStatusNotificationBeforeEnd": "종료 알림 시작 전까지 일반 알림 텍스트 유지",
   "duringClassStatusNotificationPersistent": "수업 시작 후 일반 수업 중 알림을 계속 표시하고 종료 알림 전에 전환",
-  "enableIslandDisplayTitle": "슈퍼아일랜드/다이내믹아일랜드 표시 지원",
+  "enableIslandDisplayTitle": "슈퍼아일랜드 표시",
   "enableIslandDisplaySubtitle": "끄면 시스템 슈퍼아일랜드 트리거를 중단합니다",
   "liveTimeThresholdTitle": "시간 임계값",
   "liveTimeThresholdSubtitle": "수업 전 팝업, 종료 전 슈퍼아일랜드/포커스 알림 전환, 초 단위 카운트다운을 제어합니다.",
@@ -1479,7 +1479,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "종료 {minutes}분 전에 슈퍼아일랜드/포커스 알림으로 전환, 마지막 {seconds}초에 초 단위 카운트다운으로 전환",
+  "liveClassReminderLeadSummaryIsland": "종료 {minutes}분 전에 슈퍼아일랜드와 포커스 알림으로 전환, 마지막 {seconds}초에 초 단위 카운트다운으로 전환",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1586,7 +1586,7 @@
   "guideImportMethodExtra": "패킷 캡처, 웹 디버깅, JavaScript를 할 수 있다면, 학교 교무 적응 보충에 참여하여 더 많은 학교가 바로 가져올 수 있도록 해주세요.",
   "guideFinalTipsTitle": "마지막으로 이 3가지를 확인하세요",
   "guideFinalTip1": "1. HyperOS 3.0.300 이상에서 슈퍼아일랜드를 지원합니다. 시스템 버전이 부족해도 앱은 일반 알림을 정상적으로 보낼 수 있습니다.",
-  "guideFinalTip2": "2. 먼저 설정 페이지에서 '수업 전 팝업'과 '수업 중/종료 임박 알림'의 임계값을 조정하세요.",
+  "guideFinalTip2": "2. 먼저 설정 페이지에서 '수업 전 팝업'과 '수업 중과 종료 임박 알림'의 임계값을 조정하세요.",
   "guideFinalTip3": "3. 시스템 권한 설정 완료 후 테스트 알림으로 검증하세요. 아일랜드 표시가 가끔 사라지면 자동 시작과 절전 전략을 우선 확인하세요.",
   "guidePrivacyHelperRequireConsent": "동의에 체크하면 위의 Umeng 관련 설명, 개인정보 내용과 면책 사항을 읽고 동의한 것으로 간주됩니다.",
   "guidePrivacyHelperViewOnly": "여기서는 첫 실행 시와 동일한 개인정보, 서드파티 SDK, 면책 사항을 유지합니다. 언제든 확인 가능합니다. 현재 페이지에서 다시 동의할 필요가 없습니다.",

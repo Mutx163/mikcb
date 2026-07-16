@@ -3733,7 +3733,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveReminderTimingEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'上课前、课中/下课提醒开关，以及下课前多久切到超级岛 / 重点提醒'**
+  /// **'上课前、课中与下课提醒，以及重点提醒切入时机'**
   String get liveReminderTimingEntrySubtitle;
 
   /// No description provided for @liveBeforeClassDisplayEntryTitle.
@@ -3745,7 +3745,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDuringEndDisplayEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'课中/下课提醒显示'**
+  /// **'课中与下课提醒显示'**
   String get liveDuringEndDisplayEntryTitle;
 
   /// No description provided for @liveKeepAliveEntryTitle.
@@ -3811,7 +3811,7 @@ abstract class AppLocalizations {
   /// No description provided for @duringClassReminderTitle.
   ///
   /// In zh, this message translates to:
-  /// **'课中 / 下课提醒'**
+  /// **'课中与下课提醒'**
   String get duringClassReminderTitle;
 
   /// No description provided for @duringClassReminderSubtitle.
@@ -3877,7 +3877,7 @@ abstract class AppLocalizations {
   /// No description provided for @enableIslandDisplayTitle.
   ///
   /// In zh, this message translates to:
-  /// **'展示超级岛 / 灵动岛'**
+  /// **'展示超级岛'**
   String get enableIslandDisplayTitle;
 
   /// No description provided for @enableIslandDisplaySubtitle.
@@ -5118,7 +5118,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveClassReminderLeadSummaryIsland.
   ///
   /// In zh, this message translates to:
-  /// **'下课前 {minutes} 分钟切到超级岛 / 重点提醒'**
+  /// **'下课前 {minutes} 分钟切到超级岛与重点提醒'**
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds);
 
   /// No description provided for @liveClassReminderLeadSummaryFocused.
@@ -5754,7 +5754,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideFinalTip2.
   ///
   /// In zh, this message translates to:
-  /// **'2. 先在设置页调整“上课前弹出”和“课中 / 临近下课提醒”的阈值。'**
+  /// **'2. 先在设置页调整“上课前弹出”和“课中与临近下课提醒”的阈值。'**
   String get guideFinalTip2;
 
   /// No description provided for @guideFinalTip3.

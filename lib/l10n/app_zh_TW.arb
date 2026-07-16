@@ -1015,9 +1015,9 @@
   "generateAction": "生成",
   "liveSettingsTitle": "超級島與通知",
   "liveReminderTimingEntryTitle": "提醒時段",
-  "liveReminderTimingEntrySubtitle": "上課前、課中/下課提醒開關，以及下課前多久切到超級島 / 重點提醒",
+  "liveReminderTimingEntrySubtitle": "上課前、課中與下課提醒，以及重點提醒切入時機",
   "liveBeforeClassDisplayEntryTitle": "上課前提醒顯示",
-  "liveDuringEndDisplayEntryTitle": "課中/下課提醒顯示",
+  "liveDuringEndDisplayEntryTitle": "課中與下課提醒顯示",
   "liveKeepAliveEntryTitle": "後台保活",
   "liveKeepAliveEntrySubtitle": "隱藏後台、後台保活輔助服務和權限入口",
   "liveTestingEntryTitle": "測試與診斷",
@@ -1035,7 +1035,7 @@
       }
     }
   },
-  "duringClassReminderTitle": "課中 / 下課提醒",
+  "duringClassReminderTitle": "課中與下課提醒",
   "duringClassReminderSubtitle": "只影響上課後到下課前的展示",
   "liveClassReminderLeadTitle": "下課前多久切到超級島 / 重點提醒",
   "liveClassReminderLeadOptionImmediate": "一上課就切換",
@@ -1053,7 +1053,7 @@
   "duringClassStatusNotificationImmediate": "上課後保留狀態栏通知",
   "duringClassStatusNotificationBeforeEnd": "在下課提醒開始前保留普通通知文案",
   "duringClassStatusNotificationPersistent": "上課後持續顯示普通課中通知，到下課提醒前再切換",
-  "enableIslandDisplayTitle": "支持展示超級島/靈動島",
+  "enableIslandDisplayTitle": "展示超級島",
   "enableIslandDisplaySubtitle": "關閉後不會再尝試觸發系統超級島",
   "liveTimeThresholdTitle": "時間阈值",
   "liveTimeThresholdSubtitle": "控製上課前彈出、下課前多久切到超級島 / 重點提醒，以及最後秒級倒計時。",
@@ -1478,7 +1478,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "在距離下課前 {minutes} 分鐘切到超級島 / 重點提醒，並在最後 {seconds} 秒切到秒級倒數",
+  "liveClassReminderLeadSummaryIsland": "在距離下課前 {minutes} 分鐘切到超級島與重點提醒，並在最後 {seconds} 秒切到秒級倒數",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1585,7 +1585,7 @@
   "guideImportMethodExtra": "如果你会抓包、網頁偵錯或 JavaScript，也欢迎參與学校教務適配补充，让更多学校能直接導入。",
   "guideFinalTipsTitle": "最後再看這 3 条",
   "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不够，應用仍可正常發普通提醒。",
-  "guideFinalTip2": "2. 先在設定頁調整“上課前弹出”和“課中 / 臨近下課提醒”的阈值。",
+  "guideFinalTip2": "2. 先在設定頁調整「上課前弹出」和「課中與臨近下課提醒」的閾值。",
   "guideFinalTip3": "3. 完成系統權限設定後，再用測試通知驗證；如果島区還是偶尔消失，優先檢查自啟動和省電策略。",
   "guidePrivacyHelperRequireConsent": "你勾选同意後，代表你已阅讀並同意上述友盟相關說明、隱私內容與免责提示。",
   "guidePrivacyHelperViewOnly": "這裡保留與首次啟動一致的隱私、第三方 SDK 與免责說明，方便你隨時查看；目前頁面不需要再次勾选同意。",

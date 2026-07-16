@@ -2000,14 +2000,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveReminderTimingEntryTitle => '提醒时段';
 
   @override
-  String get liveReminderTimingEntrySubtitle =>
-      '上课前、课中/下课提醒开关，以及下课前多久切到超级岛 / 重点提醒';
+  String get liveReminderTimingEntrySubtitle => '上课前、课中与下课提醒，以及重点提醒切入时机';
 
   @override
   String get liveBeforeClassDisplayEntryTitle => '上课前提醒显示';
 
   @override
-  String get liveDuringEndDisplayEntryTitle => '课中/下课提醒显示';
+  String get liveDuringEndDisplayEntryTitle => '课中与下课提醒显示';
 
   @override
   String get liveKeepAliveEntryTitle => '后台保活';
@@ -2042,7 +2041,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get duringClassReminderTitle => '课中 / 下课提醒';
+  String get duringClassReminderTitle => '课中与下课提醒';
 
   @override
   String get duringClassReminderSubtitle => '上课后到下课前的展示';
@@ -2077,7 +2076,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get duringClassStatusNotificationPersistent => '课中持续显示普通通知';
 
   @override
-  String get enableIslandDisplayTitle => '展示超级岛 / 灵动岛';
+  String get enableIslandDisplayTitle => '展示超级岛';
 
   @override
   String get enableIslandDisplaySubtitle => '关闭后不触发系统超级岛';
@@ -2766,7 +2765,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '下课前 $minutes 分钟切到超级岛 / 重点提醒';
+    return '下课前 $minutes 分钟切到超级岛与重点提醒';
   }
 
   @override
@@ -3105,7 +3104,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '1. HyperOS 3.0.300 及以上才支持超级岛；如果系统版本不够，应用仍可正常发普通提醒。';
 
   @override
-  String get guideFinalTip2 => '2. 先在设置页调整“上课前弹出”和“课中 / 临近下课提醒”的阈值。';
+  String get guideFinalTip2 => '2. 先在设置页调整“上课前弹出”和“课中与临近下课提醒”的阈值。';
 
   @override
   String get guideFinalTip3 => '3. 完成系统权限设置后，再用测试通知验证；如果岛区还是偶尔消失，优先检查自启动和省电策略。';
@@ -9897,14 +9896,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveReminderTimingEntryTitle => '提醒時段';
 
   @override
-  String get liveReminderTimingEntrySubtitle =>
-      '上課前、課中/下課提醒開關，以及下課前多久切到超級島 / 重點提醒';
+  String get liveReminderTimingEntrySubtitle => '上課前、課中與下課提醒，以及重點提醒切入時機';
 
   @override
   String get liveBeforeClassDisplayEntryTitle => '上課前提醒顯示';
 
   @override
-  String get liveDuringEndDisplayEntryTitle => '課中/下課提醒顯示';
+  String get liveDuringEndDisplayEntryTitle => '課中與下課提醒顯示';
 
   @override
   String get liveKeepAliveEntryTitle => '後台保活';
@@ -9939,7 +9937,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get duringClassReminderTitle => '課中 / 下課提醒';
+  String get duringClassReminderTitle => '課中與下課提醒';
 
   @override
   String get duringClassReminderSubtitle => '只影響上課後到下課前的展示';
@@ -9975,7 +9973,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '上課後持續顯示普通課中通知，到下課提醒前再切換';
 
   @override
-  String get enableIslandDisplayTitle => '支持展示超級島/靈動島';
+  String get enableIslandDisplayTitle => '展示超級島';
 
   @override
   String get enableIslandDisplaySubtitle => '關閉後不會再尝試觸發系統超級島';
@@ -10650,7 +10648,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '在距離下課前 $minutes 分鐘切到超級島 / 重點提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '在距離下課前 $minutes 分鐘切到超級島與重點提醒，並在最後 $seconds 秒切到秒級倒數';
   }
 
   @override
@@ -10876,7 +10874,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不够，應用仍可正常發普通提醒。';
 
   @override
-  String get guideFinalTip2 => '2. 先在設定頁調整“上課前弹出”和“課中 / 臨近下課提醒”的阈值。';
+  String get guideFinalTip2 => '2. 先在設定頁調整「上課前弹出」和「課中與臨近下課提醒」的閾值。';
 
   @override
   String get guideFinalTip3 => '3. 完成系統權限設定後，再用測試通知驗證；如果島区還是偶尔消失，優先檢查自啟動和省電策略。';
@@ -17676,14 +17674,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveReminderTimingEntryTitle => '提醒時段';
 
   @override
-  String get liveReminderTimingEntrySubtitle =>
-      '上課前、課中/下課提醒開關，以及下課前多久切到超級島 / 重點提醒';
+  String get liveReminderTimingEntrySubtitle => '上課前、課中與下課提醒，以及重點提醒切入時機';
 
   @override
   String get liveBeforeClassDisplayEntryTitle => '上課前提醒顯示';
 
   @override
-  String get liveDuringEndDisplayEntryTitle => '課中/下課提醒顯示';
+  String get liveDuringEndDisplayEntryTitle => '課中與下課提醒顯示';
 
   @override
   String get liveKeepAliveEntryTitle => '後台保活';
@@ -17718,7 +17715,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get duringClassReminderTitle => '課中 / 下課提醒';
+  String get duringClassReminderTitle => '課中與下課提醒';
 
   @override
   String get duringClassReminderSubtitle => '只影響上課後到下課前的展示';
@@ -17754,7 +17751,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '上課後持續顯示普通課中通知，到下課提醒前再切換';
 
   @override
-  String get enableIslandDisplayTitle => '支持展示超級島/靈動島';
+  String get enableIslandDisplayTitle => '展示超級島';
 
   @override
   String get enableIslandDisplaySubtitle => '關閉後不會再尝試觸發系統超級島';
@@ -18429,7 +18426,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '在距離下課前 $minutes 分鐘切到超級島 / 重點提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '在距離下課前 $minutes 分鐘切到超級島與重點提醒，並在最後 $seconds 秒切到秒級倒數';
   }
 
   @override
@@ -18655,7 +18652,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不够，應用仍可正常發普通提醒。';
 
   @override
-  String get guideFinalTip2 => '2. 先在設定頁調整“上課前弹出”和“課中 / 臨近下課提醒”的阈值。';
+  String get guideFinalTip2 => '2. 先在設定頁調整「上課前弹出」和「課中與臨近下課提醒」的閾值。';
 
   @override
   String get guideFinalTip3 => '3. 完成系統權限設定後，再用測試通知驗證；如果島区還是偶尔消失，優先檢查自啟動和省電策略。';

@@ -1128,9 +1128,9 @@
   "generateAction": "生成",
   "liveSettingsTitle": "超级岛与通知",
   "liveReminderTimingEntryTitle": "提醒时段",
-  "liveReminderTimingEntrySubtitle": "上课前、课中/下课提醒开关，以及下课前多久切到超级岛 / 重点提醒",
+  "liveReminderTimingEntrySubtitle": "上课前、课中与下课提醒，以及重点提醒切入时机",
   "liveBeforeClassDisplayEntryTitle": "上课前提醒显示",
-  "liveDuringEndDisplayEntryTitle": "课中/下课提醒显示",
+  "liveDuringEndDisplayEntryTitle": "课中与下课提醒显示",
   "liveKeepAliveEntryTitle": "后台保活",
   "liveKeepAliveEntrySubtitle": "隐藏后台、后台保活辅助服务和权限入口",
   "liveTestingEntryTitle": "测试与诊断",
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "duringClassReminderTitle": "课中 / 下课提醒",
+  "duringClassReminderTitle": "课中与下课提醒",
   "duringClassReminderSubtitle": "上课后到下课前的展示",
   "liveClassReminderLeadTitle": "重点提醒切入时机",
   "liveClassReminderLeadOptionImmediate": "一上课就切换",
@@ -1166,7 +1166,7 @@
   "duringClassStatusNotificationImmediate": "上课后保留状态栏通知",
   "duringClassStatusNotificationBeforeEnd": "重点提醒前保留普通通知",
   "duringClassStatusNotificationPersistent": "课中持续显示普通通知",
-  "enableIslandDisplayTitle": "展示超级岛 / 灵动岛",
+  "enableIslandDisplayTitle": "展示超级岛",
   "enableIslandDisplaySubtitle": "关闭后不触发系统超级岛",
   "liveTimeThresholdTitle": "时间阈值",
   "liveTimeThresholdSubtitle": "控制课前弹出与秒级倒计时。",
@@ -1596,7 +1596,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "下课前 {minutes} 分钟切到超级岛 / 重点提醒",
+  "liveClassReminderLeadSummaryIsland": "下课前 {minutes} 分钟切到超级岛与重点提醒",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1739,7 +1739,7 @@
   "guideImportMethodExtra": "如果你会抓包、网页调试或 JavaScript，也欢迎参与学校教务适配补充，让更多学校能直接导入。",
   "guideFinalTipsTitle": "最后再看这 3 条",
   "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超级岛；如果系统版本不够，应用仍可正常发普通提醒。",
-  "guideFinalTip2": "2. 先在设置页调整“上课前弹出”和“课中 / 临近下课提醒”的阈值。",
+  "guideFinalTip2": "2. 先在设置页调整“上课前弹出”和“课中与临近下课提醒”的阈值。",
   "guideFinalTip3": "3. 完成系统权限设置后，再用测试通知验证；如果岛区还是偶尔消失，优先检查自启动和省电策略。",
   "guidePrivacyHelperRequireConsent": "你勾选同意后，代表你已阅读并同意上述友盟相关说明、隐私内容与免责提示。",
   "guidePrivacyHelperViewOnly": "这里保留与首次启动一致的隐私、第三方 SDK 与免责说明，方便你随时查看；当前页面不需要再次勾选同意。",

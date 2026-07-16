@@ -2028,13 +2028,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveReminderTimingEntrySubtitle =>
-      '授業前・授業中/終了リマインダーの切替、および終了前にスーパーアイランド/フォーカスリマインダーに切り替え';
+      '授業前・授業中と終了リマインダー、およびフォーカス切替タイミング';
 
   @override
   String get liveBeforeClassDisplayEntryTitle => '授業前リマインダー表示';
 
   @override
-  String get liveDuringEndDisplayEntryTitle => '授業中/終了リマインダー表示';
+  String get liveDuringEndDisplayEntryTitle => '授業中と終了リマインダー表示';
 
   @override
   String get liveKeepAliveEntryTitle => 'バックグラウンド常駐';
@@ -2070,13 +2070,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get duringClassReminderTitle => '授業中/終了リマインダー';
+  String get duringClassReminderTitle => '授業中と終了リマインダー';
 
   @override
   String get duringClassReminderSubtitle => '授業開始後から終了前までの表示にのみ影響';
 
   @override
-  String get liveClassReminderLeadTitle => '終了前にスーパーアイランド/フォーカスリマインダーに切り替え';
+  String get liveClassReminderLeadTitle => 'フォーカス切替タイミング';
 
   @override
   String get liveClassReminderLeadOptionImmediate => '授業開始と同時に切替';
@@ -2107,7 +2107,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '授業開始後も通常授業中通知を継続表示し、終了リマインダー前に切替';
 
   @override
-  String get enableIslandDisplayTitle => 'スーパーアイランド/ダイナミックアイランド表示対応';
+  String get enableIslandDisplayTitle => 'スーパーアイランドを表示';
 
   @override
   String get enableIslandDisplaySubtitle => 'オフにするとシステムスーパーアイランドのトリガーを停止';
@@ -2808,7 +2808,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '終了$minutes分前にスーパーアイランド/フォーカスリマインダーに切替、最後の$seconds秒で秒単位カウントダウンに切替';
+    return '終了$minutes分前にスーパーアイランドとフォーカスリマインダーに切替、最後の$seconds秒で秒単位カウントダウンに切替';
   }
 
   @override
@@ -3149,7 +3149,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guideFinalTip2 =>
-      '2. まず設定ページで「授業前ポップアップ」と「授業中/終了間近リマインダー」のしきい値を調整。';
+      '2. まず設定ページで「授業前ポップアップ」と「授業中と終了間近リマインダー」のしきい値を調整。';
 
   @override
   String get guideFinalTip3 =>
