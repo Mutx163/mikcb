@@ -1,6 +1,10 @@
-# 轻屿课表 — 仅显示本应用 Warn/Error 日志（过滤系统 AssetManager2、MIUI 输入等噪音）
+# 轻屿课表 — 本应用 logcat（默认 Warn+，调试可用 -MinLevel I）
 param(
-    [switch]$IncludeProd
+    [switch]$IncludeProd,
+
+    # W=Warn+（默认，噪音少） I=Info+（调试更全） D=Debug+ V=Verbose
+    [ValidateSet("W", "I", "D", "V")]
+    [string]$MinLevel = "W"
 )
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -29,7 +33,7 @@ function Get-RunningPid([string]$packageName) {
     return $null
 }
 
-Write-Host "等待轻屿课表调试/性能进程…（请先在 Cursor 用 mikcb (debug) 或 mikcb (profile) 按 F5）" -ForegroundColor Cyan
+Write-Host "等待轻屿课表进程…（先 flutter run --flavor dev / debug_run.ps1）" -ForegroundColor Cyan
 $appPid = $null
 $activePkg = $null
 while (-not $appPid) {
@@ -55,13 +59,13 @@ while (-not $appPid) {
 
 Write-Host ""
 if ($activePkg -eq $prodPackage) {
-    Write-Host "已附着：$activePkg (PID $appPid) [正式版 · 不可 F5 调试]" -ForegroundColor Yellow
-    Write-Host "提示：正式版没有 JDWP，Cursor 热重载无效。请改用 mikcb (debug) 启动。" -ForegroundColor Yellow
+    Write-Host "已附着：$activePkg (PID $appPid) [正式版]" -ForegroundColor Yellow
+    Write-Host "提示：正式版无 JDWP。调试请用 --flavor dev。" -ForegroundColor Yellow
 } else {
     Write-Host "已附着：$activePkg (PID $appPid)" -ForegroundColor Green
 }
-Write-Host "级别：Warn / Error  |  按 Ctrl+C 停止" -ForegroundColor DarkGray
+Write-Host "级别：*:$MinLevel  |  按 Ctrl+C 停止" -ForegroundColor DarkGray
 Write-Host "常见 tag：MainActivity、flutter、LiveUpdate、KeepAliveAccessibility、UmengDiagnostic" -ForegroundColor DarkGray
 Write-Host ""
 
-& $adb logcat --pid=$appPid -v color *:W
+& $adb logcat --pid=$appPid -v color *:$MinLevel
