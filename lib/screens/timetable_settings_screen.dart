@@ -850,7 +850,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
-            const SizedBox(height: 8),
             HyperosSliderTile(
               title: l10n.frostedSheetTintLabel,
               value: _draft.frostedSheetTintAlpha,
@@ -865,7 +864,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
-            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -3065,9 +3063,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
         title: l10n.homeWidgetCountdownLeadTitle,
         subtitle: l10n.homeWidgetCountdownLeadSubtitle,
         edgeToEdge: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+        child: HyperosControlCardRows(
           children: [
             HyperosSelectTile<int>(
               label: l10n.homeWidgetCountdownLeadTitle,
@@ -3099,9 +3095,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       ),
       4 => HyperosControlCard(
         title: l10n.homeWidgetHeightAdjustTitle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+        edgeToEdge: true,
+        child: HyperosControlCardRows(
           children: [
             HyperosSliderTile(
               title: _widgetHeightAdjustmentLabel(l10n),
@@ -3114,7 +3109,6 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                 debounce: true,
               ),
             ),
-            const SizedBox(height: 12),
             HyperosSliderTile(
               title: l10n.homeWidgetCornerRadiusTitle,
               valueLabel: '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
@@ -3378,11 +3372,15 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ),
       ),
       3 => const HyperosSectionGap(),
+      // Prefer [HyperosControlCardRows] (or [HyperosListGroup] when there is no
+      // card header/subtitle) so Select/Slider tiles get correct first/last
+      // padding. A bare Column + SizedBox makes every row think it is both
+      // first and last, which looks glued-to-top on the first row and overly
+      // padded on the rest.
       4 => HyperosControlCard(
         subtitle: l10n.layoutEntrySubtitle,
         edgeToEdge: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: HyperosControlCardRows(
           children: [
             HyperosSelectTile<SectionTimeDisplayMode>(
               label: l10n.layoutTimeColumnDisplayLabel,
@@ -3397,7 +3395,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 );
               },
             ),
-            const SizedBox(height: 12),
             HyperosSelectTile<TimetableTimeColumnWidthMode>(
               label: l10n.layoutTimeColumnWidthLabel,
               items: {
@@ -3411,7 +3408,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 );
               },
             ),
-            const SizedBox(height: 12),
             HyperosSelectTile<BackToCurrentWeekButtonStyle>(
               label: l10n.layoutBackToCurrentWeekButtonStyleLabel,
               items: {
@@ -3425,10 +3421,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 );
               },
             ),
-            const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+              padding: const EdgeInsets.fromLTRB(
+                HyperosControlCardScope.defaultHorizontalPadding,
+                0,
+                HyperosControlCardScope.defaultHorizontalPadding,
+                8,
               ),
               child: Text(
                 l10n.layoutBackToCurrentWeekButtonStyleHelper,
@@ -3437,8 +3435,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               ),
             ),
             if (_draft.timetableBackToCurrentWeekButtonStyle ==
-                BackToCurrentWeekButtonStyle.floating) ...[
-              const SizedBox(height: 12),
+                BackToCurrentWeekButtonStyle.floating)
               HyperosSliderTile(
                 title: l10n.layoutBackToCurrentWeekButtonOpacityLabel(
                   (_draft.timetableFloatingBackToCurrentWeekButtonOpacity * 100)
@@ -3455,8 +3452,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                   debounce: true,
                 ),
               ),
-            ],
-            const SizedBox(height: 12),
             HyperosSliderTile(
               title: l10n.layoutCourseCardGapLabel(
                 _draft.timetableCourseCardGap.toStringAsFixed(1),
@@ -3470,7 +3465,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 debounce: true,
               ),
             ),
-            const SizedBox(height: 12),
             HyperosSliderTile(
               title: l10n.layoutSectionHeightLabel(
                 _draft.sectionHeight.toStringAsFixed(0),
@@ -3487,7 +3481,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     )
                   : null,
             ),
-            const SizedBox(height: 12),
             HyperosSliderTile(
               title: l10n.layoutCompactFontSizeLabel(
                 _draft.compactFontSize.toStringAsFixed(1),
@@ -3501,7 +3494,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 debounce: true,
               ),
             ),
-            const SizedBox(height: 12),
             HyperosSliderTile(
               title: l10n.layoutCourseCardFontSizeLabel(
                 _draft.courseCardFontSize.toStringAsFixed(1),
@@ -3599,36 +3591,31 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         text: l10n.layoutCourseCardDisplaySubtitle,
       ),
       9 => const HyperosSectionGap(),
-      10 => HyperosControlCard(
-        edgeToEdge: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            HyperosSelectTile<CourseCardVerticalAlign>(
-              label: l10n.layoutVerticalAlignLabel,
-              items: {
-                for (final v in CourseCardVerticalAlign.values)
-                  courseCardVerticalAlignLabel(l10n, v): v,
-              },
-              value: _draft.courseCardVerticalAlign,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(courseCardVerticalAlign: value));
-              },
-            ),
-            const SizedBox(height: 12),
-            HyperosSelectTile<CourseCardHorizontalAlign>(
-              label: l10n.layoutHorizontalAlignLabel,
-              items: {
-                for (final v in CourseCardHorizontalAlign.values)
-                  courseCardHorizontalAlignLabel(l10n, v): v,
-              },
-              value: _draft.courseCardHorizontalAlign,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(courseCardHorizontalAlign: value));
-              },
-            ),
-          ],
-        ),
+      10 => HyperosListGroup(
+        children: [
+          HyperosSelectTile<CourseCardVerticalAlign>(
+            label: l10n.layoutVerticalAlignLabel,
+            items: {
+              for (final v in CourseCardVerticalAlign.values)
+                courseCardVerticalAlignLabel(l10n, v): v,
+            },
+            value: _draft.courseCardVerticalAlign,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(courseCardVerticalAlign: value));
+            },
+          ),
+          HyperosSelectTile<CourseCardHorizontalAlign>(
+            label: l10n.layoutHorizontalAlignLabel,
+            items: {
+              for (final v in CourseCardHorizontalAlign.values)
+                courseCardHorizontalAlignLabel(l10n, v): v,
+            },
+            value: _draft.courseCardHorizontalAlign,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(courseCardHorizontalAlign: value));
+            },
+          ),
+        ],
       ),
       11 => const HyperosSectionGap(),
       12 => HyperosControlCard(

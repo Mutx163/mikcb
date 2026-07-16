@@ -104,6 +104,15 @@ class HyperosControlCardRowScope extends InheritedWidget {
 }
 
 /// Stacks multiple full-bleed rows inside one [HyperosControlCard].
+///
+/// **Required** when a card holds more than one [HyperosSelectTile],
+/// [HyperosSwitchTile], [HyperosSliderTile], or similar preference row.
+/// Without this wrapper, every row assumes it is both first and last and the
+/// top/bottom padding looks uneven (first row glued to the top, later rows
+/// over-padded).
+///
+/// Prefer [HyperosListGroup] when there is no card title/subtitle and the
+/// whole block is only preference rows (system Settings list style).
 class HyperosControlCardRows extends StatelessWidget {
   const HyperosControlCardRows({super.key, required this.children});
 

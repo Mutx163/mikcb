@@ -392,8 +392,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         const HyperosSectionGap(),
         HyperosControlCard(
           edgeToEdge: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: HyperosControlCardRows(
             children: [
               HyperosSelectTile<LiveCountdownTextStyle>(
                 label: l10n.countdownFormatLabel,
@@ -405,7 +404,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 onChanged: (value) =>
                     _updateDisplay(display.copyWith(countdownTextStyle: value)),
               ),
-              const SizedBox(height: 4),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   HyperosControlCardScope.defaultHorizontalPadding,
@@ -459,8 +457,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         const HyperosSectionGap(),
         HyperosControlCard(
           edgeToEdge: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: HyperosControlCardRows(
             children: [
               HyperosSelectTile<MiuiIslandLabelContent>(
                 label: l10n.liveMiuiLabelContentLabel,
@@ -473,7 +470,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   display.copyWith(miuiIslandLabelContent: value),
                 ),
               ),
-              const SizedBox(height: 12),
               HyperosSelectTile<MiuiIslandLabelStyle>(
                 label: l10n.liveMiuiLabelStyleLabel,
                 items: {
@@ -486,109 +482,95 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 ),
               ),
               if (display.miuiIslandLabelStyle ==
-                  MiuiIslandLabelStyle.iconAndText) ...[
-                const SizedBox(height: 12),
+                  MiuiIslandLabelStyle.iconAndText)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal:
-                        HyperosControlCardScope.defaultHorizontalPadding,
+                  padding: const EdgeInsets.fromLTRB(
+                    HyperosControlCardScope.defaultHorizontalPadding,
+                    4,
+                    HyperosControlCardScope.defaultHorizontalPadding,
+                    8,
                   ),
-                  child: Text(
-                    l10n.liveMiuiLabelLogoTitle,
-                    style: HyperosTypography.listTitle(context),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal:
-                        HyperosControlCardScope.defaultHorizontalPadding,
-                  ),
-                  child: Text(
-                    l10n.liveMiuiLabelLogoSubtitle,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal:
-                        HyperosControlCardScope.defaultHorizontalPadding,
-                  ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: HyperosButton(
-                          label: display.miuiIslandLabelLogoPath == null
-                              ? l10n.selectImageAction
-                              : l10n.replaceImageAction,
-                          variant: HyperosButtonVariant.secondary,
-                          expand: true,
-                          onPressed: () => _pickLabelLogoImage(display),
-                        ),
+                      Text(
+                        l10n.liveMiuiLabelLogoTitle,
+                        style: HyperosTypography.listTitle(context),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.liveMiuiLabelLogoSubtitle,
+                        style: HyperosTypography.listDetail(context),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: HyperosButton(
+                              label: display.miuiIslandLabelLogoPath == null
+                                  ? l10n.selectImageAction
+                                  : l10n.replaceImageAction,
+                              variant: HyperosButtonVariant.secondary,
+                              expand: true,
+                              onPressed: () => _pickLabelLogoImage(display),
+                            ),
+                          ),
+                          if (display.miuiIslandLabelLogoPath != null) ...[
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: HyperosButton(
+                                label: l10n.deleteAction,
+                                variant: HyperosButtonVariant.destructive,
+                                expand: true,
+                                onPressed: () async {
+                                  await _deleteManagedImageArtifacts(
+                                    directoryName: _labelLogoDir,
+                                    filePrefix: widget.forDuringEnd
+                                        ? 'during_end_label_logo'
+                                        : 'before_class_label_logo',
+                                  );
+                                  _updateDisplay(
+                                    display.copyWith(
+                                      clearMiuiIslandLabelLogoPath: true,
+                                    ),
+                                    clearLabelLogoPath: true,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       if (display.miuiIslandLabelLogoPath != null) ...[
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: HyperosButton(
-                            label: l10n.deleteAction,
-                            variant: HyperosButtonVariant.destructive,
-                            expand: true,
-                            onPressed: () async {
-                              await _deleteManagedImageArtifacts(
-                                directoryName: _labelLogoDir,
-                                filePrefix: widget.forDuringEnd
-                                    ? 'during_end_label_logo'
-                                    : 'before_class_label_logo',
-                              );
-                              _updateDisplay(
-                                display.copyWith(
-                                  clearMiuiIslandLabelLogoPath: true,
-                                ),
-                                clearLabelLogoPath: true,
-                              );
-                            },
-                          ),
+                        const SizedBox(height: 12),
+                        _ImagePreview(
+                          path: display.miuiIslandLabelLogoPath!,
+                          imageCornerRadius:
+                              display.miuiIslandLabelLogoCornerRadius,
                         ),
                       ],
                     ],
                   ),
                 ),
-                if (display.miuiIslandLabelLogoPath != null) ...[
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal:
-                          HyperosControlCardScope.defaultHorizontalPadding,
-                    ),
-                    child: _ImagePreview(
-                      path: display.miuiIslandLabelLogoPath!,
-                      imageCornerRadius:
-                          display.miuiIslandLabelLogoCornerRadius,
-                    ),
+              if (display.miuiIslandLabelStyle ==
+                      MiuiIslandLabelStyle.iconAndText &&
+                  display.miuiIslandLabelLogoPath != null)
+                HyperosSliderTile(
+                  title: l10n.liveMiuiLabelLogoCornerRadiusLabel(
+                    display.miuiIslandLabelLogoCornerRadius.toStringAsFixed(0),
                   ),
-                  const SizedBox(height: 12),
-                  HyperosSliderTile(
-                    title: l10n.liveMiuiLabelLogoCornerRadiusLabel(
-                      display.miuiIslandLabelLogoCornerRadius.toStringAsFixed(
-                        0,
-                      ),
-                    ),
-                    value: display.miuiIslandLabelLogoCornerRadius.clamp(
-                      0.0,
-                      12.0,
-                    ),
-                    min: 0,
-                    max: 12,
-                    divisions: 12,
-                    onChanged: (value) => _updateDisplay(
-                      display.copyWith(miuiIslandLabelLogoCornerRadius: value),
-                      debounce: true,
-                    ),
+                  value: display.miuiIslandLabelLogoCornerRadius.clamp(
+                    0.0,
+                    12.0,
                   ),
-                ],
-                const SizedBox(height: 12),
-              ],
+                  min: 0,
+                  max: 12,
+                  divisions: 12,
+                  onChanged: (value) => _updateDisplay(
+                    display.copyWith(miuiIslandLabelLogoCornerRadius: value),
+                    debounce: true,
+                  ),
+                ),
               HyperosSliderTile(
                 title: l10n.liveMiuiLabelFontSizeLabel(
                   display.miuiIslandLabelFontSize.toStringAsFixed(0),
@@ -602,7 +584,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   debounce: true,
                 ),
               ),
-              const SizedBox(height: 12),
               HyperosSliderTile(
                 title: l10n.liveMiuiLabelOffsetXLabel(
                   display.miuiIslandLabelOffsetX.toStringAsFixed(1),
@@ -616,7 +597,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   debounce: true,
                 ),
               ),
-              const SizedBox(height: 12),
               HyperosSliderTile(
                 title: l10n.liveMiuiLabelOffsetYLabel(
                   display.miuiIslandLabelOffsetY.toStringAsFixed(1),
@@ -630,7 +610,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   debounce: true,
                 ),
               ),
-              const SizedBox(height: 12),
               HyperosSelectTile<MiuiIslandLabelFontWeight>(
                 label: l10n.liveMiuiLabelFontWeightLabel,
                 items: {
@@ -642,7 +621,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   display.copyWith(miuiIslandLabelFontWeight: value),
                 ),
               ),
-              const SizedBox(height: 12),
               HyperosSelectTile<MiuiIslandLabelRenderQuality>(
                 label: l10n.liveMiuiLabelRenderQualityLabel,
                 items: {
@@ -654,11 +632,10 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   display.copyWith(miuiIslandLabelRenderQuality: value),
                 ),
               ),
-              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   HyperosControlCardScope.defaultHorizontalPadding,
-                  0,
+                  4,
                   HyperosControlCardScope.defaultHorizontalPadding,
                   HyperosControlCardScope.defaultBodyBottomInset,
                 ),
@@ -685,106 +662,94 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       const HyperosSectionGap(),
       HyperosControlCard(
         edgeToEdge: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: HyperosControlCardRows(
           children: [
-            HyperosControlCardRowScope(
-              isFirst: true,
-              isLast: false,
-              child: HyperosSelectTile<MiuiIslandExpandedIconMode>(
-                label: l10n.liveMiuiExpandedIconLabel,
-                items: {
-                  for (final value in MiuiIslandExpandedIconMode.values)
-                    miuiIslandExpandedIconModeLabel(l10n, value): value,
-                },
-                value: display.miuiIslandExpandedIconMode,
-                onChanged: (value) {
-                  () async {
-                    if (value != MiuiIslandExpandedIconMode.customImage) {
-                      await _deleteManagedImageArtifacts(
-                        directoryName: _expandedIconDir,
-                        filePrefix: widget.forDuringEnd
-                            ? 'during_end_expanded_icon'
-                            : 'before_class_expanded_icon',
-                      );
-                    }
-                    _updateDisplay(
-                      display.copyWith(
-                        miuiIslandExpandedIconMode: value,
-                        clearMiuiIslandExpandedIconPath:
-                            value != MiuiIslandExpandedIconMode.customImage,
-                      ),
-                      clearExpandedIconPath:
-                          value != MiuiIslandExpandedIconMode.customImage,
+            HyperosSelectTile<MiuiIslandExpandedIconMode>(
+              label: l10n.liveMiuiExpandedIconLabel,
+              items: {
+                for (final value in MiuiIslandExpandedIconMode.values)
+                  miuiIslandExpandedIconModeLabel(l10n, value): value,
+              },
+              value: display.miuiIslandExpandedIconMode,
+              onChanged: (value) {
+                () async {
+                  if (value != MiuiIslandExpandedIconMode.customImage) {
+                    await _deleteManagedImageArtifacts(
+                      directoryName: _expandedIconDir,
+                      filePrefix: widget.forDuringEnd
+                          ? 'during_end_expanded_icon'
+                          : 'before_class_expanded_icon',
                     );
-                  }();
-                },
-              ),
+                  }
+                  _updateDisplay(
+                    display.copyWith(
+                      miuiIslandExpandedIconMode: value,
+                      clearMiuiIslandExpandedIconPath:
+                          value != MiuiIslandExpandedIconMode.customImage,
+                    ),
+                    clearExpandedIconPath:
+                        value != MiuiIslandExpandedIconMode.customImage,
+                  );
+                }();
+              },
             ),
             if (display.miuiIslandExpandedIconMode ==
-                MiuiIslandExpandedIconMode.customImage) ...[
-              const SizedBox(height: 12),
+                MiuiIslandExpandedIconMode.customImage)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+                padding: const EdgeInsets.fromLTRB(
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  4,
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  HyperosControlCardScope.defaultBodyBottomInset,
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: HyperosButton(
-                        label: display.miuiIslandExpandedIconPath == null
-                            ? l10n.selectImageAction
-                            : l10n.replaceImageAction,
-                        variant: HyperosButtonVariant.secondary,
-                        expand: true,
-                        onPressed: () => _pickExpandedIconImage(display),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: HyperosButton(
+                            label: display.miuiIslandExpandedIconPath == null
+                                ? l10n.selectImageAction
+                                : l10n.replaceImageAction,
+                            variant: HyperosButtonVariant.secondary,
+                            expand: true,
+                            onPressed: () => _pickExpandedIconImage(display),
+                          ),
+                        ),
+                        if (display.miuiIslandExpandedIconPath != null) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: HyperosButton(
+                              label: l10n.deleteAction,
+                              variant: HyperosButtonVariant.destructive,
+                              expand: true,
+                              onPressed: () async {
+                                await _deleteManagedImageArtifacts(
+                                  directoryName: _expandedIconDir,
+                                  filePrefix: widget.forDuringEnd
+                                      ? 'during_end_expanded_icon'
+                                      : 'before_class_expanded_icon',
+                                );
+                                _updateDisplay(
+                                  display.copyWith(
+                                    clearMiuiIslandExpandedIconPath: true,
+                                  ),
+                                  clearExpandedIconPath: true,
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (display.miuiIslandExpandedIconPath != null) ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: HyperosButton(
-                          label: l10n.deleteAction,
-                          variant: HyperosButtonVariant.destructive,
-                          expand: true,
-                          onPressed: () async {
-                            await _deleteManagedImageArtifacts(
-                              directoryName: _expandedIconDir,
-                              filePrefix: widget.forDuringEnd
-                                  ? 'during_end_expanded_icon'
-                                  : 'before_class_expanded_icon',
-                            );
-                            _updateDisplay(
-                              display.copyWith(
-                                clearMiuiIslandExpandedIconPath: true,
-                              ),
-                              clearExpandedIconPath: true,
-                            );
-                          },
-                        ),
-                      ),
+                      const SizedBox(height: 12),
+                      _ImagePreview(path: display.miuiIslandExpandedIconPath!),
                     ],
                   ],
                 ),
               ),
-              if (display.miuiIslandExpandedIconPath != null) ...[
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    HyperosControlCardScope.defaultHorizontalPadding,
-                    0,
-                    HyperosControlCardScope.defaultHorizontalPadding,
-                    HyperosControlCardScope.defaultBodyBottomInset,
-                  ),
-                  child: _ImagePreview(
-                    path: display.miuiIslandExpandedIconPath!,
-                  ),
-                ),
-              ] else
-                const SizedBox(
-                  height: HyperosControlCardScope.defaultBodyBottomInset,
-                ),
-            ],
           ],
         ),
       ),

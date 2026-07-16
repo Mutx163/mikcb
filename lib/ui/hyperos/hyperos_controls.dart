@@ -38,6 +38,13 @@ class HyperosControlCardInset extends StatelessWidget {
 
 /// White card for sliders, button groups, and custom controls (Miuix Card +
 /// preference section layout).
+///
+/// **Multi-row full-bleed content:** wrap rows in [HyperosControlCardRows].
+/// Do not stack [HyperosSelectTile] / [HyperosSliderTile] with [SizedBox]
+/// spacers in a plain [Column] — those tiles only get correct first/last
+/// padding through [HyperosControlCardRows] or [HyperosListGroup].
+///
+/// **List-only blocks** (no title/subtitle): prefer [HyperosListGroup] instead.
 class HyperosControlCard extends StatelessWidget {
   const HyperosControlCard({
     super.key,
@@ -53,6 +60,7 @@ class HyperosControlCard extends StatelessWidget {
 
   /// When true the card body stays edge-to-edge (e.g. [HyperosSelectTile] rows).
   /// Headerless cards with only inset content default to [headerlessBodyPadding].
+  /// Multi-row edge-to-edge bodies must use [HyperosControlCardRows].
   final bool edgeToEdge;
 
   /// Stadium outline for child-only status rows (e.g. connected account strip).
@@ -312,29 +320,44 @@ EdgeInsets _hyperosSliderTilePadding(BuildContext context) {
   final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
   final cardScope = HyperosControlCardScope.maybeOf(context);
 
-  // Inside [HyperosListGroup]: use the same first/last row insets as switches
-  // and select tiles so the track is not glued to the card edge.
+  // Inside [HyperosListGroup] or [HyperosControlCardRows]: same first/last
+  // row insets as switches and select tiles.
   if (listScope != null) {
     return HyperosTokens.rowPadding(
       isFirst: listScope.isFirst,
       isLast: listScope.isLast,
     );
   }
-
-  // Mirrors [hyperosSelectRowLayout]: when no explicit row scope exists but the
-  // tile sits inside a [HyperosControlCard], treat it as the card's last block.
-  final isLast = cardRowScope?.isLast ?? cardScope != null;
-
-  var bottom = 0.0;
-  if (cardScope != null && isLast) {
-    bottom = cardScope.bodyBottomInset;
+  if (cardRowScope != null) {
+    var padding = HyperosTokens.rowPadding(
+      isFirst: cardRowScope.isFirst,
+      isLast: cardRowScope.isLast,
+    );
+    if (cardScope != null && cardRowScope.isLast) {
+      padding = padding.copyWith(
+        bottom: padding.bottom + cardScope.bodyBottomInset,
+      );
+    }
+    return padding;
   }
 
-  return EdgeInsets.fromLTRB(
+  // Bare [HyperosControlCard] with a single slider (no row scope): treat as
+  // the card's only full-bleed block. Multi-row cards must use
+  // [HyperosControlCardRows] instead of a plain Column + SizedBox.
+  if (cardScope != null) {
+    return EdgeInsets.fromLTRB(
+      HyperosControlCardScope.defaultHorizontalPadding,
+      12,
+      HyperosControlCardScope.defaultHorizontalPadding,
+      cardScope.bodyBottomInset,
+    );
+  }
+
+  return const EdgeInsets.fromLTRB(
     HyperosControlCardScope.defaultHorizontalPadding,
-    cardRowScope?.isFirst == true || cardScope != null ? 12 : 0,
+    12,
     HyperosControlCardScope.defaultHorizontalPadding,
-    bottom > 0 ? bottom : 12,
+    12,
   );
 }
 

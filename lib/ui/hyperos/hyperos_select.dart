@@ -9,6 +9,15 @@ import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 
+/// Row padding for [HyperosSelectTile] (and similar chevron rows).
+///
+/// Correct first/last insets require one of:
+/// - [HyperosListGroup] → [HyperosListTileScope]
+/// - [HyperosControlCardRows] inside [HyperosControlCard] → [HyperosControlCardRowScope]
+///
+/// A bare [Column] of select tiles under [HyperosControlCard] has no row scope;
+/// each tile then defaults to first+last (and absorbs [bodyBottomInset]), which
+/// is only valid for a **single** full-bleed child.
 ({double minHeight, EdgeInsets padding}) hyperosSelectRowLayout(
   BuildContext context, {
   bool twoLine = false,
