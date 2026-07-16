@@ -32,11 +32,11 @@ class TimetableProfilesScreen extends StatelessWidget {
           ],
           child: HyperosListView(
             children: [
+              HyperosSectionLabel(text: l10n.timetableManagementSectionTitle),
               HyperosListGroup(
                 children: [
                   for (var index = 0; index < profiles.length; index++)
                     _TimetableProfileTile(
-                      index: index,
                       profile: profiles[index],
                       isActive: profiles[index].id == activeProfileId,
                       canDelete:
@@ -244,9 +244,8 @@ class TimetableProfilesScreen extends StatelessWidget {
   }
 }
 
-class _TimetableProfileTile extends StatelessWidget {
+class _TimetableProfileTile extends StatefulWidget {
   const _TimetableProfileTile({
-    required this.index,
     required this.profile,
     required this.isActive,
     required this.canDelete,
@@ -258,7 +257,6 @@ class _TimetableProfileTile extends StatelessWidget {
     this.onDelete,
   });
 
-  final int index;
   final TimetableProfile profile;
   final bool isActive;
   final bool canDelete;
@@ -270,133 +268,150 @@ class _TimetableProfileTile extends StatelessWidget {
   final VoidCallback? onDelete;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
-    final cardColor = HyperosColors.card(context);
-    final highlightColor = HyperosColors.rowHighlight(context);
+  State<_TimetableProfileTile> createState() => _TimetableProfileTileState();
+}
 
-    final row = ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: HyperosTokens.listRowMinHeight,
-      ),
-      child: Padding(
-        padding: HyperosTokens.rowPadding(
-          isFirst: HyperosListTileScope.maybeOf(context)?.isFirst ?? true,
-          isLast: HyperosListTileScope.maybeOf(context)?.isLast ?? true,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+class _TimetableProfileTileState extends State<_TimetableProfileTile> {
+  Future<void> _openMoreMenu() async {
+    final l10n = AppLocalizations.of(context)!;
+    final destructiveStyle = TextStyle(color: HyperosColors.error(context));
+
+    final value = await showHyperosSheet<String>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: widget.profile.name,
+        child: HyperosChoiceGroup(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: (isActive ? theme.colors.primary : theme.colors.muted)
-                    .withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(10),
+            if (!widget.isActive)
+              HyperosChoiceTile(
+                title: l10n.switchToThisTimetable,
+                onTap: () => Navigator.pop(sheetContext, 'switch'),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                '${index + 1}',
-                style: theme.typography.body.sm.copyWith(
-                  color: isActive
-                      ? theme.colors.primary
-                      : theme.colors.mutedForeground,
-                  fontWeight: FontWeight.w800,
-                ),
+            HyperosChoiceTile(
+              title: l10n.renameAction,
+              onTap: () => Navigator.pop(sheetContext, 'rename'),
+            ),
+            HyperosChoiceTile(
+              title: l10n.duplicateAction,
+              onTap: () => Navigator.pop(sheetContext, 'duplicate'),
+            ),
+            if (widget.isActive)
+              HyperosChoiceTile(
+                title: l10n.clearCoursesAction,
+                enabled:
+                    widget.profile.courses.isNotEmpty && widget.onClear != null,
+                titleStyle: destructiveStyle,
+                onTap:
+                    widget.profile.courses.isNotEmpty && widget.onClear != null
+                    ? () => Navigator.pop(sheetContext, 'clear')
+                    : null,
               ),
+            HyperosChoiceTile(
+              title: l10n.deleteAction,
+              enabled: widget.canDelete && widget.onDelete != null,
+              titleStyle: destructiveStyle,
+              onTap: widget.canDelete && widget.onDelete != null
+                  ? () => Navigator.pop(sheetContext, 'delete')
+                  : null,
             ),
-            const SizedBox(width: HyperosTokens.rowContentGap),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    profile.name,
-                    style: HyperosTypography.listTitle(context).copyWith(
-                      color: isActive
-                          ? theme.colors.primary
-                          : HyperosColors.primaryText(context),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isPartnerImported
-                        ? l10n.coupleTimetablePartnerReadOnlyBadge
-                        : l10n.coursesAndWeekSummary(
-                            profile.courses.length,
-                            profile.currentWeek,
-                          ),
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ],
-              ),
-            ),
-            if (!isPartnerImported)
-              PopupMenuButton<String>(
-              tooltip: l10n.moreActionsTooltip,
-              onSelected: (value) {
-                switch (value) {
-                  case 'switch':
-                    onSwitch();
-                  case 'rename':
-                    onRename();
-                  case 'duplicate':
-                    onDuplicate();
-                  case 'clear':
-                    onClear?.call();
-                  case 'delete':
-                    onDelete?.call();
-                }
-              },
-              itemBuilder: (context) => [
-                if (!isActive)
-                  PopupMenuItem(
-                    value: 'switch',
-                    child: Text(l10n.switchToThisTimetable),
-                  ),
-                PopupMenuItem(value: 'rename', child: Text(l10n.renameAction)),
-                PopupMenuItem(
-                  value: 'duplicate',
-                  child: Text(l10n.duplicateAction),
-                ),
-                if (isActive || canDelete) const PopupMenuDivider(),
-                if (isActive)
-                  PopupMenuItem(
-                    value: 'clear',
-                    enabled: profile.courses.isNotEmpty,
-                    child: Text(
-                      l10n.clearCoursesAction,
-                      style: TextStyle(color: theme.colors.destructive),
-                    ),
-                  ),
-                PopupMenuItem(
-                  value: 'delete',
-                  enabled: canDelete,
-                  child: Text(
-                    l10n.deleteAction,
-                    style: TextStyle(
-                      color: canDelete
-                          ? theme.colors.destructive
-                          : theme.colors.mutedForeground,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (!isPartnerImported && !isActive) ...[
-              SizedBox(width: HyperosTokens.titleChevronGap),
-              const HyperosChevron(),
-            ],
           ],
         ),
       ),
     );
+    if (!mounted || value == null) {
+      return;
+    }
+    // Let the sheet finish dismissing before opening rename/confirm dialogs.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) {
+      return;
+    }
+    switch (value) {
+      case 'switch':
+        widget.onSwitch();
+      case 'rename':
+        widget.onRename();
+      case 'duplicate':
+        widget.onDuplicate();
+      case 'clear':
+        widget.onClear?.call();
+      case 'delete':
+        widget.onDelete?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
+    final primaryText = HyperosColors.primaryText(context);
+    final primaryColor = HyperosColors.primary(context);
+
+    final summary = widget.isPartnerImported
+        ? l10n.coupleTimetablePartnerReadOnlyBadge
+        : l10n.coursesAndWeekSummary(
+            widget.profile.courses.length,
+            widget.profile.currentWeek,
+          );
+
+    // Match [HyperosListTile] trailing chrome exactly: same row padding
+    // ([hyperosChevronRowPadding]), same [titleChevronGap], bare
+    // [HyperosChevron] with no custom size box or extra margin.
+    final row = hyperosListRowShell(
+      padding: hyperosChevronRowPadding(context),
+      minHeight: HyperosTokens.listRowTwoLineMinHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.profile.name,
+                  style: HyperosTypography.listTitle(context).copyWith(
+                    color: widget.isActive ? primaryColor : primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  summary,
+                  style: HyperosTypography.listDetail(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (!widget.isPartnerImported) ...[
+            HyperosIconButton(
+              icon: Icons.more_horiz_rounded,
+              tooltip: l10n.moreActionsTooltip,
+              // Same gray as [HyperosChevron] / settings trailing actions.
+              color: HyperosColors.actionIcon(context),
+              onPressed: _openMoreMenu,
+            ),
+            SizedBox(width: HyperosTokens.titleChevronGap),
+            // Checkmark uses the kit default (22), same as [HyperosChoiceTile];
+            // do not shrink it into the chevron glyph box.
+            if (widget.isActive)
+              const HyperosSelectedCheckmark()
+            else
+              const HyperosChevron(),
+          ],
+        ],
+      ),
+    );
 
     return HyperosPressableRow(
-      onTap: isActive ? null : onSwitch,
+      onTap: widget.isActive || widget.isPartnerImported
+          ? null
+          : widget.onSwitch,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: row,
