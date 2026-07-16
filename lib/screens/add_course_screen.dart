@@ -694,6 +694,86 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
+  Widget _buildScheduleConflictLinks(int index, AppLocalizations l10n) {
+    final entry = _scheduleEntries[index];
+    final provider = context.read<TimetableProvider>();
+    final partners = provider.courseConflictMap[entry.id] ?? const <Course>[];
+    if (partners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final partner in partners)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: HyperosPressableRow(
+              onTap: () => _openPartnerSchedule(partner),
+              backgroundColor: HyperosColors.error(
+                context,
+              ).withValues(alpha: 0.08),
+              highlightColor: HyperosColors.rowHighlight(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 18,
+                      color: HyperosColors.error(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.courseConflictWithCourse(partner.name),
+                        style: HyperosTypography.listDetail(
+                          context,
+                        ).copyWith(color: HyperosColors.error(context)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      l10n.courseConflictOpenPartnerAction,
+                      style: HyperosTypography.listDetail(
+                        context,
+                      ).copyWith(color: HyperosColors.primary(context)),
+                    ),
+                    const SizedBox(width: 4),
+                    const HyperosChevron(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _openPartnerSchedule(Course partner) {
+    CourseGroup? group;
+    for (final candidate in context.read<TimetableProvider>().courseGroups) {
+      if (candidate.courses.any((course) => course.id == partner.id)) {
+        group = candidate;
+        break;
+      }
+    }
+    if (group == null || !mounted) {
+      return;
+    }
+    Navigator.of(context).push(
+      HyperosPageRoute(
+        settings: const RouteSettings(name: '/course/edit-partner'),
+        builder: (_) =>
+            AddCourseScreen(courseGroup: group, initialCourse: partner),
+      ),
+    );
+  }
+
   Widget _buildScheduleEntriesSection(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -802,6 +882,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           l10n: l10n,
           onTap: () => _removeScheduleEntry(index),
         ),
+      _buildScheduleConflictLinks(index, l10n),
     ], spacing: 8);
 
     if (!hasMultipleEntries) {

@@ -4506,6 +4506,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get conflictLabel => '冲突';
 
   @override
+  String get courseConflictSectionTitle => '冲突课程';
+
+  @override
+  String get courseNormalSectionTitle => '其他课程';
+
+  @override
+  String get courseConflictDetailTitle => '冲突详情';
+
+  @override
+  String get courseConflictDetailEntryTitle => '查看冲突详情';
+
+  @override
+  String get courseConflictDetailEntrySubtitle => '查看互撞排课与重叠时段';
+
+  @override
+  String courseConflictWithCourse(String name) {
+    return '与「$name」冲突';
+  }
+
+  @override
+  String get courseConflictOpenPartnerAction => '查看对方排课';
+
+  @override
+  String get courseConflictEmpty => '当前没有检测到冲突';
+
+  @override
+  String get courseConflictPairTitle => '冲突组合';
+
+  @override
   String get selectWeekTitle => '选择周次';
 
   @override
@@ -12260,6 +12289,35 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get conflictLabel => '冲突';
+
+  @override
+  String get courseConflictSectionTitle => '衝突課程';
+
+  @override
+  String get courseNormalSectionTitle => '其他課程';
+
+  @override
+  String get courseConflictDetailTitle => '衝突詳情';
+
+  @override
+  String get courseConflictDetailEntryTitle => '查看衝突詳情';
+
+  @override
+  String get courseConflictDetailEntrySubtitle => '查看互撞排課與重疊時段';
+
+  @override
+  String courseConflictWithCourse(String name) {
+    return '與「$name」衝突';
+  }
+
+  @override
+  String get courseConflictOpenPartnerAction => '查看對方排課';
+
+  @override
+  String get courseConflictEmpty => '目前沒有偵測到衝突';
+
+  @override
+  String get courseConflictPairTitle => '衝突組合';
 
   @override
   String get selectWeekTitle => '选擇周次';
@@ -20041,6 +20099,35 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get conflictLabel => '冲突';
+
+  @override
+  String get courseConflictSectionTitle => '衝突課程';
+
+  @override
+  String get courseNormalSectionTitle => '其他課程';
+
+  @override
+  String get courseConflictDetailTitle => '衝突詳情';
+
+  @override
+  String get courseConflictDetailEntryTitle => '查看衝突詳情';
+
+  @override
+  String get courseConflictDetailEntrySubtitle => '查看互撞排課與重疊時段';
+
+  @override
+  String courseConflictWithCourse(String name) {
+    return '與「$name」衝突';
+  }
+
+  @override
+  String get courseConflictOpenPartnerAction => '查看對方排課';
+
+  @override
+  String get courseConflictEmpty => '目前沒有偵測到衝突';
+
+  @override
+  String get courseConflictPairTitle => '衝突組合';
 
   @override
   String get selectWeekTitle => '选擇周次';

@@ -2360,6 +2360,22 @@
   "backToCurrentWeekAction": "이번주로",
   "nonCurrentWeekLabel": "비이번주",
   "conflictLabel": "충돌",
+  "courseConflictSectionTitle": "충돌 수업",
+  "courseNormalSectionTitle": "기타 수업",
+  "courseConflictDetailTitle": "충돌 상세",
+  "courseConflictDetailEntryTitle": "충돌 상세 보기",
+  "courseConflictDetailEntrySubtitle": "겹치는 시간과 상대 수업 확인",
+  "courseConflictWithCourse": "「{name}」와 충돌",
+  "@courseConflictWithCourse": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "courseConflictOpenPartnerAction": "상대 시간표 열기",
+  "courseConflictEmpty": "충돌이 없습니다",
+  "courseConflictPairTitle": "충돌 쌍",
   "selectWeekTitle": "주차 선택",
   "availableWeeksCount": "총 {count}주",
   "@availableWeeksCount": {

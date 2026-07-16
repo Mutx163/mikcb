@@ -2519,6 +2519,22 @@
   "backToCurrentWeekAction": "回本周",
   "nonCurrentWeekLabel": "非本周",
   "conflictLabel": "冲突",
+  "courseConflictSectionTitle": "冲突课程",
+  "courseNormalSectionTitle": "其他课程",
+  "courseConflictDetailTitle": "冲突详情",
+  "courseConflictDetailEntryTitle": "查看冲突详情",
+  "courseConflictDetailEntrySubtitle": "查看互撞排课与重叠时段",
+  "courseConflictWithCourse": "与「{name}」冲突",
+  "@courseConflictWithCourse": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "courseConflictOpenPartnerAction": "查看对方排课",
+  "courseConflictEmpty": "当前没有检测到冲突",
+  "courseConflictPairTitle": "冲突组合",
   "selectWeekTitle": "选择周次",
   "availableWeeksCount": "共 {count} 周",
   "@availableWeeksCount": {

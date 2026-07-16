@@ -2519,6 +2519,22 @@
   "backToCurrentWeekAction": "Back",
   "nonCurrentWeekLabel": "Not this week",
   "conflictLabel": "Conflict",
+  "courseConflictSectionTitle": "Conflicts",
+  "courseNormalSectionTitle": "Other courses",
+  "courseConflictDetailTitle": "Conflict details",
+  "courseConflictDetailEntryTitle": "View conflict details",
+  "courseConflictDetailEntrySubtitle": "See overlapping schedules and partners",
+  "courseConflictWithCourse": "Conflicts with “{name}”",
+  "@courseConflictWithCourse": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "courseConflictOpenPartnerAction": "Open partner schedule",
+  "courseConflictEmpty": "No conflicts detected",
+  "courseConflictPairTitle": "Conflict pair",
   "selectWeekTitle": "Select week",
   "availableWeeksCount": "{count} weeks",
   "@availableWeeksCount": {

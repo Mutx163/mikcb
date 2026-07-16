@@ -2360,6 +2360,22 @@
   "backToCurrentWeekAction": "今週に戻る",
   "nonCurrentWeekLabel": "非今週",
   "conflictLabel": "競合",
+  "courseConflictSectionTitle": "競合授業",
+  "courseNormalSectionTitle": "その他の授業",
+  "courseConflictDetailTitle": "競合の詳細",
+  "courseConflictDetailEntryTitle": "競合の詳細を見る",
+  "courseConflictDetailEntrySubtitle": "重なる時間帯と相手の授業を確認",
+  "courseConflictWithCourse": "「{name}」と競合",
+  "@courseConflictWithCourse": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "courseConflictOpenPartnerAction": "相手の排課を開く",
+  "courseConflictEmpty": "競合は検出されていません",
+  "courseConflictPairTitle": "競合ペア",
   "selectWeekTitle": "週次を選択",
   "availableWeeksCount": "全{count}週",
   "@availableWeeksCount": {

@@ -8269,6 +8269,60 @@ abstract class AppLocalizations {
   /// **'冲突'**
   String get conflictLabel;
 
+  /// No description provided for @courseConflictSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'冲突课程'**
+  String get courseConflictSectionTitle;
+
+  /// No description provided for @courseNormalSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'其他课程'**
+  String get courseNormalSectionTitle;
+
+  /// No description provided for @courseConflictDetailTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'冲突详情'**
+  String get courseConflictDetailTitle;
+
+  /// No description provided for @courseConflictDetailEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看冲突详情'**
+  String get courseConflictDetailEntryTitle;
+
+  /// No description provided for @courseConflictDetailEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看互撞排课与重叠时段'**
+  String get courseConflictDetailEntrySubtitle;
+
+  /// No description provided for @courseConflictWithCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'与「{name}」冲突'**
+  String courseConflictWithCourse(String name);
+
+  /// No description provided for @courseConflictOpenPartnerAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看对方排课'**
+  String get courseConflictOpenPartnerAction;
+
+  /// No description provided for @courseConflictEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前没有检测到冲突'**
+  String get courseConflictEmpty;
+
+  /// No description provided for @courseConflictPairTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'冲突组合'**
+  String get courseConflictPairTitle;
+
   /// No description provided for @selectWeekTitle.
   ///
   /// In zh, this message translates to:

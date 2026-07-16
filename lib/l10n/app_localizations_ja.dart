@@ -4584,6 +4584,35 @@ class AppLocalizationsJa extends AppLocalizations {
   String get conflictLabel => '競合';
 
   @override
+  String get courseConflictSectionTitle => '競合授業';
+
+  @override
+  String get courseNormalSectionTitle => 'その他の授業';
+
+  @override
+  String get courseConflictDetailTitle => '競合の詳細';
+
+  @override
+  String get courseConflictDetailEntryTitle => '競合の詳細を見る';
+
+  @override
+  String get courseConflictDetailEntrySubtitle => '重なる時間帯と相手の授業を確認';
+
+  @override
+  String courseConflictWithCourse(String name) {
+    return '「$name」と競合';
+  }
+
+  @override
+  String get courseConflictOpenPartnerAction => '相手の排課を開く';
+
+  @override
+  String get courseConflictEmpty => '競合は検出されていません';
+
+  @override
+  String get courseConflictPairTitle => '競合ペア';
+
+  @override
   String get selectWeekTitle => '週次を選択';
 
   @override

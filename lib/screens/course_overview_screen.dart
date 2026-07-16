@@ -8,6 +8,7 @@ import '../models/course.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
 import 'add_course_screen.dart';
+import 'course_conflict_screen.dart';
 
 enum _SortMode { name, schedule, added }
 
@@ -28,7 +29,7 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     final groups = provider.courseGroups;
     final conflictMap = provider.courseConflictMap;
 
-    final sorted = _sortGroups(List.of(groups), conflictMap);
+    final sorted = _sortGroups(List.of(groups));
     final conflictGroups = <CourseGroup>[];
     final normalGroups = <CourseGroup>[];
     for (final group in sorted) {
@@ -59,11 +60,16 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
           : HyperosListView(
               children: [
                 if (conflictGroups.isNotEmpty) ...[
-                  HyperosSectionLabel(
-                    text: l10n.conflictCountLabel(conflictGroups.length),
-                  ),
+                  HyperosSectionLabel(text: l10n.courseConflictSectionTitle),
                   HyperosListGroup(
                     children: [
+                      HyperosListTile(
+                        icon: Icons.warning_amber_rounded,
+                        iconAccent: HyperosIconColors.orange,
+                        title: l10n.courseConflictDetailEntryTitle,
+                        details: l10n.conflictCountLabel(conflictGroups.length),
+                        onTap: () => _openConflictDetail(context),
+                      ),
                       for (final group in conflictGroups)
                         _CourseGroupTile(
                           group: group,
@@ -74,7 +80,8 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                   ),
                   if (normalGroups.isNotEmpty) const HyperosSectionGap(),
                 ],
-                if (normalGroups.isNotEmpty)
+                if (normalGroups.isNotEmpty) ...[
+                  HyperosSectionLabel(text: l10n.courseNormalSectionTitle),
                   HyperosListGroup(
                     children: [
                       for (final group in normalGroups)
@@ -85,8 +92,18 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                         ),
                     ],
                   ),
+                ],
               ],
             ),
+    );
+  }
+
+  void _openConflictDetail(BuildContext context) {
+    Navigator.of(context).push(
+      HyperosPageRoute(
+        settings: const RouteSettings(name: '/course/conflicts'),
+        builder: (_) => const CourseConflictScreen(),
+      ),
     );
   }
 
@@ -97,10 +114,7 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     return group.courses.any((course) => conflictMap.containsKey(course.id));
   }
 
-  List<CourseGroup> _sortGroups(
-    List<CourseGroup> groups,
-    Map<String, List<Course>> conflictMap,
-  ) {
+  List<CourseGroup> _sortGroups(List<CourseGroup> groups) {
     switch (_sortMode) {
       case _SortMode.name:
         groups.sort((a, b) => a.name.compareTo(b.name));
@@ -228,8 +242,6 @@ class _CourseGroupTile extends StatelessWidget {
     final highlightColor = HyperosColors.rowHighlight(context);
     final primaryText = HyperosColors.primaryText(context);
 
-    // One visual status only: a small "冲突" tag beside the title.
-    // Avoid stacking red border + red trailing + red banner at once.
     final row = hyperosListRowShell(
       padding: hyperosChevronRowPadding(context),
       minHeight: HyperosTokens.listRowTwoLineMinHeight,

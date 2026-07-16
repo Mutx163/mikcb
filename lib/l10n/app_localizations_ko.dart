@@ -4611,6 +4611,35 @@ class AppLocalizationsKo extends AppLocalizations {
   String get conflictLabel => '충돌';
 
   @override
+  String get courseConflictSectionTitle => '충돌 수업';
+
+  @override
+  String get courseNormalSectionTitle => '기타 수업';
+
+  @override
+  String get courseConflictDetailTitle => '충돌 상세';
+
+  @override
+  String get courseConflictDetailEntryTitle => '충돌 상세 보기';
+
+  @override
+  String get courseConflictDetailEntrySubtitle => '겹치는 시간과 상대 수업 확인';
+
+  @override
+  String courseConflictWithCourse(String name) {
+    return '「$name」와 충돌';
+  }
+
+  @override
+  String get courseConflictOpenPartnerAction => '상대 시간표 열기';
+
+  @override
+  String get courseConflictEmpty => '충돌이 없습니다';
+
+  @override
+  String get courseConflictPairTitle => '충돌 쌍';
+
+  @override
   String get selectWeekTitle => '주차 선택';
 
   @override

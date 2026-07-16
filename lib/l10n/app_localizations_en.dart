@@ -4795,6 +4795,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictLabel => 'Conflict';
 
   @override
+  String get courseConflictSectionTitle => 'Conflicts';
+
+  @override
+  String get courseNormalSectionTitle => 'Other courses';
+
+  @override
+  String get courseConflictDetailTitle => 'Conflict details';
+
+  @override
+  String get courseConflictDetailEntryTitle => 'View conflict details';
+
+  @override
+  String get courseConflictDetailEntrySubtitle =>
+      'See overlapping schedules and partners';
+
+  @override
+  String courseConflictWithCourse(String name) {
+    return 'Conflicts with “$name”';
+  }
+
+  @override
+  String get courseConflictOpenPartnerAction => 'Open partner schedule';
+
+  @override
+  String get courseConflictEmpty => 'No conflicts detected';
+
+  @override
+  String get courseConflictPairTitle => 'Conflict pair';
+
+  @override
   String get selectWeekTitle => 'Select week';
 
   @override
