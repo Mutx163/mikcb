@@ -2009,6 +2009,7 @@
       }
     }
   },
+  "layoutConflictOpacityTitle": "冲突课程透明度",
   "layoutConflictOpacitySubtitle": "冲突课程会自动层叠显示，调低透明度后能同时看到多节课。",
   "layoutTipsText": "时间模板已移到设置首页。这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用。",
   "currentWeekCompact": "{week}周",

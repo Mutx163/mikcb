@@ -3676,6 +3676,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get layoutConflictOpacityTitle => '競合授業の透明度';
+
+  @override
   String get layoutConflictOpacitySubtitle =>
       '競合授業は自動的に重ね表示。透明度を下げると複数の授業を同時に確認可能。';
 

@@ -3847,6 +3847,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get layoutConflictOpacityTitle => 'Conflict course opacity';
+
+  @override
   String get layoutConflictOpacitySubtitle =>
       'Conflicting courses are automatically stacked. Lower opacity makes multiple courses visible at the same time.';
 

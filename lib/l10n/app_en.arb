@@ -2009,6 +2009,7 @@
       }
     }
   },
+  "layoutConflictOpacityTitle": "Conflict course opacity",
   "layoutConflictOpacitySubtitle": "Conflicting courses are automatically stacked. Lower opacity makes multiple courses visible at the same time.",
   "layoutTipsText": "Time schemes have been moved to the Settings home page. This page mainly adjusts row height, time column, weekend visibility, and course card layout. If you only want to change the time for the current timetable, duplicate a time scheme first and then apply it.",
   "currentWeekCompact": "Week {week}",

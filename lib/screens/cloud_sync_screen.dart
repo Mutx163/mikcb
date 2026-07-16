@@ -645,7 +645,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       children: [
         HyperosSectionLabel(text: l10n.cloudBackupSectionTitle),
         HyperosControlCard(
-          subtitle: l10n.cloudBackupSectionSubtitle,
           child: HyperosControlCardInset(
             child: HyperosButton(
               label: l10n.cloudBackupCreateNow,
@@ -762,59 +761,71 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   }
 
   Widget _buildSyncNowSection(AppLocalizations l10n) {
-    return HyperosControlCard(
-      subtitle: l10n.cloudSyncSyncNowSubtitle,
-      child: HyperosControlCardInset(
-        child: HyperosButton(
-          label: l10n.cloudSyncSyncNow,
-          loading: _syncing,
-          onPressed: _syncing || !_config.enabled ? null : _syncNow,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosSectionLabel(text: l10n.cloudSyncSyncNow),
+        HyperosControlCard(
+          child: HyperosControlCardInset(
+            child: HyperosButton(
+              label: l10n.cloudSyncSyncNow,
+              loading: _syncing,
+              onPressed: _syncing || !_config.enabled ? null : _syncNow,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildStatusSection(AppLocalizations l10n, WebdavSyncStatus status) {
-    return HyperosControlCard(
-      title: l10n.cloudSyncStatusTitle,
-      child: HyperosControlCardInset(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _CloudSyncInfoRow(
-              label: l10n.cloudSyncLastSyncedLabel,
-              value: _formatDateTime(status.lastSyncedAt),
-              isLast: !status.isSyncing && status.lastError == null,
-            ),
-            if (status.isSyncing)
-              Padding(
-                padding: EdgeInsets.only(
-                  bottom: status.lastError == null ? 0 : 8,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosSectionLabel(text: l10n.cloudSyncStatusTitle),
+        HyperosControlCard(
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CloudSyncInfoRow(
+                  label: l10n.cloudSyncLastSyncedLabel,
+                  value: _formatDateTime(status.lastSyncedAt),
+                  isLast: !status.isSyncing && status.lastError == null,
                 ),
-                child: Row(
-                  children: [
-                    _buttonLoadingPrefix(),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.cloudSyncSyncing,
-                      style: HyperosTypography.listTitle(context),
+                if (status.isSyncing)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: status.lastError == null ? 0 : 8,
                     ),
-                  ],
-                ),
-              ),
-            if (status.lastError != null)
-              _CloudSyncInfoRow(
-                label: l10n.cloudSyncLastErrorLabel,
-                value: CloudBackupUiHelpers.localizeSyncError(
-                  l10n,
-                  status.lastError,
-                ),
-                valueColor: HyperosColors.error(context),
-                isLast: true,
-              ),
-          ],
+                    child: Row(
+                      children: [
+                        _buttonLoadingPrefix(),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.cloudSyncSyncing,
+                          style: HyperosTypography.listTitle(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (status.lastError != null)
+                  _CloudSyncInfoRow(
+                    label: l10n.cloudSyncLastErrorLabel,
+                    value: CloudBackupUiHelpers.localizeSyncError(
+                      l10n,
+                      status.lastError,
+                    ),
+                    valueColor: HyperosColors.error(context),
+                    isLast: true,
+                  ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 

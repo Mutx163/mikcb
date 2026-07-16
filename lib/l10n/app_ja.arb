@@ -1850,6 +1850,7 @@
       }
     }
   },
+  "layoutConflictOpacityTitle": "競合授業の透明度",
   "layoutConflictOpacitySubtitle": "競合授業は自動的に重ね表示。透明度を下げると複数の授業を同時に確認可能。",
   "layoutTipsText": "テンプレートは設定ホームに移動済み。ここでは主に時間割の行高さ、時間列、週末表示と授業カードレイアウトを調整。現在の時間割の時間のみ変更する場合、まずテンプレートでコピーしてから適用。",
   "currentWeekCompact": "{week}週",

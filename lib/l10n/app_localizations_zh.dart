@@ -3610,6 +3610,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get layoutConflictOpacityTitle => '冲突课程透明度';
+
+  @override
   String get layoutConflictOpacitySubtitle => '冲突课程会自动层叠显示，调低透明度后能同时看到多节课。';
 
   @override
@@ -11361,6 +11364,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String layoutConflictOpacityLabel(int value) {
     return '冲突課程透明度 $value%';
   }
+
+  @override
+  String get layoutConflictOpacityTitle => '衝突課程透明度';
 
   @override
   String get layoutConflictOpacitySubtitle => '冲突課程会自動层叠顯示，調低透明度後能同時看到多節課。';
@@ -19139,6 +19145,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String layoutConflictOpacityLabel(int value) {
     return '冲突課程透明度 $value%';
   }
+
+  @override
+  String get layoutConflictOpacityTitle => '衝突課程透明度';
 
   @override
   String get layoutConflictOpacitySubtitle => '冲突課程会自動层叠顯示，調低透明度後能同時看到多節課。';

@@ -387,55 +387,41 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ),
         ],
       ),
-      HyperosSectionDescription(text: l10n.liveDisplayContentSubtitle),
       if (display.showCountdown) ...[
         const HyperosSectionGap(),
-        HyperosControlCard(
-          edgeToEdge: true,
-          child: HyperosControlCardRows(
-            children: [
-              HyperosSelectTile<LiveCountdownTextStyle>(
-                label: l10n.countdownFormatLabel,
-                items: {
-                  for (final value in LiveCountdownTextStyle.values)
-                    liveCountdownTextStyleLabel(l10n, value): value,
-                },
-                value: display.countdownTextStyle,
-                onChanged: (value) =>
-                    _updateDisplay(display.copyWith(countdownTextStyle: value)),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  HyperosControlCardScope.defaultHorizontalPadding,
-                  0,
-                  HyperosControlCardScope.defaultHorizontalPadding,
-                  HyperosControlCardScope.defaultBodyBottomInset,
-                ),
-                child: Text(
-                  l10n.countdownFormatHelp,
-                  style: HyperosTypography.listDetail(context),
-                ),
-              ),
-            ],
-          ),
+        HyperosSectionLabel(text: l10n.countdownFormatLabel),
+        HyperosListGroup(
+          children: [
+            HyperosSelectTile<LiveCountdownTextStyle>(
+              label: l10n.countdownFormatLabel,
+              items: {
+                for (final value in LiveCountdownTextStyle.values)
+                  liveCountdownTextStyleLabel(l10n, value): value,
+              },
+              value: display.countdownTextStyle,
+              onChanged: (value) =>
+                  _updateDisplay(display.copyWith(countdownTextStyle: value)),
+            ),
+          ],
         ),
       ],
       if (!widget.forDuringEnd) ...[
         const HyperosSectionGap(),
-        HyperosControlCard(
-          title: l10n.beforeClassQuickActionTitle,
-          subtitle: l10n.beforeClassQuickActionSubtitle,
-          child: HyperosSelectTile<LiveBeforeClassQuickAction>(
-            label: l10n.beforeClassQuickActionTitle,
-            items: {
-              for (final value in LiveBeforeClassQuickAction.values)
-                liveBeforeClassQuickActionLabel(l10n, value): value,
-            },
-            value: _draft.liveBeforeClassQuickAction,
-            onChanged: (value) => _updateDraft(
-              _draft.copyWith(liveBeforeClassQuickAction: value),
+        HyperosSectionLabel(text: l10n.beforeClassQuickActionTitle),
+        HyperosListGroup(
+          children: [
+            HyperosSelectTile<LiveBeforeClassQuickAction>(
+              label: l10n.beforeClassQuickActionTitle,
+              items: {
+                for (final value in LiveBeforeClassQuickAction.values)
+                  liveBeforeClassQuickActionLabel(l10n, value): value,
+              },
+              value: _draft.liveBeforeClassQuickAction,
+              onChanged: (value) => _updateDraft(
+                _draft.copyWith(liveBeforeClassQuickAction: value),
+              ),
             ),
-          ),
+          ],
         ),
       ],
       const HyperosSectionGap(),
@@ -452,7 +438,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ),
         ],
       ),
-      HyperosSectionDescription(text: l10n.liveIslandVisualSubtitle),
       if (display.enableMiuiIslandLabelImage) ...[
         const HyperosSectionGap(),
         HyperosControlCard(
@@ -772,7 +757,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 ),
               ],
             ),
-            HyperosSectionDescription(text: l10n.liveDisplayConfigModeSubtitle),
             const HyperosSectionGap(),
           ],
           if (_followBeforeClass)
@@ -1010,7 +994,6 @@ class _LiveKeepAliveSettingsScreenState
               ),
             ],
           ),
-          HyperosSectionDescription(text: l10n.liveKeepAliveOptionsSubtitle),
         ],
       ),
     );

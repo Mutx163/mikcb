@@ -70,7 +70,8 @@ class _CoupleTimetableSettingsScreenState
   }
 
   bool get _isCoupleWebdavConnected =>
-      _coupleWebdavConfig.username.trim().isNotEmpty && _hasCoupleWebdavPassword;
+      _coupleWebdavConfig.username.trim().isNotEmpty &&
+      _hasCoupleWebdavPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -84,16 +85,17 @@ class _CoupleTimetableSettingsScreenState
       title: Text(l10n.coupleTimetableTitle),
       child: HyperosListView(
         children: [
-          HyperosControlCard(
-            title: binding == null
+          HyperosSectionLabel(
+            text: binding == null
                 ? l10n.coupleTimetableUnboundTitle
                 : l10n.coupleTimetableBoundTitle,
-            subtitle: l10n.coupleTimetableIntro,
-            child: HyperosControlCardInset(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (binding != null) ...[
+          ),
+          if (binding != null)
+            HyperosControlCard(
+              child: HyperosControlCardInset(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     _buildInfoRow(
                       context,
                       l10n.coupleTimetablePartnerNameLabel,
@@ -109,26 +111,19 @@ class _CoupleTimetableSettingsScreenState
                           : _formatDateTime(binding.lastImportedAt!),
                     ),
                   ],
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.coupleTimetablePrivacyHint,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
           const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.coupleWebdavTitle),
           HyperosControlCard(
-            title: l10n.coupleWebdavTitle,
-            subtitle: l10n.coupleWebdavSubtitle,
             child: HyperosControlCardInset(
               child: _buildCoupleWebdavControl(context, l10n),
             ),
           ),
           const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.coupleTimetableTitle),
           HyperosControlCard(
-            title: l10n.coupleTimetableTitle,
             child: HyperosControlCardInset(
               child: Wrap(
                 spacing: 8,
@@ -164,17 +159,19 @@ class _CoupleTimetableSettingsScreenState
           ),
           if (binding != null) ...[
             const HyperosSectionGap(),
+            HyperosSectionLabel(text: l10n.coupleTimetableWeekOffsetTitle),
             HyperosControlCard(
-              title: l10n.coupleTimetableWeekOffsetTitle,
-              subtitle: l10n.coupleTimetableWeekOffsetSubtitle,
               child: HyperosControlCardInset(
-                child: _buildWeekOffsetControl(context, provider, binding.weekOffset),
+                child: _buildWeekOffsetControl(
+                  context,
+                  provider,
+                  binding.weekOffset,
+                ),
               ),
             ),
             const HyperosSectionGap(),
+            HyperosSectionLabel(text: l10n.coupleTimetableColorsTitle),
             HyperosControlCard(
-              title: l10n.coupleTimetableColorsTitle,
-              subtitle: l10n.coupleTimetableColorsSubtitle,
               child: HyperosControlCardInset(
                 child: _buildCoupleColorsControl(context, provider, binding),
               ),
@@ -185,7 +182,10 @@ class _CoupleTimetableSettingsScreenState
     );
   }
 
-  Widget _buildCoupleWebdavControl(BuildContext context, AppLocalizations l10n) {
+  Widget _buildCoupleWebdavControl(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     final connected = _isCoupleWebdavConnected;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,8 +236,9 @@ class _CoupleTimetableSettingsScreenState
                     : l10n.coupleWebdavUploadForPartner,
                 variant: HyperosButtonVariant.secondary,
                 loading: _isUploadingWebdav,
-                onPressed:
-                    _isUploadingWebdav ? null : _uploadMyTimetableForPartner,
+                onPressed: _isUploadingWebdav
+                    ? null
+                    : _uploadMyTimetableForPartner,
               ),
               HyperosButton(
                 label: l10n.coupleWebdavDisconnect,

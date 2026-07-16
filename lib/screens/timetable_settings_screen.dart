@@ -36,7 +36,6 @@ import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
-import '../services/android_animation_scale_service.dart';
 import '../services/bundled_assets.dart';
 import '../services/live_testing_fixture_service.dart';
 import '../services/live_testing_trigger.dart';
@@ -2964,64 +2963,74 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     }
 
     final Widget content = switch (section) {
-      0 => HyperosControlCard(
-        title: l10n.homeWidgetQuickAddTitle,
-        subtitle: _isCheckingPinSupport
-            ? l10n.homeWidgetCheckingPinSupport
-            : (_canRequestPinWidget
-                  ? l10n.homeWidgetPinSupported
-                  : l10n.homeWidgetPinUnsupported),
-        child: HyperosControlCardInset(
-          child: Column(
-            children: [
-              Row(
+      0 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.homeWidgetQuickAddTitle),
+          HyperosControlCard(
+            child: HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: _buildPinWidgetButton(HomeWidgetPinTarget.compact22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.compact22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.miniList22,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildPinWidgetButton(
-                      HomeWidgetPinTarget.miniList22,
-                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.medium24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.large44,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPinWidgetButton(HomeWidgetPinTarget.medium24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildPinWidgetButton(HomeWidgetPinTarget.large44),
-                  ),
-                ],
+            ),
+          ),
+        ],
+      ),
+      1 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.homeWidgetTodayCourseTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSelectTile<WidgetBackgroundStyle>(
+                label: l10n.homeWidgetBackgroundStyleLabel,
+                items: {
+                  for (final v in WidgetBackgroundStyle.values)
+                    widgetBackgroundStyleLabel(l10n, v): v,
+                },
+                value: _draft.widgetBackgroundStyle,
+                onChanged: (value) {
+                  _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
+                },
               ),
             ],
           ),
-        ),
-      ),
-      1 => HyperosControlCard(
-        title: l10n.homeWidgetTodayCourseTitle,
-        subtitle: l10n.homeWidgetTodayCourseSubtitle,
-        edgeToEdge: true,
-        child: HyperosControlCardRowScope(
-          isFirst: true,
-          isLast: false,
-          child: HyperosSelectTile<WidgetBackgroundStyle>(
-            label: l10n.homeWidgetBackgroundStyleLabel,
-            items: {
-              for (final v in WidgetBackgroundStyle.values)
-                widgetBackgroundStyleLabel(l10n, v): v,
-            },
-            value: _draft.widgetBackgroundStyle,
-            onChanged: (value) {
-              _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
-            },
-          ),
-        ),
+        ],
       ),
       2 => HyperosListGroup(
         children: [
@@ -3059,70 +3068,77 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
         ],
       ),
-      3 => HyperosControlCard(
-        title: l10n.homeWidgetCountdownLeadTitle,
-        subtitle: l10n.homeWidgetCountdownLeadSubtitle,
-        edgeToEdge: true,
-        child: HyperosControlCardRows(
-          children: [
-            HyperosSelectTile<int>(
-              label: l10n.homeWidgetCountdownLeadTitle,
-              items: {
-                l10n.homeWidgetCountdownLeadAlways: 0,
-                for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
-                  l10n.beforeClassMinutesOption(m): m,
-              },
-              value: _draft.widgetCountdownLeadMinutes,
-              onChanged: (value) {
-                _updateDraft(
-                  _draft.copyWith(widgetCountdownLeadMinutes: value),
-                );
-              },
-            ),
-            HyperosSelectTile<LiveCountdownTextStyle>(
-              label: l10n.widgetCountdownStyleTitle,
-              items: {
-                for (final v in LiveCountdownTextStyle.values)
-                  liveCountdownTextStyleLabel(l10n, v): v,
-              },
-              value: _draft.widgetCountdownTextStyle,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(widgetCountdownTextStyle: value));
-              },
-            ),
-          ],
-        ),
+      3 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.homeWidgetCountdownLeadTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSelectTile<int>(
+                label: l10n.homeWidgetCountdownLeadTitle,
+                items: {
+                  l10n.homeWidgetCountdownLeadAlways: 0,
+                  for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
+                    l10n.beforeClassMinutesOption(m): m,
+                },
+                value: _draft.widgetCountdownLeadMinutes,
+                onChanged: (value) {
+                  _updateDraft(
+                    _draft.copyWith(widgetCountdownLeadMinutes: value),
+                  );
+                },
+              ),
+              HyperosSelectTile<LiveCountdownTextStyle>(
+                label: l10n.widgetCountdownStyleTitle,
+                items: {
+                  for (final v in LiveCountdownTextStyle.values)
+                    liveCountdownTextStyleLabel(l10n, v): v,
+                },
+                value: _draft.widgetCountdownTextStyle,
+                onChanged: (value) {
+                  _updateDraft(
+                    _draft.copyWith(widgetCountdownTextStyle: value),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
       ),
-      4 => HyperosControlCard(
-        title: l10n.homeWidgetHeightAdjustTitle,
-        edgeToEdge: true,
-        child: HyperosControlCardRows(
-          children: [
-            HyperosSliderTile(
-              title: _widgetHeightAdjustmentLabel(l10n),
-              value: _draft.widgetHeightAdjustment,
-              min: _defaultWidgetHeightAdjustment - 16,
-              max: _defaultWidgetHeightAdjustment + 16,
-              divisions: 32,
-              onChanged: (value) => _updateDraft(
-                _draft.copyWith(widgetHeightAdjustment: value),
-                debounce: true,
+      4 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.homeWidgetHeightAdjustTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSliderTile(
+                title: _widgetHeightAdjustmentLabel(l10n),
+                value: _draft.widgetHeightAdjustment,
+                min: _defaultWidgetHeightAdjustment - 16,
+                max: _defaultWidgetHeightAdjustment + 16,
+                divisions: 32,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(widgetHeightAdjustment: value),
+                  debounce: true,
+                ),
               ),
-            ),
-            HyperosSliderTile(
-              title: l10n.homeWidgetCornerRadiusTitle,
-              valueLabel: '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
-              value: _draft.widgetCornerRadius,
-              min: _defaultWidgetCornerRadius - 14,
-              max: _defaultWidgetCornerRadius + 14,
-              divisions: 28,
-              onChanged: (value) => _updateDraft(
-                _draft.copyWith(widgetCornerRadius: value),
-                debounce: true,
+              HyperosSliderTile(
+                title: l10n.homeWidgetCornerRadiusTitle,
+                valueLabel: '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
+                value: _draft.widgetCornerRadius,
+                min: _defaultWidgetCornerRadius - 14,
+                max: _defaultWidgetCornerRadius + 14,
+                divisions: 28,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(widgetCornerRadius: value),
+                  debounce: true,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
       _ => const SizedBox.shrink(),
     };
@@ -3216,14 +3232,15 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 
   Widget _buildPinWidgetButton(HomeWidgetPinTarget target) {
     final isLoading = _pinningTargets.contains(target);
+    final canPin = !_isCheckingPinSupport && _canRequestPinWidget && !isLoading;
     return SizedBox(
       width: double.infinity,
       child: HyperosButton(
         label: _homeWidgetTargetLabel(context, target),
         variant: HyperosButtonVariant.secondary,
         expand: true,
-        loading: isLoading,
-        onPressed: isLoading ? null : () => _requestPinWidget(target),
+        loading: isLoading || _isCheckingPinSupport,
+        onPressed: canPin ? () => _requestPinWidget(target) : null,
       ),
     );
   }
@@ -3313,7 +3330,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     );
   }
 
-  static const _layoutSectionCount = 15;
+  static const _layoutSectionCount = 14;
 
   Widget _buildLayoutSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
@@ -3346,169 +3363,154 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ],
       ),
       1 => const HyperosSectionGap(),
-      2 => HyperosControlCard(
-        subtitle: l10n.pageTransitionSpeedSubtitle,
-        edgeToEdge: true,
-        child: HyperosSliderTile(
-          title: l10n.pageTransitionSpeedLabel(
-            _draft.pageTransitionSpeed.toStringAsFixed(1),
+      2 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.pageTransitionSpeedTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSliderTile(
+                title: l10n.pageTransitionSpeedTitle,
+                value: _draft.pageTransitionSpeed,
+                min: TimetableSettings.minPageTransitionSpeed,
+                max: TimetableSettings.maxPageTransitionSpeed,
+                divisions: 20,
+                valueLabel: '${_draft.pageTransitionSpeed.toStringAsFixed(1)}×',
+                onChanged: (value) {
+                  HyperosNavigation.applyUserTransitionSpeed(context, value);
+                  _updateDraft(
+                    _draft.copyWith(pageTransitionSpeed: value),
+                    debounce: true,
+                  );
+                },
+              ),
+            ],
           ),
-          value: _draft.pageTransitionSpeed,
-          min: TimetableSettings.minPageTransitionSpeed,
-          max: TimetableSettings.maxPageTransitionSpeed,
-          divisions: 20,
-          valueLabel: l10n.pageTransitionSpeedDurationHint(
-            AndroidAnimationScaleService.scaledDuration(
-              HyperosMiuixNavigation.transitionDurationMs,
-            ).inMilliseconds,
-          ),
-          onChanged: (value) {
-            HyperosNavigation.applyUserTransitionSpeed(context, value);
-            _updateDraft(
-              _draft.copyWith(pageTransitionSpeed: value),
-              debounce: true,
-            );
-          },
-        ),
+        ],
       ),
       3 => const HyperosSectionGap(),
-      // Prefer [HyperosControlCardRows] (or [HyperosListGroup] when there is no
-      // card header/subtitle) so Select/Slider tiles get correct first/last
-      // padding. A bare Column + SizedBox makes every row think it is both
-      // first and last, which looks glued-to-top on the first row and overly
-      // padded on the rest.
-      4 => HyperosControlCard(
-        subtitle: l10n.layoutEntrySubtitle,
-        edgeToEdge: true,
-        child: HyperosControlCardRows(
-          children: [
-            HyperosSelectTile<SectionTimeDisplayMode>(
-              label: l10n.layoutTimeColumnDisplayLabel,
-              items: {
-                for (final v in SectionTimeDisplayMode.values)
-                  sectionTimeDisplayModeLabel(l10n, v): v,
-              },
-              value: _draft.timetableSectionTimeDisplayMode,
-              onChanged: (value) {
-                _updateDraft(
-                  _draft.copyWith(timetableSectionTimeDisplayMode: value),
-                );
-              },
-            ),
-            HyperosSelectTile<TimetableTimeColumnWidthMode>(
-              label: l10n.layoutTimeColumnWidthLabel,
-              items: {
-                for (final v in TimetableTimeColumnWidthMode.values)
-                  timetableTimeColumnWidthModeLabel(l10n, v): v,
-              },
-              value: _draft.timetableTimeColumnWidthMode,
-              onChanged: (value) {
-                _updateDraft(
-                  _draft.copyWith(timetableTimeColumnWidthMode: value),
-                );
-              },
-            ),
-            HyperosSelectTile<BackToCurrentWeekButtonStyle>(
-              label: l10n.layoutBackToCurrentWeekButtonStyleLabel,
-              items: {
-                for (final v in BackToCurrentWeekButtonStyle.values)
-                  _backToCurrentWeekButtonStyleLabel(l10n, v): v,
-              },
-              value: _draft.timetableBackToCurrentWeekButtonStyle,
-              onChanged: (value) {
-                _updateDraft(
-                  _draft.copyWith(timetableBackToCurrentWeekButtonStyle: value),
-                );
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                HyperosControlCardScope.defaultHorizontalPadding,
-                0,
-                HyperosControlCardScope.defaultHorizontalPadding,
-                8,
+      // Preference rows only: gray [HyperosSectionLabel] above, white list card.
+      // Do not put black/muted titles or long footnotes on the card itself.
+      4 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.layoutDensityTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSelectTile<SectionTimeDisplayMode>(
+                label: l10n.layoutTimeColumnDisplayLabel,
+                items: {
+                  for (final v in SectionTimeDisplayMode.values)
+                    sectionTimeDisplayModeLabel(l10n, v): v,
+                },
+                value: _draft.timetableSectionTimeDisplayMode,
+                onChanged: (value) {
+                  _updateDraft(
+                    _draft.copyWith(timetableSectionTimeDisplayMode: value),
+                  );
+                },
               ),
-              child: Text(
-                l10n.layoutBackToCurrentWeekButtonStyleHelper,
-                style: HyperosTypography.sectionDescription(context),
-                softWrap: true,
+              HyperosSelectTile<TimetableTimeColumnWidthMode>(
+                label: l10n.layoutTimeColumnWidthLabel,
+                items: {
+                  for (final v in TimetableTimeColumnWidthMode.values)
+                    timetableTimeColumnWidthModeLabel(l10n, v): v,
+                },
+                value: _draft.timetableTimeColumnWidthMode,
+                onChanged: (value) {
+                  _updateDraft(
+                    _draft.copyWith(timetableTimeColumnWidthMode: value),
+                  );
+                },
               ),
-            ),
-            if (_draft.timetableBackToCurrentWeekButtonStyle ==
-                BackToCurrentWeekButtonStyle.floating)
-              HyperosSliderTile(
-                title: l10n.layoutBackToCurrentWeekButtonOpacityLabel(
-                  (_draft.timetableFloatingBackToCurrentWeekButtonOpacity * 100)
-                      .round(),
-                ),
-                value: _draft.timetableFloatingBackToCurrentWeekButtonOpacity,
-                min: 0.55,
-                max: 1.0,
-                divisions: 9,
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(
-                    timetableFloatingBackToCurrentWeekButtonOpacity: value,
+              HyperosSelectTile<BackToCurrentWeekButtonStyle>(
+                label: l10n.layoutBackToCurrentWeekButtonStyleLabel,
+                items: {
+                  for (final v in BackToCurrentWeekButtonStyle.values)
+                    _backToCurrentWeekButtonStyleLabel(l10n, v): v,
+                },
+                value: _draft.timetableBackToCurrentWeekButtonStyle,
+                onChanged: (value) {
+                  _updateDraft(
+                    _draft.copyWith(
+                      timetableBackToCurrentWeekButtonStyle: value,
+                    ),
+                  );
+                },
+              ),
+              if (_draft.timetableBackToCurrentWeekButtonStyle ==
+                  BackToCurrentWeekButtonStyle.floating)
+                HyperosSliderTile(
+                  title: l10n.layoutBackToCurrentWeekButtonOpacityTitle,
+                  value: _draft.timetableFloatingBackToCurrentWeekButtonOpacity,
+                  min: 0.55,
+                  max: 1.0,
+                  divisions: 9,
+                  valueLabel:
+                      '${(_draft.timetableFloatingBackToCurrentWeekButtonOpacity * 100).round()}%',
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(
+                      timetableFloatingBackToCurrentWeekButtonOpacity: value,
+                    ),
+                    debounce: true,
                   ),
+                ),
+              HyperosSliderTile(
+                title: l10n.layoutCourseCardGapTitle,
+                value: _draft.timetableCourseCardGap,
+                min: 0,
+                max: 3,
+                divisions: 12,
+                valueLabel: _draft.timetableCourseCardGap.toStringAsFixed(1),
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(timetableCourseCardGap: value),
                   debounce: true,
                 ),
               ),
-            HyperosSliderTile(
-              title: l10n.layoutCourseCardGapLabel(
-                _draft.timetableCourseCardGap.toStringAsFixed(1),
+              HyperosSliderTile(
+                title: l10n.layoutSectionHeightTitle,
+                value: _draft.sectionHeight,
+                min: 48,
+                max: 92,
+                divisions: 11,
+                enabled: !_draft.timetableAutoFitSectionHeight,
+                valueLabel: _draft.sectionHeight.toStringAsFixed(0),
+                onChanged: !_draft.timetableAutoFitSectionHeight
+                    ? (value) => _updateDraft(
+                        _draft.copyWith(sectionHeight: value),
+                        debounce: true,
+                      )
+                    : null,
               ),
-              value: _draft.timetableCourseCardGap,
-              min: 0,
-              max: 3,
-              divisions: 12,
-              onChanged: (value) => _updateDraft(
-                _draft.copyWith(timetableCourseCardGap: value),
-                debounce: true,
+              HyperosSliderTile(
+                title: l10n.layoutCompactFontSizeTitle,
+                value: _draft.compactFontSize,
+                min: 7,
+                max: 12,
+                divisions: 10,
+                valueLabel: _draft.compactFontSize.toStringAsFixed(1),
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(compactFontSize: value),
+                  debounce: true,
+                ),
               ),
-            ),
-            HyperosSliderTile(
-              title: l10n.layoutSectionHeightLabel(
-                _draft.sectionHeight.toStringAsFixed(0),
+              HyperosSliderTile(
+                title: l10n.layoutCourseCardFontSizeTitle,
+                value: _draft.courseCardFontSize,
+                min: 7,
+                max: 12,
+                divisions: 10,
+                valueLabel: _draft.courseCardFontSize.toStringAsFixed(1),
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(courseCardFontSize: value),
+                  debounce: true,
+                ),
               ),
-              value: _draft.sectionHeight,
-              min: 48,
-              max: 92,
-              divisions: 11,
-              enabled: !_draft.timetableAutoFitSectionHeight,
-              onChanged: !_draft.timetableAutoFitSectionHeight
-                  ? (value) => _updateDraft(
-                      _draft.copyWith(sectionHeight: value),
-                      debounce: true,
-                    )
-                  : null,
-            ),
-            HyperosSliderTile(
-              title: l10n.layoutCompactFontSizeLabel(
-                _draft.compactFontSize.toStringAsFixed(1),
-              ),
-              value: _draft.compactFontSize,
-              min: 7,
-              max: 12,
-              divisions: 10,
-              onChanged: (value) => _updateDraft(
-                _draft.copyWith(compactFontSize: value),
-                debounce: true,
-              ),
-            ),
-            HyperosSliderTile(
-              title: l10n.layoutCourseCardFontSizeLabel(
-                _draft.courseCardFontSize.toStringAsFixed(1),
-              ),
-              value: _draft.courseCardFontSize,
-              min: 7,
-              max: 12,
-              divisions: 10,
-              onChanged: (value) => _updateDraft(
-                _draft.copyWith(courseCardFontSize: value),
-                debounce: true,
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
       5 => const HyperosSectionGap(),
       6 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
@@ -3587,11 +3589,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      8 => HyperosSectionDescription(
-        text: l10n.layoutCourseCardDisplaySubtitle,
-      ),
-      9 => const HyperosSectionGap(),
-      10 => HyperosListGroup(
+      8 => const HyperosSectionGap(),
+      9 => HyperosListGroup(
         children: [
           HyperosSelectTile<CourseCardVerticalAlign>(
             label: l10n.layoutVerticalAlignLabel,
@@ -3617,158 +3616,173 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      11 => const HyperosSectionGap(),
-      12 => HyperosControlCard(
-        title: l10n.layoutConflictOpacityLabel(
-          (_draft.timetableConflictCourseOpacity * 100).round(),
-        ),
-        subtitle: l10n.layoutConflictOpacitySubtitle,
-        child: HyperosSliderTile(
-          value: _draft.timetableConflictCourseOpacity,
-          min: 0.2,
-          max: 1.0,
-          divisions: 16,
-          onChanged: (value) => _updateDraft(
-            _draft.copyWith(timetableConflictCourseOpacity: value),
-            debounce: true,
+      10 => const HyperosSectionGap(),
+      11 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.layoutConflictOpacityTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSliderTile(
+                title: l10n.layoutConflictOpacityTitle,
+                value: _draft.timetableConflictCourseOpacity,
+                min: 0.2,
+                max: 1.0,
+                divisions: 16,
+                valueLabel:
+                    '${(_draft.timetableConflictCourseOpacity * 100).round()}%',
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(timetableConflictCourseOpacity: value),
+                  debounce: true,
+                ),
+              ),
+            ],
           ),
-        ),
+        ],
       ),
-      13 => const HyperosSectionGap(),
-      14 => HyperosControlCard(
-        title: l10n.textColorTitle,
-        subtitle: l10n.textColorSubtitle,
-        edgeToEdge: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            HyperosSwitchTile(
-              title: l10n.textColorIndependentDetail,
-              value: !_draft.linkCourseCardColors,
-              onChanged: (value) {
-                if (!value) {
-                  _updateDraft(
-                    _draft.copyWith(
-                      linkCourseCardColors: true,
-                      courseCardDetailColorLight:
-                          _draft.courseCardTitleColorLight,
-                      courseCardDetailColorDark:
-                          _draft.courseCardTitleColorDark,
-                    ),
-                  );
-                } else {
-                  _updateDraft(_draft.copyWith(linkCourseCardColors: false));
-                }
-              },
-            ),
-            Column(
+      12 => const HyperosSectionGap(),
+      13 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.textColorTitle),
+          HyperosControlCard(
+            edgeToEdge: true,
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 浅色模式颜色设置
-                _buildModeColorSettings(
-                  context,
-                  l10n: l10n,
-                  modeLabel: l10n.themeModeLight,
-                  containerColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerLow,
-                  titleColor: _draft.courseCardTitleColorLight,
-                  detailColor: _draft.courseCardDetailColorLight,
-                  weekdayColor: _draft.weekdayBarFontColorLight,
-                  timeAxisColor: _draft.timeAxisFontColorLight,
-                  accentColor: _draft.weekdayBarAccentColorLight,
-                  onTitleColorChanged: (color) {
-                    if (_draft.linkCourseCardColors) {
+                HyperosSwitchTile(
+                  title: l10n.textColorIndependentDetail,
+                  value: !_draft.linkCourseCardColors,
+                  onChanged: (value) {
+                    if (!value) {
                       _updateDraft(
                         _draft.copyWith(
-                          courseCardTitleColorLight: color,
-                          courseCardDetailColorLight: color,
+                          linkCourseCardColors: true,
+                          courseCardDetailColorLight:
+                              _draft.courseCardTitleColorLight,
+                          courseCardDetailColorDark:
+                              _draft.courseCardTitleColorDark,
                         ),
                       );
                     } else {
                       _updateDraft(
-                        _draft.copyWith(courseCardTitleColorLight: color),
+                        _draft.copyWith(linkCourseCardColors: false),
                       );
                     }
                   },
-                  onDetailColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(courseCardDetailColorLight: color),
-                  ),
-                  onWeekdayColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(weekdayBarFontColorLight: color),
-                  ),
-                  onTimeAxisColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(timeAxisFontColorLight: color),
-                  ),
-                  onAccentColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(weekdayBarAccentColorLight: color),
-                  ),
-                  defaultTitleColor:
-                      TimetableSettings.defaultCourseCardTitleColor,
-                  defaultDetailColor:
-                      TimetableSettings.defaultCourseCardDetailColor,
-                  defaultWeekdayColor:
-                      TimetableSettings.defaultWeekdayBarFontColorLight,
-                  defaultTimeAxisColor:
-                      TimetableSettings.defaultTimeAxisFontColorLight,
-                  defaultAccentColor:
-                      TimetableSettings.defaultWeekdayBarAccentColorLight,
                 ),
-                const SizedBox(height: 12),
-                // 深色模式颜色设置
-                _buildModeColorSettings(
-                  context,
-                  l10n: l10n,
-                  modeLabel: l10n.themeModeDark,
-                  containerColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHigh,
-                  titleColor: _draft.courseCardTitleColorDark,
-                  detailColor: _draft.courseCardDetailColorDark,
-                  weekdayColor: _draft.weekdayBarFontColorDark,
-                  timeAxisColor: _draft.timeAxisFontColorDark,
-                  accentColor: _draft.weekdayBarAccentColorDark,
-                  onTitleColorChanged: (color) {
-                    if (_draft.linkCourseCardColors) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          courseCardTitleColorDark: color,
-                          courseCardDetailColorDark: color,
-                        ),
-                      );
-                    } else {
-                      _updateDraft(
-                        _draft.copyWith(courseCardTitleColorDark: color),
-                      );
-                    }
-                  },
-                  onDetailColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(courseCardDetailColorDark: color),
-                  ),
-                  onWeekdayColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(weekdayBarFontColorDark: color),
-                  ),
-                  onTimeAxisColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(timeAxisFontColorDark: color),
-                  ),
-                  onAccentColorChanged: (color) => _updateDraft(
-                    _draft.copyWith(weekdayBarAccentColorDark: color),
-                  ),
-                  defaultTitleColor:
-                      TimetableSettings.defaultCourseCardTitleColor,
-                  defaultDetailColor:
-                      TimetableSettings.defaultCourseCardDetailColor,
-                  defaultWeekdayColor:
-                      TimetableSettings.defaultWeekdayBarFontColorDark,
-                  defaultTimeAxisColor:
-                      TimetableSettings.defaultTimeAxisFontColorDark,
-                  defaultAccentColor:
-                      TimetableSettings.defaultWeekdayBarAccentColorDark,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 浅色模式颜色设置
+                    _buildModeColorSettings(
+                      context,
+                      l10n: l10n,
+                      modeLabel: l10n.themeModeLight,
+                      containerColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      titleColor: _draft.courseCardTitleColorLight,
+                      detailColor: _draft.courseCardDetailColorLight,
+                      weekdayColor: _draft.weekdayBarFontColorLight,
+                      timeAxisColor: _draft.timeAxisFontColorLight,
+                      accentColor: _draft.weekdayBarAccentColorLight,
+                      onTitleColorChanged: (color) {
+                        if (_draft.linkCourseCardColors) {
+                          _updateDraft(
+                            _draft.copyWith(
+                              courseCardTitleColorLight: color,
+                              courseCardDetailColorLight: color,
+                            ),
+                          );
+                        } else {
+                          _updateDraft(
+                            _draft.copyWith(courseCardTitleColorLight: color),
+                          );
+                        }
+                      },
+                      onDetailColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(courseCardDetailColorLight: color),
+                      ),
+                      onWeekdayColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(weekdayBarFontColorLight: color),
+                      ),
+                      onTimeAxisColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(timeAxisFontColorLight: color),
+                      ),
+                      onAccentColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(weekdayBarAccentColorLight: color),
+                      ),
+                      defaultTitleColor:
+                          TimetableSettings.defaultCourseCardTitleColor,
+                      defaultDetailColor:
+                          TimetableSettings.defaultCourseCardDetailColor,
+                      defaultWeekdayColor:
+                          TimetableSettings.defaultWeekdayBarFontColorLight,
+                      defaultTimeAxisColor:
+                          TimetableSettings.defaultTimeAxisFontColorLight,
+                      defaultAccentColor:
+                          TimetableSettings.defaultWeekdayBarAccentColorLight,
+                    ),
+                    const SizedBox(height: 12),
+                    // 深色模式颜色设置
+                    _buildModeColorSettings(
+                      context,
+                      l10n: l10n,
+                      modeLabel: l10n.themeModeDark,
+                      containerColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHigh,
+                      titleColor: _draft.courseCardTitleColorDark,
+                      detailColor: _draft.courseCardDetailColorDark,
+                      weekdayColor: _draft.weekdayBarFontColorDark,
+                      timeAxisColor: _draft.timeAxisFontColorDark,
+                      accentColor: _draft.weekdayBarAccentColorDark,
+                      onTitleColorChanged: (color) {
+                        if (_draft.linkCourseCardColors) {
+                          _updateDraft(
+                            _draft.copyWith(
+                              courseCardTitleColorDark: color,
+                              courseCardDetailColorDark: color,
+                            ),
+                          );
+                        } else {
+                          _updateDraft(
+                            _draft.copyWith(courseCardTitleColorDark: color),
+                          );
+                        }
+                      },
+                      onDetailColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(courseCardDetailColorDark: color),
+                      ),
+                      onWeekdayColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(weekdayBarFontColorDark: color),
+                      ),
+                      onTimeAxisColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(timeAxisFontColorDark: color),
+                      ),
+                      onAccentColorChanged: (color) => _updateDraft(
+                        _draft.copyWith(weekdayBarAccentColorDark: color),
+                      ),
+                      defaultTitleColor:
+                          TimetableSettings.defaultCourseCardTitleColor,
+                      defaultDetailColor:
+                          TimetableSettings.defaultCourseCardDetailColor,
+                      defaultWeekdayColor:
+                          TimetableSettings.defaultWeekdayBarFontColorDark,
+                      defaultTimeAxisColor:
+                          TimetableSettings.defaultTimeAxisFontColorDark,
+                      defaultAccentColor:
+                          TimetableSettings.defaultWeekdayBarAccentColorDark,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       _ => const SizedBox.shrink(),
     };
@@ -3858,10 +3872,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               modeLabel,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: HyperosTypography.sectionLabel(
+                context,
+              ).copyWith(fontWeight: FontWeight.w400),
             ),
           ),
           _buildColorSettingRow(

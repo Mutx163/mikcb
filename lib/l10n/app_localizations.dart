@@ -6657,6 +6657,12 @@ abstract class AppLocalizations {
   /// **'冲突课程透明度 {value}%'**
   String layoutConflictOpacityLabel(int value);
 
+  /// No description provided for @layoutConflictOpacityTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'冲突课程透明度'**
+  String get layoutConflictOpacityTitle;
+
   /// No description provided for @layoutConflictOpacitySubtitle.
   ///
   /// In zh, this message translates to:

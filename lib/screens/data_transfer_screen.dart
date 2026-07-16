@@ -34,9 +34,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       title: Text(l10n.dataTransferTitle),
       child: HyperosListView(
         children: [
+          HyperosSectionLabel(text: l10n.fullExportTitle),
           HyperosControlCard(
-            title: l10n.fullExportTitle,
-            subtitle: l10n.fullExportSubtitle,
             child: HyperosControlCardInset(
               child: Wrap(
                 spacing: 8,
@@ -59,9 +58,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
             ),
           ),
           const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.fullImportTitle),
           HyperosControlCard(
-            title: l10n.fullImportTitle,
-            subtitle: l10n.fullImportSubtitle,
             child: HyperosControlCardInset(
               child: HyperosButton(
                 label: _isImporting
@@ -74,8 +72,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
             ),
           ),
           const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.transferOverviewTitle),
           HyperosControlCard(
-            title: l10n.transferOverviewTitle,
             child: HyperosControlCardInset(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,9 +108,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   ),
                   _buildOverviewRow(
                     context,
-                    l10n.fileExtensionBullet(
-                      DataTransferService.fileExtension,
-                    ),
+                    l10n.fileExtensionBullet(DataTransferService.fileExtension),
                     isLast: true,
                   ),
                 ],

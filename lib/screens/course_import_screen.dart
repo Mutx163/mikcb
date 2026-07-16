@@ -161,7 +161,6 @@ class CourseImportScreen extends StatelessWidget {
             includeHeaderInset: false,
             children: [
               HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
-              HyperosSectionDescription(text: l10n.chooseImportMethodSubtitle),
               const HyperosSectionGap(),
               HyperosChoiceGroup(
                 children: [
@@ -2352,7 +2351,6 @@ class _WarehouseCustomDebugEditScreenState
             includeHeaderInset: false,
             children: [
               HyperosSectionLabel(text: l10n.debugRecordFormula),
-              HyperosSectionDescription(text: l10n.debugRecordFormulaSubtitle),
               const HyperosSectionGap(),
               HyperosTextField(
                 controller: _nameController,

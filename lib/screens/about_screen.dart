@@ -2633,7 +2633,11 @@ class _AboutEntryTile extends StatelessWidget {
                 children: [
                   Text(title, style: HyperosTypography.listTitle(context)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: HyperosTypography.listDetail(context)),
+                  Text(
+                    subtitle,
+                    style: HyperosTypography.listDetail(context),
+                    softWrap: true,
+                  ),
                 ],
               ),
             ),

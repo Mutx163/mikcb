@@ -1847,6 +1847,7 @@
       }
     }
   },
+  "layoutConflictOpacityTitle": "衝突課程透明度",
   "layoutConflictOpacitySubtitle": "冲突課程会自動层叠顯示，調低透明度後能同時看到多節課。",
   "layoutTipsText": "時間模板已移到設定首頁。這裡主要調課表行高、時間列、周末顯示和課程卡片布局；如果你想只改目前課表的時間，先在時間模板裡複制一套再應用。",
   "currentWeekCompact": "{week}周",

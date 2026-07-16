@@ -283,18 +283,27 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final provider = context.read<TimetableProvider?>();
     if (provider == null) return const SizedBox.shrink();
 
-    return HyperosControlCard(
-      title: l10n.languageSectionTitle,
-      subtitle: l10n.languageSectionSubtitle,
-      child: HyperosSelectTile<String>(
-        label: l10n.languageModeLabel,
-        items: buildLocaleMenuMap(context),
-        value: normalizeLocaleTagForDropdown(provider.settings.appLocaleTag),
-        onChanged: (value) {
-          final next = provider.settings.copyWith(appLocaleTag: value);
-          provider.updateTimetableSettings(next);
-        },
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosSectionLabel(text: l10n.languageSectionTitle),
+        HyperosListGroup(
+          children: [
+            HyperosSelectTile<String>(
+              label: l10n.languageModeLabel,
+              items: buildLocaleMenuMap(context),
+              value: normalizeLocaleTagForDropdown(
+                provider.settings.appLocaleTag,
+              ),
+              onChanged: (value) {
+                final next = provider.settings.copyWith(appLocaleTag: value);
+                provider.updateTimetableSettings(next);
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 

@@ -3700,6 +3700,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get layoutConflictOpacityTitle => '충돌 수업 투명도';
+
+  @override
   String get layoutConflictOpacitySubtitle =>
       '충돌 수업은 자동으로 겹쳐 표시됩니다. 투명도를 낮추면 여러 수업을 동시에 확인할 수 있습니다.';
 

@@ -163,8 +163,8 @@ class _LanEditScreenState extends State<LanEditScreen>
       title: Text(l10n.lanEditTitle),
       child: HyperosListView(
         children: [
+          HyperosSectionLabel(text: l10n.lanEditTitle),
           HyperosControlCard(
-            subtitle: l10n.lanEditIntro,
             child: HyperosControlCardInset(
               child: isRunning
                   ? HyperosButton(
@@ -182,8 +182,8 @@ class _LanEditScreenState extends State<LanEditScreen>
           ),
           if (isRunning && session != null) ...[
             const HyperosSectionGap(),
+            HyperosSectionLabel(text: l10n.lanEditStatusRunning),
             HyperosControlCard(
-              title: l10n.lanEditStatusRunning,
               child: HyperosControlCardInset(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
