@@ -344,9 +344,7 @@ class HyperosSwitchTile extends StatelessWidget {
       color: enabled ? primaryText : primaryText.withValues(alpha: 0.45),
     );
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
-      color: enabled
-          ? HyperosColors.secondaryText(context)
-          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+      color: enabled ? primaryText : primaryText.withValues(alpha: 0.45),
     );
 
     final rowHeight = subtitle != null
@@ -520,8 +518,8 @@ class HyperosChoiceTile extends StatelessWidget {
         : baseTitleStyle;
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
       color: effectiveEnabled
-          ? HyperosColors.secondaryText(context)
-          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+          ? primaryText
+          : primaryText.withValues(alpha: 0.45),
     );
 
     final padding = _paddingForVariant(context);
@@ -556,10 +554,7 @@ class HyperosChoiceTile extends StatelessWidget {
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
-                DefaultTextStyle.merge(
-                  style: subtitleStyle,
-                  child: subtitle!,
-                ),
+                DefaultTextStyle.merge(style: subtitleStyle, child: subtitle!),
               ],
             ],
           ),

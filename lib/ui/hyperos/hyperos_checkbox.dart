@@ -169,9 +169,7 @@ class HyperosCheckboxTile extends StatelessWidget {
       color: enabled ? primaryText : primaryText.withValues(alpha: 0.45),
     );
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
-      color: enabled
-          ? HyperosColors.secondaryText(context)
-          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+      color: enabled ? primaryText : primaryText.withValues(alpha: 0.45),
     );
 
     final row = ConstrainedBox(
@@ -239,9 +237,7 @@ class HyperosRadioTile<T> extends StatelessWidget {
       color: enabled ? primaryText : primaryText.withValues(alpha: 0.45),
     );
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
-      color: enabled
-          ? HyperosColors.secondaryText(context)
-          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+      color: enabled ? primaryText : primaryText.withValues(alpha: 0.45),
     );
 
     final row = ConstrainedBox(

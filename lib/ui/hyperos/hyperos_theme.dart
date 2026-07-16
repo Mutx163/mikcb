@@ -309,11 +309,12 @@ abstract final class HyperosTypography {
 
   static TextStyle listTitle(BuildContext context) => title(context);
 
+  /// Preference row helper / trailing summary — same ink as [title] (not muted).
   static TextStyle listDetail(BuildContext context) {
     return TextStyle(
       fontSize: HyperosTokens.listDetailSize,
       fontWeight: FontWeight.w400,
-      color: HyperosColors.secondaryText(context),
+      color: HyperosColors.primaryText(context),
     );
   }
 
@@ -327,12 +328,13 @@ abstract final class HyperosTypography {
     );
   }
 
+  /// Footnote under list groups — same ink as [title] for readability.
   static TextStyle sectionDescription(BuildContext context) {
     return TextStyle(
       fontSize: HyperosTokens.sectionDescriptionSize,
       fontWeight: FontWeight.w400,
       height: 1.45,
-      color: HyperosColors.secondaryText(context),
+      color: HyperosColors.primaryText(context),
     );
   }
 
@@ -343,13 +345,13 @@ abstract final class HyperosTypography {
   /// Summary card primary line.
   static TextStyle summaryTitle(BuildContext context) => title(context);
 
-  /// Summary card secondary line (Miuix footnote1 + onSurfaceVariantSummary).
+  /// Summary card secondary line — same ink as [title].
   static TextStyle summarySubtitle(BuildContext context) {
     return TextStyle(
       fontSize: HyperosMiuixTypography.footnote1,
       fontWeight: FontWeight.w400,
       height: 1.3,
-      color: HyperosColors.onSurfaceVariantSummary(context),
+      color: HyperosColors.primaryText(context),
     );
   }
 }

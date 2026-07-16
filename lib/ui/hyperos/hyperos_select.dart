@@ -619,8 +619,8 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
         : HyperosColors.disabledOnSurface(context);
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
       color: effectiveEnabled
-          ? HyperosColors.secondaryText(context)
-          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+          ? primaryText
+          : primaryText.withValues(alpha: 0.45),
     );
 
     final rowLayout = hyperosSelectRowLayout(
