@@ -32,6 +32,9 @@ class StorageService {
   factory StorageService() => _instance;
   StorageService._internal();
 
+  @visibleForTesting
+  StorageService.forTesting();
+
   SharedPreferences? _prefs;
   SharedPreferences? _ensuredForPrefs;
   bool _profilesEnsured = false;
@@ -52,6 +55,7 @@ class StorageService {
   bool _hidePrefixMigrated = false;
 
   Future<void>? _initFuture;
+  Future<void> _coursesWriteChain = Future<void>.value();
   Future<void> _profilesWriteChain = Future<void>.value();
 
   /// 仅用于测试：重置缓存的初始化状态
@@ -63,6 +67,7 @@ class StorageService {
     _timeSchemesListCache = null;
     _profilesEnsured = false;
     _timeSchemesEnsured = false;
+    _coursesWriteChain = Future<void>.value();
     _profilesWriteChain = Future<void>.value();
   }
 
@@ -132,7 +137,9 @@ class StorageService {
   }
 
   // 课程存储
-  Future<List<Course>> getCourses() async {
+  Future<List<Course>> getCourses() => _readCoursesWithoutLock();
+
+  Future<List<Course>> _readCoursesWithoutLock() async {
     if (_prefs == null) await init();
     final coursesJson = _prefs?.getStringList(_coursesKey) ?? [];
     try {
@@ -143,31 +150,58 @@ class StorageService {
     }
   }
 
-  Future<void> saveCourses(List<Course> courses) async {
+  Future<void> saveCourses(List<Course> courses) {
+    final coursesSnapshot = List<Course>.from(courses);
+    return _runCoursesWrite(() => _writeCoursesWithoutLock(coursesSnapshot));
+  }
+
+  Future<void> _writeCoursesWithoutLock(List<Course> courses) async {
     if (_prefs == null) await init();
     final coursesJson = courses.map((course) => course.toJsonString()).toList();
     await _prefs?.setStringList(_coursesKey, coursesJson);
   }
 
-  Future<void> addCourse(Course course) async {
-    final courses = await getCourses();
-    courses.add(course);
-    await saveCourses(courses);
+  Future<void> addCourse(Course course) {
+    return _runCoursesWrite(() async {
+      final courses = await _readCoursesWithoutLock();
+      courses.add(course);
+      await _writeCoursesWithoutLock(courses);
+    });
   }
 
-  Future<void> updateCourse(Course updatedCourse) async {
-    final courses = await getCourses();
-    final index = courses.indexWhere((c) => c.id == updatedCourse.id);
-    if (index != -1) {
+  Future<void> updateCourse(Course updatedCourse) {
+    return _runCoursesWrite(() async {
+      final courses = await _readCoursesWithoutLock();
+      final index = courses.indexWhere(
+        (course) => course.id == updatedCourse.id,
+      );
+      if (index == -1) {
+        return;
+      }
       courses[index] = updatedCourse;
-      await saveCourses(courses);
-    }
+      await _writeCoursesWithoutLock(courses);
+    });
   }
 
-  Future<void> deleteCourse(String courseId) async {
-    final courses = await getCourses();
-    courses.removeWhere((c) => c.id == courseId);
-    await saveCourses(courses);
+  Future<void> deleteCourse(String courseId) {
+    return _runCoursesWrite(() async {
+      final courses = await _readCoursesWithoutLock();
+      courses.removeWhere((course) => course.id == courseId);
+      await _writeCoursesWithoutLock(courses);
+    });
+  }
+
+  Future<T> _runCoursesWrite<T>(Future<T> Function() operation) async {
+    final previousWrite = _coursesWriteChain;
+    final writeCompleter = Completer<void>();
+    _coursesWriteChain = writeCompleter.future;
+
+    await previousWrite.catchError((_) {});
+    try {
+      return await operation();
+    } finally {
+      writeCompleter.complete();
+    }
   }
 
   Future<TimetableSettings> getTimetableSettings() async {

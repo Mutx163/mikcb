@@ -76,6 +76,7 @@ void main() {
     await pumpEventQueue();
     liveService.stopLiveUpdateCallCount = 0;
     liveService.startLiveUpdateCallCount = 0;
+    liveService.syncScheduleSnapshotCallCount = 0;
   }
 
   setUp(() {
@@ -1627,11 +1628,7 @@ void main() {
     () async {
       final provider = await _createLiveActivityTestProvider();
       await provider.addCourse(
-        _liveMondayCourse(
-          id: 'odd-week-course',
-          name: '单周课',
-          isOddWeek: true,
-        ),
+        _liveMondayCourse(id: 'odd-week-course', name: '单周课', isOddWeek: true),
       );
 
       final evenWeekMonday = DateTime(2026, 3, 30, 7, 45);
@@ -1687,7 +1684,10 @@ void main() {
     final week5Monday = DateTime(2026, 3, 23, 8, 30);
     final week6Monday = DateTime(2026, 3, 30, 7, 45);
     expect(provider.getLiveActivityCourseSelection(now: week5Monday), isNull);
-    expect(provider.getLiveActivityCourseSelection(now: week6Monday), isNotNull);
+    expect(
+      provider.getLiveActivityCourseSelection(now: week6Monday),
+      isNotNull,
+    );
   });
 
   test('live activity returns null when week is suspended', () async {
@@ -1740,9 +1740,8 @@ void main() {
 
   test('live activity returns null before before-class window opens', () async {
     final provider = await _createLiveActivityTestProvider(
-      configureSettings: (settings) => settings.copyWith(
-        liveShowBeforeClassMinutes: 20,
-      ),
+      configureSettings: (settings) =>
+          settings.copyWith(liveShowBeforeClassMinutes: 20),
     );
     await provider.addCourse(
       _liveMondayCourse(id: 'window-course', name: '窗口课'),
@@ -1757,109 +1756,99 @@ void main() {
     );
   });
 
-  test('live activity returns null after class and stops live update', () async {
-    final liveService = TestMiuiLiveActivitiesService();
-    final provider = await _createLiveActivityTestProvider(
-      enableLiveActivitySync: true,
-      liveActivitiesService: liveService,
-    );
-    await settleLiveActivityStartup(liveService);
-    await provider.addCourse(
-      _liveMondayCourse(id: 'after-class-course', name: '课后课'),
-    );
-    await pumpEventQueue();
-
-    final afterClass = DateTime(2026, 3, 23, 10, 0);
-    expect(provider.getLiveActivityCourseSelection(now: afterClass), isNull);
-
-    liveService.stopLiveUpdateCallCount = 0;
-    liveService.startLiveUpdateCallCount = 0;
-    await provider.updateLiveActivityForTesting(syncScheduleSnapshot: false);
-    await pumpEventQueue();
-
-    expect(liveService.stopLiveUpdateCallCount, 1);
-    expect(liveService.startLiveUpdateCallCount, 0);
-  });
-
   test(
-    'live activity selection matches kotlin scheduler vectors',
+    'live activity returns null after class and stops live update',
     () async {
-      final provider = await _createLiveActivityTestProvider();
+      final liveService = TestMiuiLiveActivitiesService();
+      final provider = await _createLiveActivityTestProvider(
+        enableLiveActivitySync: true,
+        liveActivitiesService: liveService,
+      );
+      await settleLiveActivityStartup(liveService);
       await provider.addCourse(
-        _liveMondayCourse(
-          id: 'parity-course',
-          name: '对齐课',
-          isOddWeek: true,
-        ),
+        _liveMondayCourse(id: 'after-class-course', name: '课后课'),
       );
+      await pumpEventQueue();
 
-      final activeNow = DateTime(2026, 3, 23, 7, 45);
-      final inactiveWeekNow = DateTime(2026, 3, 30, 8, 30);
-      final afterEndWeekNow = DateTime(2026, 6, 15, 8, 30);
-      final beforeWindowNow = DateTime(2026, 3, 23, 7, 30);
-      final afterClassNow = DateTime(2026, 3, 23, 10, 0);
+      final afterClass = DateTime(2026, 3, 23, 10, 0);
+      expect(provider.getLiveActivityCourseSelection(now: afterClass), isNull);
 
-      expect(
-        provider.getLiveActivityCourseSelection(now: activeNow)?.currentCourse.id,
-        'parity-course',
-      );
-      expect(
-        provider.getLiveActivityCourseSelection(now: inactiveWeekNow),
-        isNull,
-      );
-      expect(
-        provider.getLiveActivityCourseSelection(now: afterEndWeekNow),
-        isNull,
-      );
-      expect(
-        provider.getLiveActivityCourseSelection(now: beforeWindowNow),
-        isNull,
-      );
-      expect(
-        provider.getLiveActivityCourseSelection(now: afterClassNow),
-        isNull,
-      );
+      liveService.stopLiveUpdateCallCount = 0;
+      liveService.startLiveUpdateCallCount = 0;
+      await provider.updateLiveActivityForTesting(syncScheduleSnapshot: false);
+      await pumpEventQueue();
 
-      final startTime = LiveActivityLogic.buildCourseDateTime(
-        activeNow,
-        '08:00',
-      );
-      final endTime = LiveActivityLogic.buildCourseDateTime(activeNow, '09:40');
-      expect(startTime, isNotNull);
-      expect(endTime, isNotNull);
-      expect(
-        LiveActivityLogic.resolveLiveActivityStage(
-          currentTime: activeNow,
-          startTime: startTime!,
-          endTime: endTime!,
-          aheadTime: startTime.subtract(const Duration(minutes: 20)),
-          settings: provider.settings,
-          endReminderWindow: const Duration(minutes: 10),
-        ),
-        LiveActivityStage.beforeClass,
-      );
-      expect(
-        LiveActivityLogic.resolveLiveActivityStage(
-          currentTime: beforeWindowNow,
-          startTime: startTime,
-          endTime: endTime,
-          aheadTime: startTime.subtract(const Duration(minutes: 20)),
-          settings: provider.settings,
-          endReminderWindow: const Duration(minutes: 10),
-        ),
-        isNull,
-      );
-      expect(
-        LiveActivityLogic.resolveLiveActivityStage(
-          currentTime: afterClassNow,
-          startTime: startTime,
-          endTime: endTime,
-          aheadTime: startTime.subtract(const Duration(minutes: 20)),
-          settings: provider.settings,
-          endReminderWindow: const Duration(minutes: 10),
-        ),
-        isNull,
-      );
+      expect(liveService.stopLiveUpdateCallCount, 1);
+      expect(liveService.startLiveUpdateCallCount, 0);
     },
   );
+
+  test('live activity selection matches kotlin scheduler vectors', () async {
+    final provider = await _createLiveActivityTestProvider();
+    await provider.addCourse(
+      _liveMondayCourse(id: 'parity-course', name: '对齐课', isOddWeek: true),
+    );
+
+    final activeNow = DateTime(2026, 3, 23, 7, 45);
+    final inactiveWeekNow = DateTime(2026, 3, 30, 8, 30);
+    final afterEndWeekNow = DateTime(2026, 6, 15, 8, 30);
+    final beforeWindowNow = DateTime(2026, 3, 23, 7, 30);
+    final afterClassNow = DateTime(2026, 3, 23, 10, 0);
+
+    expect(
+      provider.getLiveActivityCourseSelection(now: activeNow)?.currentCourse.id,
+      'parity-course',
+    );
+    expect(
+      provider.getLiveActivityCourseSelection(now: inactiveWeekNow),
+      isNull,
+    );
+    expect(
+      provider.getLiveActivityCourseSelection(now: afterEndWeekNow),
+      isNull,
+    );
+    expect(
+      provider.getLiveActivityCourseSelection(now: beforeWindowNow),
+      isNull,
+    );
+    expect(provider.getLiveActivityCourseSelection(now: afterClassNow), isNull);
+
+    final startTime = LiveActivityLogic.buildCourseDateTime(activeNow, '08:00');
+    final endTime = LiveActivityLogic.buildCourseDateTime(activeNow, '09:40');
+    expect(startTime, isNotNull);
+    expect(endTime, isNotNull);
+    expect(
+      LiveActivityLogic.resolveLiveActivityStage(
+        currentTime: activeNow,
+        startTime: startTime!,
+        endTime: endTime!,
+        aheadTime: startTime.subtract(const Duration(minutes: 20)),
+        settings: provider.settings,
+        endReminderWindow: const Duration(minutes: 10),
+      ),
+      LiveActivityStage.beforeClass,
+    );
+    expect(
+      LiveActivityLogic.resolveLiveActivityStage(
+        currentTime: beforeWindowNow,
+        startTime: startTime,
+        endTime: endTime,
+        aheadTime: startTime.subtract(const Duration(minutes: 20)),
+        settings: provider.settings,
+        endReminderWindow: const Duration(minutes: 10),
+      ),
+      isNull,
+    );
+    expect(
+      LiveActivityLogic.resolveLiveActivityStage(
+        currentTime: afterClassNow,
+        startTime: startTime,
+        endTime: endTime,
+        aheadTime: startTime.subtract(const Duration(minutes: 20)),
+        settings: provider.settings,
+        endReminderWindow: const Duration(minutes: 10),
+      ),
+      isNull,
+    );
+  });
 }

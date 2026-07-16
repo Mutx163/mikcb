@@ -381,7 +381,42 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> initialize() {
-    return _initializationFuture ??= _init();
+    final existingInitialization = _initializationFuture;
+    if (existingInitialization != null) {
+      return existingInitialization;
+    }
+
+    final initializationCompleter = Completer<void>();
+    final initializationFuture = initializationCompleter.future;
+    _initializationFuture = initializationFuture;
+
+    _init().then(
+      (_) => initializationCompleter.complete(),
+      onError: (Object error, StackTrace stackTrace) {
+        if (identical(_initializationFuture, initializationFuture)) {
+          _initializationFuture = null;
+        }
+        initializationCompleter.completeError(error, stackTrace);
+      },
+    );
+    return initializationFuture;
+  }
+
+  Future<void> handleAppResumed() async {
+    try {
+      await initialize();
+      if (!_enableLiveActivitySync) {
+        return;
+      }
+      await _liveHandleAppResumed(this);
+    } catch (error, stackTrace) {
+      await AppLogService.instance.error(
+        'live_activity_resume_recovery_failed',
+        '应用恢复时修复超级岛状态失败',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Re-read profiles/binding/teachers after an external snapshot apply (C4).

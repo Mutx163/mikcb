@@ -631,6 +631,7 @@ class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
 
   int stopLiveUpdateCallCount = 0;
   int startLiveUpdateCallCount = 0;
+  int syncScheduleSnapshotCallCount = 0;
 
   @override
   Future<void> stopLiveUpdate() async {
@@ -703,6 +704,7 @@ class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
     bool enableHolidayMarking = true,
     String? isHolidayDate,
   }) async {
+    syncScheduleSnapshotCallCount++;
     return true;
   }
 

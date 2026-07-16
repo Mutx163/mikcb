@@ -91,6 +91,19 @@ void _liveStartActivityTick(TimetableProvider host) {
   host._liveActivityTimer?.cancel();
   unawaited(host.syncTemporalContext());
   unawaited(_liveUpdateActivity(host));
+  _liveScheduleActivityTick(host);
+}
+
+Future<void> _liveHandleAppResumed(TimetableProvider host) async {
+  host._liveActivityTimer?.cancel();
+  await host.syncTemporalContext();
+  host._lastLiveSnapshotSignature = null;
+  host._currentLiveCourseId = null;
+  await _liveUpdateActivity(host);
+  _liveScheduleActivityTick(host);
+}
+
+void _liveScheduleActivityTick(TimetableProvider host) {
   host._liveActivityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
     unawaited(host.syncTemporalContext());
     _liveCheckActivityStageTransition(host);
