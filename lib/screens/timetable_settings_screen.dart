@@ -712,11 +712,18 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            HyperosControlCard(
+              edgeToEdge: true,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: _HomeTitleStylePreview(style: _draft.homeTitleStyle),
+              ),
+            ),
+            const SizedBox(height: 12),
             HyperosListGroup(
               children: [
                 HyperosSelectTile<HomeTitleStyle>(
                   label: l10n.homeTitleStyleLabel,
-                  subtitle: l10n.homeTitleSectionSubtitle,
                   items: {
                     for (final v in HomeTitleStyle.values)
                       homeTitleStyleLabel(l10n, v): v,
@@ -727,20 +734,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   },
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            HyperosControlCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _HomeTitleStylePreview(style: _draft.homeTitleStyle),
-                  const SizedBox(height: 8),
-                  Text(
-                    homeTitleStyleDescription(l10n, _draft.homeTitleStyle),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -774,25 +767,15 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  HyperosHexColorChipGroup(
-                    colorHexes: _backgroundColors,
-                    selectedHex: _draft.timetablePageBackgroundColor,
-                    colorParser: _colorFromHex,
-                    onSelectedHex: (color) {
-                      _updateDraft(
-                        _draft.copyWith(timetablePageBackgroundColor: color),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.timetableBackgroundColorSectionSubtitle,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-                ],
+              child: HyperosHexColorChipGroup(
+                colorHexes: _backgroundColors,
+                selectedHex: _draft.timetablePageBackgroundColor,
+                colorParser: _colorFromHex,
+                onSelectedHex: (color) {
+                  _updateDraft(
+                    _draft.copyWith(timetablePageBackgroundColor: color),
+                  );
+                },
               ),
             ),
           ],
@@ -804,35 +787,22 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           children: [
             HyperosSwitchTile(
               title: l10n.frostedBlurEnabledTitle,
-              subtitle: l10n.frostedBlurEnabledSubtitle,
               value: _draft.frostedBlurEnabled,
               onChanged: (value) {
                 _updateDraft(_draft.copyWith(frostedBlurEnabled: value));
               },
             ),
-            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  FrostedSheetSettingsPreview(
-                    provider: provider,
-                    settings: _draft,
-                    week: provider.currentWeek,
-                    blurSigma: _draft.frostedSheetBlurSigma,
-                    tintAlpha: _draft.frostedSheetTintAlpha,
-                    barrierAlpha: _draft.frostedSheetBarrierAlpha,
-                    blurEnabled: _draft.frostedBlurEnabled,
-                    onOpenDemoSheet: () =>
-                        showFrostedSheetSettingsDemo(context),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.frostedSheetSectionSubtitle,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: FrostedSheetSettingsPreview(
+                provider: provider,
+                settings: _draft,
+                week: provider.currentWeek,
+                blurSigma: _draft.frostedSheetBlurSigma,
+                tintAlpha: _draft.frostedSheetTintAlpha,
+                barrierAlpha: _draft.frostedSheetBarrierAlpha,
+                blurEnabled: _draft.frostedBlurEnabled,
+                onOpenDemoSheet: () => showFrostedSheetSettingsDemo(context),
               ),
             ),
             HyperosSliderTile(
@@ -870,7 +840,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         children: [
           HyperosSwitchTile(
             title: l10n.unifiedCourseCardColorTitle,
-            subtitle: l10n.unifiedCourseCardColorSubtitle,
             value: _draft.timetableUseUnifiedCardColor,
             onChanged: (value) {
               _updateDraft(
@@ -878,10 +847,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               );
             },
           ),
-          if (_draft.timetableUseUnifiedCardColor) ...[
-            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
+          if (_draft.timetableUseUnifiedCardColor)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
               child: HyperosHexColorChipGroup(
                 colorHexes: _cardColors,
                 selectedHex: _draft.timetableUnifiedCardColor,
@@ -893,7 +861,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 },
               ),
             ),
-          ],
         ],
       ),
       9 => HyperosSettingsBlock(
@@ -904,7 +871,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               context,
               l10n: l10n,
               title: l10n.homePageWallpaperTitle,
-              subtitle: l10n.homePageWallpaperSubtitle,
               path: resolveHomePageBackdropImagePath(_draft),
               onPick: _pickHomePageBackdropImage,
               onClear: () {
@@ -919,10 +885,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
-            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
             HyperosSwitchTile(
               title: l10n.homePageBackdropFollowsWeekPagerTitle,
-              subtitle: l10n.homePageBackdropFollowsWeekPagerSubtitle,
               value: _draft.homePageBackdropFollowsWeekPager,
               onChanged: (value) {
                 _updateDraft(
@@ -930,7 +894,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
-            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
             HyperosSwitchTile(
               title: l10n.homePageBackgroundScopeStatusBar,
               value: HomePageBackgroundScope.includes(
@@ -1003,16 +966,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                l10n.homePageBackgroundScopeSubtitle,
-                style: HyperosTypography.sectionDescription(context),
-              ),
-            ),
             HyperosSwitchTile(
               title: l10n.homePageHeaderBlurTitle,
-              subtitle: l10n.homePageHeaderBlurSubtitle,
               value: _draft.homePageHeaderBlurEnabled,
               onChanged: (value) {
                 _updateDraft(_draft.copyWith(homePageHeaderBlurEnabled: value));
@@ -1020,7 +975,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             ),
             HyperosSwitchTile(
               title: l10n.homePageWeekdayBarBlurTitle,
-              subtitle: l10n.homePageWeekdayBarBlurSubtitle,
               value: _draft.homePageWeekdayBarBlurEnabled,
               onChanged: (value) {
                 _updateDraft(
@@ -1030,20 +984,12 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             ),
             HyperosSwitchTile(
               title: l10n.homePageTimeColumnBlurTitle,
-              subtitle: l10n.homePageTimeColumnBlurSubtitle,
               value: _draft.homePageTimeColumnBlurEnabled,
               onChanged: (value) {
                 _updateDraft(
                   _draft.copyWith(homePageTimeColumnBlurEnabled: value),
                 );
               },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                l10n.homePageRegionBlurSectionSubtitle,
-                style: HyperosTypography.sectionDescription(context),
-              ),
             ),
           ],
         ),
@@ -1068,7 +1014,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     BuildContext context, {
     required AppLocalizations l10n,
     required String title,
-    required String subtitle,
     required String? path,
     required Future<void> Function() onPick,
     required VoidCallback onClear,
@@ -1077,15 +1022,13 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         ? l10n.homePageImageNotSelected
         : path.split(Platform.pathSeparator).last;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(title, style: HyperosTypography.listTitle(context)),
           const SizedBox(height: 4),
-          Text(subtitle, style: HyperosTypography.sectionDescription(context)),
-          const SizedBox(height: 12),
-          Text(fileName, style: Theme.of(context).textTheme.bodySmall),
+          Text(fileName, style: HyperosTypography.listDetail(context)),
           const SizedBox(height: 12),
           Row(
             children: [

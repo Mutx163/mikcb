@@ -9,6 +9,14 @@ import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 
+/// Shared trailing slot for active checkmark and inactive chevron.
+/// Wider than the chevron glyph so a readable check can center without
+/// shifting the more-actions button when the active profile changes.
+const double _profileTrailingIndicatorSlot = 22;
+
+/// Readable check size (matches [HyperosSelectedCheckmark] default / ChoiceTile).
+const double _profileTrailingCheckSize = 22;
+
 class TimetableProfilesScreen extends StatelessWidget {
   const TimetableProfilesScreen({super.key});
 
@@ -121,7 +129,6 @@ class TimetableProfilesScreen extends StatelessWidget {
       confirmLabel: l10n.createAction,
       bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
-        label: l10n.timetableNameLabel,
         hint: l10n.timetableNameHint,
         autofocus: true,
       ),
@@ -155,7 +162,7 @@ class TimetableProfilesScreen extends StatelessWidget {
       initialValue: currentName,
       bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
-        label: l10n.timetableNameLabel,
+        hint: l10n.timetableNameHint,
         autofocus: true,
       ),
       validate: (value) => value.isNotEmpty,
@@ -355,9 +362,8 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
             widget.profile.currentWeek,
           );
 
-    // Match [HyperosListTile] trailing chrome exactly: same row padding
-    // ([hyperosChevronRowPadding]), same [titleChevronGap], bare
-    // [HyperosChevron] with no custom size box or extra margin.
+    // Match [HyperosListTile] row padding and [titleChevronGap]; trailing
+    // indicator uses a fixed slot so check/chevron share one center.
     final row = hyperosListRowShell(
       padding: hyperosChevronRowPadding(context),
       minHeight: HyperosTokens.listRowTwoLineMinHeight,
@@ -397,12 +403,24 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
               onPressed: _openMoreMenu,
             ),
             SizedBox(width: HyperosTokens.titleChevronGap),
-            // Checkmark uses the kit default (22), same as [HyperosChoiceTile];
-            // do not shrink it into the chevron glyph box.
-            if (widget.isActive)
-              const HyperosSelectedCheckmark()
-            else
-              const HyperosChevron(),
+            // Fixed slot for check / chevron so the more button never shifts
+            // and both glyphs share the same geometric center.
+            SizedBox(
+              width: _profileTrailingIndicatorSlot,
+              height: _profileTrailingIndicatorSlot,
+              child: Center(
+                child: widget.isActive
+                    ? Transform.translate(
+                        // Material [Icons.check] sits slightly low-right;
+                        // nudge back onto the chevron centerline.
+                        offset: const Offset(-0.5, -1),
+                        child: const HyperosSelectedCheckmark(
+                          size: _profileTrailingCheckSize,
+                        ),
+                      )
+                    : const HyperosChevron(),
+              ),
+            ),
           ],
         ],
       ),

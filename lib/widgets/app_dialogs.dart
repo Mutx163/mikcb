@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
-import 'course_field_picker_sheet.dart';
-
 Future<bool?> showAppConfirmDialog(
   BuildContext context, {
   required String title,
@@ -82,11 +80,12 @@ Future<bool?> showAppTripleActionDialog(
   );
 }
 
-/// Text input form — HyperOS bottom sheet with full [HyperosButton]s
-/// (same pattern as cloud-sync / couple WebDAV connect sheets).
+/// Single-line name prompt — floating HyperOS bottom card.
 ///
-/// Do not use a center Material dialog for named inputs; that diverges from
-/// the rest of the app's form chrome.
+/// Matches home / form sheets: outer gaps on left/right/bottom, full rounded
+/// card, solid [HyperosButton]s (secondary cancel + primary confirm).
+/// Not a center [HyperosDialog] (text-only pink actions) and not edge-flush
+/// [HyperosSheetFrame] (no side/bottom margin).
 Future<String?> showAppTextInputDialog(
   BuildContext context, {
   required String title,
@@ -155,34 +154,55 @@ class _AppTextInputSheetState extends State<_AppTextInputSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return PickerSheetScaffold(
-      actions: Row(
-        children: [
-          Expanded(
-            child: HyperosButton(
-              label: widget.cancelLabel,
-              variant: HyperosButtonVariant.secondary,
-              expand: true,
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: HyperosButton(
-              label: widget.confirmLabel,
-              expand: true,
-              onPressed: _submit,
-            ),
-          ),
-        ],
+    // Floating card: same outer inset as Miuix dialog / snackbar host (12dp).
+    // showHyperosSheet already lifts for keyboard; we add safe-area bottom gap.
+    final outerInset = HyperosMiuixDialog.outsideMarginHorizontal;
+    final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        outerInset,
+        0,
+        outerInset,
+        outerInset + bottomSafeInset,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(widget.title, style: HyperosTypography.sheetTitle(context)),
-          const SizedBox(height: 16),
-          widget.bodyBuilder(_controller),
-        ],
+      child: Material(
+        color: HyperosColors.surfaceContainer(context),
+        shape: HyperosTheme.cardShape(),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(widget.title, style: HyperosTypography.sheetTitle(context)),
+              const SizedBox(height: 16),
+              widget.bodyBuilder(_controller),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: HyperosButton(
+                      label: widget.cancelLabel,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: HyperosButton(
+                      label: widget.confirmLabel,
+                      expand: true,
+                      onPressed: _submit,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
