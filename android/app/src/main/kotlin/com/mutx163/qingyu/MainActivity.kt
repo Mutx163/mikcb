@@ -94,6 +94,7 @@ class MainActivity : FlutterActivity() {
 
     private var pendingExternalImport: PendingExternalImport? = null
     private var pendingOpenLanEdit = false
+    private var pendingDebugRoute: Map<String, Any?>? = null
     private var flutterChannel: MethodChannel? = null
     private var lanEditChannel: MethodChannel? = null
 
@@ -133,6 +134,8 @@ class MainActivity : FlutterActivity() {
         )
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Debug deep links first so automation routes never fall into import.
+        handleDebugDeepLinkIntent(intent)
         handleExternalImportIntent(intent)
         handleLanEditIntent(intent)
     }
@@ -140,6 +143,7 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleDebugDeepLinkIntent(intent)
         handleExternalImportIntent(intent)
         handleLanEditIntent(intent)
     }
@@ -379,6 +383,12 @@ class MainActivity : FlutterActivity() {
                                 )
                             },
                         )
+                    }
+
+                    "getPendingDebugRoute" -> {
+                        val pending = pendingDebugRoute
+                        pendingDebugRoute = null
+                        result.success(pending)
                     }
 
                     else -> result.notImplemented()
@@ -624,11 +634,81 @@ class MainActivity : FlutterActivity() {
             }
     }
 
+    /**
+     * Debug-only deep links for adb / Android CLI automation.
+     * Scheme: mikcb-debug://path?query=value
+     * Only honored on non-release package ids (*.debug / *.profile).
+     */
+    private fun handleDebugDeepLinkIntent(intent: Intent) {
+        if (!isDebugAutomationPackage()) {
+            return
+        }
+        val action = intent.action ?: return
+        if (action != Intent.ACTION_VIEW) {
+            return
+        }
+        val data = intent.data ?: return
+        if (data.scheme != "mikcb-debug") {
+            return
+        }
+        // Prefer path-absolute form: mikcb-debug:///settings/live
+        // (empty host). Host-based form mikcb-debug://settings/live is also
+        // accepted for convenience.
+        val host = data.host?.trim().orEmpty()
+        val pathSegment = data.path
+            ?.trim()
+            .orEmpty()
+            .removePrefix("/")
+        val path = when {
+            host.isEmpty() && pathSegment.isEmpty() -> "home"
+            host.isEmpty() -> pathSegment
+            pathSegment.isEmpty() -> host
+            else -> "$host/$pathSegment"
+        }.trim().removePrefix("/")
+        if (path.isEmpty()) {
+            return
+        }
+        val query = mutableMapOf<String, String>()
+        for (name in data.queryParameterNames) {
+            val value = data.getQueryParameter(name) ?: continue
+            query[name] = value
+        }
+        pendingDebugRoute = mapOf(
+            "path" to path,
+            "query" to query,
+        )
+        notifyDebugRouteReceived()
+    }
+
+    private fun isDebugAutomationPackage(): Boolean {
+        val packageName = applicationContext.packageName
+        return packageName.endsWith(".debug") || packageName.endsWith(".profile")
+    }
+
+    private fun notifyDebugRouteReceived() {
+        try {
+            flutterChannel?.invokeMethod("onDebugRouteReceived", null)
+        } catch (error: Exception) {
+            Log.w("MainActivity", "notifyDebugRouteReceived failed", error)
+        }
+    }
+
     private fun handleExternalImportIntent(intent: Intent) {
         val action = intent.action ?: return
         if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return
 
+        // Debug automation deep links share ACTION_VIEW with file imports.
+        // Never open them as content URIs — that floods logcat with
+        // FileNotFoundException: No content provider: mikcb-debug://...
+        val dataScheme = intent.data?.scheme
+        if (dataScheme == "mikcb-debug") {
+            return
+        }
+
         val uri = resolveImportUri(intent) ?: return
+        if (uri.scheme == "mikcb-debug") {
+            return
+        }
         val mimeType = intent.type?.takeIf { it.isNotBlank() }
             ?: contentResolver.getType(uri)
         val fileName = resolveImportDisplayName(uri)
@@ -707,6 +787,9 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun readImportBytes(uri: Uri): ByteArray? {
+        if (uri.scheme == "mikcb-debug") {
+            return null
+        }
         return try {
             contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() }
         } catch (e: Exception) {

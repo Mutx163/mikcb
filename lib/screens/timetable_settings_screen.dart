@@ -1637,6 +1637,12 @@ class _HomeTitleStylePreview extends StatelessWidget {
   }
 }
 
+/// Public factory for debug deep-link navigation (debug builds only).
+Widget createLiveSettingsScreen() => const _LiveSettingsScreen();
+
+/// Public factory for debug deep-link navigation (debug builds only).
+Widget createLiveTestingSettingsScreen() => const _LiveTestingSettingsScreen();
+
 class _LiveSettingsScreen extends StatefulWidget {
   const _LiveSettingsScreen();
 

@@ -80,6 +80,14 @@
                 <data android:scheme="${umengScheme}" />
             </intent-filter>
 
+            <!-- Debug / profile automation deep links (adb / Android CLI). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mikcb-debug" />
+            </intent-filter>
+
             <!-- Supported import types: .ics, .mikcb, .json, .csv, .xlsx -->
 
             <intent-filter>
