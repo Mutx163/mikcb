@@ -2168,12 +2168,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only affects the period after class starts and before it ends';
 
   @override
-  String get liveClassReminderLeadTitle =>
-      'When to switch to highlighted island reminders before class ends';
+  String get liveClassReminderLeadTitle => 'Highlight timing';
 
   @override
-  String get liveClassReminderLeadOptionImmediate =>
-      'Switch immediately when class starts';
+  String get liveClassReminderLeadOptionImmediate => 'As soon as class starts';
 
   @override
   String liveClassReminderLeadOptionMinutes(int minutes) {
@@ -2203,7 +2201,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep a regular during-class notification, then switch before class ends';
 
   @override
-  String get enableIslandDisplayTitle => 'Enable Island / Dynamic Presentation';
+  String get enableIslandDisplayTitle => 'Show Island';
 
   @override
   String get enableIslandDisplaySubtitle =>

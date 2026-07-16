@@ -2031,38 +2031,38 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveReminderSwitchesTitle => '提醒开关';
 
   @override
-  String get liveReminderSwitchesSubtitle => '不同提醒时段可以自由组合；这些开关互不替代。';
+  String get liveReminderSwitchesSubtitle => '可自由组合，互不影响。';
 
   @override
   String get beforeClassReminderTitle => '上课前提醒';
 
   @override
   String beforeClassReminderSubtitle(int minutes) {
-    return '在课程开始前 $minutes 分钟弹出';
+    return '课程开始前 $minutes 分钟弹出';
   }
 
   @override
   String get duringClassReminderTitle => '课中 / 下课提醒';
 
   @override
-  String get duringClassReminderSubtitle => '只影响上课后到下课前的展示';
+  String get duringClassReminderSubtitle => '上课后到下课前的展示';
 
   @override
-  String get liveClassReminderLeadTitle => '下课前多久切到超级岛 / 重点提醒';
+  String get liveClassReminderLeadTitle => '重点提醒切入时机';
 
   @override
   String get liveClassReminderLeadOptionImmediate => '一上课就切换';
 
   @override
   String liveClassReminderLeadOptionMinutes(int minutes) {
-    return '下课前 $minutes 分钟切换';
+    return '下课前 $minutes 分钟';
   }
 
   @override
   String get liveDisplayModeTitle => '展示方式';
 
   @override
-  String get liveDisplayModeSubtitle => '对已启用的提醒时段生效。';
+  String get liveDisplayModeSubtitle => '对已开启的提醒生效。';
 
   @override
   String get duringClassStatusNotificationTitle => '课中状态栏通知';
@@ -2071,24 +2071,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get duringClassStatusNotificationImmediate => '上课后保留状态栏通知';
 
   @override
-  String get duringClassStatusNotificationBeforeEnd => '在下课提醒开始前保留普通通知文案';
+  String get duringClassStatusNotificationBeforeEnd => '重点提醒前保留普通通知';
 
   @override
-  String get duringClassStatusNotificationPersistent =>
-      '上课后持续显示普通课中通知，到下课提醒前再切换';
+  String get duringClassStatusNotificationPersistent => '课中持续显示普通通知';
 
   @override
-  String get enableIslandDisplayTitle => '支持展示超级岛/灵动岛';
+  String get enableIslandDisplayTitle => '展示超级岛 / 灵动岛';
 
   @override
-  String get enableIslandDisplaySubtitle => '关闭后不会再尝试触发系统超级岛';
+  String get enableIslandDisplaySubtitle => '关闭后不触发系统超级岛';
 
   @override
   String get liveTimeThresholdTitle => '时间阈值';
 
   @override
-  String get liveTimeThresholdSubtitle =>
-      '控制上课前弹出、下课前多久切到超级岛 / 重点提醒，以及最后秒级倒计时。';
+  String get liveTimeThresholdSubtitle => '控制课前弹出与秒级倒计时。';
 
   @override
   String get beforeClassPopupLabel => '上课前弹出时间';
@@ -2099,7 +2097,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get beforeEndSecondsLabel => '下课前秒级提醒阈值';
+  String get beforeEndSecondsLabel => '下课前秒级阈值';
 
   @override
   String beforeEndSecondsOption(int seconds) {
@@ -2115,13 +2113,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timeCorrectionTitle => '铃声时间矫正';
 
   @override
-  String get timeCorrectionHelp => '如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。';
+  String get timeCorrectionHelp => '铃声比课表快则提前，慢则延后。';
 
   @override
-  String get duringEndTimeDisplayLabel => '课中 / 下课提醒时间样式';
+  String get duringEndTimeDisplayLabel => '课中时间样式';
 
   @override
-  String get duringEndTimeDisplayHelp => '控制紧凑提醒里显示最近时间还是整段总时间。';
+  String get duringEndTimeDisplayHelp => '紧凑提醒显示最近时间或总时长。';
 
   @override
   String get liveDisplayContentTitle => '显示内容';
@@ -2758,22 +2756,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '从上课开始就进入重点提醒展示，并在距下课 $seconds 秒切到秒级倒数';
+    return '一上课进入重点提醒，下课前 $seconds 秒秒级倒数';
   }
 
   @override
   String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '上课后先保留普通课中通知，在距下课前 $minutes 分钟切到重点提醒 / 下课提醒，并在最后 $seconds 秒切到秒级倒数';
+    return '课中普通通知，下课前 $minutes 分钟重点提醒';
   }
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '在距下课前 $minutes 分钟切到超级岛 / 重点提醒，并在最后 $seconds 秒切到秒级倒数';
+    return '下课前 $minutes 分钟切到超级岛 / 重点提醒';
   }
 
   @override
   String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '在距下课前 $minutes 分钟开始展示重点提醒，并在最后 $seconds 秒切到秒级倒数';
+    return '下课前 $minutes 分钟开始重点提醒';
   }
 
   @override

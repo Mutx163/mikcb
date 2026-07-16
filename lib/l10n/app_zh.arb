@@ -1138,9 +1138,9 @@
   "followBeforeClassSetting": "跟随上课前提醒",
   "liveReminderTimingTitle": "提醒时段",
   "liveReminderSwitchesTitle": "提醒开关",
-  "liveReminderSwitchesSubtitle": "不同提醒时段可以自由组合；这些开关互不替代。",
+  "liveReminderSwitchesSubtitle": "可自由组合，互不影响。",
   "beforeClassReminderTitle": "上课前提醒",
-  "beforeClassReminderSubtitle": "在课程开始前 {minutes} 分钟弹出",
+  "beforeClassReminderSubtitle": "课程开始前 {minutes} 分钟弹出",
   "@beforeClassReminderSubtitle": {
     "placeholders": {
       "minutes": {
@@ -1149,10 +1149,10 @@
     }
   },
   "duringClassReminderTitle": "课中 / 下课提醒",
-  "duringClassReminderSubtitle": "只影响上课后到下课前的展示",
-  "liveClassReminderLeadTitle": "下课前多久切到超级岛 / 重点提醒",
+  "duringClassReminderSubtitle": "上课后到下课前的展示",
+  "liveClassReminderLeadTitle": "重点提醒切入时机",
   "liveClassReminderLeadOptionImmediate": "一上课就切换",
-  "liveClassReminderLeadOptionMinutes": "下课前 {minutes} 分钟切换",
+  "liveClassReminderLeadOptionMinutes": "下课前 {minutes} 分钟",
   "@liveClassReminderLeadOptionMinutes": {
     "placeholders": {
       "minutes": {
@@ -1161,15 +1161,15 @@
     }
   },
   "liveDisplayModeTitle": "展示方式",
-  "liveDisplayModeSubtitle": "对已启用的提醒时段生效。",
+  "liveDisplayModeSubtitle": "对已开启的提醒生效。",
   "duringClassStatusNotificationTitle": "课中状态栏通知",
   "duringClassStatusNotificationImmediate": "上课后保留状态栏通知",
-  "duringClassStatusNotificationBeforeEnd": "在下课提醒开始前保留普通通知文案",
-  "duringClassStatusNotificationPersistent": "上课后持续显示普通课中通知，到下课提醒前再切换",
-  "enableIslandDisplayTitle": "支持展示超级岛/灵动岛",
-  "enableIslandDisplaySubtitle": "关闭后不会再尝试触发系统超级岛",
+  "duringClassStatusNotificationBeforeEnd": "重点提醒前保留普通通知",
+  "duringClassStatusNotificationPersistent": "课中持续显示普通通知",
+  "enableIslandDisplayTitle": "展示超级岛 / 灵动岛",
+  "enableIslandDisplaySubtitle": "关闭后不触发系统超级岛",
   "liveTimeThresholdTitle": "时间阈值",
-  "liveTimeThresholdSubtitle": "控制上课前弹出、下课前多久切到超级岛 / 重点提醒，以及最后秒级倒计时。",
+  "liveTimeThresholdSubtitle": "控制课前弹出与秒级倒计时。",
   "beforeClassPopupLabel": "上课前弹出时间",
   "beforeClassMinutesOption": "{minutes} 分钟",
   "@beforeClassMinutesOption": {
@@ -1179,7 +1179,7 @@
       }
     }
   },
-  "beforeEndSecondsLabel": "下课前秒级提醒阈值",
+  "beforeEndSecondsLabel": "下课前秒级阈值",
   "beforeEndSecondsOption": "{seconds} 秒",
   "@beforeEndSecondsOption": {
     "placeholders": {
@@ -1197,9 +1197,9 @@
     }
   },
   "timeCorrectionTitle": "铃声时间矫正",
-  "timeCorrectionHelp": "如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。",
-  "duringEndTimeDisplayLabel": "课中 / 下课提醒时间样式",
-  "duringEndTimeDisplayHelp": "控制紧凑提醒里显示最近时间还是整段总时间。",
+  "timeCorrectionHelp": "铃声比课表快则提前，慢则延后。",
+  "duringEndTimeDisplayLabel": "课中时间样式",
+  "duringEndTimeDisplayHelp": "紧凑提醒显示最近时间或总时长。",
   "liveDisplayContentTitle": "显示内容",
   "liveDisplayContentSubtitle": "这组设置只影响当前阶段，不会改动另一组提醒显示。",
   "showCourseNameTitle": "显示课程名",
@@ -1577,7 +1577,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "从上课开始就进入重点提醒展示，并在距下课 {seconds} 秒切到秒级倒数",
+  "liveClassReminderLeadSummaryImmediate": "一上课进入重点提醒，下课前 {seconds} 秒秒级倒数",
   "@liveClassReminderLeadSummaryImmediate": {
     "placeholders": {
       "seconds": {
@@ -1585,7 +1585,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryKeepNormal": "上课后先保留普通课中通知，在距下课前 {minutes} 分钟切到重点提醒 / 下课提醒，并在最后 {seconds} 秒切到秒级倒数",
+  "liveClassReminderLeadSummaryKeepNormal": "课中普通通知，下课前 {minutes} 分钟重点提醒",
   "@liveClassReminderLeadSummaryKeepNormal": {
     "placeholders": {
       "minutes": {
@@ -1596,7 +1596,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "在距下课前 {minutes} 分钟切到超级岛 / 重点提醒，并在最后 {seconds} 秒切到秒级倒数",
+  "liveClassReminderLeadSummaryIsland": "下课前 {minutes} 分钟切到超级岛 / 重点提醒",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1607,7 +1607,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryFocused": "在距下课前 {minutes} 分钟开始展示重点提醒，并在最后 {seconds} 秒切到秒级倒数",
+  "liveClassReminderLeadSummaryFocused": "下课前 {minutes} 分钟开始重点提醒",
   "@liveClassReminderLeadSummaryFocused": {
     "placeholders": {
       "minutes": {

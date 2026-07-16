@@ -115,10 +115,15 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final duringClassEnabled =
+        _draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd;
     final timeCorrectionText = _formatLiveTimeCorrection(
       l10n,
       _draft.liveTimeCorrectionSeconds,
     );
+    // HyperOS list style: section label + one list group of equal-height rows.
+    // Avoid ControlCard wrappers and long footnotes so the page scans like
+    // system settings (title / one-line subtitle / trailing control).
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.liveReminderTimingTitle),
@@ -139,8 +144,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               HyperosSwitchTile(
                 title: l10n.duringClassReminderTitle,
                 subtitle: l10n.duringClassReminderSubtitle,
-                value:
-                    _draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd,
+                value: duringClassEnabled,
                 onChanged: (value) => _updateDraft(
                   _draft.copyWith(
                     liveEnableDuringClass: value,
@@ -148,31 +152,25 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   ),
                 ),
               ),
+              if (duringClassEnabled)
+                HyperosSelectTile<int>(
+                  label: l10n.liveClassReminderLeadTitle,
+                  subtitle: _buildLiveClassReminderLeadSummary(l10n, _draft),
+                  items: {
+                    l10n.liveClassReminderLeadOptionImmediate: 0,
+                    l10n.liveClassReminderLeadOptionMinutes(5): 5,
+                    l10n.liveClassReminderLeadOptionMinutes(10): 10,
+                    l10n.liveClassReminderLeadOptionMinutes(15): 15,
+                    l10n.liveClassReminderLeadOptionMinutes(20): 20,
+                    l10n.liveClassReminderLeadOptionMinutes(30): 30,
+                  },
+                  value: _draft.liveClassReminderStartMinutes,
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveClassReminderStartMinutes: value),
+                  ),
+                ),
             ],
           ),
-          HyperosSectionDescription(text: l10n.liveReminderSwitchesSubtitle),
-          if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd) ...[
-            const HyperosSectionGap(),
-            HyperosControlCard(
-              title: l10n.liveClassReminderLeadTitle,
-              subtitle: _buildLiveClassReminderLeadSummary(l10n, _draft),
-              child: HyperosSelectTile<int>(
-                label: l10n.liveClassReminderLeadTitle,
-                items: {
-                  l10n.liveClassReminderLeadOptionImmediate: 0,
-                  l10n.liveClassReminderLeadOptionMinutes(5): 5,
-                  l10n.liveClassReminderLeadOptionMinutes(10): 10,
-                  l10n.liveClassReminderLeadOptionMinutes(15): 15,
-                  l10n.liveClassReminderLeadOptionMinutes(20): 20,
-                  l10n.liveClassReminderLeadOptionMinutes(30): 30,
-                },
-                value: _draft.liveClassReminderStartMinutes,
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(liveClassReminderStartMinutes: value),
-                ),
-              ),
-            ),
-          ],
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.liveDisplayModeTitle),
           HyperosListGroup(
@@ -199,87 +197,64 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
             ],
           ),
-          HyperosSectionDescription(text: l10n.liveDisplayModeSubtitle),
           const HyperosSectionGap(),
-          HyperosControlCard(
-            title: l10n.liveTimeThresholdTitle,
-            subtitle: l10n.liveTimeThresholdSubtitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HyperosSelectTile<int>(
-                  label: l10n.beforeClassPopupLabel,
-                  items: {
-                    for (final value in _beforeClassMinutesOptions)
-                      l10n.beforeClassMinutesOption(value): value,
-                  },
-                  value: _draft.liveShowBeforeClassMinutes,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveShowBeforeClassMinutes: value),
-                  ),
+          HyperosSectionLabel(text: l10n.liveTimeThresholdTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSelectTile<int>(
+                label: l10n.beforeClassPopupLabel,
+                items: {
+                  for (final value in _beforeClassMinutesOptions)
+                    l10n.beforeClassMinutesOption(value): value,
+                },
+                value: _draft.liveShowBeforeClassMinutes,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveShowBeforeClassMinutes: value),
                 ),
-                const SizedBox(height: 12),
-                HyperosSelectTile<int>(
-                  label: l10n.beforeEndSecondsLabel,
-                  items: {
-                    for (final value in _endSecondsOptions)
-                      l10n.beforeEndSecondsOption(value): value,
-                  },
-                  value: _draft.liveEndSecondsCountdownThreshold,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveEndSecondsCountdownThreshold: value),
-                  ),
+              ),
+              HyperosSelectTile<int>(
+                label: l10n.beforeEndSecondsLabel,
+                items: {
+                  for (final value in _endSecondsOptions)
+                    l10n.beforeEndSecondsOption(value): value,
+                },
+                value: _draft.liveEndSecondsCountdownThreshold,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveEndSecondsCountdownThreshold: value),
                 ),
-                const SizedBox(height: 12),
-                HyperosSliderTile(
-                  title: l10n.timeCorrectionLabel(timeCorrectionText),
-                  value: _draft.liveTimeCorrectionSeconds.toDouble(),
-                  min: _timeCorrectionMin,
-                  max: _timeCorrectionMax,
-                  divisions: (_timeCorrectionMax - _timeCorrectionMin).round(),
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveTimeCorrectionSeconds: value.round()),
-                    debounce: true,
-                  ),
+              ),
+              HyperosSelectTile<LiveDuringClassTimeDisplayMode>(
+                label: l10n.duringEndTimeDisplayLabel,
+                subtitle: l10n.duringEndTimeDisplayHelp,
+                items: {
+                  for (final value in LiveDuringClassTimeDisplayMode.values)
+                    liveDuringClassTimeDisplayModeLabel(l10n, value): value,
+                },
+                value: _draft.liveDuringEndTimeDisplayMode,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveDuringEndTimeDisplayMode: value),
                 ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal:
-                        HyperosControlCardScope.defaultHorizontalPadding,
-                  ),
-                  child: Text(
-                    l10n.timeCorrectionHelp,
-                    style: HyperosTypography.listDetail(context),
-                  ),
+              ),
+            ],
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.timeCorrectionTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSliderTile(
+                title: l10n.timeCorrectionLabel(timeCorrectionText),
+                dialogTitle: l10n.timeCorrectionTitle,
+                dialogHelper: l10n.timeCorrectionHelp,
+                value: _draft.liveTimeCorrectionSeconds.toDouble(),
+                min: _timeCorrectionMin,
+                max: _timeCorrectionMax,
+                divisions: (_timeCorrectionMax - _timeCorrectionMin).round(),
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveTimeCorrectionSeconds: value.round()),
+                  debounce: true,
                 ),
-                const SizedBox(height: 12),
-                HyperosSelectTile<LiveDuringClassTimeDisplayMode>(
-                  label: l10n.duringEndTimeDisplayLabel,
-                  items: {
-                    for (final value in LiveDuringClassTimeDisplayMode.values)
-                      liveDuringClassTimeDisplayModeLabel(l10n, value): value,
-                  },
-                  value: _draft.liveDuringEndTimeDisplayMode,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveDuringEndTimeDisplayMode: value),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    HyperosControlCardScope.defaultHorizontalPadding,
-                    0,
-                    HyperosControlCardScope.defaultHorizontalPadding,
-                    HyperosControlCardScope.defaultBodyBottomInset,
-                  ),
-                  child: Text(
-                    l10n.duringEndTimeDisplayHelp,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -515,7 +490,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+                    horizontal:
+                        HyperosControlCardScope.defaultHorizontalPadding,
                   ),
                   child: Text(
                     l10n.liveMiuiLabelLogoTitle,
@@ -525,7 +501,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+                    horizontal:
+                        HyperosControlCardScope.defaultHorizontalPadding,
                   ),
                   child: Text(
                     l10n.liveMiuiLabelLogoSubtitle,
@@ -535,7 +512,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+                    horizontal:
+                        HyperosControlCardScope.defaultHorizontalPadding,
                   ),
                   child: Row(
                     children: [
@@ -580,11 +558,13 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+                      horizontal:
+                          HyperosControlCardScope.defaultHorizontalPadding,
                     ),
                     child: _ImagePreview(
                       path: display.miuiIslandLabelLogoPath!,
-                      imageCornerRadius: display.miuiIslandLabelLogoCornerRadius,
+                      imageCornerRadius:
+                          display.miuiIslandLabelLogoCornerRadius,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -796,7 +776,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     HyperosControlCardScope.defaultHorizontalPadding,
                     HyperosControlCardScope.defaultBodyBottomInset,
                   ),
-                  child: _ImagePreview(path: display.miuiIslandExpandedIconPath!),
+                  child: _ImagePreview(
+                    path: display.miuiIslandExpandedIconPath!,
+                  ),
                 ),
               ] else
                 const SizedBox(

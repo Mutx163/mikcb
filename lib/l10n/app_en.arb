@@ -1188,8 +1188,8 @@
   },
   "duringClassReminderTitle": "During Class / Before End Reminder",
   "duringClassReminderSubtitle": "Only affects the period after class starts and before it ends",
-  "liveClassReminderLeadTitle": "When to switch to highlighted island reminders before class ends",
-  "liveClassReminderLeadOptionImmediate": "Switch immediately when class starts",
+  "liveClassReminderLeadTitle": "Highlight timing",
+  "liveClassReminderLeadOptionImmediate": "As soon as class starts",
   "liveClassReminderLeadOptionMinutes": "Switch {minutes} min before class ends",
   "@liveClassReminderLeadOptionMinutes": {
     "placeholders": {
@@ -1204,7 +1204,7 @@
   "duringClassStatusNotificationImmediate": "Keep a status notification after class begins",
   "duringClassStatusNotificationBeforeEnd": "Keep a regular notification until highlighted reminders begin before class ends",
   "duringClassStatusNotificationPersistent": "Keep a regular during-class notification, then switch before class ends",
-  "enableIslandDisplayTitle": "Enable Island / Dynamic Presentation",
+  "enableIslandDisplayTitle": "Show Island",
   "enableIslandDisplaySubtitle": "Disable this if you never want the app to trigger system island presentation",
   "liveTimeThresholdTitle": "Timing Thresholds",
   "liveTimeThresholdSubtitle": "Controls when reminders appear, when highlighted reminders start, and when to switch to second-level countdown.",

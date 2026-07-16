@@ -3793,7 +3793,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveReminderSwitchesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'不同提醒时段可以自由组合；这些开关互不替代。'**
+  /// **'可自由组合，互不影响。'**
   String get liveReminderSwitchesSubtitle;
 
   /// No description provided for @beforeClassReminderTitle.
@@ -3805,7 +3805,7 @@ abstract class AppLocalizations {
   /// No description provided for @beforeClassReminderSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'在课程开始前 {minutes} 分钟弹出'**
+  /// **'课程开始前 {minutes} 分钟弹出'**
   String beforeClassReminderSubtitle(int minutes);
 
   /// No description provided for @duringClassReminderTitle.
@@ -3817,13 +3817,13 @@ abstract class AppLocalizations {
   /// No description provided for @duringClassReminderSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只影响上课后到下课前的展示'**
+  /// **'上课后到下课前的展示'**
   String get duringClassReminderSubtitle;
 
   /// No description provided for @liveClassReminderLeadTitle.
   ///
   /// In zh, this message translates to:
-  /// **'下课前多久切到超级岛 / 重点提醒'**
+  /// **'重点提醒切入时机'**
   String get liveClassReminderLeadTitle;
 
   /// No description provided for @liveClassReminderLeadOptionImmediate.
@@ -3835,7 +3835,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveClassReminderLeadOptionMinutes.
   ///
   /// In zh, this message translates to:
-  /// **'下课前 {minutes} 分钟切换'**
+  /// **'下课前 {minutes} 分钟'**
   String liveClassReminderLeadOptionMinutes(int minutes);
 
   /// No description provided for @liveDisplayModeTitle.
@@ -3847,7 +3847,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDisplayModeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'对已启用的提醒时段生效。'**
+  /// **'对已开启的提醒生效。'**
   String get liveDisplayModeSubtitle;
 
   /// No description provided for @duringClassStatusNotificationTitle.
@@ -3865,25 +3865,25 @@ abstract class AppLocalizations {
   /// No description provided for @duringClassStatusNotificationBeforeEnd.
   ///
   /// In zh, this message translates to:
-  /// **'在下课提醒开始前保留普通通知文案'**
+  /// **'重点提醒前保留普通通知'**
   String get duringClassStatusNotificationBeforeEnd;
 
   /// No description provided for @duringClassStatusNotificationPersistent.
   ///
   /// In zh, this message translates to:
-  /// **'上课后持续显示普通课中通知，到下课提醒前再切换'**
+  /// **'课中持续显示普通通知'**
   String get duringClassStatusNotificationPersistent;
 
   /// No description provided for @enableIslandDisplayTitle.
   ///
   /// In zh, this message translates to:
-  /// **'支持展示超级岛/灵动岛'**
+  /// **'展示超级岛 / 灵动岛'**
   String get enableIslandDisplayTitle;
 
   /// No description provided for @enableIslandDisplaySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后不会再尝试触发系统超级岛'**
+  /// **'关闭后不触发系统超级岛'**
   String get enableIslandDisplaySubtitle;
 
   /// No description provided for @liveTimeThresholdTitle.
@@ -3895,7 +3895,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTimeThresholdSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'控制上课前弹出、下课前多久切到超级岛 / 重点提醒，以及最后秒级倒计时。'**
+  /// **'控制课前弹出与秒级倒计时。'**
   String get liveTimeThresholdSubtitle;
 
   /// No description provided for @beforeClassPopupLabel.
@@ -3913,7 +3913,7 @@ abstract class AppLocalizations {
   /// No description provided for @beforeEndSecondsLabel.
   ///
   /// In zh, this message translates to:
-  /// **'下课前秒级提醒阈值'**
+  /// **'下课前秒级阈值'**
   String get beforeEndSecondsLabel;
 
   /// No description provided for @beforeEndSecondsOption.
@@ -3937,19 +3937,19 @@ abstract class AppLocalizations {
   /// No description provided for @timeCorrectionHelp.
   ///
   /// In zh, this message translates to:
-  /// **'如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。'**
+  /// **'铃声比课表快则提前，慢则延后。'**
   String get timeCorrectionHelp;
 
   /// No description provided for @duringEndTimeDisplayLabel.
   ///
   /// In zh, this message translates to:
-  /// **'课中 / 下课提醒时间样式'**
+  /// **'课中时间样式'**
   String get duringEndTimeDisplayLabel;
 
   /// No description provided for @duringEndTimeDisplayHelp.
   ///
   /// In zh, this message translates to:
-  /// **'控制紧凑提醒里显示最近时间还是整段总时间。'**
+  /// **'紧凑提醒显示最近时间或总时长。'**
   String get duringEndTimeDisplayHelp;
 
   /// No description provided for @liveDisplayContentTitle.
@@ -5106,25 +5106,25 @@ abstract class AppLocalizations {
   /// No description provided for @liveClassReminderLeadSummaryImmediate.
   ///
   /// In zh, this message translates to:
-  /// **'从上课开始就进入重点提醒展示，并在距下课 {seconds} 秒切到秒级倒数'**
+  /// **'一上课进入重点提醒，下课前 {seconds} 秒秒级倒数'**
   String liveClassReminderLeadSummaryImmediate(int seconds);
 
   /// No description provided for @liveClassReminderLeadSummaryKeepNormal.
   ///
   /// In zh, this message translates to:
-  /// **'上课后先保留普通课中通知，在距下课前 {minutes} 分钟切到重点提醒 / 下课提醒，并在最后 {seconds} 秒切到秒级倒数'**
+  /// **'课中普通通知，下课前 {minutes} 分钟重点提醒'**
   String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds);
 
   /// No description provided for @liveClassReminderLeadSummaryIsland.
   ///
   /// In zh, this message translates to:
-  /// **'在距下课前 {minutes} 分钟切到超级岛 / 重点提醒，并在最后 {seconds} 秒切到秒级倒数'**
+  /// **'下课前 {minutes} 分钟切到超级岛 / 重点提醒'**
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds);
 
   /// No description provided for @liveClassReminderLeadSummaryFocused.
   ///
   /// In zh, this message translates to:
-  /// **'在距下课前 {minutes} 分钟开始展示重点提醒，并在最后 {seconds} 秒切到秒级倒数'**
+  /// **'下课前 {minutes} 分钟开始重点提醒'**
   String liveClassReminderLeadSummaryFocused(int minutes, int seconds);
 
   /// No description provided for @liveSettingsEntrySubtitle.
