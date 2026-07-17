@@ -36,6 +36,7 @@ import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
+import '../widgets/course_field_picker_sheet.dart';
 import '../services/bundled_assets.dart';
 import '../services/live_testing_fixture_service.dart';
 import '../services/live_testing_trigger.dart';
@@ -495,7 +496,7 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
-  static const _appearanceSectionCount = 11;
+  static const _appearanceSectionCount = 12;
 
   static const List<String> _backgroundColors = [
     '#F8FAFC',
@@ -836,7 +837,34 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      8 => HyperosListGroup(
+      // After frosted blur, above background display scope.
+      8 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.pageTransitionSpeedTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSliderTile(
+                title: l10n.pageTransitionSpeedTitle,
+                value: _draft.pageTransitionSpeed,
+                min: TimetableSettings.minPageTransitionSpeed,
+                max: TimetableSettings.maxPageTransitionSpeed,
+                divisions: 20,
+                valueLabel: '${_draft.pageTransitionSpeed.toStringAsFixed(1)}×',
+                onChanged: (value) {
+                  HyperosNavigation.applyUserTransitionSpeed(context, value);
+                  _updateDraft(
+                    _draft.copyWith(pageTransitionSpeed: value),
+                    debounce: true,
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      9 => HyperosListGroup(
         children: [
           HyperosSwitchTile(
             title: l10n.unifiedCourseCardColorTitle,
@@ -863,7 +891,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             ),
         ],
       ),
-      9 => HyperosSettingsBlock(
+      10 => HyperosSettingsBlock(
         title: l10n.homePageBackgroundScopeTitle,
         child: HyperosListGroup(
           children: [
@@ -994,7 +1022,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      10 => TimetableTextColorSettings(
+      11 => TimetableTextColorSettings(
         settings: _draft,
         onChanged: (next) => _updateDraft(next),
       ),
@@ -3273,7 +3301,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     );
   }
 
-  static const _layoutSectionCount = 14;
+  static const _layoutSectionCount = 12;
 
   Widget _buildLayoutSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
@@ -3306,36 +3334,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ],
       ),
       1 => const HyperosSectionGap(),
-      2 => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          HyperosSectionLabel(text: l10n.pageTransitionSpeedTitle),
-          HyperosListGroup(
-            children: [
-              HyperosSliderTile(
-                title: l10n.pageTransitionSpeedTitle,
-                value: _draft.pageTransitionSpeed,
-                min: TimetableSettings.minPageTransitionSpeed,
-                max: TimetableSettings.maxPageTransitionSpeed,
-                divisions: 20,
-                valueLabel: '${_draft.pageTransitionSpeed.toStringAsFixed(1)}×',
-                onChanged: (value) {
-                  HyperosNavigation.applyUserTransitionSpeed(context, value);
-                  _updateDraft(
-                    _draft.copyWith(pageTransitionSpeed: value),
-                    debounce: true,
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-      3 => const HyperosSectionGap(),
       // Preference rows only: gray [HyperosSectionLabel] above, white list card.
       // Do not put black/muted titles or long footnotes on the card itself.
-      4 => Column(
+      2 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -3455,9 +3456,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      5 => const HyperosSectionGap(),
-      6 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
-      7 => HyperosListGroup(
+      3 => const HyperosSectionGap(),
+      4 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
+      5 => HyperosListGroup(
         children: [
           HyperosSwitchTile(
             title: l10n.showCourseNameTitle,
@@ -3532,8 +3533,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      8 => const HyperosSectionGap(),
-      9 => HyperosListGroup(
+      6 => const HyperosSectionGap(),
+      7 => HyperosListGroup(
         children: [
           HyperosSelectTile<CourseCardVerticalAlign>(
             label: l10n.layoutVerticalAlignLabel,
@@ -3559,8 +3560,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      10 => const HyperosSectionGap(),
-      11 => Column(
+      8 => const HyperosSectionGap(),
+      9 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -3584,8 +3585,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      12 => const HyperosSectionGap(),
-      13 => Column(
+      10 => const HyperosSectionGap(),
+      11 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -4152,133 +4153,134 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            return HyperosSheetFrame(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                16 + MediaQuery.of(ctx).viewInsets.bottom,
+            // showHyperosSheet already pads by viewInsets.bottom — do not add it
+            // again on the frame or keyboard leaves a huge empty band.
+            final dateSummary = startDate != null && endDate != null
+                ? _formatHolidayRange(startDate!, endDate!, l10n)
+                : '--';
+
+            return PickerSheetScaffold(
+              actions: Row(
+                children: [
+                  Expanded(
+                    child: HyperosButton(
+                      label: MaterialLocalizations.of(ctx).cancelButtonLabel,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: HyperosButton(
+                      label: MaterialLocalizations.of(ctx).okButtonLabel,
+                      expand: true,
+                      onPressed: () {
+                        if (nameController.text.trim().isEmpty) {
+                          showAppToast(
+                            ctx,
+                            message: l10n.customHolidayNameRequired,
+                            kind: AppToastKind.warning,
+                          );
+                          return;
+                        }
+                        if (startDate == null || endDate == null) {
+                          return;
+                        }
+                        Navigator.pop(ctx, true);
+                      },
+                    ),
+                  ),
+                ],
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      existing != null
-                          ? l10n.customHolidayEdit
-                          : l10n.customHolidayAdd,
-                      style: HyperosTypography.sheetTitle(ctx),
-                    ),
-                    const SizedBox(height: 12),
-                    HyperosTextField(
-                      controller: nameController,
-                      label: l10n.customHolidayNameLabel,
-                    ),
-                    const SizedBox(height: 12),
-                    HyperosListGroup(
-                      children: [
-                        HyperosChoiceTile(
-                          prefix: Icon(
-                            Icons.date_range,
-                            size: 18,
-                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                          ),
-                          title:
-                              '${l10n.customHolidayStartDate} / ${l10n.customHolidayEndDate}',
-                          subtitle: Text(
-                            startDate != null && endDate != null
-                                ? '${startDate!.month}/${startDate!.day} — ${endDate!.month}/${endDate!.day}'
-                                : '--',
-                          ),
-                          onTap: () async {
-                            FocusManager.instance.primaryFocus?.unfocus();
-                            final now = DateTime.now();
-                            final picked = await showDateRangePicker(
-                              context: ctx,
-                              initialDateRange:
-                                  startDate != null && endDate != null
-                                  ? DateTimeRange(
-                                      start: startDate!,
-                                      end: endDate!,
-                                    )
-                                  : null,
-                              firstDate: DateTime(now.year - 1),
-                              lastDate: DateTime(now.year + 2),
-                            );
-                            if (picked != null) {
-                              setDialogState(() {
-                                startDate = picked.start;
-                                endDate = picked.end;
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.customHolidayType,
-                      style: HyperosTypography.sectionLabel(ctx),
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      width: double.infinity,
-                      child: HyperosSegmentedControl(
-                        tabs: [
-                          l10n.customHolidayTypeVacation,
-                          l10n.customHolidayTypeWorkday,
-                        ],
-                        selectedIndex: selectedType == HolidayType.vacation
-                            ? 0
-                            : 1,
-                        onChanged: (index) {
-                          setDialogState(() {
-                            selectedType = index == 0
-                                ? HolidayType.vacation
-                                : HolidayType.adjustedWorkday;
-                          });
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    existing != null
+                        ? l10n.customHolidayEdit
+                        : l10n.customHolidayAdd,
+                    style: HyperosTypography.sheetTitle(ctx),
+                  ),
+                  const SizedBox(height: 16),
+                  HyperosTextField(
+                    controller: nameController,
+                    label: l10n.customHolidayNameLabel,
+                  ),
+                  const SizedBox(height: 12),
+                  HyperosListGroup(
+                    children: [
+                      HyperosNavTile(
+                        title: l10n.customHolidayStartDate,
+                        details: dateSummary,
+                        holdHighlightThroughTransition: false,
+                        onTap: () async {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          final now = DateTime.now();
+                          final picked = await showDateRangePicker(
+                            context: ctx,
+                            initialDateRange:
+                                startDate != null && endDate != null
+                                ? DateTimeRange(
+                                    start: startDate!,
+                                    end: endDate!,
+                                  )
+                                : null,
+                            firstDate: DateTime(now.year - 1),
+                            lastDate: DateTime(now.year + 2),
+                            builder: (pickerContext, child) {
+                              return Theme(
+                                data: Theme.of(pickerContext).copyWith(
+                                  colorScheme: ColorScheme.fromSeed(
+                                    seedColor: HyperosColors.primary(
+                                      pickerContext,
+                                    ),
+                                    brightness: Theme.of(
+                                      pickerContext,
+                                    ).brightness,
+                                  ),
+                                ),
+                                child: child ?? const SizedBox.shrink(),
+                              );
+                            },
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              startDate = picked.start;
+                              endDate = picked.end;
+                            });
+                          }
                         },
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: HyperosFrostedSheetButton(
-                            label: MaterialLocalizations.of(
-                              ctx,
-                            ).cancelButtonLabel,
-                            expand: true,
-                            bordered: true,
-                            onPressed: () => Navigator.pop(ctx, false),
-                          ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  HyperosSectionLabel(text: l10n.customHolidayType),
+                  HyperosListGroup(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        child: HyperosSegmentedControl(
+                          tabs: [
+                            l10n.customHolidayTypeVacation,
+                            l10n.customHolidayTypeWorkday,
+                          ],
+                          selectedIndex: selectedType == HolidayType.vacation
+                              ? 0
+                              : 1,
+                          onChanged: (index) {
+                            setDialogState(() {
+                              selectedType = index == 0
+                                  ? HolidayType.vacation
+                                  : HolidayType.adjustedWorkday;
+                            });
+                          },
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: HyperosButton(
-                            label: MaterialLocalizations.of(ctx).okButtonLabel,
-                            expand: true,
-                            onPressed: () {
-                              if (nameController.text.trim().isEmpty) {
-                                showAppToast(
-                                  ctx,
-                                  message: l10n.customHolidayNameRequired,
-                                  kind: AppToastKind.warning,
-                                );
-                                return;
-                              }
-                              if (startDate == null || endDate == null) {
-                                return;
-                              }
-                              Navigator.pop(ctx, true);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             );
           },
@@ -4293,7 +4295,6 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
         existing?.groupId ?? 'custom-${DateTime.now().millisecondsSinceEpoch}';
     final provider = context.read<TimetableProvider>();
 
-    // Build entries for each day in range
     final entries = <HolidayEntry>[];
     var d = startDate!;
     while (!d.isAfter(endDate!)) {
@@ -4308,7 +4309,6 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       d = d.add(const Duration(days: 1));
     }
 
-    // Batch save: load existing → add/update → save once (avoid race condition)
     if (existing != null) {
       await provider.updateCustomHoliday(groupId, entries);
     } else {
@@ -4407,17 +4407,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       onBack: () => Navigator.pop(context),
       suffixes: [
         FHeaderAction(
-          icon: const Icon(Icons.refresh),
-          semanticsLabel: l10n.holidayCheckUpdate,
-          onPress: () async {
-            await provider.refreshHolidayData();
-            if (context.mounted) {
-              showAppToast(
-                context,
-                message: l10n.holidayCheckUpdate,
-                kind: AppToastKind.success,
-              );
-            }
+          icon: const Icon(Icons.tune_rounded),
+          semanticsLabel: l10n.cloudSyncAdvancedTitle,
+          onPress: () {
+            HyperosNavigation.push(
+              context,
+              settings: const RouteSettings(name: '/settings/holiday/advanced'),
+              builder: (_) => const _HolidayAdvancedSettingsScreen(),
+            );
           },
         ),
       ],
@@ -4428,7 +4425,6 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
           context,
           index,
           l10n: l10n,
-          provider: provider,
           holidayData: holidayData,
           officialHolidays: officialHolidays,
         ),
@@ -4436,13 +4432,12 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     );
   }
 
-  static const _holidaySectionCount = 4;
+  static const _holidaySectionCount = 3;
 
   Widget _buildHolidaySection(
     BuildContext context,
     int index, {
     required AppLocalizations l10n,
-    required TimetableProvider provider,
     required HolidayData? holidayData,
     required List<_HolidayDisplayItem> officialHolidays,
   }) {
@@ -4467,306 +4462,93 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       ),
       1 => Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          HyperosCard(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.edit_note,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        l10n.customHolidayTitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    HyperosButton(
-                      label: l10n.customHolidayAdd,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: () => _showCustomHolidayDialog(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                if (_customHolidays.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: Text(
-                        l10n.customHolidayEmpty,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ..._groupCustomHolidays().map((group) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Dismissible(
-                        key: ValueKey(group.groupId),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 16),
-                          color: Theme.of(context).colorScheme.errorContainer,
-                          child: Icon(
-                            Icons.delete_outline,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
-                          ),
-                        ),
-                        confirmDismiss: (_) async {
-                          await _confirmDeleteCustomHoliday(group.groupId);
-                          return false;
-                        },
-                        child: HyperosChoiceTile(
-                          prefix: Container(
-                            width: 4,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: group.type == HolidayType.vacation
-                                  ? Colors.orange
-                                  : Colors.blue,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          title: group.name,
-                          subtitle: Text(
-                            _formatHolidayRange(
-                              group.startDate,
-                              group.endDate,
-                              l10n,
-                            ),
-                          ),
-                          trailing: Icon(
-                            Icons.delete_outline,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          onTap: () {
-                            final entries = _customHolidays
-                                .where((e) => e.groupId == group.groupId)
-                                .toList();
-                            if (entries.isNotEmpty) {
-                              _showCustomHolidayDialog(
-                                existing: entries.first,
-                                initialStart: group.startDate,
-                                initialEnd: group.endDate,
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  }),
-              ],
-            ),
-          ),
-          const HyperosSectionGap(),
-        ],
-      ),
-      2 => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosCard(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.celebration_outlined,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        l10n.holidayDataYearLabel(holidayData?.year ?? ''),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (officialHolidays.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: Text(
-                        l10n.holidayNoUpcoming,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ...officialHolidays.map(
-                    (h) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Opacity(
-                        opacity: h.isPast ? 0.4 : 1.0,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: h.type == HolidayType.vacation
-                                    ? Colors.orange
-                                    : Colors.blue,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    h.name,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatHolidayRange(
-                                      h.startDate,
-                                      h.endDate,
-                                      l10n,
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const HyperosSectionGap(),
-        ],
-      ),
-      _ => HyperosCard(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.history,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    l10n.holidayUpdateLog,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                if (provider.holidayLogs.isNotEmpty)
-                  Text(
-                    l10n.holidayUpdateLogCount(provider.holidayLogs.length),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            if (provider.holidayLogs.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  '暂无日志',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              )
-            else
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 140),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: const ClampingScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: provider.holidayLogs.length,
-                  itemBuilder: (_, i) {
-                    final log = provider.holidayLogs[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 3),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            log.timeString,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontFamily: 'monospace',
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant
-                                  .withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              HolidayLogLocalizer.localize(l10n, log.message),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+          HyperosSectionLabel(text: l10n.customHolidayTitle),
+          // Items first, then the add action at the bottom of the group.
+          HyperosListGroup(
+            children: [
+              if (_customHolidays.isEmpty)
+                HyperosNavTile(
+                  title: l10n.customHolidayEmpty,
+                  enabled: false,
+                  showChevron: false,
+                )
+              else
+                ..._groupCustomHolidays().map((group) {
+                  final typeLabel = group.type == HolidayType.vacation
+                      ? l10n.customHolidayTypeVacation
+                      : l10n.customHolidayTypeWorkday;
+                  final rangeLabel = _formatHolidayRange(
+                    group.startDate,
+                    group.endDate,
+                    l10n,
+                  );
+                  return HyperosNavTile(
+                    title: group.name,
+                    // System preference style: primary title, gray caption, trailing summary.
+                    subtitle: typeLabel,
+                    details: rangeLabel,
+                    holdHighlightThroughTransition: false,
+                    onTap: () {
+                      final entries = _customHolidays
+                          .where((e) => e.groupId == group.groupId)
+                          .toList();
+                      if (entries.isNotEmpty) {
+                        _showCustomHolidayDialog(
+                          existing: entries.first,
+                          initialStart: group.startDate,
+                          initialEnd: group.endDate,
+                        );
+                      }
+                    },
+                    onLongPress: () =>
+                        _confirmDeleteCustomHoliday(group.groupId),
+                  );
+                }),
+              HyperosActionTile(
+                icon: Icons.add_rounded,
+                title: l10n.customHolidayAdd,
+                onTap: () => _showCustomHolidayDialog(),
               ),
-          ],
-        ),
+            ],
+          ),
+          const HyperosSectionGap(),
+        ],
+      ),
+      _ => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(
+            text: l10n.holidayDataYearLabel(holidayData?.year ?? ''),
+          ),
+          if (officialHolidays.isEmpty)
+            HyperosListGroup(
+              children: [
+                HyperosNavTile(title: l10n.holidayNoUpcoming, enabled: false),
+              ],
+            )
+          else
+            HyperosListGroup(
+              children: [
+                for (final holiday in officialHolidays)
+                  Opacity(
+                    opacity: holiday.isPast ? 0.55 : 1,
+                    child: HyperosNavTile(
+                      title: holiday.name,
+                      details: _formatHolidayRange(
+                        holiday.startDate,
+                        holiday.endDate,
+                        l10n,
+                      ),
+                      showChevron: false,
+                      holdHighlightThroughTransition: false,
+                    ),
+                  ),
+              ],
+            ),
+        ],
       ),
     };
   }
@@ -4792,6 +4574,162 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
 
   bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+/// Advanced holiday tools: manual refresh + update log (hidden from casual users).
+class _HolidayAdvancedSettingsScreen extends StatefulWidget {
+  const _HolidayAdvancedSettingsScreen();
+
+  @override
+  State<_HolidayAdvancedSettingsScreen> createState() =>
+      _HolidayAdvancedSettingsScreenState();
+}
+
+class _HolidayAdvancedSettingsScreenState
+    extends State<_HolidayAdvancedSettingsScreen> {
+  bool _refreshing = false;
+
+  Future<void> _refreshHolidayData() async {
+    if (_refreshing) {
+      return;
+    }
+    setState(() => _refreshing = true);
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await context.read<TimetableProvider>().refreshHolidayData();
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.holidayCheckUpdate,
+        kind: AppToastKind.success,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _refreshing = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.watch<TimetableProvider>();
+    final logs = provider.holidayLogs;
+    final cardColor = HyperosColors.card(context);
+    final divider = HyperosColors.dividerLine(context);
+
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.cloudSyncAdvancedTitle),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: HyperosBlurredBodyInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 4),
+                  HyperosSectionLabel(text: l10n.holidayUpdateLog),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Material(
+                        color: cardColor,
+                        shape: HyperosTheme.cardShape(),
+                        clipBehavior: Clip.antiAlias,
+                        child: logs.isEmpty
+                            ? Center(
+                                child: Text(
+                                  '暂无日志',
+                                  style: HyperosTypography.listDetail(context),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  12,
+                                  16,
+                                  12,
+                                ),
+                                itemCount: logs.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 6),
+                                itemBuilder: (_, index) {
+                                  final log = logs[index];
+                                  final message = HolidayLogLocalizer.localize(
+                                    l10n,
+                                    log.message,
+                                  );
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        log.timeString,
+                                        style:
+                                            HyperosTypography.listDetail(
+                                              context,
+                                            ).copyWith(
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
+                                              height: 1.2,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        message,
+                                        style:
+                                            HyperosTypography.listDetail(
+                                              context,
+                                            ).copyWith(
+                                              color: HyperosColors.primaryText(
+                                                context,
+                                              ),
+                                              height: 1.4,
+                                              letterSpacing: 0.1,
+                                            ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Fixed footer: solid bar + full-width refresh action.
+          Material(
+            color: cardColor,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: cardColor,
+                border: Border(top: BorderSide(color: divider, width: 0.5)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: HyperosButton(
+                    label: l10n.holidayCheckUpdate,
+                    expand: true,
+                    loading: _refreshing,
+                    onPressed: _refreshing ? null : _refreshHolidayData,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HolidayDisplayItem {

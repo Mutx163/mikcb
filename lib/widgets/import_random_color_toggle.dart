@@ -4,7 +4,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../services/import_random_color_preferences.dart';
 
-/// Unified switch for random course colors on all import subpages.
+/// Master switch for random course colors on the course import hub page.
 class ImportRandomColorToggle extends StatefulWidget {
   const ImportRandomColorToggle({super.key});
 

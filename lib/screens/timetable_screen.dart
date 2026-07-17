@@ -2455,11 +2455,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     if (courseItem.isPartnerCourse) {
       void openCoursePreview() {
-        _showCourseActions(
-          courseItem.course,
-          week,
-          displayItem: courseItem,
-        );
+        _showCourseActions(courseItem.course, week, displayItem: courseItem);
       }
 
       final partnerCard = progressInfo != null
@@ -3534,11 +3530,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                 showDescription: settings.courseCardShowDescription,
                 verticalAlign: settings.courseCardVerticalAlign,
                 horizontalAlign: settings.courseCardHorizontalAlign,
-                onTap: () => _showCourseActions(
-                  item.course,
-                  week,
-                  displayItem: item,
-                ),
+                onTap: () =>
+                    _showCourseActions(item.course, week, displayItem: item),
                 compactTitleFontSize: settings.courseCardFontSize,
                 compactSubtitleFontSize: (settings.courseCardFontSize - 1)
                     .clamp(7.0, 14.0),
@@ -4009,6 +4002,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     final buttonOpacity =
         provider.settings.timetableFloatingBackToCurrentWeekButtonOpacity;
     final borderRadius = BorderRadius.circular(18);
+    // Do not wrap [HyperosFrostedSurface] in [Opacity]: Flutter's
+    // [BackdropFilter] cannot sample content behind an opacity layer, so the
+    // button would only show a solid tint and ignore the frosted-blur switch.
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final baseTint = HyperosBlurredHeader.homePageRegionTintColor(
+      context,
+      withBlur: useBlur,
+    );
+    final frostedTint = baseTint.withValues(
+      alpha: (baseTint.a * buttonOpacity).clamp(0.0, 1.0),
+    );
+    final contentOpacity = buttonOpacity.clamp(0.0, 1.0);
 
     return SafeArea(
       minimum: const EdgeInsets.only(right: 20, bottom: 24),
@@ -4016,57 +4021,66 @@ class _TimetableScreenState extends State<TimetableScreen>
         alignment: Alignment.bottomRight,
         child: Tooltip(
           message: l10n.backToCurrentWeekAction,
-          child: Opacity(
-            opacity: buttonOpacity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                border: Border.all(color: foruiColors.border, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: theme.brightness == Brightness.dark ? 0.12 : 0.06,
-                    ),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: foruiColors.border.withValues(
+                  alpha: foruiColors.border.a * contentOpacity,
+                ),
+                width: 1,
               ),
-              child: ClipRRect(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha:
+                        (theme.brightness == Brightness.dark ? 0.12 : 0.06) *
+                        contentOpacity,
+                  ),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: borderRadius,
+              child: HyperosFrostedSurface(
                 borderRadius: borderRadius,
-                child: HyperosFrostedSurface(
-                  borderRadius: borderRadius,
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: InkWell(
-                      key: const ValueKey('back-to-current-week-button'),
-                      onTap: () => _jumpToCurrentWeek(provider),
-                      borderRadius: borderRadius,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.my_location_rounded,
-                              size: 15,
-                              color: colorScheme.primary,
+                tint: frostedTint,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    key: const ValueKey('back-to-current-week-button'),
+                    onTap: () => _jumpToCurrentWeek(provider),
+                    borderRadius: borderRadius,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.my_location_rounded,
+                            size: 15,
+                            color: colorScheme.primary.withValues(
+                              alpha: colorScheme.primary.a * contentOpacity,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              l10n.backToCurrentWeekAction,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurface,
-                                height: 1,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            l10n.backToCurrentWeekAction,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: colorScheme.onSurface.a * contentOpacity,
                               ),
+                              height: 1,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -4413,10 +4427,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         !isPartner &&
         _isCoupleOverlayActive(provider) &&
         _findTogetherPartnerCourse(
-          course,
-          week,
-          partnerWeekOffset: partnerWeekOffset,
-        ) !=
+              course,
+              week,
+              partnerWeekOffset: partnerWeekOffset,
+            ) !=
             null) {
       coupleKind = CoupleCourseKind.together;
     }
@@ -4433,9 +4447,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         )) {
       coupleKind = CoupleCourseKind.together;
     }
-    if (coupleKind == null &&
-        isPartner &&
-        _isCoupleOverlayActive(provider)) {
+    if (coupleKind == null && isPartner && _isCoupleOverlayActive(provider)) {
       coupleKind = CoupleCourseKind.partner;
     }
     final items = <CourseActionPreviewItem>[
@@ -4451,12 +4463,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         if (items.any((item) => item.course.id == conflict.id)) {
           continue;
         }
-        items.add(
-          CourseActionPreviewItem(
-            course: conflict,
-            isConflict: true,
-          ),
-        );
+        items.add(CourseActionPreviewItem(course: conflict, isConflict: true));
       }
     }
 

@@ -160,6 +160,8 @@ class CourseImportScreen extends StatelessWidget {
           child: HyperosListView(
             includeHeaderInset: false,
             children: [
+              const ImportRandomColorToggle(),
+              const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
               const HyperosSectionGap(),
               HyperosChoiceGroup(
@@ -270,8 +272,6 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
                 child: HyperosListView(
                   includeHeaderInset: false,
                   children: [
-                    const ImportRandomColorToggle(),
-                    const HyperosSectionGap(),
                     _ImportGuidePanel(
                       scenarioIntro: l10n.icsScenarioIntro,
                       step1Subtitle: l10n.icsStep1Subtitle,
@@ -516,8 +516,6 @@ class _SpreadsheetCourseImportScreenState
                 child: HyperosListView(
                   includeHeaderInset: false,
                   children: [
-                    const ImportRandomColorToggle(),
-                    const HyperosSectionGap(),
                     _ImportGuidePanel(
                       scenarioIntro: l10n.spreadsheetScenarioIntro,
                       step1Subtitle: l10n.spreadsheetStep1Subtitle,
@@ -1012,8 +1010,6 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                   child: HyperosListView(
                     includeHeaderInset: false,
                     children: [
-                      const ImportRandomColorToggle(),
-                      const HyperosSectionGap(),
                       _AiWorkflowGuideCard(l10n: l10n),
                       const HyperosSectionGap(),
                       HyperosControlCard(
@@ -1764,11 +1760,6 @@ class _WarehouseCourseImportScreenState
         child: HyperosBlurredBodyInset(
           child: Column(
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: ImportRandomColorToggle(),
-              ),
-              const HyperosSectionGap(),
               Expanded(
                 child: FutureBuilder<WarehouseRootIndex>(
                   future: _rootIndexFuture,
