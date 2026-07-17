@@ -609,6 +609,10 @@ abstract final class HyperosMiuixNavigation {
   /// Fallback when [RoundedCorner] is unavailable (typical Xiaomi display).
   static const pageCornerRadiusFallback = 28.0;
 
+  /// Corner radius while a sub-page is sliding in/out (card-like HyperOS feel).
+  /// Larger than the display corner so the motion reads clearly; removed on settle.
+  static const pageTransitionCornerRadius = 40.0;
+
   /// Drop shadow on the incoming page's lower-left (overhead light on a card).
   static const pageShadowOffsetX = -8.0;
   static const pageShadowOffsetY = 12.0;

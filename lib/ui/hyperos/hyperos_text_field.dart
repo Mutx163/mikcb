@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
+import 'hyperos_tokens.dart';
 
 /// HyperOS / Miuix-styled text field (16dp corner, 2dp focus border).
 class HyperosTextField extends StatelessWidget {
@@ -123,10 +124,9 @@ class HyperosTextField extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             helper!,
-            style: TextStyle(
-              fontSize: HyperosMiuixTypography.footnote1,
-              color: summary,
-            ),
+            style: HyperosTypography.sectionDescription(
+              context,
+            ).copyWith(color: summary),
           ),
         ],
       ],
@@ -161,7 +161,7 @@ class HyperosTextFieldTile extends StatelessWidget {
             if (cardTitle != null) ...[
               Text(cardTitle!, style: HyperosTypography.title(context)),
               if (cardSubtitle != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: HyperosTokens.titleCaptionGap),
                 Text(
                   cardSubtitle!,
                   style: HyperosTypography.sectionDescription(context),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
+import 'hyperos_tokens.dart';
 
 SnackBar _buildHyperosSnackBar({
   required BuildContext context,
@@ -49,7 +50,7 @@ TextStyle _descriptionStyle(BuildContext context) {
   final onBackground = HyperosColors.onInverseSurface(context);
   return TextStyle(
     fontSize: HyperosMiuixTypography.footnote1,
-    height: 1.45,
+    height: 1.5,
     color: onBackground.withValues(alpha: 0.78),
   );
 }
@@ -104,7 +105,7 @@ void showHyperosRichSnackBar(
           children: [
             Text(message, style: _messageStyle(context)),
             if (description != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: HyperosTokens.titleCaptionGap),
               Text(description, style: _descriptionStyle(context)),
             ],
           ],

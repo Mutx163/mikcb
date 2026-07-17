@@ -36,7 +36,8 @@ class HyperosCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (hasTitle) Text(title!, style: HyperosTypography.title(context)),
-            if (hasTitle && hasSubtitle) const SizedBox(height: 2),
+            if (hasTitle && hasSubtitle)
+              const SizedBox(height: HyperosTokens.titleCaptionGap),
             if (hasSubtitle)
               Text(
                 subtitle!,
@@ -109,7 +110,7 @@ class HyperosSummaryCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: HyperosTokens.titleCaptionGap),
                       Text(
                         subtitle!,
                         style: HyperosTypography.listDetail(context),

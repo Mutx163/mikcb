@@ -79,6 +79,9 @@ abstract final class HyperosTokens {
 
   static const listDetailSize = HyperosMiuixSpec.body2Size;
 
+  /// Vertical gap between a list/card title and its multi-line caption.
+  static const titleCaptionGap = 3.0;
+
   /// Gap between trailing summary text and chevron (~one body2 character).
   static const detailChevronGap = listDetailSize;
   static const sectionLabelSize = HyperosMiuixSpec.settingsSectionLabelSize;

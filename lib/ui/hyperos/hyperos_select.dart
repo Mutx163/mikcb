@@ -717,7 +717,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (widget.subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: HyperosTokens.titleCaptionGap),
                   Text(widget.subtitle!, style: subtitleStyle, softWrap: true),
                 ],
               ],

@@ -311,10 +311,14 @@ abstract final class HyperosTypography {
   static TextStyle listTitle(BuildContext context) => title(context);
 
   /// Preference row helper / trailing summary (muted vs [title], system style).
+  ///
+  /// Explicit [height] keeps multi-line Chinese captions from stacking too
+  /// tightly (system default metrics are often cramped under CJK fonts).
   static TextStyle listDetail(BuildContext context) {
     return TextStyle(
       fontSize: HyperosTokens.listDetailSize,
       fontWeight: FontWeight.w400,
+      height: 1.4,
       color: HyperosColors.secondaryText(context),
     );
   }
@@ -334,7 +338,7 @@ abstract final class HyperosTypography {
     return TextStyle(
       fontSize: HyperosTokens.sectionDescriptionSize,
       fontWeight: FontWeight.w400,
-      height: 1.45,
+      height: 1.5,
       color: HyperosColors.secondaryText(context),
     );
   }
@@ -351,7 +355,7 @@ abstract final class HyperosTypography {
     return TextStyle(
       fontSize: HyperosMiuixTypography.footnote1,
       fontWeight: FontWeight.w400,
-      height: 1.3,
+      height: 1.4,
       color: HyperosColors.onSurfaceVariantSummary(context),
     );
   }

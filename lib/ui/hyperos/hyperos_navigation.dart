@@ -86,13 +86,38 @@ abstract final class HyperosNavigation {
     return 4 * progress * (1 - progress);
   }
 
-  /// Left-edge corner radius factor during slide (0 when the route is settled).
+  /// Whether the primary route animation is still running (not settled).
+  ///
+  /// Prefer this over raw progress for clip decisions: floating-point values
+  /// near 0/1 can leave a tiny radius that shows as a half-rounded edge in
+  /// screenshots after the page has visually finished sliding.
+  @visibleForTesting
+  static bool isPrimaryTransitionActive(AnimationStatus status) {
+    return status == AnimationStatus.forward ||
+        status == AnimationStatus.reverse;
+  }
+
+  /// Corner-radius factor for the sliding page while the primary animation runs.
+  ///
+  /// Returns 0 at settled endpoints. While moving, stays near full radius so the
+  /// page enters as a rounded card, then drops only in the final settle band.
   @visibleForTesting
   static double transitionCornerRadiusFactor(double progress) {
     if (progress <= 0 || progress >= 1) {
       return 0;
     }
-    return 1 - progress;
+    // Keep nearly full radius for most of the slide; ease out only near rest
+    // so settle never leaves a visible half-corner clip.
+    const settleBand = 0.12;
+    if (progress <= settleBand) {
+      // Reverse (pop): radius grows as the page leaves.
+      return progress / settleBand;
+    }
+    if (progress >= 1 - settleBand) {
+      // Forward (push): radius shrinks only at the end.
+      return (1 - progress) / settleBand;
+    }
+    return 1;
   }
 
   /// Viewport width plus right-side bleed so parallax exit never exposes routes
@@ -105,8 +130,9 @@ abstract final class HyperosNavigation {
   /// Opaque horizontal shared-axis transition — no fade-through so pages never
   /// become transparent like MIUI / HyperOS system settings.
   ///
-  /// The incoming page clips to the display corner radius on the left edge and
-  /// casts a soft drop shadow onto the page below (left-bottom, overhead light).
+  /// While the route is animating, the incoming page is clipped to the display
+  /// corner radius (card-like) and casts a soft drop shadow. After settle the
+  /// clip is removed so normal use and screenshots stay square-edged.
   static Widget buildSharedAxisTransition({
     required Animation<double> animation,
     required Animation<double> secondaryAnimation,
@@ -190,7 +216,10 @@ class _HyperosParallaxBleed extends StatelessWidget {
   }
 }
 
-/// Left-edge rounded clip + card drop shadow for the sliding sub-page.
+/// Rounded clip + card drop shadow only while the route is mid-transition.
+///
+/// Once [AnimationStatus.completed] / [AnimationStatus.dismissed], returns the
+/// bare child so screenshots never show residual half-corner clips.
 class _HyperosTransitionPageShell extends StatelessWidget {
   const _HyperosTransitionPageShell({
     required this.animation,
@@ -202,27 +231,51 @@ class _HyperosTransitionPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cornerRadius = HyperosMotionScope.of(context).displayCornerRadiusDp;
+    // Prefer a dedicated transition radius so the card-like slide is obvious;
+    // never smaller than the device display corner when the OS reports a larger one.
+    final displayRadius = HyperosMotionScope.of(context).displayCornerRadiusDp;
+    final cornerRadius =
+        displayRadius > HyperosMiuixNavigation.pageTransitionCornerRadius
+        ? displayRadius
+        : HyperosMiuixNavigation.pageTransitionCornerRadius;
     final surface = HyperosColors.scaffoldBackground(context);
 
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
-        final progress = animation.value;
+        final status = animation.status;
+        if (!HyperosNavigation.isPrimaryTransitionActive(status)) {
+          // Settled: no ClipRRect / no rounded DecoratedBox.
+          return child!;
+        }
+
+        final progress = animation.value.clamp(0.0, 1.0);
         final cornerFactor = HyperosNavigation.transitionCornerRadiusFactor(
           progress,
         );
         final effectiveRadius = cornerRadius * cornerFactor;
-        final clipRadius = BorderRadius.only(
-          topLeft: Radius.circular(effectiveRadius),
-          bottomLeft: Radius.circular(effectiveRadius),
-        );
+        // Full card corners while sliding (not only the left edge).
+        final clipRadius = BorderRadius.circular(effectiveRadius);
         final shadowStrength = HyperosNavigation.transitionShadowStrength(
           progress,
         );
+
+        if (effectiveRadius <= 0.5 && shadowStrength <= 0) {
+          return child!;
+        }
+
+        Widget page = child!;
+        if (effectiveRadius > 0.5) {
+          page = ClipRRect(
+            borderRadius: clipRadius,
+            clipBehavior: Clip.antiAlias,
+            child: page,
+          );
+        }
+
         return DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: clipRadius,
+            borderRadius: effectiveRadius > 0.5 ? clipRadius : null,
             color: surface,
             boxShadow: shadowStrength <= 0
                 ? null
@@ -241,9 +294,7 @@ class _HyperosTransitionPageShell extends StatelessWidget {
                     ),
                   ],
           ),
-          child: effectiveRadius <= 0
-              ? child
-              : ClipRRect(borderRadius: clipRadius, child: child),
+          child: page,
         );
       },
       child: child,

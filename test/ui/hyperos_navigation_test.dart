@@ -1,3 +1,4 @@
+import 'package:flutter/animation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/android_animation_scale_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
@@ -34,12 +35,43 @@ void main() {
     expect(HyperosNavigation.transitionShadowStrength(0.5), closeTo(1, 0.001));
   });
 
-  test('transition corner radius rests at endpoints and fades mid-slide', () {
-    expect(HyperosNavigation.transitionCornerRadiusFactor(0), 0);
-    expect(HyperosNavigation.transitionCornerRadiusFactor(1), 0);
+  test(
+    'transition corner radius rests at endpoints and stays full mid-slide',
+    () {
+      expect(HyperosNavigation.transitionCornerRadiusFactor(0), 0);
+      expect(HyperosNavigation.transitionCornerRadiusFactor(1), 0);
+      expect(
+        HyperosNavigation.transitionCornerRadiusFactor(0.5),
+        closeTo(1, 0.001),
+      );
+      // Near settle band: still fading, never stuck at a large residual radius.
+      expect(
+        HyperosNavigation.transitionCornerRadiusFactor(0.95),
+        lessThan(0.5),
+      );
+      expect(
+        HyperosNavigation.transitionCornerRadiusFactor(0.05),
+        lessThan(0.5),
+      );
+    },
+  );
+
+  test('primary transition active only while forward or reverse', () {
     expect(
-      HyperosNavigation.transitionCornerRadiusFactor(0.5),
-      closeTo(0.5, 0.001),
+      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.forward),
+      isTrue,
+    );
+    expect(
+      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.reverse),
+      isTrue,
+    );
+    expect(
+      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.completed),
+      isFalse,
+    );
+    expect(
+      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.dismissed),
+      isFalse,
     );
   });
 

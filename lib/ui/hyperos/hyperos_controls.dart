@@ -125,7 +125,9 @@ class HyperosControlCard extends StatelessWidget {
                               ),
                             if (subtitle != null) ...[
                               if (title != null && title!.isNotEmpty)
-                                const SizedBox(height: 2),
+                                const SizedBox(
+                                  height: HyperosTokens.titleCaptionGap,
+                                ),
                               Text(
                                 subtitle!,
                                 style: HyperosTypography.sectionDescription(
@@ -793,9 +795,9 @@ class HyperosButton extends StatelessWidget {
         HyperosColors.disabledOnPrimaryButton(context),
       ),
       HyperosButtonVariant.secondary => (
-        HyperosColors.secondaryVariant(context),
+        HyperosColors.secondary(context),
         HyperosColors.onSecondaryVariant(context),
-        HyperosColors.disabledSecondaryVariant(context),
+        HyperosColors.disabledSecondary(context),
         HyperosColors.disabledOnSecondaryVariant(context),
       ),
       HyperosButtonVariant.destructive => (

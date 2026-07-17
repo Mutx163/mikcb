@@ -189,7 +189,7 @@ class HyperosCheckboxTile extends StatelessWidget {
                 children: [
                   Text(title, style: titleStyle),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: HyperosTokens.titleCaptionGap),
                     Text(subtitle!, style: subtitleStyle),
                   ],
                 ],
@@ -258,7 +258,7 @@ class HyperosRadioTile<T> extends StatelessWidget {
                 children: [
                   Text(title, style: titleStyle),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: HyperosTokens.titleCaptionGap),
                     Text(subtitle!, style: subtitleStyle),
                   ],
                 ],

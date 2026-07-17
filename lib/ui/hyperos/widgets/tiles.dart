@@ -393,7 +393,7 @@ class HyperosSwitchTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: HyperosTokens.titleCaptionGap),
                   Text(subtitle!, style: subtitleStyle, softWrap: true),
                 ],
               ],
@@ -581,7 +581,7 @@ class HyperosChoiceTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: HyperosTokens.titleCaptionGap),
                 DefaultTextStyle.merge(style: subtitleStyle, child: subtitle!),
               ],
             ],
@@ -683,9 +683,11 @@ class HyperosNavTile extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onTap,
+    this.onLongPress,
     this.details,
     this.iconAccent,
     this.enabled = true,
+    this.showChevron = true,
     this.holdHighlightThroughTransition = true,
   });
 
@@ -694,8 +696,12 @@ class HyperosNavTile extends StatelessWidget {
   final String? subtitle;
   final String? details;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Color? iconAccent;
   final bool enabled;
+
+  /// When false, omits the trailing chevron (read-only preference rows).
+  final bool showChevron;
   final bool holdHighlightThroughTransition;
 
   @override
@@ -703,6 +709,8 @@ class HyperosNavTile extends StatelessWidget {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
     final canTap = onTap != null && enabled;
+    final canLongPress = onLongPress != null && enabled;
+    final interactive = canTap || canLongPress;
     final primaryText = HyperosColors.primaryText(context);
 
     final rowHeight = subtitle != null
@@ -710,16 +718,20 @@ class HyperosNavTile extends StatelessWidget {
         : null;
 
     final titleStyle = HyperosTypography.listTitle(context).copyWith(
-      color: canTap ? primaryText : primaryText.withValues(alpha: 0.45),
+      color: interactive || !showChevron
+          ? primaryText
+          : primaryText.withValues(alpha: 0.45),
     );
     final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
-      color: canTap
+      color: interactive || !showChevron
           ? HyperosColors.secondaryText(context)
           : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
     );
 
     final row = hyperosListRowShell(
-      padding: hyperosChevronRowPadding(context),
+      padding: showChevron
+          ? hyperosChevronRowPadding(context)
+          : hyperosRowPadding(context),
       minHeight: rowHeight,
       child: Row(
         children: [
@@ -743,7 +755,7 @@ class HyperosNavTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: HyperosTokens.titleCaptionGap),
                   Text(subtitle!, style: subtitleStyle, softWrap: true),
                 ],
               ],
@@ -752,16 +764,21 @@ class HyperosNavTile extends StatelessWidget {
           if (details != null) ...[
             const SizedBox(width: 6),
             _hyperosTrailingDetails(context, details!),
-            SizedBox(width: HyperosTokens.detailChevronGap),
-          ] else
+            if (showChevron) SizedBox(width: HyperosTokens.detailChevronGap),
+          ] else if (showChevron)
             SizedBox(width: HyperosTokens.titleChevronGap),
-          Opacity(opacity: canTap ? 1 : 0.45, child: const HyperosChevron()),
+          if (showChevron)
+            Opacity(
+              opacity: interactive ? 1 : 0.45,
+              child: const HyperosChevron(),
+            ),
         ],
       ),
     );
 
     return HyperosPressableRow(
       onTap: canTap ? onTap : null,
+      onLongPress: canLongPress ? onLongPress : null,
       holdHighlightThroughTransition: holdHighlightThroughTransition,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
