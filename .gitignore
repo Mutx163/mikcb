@@ -76,6 +76,10 @@ package-lock.json
 _grep.ps1
 _layout.json
 
+# 本地草稿 / 一次性脚本 / QA 产物（整目录不入库）
+tmp/
+local/
+
 # 审查输出
 reviews/
 .adversarial-review/
