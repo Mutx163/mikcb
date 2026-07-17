@@ -38,10 +38,7 @@ class WebdavBackupListResult {
   final List<CloudBackupEntry> entries;
   final String? errorMessage;
 
-  const WebdavBackupListResult({
-    required this.entries,
-    this.errorMessage,
-  });
+  const WebdavBackupListResult({required this.entries, this.errorMessage});
 
   bool get hasError => errorMessage != null;
 }
@@ -85,16 +82,11 @@ class WebdavSyncService {
         password.isEmpty) {
       return null;
     }
-    
+
     final baseUrl = config.baseUrl.trim().isEmpty
         ? WebdavSyncConfig.defaultJianguoyunBaseUrl
         : config.baseUrl.trim();
-    
-    // 强制HTTPS校验
-    if (!WebdavConnectionParams.isSecureUrl(baseUrl)) {
-      throw StateError('insecure_url_blocked');
-    }
-    
+
     return WebdavConnectionParams(
       baseUrl: baseUrl,
       username: config.username.trim(),
@@ -112,16 +104,11 @@ class WebdavSyncService {
         password.isEmpty) {
       throw StateError('missing_credentials');
     }
-    
+
     final baseUrl = config.baseUrl.trim().isEmpty
         ? WebdavSyncConfig.defaultJianguoyunBaseUrl
         : config.baseUrl.trim();
-    
-    // 强制HTTPS校验
-    if (!WebdavConnectionParams.isSecureUrl(baseUrl)) {
-      throw StateError('insecure_url_blocked');
-    }
-    
+
     await _clientService.testConnection(
       WebdavConnectionParams(
         baseUrl: baseUrl,
@@ -282,7 +269,10 @@ class WebdavSyncService {
 
     try {
       final client = _clientService.createClient(params);
-      final index = await _loadRemoteBackupIndex(client: client, config: config);
+      final index = await _loadRemoteBackupIndex(
+        client: client,
+        config: config,
+      );
       final sorted = [...index.entries]
         ..sort((a, b) => b.exportedAt.compareTo(a.exportedAt));
       return WebdavBackupListResult(entries: sorted);
@@ -310,7 +300,10 @@ class WebdavSyncService {
 
     try {
       final client = _clientService.createClient(params);
-      final index = await _loadRemoteBackupIndex(client: client, config: config);
+      final index = await _loadRemoteBackupIndex(
+        client: client,
+        config: config,
+      );
       final entry = index.entries.firstWhere(
         (item) => item.id == entryId,
         orElse: () => throw StateError('backup_not_found'),
@@ -382,7 +375,10 @@ class WebdavSyncService {
 
     try {
       final client = _clientService.createClient(params);
-      final index = await _loadRemoteBackupIndex(client: client, config: config);
+      final index = await _loadRemoteBackupIndex(
+        client: client,
+        config: config,
+      );
       final entry = index.entries.firstWhere(
         (item) => item.id == entryId,
         orElse: () => throw StateError('backup_not_found'),

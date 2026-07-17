@@ -16,7 +16,10 @@ class WebdavConnectionParams {
     required this.password,
   });
 
-  /// 检查URL是否为HTTPS协议
+  /// Whether [url] uses HTTPS.
+  ///
+  /// Kept for callers that want to display a soft hint. HTTP is fully allowed
+  /// (campus portals, LAN WebDAV, release builds).
   static bool isSecureUrl(String url) {
     return url.trim().toLowerCase().startsWith('https://');
   }
