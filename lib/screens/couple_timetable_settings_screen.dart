@@ -671,12 +671,12 @@ class _WeekOffsetStepButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return HyperosFrostedSurface(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: enabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
           child: SizedBox(
             width: 44,
             height: 44,

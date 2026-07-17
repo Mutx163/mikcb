@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../hyperos_theme.dart';
+import '../hyperos_tokens.dart';
+import 'adaptive_card.dart';
 import 'tiles.dart';
 
 /// HyperOS card: white rounded card with optional title, subtitle, and child.
@@ -25,31 +27,25 @@ class HyperosCard extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: Material(
-        color: HyperosColors.card(context),
-        shape: HyperosTheme.cardShape(),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding:
-              padding ??
-              EdgeInsets.fromLTRB(16, hasTitle || hasSubtitle ? 16 : 0, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (hasTitle)
-                Text(title!, style: HyperosTypography.title(context)),
-              if (hasTitle && hasSubtitle) const SizedBox(height: 2),
-              if (hasSubtitle)
-                Text(
-                  subtitle!,
-                  style: HyperosTypography.sectionDescription(context),
-                  softWrap: true,
-                ),
-              if (hasTitle || hasSubtitle) const SizedBox(height: 12),
-              child,
-            ],
-          ),
+      child: HyperosAdaptiveCard(
+        padding:
+            padding ??
+            EdgeInsets.fromLTRB(16, hasTitle || hasSubtitle ? 16 : 0, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasTitle) Text(title!, style: HyperosTypography.title(context)),
+            if (hasTitle && hasSubtitle) const SizedBox(height: 2),
+            if (hasSubtitle)
+              Text(
+                subtitle!,
+                style: HyperosTypography.sectionDescription(context),
+                softWrap: true,
+              ),
+            if (hasTitle || hasSubtitle) const SizedBox(height: 12),
+            child,
+          ],
         ),
       ),
     );
@@ -81,8 +77,9 @@ class HyperosSummaryCard extends StatelessWidget {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
 
-    return ClipRRect(
-      borderRadius: HyperosTheme.cardBorderRadius,
+    return HyperosAdaptiveCard(
+      color: cardColor,
+      preferredRadius: HyperosTokens.controlRadius,
       child: HyperosPressableRow(
         onTap: onTap,
         backgroundColor: cardColor,

@@ -149,7 +149,7 @@ abstract class AppLocalizations {
   /// No description provided for @displayModeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'支持跟随系统、浅色模式和深色模式。'**
+  /// **'支持跟随系统、浅色模式和深色模式'**
   String get displayModeSubtitle;
 
   /// No description provided for @themeModeLabel.
@@ -185,13 +185,13 @@ abstract class AppLocalizations {
   /// No description provided for @fontSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'内置 Inter 默认；也可选用系统已安装的字体。'**
+  /// **'内置 Inter 默认；也可选用系统已安装的字体'**
   String get fontSectionSubtitle;
 
   /// No description provided for @fontSectionFootnote.
   ///
   /// In zh, this message translates to:
-  /// **'厂商字体未内置，需系统已预装才生效。小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装。'**
+  /// **'厂商字体未内置，需系统已预装才生效，小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装'**
   String get fontSectionFootnote;
 
   /// No description provided for @fontModeLabel.
@@ -269,7 +269,7 @@ abstract class AppLocalizations {
   /// No description provided for @languageSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'可跟随系统，或手动切换到已适配语言。'**
+  /// **'可跟随系统，或手动切换到已适配语言'**
   String get languageSectionSubtitle;
 
   /// No description provided for @languageModeLabel.
@@ -419,7 +419,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableIntro.
   ///
   /// In zh, this message translates to:
-  /// **'导出你的课表发给 TA，或导入 TA 分享的课表文件。导入后可在叠加视图中查看双方课程。'**
+  /// **'导出你的课表发给 TA，或导入 TA 分享的课表文件，导入后可在叠加视图中查看双方课程'**
   String get coupleTimetableIntro;
 
   /// No description provided for @coupleTimetableBoundTitle.
@@ -491,7 +491,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableUnlinkConfirmMessage.
   ///
   /// In zh, this message translates to:
-  /// **'解除后将删除本地保存的对方课表，叠加视图也会关闭。'**
+  /// **'解除后将删除本地保存的对方课表，叠加视图也会关闭'**
   String get coupleTimetableUnlinkConfirmMessage;
 
   /// No description provided for @coupleTimetableUnlinkSuccess.
@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetablePrivacyHint.
   ///
   /// In zh, this message translates to:
-  /// **'对方只能看到你导出文件中包含的课表内容。'**
+  /// **'对方只能看到你导出文件中包含的课表内容'**
   String get coupleTimetablePrivacyHint;
 
   /// No description provided for @coupleTimetableOverlayTitle.
@@ -557,13 +557,13 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableNotBoundMessage.
   ///
   /// In zh, this message translates to:
-  /// **'请先导入对方课表后再查看叠加视图。'**
+  /// **'请先导入对方课表后再查看叠加视图'**
   String get coupleTimetableNotBoundMessage;
 
   /// No description provided for @coupleTimetableShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是我的课表，导入到轻屿课表的情侣课表即可一起查看。'**
+  /// **'这是我的课表，导入到轻屿课表的情侣课表即可一起查看'**
   String get coupleTimetableShareText;
 
   /// No description provided for @coupleTimetableShareSubject.
@@ -581,7 +581,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableWeekOffsetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'查看你的第 N 周时，读取对方课表的第 N+偏移 周。例如 +1 表示对方学期进度比你快一周。'**
+  /// **'查看你的第 N 周时，读取对方课表的第 N+偏移 周，例如 +1 表示对方学期进度比你快一周'**
   String get coupleTimetableWeekOffsetSubtitle;
 
   /// No description provided for @coupleTimetableWeekOffsetZero.
@@ -611,7 +611,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableColorsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配。'**
+  /// **'自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配'**
   String get coupleTimetableColorsSubtitle;
 
   /// No description provided for @partnerImportRequiresSingleProfile.
@@ -629,7 +629,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleWebdavSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件。与「云同步」账号独立，互不影响。'**
+  /// **'登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件，与「云同步」账号独立，互不影响'**
   String get coupleWebdavSubtitle;
 
   /// No description provided for @coupleWebdavNotConnected.
@@ -689,7 +689,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleWebdavLoginSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'请使用应用专用密码。对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传。'**
+  /// **'请使用应用专用密码，对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传'**
   String get coupleWebdavLoginSheetSubtitle;
 
   /// No description provided for @coupleWebdavConfirmConnect.
@@ -779,7 +779,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncIntroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置。'**
+  /// **'配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置'**
   String get cloudSyncIntroSubtitle;
 
   /// No description provided for @cloudSyncSettingsSectionTitle.
@@ -791,7 +791,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncSettingsSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'可切换手动或自动同步。'**
+  /// **'可切换手动或自动同步'**
   String get cloudSyncSettingsSectionSubtitle;
 
   /// No description provided for @cloudSyncEnabledTitle.
@@ -851,7 +851,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncAccountSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'请使用坚果云应用专用密码，而不是登录密码。快照会包含仓库记住的学校账号。'**
+  /// **'请使用坚果云应用专用密码，而不是登录密码，快照会包含仓库记住的学校账号'**
   String get cloudSyncAccountSubtitle;
 
   /// No description provided for @cloudSyncUsernameLabel.
@@ -881,7 +881,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncPasswordStoredHint.
   ///
   /// In zh, this message translates to:
-  /// **'已保存密码；留空表示继续使用已保存的密码。'**
+  /// **'已保存密码；留空表示继续使用已保存的密码'**
   String get cloudSyncPasswordStoredHint;
 
   /// No description provided for @cloudSyncAdvancedTitle.
@@ -899,7 +899,7 @@ abstract class AppLocalizations {
   /// 安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用
   ///
   /// In zh, this message translates to:
-  /// **'正式版仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用以保护数据安全。'**
+  /// **'正式版仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用以保护数据安全'**
   String get cloudSyncBaseUrlSecurityNote;
 
   /// No description provided for @cloudSyncRemoteFolderLabel.
@@ -953,7 +953,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncHelpBody.
   ///
   /// In zh, this message translates to:
-  /// **'打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码。WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ 。'**
+  /// **'打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码，WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ '**
   String get cloudSyncHelpBody;
 
   /// No description provided for @cloudSyncTestConnection.
@@ -1025,7 +1025,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncConflictBody.
   ///
   /// In zh, this message translates to:
-  /// **'本机和云端都有新的修改。请选择保留哪一边的数据。'**
+  /// **'本机和云端都有新的修改，请选择保留哪一边的数据'**
   String get cloudSyncConflictBody;
 
   /// No description provided for @cloudSyncUseRemoteAction.
@@ -1049,7 +1049,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncNotConnectedHint.
   ///
   /// In zh, this message translates to:
-  /// **'连接坚果云后，可在多设备间同步课表与导入数据。'**
+  /// **'连接坚果云后，可在多设备间同步课表与导入数据'**
   String get cloudSyncNotConnectedHint;
 
   /// No description provided for @cloudSyncConnectAccount.
@@ -1079,7 +1079,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncDisconnectBody.
   ///
   /// In zh, this message translates to:
-  /// **'断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机。是否继续？'**
+  /// **'断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机，是否继续？'**
   String get cloudSyncDisconnectBody;
 
   /// No description provided for @cloudSyncLoginSheetTitle.
@@ -1091,7 +1091,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncLoginSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'请使用应用专用密码，不要使用坚果云登录密码。'**
+  /// **'请使用应用专用密码，不要使用坚果云登录密码'**
   String get cloudSyncLoginSheetSubtitle;
 
   /// No description provided for @cloudSyncConfirmConnect.
@@ -1193,7 +1193,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBackupRestoreBody.
   ///
   /// In zh, this message translates to:
-  /// **'将恢复到 {time} 的课表，本地未同步的修改会丢失。是否继续？'**
+  /// **'将恢复到 {time} 的课表，本地未同步的修改会丢失，是否继续？'**
   String cloudBackupRestoreBody(String time);
 
   /// No description provided for @cloudBackupRestoreAction.
@@ -1223,7 +1223,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBackupDeleteBody.
   ///
   /// In zh, this message translates to:
-  /// **'确定删除 {time} 的云端备份吗？此操作不可撤销。'**
+  /// **'确定删除 {time} 的云端备份吗？此操作不可撤销'**
   String cloudBackupDeleteBody(String time);
 
   /// No description provided for @cloudBackupDeleteSuccess.
@@ -1259,7 +1259,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBackupUploadAsCurrentBody.
   ///
   /// In zh, this message translates to:
-  /// **'是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突。'**
+  /// **'是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突'**
   String get cloudBackupUploadAsCurrentBody;
 
   /// No description provided for @cloudBackupUploadAsCurrentYes.
@@ -1313,7 +1313,7 @@ abstract class AppLocalizations {
   /// No description provided for @lanEditIntro.
   ///
   /// In zh, this message translates to:
-  /// **'开启后，同一 WiFi 或手机热点下的电脑可通过浏览器编辑当前课表。数据不会上传云端，关闭后即停止访问。'**
+  /// **'开启后，同一 WiFi 或手机热点下的电脑可通过浏览器编辑当前课表，数据不会上传云端，关闭后即停止访问'**
   String get lanEditIntro;
 
   /// No description provided for @lanEditStart.
@@ -1373,13 +1373,13 @@ abstract class AppLocalizations {
   /// No description provided for @lanEditHotspotHint.
   ///
   /// In zh, this message translates to:
-  /// **'如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点。'**
+  /// **'如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点'**
   String get lanEditHotspotHint;
 
   /// No description provided for @lanEditQrHint.
   ///
   /// In zh, this message translates to:
-  /// **'电脑浏览器扫描上方二维码可打开控制台（链接已含 PIN，需同一局域网）。'**
+  /// **'电脑浏览器扫描上方二维码可打开控制台（链接已含 PIN，需同一局域网）'**
   String get lanEditQrHint;
 
   /// No description provided for @lanEditStartFailed.
@@ -1475,7 +1475,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectSemesterWeekCountSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'不同学校可按实际教学周数调整。'**
+  /// **'不同学校可按实际教学周数调整'**
   String get selectSemesterWeekCountSubtitle;
 
   /// No description provided for @unifiedCourseCardColorTitle.
@@ -1517,7 +1517,7 @@ abstract class AppLocalizations {
   /// No description provided for @chooseImportMethodSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'现在支持传统 .ics 日历导入、识图导入，以及从仓库读取适配器的教务系统导入。'**
+  /// **'现在支持传统 .ics 日历导入、识图导入，以及从仓库读取适配器的教务系统导入'**
   String get chooseImportMethodSubtitle;
 
   /// No description provided for @importMethodIcsTitle.
@@ -1529,13 +1529,13 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodIcsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合从 WakeUp 等课表应用导出的日历文件，流程最短。'**
+  /// **'适合从 WakeUp 等课表应用导出的日历文件，流程最短'**
   String get importMethodIcsSubtitle;
 
   /// No description provided for @importMethodIcsFooter.
   ///
   /// In zh, this message translates to:
-  /// **'进入后直接选择 .ics 文件，可追加导入或替换现有课程。'**
+  /// **'进入后直接选择 .ics 文件，可追加导入或替换现有课程'**
   String get importMethodIcsFooter;
 
   /// No description provided for @importMethodAiTitle.
@@ -1547,13 +1547,13 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodAiSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合直接从课表截图导入，支持 1 张或多张连续截图。'**
+  /// **'适合直接从课表截图导入，支持 1 张或多张连续截图'**
   String get importMethodAiSubtitle;
 
   /// No description provided for @importMethodAiFooter.
   ///
   /// In zh, this message translates to:
-  /// **'先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期。'**
+  /// **'先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期'**
   String get importMethodAiFooter;
 
   /// No description provided for @importMethodWarehouseTitle.
@@ -1565,13 +1565,13 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodWarehouseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程。'**
+  /// **'从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程'**
   String get importMethodWarehouseSubtitle;
 
   /// No description provided for @importMethodWarehouseFooter.
   ///
   /// In zh, this message translates to:
-  /// **'进入后选择学校和适配器，可直接打开教务网页登录并执行导入。'**
+  /// **'进入后选择学校和适配器，可直接打开教务网页登录并执行导入'**
   String get importMethodWarehouseFooter;
 
   /// No description provided for @importMethodSpreadsheetTitle.
@@ -1583,13 +1583,13 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodSpreadsheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合用 Excel/WPS 填写轻屿课表模板后导入，无需先导出 .ics。'**
+  /// **'适合用 Excel/WPS 填写轻屿课表模板后导入，无需先导出 .ics'**
   String get importMethodSpreadsheetSubtitle;
 
   /// No description provided for @importMethodSpreadsheetFooter.
   ///
   /// In zh, this message translates to:
-  /// **'支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入。'**
+  /// **'支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入'**
   String get importMethodSpreadsheetFooter;
 
   /// No description provided for @spreadsheetImportTitle.
@@ -1601,31 +1601,31 @@ abstract class AppLocalizations {
   /// No description provided for @spreadsheetScenarioIntro.
   ///
   /// In zh, this message translates to:
-  /// **'轻屿模板按表头识别列：必填列为课程名、星期、开始节、结束节及周次；其余列为可选。可下载完整模板，也可只保留必要列。也兼容 WakeUp 7 列格式。'**
+  /// **'轻屿模板按表头识别列：必填列为课程名、星期、开始节、结束节及周次；其余列为可选，可下载完整模板，也可只保留必要列，也兼容 WakeUp 7 列格式'**
   String get spreadsheetScenarioIntro;
 
   /// No description provided for @spreadsheetStep1Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'下载完整模板填写，或只保留必填列与上课周（或开始周+结束周）做最小导入。'**
+  /// **'下载完整模板填写，或只保留必填列与上课周（或开始周+结束周）做最小导入'**
   String get spreadsheetStep1Subtitle;
 
   /// No description provided for @spreadsheetStep2Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'填写完成后另存为 .csv 或直接保留 .xlsx。'**
+  /// **'填写完成后另存为 .csv 或直接保留 .xlsx'**
   String get spreadsheetStep2Subtitle;
 
   /// No description provided for @spreadsheetStep3Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'选择文件导入；如有识别提醒会先展示，再选择追加或替换。'**
+  /// **'选择文件导入；如有识别提醒会先展示，再选择追加或替换'**
   String get spreadsheetStep3Subtitle;
 
   /// No description provided for @spreadsheetSupportedFilesSuffix.
   ///
   /// In zh, this message translates to:
-  /// **'支持 .csv 与 .xlsx（仅读取第一个工作表）。'**
+  /// **'支持 .csv 与 .xlsx（仅读取第一个工作表）'**
   String get spreadsheetSupportedFilesSuffix;
 
   /// No description provided for @chooseSpreadsheetFileAction.
@@ -1679,7 +1679,7 @@ abstract class AppLocalizations {
   /// No description provided for @icsScenarioIntro.
   ///
   /// In zh, this message translates to:
-  /// **'如果你已经能在 WakeUp 等课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳。'**
+  /// **'如果你已经能在 WakeUp 等课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳'**
   String get icsScenarioIntro;
 
   /// No description provided for @stepLabel.
@@ -1691,19 +1691,19 @@ abstract class AppLocalizations {
   /// No description provided for @icsStep1Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'先在其他课表应用里导出 .ics 日历文件。'**
+  /// **'先在其他课表应用里导出 .ics 日历文件'**
   String get icsStep1Subtitle;
 
   /// No description provided for @icsStep2Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'回到这里选择文件，可选“追加导入”或“替换现有”。'**
+  /// **'回到这里选择文件，可选“追加导入”或“替换现有”'**
   String get icsStep2Subtitle;
 
   /// No description provided for @icsStep3Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'导入前还会让你确认开学日期，以及课表第 1 周对应校历第几周。'**
+  /// **'导入前还会让你确认开学日期，以及课表第 1 周对应校历第几周'**
   String get icsStep3Subtitle;
 
   /// No description provided for @supportedFilesTitle.
@@ -1715,13 +1715,13 @@ abstract class AppLocalizations {
   /// No description provided for @supportedFilesSuffix.
   ///
   /// In zh, this message translates to:
-  /// **'文件后缀必须是 .ics。'**
+  /// **'文件后缀必须是 .ics'**
   String get supportedFilesSuffix;
 
   /// No description provided for @supportedFilesImageHint.
   ///
   /// In zh, this message translates to:
-  /// **'如果你手里只有截图，不要走这里，请返回上一页选择“识图导入”。'**
+  /// **'如果你手里只有截图，不要走这里，请返回上一页选择“识图导入”'**
   String get supportedFilesImageHint;
 
   /// No description provided for @chooseIcsFileAction.
@@ -1829,13 +1829,13 @@ abstract class AppLocalizations {
   /// No description provided for @feedbackIntro.
   ///
   /// In zh, this message translates to:
-  /// **'如果你遇到崩溃、课程显示异常、导入问题，或者想提交功能建议，可以通过下面这些渠道反馈。'**
+  /// **'如果你遇到崩溃、课程显示异常、导入问题，或者想提交功能建议，可以通过下面这些渠道反馈'**
   String get feedbackIntro;
 
   /// No description provided for @feedbackIssueHint.
   ///
   /// In zh, this message translates to:
-  /// **'涉及复现步骤、截图、版本号和日志的问题，建议优先走 GitHub Issue。'**
+  /// **'涉及复现步骤、截图、版本号和日志的问题，建议优先走 GitHub Issue'**
   String get feedbackIssueHint;
 
   /// No description provided for @githubIssueTitle.
@@ -1847,7 +1847,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubIssueSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开仓库 Issue 页面，可提交问题、建议或查看已有反馈记录。'**
+  /// **'打开仓库 Issue 页面，可提交问题、建议或查看已有反馈记录'**
   String get githubIssueSubtitle;
 
   /// No description provided for @openIssuePage.
@@ -2033,7 +2033,7 @@ abstract class AppLocalizations {
   /// No description provided for @clearCurrentTimetableMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确定清空“{name}”的全部课程吗？课表设置会保留。'**
+  /// **'确定清空“{name}”的全部课程吗？课表设置会保留'**
   String clearCurrentTimetableMessage(String name);
 
   /// No description provided for @clearAction.
@@ -2093,7 +2093,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullExportSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态。'**
+  /// **'支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态'**
   String get fullExportSubtitle;
 
   /// No description provided for @exportCurrentTimetable.
@@ -2117,7 +2117,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullImportSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'导入时可以选择覆盖当前课表，或直接导入为一个新课表。建议先导出自己的备份。'**
+  /// **'导入时可以选择覆盖当前课表，或直接导入为一个新课表，建议先导出自己的备份'**
   String get fullImportSubtitle;
 
   /// No description provided for @chooseFileAndImport.
@@ -2189,7 +2189,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectImportModeMessage.
   ///
   /// In zh, this message translates to:
-  /// **'你可以覆盖当前课表，或者把备份导入成一个新的独立课表。'**
+  /// **'你可以覆盖当前课表，或者把备份导入成一个新的独立课表'**
   String get selectImportModeMessage;
 
   /// No description provided for @replaceCurrentTimetable.
@@ -2237,7 +2237,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'你可以先开始使用，也可以直接导入课程或从备份恢复。'**
+  /// **'你可以先开始使用，也可以直接导入课程或从备份恢复'**
   String get welcomeSubtitle;
 
   /// No description provided for @thirdPartyDisclaimer.
@@ -2309,7 +2309,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationSafeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'我们更换了应用包名，所以桌面上会暂时出现两个应用图标，这是正常现象。旧数据仍在旧版应用里，请先去旧版备份，再回到新版导入。'**
+  /// **'我们更换了应用包名，所以桌面上会暂时出现两个应用图标，这是正常现象，旧数据仍在旧版应用里，请先去旧版备份，再回到新版导入'**
   String get migrationSafeSubtitle;
 
   /// No description provided for @migrationStep1Title.
@@ -2321,7 +2321,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationStep1Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'进入“数据备份与迁移”页面后，请点“导出全部数据”。不要点“导出当前课表”，也不要先卸载旧版。'**
+  /// **'进入“数据备份与迁移”页面后，请点“导出全部数据”，不要点“导出当前课表”，也不要先卸载旧版'**
   String get migrationStep1Subtitle;
 
   /// No description provided for @migrationStep2Title.
@@ -2333,7 +2333,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationStep2Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'旧版导出后会弹出系统分享面板。优先选择“保存到文件”，建议存到 下载 / Download 文件夹。'**
+  /// **'旧版导出后会弹出系统分享面板，优先选择“保存到文件”，建议存到 下载 / Download 文件夹'**
   String get migrationStep2Subtitle;
 
   /// No description provided for @migrationStep3Title.
@@ -2345,7 +2345,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationStep3Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'回到新版后，通过系统文件选择器到 下载 / Download 文件夹选中 .mikcb 备份文件即可恢复。确认新版数据正常后，再卸载旧版应用。'**
+  /// **'回到新版后，通过系统文件选择器到 下载 / Download 文件夹选中 .mikcb 备份文件即可恢复，确认新版数据正常后，再卸载旧版应用'**
   String get migrationStep3Subtitle;
 
   /// No description provided for @migrationNoSaveToFilesTitle.
@@ -2357,7 +2357,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationNoSaveToFilesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'可以先分享到微信任意一个聊天，然后在微信里点开这个备份文件并保存。保存后通常会出现在 Download / WeiXin 文件夹里，再回到新版选择这个 .mikcb 文件导入。'**
+  /// **'可以先分享到微信任意一个聊天，然后在微信里点开这个备份文件并保存，保存后通常会出现在 Download / WeiXin 文件夹里，再回到新版选择这个 .mikcb 文件导入'**
   String get migrationNoSaveToFilesSubtitle;
 
   /// No description provided for @openingOldApp.
@@ -2405,7 +2405,7 @@ abstract class AppLocalizations {
   /// No description provided for @supportHeroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'你的支持会直接用于维护课表、教务导入适配与体验优化。'**
+  /// **'你的支持会直接用于维护课表、教务导入适配与体验优化'**
   String get supportHeroSubtitle;
 
   /// No description provided for @supportChipFixes.
@@ -2489,7 +2489,7 @@ abstract class AppLocalizations {
   /// No description provided for @donorListLoadFailed.
   ///
   /// In zh, this message translates to:
-  /// **'暂时无法加载在线鸣谢名单。'**
+  /// **'暂时无法加载在线鸣谢名单'**
   String get donorListLoadFailed;
 
   /// No description provided for @reloadAction.
@@ -2507,7 +2507,7 @@ abstract class AppLocalizations {
   /// No description provided for @donorListEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'名单还没有填写，你可以直接编辑 docs/donors.json 后重新发布。'**
+  /// **'名单还没有填写，你可以直接编辑 docs/donors.json 后重新发布'**
   String get donorListEmpty;
 
   /// No description provided for @savedToGallery.
@@ -2645,7 +2645,7 @@ abstract class AppLocalizations {
   /// No description provided for @conflictDetectedMessage.
   ///
   /// In zh, this message translates to:
-  /// **'检测到 {count} 门排课存在实际冲突，课程列表已标记冲突项。'**
+  /// **'检测到 {count} 门排课存在实际冲突，课程列表已标记冲突项'**
   String conflictDetectedMessage(int count);
 
   /// No description provided for @conflictCountLabel.
@@ -2726,7 +2726,7 @@ abstract class AppLocalizations {
   /// No description provided for @currentScheduleSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这里的星期、节次、教室、周次和单双周只影响当前这一条排课。'**
+  /// **'这里的星期、节次、教室、周次和单双周只影响当前这一条排课'**
   String get currentScheduleSubtitle;
 
   /// No description provided for @timeSchemeLabel.
@@ -2744,13 +2744,13 @@ abstract class AppLocalizations {
   /// No description provided for @followCurrentTimetableDescription.
   ///
   /// In zh, this message translates to:
-  /// **'默认跟随当前课表主时间模板，适合大多数课程。'**
+  /// **'默认跟随当前课表主时间模板，适合大多数课程'**
   String get followCurrentTimetableDescription;
 
   /// No description provided for @overrideTimeSchemeDescription.
   ///
   /// In zh, this message translates to:
-  /// **'这门课会单独使用所选时间模板，不跟随当前课表主时间模板。'**
+  /// **'这门课会单独使用所选时间模板，不跟随当前课表主时间模板'**
   String get overrideTimeSchemeDescription;
 
   /// No description provided for @weekdayLabel.
@@ -2792,7 +2792,7 @@ abstract class AppLocalizations {
   /// No description provided for @singleLessonWeekSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'单节课只会出现在一个周次里，适合补课、临时加课。'**
+  /// **'单节课只会出现在一个周次里，适合补课、临时加课'**
   String get singleLessonWeekSubtitle;
 
   /// No description provided for @selectWeekLabel.
@@ -2852,19 +2852,19 @@ abstract class AppLocalizations {
   /// No description provided for @rangeWeeksAllHint.
   ///
   /// In zh, this message translates to:
-  /// **'按开始周到结束周连续排课。'**
+  /// **'按开始周到结束周连续排课'**
   String get rangeWeeksAllHint;
 
   /// No description provided for @rangeWeeksOddHint.
   ///
   /// In zh, this message translates to:
-  /// **'只保留范围内的单周。'**
+  /// **'只保留范围内的单周'**
   String get rangeWeeksOddHint;
 
   /// No description provided for @rangeWeeksEvenHint.
   ///
   /// In zh, this message translates to:
-  /// **'只保留范围内的双周。'**
+  /// **'只保留范围内的双周'**
   String get rangeWeeksEvenHint;
 
   /// No description provided for @selectAllAction.
@@ -3026,7 +3026,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutHeroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'一个围绕课表查看、课程提醒和 HyperOS 超级岛体验打磨的 Android 开源项目。'**
+  /// **'一个围绕课表查看、课程提醒和 HyperOS 超级岛体验打磨的 Android 开源项目'**
   String get aboutHeroSubtitle;
 
   /// No description provided for @platformLabel.
@@ -3134,25 +3134,25 @@ abstract class AppLocalizations {
   /// No description provided for @aboutImportMigrationBullet1.
   ///
   /// In zh, this message translates to:
-  /// **'当前版本已经支持适配学校的教务系统网页登录导入；进入“导入课程 > 教务系统导入”后选择学校和适配器即可。'**
+  /// **'当前版本已经支持适配学校的教务系统网页登录导入；进入“导入课程 > 教务系统导入”后选择学校和适配器即可'**
   String get aboutImportMigrationBullet1;
 
   /// No description provided for @aboutImportMigrationBullet2.
   ///
   /// In zh, this message translates to:
-  /// **'如果你的学校暂时还没适配，仍然可以先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入。'**
+  /// **'如果你的学校暂时还没适配，仍然可以先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入'**
   String get aboutImportMigrationBullet2;
 
   /// No description provided for @aboutImportMigrationBullet3.
   ///
   /// In zh, this message translates to:
-  /// **'如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复。'**
+  /// **'如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复'**
   String get aboutImportMigrationBullet3;
 
   /// No description provided for @aboutImportMigrationBullet4.
   ///
   /// In zh, this message translates to:
-  /// **'如果你会抓包、网页调试或 JavaScript，也欢迎去 qingyu_warehouse 参与教务适配补充。'**
+  /// **'如果你会抓包、网页调试或 JavaScript，也欢迎去 qingyu_warehouse 参与教务适配补充'**
   String get aboutImportMigrationBullet4;
 
   /// No description provided for @aboutContributorsTitle.
@@ -3188,7 +3188,7 @@ abstract class AppLocalizations {
   /// No description provided for @appLogsShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表导出的应用日志，包含整个软件的本地运行记录，可用于排查更新、导入、通知、页面和崩溃问题。'**
+  /// **'这是轻屿课表导出的应用日志，包含整个软件的本地运行记录，可用于排查更新、导入、通知、页面和崩溃问题'**
   String get appLogsShareText;
 
   /// No description provided for @appLogsShareSubject.
@@ -3260,7 +3260,7 @@ abstract class AppLocalizations {
   /// No description provided for @appLogsRecordingPausedHint.
   ///
   /// In zh, this message translates to:
-  /// **'记录已关闭。下方为历史日志，关闭后不再新增。'**
+  /// **'记录已关闭，下方为历史日志，关闭后不再新增'**
   String get appLogsRecordingPausedHint;
 
   /// No description provided for @aboutRepositorySubtitle.
@@ -3349,7 +3349,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteTimeSchemeMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确定删除“{name}”吗？正在使用中的模板不能删除。'**
+  /// **'确定删除“{name}”吗？正在使用中的模板不能删除'**
   String deleteTimeSchemeMessage(String name);
 
   /// No description provided for @deletedTimeSchemeMessage.
@@ -3385,7 +3385,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeUsageIntro.
   ///
   /// In zh, this message translates to:
-  /// **'先看总影响范围，再决定是直接编辑这套模板，还是先复制一套再改。'**
+  /// **'先看总影响范围，再决定是直接编辑这套模板，还是先复制一套再改'**
   String get timeSchemeUsageIntro;
 
   /// No description provided for @profileCountLabel.
@@ -3415,13 +3415,13 @@ abstract class AppLocalizations {
   /// No description provided for @directlyBoundProfilesEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有课表直接使用这套模板。'**
+  /// **'当前没有课表直接使用这套模板'**
   String get directlyBoundProfilesEmpty;
 
   /// No description provided for @directlyBoundProfilesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这些课表切到这套模板后，默认都会按这套节次时间显示。'**
+  /// **'这些课表切到这套模板后，默认都会按这套节次时间显示'**
   String get directlyBoundProfilesSubtitle;
 
   /// No description provided for @followMainSchemeCoursesTitle.
@@ -3433,13 +3433,13 @@ abstract class AppLocalizations {
   /// No description provided for @followMainSchemeCoursesEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有课程通过课表主时间表间接使用它。'**
+  /// **'当前没有课程通过课表主时间表间接使用它'**
   String get followMainSchemeCoursesEmpty;
 
   /// No description provided for @followMainSchemeCoursesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这些课程没有单独设置副时间表，而是跟着所属课表一起用这套模板。'**
+  /// **'这些课程没有单独设置副时间表，而是跟着所属课表一起用这套模板'**
   String get followMainSchemeCoursesSubtitle;
 
   /// No description provided for @overrideSchemeCoursesTitle.
@@ -3451,13 +3451,13 @@ abstract class AppLocalizations {
   /// No description provided for @overrideSchemeCoursesEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有课程把它作为副时间表。'**
+  /// **'当前没有课程把它作为副时间表'**
   String get overrideSchemeCoursesEmpty;
 
   /// No description provided for @overrideSchemeCoursesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这些课程即使所在课表切换了主模板，也会继续单独使用这套时间。'**
+  /// **'这些课程即使所在课表切换了主模板，也会继续单独使用这套时间'**
   String get overrideSchemeCoursesSubtitle;
 
   /// No description provided for @closeAction.
@@ -3517,7 +3517,7 @@ abstract class AppLocalizations {
   /// No description provided for @sectionTimesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'如果当前课表正在使用这套模板，节次数量不能小于已使用的最大节次。'**
+  /// **'如果当前课表正在使用这套模板，节次数量不能小于已使用的最大节次'**
   String get sectionTimesSubtitle;
 
   /// No description provided for @schemeListCurrentLabel.
@@ -3571,19 +3571,19 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeEditorActiveAndCoursesHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程。'**
+  /// **'当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程'**
   String get timeSchemeEditorActiveAndCoursesHint;
 
   /// No description provided for @timeSchemeEditorActiveHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表。'**
+  /// **'当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表'**
   String get timeSchemeEditorActiveHint;
 
   /// No description provided for @timeSchemeEditorOverrideHint.
   ///
   /// In zh, this message translates to:
-  /// **'有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程。'**
+  /// **'有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程'**
   String get timeSchemeEditorOverrideHint;
 
   /// No description provided for @editTimeAction.
@@ -3703,7 +3703,7 @@ abstract class AppLocalizations {
   /// No description provided for @noLargeBreakRulesHint.
   ///
   /// In zh, this message translates to:
-  /// **'未设置大课间规则，将全部使用小课间时长。'**
+  /// **'未设置大课间规则，将全部使用小课间时长'**
   String get noLargeBreakRulesHint;
 
   /// No description provided for @deleteRuleTooltip.
@@ -3793,7 +3793,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveReminderSwitchesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'可自由组合，互不影响。'**
+  /// **'可自由组合，互不影响'**
   String get liveReminderSwitchesSubtitle;
 
   /// No description provided for @beforeClassReminderTitle.
@@ -3847,7 +3847,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDisplayModeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'对已开启的提醒生效。'**
+  /// **'对已开启的提醒生效'**
   String get liveDisplayModeSubtitle;
 
   /// No description provided for @duringClassStatusNotificationTitle.
@@ -3895,7 +3895,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTimeThresholdSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'控制课前弹出与秒级倒计时。'**
+  /// **'控制课前弹出与秒级倒计时'**
   String get liveTimeThresholdSubtitle;
 
   /// No description provided for @beforeClassPopupLabel.
@@ -3937,7 +3937,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeCorrectionHelp.
   ///
   /// In zh, this message translates to:
-  /// **'铃声比课表快则提前，慢则延后。'**
+  /// **'铃声比课表快则提前，慢则延后'**
   String get timeCorrectionHelp;
 
   /// No description provided for @duringEndTimeDisplayLabel.
@@ -3949,7 +3949,7 @@ abstract class AppLocalizations {
   /// No description provided for @duringEndTimeDisplayHelp.
   ///
   /// In zh, this message translates to:
-  /// **'紧凑提醒显示最近时间或总时长。'**
+  /// **'紧凑提醒显示最近时间或总时长'**
   String get duringEndTimeDisplayHelp;
 
   /// No description provided for @liveDisplayContentTitle.
@@ -3961,7 +3961,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDisplayContentSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这组设置只影响当前阶段，不会改动另一组提醒显示。'**
+  /// **'这组设置只影响当前阶段，不会改动另一组提醒显示'**
   String get liveDisplayContentSubtitle;
 
   /// No description provided for @showCourseNameTitle.
@@ -4039,7 +4039,7 @@ abstract class AppLocalizations {
   /// No description provided for @beforeClassQuickActionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只在上课前提醒的展开通知里显示。静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页。'**
+  /// **'只在上课前提醒的展开通知里显示，静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页'**
   String get beforeClassQuickActionSubtitle;
 
   /// No description provided for @liveMiuiLabelSizePreview.
@@ -4057,7 +4057,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveIslandVisualSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存。'**
+  /// **'左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存'**
   String get liveIslandVisualSubtitle;
 
   /// No description provided for @liveMiuiLabelImageTitle.
@@ -4069,7 +4069,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelImageSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'仅小米手机样式生效，会把课程名或地点生成到左侧图标位。'**
+  /// **'仅小米手机样式生效，会把课程名或地点生成到左侧图标位'**
   String get liveMiuiLabelImageSubtitle;
 
   /// No description provided for @liveMiuiLabelContentLabel.
@@ -4093,7 +4093,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelLogoSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'仅在“图标+文字”样式下生效；未选择时继续使用应用图标。'**
+  /// **'仅在“图标+文字”样式下生效；未选择时继续使用应用图标'**
   String get liveMiuiLabelLogoSubtitle;
 
   /// No description provided for @liveMiuiLabelLogoCornerRadiusLabel.
@@ -4183,7 +4183,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDisplayConfigModeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后，课中和下课提醒会完全跟随上课前提醒显示，下面的独立设置暂时不可编辑。'**
+  /// **'打开后，课中和下课提醒会完全跟随上课前提醒显示，下面的独立设置暂时不可编辑'**
   String get liveDisplayConfigModeSubtitle;
 
   /// No description provided for @followBeforeClassDisplayTitle.
@@ -4207,7 +4207,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveKeepAliveOptionsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'用于提升超级岛和提醒在后台场景下的稳定性。'**
+  /// **'用于提升超级岛和提醒在后台场景下的稳定性'**
   String get liveKeepAliveOptionsSubtitle;
 
   /// No description provided for @hideFromRecentsTitle.
@@ -4219,7 +4219,7 @@ abstract class AppLocalizations {
   /// No description provided for @hideFromRecentsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后应用会尽量不显示在最近任务列表中。'**
+  /// **'开启后应用会尽量不显示在最近任务列表中'**
   String get hideFromRecentsSubtitle;
 
   /// No description provided for @keepAliveServiceTitle.
@@ -4231,13 +4231,13 @@ abstract class AppLocalizations {
   /// No description provided for @keepAliveServiceEnabledSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前已开启。系统会保持后台保活辅助服务处于可用状态。'**
+  /// **'当前已开启，系统会保持后台保活辅助服务处于可用状态'**
   String get keepAliveServiceEnabledSubtitle;
 
   /// No description provided for @keepAliveServiceDisabledSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前未开启。可进入系统无障碍设置手动打开轻屿课表后台保活服务。'**
+  /// **'当前未开启，可进入系统无障碍设置手动打开轻屿课表后台保活服务'**
   String get keepAliveServiceDisabledSubtitle;
 
   /// No description provided for @goEnableAction.
@@ -4339,7 +4339,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickSemesterWeekCountSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'不同学校可按实际教学周数调整。'**
+  /// **'不同学校可按实际教学周数调整'**
   String get pickSemesterWeekCountSubtitle;
 
   /// No description provided for @weekCountItem.
@@ -4351,7 +4351,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsLogIntro.
   ///
   /// In zh, this message translates to:
-  /// **'支持 Markdown 与原文两种查看方式，排查时可以直接在手机上看完整日志。'**
+  /// **'支持 Markdown 与原文两种查看方式，排查时可以直接在手机上看完整日志'**
   String get diagnosticsLogIntro;
 
   /// No description provided for @diagnosticsRawTab.
@@ -4423,7 +4423,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsNoMatchingSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'可以切换到“全部”，或改看原文继续排查。'**
+  /// **'可以切换到“全部”，或改看原文继续排查'**
   String get diagnosticsNoMatchingSubtitle;
 
   /// No description provided for @diagnosticsLevelInferred.
@@ -4435,7 +4435,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsRawFilteredHint.
   ///
   /// In zh, this message translates to:
-  /// **'原文视图会跟随当前等级筛选，只显示对应日志块。'**
+  /// **'原文视图会跟随当前等级筛选，只显示对应日志块'**
   String get diagnosticsRawFilteredHint;
 
   /// No description provided for @diagnosticsTimeSortAscending.
@@ -4459,7 +4459,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsStreamingHint.
   ///
   /// In zh, this message translates to:
-  /// **'实时更新中，新日志会自动追加显示。'**
+  /// **'实时更新中，新日志会自动追加显示'**
   String get diagnosticsStreamingHint;
 
   /// No description provided for @diagnosticsEmptyTitle.
@@ -4471,7 +4471,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsEmptySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有可显示的应用日志。'**
+  /// **'当前没有可显示的应用日志'**
   String get diagnosticsEmptySubtitle;
 
   /// No description provided for @diagnosticsLogTitleFallback.
@@ -4561,7 +4561,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideHeroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'首屏先授权。下面还会明确说明系统版本支持、简称设置和导入方式，记得继续下滑。'**
+  /// **'首屏先授权，下面还会明确说明系统版本支持、简称设置和导入方式，记得继续下滑'**
   String get guideHeroSubtitle;
 
   /// No description provided for @guideChipPermissions.
@@ -4591,13 +4591,13 @@ abstract class AppLocalizations {
   /// No description provided for @guideBottomReachedHint.
   ///
   /// In zh, this message translates to:
-  /// **'你已经滑到最后了，确认无误后就可以开始使用。'**
+  /// **'你已经滑到最后了，确认无误后就可以开始使用'**
   String get guideBottomReachedHint;
 
   /// No description provided for @guideScrollHint.
   ///
   /// In zh, this message translates to:
-  /// **'向下滑动继续，下面还有 HyperOS 版本说明、权限清单、简称设置和导入方式。'**
+  /// **'向下滑动继续，下面还有 HyperOS 版本说明、权限清单、简称设置和导入方式'**
   String get guideScrollHint;
 
   /// No description provided for @guideRequestNotificationFirst.
@@ -4615,7 +4615,7 @@ abstract class AppLocalizations {
   /// No description provided for @quickSetupSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'先把最关键的 5 个入口放在前面，不用翻到下面再找。'**
+  /// **'先把最关键的 5 个入口放在前面，不用翻到下面再找'**
   String get quickSetupSubtitle;
 
   /// No description provided for @quickActionNotificationsTitle.
@@ -4687,13 +4687,13 @@ abstract class AppLocalizations {
   /// No description provided for @guideRequireConsentHint.
   ///
   /// In zh, this message translates to:
-  /// **'请先滑到底部阅读说明，并勾选同意后开始使用。'**
+  /// **'请先滑到底部阅读说明，并勾选同意后开始使用'**
   String get guideRequireConsentHint;
 
   /// No description provided for @guideContinueHint.
   ///
   /// In zh, this message translates to:
-  /// **'继续下滑查看完整引导内容。'**
+  /// **'继续下滑查看完整引导内容'**
   String get guideContinueHint;
 
   /// No description provided for @exitAppAction.
@@ -4777,13 +4777,13 @@ abstract class AppLocalizations {
   /// No description provided for @singleLessonHint.
   ///
   /// In zh, this message translates to:
-  /// **'适合补课、临时加课，课程只会落在一个周次。'**
+  /// **'适合补课、临时加课，课程只会落在一个周次'**
   String get singleLessonHint;
 
   /// No description provided for @recurringLessonHint.
   ///
   /// In zh, this message translates to:
-  /// **'适合同一时间连续上很多周的常规课程。'**
+  /// **'适合同一时间连续上很多周的常规课程'**
   String get recurringLessonHint;
 
   /// No description provided for @sharedInfoTitle.
@@ -4801,19 +4801,19 @@ abstract class AppLocalizations {
   /// No description provided for @sharedInfoSheetItemCourseName.
   ///
   /// In zh, this message translates to:
-  /// **'课程名称：课程唯一标识。名称相同的多条排课视为同一课程；更改名称将形成独立课程记录。'**
+  /// **'课程名称：课程唯一标识，名称相同的多条排课视为同一课程；更改名称将形成独立课程记录'**
   String get sharedInfoSheetItemCourseName;
 
   /// No description provided for @sharedInfoSheetItemShortName.
   ///
   /// In zh, this message translates to:
-  /// **'课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成。启用「优先显示课程简称」后生效；建议控制在 3 个汉字以内。'**
+  /// **'课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成，启用「优先显示课程简称」后生效；建议控制在 3 个汉字以内'**
   String get sharedInfoSheetItemShortName;
 
   /// No description provided for @sharedInfoSheetItemSharedSync.
   ///
   /// In zh, this message translates to:
-  /// **'共享同步：课程简称、颜色、性质、简介等字段将同步至同名课程的其他排课记录。'**
+  /// **'共享同步：课程简称、颜色、性质、简介等字段将同步至同名课程的其他排课记录'**
   String get sharedInfoSheetItemSharedSync;
 
   /// No description provided for @reuseExistingCourseLabel.
@@ -4837,7 +4837,7 @@ abstract class AppLocalizations {
   /// No description provided for @noTemplateCoursesHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了。'**
+  /// **'当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了'**
   String get noTemplateCoursesHint;
 
   /// No description provided for @courseNameLabel.
@@ -4849,7 +4849,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNameHelper.
   ///
   /// In zh, this message translates to:
-  /// **'作为课程唯一标识；名称相同的多条排课将归为同一课程。请填写完整名称，请勿为界面显示而缩写。'**
+  /// **'作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写'**
   String get courseNameHelper;
 
   /// No description provided for @pleaseEnterCourseName.
@@ -4867,7 +4867,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseShortNameHelper.
   ///
   /// In zh, this message translates to:
-  /// **'建议填写，用于超级岛等场景的简短展示。简称不会自动生成；启用「优先显示课程简称」后生效。建议控制在 3 个汉字以内。'**
+  /// **'建议填写，用于超级岛等场景的简短展示，简称不会自动生成；启用「优先显示课程简称」后生效，建议控制在 3 个汉字以内'**
   String get courseShortNameHelper;
 
   /// No description provided for @courseShortNameAutoFillAction.
@@ -4897,7 +4897,7 @@ abstract class AppLocalizations {
   /// No description provided for @currentScheduleHint.
   ///
   /// In zh, this message translates to:
-  /// **'这里的星期、节次、教室、周次和单双周只影响当前这一条排课。'**
+  /// **'这里的星期、节次、教室、周次和单双周只影响当前这一条排课'**
   String get currentScheduleHint;
 
   /// No description provided for @followProfileTimeScheme.
@@ -4921,7 +4921,7 @@ abstract class AppLocalizations {
   /// No description provided for @singleLessonWeekHint.
   ///
   /// In zh, this message translates to:
-  /// **'单节课只会出现在一个周次里，适合补课、临时加课。'**
+  /// **'单节课只会出现在一个周次里，适合补课、临时加课'**
   String get singleLessonWeekHint;
 
   /// No description provided for @rangeWeekLabel.
@@ -4957,19 +4957,19 @@ abstract class AppLocalizations {
   /// No description provided for @allWeeksHint.
   ///
   /// In zh, this message translates to:
-  /// **'按开始周到结束周连续排课。'**
+  /// **'按开始周到结束周连续排课'**
   String get allWeeksHint;
 
   /// No description provided for @oddWeeksHint.
   ///
   /// In zh, this message translates to:
-  /// **'只保留范围内的单周。'**
+  /// **'只保留范围内的单周'**
   String get oddWeeksHint;
 
   /// No description provided for @evenWeeksHint.
   ///
   /// In zh, this message translates to:
-  /// **'只保留范围内的双周。'**
+  /// **'只保留范围内的双周'**
   String get evenWeeksHint;
 
   /// No description provided for @customPaletteColor.
@@ -5148,7 +5148,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTitleSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'控制首页左上角课表切换入口的样式。'**
+  /// **'控制首页左上角课表切换入口的样式'**
   String get homeTitleSectionSubtitle;
 
   /// No description provided for @homeTitleStyleLabel.
@@ -5166,7 +5166,7 @@ abstract class AppLocalizations {
   /// No description provided for @themeSeedSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'影响顶部栏、强调色和全局主色调。'**
+  /// **'影响顶部栏、强调色和全局主色调'**
   String get themeSeedSectionSubtitle;
 
   /// No description provided for @frostedSheetSectionTitle.
@@ -5178,7 +5178,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedSheetSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'调节首页弹出面板的高斯模糊强度与磨砂亮度。滑块越靠右，白色磨砂层越明显。'**
+  /// **'调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显'**
   String get frostedSheetSectionSubtitle;
 
   /// No description provided for @frostedBlurEnabledTitle.
@@ -5190,7 +5190,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedBlurEnabledSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊。'**
+  /// **'关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊'**
   String get frostedBlurEnabledSubtitle;
 
   /// No description provided for @frostedSheetPreviewOpenAction.
@@ -5208,7 +5208,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedSheetPreviewDemoSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'与首页右上角菜单相同的磨砂玻璃效果。'**
+  /// **'与首页右上角菜单相同的磨砂玻璃效果'**
   String get frostedSheetPreviewDemoSubtitle;
 
   /// No description provided for @frostedSheetBlurLabel.
@@ -5232,7 +5232,7 @@ abstract class AppLocalizations {
   /// No description provided for @timetableBackgroundColorSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'纯色模式下作用于已选显示区域；可与背景图搭配使用。'**
+  /// **'纯色模式下作用于已选显示区域；可与背景图搭配使用'**
   String get timetableBackgroundColorSectionSubtitle;
 
   /// No description provided for @homePageBackgroundFillLabel.
@@ -5262,7 +5262,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBackgroundImageSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'在「图片」模式下，作用于下方勾选的显示区域。'**
+  /// **'在「图片」模式下，作用于下方勾选的显示区域'**
   String get homePageBackgroundImageSubtitle;
 
   /// No description provided for @homePageWallpaperTitle.
@@ -5274,7 +5274,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageWallpaperSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色。'**
+  /// **'全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色'**
   String get homePageWallpaperSubtitle;
 
   /// No description provided for @homePageBackdropFollowsWeekPagerTitle.
@@ -5286,7 +5286,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBackdropFollowsWeekPagerSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'左右切换周次时，背景图与课表页面一起移动。'**
+  /// **'左右切换周次时，背景图与课表页面一起移动'**
   String get homePageBackdropFollowsWeekPagerSubtitle;
 
   /// No description provided for @homePageBackgroundScopeTitle.
@@ -5298,7 +5298,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBackgroundScopeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色。'**
+  /// **'从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色'**
   String get homePageBackgroundScopeSubtitle;
 
   /// No description provided for @homePageBackgroundScopeStatusBar.
@@ -5334,7 +5334,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageHeaderBlurSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏。'**
+  /// **'模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏'**
   String get homePageHeaderBlurSubtitle;
 
   /// No description provided for @homePageWeekdayBarBlurTitle.
@@ -5346,7 +5346,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageWeekdayBarBlurSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'模糊周次与星期信息栏，透出下方背景图。'**
+  /// **'模糊周次与星期信息栏，透出下方背景图'**
   String get homePageWeekdayBarBlurSubtitle;
 
   /// No description provided for @homePageTimeColumnBlurTitle.
@@ -5358,13 +5358,13 @@ abstract class AppLocalizations {
   /// No description provided for @homePageTimeColumnBlurSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'模糊左侧节次/时间列，透出下方背景图。'**
+  /// **'模糊左侧节次/时间列，透出下方背景图'**
   String get homePageTimeColumnBlurSubtitle;
 
   /// No description provided for @homePageRegionBlurSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置。'**
+  /// **'需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置'**
   String get homePageRegionBlurSectionSubtitle;
 
   /// No description provided for @homePagePickImageAction.
@@ -5394,7 +5394,7 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceTextColorsSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'自定义课程卡片、星期栏与时间轴文字颜色。'**
+  /// **'自定义课程卡片、星期栏与时间轴文字颜色'**
   String get appearanceTextColorsSectionSubtitle;
 
   /// No description provided for @defaultTimetablePreviewName.
@@ -5574,7 +5574,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideStatusIslandHint.
   ///
   /// In zh, this message translates to:
-  /// **'如果你主要想用超级岛，先确认系统版本至少是 HyperOS 3.0.300，再继续把下面权限清单按顺序点完。'**
+  /// **'如果你主要想用超级岛，先确认系统版本至少是 HyperOS 3.0.300，再继续把下面权限清单按顺序点完'**
   String get guideStatusIslandHint;
 
   /// No description provided for @guidePermissionChecklistTitle.
@@ -5586,7 +5586,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidePermissionChecklistSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'按这个顺序检查，最省事，也最不容易漏。'**
+  /// **'按这个顺序检查，最省事，也最不容易漏'**
   String get guidePermissionChecklistSubtitle;
 
   /// No description provided for @guideChecklistRequestNotificationTitle.
@@ -5670,7 +5670,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideShortNameAdviceSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'超级岛支持显示课程简称。简称不是自动生成的，需要你在课程编辑里自己填写。建议控制在 3 个字以内，显示会更稳定。'**
+  /// **'超级岛支持显示课程简称，简称不是自动生成的，需要你在课程编辑里自己填写，建议控制在 3 个字以内，显示会更稳定'**
   String get guideShortNameAdviceSubtitle;
 
   /// No description provided for @guideShortNameRecommended.
@@ -5712,7 +5712,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideImportMethodsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前版本已经支持部分学校的教务系统网页登录导入；如果你的学校还没适配，也还有其他迁移方式。'**
+  /// **'当前版本已经支持部分学校的教务系统网页登录导入；如果你的学校还没适配，也还有其他迁移方式'**
   String get guideImportMethodsSubtitle;
 
   /// No description provided for @guideImportMethodStep1.
@@ -5766,13 +5766,13 @@ abstract class AppLocalizations {
   /// No description provided for @guidePrivacyHelperRequireConsent.
   ///
   /// In zh, this message translates to:
-  /// **'你勾选同意后，代表你已阅读并同意上述友盟相关说明、隐私内容与免责提示。'**
+  /// **'你勾选同意后，代表你已阅读并同意上述友盟相关说明、隐私内容与免责提示'**
   String get guidePrivacyHelperRequireConsent;
 
   /// No description provided for @guidePrivacyHelperViewOnly.
   ///
   /// In zh, this message translates to:
-  /// **'这里保留与首次启动一致的隐私、第三方 SDK 与免责说明，方便你随时查看；当前页面不需要再次勾选同意。'**
+  /// **'这里保留与首次启动一致的隐私、第三方 SDK 与免责说明，方便你随时查看；当前页面不需要再次勾选同意'**
   String get guidePrivacyHelperViewOnly;
 
   /// No description provided for @guidePrivacySectionTitle.
@@ -5850,7 +5850,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDiagnosticsShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表导出的超级岛相关日志，可用于排查“超级岛没有弹出”等问题。'**
+  /// **'这是轻屿课表导出的超级岛相关日志，可用于排查“超级岛没有弹出”等问题'**
   String get liveDiagnosticsShareText;
 
   /// No description provided for @liveDiagnosticsShareSubject.
@@ -5862,7 +5862,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDiagnosticsSnapshotShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表当前测试诊断页导出的超级岛状态快照，可用于排查“超级岛没有弹出”等问题。'**
+  /// **'这是轻屿课表当前测试诊断页导出的超级岛状态快照，可用于排查“超级岛没有弹出”等问题'**
   String get liveDiagnosticsSnapshotShareText;
 
   /// No description provided for @liveDiagnosticsSnapshotShareSubject.
@@ -5910,7 +5910,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingNotificationSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'用于验证超级岛、通知栏和课程简称等显示效果。'**
+  /// **'用于验证超级岛、通知栏和课程简称等显示效果'**
   String get liveTestingNotificationSubtitle;
 
   /// No description provided for @liveTestingSendAction.
@@ -5922,7 +5922,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingUmengHint.
   ///
   /// In zh, this message translates to:
-  /// **'下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报。'**
+  /// **'下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报'**
   String get liveTestingUmengHint;
 
   /// No description provided for @liveTestingCrashAction.
@@ -5946,7 +5946,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingIslandStatusSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这里直接显示原生实时服务、通知构造结果和不上岛原因。'**
+  /// **'这里直接显示原生实时服务、通知构造结果和不上岛原因'**
   String get liveTestingIslandStatusSubtitle;
 
   /// No description provided for @liveTestingServiceStatusRunning.
@@ -6078,7 +6078,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingRawDataSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认折叠，排查时再展开核对完整原生字段。'**
+  /// **'默认折叠，排查时再展开核对完整原生字段'**
   String get liveTestingRawDataSubtitle;
 
   /// No description provided for @liveTestingExpandRawJson.
@@ -6102,7 +6102,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingLocalLogsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'一键导出日志文件，直接通过系统分享发给开发者；也可以清空后重新收集。'**
+  /// **'一键导出日志文件，直接通过系统分享发给开发者；也可以清空后重新收集'**
   String get liveTestingLocalLogsSubtitle;
 
   /// No description provided for @liveTestingClearLogsAction.
@@ -6144,7 +6144,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingCurrentNativeFieldsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示当前原生诊断字段。'**
+  /// **'显示当前原生诊断字段'**
   String get liveTestingCurrentNativeFieldsSubtitle;
 
   /// No description provided for @liveTestingCrashSoon.
@@ -6168,7 +6168,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingTestCourseNote.
   ///
   /// In zh, this message translates to:
-  /// **'此处显示备注。可以在课程编辑页进行设置。'**
+  /// **'此处显示备注，可以在课程编辑页进行设置'**
   String get liveTestingTestCourseNote;
 
   /// No description provided for @liveTestingNotificationSent.
@@ -6198,7 +6198,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetTodayCourseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'首批支持 2×2、2×4、4×4 三种尺寸。点击小组件会直接打开首页，课程开始和结束时会主动刷新。'**
+  /// **'首批支持 2×2、2×4、4×4 三种尺寸，点击小组件会直接打开首页，课程开始和结束时会主动刷新'**
   String get homeWidgetTodayCourseSubtitle;
 
   /// No description provided for @homeWidgetQuickAddTitle.
@@ -6216,13 +6216,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetPinSupported.
   ///
   /// In zh, this message translates to:
-  /// **'支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面。'**
+  /// **'支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面'**
   String get homeWidgetPinSupported;
 
   /// No description provided for @homeWidgetPinUnsupported.
   ///
   /// In zh, this message translates to:
-  /// **'当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表 手动添加。'**
+  /// **'当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表 手动添加'**
   String get homeWidgetPinUnsupported;
 
   /// No description provided for @homeWidgetBackgroundStyleLabel.
@@ -6240,7 +6240,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowLocationSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后，小组件次级信息会优先显示周次和课程数量。'**
+  /// **'关闭后，小组件次级信息会优先显示周次和课程数量'**
   String get homeWidgetShowLocationSubtitle;
 
   /// No description provided for @homeWidgetShowCountdownTitle.
@@ -6252,7 +6252,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowCountdownSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。'**
+  /// **'先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示'**
   String get homeWidgetShowCountdownSubtitle;
 
   /// No description provided for @homeWidgetCountdownLeadTitle.
@@ -6264,7 +6264,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetCountdownLeadSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'设置上课前多少分钟自动切换到倒计时模式。'**
+  /// **'设置上课前多少分钟自动切换到倒计时模式'**
   String get homeWidgetCountdownLeadSubtitle;
 
   /// No description provided for @homeWidgetCountdownLeadAlways.
@@ -6294,7 +6294,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetHideCompletedSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。'**
+  /// **'开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程'**
   String get homeWidgetHideCompletedSubtitle;
 
   /// No description provided for @homeWidgetShowTomorrowTitle.
@@ -6306,7 +6306,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowTomorrowSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后，今日课程全部结束时小组件自动切换显示明天的课程。'**
+  /// **'开启后，今日课程全部结束时小组件自动切换显示明天的课程'**
   String get homeWidgetShowTomorrowSubtitle;
 
   /// No description provided for @homeWidgetHeightAdjustTitle.
@@ -6348,31 +6348,31 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetDescriptionText.
   ///
   /// In zh, this message translates to:
-  /// **'小组件目前优先展示今日课程。无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面组件也会跟着刷新。'**
+  /// **'小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面组件也会跟着刷新'**
   String get homeWidgetDescriptionText;
 
   /// No description provided for @homeWidgetPinRequested.
   ///
   /// In zh, this message translates to:
-  /// **'已发起“{label}”添加请求，请在系统弹窗里确认并放到桌面。'**
+  /// **'已发起“{label}”添加请求，请在系统弹窗里确认并放到桌面'**
   String homeWidgetPinRequested(String label);
 
   /// No description provided for @homeWidgetPinUnsupportedManual.
   ///
   /// In zh, this message translates to:
-  /// **'当前系统桌面不支持应用内直接添加小组件，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”。'**
+  /// **'当前系统桌面不支持应用内直接添加小组件，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”'**
   String homeWidgetPinUnsupportedManual(String label);
 
   /// No description provided for @homeWidgetInvalidType.
   ///
   /// In zh, this message translates to:
-  /// **'小组件类型无效，请稍后重试。'**
+  /// **'小组件类型无效，请稍后重试'**
   String get homeWidgetInvalidType;
 
   /// No description provided for @homeWidgetPinFailedManual.
   ///
   /// In zh, this message translates to:
-  /// **'发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”。'**
+  /// **'发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”'**
   String homeWidgetPinFailedManual(String label);
 
   /// No description provided for @layoutSettingsTitle.
@@ -6396,7 +6396,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutAutoFitHeightSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后会按当前节数自动铺满页面底部，不再保留下方空隙。'**
+  /// **'开启后会按当前节数自动铺满页面底部，不再保留下方空隙'**
   String get layoutAutoFitHeightSubtitle;
 
   /// No description provided for @layoutHideWeekendsTitle.
@@ -6408,7 +6408,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutHideWeekendsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后首页只显示周一到周五，剩余列宽会自动铺满。'**
+  /// **'开启后首页只显示周一到周五，剩余列宽会自动铺满'**
   String get layoutHideWeekendsSubtitle;
 
   /// No description provided for @layoutEnableHapticsTitle.
@@ -6420,7 +6420,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutEnableHapticsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后，页码切换等交互不再触发轻微震动。'**
+  /// **'关闭后，页码切换等交互不再触发轻微震动'**
   String get layoutEnableHapticsSubtitle;
 
   /// No description provided for @pageTransitionSpeedLabel.
@@ -6438,7 +6438,7 @@ abstract class AppLocalizations {
   /// No description provided for @pageTransitionSpeedSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'调节进入和返回子页面时的滑动动画快慢。数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置。'**
+  /// **'调节进入和返回子页面时的滑动动画快慢，数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置'**
   String get pageTransitionSpeedSubtitle;
 
   /// No description provided for @pageTransitionSpeedDurationHint.
@@ -6468,7 +6468,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutBackToCurrentWeekButtonStyleHelper.
   ///
   /// In zh, this message translates to:
-  /// **'默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮。'**
+  /// **'默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮'**
   String get layoutBackToCurrentWeekButtonStyleHelper;
 
   /// No description provided for @layoutBackToCurrentWeekButtonStyleInline.
@@ -6498,7 +6498,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutBackToCurrentWeekButtonOpacitySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只对右下角悬浮样式生效。'**
+  /// **'只对右下角悬浮样式生效'**
   String get layoutBackToCurrentWeekButtonOpacitySubtitle;
 
   /// No description provided for @layoutCourseCardGapLabel.
@@ -6558,7 +6558,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutCourseCardDisplaySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认显示课程名、老师和教室；其他信息可按课表自由开关组合。'**
+  /// **'默认显示课程名、老师和教室；其他信息可按课表自由开关组合'**
   String get layoutCourseCardDisplaySubtitle;
 
   /// No description provided for @layoutShowTeacherTitle.
@@ -6588,7 +6588,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutShowTimeLabelsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后仅显示时间点，不显示“上课”“下课”文字。'**
+  /// **'关闭后仅显示时间点，不显示“上课”“下课”文字'**
   String get layoutShowTimeLabelsSubtitle;
 
   /// No description provided for @layoutShowWeeksTitle.
@@ -6648,7 +6648,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutShowConflictBadgeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后，首页课表不再对冲突课程显示“冲突”小胶囊。'**
+  /// **'关闭后，首页课表不再对冲突课程显示“冲突”小胶囊'**
   String get layoutShowConflictBadgeSubtitle;
 
   /// No description provided for @layoutConflictOpacityLabel.
@@ -6666,13 +6666,13 @@ abstract class AppLocalizations {
   /// No description provided for @layoutConflictOpacitySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'冲突课程会自动层叠显示，调低透明度后能同时看到多节课。'**
+  /// **'冲突课程会自动层叠显示，调低透明度后能同时看到多节课'**
   String get layoutConflictOpacitySubtitle;
 
   /// No description provided for @layoutTipsText.
   ///
   /// In zh, this message translates to:
-  /// **'时间模板已移到设置首页。这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用。'**
+  /// **'时间模板已移到设置首页，这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用'**
   String get layoutTipsText;
 
   /// No description provided for @currentWeekCompact.
@@ -6720,7 +6720,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutRepositorySheetHint.
   ///
   /// In zh, this message translates to:
-  /// **'如果你想补学校教务导入适配，建议同时查看教务适配仓 qingyu_warehouse。'**
+  /// **'如果你想补学校教务导入适配，建议同时查看教务适配仓 qingyu_warehouse'**
   String get aboutRepositorySheetHint;
 
   /// No description provided for @aboutOpenGitHubAction.
@@ -6780,13 +6780,13 @@ abstract class AppLocalizations {
   /// No description provided for @aboutReadVersionFailed.
   ///
   /// In zh, this message translates to:
-  /// **'暂时无法读取版本信息，请稍后重试。'**
+  /// **'暂时无法读取版本信息，请稍后重试'**
   String get aboutReadVersionFailed;
 
   /// No description provided for @aboutReadVersionFailedHint.
   ///
   /// In zh, this message translates to:
-  /// **'如果你当前网络访问 GitHub 不稳定，可稍后再试，或切到下面的国内下载方式后重试。'**
+  /// **'如果你当前网络访问 GitHub 不稳定，可稍后再试，或切到下面的国内下载方式后重试'**
   String get aboutReadVersionFailedHint;
 
   /// No description provided for @aboutViewReleaseAction.
@@ -6840,13 +6840,13 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdateAvailableHint.
   ///
   /// In zh, this message translates to:
-  /// **'你现在只需要点下面的“立即下载”即可。测速、镜像和测试版都已经收进后面的高级选项里。'**
+  /// **'你现在只需要点下面的“立即下载”即可，测速、镜像和测试版都已经收进后面的高级选项里'**
   String get aboutUpdateAvailableHint;
 
   /// No description provided for @aboutUpdateNoUpdateHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测。'**
+  /// **'当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测'**
   String get aboutUpdateNoUpdateHint;
 
   /// No description provided for @aboutUpdatedAt.
@@ -6864,25 +6864,25 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdateNowAndroidSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'普通使用只需要点一次立即下载。下载慢、下载失败、要换线路时，再去下面的高级选项。'**
+  /// **'普通使用只需要点一次立即下载，下载慢、下载失败、要换线路时，再去下面的高级选项'**
   String get aboutUpdateNowAndroidSubtitle;
 
   /// No description provided for @aboutUpdateNowOtherSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前平台会直接打开下载页面，不会在应用内安装。'**
+  /// **'当前平台会直接打开下载页面，不会在应用内安装'**
   String get aboutUpdateNowOtherSubtitle;
 
   /// No description provided for @aboutMirrorDownloadHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前会优先使用国内下载。大多数国内网络直接点“立即下载”就行。'**
+  /// **'当前会优先使用国内下载，大多数国内网络直接点“立即下载”就行'**
   String get aboutMirrorDownloadHint;
 
   /// No description provided for @aboutOriginalDownloadHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前会优先使用国际源下载。如果下载慢或打不开，建议先切回“国内下载”。'**
+  /// **'当前会优先使用国际源下载，如果下载慢或打不开，建议先切回“国内下载”'**
   String get aboutOriginalDownloadHint;
 
   /// No description provided for @aboutUseSystemDownloaderAction.
@@ -6906,7 +6906,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutDownloadMethodSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认推荐国内下载。只有你能稳定访问 GitHub 时，再切到国际源下载。'**
+  /// **'默认推荐国内下载，只有你能稳定访问 GitHub 时，再切到国际源下载'**
   String get aboutDownloadMethodSubtitle;
 
   /// No description provided for @aboutDownloadMethodMirror.
@@ -6924,19 +6924,19 @@ abstract class AppLocalizations {
   /// No description provided for @aboutMirrorModeHintRecommended.
   ///
   /// In zh, this message translates to:
-  /// **'当前使用国内下载 · {current}。系统最近测速更推荐“{recommended}”，需要时可在后面的高级选项里切换。'**
+  /// **'当前使用国内下载 · {current}，系统最近测速更推荐“{recommended}”，需要时可在后面的高级选项里切换'**
   String aboutMirrorModeHintRecommended(String current, String recommended);
 
   /// No description provided for @aboutMirrorModeHintCurrent.
   ///
   /// In zh, this message translates to:
-  /// **'当前使用国内下载 · {current}。如果下载慢或失败，再到后面的高级选项里测速、换线路或填写自定义地址。'**
+  /// **'当前使用国内下载 · {current}，如果下载慢或失败，再到后面的高级选项里测速、换线路或填写自定义地址'**
   String aboutMirrorModeHintCurrent(String current);
 
   /// No description provided for @aboutOriginalModeHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前使用国际源下载。只有你网络能稳定访问 GitHub 时才建议这样设置；否则请切回国内下载。'**
+  /// **'当前使用国际源下载，只有你网络能稳定访问 GitHub 时才建议这样设置；否则请切回国内下载'**
   String get aboutOriginalModeHint;
 
   /// No description provided for @aboutReleaseNotesTitle.
@@ -6948,7 +6948,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutReleaseNotesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示当前检测到版本的 Release 说明。'**
+  /// **'显示当前检测到版本的 Release 说明'**
   String get aboutReleaseNotesSubtitle;
 
   /// No description provided for @aboutAdvancedOptionsTitle.
@@ -6960,7 +6960,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAdvancedOptionsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只有下载慢、要手动切线路、或要检测测试版时再展开。'**
+  /// **'只有下载慢、要手动切线路、或要检测测试版时再展开'**
   String get aboutAdvancedOptionsSubtitle;
 
   /// No description provided for @aboutMirrorSectionTitle.
@@ -6972,13 +6972,13 @@ abstract class AppLocalizations {
   /// No description provided for @aboutMirrorSectionMirrorHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前使用国内下载。这里可以手动切线路、测速推荐，或填写自定义下载地址。'**
+  /// **'当前使用国内下载，这里可以手动切线路、测速推荐，或填写自定义下载地址'**
   String get aboutMirrorSectionMirrorHint;
 
   /// No description provided for @aboutMirrorSectionOriginalHint.
   ///
   /// In zh, this message translates to:
-  /// **'你现在使用的是国际源下载。下面的线路设置只有在切回“国内下载”后才会生效。'**
+  /// **'你现在使用的是国际源下载，下面的线路设置只有在切回“国内下载”后才会生效'**
   String get aboutMirrorSectionOriginalHint;
 
   /// No description provided for @aboutFillCustomMirrorFirst.
@@ -7002,13 +7002,13 @@ abstract class AppLocalizations {
   /// No description provided for @aboutCurrentCustomMirrorHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前正在使用你手动填写的下载地址。'**
+  /// **'当前正在使用你手动填写的下载地址'**
   String get aboutCurrentCustomMirrorHint;
 
   /// No description provided for @aboutCurrentMirrorHint.
   ///
   /// In zh, this message translates to:
-  /// **'如果当前线路访问失败，可以切到其他内置线路，或改用自定义地址。'**
+  /// **'如果当前线路访问失败，可以切到其他内置线路，或改用自定义地址'**
   String get aboutCurrentMirrorHint;
 
   /// No description provided for @aboutProbeMirrorsAction.
@@ -7044,7 +7044,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutMirrorDisabledHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有使用国内下载，所以这里的线路设置暂时不会生效。需要的话，请先在上面的“下载方式”里切回国内下载。'**
+  /// **'当前没有使用国内下载，所以这里的线路设置暂时不会生效，需要的话，请先在上面的“下载方式”里切回国内下载'**
   String get aboutMirrorDisabledHint;
 
   /// No description provided for @aboutRecentProbeResultsTitle.
@@ -7074,7 +7074,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutCheckPrereleaseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后会把测试版也纳入更新检查；普通使用建议关闭。'**
+  /// **'打开后会把测试版也纳入更新检查；普通使用建议关闭'**
   String get aboutCheckPrereleaseSubtitle;
 
   /// No description provided for @aboutDiagnosticsTitle.
@@ -7086,7 +7086,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutDiagnosticsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只有遇到“超级岛没弹出”或需要给开发者反馈时再展开。'**
+  /// **'只有遇到“超级岛没弹出”或需要给开发者反馈时再展开'**
   String get aboutDiagnosticsSubtitle;
 
   /// No description provided for @aboutRecordDiagnosticsTitle.
@@ -7098,7 +7098,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutRecordDiagnosticsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源。'**
+  /// **'打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源'**
   String get aboutRecordDiagnosticsSubtitle;
 
   /// No description provided for @aboutExportDiagnosticsAction.
@@ -7218,7 +7218,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdatePackageDescription.
   ///
   /// In zh, this message translates to:
-  /// **'已交给系统下载管理器下载，完成后可直接从系统通知安装。'**
+  /// **'已交给系统下载管理器下载，完成后可直接从系统通知安装'**
   String get aboutUpdatePackageDescription;
 
   /// No description provided for @aboutSystemDownloaderQueued.
@@ -7290,7 +7290,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutWarehouseMaintainersIntro.
   ///
   /// In zh, this message translates to:
-  /// **'以下名单来自 qingyu_warehouse 适配仓的 maintainer 字段汇总。若本地已有缓存，会先显示缓存，再后台刷新。'**
+  /// **'以下名单来自 qingyu_warehouse 适配仓的 maintainer 字段汇总，若本地已有缓存，会先显示缓存，再后台刷新'**
   String get aboutWarehouseMaintainersIntro;
 
   /// No description provided for @aboutWarehouseMaintainersLoadFailed.
@@ -7302,7 +7302,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutWarehouseMaintainersEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'当前还没有读取到适配者信息。'**
+  /// **'当前还没有读取到适配者信息'**
   String get aboutWarehouseMaintainersEmpty;
 
   /// No description provided for @aboutWarehouseMaintainerCount.
@@ -7320,7 +7320,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutParticipateWarehouseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复。'**
+  /// **'如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复'**
   String get aboutParticipateWarehouseSubtitle;
 
   /// No description provided for @importFileReadFailed.
@@ -7356,7 +7356,7 @@ abstract class AppLocalizations {
   /// No description provided for @importConfirmSemesterMappingSubtitleIcs.
   ///
   /// In zh, this message translates to:
-  /// **'请选择学校校历的开学日期。系统已根据文件里最早的上课日期给出默认周次对应，你也可以手动调整。'**
+  /// **'请选择学校校历的开学日期，系统已根据文件里最早的上课日期给出默认周次对应，你也可以手动调整'**
   String get importConfirmSemesterMappingSubtitleIcs;
 
   /// No description provided for @importOverwriteCount.
@@ -7420,7 +7420,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiWorkflowSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'先复制提示词，再到豆包左下角切换为专家模式，把课表截图和提示词一起发过去。把豆包返回的 JSON 复制回这里，点击导入后再选择开学日期。'**
+  /// **'先复制提示词，再到豆包左下角切换为专家模式，把课表截图和提示词一起发过去，把豆包返回的 JSON 复制回这里，点击导入后再选择开学日期'**
   String get aiWorkflowSubtitle;
 
   /// No description provided for @aiPromptShortAction.
@@ -7432,7 +7432,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiExpertModeSuggestion.
   ///
   /// In zh, this message translates to:
-  /// **'建议豆包专家模式，支持多图，截图需带星期表头。'**
+  /// **'建议豆包专家模式，支持多图，截图需带星期表头'**
   String get aiExpertModeSuggestion;
 
   /// No description provided for @aiHintExpertMode.
@@ -7492,7 +7492,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiPasteJsonHintLong.
   ///
   /// In zh, this message translates to:
-  /// **'把豆包返回的 JSON 原样粘贴到这里，然后点击导入。支持纯 JSON，也兼容 ```json 代码块。'**
+  /// **'把豆包返回的 JSON 原样粘贴到这里，然后点击导入，支持纯 JSON，也兼容 ```json 代码块'**
   String get aiPasteJsonHintLong;
 
   /// No description provided for @detailAction.
@@ -7516,7 +7516,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiWorkflowFooter.
   ///
   /// In zh, this message translates to:
-  /// **'复制提示词 -> 豆包发送截图和提示词 -> 把 JSON 贴回这里 -> 点击导入 -> 选择开学日期。'**
+  /// **'复制提示词 -> 豆包发送截图和提示词 -> 把 JSON 贴回这里 -> 点击导入 -> 选择开学日期'**
   String get aiWorkflowFooter;
 
   /// No description provided for @previewAction.
@@ -7552,7 +7552,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiPromptSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'建议使用豆包。先把豆包左下角切换为专家模式，再把下面整段提示词和课表截图一起发过去，让它只返回 JSON。生成后把 JSON 复制回本页，点击导入后再选择开学日期。'**
+  /// **'建议使用豆包，先把豆包左下角切换为专家模式，再把下面整段提示词和课表截图一起发过去，让它只返回 JSON，生成后把 JSON 复制回本页，点击导入后再选择开学日期'**
   String get aiPromptSheetSubtitle;
 
   /// No description provided for @aiPreviewTitle.
@@ -7588,7 +7588,7 @@ abstract class AppLocalizations {
   /// No description provided for @importConfirmSemesterMappingSubtitleAi.
   ///
   /// In zh, this message translates to:
-  /// **'请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周。如果学校第一周没课，这里通常要改成第 2 周。'**
+  /// **'请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周，如果学校第一周没课，这里通常要改成第 2 周'**
   String get importConfirmSemesterMappingSubtitleAi;
 
   /// No description provided for @aiWarningExtraSuffix.
@@ -7606,7 +7606,7 @@ abstract class AppLocalizations {
   /// No description provided for @importConfirmSemesterMappingSubtitleWarehouse.
   ///
   /// In zh, this message translates to:
-  /// **'教务脚本已返回课程周次，请确认校历开学日期；如果学校前几周没有课，可把“课表第 1 周”对应到校历后面的周次。'**
+  /// **'教务脚本已返回课程周次，请确认校历开学日期；如果学校前几周没有课，可把“课表第 1 周”对应到校历后面的周次'**
   String get importConfirmSemesterMappingSubtitleWarehouse;
 
   /// No description provided for @aiPreviewCourseCount.
@@ -7648,7 +7648,7 @@ abstract class AppLocalizations {
   /// No description provided for @warehouseMissingSchoolSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'去反馈页提一个 Issue 就行。建议一起写上学校名称、教务系统网址、登录后课表页链接或截图，这样更方便补适配。'**
+  /// **'去反馈页提一个 Issue 就行，建议一起写上学校名称、教务系统网址、登录后课表页链接或截图，这样更方便补适配'**
   String get warehouseMissingSchoolSubtitle;
 
   /// No description provided for @laterAction.
@@ -7708,7 +7708,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchSchoolSuggestion.
   ///
   /// In zh, this message translates to:
-  /// **'试试学校全称、首字母或仓库里的学校代码。'**
+  /// **'试试学校全称、首字母或仓库里的学校代码'**
   String get searchSchoolSuggestion;
 
   /// No description provided for @deleteDebugRecordTitle.
@@ -7720,7 +7720,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteDebugRecordMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确认删除“{name}”？删除后不会影响已经导入的课程。'**
+  /// **'确认删除“{name}”？删除后不会影响已经导入的课程'**
   String deleteDebugRecordMessage(String name);
 
   /// No description provided for @deletedDebugRecord.
@@ -7762,7 +7762,7 @@ abstract class AppLocalizations {
   /// No description provided for @customDebugIntroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'每条记录都可以保存自定义网址和整段脚本。保存后下次直接点“开始调试”就能复用，不需要再去某个学校详情页里找入口。'**
+  /// **'每条记录都可以保存自定义网址和整段脚本，保存后下次直接点“开始调试”就能复用，不需要再去某个学校详情页里找入口'**
   String get customDebugIntroSubtitle;
 
   /// No description provided for @addDebugRecordAction.
@@ -7780,7 +7780,7 @@ abstract class AppLocalizations {
   /// No description provided for @noSavedDebugRecordsHint.
   ///
   /// In zh, this message translates to:
-  /// **'先新增一条，把网址和脚本贴进去，以后就能直接复用。'**
+  /// **'先新增一条，把网址和脚本贴进去，以后就能直接复用'**
   String get noSavedDebugRecordsHint;
 
   /// No description provided for @debugScriptLength.
@@ -7864,7 +7864,7 @@ abstract class AppLocalizations {
   /// No description provided for @debugRecordFormulaSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合你反复调试同一个学校，或者不同学校保留多套脚本。保存后会一直保留，后面可随时修改。'**
+  /// **'适合你反复调试同一个学校，或者不同学校保留多套脚本，保存后会一直保留，后面可随时修改'**
   String get debugRecordFormulaSubtitle;
 
   /// No description provided for @debugRecordNameLabel.
@@ -8002,7 +8002,7 @@ abstract class AppLocalizations {
   /// No description provided for @quickImportManualInputHint.
   ///
   /// In zh, this message translates to:
-  /// **'请完成当前需要的手动操作。完成后点击继续。'**
+  /// **'请完成当前需要的手动操作，完成后点击继续'**
   String get quickImportManualInputHint;
 
   /// No description provided for @quickImportCancelImportAction.
@@ -8092,7 +8092,7 @@ abstract class AppLocalizations {
   /// No description provided for @adapterIntroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'可查看适配器信息、登录入口与脚本状态。'**
+  /// **'可查看适配器信息、登录入口与脚本状态'**
   String get adapterIntroSubtitle;
 
   /// No description provided for @schoolLabel.
@@ -8158,7 +8158,7 @@ abstract class AppLocalizations {
   /// No description provided for @scriptLoadedLength.
   ///
   /// In zh, this message translates to:
-  /// **'脚本已成功读取，长度 {count} 字符。'**
+  /// **'脚本已成功读取，长度 {count} 字符'**
   String scriptLoadedLength(int count);
 
   /// No description provided for @scriptEmpty.
@@ -8398,13 +8398,13 @@ abstract class AppLocalizations {
   /// No description provided for @switchTimetableSubtitleEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'点击下面的课表，立即切换当前视图。'**
+  /// **'点击下面的课表，立即切换当前视图'**
   String get switchTimetableSubtitleEmpty;
 
   /// No description provided for @switchTimetableSubtitleCurrent.
   ///
   /// In zh, this message translates to:
-  /// **'当前：{name}，点击下面的课表立即切换。'**
+  /// **'当前：{name}，点击下面的课表立即切换'**
   String switchTimetableSubtitleCurrent(String name);
 
   /// No description provided for @todayTimetableTitle.
@@ -8464,13 +8464,13 @@ abstract class AppLocalizations {
   /// No description provided for @courseDialogCurrentWeekHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前查看第 {week} 周，可直接对这一周这节课调课。'**
+  /// **'当前查看第 {week} 周，可直接对这一周这节课调课'**
   String courseDialogCurrentWeekHint(int week);
 
   /// No description provided for @courseDialogNotThisWeekHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前查看第 {week} 周，这门课这周没有上课，因此不能按“本周这节”调课。'**
+  /// **'当前查看第 {week} 周，这门课这周没有上课，因此不能按“本周这节”调课'**
   String courseDialogNotThisWeekHint(int week);
 
   /// No description provided for @editActionShort.
@@ -8500,7 +8500,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteModeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'你可以删掉整条排课，也可以只删当前看到的这一周这一节。'**
+  /// **'你可以删掉整条排课，也可以只删当前看到的这一周这一节'**
   String get deleteModeSubtitle;
 
   /// No description provided for @deleteCourseAction.
@@ -8518,13 +8518,13 @@ abstract class AppLocalizations {
   /// No description provided for @deleteModeHintCurrentWeek.
   ///
   /// In zh, this message translates to:
-  /// **'“删这个课”会删除这条排课的全部周次；“删这节课”只会删除第 {week} 周这一次。'**
+  /// **'“删这个课”会删除这条排课的全部周次；“删这节课”只会删除第 {week} 周这一次'**
   String deleteModeHintCurrentWeek(int week);
 
   /// No description provided for @deleteModeHintUnavailable.
   ///
   /// In zh, this message translates to:
-  /// **'当前卡片不是第 {week} 周的实际排课，所以只能删除整条排课。'**
+  /// **'当前卡片不是第 {week} 周的实际排课，所以只能删除整条排课'**
   String deleteModeHintUnavailable(int week);
 
   /// No description provided for @deleteScheduleConfirmMessage.
@@ -8560,7 +8560,7 @@ abstract class AppLocalizations {
   /// No description provided for @rescheduleCurrentOccurrenceSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'仅改第 {week} 周本节，原课该周移除，其他周不变。'**
+  /// **'仅改第 {week} 周本节，原课该周移除，其他周不变'**
   String rescheduleCurrentOccurrenceSubtitle(int week);
 
   /// No description provided for @rescheduleTargetWeekLabel.
@@ -8674,7 +8674,7 @@ abstract class AppLocalizations {
   /// No description provided for @addCourseSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'空白课表区域不响应点击。请从这里明确选择是加一节临时课、整学期重复课，还是插入一条单次日程。'**
+  /// **'空白课表区域不响应点击，请从这里明确选择是加一节临时课、整学期重复课，还是插入一条单次日程'**
   String get addCourseSheetSubtitle;
 
   /// No description provided for @courseWeekdaySectionSummary.
@@ -9248,7 +9248,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleInfoSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'日程会按具体日期插入日视图时间线里，不会改动课程本身。'**
+  /// **'日程会按具体日期插入日视图时间线里，不会改动课程本身'**
   String get scheduleInfoSectionSubtitle;
 
   /// No description provided for @scheduleTimeSectionTitle.
@@ -9260,7 +9260,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleTimeSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'选择这条日程实际发生的日期和起止时间。'**
+  /// **'选择这条日程实际发生的日期和起止时间'**
   String get scheduleTimeSectionSubtitle;
 
   /// No description provided for @scheduleAppearanceSectionTitle.
@@ -9272,7 +9272,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleAppearanceSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'选择一个更容易和课程区分的日程颜色。'**
+  /// **'选择一个更容易和课程区分的日程颜色'**
   String get scheduleAppearanceSectionSubtitle;
 
   /// No description provided for @scheduleLocationLabel.
@@ -9374,13 +9374,13 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleSingleDayHint.
   ///
   /// In zh, this message translates to:
-  /// **'同日结束时，结束时间必须晚于开始时间。'**
+  /// **'同日结束时，结束时间必须晚于开始时间'**
   String get scheduleSingleDayHint;
 
   /// No description provided for @scheduleCrossDayHint.
   ///
   /// In zh, this message translates to:
-  /// **'跨日日程会按当天切片显示在日视图里。'**
+  /// **'跨日日程会按当天切片显示在日视图里'**
   String get scheduleCrossDayHint;
 
   /// No description provided for @scheduleSavedHint.
@@ -9620,7 +9620,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleEntryCardSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'设置这门课在何时、哪些周、由谁在哪里上课。'**
+  /// **'设置这门课在何时、哪些周、由谁在哪里上课'**
   String get scheduleEntryCardSubtitle;
 
   /// No description provided for @scheduleEntryTimeSectionTitle.
@@ -9632,7 +9632,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleEntryTimeSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'选择星期几和第几节课；连堂请填写起止节次，单节课起止相同。'**
+  /// **'选择星期几和第几节课；连堂请填写起止节次，单节课起止相同'**
   String get scheduleEntryTimeSectionSubtitle;
 
   /// No description provided for @scheduleEntryWeeksSectionTitle.
@@ -9656,7 +9656,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleEntryTimeSchemeSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改。'**
+  /// **'默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改'**
   String get scheduleEntryTimeSchemeSectionSubtitle;
 
   /// No description provided for @scheduleSectionNumberLabel.
@@ -9818,7 +9818,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseActionSheetNotice.
   ///
   /// In zh, this message translates to:
-  /// **'您正在查看第 {week} 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课。'**
+  /// **'您正在查看第 {week} 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课'**
   String courseActionSheetNotice(int week);
 
   /// No description provided for @courseActionOddWeekShort.
@@ -9878,7 +9878,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseActionPartnerReadOnlyNotice.
   ///
   /// In zh, this message translates to:
-  /// **'这是对方课表中的课程，仅供查看，无法编辑或调课。'**
+  /// **'这是对方课表中的课程，仅供查看，无法编辑或调课'**
   String get courseActionPartnerReadOnlyNotice;
 
   /// No description provided for @suspendSheetTitle.
@@ -10124,7 +10124,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidePermissionsFooterHint.
   ///
   /// In zh, this message translates to:
-  /// **'点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准。'**
+  /// **'点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准'**
   String get guidePermissionsFooterHint;
 
   /// No description provided for @guideTipsHeader.
@@ -10871,19 +10871,19 @@ abstract class AppLocalizations {
   /// No description provided for @importFirstCourseWeekMappingSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。'**
+  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周'**
   String get importFirstCourseWeekMappingSubtitle;
 
   /// No description provided for @importSemesterMappingNoShiftHint.
   ///
   /// In zh, this message translates to:
-  /// **'导入后会直接把课表第 1 周当作校历第 1 周。'**
+  /// **'导入后会直接把课表第 1 周当作校历第 1 周'**
   String get importSemesterMappingNoShiftHint;
 
   /// No description provided for @importSemesterMappingShiftHint.
   ///
   /// In zh, this message translates to:
-  /// **'导入后会把所有课程周次整体顺延 {shiftedWeeks} 周，让课表第 1 周落在校历第 {calendarWeek} 周。'**
+  /// **'导入后会把所有课程周次整体顺延 {shiftedWeeks} 周，让课表第 1 周落在校历第 {calendarWeek} 周'**
   String importSemesterMappingShiftHint(int shiftedWeeks, int calendarWeek);
 
   /// No description provided for @calendarWeekOption.
@@ -11486,7 +11486,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgSectionCountBelowUsageDetail.
   ///
   /// In zh, this message translates to:
-  /// **'节次数量不能小于当前已使用的最大节次（第{requiredMaxSection}节）。正在使用：{profileName} · {courseName}（周{dayOfWeek} {startSection}-{endSection}节，{usageType}）'**
+  /// **'节次数量不能小于当前已使用的最大节次（第{requiredMaxSection}节），正在使用：{profileName} · {courseName}（周{dayOfWeek} {startSection}-{endSection}节，{usageType}）'**
   String serviceMsgSectionCountBelowUsageDetail(
     int requiredMaxSection,
     String profileName,
@@ -11904,25 +11904,25 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgNoReleaseAvailable.
   ///
   /// In zh, this message translates to:
-  /// **'仓库还没有发布 Release。'**
+  /// **'仓库还没有发布 Release'**
   String get serviceMsgNoReleaseAvailable;
 
   /// No description provided for @serviceMsgNoReleaseWithPrerelease.
   ///
   /// In zh, this message translates to:
-  /// **'还没有可用的正式版或预发布版本。'**
+  /// **'还没有可用的正式版或预发布版本'**
   String get serviceMsgNoReleaseWithPrerelease;
 
   /// No description provided for @serviceMsgUpdateCheckHttpFailed.
   ///
   /// In zh, this message translates to:
-  /// **'检查更新失败（HTTP {statusCode}）。'**
+  /// **'检查更新失败（HTTP {statusCode}）'**
   String serviceMsgUpdateCheckHttpFailed(int statusCode);
 
   /// No description provided for @serviceMsgUpdateCheckNetworkFailed.
   ///
   /// In zh, this message translates to:
-  /// **'网络异常，暂时无法检查更新。'**
+  /// **'网络异常，暂时无法检查更新'**
   String get serviceMsgUpdateCheckNetworkFailed;
 
   /// No description provided for @serviceMsgUpdateDownloadUrlUntrusted.
@@ -11976,7 +11976,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgShareBackupText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。'**
+  /// **'这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置'**
   String get serviceMsgShareBackupText;
 
   /// No description provided for @serviceMsgShareBackupSubject.
@@ -11994,7 +11994,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgShareFullBackupText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。'**
+  /// **'这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板'**
   String get serviceMsgShareFullBackupText;
 
   /// No description provided for @serviceMsgShareFullBackupSubject.
@@ -12042,13 +12042,13 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgWarehouseFetchFailedMirror.
   ///
   /// In zh, this message translates to:
-  /// **'暂时无法读取适配仓。已尝试 {candidatesCount} 个镜像线路均失败。请检查网络，或到「版本更新」里切到其他镜像线路后重试。'**
+  /// **'暂时无法读取适配仓，已尝试 {candidatesCount} 个镜像线路均失败，请检查网络，或到「版本更新」里切到其他镜像线路后重试'**
   String serviceMsgWarehouseFetchFailedMirror(int candidatesCount);
 
   /// No description provided for @serviceMsgWarehouseFetchFailedGithub.
   ///
   /// In zh, this message translates to:
-  /// **'暂时无法读取适配仓。当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试。'**
+  /// **'暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试'**
   String get serviceMsgWarehouseFetchFailedGithub;
 
   /// No description provided for @serviceMsgManualInputCaptcha.
@@ -12272,7 +12272,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataTransferProfileShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。'**
+  /// **'这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置'**
   String get dataTransferProfileShareText;
 
   /// No description provided for @dataTransferProfileShareSubject.
@@ -12290,7 +12290,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataTransferFullBackupShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。'**
+  /// **'这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板'**
   String get dataTransferFullBackupShareText;
 
   /// No description provided for @dataTransferFullBackupShareSubject.
@@ -12680,7 +12680,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseAccordionSection1Body.
   ///
   /// In zh, this message translates to:
-  /// **'展开后显示的内容区域。'**
+  /// **'展开后显示的内容区域'**
   String get hyperosShowcaseAccordionSection1Body;
 
   /// No description provided for @hyperosShowcaseAccordionSection2.
@@ -12692,7 +12692,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseAccordionSection2Body.
   ///
   /// In zh, this message translates to:
-  /// **'可折叠分组，替代 FAccordion。'**
+  /// **'可折叠分组，替代 FAccordion'**
   String get hyperosShowcaseAccordionSection2Body;
 
   /// No description provided for @hyperosShowcaseSectionNavRows.
@@ -12974,7 +12974,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseFooterNote.
   ///
   /// In zh, this message translates to:
-  /// **'此页仅在非 Release 构建设置首页可见，用于组件视觉验收。'**
+  /// **'此页仅在非 Release 构建设置首页可见，用于组件视觉验收'**
   String get hyperosShowcaseFooterNote;
 
   /// No description provided for @hyperosShowcaseUndoAction.
@@ -12986,7 +12986,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseDialogMessage.
   ///
   /// In zh, this message translates to:
-  /// **'系统风格对话框示例。'**
+  /// **'系统风格对话框示例'**
   String get hyperosShowcaseDialogMessage;
 
   /// No description provided for @hyperosShowcaseConfirmTitle.
@@ -13109,7 +13109,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseImportSaveRecordingMessage.
   ///
   /// In zh, this message translates to:
-  /// **'录制了 {count} 个操作步骤。是否保存为快捷导入？'**
+  /// **'录制了 {count} 个操作步骤，是否保存为快捷导入？'**
   String courseImportSaveRecordingMessage(int count);
 
   /// No description provided for @courseImportRecordingSavedStatus.
@@ -13164,19 +13164,19 @@ abstract class AppLocalizations {
   /// No description provided for @courseImportFirstWeekMappingSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。'**
+  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周'**
   String get courseImportFirstWeekMappingSubtitle;
 
   /// No description provided for @courseImportFirstWeekNoShift.
   ///
   /// In zh, this message translates to:
-  /// **'导入后会直接把课表第 1 周当作校历第 1 周。'**
+  /// **'导入后会直接把课表第 1 周当作校历第 1 周'**
   String get courseImportFirstWeekNoShift;
 
   /// No description provided for @courseImportFirstWeekShifted.
   ///
   /// In zh, this message translates to:
-  /// **'导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周。'**
+  /// **'导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周'**
   String courseImportFirstWeekShifted(int weeks, int targetWeek);
 
   /// No description provided for @courseImportContinueAction.
@@ -13206,7 +13206,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseImportSectionCountInsufficientMessage.
   ///
   /// In zh, this message translates to:
-  /// **'当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节。是否自动补齐后继续导入？'**
+  /// **'当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节，是否自动补齐后继续导入？'**
   String courseImportSectionCountInsufficientMessage(int current, int required);
 
   /// No description provided for @courseImportAutoFillAndImportAction.
@@ -13236,7 +13236,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseImportPortalUrlHint.
   ///
   /// In zh, this message translates to:
-  /// **'保存后下次会直接使用，也可以在适配器信息页里修改。'**
+  /// **'保存后下次会直接使用，也可以在适配器信息页里修改'**
   String get courseImportPortalUrlHint;
 
   /// No description provided for @courseImportPortalUrlInvalid.
@@ -14733,7 +14733,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseImportPortalUrlMissingBody.
   ///
   /// In zh, this message translates to:
-  /// **'“{schoolName} / {adapterName}” 没有默认登录地址，请先输入学校教务系统网址。'**
+  /// **'“{schoolName} / {adapterName}” 没有默认登录地址，请先输入学校教务系统网址'**
   String courseImportPortalUrlMissingBody(
     String schoolName,
     String adapterName,

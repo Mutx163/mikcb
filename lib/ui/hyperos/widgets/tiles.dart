@@ -7,6 +7,7 @@ import '../hyperos_miuix_spec.dart';
 import '../hyperos_switch.dart';
 import '../hyperos_theme.dart';
 import '../hyperos_tokens.dart';
+import 'adaptive_card.dart';
 import 'indicators.dart';
 import 'layout.dart';
 
@@ -133,12 +134,15 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
       _resetGesture();
       return;
     }
+    // Keep press fill visible through a quick tap. [onTap] promotes this to
+    // the post-tap flash so anchored popups can paint one gray frame before
+    // [Navigator.pop] disposes the row.
+    _downPosition = null;
     if (_phase == PressPhase.pending) {
       _highlightTimer?.cancel();
-      _downPosition = null;
-      setState(() => _phase = PressPhase.idle);
+      _highlightTimer = null;
+      setState(() => _phase = PressPhase.highlighted);
     }
-    // Keep [highlighted] until [onTap] extends it through the page transition.
   }
 
   void _handleTapCancel() {
@@ -184,22 +188,33 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
 
     final cardScope = HyperosControlCardScope.maybeOf(context);
     final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
-    final clipHighlightBottom =
-        _showHighlight &&
-        cardScope != null &&
-        cardRowScope != null &&
-        cardRowScope.isLast;
+    final listScope = HyperosListTileScope.maybeOf(context);
+    final isFirst =
+        listScope?.isFirst ?? cardRowScope?.isFirst ?? cardScope != null;
+    final isLast =
+        listScope?.isLast ?? cardRowScope?.isLast ?? cardScope != null;
+    final surfaceRadius = HyperosSurfaceRadiusScope.of(
+      context,
+      fallback: cardScope?.cornerRadius,
+    );
+
+    final clipTop = _showHighlight && isFirst;
+    final clipBottom = _showHighlight && isLast;
 
     Widget highlighted = ColoredBox(
       color: _showHighlight ? highlight : bg,
       child: SizedBox(width: double.infinity, child: widget.child),
     );
 
-    if (clipHighlightBottom) {
+    if (clipTop || clipBottom) {
       highlighted = ClipRRect(
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(cardScope.cornerRadius),
-          bottomRight: Radius.circular(cardScope.cornerRadius),
+          topLeft: clipTop ? Radius.circular(surfaceRadius) : Radius.zero,
+          topRight: clipTop ? Radius.circular(surfaceRadius) : Radius.zero,
+          bottomLeft: clipBottom ? Radius.circular(surfaceRadius) : Radius.zero,
+          bottomRight: clipBottom
+              ? Radius.circular(surfaceRadius)
+              : Radius.zero,
         ),
         child: highlighted,
       );
@@ -476,6 +491,7 @@ class HyperosChoiceTile extends StatelessWidget {
     this.prefix,
     this.dividerIndent,
     this.titleStyle,
+    this.forceHighlighted = false,
   });
 
   final String title;
@@ -501,9 +517,20 @@ class HyperosChoiceTile extends StatelessWidget {
   /// can preview the typeface directly inside the select list.
   final TextStyle? titleStyle;
 
+  /// Forces the press fill while selection chrome (blue title / check) has
+  /// already moved — used by the anchored select popup commit window.
+  final bool forceHighlighted;
+
   @override
   Widget build(BuildContext context) {
-    final cardColor = HyperosColors.card(context);
+    final isPopup = variant == HyperosChoiceVariant.popup;
+    final isDialog = variant == HyperosChoiceVariant.dialog;
+    // Popup sits on [surfaceContainer]; keep row fill transparent so the
+    // press gray matches settings-row [HyperosPressableRow] against the same
+    // surface family. Dialog / list cards still use the card surface.
+    final cardColor = isPopup
+        ? Colors.transparent
+        : HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
     final effectiveEnabled = enabled && onTap != null;
     final primaryText = HyperosColors.primaryText(context);
@@ -525,7 +552,6 @@ class HyperosChoiceTile extends StatelessWidget {
     );
 
     final padding = _paddingForVariant(context);
-    final isPopup = variant == HyperosChoiceVariant.popup;
     // Popup rows stay content-sized (padding + title line), matching v2.0.4.
     // Do not force settings-row min height — that stacks 56dp under the
     // already-large first/last vertical padding and makes options look bloated.
@@ -583,6 +609,10 @@ class HyperosChoiceTile extends StatelessWidget {
 
     return HyperosPressableRow(
       onTap: effectiveEnabled ? onTap : null,
+      // Popup / dialog options dismiss immediately on select; keep the same
+      // gray press fill as outer settings rows through the brief commit delay.
+      holdHighlightThroughTransition: isPopup || isDialog,
+      forceHighlighted: forceHighlighted,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: Column(

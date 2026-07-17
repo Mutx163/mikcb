@@ -2380,7 +2380,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         HyperosControlCard(
           title: '快捷测试课表',
           subtitle:
-              '仅调试版可用。会创建「${LiveTestingFixtureService.timeSchemeName}」时间模板（24 个节次），并在今天生成 00:00–23:00 各一门测试课；测试课 ID 以 ${LiveTestingFixtureService.courseIdPrefix} 开头，可一键清除。',
+              '仅调试版可用，会创建「${LiveTestingFixtureService.timeSchemeName}」时间模板（24 个节次），并在今天生成 00:00–23:00 各一门测试课；测试课 ID 以 ${LiveTestingFixtureService.courseIdPrefix} 开头，可一键清除',
           child: HyperosControlCardInset(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -39,14 +39,14 @@ class AiCourseImportService {
   };
 
   static const String prompt = '''
-你是轻屿课表的专属视觉解析引擎。你的任务是精准识别课程表截图，并将其转化为严格的 JSON 数据供本地解析。
+你是轻屿课表的专属视觉解析引擎，你的任务是精准识别课程表截图，并将其转化为严格的 JSON 数据供本地解析，
 
 【核心阅读策略：按列与单元格读取】
-图片是一个二维表格。表头是星期（周一至周日），左侧是节次。
-你必须严格按照列（星期）逐个单元格进行读取。一个单元格内的一堆换行文字，代表一门课程的完整信息。绝不能跨列合并文字！
+图片是一个二维表格，表头是星期（周一至周日），左侧是节次，
+你必须严格按照列（星期）逐个单元格进行读取，一个单元格内的一堆换行文字，代表一门课程的完整信息，绝不能跨列合并文字！
 
 【数据结构与输出红线】
-你只能输出一个纯粹的 JSON 对象，绝不能包含任何 markdown 标记（如 ```json ）、前言、后语或注释。
+你只能输出一个纯粹的 JSON 对象，绝不能包含任何 markdown 标记（如 ```json ）、前言、后语或注释，
 
 {
   "schema": "mikcb_ai_import_v1",
@@ -70,31 +70,31 @@ class AiCourseImportService {
 强智教务系统的标准单元格包含 5-6 行信息，请按此特征拆解：
 
 1. 课程名称与性质：
-   - 提取课程名，丢弃类似 [32]、[48] 的学时数字。
-   - 根据 [必修] 或 [选修] 映射到 courseNature ("required" 或 "elective")。
+   - 提取课程名，丢弃类似 [32]、[48] 的学时数字，
+   - 根据 [必修] 或 [选修] 映射到 courseNature ("required" 或 "elective")，
 
 2. 教师姓名：
-   - 映射到 teacher。
+   - 映射到 teacher，
 
 3. 班级信息（极易混淆区，必须注意）：
-   - 类似24软件工程[1-3]班(100)的信息，必须完整放入 note 字段。
-   - 绝对禁止把[1-3]班、[3-4]班等带有班字的数字识别为上课节次！如果没有班级信息可填 ""。
+   - 类似24软件工程[1-3]班(100)的信息，必须完整放入 note 字段，
+   - 绝对禁止把[1-3]班、[3-4]班等带有班字的数字识别为上课节次！如果没有班级信息可填 ""，
 
 4. 周次与节次（核心排雷区）：
-   - 通常格式如：14-15(全部)[01-02-03-04节]。前半部分是周次，方括号内带节字的是节次。
-   - 周次提取：提取并展开为纯数字升序去重数组 customWeeks。处理规则：(全部)为连续数组，(单)只取奇数，(双)只取偶数。
-   - 节次提取（极其严格）：节次必须且只能从明确带有节字的方括号中提取（如 [01-02-03-04节] 提取首尾数字 1 和 4，映射为 startSection 和 endSection）。
+   - 通常格式如：14-15(全部)[01-02-03-04节]，前半部分是周次，方括号内带节字的是节次，
+   - 周次提取：提取并展开为纯数字升序去重数组 customWeeks，处理规则：(全部)为连续数组，(单)只取奇数，(双)只取偶数，
+   - 节次提取（极其严格）：节次必须且只能从明确带有节字的方括号中提取（如 [01-02-03-04节] 提取首尾数字 1 和 4，映射为 startSection 和 endSection），
    - 再次强调：绝对禁止从学时（如[32]）、班级（如[3-4]班）中提取节次数据！
 
 5. 上课地点：
-   - 类似 B201、教学楼101。映射到 location。
+   - 类似 B201、教学楼101，映射到 location，
 
 【严格约束条件】
-1. dayOfWeek：必须通过表头或所在列判断，1-7对应周一至周日。
-2. 空值处理：teacher, location, note 无内容时必须填 ""，绝不允许输出 null。
-3. 字段限制：courses 内的对象只能包含上述 9 个字段，禁止增减其他字段。
-4. 冲突与重叠：多图输入时，同名、同星期、同节次、同地点的课程自动去重。不同星期或节次的同名课程必须拆分为多个对象。如果同一门课出现 1-4 节和 3-4 节，说明你识别错了班级信息，请合并为 1-4 节。
-5. 异常处理：如果某门课缺失 dayOfWeek、节次或周次等关键定位信息，不要猜测，不要将其加入 courses，而是将原因写入 warnings 数组中。
+1. dayOfWeek：必须通过表头或所在列判断，1-7对应周一至周日，
+2. 空值处理：teacher, location, note 无内容时必须填 ""，绝不允许输出 null，
+3. 字段限制：courses 内的对象只能包含上述 9 个字段，禁止增减其他字段，
+4. 冲突与重叠：多图输入时，同名、同星期、同节次、同地点的课程自动去重，不同星期或节次的同名课程必须拆分为多个对象，如果同一门课出现 1-4 节和 3-4 节，说明你识别错了班级信息，请合并为 1-4 节，
+5. 异常处理：如果某门课缺失 dayOfWeek、节次或周次等关键定位信息，不要猜测，不要将其加入 courses，而是将原因写入 warnings 数组中，
 
 准备就绪，请直接输出纯 JSON 数据：
 ''';
@@ -201,7 +201,9 @@ class AiCourseImportService {
     final endSection = _readRequiredInt(json, 'endSection');
     if (startSection < 1) {
       throw FormatException(
-        encodeServiceMessage('ai_course_start_section_invalid', {'index': index}),
+        encodeServiceMessage('ai_course_start_section_invalid', {
+          'index': index,
+        }),
       );
     }
     if (endSection < startSection) {
@@ -290,13 +292,10 @@ class AiCourseImportService {
     final unknownKeys = actualKeys.where((key) => !allowedKeys.contains(key));
     if (unknownKeys.isNotEmpty) {
       throw FormatException(
-        encodeServiceMessage(
-          'ai_unknown_fields',
-          {
-            'targetName': targetName,
-            'fields': unknownKeys.join('、'),
-          },
-        ),
+        encodeServiceMessage('ai_unknown_fields', {
+          'targetName': targetName,
+          'fields': unknownKeys.join('、'),
+        }),
       );
     }
   }
@@ -352,7 +351,9 @@ class AiCourseImportService {
         final parsed = _readInt(item);
         if (parsed == null || parsed < 1) {
           throw FormatException(
-            encodeServiceMessage('ai_week_list_invalid', {'itemName': itemName}),
+            encodeServiceMessage('ai_week_list_invalid', {
+              'itemName': itemName,
+            }),
           );
         }
         weeks.add(parsed);

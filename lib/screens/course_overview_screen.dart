@@ -30,15 +30,7 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     final conflictMap = provider.courseConflictMap;
 
     final sorted = _sortGroups(List.of(groups));
-    final conflictGroups = <CourseGroup>[];
-    final normalGroups = <CourseGroup>[];
-    for (final group in sorted) {
-      if (_groupHasConflict(group, conflictMap)) {
-        conflictGroups.add(group);
-      } else {
-        normalGroups.add(group);
-      }
-    }
+    final conflictScheduleCount = conflictMap.length;
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -59,40 +51,32 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
           ? _buildEmptyState(context, l10n)
           : HyperosListView(
               children: [
-                if (conflictGroups.isNotEmpty) ...[
-                  HyperosSectionLabel(text: l10n.courseConflictSectionTitle),
+                // Conflicts: single entry only — details live on the dedicated page.
+                if (conflictScheduleCount > 0) ...[
                   HyperosListGroup(
                     children: [
                       HyperosListTile(
                         icon: Icons.warning_amber_rounded,
                         iconAccent: HyperosIconColors.orange,
                         title: l10n.courseConflictDetailEntryTitle,
-                        details: l10n.conflictCountLabel(conflictGroups.length),
+                        details: l10n.conflictCountLabel(conflictScheduleCount),
                         onTap: () => _openConflictDetail(context),
                       ),
-                      for (final group in conflictGroups)
-                        _CourseGroupTile(
-                          group: group,
-                          hasConflict: true,
-                          onTap: () => _navigateToEditGroup(context, group),
-                        ),
                     ],
                   ),
-                  if (normalGroups.isNotEmpty) const HyperosSectionGap(),
+                  const HyperosSectionGap(),
                 ],
-                if (normalGroups.isNotEmpty) ...[
-                  HyperosSectionLabel(text: l10n.courseNormalSectionTitle),
-                  HyperosListGroup(
-                    children: [
-                      for (final group in normalGroups)
-                        _CourseGroupTile(
-                          group: group,
-                          hasConflict: false,
-                          onTap: () => _navigateToEditGroup(context, group),
-                        ),
-                    ],
-                  ),
-                ],
+                // Main course list: no section caption (this is the primary list).
+                HyperosListGroup(
+                  children: [
+                    for (final group in sorted)
+                      _CourseGroupTile(
+                        group: group,
+                        hasConflict: _groupHasConflict(group, conflictMap),
+                        onTap: () => _navigateToEditGroup(context, group),
+                      ),
+                  ],
+                ),
               ],
             ),
     );

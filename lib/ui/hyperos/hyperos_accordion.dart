@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
+import 'widgets/adaptive_card.dart';
 
 class HyperosAccordionItem {
   const HyperosAccordionItem({required this.title, required this.child});
@@ -88,13 +89,9 @@ class HyperosHintBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return HyperosAdaptiveCard(
+      preferredRadius: HyperosTokens.controlRadius,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: HyperosColors.card(context),
-        borderRadius: HyperosTheme.cardBorderRadius,
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -226,29 +226,27 @@ class _RelatedCoursesPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HyperosFrostedSurface(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: onToggleExpanded,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 child: Row(
                   children: [
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: HyperosTokens.iconBadgeSize,
+                      height: HyperosTokens.iconBadgeSize,
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(9),
+                        borderRadius: BorderRadius.circular(
+                          HyperosTokens.iconBadgeRadius,
+                        ),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(
-                        panelIcon,
-                        size: 17,
-                        color: accent,
-                      ),
+                      child: Icon(panelIcon, size: 17, color: accent),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -288,7 +286,11 @@ class _RelatedCoursesPanel extends StatelessWidget {
         ),
         if (expanded) ...[
           const SizedBox(height: 8),
-          for (var itemIndex = 0; itemIndex < otherIndexes.length; itemIndex++) ...[
+          for (
+            var itemIndex = 0;
+            itemIndex < otherIndexes.length;
+            itemIndex++
+          ) ...[
             if (itemIndex > 0) const SizedBox(height: 8),
             _RelatedCourseCompactRow(
               previewItem: previewItems[otherIndexes[itemIndex]],
@@ -354,12 +356,12 @@ class _RelatedCourseCompactRow extends StatelessWidget {
     final badgeLabel = _previewItemBadgeLabel(l10n, previewItem);
 
     return HyperosFrostedSurface(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
@@ -452,10 +454,7 @@ Color _previewItemColor(
   if (item.isConflict) {
     return colors.destructive;
   }
-  return parseHexColorOrFallback(
-    item.course.color,
-    fallback: colors.primary,
-  );
+  return parseHexColorOrFallback(item.course.color, fallback: colors.primary);
 }
 
 String? _previewItemBadgeLabel(
@@ -557,11 +556,7 @@ class _CourseActionSheetContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               alignment: Alignment.center,
-              child: Icon(
-                headerIcon,
-                color: courseColor,
-                size: 24,
-              ),
+              child: Icon(headerIcon, color: courseColor, size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -730,7 +725,7 @@ class _CourseDetailTile extends StatelessWidget {
     final colors = context.theme.colors;
 
     return HyperosFrostedSurface(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: Row(

@@ -622,7 +622,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   HyperosControlCardScope.defaultHorizontalPadding,
                   4,
                   HyperosControlCardScope.defaultHorizontalPadding,
-                  HyperosControlCardScope.defaultBodyBottomInset,
+                  13,
                 ),
                 child: Wrap(
                   spacing: 12,
@@ -685,7 +685,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   HyperosControlCardScope.defaultHorizontalPadding,
                   4,
                   HyperosControlCardScope.defaultHorizontalPadding,
-                  HyperosControlCardScope.defaultBodyBottomInset,
+                  // Match last-row bottom of preference tiles (not card bleed).
+                  13,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

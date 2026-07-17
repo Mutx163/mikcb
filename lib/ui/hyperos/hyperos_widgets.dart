@@ -4,6 +4,7 @@
 /// backward compatibility with existing import statements.
 library;
 
+export 'widgets/adaptive_card.dart';
 export 'widgets/cards.dart';
 export 'widgets/indicators.dart';
 export 'widgets/layout.dart';

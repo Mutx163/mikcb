@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'hyperos_radius.dart';
 import 'hyperos_theme.dart';
 
 /// Selectable color swatch for theme / appearance pickers.
@@ -11,17 +12,20 @@ class HyperosColorChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.size = 42,
-    this.radius = 16,
+    this.radius,
   });
 
   final Color color;
   final bool selected;
   final VoidCallback onTap;
   final double size;
-  final double radius;
+
+  /// Defaults to [HyperosRadius.chipRadius] for [size].
+  final double? radius;
 
   @override
   Widget build(BuildContext context) {
+    final cornerRadius = radius ?? HyperosRadius.chipRadius(size);
     final outline = selected
         ? HyperosColors.onSurface(context)
         : HyperosColors.outline(context);
@@ -33,14 +37,14 @@ class HyperosColorChip extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(cornerRadius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           width: size,
           height: size,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(radius),
+            borderRadius: BorderRadius.circular(cornerRadius),
             border: Border.all(color: outline, width: selected ? 2 : 1),
             boxShadow: [
               BoxShadow(

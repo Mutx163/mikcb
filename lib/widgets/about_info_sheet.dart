@@ -20,7 +20,9 @@ class AboutInfoSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bodyStyle = HyperosTypography.listTitle(
+    // Match secondary brand line under the icon (version / list detail size),
+    // not list-title 17sp — keep primary black for full readable bullets.
+    final bodyStyle = HyperosTypography.listDetail(
       context,
     ).copyWith(color: HyperosColors.primaryText(context), height: 1.45);
 

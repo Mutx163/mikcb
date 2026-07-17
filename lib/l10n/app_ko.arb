@@ -7,14 +7,14 @@
   "previewTitle": "미리보기",
   "timetableBackgroundPreview": "시간표 배경",
   "displayModeTitle": "표시 모드",
-  "displayModeSubtitle": "시스템 연동, 라이트 모드, 다크 모드를 지원합니다.",
+  "displayModeSubtitle": "시스템 연동, 라이트 모드, 다크 모드를 지원합니다",
   "themeModeLabel": "테마 모드",
   "themeModeSystem": "시스템 연동",
   "themeModeLight": "라이트 모드",
   "themeModeDark": "다크 모드",
   "fontSectionTitle": "앱 글꼴",
-  "fontSectionSubtitle": "Inter 기본 제공, 휴대폰에 이미 있는 글꼴도 선택할 수 있습니다.",
-  "fontSectionFootnote": "제조사 글꼴은 포함되지 않으며, 시스템에 있을 때만 적용됩니다. Xiaomi에서는 보통 MiSans만 뚜렷합니다. 변화가 없으면 자동 대체되며, 직접 설치할 필요는 보통 없습니다.",
+  "fontSectionSubtitle": "Inter 기본 제공, 휴대폰에 이미 있는 글꼴도 선택할 수 있습니다",
+  "fontSectionFootnote": "제조사 글꼴은 포함되지 않으며, 시스템에 있을 때만 적용됩니다. Xiaomi에서는 보통 MiSans만 뚜렷합니다. 변화가 없으면 자동 대체되며, 직접 설치할 필요는 보통 없습니다",
   "fontModeLabel": "글꼴 선택",
   "fontModeSystem": "앱 기본(Inter)",
   "fontModeSansSerif": "시스템 산세리프",
@@ -27,7 +27,7 @@
   "fontModeSongti": "송체",
   "fontModeMonospace": "고정폭",
   "languageSectionTitle": "앱 언어",
-  "languageSectionSubtitle": "시스템 연동 또는 수동으로 지원 언어를 전환할 수 있습니다.",
+  "languageSectionSubtitle": "시스템 연동 또는 수동으로 지원 언어를 전환할 수 있습니다",
   "languageModeLabel": "언어 선택",
   "languageModeSystem": "시스템 연동",
   "settingsTitle": "시간표 설정",
@@ -58,9 +58,9 @@
   "cloudSyncEntrySubtitle": "Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화",
   "cloudSyncTitle": "클라우드 동기화",
   "cloudSyncIntroTitle": "다중 기기 동기화",
-  "cloudSyncIntroSubtitle": "Jianguoyun WEBDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다.",
+  "cloudSyncIntroSubtitle": "Jianguoyun WEBDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다",
   "cloudSyncSettingsSectionTitle": "동기화 설정",
-  "cloudSyncSettingsSectionSubtitle": "수동 또는 자동 동기화를 전환할 수 있습니다.",
+  "cloudSyncSettingsSectionSubtitle": "수동 또는 자동 동기화를 전환할 수 있습니다",
   "cloudSyncEnabledTitle": "클라우드 동기화 사용",
   "cloudSyncEnabledSubtitle": "끄면 스냅샷을 업로드하거나 다운로드하지 않습니다",
   "cloudSyncProviderTitle": "서비스 제공자",
@@ -70,15 +70,15 @@
   "cloudSyncModeAuto": "자동 동기화",
   "cloudSyncModeManual": "수동 동기화",
   "cloudSyncAccountTitle": "계정 설정",
-  "cloudSyncAccountSubtitle": "Jianguoyun 앱 전용 비밀번호를 사용하세요 (로그인 비밀번호 아님). 스냅샷에는 창고에 저장된 학교 계정도 포함됩니다.",
+  "cloudSyncAccountSubtitle": "Jianguoyun 앱 전용 비밀번호를 사용하세요 (로그인 비밀번호 아님). 스냅샷에는 창고에 저장된 학교 계정도 포함됩니다",
   "cloudSyncUsernameLabel": "이메일 / 사용자명",
   "cloudSyncUsernameHint": "Jianguoyun 가입 이메일",
   "cloudSyncPasswordLabel": "앱 전용 비밀번호",
   "cloudSyncPasswordHint": "Jianguoyun 계정 보안 설정에서 생성",
-  "cloudSyncPasswordStoredHint": "비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다.",
+  "cloudSyncPasswordStoredHint": "비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다",
   "cloudSyncAdvancedTitle": "고급 설정",
   "cloudSyncBaseUrlLabel": "WEBDAV 주소",
-  "cloudSyncBaseUrlSecurityNote": "출시 버전은 HTTPS 암호화 연결만 지원합니다. 데이터 보안을 위해 HTTP 평문 프로토콜은 비활성화되었습니다.",
+  "cloudSyncBaseUrlSecurityNote": "출시 버전은 HTTPS 암호화 연결만 지원합니다. 데이터 보안을 위해 HTTP 평문 프로토콜은 비활성화되었습니다",
   "cloudSyncRemoteFolderLabel": "원격 폴더",
   "cloudSyncStatusTitle": "동기화 상태",
   "cloudSyncLastSyncedLabel": "마지막 동기화",
@@ -124,7 +124,7 @@
   "cloudSyncUseRemoteAction": "클라우드 사용",
   "cloudSyncKeepLocalAction": "로컬 유지",
   "cloudSyncAccountSectionTitle": "클라우드 계정",
-  "cloudSyncNotConnectedHint": "Jianguoyun에 연결하면 여러 기기에서 시간표와 가져온 데이터를 동기화할 수 있습니다.",
+  "cloudSyncNotConnectedHint": "Jianguoyun에 연결하면 여러 기기에서 시간표와 가져온 데이터를 동기화할 수 있습니다",
   "cloudSyncConnectAccount": "Jianguoyun 연결",
   "cloudSyncConnectedAs": "연결됨: {email}",
   "@cloudSyncConnectedAs": {
@@ -138,7 +138,7 @@
   "cloudSyncDisconnectTitle": "클라우드 동기화 계정 연결 해제",
   "cloudSyncDisconnectBody": "연결 해제 시 이 기기에 저장된 WEBDAV 자격 증명이 삭제됩니다. 시간표 데이터는 기기에 남습니다. 계속하시겠습니까?",
   "cloudSyncLoginSheetTitle": "Jianguoyun 연결",
-  "cloudSyncLoginSheetSubtitle": "앱 전용 비밀번호를 사용하세요 (Jianguoyun 로그인 비밀번호 아님).",
+  "cloudSyncLoginSheetSubtitle": "앱 전용 비밀번호를 사용하세요 (Jianguoyun 로그인 비밀번호 아님)",
   "cloudSyncConfirmConnect": "연결 확인",
   "cloudSyncConnectSuccess": "계정 연결 성공",
   "cloudBackupSectionTitle": "버전 기록",
@@ -221,7 +221,7 @@
   "lanEditEntryTitle": "LAN 편집",
   "lanEditEntrySubtitle": "PC 브라우저에서 현재 시간표 편집",
   "lanEditTitle": "LAN 편집",
-  "lanEditIntro": "활성화하면 같은 Wi-Fi 또는 핫스팟의 PC 브라우저에서 현재 시간표를 편집할 수 있습니다.",
+  "lanEditIntro": "활성화하면 같은 Wi-Fi 또는 핫스팟의 PC 브라우저에서 현재 시간표를 편집할 수 있습니다",
   "lanEditStart": "LAN 편집 시작",
   "lanEditStop": "중지",
   "lanEditStatusRunning": "LAN 편집 세션 진행 중",
@@ -231,8 +231,8 @@
   "lanEditPortLabel": "포트",
   "lanEditCopyAddress": "주소 복사",
   "lanEditCopied": "주소가 복사되었습니다",
-  "lanEditHotspotHint": "기숙사 Wi-Fi에서 연결되지 않으면 휴대폰 핫스팟을 사용해 보세요.",
-  "lanEditQrHint": "같은 LAN의 PC 브라우저로 QR 코드를 스캔하세요(PIN 포함 링크).",
+  "lanEditHotspotHint": "기숙사 Wi-Fi에서 연결되지 않으면 휴대폰 핫스팟을 사용해 보세요",
+  "lanEditQrHint": "같은 LAN의 PC 브라우저로 QR 코드를 스캔하세요(PIN 포함 링크)",
   "lanEditStartFailed": "시작 실패",
   "lanEditConnectedClientsLabel": "연결됨",
   "lanEditConnectedClientsNone": "없음",
@@ -261,31 +261,31 @@
     }
   },
   "selectSemesterWeekCountTitle": "학기 주 수 선택",
-  "selectSemesterWeekCountSubtitle": "학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다.",
+  "selectSemesterWeekCountSubtitle": "학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다",
   "unifiedCourseCardColorTitle": "수업 카드 색상 통일",
   "unifiedCourseCardColorSubtitle": "끄면 각 수업의 개별 색상을 계속 사용합니다",
   "importRandomCourseColorTitle": "수업 색상 무작위",
   "importRandomCourseColorSubtitle": "켜면 수업명과 교수로 프리셋 색을 배정하여 전부 같은 파란색이 되지 않게 합니다",
   "courseImportTitle": "수업 가져오기",
   "chooseImportMethodTitle": "가져오기 방법 선택",
-  "chooseImportMethodSubtitle": "기존 .ics 캘린더 가져오기, 이미지 인식 가져오기, 저장소에서 어댑터를 읽어오는 교무 시스템 가져오기를 지원합니다.",
+  "chooseImportMethodSubtitle": "기존 .ics 캘린더 가져오기, 이미지 인식 가져오기, 저장소에서 어댑터를 읽어오는 교무 시스템 가져오기를 지원합니다",
   "importMethodIcsTitle": ".ics 캘린더 가져오기",
-  "importMethodIcsSubtitle": "WakeUp 등 시간표 앱에서 내보낸 캘린더 파일에 적합하며, 절차가 가장 짧습니다.",
+  "importMethodIcsSubtitle": "WakeUp 등 시간표 앱에서 내보낸 캘린더 파일에 적합하며, 절차가 가장 짧습니다",
   "importMethodIcsFooter": "진입 후 .ics 파일을 선택하여 추가 가져오기 또는 기존 수업을 대체할 수 있습니다.",
   "importMethodAiTitle": "이미지 인식 가져오기",
-  "importMethodAiSubtitle": "시간표 스크린샷에서 바로 가져오기에 적합합니다. 1장 또는 연속 여러 장을 지원합니다.",
+  "importMethodAiSubtitle": "시간표 스크린샷에서 바로 가져오기에 적합합니다. 1장 또는 연속 여러 장을 지원합니다",
   "importMethodAiFooter": "프롬프트를 복사한 뒤 Doubao 전문가 모드에서 스크린샷과 프롬프트를 전송하고, 반환된 JSON을 복사하여 가져온 후 학기 시작일을 선택합니다.",
   "importMethodWarehouseTitle": "교무 시스템 가져오기",
-  "importMethodWarehouseSubtitle": "qingyu_warehouse에서 학교와 어댑터를 읽어 웹 로그인으로 수업을 가져옵니다.",
+  "importMethodWarehouseSubtitle": "qingyu_warehouse에서 학교와 어댑터를 읽어 웹 로그인으로 수업을 가져옵니다",
   "importMethodWarehouseFooter": "진입 후 학교와 어댑터를 선택하면 교무 웹페이지를 열어 로그인 후 가져오기를 실행할 수 있습니다.",
   "importMethodSpreadsheetTitle": "표 가져오기",
-  "importMethodSpreadsheetSubtitle": "Excel/WPS에서 경량섬 시간표 템플릿을 작성한 뒤 가져오기. .ics 사전보내기 불필요.",
+  "importMethodSpreadsheetSubtitle": "Excel/WPS에서 경량섬 시간표 템플릿을 작성한 뒤 가져오기. .ics 사전보내기 불필요",
   "importMethodSpreadsheetFooter": ".csv와 .xlsx 지원. 템플릿을 다운로드해 작성 후 파일을 선택하세요.",
   "spreadsheetImportTitle": "표 가져오기",
-  "spreadsheetScenarioIntro": "경량섬 템플릿은 헤더로 열을 인식합니다. 필수: 과목명, 요일, 시작/종료 절, 주차. 나머지는 선택. 전체 템플릿을 받거나 필수 열만 유지해도 됩니다. WakeUp 7열 형식도 지원.",
-  "spreadsheetStep1Subtitle": "전체 템플릿을 받아 작성하거나, 필수 열과 上课周(또는 시작周+结束周)만 남겨 최소 가져오기.",
-  "spreadsheetStep2Subtitle": "작성 후 .csv로 저장하거나 .xlsx를 그대로 사용합니다.",
-  "spreadsheetStep3Subtitle": "파일을 선택해 가져옵니다. 인식 경고가 있으면 먼저 표시한 뒤 추가 또는 대체를 선택합니다.",
+  "spreadsheetScenarioIntro": "경량섬 템플릿은 헤더로 열을 인식합니다. 필수: 과목명, 요일, 시작/종료 절, 주차. 나머지는 선택. 전체 템플릿을 받거나 필수 열만 유지해도 됩니다. WakeUp 7열 형식도 지원",
+  "spreadsheetStep1Subtitle": "전체 템플릿을 받아 작성하거나, 필수 열과 上课周(또는 시작周+结束周)만 남겨 최소 가져오기",
+  "spreadsheetStep2Subtitle": "작성 후 .csv로 저장하거나 .xlsx를 그대로 사용합니다",
+  "spreadsheetStep3Subtitle": "파일을 선택해 가져옵니다. 인식 경고가 있으면 먼저 표시한 뒤 추가 또는 대체를 선택합니다",
   "spreadsheetSupportedFilesSuffix": ".csv와 .xlsx 지원(첫 번째 시트만).",
   "chooseSpreadsheetFileAction": "표 파일 선택",
   "downloadSpreadsheetTemplateAction": "경량섬 시간표 템플릿 다운로드",
@@ -295,7 +295,7 @@
   "spreadsheetFormatUnrecognized": "표 형식을 인식하지 못했습니다. 경량섬 시간표 템플릿을 사용하세요. WakeUp 등 동일 열 형식도 지원합니다.",
   "icsImportTitle": ".ics 캘린더 가져오기",
   "applicableScenarioTitle": "적용 시나리오",
-  "icsScenarioIntro": "WakeUp 등 시간표 앱에서 교무 시스템 수업을 가져온 뒤 .ics 파일로 내보낼 수 있다면, 이 방법이 가장 안정적입니다.",
+  "icsScenarioIntro": "WakeUp 등 시간표 앱에서 교무 시스템 수업을 가져온 뒤 .ics 파일로 내보낼 수 있다면, 이 방법이 가장 안정적입니다",
   "stepLabel": "단계 {step}",
   "@stepLabel": {
     "placeholders": {
@@ -304,12 +304,12 @@
       }
     }
   },
-  "icsStep1Subtitle": "먼저 다른 시간표 앱에서 .ics 캘린더 파일을 내보냅니다.",
-  "icsStep2Subtitle": "여기서 파일을 선택합니다. '추가 가져오기' 또는 '기존 대체'를 선택할 수 있습니다.",
-  "icsStep3Subtitle": "가져오기 전에 학기 시작일과 시간표의 1주차가 학사일정의 몇 주차에 해당하는지 확인합니다.",
+  "icsStep1Subtitle": "먼저 다른 시간표 앱에서 .ics 캘린더 파일을 내보냅니다",
+  "icsStep2Subtitle": "여기서 파일을 선택합니다. '추가 가져오기' 또는 '기존 대체'를 선택할 수 있습니다",
+  "icsStep3Subtitle": "가져오기 전에 학기 시작일과 시간표의 1주차가 학사일정의 몇 주차에 해당하는지 확인합니다",
   "supportedFilesTitle": "지원 파일",
   "supportedFilesSuffix": "파일 확장자는 .ics여야 합니다.",
-  "supportedFilesImageHint": "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요.",
+  "supportedFilesImageHint": "스크린샷만 있다면 이곳이 아닌 이전 페이지에서 '이미지 인식 가져오기'를 선택하세요",
   "chooseIcsFileAction": ".ics 파일 선택",
   "timetableAppName": "경屿 시간표",
   "switchProfileHint": "탭하여 시간표 전환",
@@ -348,10 +348,10 @@
     }
   },
   "feedbackTitle": "문제 제보",
-  "feedbackIntro": "앱 충돌, 수업 표시 오류, 가져오기 문제 또는 기능 제안이 있다면 아래 채널을 통해 피드백해 주세요.",
-  "feedbackIssueHint": "재현 단계, 스크린샷, 버전 번호, 로그가 관련된 문제는 GitHub Issue를 권장합니다.",
+  "feedbackIntro": "앱 충돌, 수업 표시 오류, 가져오기 문제 또는 기능 제안이 있다면 아래 채널을 통해 피드백해 주세요",
+  "feedbackIssueHint": "재현 단계, 스크린샷, 버전 번호, 로그가 관련된 문제는 GitHub Issue를 권장합니다",
   "githubIssueTitle": "GitHub Issue",
-  "githubIssueSubtitle": "저장소 Issue 페이지를 열어 문제나 제안을 제출하거나 기존 피드백을 확인할 수 있습니다.",
+  "githubIssueSubtitle": "저장소 Issue 페이지를 열어 문제나 제안을 제출하거나 기존 피드백을 확인할 수 있습니다",
   "openIssuePage": "Issue 페이지 열기",
   "copyAddress": "주소 복사",
   "copiedIssueAddress": "Issue 주소를 복사했습니다",
@@ -413,7 +413,7 @@
     }
   },
   "clearCurrentTimetableTitle": "현재 시간표 비우기",
-  "clearCurrentTimetableMessage": "\"{name}\"의 모든 수업을 비우시겠습니까? 시간표 설정은 유지됩니다.",
+  "clearCurrentTimetableMessage": "\"{name}\"의 모든 수업을 비우시겠습니까? 시간표 설정은 유지됩니다",
   "@clearCurrentTimetableMessage": {
     "placeholders": {
       "name": {
@@ -451,11 +451,11 @@
   "keepAtLeastOneProfile": "최소 1개의 시간표를 유지하세요",
   "dataTransferTitle": "데이터 백업 및 마이그레이션",
   "fullExportTitle": "전체 내보내기",
-  "fullExportSubtitle": "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다.",
+  "fullExportSubtitle": "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다",
   "exportCurrentTimetable": "현재 시간표 내보내기",
   "exportAllData": "모든 데이터 내보내기",
   "fullImportTitle": "전체 가져오기",
-  "fullImportSubtitle": "가져오기 시 현재 시간표를 덮어쓰거나 새 시간표로 가져올 수 있습니다. 먼저 백업을 권장합니다.",
+  "fullImportSubtitle": "가져오기 시 현재 시간표를 덮어쓰거나 새 시간표로 가져올 수 있습니다. 먼저 백업을 권장합니다",
   "chooseFileAndImport": "파일 선택 및 가져오기",
   "transferOverviewTitle": "현재 마이그레이션 가능 항목",
   "courseCountBullet": "수업 수: {count}개",
@@ -516,7 +516,7 @@
     }
   },
   "selectImportModeTitle": "가져오기 모드 선택",
-  "selectImportModeMessage": "현재 시간표를 덮어쓰거나, 백업을 독립된 새 시간표로 가져올 수 있습니다.",
+  "selectImportModeMessage": "현재 시간표를 덮어쓰거나, 백업을 독립된 새 시간표로 가져올 수 있습니다",
   "replaceCurrentTimetable": "현재 시간표 덮어쓰기",
   "importAsNewTimetable": "새 시간표로 가져오기",
   "createdNewTimetableAfterImport": "가져오기 성공, 새 시간표가 생성되었습니다",
@@ -524,7 +524,7 @@
   "importFailedInvalidFile": "가져오기 실패, 파일이 유효한지 확인하세요",
   "welcomeTitle": "환영합니다",
   "welcomeAppName": "경屿 시간표",
-  "welcomeSubtitle": "바로 시작하거나 수업을 가져오거나 백업에서 복원할 수 있습니다.",
+  "welcomeSubtitle": "바로 시작하거나 수업을 가져오거나 백업에서 복원할 수 있습니다",
   "thirdPartyDisclaimer": "声明：본 앱은 제3자 개발자가 독립적으로 개발하였으며, 학습 및 연구 목적으로만 사용됩니다. Xiaomi(小米) 공식 소프트웨어가 아니며 Xiaomi Technology Co., Ltd.(小米科技有限責任公司)와 어떠한 종속, 협력 또는 승인 관계도 없습니다. 콘텐츠 침해가 있는 경우 권리자께서 작성자에게 연락해 주시면 즉시 관련 콘텐츠를下架 및 삭제하겠습니다.",
   "startUsingTitle": "시작하기",
   "startUsingSubtitle": "앱에 진입하여 첫 사용 가이드를 계속 진행",
@@ -536,15 +536,15 @@
   "viewGuideSubtitle": "권한, 슈퍼아일랜드 및 기본 설정 확인",
   "migrationTitle": "이전 데이터 마이그레이션",
   "migrationSafeTitle": "걱정 마세요, 데이터가 사라진 것이 아닙니다",
-  "migrationSafeSubtitle": "앱 패키지명이 변경되어 홈 화면에 잠시 두 개의 아이콘이 표시됩니다. 이는 정상입니다. 이전 데이터는 이전 버전 앱에 있습니다. 먼저 이전 버전에서 백업한 뒤 새 버전에서 가져오세요.",
+  "migrationSafeSubtitle": "앱 패키지명이 변경되어 홈 화면에 잠시 두 개의 아이콘이 표시됩니다. 이는 정상입니다. 이전 데이터는 이전 버전 앱에 있습니다. 먼저 이전 버전에서 백업한 뒤 새 버전에서 가져오세요",
   "migrationStep1Title": "이전 버전 열기",
-  "migrationStep1Subtitle": "'데이터 백업 및 마이그레이션' 페이지에서 '모든 데이터 내보내기'를 탭하세요. '현재 시간표 내보내기'를 누르지 말고, 이전 버전을 먼저 삭제하지 마세요.",
+  "migrationStep1Subtitle": "'데이터 백업 및 마이그레이션' 페이지에서 '모든 데이터 내보내기'를 탭하세요. '현재 시간표 내보내기'를 누르지 말고, 이전 버전을 먼저 삭제하지 마세요",
   "migrationStep2Title": "백업 파일 저장",
-  "migrationStep2Subtitle": "이전 버전에서 내보내기 후 시스템 공유 패널이 표시됩니다. '파일에 저장'을 우선 선택하고, 다운로드 폴더에 저장하는 것을 권장합니다.",
+  "migrationStep2Subtitle": "이전 버전에서 내보내기 후 시스템 공유 패널이 표시됩니다. '파일에 저장'을 우선 선택하고, 다운로드 폴더에 저장하는 것을 권장합니다",
   "migrationStep3Title": "현재 버전에서 가져오기",
-  "migrationStep3Subtitle": "새 버전으로 돌아와 시스템 파일 선택기로 다운로드 폴더의 .mikcb 백업 파일을 선택하여 복원합니다. 새 버전의 데이터가 정상인지 확인한 뒤 이전 버전을 삭제하세요.",
+  "migrationStep3Subtitle": "새 버전으로 돌아와 시스템 파일 선택기로 다운로드 폴더의 .mikcb 백업 파일을 선택하여 복원합니다. 새 버전의 데이터가 정상인지 확인한 뒤 이전 버전을 삭제하세요",
   "migrationNoSaveToFilesTitle": "'파일에 저장'이 없는 경우",
-  "migrationNoSaveToFilesSubtitle": "WeChat의 아무 채팅에 공유한 뒤 WeChat에서 백업 파일을 열어 저장하세요. 저장 후 보통 Download/WeiXin 폴더에 나타납니다. 새 버전에서 이 .mikcb 파일을 선택하여 가져오세요.",
+  "migrationNoSaveToFilesSubtitle": "WeChat의 아무 채팅에 공유한 뒤 WeChat에서 백업 파일을 열어 저장하세요. 저장 후 보통 Download/WeiXin 폴더에 나타납니다. 새 버전에서 이 .mikcb 파일을 선택하여 가져오세요",
   "openingOldApp": "이전 버전 여는 중...",
   "openOldAppForBackup": "이전 버전에서 백업",
   "backupDoneGoImport": "백업 완료, 가져오기로 이동",
@@ -552,7 +552,7 @@
   "openOldAppFailed": "이전 버전을 열지 못했습니다. 홈 화면에서 수동으로 이전 버전을 여세요",
   "supportCreatorTitle": "개발자에게 커피 한 잔",
   "supportHeroTitle": "경屿 시간표의 지속적 업데이트를 지원",
-  "supportHeroSubtitle": "여러분의 지원은 시간표 유지보수, 교무 가져오기 적응 및 UX 개선에 직접 사용됩니다.",
+  "supportHeroSubtitle": "여러분의 지원은 시간표 유지보수, 교무 가져오기 적응 및 UX 개선에 직접 사용됩니다",
   "supportChipFixes": "문제 수정",
   "supportChipAdapters": "교무 적응",
   "supportChipPolish": "UX 개선",
@@ -633,7 +633,7 @@
   "courseOverviewTitle": "수업 전체보기 및 편집",
   "addNewCourseTooltip": "새 수업 추가",
   "emptyCourseOverviewHint": "시간표를 길게 누르거나 오른쪽 위에서 수업을 추가하세요",
-  "conflictDetectedMessage": "{count}개의 배치에 실제 충돌이 감지되었습니다. 수업 목록에 충돌 항목이 표시됩니다.",
+  "conflictDetectedMessage": "{count}개의 배치에 실제 충돌이 감지되었습니다. 수업 목록에 충돌 항목이 표시됩니다",
   "@conflictDetectedMessage": {
     "placeholders": {
       "count": {
@@ -722,7 +722,7 @@
     }
   },
   "currentScheduleTitle": "현재 배치",
-  "currentScheduleSubtitle": "여기의 요일, 교시, 강의실, 주차 및 홀짝주는 이 배치에만 영향을 줍니다.",
+  "currentScheduleSubtitle": "여기의 요일, 교시, 강의실, 주차 및 홀짝주는 이 배치에만 영향을 줍니다",
   "timeSchemeLabel": "수업 시간 방안",
   "followCurrentTimetableWithName": "현재 시간표에 연동 ({name})",
   "@followCurrentTimetableWithName": {
@@ -732,8 +732,8 @@
       }
     }
   },
-  "followCurrentTimetableDescription": "기본으로 현재 시간표의 메인 템플릿에 연동됩니다. 대부분의 수업에 적합합니다.",
-  "overrideTimeSchemeDescription": "이 수업은 선택한 템플릿을 개별 사용하며 메인 템플릿에 연동되지 않습니다.",
+  "followCurrentTimetableDescription": "기본으로 현재 시간표의 메인 템플릿에 연동됩니다. 대부분의 수업에 적합합니다",
+  "overrideTimeSchemeDescription": "이 수업은 선택한 템플릿을 개별 사용하며 메인 템플릿에 연동되지 않습니다",
   "weekdayLabel": "요일",
   "startSectionLabel": "시작 교시",
   "endSectionLabel": "종료 교시",
@@ -750,7 +750,7 @@
   },
   "locationLabel": "수업 장소",
   "singleLessonWeekTitle": "수업 주차",
-  "singleLessonWeekSubtitle": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다.",
+  "singleLessonWeekSubtitle": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다",
   "selectWeekLabel": "주차 선택",
   "weekSettingsTitle": "주차 설정",
   "rangeWeeksLabel": "연속 주",
@@ -760,9 +760,9 @@
   "allWeeksFilter": "전체",
   "oddWeeksFilter": "홀수 주",
   "evenWeeksFilter": "짝수 주",
-  "rangeWeeksAllHint": "시작 주부터 종료 주까지 연속으로 수업을 배치합니다.",
-  "rangeWeeksOddHint": "범위 내 홀수 주만 유지합니다.",
-  "rangeWeeksEvenHint": "범위 내 짝수 주만 유지합니다.",
+  "rangeWeeksAllHint": "시작 주부터 종료 주까지 연속으로 수업을 배치합니다",
+  "rangeWeeksOddHint": "범위 내 홀수 주만 유지합니다",
+  "rangeWeeksEvenHint": "범위 내 짝수 주만 유지합니다",
   "selectAllAction": "전체 선택",
   "selectOddWeeksAction": "홀수 주",
   "selectEvenWeeksAction": "짝수 주",
@@ -827,7 +827,7 @@
       }
     }
   },
-  "aboutHeroSubtitle": "시간표 조회, 수업 알림, HyperOS 슈퍼아일랜드 경험에 집중한 Android 오픈소스 프로젝트.",
+  "aboutHeroSubtitle": "시간표 조회, 수업 알림, HyperOS 슈퍼아일랜드 경험에 집중한 Android 오픈소스 프로젝트",
   "platformLabel": "플랫폼",
   "focusLabel": "중점",
   "updateLabel": "업데이트",
@@ -900,7 +900,7 @@
     }
   },
   "deleteTimeSchemeTitle": "템플릿 삭제",
-  "deleteTimeSchemeMessage": "\"{name}\"을(를) 삭제하시겠습니까? 사용 중인 템플릿은 삭제할 수 없습니다.",
+  "deleteTimeSchemeMessage": "\"{name}\"을(를) 삭제하시겠습니까? 사용 중인 템플릿은 삭제할 수 없습니다",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -934,19 +934,19 @@
       }
     }
   },
-  "timeSchemeUsageIntro": "먼저 전체 영향 범위를 확인한 뒤, 직접 편집할지 복사 후 변경할지 결정하세요.",
+  "timeSchemeUsageIntro": "먼저 전체 영향 범위를 확인한 뒤, 직접 편집할지 복사 후 변경할지 결정하세요",
   "profileCountLabel": "시간표",
   "courseCountLabel": "수업",
   "overrideTimeSchemeLabel": "부 템플릿",
   "directlyBoundProfilesTitle": "이 템플릿에 직접 바인딩된 시간표",
   "directlyBoundProfilesEmpty": "현재 이 템플릿을 직접 사용하는 시간표가 없습니다.",
-  "directlyBoundProfilesSubtitle": "이 시간표들은 이 템플릿으로 전환 후 이 교시 시간으로 표시됩니다.",
+  "directlyBoundProfilesSubtitle": "이 시간표들은 이 템플릿으로 전환 후 이 교시 시간으로 표시됩니다",
   "followMainSchemeCoursesTitle": "메인 템플릿에 연동되는 수업",
   "followMainSchemeCoursesEmpty": "현재 메인 템플릿 경유로 사용하는 수업이 없습니다.",
-  "followMainSchemeCoursesSubtitle": "이 수업들은 부 템플릿을 개별 설정하지 않고 소속 시간표와 함께 이 템플릿을 사용합니다.",
+  "followMainSchemeCoursesSubtitle": "이 수업들은 부 템플릿을 개별 설정하지 않고 소속 시간표와 함께 이 템플릿을 사용합니다",
   "overrideSchemeCoursesTitle": "부 템플릿으로 사용하는 수업",
   "overrideSchemeCoursesEmpty": "현재 이 템플릿을 부 템플릿으로 사용하는 수업이 없습니다.",
-  "overrideSchemeCoursesSubtitle": "이 수업들은 소속 시간표의 메인 템플릿이 변경되어도 이 템플릿을 개별 사용합니다.",
+  "overrideSchemeCoursesSubtitle": "이 수업들은 소속 시간표의 메인 템플릿이 변경되어도 이 템플릿을 개별 사용합니다",
   "closeAction": "닫기",
   "editTimeSchemeTitle": "템플릿 편집",
   "backToSchemeList": "템플릿 목록으로",
@@ -956,7 +956,7 @@
   "removeLastSectionAction": "마지막 교시 삭제",
   "resetDefaultAction": "기본값 복원",
   "sectionTimesTitle": "교시 시간",
-  "sectionTimesSubtitle": "현재 시간표가 이 템플릿을 사용 중이면, 교시 수는 사용된 최대 교시 이상이어야 합니다.",
+  "sectionTimesSubtitle": "현재 시간표가 이 템플릿을 사용 중이면, 교시 수는 사용된 최대 교시 이상이어야 합니다",
   "schemeListCurrentLabel": "현재",
   "schemeListCountLabel": "수",
   "sectionCountLabel": "교시 수",
@@ -965,9 +965,9 @@
   "afterSectionLabel": "몇 교시 뒤",
   "breakDurationMinutesLabel": "휴식 시간(분)",
   "fillNumbersValidationMessage": "교시 수와 시간을 숫자로 입력하세요",
-  "timeSchemeEditorActiveAndCoursesHint": "현재 시간표와 일부 수업이 이 템플릿을 사용 중입니다. 저장 후 관련된 모든 시간표와 수업이 동기화됩니다.",
-  "timeSchemeEditorActiveHint": "현재 시간표가 이 템플릿을 사용 중입니다. 저장 후 사용 중인 모든 시간표가 동기화됩니다.",
-  "timeSchemeEditorOverrideHint": "수업이 이 템플릿을 부 템플릿으로 사용 중입니다. 저장 후 참조하는 모든 수업이 동기화됩니다.",
+  "timeSchemeEditorActiveAndCoursesHint": "현재 시간표와 일부 수업이 이 템플릿을 사용 중입니다. 저장 후 관련된 모든 시간표와 수업이 동기화됩니다",
+  "timeSchemeEditorActiveHint": "현재 시간표가 이 템플릿을 사용 중입니다. 저장 후 사용 중인 모든 시간표가 동기화됩니다",
+  "timeSchemeEditorOverrideHint": "수업이 이 템플릿을 부 템플릿으로 사용 중입니다. 저장 후 참조하는 모든 수업이 동기화됩니다",
   "editTimeAction": "시간 편집",
   "editingSchemeLabel": "편집 중: {name}",
   "@editingSchemeLabel": {
@@ -1011,7 +1011,7 @@
   "classDurationMinutesLabel": "1교시 길이(분)",
   "smallBreakDurationMinutesLabel": "소휴식 시간(분)",
   "largeBreakRulesTitle": "대휴식 규칙",
-  "noLargeBreakRulesHint": "대휴식 규칙 미설정. 모두 소휴식 시간이 사용됩니다.",
+  "noLargeBreakRulesHint": "대휴식 규칙 미설정. 모두 소휴식 시간이 사용됩니다",
   "deleteRuleTooltip": "규칙 삭제",
   "generateAction": "생성",
   "liveSettingsTitle": "슈퍼아일랜드 및 알림",
@@ -1026,7 +1026,7 @@
   "followBeforeClassSetting": "수업 전 알림에 연동",
   "liveReminderTimingTitle": "알림 시간대",
   "liveReminderSwitchesTitle": "알림 스위치",
-  "liveReminderSwitchesSubtitle": "서로 다른 알림 시간대를 자유롭게 조합할 수 있습니다. 이 스위치들은 서로 대체하지 않습니다.",
+  "liveReminderSwitchesSubtitle": "서로 다른 알림 시간대를 자유롭게 조합할 수 있습니다. 이 스위치들은 서로 대체하지 않습니다",
   "beforeClassReminderTitle": "수업 전 알림",
   "beforeClassReminderSubtitle": "수업 시작 {minutes}분 전에 팝업",
   "@beforeClassReminderSubtitle": {
@@ -1049,7 +1049,7 @@
     }
   },
   "liveDisplayModeTitle": "표시 모드",
-  "liveDisplayModeSubtitle": "활성화된 알림 시간대에 적용됩니다.",
+  "liveDisplayModeSubtitle": "활성화된 알림 시간대에 적용됩니다",
   "duringClassStatusNotificationTitle": "수업 중 상태바 알림",
   "duringClassStatusNotificationImmediate": "수업 시작 후에도 상태바 알림 유지",
   "duringClassStatusNotificationBeforeEnd": "종료 알림 시작 전까지 일반 알림 텍스트 유지",
@@ -1057,7 +1057,7 @@
   "enableIslandDisplayTitle": "슈퍼아일랜드 표시",
   "enableIslandDisplaySubtitle": "끄면 시스템 슈퍼아일랜드 트리거를 중단합니다",
   "liveTimeThresholdTitle": "시간 임계값",
-  "liveTimeThresholdSubtitle": "수업 전 팝업, 종료 전 슈퍼아일랜드/포커스 알림 전환, 초 단위 카운트다운을 제어합니다.",
+  "liveTimeThresholdSubtitle": "수업 전 팝업, 종료 전 슈퍼아일랜드/포커스 알림 전환, 초 단위 카운트다운을 제어합니다",
   "beforeClassPopupLabel": "수업 전 팝업 시간",
   "beforeClassMinutesOption": "{minutes}분",
   "@beforeClassMinutesOption": {
@@ -1088,7 +1088,7 @@
   "duringEndTimeDisplayLabel": "수업 중/종료 알림 시간 스타일",
   "duringEndTimeDisplayHelp": "컴팩트 알림에서 최근 시간을 표시할지 전체 총 시간을 표시할지 제어합니다.",
   "liveDisplayContentTitle": "표시 내용",
-  "liveDisplayContentSubtitle": "이 설정 그룹은 현재 스테이지에만 영향을 주며, 다른 알림 표시는 변경하지 않습니다.",
+  "liveDisplayContentSubtitle": "이 설정 그룹은 현재 스테이지에만 영향을 주며, 다른 알림 표시는 변경하지 않습니다",
   "showCourseNameTitle": "수업명 표시",
   "preferShortNameTitle": "약칭 우선 표시",
   "preferShortNameSubtitle": "약칭은 3자 이내를 권장합니다",
@@ -1101,7 +1101,7 @@
   "hidePrefixTextTitle": "접두사 텍스트 숨기기",
   "hidePrefixTextSubtitle": "예: '곧 수업' 같은 접두사를 숨기기",
   "beforeClassQuickActionTitle": "수업 전 빠른 작업",
-  "beforeClassQuickActionSubtitle": "수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다.",
+  "beforeClassQuickActionSubtitle": "수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다",
   "liveMiuiLabelSizePreview": "{value}",
   "@liveMiuiLabelSizePreview": {
     "placeholders": {
@@ -1111,13 +1111,13 @@
     }
   },
   "liveIslandVisualTitle": "왼쪽 아이콘 및 펼친 상태",
-  "liveIslandVisualSubtitle": "왼쪽 텍스트 이미지, 펼친 상태 큰 아이콘, 사용자 정의 이미지는 모두 현재 스테이지별로 개별 저장됩니다.",
+  "liveIslandVisualSubtitle": "왼쪽 텍스트 이미지, 펼친 상태 큰 아이콘, 사용자 정의 이미지는 모두 현재 스테이지별로 개별 저장됩니다",
   "liveMiuiLabelImageTitle": "샤오미 아일랜드 왼쪽 텍스트 아이콘",
-  "liveMiuiLabelImageSubtitle": "샤오미 기기 스타일에서만 유효합니다. 수업명 또는 장소를 왼쪽 아이콘 위치에 생성합니다.",
+  "liveMiuiLabelImageSubtitle": "샤오미 기기 스타일에서만 유효합니다. 수업명 또는 장소를 왼쪽 아이콘 위치에 생성합니다",
   "liveMiuiLabelContentLabel": "왼쪽 텍스트 내용",
   "liveMiuiLabelStyleLabel": "왼쪽 아이콘 스타일",
   "liveMiuiLabelLogoTitle": "왼쪽 아이콘 로고",
-  "liveMiuiLabelLogoSubtitle": "'아이콘+텍스트' 스타일에서만 유효합니다. 미선택 시 앱 아이콘을 계속 사용합니다.",
+  "liveMiuiLabelLogoSubtitle": "'아이콘+텍스트' 스타일에서만 유효합니다. 미선택 시 앱 아이콘을 계속 사용합니다",
   "liveMiuiLabelLogoCornerRadiusLabel": "왼쪽 아이콘 둥근 모서리 {value}",
   "@liveMiuiLabelLogoCornerRadiusLabel": {
     "placeholders": {
@@ -1156,16 +1156,16 @@
   "selectImageAction": "이미지 선택",
   "replaceImageAction": "이미지 변경",
   "liveDisplayConfigModeTitle": "설정 모드",
-  "liveDisplayConfigModeSubtitle": "켜면 수업 중 및 종료 알림이 수업 전 알림 표시를 완전히 따릅니다. 아래 개별 설정은 일시적으로 편집할 수 없습니다.",
+  "liveDisplayConfigModeSubtitle": "켜면 수업 중 및 종료 알림이 수업 전 알림 표시를 완전히 따릅니다. 아래 개별 설정은 일시적으로 편집할 수 없습니다",
   "followBeforeClassDisplayTitle": "수업 전 알림 설정에 연동",
   "liveKeepAliveTitle": "백그라운드 상주",
   "liveKeepAliveOptionsTitle": "상주 옵션",
-  "liveKeepAliveOptionsSubtitle": "슈퍼아일랜드와 알림의 백그라운드 안정성을 향상시킵니다.",
+  "liveKeepAliveOptionsSubtitle": "슈퍼아일랜드와 알림의 백그라운드 안정성을 향상시킵니다",
   "hideFromRecentsTitle": "최근 작업에서 앱 숨기기",
-  "hideFromRecentsSubtitle": "켜면 최근 작업 목록에 표시되지 않도록 합니다.",
+  "hideFromRecentsSubtitle": "켜면 최근 작업 목록에 표시되지 않도록 합니다",
   "keepAliveServiceTitle": "경屿 시간표 백그라운드 상주 서비스",
-  "keepAliveServiceEnabledSubtitle": "현재 켜짐. 시스템이 백그라운드 상주 보조 서비스를 사용 가능한 상태로 유지합니다.",
-  "keepAliveServiceDisabledSubtitle": "현재 꺼짐. 시스템 접근성 설정에서 수동으로 켤 수 있습니다.",
+  "keepAliveServiceEnabledSubtitle": "현재 켜짐. 시스템이 백그라운드 상주 보조 서비스를 사용 가능한 상태로 유지합니다",
+  "keepAliveServiceDisabledSubtitle": "현재 꺼짐. 시스템 접근성 설정에서 수동으로 켤 수 있습니다",
   "goEnableAction": "활성화하기",
   "layoutEntryTitle": "레이아웃 및 교시",
   "layoutEntrySubtitle": "교시 시간, 행 높이, 시간 열, 주말 표시 및 카드 레이아웃",
@@ -1213,7 +1213,7 @@
     }
   },
   "pickSemesterWeekCountTitle": "학기 주 수 선택",
-  "pickSemesterWeekCountSubtitle": "학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다.",
+  "pickSemesterWeekCountSubtitle": "학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다",
   "weekCountItem": "{count}주",
   "@weekCountItem": {
     "placeholders": {
@@ -1222,7 +1222,7 @@
       }
     }
   },
-  "diagnosticsLogIntro": "Markdown과 원본 두 가지 보기 방식을 지원합니다. 트러블슈팅 시 스마트폰에서 전체 로그를 직접 확인할 수 있습니다.",
+  "diagnosticsLogIntro": "Markdown과 원본 두 가지 보기 방식을 지원합니다. 트러블슈팅 시 스마트폰에서 전체 로그를 직접 확인할 수 있습니다",
   "diagnosticsRawTab": "원본",
   "diagnosticsStructuredTab": "구조화",
   "diagnosticsLevelLabel": "레벨",
@@ -1244,15 +1244,15 @@
     }
   },
   "diagnosticsNoMatchingTitle": "현재 필터에 일치하는 로그 없음",
-  "diagnosticsNoMatchingSubtitle": "'전체'로 전환하거나 원본으로 트러블슈팅을 계속하세요.",
+  "diagnosticsNoMatchingSubtitle": "'전체'로 전환하거나 원본으로 트러블슈팅을 계속하세요",
   "diagnosticsLevelInferred": "추정 레벨",
-  "diagnosticsRawFilteredHint": "원본 뷰는 현재 레벨 필터에 연동되어 해당 로그 블록만 표시합니다.",
+  "diagnosticsRawFilteredHint": "원본 뷰는 현재 레벨 필터에 연동되어 해당 로그 블록만 표시합니다",
   "diagnosticsTimeSortAscending": "오름차순",
   "diagnosticsTimeSortDescending": "내림차순",
   "diagnosticsDisplayOptionsTitle": "보기 및 정렬",
-  "diagnosticsStreamingHint": "실시간 업데이트 중입니다. 새 로그가 자동으로 표시됩니다.",
+  "diagnosticsStreamingHint": "실시간 업데이트 중입니다. 새 로그가 자동으로 표시됩니다",
   "diagnosticsEmptyTitle": "로그 없음",
-  "diagnosticsEmptySubtitle": "현재 표시할 수 있는 슈퍼아일랜드 진단 로그가 없습니다.",
+  "diagnosticsEmptySubtitle": "현재 표시할 수 있는 슈퍼아일랜드 진단 로그가 없습니다",
   "diagnosticsLogTitleFallback": "슈퍼아일랜드 진단 로그",
   "diagnosticsDeviceInfoTitle": "기기 및 내보내기 정보",
   "diagnosticsContentTitle": "로그 내용",
@@ -1267,7 +1267,7 @@
   "guideAndPermissionsTitle": "사용 가이드 및 권한",
   "refreshStatusTooltip": "상태 새로고침",
   "guideHeroTitle": "먼저 이 페이지를 완료하세요",
-  "guideHeroSubtitle": "먼저 첫 화면에서 인증하세요. 아래에 시스템 버전 지원, 약칭 설정, 가져오기 방법이 설명되어 있습니다. 스크롤을 계속하세요.",
+  "guideHeroSubtitle": "먼저 첫 화면에서 인증하세요. 아래에 시스템 버전 지원, 약칭 설정, 가져오기 방법이 설명되어 있습니다. 스크롤을 계속하세요",
   "guideChipPermissions": "권한 준비",
   "guideChipShortName": "약칭 설정",
   "guideChipImport": "수업 가져오기",
@@ -1279,11 +1279,11 @@
       }
     }
   },
-  "guideBottomReachedHint": "마지막까지 스크롤했습니다. 확인 후 바로 시작할 수 있습니다.",
-  "guideScrollHint": "아래로 스크롤하여 계속하세요. HyperOS 버전 설명, 권한 목록, 약칭 설정, 가져오기 방법이 있습니다.",
+  "guideBottomReachedHint": "마지막까지 스크롤했습니다. 확인 후 바로 시작할 수 있습니다",
+  "guideScrollHint": "아래로 스크롤하여 계속하세요. HyperOS 버전 설명, 권한 목록, 약칭 설정, 가져오기 방법이 있습니다",
   "guideRequestNotificationFirst": "먼저 알림 권한 요청",
   "quickSetupTitle": "첫 화면 빠른 설정",
-  "quickSetupSubtitle": "가장 중요한 5개 항목을 먼저 배치합니다. 아래까지 스크롤할 필요 없이.",
+  "quickSetupSubtitle": "가장 중요한 5개 항목을 먼저 배치합니다. 아래까지 스크롤할 필요 없이",
   "quickActionNotificationsTitle": "알림 설정",
   "quickActionNotificationsSubtitle": "먼저 알림 전송 가능 확인",
   "quickActionIslandTitle": "슈퍼아일랜드 권한",
@@ -1295,8 +1295,8 @@
   "quickActionKeepAliveTitle": "백그라운드 상주 보조",
   "quickActionKeepAliveSubtitle": "백그라운드 안정성 향상",
   "guidePrivacyConsentLabel": "Umeng 관련 개인정보 처리방침을 읽고 동의합니다",
-  "guideRequireConsentHint": "먼저 아래로 스크롤하여 설명을 읽고, 동의에 체크한 후 시작하세요.",
-  "guideContinueHint": "아래로 스크롤하여 전체 가이드 내용을 확인하세요.",
+  "guideRequireConsentHint": "먼저 아래로 스크롤하여 설명을 읽고, 동의에 체크한 후 시작하세요",
+  "guideContinueHint": "아래로 스크롤하여 전체 가이드 내용을 확인하세요",
   "exitAppAction": "앱 종료",
   "continueReadingAction": "계속 보기",
   "agreeAndStartAction": "동의하고 시작",
@@ -1310,8 +1310,8 @@
   "addMethodTitle": "추가 방법",
   "singleLessonLabel": "단일 수업",
   "recurringLessonLabel": "반복 수업",
-  "singleLessonHint": "보충 수업, 임시 추가에 적합합니다. 수업은 한 주차에만 표시됩니다.",
-  "recurringLessonHint": "같은 시간에 매주 연속하는 정규 수업에 적합합니다.",
+  "singleLessonHint": "보충 수업, 임시 추가에 적합합니다. 수업은 한 주차에만 표시됩니다",
+  "recurringLessonHint": "같은 시간에 매주 연속하는 정규 수업에 적합합니다",
   "sharedInfoTitle": "공유 정보",
   "sharedInfoHint": "공유 필드 설명 보기",
   "sharedInfoSheetItemCourseName": "수업명: 수업 고유 식별자. 동일한 이름의 여러 배치는 하나의 수업으로 처리됩니다. 이름을 변경하면 별도 수업 기록이 생성됩니다.",
@@ -1320,17 +1320,17 @@
   "reuseExistingCourseLabel": "기존 수업 활용",
   "reuseExistingCourseHelper": "기존 수업을 선택하면 수업명, 교사와 기타 공유 정보가 자동 입력됩니다",
   "manualInputLabel": "수동 입력",
-  "noTemplateCoursesHint": "현재 시간표에 수업이 없습니다. 먼저 1개를 수동으로 등록하면 이후 임시 추가 시 바로 선택할 수 있습니다.",
+  "noTemplateCoursesHint": "현재 시간표에 수업이 없습니다. 먼저 1개를 수동으로 등록하면 이후 임시 추가 시 바로 선택할 수 있습니다",
   "courseNameLabel": "수업명",
-  "courseNameHelper": "수업 고유 식별자입니다. 동일한 이름의 배치는 하나의 수업으로 통합됩니다. 공식 전체 명칭을 입력하고, 표시 목적의 약칭은 사용하지 마세요.",
+  "courseNameHelper": "수업 고유 식별자입니다. 동일한 이름의 배치는 하나의 수업으로 통합됩니다. 공식 전체 명칭을 입력하고, 표시 목적의 약칭은 사용하지 마세요",
   "pleaseEnterCourseName": "수업명을 입력하세요",
   "courseShortNameOptional": "수업 약칭",
-  "courseShortNameHelper": "슈퍼아일랜드 등 간략 표시에 권장. 약칭은 자동 생성되지 않으며 「수업 약칭 우선 표시」 활성화 시 적용. 3자 이내 권장.",
+  "courseShortNameHelper": "슈퍼아일랜드 등 간략 표시에 권장. 약칭은 자동 생성되지 않으며 「수업 약칭 우선 표시」 활성화 시 적용. 3자 이내 권장",
   "courseShortNameAutoFillAction": "앞 2자",
   "teacherLabel": "담당 교사",
   "courseNatureLabel": "수업 성격",
   "courseDescriptionOptional": "수업 개요 (선택)",
-  "currentScheduleHint": "여기의 요일, 교시, 강의실, 주차 및 홀짝주는 이 배치에만 영향을 줍니다.",
+  "currentScheduleHint": "여기의 요일, 교시, 강의실, 주차 및 홀짝주는 이 배치에만 영향을 줍니다",
   "followProfileTimeScheme": "현재 시간표에 연동 ({name})",
   "@followProfileTimeScheme": {
     "placeholders": {
@@ -1341,15 +1341,15 @@
   },
   "timeSchemeOverrideLabel": "수업 시간 방안",
   "lessonWeeksTitle": "수업 주차",
-  "singleLessonWeekHint": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다.",
+  "singleLessonWeekHint": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다",
   "rangeWeekLabel": "연속 주",
   "customWeekLabel": "사용자 정의 주",
   "allWeeksLabel": "전체",
   "oddWeeksLabel": "홀수 주",
   "evenWeeksLabel": "짝수 주",
-  "allWeeksHint": "시작 주부터 종료 주까지 연속으로 수업을 배치합니다.",
-  "oddWeeksHint": "범위 내 홀수 주만 유지합니다.",
-  "evenWeeksHint": "범위 내 짝수 주만 유지합니다.",
+  "allWeeksHint": "시작 주부터 종료 주까지 연속으로 수업을 배치합니다",
+  "oddWeeksHint": "범위 내 홀수 주만 유지합니다",
+  "evenWeeksHint": "범위 내 짝수 주만 유지합니다",
   "customPaletteColor": "팔레트에서 사용자 정의",
   "timeSchemeSetCountValue": "{count}세트",
   "@timeSchemeSetCountValue": {
@@ -1504,12 +1504,12 @@
   "liveSettingsEntrySubtitle": "알림 시간대, 아일랜드 표시, 알림바 및 표시 내용",
   "timetableProfilesEntrySubtitle": "새로 만들기, 전환, 복사, 이름 변경 및 삭제",
   "homeTitleSectionTitle": "홈 제목",
-  "homeTitleSectionSubtitle": "홈 왼쪽 위 시간표 전환 항목의 스타일을 제어합니다.",
+  "homeTitleSectionSubtitle": "홈 왼쪽 위 시간표 전환 항목의 스타일을 제어합니다",
   "homeTitleStyleLabel": "제목 스타일",
   "themeSeedSectionTitle": "앱 테마 색상",
-  "themeSeedSectionSubtitle": "상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다.",
+  "themeSeedSectionSubtitle": "상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다",
   "timetableBackgroundColorSectionTitle": "시간표 배경색",
-  "timetableBackgroundColorSectionSubtitle": "시간표 페이지의 큰 배경에만 적용됩니다.",
+  "timetableBackgroundColorSectionSubtitle": "시간표 페이지의 큰 배경에만 적용됩니다",
   "defaultTimetablePreviewName": "기본 시간표",
   "beforeClassDisplaySettingsTitle": "수업 전 알림 표시",
   "duringEndDisplaySettingsTitle": "수업 중/종료 알림 표시",
@@ -1556,9 +1556,9 @@
   "guideStatusVersionUnknown": "미인식",
   "guideStatusIslandSystemSupport": "슈퍼아일랜드 시스템 지원",
   "guideStatusIslandSystemRequirement": "HyperOS 3.0.300 이상 필요",
-  "guideStatusIslandHint": "슈퍼아일랜드를 주로 사용하려면, 먼저 시스템 버전이 HyperOS 3.0.300 이상인지 확인한 뒤 아래 권한 목록을 순서대로 완료하세요.",
+  "guideStatusIslandHint": "슈퍼아일랜드를 주로 사용하려면, 먼저 시스템 버전이 HyperOS 3.0.300 이상인지 확인한 뒤 아래 권한 목록을 순서대로 완료하세요",
   "guidePermissionChecklistTitle": "권한 목록",
-  "guidePermissionChecklistSubtitle": "이 순서로 확인하는 것이 가장 효율적이고 누락이 적습니다.",
+  "guidePermissionChecklistSubtitle": "이 순서로 확인하는 것이 가장 효율적이고 누락이 적습니다",
   "guideChecklistRequestNotificationTitle": "알림 권한 요청",
   "guideChecklistRequestNotificationSubtitle": "모든 알림의 전제 조건",
   "guideChecklistOpenNotificationTitle": "알림 설정 열기",
@@ -1568,18 +1568,18 @@
   "guideChecklistOpenAutoStartTitle": "자동 시작 설정 열기",
   "guideChecklistOpenAutoStartSubtitle": "앱의 자동 시작과 백그라운드 상주를 허용",
   "guideChecklistOpenBatteryTitle": "배터리 전략 설정 열기",
-  "guideChecklistOpenBatterySubtitle": "제한 없음으로 변경 권장. 수업 알림 중단을 방지합니다.",
+  "guideChecklistOpenBatterySubtitle": "제한 없음으로 변경 권장. 수업 알림 중단을 방지합니다",
   "guideChecklistOpenKeepAliveTitle": "백그라운드 상주 보조 열기",
   "guideChecklistOpenKeepAliveSubtitle": "슈퍼아일랜드와 알림의 백그라운드 안정성을 더욱 향상",
   "guideShortNameAdviceTitle": "수업 약칭 권장사항",
-  "guideShortNameAdviceSubtitle": "슈퍼아일랜드는 수업 약칭 표시를 지원합니다. 약칭은 자동 생성되지 않으며 수업 편집에서 수동 입력이 필요합니다. 3자 이내를 권장합니다.",
+  "guideShortNameAdviceSubtitle": "슈퍼아일랜드는 수업 약칭 표시를 지원합니다. 약칭은 자동 생성되지 않으며 수업 편집에서 수동 입력이 필요합니다. 3자 이내를 권장합니다",
   "guideShortNameRecommended": "권장 예시",
   "guideShortNameNotRecommended": "비권장",
   "guideShortNameRecommendedExample": "미적 / 확률 / 수치",
   "guideShortNameNotRecommendedExample": "고등수학A(1) / 수치제어기술및응용",
   "guideSetCourseShortNameAction": "수업 약칭 설정하기",
   "guideImportMethodsTitle": "시간표 가져오기 방법",
-  "guideImportMethodsSubtitle": "현재 버전은 일부 학교의 교무 시스템 웹 로그인 가져오기를 지원합니다. 미대응 학교라도 다른 마이그레이션 방법이 있습니다.",
+  "guideImportMethodsSubtitle": "현재 버전은 일부 학교의 교무 시스템 웹 로그인 가져오기를 지원합니다. 미대응 학교라도 다른 마이그레이션 방법이 있습니다",
   "guideImportMethodStep1": "먼저 '수업 가져오기 > 교무 시스템 가져오기'에서 학교와 어댑터를 선택하고, 앱 내에서 교무 웹페이지를 열어 가져오기를 완료하세요.",
   "guideImportMethodStep2": "사용하는 학교가 아직 미대응인 경우, WakeUp 등 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져오세요.",
   "guideImportMethodStep3": "다른 사용자가 이미 본 앱을 사용 중인 경우, 전체 백업 파일을 내보내어 직접 가져오면 수업과 설정을 복원할 수 있습니다.",
@@ -1588,8 +1588,8 @@
   "guideFinalTip1": "1. HyperOS 3.0.300 이상에서 슈퍼아일랜드를 지원합니다. 시스템 버전이 부족해도 앱은 일반 알림을 정상적으로 보낼 수 있습니다.",
   "guideFinalTip2": "2. 먼저 설정 페이지에서 '수업 전 팝업'과 '수업 중과 종료 임박 알림'의 임계값을 조정하세요.",
   "guideFinalTip3": "3. 시스템 권한 설정 완료 후 테스트 알림으로 검증하세요. 아일랜드 표시가 가끔 사라지면 자동 시작과 절전 전략을 우선 확인하세요.",
-  "guidePrivacyHelperRequireConsent": "동의에 체크하면 위의 Umeng 관련 설명, 개인정보 내용과 면책 사항을 읽고 동의한 것으로 간주됩니다.",
-  "guidePrivacyHelperViewOnly": "여기서는 첫 실행 시와 동일한 개인정보, 서드파티 SDK, 면책 사항을 유지합니다. 언제든 확인 가능합니다. 현재 페이지에서 다시 동의할 필요가 없습니다.",
+  "guidePrivacyHelperRequireConsent": "동의에 체크하면 위의 Umeng 관련 설명, 개인정보 내용과 면책 사항을 읽고 동의한 것으로 간주됩니다",
+  "guidePrivacyHelperViewOnly": "여기서는 첫 실행 시와 동일한 개인정보, 서드파티 SDK, 면책 사항을 유지합니다. 언제든 확인 가능합니다. 현재 페이지에서 다시 동의할 필요가 없습니다",
   "guidePrivacySectionTitle": "개인정보, 서드파티 SDK 및 면책 사항",
   "guidePrivacyParagraph1": "본 앱의 주요 기능은 로컬 실행 방식으로 설계되었습니다. 시간표, 템플릿, 수업 기록과 대부분의 설정은 기본적으로 기기 로컬에 저장됩니다.",
   "guidePrivacyParagraph2": "사용자가 능동적으로 업데이트 확인, 다운로드, 가져오기/내보내기 등의 네트워크 기능을 사용하거나, 동의 후 Umeng SDK를 초기화한 경우에만 외부 서비스와 데이터 통신이 발생합니다.",
@@ -1612,13 +1612,13 @@
   "liveTestingNotRefreshed": "아직 새로고침 안 됨",
   "liveTestingTitle": "테스트 및 진단",
   "liveTestingNotificationTitle": "테스트 알림",
-  "liveTestingNotificationSubtitle": "슈퍼아일랜드, 알림바, 수업 약칭 등의 표시 효과를 검증합니다.",
+  "liveTestingNotificationSubtitle": "슈퍼아일랜드, 알림바, 수업 약칭 등의 표시 효과를 검증합니다",
   "liveTestingSendAction": "테스트 알림 전송",
-  "liveTestingUmengHint": "아래 두 버튼은 테스트판에만 표시됩니다. Umeng U-APM 충돌과 프리즈上报 검증용입니다.",
+  "liveTestingUmengHint": "아래 두 버튼은 테스트판에만 표시됩니다. Umeng U-APM 충돌과 프리즈上报 검증용입니다",
   "liveTestingCrashAction": "충돌 테스트",
   "liveTestingAnrAction": "비정상 프리즈 테스트",
   "liveTestingIslandStatusTitle": "아일랜드 상태 진단",
-  "liveTestingIslandStatusSubtitle": "네이티브 실시간 서비스, 알림 구성 결과 및 비아일랜드 사유를 직접 표시합니다.",
+  "liveTestingIslandStatusSubtitle": "네이티브 실시간 서비스, 알림 구성 결과 및 비아일랜드 사유를 직접 표시합니다",
   "liveTestingServiceStatusRunning": "서비스 실행 중",
   "liveTestingServiceStatusStopped": "서비스 미실행",
   "liveTestingNoIslandReasonTitle": "비아일랜드 사유",
@@ -1654,22 +1654,22 @@
   "liveTestingSectionNotification": "알림 판정 결과",
   "liveTestingSectionRecentLogs": "최근 진단 로그",
   "liveTestingRawDataTitle": "원시 디버그 데이터",
-  "liveTestingRawDataSubtitle": "기본 접힘. 트러블슈팅 시 펼쳐서 전체 네이티브 필드를 확인하세요.",
+  "liveTestingRawDataSubtitle": "기본 접힘. 트러블슈팅 시 펼쳐서 전체 네이티브 필드를 확인하세요",
   "liveTestingExpandRawJson": "원시 JSON 펼치기",
   "liveTestingExpandRawJsonSubtitle": "대량의 원시 필드가 페이지를 차지하는 것을 방지",
   "liveTestingLocalLogsTitle": "로컬 진단 로그",
-  "liveTestingLocalLogsSubtitle": "원클릭으로 로그 파일을 내보내고 시스템 공유로 개발자에게 전송. 비운 후 재수집도 가능합니다.",
+  "liveTestingLocalLogsSubtitle": "원클릭으로 로그 파일을 내보내고 시스템 공유로 개발자에게 전송. 비운 후 재수집도 가능합니다",
   "liveTestingClearLogsAction": "로그 비우기",
   "liveTestingClearingLogs": "비우는 중",
   "liveTestingViewPhoneLogsAction": "기기 로그 확인",
   "liveTestingMoreTesterOptionsAction": "기본 테스터 옵션",
   "yesLabel": "예",
   "noLabel": "아니오",
-  "liveTestingCurrentNativeFieldsSubtitle": "현재 네이티브 진단 필드를 표시합니다.",
+  "liveTestingCurrentNativeFieldsSubtitle": "현재 네이티브 진단 필드를 표시합니다",
   "liveTestingCrashSoon": "Umeng U-APM 테스트 충돌을 트리거합니다. 앱을 다시 열어 백그라운드에서 上报를 수신했는지 확인하세요.",
   "liveTestingAnrSoon": "약 30초간 메인 스레드 프리즈를 트리거합니다. flutter run에서 벗어나 테스트하고, 프리즈 후 앱을 다시 열어 Umeng 백그라운드를 확인하세요.",
   "liveTestingNoCourseAvailable": "현재 테스트 가능한 수업이 없습니다",
-  "liveTestingTestCourseNote": "여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다.",
+  "liveTestingTestCourseNote": "여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다",
   "liveTestingNotificationSent": "수업 알림 테스트 알림을 전송했습니다. 약 8초 내에 수업 전 알림 단계로 진입합니다",
   "sendFailedWithError": "전송 실패: {error}",
   "@sendFailedWithError": {
@@ -1681,18 +1681,18 @@
   },
   "homeWidgetSettingsTitle": "홈 위젯",
   "homeWidgetTodayCourseTitle": "오늘 수업 위젯",
-  "homeWidgetTodayCourseSubtitle": "2×2, 2×4, 4×4 세 가지 크기를 지원합니다. 위젯을 탭하면 홈을 열고, 수업 시작/종료 시 자동 갱신됩니다.",
+  "homeWidgetTodayCourseSubtitle": "2×2, 2×4, 4×4 세 가지 크기를 지원합니다. 위젯을 탭하면 홈을 열고, 수업 시작/종료 시 자동 갱신됩니다",
   "homeWidgetQuickAddTitle": "홈에 빠른 추가",
   "homeWidgetCheckingPinSupport": "현재 홈이 앱 내 위젯 추가를 지원하는지 확인 중…",
   "homeWidgetPinSupported": "지원하면 시스템 추가 확인이 직접 팝업됩니다. 별도의 권한 팝업이 아닙니다. 확인 후 홈에 고정할 수 있습니다.",
   "homeWidgetPinUnsupported": "현재 홈이 앱 내 직접 추가를 지원하지 않으면, 홈을 길게 눌러 → 위젯 → 경屿 시간표에서 수동으로 추가할 수 있습니다.",
   "homeWidgetBackgroundStyleLabel": "배경 스타일",
   "homeWidgetShowLocationTitle": "장소 표시",
-  "homeWidgetShowLocationSubtitle": "끄면 위젯의 부가 정보가 주차와 수업 수를 우선 표시합니다.",
+  "homeWidgetShowLocationSubtitle": "끄면 위젯의 부가 정보가 주차와 수업 수를 우선 표시합니다",
   "homeWidgetShowCountdownTitle": "카운트다운 표시",
-  "homeWidgetShowCountdownSubtitle": "새로고침 스위치를 유지합니다. 다음 수업과 수업 중 남은 시간 표시에 사용됩니다.",
+  "homeWidgetShowCountdownSubtitle": "새로고침 스위치를 유지합니다. 다음 수업과 수업 중 남은 시간 표시에 사용됩니다",
   "homeWidgetCountdownLeadTitle": "카운트다운 선행량",
-  "homeWidgetCountdownLeadSubtitle": "수업 전 몇 분에 카운트다운 모드로 전환할지 설정합니다.",
+  "homeWidgetCountdownLeadSubtitle": "수업 전 몇 분에 카운트다운 모드로 전환할지 설정합니다",
   "homeWidgetCountdownLeadAlways": "항상 표시",
   "homeWidgetCountdownLeadMinutes": "수업 전 {minutes}분",
   "@homeWidgetCountdownLeadMinutes": {
@@ -1704,9 +1704,9 @@
   },
   "widgetCountdownStyleTitle": "카운트다운 스타일",
   "homeWidgetHideCompletedTitle": "완료된 수업 숨기기",
-  "homeWidgetHideCompletedSubtitle": "켜면 2×2, 2×4, 4×4 수업 목록에 아직 끝나지 않은 수업만 표시됩니다.",
+  "homeWidgetHideCompletedSubtitle": "켜면 2×2, 2×4, 4×4 수업 목록에 아직 끝나지 않은 수업만 표시됩니다",
   "homeWidgetShowTomorrowTitle": "수업 후 내일 수업 표시",
-  "homeWidgetShowTomorrowSubtitle": "켜면 오늘 수업이 모두 끝나면 위젯이 자동으로 내일 수업을 표시합니다.",
+  "homeWidgetShowTomorrowSubtitle": "켜면 오늘 수업이 모두 끝나면 위젯이 자동으로 내일 수업을 표시합니다",
   "homeWidgetHeightAdjustTitle": "카드 높이 미세 조정",
   "defaultLabel": "기본",
   "higherByValue": "높게 {value}",
@@ -1727,7 +1727,7 @@
   },
   "homeWidgetCornerRadiusTitle": "카드 둥근 모서리",
   "homeWidgetDescriptionTitle": "설명",
-  "homeWidgetDescriptionText": "위젯은 현재 오늘 수업을 우선 표시합니다. 수업 없음 상태는 완전한 카드를 유지하며 빈 화면이 나타나지 않습니다. 시간표 전환이나 스타일 변경 시 데스크톱 컴포넌트도 연동하여 갱신됩니다.",
+  "homeWidgetDescriptionText": "위젯은 현재 오늘 수업을 우선 표시합니다. 수업 없음 상태는 완전한 카드를 유지하며 빈 화면이 나타나지 않습니다. 시간표 전환이나 스타일 변경 시 데스크톱 컴포넌트도 연동하여 갱신됩니다",
   "homeWidgetPinRequested": "\"{label}\" 추가 요청을 보냈습니다. 시스템 팝업에서 확인하고 홈에 배치하세요.",
   "@homeWidgetPinRequested": {
     "placeholders": {
@@ -1756,11 +1756,11 @@
   "layoutSettingsTitle": "레이아웃 및 교시",
   "layoutDensityTitle": "시간표 밀도",
   "layoutAutoFitHeightTitle": "화면 높이에 자동 맞춤",
-  "layoutAutoFitHeightSubtitle": "켜면 현재 교시 수에 따라 페이지 하단까지 자동 맞춤됩니다. 아래 여백을 유지하지 않습니다.",
+  "layoutAutoFitHeightSubtitle": "켜면 현재 교시 수에 따라 페이지 하단까지 자동 맞춤됩니다. 아래 여백을 유지하지 않습니다",
   "layoutHideWeekendsTitle": "토요일과 일요일 숨기기",
-  "layoutHideWeekendsSubtitle": "켜면 홈에 월~금만 표시됩니다. 나머지 열 너비는 자동 맞춤됩니다.",
+  "layoutHideWeekendsSubtitle": "켜면 홈에 월~금만 표시됩니다. 나머지 열 너비는 자동 맞춤됩니다",
   "layoutEnableHapticsTitle": "앱 내 진동 피드백 활성화",
-  "layoutEnableHapticsSubtitle": "끄면 페이지 전환 등의 상호작용에서 가벼운 진동이 발생하지 않습니다.",
+  "layoutEnableHapticsSubtitle": "끄면 페이지 전환 등의 상호작용에서 가벼운 진동이 발생하지 않습니다",
   "pageTransitionSpeedLabel": "페이지 전환 속도 {speed}×",
   "@pageTransitionSpeedLabel": {
     "placeholders": {
@@ -1769,7 +1769,7 @@
       }
     }
   },
-  "pageTransitionSpeedSubtitle": "하위 페이지 슬라이드 애니메이션 속도를 조절합니다. 값이 클수록 빠르고, 작을수록 느립니다. Android 시스템 '전환 애니메이션 배율'과 함께 적용됩니다.",
+  "pageTransitionSpeedSubtitle": "하위 페이지 슬라이드 애니메이션 속도를 조절합니다. 값이 클수록 빠르고, 작을수록 느립니다. Android 시스템 '전환 애니메이션 배율'과 함께 적용됩니다",
   "pageTransitionSpeedDurationHint": "약 {milliseconds}ms",
   "@pageTransitionSpeedDurationHint": {
     "placeholders": {
@@ -1781,7 +1781,7 @@
   "layoutTimeColumnDisplayLabel": "홈 시간 열 표시",
   "layoutTimeColumnWidthLabel": "시간 열 너비",
   "layoutBackToCurrentWeekButtonStyleLabel": "\"이번주로 돌아가기\" 버튼 스타일",
-  "layoutBackToCurrentWeekButtonStyleHelper": "기본은 현재 인라인 스타일을 유지합니다. 주간 뷰 오른쪽 아래의 소형 플로팅 버튼으로도 변경할 수 있습니다.",
+  "layoutBackToCurrentWeekButtonStyleHelper": "기본은 현재 인라인 스타일을 유지합니다. 주간 뷰 오른쪽 아래의 소형 플로팅 버튼으로도 변경할 수 있습니다",
   "layoutBackToCurrentWeekButtonStyleInline": "시간 열 인라인",
   "layoutBackToCurrentWeekButtonStyleFloating": "오른쪽 아래 플로팅",
   "layoutBackToCurrentWeekButtonOpacityLabel": "플로팅 버튼 불투명도 {value}%",
@@ -1792,7 +1792,7 @@
       }
     }
   },
-  "layoutBackToCurrentWeekButtonOpacitySubtitle": "오른쪽 아래 플로팅 스타일에만 유효합니다.",
+  "layoutBackToCurrentWeekButtonOpacitySubtitle": "오른쪽 아래 플로팅 스타일에만 유효합니다",
   "layoutCourseCardGapLabel": "수업 카드 간격 {value}",
   "@layoutCourseCardGapLabel": {
     "placeholders": {
@@ -1826,22 +1826,22 @@
     }
   },
   "layoutCourseCardDisplayTitle": "수업 카드 표시",
-  "layoutCourseCardDisplaySubtitle": "기본으로 수업명, 교사, 강의실을 표시합니다. 다른 정보는 시간표별로 자유롭게 조합할 수 있습니다.",
+  "layoutCourseCardDisplaySubtitle": "기본으로 수업명, 교사, 강의실을 표시합니다. 다른 정보는 시간표별로 자유롭게 조합할 수 있습니다",
   "layoutShowTeacherTitle": "교사 표시",
   "layoutShowClassroomTitle": "강의실 표시",
   "layoutShowTimeTitle": "시간 표시",
   "layoutShowTimeLabelsTitle": "수업 시작과 종료 텍스트 표시",
-  "layoutShowTimeLabelsSubtitle": "끄면 시간 포인트만 표시합니다. '수업 시작' '수업 종료' 텍스트는 숨겨집니다.",
+  "layoutShowTimeLabelsSubtitle": "끄면 시간 포인트만 표시합니다. '수업 시작' '수업 종료' 텍스트는 숨겨집니다",
   "layoutShowWeeksTitle": "주차 수 표시",
   "layoutShowWeeksSubtitle": "예: 1-16주, 홀짝주",
   "layoutShowDescriptionTitle": "수업 개요 표시",
-  "layoutShowDescriptionSubtitle": "기본 꺼짐. 공간 부족 시 가장 먼저 압축됩니다.",
+  "layoutShowDescriptionSubtitle": "기본 꺼짐. 공간 부족 시 가장 먼저 압축됩니다",
   "layoutShowOtherWeeksTitle": "비이번주 수업 표시",
-  "layoutShowOtherWeeksSubtitle": "기본 꺼짐. 켜면 현재 주에 없는 수업을 회색 반투명으로 표시합니다.",
+  "layoutShowOtherWeeksSubtitle": "기본 꺼짐. 켜면 현재 주에 없는 수업을 회색 반투명으로 표시합니다",
   "layoutVerticalAlignLabel": "수직 레이아웃",
   "layoutHorizontalAlignLabel": "수평 레이아웃",
   "layoutShowConflictBadgeTitle": "홈에 충돌 캡슐 표시",
-  "layoutShowConflictBadgeSubtitle": "끄면 홈 시간표에서 충돌 수업에 '충돌' 캡슐을 표시하지 않습니다.",
+  "layoutShowConflictBadgeSubtitle": "끄면 홈 시간표에서 충돌 수업에 '충돌' 캡슐을 표시하지 않습니다",
   "layoutConflictOpacityLabel": "충돌 수업 투명도 {value}%",
   "@layoutConflictOpacityLabel": {
     "placeholders": {
@@ -1851,7 +1851,7 @@
     }
   },
   "layoutConflictOpacityTitle": "충돌 수업 투명도",
-  "layoutConflictOpacitySubtitle": "충돌 수업은 자동으로 겹쳐 표시됩니다. 투명도를 낮추면 여러 수업을 동시에 확인할 수 있습니다.",
+  "layoutConflictOpacitySubtitle": "충돌 수업은 자동으로 겹쳐 표시됩니다. 투명도를 낮추면 여러 수업을 동시에 확인할 수 있습니다",
   "layoutTipsText": "템플릿은 설정 홈으로 이동했습니다. 여기서는 시간표의 행 높이, 시간 열, 주말 표시, 수업 카드 레이아웃을 조정합니다. 현재 시간표의 시간만 변경하려면 먼저 템플릿에서 복사한 뒤 적용하세요.",
   "currentWeekCompact": "{week}주",
   "@currentWeekCompact": {
@@ -1867,7 +1867,7 @@
   "sampleCourseEnglish": "영어",
   "sampleTeacherLi": "이 선생님",
   "aboutRepositorySheetTitle": "오픈소스 저장소",
-  "aboutRepositorySheetHint": "학교 교무 가져오기 적응을 보충하려면, 교무 적응 저장소 qingyu_warehouse도 함께 확인하는 것을 권장합니다.",
+  "aboutRepositorySheetHint": "학교 교무 가져오기 적응을 보충하려면, 교무 적응 저장소 qingyu_warehouse도 함께 확인하는 것을 권장합니다",
   "aboutOpenGitHubAction": "GitHub 열기",
   "aboutOpenWarehouseRepoAction": "교무 적응 저장소 열기",
   "copiedRepositoryAddress": "저장소 주소를 복사했습니다",
@@ -1878,7 +1878,7 @@
   "aboutCheckingLatestVersion": "최신 버전 정보 확인 중…",
   "aboutCheckingForUpdate": "업데이트 확인 중…",
   "aboutReadVersionFailed": "버전 정보를 일시적으로 읽을 수 없습니다. 나중에 다시 시도하세요.",
-  "aboutReadVersionFailedHint": "현재 네트워크에서 GitHub 접속이 불안정하면 나중에 다시 시도하거나, 아래의 국내 다운로드 방식으로 전환한 뒤 재시도하세요.",
+  "aboutReadVersionFailedHint": "현재 네트워크에서 GitHub 접속이 불안정하면 나중에 다시 시도하거나, 아래의 국내 다운로드 방식으로 전환한 뒤 재시도하세요",
   "aboutViewReleaseAction": "Release 보기",
   "aboutDownloadNowAction": "지금 다운로드",
   "aboutOpenDownloadPageAction": "다운로드 페이지 열기",
@@ -1887,8 +1887,8 @@
   "aboutUnreleasedLabel": "미출시",
   "aboutVersionChannelLabel": "버전 채널",
   "aboutPrereleaseChannel": "시험판",
-  "aboutUpdateAvailableHint": "지금은 아래의 '지금 다운로드'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다.",
-  "aboutUpdateNoUpdateHint": "현재 버전은 정상 사용 가능합니다. 시험판을 체험하려면 뒤의 고급 옵션에서 시험판 검출을 켜세요.",
+  "aboutUpdateAvailableHint": "지금은 아래의 '지금 다운로드'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다",
+  "aboutUpdateNoUpdateHint": "현재 버전은 정상 사용 가능합니다. 시험판을 체험하려면 뒤의 고급 옵션에서 시험판 검출을 켜세요",
   "aboutUpdatedAt": "업데이트 시간: {time}",
   "@aboutUpdatedAt": {
     "placeholders": {
@@ -1898,17 +1898,17 @@
     }
   },
   "aboutUpdateNowTitle": "지금 업데이트",
-  "aboutUpdateNowAndroidSubtitle": "일반 사용은 '지금 다운로드'를 한 번 탭하기만 하면 됩니다. 다운로드 느림, 실패, 회선 변경 시 아래의 고급 옵션으로 이동하세요.",
-  "aboutUpdateNowOtherSubtitle": "현재 플랫폼은 다운로드 페이지를 직접 열며 앱 내에서 설치하지 않습니다.",
-  "aboutMirrorDownloadHint": "현재 국내 다운로드를 우선합니다. 대부분의 국내 네트워크에서는 '지금 다운로드'를 탭하기만 하면 됩니다.",
-  "aboutOriginalDownloadHint": "현재 국제 소스 다운로드를 우선합니다. 다운로드가 느리거나 열리지 않으면 먼저 '국내 다운로드'로 전환하세요.",
+  "aboutUpdateNowAndroidSubtitle": "일반 사용은 '지금 다운로드'를 한 번 탭하기만 하면 됩니다. 다운로드 느림, 실패, 회선 변경 시 아래의 고급 옵션으로 이동하세요",
+  "aboutUpdateNowOtherSubtitle": "현재 플랫폼은 다운로드 페이지를 직접 열며 앱 내에서 설치하지 않습니다",
+  "aboutMirrorDownloadHint": "현재 국내 다운로드를 우선합니다. 대부분의 국내 네트워크에서는 '지금 다운로드'를 탭하기만 하면 됩니다",
+  "aboutOriginalDownloadHint": "현재 국제 소스 다운로드를 우선합니다. 다운로드가 느리거나 열리지 않으면 먼저 '국내 다운로드'로 전환하세요",
   "aboutUseSystemDownloaderAction": "시스템 다운로더로 다운로드",
   "aboutOpenReleasePageAction": "Release 페이지 열기",
   "aboutDownloadMethodTitle": "다운로드 방식",
-  "aboutDownloadMethodSubtitle": "기본으로 국내 다운로드를 권장합니다. GitHub에 안정적으로 접근할 수 있을 때만 국제 소스로 전환하세요.",
+  "aboutDownloadMethodSubtitle": "기본으로 국내 다운로드를 권장합니다. GitHub에 안정적으로 접근할 수 있을 때만 국제 소스로 전환하세요",
   "aboutDownloadMethodMirror": "국내 다운로드",
   "aboutDownloadMethodOriginal": "국제 소스 다운로드",
-  "aboutMirrorModeHintRecommended": "현재 국내 다운로드 사용 중 · {current}. 최근 속도 측정에서 \"{recommended}\"이(가) 권장됩니다. 필요 시 뒤의 고급 옵션에서 전환할 수 있습니다.",
+  "aboutMirrorModeHintRecommended": "현재 국내 다운로드 사용 중 · {current}. 최근 속도 측정에서 \"{recommended}\"이(가) 권장됩니다. 필요 시 뒤의 고급 옵션에서 전환할 수 있습니다",
   "@aboutMirrorModeHintRecommended": {
     "placeholders": {
       "current": {
@@ -1919,7 +1919,7 @@
       }
     }
   },
-  "aboutMirrorModeHintCurrent": "현재 국내 다운로드 사용 중 · {current}. 다운로드가 느리거나 실패하면 뒤의 고급 옵션에서 속도 측정, 회선 변경 또는 사용자 정의 주소를 입력하세요.",
+  "aboutMirrorModeHintCurrent": "현재 국내 다운로드 사용 중 · {current}. 다운로드가 느리거나 실패하면 뒤의 고급 옵션에서 속도 측정, 회선 변경 또는 사용자 정의 주소를 입력하세요",
   "@aboutMirrorModeHintCurrent": {
     "placeholders": {
       "current": {
@@ -1927,19 +1927,19 @@
       }
     }
   },
-  "aboutOriginalModeHint": "현재 국제 소스 다운로드 사용 중. GitHub에 안정적으로 접근할 수 있을 때만 이 설정을 권장합니다. 그렇지 않으면 국내 다운로드로 전환하세요.",
+  "aboutOriginalModeHint": "현재 국제 소스 다운로드 사용 중. GitHub에 안정적으로 접근할 수 있을 때만 이 설정을 권장합니다. 그렇지 않으면 국내 다운로드로 전환하세요",
   "aboutReleaseNotesTitle": "이번 업데이트 내용",
   "aboutReleaseNotesSubtitle": "현재 감지된 버전의 Release 설명을 표시합니다.",
   "aboutAdvancedOptionsTitle": "고급 옵션",
-  "aboutAdvancedOptionsSubtitle": "다운로드 느림, 수동 회선 전환, 시험판 검출 시에만 펼치세요.",
+  "aboutAdvancedOptionsSubtitle": "다운로드 느림, 수동 회선 전환, 시험판 검출 시에만 펼치세요",
   "aboutMirrorSectionTitle": "다운로드 회선 및 미러",
-  "aboutMirrorSectionMirrorHint": "현재 국내 다운로드 사용 중. 여기서 수동으로 회선 전환, 속도 측정 권장, 사용자 정의 다운로드 주소 입력이 가능합니다.",
-  "aboutMirrorSectionOriginalHint": "현재 국제 소스 다운로드를 사용 중입니다. 아래 회선 설정은 '국내 다운로드'로 전환 후에만 유효합니다.",
+  "aboutMirrorSectionMirrorHint": "현재 국내 다운로드 사용 중. 여기서 수동으로 회선 전환, 속도 측정 권장, 사용자 정의 다운로드 주소 입력이 가능합니다",
+  "aboutMirrorSectionOriginalHint": "현재 국제 소스 다운로드를 사용 중입니다. 아래 회선 설정은 '국내 다운로드'로 전환 후에만 유효합니다",
   "aboutFillCustomMirrorFirst": "먼저 사용자 정의 다운로드 주소를 입력하세요",
   "aboutCurrentCustomMirrorTitle": "현재 사용자 정의 다운로드 주소",
   "aboutCurrentMirrorTitle": "현재 다운로드 회선 주소",
-  "aboutCurrentCustomMirrorHint": "현재 수동으로 입력한 다운로드 주소를 사용 중입니다.",
-  "aboutCurrentMirrorHint": "현재 회선 접속 실패 시 다른 내장 회선으로 전환하거나 사용자 정의 주소로 변경할 수 있습니다.",
+  "aboutCurrentCustomMirrorHint": "현재 수동으로 입력한 다운로드 주소를 사용 중입니다",
+  "aboutCurrentMirrorHint": "현재 회선 접속 실패 시 다른 내장 회선으로 전환하거나 사용자 정의 주소로 변경할 수 있습니다",
   "aboutProbeMirrorsAction": "속도 측정 및 권장",
   "aboutProbingMirrors": "속도 측정 중…",
   "aboutEditCustomMirrorAction": "사용자 정의 주소 변경",
@@ -1952,16 +1952,16 @@
       }
     }
   },
-  "aboutMirrorDisabledHint": "현재 국내 다운로드를 사용하지 않아 여기의 회선 설정이 일시적으로 유효하지 않습니다. 필요하면 위의 '다운로드 방식'에서 국내 다운로드로 전환하세요.",
+  "aboutMirrorDisabledHint": "현재 국내 다운로드를 사용하지 않아 여기의 회선 설정이 일시적으로 유효하지 않습니다. 필요하면 위의 '다운로드 방식'에서 국내 다운로드로 전환하세요",
   "aboutRecentProbeResultsTitle": "최근 속도 측정 결과",
   "aboutUnavailable": "사용 불가",
   "aboutRecommended": "권장",
   "aboutCheckPrereleaseTitle": "시험판 검출",
-  "aboutCheckPrereleaseSubtitle": "켜면 시험판도 업데이트 확인에 포함됩니다. 일반 사용은 끄기를 권장합니다.",
+  "aboutCheckPrereleaseSubtitle": "켜면 시험판도 업데이트 확인에 포함됩니다. 일반 사용은 끄기를 권장합니다",
   "aboutDiagnosticsTitle": "테스트 및 진단",
-  "aboutDiagnosticsSubtitle": "'슈퍼아일랜드가 표시되지 않음' 또는 개발자 피드백이 필요한 경우에만 펼치세요.",
+  "aboutDiagnosticsSubtitle": "'슈퍼아일랜드가 표시되지 않음' 또는 개발자 피드백이 필요한 경우에만 펼치세요",
   "aboutRecordDiagnosticsTitle": "앱 로그 기록",
-  "aboutRecordDiagnosticsSubtitle": "켜면 로컬에서 중요 로그를 지속적으로 기록합니다. '표시되어야 할 것이 표시되지 않는' 문제 트러블슈팅 전용입니다.",
+  "aboutRecordDiagnosticsSubtitle": "켜면 로컬에서 중요 로그를 지속적으로 기록합니다. '표시되어야 할 것이 표시되지 않는' 문제 트러블슈팅 전용입니다",
   "aboutExportDiagnosticsAction": "앱 로그 내보내기",
   "aboutViewPhoneLogsAction": "로그 페이지 열기",
   "aboutClearAndRecollectAction": "비우고 재수집",
@@ -2012,7 +2012,7 @@
   "aboutDownloadCancelled": "다운로드가 취소되었습니다",
   "aboutInstallReady": "설치 패키지 준비 완료. 설치 화면을 열려고 했습니다. 시스템이 표시하지 않으면 나중에 알림 또는 파일 관리자에서 수동으로 설치하세요",
   "aboutUpdatePackageTitle": "경屿 시간표 업데이트 패키지",
-  "aboutUpdatePackageDescription": "시스템 다운로드 관리자에 전달하여 다운로드 중입니다. 완료 후 시스템 알림에서 바로 설치할 수 있습니다.",
+  "aboutUpdatePackageDescription": "시스템 다운로드 관리자에 전달하여 다운로드 중입니다. 완료 후 시스템 알림에서 바로 설치할 수 있습니다",
   "aboutSystemDownloaderQueued": "시스템 다운로드 관리자에 전달했습니다. 시스템 알림 또는 다운로드 목록에서 진행 상황을 확인하세요",
   "aboutSystemDownloaderFailed": "시스템 다운로드 관리자 호출 실패",
   "aboutDownloadCancelling": "다운로드 취소 중…",
@@ -2038,7 +2038,7 @@
   "aboutDevelopersTitle": "개발자",
   "aboutDeveloperMaintainerSubtitle": "경屿 시간표 개발 및 유지보수",
   "aboutWarehouseMaintainersTitle": "교무 가져오기 적응자",
-  "aboutWarehouseMaintainersIntro": "아래 목록은 qingyu_warehouse 적응 저장소의 maintainer 필드에서 집계한 것입니다. 로컬 캐시가 있으면 먼저 캐시를 표시한 뒤 백그라운드에서 갱신합니다.",
+  "aboutWarehouseMaintainersIntro": "아래 목록은 qingyu_warehouse 적응 저장소의 maintainer 필드에서 집계한 것입니다. 로컬 캐시가 있으면 먼저 캐시를 표시한 뒤 백그라운드에서 갱신합니다",
   "aboutWarehouseMaintainersLoadFailed": "적응자 목록을 일시적으로 읽을 수 없습니다: {error}",
   "@aboutWarehouseMaintainersLoadFailed": {
     "placeholders": {
@@ -2057,7 +2057,7 @@
     }
   },
   "aboutParticipateWarehouseTitle": "교무 적응에 참여",
-  "aboutParticipateWarehouseSubtitle": "패킷 캡처, 웹 디버깅, JavaScript를 할 수 있거나 자신의 학교 교무 시스템을 장기 유지보수하고 싶다면, qingyu_warehouse에서 새 학교 적응과 수정을 제출해 주세요.",
+  "aboutParticipateWarehouseSubtitle": "패킷 캡처, 웹 디버깅, JavaScript를 할 수 있거나 자신의 학교 교무 시스템을 장기 유지보수하고 싶다면, qingyu_warehouse에서 새 학교 적응과 수정을 제출해 주세요",
   "importFileReadFailed": "선택한 파일을 읽을 수 없습니다",
   "importReplaceExistingTitle": "수업 가져오기",
   "importReplaceExistingMessage": "{name}을(를) 가져올 때 기존 수업을 대체하시겠습니까?",
@@ -2070,7 +2070,7 @@
   },
   "importNoCoursesRecognized": "가져올 수 있는 수업이 인식되지 않았습니다",
   "importConfirmSemesterMappingTitle": "학기 시작일과 주차 대응 확인",
-  "importConfirmSemesterMappingSubtitleIcs": "학교 학사일정의 학기 시작일을 선택하세요. 파일 내 가장 이른 수업 날짜에 따라 기본 주차 대응을 제안했습니다. 수동으로 조정할 수도 있습니다.",
+  "importConfirmSemesterMappingSubtitleIcs": "학교 학사일정의 학기 시작일을 선택하세요. 파일 내 가장 이른 수업 날짜에 따라 기본 주차 대응을 제안했습니다. 수동으로 조정할 수도 있습니다",
   "importOverwriteCount": "{count}건 수업을 덮어쓰기 가져왔습니다",
   "@importOverwriteCount": {
     "placeholders": {
@@ -2114,7 +2114,7 @@
   "aiWorkflowCompactTitle": "프롬프트 복사 → Doubao 이미지 인식 → 가져오기",
   "aiWorkflowCompactSubtitle": "Doubao 전문가 모드 → JSON 복사 → 학기 시작일 선택",
   "aiWorkflowTitle": "프롬프트 복사 → Doubao 이미지 인식 → JSON 붙여넣기 → 가져오기",
-  "aiWorkflowSubtitle": "먼저 프롬프트를 복사하고, Doubao 왼쪽 아래에서 전문가 모드로 전환한 뒤, 시간표 스크린샷과 프롬프트를 함께 전송합니다. Doubao가 반환한 JSON을 여기에 복사하고 가져오기를 탭한 뒤 학기 시작일을 선택합니다.",
+  "aiWorkflowSubtitle": "먼저 프롬프트를 복사하고, Doubao 왼쪽 아래에서 전문가 모드로 전환한 뒤, 시간표 스크린샷과 프롬프트를 함께 전송합니다. Doubao가 반환한 JSON을 여기에 복사하고 가져오기를 탭한 뒤 학기 시작일을 선택합니다",
   "aiPromptShortAction": "프롬프트",
   "aiExpertModeSuggestion": "Doubao 전문가 모드를 권장합니다. 다중 이미지 지원, 스크린샷에 요일 헤더가 필요합니다.",
   "aiHintExpertMode": "먼저 Doubao 전문가 모드로 전환",
@@ -2133,7 +2133,7 @@
   },
   "aiParseFailedChip": "파싱 실패",
   "aiPasteJsonHintShort": "AI가 반환한 JSON 붙여넣기",
-  "aiPasteJsonHintLong": "Doubao가 반환한 JSON을 그대로 여기에 붙여넣고 가져오기를 탭하세요. 순수 JSON과 ```json 코드 블록 모두 지원합니다.",
+  "aiPasteJsonHintLong": "Doubao가 반환한 JSON을 그대로 여기에 붙여넣고 가져오기를 탭하세요. 순수 JSON과 ```json 코드 블록 모두 지원합니다",
   "detailAction": "상세",
   "aiParseErrorTitle": "파싱 오류",
   "viewDetailsAction": "상세 보기",
@@ -2143,13 +2143,13 @@
   "promptCopiedHint": "프롬프트를 복사했습니다. Doubao에서 스크린샷과 프롬프트를 전송하세요",
   "clipboardNoText": "클립보드에 사용 가능한 텍스트가 없습니다",
   "aiPromptSheetTitle": "이미지 인식 프롬프트",
-  "aiPromptSheetSubtitle": "Doubao 사용을 권장합니다. 먼저 Doubao 왼쪽 아래에서 전문가 모드로 전환하고, 아래 프롬프트 전체와 시간표 스크린샷을 함께 전송하여 JSON만 반환하도록 합니다. 생성 후 JSON을 이 페이지에 복사하고 가져오기를 탭한 뒤 학기 시작일을 선택합니다.",
+  "aiPromptSheetSubtitle": "Doubao 사용을 권장합니다. 먼저 Doubao 왼쪽 아래에서 전문가 모드로 전환하고, 아래 프롬프트 전체와 시간표 스크린샷을 함께 전송하여 JSON만 반환하도록 합니다. 생성 후 JSON을 이 페이지에 복사하고 가져오기를 탭한 뒤 학기 시작일을 선택합니다",
   "aiPreviewTitle": "파싱 미리보기",
   "aiPasteJsonFirst": "먼저 AI가 반환한 JSON을 붙여넣으세요",
   "aiParseFailedIncompleteJson": "파싱 실패. 완전한 JSON이 붙여넣어졌는지 확인하세요",
   "importAiResultTitle": "AI 파싱 결과 가져오기",
   "importAiReplaceMessage": "현재 AI 파싱 결과로 기존 수업을 대체하시겠습니까?",
-  "importConfirmSemesterMappingSubtitleAi": "학교 학사일정의 학기 시작일을 선택하고, 시간표의 1주차가 학사일정의 몇 주차에 해당하는지 확인하세요. 학교 첫 주에 수업이 없으면 보통 2주차로 변경해야 합니다.",
+  "importConfirmSemesterMappingSubtitleAi": "학교 학사일정의 학기 시작일을 선택하고, 시간표의 1주차가 학사일정의 몇 주차에 해당하는지 확인하세요. 학교 첫 주에 수업이 없으면 보통 2주차로 변경해야 합니다",
   "aiWarningExtraSuffix": ", 추가로 {count}건 인식 주의사항",
   "@aiWarningExtraSuffix": {
     "placeholders": {
@@ -2159,7 +2159,7 @@
     }
   },
   "pasteAction": "붙여넣기",
-  "importConfirmSemesterMappingSubtitleWarehouse": "교무 스크립트가 수업 주차를 반환했습니다. 학사일정 학기 시작일을 확인하세요. 학교 첫 몇 주에 수업이 없으면 '시간표 1주차'를 학사일정后面的 주차에 대응할 수 있습니다.",
+  "importConfirmSemesterMappingSubtitleWarehouse": "교무 스크립트가 수업 주차를 반환했습니다. 학사일정 학기 시작일을 확인하세요. 학교 첫 몇 주에 수업이 없으면 '시간표 1주차'를 학사일정后面的 주차에 대응할 수 있습니다",
   "aiPreviewCourseCount": "수업 수: {count}",
   "@aiPreviewCourseCount": {
     "placeholders": {
@@ -2187,7 +2187,7 @@
     }
   },
   "warehouseMissingSchoolTitle": "학교 목록에 해당 학교가 없으신가요?",
-  "warehouseMissingSchoolSubtitle": "피드백 페이지에서 Issue를 제출하세요. 학교 이름, 교무 시스템 URL, 로그인 후 시간표 페이지 링크 또는 스크린샷을 함께 작성하면 적응 보충이 더 원활합니다.",
+  "warehouseMissingSchoolSubtitle": "피드백 페이지에서 Issue를 제출하세요. 학교 이름, 교무 시스템 URL, 로그인 후 시간표 페이지 링크 또는 스크린샷을 함께 작성하면 적응 보충이 더 원활합니다",
   "laterAction": "나중에",
   "goFeedbackAction": "피드백 페이지로",
   "warehouseFeedbackMissingSchoolTitle": "학교가 없으신가요? 피드백으로",
@@ -2199,7 +2199,7 @@
   "noAvailableSchools": "사용 가능한 학교가 없습니다",
   "searchSchoolSuggestion": "학교 정식명칭, 이니셜 또는 저장소의 학교 코드를 시도해 보세요.",
   "deleteDebugRecordTitle": "디버그 레코드 삭제",
-  "deleteDebugRecordMessage": "\"{name}\"을(를) 삭제하시겠습니까? 삭제 후 이미 가져온 수업에는 영향을 주지 않습니다.",
+  "deleteDebugRecordMessage": "\"{name}\"을(를) 삭제하시겠습니까? 삭제 후 이미 가져온 수업에는 영향을 주지 않습니다",
   "@deleteDebugRecordMessage": {
     "placeholders": {
       "name": {
@@ -2220,10 +2220,10 @@
   "customDebugDescription": "사용자가 저장한 사용자 정의 교무 디버그 스크립트",
   "addDebugRecordTooltip": "디버그 레코드 추가",
   "customDebugIntroTitle": "여기에 나만의 교무 디버그 레코드를 배치하세요",
-  "customDebugIntroSubtitle": "각 레코드에 사용자 정의 URL과 스크립트 전체를 저장할 수 있습니다. 저장 후 다음에 '디버그 시작'을 탭하기만 하면 재사용할 수 있습니다.",
+  "customDebugIntroSubtitle": "각 레코드에 사용자 정의 URL과 스크립트 전체를 저장할 수 있습니다. 저장 후 다음에 '디버그 시작'을 탭하기만 하면 재사용할 수 있습니다",
   "addDebugRecordAction": "디버그 레코드 추가",
   "noSavedDebugRecords": "저장된 디버그 레코드가 없습니다",
-  "noSavedDebugRecordsHint": "먼저 1건 추가하고 URL과 스크립트를 붙여넣으세요. 이후 바로 재사용할 수 있습니다.",
+  "noSavedDebugRecordsHint": "먼저 1건 추가하고 URL과 스크립트를 붙여넣으세요. 이후 바로 재사용할 수 있습니다",
   "debugScriptLength": "스크립트 {count}자",
   "@debugScriptLength": {
     "placeholders": {
@@ -2258,7 +2258,7 @@
   "addDebugRecordTitle": "디버그 레코드 추가",
   "savingAction": "저장 중…",
   "debugRecordFormula": "1레코드 = 1URL + 1스크립트",
-  "debugRecordFormulaSubtitle": "같은 학교를 반복 디버그하거나, 다른 학교에 여러 스크립트 세트를 유지하는 데 적합합니다. 저장 후 언제든 수정 가능합니다.",
+  "debugRecordFormulaSubtitle": "같은 학교를 반복 디버그하거나, 다른 학교에 여러 스크립트 세트를 유지하는 데 적합합니다. 저장 후 언제든 수정 가능합니다",
   "debugRecordNameLabel": "레코드 이름",
   "debugRecordNameHint": "예: 충칭기전-신규교무",
   "importUrlLabel": "교무 URL",
@@ -2298,7 +2298,7 @@
   "quickImportPlayingTitle": "자동 가져오는 중…",
   "quickImportExecutingScriptTitle": "재생 완료, 가져오기 스크립트 실행 중…",
   "quickImportManualInputTitle": "수동 작업 필요",
-  "quickImportManualInputHint": "필요한 수동 작업을 완료한 후 계속을 탭하세요.",
+  "quickImportManualInputHint": "필요한 수동 작업을 완료한 후 계속을 탭하세요",
   "quickImportCancelImportAction": "가져오기 취소",
   "quickImportContinueAction": "계속",
   "quickImportFinishedTitle": "가져오기 완료",
@@ -2323,7 +2323,7 @@
   "stopRecordingTooltip": "녹화 중지",
   "startRecordingTooltip": "동작 녹화",
   "savedImportUrlHint": "교무 URL 저장됨. 다음에 바로 가져올 수 있습니다",
-  "adapterIntroSubtitle": "어댑터 정보, 로그인 항목과 스크립트 상태를 확인할 수 있습니다.",
+  "adapterIntroSubtitle": "어댑터 정보, 로그인 항목과 스크립트 상태를 확인할 수 있습니다",
   "schoolLabel": "학교",
   "categoryLabel": "카테고리",
   "maintainerLabel": "유지보수자",
@@ -2402,8 +2402,8 @@
   "homeMenuCoffeeTitle": "커피 한 잔",
   "homeMenuFeedbackTitle": "문제 제보",
   "switchTimetableTitle": "시간표 전환",
-  "switchTimetableSubtitleEmpty": "아래 시간표를 탭하여 현재 뷰를 즉시 전환하세요.",
-  "switchTimetableSubtitleCurrent": "현재: {name}. 아래 시간표를 탭하여 즉시 전환하세요.",
+  "switchTimetableSubtitleEmpty": "아래 시간표를 탭하여 현재 뷰를 즉시 전환하세요",
+  "switchTimetableSubtitleCurrent": "현재: {name}. 아래 시간표를 탭하여 즉시 전환하세요",
   "@switchTimetableSubtitleCurrent": {
     "placeholders": {
       "name": {
@@ -2441,7 +2441,7 @@
       }
     }
   },
-  "courseDialogCurrentWeekHint": "현재 제{week}주를 보고 있습니다. 이 주의 이 수업을 바로 시간 변경할 수 있습니다.",
+  "courseDialogCurrentWeekHint": "현재 제{week}주를 보고 있습니다. 이 주의 이 수업을 바로 시간 변경할 수 있습니다",
   "@courseDialogCurrentWeekHint": {
     "placeholders": {
       "week": {
@@ -2449,7 +2449,7 @@
       }
     }
   },
-  "courseDialogNotThisWeekHint": "현재 제{week}주를 보고 있습니다. 이 수업은 이번 주에 없으므로 '이번주 이 수업'으로 시간 변경할 수 없습니다.",
+  "courseDialogNotThisWeekHint": "현재 제{week}주를 보고 있습니다. 이 수업은 이번 주에 없으므로 '이번주 이 수업'으로 시간 변경할 수 없습니다",
   "@courseDialogNotThisWeekHint": {
     "placeholders": {
       "week": {
@@ -2461,10 +2461,10 @@
   "rescheduleAction": "시간 변경",
   "deleteActionShort": "삭제",
   "deleteModeTitle": "삭제 방식",
-  "deleteModeSubtitle": "배치 전체를 삭제하거나, 현재 보고 있는 이 주의 이 수업만 삭제할 수 있습니다.",
+  "deleteModeSubtitle": "배치 전체를 삭제하거나, 현재 보고 있는 이 주의 이 수업만 삭제할 수 있습니다",
   "deleteCourseAction": "이 수업 삭제",
   "deleteOccurrenceAction": "이 수업 회 삭제",
-  "deleteModeHintCurrentWeek": "'이 수업 삭제'는 배치의 전체 주차를 삭제합니다. '이 수업 회 삭제'는 제{week}주 이번만 삭제합니다.",
+  "deleteModeHintCurrentWeek": "'이 수업 삭제'는 배치의 전체 주차를 삭제합니다. '이 수업 회 삭제'는 제{week}주 이번만 삭제합니다",
   "@deleteModeHintCurrentWeek": {
     "placeholders": {
       "week": {
@@ -2472,7 +2472,7 @@
       }
     }
   },
-  "deleteModeHintUnavailable": "현재 카드는 제{week}주 실제 배치가 아니므로 배치 전체만 삭제할 수 있습니다.",
+  "deleteModeHintUnavailable": "현재 카드는 제{week}주 실제 배치가 아니므로 배치 전체만 삭제할 수 있습니다",
   "@deleteModeHintUnavailable": {
     "placeholders": {
       "week": {
@@ -2515,7 +2515,7 @@
   },
   "noChangesDetected": "변경 사항이 감지되지 않았습니다",
   "rescheduleCurrentOccurrenceTitle": "이번주 이 수업 시간 변경",
-  "rescheduleCurrentOccurrenceSubtitle": "제{week}주 이 수업만 조정합니다. 원래 수업은 이 주에서 자동으로 제거되며 다른 주는 변경 없습니다.",
+  "rescheduleCurrentOccurrenceSubtitle": "제{week}주 이 수업만 조정합니다. 원래 수업은 이 주에서 자동으로 제거되며 다른 주는 변경 없습니다",
   "@rescheduleCurrentOccurrenceSubtitle": {
     "placeholders": {
       "week": {
@@ -2531,8 +2531,8 @@
   "confirmRescheduleAction": "시간 변경 확인",
   "homeTitleStyleClassicLabel": "클래식 텍스트",
   "homeTitleStyleBrandLabel": "큰 로고",
-  "homeTitleStyleClassicDescription": "원래 제목 스타일을 유지합니다. 텍스트만 표시하고 탭하면 시간표를 전환합니다.",
-  "homeTitleStyleBrandDescription": "큰 로고와 작은 시간표 이름을 표시합니다. 브랜드 감성을 강조합니다.",
+  "homeTitleStyleClassicDescription": "원래 제목 스타일을 유지합니다. 텍스트만 표시하고 탭하면 시간표를 전환합니다",
+  "homeTitleStyleBrandDescription": "큰 로고와 작은 시간표 이름을 표시합니다. 브랜드 감성을 강조합니다",
   "widgetBackgroundStyleGlass": "반투명 유리",
   "widgetBackgroundStyleSolid": "단색 카드",
   "widgetBackgroundStyleGradient": "그라데이션 카드",
@@ -2541,7 +2541,7 @@
   "homeWidgetTargetMedium24": "개요 2×4",
   "homeWidgetTargetLarge44": "목록 4×4",
   "addCourseSheetTitle": "콘텐츠 추가",
-  "addCourseSheetSubtitle": "빈 시간표 영역은 탭에 반응하지 않습니다. 임시 수업, 학기 전체 반복 수업, 또는 단일 일정 삽입을 명확히 선택하세요.",
+  "addCourseSheetSubtitle": "빈 시간표 영역은 탭에 반응하지 않습니다. 임시 수업, 학기 전체 반복 수업, 또는 단일 일정 삽입을 명확히 선택하세요",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} {startSection}-{endSection}교시",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
@@ -2856,11 +2856,11 @@
   "scheduleTitleHint": "예: 조모임, 서류 처리, 택배 수령",
   "scheduleTitleRequired": "일정 제목을 입력하세요",
   "scheduleInfoSectionTitle": "일정 정보",
-  "scheduleInfoSectionSubtitle": "일정은 구체적인 날짜로 일간 뷰 타임라인에 삽입됩니다. 수업 자체는 변경하지 않습니다.",
+  "scheduleInfoSectionSubtitle": "일정은 구체적인 날짜로 일간 뷰 타임라인에 삽입됩니다. 수업 자체는 변경하지 않습니다",
   "scheduleTimeSectionTitle": "시간 설정",
-  "scheduleTimeSectionSubtitle": "이 일정이 실제로 발생하는 날짜와 시작/종료 시간을 선택하세요.",
+  "scheduleTimeSectionSubtitle": "이 일정이 실제로 발생하는 날짜와 시작/종료 시간을 선택하세요",
   "scheduleAppearanceSectionTitle": "표시 스타일",
-  "scheduleAppearanceSectionSubtitle": "수업과 쉽게 구분되는 일정 색상을 선택하세요.",
+  "scheduleAppearanceSectionSubtitle": "수업과 쉽게 구분되는 일정 색상을 선택하세요",
   "scheduleLocationLabel": "장소",
   "scheduleLocationHint": "선택사항",
   "scheduleDateLabel": "날짜",
@@ -2884,8 +2884,8 @@
   },
   "scheduleTimeRangeInvalid": "종료 시간은 시작 시간보다 나중이어야 합니다",
   "scheduleDateRangeInvalid": "종료일은 시작일보다 이전일 수 없습니다",
-  "scheduleSingleDayHint": "같은 날 종료 시 종료 시간은 시작 시간보다 나중이어야 합니다.",
-  "scheduleCrossDayHint": "날짜 초과 일정은 당일 슬라이스로 일간 뷰에 표시됩니다.",
+  "scheduleSingleDayHint": "같은 날 종료 시 종료 시간은 시작 시간보다 나중이어야 합니다",
+  "scheduleCrossDayHint": "날짜 초과 일정은 당일 슬라이스로 일간 뷰에 표시됩니다",
   "scheduleSavedHint": "일정이 추가되었습니다",
   "scheduleUpdatedHint": "일정이 업데이트되었습니다",
   "crossDayBadgeLabel": "날짜 초과",
@@ -2960,13 +2960,13 @@
     }
   },
   "scheduleEntrySingleTitle": "수업 일정",
-  "scheduleEntryCardSubtitle": "이 수업이 언제, 어떤 주에, 누가 어디에서 진행되는지 설정합니다.",
+  "scheduleEntryCardSubtitle": "이 수업이 언제, 어떤 주에, 누가 어디에서 진행되는지 설정합니다",
   "scheduleEntryTimeSectionTitle": "언제",
-  "scheduleEntryTimeSectionSubtitle": "요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다.",
+  "scheduleEntryTimeSectionSubtitle": "요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다",
   "scheduleEntryWeeksSectionTitle": "어떤 주",
   "scheduleEntryPeopleSectionTitle": "교수와 강의실",
   "scheduleEntryTimeSchemeSectionTitle": "별도 시간표",
-  "scheduleEntryTimeSchemeSectionSubtitle": "기본값은 현재 시간표를 따릅니다. 이 수업만 종 다른 시간이면 변경하세요.",
+  "scheduleEntryTimeSchemeSectionSubtitle": "기본값은 현재 시간표를 따릅니다. 이 수업만 종 다른 시간이면 변경하세요",
   "scheduleSectionNumberLabel": "{section}교시",
   "@scheduleSectionNumberLabel": {
     "placeholders": {
@@ -3059,7 +3059,7 @@
   "guideNextButton": "다음",
   "guidePermissionsHeader": "시스템 권한 설정",
   "guidePermissionsSubtitle": "이 설정을 완료해야 슈퍼아일랜드와 알림이 정상 작동합니다",
-  "guidePermissionsFooterHint": "탭하면 시스템 설정으로 이동합니다. 앱으로 돌아오면 인식 가능한 상태가 자동으로 갱신됩니다. 자동 시작은 시스템 제한이 있으므로 시스템 페이지 스위치를 기준으로 하세요.",
+  "guidePermissionsFooterHint": "탭하면 시스템 설정으로 이동합니다. 앱으로 돌아오면 인식 가능한 상태가 자동으로 갱신됩니다. 자동 시작은 시스템 제한이 있으므로 시스템 페이지 스위치를 기준으로 하세요",
   "guideTipsHeader": "사용 팁",
   "guideTipsSubtitle": "이것들은 언제든 '설정'에서 찾을 수 있습니다",
   "guidePrivacyReadBeforeUse": "사용 전 아래 내용을 읽고 동의하세요",
@@ -3122,7 +3122,7 @@
     }
   },
   "liveTestingHolidayOverride": "휴일 상태 덮어쓰기",
-  "liveTestingHolidayOverrideSubtitle": "켜면 휴일 상태를 시뮬레이션합니다. 알림과 위젯이 수업을 올바르게 숨기는지 테스트할 수 있습니다.",
+  "liveTestingHolidayOverrideSubtitle": "켜면 휴일 상태를 시뮬레이션합니다. 알림과 위젯이 수업을 올바르게 숨기는지 테스트할 수 있습니다",
   "liveTestingHolidayModeEnabled": "휴일 모드 활성화됨",
   "liveTestingHolidayModeDisabled": "휴일 모드 비활성화됨",
   "liveTestingHolidayModeEnabledDesc": "수업 알림과 위젯이 모든 수업을 숨깁니다",
@@ -3379,7 +3379,7 @@
   "importFirstCourseWeekMappingLabel": "Timetable week 1 maps to calendar week",
   "importFirstCourseWeekMappingSubtitle": "If the first school week has no classes, choose week 2; if the first two weeks are empty, choose week 3.",
   "importSemesterMappingNoShiftHint": "After import, timetable week 1 will be treated as calendar week 1.",
-  "importSemesterMappingShiftHint": "All course weeks will shift forward by {shiftedWeeks} so timetable week 1 lands on calendar week {calendarWeek}.",
+  "importSemesterMappingShiftHint": "All course weeks will shift forward by {shiftedWeeks} so timetable week 1 lands on calendar week {calendarWeek}",
   "@importSemesterMappingShiftHint": {
     "placeholders": {
       "shiftedWeeks": {
@@ -3497,7 +3497,7 @@
   "serviceMsgTimeSchemeNotFound": "Time scheme not found.",
   "serviceMsgTimeSchemeConfigUnavailable": "Current timetable time configuration is unavailable.",
   "serviceMsgTimeSchemeNotFoundSelected": "Selected time scheme was not found.",
-  "serviceMsgTimeSchemeSectionsInsufficient": "Selected time scheme does not have enough sections for sections {startSection}-{endSection}.",
+  "serviceMsgTimeSchemeSectionsInsufficient": "Selected time scheme does not have enough sections for sections {startSection}-{endSection}",
   "@serviceMsgTimeSchemeSectionsInsufficient": {
     "placeholders": {
       "startSection": {
@@ -3508,7 +3508,7 @@
       }
     }
   },
-  "serviceMsgSectionCountBelowUsage": "Section count cannot be less than the maximum section in use (section {requiredMaxSection}).",
+  "serviceMsgSectionCountBelowUsage": "Section count cannot be less than the maximum section in use (section {requiredMaxSection})",
   "@serviceMsgSectionCountBelowUsage": {
     "placeholders": {
       "requiredMaxSection": {
@@ -3542,8 +3542,8 @@
       }
     }
   },
-  "serviceMsgAtLeastOneSectionRequired": "At least one section time must be kept.",
-  "serviceMsgSectionEndMustAfterStart": "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported.",
+  "serviceMsgAtLeastOneSectionRequired": "At least one section time must be kept",
+  "serviceMsgSectionEndMustAfterStart": "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported",
   "@serviceMsgSectionEndMustAfterStart": {
     "placeholders": {
       "sectionNumber": {
@@ -3551,7 +3551,7 @@
       }
     }
   },
-  "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time.",
+  "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time",
   "@serviceMsgSectionStartBeforePreviousEnd": {
     "placeholders": {
       "sectionNumber": {
@@ -3560,7 +3560,7 @@
     }
   },
   "serviceMsgPeriodStartTimeRequired": "Set the first section start time for periods that have sections.",
-  "serviceMsgSectionCrossesMidnight": "Section {sectionNumber} would cross midnight. Overnight classes are not supported.",
+  "serviceMsgSectionCrossesMidnight": "Section {sectionNumber} would cross midnight. Overnight classes are not supported",
   "@serviceMsgSectionCrossesMidnight": {
     "placeholders": {
       "sectionNumber": {
@@ -3570,7 +3570,7 @@
   },
   "serviceMsgClassDurationMustPositive": "Class duration must be greater than 0.",
   "serviceMsgBreakDurationMustNonNegative": "Break duration cannot be less than 0.",
-  "serviceMsgAtLeastOnePeriodSection": "At least one period must have sections.",
+  "serviceMsgAtLeastOnePeriodSection": "At least one period must have sections",
   "serviceMsgInvalidTimeFormat": "Time format is invalid.",
   "serviceMsgLinkedCourseNotFound": "Linked course was not found.",
   "serviceMsgCourseNotFoundForDelete": "Course to delete was not found.",
@@ -3654,7 +3654,7 @@
       }
     }
   },
-  "serviceMsgSectionOutOfRange": "Section {section} is outside the time scheme range (1-{maxSection}).",
+  "serviceMsgSectionOutOfRange": "Section {section} is outside the time scheme range (1-{maxSection})",
   "@serviceMsgSectionOutOfRange": {
     "placeholders": {
       "section": {
@@ -3804,7 +3804,7 @@
       }
     }
   },
-  "serviceMsgAiCourseEndSectionInvalid": "courses[{index}].endSection cannot be less than startSection.",
+  "serviceMsgAiCourseEndSectionInvalid": "courses[{index}].endSection cannot be less than startSection",
   "@serviceMsgAiCourseEndSectionInvalid": {
     "placeholders": {
       "index": {
@@ -4346,9 +4346,9 @@
   "hyperosShowcaseKitSubtitle": "mikcb HyperOS-style components",
   "hyperosShowcaseSectionTags": "Tags / Accordion / Hints",
   "hyperosShowcaseAccordionSection1": "Section 1",
-  "hyperosShowcaseAccordionSection1Body": "Content shown after expanding.",
+  "hyperosShowcaseAccordionSection1Body": "Content shown after expanding",
   "hyperosShowcaseAccordionSection2": "Section 2",
-  "hyperosShowcaseAccordionSection2Body": "Collapsible group replacing FAccordion.",
+  "hyperosShowcaseAccordionSection2Body": "Collapsible group replacing FAccordion",
   "hyperosShowcaseSectionNavRows": "List rows · Navigation",
   "hyperosShowcaseNavRowWithIcon": "With icon",
   "hyperosShowcaseNavRowNoIconSubtitle": "No leading tinted icon",
@@ -4402,9 +4402,9 @@
   "hyperosShowcaseSectionFrosted": "Frosted header · scroll physics",
   "hyperosShowcaseSectionFeedback": "Feedback · overlays",
   "hyperosShowcaseSectionIconColors": "HyperosIconColors",
-  "hyperosShowcaseFooterNote": "Visible on the settings home page in non-release builds for component QA.",
+  "hyperosShowcaseFooterNote": "Visible on the settings home page in non-release builds for component QA",
   "hyperosShowcaseUndoAction": "Undo",
-  "hyperosShowcaseDialogMessage": "System-style dialog example.",
+  "hyperosShowcaseDialogMessage": "System-style dialog example",
   "hyperosShowcaseConfirmTitle": "Confirm action",
   "hyperosShowcaseConfirmed": "Confirmed",
   "hyperosShowcaseToastDescription": "With icon and subtitle, same as app toast",
@@ -4430,7 +4430,7 @@
   "courseImportScriptNoCourses": "Import script returned no course data",
   "courseImportScriptFailed": "Script execution failed",
   "courseImportRecordingStatus": "Recording… tap Stop to finish",
-  "courseImportRecordingStartedTip": "Recording started. Continue through the academic portal as usual.",
+  "courseImportRecordingStartedTip": "Recording started. Continue through the academic portal as usual",
   "courseImportRecordingEmptyStatus": "No actions recorded",
   "courseImportRecordingEmptyTip": "No actions recorded",
   "courseImportSaveRecordingTitle": "Save recording",
@@ -4517,7 +4517,7 @@
   "courseImportPortalUrlTitle": "Enter academic portal URL",
   "courseImportPortalUrlSaveContinue": "Save and continue",
   "courseImportPortalUrlLabel": "Portal URL",
-  "courseImportPortalUrlHint": "Saved URL will be reused next time. You can also edit it on the adapter info page.",
+  "courseImportPortalUrlHint": "Saved URL will be reused next time. You can also edit it on the adapter info page",
   "courseImportPortalUrlInvalid": "Invalid login URL format",
   "logAppLoggerInitialized": "App log service initialized",
   "logPrivacyConsentUpdated": "Privacy consent status updated",

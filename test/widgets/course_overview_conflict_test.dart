@@ -44,9 +44,11 @@ void main() {
   const analyticsChannel = MethodChannel('com.mutx163.qingyu/umeng_analytics');
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
-  setUp(() {
+  setUp(() async {
     StorageService().resetForTesting();
     _seedInitializedPrefs();
+    // Ensure mock prefs are live before any StorageService.init().
+    await SharedPreferences.getInstance();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -105,8 +107,14 @@ void main() {
     );
     await _pumpScreen(tester);
 
-    expect(find.textContaining('检测到 2 门排课存在实际冲突'), findsOneWidget);
-    expect(find.text('冲突 1 节'), findsNWidgets(2));
+    // Single entry into the dedicated conflict page (not the old banner/split list).
+    expect(find.text('查看冲突详情'), findsOneWidget);
+    // Two schedule entries participate in the conflict → "冲突 2 节".
+    expect(find.text('冲突 2 节'), findsOneWidget);
+    // Each conflicting course group is tagged in the main list.
+    expect(find.text('冲突'), findsNWidgets(2));
+    expect(find.text('线性代数'), findsOneWidget);
+    expect(find.text('大学物理'), findsOneWidget);
   });
 
   testWidgets('course overview does not mark same slot on different weeks', (
@@ -156,8 +164,10 @@ void main() {
     );
     await _pumpScreen(tester);
 
-    expect(find.textContaining('检测到'), findsNothing);
+    expect(find.text('查看冲突详情'), findsNothing);
     expect(find.textContaining('冲突 '), findsNothing);
-    expect(find.textContaining('展开查看冲突详情'), findsNothing);
+    expect(find.text('冲突'), findsNothing);
+    expect(find.text('高等数学'), findsOneWidget);
+    expect(find.text('大学英语'), findsOneWidget);
   });
 }

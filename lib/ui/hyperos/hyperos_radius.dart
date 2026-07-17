@@ -1,0 +1,129 @@
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
+
+import 'hyperos_tokens.dart';
+
+/// Corner-radius policy for HyperOS / Miuix surfaces.
+///
+/// **Why this exists**
+///
+/// A fixed large radius (settings group `24`) on a short surface makes the top
+/// and bottom arcs meet (stadium / capsule). That looks fine for a true pill
+/// control, but settings cards, single list rows, and nested pickers should keep
+/// a visible flat side wall.
+///
+/// Miuix pairs each component with a radius that fits its height:
+/// - settings group / tall card → [HyperosTokens.cardRadius] (24)
+/// - button / text field → [HyperosTokens.controlRadius] (16) + min height 40
+/// - tiny chips → proportional radius ≪ size/2
+///
+/// Use [surfaceRadiusForHeight] (or [HyperosAdaptiveCard]) instead of hard-coding
+/// [HyperosTokens.cardRadius] on unknown-height content.
+abstract final class HyperosRadius {
+  /// Minimum flat side wall (dp) kept after clamping, so arcs never merge.
+  static const minStraightEdge = 6.0;
+
+  /// Surfaces shorter than this use [HyperosTokens.controlRadius] as the
+  /// preferred radius (single list row / collapsed accordion header).
+  static const shortSurfaceThreshold =
+      HyperosTokens.listRowMinHeight * 1.35; // ~75.6
+
+  /// Clamps [preferred] so `radius < height/2 - minStraightEdge`.
+  ///
+  /// When [height] is unknown or non-positive, returns [preferred] unchanged.
+  static double clampCornerRadius(double preferred, double height) {
+    if (height <= 0 || !height.isFinite) {
+      return preferred;
+    }
+    final maxRadius = (height / 2) - minStraightEdge;
+    if (maxRadius <= 0) {
+      // Pathologically short: half-height is the geometric limit.
+      return height / 2;
+    }
+    if (preferred <= maxRadius) {
+      return preferred;
+    }
+    return maxRadius;
+  }
+
+  /// Picks the preferred radius for a measured surface height, then clamps.
+  ///
+  /// Short surfaces prefer [HyperosTokens.controlRadius]; tall ones prefer
+  /// [preferred] (defaults to [HyperosTokens.cardRadius]).
+  static double surfaceRadiusForHeight(double height, {double? preferred}) {
+    final tallPreferred = preferred ?? HyperosTokens.cardRadius;
+    final shortPreferred = HyperosTokens.controlRadius;
+    final chosen = height > 0 && height < shortSurfaceThreshold
+        ? shortPreferred
+        : tallPreferred;
+    return clampCornerRadius(chosen, height);
+  }
+
+  /// Minimum height that can host [radius] without collapsing into a capsule.
+  static double minHeightForRadius(double radius) {
+    return radius * 2 + minStraightEdge * 2;
+  }
+
+  /// Corner radius for a square/chip of [size] using the icon-badge proportion.
+  static double chipRadius(double size) {
+    if (size <= 0) {
+      return 0;
+    }
+    final proportional =
+        size * HyperosTokens.iconBadgeRadius / HyperosTokens.iconBadgeSize;
+    return clampCornerRadius(proportional, size);
+  }
+
+  static BorderRadius borderRadiusForHeight(
+    double height, {
+    double? preferred,
+  }) {
+    return BorderRadius.circular(
+      surfaceRadiusForHeight(height, preferred: preferred),
+    );
+  }
+}
+
+/// Reports the laid-out size of [child] after each layout pass.
+class HyperosSizeReporter extends SingleChildRenderObjectWidget {
+  const HyperosSizeReporter({super.key, required this.onSize, super.child});
+
+  final ValueChanged<Size> onSize;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return RenderHyperosSizeReporter(onSize: onSize);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant RenderHyperosSizeReporter renderObject,
+  ) {
+    renderObject.onSize = onSize;
+  }
+}
+
+/// Layout proxy that reports size changes to [onSize].
+class RenderHyperosSizeReporter extends RenderProxyBox {
+  RenderHyperosSizeReporter({required this.onSize});
+
+  ValueChanged<Size> onSize;
+  Size? _lastReported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final laidOut = size;
+    if (_lastReported == laidOut) {
+      return;
+    }
+    _lastReported = laidOut;
+    // Defer so setState from the listener is not during layout.
+    final callback = onSize;
+    final reported = laidOut;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      callback(reported);
+    });
+  }
+}

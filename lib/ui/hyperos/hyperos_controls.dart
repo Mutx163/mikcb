@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_radius.dart';
 import 'hyperos_text_field.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
@@ -87,13 +88,13 @@ class HyperosControlCard extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: Material(
-        color: HyperosColors.card(context),
-        shape: useStrip ? HyperosTheme.stripShape() : HyperosTheme.cardShape(),
-        clipBehavior: Clip.antiAlias,
+      child: HyperosAdaptiveCard(
         child: HyperosControlCardScope(
           hasHeader: hasHeader,
-          bodyBottomInset: useStrip
+          // Edge-to-edge bodies already use first/last row padding (same as
+          // [HyperosListGroup]). An extra bodyBottomInset under a lone select
+          // row leaves a dead band and makes the label look top-heavy.
+          bodyBottomInset: useStrip || edgeToEdge
               ? 0
               : HyperosControlCardScope.defaultBodyBottomInset,
           cornerRadius: HyperosTokens.cardRadius,
@@ -836,9 +837,15 @@ class HyperosButton extends StatelessWidget {
           )
         : Text(label, style: labelStyle);
 
+    final minHeight = dense ? 36.0 : HyperosMiuixButton.minHeight;
+    final cornerRadius = HyperosRadius.clampCornerRadius(
+      HyperosMiuixButton.cornerRadius,
+      minHeight,
+    );
+
     final button = Material(
       color: enabled ? bg : disabledBg,
-      borderRadius: BorderRadius.circular(HyperosMiuixButton.cornerRadius),
+      borderRadius: BorderRadius.circular(cornerRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: enabled
@@ -850,7 +857,7 @@ class HyperosButton extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minWidth: dense ? 0 : HyperosMiuixButton.minWidth,
-            minHeight: dense ? 36 : HyperosMiuixButton.minHeight,
+            minHeight: minHeight,
           ),
           child: Padding(
             padding: dense

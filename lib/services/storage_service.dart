@@ -63,10 +63,12 @@ class StorageService {
   void resetForTesting() {
     _initFuture = null;
     _prefs = null;
+    _ensuredForPrefs = null;
     _profilesListCache = null;
     _timeSchemesListCache = null;
     _profilesEnsured = false;
     _timeSchemesEnsured = false;
+    _hidePrefixMigrated = false;
     _coursesWriteChain = Future<void>.value();
     _profilesWriteChain = Future<void>.value();
   }

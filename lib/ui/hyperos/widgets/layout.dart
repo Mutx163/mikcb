@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../hyperos_theme.dart';
 import '../hyperos_tokens.dart';
+import 'adaptive_card.dart';
 
 class HyperosInsetDivider extends StatelessWidget {
   const HyperosInsetDivider({super.key, required this.indent});
@@ -58,8 +59,9 @@ class HyperosControlCardScope extends InheritedWidget {
 
   static const defaultHorizontalPadding = 16.0;
 
-  /// Extra bottom inset absorbed by the last full-bleed row (replaces outer card
-  /// padding so press highlight can reach the card's rounded bottom edge).
+  /// Extra bottom inset for non-edge-to-edge cards (inset content under a
+  /// header). Edge-to-edge preference rows use first/last row padding only —
+  /// do not add this under a lone select row or the label looks top-heavy.
   static const defaultBodyBottomInset = 12.0;
 
   /// Whether [HyperosControlCard] rendered a title/subtitle block above [child].
@@ -153,6 +155,7 @@ EdgeInsets hyperosChevronRowPadding(BuildContext context) {
 
 /// Fixed-height row shell shared by settings list tiles (56dp single-line default).
 Widget hyperosListRowShell({
+  Key? key,
   required EdgeInsetsGeometry padding,
   required Widget child,
   double? minHeight,
@@ -163,14 +166,18 @@ Widget hyperosListRowShell({
   // (e.g. HyperosPageRoute shared-axis transition) without bottom overflow.
   if (minHeight != null && minHeight > HyperosTokens.listRowMinHeight) {
     return ConstrainedBox(
+      key: key,
       constraints: BoxConstraints(minHeight: targetHeight),
       child: padded,
     );
   }
-  return SizedBox(height: targetHeight, child: padded);
+  return SizedBox(key: key, height: targetHeight, child: padded);
 }
 
 /// White rounded card grouping list rows.
+///
+/// Corner radius adapts to content height so a single action row (e.g. cloud
+/// disconnect) does not look like a stadium capsule.
 class HyperosListGroup extends StatelessWidget {
   const HyperosListGroup({super.key, required this.children});
 
@@ -180,10 +187,7 @@ class HyperosListGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: Material(
-        color: HyperosColors.card(context),
-        shape: HyperosTheme.cardShape(),
-        clipBehavior: Clip.antiAlias,
+      child: HyperosAdaptiveCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
