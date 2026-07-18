@@ -189,22 +189,28 @@ class HyperosRouteBlurGate with RouteAware {
     cancelBlurSettle();
     final generation = _blurSettleGeneration;
     _blurSettlePending = true;
-    void afterFrames(int remaining) {
+
+    // Count down post-frame hops. Always scheduleFrame so the chain still
+    // flushes under WidgetTester (nested post-frame callbacks do not run on
+    // the next pump unless a frame is explicitly scheduled).
+    var remaining = blurSettleFrameCount;
+    void step(Duration _) {
       if (!isMounted() ||
           generation != _blurSettleGeneration ||
           isRouteTransitioning) {
         return;
       }
+      remaining -= 1;
       if (remaining <= 0) {
         markBlurSettled(source: 'frames');
         return;
       }
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        afterFrames(remaining - 1);
-      });
+      SchedulerBinding.instance.addPostFrameCallback(step);
+      SchedulerBinding.instance.scheduleFrame();
     }
 
-    afterFrames(blurSettleFrameCount);
+    SchedulerBinding.instance.addPostFrameCallback(step);
+    SchedulerBinding.instance.scheduleFrame();
   }
 
   void tryEnableBlurOnUserScroll() {
@@ -221,14 +227,16 @@ class HyperosRouteBlurGate with RouteAware {
 
     if (transitioning) {
       cancelBlurSettle();
-      if (blurSettled && isMounted()) {
+      // Only notify when the settled flag actually flips. Animation listeners
+      // fire every frame; re-notifying while already unset rebuilds the whole
+      // page (and any dynamic headerExtension) for no visual change.
+      if (blurSettled) {
         blurSettled = false;
-        onChanged();
+        if (isMounted()) {
+          onChanged();
+        }
       } else {
         blurSettled = false;
-      }
-      if (isCurrent && isMounted()) {
-        onChanged();
       }
       return;
     }
@@ -240,11 +248,10 @@ class HyperosRouteBlurGate with RouteAware {
       return;
     }
 
+    // Transition just ended (or first attach): schedule settle frames. Do not
+    // call onChanged here while already settled — that only causes flicker.
     if (!blurSettled) {
       scheduleBlurSettle();
-    }
-    if (isMounted()) {
-      onChanged();
     }
   }
 

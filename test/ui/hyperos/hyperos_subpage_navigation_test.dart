@@ -545,11 +545,140 @@ void main() {
     );
     expect(
       scope.contentTopInset,
-      greaterThan(HyperosBlurredHeader.contentTopInset(
-        tester.element(find.byType(HyperosSubpage)),
-      )),
+      greaterThan(
+        HyperosBlurredHeader.contentTopInset(
+          tester.element(find.byType(HyperosSubpage)),
+        ),
+      ),
     );
   });
+
+  testWidgets(
+    'rebuilding headerExtension with new instances keeps contentTopInset stable',
+    (WidgetTester tester) async {
+      var rebuildToken = 0;
+
+      await tester.pumpWidget(
+        TestApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return HyperosSubpage(
+                onBack: () {},
+                title: Text('Guide $rebuildToken'),
+                // Fresh widget identity each rebuild (matches UserGuideScreen).
+                headerExtension: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('1 / 4 token=$rebuildToken'),
+                      const SizedBox(height: 8),
+                      const LinearProgressIndicator(value: 0.25),
+                    ],
+                  ),
+                ),
+                child: HyperosBlurredBodyInset(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: PageView(
+                          children: const [
+                            Center(child: Text('page-a')),
+                            Center(child: Text('page-b')),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() => rebuildToken++);
+                        },
+                        child: const Text('bump'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await pumpBlurSettleFrames(tester);
+      await tester.pumpAndSettle();
+
+      double insetOf() {
+        return tester
+            .widget<HyperosBlurredHeaderScope>(
+              find.byType(HyperosBlurredHeaderScope),
+            )
+            .contentTopInset;
+      }
+
+      final baselineInset = insetOf();
+      expect(baselineInset, greaterThan(0));
+
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(find.text('bump'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(
+          insetOf(),
+          closeTo(baselineInset, 0.5),
+          reason: 'contentTopInset must not jump after rebuild #$i',
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'horizontal PageView scroll does not flip contentUnderHeader frost',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosSubpage(
+            onBack: () {},
+            title: const Text('Guide'),
+            headerExtension: const HyperosBlurredHeaderExtension(
+              child: SizedBox(height: 40, child: Text('progress')),
+            ),
+            child: HyperosBlurredBodyInset(
+              child: PageView(
+                children: List.generate(
+                  3,
+                  (index) => ListView(
+                    children: [
+                      for (var row = 0; row < 8; row++)
+                        ListTile(title: Text('page-$index-row-$row')),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await pumpBlurSettleFrames(tester);
+      await tester.pumpAndSettle();
+
+      HyperosBlurredHeaderScope scope() {
+        return tester.widget<HyperosBlurredHeaderScope>(
+          find.byType(HyperosBlurredHeaderScope),
+        );
+      }
+
+      expect(scope().contentUnderHeader, isFalse);
+
+      await tester.drag(find.byType(PageView), const Offset(-320, 0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        scope().contentUnderHeader,
+        isFalse,
+        reason: 'horizontal page offset must not frost the header',
+      );
+    },
+  );
 }
 
 class _AppearanceStub extends StatelessWidget {

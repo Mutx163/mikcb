@@ -167,8 +167,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       if (!mounted) {
         return;
       }
+      // setState is safe in idle and post-frame phases. Defer only while the
+      // pipeline is mid build/layout/paint. Always scheduleFrame when deferring
+      // so nested post-frame work still flushes under WidgetTester (and after
+      // route animation status flips without an extra vsync tick).
       final phase = SchedulerBinding.instance.schedulerPhase;
-      if (phase == SchedulerPhase.idle) {
+      if (phase == SchedulerPhase.idle ||
+          phase == SchedulerPhase.postFrameCallbacks) {
         setState(() {});
         return;
       }
@@ -178,6 +183,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         }
         setState(() {});
       });
+      SchedulerBinding.instance.scheduleFrame();
     }
 
     _routeBlurGate = HyperosRouteBlurGate(
@@ -216,8 +222,17 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   @override
   void didUpdateWidget(covariant _HyperosBlurredPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.headerExtension != widget.headerExtension) {
+    // Only presence (null ↔ non-null) should clear the measured height.
+    // Callers often pass a freshly built [headerExtension] each frame; treating
+    // widget identity changes as "structure changed" zeros the inset and causes
+    // a measure → setState → rebuild flicker loop (e.g. UserGuide progress bar).
+    final hadExtension = oldWidget.headerExtension != null;
+    final hasExtension = widget.headerExtension != null;
+    if (hadExtension != hasExtension) {
       _overlayMetrics.resetMeasuredHeight();
+      _overlayMetrics.requestOverlayHeaderMeasure();
+    } else if (hasExtension) {
+      // Content may have resized; remeasure without zeroing to avoid inset jumps.
       _overlayMetrics.requestOverlayHeaderMeasure();
     }
   }
@@ -237,6 +252,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     if (notification is ScrollStartNotification ||
         notification is ScrollUpdateNotification ||
         notification is ScrollEndNotification) {
+      // PageView / horizontal carousels also bubble ScrollNotifications. Their
+      // pixels are page offsets, not vertical under-header scroll, and must not
+      // toggle frosted-header state.
+      if (notification.metrics.axis != Axis.vertical) {
+        return false;
+      }
       _headerFrost.noteScrollContext(
         notification.context,
         notification.metrics.axis,
