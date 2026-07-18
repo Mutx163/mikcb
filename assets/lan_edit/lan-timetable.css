@@ -1958,6 +1958,20 @@ input[type="checkbox"] {
   margin-bottom: 0.75rem;
 }
 
+.slot-card-focused {
+  border-color: hsl(var(--primary) / 0.55);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--primary) / 0.08) 0%,
+    hsl(var(--muted) / 0.35) 48%
+  );
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12), var(--shadow-sm);
+}
+
+.slot-card-focused .slot-card-title {
+  color: hsl(var(--primary));
+}
+
 .slot-card-header {
   display: flex;
   align-items: center;
@@ -1965,7 +1979,8 @@ input[type="checkbox"] {
   margin-bottom: 0.75rem;
 }
 
-.slot-card-header h4 {
+.slot-card-header h4,
+.slot-card-title {
   margin: 0;
   font-size: 0.875rem;
   font-weight: 600;

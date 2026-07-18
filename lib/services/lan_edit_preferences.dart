@@ -19,6 +19,9 @@ class LanEditPreferences {
   static bool get keepAliveWhenLeavingCached =>
       _cachedKeepAliveWhenLeaving ?? defaultKeepAliveWhenLeaving;
 
+  /// `null` until [keepAliveWhenLeaving] or [setKeepAliveWhenLeaving] runs.
+  static bool? get keepAliveWhenLeavingOrNull => _cachedKeepAliveWhenLeaving;
+
   static Future<bool> keepAliveWhenLeaving() async {
     if (_cachedKeepAliveWhenLeaving != null) {
       return _cachedKeepAliveWhenLeaving!;

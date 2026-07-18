@@ -25,13 +25,31 @@ class LanEditServerService {
   LanEditSession? _session;
   LanEditHost? _host;
   Timer? _idleTimer;
-  LanEditServerStoppedCallback? onStopped;
+  final List<LanEditServerStoppedCallback> _stoppedListeners =
+      <LanEditServerStoppedCallback>[];
+
+  /// When true, [LanEditScreen] dispose must not stop this server.
+  ///
+  /// Updated from the keep-alive switch / prefs so leave-page decisions do not
+  /// race against an unfinished SharedPreferences load.
+  bool retainAfterLeave = false;
 
   bool get isRunning => _server != null;
 
   int? get port => _server?.port;
 
   LanEditSession? get session => _session;
+
+  /// Registers a listener for [stop]. Safe to call repeatedly; duplicates ignored.
+  void addStoppedListener(LanEditServerStoppedCallback listener) {
+    if (!_stoppedListeners.contains(listener)) {
+      _stoppedListeners.add(listener);
+    }
+  }
+
+  void removeStoppedListener(LanEditServerStoppedCallback listener) {
+    _stoppedListeners.remove(listener);
+  }
 
   Future<void> start({
     required LanEditHost host,
@@ -43,7 +61,18 @@ class LanEditServerService {
     _host = host;
     _session = session;
     _server = await HttpServer.bind(InternetAddress.anyIPv4, 0);
-    _server!.listen(_onRequest, onError: (_) => stop(), onDone: stop);
+    _server!.listen(
+      _onRequest,
+      onError: (_) {
+        unawaited(stop(reason: 'server_error'));
+      },
+      onDone: () {
+        // [stop] already nulls [_server] before close; ignore the close echo.
+        if (_server != null) {
+          unawaited(stop(reason: 'server_done'));
+        }
+      },
+    );
     _idleTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_session?.isExpired ?? true) {
         unawaited(stop(reason: 'idle_timeout'));
@@ -73,17 +102,31 @@ class LanEditServerService {
     _session = null;
     _host = null;
     if (server != null) {
-      await server.close(force: true);
+      try {
+        await server.close(force: true);
+      } catch (_) {
+        // Server may already be closed.
+      }
     }
+    // Always dismiss the Android notification so UI / status bar stay in sync.
+    await LanEditForegroundBridge.stop();
     if (wasRunning) {
-      unawaited(LanEditForegroundBridge.stop());
       lanEditAuditInfo(
         'lan_edit_session_stopped',
         AppLogMessages.lanEditSessionStopped,
         extras: {'reason': reason, 'port': ?port},
       );
+      final listeners = List<LanEditServerStoppedCallback>.from(
+        _stoppedListeners,
+      );
+      for (final listener in listeners) {
+        try {
+          listener();
+        } catch (_) {
+          // UI listeners must not break teardown.
+        }
+      }
     }
-    onStopped?.call();
   }
 
   Future<void> _onRequest(HttpRequest request) async {

@@ -453,7 +453,9 @@ function renderDashboard() {
         syncTabsUI();
         const groups = getCourseGroups(state.courses);
         const group = groups.find(g => g.name === course.name);
-        if (group) openEditor(group);
+        if (group) {
+          openEditor(group, course.dayOfWeek, course.startSection, course.id);
+        }
       });
       todayCourseList.appendChild(item);
     });
@@ -507,7 +509,9 @@ function buildCourseBlock(course) {
     event.stopPropagation();
     const groups = getCourseGroups(state.courses);
     const group = groups.find(g => g.name === course.name);
-    if (group) openEditor(group);
+    if (group) {
+      openEditor(group, course.dayOfWeek, course.startSection, course.id);
+    }
   });
   return block;
 }
@@ -878,16 +882,21 @@ function handleSelectedFile(file) {
 }
 
 // 动态时间段表单项生成
-function addSlotField(data = {}) {
+function addSlotField(data = {}, options = {}) {
   const slotId = `slot-${slotCounter++}`;
   const card = document.createElement('div');
-  card.className = 'slot-card';
+  card.className = options.focused ? 'slot-card slot-card-focused' : 'slot-card';
   card.id = slotId;
   card.dataset.id = data.id || ''; // 保存的原课程 ID (如果有)
+  if (data.id) {
+    card.dataset.courseId = data.id;
+  }
+
+  const slotTitle = options.focused ? '时间段 · 当前点击' : '时间段';
 
   card.innerHTML = `
     <div class="slot-card-header">
-      <h4>时间段</h4>
+      <h4 class="slot-card-title">${slotTitle}</h4>
       <button type="button" class="btn-remove-slot" title="删除此时间段">&times; 删除</button>
     </div>
     <div class="form-grid">
@@ -1127,7 +1136,8 @@ function fillColorSwatches(selectedColor) {
 }
 
 // 课程表单编辑 Modal (按组聚合打开)
-function openEditor(courseGroup, defaultDay, defaultSection) {
+// focusCourseId / defaultDay / defaultSection：从课表网格点进时，把对应时间段排到第一并高亮
+function openEditor(courseGroup, defaultDay, defaultSection, focusCourseId) {
   scheduleSlotsContainer.innerHTML = '';
   
   if (courseGroup) {
@@ -1139,10 +1149,27 @@ function openEditor(courseGroup, defaultDay, defaultSection) {
     courseForm.note.value = courseGroup.note || '';
     fillColorSwatches(courseGroup.color);
 
-    // 载入所有的上课时间段
-    courseGroup.courses.forEach(c => {
-      addSlotField(c);
+    const orderedSlots = orderSlotsForFocus(
+      courseGroup.courses,
+      focusCourseId,
+      defaultDay,
+      defaultSection,
+    );
+    const focusKey = resolveFocusSlotKey(orderedSlots, focusCourseId, defaultDay, defaultSection);
+
+    orderedSlots.forEach((courseSlot) => {
+      const isFocused = focusKey != null && slotMatchesFocus(courseSlot, focusKey);
+      addSlotField(courseSlot, { focused: isFocused });
     });
+
+    // 若未匹配到任何时段（异常数据），仍保证至少有一张卡
+    if (orderedSlots.length === 0) {
+      addSlotField({
+        dayOfWeek: defaultDay || 1,
+        startSection: defaultSection || 1,
+        endSection: defaultSection || 2,
+      }, { focused: true });
+    }
 
     show(deleteCourseBtn);
     show(duplicateCourseBtn);
@@ -1155,12 +1182,12 @@ function openEditor(courseGroup, defaultDay, defaultSection) {
     courseForm.note.value = '';
     fillColorSwatches(state.meta?.presetColors?.[0] || '#2196F3');
 
-    // 默认提供一个上课时间段项
+    // 默认提供一个上课时间段项（空格点击时带上星期/节次）
     addSlotField({
       dayOfWeek: defaultDay || 1,
       startSection: defaultSection || 1,
       endSection: defaultSection || 2,
-    });
+    }, { focused: true });
 
     hide(deleteCourseBtn);
     hide(duplicateCourseBtn);
@@ -1168,7 +1195,80 @@ function openEditor(courseGroup, defaultDay, defaultSection) {
   
   setError(formError, '');
   showCourseModal();
-  courseForm.name.focus();
+  focusPrimaryEditorField();
+}
+
+/** Put the clicked timetable slot first (same UX as phone course editor). */
+function orderSlotsForFocus(courses, focusCourseId, defaultDay, defaultSection) {
+  const list = Array.isArray(courses) ? [...courses] : [];
+  const focusKey = resolveFocusSlotKey(list, focusCourseId, defaultDay, defaultSection);
+  if (!focusKey) {
+    return list.sort(compareSlotsByDayAndSection);
+  }
+  return list.sort((left, right) => {
+    const leftFocused = slotMatchesFocus(left, focusKey);
+    const rightFocused = slotMatchesFocus(right, focusKey);
+    if (leftFocused && !rightFocused) return -1;
+    if (!leftFocused && rightFocused) return 1;
+    return compareSlotsByDayAndSection(left, right);
+  });
+}
+
+function resolveFocusSlotKey(courses, focusCourseId, defaultDay, defaultSection) {
+  if (focusCourseId) {
+    const byId = courses.find((course) => course.id === focusCourseId);
+    if (byId) {
+      return { type: 'id', courseId: focusCourseId };
+    }
+  }
+  if (defaultDay != null && defaultSection != null) {
+    return {
+      type: 'daySection',
+      dayOfWeek: Number(defaultDay),
+      section: Number(defaultSection),
+    };
+  }
+  return null;
+}
+
+function slotMatchesFocus(course, focusKey) {
+  if (!course || !focusKey) return false;
+  if (focusKey.type === 'id') {
+    return course.id === focusKey.courseId;
+  }
+  if (focusKey.type === 'daySection') {
+    const day = Number(course.dayOfWeek);
+    const start = Number(course.startSection);
+    const end = Number(course.endSection || course.startSection);
+    return (
+      day === focusKey.dayOfWeek &&
+      start <= focusKey.section &&
+      end >= focusKey.section
+    );
+  }
+  return false;
+}
+
+function compareSlotsByDayAndSection(left, right) {
+  const dayDelta = Number(left.dayOfWeek || 0) - Number(right.dayOfWeek || 0);
+  if (dayDelta !== 0) return dayDelta;
+  return Number(left.startSection || 0) - Number(right.startSection || 0);
+}
+
+function focusPrimaryEditorField() {
+  // Prefer the focused slot (clicked cell); fall back to course name.
+  const focusedSlot = scheduleSlotsContainer?.querySelector('.slot-card-focused');
+  if (focusedSlot) {
+    requestAnimationFrame(() => {
+      focusedSlot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const daySelect = focusedSlot.querySelector('.field-slot-day');
+      if (daySelect && typeof daySelect.focus === 'function') {
+        daySelect.focus({ preventScroll: true });
+      }
+    });
+    return;
+  }
+  courseForm?.name?.focus?.();
 }
 
 function closeEditor() {
