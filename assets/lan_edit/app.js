@@ -210,10 +210,33 @@ async function api(path, options = {}) {
   if (state.token) {
     headers.Authorization = `Bearer ${state.token}`;
   }
-  if (options.body && !headers['Content-Type']) {
+  const profileId = state.session?.profileId || state.meta?.profileId || '';
+  if (profileId) {
+    headers['X-Profile-Id'] = profileId;
+  }
+  let body = options.body;
+  const method = (options.method || 'GET').toUpperCase();
+  if (
+    profileId &&
+    body &&
+    typeof body === 'string' &&
+    method !== 'GET' &&
+    method !== 'HEAD'
+  ) {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.profileId) {
+        parsed.profileId = profileId;
+        body = JSON.stringify(parsed);
+      }
+    } catch (_) {
+      // Non-JSON body (e.g. raw backup import) — header carries profileId.
+    }
+  }
+  if (body && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-  const response = await fetch(path, { ...options, headers });
+  const response = await fetch(path, { ...options, headers, body });
   const text = await response.text();
   let data = {};
   if (text) {
@@ -225,6 +248,9 @@ async function api(path, options = {}) {
   }
   if (!response.ok) {
     const code = response.status;
+    if (code === 409 && data.error === 'profile_mismatch') {
+      throw new Error(data.message || '课表已切换，请刷新后重试');
+    }
     if (code === 502 || code === 504) {
       throw new Error(t('connectionError', code));
     }

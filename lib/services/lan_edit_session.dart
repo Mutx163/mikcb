@@ -15,6 +15,9 @@ class LanEditSession {
   final DateTime createdAt;
   DateTime lastActivityAt;
 
+  /// Profile id the LAN client is editing; required for write authorization.
+  String? boundProfileId;
+
   final Map<String, _PinAttemptState> _pinAttempts = {};
   final Set<String> _connectedClientIps = {};
 
@@ -23,6 +26,7 @@ class LanEditSession {
     required this.token,
     required this.createdAt,
     required this.lastActivityAt,
+    this.boundProfileId,
   });
 
   factory LanEditSession.create({Random? random}) {
@@ -43,12 +47,14 @@ class LanEditSession {
     required String token,
     required DateTime createdAt,
     required DateTime lastActivityAt,
+    String? boundProfileId,
   }) {
     return LanEditSession._(
       pin: pin,
       token: token,
       createdAt: createdAt,
       lastActivityAt: lastActivityAt,
+      boundProfileId: boundProfileId,
     );
   }
 

@@ -47,6 +47,7 @@ class LanEditApiHandlers {
 
       if (path == '/api/v1/session' && request.method == 'GET') {
         await host.ensureInitialized();
+        session.boundProfileId ??= host.activeProfileId;
         await _writeJson(request, 200, {
           'profileId': host.activeProfileId,
           'profileName': host.activeProfileName,
@@ -208,6 +209,9 @@ class LanEditApiHandlers {
     try {
       await host.ensureInitialized();
       final body = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: body)) {
+        return;
+      }
       final context = _courseContext();
       final draft = LanEditProviderHost.courseFromApiJson(
         body,
@@ -261,6 +265,9 @@ class LanEditApiHandlers {
         return;
       }
       final patch = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: patch)) {
+        return;
+      }
       final context = _courseContext();
       final updated = LanEditProviderHost.mergeCoursePatch(
         existing,
@@ -299,6 +306,9 @@ class LanEditApiHandlers {
   Future<void> _handleDeleteCourse(HttpRequest request, String courseId) async {
     try {
       await host.ensureInitialized();
+      if (!await _ensureWriteProfileTarget(request)) {
+        return;
+      }
       final existing = host.findCourse(courseId);
       if (existing == null) {
         await _writeError(request, 404, 'not_found', 'Course not found');
@@ -327,6 +337,9 @@ class LanEditApiHandlers {
     try {
       await host.ensureInitialized();
       final body = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: body)) {
+        return;
+      }
       final originalName = body['originalName']?.toString();
       final rawSlots = body['slots'];
       if (rawSlots is! List || rawSlots.isEmpty) {
@@ -411,6 +424,9 @@ class LanEditApiHandlers {
 
   Future<void> _handleImportProfile(HttpRequest request) async {
     await host.ensureInitialized();
+    if (!await _ensureWriteProfileTarget(request)) {
+      return;
+    }
     final body = await _readBody(request);
     await host.importProfileBackupJson(body);
     await _writeJson(request, 200, {'imported': true});
@@ -419,6 +435,9 @@ class LanEditApiHandlers {
   Future<void> _handleMergeImport(HttpRequest request) async {
     try {
       await host.ensureInitialized();
+      if (!await _ensureWriteProfileTarget(request)) {
+        return;
+      }
       final body = await _readBody(request);
       if (body.trim().isEmpty) {
         await _writeError(
@@ -445,6 +464,9 @@ class LanEditApiHandlers {
     try {
       await host.ensureInitialized();
       final body = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: body)) {
+        return;
+      }
       final rawIds = body['ids'];
       if (rawIds is! List || rawIds.isEmpty) {
         await _writeError(request, 400, 'invalid_request', 'ids 不能为空');
@@ -472,6 +494,9 @@ class LanEditApiHandlers {
     try {
       await host.ensureInitialized();
       final body = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: body)) {
+        return;
+      }
       final week = (body['currentWeek'] as num?)?.toInt();
       if (week == null || week < 1) {
         await _writeError(request, 400, 'invalid_request', 'currentWeek 无效');
@@ -508,6 +533,7 @@ class LanEditApiHandlers {
         return;
       }
       await host.switchProfile(profileId);
+      session.boundProfileId = host.activeProfileId;
       lanEditAuditInfo(
         'lan_edit_profile_switched',
         AppLogMessages.lanEditProfileSwitched,
@@ -542,6 +568,9 @@ class LanEditApiHandlers {
     try {
       await host.ensureInitialized();
       final body = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: body)) {
+        return;
+      }
       final fileName = body['fileName']?.toString() ?? 'import.csv';
       final encoded = body['contentBase64']?.toString() ?? '';
       if (encoded.trim().isEmpty) {
@@ -648,6 +677,64 @@ class LanEditApiHandlers {
       await _writeError(request, 401, 'unauthorized', 'Unauthorized');
       return false;
     }
+    return true;
+  }
+
+  /// Ensures write targets the session-bound / request profile and current active.
+  ///
+  /// Returns false after writing 400/409 when the write must be rejected.
+  Future<bool> _ensureWriteProfileTarget(
+    HttpRequest request, {
+    Map<String, dynamic>? body,
+  }) async {
+    await host.ensureInitialized();
+    session.boundProfileId ??= host.activeProfileId;
+
+    final fromBody = body?['profileId']?.toString().trim();
+    final fromQuery = request.uri.queryParameters['profileId']?.trim();
+    final fromHeader = request.headers.value('x-profile-id')?.trim();
+    final requested = (fromBody != null && fromBody.isNotEmpty)
+        ? fromBody
+        : (fromQuery != null && fromQuery.isNotEmpty)
+        ? fromQuery
+        : (fromHeader != null && fromHeader.isNotEmpty)
+        ? fromHeader
+        : session.boundProfileId?.trim();
+
+    if (requested == null || requested.isEmpty) {
+      await _writeError(
+        request,
+        400,
+        'profile_id_required',
+        'profileId is required for write operations',
+      );
+      return false;
+    }
+
+    final bound = session.boundProfileId?.trim();
+    if (bound != null && bound.isNotEmpty && bound != requested) {
+      await _writeError(
+        request,
+        400,
+        'profile_id_mismatch',
+        'profileId does not match session-bound profile',
+      );
+      return false;
+    }
+
+    final active = host.activeProfileId;
+    if (active != null && active != requested) {
+      await _writeJson(request, 409, {
+        'error': 'profile_mismatch',
+        'message': 'Active profile changed; refresh or switch profile',
+        'activeProfileId': active,
+        'requestedProfileId': requested,
+        'boundProfileId': bound,
+      });
+      return false;
+    }
+
+    session.boundProfileId = requested;
     return true;
   }
 
