@@ -292,39 +292,41 @@ class AppSyncSnapshotService {
   Future<String?> applySnapshot({
     required TimetableProvider provider,
     required AppSyncSnapshot snapshot,
-  }) async {
-    if (snapshot.profiles.isEmpty) {
-      return 'sync_snapshot_no_profiles';
-    }
+  }) {
+    return provider.runMutationExclusive(() async {
+      if (snapshot.profiles.isEmpty) {
+        return 'sync_snapshot_no_profiles';
+      }
 
-    final fullBackupJson = _dataTransferService.buildFullBackupJson(
-      profiles: snapshot.profiles,
-      activeProfileId: snapshot.activeProfileId,
-      timeSchemes: snapshot.timeSchemes,
-    );
-    final timetableError = await provider.importFullAppDataBackup(
-      fullBackupJson,
-    );
-    if (timetableError != null) {
-      return timetableError;
-    }
-
-    await _storageService.saveTeacherRecords(snapshot.teacherRecords);
-    await _storageService.saveLocationRecords(snapshot.locationRecords);
-    await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
-    await _warehouseMacroService.importAllMacros(snapshot.macros);
-    await _holidayService.saveCustomHolidays(snapshot.customHolidays);
-
-    if (snapshot.includesPartnerTimetableBinding) {
-      await _storageService.savePartnerTimetableBinding(
-        snapshot.partnerTimetableBinding,
+      final fullBackupJson = _dataTransferService.buildFullBackupJson(
+        profiles: snapshot.profiles,
+        activeProfileId: snapshot.activeProfileId,
+        timeSchemes: snapshot.timeSchemes,
       );
-    }
+      final timetableError = await provider.importFullAppDataBackup(
+        fullBackupJson,
+      );
+      if (timetableError != null) {
+        return timetableError;
+      }
 
-    // Force full in-memory reload: initialize() is process-idempotent and
-    // would skip partner/teachers/locations after the first start (C4).
-    await provider.reloadFromStorageAfterExternalApply();
-    return null;
+      await _storageService.saveTeacherRecords(snapshot.teacherRecords);
+      await _storageService.saveLocationRecords(snapshot.locationRecords);
+      await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
+      await _warehouseMacroService.importAllMacros(snapshot.macros);
+      await _holidayService.saveCustomHolidays(snapshot.customHolidays);
+
+      if (snapshot.includesPartnerTimetableBinding) {
+        await _storageService.savePartnerTimetableBinding(
+          snapshot.partnerTimetableBinding,
+        );
+      }
+
+      // Force full in-memory reload: initialize() is process-idempotent and
+      // would skip partner/teachers/locations after the first start (C4).
+      await provider.reloadFromStorageAfterExternalApply();
+      return null;
+    });
   }
 
   Future<String?> applySnapshotJson({
@@ -438,6 +440,42 @@ SyncConflictChoice resolveSyncConflictForBackground(SyncConflictInfo info) {
     return SyncConflictChoice.keepRemote;
   }
   return automatic;
+}
+
+/// Whether auto-upload may PUT over the current remote snapshot.
+///
+/// Auto path must never silently overwrite a remote that drifted away from
+/// our last known baseline (last applied / last uploaded hash).
+enum WebdavAutoUploadDecision {
+  /// Remote missing or still our baseline — PUT allowed.
+  allow,
+
+  /// Remote content already matches local — skip upload.
+  upToDate,
+
+  /// Remote changed by another client — do not PUT.
+  remoteDrifted,
+}
+
+WebdavAutoUploadDecision decideWebdavAutoUpload({
+  required String? remoteContentSha256,
+  required String? lastAppliedRemoteHash,
+  required String? lastUploadedLocalHash,
+  required String localContentSha256,
+}) {
+  final remoteHash = remoteContentSha256?.trim();
+  if (remoteHash == null || remoteHash.isEmpty) {
+    return WebdavAutoUploadDecision.allow;
+  }
+  if (remoteHash == localContentSha256) {
+    return WebdavAutoUploadDecision.upToDate;
+  }
+  final matchesBaseline = remoteHash == lastAppliedRemoteHash ||
+      remoteHash == lastUploadedLocalHash;
+  if (matchesBaseline) {
+    return WebdavAutoUploadDecision.allow;
+  }
+  return WebdavAutoUploadDecision.remoteDrifted;
 }
 
 bool webdavPullHasSyncConflict({

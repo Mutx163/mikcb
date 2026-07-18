@@ -1306,7 +1306,7 @@ void main() {
   });
 
   test(
-    'import parsed courses updates current timetable by replacement while keeping local metadata',
+    'import parsed courses updates matching same-day course while keeping local metadata',
     () async {
       final provider = TimetableProvider(
         autoInitialize: false,
@@ -1321,7 +1321,7 @@ void main() {
           shortName: '高数',
           teacher: '张老师',
           location: 'A101',
-          dayOfWeek: 1,
+          dayOfWeek: 3,
           startSection: 1,
           endSection: 2,
           startTime: '08:00',

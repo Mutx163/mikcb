@@ -51,10 +51,8 @@ class PartnerTimetableService {
 
     final backup = _dataTransferService.parseBackupJson(content);
     final now = DateTime.now();
-    final profiles = await _storageService.getProfiles();
     final existingBinding = await _storageService.getPartnerTimetableBinding();
-    final isUpdate = existingBinding != null &&
-        profiles.any((profile) => profile.id == partnerProfileId);
+    final contentHash = computeContentHash(content);
 
     final displayName = partnerName?.trim().isNotEmpty == true
         ? partnerName!.trim()
@@ -62,35 +60,43 @@ class PartnerTimetableService {
         ? backup.profileName!.trim()
         : 'TA的课表';
 
-    final partnerProfile = TimetableProfile(
-      id: partnerProfileId,
-      name: displayName,
-      courses: backup.courses,
-      scheduleItems: const [],
-      exams: const [],
-      settings: backup.settings,
-      currentWeek: backup.currentWeek,
-      createdAt: isUpdate
-          ? profiles
-                .firstWhere((profile) => profile.id == partnerProfileId)
-                .createdAt
-          : now,
-      lastUsedAt: now,
-      profileKind: TimetableProfileKind.partnerImported,
-    );
+    late final bool isUpdate;
+    late final TimetableProfile partnerProfile;
 
-    final nextProfiles = [
-      for (final profile in profiles)
-        if (profile.id != partnerProfileId) profile,
-      partnerProfile,
-    ];
+    await _storageService.updateProfiles((profiles) {
+      isUpdate = existingBinding != null &&
+          profiles.any((profile) => profile.id == partnerProfileId);
+
+      partnerProfile = TimetableProfile(
+        id: partnerProfileId,
+        name: displayName,
+        courses: backup.courses,
+        scheduleItems: const [],
+        exams: const [],
+        settings: backup.settings,
+        currentWeek: backup.currentWeek,
+        createdAt: isUpdate
+            ? profiles
+                  .firstWhere((profile) => profile.id == partnerProfileId)
+                  .createdAt
+            : now,
+        lastUsedAt: now,
+        profileKind: TimetableProfileKind.partnerImported,
+      );
+
+      return [
+        for (final profile in profiles)
+          if (profile.id != partnerProfileId) profile,
+        partnerProfile,
+      ];
+    });
 
     final binding = PartnerTimetableBinding(
       partnerProfileId: partnerProfileId,
       partnerName: displayName,
       linkedAt: existingBinding?.linkedAt ?? now,
       lastImportedAt: now,
-      sourceFileHash: computeContentHash(content),
+      sourceFileHash: contentHash,
       weekOffset: existingBinding?.weekOffset ?? 0,
       mineColorHex: existingBinding?.mineColorHex ??
           CoupleTimetableLogic.mineColorHexDefault,
@@ -100,7 +106,6 @@ class PartnerTimetableService {
           CoupleTimetableLogic.togetherColorHexDefault,
     );
 
-    await _storageService.saveProfiles(nextProfiles);
     await _storageService.savePartnerTimetableBinding(binding);
 
     return PartnerImportResult(
@@ -113,11 +118,11 @@ class PartnerTimetableService {
   }
 
   Future<void> unlink() async {
-    final profiles = await _storageService.getProfiles();
-    final nextProfiles = profiles
-        .where((profile) => profile.id != partnerProfileId)
-        .toList();
-    await _storageService.saveProfiles(nextProfiles);
+    await _storageService.updateProfiles((profiles) {
+      return profiles
+          .where((profile) => profile.id != partnerProfileId)
+          .toList();
+    });
     await _storageService.savePartnerTimetableBinding(null);
   }
 }

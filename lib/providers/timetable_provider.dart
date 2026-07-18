@@ -140,6 +140,9 @@ class TimetableProvider with ChangeNotifier {
 
   /// Serializes native live/home-widget surface updates (island + widget).
   final SyncOperationGate _liveSurfaceGate = SyncOperationGate();
+
+  /// Serializes in-memory timetable mutations (courses/profiles/import/apply).
+  final SyncOperationGate _mutationGate = SyncOperationGate();
   HolidayData? _holidayData;
   List<String> _teacherRecords = [];
   List<String> _locationRecords = [];
@@ -426,35 +429,69 @@ class TimetableProvider with ChangeNotifier {
   /// Re-read profiles/binding/teachers after an external snapshot apply (C4).
   ///
   /// [initialize] is process-idempotent; cloud restore must force a full load.
-  Future<void> reloadFromStorageAfterExternalApply() async {
-    // Join any in-flight init before resetting the future, so two _init()
-    // bodies cannot interleave memory writes.
-    final existingInitialization = _initializationFuture;
-    if (existingInitialization != null) {
-      try {
-        await existingInitialization;
-      } catch (_) {
-        // Previous attempt failed; continue with a forced reload.
+  Future<void> reloadFromStorageAfterExternalApply() {
+    return _runMutation(() async {
+      // Join any in-flight init before resetting the future, so two _init()
+      // bodies cannot interleave memory writes.
+      final existingInitialization = _initializationFuture;
+      if (existingInitialization != null) {
+        try {
+          await existingInitialization;
+        } catch (_) {
+          // Previous attempt failed; continue with a forced reload.
+        }
       }
-    }
-    _initializationFuture = null;
-    await initialize();
-    // Deferred teacher/location load is unawaited in _init; wait here so UI
-    // sees storage-consistent records immediately after restore.
-    await _loadDeferredData();
-    // importFullAppDataBackup may have pushed live surfaces before teachers /
-    // locations were reloaded; force one consistent resync after storage load.
-    await _runLiveSurfaceExclusive(() async {
-      _lastLiveSnapshotSignature = null;
-      _lastHomeWidgetSnapshotSignature = null;
-      _currentLiveCourseId = null;
-      await _liveUpdateActivityBody(this);
+      _initializationFuture = null;
+      await initialize();
+      // Deferred teacher/location load is unawaited in _init; wait here so UI
+      // sees storage-consistent records immediately after restore.
+      await _loadDeferredData();
+      // importFullAppDataBackup may have pushed live surfaces before teachers /
+      // locations were reloaded; force one consistent resync after storage load.
+      await _runLiveSurfaceExclusive(() async {
+        _lastLiveSnapshotSignature = null;
+        _lastHomeWidgetSnapshotSignature = null;
+        _currentLiveCourseId = null;
+        await _liveUpdateActivityBody(this);
+      });
+      notifyListeners();
     });
-    notifyListeners();
   }
 
   Future<T> _runLiveSurfaceExclusive<T>(Future<T> Function() action) {
     return _liveSurfaceGate.runExclusive(action);
+  }
+
+  /// Public entry for external apply paths (WebDAV) that must share the
+  /// timetable mutation gate with local / LAN writes.
+  Future<T> runMutationExclusive<T>(Future<T> Function() action) {
+    return _runMutation(action);
+  }
+
+  Future<T> _runMutation<T>(Future<T> Function() action) {
+    return _mutationGate.runExclusive(action);
+  }
+
+  /// Merges in-memory active courses/settings into [_profiles] without disk I/O.
+  void _mergeActiveProfileIntoProfilesList({bool touchLastUsedAt = false}) {
+    final activeProfile = this.activeProfile;
+    if (activeProfile == null) {
+      return;
+    }
+    final index = _profiles.indexWhere(
+      (profile) => profile.id == activeProfile.id,
+    );
+    if (index == -1) {
+      return;
+    }
+    _profiles[index] = activeProfile.copyWith(
+      courses: List<Course>.from(_courses),
+      scheduleItems: List<ScheduleItem>.from(_scheduleItems),
+      exams: List<Exam>.from(_exams),
+      settings: _settings,
+      currentWeek: _currentWeek,
+      lastUsedAt: touchLastUsedAt ? DateTime.now() : activeProfile.lastUsedAt,
+    );
   }
 
   Future<void> _init() async {
@@ -758,26 +795,10 @@ class TimetableProvider with ChangeNotifier {
     bool touchLastUsedAt = false,
     bool notifySync = true,
   }) async {
-    final activeProfile = this.activeProfile;
+    _mergeActiveProfileIntoProfilesList(touchLastUsedAt: touchLastUsedAt);
     if (activeProfile == null) {
       return;
     }
-
-    final index = _profiles.indexWhere(
-      (profile) => profile.id == activeProfile.id,
-    );
-    if (index == -1) {
-      return;
-    }
-
-    _profiles[index] = activeProfile.copyWith(
-      courses: List<Course>.from(_courses),
-      scheduleItems: List<ScheduleItem>.from(_scheduleItems),
-      exams: List<Exam>.from(_exams),
-      settings: _settings,
-      currentWeek: _currentWeek,
-      lastUsedAt: touchLastUsedAt ? DateTime.now() : activeProfile.lastUsedAt,
-    );
     await _storageService.saveProfiles(_profiles);
     if (_activeProfileId != null) {
       await _storageService.setActiveProfileId(_activeProfileId!);
@@ -968,178 +989,154 @@ class TimetableProvider with ChangeNotifier {
   Future<bool> deleteTimeScheme(String schemeId) =>
       _timetableDeleteTimeScheme(this, schemeId);
 
-  Future<TimetableProfile> createProfile({required String name}) async {
-    await initialize();
-    if (activeProfile != null) {
+  Future<TimetableProfile> createProfile({required String name}) {
+    return _runMutation(() async {
+      await initialize();
+      if (activeProfile != null) {
+        await _persistActiveProfileState();
+      }
+
+      final now = DateTime.now();
+      final profile = TimetableProfile(
+        id: const Uuid().v4(),
+        name: name,
+        courses: const [],
+        settings: _buildDefaultSettingsForNewProfile(),
+        currentWeek: 1,
+        createdAt: now,
+        lastUsedAt: now,
+      );
+
+      _profiles.add(profile);
+      _activeProfileId = profile.id;
+      _applyProfileState(profile);
+      await _persistActiveProfileState(touchLastUsedAt: true);
+      _currentLiveCourseId = null;
+      notifyListeners();
+      await _updateLiveActivity();
+      return activeProfile!;
+    });
+  }
+
+  Future<TimetableProfile?> duplicateActiveProfile({String? name}) {
+    return _runMutation(() async {
+      await initialize();
+      final source = activeProfile;
+      if (source == null) {
+        return null;
+      }
+
       await _persistActiveProfileState();
-    }
-
-    final now = DateTime.now();
-    final profile = TimetableProfile(
-      id: const Uuid().v4(),
-      name: name,
-      courses: const [],
-      settings: _buildDefaultSettingsForNewProfile(),
-      currentWeek: 1,
-      createdAt: now,
-      lastUsedAt: now,
-    );
-
-    _profiles.add(profile);
-    _activeProfileId = profile.id;
-    _applyProfileState(profile);
-    await _persistActiveProfileState(touchLastUsedAt: true);
-    _currentLiveCourseId = null;
-    notifyListeners();
-    await _updateLiveActivity();
-    return activeProfile!;
+      final now = DateTime.now();
+      final profile = source.copyWith(
+        id: const Uuid().v4(),
+        name: name ?? '${source.name} 副本',
+        createdAt: now,
+        lastUsedAt: now,
+      );
+      _profiles.add(profile);
+      _activeProfileId = profile.id;
+      _applyProfileState(profile);
+      await _persistActiveProfileState(touchLastUsedAt: true);
+      _currentLiveCourseId = null;
+      notifyListeners();
+      await _updateLiveActivity();
+      return activeProfile;
+    });
   }
 
-  Future<TimetableProfile?> duplicateActiveProfile({String? name}) async {
-    await initialize();
-    final source = activeProfile;
-    if (source == null) {
-      return null;
-    }
+  Future<void> switchProfile(String profileId) {
+    return _runMutation(() async {
+      await initialize();
+      if (_activeProfileId == profileId) {
+        return;
+      }
+      final targetProfile = _getProfileById(profileId);
+      if (targetProfile == null || targetProfile.isPartnerImported) {
+        return;
+      }
 
-    await _persistActiveProfileState();
-    final now = DateTime.now();
-    final profile = source.copyWith(
-      id: const Uuid().v4(),
-      name: name ?? '${source.name} 副本',
-      createdAt: now,
-      lastUsedAt: now,
-    );
-    _profiles.add(profile);
-    _activeProfileId = profile.id;
-    _applyProfileState(profile);
-    await _persistActiveProfileState(touchLastUsedAt: true);
-    _currentLiveCourseId = null;
-    notifyListeners();
-    await _updateLiveActivity();
-    return activeProfile;
+      await _persistActiveProfileState();
+      _activeProfileId = profileId;
+      _applyProfileState(targetProfile);
+      await _persistActiveProfileState(touchLastUsedAt: true);
+      _currentLiveCourseId = null;
+      _lastLiveSnapshotSignature = null;
+      notifyListeners();
+      await _liveActivitiesService.stopLiveUpdate();
+      _lastLiveActivityStageKey = null;
+      await _syncLiveScheduleSnapshot();
+      await _updateLiveActivity(syncScheduleSnapshot: false);
+    });
   }
 
-  Future<void> switchProfile(String profileId) async {
-    await initialize();
-    if (_activeProfileId == profileId) {
-      return;
-    }
-    final targetProfile = _getProfileById(profileId);
-    if (targetProfile == null || targetProfile.isPartnerImported) {
-      return;
-    }
+  Future<void> renameProfile(String profileId, String name) {
+    return _runMutation(() async {
+      await initialize();
+      // Flush active memory into _profiles before any whole-list save so a
+      // rename cannot persist a stale courses snapshot over concurrent edits.
+      _mergeActiveProfileIntoProfilesList();
+      final index = _profiles.indexWhere((profile) => profile.id == profileId);
+      if (index == -1) {
+        return;
+      }
 
-    await _persistActiveProfileState();
-    _activeProfileId = profileId;
-    _applyProfileState(targetProfile);
-    await _persistActiveProfileState(touchLastUsedAt: true);
-    _currentLiveCourseId = null;
-    _lastLiveSnapshotSignature = null;
-    notifyListeners();
-    await _liveActivitiesService.stopLiveUpdate();
-    _lastLiveActivityStageKey = null;
-    await _syncLiveScheduleSnapshot();
-    await _updateLiveActivity(syncScheduleSnapshot: false);
+      _profiles[index] = _profiles[index].copyWith(name: name.trim());
+      await _storageService.saveProfiles(_profiles);
+      notifyUserDataChangedForSync();
+      notifyListeners();
+    });
   }
 
-  Future<void> renameProfile(String profileId, String name) async {
-    await initialize();
-    final index = _profiles.indexWhere((profile) => profile.id == profileId);
-    if (index == -1) {
-      return;
-    }
-
-    _profiles[index] = _profiles[index].copyWith(name: name.trim());
-    await _storageService.saveProfiles(_profiles);
-    notifyUserDataChangedForSync();
-    notifyListeners();
-  }
-
-  Future<bool> deleteProfile(String profileId) async {
-    await initialize();
-    if (_profiles.length <= 1) {
-      return false;
-    }
-
-    final index = _profiles.indexWhere((profile) => profile.id == profileId);
-    if (index == -1 || _profiles[index].isPartnerImported) {
-      return false;
-    }
-
-    final isActive = _profiles[index].id == _activeProfileId;
-    if (isActive) {
-      final hasNormalFallback = _profiles
-          .where(
-            (profile) => profile.id != profileId && !profile.isPartnerImported,
-          )
-          .isNotEmpty;
-      if (!hasNormalFallback) {
-        // Keep at least one non-partner profile as the working set.
+  Future<bool> deleteProfile(String profileId) {
+    return _runMutation(() async {
+      await initialize();
+      if (_profiles.length <= 1) {
         return false;
       }
-    }
-    _profiles.removeAt(index);
-    if (isActive) {
-      final fallbackProfile = _profiles
-          .where((profile) => !profile.isPartnerImported)
-          .first;
-      _activeProfileId = fallbackProfile.id;
-      _applyProfileState(fallbackProfile);
-      _currentLiveCourseId = null;
-    }
-    await _storageService.saveProfiles(_profiles);
-    if (_activeProfileId != null) {
-      await _storageService.setActiveProfileId(_activeProfileId!);
-    }
-    notifyUserDataChangedForSync();
-    notifyListeners();
-    await _updateLiveActivity();
-    return true;
+
+      final index = _profiles.indexWhere((profile) => profile.id == profileId);
+      if (index == -1 || _profiles[index].isPartnerImported) {
+        return false;
+      }
+
+      final isActive = _profiles[index].id == _activeProfileId;
+      if (isActive) {
+        final hasNormalFallback = _profiles
+            .where(
+              (profile) =>
+                  profile.id != profileId && !profile.isPartnerImported,
+            )
+            .isNotEmpty;
+        if (!hasNormalFallback) {
+          // Keep at least one non-partner profile as the working set.
+          return false;
+        }
+      } else {
+        _mergeActiveProfileIntoProfilesList();
+      }
+      _profiles.removeAt(index);
+      if (isActive) {
+        final fallbackProfile = _profiles
+            .where((profile) => !profile.isPartnerImported)
+            .first;
+        _activeProfileId = fallbackProfile.id;
+        _applyProfileState(fallbackProfile);
+        _currentLiveCourseId = null;
+      }
+      await _storageService.saveProfiles(_profiles);
+      if (_activeProfileId != null) {
+        await _storageService.setActiveProfileId(_activeProfileId!);
+      }
+      notifyUserDataChangedForSync();
+      notifyListeners();
+      await _updateLiveActivity();
+      return true;
+    });
   }
 
-  Future<void> addCourse(Course course) async {
-    final validationMessage = validateCourseTimeSchemeOverride(
-      timeSchemeId: course.timeSchemeIdOverride,
-      startSection: course.startSection,
-      endSection: course.endSection,
-    );
-    if (validationMessage != null) {
-      throw ArgumentError(validationMessage);
-    }
-    final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
-      _normalizeCourse(course),
-    );
-    final existingSharedCourse = _courses.cast<Course?>().firstWhere(
-      (item) =>
-          item != null &&
-          _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
-      orElse: () => null,
-    );
-    final preparedCourse = existingSharedCourse == null
-        ? normalizedCourse
-        : _applySharedCourseFields(normalizedCourse, existingSharedCourse);
-
-    _courses.add(preparedCourse);
-    await _persistActiveProfileState();
-    await recordTeacher(preparedCourse.teacher);
-    await recordLocation(preparedCourse.location);
-    _currentLiveCourseId = null;
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'course_created',
-      parameters: {
-        'day_of_week': preparedCourse.dayOfWeek,
-        'section_count': preparedCourse.sectionCount,
-        'has_short_name': preparedCourse.shortName?.isNotEmpty == true ? 1 : 0,
-      },
-    );
-    _updateLiveActivity();
-  }
-
-  Future<void> updateCourse(Course course, {String? previousSharedName}) async {
-    final index = _courses.indexWhere((c) => c.id == course.id);
-    if (index != -1) {
+  Future<void> addCourse(Course course) {
+    return _runMutation(() async {
       final validationMessage = validateCourseTimeSchemeOverride(
         timeSchemeId: course.timeSchemeIdOverride,
         startSection: course.startSection,
@@ -1151,73 +1148,123 @@ class TimetableProvider with ChangeNotifier {
       final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
         _normalizeCourse(course),
       );
-      final originalCourse = _courses[index];
-      final previousKey = _sharedCourseKeyFromName(
-        previousSharedName ?? originalCourse.name,
+      final existingSharedCourse = _courses.cast<Course?>().firstWhere(
+        (item) =>
+            item != null &&
+            _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
+        orElse: () => null,
       );
-      final newKey = _sharedCourseKey(normalizedCourse);
+      final preparedCourse = existingSharedCourse == null
+          ? normalizedCourse
+          : _applySharedCourseFields(normalizedCourse, existingSharedCourse);
 
-      _courses[index] = normalizedCourse;
-      await recordTeacher(normalizedCourse.teacher);
-      await recordLocation(normalizedCourse.location);
-      for (var i = 0; i < _courses.length; i++) {
-        if (i == index) {
-          continue;
-        }
-        final current = _courses[i];
-        final currentKey = _sharedCourseKey(current);
-        if (currentKey == previousKey || currentKey == newKey) {
-          _courses[i] = _applySharedCourseFields(current, normalizedCourse);
-        }
-      }
-
+      _courses.add(preparedCourse);
       await _persistActiveProfileState();
+      await recordTeacher(preparedCourse.teacher);
+      await recordLocation(preparedCourse.location);
       _currentLiveCourseId = null;
       notifyListeners();
       _analytics.logEventLater(
-        name: 'course_updated',
+        name: 'course_created',
         parameters: {
-          'day_of_week': normalizedCourse.dayOfWeek,
-          'section_count': normalizedCourse.sectionCount,
-          'has_short_name': normalizedCourse.shortName?.isNotEmpty == true
+          'day_of_week': preparedCourse.dayOfWeek,
+          'section_count': preparedCourse.sectionCount,
+          'has_short_name': preparedCourse.shortName?.isNotEmpty == true
               ? 1
               : 0,
         },
       );
       _updateLiveActivity();
-    }
+    });
   }
 
-  Future<void> deleteCourse(String courseId) async {
-    _courses.removeWhere((c) => c.id == courseId);
-    _exams.removeWhere((e) => e.courseId == courseId);
-    await _persistActiveProfileState();
-    _currentLiveCourseId = null;
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'course_deleted',
-      parameters: {'remaining_course_count': _courses.length},
-    );
-    _updateLiveActivity();
+  Future<void> updateCourse(Course course, {String? previousSharedName}) {
+    return _runMutation(() async {
+      final index = _courses.indexWhere((c) => c.id == course.id);
+      if (index != -1) {
+        final validationMessage = validateCourseTimeSchemeOverride(
+          timeSchemeId: course.timeSchemeIdOverride,
+          startSection: course.startSection,
+          endSection: course.endSection,
+        );
+        if (validationMessage != null) {
+          throw ArgumentError(validationMessage);
+        }
+        final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
+          _normalizeCourse(course),
+        );
+        final originalCourse = _courses[index];
+        final previousKey = _sharedCourseKeyFromName(
+          previousSharedName ?? originalCourse.name,
+        );
+        final newKey = _sharedCourseKey(normalizedCourse);
+
+        _courses[index] = normalizedCourse;
+        await recordTeacher(normalizedCourse.teacher);
+        await recordLocation(normalizedCourse.location);
+        for (var i = 0; i < _courses.length; i++) {
+          if (i == index) {
+            continue;
+          }
+          final current = _courses[i];
+          final currentKey = _sharedCourseKey(current);
+          if (currentKey == previousKey || currentKey == newKey) {
+            _courses[i] = _applySharedCourseFields(current, normalizedCourse);
+          }
+        }
+
+        await _persistActiveProfileState();
+        _currentLiveCourseId = null;
+        notifyListeners();
+        _analytics.logEventLater(
+          name: 'course_updated',
+          parameters: {
+            'day_of_week': normalizedCourse.dayOfWeek,
+            'section_count': normalizedCourse.sectionCount,
+            'has_short_name': normalizedCourse.shortName?.isNotEmpty == true
+                ? 1
+                : 0,
+          },
+        );
+        _updateLiveActivity();
+      }
+    });
+  }
+
+  Future<void> deleteCourse(String courseId) {
+    return _runMutation(() async {
+      _courses.removeWhere((c) => c.id == courseId);
+      _exams.removeWhere((e) => e.courseId == courseId);
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'course_deleted',
+        parameters: {'remaining_course_count': _courses.length},
+      );
+      _updateLiveActivity();
+    });
   }
 
   /// Delete all schedule entries (courses) for a given course name.
-  Future<void> deleteCourseGroup(String name) async {
-    final key = _buildSharedCourseNameKey(name);
-    final deletedCourseIds = _courses
-        .where((c) => _buildSharedCourseNameKey(c.name) == key)
-        .map((c) => c.id)
-        .toSet();
-    _courses.removeWhere((c) => deletedCourseIds.contains(c.id));
-    _exams.removeWhere((e) => deletedCourseIds.contains(e.courseId));
-    await _persistActiveProfileState();
-    _currentLiveCourseId = null;
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'course_group_deleted',
-      parameters: {'remaining_course_count': _courses.length},
-    );
-    _updateLiveActivity();
+  Future<void> deleteCourseGroup(String name) {
+    return _runMutation(() async {
+      final key = _buildSharedCourseNameKey(name);
+      final deletedCourseIds = _courses
+          .where((c) => _buildSharedCourseNameKey(c.name) == key)
+          .map((c) => c.id)
+          .toSet();
+      _courses.removeWhere((c) => deletedCourseIds.contains(c.id));
+      _exams.removeWhere((e) => deletedCourseIds.contains(e.courseId));
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'course_group_deleted',
+        parameters: {'remaining_course_count': _courses.length},
+      );
+      _updateLiveActivity();
+    });
   }
 
   /// Replace all schedule entries for a course group.  [updatedCourses] is
@@ -1226,78 +1273,82 @@ class TimetableProvider with ChangeNotifier {
   Future<void> updateCourseGroup(
     String originalName,
     List<Course> updatedCourses,
-  ) async {
-    final key = _buildSharedCourseNameKey(originalName);
-    // Remove old entries for this group.
-    _courses.removeWhere((c) => _buildSharedCourseNameKey(c.name) == key);
-    // Add the updated entries, applying shared fields.
-    final shared = updatedCourses.first;
-    for (final course in updatedCourses) {
-      final normalized = _normalizeCourse(
-        _applySharedCourseFields(course, shared),
+  ) {
+    return _runMutation(() async {
+      final key = _buildSharedCourseNameKey(originalName);
+      // Remove old entries for this group.
+      _courses.removeWhere((c) => _buildSharedCourseNameKey(c.name) == key);
+      // Add the updated entries, applying shared fields.
+      final shared = updatedCourses.first;
+      for (final course in updatedCourses) {
+        final normalized = _normalizeCourse(
+          _applySharedCourseFields(course, shared),
+        );
+        _courses.add(normalized);
+        await recordTeacher(normalized.teacher);
+        await recordLocation(normalized.location);
+      }
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'course_group_updated',
+        parameters: {
+          'schedule_count': updatedCourses.length,
+          'remaining_course_count': _courses.length,
+        },
       );
-      _courses.add(normalized);
-      await recordTeacher(normalized.teacher);
-      await recordLocation(normalized.location);
-    }
-    await _persistActiveProfileState();
-    _currentLiveCourseId = null;
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'course_group_updated',
-      parameters: {
-        'schedule_count': updatedCourses.length,
-        'remaining_course_count': _courses.length,
-      },
-    );
-    _updateLiveActivity();
+      _updateLiveActivity();
+    });
   }
 
   /// Add multiple schedule entries for a new course group in one persist.
-  Future<void> addCourseGroup(List<Course> courses) async {
-    if (courses.isEmpty) {
-      return;
-    }
-    final shared = courses.first;
-    // 先收集到临时列表，验证全部通过后再批量添加，避免中途失败导致状态不一致
-    final normalizedCourses = <Course>[];
-    final teachers = <String>{};
-    final locations = <String>{};
-    for (final course in courses) {
-      final validationMessage = validateCourseTimeSchemeOverride(
-        timeSchemeId: course.timeSchemeIdOverride,
-        startSection: course.startSection,
-        endSection: course.endSection,
-      );
-      if (validationMessage != null) {
-        throw ArgumentError(validationMessage);
+  Future<void> addCourseGroup(List<Course> courses) {
+    return _runMutation(() async {
+      if (courses.isEmpty) {
+        return;
       }
-      final normalized = _syncCourseWithEffectiveTimeScheme(
-        _normalizeCourse(_applySharedCourseFields(course, shared)),
+      final shared = courses.first;
+      // 先收集到临时列表，验证全部通过后再批量添加，避免中途失败导致状态不一致
+      final normalizedCourses = <Course>[];
+      final teachers = <String>{};
+      final locations = <String>{};
+      for (final course in courses) {
+        final validationMessage = validateCourseTimeSchemeOverride(
+          timeSchemeId: course.timeSchemeIdOverride,
+          startSection: course.startSection,
+          endSection: course.endSection,
+        );
+        if (validationMessage != null) {
+          throw ArgumentError(validationMessage);
+        }
+        final normalized = _syncCourseWithEffectiveTimeScheme(
+          _normalizeCourse(_applySharedCourseFields(course, shared)),
+        );
+        normalizedCourses.add(normalized);
+        if (normalized.teacher.isNotEmpty) teachers.add(normalized.teacher);
+        if (normalized.location.isNotEmpty) locations.add(normalized.location);
+      }
+      // 所有验证通过，批量添加
+      _courses.addAll(normalizedCourses);
+      for (final teacher in teachers) {
+        await recordTeacher(teacher);
+      }
+      for (final location in locations) {
+        await recordLocation(location);
+      }
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'course_group_created',
+        parameters: {
+          'schedule_count': courses.length,
+          'remaining_course_count': _courses.length,
+        },
       );
-      normalizedCourses.add(normalized);
-      if (normalized.teacher.isNotEmpty) teachers.add(normalized.teacher);
-      if (normalized.location.isNotEmpty) locations.add(normalized.location);
-    }
-    // 所有验证通过，批量添加
-    _courses.addAll(normalizedCourses);
-    for (final teacher in teachers) {
-      await recordTeacher(teacher);
-    }
-    for (final location in locations) {
-      await recordLocation(location);
-    }
-    await _persistActiveProfileState();
-    _currentLiveCourseId = null;
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'course_group_created',
-      parameters: {
-        'schedule_count': courses.length,
-        'remaining_course_count': _courses.length,
-      },
-    );
-    _updateLiveActivity();
+      _updateLiveActivity();
+    });
   }
 
   /// 切换课程在指定周次的停课状态
@@ -2329,17 +2380,19 @@ class TimetableProvider with ChangeNotifier {
   Future<PartnerImportResult> importPartnerTimetable(
     String content, {
     String? partnerName,
-  }) async {
-    await initialize();
-    final result = await _partnerTimetableService.importFromContent(
-      content,
-      partnerName: partnerName,
-    );
-    _profiles = await _storageService.getProfiles();
-    _partnerBinding = result.binding;
-    notifyUserDataChangedForSync();
-    notifyListeners();
-    return result;
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      final result = await _partnerTimetableService.importFromContent(
+        content,
+        partnerName: partnerName,
+      );
+      _profiles = await _storageService.getProfiles();
+      _partnerBinding = result.binding;
+      notifyUserDataChangedForSync();
+      notifyListeners();
+      return result;
+    });
   }
 
   Future<void> updatePartnerWeekOffset(int offset) async {
@@ -2378,22 +2431,24 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> unlinkPartner() async {
-    await initialize();
-    await _partnerTimetableService.unlink();
-    _profiles = await _storageService.getProfiles();
-    _partnerBinding = null;
-    if (_activeProfileId == PartnerTimetableService.partnerProfileId) {
-      final fallback = _profiles
-          .where((profile) => !profile.isPartnerImported)
-          .firstOrNull;
-      if (fallback != null) {
-        _activeProfileId = fallback.id;
-        _applyProfileState(fallback);
-        await _storageService.setActiveProfileId(fallback.id);
+  Future<void> unlinkPartner() {
+    return _runMutation(() async {
+      await initialize();
+      await _partnerTimetableService.unlink();
+      _profiles = await _storageService.getProfiles();
+      _partnerBinding = null;
+      if (_activeProfileId == PartnerTimetableService.partnerProfileId) {
+        final fallback = _profiles
+            .where((profile) => !profile.isPartnerImported)
+            .firstOrNull;
+        if (fallback != null) {
+          _activeProfileId = fallback.id;
+          _applyProfileState(fallback);
+          await _storageService.setActiveProfileId(fallback.id);
+        }
       }
-    }
-    notifyUserDataChangedForSync();
-    notifyListeners();
+      notifyUserDataChangedForSync();
+      notifyListeners();
+    });
   }
 }

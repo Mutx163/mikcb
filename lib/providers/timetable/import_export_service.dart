@@ -100,76 +100,78 @@ Future<int> _timetableImportParsedCourses(
   required bool replaceExisting,
   DateTime? semesterStart,
   required String source,
-}) async {
-  if (importedCourses.isEmpty) {
-    return 0;
-  }
-
-  final ImportedCourseSyncResult? syncResult;
-  final List<Course> mergedCourses;
-  final int effectiveImportedCount;
-  if (replaceExisting) {
-    final dedupedImportedCourses = dedupeImportedCourses(importedCourses);
-    // Preserve local metadata (color/shortName/note/…) for matching courses.
-    mergedCourses = replaceImportedCoursesPreservingLocalFields(
-      existingCourses: host._courses,
-      importedCourses: dedupedImportedCourses,
-    );
-    effectiveImportedCount = dedupedImportedCourses.length;
-    syncResult = null;
-  } else {
-    final result = syncImportedCourses(
-      existingCourses: host._courses,
-      importedCourses: importedCourses,
-    );
-    if (courseListsEqual(host._courses, result.mergedCourses)) {
+}) {
+  return host._runMutation(() async {
+    if (importedCourses.isEmpty) {
       return 0;
     }
-    syncResult = result;
-    mergedCourses = result.mergedCourses;
-    effectiveImportedCount = result.addedCount + result.updatedCount;
-  }
 
-  host._courses = host._syncCoursesWithEffectiveTimeSchemes(
-    mergedCourses,
-    settings: host._settings,
-  );
-  final requiredWeekCount = ImportExportLogic.maxCourseWeek(
-    host._courses,
-    fallbackWeekCount: host._settings.semesterWeekCount,
-  );
-  host._settings = host._settings.copyWith(
-    semesterStartDate: semesterStart ?? host._settings.semesterStartDate,
-    semesterWeekCount: requiredWeekCount > host._settings.semesterWeekCount
-        ? requiredWeekCount
-        : host._settings.semesterWeekCount,
-  );
-  if (semesterStart != null) {
-    host._currentWeek = host._calculateWeekForDate(
-      DateTime.now(),
-      fallbackWeek: host._currentWeek,
+    final ImportedCourseSyncResult? syncResult;
+    final List<Course> mergedCourses;
+    final int effectiveImportedCount;
+    if (replaceExisting) {
+      final dedupedImportedCourses = dedupeImportedCourses(importedCourses);
+      // Preserve local metadata (color/shortName/note/…) for matching courses.
+      mergedCourses = replaceImportedCoursesPreservingLocalFields(
+        existingCourses: host._courses,
+        importedCourses: dedupedImportedCourses,
+      );
+      effectiveImportedCount = dedupedImportedCourses.length;
+      syncResult = null;
+    } else {
+      final result = syncImportedCourses(
+        existingCourses: host._courses,
+        importedCourses: importedCourses,
+      );
+      if (courseListsEqual(host._courses, result.mergedCourses)) {
+        return 0;
+      }
+      syncResult = result;
+      mergedCourses = result.mergedCourses;
+      effectiveImportedCount = result.addedCount + result.updatedCount;
+    }
+
+    host._courses = host._syncCoursesWithEffectiveTimeSchemes(
+      mergedCourses,
+      settings: host._settings,
     );
-  }
-  host._currentDateWeek = host._resolveCurrentDateWeek();
-  // Persist once at end of import; suppress mid-import cloud sync notify.
-  await host._persistActiveProfileState(notifySync: false);
-  notifyUserDataChangedForSync();
-  host._currentLiveCourseId = null;
-  host._notifyStateChanged();
-  host._analytics.logEventLater(
-    name: 'schedule_imported',
-    parameters: {
-      'imported_course_count': effectiveImportedCount,
-      'replace_existing': replaceExisting ? 1 : 0,
-      'source': source,
-      if (syncResult != null) ...{
-        'sync_added_count': syncResult.addedCount,
-        'sync_updated_count': syncResult.updatedCount,
+    final requiredWeekCount = ImportExportLogic.maxCourseWeek(
+      host._courses,
+      fallbackWeekCount: host._settings.semesterWeekCount,
+    );
+    host._settings = host._settings.copyWith(
+      semesterStartDate: semesterStart ?? host._settings.semesterStartDate,
+      semesterWeekCount: requiredWeekCount > host._settings.semesterWeekCount
+          ? requiredWeekCount
+          : host._settings.semesterWeekCount,
+    );
+    if (semesterStart != null) {
+      host._currentWeek = host._calculateWeekForDate(
+        DateTime.now(),
+        fallbackWeek: host._currentWeek,
+      );
+    }
+    host._currentDateWeek = host._resolveCurrentDateWeek();
+    // Persist once at end of import; suppress mid-import cloud sync notify.
+    await host._persistActiveProfileState(notifySync: false);
+    notifyUserDataChangedForSync();
+    host._currentLiveCourseId = null;
+    host._notifyStateChanged();
+    host._analytics.logEventLater(
+      name: 'schedule_imported',
+      parameters: {
+        'imported_course_count': effectiveImportedCount,
+        'replace_existing': replaceExisting ? 1 : 0,
+        'source': source,
+        if (syncResult != null) ...{
+          'sync_added_count': syncResult.addedCount,
+          'sync_updated_count': syncResult.updatedCount,
+        },
       },
-    },
-  );
-  await host._updateLiveActivity();
-  return effectiveImportedCount;
+    );
+    await host._updateLiveActivity();
+    return effectiveImportedCount;
+  });
 }
 
 Future<String?> _timetableImportAppDataBackup(
@@ -275,57 +277,59 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
 Future<String?> _timetableImportFullAppDataBackup(
   TimetableProvider host,
   String content,
-) async {
-  try {
-    final backup = host._dataTransferService.parseFullBackupJson(content);
-    if (backup.profiles.isEmpty) {
-      return 'import_no_profiles_in_backup';
-    }
+) {
+  return host._runMutation(() async {
+    try {
+      final backup = host._dataTransferService.parseFullBackupJson(content);
+      if (backup.profiles.isEmpty) {
+        return 'import_no_profiles_in_backup';
+      }
 
-    host._timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
-    host._profiles = backup.profiles
-        .map(
-          (profile) => profile.copyWith(
-            settings: host._normalizeSettingsWithTimeScheme(profile.settings),
-          ),
-        )
-        .toList();
-    host._profiles = host._profiles
-        .map(
-          (profile) => profile.copyWith(
-            courses: host._syncCoursesWithEffectiveTimeSchemes(
-              List<Course>.from(profile.courses),
-              settings: profile.settings,
+      host._timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
+      host._profiles = backup.profiles
+          .map(
+            (profile) => profile.copyWith(
+              settings: host._normalizeSettingsWithTimeScheme(profile.settings),
             ),
-          ),
-        )
-        .toList();
-    host._activeProfileId =
-        backup.activeProfileId != null &&
-            host._profiles.any(
-              (profile) => profile.id == backup.activeProfileId,
-            )
-        ? backup.activeProfileId
-        : host._profiles.first.id;
+          )
+          .toList();
+      host._profiles = host._profiles
+          .map(
+            (profile) => profile.copyWith(
+              courses: host._syncCoursesWithEffectiveTimeSchemes(
+                List<Course>.from(profile.courses),
+                settings: profile.settings,
+              ),
+            ),
+          )
+          .toList();
+      host._activeProfileId =
+          backup.activeProfileId != null &&
+              host._profiles.any(
+                (profile) => profile.id == backup.activeProfileId,
+              )
+          ? backup.activeProfileId
+          : host._profiles.first.id;
 
-    await host._storageService.saveTimeSchemes(host._timeSchemes);
-    await host._storageService.saveProfiles(host._profiles);
-    if (host._activeProfileId != null) {
-      await host._storageService.setActiveProfileId(host._activeProfileId!);
+      await host._storageService.saveTimeSchemes(host._timeSchemes);
+      await host._storageService.saveProfiles(host._profiles);
+      if (host._activeProfileId != null) {
+        await host._storageService.setActiveProfileId(host._activeProfileId!);
+      }
+
+      host._applyProfileState(
+        host._profiles.firstWhere(
+          (profile) => profile.id == host._activeProfileId,
+        ),
+      );
+      host._currentLiveCourseId = null;
+      host._notifyStateChanged();
+      await host._updateLiveActivity();
+      return null;
+    } on FormatException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'import_file_unrecognized';
     }
-
-    host._applyProfileState(
-      host._profiles.firstWhere(
-        (profile) => profile.id == host._activeProfileId,
-      ),
-    );
-    host._currentLiveCourseId = null;
-    host._notifyStateChanged();
-    await host._updateLiveActivity();
-    return null;
-  } on FormatException catch (e) {
-    return e.message;
-  } catch (_) {
-    return 'import_file_unrecognized';
-  }
+  });
 }
