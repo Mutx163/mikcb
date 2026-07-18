@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
@@ -320,8 +321,116 @@ Widget hyperosBlockStretchOverscroll({required Widget child}) {
   );
 }
 
+/// Per-scrollable latch so top/bottom edge haptics fire once until content
+/// returns fully in-range for that edge (then may fire again on re-entry).
+class _OverscrollEdgeHapticState {
+  bool topLatched = false;
+  bool bottomLatched = false;
+}
+
+final Map<int, _OverscrollEdgeHapticState> _overscrollEdgeHapticStates = {};
+
+/// Must overscroll at least this far past an edge before haptic can fire.
+/// Filters float noise and near-edge jitter (especially common at the top).
+@visibleForTesting
+const hyperosOverscrollEdgeHapticEnterPx = 1.0;
+
+/// Clears edge-haptic latches (tests only).
+@visibleForTesting
+void hyperosResetOverscrollEdgeHaptics() {
+  _overscrollEdgeHapticStates.clear();
+}
+
+int? _overscrollEdgeHapticKey(ScrollNotification notification) {
+  final metrics = notification.metrics;
+  if (metrics is ScrollPosition) {
+    return identityHashCode(metrics);
+  }
+  final position = notification.context
+      ?.findAncestorStateOfType<ScrollableState>()
+      ?.position;
+  if (position != null) {
+    return identityHashCode(position);
+  }
+  // Metrics from ScrollPosition.copyWith() are ephemeral FixedScrollMetrics.
+  // Without a stable Scrollable identity, latching cannot work — skip haptic.
+  return null;
+}
+
+/// Fires a light haptic the moment content first crosses past the top or bottom
+/// edge. Same edge does not re-fire until pixels are fully back in range.
+///
+/// Pair with [hyperosHandleOverscrollSnapBack] (called automatically from it)
+/// so every HyperOS rubber-band list gets edge feedback without extra wiring.
+///
+/// Only [ScrollUpdateNotification] is used: rubber-band overscroll moves
+/// [ScrollPosition.pixels] out of range and always emits updates. Handling
+/// [OverscrollNotification] as well would risk a second pulse at the hard cap
+/// if the latch were ever cleared by near-edge jitter.
+bool hyperosHandleOverscrollEdgeHaptic(ScrollNotification notification) {
+  if (notification is! ScrollUpdateNotification) {
+    return false;
+  }
+
+  final metrics = notification.metrics;
+  if (metrics.axis != Axis.vertical) {
+    return false;
+  }
+
+  final key = _overscrollEdgeHapticKey(notification);
+  if (key == null) {
+    return false;
+  }
+
+  // past* > 0 means content has left the scrollable range on that edge.
+  final pastTop = metrics.minScrollExtent - metrics.pixels;
+  final pastBottom = metrics.pixels - metrics.maxScrollExtent;
+  final state = _overscrollEdgeHapticStates.putIfAbsent(
+    key,
+    _OverscrollEdgeHapticState.new,
+  );
+
+  var fired = false;
+
+  // Enter with hysteresis; re-arm only when fully in-range (past* <= 0).
+  // The previous "re-arm when past* <= tolerance (~0.5px)" path was too eager:
+  // at the top, pixels often jitter around the edge (header frost rebuilds,
+  // float error, multi-listener updates), which cleared the latch and fired a
+  // second haptic while the finger was still holding an overscroll.
+  if (pastTop > hyperosOverscrollEdgeHapticEnterPx) {
+    if (!state.topLatched) {
+      state.topLatched = true;
+      HapticFeedback.lightImpact();
+      fired = true;
+    }
+  } else if (pastTop <= 0) {
+    state.topLatched = false;
+  }
+
+  if (pastBottom > hyperosOverscrollEdgeHapticEnterPx) {
+    if (!state.bottomLatched) {
+      state.bottomLatched = true;
+      HapticFeedback.lightImpact();
+      fired = true;
+    }
+  } else if (pastBottom <= 0) {
+    state.bottomLatched = false;
+  }
+
+  if (!state.topLatched && !state.bottomLatched) {
+    _overscrollEdgeHapticStates.remove(key);
+  }
+
+  return fired;
+}
+
 /// Ensures rubber-band overscroll snaps back after drag ends.
+///
+/// Also dispatches edge haptics via [hyperosHandleOverscrollEdgeHaptic] so
+/// existing NotificationListener call sites pick up both behaviors.
 bool hyperosHandleOverscrollSnapBack(ScrollNotification notification) {
+  hyperosHandleOverscrollEdgeHaptic(notification);
+
   if (notification is! ScrollEndNotification) {
     return false;
   }
