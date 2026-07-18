@@ -11,6 +11,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../services/lan_edit_network_utils.dart';
+import '../services/lan_edit_preferences.dart';
 import '../services/lan_edit_provider_host.dart';
 import '../services/lan_edit_server_service.dart';
 import '../services/lan_edit_session.dart';
@@ -25,11 +26,14 @@ class LanEditScreen extends StatefulWidget {
 
 class _LanEditScreenState extends State<LanEditScreen>
     with WidgetsBindingObserver {
-  final LanEditServerService _server = LanEditServerService();
+  /// Shared so the HTTP session can outlive this route when keep-alive is on.
+  final LanEditServerService _server = LanEditServerService.shared;
   LanEditSession? _session;
   String? _lanAddress;
   bool _isStarting = false;
   bool _isStopping = false;
+  bool _keepAliveWhenLeaving = LanEditPreferences.defaultKeepAliveWhenLeaving;
+  bool _preferencesLoaded = false;
   Timer? _statusTimer;
 
   @override
@@ -37,6 +41,38 @@ class _LanEditScreenState extends State<LanEditScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _server.onStopped = _handleServerStopped;
+    unawaited(_bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    final keepAlive = await LanEditPreferences.keepAliveWhenLeaving();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _keepAliveWhenLeaving = keepAlive;
+      _preferencesLoaded = true;
+    });
+    await _restoreRunningSessionUi();
+  }
+
+  Future<void> _restoreRunningSessionUi() async {
+    final session = _server.session;
+    if (!_server.isRunning || session == null) {
+      return;
+    }
+    final ip = await findPreferredLanIPv4();
+    if (!mounted) {
+      return;
+    }
+    final port = _server.port;
+    setState(() {
+      _session = session;
+      _lanAddress = (ip == null || port == null)
+          ? null
+          : encodeLanEditUrl(host: ip, port: port, pin: session.pin);
+    });
+    _startStatusTimer();
   }
 
   @override
@@ -44,7 +80,12 @@ class _LanEditScreenState extends State<LanEditScreen>
     WidgetsBinding.instance.removeObserver(this);
     _statusTimer?.cancel();
     _server.onStopped = null;
-    _server.stop();
+    // Use cached preference so a quick pop before async load cannot kill a
+    // keep-alive session, and a toggle is reflected even if setState lagged.
+    final shouldKeepAlive = LanEditPreferences.keepAliveWhenLeavingCached;
+    if (!shouldKeepAlive) {
+      unawaited(_server.stop(reason: 'page_pop'));
+    }
     super.dispose();
   }
 
@@ -76,6 +117,13 @@ class _LanEditScreenState extends State<LanEditScreen>
       }
       setState(() {});
     });
+  }
+
+  Future<void> _onKeepAliveChanged(bool enabled) async {
+    setState(() {
+      _keepAliveWhenLeaving = enabled;
+    });
+    await LanEditPreferences.setKeepAliveWhenLeaving(enabled);
   }
 
   Future<void> _startServer() async {
@@ -179,6 +227,17 @@ class _LanEditScreenState extends State<LanEditScreen>
                       onPressed: _isStarting ? null : _startServer,
                     ),
             ),
+          ),
+          const HyperosSectionGap(),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.lanEditKeepAliveWhenLeavingTitle,
+                subtitle: l10n.lanEditKeepAliveWhenLeavingSubtitle,
+                value: _keepAliveWhenLeaving,
+                onChanged: _preferencesLoaded ? _onKeepAliveChanged : null,
+              ),
+            ],
           ),
           if (isRunning && session != null) ...[
             const HyperosSectionGap(),

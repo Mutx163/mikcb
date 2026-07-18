@@ -244,6 +244,8 @@
     }
   },
   "lanEditLastActivityLabel": "最終アクティビティ",
+  "lanEditKeepAliveWhenLeavingTitle": "退出後も維持",
+  "lanEditKeepAliveWhenLeavingSubtitle": "オンにするとこの画面を離れてもLAN編集を継続し、オフにすると退出時に停止します",
   "aboutSupportSectionTitle": "アプリ情報とサポート",
   "feedbackEntryTitle": "問題報告",
   "feedbackEntrySubtitle": "Issue、コミュニティチャネルとフィードバック",

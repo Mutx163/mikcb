@@ -353,6 +353,8 @@
     }
   },
   "lanEditLastActivityLabel": "Last activity",
+  "lanEditKeepAliveWhenLeavingTitle": "Keep open after leaving",
+  "lanEditKeepAliveWhenLeavingSubtitle": "When on, leaving this page keeps LAN editing running; when off, leaving stops it",
   "aboutSupportSectionTitle": "About & Support",
   "feedbackEntryTitle": "Feedback",
   "feedbackEntrySubtitle": "Issue tracker, community channels, and suggestion entry",

@@ -244,6 +244,8 @@
     }
   },
   "lanEditLastActivityLabel": "最近活動",
+  "lanEditKeepAliveWhenLeavingTitle": "離開後保持開啟",
+  "lanEditKeepAliveWhenLeavingSubtitle": "開啟後，返回設定頁不會自動關閉區域網路編輯；關閉後離開本頁即停止",
   "aboutSupportSectionTitle": "關於與支持",
   "feedbackEntryTitle": "問題回饋",
   "feedbackEntrySubtitle": "Issue、社区渠道和建議反饋入口",

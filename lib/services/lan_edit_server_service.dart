@@ -15,6 +15,12 @@ typedef LanEditServerStoppedCallback = void Function();
 
 /// Embedded HTTP server for LAN timetable editing.
 class LanEditServerService {
+  /// Process-wide instance used by the LAN edit UI so a session can outlive
+  /// the settings sub-page when the user enables “keep open after leaving”.
+  ///
+  /// Tests should construct a fresh [LanEditServerService] instead of this.
+  static final LanEditServerService shared = LanEditServerService();
+
   HttpServer? _server;
   LanEditSession? _session;
   LanEditHost? _host;

@@ -757,6 +757,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanEditLastActivityLabel => 'Last activity';
 
   @override
+  String get lanEditKeepAliveWhenLeavingTitle => 'Keep open after leaving';
+
+  @override
+  String get lanEditKeepAliveWhenLeavingSubtitle =>
+      'When on, leaving this page keeps LAN editing running; when off, leaving stops it';
+
+  @override
   String get aboutSupportSectionTitle => 'About & Support';
 
   @override

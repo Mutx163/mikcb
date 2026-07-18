@@ -643,39 +643,51 @@ function renderCoursesTable() {
 
       return `
         <div class="card-slot-item">
-          <span class="slot-time"><i class="ti ti-calendar me-1"></i>${dayName} ${sectionText} <span class="slot-weeks">(${weekText})</span></span>
-          <div class="slot-details">
-            ${course.teacher ? `<span class="slot-detail-pill"><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher)}</span>` : ''}
-            ${course.location ? `<span class="slot-detail-pill"><i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location)}</span>` : ''}
+          <div class="slot-time-line">
+            <i class="ti ti-calendar-event"></i>
+            <span class="slot-time-main">${dayName} · ${sectionText}</span>
+            <span class="slot-weeks">${weekText}</span>
           </div>
+          ${(course.teacher || course.location) ? `
+          <div class="slot-details">
+            ${course.teacher ? `<span class="slot-detail-pill"><i class="ti ti-user"></i>${escapeHtml(course.teacher)}</span>` : ''}
+            ${course.location ? `<span class="slot-detail-pill"><i class="ti ti-map-pin"></i>${escapeHtml(course.location)}</span>` : ''}
+          </div>` : ''}
         </div>
       `;
     }).join('');
 
     const natureBadge = group.courseNature === 'elective'
-      ? '<span class="badge badge-success">选修</span>'
-      : '<span class="badge badge-destructive">必修</span>';
+      ? '<span class="badge badge-success course-nature-badge">选修</span>'
+      : '<span class="badge badge-primary course-nature-badge">必修</span>';
 
+    const accentColor = group.color || '#3482ff';
+    const slotCount = group.courses.length;
     card.className = 'card course-group-card';
     card.innerHTML = `
-      <div class="card-header-band" style="background-color: ${group.color || '#4f46e5'}"></div>
-      <div class="card-body">
-        <div class="flex items-start gap-2 mb-2">
-          <label class="form-check mb-0" title="批量删除">
+      <div class="course-card-accent" style="background-color: ${accentColor}"></div>
+      <div class="course-card-body">
+        <div class="course-card-top">
+          <label class="course-card-check" title="批量删除">
             <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
           </label>
-          <div class="flex-fill min-w-0">
-            <h3 class="card-title mb-0">${escapeHtml(group.name)}</h3>
-            ${group.shortName ? `<div class="text-muted text-xs">${escapeHtml(group.shortName)}</div>` : ''}
+          <div class="course-card-heading min-w-0">
+            <div class="course-card-title-row">
+              <h3 class="course-card-title" title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</h3>
+              ${natureBadge}
+            </div>
+            <div class="course-card-meta">
+              ${group.shortName ? `<span class="course-card-short">${escapeHtml(group.shortName)}</span>` : ''}
+              <span class="course-card-slot-count">${slotCount} 个时段</span>
+            </div>
           </div>
-          ${natureBadge}
         </div>
         <div class="card-slots-list">${slotsHtml}</div>
-        ${group.note ? `<p class="text-muted text-xs mt-2 mb-0"><i class="ti ti-notes me-1"></i>${escapeHtml(group.note)}</p>` : ''}
-        <div class="btn-list mt-3">
-          <button type="button" class="btn btn-outline btn-sm action-edit-btn">编辑</button>
-          <button type="button" class="btn btn-outline btn-sm action-copy-btn">复制</button>
-          <button type="button" class="btn btn-destructive btn-sm action-delete-btn">删除</button>
+        ${group.note ? `<p class="course-card-note"><i class="ti ti-notes"></i><span>${escapeHtml(group.note)}</span></p>` : ''}
+        <div class="course-card-actions">
+          <button type="button" class="btn btn-outline btn-sm action-edit-btn"><i class="ti ti-edit"></i>编辑</button>
+          <button type="button" class="btn btn-ghost btn-sm action-copy-btn"><i class="ti ti-copy"></i>复制</button>
+          <button type="button" class="btn btn-ghost btn-sm course-card-delete action-delete-btn"><i class="ti ti-trash"></i>删除</button>
         </div>
       </div>
     `;

@@ -353,6 +353,8 @@
     }
   },
   "lanEditLastActivityLabel": "最近活动",
+  "lanEditKeepAliveWhenLeavingTitle": "离开后保持开启",
+  "lanEditKeepAliveWhenLeavingSubtitle": "开启后，返回设置页不会自动关闭局域网编辑；关闭后离开本页即停止",
   "aboutSupportSectionTitle": "关于与支持",
   "feedbackEntryTitle": "问题反馈",
   "feedbackEntrySubtitle": "Issue、社区渠道和建议反馈入口",

@@ -711,6 +711,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lanEditLastActivityLabel => '最近活动';
 
   @override
+  String get lanEditKeepAliveWhenLeavingTitle => '离开后保持开启';
+
+  @override
+  String get lanEditKeepAliveWhenLeavingSubtitle =>
+      '开启后，返回设置页不会自动关闭局域网编辑；关闭后离开本页即停止';
+
+  @override
   String get aboutSupportSectionTitle => '关于与支持';
 
   @override
@@ -8690,6 +8697,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get lanEditLastActivityLabel => '最近活動';
 
   @override
+  String get lanEditKeepAliveWhenLeavingTitle => '離開後保持開啟';
+
+  @override
+  String get lanEditKeepAliveWhenLeavingSubtitle =>
+      '開啟後，返回設定頁不會自動關閉局域網編輯；關閉後離開本頁即停止';
+
+  @override
   String get aboutSupportSectionTitle => '關於與支持';
 
   @override
@@ -16539,6 +16553,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get lanEditLastActivityLabel => '最近活動';
+
+  @override
+  String get lanEditKeepAliveWhenLeavingTitle => '離開後保持開啟';
+
+  @override
+  String get lanEditKeepAliveWhenLeavingSubtitle =>
+      '開啟後，返回設定頁不會自動關閉區域網路編輯；關閉後離開本頁即停止';
 
   @override
   String get aboutSupportSectionTitle => '關於與支持';

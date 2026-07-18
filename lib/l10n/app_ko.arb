@@ -245,6 +245,8 @@
     }
   },
   "lanEditLastActivityLabel": "최근 활동",
+  "lanEditKeepAliveWhenLeavingTitle": "나가도 유지",
+  "lanEditKeepAliveWhenLeavingSubtitle": "켜면 이 화면을 떠나도 LAN 편집이 유지되고, 끄면 나갈 때 중지됩니다",
   "feedbackEntryTitle": "문제 제보",
   "feedbackEntrySubtitle": "이슈, 커뮤니티 채널 및 피드백",
   "aboutEntryTitle": "앱 정보",

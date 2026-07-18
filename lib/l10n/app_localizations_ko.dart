@@ -718,6 +718,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get lanEditLastActivityLabel => '최근 활동';
 
   @override
+  String get lanEditKeepAliveWhenLeavingTitle => '나가도 유지';
+
+  @override
+  String get lanEditKeepAliveWhenLeavingSubtitle =>
+      '켜면 이 화면을 떠나도 LAN 편집이 유지되고, 끄면 나갈 때 중지됩니다';
+
+  @override
   String get aboutSupportSectionTitle => '앱 정보 및 지원';
 
   @override

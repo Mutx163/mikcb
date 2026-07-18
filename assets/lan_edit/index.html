@@ -280,16 +280,15 @@
           <!-- 课程库 -->
           <section id="courses-panel" class="tab-panel hidden">
             <div class="card">
-              <div class="card-header">
-                <div class="flex items-center gap-2 flex-wrap">
+              <div class="card-header courses-toolbar">
+                <div class="courses-toolbar-filters">
                   <input
                     id="course-search"
-                    class="input"
+                    class="input courses-search-input"
                     type="search"
                     placeholder="搜索课程、教师、教室…"
-                    style="max-width: 16rem;"
                   />
-                  <select id="filter-nature" class="select w-auto" style="width: auto;">
+                  <select id="filter-nature" class="select courses-filter-select">
                     <option value="">全部性质</option>
                     <option value="required">必修</option>
                     <option value="elective">选修</option>
@@ -297,15 +296,15 @@
                   <button id="btn-batch-delete-courses" type="button" class="btn btn-destructive btn-sm hidden" disabled>
                     <i class="ti ti-trash"></i>批量删除
                   </button>
-                  <div class="ms-auto">
-                    <button id="btn-add-course" type="button" class="btn btn-primary">
-                      <i class="ti ti-plus"></i>新建课程
-                    </button>
-                  </div>
+                </div>
+                <div class="courses-toolbar-actions">
+                  <button id="btn-add-course" type="button" class="btn btn-primary">
+                    <i class="ti ti-plus"></i>新建课程
+                  </button>
                 </div>
               </div>
               <div class="card-body">
-                <p class="text-muted mb-3">共 <strong id="course-count">0</strong> 门课程</p>
+                <p class="courses-count-line text-muted mb-3">共 <strong id="course-count">0</strong> 门课程</p>
                 <div id="courses-cards-container" class="row-cards"></div>
               </div>
             </div>

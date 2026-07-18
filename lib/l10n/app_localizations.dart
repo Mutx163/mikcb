@@ -1412,6 +1412,18 @@ abstract class AppLocalizations {
   /// **'最近活动'**
   String get lanEditLastActivityLabel;
 
+  /// No description provided for @lanEditKeepAliveWhenLeavingTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'离开后保持开启'**
+  String get lanEditKeepAliveWhenLeavingTitle;
+
+  /// No description provided for @lanEditKeepAliveWhenLeavingSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，返回设置页不会自动关闭局域网编辑；关闭后离开本页即停止'**
+  String get lanEditKeepAliveWhenLeavingSubtitle;
+
   /// No description provided for @aboutSupportSectionTitle.
   ///
   /// In zh, this message translates to:
