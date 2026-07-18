@@ -1,7 +1,52 @@
 {
-  "generatedAt": "2026-07-18T13:52:28.535Z",
-  "releaseCount": 86,
+  "generatedAt": "2026-07-18T14:16:15.229Z",
+  "releaseCount": 87,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.0.5",
+      "title": "v2.0.5",
+      "prerelease": true,
+      "publishedAt": "2026-07-18T14:15:44Z",
+      "description": "局域网编辑：支持「离开后保持开启」——回到设置页可选择继续运行，不必每次重新开服务 · 局域网编辑：控制台支持浅色 / 深色主题切换，并记住本机偏好 · 局域网编辑：浏览器端支持切换课表档案",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "局域网编辑：支持「离开后保持开启」——回到设置页可选择继续运行，不必每次重新开服务"
+        },
+        {
+          "type": "新增",
+          "text": "局域网编辑：控制台支持浅色 / 深色主题切换，并记住本机偏好"
+        },
+        {
+          "type": "新增",
+          "text": "局域网编辑：浏览器端支持切换课表档案"
+        },
+        {
+          "type": "新增",
+          "text": "关于页：新增「开源许可证」列表（本应用 GPL 说明 + 第三方组件许可证检索）"
+        },
+        {
+          "type": "新增",
+          "text": "课程总览：冲突详情页（互撞组合、时段，可跳转对应排课编辑）"
+        },
+        {
+          "type": "新增",
+          "text": "导入课程：首页增加「随机预设色」总开关（各导入子页统一）"
+        },
+        {
+          "type": "新增",
+          "text": "运行日志：独立解析能力，大文件更顺畅，支持单条展开详情"
+        },
+        {
+          "type": "新增",
+          "text": "HyperOS：胶囊滑块轨道样式、控件无障碍语义，界面组件与语义色更完整"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5/mikcb-2.0.5-arm64-v8a.apk",
+      "assetName": "mikcb-2.0.5-arm64-v8a.apk"
+    },
     {
       "channelLabel": "正式版",
       "version": "2.0.4",
@@ -224,31 +269,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.14",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.14/mikcb-1.2.1.14-arm64-v8a.apk",
       "assetName": "mikcb-1.2.1.14-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "正式版",
-      "version": "1.2.1.12",
-      "title": "v1.2.1.12",
-      "prerelease": false,
-      "publishedAt": "2026-06-03T15:10:00Z",
-      "description": "修复 CI 构建流程中因 AGP 8.9.1 与 --split-per-abi 不兼容导致产出空 APK 的问题 · 优化构建产物大小，使用 --target-platform 精简 APK 体积 · 增强工作流错误检测，避免静默吞失败",
-      "highlights": [
-        {
-          "type": "修复",
-          "text": "修复 CI 构建流程中因 AGP 8.9.1 与 --split-per-abi 不兼容导致产出空 APK 的问题"
-        },
-        {
-          "type": "优化",
-          "text": "优化构建产物大小，使用 --target-platform 精简 APK 体积"
-        },
-        {
-          "type": "优化",
-          "text": "增强工作流错误检测，避免静默吞失败"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.12",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.12/mikcb-1.2.1.12-arm64-v8a.apk",
-      "assetName": "mikcb-1.2.1.12-arm64-v8a.apk"
     }
   ]
 }
