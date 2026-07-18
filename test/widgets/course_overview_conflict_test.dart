@@ -67,37 +67,37 @@ void main() {
   });
 
   testWidgets('course overview marks actual conflicts', (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-a',
-        name: '线性代数',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 2,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'course-b',
-        name: '大学物理',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 2,
-        startSection: 2,
-        endSection: 3,
-        startTime: '08:55',
-        endTime: '10:35',
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-a',
+          name: '线性代数',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 2,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-b',
+          name: '大学物理',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 2,
+          startSection: 2,
+          endSection: 3,
+          startTime: '08:55',
+          endTime: '10:35',
+        ),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -120,41 +120,41 @@ void main() {
   testWidgets('course overview does not mark same slot on different weeks', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-a',
-        name: '高等数学',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 2,
-        startSection: 1,
-        endSection: 2,
-        startWeek: 1,
-        endWeek: 8,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'course-b',
-        name: '大学英语',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 2,
-        startSection: 1,
-        endSection: 2,
-        startWeek: 9,
-        endWeek: 16,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-a',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 2,
+          startSection: 1,
+          endSection: 2,
+          startWeek: 1,
+          endWeek: 8,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-b',
+          name: '大学英语',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 2,
+          startSection: 1,
+          endSection: 2,
+          startWeek: 9,
+          endWeek: 16,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(

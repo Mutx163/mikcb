@@ -45,6 +45,10 @@ String _weekdayLabelForTest(int weekday) {
   return labels[weekday - 1];
 }
 
+/// Real async init under testWidgets (FakeAsync would stall storage/network).
+Future<TimetableProvider> _createInitializedProvider(WidgetTester tester) =>
+    createInitializedTestProvider(tester);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const homeWidgetChannel = MethodChannel('com.mutx163.qingyu/home_widget');
@@ -52,8 +56,8 @@ void main() {
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
-    StorageService().resetForTesting();
     _seedInitializedPrefs();
+    StorageService().resetForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -72,11 +76,7 @@ void main() {
   });
 
   testWidgets('editing course shows delete action', (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await _createInitializedProvider(tester);
 
     final course = Course(
       id: 'course-1',
@@ -104,11 +104,7 @@ void main() {
   testWidgets('editing course with invalid color still renders', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await _createInitializedProvider(tester);
 
     final course = Course(
       id: 'course-invalid-color',
@@ -138,11 +134,7 @@ void main() {
   testWidgets('single lesson mode can default to today weekday', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await _createInitializedProvider(tester);
     final todayWeekday = DateTime.now().weekday;
 
     await tester.pumpWidget(
@@ -166,11 +158,7 @@ void main() {
   testWidgets('custom week grid wraps earlier on narrow screens', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await _createInitializedProvider(tester);
 
     await tester.binding.setSurfaceSize(const Size(320, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -185,7 +173,6 @@ void main() {
 
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await _pumpScreen(tester);
-    // Open week picker dialog
     await tester.tap(find.textContaining('哪些周上'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('自定义周'));
@@ -208,11 +195,7 @@ void main() {
   });
 
   testWidgets('range week filter uses compact parity chips', (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await _createInitializedProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -225,7 +208,6 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await _pumpScreen(tester);
 
-    // Open week picker dialog
     await tester.tap(find.textContaining('哪些周上'));
     await tester.pumpAndSettle();
 
@@ -246,11 +228,7 @@ void main() {
   });
 
   testWidgets('saving new course from header check succeeds', (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await _createInitializedProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -264,11 +242,16 @@ void main() {
     await _pumpScreen(tester);
 
     await tester.tap(find.bySemanticsLabel('保存'));
-    await _pumpScreen(tester);
+    // _saveCourse awaits a short delay then SharedPreferences I/O.
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
     await tester.pumpAndSettle();
 
-    expect(find.text('课程添加成功'), findsOneWidget);
     expect(provider.courses, hasLength(1));
     expect(provider.courses.first.name, '高等数学');
+    // Success toast is shown on the root messenger before route pop.
+    expect(find.text('课程添加成功'), findsOneWidget);
   });
 }

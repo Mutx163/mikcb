@@ -68,14 +68,14 @@ void main() {
   testWidgets('home screen can quick switch profiles from title trigger', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
     final defaultProfileId = provider.activeProfileId!;
-    await provider.createProfile(name: '秋季课表');
-    await provider.switchProfile(defaultProfileId);
+    await runRealAsync(tester, () async {
+      await provider.createProfile(name: '秋季课表');
+    });
+    await runRealAsync(tester, () async {
+      await provider.switchProfile(defaultProfileId);
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -104,6 +104,9 @@ void main() {
     expect(find.text('秋季课表'), findsOneWidget);
 
     await tester.tap(find.text('秋季课表'));
+    await runRealAsync(tester, () async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
     await _pumpTimetableFrame(tester);
 
     expect(provider.activeProfile?.name, '秋季课表');
@@ -113,14 +116,12 @@ void main() {
   testWidgets('brand title style shows active profile name on home', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(homeTitleStyle: HomeTitleStyle.brand),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(homeTitleStyle: HomeTitleStyle.brand),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -145,11 +146,7 @@ void main() {
   testWidgets('home overflow menu omits timetable management entry', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -174,11 +171,7 @@ void main() {
   testWidgets('profile switch sheet can open timetable management screen', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -206,30 +199,36 @@ void main() {
   testWidgets('switching profiles restores each profile timetable view state', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
     final defaultProfileId = provider.activeProfileId!;
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        timetableHomeViewMode: TimetableHomeViewMode.day,
-        timetableLastViewedDayOfWeek: 3,
-      ),
-    );
-    await provider.setCurrentWeek(2);
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          timetableHomeViewMode: TimetableHomeViewMode.day,
+          timetableLastViewedDayOfWeek: 3,
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(2);
+    });
 
-    await provider.createProfile(name: '周视图课表');
+    await runRealAsync(tester, () async {
+      await provider.createProfile(name: '周视图课表');
+    });
     final weekProfileId = provider.activeProfileId!;
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        timetableHomeViewMode: TimetableHomeViewMode.week,
-      ),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          timetableHomeViewMode: TimetableHomeViewMode.week,
+        ),
+      );
+    });
 
-    await provider.switchProfile(defaultProfileId);
+    await runRealAsync(tester, () async {
+      await provider.switchProfile(defaultProfileId);
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -249,12 +248,16 @@ void main() {
       findsOneWidget,
     );
 
-    await provider.switchProfile(weekProfileId);
+    await runRealAsync(tester, () async {
+      await provider.switchProfile(weekProfileId);
+    });
     await _pumpTimetableFrame(tester);
 
     expect(find.byKey(const ValueKey('timetable-day-view-1-3')), findsNothing);
 
-    await provider.switchProfile(defaultProfileId);
+    await runRealAsync(tester, () async {
+      await provider.switchProfile(defaultProfileId);
+    });
     await _pumpTimetableFrame(tester);
 
     expect(

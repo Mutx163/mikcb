@@ -187,11 +187,7 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider<TimetableProvider>.value(

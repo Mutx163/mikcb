@@ -68,37 +68,37 @@ void main() {
   testWidgets('home timetable shows conflict badge when enabled', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-a',
-        name: '软件工程',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'course-b',
-        name: '计算机网络',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 2,
-        endSection: 3,
-        startTime: '08:55',
-        endTime: '10:35',
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-a',
+          name: '软件工程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-b',
+          name: '计算机网络',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 2,
+          endSection: 3,
+          startTime: '08:55',
+          endTime: '10:35',
+        ),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -115,9 +115,11 @@ void main() {
 
     expect(find.text('冲突'), findsWidgets);
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(showConflictBadgeOnTimetable: false),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(showConflictBadgeOnTimetable: false),
+      );
+    });
     await _pumpTimetableFrame(tester);
 
     expect(find.text('冲突'), findsNothing);
@@ -126,44 +128,46 @@ void main() {
   testWidgets('home timetable renders overlapping conflict courses together', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-a',
-        name: '软件工程',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'course-b',
-        name: '计算机网络',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 2,
-        endSection: 3,
-        startTime: '08:55',
-        endTime: '10:35',
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-a',
+          name: '软件工程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-b',
+          name: '计算机网络',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 2,
+          endSection: 3,
+          startTime: '08:55',
+          endTime: '10:35',
+        ),
+      );
+    });
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        showConflictBadgeOnTimetable: false,
-        timetableConflictCourseOpacity: 0.6,
-      ),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          showConflictBadgeOnTimetable: false,
+          timetableConflictCourseOpacity: 0.6,
+        ),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -188,37 +192,37 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(800, 2000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-a',
-        name: '软件工程',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'course-b',
-        name: '计算机网络',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 2,
-        endSection: 3,
-        startTime: '08:55',
-        endTime: '10:35',
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-a',
+          name: '软件工程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'course-b',
+          name: '计算机网络',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 2,
+          endSection: 3,
+          startTime: '08:55',
+          endTime: '10:35',
+        ),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -258,42 +262,44 @@ void main() {
   testWidgets('home timetable can show non-current-week courses separately', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.setCurrentWeek(1);
-    await provider.addCourse(
-      Course(
-        id: 'current-course',
-        name: '本周课程',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-        startWeek: 1,
-        endWeek: 1,
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'other-week-course',
-        name: '非本周课程',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 3,
-        endSection: 4,
-        startTime: '10:00',
-        endTime: '11:40',
-        startWeek: 2,
-        endWeek: 2,
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(1);
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'current-course',
+          name: '本周课程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 1,
+          endWeek: 1,
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'other-week-course',
+          name: '非本周课程',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+          startWeek: 2,
+          endWeek: 2,
+        ),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -311,9 +317,11 @@ void main() {
     expect(find.text('本周课程'), findsOneWidget);
     expect(find.text('非本周课程'), findsNothing);
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
+      );
+    });
     await _pumpTimetableFrame(tester);
 
     expect(find.text('本周课程'), findsOneWidget);
@@ -323,46 +331,50 @@ void main() {
   testWidgets('non-current-week course does not overlap current-week course', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.setCurrentWeek(1);
-    await provider.addCourse(
-      Course(
-        id: 'current-course',
-        name: '本周课程',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-        startWeek: 1,
-        endWeek: 1,
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'other-week-course',
-        name: '非本周课程',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-        startWeek: 2,
-        endWeek: 2,
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(1);
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'current-course',
+          name: '本周课程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 1,
+          endWeek: 1,
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'other-week-course',
+          name: '非本周课程',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 2,
+          endWeek: 2,
+        ),
+      );
+    });
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -385,31 +397,33 @@ void main() {
   testWidgets('non-current-week course shows overline when displayed', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.setCurrentWeek(1);
-    await provider.addCourse(
-      Course(
-        id: 'other-week-course',
-        name: '非本周课程',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 3,
-        endSection: 4,
-        startTime: '10:00',
-        endTime: '11:40',
-        startWeek: 2,
-        endWeek: 2,
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(1);
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'other-week-course',
+          name: '非本周课程',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+          startWeek: 2,
+          endWeek: 2,
+        ),
+      );
+    });
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -431,46 +445,50 @@ void main() {
   testWidgets('overlapping non-current-week courses only show nearest one', (
     tester,
   ) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.setCurrentWeek(5);
-    await provider.addCourse(
-      Course(
-        id: 'near-course',
-        name: '较近非本周课',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-        startWeek: 6,
-        endWeek: 6,
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'far-course',
-        name: '较远非本周课',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-        startWeek: 10,
-        endWeek: 10,
-      ),
-    );
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(5);
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'near-course',
+          name: '较近非本周课',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 6,
+          endWeek: 6,
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'far-course',
+          name: '较远非本周课',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 10,
+          endWeek: 10,
+        ),
+      );
+    });
 
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
-    );
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
+      );
+    });
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(

@@ -500,22 +500,18 @@ class TimetableProvider with ChangeNotifier {
   Future<void> _init() async {
     await _storageService.init();
 
-    // --- 最小就绪集：只等主屏必需的 3 项数据 ---
-    final profilesFuture = _storageService.getProfiles();
-    final timeSchemesFuture = _storageService.getTimeSchemes();
-    final activeProfileIdFuture = _storageService.getActiveProfileId();
-    final partnerBindingFuture = _storageService.getPartnerTimetableBinding();
-    await Future.wait([
-      profilesFuture,
-      timeSchemesFuture,
-      activeProfileIdFuture,
-      partnerBindingFuture,
-    ]);
+    // Profiles and time schemes both run ensure* migrations that may write
+    // under the same profiles write chain — load sequentially to avoid
+    // re-entrant wait deadlocks under Future.wait.
+    final profiles = await _storageService.getProfiles();
+    final timeSchemes = await _storageService.getTimeSchemes();
+    final activeProfileId = await _storageService.getActiveProfileId();
+    final partnerBinding = await _storageService.getPartnerTimetableBinding();
 
-    _profiles = await profilesFuture;
-    _timeSchemes = await timeSchemesFuture;
-    _activeProfileId = await activeProfileIdFuture;
-    _partnerBinding = await partnerBindingFuture;
+    _profiles = profiles;
+    _timeSchemes = timeSchemes;
+    _activeProfileId = activeProfileId;
+    _partnerBinding = partnerBinding;
 
     if (_activeProfileId != null) {
       final storedActive = _getProfileById(_activeProfileId);

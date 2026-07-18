@@ -88,11 +88,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -133,11 +129,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -182,11 +174,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
+    final provider = await createInitializedTestProvider(tester);
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
