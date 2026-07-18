@@ -31,7 +31,10 @@ hyperosSelectRowLayout(BuildContext context, {bool twoLine = false}) {
   final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
   final cardScope = HyperosControlCardScope.maybeOf(context);
 
-  final isFirst = listScope?.isFirst ?? cardRowScope?.isFirst ?? true;
+  // Prefer shared edge flags; lone select under a ControlCard is last so it
+  // can absorb [bodyBottomInset] via [bodyBottomBleed].
+  final edges = hyperosRowEdgeFlags(context);
+  final isFirst = edges.isFirst;
   final isLast = listScope?.isLast ?? cardRowScope?.isLast ?? cardScope != null;
 
   final padding =

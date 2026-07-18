@@ -628,8 +628,8 @@ class HyperosChoiceTile extends StatelessWidget {
     );
   }
 
-  /// Settings-list rows use [HyperosListTileScope]; popup rows use the
-  /// explicit [isFirstInPopup] / [isLastInPopup] flags from the select body.
+  /// Settings-list rows use [HyperosListTileScope] / [HyperosControlCardRowScope];
+  /// popup rows use the explicit [isFirstInPopup] / [isLastInPopup] flags.
   EdgeInsets _paddingForVariant(BuildContext context) {
     if (variant == HyperosChoiceVariant.popup) {
       return _popupChoiceRowPadding(
@@ -637,10 +637,7 @@ class HyperosChoiceTile extends StatelessWidget {
         isLast: isLastInPopup,
       );
     }
-    final scope = HyperosListTileScope.maybeOf(context);
-    final isFirst = scope?.isFirst ?? true;
-    final isLast = scope?.isLast ?? true;
-    return HyperosTokens.chevronRowPadding(isFirst: isFirst, isLast: isLast);
+    return hyperosChevronRowPadding(context);
   }
 }
 

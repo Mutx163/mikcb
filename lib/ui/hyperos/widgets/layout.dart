@@ -137,19 +137,29 @@ class HyperosControlCardRows extends StatelessWidget {
   }
 }
 
-EdgeInsets hyperosRowPadding(BuildContext context) {
-  final scope = HyperosListTileScope.maybeOf(context);
-  return HyperosTokens.rowPadding(
-    isFirst: scope?.isFirst ?? true,
-    isLast: scope?.isLast ?? true,
+/// Resolves first/last row flags for preference tiles.
+///
+/// Priority: [HyperosListTileScope] (ListGroup) → [HyperosControlCardRowScope]
+/// (ControlCardRows) → standalone first+last.
+({bool isFirst, bool isLast}) hyperosRowEdgeFlags(BuildContext context) {
+  final listScope = HyperosListTileScope.maybeOf(context);
+  final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
+  return (
+    isFirst: listScope?.isFirst ?? cardRowScope?.isFirst ?? true,
+    isLast: listScope?.isLast ?? cardRowScope?.isLast ?? true,
   );
 }
 
+EdgeInsets hyperosRowPadding(BuildContext context) {
+  final edges = hyperosRowEdgeFlags(context);
+  return HyperosTokens.rowPadding(isFirst: edges.isFirst, isLast: edges.isLast);
+}
+
 EdgeInsets hyperosChevronRowPadding(BuildContext context) {
-  final scope = HyperosListTileScope.maybeOf(context);
+  final edges = hyperosRowEdgeFlags(context);
   return HyperosTokens.chevronRowPadding(
-    isFirst: scope?.isFirst ?? true,
-    isLast: scope?.isLast ?? true,
+    isFirst: edges.isFirst,
+    isLast: edges.isLast,
   );
 }
 

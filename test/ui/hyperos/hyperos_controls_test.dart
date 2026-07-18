@@ -7,6 +7,64 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('HyperosSwitchTile', () {
+    tearDown(() {
+      HyperosLayoutTuningController.instance.reset();
+    });
+
+    testWidgets(
+      'ControlCardRows applies first/last padding via hyperosRowPadding',
+      (tester) async {
+        HyperosLayoutTuningController.instance.apply(
+          HyperosLayoutTuning.defaults.copyWith(
+            paddingTopFirst: 21,
+            paddingBottomLast: 27,
+          ),
+        );
+
+        final captured = <EdgeInsets>[];
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HyperosControlCard(
+                edgeToEdge: true,
+                child: HyperosControlCardRows(
+                  children: [
+                    for (var index = 0; index < 3; index++)
+                      Builder(
+                        builder: (context) {
+                          captured.add(hyperosRowPadding(context));
+                          // Probe only — inflated first/last insets overflow a
+                          // fixed-height SwitchTile shell in widget tests.
+                          return const SizedBox(height: 1);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(captured, hasLength(3));
+        expect(
+          captured[0],
+          HyperosTokens.rowPadding(isFirst: true, isLast: false),
+        );
+        expect(
+          captured[1],
+          HyperosTokens.rowPadding(isFirst: false, isLast: false),
+        );
+        expect(
+          captured[2],
+          HyperosTokens.rowPadding(isFirst: false, isLast: true),
+        );
+        expect(captured[0].top, 21);
+        expect(captured[2].bottom, 27);
+        expect(captured[1].top, isNot(21));
+      },
+    );
+
     testWidgets('uses HyperosSwitch and toggles on row tap', (tester) async {
       var value = false;
 
@@ -109,102 +167,98 @@ void main() {
       expect(sliderTheme.data.tickMarkShape, SliderTickMarkShape.noTickMark);
     });
 
-    testWidgets('adds card bottom inset when last tile in HyperosControlCard', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HyperosControlCard(
-              subtitle: 'Speed',
-              edgeToEdge: true,
-              child: HyperosSliderTile(
-                title: 'Transition',
-                value: 0.5,
-                onChanged: (_) {},
+    testWidgets(
+      'edgeToEdge lone slider omits card bodyBottomInset (uses row shell only)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HyperosControlCard(
+                subtitle: 'Speed',
+                edgeToEdge: true,
+                child: HyperosSliderTile(
+                  title: 'Transition',
+                  value: 0.5,
+                  onChanged: (_) {},
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final padding = tester.widget<Padding>(
-        find.ancestor(
-          of: find.byType(HyperosSlider),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is Padding &&
-                widget.padding ==
-                    _sliderTilePaddingForTest(
-                      bottom: HyperosControlCardScope.defaultBodyBottomInset,
+        final padding = tester.widget<Padding>(
+          find.ancestor(
+            of: find.byType(HyperosSlider),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Padding &&
+                  widget.padding == _sliderTilePaddingForTest(bottom: 0),
+            ),
+          ),
+        );
+        // edgeToEdge zeros [bodyBottomInset]; bare full-bleed uses top 12.
+        expect(padding.padding, _sliderTilePaddingForTest(bottom: 0));
+      },
+    );
+
+    testWidgets(
+      'ControlCardRows applies first/last slider padding without middle bleed',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HyperosControlCard(
+                edgeToEdge: true,
+                child: HyperosControlCardRows(
+                  children: [
+                    HyperosSliderTile(
+                      title: 'First',
+                      value: 0.2,
+                      onChanged: (_) {},
                     ),
-          ),
-        ),
-      );
-      expect(
-        padding.padding,
-        _sliderTilePaddingForTest(
-          bottom: HyperosControlCardScope.defaultBodyBottomInset,
-        ),
-      );
-    });
-
-    testWidgets('omits card bottom inset between stacked slider tiles', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HyperosControlCard(
-              edgeToEdge: true,
-              child: HyperosControlCardRows(
-                children: [
-                  HyperosSliderTile(
-                    title: 'First',
-                    value: 0.2,
-                    onChanged: (_) {},
-                  ),
-                  HyperosSliderTile(
-                    title: 'Last',
-                    value: 0.8,
-                    onChanged: (_) {},
-                  ),
-                ],
+                    HyperosSliderTile(
+                      title: 'Last',
+                      value: 0.8,
+                      onChanged: (_) {},
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final paddings = tester
-          .widgetList<Padding>(
-            find.descendant(
-              of: find.byType(HyperosControlCard),
-              matching: find.byWidgetPredicate(
-                (widget) =>
-                    widget is Padding &&
-                    widget.child is Column &&
-                    find
-                        .descendant(
-                          of: find.byWidget(widget),
-                          matching: find.byType(HyperosSlider),
-                        )
-                        .evaluate()
-                        .isNotEmpty,
+        final paddings = tester
+            .widgetList<Padding>(
+              find.descendant(
+                of: find.byType(HyperosControlCard),
+                matching: find.byWidgetPredicate(
+                  (widget) =>
+                      widget is Padding &&
+                      widget.child is Column &&
+                      find
+                          .descendant(
+                            of: find.byWidget(widget),
+                            matching: find.byType(HyperosSlider),
+                          )
+                          .evaluate()
+                          .isNotEmpty,
+                ),
               ),
-            ),
-          )
-          .toList(growable: false);
+            )
+            .toList(growable: false);
 
-      expect(paddings, hasLength(2));
-      expect(paddings.first.padding, _sliderTilePaddingForTest());
-      expect(
-        paddings.last.padding,
-        _sliderTilePaddingForTest(
-          bottom: HyperosControlCardScope.defaultBodyBottomInset,
-        ),
-      );
-    });
+        expect(paddings, hasLength(2));
+        expect(
+          paddings.first.padding,
+          HyperosTokens.rowPadding(isFirst: true, isLast: false),
+        );
+        expect(
+          paddings.last.padding,
+          HyperosTokens.rowPadding(isFirst: false, isLast: true),
+        );
+      },
+    );
 
     testWidgets('shows chevron when slider tile supports tap editing', (
       tester,
@@ -523,7 +577,7 @@ void main() {
 EdgeInsets _sliderTilePaddingForTest({double bottom = 0}) {
   return EdgeInsets.fromLTRB(
     HyperosControlCardScope.defaultHorizontalPadding,
-    0,
+    12,
     HyperosControlCardScope.defaultHorizontalPadding,
     bottom,
   );
