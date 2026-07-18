@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +8,19 @@
   <link rel="apple-touch-icon" href="/assets/logo.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <link rel="stylesheet" href="/assets/lan-timetable.css" />
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('lanEditTheme');
+        var theme = stored === 'dark' || stored === 'light'
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (_) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div id="toast-container" aria-live="polite"></div>
@@ -18,6 +31,16 @@
 
   <!-- 登录页 -->
   <div id="login-view" class="login-page">
+    <button
+      type="button"
+      class="theme-toggle login-theme-toggle"
+      data-theme-toggle
+      aria-label="切换浅色/深色模式"
+      title="切换主题"
+    >
+      <i class="ti ti-sun icon-sun" aria-hidden="true"></i>
+      <i class="ti ti-moon icon-moon" aria-hidden="true"></i>
+    </button>
     <div class="login-bg" aria-hidden="true">
       <span class="login-bg-orb login-bg-orb-a"></span>
       <span class="login-bg-orb login-bg-orb-b"></span>
@@ -145,6 +168,18 @@
           <div class="min-w-0">
             <h2 id="page-title" class="main-header-title" data-i18n="pageOverview">控制台概览</h2>
             <p id="week-label" class="main-header-sub" data-i18n="fetchingTimeline">获取时间轴数据中…</p>
+          </div>
+          <div class="header-actions">
+            <button
+              type="button"
+              class="theme-toggle"
+              data-theme-toggle
+              aria-label="切换浅色/深色模式"
+              title="切换主题"
+            >
+              <i class="ti ti-sun icon-sun" aria-hidden="true"></i>
+              <i class="ti ti-moon icon-moon" aria-hidden="true"></i>
+            </button>
           </div>
         </header>
 

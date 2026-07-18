@@ -1,5 +1,53 @@
 const t = (key, ...args) => window.LanEditI18n?.t(key, ...args) ?? key;
 
+const THEME_STORAGE_KEY = 'lanEditTheme';
+
+function resolvePreferredTheme() {
+  try {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      return storedTheme;
+    }
+  } catch (_) {
+    // localStorage may be unavailable in private mode.
+  }
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
+function applyTheme(theme) {
+  const nextTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', nextTheme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  } catch (_) {
+    // Ignore persistence failures; theme still applies for this session.
+  }
+  document.querySelectorAll('[data-theme-toggle]').forEach((toggleButton) => {
+    const nextLabel =
+      nextTheme === 'dark' ? t('switchToLightTheme') : t('switchToDarkTheme');
+    toggleButton.setAttribute('aria-label', nextLabel);
+    toggleButton.setAttribute('title', nextLabel);
+  });
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark'
+    ? 'dark'
+    : 'light';
+  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+}
+
+function bindThemeToggles() {
+  document.querySelectorAll('[data-theme-toggle]').forEach((toggleButton) => {
+    toggleButton.addEventListener('click', () => toggleTheme());
+  });
+}
+
+applyTheme(resolvePreferredTheme());
+
 const state = {
   token: sessionStorage.getItem('lanEditToken') || '',
   pin: sessionStorage.getItem('lanEditPin') || '',
@@ -1817,6 +1865,8 @@ async function bootstrap() {
     // i18n is optional; login must still work if the asset fails to load.
   }
 
+  bindThemeToggles();
+  applyTheme(resolvePreferredTheme());
   renderActivityLog();
   const params = new URLSearchParams(window.location.search);
   const urlToken = params.get('token');
