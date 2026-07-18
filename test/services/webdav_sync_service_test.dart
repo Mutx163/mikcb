@@ -63,6 +63,54 @@ void main() {
     expect(choice, SyncConflictChoice.keepRemote);
   });
 
+  test('auto upload allows when remote matches last uploaded baseline', () {
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: 'baseline',
+        lastAppliedRemoteHash: 'other',
+        lastUploadedLocalHash: 'baseline',
+        localContentSha256: 'local-new',
+      ),
+      WebdavAutoUploadDecision.allow,
+    );
+  });
+
+  test('auto upload blocks when remote drifted from baseline', () {
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: 'remote-other-device',
+        lastAppliedRemoteHash: 'baseline',
+        lastUploadedLocalHash: 'baseline',
+        localContentSha256: 'local-new',
+      ),
+      WebdavAutoUploadDecision.remoteDrifted,
+    );
+  });
+
+  test('auto upload is upToDate when remote equals local', () {
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: 'same',
+        lastAppliedRemoteHash: 'old',
+        lastUploadedLocalHash: 'old',
+        localContentSha256: 'same',
+      ),
+      WebdavAutoUploadDecision.upToDate,
+    );
+  });
+
+  test('auto upload allows first upload when remote meta missing', () {
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: null,
+        lastAppliedRemoteHash: null,
+        lastUploadedLocalHash: null,
+        localContentSha256: 'local',
+      ),
+      WebdavAutoUploadDecision.allow,
+    );
+  });
+
   test('content hash ignores exportedAt and deviceId', () {
     final base = <String, dynamic>{
       'app': 'mikcb',

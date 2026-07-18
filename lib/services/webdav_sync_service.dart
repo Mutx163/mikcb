@@ -27,6 +27,15 @@ enum WebdavSyncResultKind {
   backupDeleted,
 }
 
+/// Controls whether [WebdavSyncService.uploadSnapshot] may overwrite remote.
+enum WebdavUploadConflictPolicy {
+  /// Manual sync / keep-local: always PUT.
+  force,
+
+  /// Auto upload: only PUT when remote is missing or still our baseline.
+  requireUnchangedRemote,
+}
+
 class WebdavSyncResult {
   final WebdavSyncResultKind kind;
   final String? message;
@@ -138,6 +147,10 @@ class WebdavSyncService {
     CloudBackupSource backupSource = CloudBackupSource.auto,
     bool writeHistory = true,
     bool updateSyncTimestamps = true,
+    /// Auto upload must not silently overwrite a drifted remote.
+    /// Manual keep-local / force paths pass [force].
+    WebdavUploadConflictPolicy conflictPolicy =
+        WebdavUploadConflictPolicy.force,
   }) async {
     final config = configOverride ?? await _configStore.load();
     if (!config.enabled) {
@@ -177,6 +190,38 @@ class WebdavSyncService {
         client: client,
         remoteFolder: config.normalizedRemoteFolder,
       );
+
+      if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote) {
+        final remoteMetaResult = await _clientService.getRemoteMetaResult(
+          client: client,
+          remotePath: config.metaRemotePath,
+        );
+        if (remoteMetaResult.isFailed) {
+          return WebdavSyncResult(
+            kind: WebdavSyncResultKind.failed,
+            message: remoteMetaResult.errorMessage ?? 'remote_meta_unavailable',
+          );
+        }
+        final remoteMeta = remoteMetaResult.meta;
+        final decision = decideWebdavAutoUpload(
+          remoteContentSha256: remoteMeta?.contentSha256,
+          lastAppliedRemoteHash: config.lastAppliedRemoteHash,
+          lastUploadedLocalHash: config.lastUploadedLocalHash,
+          localContentSha256: snapshot.contentSha256,
+        );
+        switch (decision) {
+          case WebdavAutoUploadDecision.allow:
+            break;
+          case WebdavAutoUploadDecision.upToDate:
+            return const WebdavSyncResult(kind: WebdavSyncResultKind.upToDate);
+          case WebdavAutoUploadDecision.remoteDrifted:
+            return const WebdavSyncResult(
+              kind: WebdavSyncResultKind.cancelled,
+              message: 'remote_drifted_manual_sync_required',
+            );
+        }
+      }
+
       await _clientService.putBytes(
         client: client,
         remotePath: config.snapshotRemotePath,

@@ -192,7 +192,10 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     await _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.uploadSnapshot(provider: provider);
+        final result = await _syncService.uploadSnapshot(
+          provider: provider,
+          conflictPolicy: WebdavUploadConflictPolicy.requireUnchangedRemote,
+        );
         _applyResult(result);
       } finally {
         _setStatus(_status.copyWith(isSyncing: false));
