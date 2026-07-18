@@ -123,6 +123,53 @@ class HolidayData {
     );
   }
 
+  /// `yyyy-MM-dd` keys for native surfaces (island / widget schedule).
+  ///
+  /// Uses full [isHoliday] semantics so custom makeup workdays that cover a
+  /// statutory vacation are excluded, matching Flutter timetable UI.
+  List<String> holidayDateKeysForSnapshot() {
+    final dateKeys = <String>{};
+    for (final entry in entries) {
+      final dateOnly = DateTime(
+        entry.date.year,
+        entry.date.month,
+        entry.date.day,
+      );
+      if (!isHoliday(dateOnly)) {
+        continue;
+      }
+      dateKeys.add(_dateKey(dateOnly));
+    }
+    return dateKeys.toList()..sort();
+  }
+
+  /// Effective makeup/adjusted workdays for native holiday override punch-through.
+  ///
+  /// Mirrors [isAdjustedWorkday] (custom rest still wins over makeup).
+  List<String> adjustedWorkdayDateKeysForSnapshot() {
+    final dateKeys = <String>{};
+    for (final entry in entries) {
+      if (!entry.isAdjustedWorkday) {
+        continue;
+      }
+      final dateOnly = DateTime(
+        entry.date.year,
+        entry.date.month,
+        entry.date.day,
+      );
+      if (!isAdjustedWorkday(dateOnly)) {
+        continue;
+      }
+      dateKeys.add(_dateKey(dateOnly));
+    }
+    return dateKeys.toList()..sort();
+  }
+
+  static String _dateKey(DateTime dateOnly) =>
+      '${dateOnly.year}-'
+      '${dateOnly.month.toString().padLeft(2, '0')}-'
+      '${dateOnly.day.toString().padLeft(2, '0')}';
+
   /// 某日期是否为调休上班日（排除被自定义假期覆盖的情况）
   bool isAdjustedWorkday(DateTime date) {
     final dateOnly = DateTime(date.year, date.month, date.day);

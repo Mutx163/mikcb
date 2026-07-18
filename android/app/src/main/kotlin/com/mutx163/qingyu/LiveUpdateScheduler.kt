@@ -85,6 +85,13 @@ internal fun liveSchedulerIsLegacyHolidayFlagActive(
     return isHolidayDate == String.format("%04d-%02d-%02d", year, month, dayOfMonth)
 }
 
+/**
+ * Same priority as Flutter [TimetableProvider.isHoliday]:
+ * 1. Effective adjusted workday (makeup) → not holiday (beats override)
+ * 2. holidayOverrideEnabled → holiday
+ * 3. enableHolidayMarking off → not holiday
+ * 4. Else membership in [holidayDates]
+ */
 internal fun liveSchedulerIsDateHoliday(
     holidayDates: Set<String>,
     holidayOverrideEnabled: Boolean,
@@ -92,14 +99,18 @@ internal fun liveSchedulerIsDateHoliday(
     year: Int,
     month: Int,
     dayOfMonth: Int,
+    adjustedWorkdayDates: Set<String> = emptySet(),
 ): Boolean {
+    val dateStr = String.format("%04d-%02d-%02d", year, month, dayOfMonth)
+    if (adjustedWorkdayDates.contains(dateStr)) {
+        return false
+    }
     if (holidayOverrideEnabled) {
         return true
     }
     if (!enableHolidayMarking || holidayDates.isEmpty()) {
         return false
     }
-    val dateStr = String.format("%04d-%02d-%02d", year, month, dayOfMonth)
     return holidayDates.contains(dateStr)
 }
 
@@ -225,6 +236,7 @@ internal data class LiveSchedulerTestSnapshot(
     val semesterStartMillis: Long?,
     val endReminderLeadMillis: Long = 600_000L,
     val holidayDates: Set<String> = emptySet(),
+    val adjustedWorkdayDates: Set<String> = emptySet(),
     val holidayOverrideEnabled: Boolean = false,
     val enableHolidayMarking: Boolean = true,
     val courses: List<LiveSchedulerTestCourse>,
@@ -253,6 +265,7 @@ internal fun liveSchedulerFindActiveSelection(
             year = nowCalendar.get(Calendar.YEAR),
             month = nowCalendar.get(Calendar.MONTH) + 1,
             dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
+            adjustedWorkdayDates = snapshot.adjustedWorkdayDates,
         )
     ) {
         return null
@@ -549,6 +562,7 @@ private data class NativeScheduleSnapshot(
     /** Date (yyyy-MM-dd) the [isHoliday] flag was computed for; flag is only valid on that day. */
     val isHolidayDate: String?,
     val holidayDates: Set<String>,
+    val adjustedWorkdayDates: Set<String>,
     val holidayOverrideEnabled: Boolean,
     val enableHolidayMarking: Boolean,
     val courses: List<NativeCourse>,
@@ -1248,6 +1262,14 @@ object LiveUpdateScheduler {
                 if (dateStr.isNotBlank()) holidayDates.add(dateStr)
             }
         }
+        val adjustedWorkdayDatesArray = json.optJSONArray("adjustedWorkdayDates")
+        val adjustedWorkdayDates = mutableSetOf<String>()
+        if (adjustedWorkdayDatesArray != null) {
+            for (i in 0 until adjustedWorkdayDatesArray.length()) {
+                val dateStr = adjustedWorkdayDatesArray.optString(i)
+                if (dateStr.isNotBlank()) adjustedWorkdayDates.add(dateStr)
+            }
+        }
 
         return NativeScheduleSnapshot(
             currentWeek = json.optInt("currentWeek", 1),
@@ -1256,6 +1278,7 @@ object LiveUpdateScheduler {
             isHoliday = json.optBoolean("isHoliday", false),
             isHolidayDate = json.optString("isHolidayDate").takeIf { it.isNotBlank() },
             holidayDates = holidayDates,
+            adjustedWorkdayDates = adjustedWorkdayDates,
             holidayOverrideEnabled = json.optBoolean("holidayOverrideEnabled", false),
             enableHolidayMarking = json.optBoolean("enableHolidayMarking", true),
             courses = courses,
@@ -1925,6 +1948,7 @@ object LiveUpdateScheduler {
             year = dateCalendar.get(Calendar.YEAR),
             month = dateCalendar.get(Calendar.MONTH) + 1,
             dayOfMonth = dateCalendar.get(Calendar.DAY_OF_MONTH),
+            adjustedWorkdayDates = snapshot.adjustedWorkdayDates,
         )
     }
 

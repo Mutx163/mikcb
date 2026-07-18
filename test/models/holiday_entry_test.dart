@@ -103,6 +103,11 @@ void main() {
 
       expect(data.isHoliday(DateTime(2026, 10, 10)), isFalse);
       expect(data.isAdjustedWorkday(DateTime(2026, 10, 10)), isTrue);
+      expect(data.holidayDateKeysForSnapshot(), [
+        '2026-10-01',
+        '2026-10-02',
+        '2026-12-25',
+      ]);
     });
 
     test('custom vacation overrides makeup workday on same date', () {
@@ -128,6 +133,71 @@ void main() {
       expect(data.isHoliday(DateTime(2026, 5, 4)), isTrue);
       expect(data.isAdjustedWorkday(DateTime(2026, 5, 4)), isFalse);
     });
+
+    test(
+      'custom makeup workday covers statutory vacation for island snapshot keys',
+      () {
+        final data = HolidayData(
+          year: 2026,
+          version: 1,
+          entries: [
+            HolidayEntry(
+              date: DateTime(2026, 10, 1),
+              name: '国庆节',
+              type: HolidayType.vacation,
+              groupId: 'national-day-2026',
+            ),
+            HolidayEntry(
+              date: DateTime(2026, 10, 2),
+              name: '国庆节',
+              type: HolidayType.vacation,
+              groupId: 'national-day-2026',
+            ),
+            HolidayEntry(
+              date: DateTime(2026, 10, 1),
+              name: '学校补班',
+              type: HolidayType.adjustedWorkday,
+              groupId: 'custom-school-makeup',
+            ),
+          ],
+        );
+
+        expect(data.isHoliday(DateTime(2026, 10, 1)), isFalse);
+        expect(data.isAdjustedWorkday(DateTime(2026, 10, 1)), isTrue);
+        expect(data.isHoliday(DateTime(2026, 10, 2)), isTrue);
+        expect(data.holidayDateKeysForSnapshot(), ['2026-10-02']);
+        expect(data.adjustedWorkdayDateKeysForSnapshot(), ['2026-10-01']);
+      },
+    );
+
+    test(
+      'custom rest still excludes makeup from adjusted workday snapshot keys',
+      () {
+        final data = HolidayData(
+          year: 2026,
+          version: 1,
+          entries: [
+            HolidayEntry(
+              date: DateTime(2026, 5, 4),
+              name: '调休上班',
+              type: HolidayType.adjustedWorkday,
+              groupId: 'labor-day-2026',
+            ),
+            HolidayEntry(
+              date: DateTime(2026, 5, 4),
+              name: '学校放假',
+              type: HolidayType.vacation,
+              groupId: 'custom-school-closure',
+            ),
+          ],
+        );
+
+        expect(data.isHoliday(DateTime(2026, 5, 4)), isTrue);
+        expect(data.isAdjustedWorkday(DateTime(2026, 5, 4)), isFalse);
+        expect(data.adjustedWorkdayDateKeysForSnapshot(), isEmpty);
+        expect(data.holidayDateKeysForSnapshot(), ['2026-05-04']);
+      },
+    );
 
     test('entriesForGroup returns sorted group members', () {
       final data = buildSampleData();

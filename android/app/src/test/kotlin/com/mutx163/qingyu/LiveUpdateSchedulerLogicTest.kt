@@ -283,6 +283,32 @@ class LiveUpdateSchedulerLogicTest {
     }
 
     @Test
+    fun adjustedWorkdayBeatsHolidayOverride() {
+        assertFalse(
+            liveSchedulerIsDateHoliday(
+                holidayDates = emptySet(),
+                holidayOverrideEnabled = true,
+                enableHolidayMarking = true,
+                year = 2026,
+                month = 7,
+                dayOfMonth = 18,
+                adjustedWorkdayDates = setOf("2026-07-18"),
+            ),
+        )
+        assertTrue(
+            liveSchedulerIsDateHoliday(
+                holidayDates = emptySet(),
+                holidayOverrideEnabled = true,
+                enableHolidayMarking = true,
+                year = 2026,
+                month = 7,
+                dayOfMonth = 19,
+                adjustedWorkdayDates = setOf("2026-07-18"),
+            ),
+        )
+    }
+
+    @Test
     fun resolveStageHonorsBeforeClassWindowAndAfterClassEnd() {
         val startAtMillis = calendarOf(2026, Calendar.MARCH, 23, 8, 0).timeInMillis
         val endAtMillis = calendarOf(2026, Calendar.MARCH, 23, 9, 40).timeInMillis

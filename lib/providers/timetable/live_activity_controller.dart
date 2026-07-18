@@ -81,10 +81,17 @@ List<String> _liveBuildHolidayDatesForSnapshot(TimetableProvider host) {
   if (!host._settings.enableHolidayMarking || host._holidayData == null) {
     return const [];
   }
-  return host._holidayData!.entries.where((e) => e.shouldHideCourses).map((e) {
-    final d = e.date;
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  }).toList();
+  // Full HolidayData.isHoliday semantics (custom makeup beats statutory hide).
+  // Do not use TimetableProvider.isHoliday: holidayOverride is sent separately.
+  return host._holidayData!.holidayDateKeysForSnapshot();
+}
+
+/// Makeup days that must punch through native [holidayOverrideEnabled].
+List<String> _liveBuildAdjustedWorkdayDatesForSnapshot(TimetableProvider host) {
+  if (host._holidayData == null) {
+    return const [];
+  }
+  return host._holidayData!.adjustedWorkdayDateKeysForSnapshot();
 }
 
 void _liveStartActivityTick(TimetableProvider host) {
@@ -572,6 +579,7 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
       '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   final todayIsHoliday = host.isHoliday(now);
   final holidayDates = _liveBuildHolidayDatesForSnapshot(host);
+  final adjustedWorkdayDates = _liveBuildAdjustedWorkdayDatesForSnapshot(host);
   final snapshotSignature = jsonEncode({
     'profileId': activeProfile.id,
     'currentWeek': scheduleWeek,
@@ -580,6 +588,7 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
     'isHoliday': todayIsHoliday,
     'isHolidayDate': todayKey,
     'holidayDates': holidayDates,
+    'adjustedWorkdayDates': adjustedWorkdayDates,
     'holidayOverrideEnabled': host._settings.holidayOverrideEnabled,
     'enableHolidayMarking': host._settings.enableHolidayMarking,
     'settings': host._settings.toJson(),
@@ -599,6 +608,7 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
     isHoliday: todayIsHoliday,
     isHolidayDate: todayKey,
     holidayDates: holidayDates,
+    adjustedWorkdayDates: adjustedWorkdayDates,
     holidayOverrideEnabled: host._settings.holidayOverrideEnabled,
     enableHolidayMarking: host._settings.enableHolidayMarking,
   );
