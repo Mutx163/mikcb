@@ -1,17 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('TimetableProvider undo functionality', () {
     late TimetableProvider provider;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      provider = TimetableProvider();
-      // Wait for initialization
-      await Future.delayed(Duration.zero);
+      // Avoid auto-init (holiday fetch / live activity / home widget) so undo
+      // unit tests stay offline and do not hang CI.
+      provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
     });
 
     tearDown(() {
@@ -64,8 +71,11 @@ void main() {
           themeSeedColor: '#FF0000',
         );
 
-        // Apply theme with undo
-        provider.applyThemeWithUndo(newSettings, themeName: 'Test Theme');
+        // Apply theme with undo (do not await under fakeAsync).
+        unawaited(
+          provider.applyThemeWithUndo(newSettings, themeName: 'Test Theme'),
+        );
+        async.flushMicrotasks();
         expect(provider.hasPendingUndo, isTrue);
 
         // Advance time to just before timeout
@@ -97,22 +107,21 @@ void main() {
     });
 
     test('dispose cancels undo timer without crash', () async {
-      // Use a separate provider for this test
-      final testProvider = TimetableProvider();
-      await Future.delayed(Duration.zero);
+      final testProvider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
 
       final newSettings = testProvider.settings.copyWith(
         themeSeedColor: '#FF0000',
       );
 
-      // Apply theme with undo
       await testProvider.applyThemeWithUndo(
         newSettings,
         themeName: 'Test Theme',
       );
       expect(testProvider.hasPendingUndo, isTrue);
 
-      // Dispose provider - should not throw
       testProvider.dispose();
     });
   });

@@ -94,8 +94,14 @@ void main() {
       },
     );
 
-    test('strip card uses stadium shape token', () {
-      expect(HyperosTheme.stripShape(), isA<StadiumBorder>());
+    test('strip card uses control radius shape token', () {
+      final shape = HyperosTheme.stripShape();
+      expect(shape, isA<RoundedRectangleBorder>());
+      final border = shape as RoundedRectangleBorder;
+      expect(
+        border.borderRadius,
+        BorderRadius.circular(HyperosTokens.controlRadius),
+      );
     });
 
     testWidgets('single-row nav tile keeps 56dp touch height', (tester) async {
