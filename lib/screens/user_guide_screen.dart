@@ -368,8 +368,21 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
   }
 
+  /// Body copy matching about-page「项目定位」sheet ([AboutInfoSheetBody]).
+  TextStyle _guideBodyStyle() {
+    return HyperosTypography.listDetail(
+      context,
+    ).copyWith(color: HyperosColors.primaryText(context), height: 1.45);
+  }
+
+  /// Secondary / footnote body (same size as [_guideBodyStyle], muted ink).
+  TextStyle _guideMutedBodyStyle() {
+    return HyperosTypography.listDetail(context).copyWith(height: 1.45);
+  }
+
   Widget _buildPrivacyPage(AppLocalizations l10n) {
-    final typo = context.theme.typography.body;
+    final bodyStyle = _guideBodyStyle();
+    final mutedBodyStyle = _guideMutedBodyStyle();
     final helperText = widget.requirePrivacyConsent
         ? l10n.guidePrivacyHelperRequireConsent
         : l10n.guidePrivacyHelperViewOnly;
@@ -407,13 +420,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.guidePrivacyParagraph1, style: typo.sm),
+                Text(l10n.guidePrivacyParagraph1, style: bodyStyle),
                 const SizedBox(height: 8),
-                Text(l10n.guidePrivacyParagraph2, style: typo.sm),
+                Text(l10n.guidePrivacyParagraph2, style: bodyStyle),
                 const SizedBox(height: 8),
-                Text(l10n.guidePrivacyParagraph3, style: typo.sm),
+                Text(l10n.guidePrivacyParagraph3, style: bodyStyle),
                 const SizedBox(height: 8),
-                Text(l10n.guidePrivacyParagraph4, style: typo.sm),
+                Text(l10n.guidePrivacyParagraph4, style: bodyStyle),
               ],
             ),
           ),
@@ -425,11 +438,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.guideRiskParagraph1, style: typo.sm),
+                Text(l10n.guideRiskParagraph1, style: bodyStyle),
                 const SizedBox(height: 8),
-                Text(l10n.guideRiskParagraph2, style: typo.sm),
+                Text(l10n.guideRiskParagraph2, style: bodyStyle),
                 const SizedBox(height: 8),
-                Text(l10n.guideRiskParagraph3, style: typo.sm),
+                Text(l10n.guideRiskParagraph3, style: bodyStyle),
               ],
             ),
           ),
@@ -438,12 +451,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         HyperosControlCard(
           subtitle: helperText,
           child: HyperosControlCardInset(
-            child: Text(
-              l10n.guideUmengPrivacyLink,
-              style: typo.xs2.copyWith(
-                color: context.theme.colors.mutedForeground,
-              ),
-            ),
+            child: Text(l10n.guideUmengPrivacyLink, style: mutedBodyStyle),
           ),
         ),
         if (widget.requirePrivacyConsent) ...[
@@ -592,8 +600,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildTipsPage(AppLocalizations l10n) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
+    final bodyStyle = _guideBodyStyle();
+    final mutedBodyStyle = _guideMutedBodyStyle();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -601,10 +609,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         HyperosSectionLabel(text: l10n.guideTipsHeader),
         Padding(
           padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
-          child: Text(
-            l10n.guideTipsSubtitle,
-            style: typo.sm.copyWith(color: colors.mutedForeground),
-          ),
+          child: Text(l10n.guideTipsSubtitle, style: mutedBodyStyle),
         ),
         // 短名称建议卡片
         HyperosControlCard(
@@ -613,7 +618,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.guideShortNameAdviceSubtitle, style: typo.sm),
+                Text(l10n.guideShortNameAdviceSubtitle, style: bodyStyle),
                 const SizedBox(height: 12),
                 _buildShortNameExampleRow(
                   l10n.guideShortNameRecommended,
@@ -656,7 +661,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.guideImportMethodsSubtitle, style: typo.sm),
+                Text(l10n.guideImportMethodsSubtitle, style: bodyStyle),
                 const SizedBox(height: 12),
                 _buildNumberedLine('1', l10n.guideImportMethodStep1),
                 const SizedBox(height: 10),
@@ -664,10 +669,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 const SizedBox(height: 10),
                 _buildNumberedLine('3', l10n.guideImportMethodStep3),
                 const SizedBox(height: 12),
-                Text(
-                  l10n.guideImportMethodExtra,
-                  style: typo.xs2.copyWith(color: colors.mutedForeground),
-                ),
+                Text(l10n.guideImportMethodExtra, style: mutedBodyStyle),
               ],
             ),
           ),
@@ -694,20 +696,19 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildShortNameExampleRow(String label, String example) {
+    final bodyStyle = _guideBodyStyle();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 72,
-          child: Text(label, style: context.theme.typography.body.sm),
-        ),
-        Expanded(child: Text(example, style: context.theme.typography.body.sm)),
+        SizedBox(width: 72, child: Text(label, style: bodyStyle)),
+        Expanded(child: Text(example, style: bodyStyle)),
       ],
     );
   }
 
   Widget _buildNumberedLine(String step, String text) {
     final colors = context.theme.colors;
+    final bodyStyle = _guideBodyStyle();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -725,7 +726,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: context.theme.typography.body.sm)),
+        Expanded(child: Text(text, style: bodyStyle)),
       ],
     );
   }
@@ -737,7 +738,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       children: [
         Icon(icon, size: 18, color: colors.primary),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: context.theme.typography.body.sm)),
+        Expanded(child: Text(text, style: _guideBodyStyle())),
       ],
     );
   }
