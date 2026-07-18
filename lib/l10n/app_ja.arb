@@ -852,6 +852,34 @@
   "aboutContributorsTitle": "コード貢献者",
   "aboutContributorsSubtitle": "開発者と教務インポート適応者の一覧",
   "aboutRepositoryTitle": "オープンソースリポジトリ",
+  "aboutRepositorySubtitle": "GitHubリポジトリ、ソース、Releaseとフィードバック",
+  "aboutOpenSourceLicensesTitle": "オープンソースライセンス",
+  "aboutOpenSourceLicensesSubtitle": "本アプリのライセンスと第三者コンポーネントの許諾",
+  "aboutOpenSourceLicensesSearchHint": "パッケージ名を検索",
+  "aboutOpenSourceLicensesAppSectionTitle": "ライセンスについて",
+  "aboutOpenSourceLicensesAppLicenseLabel": "軽屿時間割のソースコードは GPL-3.0-or-later で公開されています。",
+  "aboutOpenSourceLicensesIntro": "以下は本アプリが利用するオープンソースコンポーネントと各ライセンスです。項目をタップすると全文を確認できます。",
+  "aboutOpenSourceLicensesExtraSectionTitle": "ライセンスについて",
+  "aboutOpenSourceLicensesExtraUmeng": "友盟（Umeng）などの分析サービスは、プライバシーポリシーへの同意後にのみ有効になり、各サービスの利用規約とプライバシーポリシーが適用されます。",
+  "aboutOpenSourceLicensesExtraNote": "",
+  "aboutOpenSourceLicensesPackagesSectionTitle": "オープンソースコンポーネント（{count}）",
+  "@aboutOpenSourceLicensesPackagesSectionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesPackageSubtitle": "ライセンス本文 {count} 件",
+  "@aboutOpenSourceLicensesPackageSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesLoadFailed": "ライセンスの読み込みに失敗しました。後でもう一度お試しください。",
+  "aboutOpenSourceLicensesEmpty": "一致するパッケージがありません",
   "aboutAppLogsTitle": "アプリログ",
   "aboutAppLogsSubtitle": "error / warn / info / debug / verbose全レベルのログを確認",
   "appLogsShareText": "軽屿時間割がエクスポートしたアプリログです。ローカル実行記録を含み、更新、インポート、通知、ページ、クラッシュ問題のトラブルシュートに使用できます。",
@@ -864,7 +892,6 @@
   "appLogsClearAction": "ログをクリア",
   "appLogsCleared": "アプリログをクリアしました",
   "appLogsClearFailed": "アプリログのクリアに失敗しました",
-  "aboutRepositorySubtitle": "GitHubリポジトリ、ソース、Releaseとフィードバック",
   "timeSchemeTitle": "時間テンプレート",
   "newSchemeTooltip": "新規テンプレート",
   "timeSchemeSummary": "{sections}時限・{profiles}個の時間割・{courses}件の授業・{overrideCourses}件の副テンプレート",

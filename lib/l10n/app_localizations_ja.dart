@@ -1717,6 +1717,56 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutRepositoryTitle => 'オープンソースリポジトリ';
 
   @override
+  String get aboutRepositorySubtitle => 'GitHubリポジトリ、ソース、Releaseとフィードバック';
+
+  @override
+  String get aboutOpenSourceLicensesTitle => 'オープンソースライセンス';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle => '本アプリのライセンスと第三者コンポーネントの許諾';
+
+  @override
+  String get aboutOpenSourceLicensesSearchHint => 'パッケージ名を検索';
+
+  @override
+  String get aboutOpenSourceLicensesAppSectionTitle => 'ライセンスについて';
+
+  @override
+  String get aboutOpenSourceLicensesAppLicenseLabel =>
+      '軽屿時間割のソースコードは GPL-3.0-or-later で公開されています。';
+
+  @override
+  String get aboutOpenSourceLicensesIntro =>
+      '以下は本アプリが利用するオープンソースコンポーネントと各ライセンスです。項目をタップすると全文を確認できます。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraSectionTitle => 'ライセンスについて';
+
+  @override
+  String get aboutOpenSourceLicensesExtraUmeng =>
+      '友盟（Umeng）などの分析サービスは、プライバシーポリシーへの同意後にのみ有効になり、各サービスの利用規約とプライバシーポリシーが適用されます。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraNote => '';
+
+  @override
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
+    return 'オープンソースコンポーネント（$count）';
+  }
+
+  @override
+  String aboutOpenSourceLicensesPackageSubtitle(int count) {
+    return 'ライセンス本文 $count 件';
+  }
+
+  @override
+  String get aboutOpenSourceLicensesLoadFailed =>
+      'ライセンスの読み込みに失敗しました。後でもう一度お試しください。';
+
+  @override
+  String get aboutOpenSourceLicensesEmpty => '一致するパッケージがありません';
+
+  @override
   String get aboutAppLogsTitle => 'アプリログ';
 
   @override
@@ -1762,9 +1812,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appLogsRecordingPausedHint => '记录已关闭，下方为历史日志，关闭后不再新增';
-
-  @override
-  String get aboutRepositorySubtitle => 'GitHubリポジトリ、ソース、Releaseとフィードバック';
 
   @override
   String get timeSchemeTitle => '時間テンプレート';

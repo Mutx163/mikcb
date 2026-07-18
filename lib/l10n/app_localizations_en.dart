@@ -1794,6 +1794,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutRepositoryTitle => 'Open Source Repositories';
 
   @override
+  String get aboutRepositorySubtitle =>
+      'GitHub source, releases, and feedback entry';
+
+  @override
+  String get aboutOpenSourceLicensesTitle => 'Open Source Licenses';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle =>
+      'App license and third-party component licenses';
+
+  @override
+  String get aboutOpenSourceLicensesSearchHint => 'Search package name';
+
+  @override
+  String get aboutOpenSourceLicensesAppSectionTitle => 'About these licenses';
+
+  @override
+  String get aboutOpenSourceLicensesAppLicenseLabel =>
+      'Qingyu Timetable source code is released under GPL-3.0-or-later.';
+
+  @override
+  String get aboutOpenSourceLicensesIntro =>
+      'The list below shows open-source components used by this app and their licenses. Tap an item to read the full text.';
+
+  @override
+  String get aboutOpenSourceLicensesExtraSectionTitle => 'About these licenses';
+
+  @override
+  String get aboutOpenSourceLicensesExtraUmeng =>
+      'Analytics services such as Umeng are enabled only after you accept the privacy policy, and are governed by their own terms and privacy policy.';
+
+  @override
+  String get aboutOpenSourceLicensesExtraNote => '';
+
+  @override
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
+    return 'Open-source components ($count)';
+  }
+
+  @override
+  String aboutOpenSourceLicensesPackageSubtitle(int count) {
+    return '$count license text(s)';
+  }
+
+  @override
+  String get aboutOpenSourceLicensesLoadFailed =>
+      'Failed to load licenses. Please try again later.';
+
+  @override
+  String get aboutOpenSourceLicensesEmpty => 'No matching packages';
+
+  @override
   String get aboutAppLogsTitle => 'App logs';
 
   @override
@@ -1840,10 +1892,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appLogsRecordingPausedHint =>
       'Recording is off. The entries below are historical logs only; no new logs will be added';
-
-  @override
-  String get aboutRepositorySubtitle =>
-      'GitHub source, releases, and feedback entry';
 
   @override
   String get timeSchemeTitle => 'Time Schemes';

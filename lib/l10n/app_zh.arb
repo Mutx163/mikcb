@@ -961,6 +961,34 @@
   "aboutContributorsTitle": "代码贡献者",
   "aboutContributorsSubtitle": "开发人员与教务导入适配者名单",
   "aboutRepositoryTitle": "开源仓库",
+  "aboutRepositorySubtitle": "GitHub 仓库地址、源码、Release 和反馈入口",
+  "aboutOpenSourceLicensesTitle": "开源许可",
+  "aboutOpenSourceLicensesSubtitle": "本应用协议与第三方组件许可证",
+  "aboutOpenSourceLicensesSearchHint": "搜索组件名称",
+  "aboutOpenSourceLicensesAppSectionTitle": "许可说明",
+  "aboutOpenSourceLicensesAppLicenseLabel": "轻屿课表源码以 GPL-3.0-or-later 发布。",
+  "aboutOpenSourceLicensesIntro": "下方列表为本应用使用的开源组件及其许可证，点进可查看全文。",
+  "aboutOpenSourceLicensesExtraSectionTitle": "许可说明",
+  "aboutOpenSourceLicensesExtraUmeng": "友盟统计等分析服务仅在你同意隐私政策后启用，适用友盟自身的用户协议与隐私政策。",
+  "aboutOpenSourceLicensesExtraNote": "",
+  "aboutOpenSourceLicensesPackagesSectionTitle": "开源组件（{count}）",
+  "@aboutOpenSourceLicensesPackagesSectionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesPackageSubtitle": "{count} 份许可证文本",
+  "@aboutOpenSourceLicensesPackageSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesLoadFailed": "加载许可证失败，请稍后重试",
+  "aboutOpenSourceLicensesEmpty": "没有匹配的组件",
   "aboutAppLogsTitle": "应用日志",
   "aboutAppLogsSubtitle": "查看整个软件的 error / warn / info / debug / verbose 全等级日志",
   "appLogsShareText": "这是轻屿课表导出的应用日志，包含整个软件的本地运行记录，可用于排查更新、导入、通知、页面和崩溃问题",
@@ -976,7 +1004,6 @@
   "appLogsSourceApp": "应用",
   "appLogsSourceNative": "超级岛",
   "appLogsRecordingPausedHint": "记录已关闭，下方为历史日志，关闭后不再新增",
-  "aboutRepositorySubtitle": "GitHub 仓库地址、源码、Release 和反馈入口",
   "timeSchemeTitle": "时间模板",
   "newSchemeTooltip": "新建模板",
   "timeSchemeSummary": "{sections} 节 · {profiles} 个课表 · {courses} 节课程 · {overrideCourses} 节副时间表",

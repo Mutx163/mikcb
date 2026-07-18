@@ -3173,6 +3173,90 @@ abstract class AppLocalizations {
   /// **'开源仓库'**
   String get aboutRepositoryTitle;
 
+  /// No description provided for @aboutRepositorySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub 仓库地址、源码、Release 和反馈入口'**
+  String get aboutRepositorySubtitle;
+
+  /// No description provided for @aboutOpenSourceLicensesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开源许可'**
+  String get aboutOpenSourceLicensesTitle;
+
+  /// No description provided for @aboutOpenSourceLicensesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本应用协议与第三方组件许可证'**
+  String get aboutOpenSourceLicensesSubtitle;
+
+  /// No description provided for @aboutOpenSourceLicensesSearchHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索组件名称'**
+  String get aboutOpenSourceLicensesSearchHint;
+
+  /// No description provided for @aboutOpenSourceLicensesAppSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'许可说明'**
+  String get aboutOpenSourceLicensesAppSectionTitle;
+
+  /// No description provided for @aboutOpenSourceLicensesAppLicenseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表源码以 GPL-3.0-or-later 发布。'**
+  String get aboutOpenSourceLicensesAppLicenseLabel;
+
+  /// No description provided for @aboutOpenSourceLicensesIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'下方列表为本应用使用的开源组件及其许可证，点进可查看全文。'**
+  String get aboutOpenSourceLicensesIntro;
+
+  /// No description provided for @aboutOpenSourceLicensesExtraSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'许可说明'**
+  String get aboutOpenSourceLicensesExtraSectionTitle;
+
+  /// No description provided for @aboutOpenSourceLicensesExtraUmeng.
+  ///
+  /// In zh, this message translates to:
+  /// **'友盟统计等分析服务仅在你同意隐私政策后启用，适用友盟自身的用户协议与隐私政策。'**
+  String get aboutOpenSourceLicensesExtraUmeng;
+
+  /// No description provided for @aboutOpenSourceLicensesExtraNote.
+  ///
+  /// In zh, this message translates to:
+  /// **''**
+  String get aboutOpenSourceLicensesExtraNote;
+
+  /// No description provided for @aboutOpenSourceLicensesPackagesSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开源组件（{count}）'**
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count);
+
+  /// No description provided for @aboutOpenSourceLicensesPackageSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 份许可证文本'**
+  String aboutOpenSourceLicensesPackageSubtitle(int count);
+
+  /// No description provided for @aboutOpenSourceLicensesLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载许可证失败，请稍后重试'**
+  String get aboutOpenSourceLicensesLoadFailed;
+
+  /// No description provided for @aboutOpenSourceLicensesEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的组件'**
+  String get aboutOpenSourceLicensesEmpty;
+
   /// No description provided for @aboutAppLogsTitle.
   ///
   /// In zh, this message translates to:
@@ -3262,12 +3346,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'记录已关闭，下方为历史日志，关闭后不再新增'**
   String get appLogsRecordingPausedHint;
-
-  /// No description provided for @aboutRepositorySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'GitHub 仓库地址、源码、Release 和反馈入口'**
-  String get aboutRepositorySubtitle;
 
   /// No description provided for @timeSchemeTitle.
   ///

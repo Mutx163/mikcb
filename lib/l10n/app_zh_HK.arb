@@ -851,6 +851,34 @@
   "aboutContributorsTitle": "代碼貢獻者",
   "aboutContributorsSubtitle": "開發人員與教務匯入適配者名單",
   "aboutRepositoryTitle": "開源倉庫",
+  "aboutRepositorySubtitle": "GitHub 倉庫地址、源碼、Release 和反饋入口",
+  "aboutOpenSourceLicensesTitle": "開源許可",
+  "aboutOpenSourceLicensesSubtitle": "本應用協議與第三方組件許可證",
+  "aboutOpenSourceLicensesSearchHint": "搜尋組件名稱",
+  "aboutOpenSourceLicensesAppSectionTitle": "許可說明",
+  "aboutOpenSourceLicensesAppLicenseLabel": "輕嶼課表源碼以 GPL-3.0-or-later 發佈。",
+  "aboutOpenSourceLicensesIntro": "下方列表為本應用使用的開源組件及其許可證，點進可查看全文。",
+  "aboutOpenSourceLicensesExtraSectionTitle": "許可說明",
+  "aboutOpenSourceLicensesExtraUmeng": "友盟統計等分析服務僅在你同意隱私政策後啟用，適用友盟自身的用戶協議與隱私政策。",
+  "aboutOpenSourceLicensesExtraNote": "",
+  "aboutOpenSourceLicensesPackagesSectionTitle": "開源組件（{count}）",
+  "@aboutOpenSourceLicensesPackagesSectionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesPackageSubtitle": "{count} 份許可證文本",
+  "@aboutOpenSourceLicensesPackageSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesLoadFailed": "加載許可證失敗，請稍後重試",
+  "aboutOpenSourceLicensesEmpty": "沒有匹配的組件",
   "aboutAppLogsTitle": "應用日誌",
   "aboutAppLogsSubtitle": "查看整個軟件的 error / warn / info / debug / verbose 全等級日誌",
   "appLogsShareText": "這是輕嶼課表匯出的應用日誌，包含整個軟件的本地運行記錄，可用於排查更新、匯入、通知、頁面與崩潰問題",
@@ -863,7 +891,6 @@
   "appLogsClearAction": "清空日誌",
   "appLogsCleared": "已清空應用日誌",
   "appLogsClearFailed": "清空應用日誌失敗",
-  "aboutRepositorySubtitle": "GitHub 倉庫地址、源碼、Release 和反饋入口",
   "timeSchemeTitle": "時間範本",
   "newSchemeTooltip": "新建範本",
   "timeSchemeSummary": "{sections} 節 · {profiles} 個課表 · {courses} 節課程 · {overrideCourses} 節副時間表",

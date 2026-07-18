@@ -930,6 +930,34 @@
   "aboutContributorsTitle": "Contributors",
   "aboutContributorsSubtitle": "Developers and academic system adapter contributors",
   "aboutRepositoryTitle": "Open Source Repositories",
+  "aboutRepositorySubtitle": "GitHub source, releases, and feedback entry",
+  "aboutOpenSourceLicensesTitle": "Open Source Licenses",
+  "aboutOpenSourceLicensesSubtitle": "App license and third-party component licenses",
+  "aboutOpenSourceLicensesSearchHint": "Search package name",
+  "aboutOpenSourceLicensesAppSectionTitle": "About these licenses",
+  "aboutOpenSourceLicensesAppLicenseLabel": "Qingyu Timetable source code is released under GPL-3.0-or-later.",
+  "aboutOpenSourceLicensesIntro": "The list below shows open-source components used by this app and their licenses. Tap an item to read the full text.",
+  "aboutOpenSourceLicensesExtraSectionTitle": "About these licenses",
+  "aboutOpenSourceLicensesExtraUmeng": "Analytics services such as Umeng are enabled only after you accept the privacy policy, and are governed by their own terms and privacy policy.",
+  "aboutOpenSourceLicensesExtraNote": "",
+  "aboutOpenSourceLicensesPackagesSectionTitle": "Open-source components ({count})",
+  "@aboutOpenSourceLicensesPackagesSectionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesPackageSubtitle": "{count} license text(s)",
+  "@aboutOpenSourceLicensesPackageSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutOpenSourceLicensesLoadFailed": "Failed to load licenses. Please try again later.",
+  "aboutOpenSourceLicensesEmpty": "No matching packages",
   "aboutAppLogsTitle": "App logs",
   "aboutAppLogsSubtitle": "Open the dedicated page for full app logs across error / warn / info / debug / verbose levels",
   "appLogsShareText": "These are the app logs exported from Qingyu Timetable. They include local runtime records across the whole app for troubleshooting updates, imports, notifications, screens, and crashes.",
@@ -945,7 +973,6 @@
   "appLogsSourceApp": "App",
   "appLogsSourceNative": "Super Island",
   "appLogsRecordingPausedHint": "Recording is off. The entries below are historical logs only; no new logs will be added",
-  "aboutRepositorySubtitle": "GitHub source, releases, and feedback entry",
   "timeSchemeTitle": "Time Schemes",
   "newSchemeTooltip": "Create Scheme",
   "timeSchemeSummary": "{sections} sections · {profiles} timetables · {courses} course entries · {overrideCourses} override entries",

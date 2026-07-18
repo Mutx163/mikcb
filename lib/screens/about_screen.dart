@@ -23,6 +23,7 @@ import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
 import '../services/app_log_service.dart';
 import 'changelog_screen.dart';
+import 'open_source_licenses_screen.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
@@ -303,6 +304,23 @@ class _AboutScreenState extends State<AboutScreen> {
                 title: l10n.aboutRepositoryTitle,
                 subtitle: l10n.aboutRepositorySubtitle,
                 onTap: () => _showRepositorySheet(context),
+              ),
+              _AboutEntryTile(
+                icon: Icons.gavel_outlined,
+                iconAccent: HyperosIconColors.indigo,
+                title: l10n.aboutOpenSourceLicensesTitle,
+                subtitle: l10n.aboutOpenSourceLicensesSubtitle,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    HyperosPageRoute(
+                      settings: const RouteSettings(
+                        name: '/about/oss-licenses',
+                      ),
+                      builder: (_) => const OpenSourceLicensesScreen(),
+                    ),
+                  );
+                },
               ),
               _AboutEntryTile(
                 icon: Icons.article_outlined,

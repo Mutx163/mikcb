@@ -1696,6 +1696,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutRepositoryTitle => '开源仓库';
 
   @override
+  String get aboutRepositorySubtitle => 'GitHub 仓库地址、源码、Release 和反馈入口';
+
+  @override
+  String get aboutOpenSourceLicensesTitle => '开源许可';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle => '本应用协议与第三方组件许可证';
+
+  @override
+  String get aboutOpenSourceLicensesSearchHint => '搜索组件名称';
+
+  @override
+  String get aboutOpenSourceLicensesAppSectionTitle => '许可说明';
+
+  @override
+  String get aboutOpenSourceLicensesAppLicenseLabel =>
+      '轻屿课表源码以 GPL-3.0-or-later 发布。';
+
+  @override
+  String get aboutOpenSourceLicensesIntro => '下方列表为本应用使用的开源组件及其许可证，点进可查看全文。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraSectionTitle => '许可说明';
+
+  @override
+  String get aboutOpenSourceLicensesExtraUmeng =>
+      '友盟统计等分析服务仅在你同意隐私政策后启用，适用友盟自身的用户协议与隐私政策。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraNote => '';
+
+  @override
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
+    return '开源组件（$count）';
+  }
+
+  @override
+  String aboutOpenSourceLicensesPackageSubtitle(int count) {
+    return '$count 份许可证文本';
+  }
+
+  @override
+  String get aboutOpenSourceLicensesLoadFailed => '加载许可证失败，请稍后重试';
+
+  @override
+  String get aboutOpenSourceLicensesEmpty => '没有匹配的组件';
+
+  @override
   String get aboutAppLogsTitle => '应用日志';
 
   @override
@@ -1741,9 +1789,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appLogsRecordingPausedHint => '记录已关闭，下方为历史日志，关闭后不再新增';
-
-  @override
-  String get aboutRepositorySubtitle => 'GitHub 仓库地址、源码、Release 和反馈入口';
 
   @override
   String get timeSchemeTitle => '时间模板';
@@ -9630,6 +9675,54 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutRepositoryTitle => '開源倉庫';
 
   @override
+  String get aboutRepositorySubtitle => 'GitHub 倉庫地址、源碼、Release 和反饋入口';
+
+  @override
+  String get aboutOpenSourceLicensesTitle => '開源許可';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle => '本應用協議與第三方組件許可證';
+
+  @override
+  String get aboutOpenSourceLicensesSearchHint => '搜尋組件名稱';
+
+  @override
+  String get aboutOpenSourceLicensesAppSectionTitle => '許可說明';
+
+  @override
+  String get aboutOpenSourceLicensesAppLicenseLabel =>
+      '輕嶼課表源碼以 GPL-3.0-or-later 發佈。';
+
+  @override
+  String get aboutOpenSourceLicensesIntro => '下方列表為本應用使用的開源組件及其許可證，點進可查看全文。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraSectionTitle => '許可說明';
+
+  @override
+  String get aboutOpenSourceLicensesExtraUmeng =>
+      '友盟統計等分析服務僅在你同意隱私政策後啟用，適用友盟自身的用戶協議與隱私政策。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraNote => '';
+
+  @override
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
+    return '開源組件（$count）';
+  }
+
+  @override
+  String aboutOpenSourceLicensesPackageSubtitle(int count) {
+    return '$count 份許可證文本';
+  }
+
+  @override
+  String get aboutOpenSourceLicensesLoadFailed => '加載許可證失敗，請稍後重試';
+
+  @override
+  String get aboutOpenSourceLicensesEmpty => '沒有匹配的組件';
+
+  @override
   String get aboutAppLogsTitle => '應用日誌';
 
   @override
@@ -9666,9 +9759,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get appLogsClearFailed => '清空應用日誌失敗';
-
-  @override
-  String get aboutRepositorySubtitle => 'GitHub 倉庫地址、源碼、Release 和反饋入口';
 
   @override
   String get timeSchemeTitle => '時間範本';
@@ -17436,6 +17526,54 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutRepositoryTitle => '開源倉庫';
 
   @override
+  String get aboutRepositorySubtitle => 'GitHub 倉庫地址、源碼、Release 和反饋入口';
+
+  @override
+  String get aboutOpenSourceLicensesTitle => '開源許可';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle => '本應用協議與第三方元件授權';
+
+  @override
+  String get aboutOpenSourceLicensesSearchHint => '搜尋元件名稱';
+
+  @override
+  String get aboutOpenSourceLicensesAppSectionTitle => '許可說明';
+
+  @override
+  String get aboutOpenSourceLicensesAppLicenseLabel =>
+      '輕嶼課表原始碼以 GPL-3.0-or-later 釋出。';
+
+  @override
+  String get aboutOpenSourceLicensesIntro => '下方列表為本應用使用的開源元件及其授權，點進可查看全文。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraSectionTitle => '許可說明';
+
+  @override
+  String get aboutOpenSourceLicensesExtraUmeng =>
+      '友盟統計等分析服務僅在你同意隱私政策後啟用，適用友盟自身的使用者協議與隱私政策。';
+
+  @override
+  String get aboutOpenSourceLicensesExtraNote => '';
+
+  @override
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
+    return '開源元件（$count）';
+  }
+
+  @override
+  String aboutOpenSourceLicensesPackageSubtitle(int count) {
+    return '$count 份授權文字';
+  }
+
+  @override
+  String get aboutOpenSourceLicensesLoadFailed => '載入授權失敗，請稍後再試';
+
+  @override
+  String get aboutOpenSourceLicensesEmpty => '沒有符合的元件';
+
+  @override
   String get aboutAppLogsTitle => '應用日誌';
 
   @override
@@ -17472,9 +17610,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appLogsClearFailed => '清空應用日誌失敗';
-
-  @override
-  String get aboutRepositorySubtitle => 'GitHub 倉庫地址、源碼、Release 和反饋入口';
 
   @override
   String get timeSchemeTitle => '時間範本';

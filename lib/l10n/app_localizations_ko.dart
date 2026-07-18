@@ -1729,6 +1729,56 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutRepositoryTitle => '오픈소스 저장소';
 
   @override
+  String get aboutRepositorySubtitle => 'GitHub 저장소, 소스, Release 및 피드백';
+
+  @override
+  String get aboutOpenSourceLicensesTitle => '오픈소스 라이선스';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle => '본 앱 라이선스와 서드파티 구성 요소 라이선스';
+
+  @override
+  String get aboutOpenSourceLicensesSearchHint => '패키지 이름 검색';
+
+  @override
+  String get aboutOpenSourceLicensesAppSectionTitle => '라이선스 안내';
+
+  @override
+  String get aboutOpenSourceLicensesAppLicenseLabel =>
+      '경屿 시간표 소스 코드는 GPL-3.0-or-later로 배포됩니다.';
+
+  @override
+  String get aboutOpenSourceLicensesIntro =>
+      '아래 목록은 이 앱이 사용하는 오픈소스 구성 요소와 라이선스입니다. 항목을 눌러 전문을 볼 수 있습니다.';
+
+  @override
+  String get aboutOpenSourceLicensesExtraSectionTitle => '라이선스 안내';
+
+  @override
+  String get aboutOpenSourceLicensesExtraUmeng =>
+      '우멍(Umeng) 등 분석 서비스는 개인정보 처리방침에 동의한 후에만 사용되며, 해당 서비스의 약관과 개인정보 정책이 적용됩니다.';
+
+  @override
+  String get aboutOpenSourceLicensesExtraNote => '';
+
+  @override
+  String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
+    return '오픈소스 구성 요소($count)';
+  }
+
+  @override
+  String aboutOpenSourceLicensesPackageSubtitle(int count) {
+    return '라이선스 본문 $count개';
+  }
+
+  @override
+  String get aboutOpenSourceLicensesLoadFailed =>
+      '라이선스를 불러오지 못했습니다. 나중에 다시 시도하세요.';
+
+  @override
+  String get aboutOpenSourceLicensesEmpty => '일치하는 패키지가 없습니다';
+
+  @override
   String get aboutAppLogsTitle => '앱 로그';
 
   @override
@@ -1774,9 +1824,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appLogsRecordingPausedHint => '记录已关闭，下方为历史日志，关闭后不再新增';
-
-  @override
-  String get aboutRepositorySubtitle => 'GitHub 저장소, 소스, Release 및 피드백';
 
   @override
   String get timeSchemeTitle => '시간 템플릿';
