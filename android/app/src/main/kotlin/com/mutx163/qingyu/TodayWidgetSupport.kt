@@ -124,6 +124,8 @@ object TodayWidgetSupport {
     private const val FLUTTER_PREFS_NAME = "FlutterSharedPreferences"
     private const val KEY_TIMETABLE_PROFILES = "flutter.timetable_profiles"
     private const val KEY_ACTIVE_PROFILE_ID = "flutter.active_timetable_profile_id"
+    private const val KEY_CUSTOM_HOLIDAYS = "flutter.custom_holidays"
+    private const val KEY_HOLIDAY_DATA_PREFIX = "flutter.holiday_data_"
 
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
         // Prefer real-time computed snapshot (state reflects current time).
@@ -159,8 +161,34 @@ object TodayWidgetSupport {
     ): TodayWidgetSnapshotInfo? {
         val profileJson = readActiveProfileJson(context) ?: return null
         val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
-        val isHoliday = profileJson.optBoolean("isHoliday", false)
-            || settingsJson.optBoolean("holidayOverrideEnabled", false)
+        val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+        val todayDateStr = widgetFormatDate(
+            year = nowCalendar.get(Calendar.YEAR),
+            month = nowCalendar.get(Calendar.MONTH) + 1,
+            dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        val holidayEntries = loadHolidayEntriesForDate(context, nowCalendar)
+        val enableHolidayMarking = settingsJson.optBoolean("enableHolidayMarking", true)
+        val holidayOverrideEnabled = settingsJson.optBoolean("holidayOverrideEnabled", false)
+        // Prefer full holiday resolution from Flutter prefs. The legacy profile-level
+        // isHoliday flag is only a same-day hint and is usually missing entirely.
+        val isHoliday = widgetResolveIsHoliday(
+            entries = holidayEntries,
+            dateStr = todayDateStr,
+            enableHolidayMarking = enableHolidayMarking,
+            holidayOverrideEnabled = holidayOverrideEnabled,
+        ) || liveSchedulerIsLegacyHolidayFlagActive(
+            isHoliday = profileJson.optBoolean("isHoliday", false),
+            isHolidayDate = profileJson.optString("isHolidayDate").takeIf { it.isNotBlank() },
+            year = nowCalendar.get(Calendar.YEAR),
+            month = nowCalendar.get(Calendar.MONTH) + 1,
+            dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        val holidayName = if (isHoliday) {
+            widgetResolveHolidayName(holidayEntries, todayDateStr)
+        } else {
+            null
+        }
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
         val currentWeek = calculateWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
@@ -168,9 +196,7 @@ object TodayWidgetSupport {
             semesterWeekCount = semesterWeekCount,
             nowMillis = nowMillis,
         )
-        val todayWeekday = Calendar.getInstance().apply {
-            timeInMillis = nowMillis
-        }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
+        val todayWeekday = nowCalendar.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
         val allCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
         // 含停课的原始课程数（用于区分"没课"和"课都停了"）
         val originalTodayCourseCount = if (isHoliday) 0 else {
@@ -236,12 +262,6 @@ object TodayWidgetSupport {
             else -> false
         }
         // Find next upcoming exam
-        val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
-        val todayDateStr = String.format("%04d-%02d-%02d",
-            nowCalendar.get(Calendar.YEAR),
-            nowCalendar.get(Calendar.MONTH) + 1,
-            nowCalendar.get(Calendar.DAY_OF_MONTH),
-        )
         val examsArray = profileJson.optJSONArray("exams")
         var nextExamName: String? = null
         var nextExamDate: String? = null
@@ -313,7 +333,18 @@ object TodayWidgetSupport {
                 semesterWeekCount = semesterWeekCount,
                 nowMillis = tomorrowCal.timeInMillis,
             )
-            val isTomorrowHoliday = profileJson.optBoolean("isHoliday", false)
+            val tomorrowDateStr = widgetFormatDate(
+                year = tomorrowCal.get(Calendar.YEAR),
+                month = tomorrowCal.get(Calendar.MONTH) + 1,
+                dayOfMonth = tomorrowCal.get(Calendar.DAY_OF_MONTH),
+            )
+            val tomorrowHolidayEntries = loadHolidayEntriesForDate(context, tomorrowCal)
+            val isTomorrowHoliday = widgetResolveIsHoliday(
+                entries = tomorrowHolidayEntries,
+                dateStr = tomorrowDateStr,
+                enableHolidayMarking = enableHolidayMarking,
+                holidayOverrideEnabled = holidayOverrideEnabled,
+            )
             tomorrowCourses = if (isTomorrowHoliday) {
                 emptyList()
             } else {
@@ -346,6 +377,7 @@ object TodayWidgetSupport {
             nextExamLocation = nextExamLocation,
             nextExamStartTime = nextExamStartTime,
             nextExamEndTime = nextExamEndTime,
+            holidayName = holidayName,
             tomorrowCourses = tomorrowCourses,
             tomorrowWeek = tomorrowWeek,
             tomorrowDayOfWeek = tomorrowDayOfWeek,
@@ -358,8 +390,24 @@ object TodayWidgetSupport {
     ): Long? {
         val profileJson = readActiveProfileJson(context) ?: return null
         val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
-        val isHoliday = profileJson.optBoolean("isHoliday", false)
-            || settingsJson.optBoolean("holidayOverrideEnabled", false)
+        val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+        val todayDateStr = widgetFormatDate(
+            year = nowCalendar.get(Calendar.YEAR),
+            month = nowCalendar.get(Calendar.MONTH) + 1,
+            dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        val isHoliday = widgetResolveIsHoliday(
+            entries = loadHolidayEntriesForDate(context, nowCalendar),
+            dateStr = todayDateStr,
+            enableHolidayMarking = settingsJson.optBoolean("enableHolidayMarking", true),
+            holidayOverrideEnabled = settingsJson.optBoolean("holidayOverrideEnabled", false),
+        ) || liveSchedulerIsLegacyHolidayFlagActive(
+            isHoliday = profileJson.optBoolean("isHoliday", false),
+            isHolidayDate = profileJson.optString("isHolidayDate").takeIf { it.isNotBlank() },
+            year = nowCalendar.get(Calendar.YEAR),
+            month = nowCalendar.get(Calendar.MONTH) + 1,
+            dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
         if (isHoliday) return null
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
         val currentWeek = calculateWeekForDate(
@@ -841,6 +889,35 @@ object TodayWidgetSupport {
         } catch (_: Exception) {
             null
         }
+    }
+
+    /**
+     * Load holiday entries for [calendar]'s year (and next year near year-end)
+     * from Flutter SharedPreferences, matching [HolidayService] cache keys.
+     */
+    private fun loadHolidayEntriesForDate(
+        context: Context,
+        calendar: Calendar,
+    ): List<WidgetHolidayEntry> {
+        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+        val year = calendar.get(Calendar.YEAR)
+        val years = buildList {
+            add(year)
+            // Semester / custom ranges near Dec 31 may need next year's cache.
+            if (calendar.get(Calendar.MONTH) >= Calendar.NOVEMBER) {
+                add(year + 1)
+            }
+        }
+        val entries = mutableListOf<WidgetHolidayEntry>()
+        for (targetYear in years) {
+            entries += widgetParseHolidayEntriesFromHolidayDataJson(
+                flutterPrefs.getString("$KEY_HOLIDAY_DATA_PREFIX$targetYear", null),
+            )
+        }
+        entries += widgetParseHolidayEntriesFromCustomJson(
+            flutterPrefs.getString(KEY_CUSTOM_HOLIDAYS, null),
+        )
+        return entries
     }
 
     private fun parseSourceCourses(json: JSONArray?): List<WidgetSourceCourse> {

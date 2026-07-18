@@ -1721,6 +1721,7 @@ void main() {
           date: DateTime(2026, 4, 13),
           name: '测试假期',
           type: HolidayType.vacation,
+          groupId: 'custom-test-holiday',
         ),
       );
       await pumpEventQueue();
@@ -1735,6 +1736,57 @@ void main() {
 
       expect(liveService.stopLiveUpdateCallCount, 1);
       expect(liveService.startLiveUpdateCallCount, 0);
+    },
+  );
+
+  test(
+    'home widget snapshot uses full isHoliday semantics for custom vacation',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterStartDate: DateTime(2026, 3, 23),
+          enableHolidayMarking: true,
+        ),
+      );
+      await provider.addCourse(
+        Course(
+          id: 'holiday-widget-course',
+          name: '操作系统',
+          teacher: '张老师',
+          location: 'A203',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+      await provider.addCustomHoliday(
+        HolidayEntry(
+          date: DateTime(2026, 4, 13),
+          name: '测试假期',
+          type: HolidayType.vacation,
+          groupId: 'custom-widget-holiday',
+        ),
+      );
+      await pumpEventQueue();
+
+      final snapshot = provider.buildHomeWidgetSnapshot(
+        now: DateTime(2026, 4, 13, 8, 30),
+      );
+
+      expect(snapshot, isNotNull);
+      expect(snapshot!.state, HomeWidgetSnapshotState.holiday);
+      expect(snapshot.holidayName, '测试假期');
+      expect(snapshot.todayCourses, isEmpty);
+      expect(snapshot.highlightedCourse, isNull);
+      expect(snapshot.nextCourse, isNull);
+      expect(snapshot.totalTodayCourseCount, 0);
     },
   );
 

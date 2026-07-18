@@ -353,17 +353,23 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
   final originalTodayCount = host
       .getCoursesForDay(currentTime.weekday, week: targetWeek)
       .length;
-  final todayCourses = host
-      .getActiveCoursesForDay(currentTime.weekday, week: targetWeek)
-      .map(host.resolveCourseDisplayName)
-      .toList(growable: false);
+  final todayIsHoliday = host.isHoliday(currentTime);
+  final todayCourses = todayIsHoliday
+      ? const <Course>[]
+      : host
+            .getActiveCoursesForDay(currentTime.weekday, week: targetWeek)
+            .map(host.resolveCourseDisplayName)
+            .toList(growable: false);
 
   final tomorrow = currentTime.add(const Duration(days: 1));
   final tomorrowWeek = host._calculateWeekForDate(tomorrow);
-  final tomorrowCourses = host
-      .getActiveCoursesForDay(tomorrow.weekday, week: tomorrowWeek)
-      .map(host.resolveCourseDisplayName)
-      .toList(growable: false);
+  final tomorrowIsHoliday = host.isHoliday(tomorrow);
+  final tomorrowCourses = tomorrowIsHoliday
+      ? const <Course>[]
+      : host
+            .getActiveCoursesForDay(tomorrow.weekday, week: tomorrowWeek)
+            .map(host.resolveCourseDisplayName)
+            .toList(growable: false);
 
   final holidayEntry = host.getHolidayForDate(currentTime);
 
@@ -377,13 +383,13 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
     countdownLeadMinutes: host._settings.widgetCountdownLeadMinutes,
     countdownTextStyle: host._settings.widgetCountdownTextStyle.value,
     nextExam: host.getNextExam(),
-    isHoliday: holidayEntry?.shouldHideCourses ?? false,
-    holidayName: holidayEntry?.name,
+    isHoliday: todayIsHoliday,
+    holidayName: todayIsHoliday ? holidayEntry?.name : null,
     tomorrowCourses: tomorrowCourses,
     tomorrowWeek: tomorrowWeek,
     tomorrowDayOfWeek: tomorrow.weekday,
     showTomorrowCourses: host._settings.widgetShowTomorrowCourses,
-    originalTodayCourseCount: originalTodayCount,
+    originalTodayCourseCount: todayIsHoliday ? 0 : originalTodayCount,
   );
 }
 

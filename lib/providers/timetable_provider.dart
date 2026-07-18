@@ -1527,8 +1527,21 @@ class TimetableProvider with ChangeNotifier {
         entries: allEntries,
       );
       notifyListeners();
+      // Holiday data is not stored in timetable profiles; force home widget /
+      // live schedule resync so desktop widgets pick up vacation days.
+      await _syncSurfacesAfterHolidayDataChanged();
     } catch (_) {
       // Holiday data is non-critical; silently ignore failures
+    }
+  }
+
+  /// Invalidate cached native surfaces and push a fresh holiday-aware snapshot.
+  Future<void> _syncSurfacesAfterHolidayDataChanged() async {
+    _lastHomeWidgetSnapshotSignature = null;
+    _lastLiveSnapshotSignature = null;
+    await _syncHomeWidgetSnapshot();
+    if (_enableLiveActivitySync) {
+      await _syncLiveScheduleSnapshot();
     }
   }
 
