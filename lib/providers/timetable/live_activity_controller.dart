@@ -97,9 +97,13 @@ void _liveStartActivityTick(TimetableProvider host) {
 Future<void> _liveHandleAppResumed(TimetableProvider host) async {
   host._liveActivityTimer?.cancel();
   await host.syncTemporalContext();
-  host._lastLiveSnapshotSignature = null;
-  host._currentLiveCourseId = null;
-  await _liveUpdateActivity(host);
+  // Clear + push under one exclusive section so a concurrent WebDAV apply
+  // cannot interleave a half-updated native snapshot.
+  await host._runLiveSurfaceExclusive(() async {
+    host._lastLiveSnapshotSignature = null;
+    host._currentLiveCourseId = null;
+    await _liveUpdateActivityBody(host);
+  });
   _liveScheduleActivityTick(host);
 }
 
@@ -394,6 +398,18 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
 }
 
 Future<void> _liveUpdateActivity(
+  TimetableProvider host, {
+  bool syncScheduleSnapshot = true,
+}) {
+  return host._runLiveSurfaceExclusive(
+    () => _liveUpdateActivityBody(
+      host,
+      syncScheduleSnapshot: syncScheduleSnapshot,
+    ),
+  );
+}
+
+Future<void> _liveUpdateActivityBody(
   TimetableProvider host, {
   bool syncScheduleSnapshot = true,
 }) async {

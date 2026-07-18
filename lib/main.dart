@@ -575,9 +575,27 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(refreshHyperosMotionFromAndroid());
-      unawaited(_cloudSyncCoordinator.maybePullRemote());
-      unawaited(context.read<TimetableProvider>().handleAppResumed());
+      // Pull first, then live resync. Concurrent pull apply + handleAppResumed
+      // can push stale schedule snapshots to the island / home widget.
+      unawaited(_handleAppResumedWithCloudPull());
     }
+  }
+
+  /// Serializes WebDAV auto-pull and live-activity resume recovery.
+  Future<void> _handleAppResumedWithCloudPull() async {
+    await _cloudSyncCoordinator.maybePullRemote();
+    if (!mounted) {
+      return;
+    }
+    await context.read<TimetableProvider>().handleAppResumed();
+  }
+
+  /// Ensures local provider init finishes before the first auto pull apply.
+  Future<void> _initializeThenMaybePullRemote(
+    TimetableProvider provider,
+  ) async {
+    await provider.initialize();
+    await _cloudSyncCoordinator.maybePullRemote();
   }
 
   Future<void> _handleStartupFlows() async {
@@ -609,8 +627,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       // 老用户快速路径：不等待课表 JSON 解析/Provider 初始化，先进入主界面。
       if (hasAcceptedPrivacy && hasSeenGuide) {
         _cloudSyncCoordinator.bindProvider(provider);
-        unawaited(provider.initialize());
-        unawaited(_cloudSyncCoordinator.maybePullRemote());
+        unawaited(_initializeThenMaybePullRemote(provider));
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
         unawaited(_checkPendingExternalImport());

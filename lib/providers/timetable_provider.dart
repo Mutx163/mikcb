@@ -26,6 +26,7 @@ import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
 import '../services/partner_timetable_service.dart';
 import '../services/storage_service.dart';
+import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
@@ -136,6 +137,9 @@ class TimetableProvider with ChangeNotifier {
   String? _lastHomeWidgetSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
   Future<void>? _initializationFuture;
+
+  /// Serializes native live/home-widget surface updates (island + widget).
+  final SyncOperationGate _liveSurfaceGate = SyncOperationGate();
   HolidayData? _holidayData;
   List<String> _teacherRecords = [];
   List<String> _locationRecords = [];
@@ -423,12 +427,34 @@ class TimetableProvider with ChangeNotifier {
   ///
   /// [initialize] is process-idempotent; cloud restore must force a full load.
   Future<void> reloadFromStorageAfterExternalApply() async {
+    // Join any in-flight init before resetting the future, so two _init()
+    // bodies cannot interleave memory writes.
+    final existingInitialization = _initializationFuture;
+    if (existingInitialization != null) {
+      try {
+        await existingInitialization;
+      } catch (_) {
+        // Previous attempt failed; continue with a forced reload.
+      }
+    }
     _initializationFuture = null;
     await initialize();
     // Deferred teacher/location load is unawaited in _init; wait here so UI
     // sees storage-consistent records immediately after restore.
     await _loadDeferredData();
+    // importFullAppDataBackup may have pushed live surfaces before teachers /
+    // locations were reloaded; force one consistent resync after storage load.
+    await _runLiveSurfaceExclusive(() async {
+      _lastLiveSnapshotSignature = null;
+      _lastHomeWidgetSnapshotSignature = null;
+      _currentLiveCourseId = null;
+      await _liveUpdateActivityBody(this);
+    });
     notifyListeners();
+  }
+
+  Future<T> _runLiveSurfaceExclusive<T>(Future<T> Function() action) {
+    return _liveSurfaceGate.runExclusive(action);
   }
 
   Future<void> _init() async {

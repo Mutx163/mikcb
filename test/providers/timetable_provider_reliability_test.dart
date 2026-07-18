@@ -100,4 +100,24 @@ void main() {
     expect(liveService.syncScheduleSnapshotCallCount, 1);
     provider.dispose();
   });
+
+  test(
+    'reloadFromStorageAfterExternalApply joins in-flight initialize',
+    () async {
+      final storage = StorageService.forTesting();
+      final provider = TimetableProvider(
+        storageService: storage,
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+
+      final firstInitialization = provider.initialize();
+      // Force reload while the first initialize is still the shared future.
+      final reload = provider.reloadFromStorageAfterExternalApply();
+      await Future.wait([firstInitialization, reload]);
+
+      expect(provider.activeProfile, isNotNull);
+      provider.dispose();
+    },
+  );
 }
