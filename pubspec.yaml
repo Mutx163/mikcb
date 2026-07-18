@@ -1,7 +1,7 @@
 name: university_timetable
 description: 轻屿课表应用 - 支持小米超级岛
 publish_to: 'none'
-version: 2.0.4-0+111
+version: 2.0.5-0+112
 repository: https://github.com/Mutx163/mikcb
 homepage: https://github.com/Mutx163/mikcb
 issue_tracker: https://github.com/Mutx163/mikcb/issues
