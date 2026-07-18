@@ -389,45 +389,14 @@ class WarehouseImportPreferencesService {
 
   Future<WarehouseSyncBundle> exportSyncBundle() async {
     final prefs = await _prefs;
-    final secureEntries = await _secureStorage.readAll();
-    final rememberedLogins = <WarehouseRememberedLoginEntry>[];
-
-    for (final entry in secureEntries.entries) {
-      if (!entry.key.startsWith(_secureRememberedLoginPrefix)) {
-        continue;
-      }
-      final adapterId = entry.key.substring(
-        _secureRememberedLoginPrefix.length,
-      );
-      if (adapterId.isEmpty) {
-        continue;
-      }
-      final login = _decodeRememberedLogin(entry.value);
-      if (login == null) {
-        continue;
-      }
-      rememberedLogins.add(
-        WarehouseRememberedLoginEntry(adapterId: adapterId, login: login),
-      );
-    }
-
-    for (final legacyKey in prefs.getKeys()) {
-      if (!legacyKey.startsWith(_rememberedLoginPrefix)) {
-        continue;
-      }
-      final adapterId = legacyKey.substring(_rememberedLoginPrefix.length);
-      if (adapterId.isEmpty ||
-          rememberedLogins.any((item) => item.adapterId == adapterId)) {
-        continue;
-      }
-      final login = _decodeRememberedLogin(prefs.getString(legacyKey));
-      if (login == null) {
-        continue;
-      }
-      rememberedLogins.add(
-        WarehouseRememberedLoginEntry(adapterId: adapterId, login: login),
-      );
-    }
+    final rememberedLogins = (await _readRememberedLoginsByAdapterId()).entries
+        .map(
+          (entry) => WarehouseRememberedLoginEntry(
+            adapterId: entry.key,
+            login: entry.value,
+          ),
+        )
+        .toList();
 
     final customImportUrls = <String, String>{};
     for (final key in prefs.getKeys()) {
@@ -450,8 +419,12 @@ class WarehouseImportPreferencesService {
     );
   }
 
+  /// Cloud snapshots strip passwords ([WarehouseSyncBundle.withoutPasswords]).
+  /// Before replace-import, keep local passwords when remote password is empty
+  /// and the remembered account identity still matches.
   Future<void> importSyncBundle(WarehouseSyncBundle bundle) async {
     final prefs = await _prefs;
+    final localRememberedLogins = await _readRememberedLoginsByAdapterId();
 
     for (final key in prefs.getKeys()) {
       if (key.startsWith(_customImportUrlPrefix) ||
@@ -473,7 +446,18 @@ class WarehouseImportPreferencesService {
       if (entry.adapterId.isEmpty) {
         continue;
       }
-      await setRememberedLogin(entry.adapterId, entry.login);
+      final resolvedPassword = resolveRememberedLoginPasswordForImport(
+        incomingPassword: entry.login.password,
+        incomingUsername: entry.login.username,
+        localLogin: localRememberedLogins[entry.adapterId],
+      );
+      await setRememberedLogin(
+        entry.adapterId,
+        WarehouseRememberedLogin(
+          username: entry.login.username,
+          password: resolvedPassword,
+        ),
+      );
     }
     for (final entry in bundle.customImportUrls.entries) {
       await setCustomImportUrl(entry.key, entry.value);
@@ -490,6 +474,66 @@ class WarehouseImportPreferencesService {
       );
     }
   }
+
+  Future<Map<String, WarehouseRememberedLogin>>
+  _readRememberedLoginsByAdapterId() async {
+    final prefs = await _prefs;
+    final rememberedLogins = <String, WarehouseRememberedLogin>{};
+
+    final secureEntries = await _secureStorage.readAll();
+    for (final entry in secureEntries.entries) {
+      if (!entry.key.startsWith(_secureRememberedLoginPrefix)) {
+        continue;
+      }
+      final adapterId = entry.key.substring(
+        _secureRememberedLoginPrefix.length,
+      );
+      if (adapterId.isEmpty) {
+        continue;
+      }
+      final login = _decodeRememberedLogin(entry.value);
+      if (login == null) {
+        continue;
+      }
+      rememberedLogins[adapterId] = login;
+    }
+
+    for (final legacyKey in prefs.getKeys()) {
+      if (!legacyKey.startsWith(_rememberedLoginPrefix)) {
+        continue;
+      }
+      final adapterId = legacyKey.substring(_rememberedLoginPrefix.length);
+      if (adapterId.isEmpty || rememberedLogins.containsKey(adapterId)) {
+        continue;
+      }
+      final login = _decodeRememberedLogin(prefs.getString(legacyKey));
+      if (login == null) {
+        continue;
+      }
+      rememberedLogins[adapterId] = login;
+    }
+
+    return rememberedLogins;
+  }
+}
+
+/// Cloud restore / sync import: prefer non-empty remote password; otherwise
+/// keep the local password when the account still looks like the same user.
+String resolveRememberedLoginPasswordForImport({
+  required String incomingPassword,
+  required String incomingUsername,
+  WarehouseRememberedLogin? localLogin,
+}) {
+  if (incomingPassword.isNotEmpty) {
+    return incomingPassword;
+  }
+  if (localLogin == null || localLogin.password.isEmpty) {
+    return '';
+  }
+  if (incomingUsername.isEmpty || incomingUsername == localLogin.username) {
+    return localLogin.password;
+  }
+  return '';
 }
 
 /// Prefers a user-set custom import URL, otherwise falls back to [defaultUrl].
