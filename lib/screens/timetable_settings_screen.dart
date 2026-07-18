@@ -4148,7 +4148,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     DateTime? endDate = initialEnd ?? existing?.date;
     HolidayType selectedType = existing?.type ?? HolidayType.vacation;
 
-    final result = await showHyperosSheet<bool>(
+    final result = await showHyperosSheet<String>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
@@ -4164,16 +4164,16 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                 children: [
                   Expanded(
                     child: HyperosButton(
-                      label: MaterialLocalizations.of(ctx).cancelButtonLabel,
+                      label: l10n.cancelAction,
                       variant: HyperosButtonVariant.secondary,
                       expand: true,
-                      onPressed: () => Navigator.pop(ctx, false),
+                      onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: HyperosButton(
-                      label: MaterialLocalizations.of(ctx).okButtonLabel,
+                      label: l10n.saveAction,
                       expand: true,
                       onPressed: () {
                         if (nameController.text.trim().isEmpty) {
@@ -4187,7 +4187,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                         if (startDate == null || endDate == null) {
                           return;
                         }
-                        Navigator.pop(ctx, true);
+                        Navigator.pop(ctx, 'save');
                       },
                     ),
                   ),
@@ -4280,6 +4280,20 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                       ),
                     ],
                   ),
+                  if (existing?.groupId != null) ...[
+                    const SizedBox(height: 12),
+                    HyperosListGroup(
+                      children: [
+                        HyperosDangerTile(
+                          icon: Icons.delete_outline_rounded,
+                          title: l10n.customHolidayDelete,
+                          // Close the edit sheet first; confirm is a separate
+                          // bottom sheet so we never stack dialog-on-sheet.
+                          onTap: () => Navigator.pop(ctx, 'delete'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             );
@@ -4288,8 +4302,12 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       },
     );
 
-    if (result != true || startDate == null || endDate == null) return;
     if (!mounted) return;
+    if (result == 'delete' && existing?.groupId != null) {
+      await _confirmDeleteCustomHoliday(existing!.groupId!);
+      return;
+    }
+    if (result != 'save' || startDate == null || endDate == null) return;
     final name = nameController.text.trim();
     final groupId =
         existing?.groupId ?? 'custom-${DateTime.now().millisecondsSinceEpoch}';
@@ -4317,17 +4335,60 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     await _loadCustomHolidays();
   }
 
-  Future<void> _confirmDeleteCustomHoliday(String groupId) async {
+  /// Bottom confirm sheet with solid HyperOS buttons (not center HyperosDialog).
+  Future<bool> _showCustomHolidayDeleteConfirmSheet() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showHyperosConfirmDialog(
+    final confirmed = await showHyperosSheet<bool>(
       context: context,
-      title: l10n.customHolidayDelete,
-      message: l10n.customHolidayDeleteConfirm,
-      cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-      confirmLabel: l10n.customHolidayDelete,
-      destructive: true,
+      builder: (sheetContext) {
+        return HyperosSheetFrame(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.customHolidayDelete,
+                style: HyperosTypography.sheetTitle(sheetContext),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.customHolidayDeleteConfirm,
+                style: HyperosTypography.listDetail(sheetContext),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: HyperosButton(
+                      label: l10n.cancelAction,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: HyperosButton(
+                      label: l10n.deleteAction,
+                      variant: HyperosButtonVariant.destructive,
+                      expand: true,
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (confirmed == true && mounted) {
+    return confirmed == true;
+  }
+
+  Future<void> _confirmDeleteCustomHoliday(String groupId) async {
+    final confirmed = await _showCustomHolidayDeleteConfirmSheet();
+    if (confirmed && mounted) {
       final provider = context.read<TimetableProvider>();
       await provider.removeCustomHoliday(groupId);
       await _loadCustomHolidays();
@@ -4465,7 +4526,6 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           HyperosSectionLabel(text: l10n.customHolidayTitle),
-          // Items first, then the add action at the bottom of the group.
           HyperosListGroup(
             children: [
               if (_customHolidays.isEmpty)
@@ -4506,12 +4566,19 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                         _confirmDeleteCustomHoliday(group.groupId),
                   );
                 }),
-              HyperosActionTile(
-                icon: Icons.add_rounded,
-                title: l10n.customHolidayAdd,
-                onTap: () => _showCustomHolidayDialog(),
-              ),
             ],
+          ),
+          const SizedBox(height: 12),
+          // Full-width Miuix button (same pattern as data transfer / empty states).
+          HyperosControlCard(
+            child: HyperosControlCardInset(
+              child: HyperosButton(
+                label: l10n.customHolidayAdd,
+                variant: HyperosButtonVariant.secondary,
+                expand: true,
+                onPressed: () => _showCustomHolidayDialog(),
+              ),
+            ),
           ),
           const HyperosSectionGap(),
         ],
