@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_page.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_page_collaborators.dart';
 
 void main() {
