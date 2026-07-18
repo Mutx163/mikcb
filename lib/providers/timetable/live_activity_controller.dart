@@ -164,6 +164,11 @@ LiveActivityCourseSelection? _liveGetActivityCourseSelection(
   int? week,
 }) {
   final currentTime = now ?? DateTime.now();
+  // Selection must honor holiday semantics; do not rely solely on the stop
+  // branch in _liveUpdateActivityBody (tick/stage paths call selection first).
+  if (host.isHoliday(currentTime)) {
+    return null;
+  }
   final targetWeek = week ?? host._calculateCalendarWeekForDate(currentTime);
   final todayCourses = host.getActiveCoursesForDay(
     currentTime.weekday,

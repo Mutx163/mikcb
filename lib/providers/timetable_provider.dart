@@ -382,6 +382,9 @@ class TimetableProvider with ChangeNotifier {
        _holidayService = holidayService ?? HolidayService(),
        _analytics = analytics ?? AppAnalytics.instance,
        _enableLiveActivitySync = enableLiveActivitySync {
+    _holidayService.onRemoteHolidayDataUpdated = (_) {
+      unawaited(_loadHolidayData());
+    };
     if (autoInitialize) {
       unawaited(initialize());
     }
@@ -553,10 +556,20 @@ class TimetableProvider with ChangeNotifier {
     // --- 首帧已可渲染，立即通知 ---
     notifyListeners();
 
-    // --- 非关键任务全部后台执行 ---
-    unawaited(_loadHolidayData());
-    unawaited(_syncHomeWidgetSnapshot());
+    // Holiday must finish before the first live/widget push so cold start on a
+    // holiday day does not briefly publish courses (empty holidayData ⇒ false).
+    unawaited(_bootstrapHolidayAwareSurfaces());
+  }
+
+  /// Load holidays first, then push widget/island once with correct semantics.
+  Future<void> _bootstrapHolidayAwareSurfaces() async {
     unawaited(_syncNativeRuntimePreferences());
+    await _loadHolidayData();
+    // _loadHolidayData already re-pushes surfaces on success. If it failed
+    // silently, still push once so widgets are not stuck empty forever.
+    if (_lastHomeWidgetSnapshotSignature == null) {
+      await _syncHomeWidgetSnapshot();
+    }
     if (_enableLiveActivitySync) {
       _startLiveActivityTick();
     }
@@ -620,6 +633,7 @@ class TimetableProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _holidayService.onRemoteHolidayDataUpdated = null;
     _liveActivityTimer?.cancel();
     _undoTimer?.cancel();
     super.dispose();
@@ -1612,14 +1626,16 @@ class TimetableProvider with ChangeNotifier {
     }
   }
 
-  /// Invalidate cached native surfaces and push a fresh holiday-aware snapshot.
+  /// Invalidate cached native surfaces and fully refresh live gate (stop island
+  /// on holiday). Must not only sync schedule snapshot — that path leaves a
+  /// running island session until the next resume/tick that happens to stop.
   Future<void> _syncSurfacesAfterHolidayDataChanged() async {
     _lastHomeWidgetSnapshotSignature = null;
     _lastLiveSnapshotSignature = null;
-    await _syncHomeWidgetSnapshot();
-    if (_enableLiveActivitySync) {
-      await _syncLiveScheduleSnapshot();
-    }
+    _currentLiveCourseId = null;
+    _lastLiveActivityStageKey = null;
+    // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
+    await _updateLiveActivity();
   }
 
   /// 获取指定日期的节假日条目

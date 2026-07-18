@@ -251,10 +251,17 @@ void main() {
 
       expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
       expect(
-        service.logs.any((e) => e.message.contains('holiday_log_primary_api_status|statusCode=500')),
+        service.logs.any(
+          (e) => e.message.contains(
+            'holiday_log_primary_api_status|statusCode=500',
+          ),
+        ),
         isTrue,
       );
-      expect(service.logs.any((e) => e.message.contains('holiday_log_fallback_api')), isTrue);
+      expect(
+        service.logs.any((e) => e.message.contains('holiday_log_fallback_api')),
+        isTrue,
+      );
     });
 
     test('falls back to ailcc when primary throws exception', () async {
@@ -286,7 +293,12 @@ void main() {
 
       // Should have loaded builtin asset
       expect(data.entries, isNotEmpty);
-      expect(service.logs.any((e) => e.message.contains('holiday_log_remote_failed_builtin')), isTrue);
+      expect(
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_remote_failed_builtin'),
+        ),
+        isTrue,
+      );
     });
 
     test('falls back when primary returns invalid JSON', () async {
@@ -366,8 +378,47 @@ void main() {
       await service.getDataForYear(2026);
 
       // Background refresh may fire, but the main path uses cache
-      expect(service.logs.any((e) => e.message.contains('holiday_log_memory_cache_hit')), isTrue);
+      expect(
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_memory_cache_hit'),
+        ),
+        isTrue,
+      );
     });
+
+    test(
+      'background remote change notifies listener only when data differs',
+      () async {
+        final client = _FakeClient({
+          _remoteUrl2026: _utf8Response(
+            _buildXiaoaiResponse([
+              {'date': '2026-01-01', 'daytype': 1, 'holiday': '元旦节', 'rest': 1},
+            ]),
+            200,
+          ),
+        });
+        final service = HolidayService(client: client);
+        final notifiedYears = <int>[];
+        service.onRemoteHolidayDataUpdated = notifiedYears.add;
+
+        await service.getDataForYear(2026);
+        notifiedYears.clear();
+
+        // Same remote payload → no notify
+        await service.backgroundRefreshForTest(2026);
+        expect(notifiedYears, isEmpty);
+
+        client.responses[_remoteUrl2026] = _utf8Response(
+          _buildXiaoaiResponse([
+            {'date': '2026-01-01', 'daytype': 1, 'holiday': '元旦节', 'rest': 1},
+            {'date': '2026-01-02', 'daytype': 1, 'holiday': '元旦节', 'rest': 1},
+          ]),
+          200,
+        );
+        await service.backgroundRefreshForTest(2026);
+        expect(notifiedYears, [2026]);
+      },
+    );
 
     test('SharedPreferences cache is used on cold start', () async {
       final cached = HolidayData(
@@ -395,7 +446,12 @@ void main() {
       final data = await service.getDataForYear(2026);
 
       expect(data.entries.single.name, '缓存假期');
-      expect(service.logs.any((e) => e.message.contains('holiday_log_local_cache_hit')), isTrue);
+      expect(
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_local_cache_hit'),
+        ),
+        isTrue,
+      );
     });
 
     test('clearCache removes both memory and local cache', () async {
@@ -453,7 +509,12 @@ void main() {
 
       // 应该返回内置资产
       expect(data.entries, isNotEmpty);
-      expect(service.logs.any((e) => e.message.contains('holiday_log_remote_failed_builtin')), isTrue);
+      expect(
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_remote_failed_builtin'),
+        ),
+        isTrue,
+      );
     }, timeout: const Timeout(Duration(seconds: 25)));
 
     test('主 API 超时后应立即尝试备用 API', () async {
@@ -473,7 +534,11 @@ void main() {
 
       expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
       expect(
-        service.logs.any((e) => e.message.contains('holiday_log_primary_api_status|statusCode=408')),
+        service.logs.any(
+          (e) => e.message.contains(
+            'holiday_log_primary_api_status|statusCode=408',
+          ),
+        ),
         isTrue,
       );
     });
@@ -525,7 +590,9 @@ void main() {
       // 后台刷新会发起额外请求，所以请求次数会增加
       // 但主路径应该使用缓存
       expect(
-        service.logs.any((e) => e.message.contains('holiday_log_memory_cache_hit')),
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_memory_cache_hit'),
+        ),
         isTrue,
         reason: '第二次调用应该命中内存缓存',
       );
@@ -646,7 +713,12 @@ void main() {
 
       // 应该使用内置资产
       expect(data.entries, isNotEmpty);
-      expect(service.logs.any((e) => e.message.contains('holiday_log_remote_failed_builtin')), isTrue);
+      expect(
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_remote_failed_builtin'),
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -671,7 +743,12 @@ void main() {
 
       // 应该 fallback 到远程数据
       expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
-      expect(service.logs.any((e) => e.message.contains('holiday_log_local_cache_hit')), isFalse);
+      expect(
+        service.logs.any(
+          (e) => e.message.contains('holiday_log_local_cache_hit'),
+        ),
+        isFalse,
+      );
     });
 
     test('SharedPreferences entries 为空应 fallback', () async {

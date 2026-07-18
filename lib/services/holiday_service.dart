@@ -58,6 +58,10 @@ class HolidayService {
   /// Update process logs (most recent first, capped at 50).
   final List<HolidayLogEntry> logs = [];
 
+  /// Fired when a background remote fetch overwrites in-memory + prefs cache
+  /// with different data. Provider should reload and re-push live surfaces.
+  void Function(int year)? onRemoteHolidayDataUpdated;
+
   void _log(String message, {bool verbose = false}) {
     final entry = HolidayLogEntry(DateTime.now(), message);
     logs.insert(0, entry);
@@ -145,21 +149,46 @@ class HolidayService {
     unawaited(
       _fetchRemoteUpdate(year).then((remote) {
         if (remote != null && remote.entries.isNotEmpty) {
+          final previous = _memoryCache[year];
+          final previousJson = previous?.toJsonString();
+          final remoteJson = remote.toJsonString();
+          final didChange = previousJson != remoteJson;
           _memoryCache[year] = remote;
           unawaited(_saveToLocalCache(year, remote));
           _logKey(
             'holiday_log_background_success',
-            params: {'year': year, 'count': remote.entries.length},
+            params: {
+              'year': year,
+              'count': remote.entries.length,
+              'changed': didChange,
+            },
             verbose: true,
           );
+          if (didChange) {
+            onRemoteHolidayDataUpdated?.call(year);
+          }
         } else {
-          _logKey(
-            'holiday_log_background_no_data',
-            params: {'year': year},
-          );
+          _logKey('holiday_log_background_no_data', params: {'year': year});
         }
       }),
     );
+  }
+
+  /// Test-only: run the same background refresh path as [getDataForYear].
+  @visibleForTesting
+  Future<void> backgroundRefreshForTest(int year) async {
+    final remote = await _fetchRemoteUpdate(year);
+    if (remote != null && remote.entries.isNotEmpty) {
+      final previous = _memoryCache[year];
+      final previousJson = previous?.toJsonString();
+      final remoteJson = remote.toJsonString();
+      final didChange = previousJson != remoteJson;
+      _memoryCache[year] = remote;
+      await _saveToLocalCache(year, remote);
+      if (didChange) {
+        onRemoteHolidayDataUpdated?.call(year);
+      }
+    }
   }
 
   Future<HolidayData?> _loadFromLocalCache(int year) async {
@@ -203,7 +232,11 @@ class HolidayService {
   Future<HolidayData?> _fetchFromXiaoai(int year) async {
     try {
       final uri = Uri.parse('$_remoteHolidayBaseUrl?year=$year');
-      _logKey('holiday_log_requesting', params: {'uri': uri.toString()}, verbose: true);
+      _logKey(
+        'holiday_log_requesting',
+        params: {'uri': uri.toString()},
+        verbose: true,
+      );
       final response = await _client
           .get(
             uri,
@@ -251,7 +284,11 @@ class HolidayService {
   Future<HolidayData?> _fetchFromAilcc(int year) async {
     try {
       final uri = Uri.parse('$_fallbackHolidayBaseUrl/$year');
-      _logKey('holiday_log_requesting', params: {'uri': uri.toString()}, verbose: true);
+      _logKey(
+        'holiday_log_requesting',
+        params: {'uri': uri.toString()},
+        verbose: true,
+      );
       final response = await _client
           .get(
             uri,

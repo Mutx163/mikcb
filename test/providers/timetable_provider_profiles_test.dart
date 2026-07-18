@@ -1728,6 +1728,10 @@ void main() {
 
       final holidayMonday = DateTime(2026, 4, 13, 8, 30);
       expect(provider.isHoliday(holidayMonday), isTrue);
+      expect(
+        provider.getLiveActivityCourseSelection(now: holidayMonday),
+        isNull,
+      );
 
       liveService.stopLiveUpdateCallCount = 0;
       liveService.startLiveUpdateCallCount = 0;
@@ -1735,6 +1739,43 @@ void main() {
       await pumpEventQueue();
 
       expect(liveService.stopLiveUpdateCallCount, 1);
+      expect(liveService.startLiveUpdateCallCount, 0);
+    },
+  );
+
+  test(
+    'adding custom holiday for today stops live update via surface sync',
+    () async {
+      final liveService = TestMiuiLiveActivitiesService();
+      final provider = await _createLiveActivityTestProvider(
+        enableLiveActivitySync: true,
+        liveActivitiesService: liveService,
+      );
+      await settleLiveActivityStartup(liveService);
+      await provider.addCourse(
+        _liveMondayCourse(id: 'today-holiday-course', name: '今日假期课'),
+      );
+      provider.seedLiveActivityTrackingForTesting(
+        lastStageKey: 'seeded-stage',
+        currentCourseId: 'seeded-course',
+      );
+
+      liveService.stopLiveUpdateCallCount = 0;
+      liveService.startLiveUpdateCallCount = 0;
+      final today = DateTime.now();
+      await provider.addCustomHoliday(
+        HolidayEntry(
+          date: DateTime(today.year, today.month, today.day),
+          name: '今日放假',
+          type: HolidayType.vacation,
+          groupId: 'custom-today-holiday',
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(provider.isHoliday(today), isTrue);
+      expect(provider.getLiveActivityCourseSelection(now: today), isNull);
+      expect(liveService.stopLiveUpdateCallCount, greaterThanOrEqualTo(1));
       expect(liveService.startLiveUpdateCallCount, 0);
     },
   );

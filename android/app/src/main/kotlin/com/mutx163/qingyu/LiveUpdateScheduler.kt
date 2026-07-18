@@ -715,7 +715,13 @@ object LiveUpdateScheduler {
         // window must show the island right away. Otherwise resolveNextTrigger
         // only finds future triggers and the reminder is silently skipped
         // until the next stage boundary.
-        reschedule(context, allowImmediateStart = true)
+        // stopStaleSessions=true: a holiday/empty selection snapshot must stop
+        // any session still showing courses from before the holiday sync.
+        reschedule(
+            context,
+            allowImmediateStart = true,
+            stopStaleSessions = true,
+        )
         // WorkManager backup: ensures live update can still trigger
         // when AlarmManager is suppressed (e.g. MIUI + accessibility).
         LiveUpdateRefreshWorker.ensureScheduled(context)
