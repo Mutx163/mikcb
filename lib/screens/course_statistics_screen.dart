@@ -13,6 +13,7 @@ import '../widgets/statistics/data_story_card.dart';
 import '../widgets/statistics/daily_chart.dart';
 import '../widgets/statistics/nature_ratio.dart';
 import '../widgets/statistics/course_ranking.dart';
+import '../widgets/statistics/statistics_export_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
 
 /// 课程统计页面（账单式）
@@ -24,7 +25,42 @@ class CourseStatisticsScreen extends StatefulWidget {
 }
 
 class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
-  final GlobalKey _shareKey = GlobalKey();
+  bool _isExporting = false;
+
+  Future<void> _handleExport({
+    required BuildContext context,
+    required SemesterStats semesterStats,
+    required List<Achievement> achievements,
+    required List<DataStory> stories,
+  }) async {
+    if (_isExporting) {
+      return;
+    }
+
+    final options = await showStatisticsExportSheet(
+      context: context,
+      hasAchievements: achievements.isNotEmpty,
+      hasStories: stories.isNotEmpty,
+    );
+    if (options == null || !context.mounted) {
+      return;
+    }
+
+    setState(() => _isExporting = true);
+    try {
+      await StatisticsShareService.exportAndShare(
+        context: context,
+        options: options,
+        semesterStats: semesterStats,
+        achievements: achievements,
+        stories: stories,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,20 +71,17 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
         final currentWeek = provider.currentWeek;
         final courses = provider.courses;
 
-        // 计算学期统计
         final semesterStats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: currentWeek,
           semesterWeekCount: provider.settings.semesterWeekCount,
         );
 
-        // 计算成就
         final achievements = StatisticsService.calculateAchievements(
           allCourses: courses,
           currentWeek: currentWeek,
         );
 
-        // 生成数据故事
         final stories = StatisticsService.generateDataStories(
           allCourses: courses,
           currentWeek: currentWeek,
@@ -62,13 +95,25 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
           suffixes: hasData
               ? [
                   FHeaderAction(
-                    icon: const Icon(Icons.share_rounded),
+                    icon: _isExporting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.ios_share_rounded),
                     semanticsLabel: l10n.statisticsShareLabel,
-                    onPress: () => StatisticsShareService.shareWidgetAsImage(
-                      context: context,
-                      repaintBoundaryKey: _shareKey,
-                      title: l10n.statisticsShareTitle,
-                    ),
+                    onPress: () {
+                      if (_isExporting) {
+                        return;
+                      }
+                      _handleExport(
+                        context: context,
+                        semesterStats: semesterStats,
+                        achievements: achievements,
+                        stories: stories,
+                      );
+                    },
                   ),
                 ]
               : const [],
@@ -93,40 +138,37 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     List<DataStory> stories,
     AppLocalizations l10n,
   ) {
-    return RepaintBoundary(
-      key: _shareKey,
-      child: HyperosListView(
-        children: [
-          OverviewSection(stats: semesterStats),
+    return HyperosListView(
+      children: [
+        OverviewSection(stats: semesterStats),
+        const HyperosSectionGap(),
+        HyperosSettingsBlock(
+          title: l10n.statisticsAchievementsTitle,
+          child: AchievementGrid(achievements: achievements),
+        ),
+        if (stories.isNotEmpty) ...[
           const HyperosSectionGap(),
           HyperosSettingsBlock(
-            title: l10n.statisticsAchievementsTitle,
-            child: AchievementGrid(achievements: achievements),
-          ),
-          if (stories.isNotEmpty) ...[
-            const HyperosSectionGap(),
-            HyperosSettingsBlock(
-              title: l10n.statisticsStoriesTitle,
-              child: DataStoryList(stories: stories),
-            ),
-          ],
-          const HyperosSectionGap(),
-          HyperosSettingsBlock(
-            title: l10n.statisticsDailyDistribution,
-            child: DailyChart(dailyAverages: semesterStats.dailyAverages),
-          ),
-          const HyperosSectionGap(),
-          HyperosSettingsBlock(
-            title: l10n.statisticsNatureRatio,
-            child: NatureRatio(stats: semesterStats.natureStats),
-          ),
-          const HyperosSectionGap(),
-          HyperosSettingsBlock(
-            title: l10n.statisticsRankingTitle,
-            child: CourseRanking(courseRanking: semesterStats.courseRanking),
+            title: l10n.statisticsStoriesTitle,
+            child: DataStoryList(stories: stories),
           ),
         ],
-      ),
+        const HyperosSectionGap(),
+        HyperosSettingsBlock(
+          title: l10n.statisticsDailyDistribution,
+          child: DailyChart(dailyAverages: semesterStats.dailyAverages),
+        ),
+        const HyperosSectionGap(),
+        HyperosSettingsBlock(
+          title: l10n.statisticsNatureRatio,
+          child: NatureRatio(stats: semesterStats.natureStats),
+        ),
+        const HyperosSectionGap(),
+        HyperosSettingsBlock(
+          title: l10n.statisticsRankingTitle,
+          child: CourseRanking(courseRanking: semesterStats.courseRanking),
+        ),
+      ],
     );
   }
 

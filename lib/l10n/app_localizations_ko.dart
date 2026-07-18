@@ -6038,6 +6038,46 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsShareLabel => '통계 공유';
 
   @override
+  String get statisticsExportTitle => '통계 내보내기';
+
+  @override
+  String get statisticsExportModulesSection => '포함할 모듈';
+
+  @override
+  String get statisticsExportFormatSection => '내보내기 형식';
+
+  @override
+  String get statisticsExportFormatImage => '긴 이미지 (PNG)';
+
+  @override
+  String get statisticsExportFormatPdf => 'PDF 문서';
+
+  @override
+  String get statisticsExportAction => '내보내기';
+
+  @override
+  String get statisticsExportSelectModuleHint => '모듈을 하나 이상 선택하세요';
+
+  @override
+  String get statisticsExportModuleOverview => '학기 개요';
+
+  @override
+  String get statisticsExportBrandTagline => '수업 정보를 시스템 경험으로';
+
+  @override
+  String statisticsExportGithubHint(String url) {
+    return 'GitHub에서 검색: $url';
+  }
+
+  @override
+  String get statisticsExportQrScanHint => '스캔하여 공식 사이트';
+
+  @override
+  String statisticsExportRankingMore(int count) {
+    return '외 $count개 수업은 생략';
+  }
+
+  @override
   String get statisticsShareTitle => '내 학기 통계';
 
   @override

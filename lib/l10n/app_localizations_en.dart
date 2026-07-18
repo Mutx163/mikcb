@@ -6252,6 +6252,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsShareLabel => 'Share statistics';
 
   @override
+  String get statisticsExportTitle => 'Export statistics';
+
+  @override
+  String get statisticsExportModulesSection => 'Include modules';
+
+  @override
+  String get statisticsExportFormatSection => 'Export format';
+
+  @override
+  String get statisticsExportFormatImage => 'Long image (PNG)';
+
+  @override
+  String get statisticsExportFormatPdf => 'PDF document';
+
+  @override
+  String get statisticsExportAction => 'Export';
+
+  @override
+  String get statisticsExportSelectModuleHint => 'Select at least one module';
+
+  @override
+  String get statisticsExportModuleOverview => 'Semester overview';
+
+  @override
+  String get statisticsExportBrandTagline => 'Course info, system experience';
+
+  @override
+  String statisticsExportGithubHint(String url) {
+    return 'Find us on GitHub: $url';
+  }
+
+  @override
+  String get statisticsExportQrScanHint => 'Scan for website';
+
+  @override
+  String statisticsExportRankingMore(int count) {
+    return '$count more courses not shown';
+  }
+
+  @override
   String get statisticsShareTitle => 'My Semester Stats';
 
   @override

@@ -5926,6 +5926,46 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsShareLabel => '分享统计';
 
   @override
+  String get statisticsExportTitle => '导出统计';
+
+  @override
+  String get statisticsExportModulesSection => '包含模块';
+
+  @override
+  String get statisticsExportFormatSection => '导出格式';
+
+  @override
+  String get statisticsExportFormatImage => '长图 (PNG)';
+
+  @override
+  String get statisticsExportFormatPdf => 'PDF 文档';
+
+  @override
+  String get statisticsExportAction => '开始导出';
+
+  @override
+  String get statisticsExportSelectModuleHint => '请至少选择一个模块';
+
+  @override
+  String get statisticsExportModuleOverview => '学期总览';
+
+  @override
+  String get statisticsExportBrandTagline => '把课程信息做成系统体验';
+
+  @override
+  String statisticsExportGithubHint(String url) {
+    return 'GitHub 搜索项目：$url';
+  }
+
+  @override
+  String get statisticsExportQrScanHint => '扫码访问官网';
+
+  @override
+  String statisticsExportRankingMore(int count) {
+    return '另有 $count 门课程未展示';
+  }
+
+  @override
   String get statisticsShareTitle => '我的学期统计';
 
   @override
@@ -13738,6 +13778,46 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsShareLabel => '分享統計';
+
+  @override
+  String get statisticsExportTitle => '匯出統計';
+
+  @override
+  String get statisticsExportModulesSection => '包含模組';
+
+  @override
+  String get statisticsExportFormatSection => '匯出格式';
+
+  @override
+  String get statisticsExportFormatImage => '長圖 (PNG)';
+
+  @override
+  String get statisticsExportFormatPdf => 'PDF 文件';
+
+  @override
+  String get statisticsExportAction => '開始匯出';
+
+  @override
+  String get statisticsExportSelectModuleHint => '請至少選擇一個模組';
+
+  @override
+  String get statisticsExportModuleOverview => '學期總覽';
+
+  @override
+  String get statisticsExportBrandTagline => '把課程資訊做成系統體驗';
+
+  @override
+  String statisticsExportGithubHint(String url) {
+    return 'GitHub 搜尋專案：$url';
+  }
+
+  @override
+  String get statisticsExportQrScanHint => '掃碼造訪官網';
+
+  @override
+  String statisticsExportRankingMore(int count) {
+    return '另有 $count 門課程未展示';
+  }
 
   @override
   String get statisticsShareTitle => '我的學期統計';
@@ -21596,6 +21676,46 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsShareLabel => '分享統計';
+
+  @override
+  String get statisticsExportTitle => '匯出統計';
+
+  @override
+  String get statisticsExportModulesSection => '包含模組';
+
+  @override
+  String get statisticsExportFormatSection => '匯出格式';
+
+  @override
+  String get statisticsExportFormatImage => '長圖 (PNG)';
+
+  @override
+  String get statisticsExportFormatPdf => 'PDF 文件';
+
+  @override
+  String get statisticsExportAction => '開始匯出';
+
+  @override
+  String get statisticsExportSelectModuleHint => '請至少選擇一個模組';
+
+  @override
+  String get statisticsExportModuleOverview => '學期總覽';
+
+  @override
+  String get statisticsExportBrandTagline => '把課程資訊做成系統體驗';
+
+  @override
+  String statisticsExportGithubHint(String url) {
+    return 'GitHub 搜尋專案：$url';
+  }
+
+  @override
+  String get statisticsExportQrScanHint => '掃碼造訪官網';
+
+  @override
+  String statisticsExportRankingMore(int count) {
+    return '另有 $count 門課程未展示';
+  }
 
   @override
   String get statisticsShareTitle => '我的學期統計';

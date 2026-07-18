@@ -3330,6 +3330,32 @@
   "statisticsRankingTitle": "科目ランキング",
   "statisticsNoDataHint": "授業を追加すると統計を表示できます",
   "statisticsShareLabel": "統計を共有",
+  "statisticsExportTitle": "統計を書き出す",
+  "statisticsExportModulesSection": "含める項目",
+  "statisticsExportFormatSection": "書き出し形式",
+  "statisticsExportFormatImage": "長尺画像 (PNG)",
+  "statisticsExportFormatPdf": "PDF 文書",
+  "statisticsExportAction": "書き出す",
+  "statisticsExportSelectModuleHint": "少なくとも1つの項目を選択してください",
+  "statisticsExportModuleOverview": "学期の概要",
+  "statisticsExportBrandTagline": "授業情報をシステム体験に",
+  "statisticsExportGithubHint": "GitHub で検索：{url}",
+  "@statisticsExportGithubHint": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsExportQrScanHint": "スキャンで公式サイト",
+  "statisticsExportRankingMore": "他 {count} 件の授業は省略",
+  "@statisticsExportRankingMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "statisticsShareTitle": "学期の統計",
   "statisticsRankingSlotDetail": "{day} {startSection}-{endSection}限",
   "@statisticsRankingSlotDetail": {

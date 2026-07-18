@@ -10798,6 +10798,78 @@ abstract class AppLocalizations {
   /// **'分享统计'**
   String get statisticsShareLabel;
 
+  /// No description provided for @statisticsExportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出统计'**
+  String get statisticsExportTitle;
+
+  /// No description provided for @statisticsExportModulesSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'包含模块'**
+  String get statisticsExportModulesSection;
+
+  /// No description provided for @statisticsExportFormatSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出格式'**
+  String get statisticsExportFormatSection;
+
+  /// No description provided for @statisticsExportFormatImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'长图 (PNG)'**
+  String get statisticsExportFormatImage;
+
+  /// No description provided for @statisticsExportFormatPdf.
+  ///
+  /// In zh, this message translates to:
+  /// **'PDF 文档'**
+  String get statisticsExportFormatPdf;
+
+  /// No description provided for @statisticsExportAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始导出'**
+  String get statisticsExportAction;
+
+  /// No description provided for @statisticsExportSelectModuleHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请至少选择一个模块'**
+  String get statisticsExportSelectModuleHint;
+
+  /// No description provided for @statisticsExportModuleOverview.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期总览'**
+  String get statisticsExportModuleOverview;
+
+  /// No description provided for @statisticsExportBrandTagline.
+  ///
+  /// In zh, this message translates to:
+  /// **'把课程信息做成系统体验'**
+  String get statisticsExportBrandTagline;
+
+  /// No description provided for @statisticsExportGithubHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub 搜索项目：{url}'**
+  String statisticsExportGithubHint(String url);
+
+  /// No description provided for @statisticsExportQrScanHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫码访问官网'**
+  String get statisticsExportQrScanHint;
+
+  /// No description provided for @statisticsExportRankingMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'另有 {count} 门课程未展示'**
+  String statisticsExportRankingMore(int count);
+
   /// No description provided for @statisticsShareTitle.
   ///
   /// In zh, this message translates to:

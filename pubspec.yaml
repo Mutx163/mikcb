@@ -41,6 +41,7 @@ dependencies:
   forui: ^0.23.0
   fast_gbk: ^1.0.0
   flutter_svg: ^2.3.0
+  image: ^4.8.0
 
 dev_dependencies:
   flutter_test:

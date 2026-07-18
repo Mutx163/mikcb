@@ -3330,6 +3330,32 @@
   "statisticsRankingTitle": "과목 순위",
   "statisticsNoDataHint": "수업을 추가하면 통계를 볼 수 있습니다",
   "statisticsShareLabel": "통계 공유",
+  "statisticsExportTitle": "통계 내보내기",
+  "statisticsExportModulesSection": "포함할 모듈",
+  "statisticsExportFormatSection": "내보내기 형식",
+  "statisticsExportFormatImage": "긴 이미지 (PNG)",
+  "statisticsExportFormatPdf": "PDF 문서",
+  "statisticsExportAction": "내보내기",
+  "statisticsExportSelectModuleHint": "모듈을 하나 이상 선택하세요",
+  "statisticsExportModuleOverview": "학기 개요",
+  "statisticsExportBrandTagline": "수업 정보를 시스템 경험으로",
+  "statisticsExportGithubHint": "GitHub에서 검색: {url}",
+  "@statisticsExportGithubHint": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsExportQrScanHint": "스캔하여 공식 사이트",
+  "statisticsExportRankingMore": "외 {count}개 수업은 생략",
+  "@statisticsExportRankingMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "statisticsShareTitle": "내 학기 통계",
   "statisticsRankingSlotDetail": "{day} {startSection}-{endSection}교시",
   "@statisticsRankingSlotDetail": {

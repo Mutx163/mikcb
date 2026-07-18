@@ -3508,6 +3508,32 @@
   "statisticsRankingTitle": "Course Ranking",
   "statisticsNoDataHint": "Add courses to view statistics",
   "statisticsShareLabel": "Share statistics",
+  "statisticsExportTitle": "Export statistics",
+  "statisticsExportModulesSection": "Include modules",
+  "statisticsExportFormatSection": "Export format",
+  "statisticsExportFormatImage": "Long image (PNG)",
+  "statisticsExportFormatPdf": "PDF document",
+  "statisticsExportAction": "Export",
+  "statisticsExportSelectModuleHint": "Select at least one module",
+  "statisticsExportModuleOverview": "Semester overview",
+  "statisticsExportBrandTagline": "Course info, system experience",
+  "statisticsExportGithubHint": "Find us on GitHub: {url}",
+  "@statisticsExportGithubHint": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsExportQrScanHint": "Scan for website",
+  "statisticsExportRankingMore": "{count} more courses not shown",
+  "@statisticsExportRankingMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "statisticsShareTitle": "My Semester Stats",
   "statisticsRankingSlotDetail": "{day} Periods {startSection}-{endSection}",
   "@statisticsRankingSlotDetail": {

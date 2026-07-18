@@ -6005,6 +6005,46 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsShareLabel => '統計を共有';
 
   @override
+  String get statisticsExportTitle => '統計を書き出す';
+
+  @override
+  String get statisticsExportModulesSection => '含める項目';
+
+  @override
+  String get statisticsExportFormatSection => '書き出し形式';
+
+  @override
+  String get statisticsExportFormatImage => '長尺画像 (PNG)';
+
+  @override
+  String get statisticsExportFormatPdf => 'PDF 文書';
+
+  @override
+  String get statisticsExportAction => '書き出す';
+
+  @override
+  String get statisticsExportSelectModuleHint => '少なくとも1つの項目を選択してください';
+
+  @override
+  String get statisticsExportModuleOverview => '学期の概要';
+
+  @override
+  String get statisticsExportBrandTagline => '授業情報をシステム体験に';
+
+  @override
+  String statisticsExportGithubHint(String url) {
+    return 'GitHub で検索：$url';
+  }
+
+  @override
+  String get statisticsExportQrScanHint => 'スキャンで公式サイト';
+
+  @override
+  String statisticsExportRankingMore(int count) {
+    return '他 $count 件の授業は省略';
+  }
+
+  @override
   String get statisticsShareTitle => '学期の統計';
 
   @override

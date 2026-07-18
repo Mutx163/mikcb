@@ -3330,6 +3330,32 @@
   "statisticsRankingTitle": "課程排行",
   "statisticsNoDataHint": "添加課程後即可查看統計",
   "statisticsShareLabel": "分享統計",
+  "statisticsExportTitle": "匯出統計",
+  "statisticsExportModulesSection": "包含模組",
+  "statisticsExportFormatSection": "匯出格式",
+  "statisticsExportFormatImage": "長圖 (PNG)",
+  "statisticsExportFormatPdf": "PDF 文件",
+  "statisticsExportAction": "開始匯出",
+  "statisticsExportSelectModuleHint": "請至少選擇一個模組",
+  "statisticsExportModuleOverview": "學期總覽",
+  "statisticsExportBrandTagline": "把課程資訊做成系統體驗",
+  "statisticsExportGithubHint": "GitHub 搜尋專案：{url}",
+  "@statisticsExportGithubHint": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsExportQrScanHint": "掃碼造訪官網",
+  "statisticsExportRankingMore": "另有 {count} 門課程未展示",
+  "@statisticsExportRankingMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "statisticsShareTitle": "我的學期統計",
   "statisticsRankingSlotDetail": "{day} 第{startSection}-{endSection}節",
   "@statisticsRankingSlotDetail": {
