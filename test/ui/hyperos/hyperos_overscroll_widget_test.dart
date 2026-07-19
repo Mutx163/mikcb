@@ -5,6 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_overscroll.dart';
 
+/// Sets [ScrollPosition] pixels including out-of-range overscroll values.
+void _forceScrollPixels(ScrollPosition position, double pixels) {
+  // ignore: invalid_use_of_protected_member
+  position.forcePixels(pixels);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -147,7 +153,7 @@ void main() {
     final scrollContext = tester.element(scrollable);
 
     void notifyAt(double pixels) {
-      position.forcePixels(pixels);
+      _forceScrollPixels(position, pixels);
       hyperosHandleOverscrollEdgeHaptic(
         ScrollUpdateNotification(
           metrics: position,
@@ -239,7 +245,7 @@ void main() {
     final scrollContext = tester.element(scrollable);
 
     void notifyAt(double pixels) {
-      position.forcePixels(pixels);
+      _forceScrollPixels(position, pixels);
       hyperosHandleOverscrollEdgeHaptic(
         ScrollUpdateNotification(
           metrics: position,
@@ -311,7 +317,7 @@ void main() {
     final scrollContext = tester.element(scrollable);
 
     void notifyAt(double pixels) {
-      position.forcePixels(pixels);
+      _forceScrollPixels(position, pixels);
       hyperosHandleOverscrollEdgeHaptic(
         ScrollUpdateNotification(
           metrics: position,
@@ -355,7 +361,7 @@ void main() {
     final scrollContext = tester.element(scrollable);
 
     void notifyAt(double pixels) {
-      position.forcePixels(pixels);
+      _forceScrollPixels(position, pixels);
       hyperosHandleOverscrollEdgeHaptic(
         ScrollUpdateNotification(
           metrics: position,
