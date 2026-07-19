@@ -244,7 +244,10 @@ class DebugDeepLinkNavigator {
     final leadMinutes = minutes.clamp(1, 120);
     final course = await LiveTestingFixtureService.upsertTimedFixtureCourse(
       provider: provider,
-      hour: LiveTestingFixtureService.hourSlotFor(now),
+      sectionNumber: LiveTestingFixtureService.sectionNumberForTime(
+        now,
+        provider.settings.sections,
+      ),
       now: now,
       lead: Duration(minutes: leadMinutes),
       note: '调试深链 seed-soon（$leadMinutes 分钟后）',

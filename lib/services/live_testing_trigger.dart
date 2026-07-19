@@ -187,17 +187,17 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
   }
 }
 
-Future<LiveTestingTriggerResult> triggerLiveUpdateTestForHourSlot({
+Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({
   required BuildContext context,
   required TimetableProvider provider,
-  required int hour,
+  required int sectionNumber,
   required Duration lead,
   String source = 'quick_fixture_grid',
 }) async {
   final now = DateTime.now();
   final timedCourse = await LiveTestingFixtureService.upsertTimedFixtureCourse(
     provider: provider,
-    hour: hour,
+    sectionNumber: sectionNumber,
     now: now,
     lead: lead,
   );
@@ -207,10 +207,14 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForHourSlot({
       message: null,
     );
   }
-  final nextHour = LiveTestingFixtureService.nextHourSlotFor(now);
-  final nextTemplate = LiveTestingFixtureService.findFixtureForHour(
+  final sections = provider.settings.sections;
+  final nextSection = LiveTestingFixtureService.nextSectionNumberForTime(
+    now,
+    sections,
+  );
+  final nextTemplate = LiveTestingFixtureService.findFixtureForSection(
     provider,
-    nextHour,
+    nextSection,
   );
   return triggerLiveUpdateTest(
     context: context,

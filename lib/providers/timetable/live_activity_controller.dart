@@ -509,6 +509,8 @@ Future<void> _liveUpdateActivityBody(
       stage: selection.stage.name,
       validateAgainstSchedule: true,
       beforeClassLeadMillis: settings.liveShowBeforeClassMinutes * 60000,
+      startAtMillis: startAtMillis,
+      endAtMillis: endAtMillis,
       liveClassReminderStartMinutes: settings.liveClassReminderStartMinutes,
       endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
       promoteDuringClass:

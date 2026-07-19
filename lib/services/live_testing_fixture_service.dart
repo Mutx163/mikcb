@@ -7,6 +7,11 @@ import '../providers/timetable_provider.dart';
 
 /// Debug-only helpers for installing and driving live-update test timetables.
 ///
+/// Install flow:
+/// 1. Ensure the shared 24-section hourly scheme [timeSchemeName]
+/// 2. **Apply it as the active time scheme** so left-rail times match courses
+/// 3. Install one fixture course per section (section-indexed, not free-form clock)
+///
 /// All fixture courses use [courseIdPrefix] so they can be removed without
 /// touching user-created courses.
 class LiveTestingFixtureService {
@@ -20,18 +25,18 @@ class LiveTestingFixtureService {
   static bool isFixtureCourse(Course course) =>
       course.id.startsWith(courseIdPrefix);
 
-  static String fixtureIdForHour(int hour) =>
-      '$courseIdPrefix${hour.clamp(0, 23).toString().padLeft(2, '0')}';
-
-  static int hourSlotFor(DateTime time) => time.hour.clamp(0, 23);
-
-  static int nextHourSlotFor(DateTime time) => (time.hour + 1) % 24;
+  /// 1-based section number → stable fixture id (`live_test_01` …).
+  static String fixtureIdForSection(int sectionNumber) {
+    final normalized = sectionNumber < 1 ? 1 : sectionNumber;
+    return '$courseIdPrefix${normalized.toString().padLeft(2, '0')}';
+  }
 
   static String formatClock(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:'
         '${time.minute.toString().padLeft(2, '0')}';
   }
 
+  /// 24 sections: 第1节=00:00–01:00 … 第24节=23:00–23:59.
   static List<SectionTime> buildHourlySections() {
     return List<SectionTime>.generate(24, (hour) {
       final endHour = hour == 23 ? 23 : hour + 1;
@@ -44,6 +49,20 @@ class LiveTestingFixtureService {
     });
   }
 
+  static bool _sectionsMatch(List<SectionTime> left, List<SectionTime> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (left[index].startTime != right[index].startTime ||
+          left[index].endTime != right[index].endTime) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// Creates or updates the 24-hour test scheme (does not apply it).
   static Future<TimeScheme> ensureHourlyTimeScheme(
     TimetableProvider provider,
   ) async {
@@ -58,7 +77,8 @@ class LiveTestingFixtureService {
     }
 
     if (existing != null) {
-      final needsUpdate = existing.sections.length != sections.length ||
+      final needsUpdate =
+          existing.sections.length != sections.length ||
           !_sectionsMatch(existing.sections, sections);
       if (needsUpdate) {
         final error = await provider.updateTimeScheme(
@@ -70,80 +90,112 @@ class LiveTestingFixtureService {
           throw StateError(error);
         }
       }
-      return provider.timeSchemes.firstWhere((scheme) => scheme.id == existing!.id);
+      return provider.timeSchemes.firstWhere(
+        (scheme) => scheme.id == existing!.id,
+      );
     }
 
     return provider.createTimeScheme(
       name: timeSchemeName,
       sections: sections,
+      applyToActiveProfile: false,
     );
   }
 
-  static bool _sectionsMatch(
-    List<SectionTime> left,
-    List<SectionTime> right,
-  ) {
-    if (left.length != right.length) {
-      return false;
+  static int? _clockMinutes(String clock) {
+    final parts = clock.split(':');
+    if (parts.length < 2) {
+      return null;
     }
-    for (var i = 0; i < left.length; i++) {
-      if (left[i].startTime != right[i].startTime ||
-          left[i].endTime != right[i].endTime) {
-        return false;
-      }
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return null;
     }
-    return true;
+    return hour * 60 + minute;
   }
 
-  static List<Course> buildTwentyFourHourGrid({
+  /// Section (1-based) that [time] falls in, or the next upcoming section,
+  /// or the last section when the day is already past all sections.
+  static int sectionNumberForTime(DateTime time, List<SectionTime> sections) {
+    if (sections.isEmpty) {
+      return 1;
+    }
+    final minutes = time.hour * 60 + time.minute;
+    for (var index = 0; index < sections.length; index++) {
+      final startMinutes = _clockMinutes(sections[index].startTime) ?? 0;
+      final endMinutes =
+          _clockMinutes(sections[index].endTime) ?? (startMinutes + 1);
+      if (minutes < startMinutes) {
+        return index + 1;
+      }
+      if (minutes < endMinutes) {
+        return index + 1;
+      }
+    }
+    return sections.length;
+  }
+
+  /// Section after [sectionNumberForTime], wrapping to 1 after the last.
+  static int nextSectionNumberForTime(
+    DateTime time,
+    List<SectionTime> sections,
+  ) {
+    if (sections.isEmpty) {
+      return 1;
+    }
+    final current = sectionNumberForTime(time, sections);
+    return current >= sections.length ? 1 : current + 1;
+  }
+
+  static List<Course> buildSectionGrid({
     required DateTime now,
     required int semesterWeekCount,
-    required String timeSchemeId,
+    required List<SectionTime> sections,
   }) {
     final dayOfWeek = now.weekday;
-    final sections = buildHourlySections();
     return List<Course>.generate(
-      24,
-      (hour) => buildSlotTemplate(
-        hour: hour,
+      sections.length,
+      (index) => buildSlotTemplate(
+        sectionNumber: index + 1,
+        section: sections[index],
         dayOfWeek: dayOfWeek,
         semesterWeekCount: semesterWeekCount,
-        timeSchemeId: timeSchemeId,
-        section: sections[hour],
+        totalSections: sections.length,
       ),
     );
   }
 
   static Course buildSlotTemplate({
-    required int hour,
+    required int sectionNumber,
+    required SectionTime section,
     required int dayOfWeek,
     required int semesterWeekCount,
-    required String timeSchemeId,
-    SectionTime? section,
+    int totalSections = 1,
   }) {
-    final normalizedHour = hour.clamp(0, 23);
-    final resolvedSection = section ?? buildHourlySections()[normalizedHour];
-    final sectionIndex = normalizedHour + 1;
-    final color = colorForHour(normalizedHour);
+    final normalizedSection = sectionNumber < 1 ? 1 : sectionNumber;
+    final color = colorForSection(normalizedSection, totalSections);
+    final padded = normalizedSection.toString().padLeft(2, '0');
     return Course(
-      id: fixtureIdForHour(normalizedHour),
-      name: '测试 ${resolvedSection.startTime}',
-      shortName: '测${normalizedHour.toString().padLeft(2, '0')}',
+      id: fixtureIdForSection(normalizedSection),
+      name: '测试 第$normalizedSection节',
+      shortName: '测$padded',
       teacher: '测试教师',
-      location: '测试教室 ${normalizedHour.toString().padLeft(2, '0')}',
+      location: '测试教室 $padded',
       dayOfWeek: dayOfWeek,
-      startSection: sectionIndex,
-      endSection: sectionIndex,
-      startTime: resolvedSection.startTime,
-      endTime: resolvedSection.endTime,
+      startSection: normalizedSection,
+      endSection: normalizedSection,
+      startTime: section.startTime,
+      endTime: section.endTime,
       color: color,
       startWeek: 1,
       endWeek: semesterWeekCount,
-      timeSchemeIdOverride: timeSchemeId,
       note: '超级岛快捷测试课（可安全删除）',
     );
   }
 
+  /// Shifts only the clock fields for live-island lead testing.
+  /// Section indices stay on the template so the week grid placement is stable.
   static Course buildTimedTestCourse({
     required Course template,
     required DateTime now,
@@ -161,16 +213,21 @@ class LiveTestingFixtureService {
     );
   }
 
-  static String colorForHour(int hour) {
-    final hue = (hour.clamp(0, 23) * 15) % 360;
+  static String colorForSection(int sectionNumber, int totalSections) {
+    final safeTotal = totalSections < 1 ? 1 : totalSections;
+    final hueStep = 360.0 / safeTotal;
+    final hue = ((sectionNumber - 1).clamp(0, safeTotal - 1) * hueStep) % 360;
     final color = HSLColor.fromAHSL(1, hue.toDouble(), 0.58, 0.48).toColor();
     String channel(double value) =>
         (value * 255.0).round().clamp(0, 255).toRadixString(16).padLeft(2, '0');
     return '#${channel(color.r)}${channel(color.g)}${channel(color.b)}';
   }
 
-  static Course? findFixtureForHour(TimetableProvider provider, int hour) {
-    final id = fixtureIdForHour(hour);
+  static Course? findFixtureForSection(
+    TimetableProvider provider,
+    int sectionNumber,
+  ) {
+    final id = fixtureIdForSection(sectionNumber);
     for (final course in provider.courses) {
       if (course.id == id) {
         return course;
@@ -191,15 +248,30 @@ class LiveTestingFixtureService {
     return fixtureIds.length;
   }
 
-  static Future<int> installTwentyFourHourGrid(TimetableProvider provider) async {
+  /// Ensures the 24-hour scheme, **applies it as active**, then installs one
+  /// fixture course per section for today.
+  static Future<int> installSectionGrid(TimetableProvider provider) async {
     await provider.initialize();
     await removeAllFixtureCourses(provider);
+
     final scheme = await ensureHourlyTimeScheme(provider);
+    // Without this, courses use the 24-section scheme data but the week grid
+    // still renders the previous scheme — the original mismatch.
+    final applyError = await provider.applyTimeScheme(scheme.id);
+    if (applyError != null) {
+      throw StateError(applyError);
+    }
+
     final settings = provider.settings;
-    final grid = buildTwentyFourHourGrid(
+    final sections = List<SectionTime>.from(scheme.sections);
+    if (sections.isEmpty) {
+      throw StateError('测试时间方案没有节次，无法安装测试课表');
+    }
+
+    final grid = buildSectionGrid(
       now: DateTime.now(),
       semesterWeekCount: settings.semesterWeekCount,
-      timeSchemeId: scheme.id,
+      sections: sections,
     );
     return provider.importParsedCourses(
       grid,
@@ -210,20 +282,27 @@ class LiveTestingFixtureService {
 
   static Future<Course> upsertTimedFixtureCourse({
     required TimetableProvider provider,
-    required int hour,
+    required int sectionNumber,
     required DateTime now,
     required Duration lead,
     String? note,
   }) async {
     await provider.initialize();
     final settings = provider.settings;
-    final scheme = await ensureHourlyTimeScheme(provider);
-    final template = findFixtureForHour(provider, hour) ??
+    final sections = settings.sections;
+    if (sections.isEmpty) {
+      throw StateError('当前课表没有节次时间，无法写入测试课');
+    }
+    final clampedSection = sectionNumber.clamp(1, sections.length);
+    final section = sections[clampedSection - 1];
+    final template =
+        findFixtureForSection(provider, clampedSection) ??
         buildSlotTemplate(
-          hour: hour,
+          sectionNumber: clampedSection,
+          section: section,
           dayOfWeek: now.weekday,
           semesterWeekCount: settings.semesterWeekCount,
-          timeSchemeId: scheme.id,
+          totalSections: sections.length,
         );
     final timedCourse = buildTimedTestCourse(
       template: template,
@@ -231,7 +310,7 @@ class LiveTestingFixtureService {
       lead: lead,
       note: note,
     );
-    if (findFixtureForHour(provider, hour) == null) {
+    if (findFixtureForSection(provider, clampedSection) == null) {
       await provider.addCourse(timedCourse);
       return timedCourse;
     }

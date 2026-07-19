@@ -1,52 +1,132 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
 
 void main() {
-  test('buildHourlySections spans 24 distinct hourly slots', () {
+  const sampleSections = [
+    SectionTime(startTime: '08:00', endTime: '08:45'),
+    SectionTime(startTime: '08:55', endTime: '09:40'),
+    SectionTime(startTime: '10:00', endTime: '10:45'),
+    SectionTime(startTime: '10:55', endTime: '11:40'),
+    SectionTime(startTime: '14:00', endTime: '14:45'),
+  ];
+
+  test('buildHourlySections spans 24 section-aligned hourly slots', () {
     final sections = LiveTestingFixtureService.buildHourlySections();
 
     expect(sections, hasLength(24));
     expect(sections.first.startTime, '00:00');
     expect(sections.first.endTime, '01:00');
-    expect(sections[8].startTime, '08:00');
-    expect(sections[8].endTime, '09:00');
+    expect(sections[10].startTime, '10:00');
+    expect(sections[10].endTime, '11:00');
     expect(sections.last.startTime, '23:00');
     expect(sections.last.endTime, '23:59');
-    expect(
-      sections.map((section) => section.startTime).toSet(),
-      hasLength(24),
-    );
   });
 
-  test('buildTwentyFourHourGrid maps each course to its own section', () {
+  test('hourly grid keeps section index aligned with scheme times', () {
     final now = DateTime(2026, 3, 23, 10, 30);
-    final grid = LiveTestingFixtureService.buildTwentyFourHourGrid(
+    final sections = LiveTestingFixtureService.buildHourlySections();
+    final grid = LiveTestingFixtureService.buildSectionGrid(
       now: now,
       semesterWeekCount: 20,
-      timeSchemeId: 'scheme-live-test',
+      sections: sections,
     );
 
     expect(grid, hasLength(24));
-    expect(grid[0].startSection, 1);
-    expect(grid[0].startTime, '00:00');
-    expect(grid[8].startSection, 9);
-    expect(grid[8].startTime, '08:00');
-    expect(grid[23].startSection, 24);
-    expect(grid[23].startTime, '23:00');
-    expect(
-      grid.map((course) => course.timeSchemeIdOverride).toSet(),
-      {'scheme-live-test'},
-    );
-    expect(grid.every((course) => course.dayOfWeek == now.weekday), isTrue);
+    expect(grid[10].startSection, 11);
+    expect(grid[10].endSection, 11);
+    expect(grid[10].startTime, '10:00');
+    expect(grid[10].endTime, '11:00');
+    expect(grid[10].name, '测试 第11节');
   });
 
-  test('buildTimedTestCourse shifts start and end by lead duration', () {
+  test('buildSectionGrid maps each course to its own section times', () {
+    final now = DateTime(2026, 3, 23, 10, 30);
+    final grid = LiveTestingFixtureService.buildSectionGrid(
+      now: now,
+      semesterWeekCount: 20,
+      sections: sampleSections,
+    );
+
+    expect(grid, hasLength(5));
+    expect(grid[0].startSection, 1);
+    expect(grid[0].endSection, 1);
+    expect(grid[0].startTime, '08:00');
+    expect(grid[0].endTime, '08:45');
+    expect(grid[0].name, '测试 第1节');
+    expect(grid[0].timeSchemeIdOverride, isNull);
+
+    expect(grid[2].startSection, 3);
+    expect(grid[2].startTime, '10:00');
+    expect(grid[2].endTime, '10:45');
+    expect(grid[2].name, '测试 第3节');
+
+    expect(grid.every((course) => course.dayOfWeek == now.weekday), isTrue);
+    expect(grid.map((course) => course.id).toSet(), {
+      'live_test_01',
+      'live_test_02',
+      'live_test_03',
+      'live_test_04',
+      'live_test_05',
+    });
+  });
+
+  test('sectionNumberForTime prefers in-progress then upcoming section', () {
+    expect(
+      LiveTestingFixtureService.sectionNumberForTime(
+        DateTime(2026, 3, 23, 7, 30),
+        sampleSections,
+      ),
+      1,
+    );
+    expect(
+      LiveTestingFixtureService.sectionNumberForTime(
+        DateTime(2026, 3, 23, 8, 10),
+        sampleSections,
+      ),
+      1,
+    );
+    expect(
+      LiveTestingFixtureService.sectionNumberForTime(
+        DateTime(2026, 3, 23, 10, 20),
+        sampleSections,
+      ),
+      3,
+    );
+    expect(
+      LiveTestingFixtureService.sectionNumberForTime(
+        DateTime(2026, 3, 23, 22, 0),
+        sampleSections,
+      ),
+      5,
+    );
+  });
+
+  test('nextSectionNumberForTime wraps after last section', () {
+    expect(
+      LiveTestingFixtureService.nextSectionNumberForTime(
+        DateTime(2026, 3, 23, 14, 10),
+        sampleSections,
+      ),
+      1,
+    );
+    expect(
+      LiveTestingFixtureService.nextSectionNumberForTime(
+        DateTime(2026, 3, 23, 8, 10),
+        sampleSections,
+      ),
+      2,
+    );
+  });
+
+  test('buildTimedTestCourse shifts clock only, keeps section indices', () {
     final now = DateTime(2026, 3, 23, 10, 15);
     final template = LiveTestingFixtureService.buildSlotTemplate(
-      hour: 10,
+      sectionNumber: 3,
+      section: sampleSections[2],
       dayOfWeek: now.weekday,
       semesterWeekCount: 20,
-      timeSchemeId: 'scheme-live-test',
+      totalSections: sampleSections.length,
     );
     final timed = LiveTestingFixtureService.buildTimedTestCourse(
       template: template,
@@ -57,15 +137,8 @@ void main() {
 
     expect(timed.startTime, '10:18');
     expect(timed.endTime, '10:21');
+    expect(timed.startSection, 3);
+    expect(timed.endSection, 3);
     expect(timed.dayOfWeek, now.weekday);
-  });
-
-  test('nextHourSlot wraps at midnight', () {
-    expect(
-      LiveTestingFixtureService.nextHourSlotFor(
-        DateTime(2026, 3, 23, 23, 10),
-      ),
-      0,
-    );
   });
 }
