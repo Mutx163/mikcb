@@ -59,10 +59,6 @@ class _HomeTopMenuSheet extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final colors = context.theme.colors;
     final typo = context.theme.typography;
-    final itemWidth = ((MediaQuery.sizeOf(context).width - 32 - 30) / 4).clamp(
-      72.0,
-      112.0,
-    );
     const tileSpacing = 10.0;
     const tileHorizontalPadding = 14.0;
 
@@ -81,101 +77,111 @@ class _HomeTopMenuSheet extends StatelessWidget {
       height: 1.15,
       color: colors.foreground,
     );
-    final titleAreaHeight = _maxMenuTitleHeight(
-      titles: menuTitles,
-      style: titleStyle,
-      maxWidth: itemWidth - tileHorizontalPadding,
-      textDirection: Directionality.of(context),
-    );
-
-    Widget tile({
-      required IconData icon,
-      required String title,
-      required HomeTopMenuAction action,
-      Color? accentColor,
-      String? badgeText,
-    }) {
-      return SizedBox(
-        width: itemWidth,
-        child: _HomeMenuActionTile(
-          icon: icon,
-          title: title,
-          titleStyle: titleStyle,
-          titleAreaHeight: titleAreaHeight,
-          accentColor: accentColor,
-          badgeText: badgeText,
-          onTap: () => Navigator.of(context).pop(action),
-        ),
-      );
-    }
-
-    Widget menuRow(List<Widget> tiles) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var index = 0; index < tiles.length; index++) ...[
-            if (index > 0) const SizedBox(width: tileSpacing),
-            tiles[index],
-          ],
-        ],
-      );
-    }
 
     return HyperosSheetFrame(
       frosted: true,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            menuRow([
-              tile(
-                icon: Icons.system_update_alt_rounded,
-                title: l10n.homeMenuUpdateTitle,
-                action: HomeTopMenuAction.update,
-                badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
-                accentColor: hasAvailableUpdate ? colorScheme.primary : null,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Width is already after floating outer inset + frame padding.
+          final itemWidth = ((constraints.maxWidth - tileSpacing * 3) / 4)
+              .clamp(64.0, 112.0);
+          final titleAreaHeight = _maxMenuTitleHeight(
+            titles: menuTitles,
+            style: titleStyle,
+            maxWidth: itemWidth - tileHorizontalPadding,
+            textDirection: Directionality.of(context),
+          );
+
+          Widget tile({
+            required IconData icon,
+            required String title,
+            required HomeTopMenuAction action,
+            Color? accentColor,
+            String? badgeText,
+          }) {
+            return SizedBox(
+              width: itemWidth,
+              child: _HomeMenuActionTile(
+                icon: icon,
+                title: title,
+                titleStyle: titleStyle,
+                titleAreaHeight: titleAreaHeight,
+                accentColor: accentColor,
+                badgeText: badgeText,
+                onTap: () => Navigator.of(context).pop(action),
               ),
-              tile(
-                icon: Icons.dashboard_customize_rounded,
-                title: l10n.homeMenuOverviewTitle,
-                action: HomeTopMenuAction.overview,
-              ),
-              tile(
-                icon: Icons.bar_chart_rounded,
-                title: l10n.homeMenuStatisticsTitle,
-                action: HomeTopMenuAction.statistics,
-              ),
-              tile(
-                icon: Icons.add_circle_outline_rounded,
-                title: l10n.homeMenuAddCourseTitle,
-                action: HomeTopMenuAction.addCourse,
-              ),
-            ]),
-            const SizedBox(height: tileSpacing),
-            menuRow([
-              tile(
-                icon: Icons.school_outlined,
-                title: l10n.examListTitle,
-                action: HomeTopMenuAction.exams,
-              ),
-              tile(
-                icon: Icons.file_upload_outlined,
-                title: l10n.homeMenuImportTitle,
-                action: HomeTopMenuAction.importCourses,
-              ),
-              tile(
-                icon: Icons.tune_rounded,
-                title: l10n.homeMenuSettingsTitle,
-                action: HomeTopMenuAction.settings,
-              ),
-              tile(
-                icon: Icons.favorite_border_rounded,
-                title: l10n.homeMenuCoffeeTitle,
-                action: HomeTopMenuAction.support,
-              ),
-            ]),
-          ],
-        ),
+            );
+          }
+
+          Widget menuRow(List<Widget> tiles) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var index = 0; index < tiles.length; index++) ...[
+                  if (index > 0) const SizedBox(width: tileSpacing),
+                  tiles[index],
+                ],
+              ],
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                menuRow([
+                  tile(
+                    icon: Icons.system_update_alt_rounded,
+                    title: l10n.homeMenuUpdateTitle,
+                    action: HomeTopMenuAction.update,
+                    badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
+                    accentColor: hasAvailableUpdate
+                        ? colorScheme.primary
+                        : null,
+                  ),
+                  tile(
+                    icon: Icons.dashboard_customize_rounded,
+                    title: l10n.homeMenuOverviewTitle,
+                    action: HomeTopMenuAction.overview,
+                  ),
+                  tile(
+                    icon: Icons.bar_chart_rounded,
+                    title: l10n.homeMenuStatisticsTitle,
+                    action: HomeTopMenuAction.statistics,
+                  ),
+                  tile(
+                    icon: Icons.add_circle_outline_rounded,
+                    title: l10n.homeMenuAddCourseTitle,
+                    action: HomeTopMenuAction.addCourse,
+                  ),
+                ]),
+                const SizedBox(height: tileSpacing),
+                menuRow([
+                  tile(
+                    icon: Icons.school_outlined,
+                    title: l10n.examListTitle,
+                    action: HomeTopMenuAction.exams,
+                  ),
+                  tile(
+                    icon: Icons.file_upload_outlined,
+                    title: l10n.homeMenuImportTitle,
+                    action: HomeTopMenuAction.importCourses,
+                  ),
+                  tile(
+                    icon: Icons.tune_rounded,
+                    title: l10n.homeMenuSettingsTitle,
+                    action: HomeTopMenuAction.settings,
+                  ),
+                  tile(
+                    icon: Icons.favorite_border_rounded,
+                    title: l10n.homeMenuCoffeeTitle,
+                    action: HomeTopMenuAction.support,
+                  ),
+                ]),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

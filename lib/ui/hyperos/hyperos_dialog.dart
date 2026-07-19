@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 
-/// Action button for [HyperosDialog] — text style, Miuix dialog pattern.
+/// Action button for [HyperosDialog] — maps to solid [HyperosButton] variants.
 class HyperosDialogAction {
   const HyperosDialogAction({
     required this.label,
@@ -18,7 +20,9 @@ class HyperosDialogAction {
   final bool isDestructive;
 }
 
-/// HyperOS / Miuix-styled alert dialog (title + summary + text actions).
+/// HyperOS bottom floating alert card (title + body + solid action buttons).
+///
+/// Uses [HyperosSheetFrame] frosted glass (sigma from 外观与配色 settings).
 class HyperosDialog extends StatelessWidget {
   const HyperosDialog({
     super.key,
@@ -35,73 +39,56 @@ class HyperosDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = HyperosColors.surfaceContainer(context);
-    final titleColor = HyperosColors.onSurface(context);
+    final detailStyle = HyperosTypography.listDetail(context);
+    final Widget? content;
+    if (body != null) {
+      content = body;
+    } else if (message != null) {
+      content = Text(message!, textAlign: TextAlign.center, style: detailStyle);
+    } else {
+      content = null;
+    }
 
-    final content =
-        body ??
-        (message != null
-            ? Text(message!, style: HyperosTypography.listDetail(context))
-            : null);
+    final maxCardHeight = MediaQuery.sizeOf(context).height * 0.72;
+    final maxBodyHeight = maxCardHeight * 0.55;
 
-    final viewSize = MediaQuery.sizeOf(context);
-    final viewInsets = MediaQuery.viewInsetsOf(context);
-    final maxDialogHeight =
-        (viewSize.height - viewInsets.vertical) -
-        HyperosMiuixDialog.outsideMarginVertical * 2;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: HyperosMiuixDialog.outsideMarginHorizontal,
-        vertical: HyperosMiuixDialog.outsideMarginVertical,
+    return HyperosSheetFrame(
+      chrome: HyperosSheetChrome.floating,
+      frosted: true,
+      padding: const EdgeInsets.fromLTRB(
+        HyperosMiuixDialog.insideMarginHorizontal,
+        HyperosMiuixDialog.insideMarginVertical,
+        HyperosMiuixDialog.insideMarginHorizontal,
+        HyperosMiuixDialog.insideMarginVertical,
       ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: HyperosMiuixDialog.maxWidth,
-          maxHeight: maxDialogHeight,
-        ),
-        child: Material(
-          color: background,
-          shape: HyperosTheme.cardShape(),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              HyperosMiuixDialog.insideMarginHorizontal,
-              HyperosMiuixDialog.insideMarginVertical,
-              HyperosMiuixDialog.insideMarginHorizontal,
-              HyperosMiuixDialog.insideMarginVertical,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null) ...[
+            Text(
+              title!,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.sheetTitle(context),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (title != null) ...[
-                  Text(
-                    title!,
-                    style: HyperosTypography.title(
-                      context,
-                    ).copyWith(color: titleColor),
-                  ),
-                  SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
-                ],
-                if (content != null) ...[
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: DefaultTextStyle(
-                        style: HyperosTypography.listDetail(context),
-                        child: content,
-                      ),
-                    ),
-                  ),
-                  if (actions.isNotEmpty)
-                    SizedBox(height: HyperosMiuixDialog.summaryBottomPadding),
-                ],
-                if (actions.isNotEmpty) _HyperosDialogActions(actions: actions),
-              ],
+            SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
+          ],
+          if (content != null) ...[
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxBodyHeight),
+              child: SingleChildScrollView(
+                child: DefaultTextStyle(
+                  style: detailStyle,
+                  textAlign: TextAlign.center,
+                  child: content,
+                ),
+              ),
             ),
-          ),
-        ),
+            if (actions.isNotEmpty)
+              SizedBox(height: HyperosMiuixDialog.summaryBottomPadding + 8),
+          ],
+          if (actions.isNotEmpty) _HyperosDialogActions(actions: actions),
+        ],
       ),
     );
   }
@@ -112,51 +99,55 @@ class _HyperosDialogActions extends StatelessWidget {
 
   final List<HyperosDialogAction> actions;
 
-  Color _labelColor(BuildContext context, HyperosDialogAction action) {
+  HyperosButtonVariant _variantFor(HyperosDialogAction action) {
     if (action.isDestructive) {
-      return HyperosColors.error(context);
+      return HyperosButtonVariant.destructive;
     }
     if (action.isPrimary) {
-      return HyperosColors.primary(context);
+      return HyperosButtonVariant.primary;
     }
-    return HyperosColors.onSurface(context);
+    return HyperosButtonVariant.secondary;
+  }
+
+  Widget _button(HyperosDialogAction action) {
+    return HyperosButton(
+      label: action.label,
+      variant: _variantFor(action),
+      expand: true,
+      fitLabel: true,
+      onPressed: action.onPressed,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Wrap(
-        alignment: WrapAlignment.end,
-        spacing: 8,
-        runSpacing: 4,
+    if (actions.length == 1) {
+      return _button(actions.first);
+    }
+
+    if (actions.length == 2) {
+      return Row(
         children: [
-          for (final action in actions)
-            TextButton(
-              onPressed: action.onPressed,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(
-                  HyperosMiuixButton.minWidth,
-                  HyperosMiuixButton.minHeight,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                foregroundColor: _labelColor(context, action),
-                textStyle: TextStyle(
-                  fontSize: HyperosMiuixTypography.button,
-                  fontWeight: action.isPrimary
-                      ? FontWeight.w600
-                      : FontWeight.w400,
-                ),
-              ),
-              child: Text(action.label),
-            ),
+          Expanded(child: _button(actions[0])),
+          const SizedBox(width: 12),
+          Expanded(child: _button(actions[1])),
         ],
-      ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < actions.length; index++) ...[
+          if (index > 0) const SizedBox(height: 12),
+          _button(actions[index]),
+        ],
+      ],
     );
   }
 }
 
-/// Shows a [HyperosDialog] with Miuix window dimming.
+/// Shows a HyperOS bottom floating alert (sheet), not a center Material dialog.
 Future<T?> showHyperosDialog<T>({
   required BuildContext context,
   String? title,
@@ -166,12 +157,13 @@ Future<T?> showHyperosDialog<T>({
   bool barrierDismissible = true,
   bool useRootNavigator = false,
 }) {
-  return showDialog<T>(
+  return showHyperosSheet<T>(
     context: context,
+    isDismissible: barrierDismissible,
+    enableDrag: barrierDismissible,
     useRootNavigator: useRootNavigator,
-    barrierDismissible: barrierDismissible,
     barrierColor: HyperosColors.windowDimming(context),
-    builder: (ctx) => HyperosDialog(
+    builder: (sheetContext) => HyperosDialog(
       title: title,
       body: body,
       message: message,
@@ -180,7 +172,7 @@ Future<T?> showHyperosDialog<T>({
   );
 }
 
-/// Convenience confirm dialog — returns `true` when the primary action runs.
+/// Convenience confirm sheet — returns `true` when the primary action runs.
 Future<bool?> showHyperosConfirmDialog({
   required BuildContext context,
   required String title,
@@ -192,9 +184,6 @@ Future<bool?> showHyperosConfirmDialog({
   bool barrierDismissible = true,
   bool useRootNavigator = false,
 }) {
-  // Pop the same navigator the dialog is pushed on — resolving via the caller
-  // context would target the nearest navigator even when useRootNavigator is
-  // true, closing the wrong route once nested navigators exist.
   final navigator = Navigator.of(context, rootNavigator: useRootNavigator);
   return showHyperosDialog<bool>(
     context: context,

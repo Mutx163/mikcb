@@ -145,11 +145,14 @@ abstract final class HyperosBlurredHeader {
     return Colors.white.withValues(alpha: alpha);
   }
 
-  /// Frosted bottom sheet panel tint. Light mode uses a milky white overlay so
-  /// blur reads as bright frosted glass; dark mode keeps a surface scrim.
+  /// Frosted bottom sheet / dialog panel tint.
+  ///
+  /// When [withBlur] is true: milky translucent glass (sigma from settings).
+  /// When [withBlur] is false: **fully opaque** surface — never a see-through
+  /// panel (Gaussian blur off must not leave transparent sheets).
   static Color sheetTintColor(BuildContext context, {required bool withBlur}) {
     if (!withBlur) {
-      return tintColor(context, withBlur: false);
+      return HyperosColors.surfaceContainer(context);
     }
     return _frostedScrimColor(context);
   }
@@ -160,18 +163,21 @@ abstract final class HyperosBlurredHeader {
     required bool withBlur,
     Color? base,
   }) {
+    if (!withBlur) {
+      // Parent sheet is already opaque surfaceContainer. Nested tiles must use a
+      // different solid fill so their frames stay visible (never pure white-on-white).
+      // Do not touch the withBlur:true path — appearance tuning is frozen there.
+      return HyperosColors.secondaryVariant(context);
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!isDark && withBlur) {
+    if (!isDark) {
       final parentAlpha = _appearanceOf(context).sheetTintAlpha;
       return Colors.white.withValues(
         alpha: (parentAlpha * 0.55 + 0.18).clamp(0.22, 0.72),
       );
     }
     final surface = base ?? HyperosColors.card(context);
-    final tintAlpha = withBlur
-        ? (isDark ? 0.52 : 0.48)
-        : (isDark ? darkTintOnlyAlpha : lightTintOnlyAlpha);
-    return surface.withValues(alpha: tintAlpha);
+    return surface.withValues(alpha: 0.52);
   }
 
   /// Frosted tint for home timetable regions over a full-screen backdrop.

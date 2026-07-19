@@ -48,9 +48,8 @@ const TimeSchemeQuickGeneratePreset kDefaultTimeSchemeQuickGeneratePreset =
 
 /// Floating HyperOS form card with solid [HyperosButton]s.
 ///
-/// Matches [showAppTextInputDialog]: outer inset, full rounded surface card,
-/// secondary cancel + primary confirm — not a center [HyperosDialog] with
-/// text-only actions.
+/// Same bottom floating card pattern as [showHyperosDialog] /
+/// [showAppTextInputDialog].
 Future<TimeSchemeQuickGeneratePreset?> showTimeSchemeQuickGenerateSheet(
   BuildContext context, {
   required TimeSchemeQuickGeneratePreset initialPreset,
@@ -140,150 +139,135 @@ class _TimeSchemeQuickGenerateSheetState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final outerInset = HyperosMiuixDialog.outsideMarginHorizontal;
-    final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
     final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.88;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        outerInset,
-        0,
-        outerInset,
-        outerInset + bottomSafeInset,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxSheetHeight),
-        child: Material(
-          color: HyperosColors.surfaceContainer(context),
-          shape: HyperosTheme.cardShape(),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.quickGenerateTimeSchemeTitle,
-                  style: HyperosTypography.sheetTitle(context),
-                ),
-                const SizedBox(height: 16),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildNumberField(
-                          _morningCountController,
-                          l10n.morningSectionCountLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTimeTile(
-                          label: l10n.morningFirstSectionTimeLabel,
-                          value: _morningStartTime,
-                          onTap: () => _pickTime(
-                            currentValue: _morningStartTime,
-                            onSelected: (value) {
-                              setState(() {
-                                _morningStartTime = value;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNumberField(
-                          _afternoonCountController,
-                          l10n.afternoonSectionCountLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTimeTile(
-                          label: l10n.afternoonFirstSectionTimeLabel,
-                          value: _afternoonStartTime,
-                          onTap: () => _pickTime(
-                            currentValue: _afternoonStartTime,
-                            onSelected: (value) {
-                              setState(() {
-                                _afternoonStartTime = value;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNumberField(
-                          _eveningCountController,
-                          l10n.eveningSectionCountLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTimeTile(
-                          label: l10n.eveningFirstSectionTimeLabel,
-                          value: _eveningStartTime,
-                          onTap: () => _pickTime(
-                            currentValue: _eveningStartTime,
-                            onSelected: (value) {
-                              setState(() {
-                                _eveningStartTime = value;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNumberField(
-                          _classDurationController,
-                          l10n.classDurationMinutesLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNumberField(
-                          _breakDurationController,
-                          l10n.smallBreakDurationMinutesLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            l10n.largeBreakRulesTitle,
-                            style: HyperosTypography.listTitle(context),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ..._buildBreakOverrideRows(),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: HyperosButton(
-                            label: l10n.addBreakRuleAction,
-                            variant: HyperosButtonVariant.secondary,
-                            onPressed: _addBreakOverride,
-                          ),
-                        ),
-                      ],
+    return HyperosSheetFrame(
+      chrome: HyperosSheetChrome.floating,
+      frosted: true,
+      maxHeight: maxSheetHeight,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.quickGenerateTimeSchemeTitle,
+            style: HyperosTypography.sheetTitle(context),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildNumberField(
+                    _morningCountController,
+                    l10n.morningSectionCountLabel,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTimeTile(
+                    label: l10n.morningFirstSectionTimeLabel,
+                    value: _morningStartTime,
+                    onTap: () => _pickTime(
+                      currentValue: _morningStartTime,
+                      onSelected: (value) {
+                        setState(() {
+                          _morningStartTime = value;
+                        });
+                      },
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: HyperosButton(
-                        label: l10n.cancelAction,
-                        variant: HyperosButtonVariant.secondary,
-                        expand: true,
-                        onPressed: () => Navigator.pop(context),
-                      ),
+                  const SizedBox(height: 12),
+                  _buildNumberField(
+                    _afternoonCountController,
+                    l10n.afternoonSectionCountLabel,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTimeTile(
+                    label: l10n.afternoonFirstSectionTimeLabel,
+                    value: _afternoonStartTime,
+                    onTap: () => _pickTime(
+                      currentValue: _afternoonStartTime,
+                      onSelected: (value) {
+                        setState(() {
+                          _afternoonStartTime = value;
+                        });
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: HyperosButton(
-                        label: l10n.generateAction,
-                        expand: true,
-                        onPressed: _submit,
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildNumberField(
+                    _eveningCountController,
+                    l10n.eveningSectionCountLabel,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTimeTile(
+                    label: l10n.eveningFirstSectionTimeLabel,
+                    value: _eveningStartTime,
+                    onTap: () => _pickTime(
+                      currentValue: _eveningStartTime,
+                      onSelected: (value) {
+                        setState(() {
+                          _eveningStartTime = value;
+                        });
+                      },
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildNumberField(
+                    _classDurationController,
+                    l10n.classDurationMinutesLabel,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildNumberField(
+                    _breakDurationController,
+                    l10n.smallBreakDurationMinutesLabel,
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      l10n.largeBreakRulesTitle,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._buildBreakOverrideRows(),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: HyperosButton(
+                      label: l10n.addBreakRuleAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _addBreakOverride,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.cancelAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.generateAction,
+                  expand: true,
+                  onPressed: _submit,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -301,10 +285,12 @@ class _TimeSchemeQuickGenerateSheetState
     required String value,
     required VoidCallback onTap,
   }) {
-    return HyperosListTile(
+    // Match [HyperosTextField] chrome (secondary fill + 16 radius), not a white
+    // [HyperosListGroup] card that stands out on frosted sheets.
+    return HyperosPickerField(
+      label: label,
+      value: value,
       icon: Icons.schedule_outlined,
-      title: label,
-      details: value,
       onTap: onTap,
     );
   }

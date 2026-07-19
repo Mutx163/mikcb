@@ -861,8 +861,15 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 icon: Icons.call_to_action_outlined,
                 iconAccent: HyperosIconColors.purple,
                 title: 'showHyperosSheet',
-                details: 'HyperosSheetFrame',
+                details: 'floating · 四边圆角+外边距',
                 onTap: _demoGenericSheet,
+              ),
+              HyperosListTile(
+                icon: Icons.vertical_align_bottom_outlined,
+                iconAccent: HyperosIconColors.indigo,
+                title: 'showHomeHyperosSheet',
+                details: 'edge · 贴边仅上圆角',
+                onTap: _demoEdgeSheet,
               ),
               HyperosListTile(
                 key: _selectPopupAnchorKey,
@@ -969,9 +976,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   }
 
   void _demoSnackBarWidget() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      HyperosSnackBar(context: context, message: 'HyperosSnackBar widget 类'),
-    );
+    showHyperosSnackBar(context, message: 'HyperosToastCapsule / system toast');
   }
 
   void _demoRootPage() {
@@ -1000,8 +1005,25 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
     await showHyperosSheet<void>(
       context: context,
       builder: (sheetContext) => HyperosSheet(
-        title: 'showHyperosSheet',
-        description: 'HyperosSheetFrame 灰底圆角容器',
+        title: 'showHyperosSheet · floating',
+        description: '四边圆角 + 外边距（同 Dialog）',
+        child: HyperosButton(
+          label: l10n.closeAction,
+          expand: true,
+          onPressed: () => Navigator.pop(sheetContext),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _demoEdgeSheet() async {
+    final l10n = AppLocalizations.of(context)!;
+    await showHomeHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        frosted: true,
+        title: 'showHomeHyperosSheet · edge',
+        description: '贴边、仅上圆角（首页菜单同款）',
         child: HyperosButton(
           label: l10n.closeAction,
           expand: true,

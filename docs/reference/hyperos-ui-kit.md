@@ -130,8 +130,8 @@ await HyperosNavigation.push(
 
 | 组件 | 说明 | 状态 |
 |------|------|------|
-| `HyperosDialog` / `showHyperosDialog` | Miuix Alert；支持 `useRootNavigator` | ✅ |
-| `showHyperosConfirmDialog` | 双按钮确认 | ✅ |
+| `HyperosDialog` / `showHyperosDialog` | 底部浮动圆角卡片 + 实心按钮；支持 `useRootNavigator` | ✅ |
+| `showHyperosConfirmDialog` | 底部双按钮确认（次要/主色或危险） | ✅ |
 | `HyperosTextField` / `HyperosTextFieldTile` | 对话框 / 卡片内输入 | ✅ |
 | `HyperosCheckbox` / `HyperosRadio` + Tile 变体 | 勾选 / 单选 | ✅ |
 | `HyperosTabRow` / `HyperosSegmentedControl` | 顶部分段 / Tab | ✅ |
@@ -154,7 +154,8 @@ await HyperosNavigation.push(
 | `HyperosTag` | 行内文字胶囊（替代 `FBadge` 非角标场景） | ✅ |
 | `HyperosAccordion` / `HyperosHintBanner` | 折叠分组 / 信息横幅（替代 `FAccordion` / `FAlert`） | ✅ |
 | `showHyperosRichSnackBar` | 带图标与副标题 SnackBar（`showAppToast` 同款） | ✅ |
-| `showHyperosSheet` / `HyperosSheetFrame` | 通用 bottom sheet 壳 | ✅ |
+| `showHyperosSheet` / `HyperosSheetFrame` | 底部面板壳；**两种 chrome**：`floating`（四边圆角+外边距，同 Dialog）/ `edge`（贴边、仅上圆角，首页菜单） | ✅ |
+| `showHomeHyperosSheet` | 首页专用：默认 `edge` + 浅遮罩 | ✅ |
 | `showHyperosSelectPopup` | 锚点下拉单选 | ✅ |
 | `HyperosPressableRow` | 列表行按下态底层 | ✅ |
 | `HyperosOverscrollPhysics` | Miuix 橡皮筋滚动物理 | ✅ |

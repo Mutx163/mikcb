@@ -82,10 +82,8 @@ Future<bool?> showAppTripleActionDialog(
 
 /// Single-line name prompt — floating HyperOS bottom card.
 ///
-/// Matches home / form sheets: outer gaps on left/right/bottom, full rounded
-/// card, solid [HyperosButton]s (secondary cancel + primary confirm).
-/// Not a center [HyperosDialog] (text-only pink actions) and not edge-flush
-/// [HyperosSheetFrame] (no side/bottom margin).
+/// Same shell as [showHyperosDialog]: outer inset, full rounded surface card,
+/// solid [HyperosButton]s (secondary cancel + primary confirm).
 Future<String?> showAppTextInputDialog(
   BuildContext context, {
   required String title,
@@ -154,55 +152,39 @@ class _AppTextInputSheetState extends State<_AppTextInputSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Floating card: same outer inset as Miuix dialog / snackbar host (12dp).
-    // showHyperosSheet already lifts for keyboard; we add safe-area bottom gap.
-    final outerInset = HyperosMiuixDialog.outsideMarginHorizontal;
-    final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        outerInset,
-        0,
-        outerInset,
-        outerInset + bottomSafeInset,
-      ),
-      child: Material(
-        color: HyperosColors.surfaceContainer(context),
-        shape: HyperosTheme.cardShape(),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return HyperosSheetFrame(
+      chrome: HyperosSheetChrome.floating,
+      frosted: true,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(widget.title, style: HyperosTypography.sheetTitle(context)),
+          const SizedBox(height: 16),
+          widget.bodyBuilder(_controller),
+          const SizedBox(height: 20),
+          Row(
             children: [
-              Text(widget.title, style: HyperosTypography.sheetTitle(context)),
-              const SizedBox(height: 16),
-              widget.bodyBuilder(_controller),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: HyperosButton(
-                      label: widget.cancelLabel,
-                      variant: HyperosButtonVariant.secondary,
-                      expand: true,
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: HyperosButton(
-                      label: widget.confirmLabel,
-                      expand: true,
-                      onPressed: _submit,
-                    ),
-                  ),
-                ],
+              Expanded(
+                child: HyperosButton(
+                  label: widget.cancelLabel,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HyperosButton(
+                  label: widget.confirmLabel,
+                  expand: true,
+                  onPressed: _submit,
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -222,10 +204,10 @@ Future<int?> showAppSingleChoiceDialog(
     options.isEmpty ? 0 : options.length - 1,
   );
 
-  return showDialog<int>(
+  return showHyperosSheet<int>(
     context: context,
     barrierColor: HyperosColors.windowDimming(context),
-    builder: (ctx) {
+    builder: (sheetContext) {
       return StatefulBuilder(
         builder: (context, setState) {
           return HyperosDialog(
@@ -244,12 +226,12 @@ Future<int?> showAppSingleChoiceDialog(
             actions: [
               HyperosDialogAction(
                 label: cancelLabel ?? l10n.cancelAction,
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () => Navigator.pop(sheetContext),
               ),
               HyperosDialogAction(
                 label: confirmLabel ?? l10n.saveAction,
                 isPrimary: true,
-                onPressed: () => Navigator.pop(ctx, selectedIndex),
+                onPressed: () => Navigator.pop(sheetContext, selectedIndex),
               ),
             ],
           );

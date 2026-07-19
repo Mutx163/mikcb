@@ -45,82 +45,62 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final sheetBackground = HyperosColors.surfaceContainer(context);
-    const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
-    const bottomInsetBase = HyperosMiuixBasicComponent.selectSheetBottomMargin;
-    final bottomInset = bottomInsetBase + MediaQuery.paddingOf(context).bottom;
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.52;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalInset,
-        0,
-        horizontalInset,
-        bottomInset,
-      ),
-      child: Material(
-        color: sheetBackground,
-        borderRadius: BorderRadius.circular(
-          HyperosMiuixDialog.minBottomCornerRadius,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+    return HyperosSheetFrame(
+      chrome: HyperosSheetChrome.floating,
+      frosted: true,
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: HyperosTypography.sheetTitle(context),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitle!,
+                  textAlign: TextAlign.center,
+                  style: HyperosTypography.sectionDescription(context),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxListHeight),
+            child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: HyperosTypography.sheetTitle(context),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      subtitle!,
-                      textAlign: TextAlign.center,
-                      style: HyperosTypography.sectionDescription(context),
+                  for (final group in courseGroups)
+                    _buildCourseTile(
+                      context,
+                      group: group,
+                      isSelected: group.courses.any(
+                        (course) => course.id == selectedCourseId,
+                      ),
+                      onPress: () =>
+                          Navigator.pop(context, group.courses.first),
                     ),
-                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxListHeight),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final group in courseGroups)
-                      _buildCourseTile(
-                        context,
-                        group: group,
-                        isSelected: group.courses.any(
-                          (course) => course.id == selectedCourseId,
-                        ),
-                        onPress: () =>
-                            Navigator.pop(context, group.courses.first),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: HyperosButton(
-                label: l10n.cancelAction,
-                variant: HyperosButtonVariant.secondary,
-                expand: true,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          HyperosButton(
+            label: l10n.cancelAction,
+            variant: HyperosButtonVariant.secondary,
+            expand: true,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       ),
     );
   }

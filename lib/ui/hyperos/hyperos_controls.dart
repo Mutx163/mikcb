@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_radius.dart';
+import 'hyperos_sheet.dart';
 import 'hyperos_text_field.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
@@ -432,29 +433,20 @@ Future<double?> showHyperosSliderValueDialog({
   required String confirmLabel,
   String? helper,
 }) {
-  return showModalBottomSheet<double>(
+  return showHyperosSheet<double>(
     context: context,
-    isScrollControlled: true,
-    isDismissible: true,
-    enableDrag: true,
     useRootNavigator: true,
-    backgroundColor: Colors.transparent,
     barrierColor: HyperosColors.windowDimming(context),
     builder: (sheetContext) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-        ),
-        child: _HyperosSliderValueSheetBody(
-          title: title,
-          value: value,
-          min: min,
-          max: max,
-          divisions: divisions,
-          cancelLabel: cancelLabel,
-          confirmLabel: confirmLabel,
-          helper: helper,
-        ),
+      return _HyperosSliderValueSheetBody(
+        title: title,
+        value: value,
+        min: min,
+        max: max,
+        divisions: divisions,
+        cancelLabel: cancelLabel,
+        confirmLabel: confirmLabel,
+        helper: helper,
       );
     },
   );
@@ -535,71 +527,49 @@ class _HyperosSliderValueSheetBodyState
 
   @override
   Widget build(BuildContext context) {
-    final background = HyperosColors.surfaceContainer(context);
-    final borderColor = HyperosColors.outline(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Material(
-          color: background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
-            side: BorderSide(color: borderColor.withValues(alpha: 0.2)),
+    return HyperosSheetFrame(
+      chrome: HyperosSheetChrome.floating,
+      frosted: true,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(widget.title, style: HyperosTypography.sheetTitle(context)),
+          const SizedBox(height: 16),
+          HyperosTextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            ],
+            helper:
+                _errorText ?? widget.helper ?? '${widget.min} - ${widget.max}',
+            onSubmitted: (_) => _submit(),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.title,
-                  style: HyperosTypography.sheetTitle(context),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: widget.cancelLabel,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(height: 16),
-                HyperosTextField(
-                  controller: _controller,
-                  autofocus: true,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                  helper:
-                      _errorText ??
-                      widget.helper ??
-                      '${widget.min} - ${widget.max}',
-                  onSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HyperosButton(
+                  label: widget.confirmLabel,
+                  expand: true,
+                  onPressed: _submit,
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: HyperosButton(
-                        label: widget.cancelLabel,
-                        variant: HyperosButtonVariant.secondary,
-                        expand: true,
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: HyperosButton(
-                        label: widget.confirmLabel,
-                        expand: true,
-                        onPressed: _submit,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -786,6 +756,8 @@ class HyperosButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !loading;
+    final onFrostedPanel = HyperosFrostedPanelScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final (bg, fg, disabledBg, disabledFg) = switch (variant) {
       HyperosButtonVariant.primary => (
@@ -794,12 +766,26 @@ class HyperosButton extends StatelessWidget {
         HyperosColors.disabledPrimaryButton(context),
         HyperosColors.disabledOnPrimaryButton(context),
       ),
-      HyperosButtonVariant.secondary => (
-        HyperosColors.secondary(context),
-        HyperosColors.onSecondaryVariant(context),
-        HyperosColors.disabledSecondary(context),
-        HyperosColors.disabledOnSecondaryVariant(context),
-      ),
+      // Flat #E6E6E6 secondary washes out on milky frosted glass; use a clearer
+      // fill (+ light outline) when nested under [HyperosFrostedPanelScope].
+      HyperosButtonVariant.secondary =>
+        onFrostedPanel
+            ? (
+                isDark
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : const Color(0xFFD8D8D8),
+                HyperosColors.onSecondaryVariant(context),
+                isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : const Color(0xFFE8E8E8),
+                HyperosColors.disabledOnSecondaryVariant(context),
+              )
+            : (
+                HyperosColors.secondary(context),
+                HyperosColors.onSecondaryVariant(context),
+                HyperosColors.disabledSecondary(context),
+                HyperosColors.disabledOnSecondaryVariant(context),
+              ),
       HyperosButtonVariant.destructive => (
         HyperosColors.error(context),
         HyperosColors.onError(context),
@@ -844,10 +830,14 @@ class HyperosButton extends StatelessWidget {
       HyperosMiuixButton.cornerRadius,
       minHeight,
     );
+    final borderRadius = BorderRadius.circular(cornerRadius);
+    final outline = HyperosColors.outline(context);
+    final showFrostedSecondaryEdge =
+        onFrostedPanel && variant == HyperosButtonVariant.secondary;
 
     final button = Material(
       color: enabled ? bg : disabledBg,
-      borderRadius: BorderRadius.circular(cornerRadius),
+      borderRadius: borderRadius,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: enabled
@@ -856,16 +846,27 @@ class HyperosButton extends StatelessWidget {
                 onPressed!();
               }
             : null,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: dense ? 0 : HyperosMiuixButton.minWidth,
-            minHeight: minHeight,
-          ),
-          child: Padding(
-            padding: dense
-                ? const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
-                : HyperosMiuixButton.insideMargin,
-            child: Center(child: labelChild),
+        borderRadius: borderRadius,
+        child: Ink(
+          decoration: showFrostedSecondaryEdge
+              ? BoxDecoration(
+                  borderRadius: borderRadius,
+                  border: Border.all(
+                    color: outline.withValues(alpha: isDark ? 0.45 : 0.55),
+                  ),
+                )
+              : null,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: dense ? 0 : HyperosMiuixButton.minWidth,
+              minHeight: minHeight,
+            ),
+            child: Padding(
+              padding: dense
+                  ? const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
+                  : HyperosMiuixButton.insideMargin,
+              child: Center(child: labelChild),
+            ),
           ),
         ),
       ),

@@ -525,10 +525,10 @@ class HyperosChoiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPopup = variant == HyperosChoiceVariant.popup;
     final isDialog = variant == HyperosChoiceVariant.dialog;
-    // Popup sits on [surfaceContainer]; keep row fill transparent so the
-    // press gray matches settings-row [HyperosPressableRow] against the same
-    // surface family. Dialog / list cards still use the card surface.
-    final cardColor = isPopup
+    // Popup / dialog sit on frosted [HyperosSheetFrame] or surfaceContainer —
+    // keep row fill transparent so the glass shows through (same as popup).
+    // List cards still use the opaque card surface.
+    final cardColor = (isPopup || isDialog)
         ? Colors.transparent
         : HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);

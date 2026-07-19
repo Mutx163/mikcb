@@ -22,10 +22,21 @@ class CourseFieldPickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HyperosListTile(
+    // Same chrome as [HyperosTextField] / [HyperosPickerField] so frosted sheets
+    // do not get opaque white list-card islands.
+    if (HyperosListTileScope.maybeOf(context) != null) {
+      return HyperosListTile(
+        icon: icon,
+        title: label,
+        details: isPlaceholder ? null : value,
+        onTap: onPress,
+      );
+    }
+    return HyperosPickerField(
+      label: label,
+      value: value,
       icon: icon,
-      title: label,
-      details: isPlaceholder ? null : value,
+      isPlaceholder: isPlaceholder,
       onTap: onPress,
     );
   }

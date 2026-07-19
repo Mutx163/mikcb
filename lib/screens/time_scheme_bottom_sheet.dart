@@ -72,16 +72,14 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
           _stopEditing();
         }
       },
-      child: SafeArea(
-        child: SizedBox(
-          height: maxSheetHeight,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: _editingSchemeId == null
-                ? _buildSchemeList(context)
-                : _buildEditor(context),
-          ),
-        ),
+      child: HyperosSheetFrame(
+        chrome: HyperosSheetChrome.floating,
+        frosted: true,
+        maxHeight: maxSheetHeight,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: _editingSchemeId == null
+            ? _buildSchemeList(context)
+            : _buildEditor(context),
       ),
     );
   }

@@ -3,7 +3,9 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 enum AppToastKind { info, success, warning, error }
 
-const Duration _defaultToastDuration = Duration(seconds: 4);
+const Duration _defaultToastDuration = Duration(
+  milliseconds: HyperosMiuixSnackbar.durationShortMs,
+);
 const Duration _actionToastDuration = Duration(seconds: 8);
 
 IconData _defaultIconForKind(AppToastKind kind) {
@@ -16,13 +18,9 @@ IconData _defaultIconForKind(AppToastKind kind) {
 }
 
 Color _iconColorForKind(BuildContext context, AppToastKind kind) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
   return switch (kind) {
-    // Success/warning keep custom light-mode brand tints; dark uses HyperOS roles.
-    AppToastKind.success =>
-      isDark ? HyperosColors.primary(context) : const Color(0xFF047857),
-    AppToastKind.warning =>
-      isDark ? HyperosColors.error(context) : const Color(0xFFB45309),
+    AppToastKind.success => const Color(0xFF047857),
+    AppToastKind.warning => const Color(0xFFB45309),
     AppToastKind.error => HyperosColors.error(context),
     AppToastKind.info => HyperosColors.primary(context),
   };
@@ -45,7 +43,14 @@ void showAppLightTip(
   );
 }
 
-/// Shows a transient HyperOS snackbar.
+/// Shows a transient HyperOS system-style frosted toast.
+///
+/// Milky frosted shell + black regular label. Insets: 2 字 left/right,
+/// 1 字 top/bottom (≈ 3 字 high single-line shell). Content width, no swipe
+/// dismiss, auto-hide.
+///
+/// Icons are omitted by default so single-line height matches system toast;
+/// pass [icon] or [showKindIcon] when a leading glyph is required.
 void showAppToast(
   BuildContext context, {
   required String message,
@@ -53,18 +58,21 @@ void showAppToast(
   AppToastKind kind = AppToastKind.info,
   Duration? duration = _defaultToastDuration,
   IconData? icon,
+  bool showKindIcon = false,
 }) {
+  final resolvedIcon =
+      icon ?? (showKindIcon ? _defaultIconForKind(kind) : null);
   showHyperosRichSnackBar(
     context,
     message: message,
     description: description,
-    icon: icon ?? _defaultIconForKind(kind),
-    iconColor: _iconColorForKind(context, kind),
+    icon: resolvedIcon,
+    iconColor: resolvedIcon == null ? null : _iconColorForKind(context, kind),
     duration: duration ?? _defaultToastDuration,
   );
 }
 
-/// Shows a snackbar with a trailing action button (e.g. undo, switch source).
+/// Shows a frosted toast with a trailing action label (e.g. undo).
 void showAppToastWithAction(
   BuildContext context, {
   required String message,
@@ -73,18 +81,17 @@ void showAppToastWithAction(
   String? description,
   AppToastKind kind = AppToastKind.info,
   Duration duration = _actionToastDuration,
+  bool showKindIcon = false,
 }) {
+  final resolvedIcon = showKindIcon ? _defaultIconForKind(kind) : null;
   showHyperosRichSnackBar(
     context,
     message: message,
     description: description,
-    icon: _defaultIconForKind(kind),
-    iconColor: _iconColorForKind(context, kind),
+    icon: resolvedIcon,
+    iconColor: resolvedIcon == null ? null : _iconColorForKind(context, kind),
     duration: duration,
     actionLabel: actionLabel,
-    onAction: () {
-      onAction();
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    },
+    onAction: onAction,
   );
 }

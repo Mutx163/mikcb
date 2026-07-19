@@ -443,10 +443,9 @@ class TimetableSettingsScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    showAppToast(
+    showAppLightTip(
       context,
-      message: l10n.currentWeekBullet(provider.currentWeek),
-      kind: AppToastKind.success,
+      message: l10n.syncedCurrentWeekMessage(provider.currentWeek),
     );
   }
 
@@ -1715,21 +1714,20 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
             });
           },
         ),
-        if (!kReleaseMode)
-          HyperosListTile(
-            icon: Icons.science_outlined,
-            title: l10n.liveTestingEntryTitle,
-            onTap: () async {
-              await HyperosNavigation.push(
-                context,
-                builder: (_) => const _LiveTestingSettingsScreen(),
-              );
-              if (!mounted) return;
-              setState(() {
-                _draft = context.read<TimetableProvider>().settings;
-              });
-            },
-          ),
+        HyperosListTile(
+          icon: Icons.science_outlined,
+          title: l10n.liveTestingEntryTitle,
+          onTap: () async {
+            await HyperosNavigation.push(
+              context,
+              builder: (_) => const _LiveTestingSettingsScreen(),
+            );
+            if (!mounted) return;
+            setState(() {
+              _draft = context.read<TimetableProvider>().settings;
+            });
+          },
+        ),
       ],
     );
   }
@@ -4209,89 +4207,75 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                     label: l10n.customHolidayNameLabel,
                   ),
                   const SizedBox(height: 12),
-                  HyperosListGroup(
-                    children: [
-                      HyperosNavTile(
-                        title: l10n.customHolidayStartDate,
-                        details: dateSummary,
-                        holdHighlightThroughTransition: false,
-                        onTap: () async {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          final now = DateTime.now();
-                          final picked = await showDateRangePicker(
-                            context: ctx,
-                            initialDateRange:
-                                startDate != null && endDate != null
-                                ? DateTimeRange(
-                                    start: startDate!,
-                                    end: endDate!,
-                                  )
-                                : null,
-                            firstDate: DateTime(now.year - 1),
-                            lastDate: DateTime(now.year + 2),
-                            builder: (pickerContext, child) {
-                              return Theme(
-                                data: Theme.of(pickerContext).copyWith(
-                                  colorScheme: ColorScheme.fromSeed(
-                                    seedColor: HyperosColors.primary(
-                                      pickerContext,
-                                    ),
-                                    brightness: Theme.of(
-                                      pickerContext,
-                                    ).brightness,
-                                  ),
-                                ),
-                                child: child ?? const SizedBox.shrink(),
-                              );
-                            },
+                  // Match [HyperosTextField] / [HyperosPickerField] chrome on
+                  // frosted sheets — avoid white [HyperosListGroup] islands.
+                  HyperosPickerField(
+                    label: l10n.customHolidayStartDate,
+                    value: dateSummary,
+                    icon: Icons.date_range_outlined,
+                    isPlaceholder: startDate == null || endDate == null,
+                    onTap: () async {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      final now = DateTime.now();
+                      final picked = await showDateRangePicker(
+                        context: ctx,
+                        initialDateRange: startDate != null && endDate != null
+                            ? DateTimeRange(start: startDate!, end: endDate!)
+                            : null,
+                        firstDate: DateTime(now.year - 1),
+                        lastDate: DateTime(now.year + 2),
+                        builder: (pickerContext, child) {
+                          return Theme(
+                            data: Theme.of(pickerContext).copyWith(
+                              colorScheme: ColorScheme.fromSeed(
+                                seedColor: HyperosColors.primary(pickerContext),
+                                brightness: Theme.of(pickerContext).brightness,
+                              ),
+                            ),
+                            child: child ?? const SizedBox.shrink(),
                           );
-                          if (picked != null) {
-                            setDialogState(() {
-                              startDate = picked.start;
-                              endDate = picked.end;
-                            });
-                          }
                         },
-                      ),
-                    ],
+                      );
+                      if (picked != null) {
+                        setDialogState(() {
+                          startDate = picked.start;
+                          endDate = picked.end;
+                        });
+                      }
+                    },
                   ),
                   const SizedBox(height: 12),
-                  HyperosSectionLabel(text: l10n.customHolidayType),
-                  HyperosListGroup(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                        child: HyperosSegmentedControl(
-                          tabs: [
-                            l10n.customHolidayTypeVacation,
-                            l10n.customHolidayTypeWorkday,
-                          ],
-                          selectedIndex: selectedType == HolidayType.vacation
-                              ? 0
-                              : 1,
-                          onChanged: (index) {
-                            setDialogState(() {
-                              selectedType = index == 0
-                                  ? HolidayType.vacation
-                                  : HolidayType.adjustedWorkday;
-                            });
-                          },
-                        ),
-                      ),
+                  Text(
+                    l10n.customHolidayType,
+                    style: TextStyle(
+                      fontSize: HyperosMiuixTextField.labelFontSizeNormal,
+                      color: HyperosColors.onSurface(ctx),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  HyperosSegmentedControl(
+                    tabs: [
+                      l10n.customHolidayTypeVacation,
+                      l10n.customHolidayTypeWorkday,
                     ],
+                    selectedIndex: selectedType == HolidayType.vacation ? 0 : 1,
+                    onChanged: (index) {
+                      setDialogState(() {
+                        selectedType = index == 0
+                            ? HolidayType.vacation
+                            : HolidayType.adjustedWorkday;
+                      });
+                    },
                   ),
                   if (existing?.groupId != null) ...[
-                    const SizedBox(height: 12),
-                    HyperosListGroup(
-                      children: [
-                        HyperosDangerTile(
-                          icon: Icons.delete_outline_rounded,
-                          title: l10n.customHolidayDelete,
-                          // Close the edit sheet first; confirm is a separate
-                          // bottom sheet so we never stack dialog-on-sheet.
-                          onTap: () => Navigator.pop(ctx, 'delete'),
-                        ),
-                      ],
+                    const SizedBox(height: 16),
+                    HyperosButton(
+                      label: l10n.customHolidayDelete,
+                      variant: HyperosButtonVariant.destructive,
+                      expand: true,
+                      // Close the edit sheet first; confirm is a separate
+                      // bottom sheet so we never stack dialog-on-sheet.
+                      onPressed: () => Navigator.pop(ctx, 'delete'),
                     ),
                   ],
                 ],

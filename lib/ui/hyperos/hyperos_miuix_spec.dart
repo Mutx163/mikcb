@@ -393,24 +393,76 @@ abstract final class HyperosMiuixSearchBar {
 // Snackbar.kt — SnackbarDefaults
 // =============================================================================
 
+/// System HyperOS status toast (content-tight frosted rounded rect).
+///
+/// Calibrated against HyperOS system toast (e.g. settings "扩展功能已开启"):
+/// - Milky frosted shell; **black regular** label (not primary blue / not medium).
+/// - Insets are measured in **glyph units** of [messageFontSize]:
+///   - horizontal: **2 字** each side
+///   - vertical: **1 字** above and **1 字** below the label
+///   → single-line outer height ≈ 3 字高（约 14+14+14 = 42dp，含行高略高）
+/// - Sits higher than Material SnackBar (clear of home indicator / bottom chrome).
+/// - Width = text + insets only (never stretch toward screen edges).
 abstract final class HyperosMiuixSnackbar {
+  /// System toast label size — all inset math is relative to this glyph unit.
+  static const messageFontSize = 14.0;
+
+  /// Soft round — close to system toast; not a full stadium of half-height.
   static const cornerRadius = 16.0;
-  static const insideMargin = 12.0;
-  static const outerPaddingHorizontal = 12.0;
+
+  /// Left/right inset = **2 字** width each side.
+  static const insideMarginHorizontal = messageFontSize * 2; // 28
+
+  /// Top/bottom inset = **1 字** height each side (not a tight 8dp pad).
+  static const insideMarginVertical = messageFontSize; // 14
+  static const insideMargin = insideMarginHorizontal;
+
+  /// Keep long toasts away from screen edges.
+  static const outerPaddingHorizontal = 40.0;
   static const outerPaddingTop = 8.0;
-  static const hostBottomPadding = 12.0;
-  static const minHeight = 48.0;
+
+  /// Distance above the home-indicator / safe-area bottom.
+  /// System status toast sits mid-lower, not glued to the gesture bar.
+  static const hostBottomPadding = 88.0;
+
+  /// Soft max only for wrapping; short text must stay content-width.
+  static const maxWidthFraction = 0.78;
+
+  /// Regular weight — system toast is not medium/semibold.
+  static const messageFontWeight = FontWeight.w400;
+
+  /// Near-black on milky glass (system toast; independent of app theme blue).
+  static const messageColor = Color(0xFF000000);
+
+  /// Tight line box so outer height is driven by padding, not extra leading.
+  static const messageLineHeight = 1.0;
+  static const iconSize = 16.0;
+  static const iconGap = 8.0;
+
+  /// Stronger blur than sheets — system toast reads as dense frosted glass.
+  /// Prefer [HyperosBlurredHeader.blurSigmaOf] at runtime (外观与配色).
+  @Deprecated('Use HyperosBlurredHeader.blurSigmaOf(context)')
+  static const blurSigma = 28.0;
+  static const tintAlphaWithBlur = 0.62;
+  static const tintAlphaOpaque = 0.94;
+
   static const actionCornerRadius = 50.0;
   static const actionInsideMarginHorizontal = 12.0;
   static const actionMinWidth = 26.0;
   static const actionMinHeight = 26.0;
-  static const actionFontSize = 15.0;
+  static const actionFontSize = 14.0;
   static const actionStartPadding = 12.0;
   static const dismissIconSize = 20.0;
   static const dismissStartPadding = 8.0;
-  static const shadowRadius = 10.0;
-  static const shadowAlpha = 0.1;
-  static const durationShortMs = 4000;
+
+  static const shadowRadius = 12.0;
+  static const shadowAlpha = 0.06;
+  static const shadowYOffset = 2.0;
+
+  static const enterMs = 220;
+  static const exitMs = 180;
+  static const enterScale = 0.96;
+  static const durationShortMs = 2500;
   static const durationLongMs = 10000;
 }
 

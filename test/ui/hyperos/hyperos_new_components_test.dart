@@ -479,6 +479,7 @@ void main() {
                       context,
                       message: 'Saved',
                       description: 'Changes applied',
+                      duration: const Duration(seconds: 10),
                     );
                   },
                   child: const Text('toast'),
@@ -491,9 +492,11 @@ void main() {
 
       await tester.tap(find.text('toast'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('Saved'), findsOneWidget);
       expect(find.text('Changes applied'), findsOneWidget);
+      hideHyperosToast(animated: false);
+      await tester.pump();
     });
   });
 

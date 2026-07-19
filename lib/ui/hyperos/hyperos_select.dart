@@ -344,81 +344,53 @@ Future<T?> showHyperosSelectSheet<T>({
   return showHyperosSheet<T>(
     context: context,
     builder: (sheetContext) {
-      // Resolve inside the builder so rotation / keyboard metrics changes
-      // re-evaluate instead of using a snapshot taken when the sheet opened.
       final maxListHeight = MediaQuery.sizeOf(sheetContext).height * 0.55;
-      final sheetBackground = HyperosColors.surfaceContainer(sheetContext);
 
-      // ~1 body1 char side inset; floating select sheet bottom gap (see spec).
-      const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
-      const bottomInsetBase =
-          HyperosMiuixBasicComponent.selectSheetBottomMargin;
-      final bottomInset =
-          bottomInsetBase + MediaQuery.paddingOf(sheetContext).bottom;
-
-      return Padding(
-        padding: EdgeInsets.fromLTRB(
-          horizontalInset,
-          0,
-          horizontalInset,
-          bottomInset,
-        ),
-        child: Material(
-          color: sheetBackground,
-          borderRadius: BorderRadius.circular(
-            HyperosMiuixDialog.minBottomCornerRadius,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: HyperosTypography.sheetTitle(sheetContext),
-                    ),
-                    if (description != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        description,
-                        textAlign: TextAlign.start,
-                        style: HyperosTypography.sectionDescription(
-                          sheetContext,
-                        ),
-                      ),
-                    ],
-                  ],
+      return HyperosSheetFrame(
+        chrome: HyperosSheetChrome.floating,
+        frosted: true,
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: HyperosTypography.sheetTitle(sheetContext),
                 ),
+                if (description != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    textAlign: TextAlign.start,
+                    style: HyperosTypography.sectionDescription(sheetContext),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxListHeight),
+              child: _AutoScrollChoiceList<T>(
+                entries: entries,
+                currentValue: currentValue,
+                itemTitleStyleBuilder: itemTitleStyleBuilder,
+                variant: HyperosChoiceVariant.dialog,
+                onSelected: (value) => Navigator.of(sheetContext).pop(value),
               ),
-              const SizedBox(height: 12),
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: maxListHeight),
-                child: _AutoScrollChoiceList<T>(
-                  entries: entries,
-                  currentValue: currentValue,
-                  itemTitleStyleBuilder: itemTitleStyleBuilder,
-                  variant: HyperosChoiceVariant.dialog,
-                  onSelected: (value) => Navigator.of(sheetContext).pop(value),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: HyperosButton(
-                  label: resolvedCancelLabel,
-                  expand: true,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            HyperosButton(
+              label: resolvedCancelLabel,
+              expand: true,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: () => Navigator.of(sheetContext).pop(),
+            ),
+          ],
         ),
       );
     },
