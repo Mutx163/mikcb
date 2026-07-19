@@ -81,11 +81,17 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
                 targetAspect = 1f,
             )
-            val isShowingTomorrow = (state == "completed" || state == "no_course") && (snapshot?.tomorrowCourses?.isNotEmpty() == true)
+            val isExamOngoing = snapshot != null && TodayWidgetSupport.isExamOngoing(snapshot)
+            val isShowingTomorrow = snapshot != null && TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
+            val displayState = if (snapshot != null) {
+                TodayWidgetSupport.displayStatusState(snapshot)
+            } else {
+                state
+            }
             views.setTextViewText(
                 R.id.widget_status,
-                if (isShowingTomorrow) {
-                    context.getString(R.string.widget_tomorrow_courses)
+                if (snapshot != null) {
+                    TodayWidgetSupport.displayStatusText(context, snapshot)
                 } else {
                     TodayWidgetSupport.statusText(context, state)
                 }
@@ -94,6 +100,9 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 R.id.widget_course_name,
                 when {
                     snapshot == null -> context.getString(R.string.widget_no_course_today)
+                    isExamOngoing ->
+                        TodayWidgetSupport.examDisplayName(snapshot)
+                            ?: context.getString(R.string.widget_exam_fallback_name)
                     state == "holiday" ->
                         snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
                     isShowingTomorrow -> snapshot.tomorrowCourses.first().name
@@ -105,23 +114,41 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 R.id.widget_meta,
                 when {
                     snapshot == null -> context.getString(R.string.widget_tap_to_open)
-                    state == "holiday" -> context.getString(R.string.widget_rest_well)
+                    isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
+                    state == "holiday" -> {
+                        val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                        examText ?: context.getString(R.string.widget_rest_well)
+                    }
                     isShowingTomorrow -> {
                         val first = snapshot.tomorrowCourses.first()
                         val time = "${first.startTime} - ${first.endTime}"
-                        if (snapshot.showLocation && first.location.isNotBlank()) "$time\n${first.location}" else time
+                        val base = if (snapshot.showLocation && first.location.isNotBlank()) {
+                            "$time\n${first.location}"
+                        } else {
+                            time
+                        }
+                        val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                        if (examText != null) "$base\n$examText" else base
                     }
-                    state == "no_course" -> context.getString(R.string.widget_take_a_break)
-                    state == "completed" -> context.getString(R.string.widget_today_ended_short)
+                    state == "no_course" -> {
+                        val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                        examText ?: context.getString(R.string.widget_take_a_break)
+                    }
+                    state == "completed" -> {
+                        val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                        examText ?: context.getString(R.string.widget_today_ended_short)
+                    }
                     else -> {
-                    val cd = TodayWidgetSupport.countdownText(context, snapshot)
-                    if (cd != null) {
-                        val loc = snapshot.highlightedCourse?.location.orEmpty()
-                        if (snapshot.showLocation && loc.isNotBlank()) "$cd\n$loc" else cd
-                    } else {
-                        TodayWidgetSupport.compactMetaText(context, snapshot)
+                        val cd = TodayWidgetSupport.countdownText(context, snapshot)
+                        val base = if (cd != null) {
+                            val loc = snapshot.highlightedCourse?.location.orEmpty()
+                            if (snapshot.showLocation && loc.isNotBlank()) "$cd\n$loc" else cd
+                        } else {
+                            TodayWidgetSupport.compactMetaText(context, snapshot)
+                        }
+                        val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                        if (examText != null) "$base\n$examText" else base
                     }
-                }
                 }
             )
             views.setTextColor(R.id.widget_status, secondaryTextColor)
@@ -130,7 +157,7 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
             views.setInt(
                 R.id.widget_status,
                 "setBackgroundResource",
-                TodayWidgetSupport.statusBackgroundRes(state, backgroundStyle)
+                TodayWidgetSupport.statusBackgroundRes(displayState, backgroundStyle)
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,

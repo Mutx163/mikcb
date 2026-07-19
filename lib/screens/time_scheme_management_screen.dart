@@ -378,8 +378,18 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _applyScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
-    await context.read<TimetableProvider>().applyTimeScheme(scheme.id);
+    final error = await context.read<TimetableProvider>().applyTimeScheme(
+      scheme.id,
+    );
     if (!context.mounted) {
+      return;
+    }
+    if (error != null) {
+      showAppToast(
+        context,
+        message: localizeServiceMessage(l10n, error),
+        kind: AppToastKind.warning,
+      );
       return;
     }
     showAppToast(

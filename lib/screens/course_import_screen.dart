@@ -3414,7 +3414,10 @@ class _WarehouseAdapterWebLoginScreenState
         sections: sections,
         applyToActiveProfile: true,
       );
-      await provider.applyTimeScheme(created.id);
+      final applyError = await provider.applyTimeScheme(created.id);
+      if (applyError != null) {
+        throw FormatException(applyError);
+      }
       return;
     }
     final result = await provider.updateTimeScheme(
@@ -3425,7 +3428,10 @@ class _WarehouseAdapterWebLoginScreenState
     if (result != null) {
       throw FormatException(result);
     }
-    await provider.applyTimeScheme(existingScheme.id);
+    final applyError = await provider.applyTimeScheme(existingScheme.id);
+    if (applyError != null) {
+      throw FormatException(applyError);
+    }
   }
 
   Future<void> _applyPendingImportedSectionsIfNeeded() async {

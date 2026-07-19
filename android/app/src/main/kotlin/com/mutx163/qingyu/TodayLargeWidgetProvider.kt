@@ -79,10 +79,15 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_large_subtitle, secondaryColor)
             views.setTextColor(R.id.widget_large_exam, secondaryColor)
             views.setTextColor(R.id.widget_large_empty, secondaryColor)
+            val largeStatusState = if (snapshot != null) {
+                TodayWidgetSupport.displayStatusState(snapshot)
+            } else {
+                "no_course"
+            }
             views.setInt(
                 R.id.widget_large_heading,
                 "setBackgroundResource",
-                TodayWidgetSupport.statusBackgroundRes(snapshot?.state ?: "no_course", style)
+                TodayWidgetSupport.statusBackgroundRes(largeStatusState, style)
             )
 
             if (snapshot == null) {
@@ -95,7 +100,8 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_large_exam, View.GONE)
                 setCourseRows(views, emptyList(), primaryColor, secondaryColor)
             } else {
-                val isShowingTomorrow = (snapshot.state == "completed" || snapshot.state == "no_course") && snapshot.tomorrowCourses.isNotEmpty()
+                val isExamOngoing = TodayWidgetSupport.isExamOngoing(snapshot)
+                val isShowingTomorrow = TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
                 views.setTextViewText(R.id.widget_large_heading, TodayWidgetSupport.headingText(context, snapshot))
                 views.setTextViewText(
                     R.id.widget_large_week,
@@ -104,6 +110,9 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(
                     R.id.widget_large_title,
                     when {
+                        isExamOngoing ->
+                            TodayWidgetSupport.examDisplayName(snapshot)
+                                ?: context.getString(R.string.widget_exam_fallback_name)
                         snapshot.state == "holiday" ->
                             snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
                         isShowingTomorrow -> context.getString(R.string.widget_tomorrow_list_title)
@@ -113,6 +122,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(
                     R.id.widget_large_subtitle,
                     when {
+                        isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
                         snapshot.state == "holiday" -> context.getString(R.string.widget_rest_well)
                         isShowingTomorrow -> TodayWidgetSupport.footerText(context, snapshot)
                         snapshot.state == "no_course" -> context.getString(R.string.widget_no_schedule_today)
@@ -122,6 +132,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     }
                 )
                 val emptyText = when {
+                    isExamOngoing -> ""
                     isShowingTomorrow -> ""
                     snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
                         context.getString(R.string.widget_today_ended)
@@ -133,7 +144,11 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     if (emptyText.isBlank()) View.GONE else View.VISIBLE
                 )
                 views.setTextViewText(R.id.widget_large_empty, emptyText)
-                val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                val examText = if (isExamOngoing) {
+                    null
+                } else {
+                    TodayWidgetSupport.examCountdownText(context, snapshot)
+                }
                 if (examText != null) {
                     views.setViewVisibility(R.id.widget_large_exam, View.VISIBLE)
                     views.setTextViewText(R.id.widget_large_exam, examText)
@@ -142,14 +157,15 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 }
                 setCourseRows(
                     views,
-                    if (isShowingTomorrow) {
-                        snapshot.tomorrowCourses.take(TodayWidgetSupport.largeVisibleRows(profile))
-                    } else if (snapshot.state == "completed") {
-                        emptyList()
-                    } else {
-                        snapshot.visibleTodayCourses.take(
-                            TodayWidgetSupport.largeVisibleRows(profile)
-                        )
+                    when {
+                        isExamOngoing -> emptyList()
+                        isShowingTomorrow ->
+                            snapshot.tomorrowCourses.take(TodayWidgetSupport.largeVisibleRows(profile))
+                        snapshot.state == "completed" -> emptyList()
+                        else ->
+                            snapshot.visibleTodayCourses.take(
+                                TodayWidgetSupport.largeVisibleRows(profile)
+                            )
                     },
                     primaryColor,
                     secondaryColor

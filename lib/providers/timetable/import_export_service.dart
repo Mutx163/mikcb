@@ -201,6 +201,7 @@ Future<String?> _timetableImportAppDataBackup(
     await host._persistActiveProfileState();
     host._currentLiveCourseId = null;
     host._notifyStateChanged();
+    unawaited(host._syncExamReminders());
     host._analytics.logEventLater(
       name: 'backup_imported',
       parameters: {
@@ -257,6 +258,7 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
     await host._persistActiveProfileState(touchLastUsedAt: true);
     host._currentLiveCourseId = null;
     host._notifyStateChanged();
+    unawaited(host._syncExamReminders());
     host._analytics.logEventLater(
       name: 'backup_imported',
       parameters: {
@@ -324,6 +326,7 @@ Future<String?> _timetableImportFullAppDataBackup(
       );
       host._currentLiveCourseId = null;
       host._notifyStateChanged();
+      unawaited(host._syncExamReminders());
       await host._updateLiveActivity();
       return null;
     } on FormatException catch (e) {

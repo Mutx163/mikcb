@@ -18,6 +18,7 @@
     <string name="widget_status_completed">今日は終了</string>
     <string name="widget_status_holiday">今日は休日</string>
     <string name="widget_status_no_course">今日は授業なし</string>
+    <string name="widget_status_exam_ongoing">試験中</string>
 
     <string name="widget_on_holiday">休日中</string>
     <string name="widget_today_ended">今日の授業は終了</string>
@@ -37,7 +38,11 @@
     <string name="widget_countdown_until_start">開始まで %1$s</string>
 
     <string name="widget_exam_day">試験日 %1$s%2$s%3$s</string>
+    <string name="widget_exam_today">今日試験 %1$s%2$s%3$s</string>
+    <string name="widget_exam_ongoing">試験中 %1$s · %2$sまで%3$s</string>
+    <string name="widget_exam_until">%1$sまで</string>
     <string name="widget_exam_countdown">%1$sまであと%2$d日%3$s%4$s</string>
+    <string name="widget_exam_fallback_name">試験</string>
 
     <string name="widget_day_sun">日</string>
     <string name="widget_day_mon">月</string>

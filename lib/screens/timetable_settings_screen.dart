@@ -2391,153 +2391,165 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     BuildContext context,
     AppLocalizations l10n,
   ) {
-    final theme = Theme.of(context);
     final provider = context.watch<TimetableProvider>();
     final now = DateTime.now();
-    final currentHour = LiveTestingFixtureService.hourSlotFor(now);
-    final nextHour = LiveTestingFixtureService.nextHourSlotFor(now);
+    final sections = provider.settings.sections;
+    final sectionCount = sections.length;
+    final currentSection = LiveTestingFixtureService.sectionNumberForTime(
+      now,
+      sections,
+    );
+    final nextSection = LiveTestingFixtureService.nextSectionNumberForTime(
+      now,
+      sections,
+    );
     final fixtureCount = provider.courses
         .where(LiveTestingFixtureService.isFixtureCourse)
         .length;
+    final hasFixtures = fixtureCount > 0;
+    final canTrigger = sectionCount > 0;
+    final activeSchemeName =
+        provider.activeTimeScheme?.name ?? l10n.unsetLabel;
+    final leadOptions = LiveTestingFixtureService.supportedLeadMinutes;
+    final leadIndex = leadOptions
+        .indexOf(_fixtureLeadMinutes)
+        .clamp(0, leadOptions.length - 1);
+    final currentStart = canTrigger
+        ? sections[currentSection - 1].startTime
+        : '--:--';
+    final nextStart = canTrigger
+        ? sections[nextSection - 1].startTime
+        : '--:--';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const HyperosSectionLabel(text: '快捷测试课表'),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.download_outlined,
+              iconAccent: HyperosIconColors.indigo,
+              title: _installingFixtureGrid ? '正在安装…' : '安装 24 时段测试课表',
+              details: _installingFixtureGrid
+                  ? null
+                  : (canTrigger ? '$fixtureCount/$sectionCount' : '未安装'),
+              onTap: _installingFixtureGrid
+                  ? null
+                  : () => _installQuickFixtureGrid(context),
+            ),
+            HyperosListTile(
+              icon: Icons.delete_outline,
+              iconAccent: HyperosIconColors.orange,
+              title: _clearingFixtureGrid ? '正在清除…' : '清除测试课表',
+              details: hasFixtures ? '$fixtureCount 门' : null,
+              onTap: _clearingFixtureGrid || !hasFixtures
+                  ? null
+                  : () => _clearQuickFixtureGrid(context),
+            ),
+          ],
+        ),
+        HyperosSectionDescription(
+          text:
+              '当前方案：$activeSchemeName。安装会创建并自动套用「超级岛测试24时段」，按第 1～24 节生成测试课（与正常课程同一套逻辑）。'
+              '测完请先「清除测试课表」再切回自己的时间方案；若仍有第 11 节及以后的课，系统会拒绝切到更短的方案。',
+        ),
+        const HyperosSectionGap(),
         HyperosControlCard(
-          title: '快捷测试课表',
-          subtitle:
-              '仅调试版可用，会创建「${LiveTestingFixtureService.timeSchemeName}」时间模板（24 个节次），并在今天生成 00:00–23:00 各一门测试课；测试课 ID 以 ${LiveTestingFixtureService.courseIdPrefix} 开头，可一键清除',
+          title: '课前提醒',
+          subtitle: '发送超级岛测试时，提前多久进入课前态',
           child: HyperosControlCardInset(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '课前提醒：$fixtureCount/24 个测试时段已安装',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                Text('多少分钟后上课', style: theme.textTheme.labelLarge),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final minutes
-                        in LiveTestingFixtureService.supportedLeadMinutes)
-                      ChoiceChip(
-                        label: Text('$minutes 分钟'),
-                        selected: _fixtureLeadMinutes == minutes,
-                        onSelected: (selected) {
-                          if (!selected) return;
-                          setState(() => _fixtureLeadMinutes = minutes);
-                        },
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    HyperosButton(
-                      label: _installingFixtureGrid ? '安装中…' : '安装 24 小时测试课表',
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _installingFixtureGrid
-                          ? null
-                          : () => _installQuickFixtureGrid(context),
+            child: HyperosSegmentedControl(
+              tabs: [for (final minutes in leadOptions) '$minutes 分钟'],
+              selectedIndex: leadIndex,
+              onChanged: (index) {
+                setState(() => _fixtureLeadMinutes = leadOptions[index]);
+              },
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+        const HyperosSectionLabel(text: '一键发送'),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.play_circle_outline,
+              iconAccent: HyperosIconColors.blue,
+              title: '当前节次 · 第$currentSection节',
+              details: currentStart,
+              onTap: !canTrigger
+                  ? null
+                  : () => _triggerQuickFixtureSlot(
+                      context,
+                      sectionNumber: currentSection,
+                      source: 'quick_fixture_current_slot',
                     ),
-                    HyperosButton(
-                      label: _clearingFixtureGrid ? '清除中…' : '清除测试课表',
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _clearingFixtureGrid || fixtureCount == 0
-                          ? null
-                          : () => _clearQuickFixtureGrid(context),
+            ),
+            HyperosListTile(
+              icon: Icons.skip_next_outlined,
+              iconAccent: HyperosIconColors.purple,
+              title: '下一节次 · 第$nextSection节',
+              details: nextStart,
+              onTap: !canTrigger
+                  ? null
+                  : () => _triggerQuickFixtureSlot(
+                      context,
+                      sectionNumber: nextSection,
+                      source: 'quick_fixture_next_slot',
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    HyperosButton(
-                      label:
-                          '当前时段（${currentHour.toString().padLeft(2, '0')}:00）',
-                      variant: HyperosButtonVariant.primary,
-                      onPressed: () => _triggerQuickFixtureSlot(
-                        context,
-                        hour: currentHour,
-                        source: 'quick_fixture_current_slot',
-                      ),
-                    ),
-                    HyperosButton(
-                      label: '下一时段（${nextHour.toString().padLeft(2, '0')}:00）',
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: () => _triggerQuickFixtureSlot(
-                        context,
-                        hour: nextHour,
-                        source: 'quick_fixture_next_slot',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '点选时段：把该时段测试课设为 $_fixtureLeadMinutes 分钟后上课并发送超级岛测试',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 24,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1.8,
-                  ),
-                  itemBuilder: (context, index) {
-                    final installed =
-                        LiveTestingFixtureService.findFixtureForHour(
-                          provider,
-                          index,
-                        ) !=
-                        null;
-                    final isCurrent = index == currentHour;
-                    final color = tryParseHexColor(
-                      LiveTestingFixtureService.colorForHour(index),
-                    );
-                    return Material(
-                      color: (color ?? theme.colorScheme.primaryContainer)
-                          .withValues(alpha: isCurrent ? 0.95 : 0.55),
-                      borderRadius: BorderRadius.circular(12),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
+            ),
+          ],
+        ),
+        HyperosSectionDescription(
+          text: '将对应节次设为 $_fixtureLeadMinutes 分钟后上课，并发送超级岛测试（请回桌面查看）。',
+        ),
+        const HyperosSectionGap(),
+        HyperosControlCard(
+          title: '按节次发送',
+          subtitle: canTrigger
+              ? '点选某一节，立即写入并触发超级岛测试'
+              : '请先安装 24 时段测试课表',
+          child: HyperosControlCardInset(
+            child: canTrigger
+                ? GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: sectionCount,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 1.15,
+                        ),
+                    itemBuilder: (context, index) {
+                      final sectionNumber = index + 1;
+                      final section = sections[index];
+                      final installed =
+                          LiveTestingFixtureService.findFixtureForSection(
+                            provider,
+                            sectionNumber,
+                          ) !=
+                          null;
+                      final isCurrent = sectionNumber == currentSection;
+                      return _QuickFixtureSectionCell(
+                        sectionNumber: sectionNumber,
+                        startTime: section.startTime,
+                        installed: installed,
+                        isCurrent: isCurrent,
                         onTap: () => _triggerQuickFixtureSlot(
                           context,
-                          hour: index,
+                          sectionNumber: sectionNumber,
                           source: 'quick_fixture_grid',
                         ),
-                        child: Center(
-                          child: Text(
-                            '${index.toString().padLeft(2, '0')}:00'
-                            '${installed ? '\n已装' : ''}'
-                            '${isCurrent ? '\n现在' : ''}',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: isCurrent
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+                      );
+                    },
+                  )
+                : Text(
+                    '安装后这里会列出全部节次',
+                    style: HyperosTypography.sectionDescription(context),
+                  ),
           ),
         ),
         const HyperosSectionGap(),
@@ -2550,13 +2562,17 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     setState(() => _installingFixtureGrid = true);
     try {
       final provider = context.read<TimetableProvider>();
-      final count = await LiveTestingFixtureService.installTwentyFourHourGrid(
+      final count = await LiveTestingFixtureService.installSectionGrid(
         provider,
       );
       if (!context.mounted) return;
+      final schemeName =
+          provider.activeTimeScheme?.name ??
+          LiveTestingFixtureService.timeSchemeName;
       showAppToast(
         context,
-        message: '已安装 $count 个测试时段（今天星期${DateTime.now().weekday}）',
+        message:
+            '已套用「$schemeName」并安装 $count 门测试课（今天星期${DateTime.now().weekday}）',
         kind: AppToastKind.success,
       );
     } catch (e) {
@@ -2595,15 +2611,15 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
 
   Future<void> _triggerQuickFixtureSlot(
     BuildContext context, {
-    required int hour,
+    required int sectionNumber,
     required String source,
   }) async {
     final provider = context.read<TimetableProvider>();
     final lead = Duration(minutes: _fixtureLeadMinutes);
-    final result = await triggerLiveUpdateTestForHourSlot(
+    final result = await triggerLiveUpdateTestForSectionSlot(
       context: context,
       provider: provider,
-      hour: hour,
+      sectionNumber: sectionNumber,
       lead: lead,
       source: source,
     );
@@ -2632,6 +2648,93 @@ enum _LiveTestingSection {
   debugRecentLogs,
   rawJson,
   localLogs,
+}
+
+/// Compact section cell for the live-testing fixture grid (HyperOS surface style).
+class _QuickFixtureSectionCell extends StatelessWidget {
+  const _QuickFixtureSectionCell({
+    required this.sectionNumber,
+    required this.startTime,
+    required this.installed,
+    required this.isCurrent,
+    required this.onTap,
+  });
+
+  final int sectionNumber;
+  final String startTime;
+  final bool installed;
+  final bool isCurrent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = HyperosColors.primary(context);
+    final onPrimary = HyperosColors.onPrimary(context);
+    final surface = HyperosColors.surface(context);
+    final onSurface = HyperosColors.onSurface(context);
+    final muted = HyperosColors.onSurfaceVariantSummary(context);
+    final background = isCurrent ? primary : surface;
+    final titleColor = isCurrent ? onPrimary : onSurface;
+    final captionColor = isCurrent
+        ? onPrimary.withValues(alpha: 0.86)
+        : muted;
+    final radius = BorderRadius.circular(HyperosTokens.cardRadius * 0.55);
+
+    return Material(
+      color: background,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '第$sectionNumber节',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+                  color: titleColor,
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                startTime,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: captionColor,
+                  height: 1.1,
+                ),
+              ),
+              if (installed || isCurrent) ...[
+                const SizedBox(height: 3),
+                Text(
+                  isCurrent ? '现在' : '已装',
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: captionColor,
+                    height: 1.0,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 BuildContext? _debugL10nContext;

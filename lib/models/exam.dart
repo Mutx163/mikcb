@@ -209,6 +209,18 @@ class Exam {
     return reminderPreset.reminderMinutes;
   }
 
+  /// Local wall-clock start of the exam (`dateTime` date + [startTime]).
+  DateTime get examStartDateTime {
+    final startParts = parseTimeOfDayParts(startTime);
+    return DateTime(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      startParts.$1,
+      startParts.$2,
+    );
+  }
+
   /// 考试是否已过期
   bool get isExpired {
     final now = DateTime.now();

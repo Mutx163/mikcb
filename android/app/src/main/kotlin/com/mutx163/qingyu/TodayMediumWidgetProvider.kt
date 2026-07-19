@@ -79,10 +79,15 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_medium_meta, secondaryColor)
             views.setTextColor(R.id.widget_medium_exam, secondaryColor)
             views.setTextColor(R.id.widget_medium_footer, secondaryColor)
+            val mediumStatusState = if (snapshot != null) {
+                TodayWidgetSupport.displayStatusState(snapshot)
+            } else {
+                "no_course"
+            }
             views.setInt(
                 R.id.widget_medium_label,
                 "setBackgroundResource",
-                TodayWidgetSupport.statusBackgroundRes(snapshot?.state ?: "no_course", style)
+                TodayWidgetSupport.statusBackgroundRes(mediumStatusState, style)
             )
 
             if (snapshot == null) {
@@ -94,34 +99,53 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_medium_exam, View.GONE)
                 setRowVisibility(views, false, false, false)
             } else {
-                val isShowingTomorrow = (snapshot.state == "completed" || snapshot.state == "no_course") && snapshot.tomorrowCourses.isNotEmpty()
+                val isExamOngoing = TodayWidgetSupport.isExamOngoing(snapshot)
+                val isShowingTomorrow = TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
                 views.setTextViewText(
                     R.id.widget_medium_label,
-                    if (isShowingTomorrow) {
-                        context.getString(R.string.widget_tomorrow_courses)
-                    } else {
-                        TodayWidgetSupport.statusText(context, snapshot.state)
-                    }
+                    TodayWidgetSupport.displayStatusText(context, snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_medium_title,
-                    TodayWidgetSupport.heroCourseName(context, snapshot)
+                    if (isExamOngoing) {
+                        TodayWidgetSupport.examDisplayName(snapshot)
+                            ?: context.getString(R.string.widget_exam_fallback_name)
+                    } else {
+                        TodayWidgetSupport.heroCourseName(context, snapshot)
+                    }
                 )
                 views.setTextViewText(
                     R.id.widget_medium_time,
-                    if (isShowingTomorrow) TodayWidgetSupport.heroTimeText(context, snapshot)
-                    else TodayWidgetSupport.countdownText(context, snapshot)
-                        ?: TodayWidgetSupport.heroTimeText(context, snapshot)
+                    when {
+                        isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
+                        isShowingTomorrow -> TodayWidgetSupport.heroTimeText(context, snapshot)
+                        else -> TodayWidgetSupport.countdownText(context, snapshot)
+                            ?: TodayWidgetSupport.heroTimeText(context, snapshot)
+                    }
                 )
                 views.setTextViewText(
                     R.id.widget_medium_meta,
-                    TodayWidgetSupport.heroMetaText(context, snapshot)
+                    if (isExamOngoing) {
+                        val rawLocation = snapshot.nextExamLocation.orEmpty()
+                        if (rawLocation.isNotBlank() && !rawLocation.equals("null", ignoreCase = true)) {
+                            rawLocation
+                        } else {
+                            context.getString(R.string.widget_status_exam_ongoing)
+                        }
+                    } else {
+                        TodayWidgetSupport.heroMetaText(context, snapshot)
+                    }
                 )
                 views.setTextViewText(
                     R.id.widget_medium_footer,
                     TodayWidgetSupport.footerText(context, snapshot)
                 )
-                val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
+                // Primary chrome already shows live exam; avoid duplicating the exam line.
+                val examText = if (isExamOngoing) {
+                    null
+                } else {
+                    TodayWidgetSupport.examCountdownText(context, snapshot)
+                }
                 if (examText != null) {
                     views.setViewVisibility(R.id.widget_medium_exam, View.VISIBLE)
                     views.setTextViewText(R.id.widget_medium_exam, examText)

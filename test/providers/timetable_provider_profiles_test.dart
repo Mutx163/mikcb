@@ -395,6 +395,61 @@ void main() {
     expect(provider.courses.single.endTime, '09:30');
   });
 
+  test(
+    'applying a shorter time scheme is rejected when courses exceed it',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      final longScheme = await provider.createTimeScheme(
+        name: '24时段',
+        sections: List<SectionTime>.generate(
+          12,
+          (index) => SectionTime(
+            startTime: '${(8 + index).toString().padLeft(2, '0')}:00',
+            endTime: '${(8 + index).toString().padLeft(2, '0')}:45',
+          ),
+        ),
+      );
+      final applyLong = await provider.applyTimeScheme(longScheme.id);
+      expect(applyLong, isNull);
+
+      await provider.addCourse(
+        Course(
+          id: 'late-slot',
+          name: '晚课',
+          teacher: '王老师',
+          location: 'D101',
+          dayOfWeek: 1,
+          startSection: 11,
+          endSection: 12,
+          startTime: '18:00',
+          endTime: '19:45',
+        ),
+      );
+
+      final shortScheme = await provider.createTimeScheme(
+        name: '10节作息',
+        sections: List<SectionTime>.generate(
+          10,
+          (index) => SectionTime(
+            startTime: '${(8 + index).toString().padLeft(2, '0')}:00',
+            endTime: '${(8 + index).toString().padLeft(2, '0')}:45',
+          ),
+        ),
+      );
+
+      final applyShort = await provider.applyTimeScheme(shortScheme.id);
+      expect(applyShort, isNotNull);
+      expect(applyShort, contains('section_count_below_usage'));
+      expect(provider.settings.activeTimeSchemeId, longScheme.id);
+      expect(provider.settings.sectionCount, 12);
+    },
+  );
+
   test('updating a time scheme syncs profiles using it', () async {
     final provider = TimetableProvider(
       autoInitialize: false,

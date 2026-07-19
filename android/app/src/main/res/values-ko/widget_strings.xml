@@ -18,6 +18,7 @@
     <string name="widget_status_completed">오늘 종료</string>
     <string name="widget_status_holiday">오늘 휴일</string>
     <string name="widget_status_no_course">오늘 수업 없음</string>
+    <string name="widget_status_exam_ongoing">시험 중</string>
 
     <string name="widget_on_holiday">휴일 중</string>
     <string name="widget_today_ended">오늘 수업이 끝났습니다</string>
@@ -37,7 +38,11 @@
     <string name="widget_countdown_until_start">시작까지 %1$s</string>
 
     <string name="widget_exam_day">시험일 %1$s%2$s%3$s</string>
+    <string name="widget_exam_today">오늘 시험 %1$s%2$s%3$s</string>
+    <string name="widget_exam_ongoing">시험 중 %1$s · %2$s까지%3$s</string>
+    <string name="widget_exam_until">%1$s까지</string>
     <string name="widget_exam_countdown">%1$s까지 %2$d일%3$s%4$s</string>
+    <string name="widget_exam_fallback_name">시험</string>
 
     <string name="widget_day_sun">일</string>
     <string name="widget_day_mon">월</string>

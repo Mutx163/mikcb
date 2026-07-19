@@ -67,6 +67,7 @@ class MainActivity : FlutterActivity() {
         private const val SYSTEM_UI_CHANNEL = "com.mutx163.qingyu/system_ui"
         private const val UMENG_CHANNEL = "com.mutx163.qingyu/umeng_analytics"
         private const val HOME_WIDGET_CHANNEL = "com.mutx163.qingyu/home_widget"
+        private const val EXAM_REMINDER_CHANNEL = "com.mutx163.qingyu/exam_reminder"
         private const val SUPPORT_CHANNEL = "com.mutx163.qingyu/support"
         private const val MIGRATION_CHANNEL = "com.mutx163.qingyu/migration"
         private const val CHANNEL_ID = "live_update_channel"
@@ -544,6 +545,27 @@ class MainActivity : FlutterActivity() {
                         } else {
                             result.error("INVALID_ARGUMENTS", "Missing widget refresh times", null)
                         }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, EXAM_REMINDER_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "reconcile" -> {
+                        val payload = call.arguments as? Map<*, *>
+                        val fires = payload?.get("fires") as? List<*>
+                        if (fires != null) {
+                            ExamReminderScheduler.reconcile(applicationContext, fires)
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Missing exam reminder fires", null)
+                        }
+                    }
+                    "clear" -> {
+                        ExamReminderScheduler.clear(applicationContext)
+                        result.success(true)
                     }
                     else -> result.notImplemented()
                 }
@@ -1335,6 +1357,7 @@ class MainActivity : FlutterActivity() {
                 description = getString(R.string.notification_channel_live_update_desc)
             }
             notificationManager?.createNotificationChannel(channel)
+            ExamReminderScheduler.ensureChannel(this)
         }
     }
 

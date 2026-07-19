@@ -35,7 +35,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   ExamReminderPreset _reminderPreset = ExamReminderPreset.day1AndHour1;
-  List<int> _customReminderMinutes = [1440, 60];
+  List<int> _customReminderMinutes = [];
   bool _hasSelectedDate = false;
 
   bool get _isEditing => widget.exam != null;
@@ -168,6 +168,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildReminderDropdown(l10n),
+                  if (_reminderPreset == ExamReminderPreset.custom)
+                    ..._buildCustomReminderSection(l10n),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       HyperosControlCardScope.defaultHorizontalPadding,
@@ -405,11 +407,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            HyperosListTileScope(
-              isFirst: true,
-              isLast: false,
-              child: dateTile,
-            ),
+            HyperosListTileScope(isFirst: true, isLast: false, child: dateTile),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -469,8 +467,154 @@ class _AddExamScreenState extends State<AddExamScreen> {
           examReminderPresetLabel(l10n, preset): preset,
       },
       value: _reminderPreset,
-      onChanged: (value) => setState(() => _reminderPreset = value),
+      onChanged: (value) {
+        setState(() {
+          _reminderPreset = value;
+          // Keep any existing custom list when re-selecting custom; start empty
+          // only if the user never configured one.
+        });
+      },
     );
+  }
+
+  List<Widget> _buildCustomReminderSection(AppLocalizations l10n) {
+    final sortedOffsets = List<int>.from(_customReminderMinutes)
+      ..sort((left, right) => right.compareTo(left));
+
+    return [
+      if (sortedOffsets.isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            HyperosControlCardScope.defaultHorizontalPadding,
+            4,
+            HyperosControlCardScope.defaultHorizontalPadding,
+            8,
+          ),
+          child: Text(
+            l10n.examReminderCustomEmptyHint,
+            style: HyperosTypography.listDetail(context),
+          ),
+        ),
+      HyperosControlCardRows(
+        children: [
+          for (final minutes in sortedOffsets)
+            _CustomReminderOffsetRow(
+              title: _examReminderOffsetLabel(l10n, minutes),
+              onEdit: () => _editCustomReminderOffset(l10n, minutes),
+              onRemove: () => _removeCustomReminderOffset(minutes),
+            ),
+          HyperosListTile(
+            icon: Icons.add_rounded,
+            title: l10n.examReminderAddCustom,
+            iconAccent: HyperosIconColors.blue,
+            onTap: () => _addCustomReminderOffset(l10n),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  void _removeCustomReminderOffset(int minutes) {
+    setState(() {
+      _customReminderMinutes = _customReminderMinutes
+          .where((item) => item != minutes)
+          .toList();
+    });
+  }
+
+  Future<void> _addCustomReminderOffset(AppLocalizations l10n) async {
+    final totalMinutes = await showExamReminderOffsetPickerSheet(context);
+    if (!mounted || totalMinutes == null) {
+      return;
+    }
+    await _applyCustomReminderOffset(
+      l10n: l10n,
+      totalMinutes: totalMinutes,
+      replacingMinutes: null,
+    );
+  }
+
+  Future<void> _editCustomReminderOffset(
+    AppLocalizations l10n,
+    int existingMinutes,
+  ) async {
+    final totalMinutes = await showExamReminderOffsetPickerSheet(
+      context,
+      initialTotalMinutes: existingMinutes,
+    );
+    if (!mounted || totalMinutes == null) {
+      return;
+    }
+    await _applyCustomReminderOffset(
+      l10n: l10n,
+      totalMinutes: totalMinutes,
+      replacingMinutes: existingMinutes,
+    );
+  }
+
+  Future<void> _applyCustomReminderOffset({
+    required AppLocalizations l10n,
+    required int totalMinutes,
+    required int? replacingMinutes,
+  }) async {
+    if (totalMinutes <= 0) {
+      showAppToast(
+        context,
+        message: l10n.examReminderCustomInvalid,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    final isUnchanged =
+        replacingMinutes != null && totalMinutes == replacingMinutes;
+    if (isUnchanged) {
+      return;
+    }
+    final collidesWithOther = _customReminderMinutes.any(
+      (item) => item == totalMinutes && item != replacingMinutes,
+    );
+    if (collidesWithOther) {
+      showAppToast(
+        context,
+        message: l10n.examReminderCustomAlreadyAdded,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    setState(() {
+      final next = _customReminderMinutes
+          .where((item) => item != replacingMinutes)
+          .toList();
+      next.add(totalMinutes);
+      next.sort((left, right) => right.compareTo(left));
+      _customReminderMinutes = next;
+    });
+  }
+
+  String _examReminderOffsetLabel(AppLocalizations l10n, int minutes) {
+    if (minutes > 0 && minutes % 1440 == 0) {
+      return l10n.examReminderOffsetDays(minutes ~/ 1440);
+    }
+    if (minutes > 0 && minutes % 60 == 0) {
+      return l10n.examReminderOffsetHours(minutes ~/ 60);
+    }
+    // Mixed units: prefer compact "Xd Yh Zm" style via minutes fallback when
+    // not a clean day/hour multiple.
+    final days = minutes ~/ 1440;
+    final hours = (minutes % 1440) ~/ 60;
+    final remainMinutes = minutes % 60;
+    if (days > 0 || hours > 0) {
+      final parts = <String>[
+        if (days > 0) l10n.examReminderOffsetDays(days),
+        if (hours > 0) l10n.examReminderOffsetHours(hours),
+        if (remainMinutes > 0) l10n.examReminderOffsetMinutes(remainMinutes),
+      ];
+      // Collapse "考前 X 天 · 考前 Y 小时" noise: show only first label style by
+      // joining the numeric parts after stripping repeated "考前" is hard in
+      // l10n; keep full labels joined with " + ".
+      return parts.join(' + ');
+    }
+    return l10n.examReminderOffsetMinutes(minutes);
   }
 
   Widget _buildNoteField(AppLocalizations l10n) {
@@ -815,6 +959,16 @@ class _AddExamScreenState extends State<AddExamScreen> {
       return;
     }
 
+    if (_reminderPreset == ExamReminderPreset.custom &&
+        _customReminderMinutes.isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.examReminderCustomEmpty,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+
     final provider = context.read<TimetableProvider>();
     final now = DateTime.now();
     final dateTime = DateTime(
@@ -867,5 +1021,168 @@ class _AddExamScreenState extends State<AddExamScreen> {
       );
     }
     return const TimeOfDay(hour: 8, minute: 0);
+  }
+}
+
+class _CustomReminderOffsetRow extends StatelessWidget {
+  const _CustomReminderOffsetRow({
+    required this.title,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  final String title;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
+
+    return HyperosPressableRow(
+      onTap: onEdit,
+      backgroundColor: cardColor,
+      highlightColor: highlightColor,
+      child: hyperosListRowShell(
+        padding: hyperosRowPadding(context),
+        minHeight: HyperosTokens.listRowMinHeight,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(title, style: HyperosTypography.listTitle(context)),
+            ),
+            SizedBox(width: HyperosTokens.titleChevronGap),
+            const HyperosChevron(),
+            IconButton(
+              onPressed: onRemove,
+              icon: Icon(
+                Icons.remove_circle_outline_rounded,
+                color: HyperosColors.error(context),
+              ),
+              tooltip: AppLocalizations.of(context)!.deleteAction,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Returns total minutes before exam start, or null if dismissed.
+Future<int?> showExamReminderOffsetPickerSheet(
+  BuildContext context, {
+  int? initialTotalMinutes,
+}) {
+  return showHyperosSheet<int>(
+    context: context,
+    builder: (sheetContext) => _ExamReminderOffsetPickerSheet(
+      initialTotalMinutes: initialTotalMinutes,
+    ),
+  );
+}
+
+class _ExamReminderOffsetPickerSheet extends StatefulWidget {
+  const _ExamReminderOffsetPickerSheet({this.initialTotalMinutes});
+
+  final int? initialTotalMinutes;
+
+  @override
+  State<_ExamReminderOffsetPickerSheet> createState() =>
+      _ExamReminderOffsetPickerSheetState();
+}
+
+class _ExamReminderOffsetPickerSheetState
+    extends State<_ExamReminderOffsetPickerSheet> {
+  late int _days;
+  late int _hours;
+  late int _minutes;
+
+  bool get _isEditing => widget.initialTotalMinutes != null;
+
+  int get _totalMinutes => _days * 1440 + _hours * 60 + _minutes;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialTotalMinutes ?? 60;
+    final clamped = initial.clamp(0, 30 * 1440 + 23 * 60 + 59);
+    _days = clamped ~/ 1440;
+    _hours = (clamped % 1440) ~/ 60;
+    _minutes = clamped % 60;
+    if (_days > 30) {
+      _days = 30;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return HyperosSheet(
+      title: l10n.examReminderAddCustomTitle,
+      description: l10n.examReminderAddCustomHint,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: HyperosNumberPickerTile(
+                  title: l10n.examReminderPickerDays,
+                  picker: HyperosNumberPicker(
+                    min: 0,
+                    max: 30,
+                    value: _days,
+                    onChanged: (value) => setState(() => _days = value),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: HyperosNumberPickerTile(
+                  title: l10n.examReminderPickerHours,
+                  picker: HyperosNumberPicker(
+                    min: 0,
+                    max: 23,
+                    value: _hours,
+                    onChanged: (value) => setState(() => _hours = value),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: HyperosNumberPickerTile(
+                  title: l10n.examReminderPickerMinutes,
+                  picker: HyperosNumberPicker(
+                    min: 0,
+                    max: 59,
+                    value: _minutes,
+                    onChanged: (value) => setState(() => _minutes = value),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          HyperosButton(
+            label: _isEditing ? l10n.confirmAction : l10n.examReminderAddCustom,
+            onPressed: () {
+              if (_totalMinutes <= 0) {
+                showAppToast(
+                  context,
+                  message: l10n.examReminderCustomInvalid,
+                  kind: AppToastKind.warning,
+                );
+                return;
+              }
+              Navigator.of(context).pop(_totalMinutes);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

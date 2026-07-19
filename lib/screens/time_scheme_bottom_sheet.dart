@@ -380,8 +380,18 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
   Future<void> _applyScheme(String schemeId) async {
     final l10n = AppLocalizations.of(context)!;
-    await context.read<TimetableProvider>().applyTimeScheme(schemeId);
+    final error = await context.read<TimetableProvider>().applyTimeScheme(
+      schemeId,
+    );
     if (!mounted) {
+      return;
+    }
+    if (error != null) {
+      showAppToast(
+        context,
+        message: localizeServiceMessage(l10n, error),
+        kind: AppToastKind.warning,
+      );
       return;
     }
     final nextScheme = context.read<TimetableProvider>().activeTimeScheme;

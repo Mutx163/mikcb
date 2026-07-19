@@ -184,7 +184,7 @@ class HomeWidgetSnapshotService {
     bool showTomorrowCourses = true,
     int originalTodayCourseCount = 0,
   }) {
-    // Holiday: return a dedicated snapshot without course info
+    // Holiday: still surface the next exam so widgets keep the countdown.
     if (isHoliday) {
       return HomeWidgetSnapshot(
         profileId: profileId,
@@ -204,6 +204,14 @@ class HomeWidgetSnapshotService {
         todayCourses: const [],
         visibleTodayCourses: const [],
         holidayName: holidayName ?? 'Holiday',
+        nextExamName: nextExam?.name,
+        nextExamDate: nextExam != null
+            ? '${nextExam.dateTime.year}-${nextExam.dateTime.month.toString().padLeft(2, '0')}-${nextExam.dateTime.day.toString().padLeft(2, '0')}'
+            : null,
+        nextExamDaysUntil: nextExam?.daysUntil,
+        nextExamLocation: nextExam?.location,
+        nextExamStartTime: nextExam?.startTime,
+        nextExamEndTime: nextExam?.endTime,
       );
     }
 

@@ -234,6 +234,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm. -->
+        <receiver
+            android:name=".ExamReminderReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".TodayCompactWidgetProvider"
             android:label="@string/widget_today_compact_name"

@@ -18,6 +18,7 @@
     <string name="widget_status_completed">Done for today</string>
     <string name="widget_status_holiday">Holiday today</string>
     <string name="widget_status_no_course">No classes today</string>
+    <string name="widget_status_exam_ongoing">In exam</string>
 
     <string name="widget_on_holiday">On holiday</string>
     <string name="widget_today_ended">Classes ended for today</string>
@@ -37,7 +38,11 @@
     <string name="widget_countdown_until_start">%1$s until class starts</string>
 
     <string name="widget_exam_day">Exam day %1$s%2$s%3$s</string>
+    <string name="widget_exam_today">Exam today %1$s%2$s%3$s</string>
+    <string name="widget_exam_ongoing">In exam %1$s · until %2$s%3$s</string>
+    <string name="widget_exam_until">Until %1$s</string>
     <string name="widget_exam_countdown">%2$d days until %1$s%3$s%4$s</string>
+    <string name="widget_exam_fallback_name">Exam</string>
 
     <string name="widget_day_sun">Sun</string>
     <string name="widget_day_mon">Mon</string>

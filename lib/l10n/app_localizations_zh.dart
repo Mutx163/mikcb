@@ -5329,6 +5329,49 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get examOverviewCountdown => '倒计时';
+
+  @override
+  String get examOverviewCountdownUnit => '天后';
+
+  @override
+  String examOverviewTodayCount(int count) {
+    return '今日 $count 场';
+  }
+
+  @override
+  String examOverviewUpcomingCount(int count) {
+    return '共 $count 场';
+  }
+
+  @override
+  String get examOverviewInProgress => '考试进行中';
+
+  @override
+  String get examOverviewLiveBadge => '进行中';
+
+  @override
+  String examOverviewStartsAt(String time) {
+    return '$time 开始';
+  }
+
+  @override
+  String examOverviewUntilTime(String time) {
+    return '至 $time';
+  }
+
+  @override
+  String get examOverviewReminderOn => '已设提醒';
+
+  @override
+  String get examOverviewReminderOff => '未设提醒';
+
+  @override
+  String examTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
   String get sortAction => '排序';
 
   @override
@@ -6179,6 +6222,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get examReminderCustom => '自定义';
 
   @override
+  String examReminderOffsetMinutes(int minutes) {
+    return '考前 $minutes 分钟';
+  }
+
+  @override
+  String examReminderOffsetHours(int hours) {
+    return '考前 $hours 小时';
+  }
+
+  @override
+  String examReminderOffsetDays(int days) {
+    return '考前 $days 天';
+  }
+
+  @override
+  String get examReminderCustomEmpty => '请至少选择一个提醒时间';
+
+  @override
+  String get examReminderAddCustom => '添加提醒';
+
+  @override
+  String get examReminderAddCustomTitle => '自定义提醒时间';
+
+  @override
+  String get examReminderAddCustomHint => '设置距离考试开始前多久提醒，可添加多个';
+
+  @override
+  String get examReminderPickerDays => '天';
+
+  @override
+  String get examReminderPickerHours => '小时';
+
+  @override
+  String get examReminderPickerMinutes => '分钟';
+
+  @override
+  String get examReminderCustomAlreadyAdded => '该提醒时间已添加';
+
+  @override
+  String get examReminderCustomInvalid => '请设置大于 0 的提醒时间';
+
+  @override
+  String get examReminderCustomEmptyHint => '还没有自定义提醒，点下方添加';
+
+  @override
   String get debugCopiedJson => '已复制 JSON';
 
   @override
@@ -6387,7 +6475,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
-    return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）';
+    return '有课排到第$requiredMaxSection节';
   }
 
   @override
@@ -13216,6 +13304,49 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get examOverviewCountdown => '倒數';
+
+  @override
+  String get examOverviewCountdownUnit => '天後';
+
+  @override
+  String examOverviewTodayCount(int count) {
+    return '今日 $count 場';
+  }
+
+  @override
+  String examOverviewUpcomingCount(int count) {
+    return '共 $count 場';
+  }
+
+  @override
+  String get examOverviewInProgress => '考試進行中';
+
+  @override
+  String get examOverviewLiveBadge => '進行中';
+
+  @override
+  String examOverviewStartsAt(String time) {
+    return '$time 開始';
+  }
+
+  @override
+  String examOverviewUntilTime(String time) {
+    return '至 $time';
+  }
+
+  @override
+  String get examOverviewReminderOn => '已設提醒';
+
+  @override
+  String get examOverviewReminderOff => '未設提醒';
+
+  @override
+  String examTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
   String get sortAction => '排序';
 
   @override
@@ -14047,6 +14178,51 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get examReminderCustom => '自定义';
 
   @override
+  String examReminderOffsetMinutes(int minutes) {
+    return '考前 $minutes 分钟';
+  }
+
+  @override
+  String examReminderOffsetHours(int hours) {
+    return '考前 $hours 小时';
+  }
+
+  @override
+  String examReminderOffsetDays(int days) {
+    return '考前 $days 天';
+  }
+
+  @override
+  String get examReminderCustomEmpty => '请至少选择一个提醒时间';
+
+  @override
+  String get examReminderAddCustom => '添加提醒';
+
+  @override
+  String get examReminderAddCustomTitle => '自定义提醒时间';
+
+  @override
+  String get examReminderAddCustomHint => '设置距离考试开始前多久提醒，可添加多个';
+
+  @override
+  String get examReminderPickerDays => '天';
+
+  @override
+  String get examReminderPickerHours => '小时';
+
+  @override
+  String get examReminderPickerMinutes => '分钟';
+
+  @override
+  String get examReminderCustomAlreadyAdded => '该提醒时间已添加';
+
+  @override
+  String get examReminderCustomInvalid => '请设置大于 0 的提醒时间';
+
+  @override
+  String get examReminderCustomEmptyHint => '还没有自定义提醒，点下方添加';
+
+  @override
   String get debugCopiedJson => '已複製 JSON';
 
   @override
@@ -14268,7 +14444,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
-    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection).';
+    return '有課排到第$requiredMaxSection節';
   }
 
   @override
@@ -21128,6 +21304,49 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get examOverviewCountdown => '倒數';
+
+  @override
+  String get examOverviewCountdownUnit => '天後';
+
+  @override
+  String examOverviewTodayCount(int count) {
+    return '今日 $count 場';
+  }
+
+  @override
+  String examOverviewUpcomingCount(int count) {
+    return '共 $count 場';
+  }
+
+  @override
+  String get examOverviewInProgress => '考試進行中';
+
+  @override
+  String get examOverviewLiveBadge => '進行中';
+
+  @override
+  String examOverviewStartsAt(String time) {
+    return '$time 開始';
+  }
+
+  @override
+  String examOverviewUntilTime(String time) {
+    return '至 $time';
+  }
+
+  @override
+  String get examOverviewReminderOn => '已設提醒';
+
+  @override
+  String get examOverviewReminderOff => '未設提醒';
+
+  @override
+  String examTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
   String get sortAction => '排序';
 
   @override
@@ -21959,6 +22178,51 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get examReminderCustom => '自定义';
 
   @override
+  String examReminderOffsetMinutes(int minutes) {
+    return '考前 $minutes 分钟';
+  }
+
+  @override
+  String examReminderOffsetHours(int hours) {
+    return '考前 $hours 小时';
+  }
+
+  @override
+  String examReminderOffsetDays(int days) {
+    return '考前 $days 天';
+  }
+
+  @override
+  String get examReminderCustomEmpty => '请至少选择一个提醒时间';
+
+  @override
+  String get examReminderAddCustom => '添加提醒';
+
+  @override
+  String get examReminderAddCustomTitle => '自定义提醒时间';
+
+  @override
+  String get examReminderAddCustomHint => '设置距离考试开始前多久提醒，可添加多个';
+
+  @override
+  String get examReminderPickerDays => '天';
+
+  @override
+  String get examReminderPickerHours => '小时';
+
+  @override
+  String get examReminderPickerMinutes => '分钟';
+
+  @override
+  String get examReminderCustomAlreadyAdded => '该提醒时间已添加';
+
+  @override
+  String get examReminderCustomInvalid => '请设置大于 0 的提醒时间';
+
+  @override
+  String get examReminderCustomEmptyHint => '还没有自定义提醒，点下方添加';
+
+  @override
   String get debugCopiedJson => '已複製 JSON';
 
   @override
@@ -22180,7 +22444,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
-    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection).';
+    return '有課排到第$requiredMaxSection節';
   }
 
   @override

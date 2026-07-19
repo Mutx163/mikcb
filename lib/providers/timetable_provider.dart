@@ -24,6 +24,7 @@ import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
+import '../services/exam_reminder_service.dart';
 import '../services/partner_timetable_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
@@ -115,6 +116,7 @@ class TimetableProvider with ChangeNotifier {
   final PartnerTimetableService _partnerTimetableService;
   final HomeWidgetService _homeWidgetService;
   final HomeWidgetSnapshotService _homeWidgetSnapshotService;
+  final ExamReminderService _examReminderService;
   final HolidayService _holidayService;
   final AppAnalytics _analytics;
   final bool _enableLiveActivitySync;
@@ -365,6 +367,7 @@ class TimetableProvider with ChangeNotifier {
     PartnerTimetableService? partnerTimetableService,
     HomeWidgetService? homeWidgetService,
     HomeWidgetSnapshotService? homeWidgetSnapshotService,
+    ExamReminderService? examReminderService,
     HolidayService? holidayService,
     AppAnalytics? analytics,
     bool autoInitialize = true,
@@ -379,6 +382,7 @@ class TimetableProvider with ChangeNotifier {
        _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
        _homeWidgetSnapshotService =
            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
+       _examReminderService = examReminderService ?? ExamReminderService(),
        _holidayService = holidayService ?? HolidayService(),
        _analytics = analytics ?? AppAnalytics.instance,
        _enableLiveActivitySync = enableLiveActivitySync {
@@ -566,6 +570,7 @@ class TimetableProvider with ChangeNotifier {
     if (_lastHomeWidgetSnapshotSignature == null) {
       await _syncHomeWidgetSnapshot();
     }
+    unawaited(_syncExamReminders());
     if (_enableLiveActivitySync) {
       _startLiveActivityTick();
     }
@@ -976,7 +981,7 @@ class TimetableProvider with ChangeNotifier {
     applyToActiveProfile: applyToActiveProfile,
   );
 
-  Future<void> applyTimeScheme(String schemeId) =>
+  Future<String?> applyTimeScheme(String schemeId) =>
       _timetableApplyTimeScheme(this, schemeId);
 
   Future<TimeScheme?> renameTimeScheme(String schemeId, String name) =>
@@ -1077,6 +1082,7 @@ class TimetableProvider with ChangeNotifier {
       _lastLiveActivityStageKey = null;
       await _syncLiveScheduleSnapshot();
       await _updateLiveActivity(syncScheduleSnapshot: false);
+      unawaited(_syncExamReminders());
     });
   }
 
@@ -1248,6 +1254,7 @@ class TimetableProvider with ChangeNotifier {
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
+      unawaited(_syncExamReminders());
       _analytics.logEventLater(
         name: 'course_deleted',
         parameters: {'remaining_course_count': _courses.length},
@@ -1269,6 +1276,7 @@ class TimetableProvider with ChangeNotifier {
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
+      unawaited(_syncExamReminders());
       _analytics.logEventLater(
         name: 'course_group_deleted',
         parameters: {'remaining_course_count': _courses.length},
@@ -1561,6 +1569,11 @@ class TimetableProvider with ChangeNotifier {
     _exams.add(exam);
     await _persistActiveProfileState();
     notifyListeners();
+    unawaited(_syncExamReminders());
+    // Native widgets re-read profiles; force a snapshot push so exam line
+    // appears without waiting for the next course-boundary refresh.
+    _lastHomeWidgetSnapshotSignature = null;
+    unawaited(_syncHomeWidgetSnapshot());
     _analytics.logEventLater(
       name: 'exam_created',
       parameters: {
@@ -1577,6 +1590,9 @@ class TimetableProvider with ChangeNotifier {
     _exams[index] = exam;
     await _persistActiveProfileState();
     notifyListeners();
+    unawaited(_syncExamReminders());
+    _lastHomeWidgetSnapshotSignature = null;
+    unawaited(_syncHomeWidgetSnapshot());
     _analytics.logEventLater(
       name: 'exam_updated',
       parameters: {'exam_id': exam.id},
@@ -1587,10 +1603,25 @@ class TimetableProvider with ChangeNotifier {
     _exams.removeWhere((e) => e.id == examId);
     await _persistActiveProfileState();
     notifyListeners();
+    unawaited(_syncExamReminders());
+    _lastHomeWidgetSnapshotSignature = null;
+    unawaited(_syncHomeWidgetSnapshot());
     _analytics.logEventLater(
       name: 'exam_deleted',
       parameters: {'remaining_exam_count': _exams.length},
     );
+  }
+
+  /// Reconcile native exam-reminder alarms with the active profile exam list.
+  Future<void> _syncExamReminders() async {
+    try {
+      await _examReminderService.reconcile(
+        exams: _exams,
+        resolveCourse: getCourseForExam,
+      );
+    } catch (error) {
+      appDebugLog('ExamReminder', 'sync failed: $error');
+    }
   }
 
   // ---- 节假日相关 ----

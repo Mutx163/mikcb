@@ -9695,6 +9695,72 @@ abstract class AppLocalizations {
   /// **'{days}天后'**
   String examCountdownDays(int days);
 
+  /// No description provided for @examOverviewCountdown.
+  ///
+  /// In zh, this message translates to:
+  /// **'倒计时'**
+  String get examOverviewCountdown;
+
+  /// No description provided for @examOverviewCountdownUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'天后'**
+  String get examOverviewCountdownUnit;
+
+  /// No description provided for @examOverviewTodayCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日 {count} 场'**
+  String examOverviewTodayCount(int count);
+
+  /// No description provided for @examOverviewUpcomingCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'共 {count} 场'**
+  String examOverviewUpcomingCount(int count);
+
+  /// No description provided for @examOverviewInProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试进行中'**
+  String get examOverviewInProgress;
+
+  /// No description provided for @examOverviewLiveBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'进行中'**
+  String get examOverviewLiveBadge;
+
+  /// No description provided for @examOverviewStartsAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'{time} 开始'**
+  String examOverviewStartsAt(String time);
+
+  /// No description provided for @examOverviewUntilTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'至 {time}'**
+  String examOverviewUntilTime(String time);
+
+  /// No description provided for @examOverviewReminderOn.
+  ///
+  /// In zh, this message translates to:
+  /// **'已设提醒'**
+  String get examOverviewReminderOn;
+
+  /// No description provided for @examOverviewReminderOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设提醒'**
+  String get examOverviewReminderOff;
+
+  /// No description provided for @examTimeRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{start} – {end}'**
+  String examTimeRange(String start, String end);
+
   /// No description provided for @sortAction.
   ///
   /// In zh, this message translates to:
@@ -11258,6 +11324,84 @@ abstract class AppLocalizations {
   /// **'自定义'**
   String get examReminderCustom;
 
+  /// No description provided for @examReminderOffsetMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 {minutes} 分钟'**
+  String examReminderOffsetMinutes(int minutes);
+
+  /// No description provided for @examReminderOffsetHours.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 {hours} 小时'**
+  String examReminderOffsetHours(int hours);
+
+  /// No description provided for @examReminderOffsetDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 {days} 天'**
+  String examReminderOffsetDays(int days);
+
+  /// No description provided for @examReminderCustomEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'请至少选择一个提醒时间'**
+  String get examReminderCustomEmpty;
+
+  /// No description provided for @examReminderAddCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加提醒'**
+  String get examReminderAddCustom;
+
+  /// No description provided for @examReminderAddCustomTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义提醒时间'**
+  String get examReminderAddCustomTitle;
+
+  /// No description provided for @examReminderAddCustomHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置距离考试开始前多久提醒，可添加多个'**
+  String get examReminderAddCustomHint;
+
+  /// No description provided for @examReminderPickerDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'天'**
+  String get examReminderPickerDays;
+
+  /// No description provided for @examReminderPickerHours.
+  ///
+  /// In zh, this message translates to:
+  /// **'小时'**
+  String get examReminderPickerHours;
+
+  /// No description provided for @examReminderPickerMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟'**
+  String get examReminderPickerMinutes;
+
+  /// No description provided for @examReminderCustomAlreadyAdded.
+  ///
+  /// In zh, this message translates to:
+  /// **'该提醒时间已添加'**
+  String get examReminderCustomAlreadyAdded;
+
+  /// No description provided for @examReminderCustomInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请设置大于 0 的提醒时间'**
+  String get examReminderCustomInvalid;
+
+  /// No description provided for @examReminderCustomEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有自定义提醒，点下方添加'**
+  String get examReminderCustomEmptyHint;
+
   /// No description provided for @debugCopiedJson.
   ///
   /// In zh, this message translates to:
@@ -11666,7 +11810,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgSectionCountBelowUsage.
   ///
   /// In zh, this message translates to:
-  /// **'节次数量不能小于当前已使用的最大节次（第{requiredMaxSection}节）'**
+  /// **'有课排到第{requiredMaxSection}节'**
   String serviceMsgSectionCountBelowUsage(int requiredMaxSection);
 
   /// No description provided for @serviceMsgSectionCountBelowUsageDetail.

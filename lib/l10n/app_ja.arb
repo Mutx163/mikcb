@@ -2987,6 +2987,55 @@
       }
     }
   },
+  "examOverviewCountdown": "カウントダウン",
+  "examOverviewCountdownUnit": "日後",
+  "examOverviewTodayCount": "本日 {count} 件",
+  "@examOverviewTodayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examOverviewUpcomingCount": "残り {count} 件",
+  "@examOverviewUpcomingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examOverviewInProgress": "試験中",
+  "examOverviewLiveBadge": "実施中",
+  "examOverviewStartsAt": "{time} 開始",
+  "@examOverviewStartsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "examOverviewUntilTime": "{time} まで",
+  "@examOverviewUntilTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "examOverviewReminderOn": "リマインダー設定済み",
+  "examOverviewReminderOff": "リマインダーなし",
+  "examTimeRange": "{start} – {end}",
+  "@examTimeRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "sortAction": "並べ替え",
   "sortByAdded": "追加順",
   "sortByName": "授業名順",
@@ -3497,6 +3546,40 @@
   "examReminderDay1": "1 day before",
   "examReminderDay1AndHour1": "1 day and 1 hour before",
   "examReminderCustom": "Custom",
+  "examReminderOffsetMinutes": "{minutes} minutes before",
+  "@examReminderOffsetMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "examReminderOffsetHours": "{hours} hours before",
+  "@examReminderOffsetHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "examReminderOffsetDays": "{days} days before",
+  "@examReminderOffsetDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "examReminderCustomEmpty": "Select at least one reminder time",
+  "examReminderAddCustom": "Add reminder",
+  "examReminderAddCustomTitle": "Custom reminder time",
+  "examReminderAddCustomHint": "How long before the exam starts; you can add multiple",
+  "examReminderPickerDays": "Days",
+  "examReminderPickerHours": "Hours",
+  "examReminderPickerMinutes": "Minutes",
+  "examReminderCustomAlreadyAdded": "This reminder is already added",
+  "examReminderCustomInvalid": "Set a time greater than zero",
+  "examReminderCustomEmptyHint": "No custom reminders yet — tap below to add",
   "debugCopiedJson": "JSON copied",
   "liveDuringClassTimeNearest": "Nearest time",
   "liveDuringClassTimeTotal": "Total time",
@@ -3574,7 +3657,7 @@
       }
     }
   },
-  "serviceMsgSectionCountBelowUsage": "Section count cannot be less than the maximum section in use (section {requiredMaxSection})",
+  "serviceMsgSectionCountBelowUsage": "Courses go to period {requiredMaxSection}",
   "@serviceMsgSectionCountBelowUsage": {
     "placeholders": {
       "requiredMaxSection": {

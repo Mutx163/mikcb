@@ -2984,6 +2984,55 @@
       }
     }
   },
+  "examOverviewCountdown": "倒數",
+  "examOverviewCountdownUnit": "天後",
+  "examOverviewTodayCount": "今日 {count} 場",
+  "@examOverviewTodayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examOverviewUpcomingCount": "共 {count} 場",
+  "@examOverviewUpcomingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examOverviewInProgress": "考試進行中",
+  "examOverviewLiveBadge": "進行中",
+  "examOverviewStartsAt": "{time} 開始",
+  "@examOverviewStartsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "examOverviewUntilTime": "至 {time}",
+  "@examOverviewUntilTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "examOverviewReminderOn": "已設提醒",
+  "examOverviewReminderOff": "未設提醒",
+  "examTimeRange": "{start} – {end}",
+  "@examTimeRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "examDefaultName": "期末考試",
   "examDateWeekPickerTitle": "選擇考試日期",
   "weekPickerCalendarTooltip": "使用日曆選擇",
@@ -3497,6 +3546,40 @@
   "examReminderDay1": "考前 1 天",
   "examReminderDay1AndHour1": "考前 1 天 + 1 小时",
   "examReminderCustom": "自定义",
+  "examReminderOffsetMinutes": "考前 {minutes} 分钟",
+  "@examReminderOffsetMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "examReminderOffsetHours": "考前 {hours} 小时",
+  "@examReminderOffsetHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "examReminderOffsetDays": "考前 {days} 天",
+  "@examReminderOffsetDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "examReminderCustomEmpty": "请至少选择一个提醒时间",
+  "examReminderAddCustom": "添加提醒",
+  "examReminderAddCustomTitle": "自定义提醒时间",
+  "examReminderAddCustomHint": "设置距离考试开始前多久提醒，可添加多个",
+  "examReminderPickerDays": "天",
+  "examReminderPickerHours": "小时",
+  "examReminderPickerMinutes": "分钟",
+  "examReminderCustomAlreadyAdded": "该提醒时间已添加",
+  "examReminderCustomInvalid": "请设置大于 0 的提醒时间",
+  "examReminderCustomEmptyHint": "还没有自定义提醒，点下方添加",
   "debugCopiedJson": "已複製 JSON",
   "liveDuringClassTimeNearest": "最近时间",
   "liveDuringClassTimeTotal": "总时间",
@@ -3574,7 +3657,7 @@
       }
     }
   },
-  "serviceMsgSectionCountBelowUsage": "Section count cannot be less than the maximum section in use (section {requiredMaxSection}).",
+  "serviceMsgSectionCountBelowUsage": "有課排到第{requiredMaxSection}節",
   "@serviceMsgSectionCountBelowUsage": {
     "placeholders": {
       "requiredMaxSection": {

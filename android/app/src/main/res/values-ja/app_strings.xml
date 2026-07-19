@@ -9,6 +9,10 @@
 
     <string name="notification_channel_live_update_name">時間割リアルタイム更新</string>
     <string name="notification_channel_live_update_desc">現在の授業進捗を表示</string>
+    <string name="notification_channel_exam_reminder_name">試験リマインダー</string>
+    <string name="notification_channel_exam_reminder_desc">試験開始前の通知</string>
+    <string name="notification_exam_reminder_default_title">試験リマインダー</string>
+    <string name="notification_exam_reminder_default_body">まもなく試験があります</string>
 
     <string name="notification_course_reminder_title">授業リマインダー: %1$s</string>
     <string name="notification_preparing_reminder">授業リマインダーを準備中</string>

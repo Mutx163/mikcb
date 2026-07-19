@@ -5407,6 +5407,49 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get examOverviewCountdown => 'カウントダウン';
+
+  @override
+  String get examOverviewCountdownUnit => '日後';
+
+  @override
+  String examOverviewTodayCount(int count) {
+    return '本日 $count 件';
+  }
+
+  @override
+  String examOverviewUpcomingCount(int count) {
+    return '残り $count 件';
+  }
+
+  @override
+  String get examOverviewInProgress => '試験中';
+
+  @override
+  String get examOverviewLiveBadge => '実施中';
+
+  @override
+  String examOverviewStartsAt(String time) {
+    return '$time 開始';
+  }
+
+  @override
+  String examOverviewUntilTime(String time) {
+    return '$time まで';
+  }
+
+  @override
+  String get examOverviewReminderOn => 'リマインダー設定済み';
+
+  @override
+  String get examOverviewReminderOff => 'リマインダーなし';
+
+  @override
+  String examTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
   String get sortAction => '並べ替え';
 
   @override
@@ -6265,6 +6308,53 @@ class AppLocalizationsJa extends AppLocalizations {
   String get examReminderCustom => 'Custom';
 
   @override
+  String examReminderOffsetMinutes(int minutes) {
+    return '$minutes minutes before';
+  }
+
+  @override
+  String examReminderOffsetHours(int hours) {
+    return '$hours hours before';
+  }
+
+  @override
+  String examReminderOffsetDays(int days) {
+    return '$days days before';
+  }
+
+  @override
+  String get examReminderCustomEmpty => 'Select at least one reminder time';
+
+  @override
+  String get examReminderAddCustom => 'Add reminder';
+
+  @override
+  String get examReminderAddCustomTitle => 'Custom reminder time';
+
+  @override
+  String get examReminderAddCustomHint =>
+      'How long before the exam starts; you can add multiple';
+
+  @override
+  String get examReminderPickerDays => 'Days';
+
+  @override
+  String get examReminderPickerHours => 'Hours';
+
+  @override
+  String get examReminderPickerMinutes => 'Minutes';
+
+  @override
+  String get examReminderCustomAlreadyAdded => 'This reminder is already added';
+
+  @override
+  String get examReminderCustomInvalid => 'Set a time greater than zero';
+
+  @override
+  String get examReminderCustomEmptyHint =>
+      'No custom reminders yet — tap below to add';
+
+  @override
   String get debugCopiedJson => 'JSON copied';
 
   @override
@@ -6488,7 +6578,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
-    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection)';
+    return 'Courses go to period $requiredMaxSection';
   }
 
   @override
