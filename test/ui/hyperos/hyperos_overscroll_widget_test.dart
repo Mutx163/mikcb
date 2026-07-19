@@ -23,12 +23,12 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   }
 
-  int lightImpactCount(List<MethodCall> log) {
+  int edgeHapticCount(List<MethodCall> log) {
     return log
         .where(
           (call) =>
               call.method == 'HapticFeedback.vibrate' &&
-              call.arguments == 'HapticFeedbackType.lightImpact',
+              call.arguments == 'HapticFeedbackType.selectionClick',
         )
         .length;
   }
@@ -115,7 +115,56 @@ void main() {
     expect(state.position.pixels, closeTo(0, 1));
   });
 
-  testWidgets('edge haptic fires once when crossing top overscroll', (
+  testWidgets('edge haptic fires once when arriving at top from content', (
+    tester,
+  ) async {
+    final hapticLog = installHapticLog();
+    addTearDown(clearHapticLog);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NotificationListener<ScrollNotification>(
+            onNotification: hyperosHandleOverscrollSnapBack,
+            child: ListView(
+              physics: const HyperosOverscrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              children: List.generate(
+                20,
+                (i) => SizedBox(height: 100, child: Text('Item $i')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final scrollable = find.byType(Scrollable);
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final scrollContext = tester.element(scrollable);
+
+    void notifyAt(double pixels) {
+      position.forcePixels(pixels);
+      hyperosHandleOverscrollEdgeHaptic(
+        ScrollUpdateNotification(
+          metrics: position,
+          context: scrollContext,
+          scrollDelta: 1,
+        ),
+      );
+    }
+
+    notifyAt(120);
+    notifyAt(0);
+    expect(edgeHapticCount(hapticLog), 1);
+
+    notifyAt(-20);
+    notifyAt(-40);
+    expect(edgeHapticCount(hapticLog), 1);
+  });
+
+  testWidgets('already at top then pull blank gap does not fire edge haptic', (
     tester,
   ) async {
     final hapticLog = installHapticLog();
@@ -145,19 +194,20 @@ void main() {
     final viewport = state.position.viewportDimension;
 
     final gesture = await tester.startGesture(tester.getCenter(scrollable));
-    await gesture.moveBy(Offset(0, viewport * 0.3));
+    await gesture.moveBy(Offset(0, viewport * 0.4));
     await tester.pump();
     await gesture.moveBy(Offset(0, viewport * 0.2));
     await tester.pump();
 
     expect(state.position.pixels, lessThan(0));
-    expect(lightImpactCount(hapticLog), 1);
+    expect(edgeHapticCount(hapticLog), 0);
 
     await gesture.up();
     await tester.pumpAndSettle(const Duration(seconds: 3));
+    expect(edgeHapticCount(hapticLog), 0);
   });
 
-  testWidgets('edge haptic re-fires after returning in-range then re-pull', (
+  testWidgets('edge haptic re-fires only after re-arming from interior', (
     tester,
   ) async {
     final hapticLog = installHapticLog();
@@ -173,7 +223,7 @@ void main() {
                 parent: AlwaysScrollableScrollPhysics(),
               ),
               children: List.generate(
-                5,
+                20,
                 (i) => SizedBox(height: 100, child: Text('Item $i')),
               ),
             ),
@@ -183,23 +233,177 @@ void main() {
     );
 
     final scrollable = find.byType(Scrollable);
-    final viewport = tester
-        .state<ScrollableState>(scrollable)
-        .position
-        .viewportDimension;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final scrollContext = tester.element(scrollable);
 
-    final firstPull = await tester.startGesture(tester.getCenter(scrollable));
-    await firstPull.moveBy(Offset(0, viewport * 0.4));
-    await tester.pump();
-    await firstPull.up();
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(lightImpactCount(hapticLog), 1);
+    void notifyAt(double pixels) {
+      position.forcePixels(pixels);
+      hyperosHandleOverscrollEdgeHaptic(
+        ScrollUpdateNotification(
+          metrics: position,
+          context: scrollContext,
+          scrollDelta: 1,
+        ),
+      );
+    }
 
-    final secondPull = await tester.startGesture(tester.getCenter(scrollable));
-    await secondPull.moveBy(Offset(0, viewport * 0.4));
-    await tester.pump();
-    await secondPull.up();
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(lightImpactCount(hapticLog), 2);
+    notifyAt(120);
+    notifyAt(0);
+    expect(edgeHapticCount(hapticLog), 1);
+
+    // Small near-edge jiggle must not re-arm (pull a little then back to top).
+    notifyAt(2);
+    notifyAt(0);
+    expect(edgeHapticCount(hapticLog), 1);
+    notifyAt(24);
+    notifyAt(0);
+    notifyAt(40);
+    notifyAt(0);
+    expect(edgeHapticCount(hapticLog), 1);
+
+    notifyAt(hyperosOverscrollEdgeHapticRearmPx + 4);
+    await tester.pump(
+      hyperosOverscrollEdgeHapticCooldown + const Duration(milliseconds: 20),
+    );
+    notifyAt(0);
+    expect(edgeHapticCount(hapticLog), 2);
   });
+
+  testWidgets('gradual scroll to top still fires once', (tester) async {
+    final hapticLog = installHapticLog();
+    addTearDown(clearHapticLog);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NotificationListener<ScrollNotification>(
+            onNotification: hyperosHandleOverscrollSnapBack,
+            child: ListView(
+              physics: const HyperosOverscrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              children: List.generate(
+                20,
+                (i) => SizedBox(height: 100, child: Text('Item $i')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final scrollable = find.byType(Scrollable);
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final scrollContext = tester.element(scrollable);
+
+    void notifyAt(double pixels) {
+      position.forcePixels(pixels);
+      hyperosHandleOverscrollEdgeHaptic(
+        ScrollUpdateNotification(
+          metrics: position,
+          context: scrollContext,
+          scrollDelta: 1,
+        ),
+      );
+    }
+
+    for (final pixels in <double>[40, 25, 12, 7, 3, 1, 0, -8, -16]) {
+      notifyAt(pixels);
+    }
+    expect(edgeHapticCount(hapticLog), 1);
+  });
+
+  testWidgets('fast ballistic arrival at top fires only once', (tester) async {
+    final hapticLog = installHapticLog();
+    addTearDown(clearHapticLog);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NotificationListener<ScrollNotification>(
+            onNotification: hyperosHandleOverscrollSnapBack,
+            child: ListView(
+              physics: const HyperosOverscrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              children: List.generate(
+                30,
+                (i) => SizedBox(height: 80, child: Text('Item $i')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final scrollable = find.byType(Scrollable);
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final scrollContext = tester.element(scrollable);
+
+    void notifyAt(double pixels) {
+      position.forcePixels(pixels);
+      hyperosHandleOverscrollEdgeHaptic(
+        ScrollUpdateNotification(
+          metrics: position,
+          context: scrollContext,
+          scrollDelta: 1,
+        ),
+      );
+    }
+
+    notifyAt(position.maxScrollExtent);
+    notifyAt(position.maxScrollExtent * 0.5);
+    notifyAt(40);
+    notifyAt(0);
+    notifyAt(-30);
+    notifyAt(-10);
+    notifyAt(0);
+
+    expect(edgeHapticCount(hapticLog), 1);
+  });
+
+  testWidgets(
+    'real drag from mid-list to top fires via framework FixedScrollMetrics',
+    (tester) async {
+      final hapticLog = installHapticLog();
+      addTearDown(clearHapticLog);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NotificationListener<ScrollNotification>(
+              onNotification: hyperosHandleOverscrollSnapBack,
+              child: ListView(
+                physics: const HyperosOverscrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                children: List.generate(
+                  30,
+                  (i) => SizedBox(height: 80, child: Text('Item $i')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final scrollable = find.byType(Scrollable);
+      final position = tester.state<ScrollableState>(scrollable).position;
+
+      position.jumpTo(400);
+      await tester.pumpAndSettle();
+      hyperosResetOverscrollEdgeHaptics();
+      hapticLog.clear();
+
+      await tester.drag(scrollable, const Offset(0, 600));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(
+        edgeHapticCount(hapticLog),
+        greaterThanOrEqualTo(1),
+        reason: 'must fire when real ScrollUpdateNotifications reach the top',
+      );
+    },
+  );
 }

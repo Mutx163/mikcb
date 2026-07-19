@@ -1,5 +1,9 @@
 package com.mutx163.qingyu
 
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.view.HapticFeedbackConstants
 import android.Manifest
 import android.app.ActivityManager
 import android.app.AppOpsManager
@@ -76,6 +80,7 @@ class MainActivity : FlutterActivity() {
         private const val LAN_EDIT_CHANNEL = "com.mutx163.qingyu/lan_edit"
         private const val FROSTED_BLUR_CHANNEL = "com.mutx163.qingyu/frosted_blur"
         private const val LAUNCH_URL_CHANNEL = "com.mutx163.qingyu/launch_url"
+        private const val HAPTIC_CHANNEL = "com.mutx163.qingyu/haptic"
 
         /** Schemes allowed for the `launch_url` channel (feedback deep links). */
         private val ALLOWED_LAUNCH_SCHEMES = setOf(
@@ -172,6 +177,21 @@ class MainActivity : FlutterActivity() {
                     }
                     "getDisplayCornerRadiusDp" -> {
                         result.success(readDisplayCornerRadiusDp())
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HAPTIC_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "edgeTick" -> {
+                        try {
+                            result.success(performEdgeHapticTick())
+                        } catch (error: Exception) {
+                            Log.w("EdgeHaptic", "edgeTick failed", error)
+                            result.error("HAPTIC_FAILED", error.message, null)
+                        }
                     }
                     else -> result.notImplemented()
                 }
@@ -1531,6 +1551,66 @@ class MainActivity : FlutterActivity() {
             }
         }
         return 28.0
+    }
+
+    /**
+     * Soft edge-arrival tick (CLOCK_TICK). Kept for optional native callers;
+     * Dart currently uses Flutter [HapticFeedback.selectionClick] for intensity.
+     */
+    private fun performEdgeHapticTick(): String {
+        val decorView = window?.decorView
+        if (decorView != null) {
+            @Suppress("DEPRECATION")
+            val feedbackFlags =
+                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING or
+                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+            if (decorView.performHapticFeedback(
+                    HapticFeedbackConstants.CLOCK_TICK,
+                    feedbackFlags,
+                )
+            ) {
+                return "view_clock_tick"
+            }
+            if (decorView.performHapticFeedback(
+                    HapticFeedbackConstants.CONTEXT_CLICK,
+                    feedbackFlags,
+                )
+            ) {
+                return "view_context_click"
+            }
+        }
+
+        val vibrator = resolveDefaultVibrator()
+        if (vibrator != null && vibrator.hasVibrator()) {
+            // Soft tick only — avoid long/high-amplitude oneshots.
+            val durationMs = 8L
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val amplitude =
+                    if (vibrator.hasAmplitudeControl()) {
+                        48
+                    } else {
+                        VibrationEffect.DEFAULT_AMPLITUDE
+                    }
+                vibrator.vibrate(VibrationEffect.createOneShot(durationMs, amplitude))
+                return "vibrator_oneshot_${durationMs}ms"
+            }
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(durationMs)
+            return "vibrator_legacy_${durationMs}ms"
+        }
+
+        return "no_haptic"
+    }
+
+    private fun resolveDefaultVibrator(): Vibrator? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager =
+                getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            manager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
     }
 }
 

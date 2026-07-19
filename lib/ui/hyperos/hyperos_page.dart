@@ -323,9 +323,8 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         child: child,
       ),
     );
-    if (!_useOverlayLayout) {
-      return body;
-    }
+    // Always listen: edge haptics + snap-back are not limited to frosted overlay
+    // pages. HyperosScrollBehavior also hooks each Scrollable as a second path.
     return NotificationListener<ScrollNotification>(
       onNotification: _handleBodyScrollForBlur,
       child: body,

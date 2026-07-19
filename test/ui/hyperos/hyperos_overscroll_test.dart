@@ -4,6 +4,8 @@ import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_overscroll.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('HyperosOverscrollPhysics', () {
     const physics = HyperosOverscrollPhysics(
       parent: AlwaysScrollableScrollPhysics(),
