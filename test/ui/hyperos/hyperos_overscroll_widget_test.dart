@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -251,17 +253,29 @@ void main() {
     notifyAt(0);
     expect(edgeHapticCount(hapticLog), 1);
 
-    // Small near-edge jiggle must not re-arm (pull a little then back to top).
+    final rearmDistance = hyperosOverscrollEdgeHapticRearmDistance(position);
+
+    // Near-edge jiggles (well under half viewport) must not re-arm.
     notifyAt(2);
     notifyAt(0);
     expect(edgeHapticCount(hapticLog), 1);
     notifyAt(24);
     notifyAt(0);
-    notifyAt(40);
+    notifyAt(math.min(40.0, rearmDistance * 0.25));
+    notifyAt(0);
+    expect(edgeHapticCount(hapticLog), 1);
+    notifyAt(math.min(rearmDistance * 0.5, position.maxScrollExtent * 0.4));
     notifyAt(0);
     expect(edgeHapticCount(hapticLog), 1);
 
-    notifyAt(hyperosOverscrollEdgeHapticRearmPx + 4);
+    // Only after traveling ~half a viewport into content can the top re-fire.
+    final rearmPixels = math.min(rearmDistance + 8, position.maxScrollExtent);
+    expect(
+      rearmPixels,
+      greaterThan(rearmDistance),
+      reason: 'test list must be tall enough to re-arm at half viewport',
+    );
+    notifyAt(rearmPixels);
     await tester.pump(
       hyperosOverscrollEdgeHapticCooldown + const Duration(milliseconds: 20),
     );

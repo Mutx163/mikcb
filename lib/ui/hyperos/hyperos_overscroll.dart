@@ -330,11 +330,18 @@ Widget hyperosBlockStretchOverscroll({required Widget child}) {
   );
 }
 
-/// Per-scrollable edge-arrival haptic latch.
+/// Edge-arrival haptic latch (one state per scroll [Axis]).
 ///
 /// Fires only when content *arrives* at the top/bottom edge from the interior,
 /// not when the user is already parked at that edge and deepens rubber-band
 /// overscroll (blank gap).
+///
+/// After an edge has fired (or was seeded as already-at-edge), the same edge
+/// re-arms only after the user scrolls about **half a viewport** into content.
+///
+/// State is keyed by [Axis] (not [ScrollPosition] identity). HyperOS pages
+/// often rebuild scrollables mid-gesture; a new ScrollPosition would otherwise
+/// reset latches and re-fire on every near-edge jiggle.
 ///
 /// Detection runs from two places so every page is covered:
 /// 1. [HyperosOverscrollPhysics.applyPhysicsToUserOffset] (finger drag)
@@ -347,14 +354,13 @@ class _OverscrollEdgeHapticState {
   Duration lastFireTimestamp = Duration.zero;
 }
 
-/// Keyed by [ScrollPosition] identity when available.
-final Map<Object, _OverscrollEdgeHapticState> _overscrollEdgeHapticStates = {};
+/// One latch per scroll axis (vertical list / horizontal pager).
+final Map<Axis, _OverscrollEdgeHapticState> _overscrollEdgeHapticStates = {};
 
-/// Must travel this far into content before the same edge can fire again.
-///
-/// Large enough that small up/down jiggles near the edge do not re-arm.
+/// Fraction of [ScrollMetrics.viewportDimension] that must be traveled into
+/// content before the same edge can fire again (~half screen).
 @visibleForTesting
-const hyperosOverscrollEdgeHapticRearmPx = 56.0;
+const hyperosOverscrollEdgeHapticRearmViewportFraction = 0.5;
 
 /// Treat positions within this distance of min/max as "at the edge".
 @visibleForTesting
@@ -370,45 +376,21 @@ void hyperosResetOverscrollEdgeHaptics() {
   _overscrollEdgeHapticStates.clear();
 }
 
-Object _keyForScrollPosition(ScrollMetrics position) {
-  if (position is ScrollPosition) {
-    return position;
+/// Distance from an edge into content required to re-arm that edge's haptic.
+@visibleForTesting
+double hyperosOverscrollEdgeHapticRearmDistance(ScrollMetrics position) {
+  final viewport = position.viewportDimension;
+  if (viewport <= 0) {
+    return 200.0;
   }
-  return Object.hash(
-    position.axis,
-    position.viewportDimension,
-    position.minScrollExtent,
-    position.maxScrollExtent,
-  );
-}
-
-Object _keyForNotification(ScrollNotification notification) {
-  final metrics = notification.metrics;
-  if (metrics is ScrollPosition) {
-    return metrics;
-  }
-  final context = notification.context;
-  if (context != null) {
-    final scrollable = Scrollable.maybeOf(context);
-    if (scrollable != null) {
-      return scrollable.position;
-    }
-    final ancestor = context.findAncestorStateOfType<ScrollableState>();
-    if (ancestor != null) {
-      return ancestor.position;
-    }
-  }
-  return Object.hash(
-    notification.depth,
-    metrics.axis,
-    metrics.viewportDimension,
-    metrics.minScrollExtent,
-    metrics.maxScrollExtent,
+  // Half viewport, never below 160px.
+  return math.max(
+    viewport * hyperosOverscrollEdgeHapticRearmViewportFraction,
+    160.0,
   );
 }
 
 Duration _overscrollEdgeHapticNow() {
-  // Physics unit tests call applyPhysicsToUserOffset without a binding.
   try {
     return SchedulerBinding.instance.currentSystemFrameTimeStamp;
   } catch (_) {
@@ -422,23 +404,27 @@ bool _isAtTopEdge(double pixels, double minExtent) =>
 bool _isAtBottomEdge(double pixels, double maxExtent) =>
     pixels >= maxExtent - hyperosOverscrollEdgeHapticEdgeEpsilonPx;
 
-bool _isInteriorForTopRearm(double pixels, double minExtent, double maxExtent) {
-  return pixels > minExtent + hyperosOverscrollEdgeHapticRearmPx &&
+bool _isInteriorForTopRearm({
+  required double pixels,
+  required double minExtent,
+  required double maxExtent,
+  required double rearmDistance,
+}) {
+  return pixels > minExtent + rearmDistance &&
       pixels <= maxExtent + hyperosOverscrollEdgeHapticEdgeEpsilonPx;
 }
 
-bool _isInteriorForBottomRearm(
-  double pixels,
-  double minExtent,
-  double maxExtent,
-) {
-  return pixels < maxExtent - hyperosOverscrollEdgeHapticRearmPx &&
+bool _isInteriorForBottomRearm({
+  required double pixels,
+  required double minExtent,
+  required double maxExtent,
+  required double rearmDistance,
+}) {
+  return pixels < maxExtent - rearmDistance &&
       pixels >= minExtent - hyperosOverscrollEdgeHapticEdgeEpsilonPx;
 }
 
 Future<void> _fireEdgeHaptic() async {
-  // Light tick (matches original HyperOS control haptics). Widget tests mock
-  // SystemChannels.platform and count selectionClick.
   try {
     await HapticFeedback.selectionClick();
   } catch (_) {
@@ -453,45 +439,56 @@ bool hyperosObserveScrollEdgeHaptic({
   Object? key,
   String source = 'unknown',
 }) {
-  // [source] retained for call-site readability; intentionally unused.
-  final _ = source;
-  final resolvedKey = key ?? _keyForScrollPosition(position);
+  // Axis is the stable latch key (see class doc). Optional [key]/[source]
+  // retained for call-site readability.
+  final _ = (key, source);
+  final axis = position.axis;
   final minExtent = position.minScrollExtent;
   final maxExtent = position.maxScrollExtent;
+  final rearmDistance = hyperosOverscrollEdgeHapticRearmDistance(position);
 
   final atTop = _isAtTopEdge(pixels, minExtent);
   final atBottom = _isAtBottomEdge(pixels, maxExtent);
 
   final state = _overscrollEdgeHapticStates.putIfAbsent(
-    resolvedKey,
+    axis,
     _OverscrollEdgeHapticState.new,
   );
 
   final scrollableRange = maxExtent - minExtent;
-  if (scrollableRange < hyperosOverscrollEdgeHapticRearmPx) {
-    if (atTop) {
-      state.topConsumed = true;
-    }
-    if (atBottom) {
-      state.bottomConsumed = true;
-    }
+
+  // Non-scrollable / near-zero range: never fire.
+  if (scrollableRange <= hyperosOverscrollEdgeHapticEdgeEpsilonPx) {
+    state.topConsumed = true;
+    state.bottomConsumed = true;
     state.lastPixels = pixels;
     return false;
   }
 
-  if (_isInteriorForTopRearm(pixels, minExtent, maxExtent)) {
-    state.topConsumed = false;
-  }
-  if (_isInteriorForBottomRearm(pixels, minExtent, maxExtent)) {
-    state.bottomConsumed = false;
+  final canRearm = scrollableRange >= rearmDistance;
+  if (canRearm) {
+    if (_isInteriorForTopRearm(
+      pixels: pixels,
+      minExtent: minExtent,
+      maxExtent: maxExtent,
+      rearmDistance: rearmDistance,
+    )) {
+      state.topConsumed = false;
+    }
+    if (_isInteriorForBottomRearm(
+      pixels: pixels,
+      minExtent: minExtent,
+      maxExtent: maxExtent,
+      rearmDistance: rearmDistance,
+    )) {
+      state.bottomConsumed = false;
+    }
   }
 
   var fired = false;
   final lastPixels = state.lastPixels;
 
   if (lastPixels == null) {
-    // Seed only: if first sample is already at an edge, consume it so parking
-    // / blank-gap overscroll does not fire until a real interior re-arm trip.
     if (atTop) {
       state.topConsumed = true;
     }
@@ -545,7 +542,6 @@ bool hyperosHandleOverscrollEdgeHaptic(ScrollNotification notification) {
   return hyperosObserveScrollEdgeHaptic(
     position: metrics,
     pixels: metrics.pixels,
-    key: _keyForNotification(notification),
     source: 'notification depth=${notification.depth}',
   );
 }
