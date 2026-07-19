@@ -362,6 +362,8 @@
   "copiedCoolapkId": "已複製酷安號",
   "copyQqGroupId": "複製群號",
   "copiedQqGroupId": "已複製 QQ 群號",
+  "copiedWechatOaName": "已複製公眾號名稱",
+  "feedbackWechatOaOpenHint": "已複製公眾號名稱，請到微信中貼上搜尋",
   "feedbackOpeningChannel": "正在打開…",
   "feedbackOpenChannelFailed": "無法打開，已複製相關資訊",
   "timetableProfilesTitle": "課表管理",
@@ -2735,6 +2737,15 @@
   "@feedbackQqGroupSubtitle": {
     "placeholders": {
       "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackWechatOaTitle": "微信公眾號",
+  "feedbackWechatOaSubtitle": "{name}",
+  "@feedbackWechatOaSubtitle": {
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }

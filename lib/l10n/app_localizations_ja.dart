@@ -998,6 +998,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get copiedQqGroupId => 'QQグループIDをコピーしました';
 
   @override
+  String get copiedWechatOaName => '公式アカウント名をコピーしました';
+
+  @override
+  String get feedbackWechatOaOpenHint =>
+      '公式アカウント名をコピーしました。WeChatで貼り付けて検索してください';
+
+  @override
   String get feedbackOpeningChannel => '開いています…';
 
   @override
@@ -4947,6 +4954,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String feedbackQqGroupSubtitle(String id) {
     return 'グループID：$id';
+  }
+
+  @override
+  String get feedbackWechatOaTitle => 'WeChat公式アカウント';
+
+  @override
+  String feedbackWechatOaSubtitle(String name) {
+    return '$name';
   }
 
   @override

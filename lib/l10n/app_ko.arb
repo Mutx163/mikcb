@@ -363,6 +363,8 @@
   "copiedCoolapkId": "Coolapk ID를 복사했습니다",
   "copyQqGroupId": "QQ 그룹 ID 복사",
   "copiedQqGroupId": "QQ 그룹 ID를 복사했습니다",
+  "copiedWechatOaName": "공식 계정 이름을 복사했습니다",
+  "feedbackWechatOaOpenHint": "공식 계정 이름을 복사했습니다. WeChat에서 붙여넣어 검색하세요",
   "feedbackOpeningChannel": "여는 중…",
   "feedbackOpenChannelFailed": "열 수 없습니다. 정보를 복사했습니다.",
   "timetableProfilesTitle": "시간표 관리",
@@ -2689,6 +2691,15 @@
   "@feedbackQqGroupSubtitle": {
     "placeholders": {
       "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackWechatOaTitle": "WeChat 공식 계정",
+  "feedbackWechatOaSubtitle": "{name}",
+  "@feedbackWechatOaSubtitle": {
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }

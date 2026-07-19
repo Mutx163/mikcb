@@ -1004,6 +1004,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get copiedQqGroupId => 'QQ 그룹 ID를 복사했습니다';
 
   @override
+  String get copiedWechatOaName => '공식 계정 이름을 복사했습니다';
+
+  @override
+  String get feedbackWechatOaOpenHint =>
+      '공식 계정 이름을 복사했습니다. WeChat에서 붙여넣어 검색하세요';
+
+  @override
   String get feedbackOpeningChannel => '여는 중…';
 
   @override
@@ -4978,6 +4985,14 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String feedbackQqGroupSubtitle(String id) {
     return '그룹 ID: $id';
+  }
+
+  @override
+  String get feedbackWechatOaTitle => 'WeChat 공식 계정';
+
+  @override
+  String feedbackWechatOaSubtitle(String name) {
+    return '$name';
   }
 
   @override

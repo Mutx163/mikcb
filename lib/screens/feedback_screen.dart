@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../services/bundled_assets.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 
@@ -42,6 +43,12 @@ class FeedbackScreen extends StatelessWidget {
   static const String _coolapkAppUrl = 'coolmarket://www.coolapk.com/u/739248';
   static const String _qqGroupId = '1077077989';
   static const String _qqGroupJoinKey = 'TMCg23sigjbqS5nYrBx0kxc7JcuwHN8Q';
+
+  /// WeChat official account display name (search / copy target).
+  static const String _wechatOaName = '轻屿课表';
+
+  /// Opens WeChat only; official accounts cannot be deep-linked reliably.
+  static const String _wechatOpenUrl = 'weixin://';
 
   static final String _qqGroupJoinAppUrl =
       'mqqopensdkapi://bizAgent/qm/qr?url='
@@ -134,12 +141,48 @@ class FeedbackScreen extends StatelessWidget {
                   successMessage: l10n.copiedQqGroupId,
                 ),
               ),
+              _FeedbackChannelTile(
+                brandBadge: const _FeedbackBrandBadge.png(
+                  assetPath: BundledAssets.launcherIcon,
+                ),
+                title: l10n.feedbackWechatOaTitle,
+                subtitle: l10n.feedbackWechatOaSubtitle(_wechatOaName),
+                onTap: () => _openWechatOfficialAccount(context),
+                onCopy: () => _copyText(
+                  context,
+                  _wechatOaName,
+                  successMessage: l10n.copiedWechatOaName,
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
   }
+}
+
+/// Copies the official-account name, then tries to open WeChat so the user can
+/// paste and search. Direct deep links into a specific OA profile are not
+/// supported by WeChat for third-party apps.
+Future<void> _openWechatOfficialAccount(BuildContext context) async {
+  if (!context.mounted) {
+    return;
+  }
+  final l10n = AppLocalizations.of(context)!;
+  await Clipboard.setData(
+    const ClipboardData(text: FeedbackScreen._wechatOaName),
+  );
+  if (!context.mounted) {
+    return;
+  }
+  await _openChannel(
+    context: context,
+    urls: const [FeedbackScreen._wechatOpenUrl],
+    fallbackCopyValue: FeedbackScreen._wechatOaName,
+    openingMessage: l10n.feedbackWechatOaOpenHint,
+    openingDuration: const Duration(seconds: 4),
+  );
 }
 
 /// Opens the first working URL in [urls].
@@ -153,6 +196,8 @@ Future<void> _openChannel({
   required BuildContext context,
   required List<String> urls,
   required String fallbackCopyValue,
+  String? openingMessage,
+  Duration openingDuration = const Duration(seconds: 2),
 }) async {
   debugPrint('[FeedbackChannel] tap; urls=${urls.join(' | ')}');
   if (!context.mounted) {
@@ -161,9 +206,9 @@ Future<void> _openChannel({
   final l10n = AppLocalizations.of(context)!;
   showAppToast(
     context,
-    message: l10n.feedbackOpeningChannel,
+    message: openingMessage ?? l10n.feedbackOpeningChannel,
     kind: AppToastKind.info,
-    duration: const Duration(seconds: 2),
+    duration: openingDuration,
   );
 
   for (final candidateUrl in urls) {

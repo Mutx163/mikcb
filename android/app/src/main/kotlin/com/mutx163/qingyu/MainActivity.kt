@@ -84,7 +84,7 @@ class MainActivity : FlutterActivity() {
 
         /** Schemes allowed for the `launch_url` channel (feedback deep links). */
         private val ALLOWED_LAUNCH_SCHEMES = setOf(
-            "https", "http", "coolmarket", "xhsdiscover", "mqqopensdkapi", "mqqapi"
+            "https", "http", "coolmarket", "xhsdiscover", "mqqopensdkapi", "mqqapi", "weixin"
         )
     }
 

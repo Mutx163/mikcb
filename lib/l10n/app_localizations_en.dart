@@ -1050,6 +1050,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copiedQqGroupId => 'QQ group ID copied';
 
   @override
+  String get copiedWechatOaName => 'Official account name copied';
+
+  @override
+  String get feedbackWechatOaOpenHint =>
+      'Official account name copied. Paste and search in WeChat';
+
+  @override
   String get feedbackOpeningChannel => 'Opening…';
 
   @override
@@ -5170,6 +5177,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String feedbackQqGroupSubtitle(String id) {
     return 'Group ID: $id';
+  }
+
+  @override
+  String get feedbackWechatOaTitle => 'WeChat Official Account';
+
+  @override
+  String feedbackWechatOaSubtitle(String name) {
+    return '$name';
   }
 
   @override

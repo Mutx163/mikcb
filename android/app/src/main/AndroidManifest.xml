@@ -2,10 +2,11 @@
     <queries>
         <package android:name="com.example.university_timetable" />
         <package android:name="com.example.university_timetable.debug" />
-        <!-- Feedback channel deep links (Coolapk / Xiaohongshu / QQ) -->
+        <!-- Feedback channel deep links (Coolapk / Xiaohongshu / QQ / WeChat) -->
         <package android:name="com.coolapk.market" />
         <package android:name="com.xingin.xhs" />
         <package android:name="com.tencent.mobileqq" />
+        <package android:name="com.tencent.mm" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
@@ -29,6 +30,10 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="mqqapi" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="weixin" />
         </intent>
     </queries>
 

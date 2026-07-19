@@ -1916,6 +1916,18 @@ abstract class AppLocalizations {
   /// **'已复制 QQ 群号'**
   String get copiedQqGroupId;
 
+  /// No description provided for @copiedWechatOaName.
+  ///
+  /// In zh, this message translates to:
+  /// **'已复制公众号名称'**
+  String get copiedWechatOaName;
+
+  /// No description provided for @feedbackWechatOaOpenHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已复制公众号名称，请到微信中粘贴搜索'**
+  String get feedbackWechatOaOpenHint;
+
   /// No description provided for @feedbackOpeningChannel.
   ///
   /// In zh, this message translates to:
@@ -8872,6 +8884,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'群号：{id}'**
   String feedbackQqGroupSubtitle(String id);
+
+  /// No description provided for @feedbackWechatOaTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'微信公众号'**
+  String get feedbackWechatOaTitle;
+
+  /// No description provided for @feedbackWechatOaSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'{name}'**
+  String feedbackWechatOaSubtitle(String name);
 
   /// No description provided for @copiedCurrentTimetable.
   ///

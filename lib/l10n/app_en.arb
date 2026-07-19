@@ -472,6 +472,8 @@
   "copiedCoolapkId": "Coolapk ID copied",
   "copyQqGroupId": "Copy QQ Group ID",
   "copiedQqGroupId": "QQ group ID copied",
+  "copiedWechatOaName": "Official account name copied",
+  "feedbackWechatOaOpenHint": "Official account name copied. Paste and search in WeChat",
   "feedbackOpeningChannel": "Opening…",
   "feedbackOpenChannelFailed": "Could not open. Details copied.",
   "timetableProfilesTitle": "Timetable Profiles",
@@ -2848,6 +2850,15 @@
   "@feedbackQqGroupSubtitle": {
     "placeholders": {
       "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackWechatOaTitle": "WeChat Official Account",
+  "feedbackWechatOaSubtitle": "{name}",
+  "@feedbackWechatOaSubtitle": {
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }

@@ -982,6 +982,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get copiedQqGroupId => '已复制 QQ 群号';
 
   @override
+  String get copiedWechatOaName => '已复制公众号名称';
+
+  @override
+  String get feedbackWechatOaOpenHint => '已复制公众号名称，请到微信中粘贴搜索';
+
+  @override
   String get feedbackOpeningChannel => '正在打开…';
 
   @override
@@ -4871,6 +4877,14 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String feedbackQqGroupSubtitle(String id) {
     return '群号：$id';
+  }
+
+  @override
+  String get feedbackWechatOaTitle => '微信公众号';
+
+  @override
+  String feedbackWechatOaSubtitle(String name) {
+    return '$name';
   }
 
   @override
@@ -9008,6 +9022,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get copiedQqGroupId => '已複製 QQ 群號';
 
   @override
+  String get copiedWechatOaName => '已複製公眾號名稱';
+
+  @override
+  String get feedbackWechatOaOpenHint => '已複製公眾號名稱，請到微信中貼上搜尋';
+
+  @override
   String get feedbackOpeningChannel => '正在打開…';
 
   @override
@@ -12744,6 +12764,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String feedbackQqGroupSubtitle(String id) {
     return '群号：$id';
+  }
+
+  @override
+  String get feedbackWechatOaTitle => '微信公眾號';
+
+  @override
+  String feedbackWechatOaSubtitle(String name) {
+    return '$name';
   }
 
   @override
@@ -16906,6 +16934,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get copiedQqGroupId => '已複製 QQ 群號';
 
   @override
+  String get copiedWechatOaName => '已複製公眾號名稱';
+
+  @override
+  String get feedbackWechatOaOpenHint => '已複製公眾號名稱，請到微信中貼上搜尋';
+
+  @override
   String get feedbackOpeningChannel => '正在打開…';
 
   @override
@@ -20642,6 +20676,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String feedbackQqGroupSubtitle(String id) {
     return '群号：$id';
+  }
+
+  @override
+  String get feedbackWechatOaTitle => '微信公眾號';
+
+  @override
+  String feedbackWechatOaSubtitle(String name) {
+    return '$name';
   }
 
   @override
