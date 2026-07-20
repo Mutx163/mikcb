@@ -1,5 +1,5 @@
 {
-  "releaseCount": 90,
+  "releaseCount": 89,
   "stable": {
     "channelLabel": "正式版",
     "version": "2.0.5",
@@ -14,14 +14,14 @@
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "2.0.5.3",
-    "title": "v2.0.5.3",
-    "publishedAt": "2026-07-20T14:20:16Z",
-    "body": "# v2.0.5.3\n\n### 优化\n\n- 课程统计「生成主图分享」：导出过程增加遮罩与进度指示，减少闪动与「卡住」感；缩短等待并优化截图编码，长图生成更顺畅\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.3",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.3/mikcb-2.0.5.3-arm64-v8a.apk",
-    "assetName": "mikcb-2.0.5.3-arm64-v8a.apk",
+    "version": "2.0.5.2",
+    "title": "v2.0.5.2",
+    "publishedAt": "2026-07-20T07:21:40Z",
+    "body": "# v2.0.5.2\n\n### 优化\n\n- 课程统计「生成主图分享」：修复正式包 / 预发布包下分享失败（提示 Local result 未初始化）的问题，导出长图更稳定\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.2",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.2/mikcb-2.0.5.2-arm64-v8a.apk",
+    "assetName": "mikcb-2.0.5.2-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 0
+    "assetDownloadCount": 2
   }
 }

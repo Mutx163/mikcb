@@ -1,24 +1,7 @@
 {
-  "generatedAt": "2026-07-20T14:34:41.938Z",
-  "releaseCount": 90,
+  "generatedAt": "2026-07-20T14:36:34.972Z",
+  "releaseCount": 89,
   "releases": [
-    {
-      "channelLabel": "预发布",
-      "version": "2.0.5.3",
-      "title": "v2.0.5.3",
-      "prerelease": true,
-      "publishedAt": "2026-07-20T14:20:16Z",
-      "description": "课程统计「生成主图分享」：导出过程增加遮罩与进度指示，减少闪动与「卡住」感；缩短等待并优化截图编码，长图生成更顺畅",
-      "highlights": [
-        {
-          "type": "优化",
-          "text": "课程统计「生成主图分享」：导出过程增加遮罩与进度指示，减少闪动与「卡住」感；缩短等待并优化截图编码，长图生成更顺畅"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.3",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.3/mikcb-2.0.5.3-arm64-v8a.apk",
-      "assetName": "mikcb-2.0.5.3-arm64-v8a.apk"
-    },
     {
       "channelLabel": "预发布",
       "version": "2.0.5.2",
@@ -253,6 +236,51 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3.1",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3.1/mikcb-1.3.1-arm64-v8a.apk",
       "assetName": "mikcb-1.3.1-arm64-v8a.apk"
+    },
+    {
+      "channelLabel": "正式版",
+      "version": "1.3",
+      "title": "v1.3",
+      "prerelease": false,
+      "publishedAt": "2026-07-05T08:16:43Z",
+      "description": "新增学期账单式课程统计：总览、成就徽章、数据故事、每日课时分布、必修/选修比例、课程排名，支持分享长图 · 新增局域网浏览器编辑课表：手机开本地 Web 服务，电脑浏览器改课表；Android 前台保活维持连接 · 新增表格导入课程：CSV 模板导入、周次表达式、教务系统快捷导入宏",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增学期账单式课程统计：总览、成就徽章、数据故事、每日课时分布、必修/选修比例、课程排名，支持分享长图"
+        },
+        {
+          "type": "新增",
+          "text": "新增局域网浏览器编辑课表：手机开本地 Web 服务，电脑浏览器改课表；Android 前台保活维持连接"
+        },
+        {
+          "type": "新增",
+          "text": "新增表格导入课程：CSV 模板导入、周次表达式、教务系统快捷导入宏"
+        },
+        {
+          "type": "新增",
+          "text": "新增统一 Forui 提示：普通 Toast、轻量短提示、带操作按钮提示（如撤销主题、切换镜像源）"
+        },
+        {
+          "type": "新增",
+          "text": "新增共用选择 Sheet：主题、学期周数、时段方案、课程颜色等，设置页与添加课程页复用"
+        },
+        {
+          "type": "新增",
+          "text": "课程简称新增「取前两字」快捷填充"
+        },
+        {
+          "type": "新增",
+          "text": "课程操作菜单补充编辑/调课/停课/删除次级操作与单双周标识"
+        },
+        {
+          "type": "优化",
+          "text": "全面迁移至 Forui 设计体系：课表、设置、添加课程/考试/日程、导入、关于、统计、用户引导、Live 诊断等界面统一新视觉"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3/mikcb-1.3-arm64-v8a.apk",
+      "assetName": "mikcb-1.3-arm64-v8a.apk"
     }
   ]
 }
