@@ -1,7 +1,52 @@
 {
-  "generatedAt": "2026-07-20T04:07:37.084Z",
-  "releaseCount": 87,
+  "generatedAt": "2026-07-20T06:48:10.729Z",
+  "releaseCount": 88,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.0.5.1",
+      "title": "v2.0.5.1",
+      "prerelease": true,
+      "publishedAt": "2026-07-20T06:47:37Z",
+      "description": "问题反馈：支持微信公众号通道——一键复制「轻屿课表」并可拉起微信搜索关注 · 考试提醒：支持系统级考试提醒调度，可设置考前多时段与自定义提醒时间 · 考试安排：列表页增加概览（今日 / 临近 / 进行中）与更清晰的条目布局",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "问题反馈：支持微信公众号通道——一键复制「轻屿课表」并可拉起微信搜索关注"
+        },
+        {
+          "type": "新增",
+          "text": "考试提醒：支持系统级考试提醒调度，可设置考前多时段与自定义提醒时间"
+        },
+        {
+          "type": "新增",
+          "text": "考试安排：列表页增加概览（今日 / 临近 / 进行中）与更清晰的条目布局"
+        },
+        {
+          "type": "新增",
+          "text": "桌面小组件：考试进行中时优先展示考试状态"
+        },
+        {
+          "type": "优化",
+          "text": "应用内提示（Toast）改为系统风格胶囊样式，更轻、更不挡内容"
+        },
+        {
+          "type": "优化",
+          "text": "弹窗与底部弹层支持磨砂 / 浮层样式，模糊强度跟随外观设置；关闭模糊时保持不透明底"
+        },
+        {
+          "type": "优化",
+          "text": "表单内选择行、节假日编辑等控件对齐输入框样式，设置页观感更统一"
+        },
+        {
+          "type": "优化",
+          "text": "时间模板：切换到节次更少的方案时，若课表仍有课排在超出节次，会拦截并提示「有课排到第 N 节」"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.1",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.1/mikcb-2.0.5.1-arm64-v8a.apk",
+      "assetName": "mikcb-2.0.5.1-arm64-v8a.apk"
+    },
     {
       "channelLabel": "正式版",
       "version": "2.0.5",
@@ -240,35 +285,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.15",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.15/mikcb-1.2.1.15-arm64-v8a.apk",
       "assetName": "mikcb-1.2.1.15-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "预发布",
-      "version": "1.2.1.14",
-      "title": "v1.2.1.14",
-      "prerelease": true,
-      "publishedAt": "2026-06-06T16:09:34Z",
-      "description": "新增导入流程调试日志，便于排查快捷导入问题 · 优化快捷导入录制按钮位置，移至每个适配器卡片内与\"网页登录导入\"同级显示 · 优化快捷导入登录弹窗稳定性，自动检测登录表单并填充已记住的密码",
-      "highlights": [
-        {
-          "type": "新增",
-          "text": "新增导入流程调试日志，便于排查快捷导入问题"
-        },
-        {
-          "type": "优化",
-          "text": "优化快捷导入录制按钮位置，移至每个适配器卡片内与\"网页登录导入\"同级显示"
-        },
-        {
-          "type": "优化",
-          "text": "优化快捷导入登录弹窗稳定性，自动检测登录表单并填充已记住的密码"
-        },
-        {
-          "type": "优化",
-          "text": "优化宏回放导入流程，脚本完成与课程数据到达之间的状态过渡更平滑"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.14",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.14/mikcb-1.2.1.14-arm64-v8a.apk",
-      "assetName": "mikcb-1.2.1.14-arm64-v8a.apk"
     }
   ]
 }
