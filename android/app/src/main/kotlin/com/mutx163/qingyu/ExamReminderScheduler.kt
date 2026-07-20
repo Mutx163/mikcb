@@ -120,31 +120,38 @@ object ExamReminderScheduler {
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
         val examId = intent.getStringExtra(EXTRA_EXAM_ID).orEmpty()
         val offsetMinutes = intent.getIntExtra(EXTRA_OFFSET_MINUTES, 0)
-        val title = intent.getStringExtra(EXTRA_TITLE)
-            ?: appContext.getString(R.string.notification_exam_reminder_default_title)
-        val body = intent.getStringExtra(EXTRA_BODY).orEmpty()
 
-        val stillScheduled = loadFires(appContext).any {
+        // Only deliver fires that are still in the persisted schedule. Receiver is
+        // exported for BOOT_COMPLETED etc.; never trust Intent extras alone or an
+        // external app can forge exam-reminder notifications.
+        val scheduled = loadFires(appContext)
+        val matched = scheduled.firstOrNull {
             it.requestCode == requestCode ||
-                (it.examId == examId && it.offsetMinutes == offsetMinutes)
+                (examId.isNotBlank() && it.examId == examId && it.offsetMinutes == offsetMinutes)
         }
-        if (!stillScheduled && requestCode < 0) {
+        if (matched == null) {
+            Log.w(TAG, "drop fire: not scheduled requestCode=$requestCode examId=$examId")
             return
+        }
+
+        // Prefer persisted copy over Intent extras so spoofed payloads cannot override.
+        val title = matched.title.takeIf { it.isNotBlank() }
+            ?: appContext.getString(R.string.notification_exam_reminder_default_title)
+        val body = matched.body.ifBlank {
+            appContext.getString(R.string.notification_exam_reminder_default_body)
         }
 
         postNotification(
             context = appContext,
-            notificationId = if (requestCode >= 0) requestCode else examId.hashCode(),
+            notificationId = if (matched.requestCode != 0) matched.requestCode else matched.examId.hashCode(),
             title = title,
-            body = body.ifBlank {
-                appContext.getString(R.string.notification_exam_reminder_default_body)
-            },
+            body = body,
         )
 
         // Drop the fired entry so later cancels / boot reschedule stay accurate.
-        val remaining = loadFires(appContext).filterNot {
-            it.requestCode == requestCode ||
-                (it.examId == examId && it.offsetMinutes == offsetMinutes)
+        val remaining = scheduled.filterNot {
+            it.requestCode == matched.requestCode ||
+                (it.examId == matched.examId && it.offsetMinutes == matched.offsetMinutes)
         }
         persistFires(appContext, remaining)
     }

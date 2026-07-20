@@ -20,6 +20,7 @@ void main() {
 
   Exam buildExam({
     String id = 'exam-1',
+    String name = '期末考试',
     DateTime? dateTime,
     String startTime = '08:30',
     String endTime = '10:30',
@@ -31,7 +32,7 @@ void main() {
     return Exam(
       id: id,
       courseId: 'course-1',
-      name: '期末考试',
+      name: name,
       dateTime: dateTime ?? DateTime(2026, 7, 20),
       startTime: startTime,
       endTime: endTime,
@@ -108,6 +109,27 @@ void main() {
       expect(fires.first.body, contains('A-301'));
       expect(fires.first.body, contains('12'));
     });
+
+    test(
+      'uses exam name as title and leaves blank for native i18n fallback',
+      () {
+        final named = ExamReminderService.buildFires(
+          exams: [buildExam(dateTime: DateTime(2026, 8, 1), name: ' 高等数学 ')],
+          resolveCourse: (_) => null,
+          now: DateTime(2026, 7, 1),
+        );
+        expect(named.first.title, '高等数学');
+
+        final blank = ExamReminderService.buildFires(
+          exams: [buildExam(dateTime: DateTime(2026, 8, 1), name: '   ')],
+          resolveCourse: (_) => null,
+          now: DateTime(2026, 7, 1),
+        );
+        // Empty title is intentional: native uses localized default title.
+        expect(blank.first.title, isEmpty);
+        expect(blank.first.title, isNot('考试提醒'));
+      },
+    );
 
     test('stableRequestCode is deterministic', () {
       expect(

@@ -111,13 +111,15 @@ class ExamReminderService {
         )) {
           continue;
         }
+        // Empty title → native falls back to localized
+        // notification_exam_reminder_default_title (do not hardcode zh-CN).
         fires.add(
           ExamReminderFire(
             examId: exam.id,
             offsetMinutes: offsetMinutes,
             fireAtMillis: fireAt.millisecondsSinceEpoch,
             examStartMillis: examStartMillis,
-            title: exam.name.trim().isEmpty ? '考试提醒' : exam.name.trim(),
+            title: exam.name.trim(),
             body: body,
             requestCode: stableRequestCode(exam.id, offsetMinutes),
           ),
