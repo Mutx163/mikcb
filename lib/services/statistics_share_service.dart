@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -23,13 +24,14 @@ import '../widgets/statistics/statistics_export_document.dart';
 class StatisticsShareService {
   StatisticsShareService._();
 
-  /// Target capture density for share-quality long images.
-  static const double _preferredPixelRatio = 3.0;
+  /// Share density: 2.5 balances sharpness vs main-thread paint cost.
+  static const double _preferredPixelRatio = 2.5;
 
   /// Conservative GPU texture edge so OPPO / mid-range Android stays safe.
   static const double _maxTextureEdge = 4096;
 
-  static const int _settleFrameCount = 5;
+  /// Layout settle frames (no artificial sleeps — those feel like freezes).
+  static const int _settleFrameCount = 2;
   static const double _maxExportLogicalHeight = 30000;
 
   /// Share images always use light scaffold so transparent holes never look black.
@@ -54,8 +56,27 @@ class StatisticsShareService {
       return;
     }
 
+    final overlayState = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlayState == null) {
+      appDebugLog('StatisticsShare', 'Overlay not found for export capture');
+      if (context.mounted) {
+        showAppToast(
+          context,
+          message: localizeServiceMessage(
+            l10n,
+            encodeServiceMessage('statistics_share_failed', {
+              'detail': 'overlay_missing',
+            }),
+          ),
+          kind: AppToastKind.error,
+        );
+      }
+      return;
+    }
+
     try {
       final pngBytes = await _captureExportDocumentPng(
+        overlayState: overlayState,
         context: context,
         options: options,
         semesterStats: semesterStats,
@@ -115,18 +136,13 @@ class StatisticsShareService {
   }
 
   static Future<Uint8List?> _captureExportDocumentPng({
+    required OverlayState overlayState,
     required BuildContext context,
     required StatisticsExportOptions options,
     required SemesterStats semesterStats,
     required List<Achievement> achievements,
     required List<DataStory> stories,
   }) async {
-    final overlayState = Overlay.maybeOf(context, rootOverlay: true);
-    if (overlayState == null) {
-      appDebugLog('StatisticsShare', 'Overlay not found for export capture');
-      return null;
-    }
-
     final mediaQuery = MediaQuery.of(context);
     final exportWidth = mediaQuery.size.width.clamp(320.0, 420.0);
     final textDirection = Directionality.of(context);
@@ -134,124 +150,148 @@ class StatisticsShareService {
     final exportForuiTheme = _exportLightForuiTheme(context);
     const scaffoldColor = _exportScaffoldColor;
 
-    Widget buildDocument() {
-      return StatisticsExportDocument(
-        options: options,
-        semesterStats: semesterStats,
-        achievements: achievements,
-        stories: stories,
-      );
-    }
+    final document = StatisticsExportDocument(
+      options: options,
+      semesterStats: semesterStats,
+      achievements: achievements,
+      stories: stories,
+    );
 
-    // Pass 1: measure full logical size at layout-only density.
-    final measuredSize = await _measureExportDocument(
-      overlayState: overlayState,
+    final session = _ExportCaptureSession(
       exportWidth: exportWidth,
       mediaQuery: mediaQuery,
       theme: exportTheme,
       foruiTheme: exportForuiTheme,
       textDirection: textDirection,
       scaffoldColor: scaffoldColor,
-      document: buildDocument(),
-    );
-    if (measuredSize == null ||
-        measuredSize.width <= 0 ||
-        measuredSize.height <= 0) {
-      appDebugLog('StatisticsShare', 'Failed to measure export document');
-      return null;
-    }
-
-    final pixelRatio = _preferredPixelRatio;
-    final fullPixelHeight = measuredSize.height * pixelRatio;
-    final maxSlicePixelHeight = _maxTextureEdge - 16;
-
-    appDebugLog(
-      'StatisticsShare',
-      'Export measure '
-          '${measuredSize.width.toStringAsFixed(1)}x'
-          '${measuredSize.height.toStringAsFixed(1)} '
-          'ratio=$pixelRatio pxH≈${fullPixelHeight.round()} '
-          'scaffold=#${scaffoldColor.toARGB32().toRadixString(16).padLeft(8, '0')}',
+      document: document,
     );
 
-    // Short enough: single high-DPI capture.
-    if (fullPixelHeight <= maxSlicePixelHeight) {
-      return _captureSingleShot(
-        overlayState: overlayState,
-        exportWidth: exportWidth,
-        mediaQuery: mediaQuery,
-        theme: exportTheme,
-        foruiTheme: exportForuiTheme,
-        textDirection: textDirection,
-        scaffoldColor: scaffoldColor,
-        document: buildDocument(),
-        pixelRatio: pixelRatio,
-      );
-    }
+    late OverlayEntry captureEntry;
+    captureEntry = OverlayEntry(builder: (_) => session.build());
+    // Capture first, then barrier on top — user only sees the spinner.
+    overlayState.insert(captureEntry);
 
-    // Tall content: capture vertical windows at full pixel ratio, then stitch.
-    final sliceLogicalHeight = maxSlicePixelHeight / pixelRatio;
-    final sliceCount = (measuredSize.height / sliceLogicalHeight).ceil();
-    appDebugLog(
-      'StatisticsShare',
-      'Tall export slices=$sliceCount sliceH=${sliceLogicalHeight.toStringAsFixed(1)}',
+    final barrierEntry = OverlayEntry(
+      builder: (_) {
+        return const Positioned.fill(
+          child: AbsorbPointer(
+            child: ColoredBox(
+              color: Color(0x61000000),
+              child: Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color(0xF5FFFFFF),
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
+    overlayState.insert(barrierEntry);
+    // Paint the spinner once before heavy capture work so the UI doesn't feel frozen.
+    await Future<void>.delayed(Duration.zero);
+    await WidgetsBinding.instance.endOfFrame;
 
-    final decodedSlices = <img.Image>[];
-    for (var sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++) {
-      final sliceTop = sliceIndex * sliceLogicalHeight;
-      final remaining = measuredSize.height - sliceTop;
-      if (remaining <= 0.5) {
-        break;
-      }
-      final thisSliceHeight = math.min(sliceLogicalHeight, remaining);
-      final slicePng = await _captureVerticalSlice(
-        overlayState: overlayState,
-        exportWidth: exportWidth,
-        mediaQuery: mediaQuery,
-        theme: exportTheme,
-        foruiTheme: exportForuiTheme,
-        textDirection: textDirection,
-        scaffoldColor: scaffoldColor,
-        document: buildDocument(),
-        sliceTop: sliceTop,
-        sliceHeight: thisSliceHeight,
-        pixelRatio: pixelRatio,
-      );
-      if (slicePng == null) {
-        appDebugLog('StatisticsShare', 'Slice $sliceIndex capture failed');
+    try {
+      // Pass 1: measure full logical size (one host, no tear-down mid-session).
+      session.configureFullDocument();
+      captureEntry.markNeedsBuild();
+      final measuredSize = await _waitAndReadSize(session.boundaryKey);
+      if (measuredSize == null ||
+          measuredSize.width <= 0 ||
+          measuredSize.height <= 0) {
+        appDebugLog('StatisticsShare', 'Failed to measure export document');
         return null;
       }
-      final decoded = img.decodePng(slicePng);
-      if (decoded == null) {
-        appDebugLog('StatisticsShare', 'Slice $sliceIndex decode failed');
+
+      const pixelRatio = _preferredPixelRatio;
+      final fullPixelHeight = measuredSize.height * pixelRatio;
+      final maxSlicePixelHeight = _maxTextureEdge - 16;
+
+      appDebugLog(
+        'StatisticsShare',
+        'Export measure '
+            '${measuredSize.width.toStringAsFixed(1)}x'
+            '${measuredSize.height.toStringAsFixed(1)} '
+            'ratio=$pixelRatio pxH≈${fullPixelHeight.round()}',
+      );
+
+      if (fullPixelHeight <= maxSlicePixelHeight) {
+        final rgbaImage = await _rasterizeKeyToRgba(
+          session.boundaryKey,
+          pixelRatio,
+          opaqueFill: scaffoldColor,
+        );
+        if (rgbaImage == null) {
+          return null;
+        }
+        return _encodePngOffMainThread(rgbaImage);
+      }
+
+      // Tall content: reuse one host, only change slice window.
+      final sliceLogicalHeight = maxSlicePixelHeight / pixelRatio;
+      final sliceCount = (measuredSize.height / sliceLogicalHeight).ceil();
+      appDebugLog(
+        'StatisticsShare',
+        'Tall export slices=$sliceCount sliceH=${sliceLogicalHeight.toStringAsFixed(1)}',
+      );
+
+      final decodedSlices = <img.Image>[];
+      for (var sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++) {
+        final sliceTop = sliceIndex * sliceLogicalHeight;
+        final remaining = measuredSize.height - sliceTop;
+        if (remaining <= 0.5) {
+          break;
+        }
+        final thisSliceHeight = math.min(sliceLogicalHeight, remaining);
+        session.configureSlice(
+          sliceTop: sliceTop,
+          sliceHeight: thisSliceHeight,
+        );
+        captureEntry.markNeedsBuild();
+        // Yield so the barrier spinner can paint between heavy frames.
+        await Future<void>.delayed(Duration.zero);
+        await _settleFrames();
+
+        final sliceImage = await _rasterizeKeyToRgba(
+          session.boundaryKey,
+          pixelRatio,
+          opaqueFill: scaffoldColor,
+        );
+        if (sliceImage == null) {
+          appDebugLog('StatisticsShare', 'Slice $sliceIndex capture failed');
+          return null;
+        }
+        decodedSlices.add(sliceImage);
+      }
+
+      if (decodedSlices.isEmpty) {
         return null;
       }
-      decodedSlices.add(decoded);
+
+      // Stitch on the main isolate (img.Image is not reliably isolate-sendable),
+      // then encode PNG off the UI thread.
+      final stitched = _stitchRgbaSlices(
+        slices: decodedSlices,
+        fillColor: scaffoldColor,
+      );
+      return _encodePngOffMainThread(stitched);
+    } finally {
+      barrierEntry.remove();
+      captureEntry.remove();
     }
-
-    if (decodedSlices.isEmpty) {
-      return null;
-    }
-
-    final stitchedWidth = decodedSlices
-        .map((slice) => slice.width)
-        .reduce(math.max);
-    final stitchedHeight = decodedSlices.fold<int>(
-      0,
-      (sum, slice) => sum + slice.height,
-    );
-    final canvas = img.Image(width: stitchedWidth, height: stitchedHeight);
-    // Opaque scaffold fill: any unpainted slice edge stays light gray, not black.
-    img.fill(canvas, color: _toRgba8(scaffoldColor));
-
-    var offsetY = 0;
-    for (final slice in decodedSlices) {
-      img.compositeImage(canvas, slice, dstY: offsetY);
-      offsetY += slice.height;
-    }
-
-    return Uint8List.fromList(img.encodePng(canvas, level: 6));
   }
 
   /// Force light Material theme so share cards stay readable in WeChat etc.
@@ -270,7 +310,7 @@ class StatisticsShareService {
     );
   }
 
-  /// Light Forui palette for export (Hyperos dark branches never run).
+  /// Light Forui palette so Hyperos dark branches never run during export.
   static FThemeData _exportLightForuiTheme(BuildContext context) {
     if (Theme.of(context).brightness == Brightness.light) {
       return context.theme;
@@ -278,166 +318,9 @@ class StatisticsShareService {
     return FThemes.neutral.light.touch;
   }
 
-  static Future<Size?> _measureExportDocument({
-    required OverlayState overlayState,
-    required double exportWidth,
-    required MediaQueryData mediaQuery,
-    required ThemeData theme,
-    required FThemeData foruiTheme,
-    required TextDirection textDirection,
-    required Color scaffoldColor,
-    required Widget document,
-  }) {
-    final measureKey = GlobalKey();
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) {
-        return _ExportCaptureHost(
-          exportWidth: exportWidth,
-          hostHeight: mediaQuery.size.height,
-          mediaQuery: mediaQuery,
-          theme: theme,
-          foruiTheme: foruiTheme,
-          textDirection: textDirection,
-          scaffoldColor: scaffoldColor,
-          maxHeight: _maxExportLogicalHeight,
-          child: RepaintBoundary(key: measureKey, child: document),
-        );
-      },
-    );
-
-    overlayState.insert(entry);
-    return _waitAndReadSize(measureKey).whenComplete(entry.remove);
-  }
-
-  static Future<Uint8List?> _captureSingleShot({
-    required OverlayState overlayState,
-    required double exportWidth,
-    required MediaQueryData mediaQuery,
-    required ThemeData theme,
-    required FThemeData foruiTheme,
-    required TextDirection textDirection,
-    required Color scaffoldColor,
-    required Widget document,
-    required double pixelRatio,
-  }) async {
-    final captureKey = GlobalKey();
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) {
-        return _ExportCaptureHost(
-          exportWidth: exportWidth,
-          hostHeight: mediaQuery.size.height,
-          mediaQuery: mediaQuery,
-          theme: theme,
-          foruiTheme: foruiTheme,
-          textDirection: textDirection,
-          scaffoldColor: scaffoldColor,
-          maxHeight: _maxExportLogicalHeight,
-          child: RepaintBoundary(key: captureKey, child: document),
-        );
-      },
-    );
-
-    overlayState.insert(entry);
-    try {
-      await _settleFrames();
-      return _rasterizeKey(captureKey, pixelRatio, opaqueFill: scaffoldColor);
-    } finally {
-      entry.remove();
-    }
-  }
-
-  static Future<Uint8List?> _captureVerticalSlice({
-    required OverlayState overlayState,
-    required double exportWidth,
-    required MediaQueryData mediaQuery,
-    required ThemeData theme,
-    required FThemeData foruiTheme,
-    required TextDirection textDirection,
-    required Color scaffoldColor,
-    required Widget document,
-    required double sliceTop,
-    required double sliceHeight,
-    required double pixelRatio,
-  }) async {
-    final captureKey = GlobalKey();
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) {
-        // Boundary must be constrained to [sliceHeight] so each capture is a
-        // viewport window, not the full document (which would break stitching).
-        return Positioned(
-          left: 0,
-          top: 0,
-          width: exportWidth,
-          height: sliceHeight,
-          child: IgnorePointer(
-            child: ExcludeSemantics(
-              child: Opacity(
-                // Non-zero so the subtree still paints (0 skips paint entirely).
-                opacity: 0.01,
-                child: MediaQuery(
-                  data: mediaQuery.copyWith(
-                    size: Size(exportWidth, sliceHeight),
-                    textScaler: mediaQuery.textScaler,
-                    padding: EdgeInsets.zero,
-                    viewPadding: EdgeInsets.zero,
-                    viewInsets: EdgeInsets.zero,
-                    platformBrightness: Brightness.light,
-                  ),
-                  child: Theme(
-                    data: theme,
-                    child: FTheme(
-                      data: foruiTheme,
-                      child: Directionality(
-                        textDirection: textDirection,
-                        child: Material(
-                          color: scaffoldColor,
-                          child: ClipRect(
-                            child: RepaintBoundary(
-                              key: captureKey,
-                              child: OverflowBox(
-                                alignment: Alignment.topLeft,
-                                minWidth: exportWidth,
-                                maxWidth: exportWidth,
-                                minHeight: 0,
-                                maxHeight: _maxExportLogicalHeight,
-                                child: Transform.translate(
-                                  offset: Offset(0, -sliceTop),
-                                  child: SizedBox(
-                                    width: exportWidth,
-                                    child: document,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    overlayState.insert(entry);
-    try {
-      await _settleFrames();
-      return _rasterizeKey(captureKey, pixelRatio, opaqueFill: scaffoldColor);
-    } finally {
-      entry.remove();
-    }
-  }
-
   static Future<void> _settleFrames() async {
     for (var frameIndex = 0; frameIndex < _settleFrameCount; frameIndex++) {
       await WidgetsBinding.instance.endOfFrame;
-      await Future<void>.delayed(const Duration(milliseconds: 20));
     }
   }
 
@@ -450,11 +333,8 @@ class StatisticsShareService {
     return renderObject.size;
   }
 
-  /// Rasterize [RepaintBoundary] then composite onto an opaque scaffold fill.
-  ///
-  /// Unpainted pixels from [toImage] are transparent black (0,0,0,0); without
-  /// this step, share previews (OPPO / WeChat) show large pure-black holes.
-  static Future<Uint8List?> _rasterizeKey(
+  /// Rasterize [RepaintBoundary] → opaque RGBA [img.Image] (no PNG round-trip).
+  static Future<img.Image?> _rasterizeKeyToRgba(
     GlobalKey key,
     double pixelRatio, {
     required Color opaqueFill,
@@ -463,17 +343,24 @@ class StatisticsShareService {
     if (renderObject is! RenderRepaintBoundary) {
       return null;
     }
-    // Do not read [RenderObject.debugNeedsPaint]: in release builds that
-    // getter throws LateInitializationError (assert-only assignment).
-    // Callers already settle frames before rasterizing.
+    // Never read [RenderObject.debugNeedsPaint] in release (throws LateError).
     final snapshot = await renderObject.toImage(pixelRatio: pixelRatio);
     ui.Image? composited;
     try {
       composited = await _compositeOntoOpaque(snapshot, opaqueFill);
       final byteData = await composited.toByteData(
-        format: ui.ImageByteFormat.png,
+        format: ui.ImageByteFormat.rawRgba,
       );
-      return byteData?.buffer.asUint8List();
+      if (byteData == null) {
+        return null;
+      }
+      return img.Image.fromBytes(
+        width: composited.width,
+        height: composited.height,
+        bytes: byteData.buffer,
+        bytesOffset: byteData.offsetInBytes,
+        order: img.ChannelOrder.rgba,
+      );
     } finally {
       snapshot.dispose();
       composited?.dispose();
@@ -499,6 +386,42 @@ class StatisticsShareService {
     }
   }
 
+  static Future<Uint8List> _encodePngOffMainThread(img.Image image) {
+    final width = image.width;
+    final height = image.height;
+    final rgbaBytes = Uint8List.fromList(
+      image.getBytes(order: img.ChannelOrder.rgba),
+    );
+    return Isolate.run(() {
+      final copy = img.Image.fromBytes(
+        width: width,
+        height: height,
+        bytes: rgbaBytes.buffer,
+        order: img.ChannelOrder.rgba,
+      );
+      return Uint8List.fromList(img.encodePng(copy, level: 6));
+    });
+  }
+
+  static img.Image _stitchRgbaSlices({
+    required List<img.Image> slices,
+    required Color fillColor,
+  }) {
+    final stitchedWidth = slices.map((slice) => slice.width).reduce(math.max);
+    final stitchedHeight = slices.fold<int>(
+      0,
+      (sum, slice) => sum + slice.height,
+    );
+    final canvas = img.Image(width: stitchedWidth, height: stitchedHeight);
+    img.fill(canvas, color: _toRgba8(fillColor));
+    var offsetY = 0;
+    for (final slice in slices) {
+      img.compositeImage(canvas, slice, dstY: offsetY);
+      offsetY += slice.height;
+    }
+    return canvas;
+  }
+
   static img.ColorRgba8 _toRgba8(Color color) {
     return img.ColorRgba8(
       (color.r * 255.0).round().clamp(0, 255),
@@ -509,40 +432,77 @@ class StatisticsShareService {
   }
 }
 
-/// On-screen (but invisible) host so Impeller still composites the layer.
-///
-/// Completely off-screen negative [Positioned.left] can skip rasterization on
-/// some ColorOS / Android 16 devices; keep the host in the viewport and hide
-/// it with near-zero [Opacity] instead.
-///
-/// Do not use [Opacity] of `0`: Flutter skips painting fully transparent
-/// subtrees, which leaves [RepaintBoundary.toImage] empty. Parent opacity
-/// does not multiply into a child boundary's [toImage] result.
-class _ExportCaptureHost extends StatelessWidget {
-  const _ExportCaptureHost({
+enum _ExportCaptureMode { fullDocument, slice }
+
+/// Mutable capture host config shared by one OverlayEntry for the whole export.
+class _ExportCaptureSession {
+  _ExportCaptureSession({
     required this.exportWidth,
-    required this.hostHeight,
     required this.mediaQuery,
     required this.theme,
     required this.foruiTheme,
     required this.textDirection,
     required this.scaffoldColor,
-    required this.maxHeight,
-    required this.child,
+    required this.document,
   });
 
   final double exportWidth;
-  final double hostHeight;
   final MediaQueryData mediaQuery;
   final ThemeData theme;
   final FThemeData foruiTheme;
   final TextDirection textDirection;
   final Color scaffoldColor;
-  final double maxHeight;
-  final Widget child;
+  final Widget document;
 
-  @override
-  Widget build(BuildContext context) {
+  final GlobalKey boundaryKey = GlobalKey();
+
+  _ExportCaptureMode mode = _ExportCaptureMode.fullDocument;
+  double sliceTop = 0;
+  double sliceHeight = 0;
+
+  void configureFullDocument() {
+    mode = _ExportCaptureMode.fullDocument;
+    sliceTop = 0;
+    sliceHeight = 0;
+  }
+
+  void configureSlice({required double sliceTop, required double sliceHeight}) {
+    mode = _ExportCaptureMode.slice;
+    this.sliceTop = sliceTop;
+    this.sliceHeight = sliceHeight;
+  }
+
+  Widget build() {
+    final hostHeight = mode == _ExportCaptureMode.slice
+        ? sliceHeight
+        : mediaQuery.size.height;
+
+    Widget content;
+    if (mode == _ExportCaptureMode.slice) {
+      content = ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: exportWidth,
+          maxWidth: exportWidth,
+          minHeight: 0,
+          maxHeight: StatisticsShareService._maxExportLogicalHeight,
+          child: Transform.translate(
+            offset: Offset(0, -sliceTop),
+            child: SizedBox(width: exportWidth, child: document),
+          ),
+        ),
+      );
+    } else {
+      content = OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: exportWidth,
+        maxWidth: exportWidth,
+        minHeight: 0,
+        maxHeight: StatisticsShareService._maxExportLogicalHeight,
+        child: SizedBox(width: exportWidth, child: document),
+      );
+    }
+
     return Positioned(
       left: 0,
       top: 0,
@@ -550,34 +510,28 @@ class _ExportCaptureHost extends StatelessWidget {
       height: hostHeight,
       child: IgnorePointer(
         child: ExcludeSemantics(
+          // Non-zero opacity so the subtree still paints (0 skips paint).
+          // Barrier above hides this from the user.
           child: Opacity(
-            // Non-zero so the subtree still paints (0 skips paint entirely).
-            opacity: 0.01,
-            child: OverflowBox(
-              alignment: Alignment.topLeft,
-              minWidth: exportWidth,
-              maxWidth: exportWidth,
-              minHeight: 0,
-              maxHeight: maxHeight,
-              child: MediaQuery(
-                data: mediaQuery.copyWith(
-                  size: Size(exportWidth, hostHeight),
-                  textScaler: mediaQuery.textScaler,
-                  padding: EdgeInsets.zero,
-                  viewPadding: EdgeInsets.zero,
-                  viewInsets: EdgeInsets.zero,
-                  platformBrightness: Brightness.light,
-                ),
-                child: Theme(
-                  data: theme,
-                  child: FTheme(
-                    data: foruiTheme,
-                    child: Directionality(
-                      textDirection: textDirection,
-                      child: Material(
-                        color: scaffoldColor,
-                        child: SizedBox(width: exportWidth, child: child),
-                      ),
+            opacity: 0.02,
+            child: MediaQuery(
+              data: mediaQuery.copyWith(
+                size: Size(exportWidth, hostHeight),
+                textScaler: mediaQuery.textScaler,
+                padding: EdgeInsets.zero,
+                viewPadding: EdgeInsets.zero,
+                viewInsets: EdgeInsets.zero,
+                platformBrightness: Brightness.light,
+              ),
+              child: Theme(
+                data: theme,
+                child: FTheme(
+                  data: foruiTheme,
+                  child: Directionality(
+                    textDirection: textDirection,
+                    child: Material(
+                      color: scaffoldColor,
+                      child: RepaintBoundary(key: boundaryKey, child: content),
                     ),
                   ),
                 ),
