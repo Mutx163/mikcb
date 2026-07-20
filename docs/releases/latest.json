@@ -1,5 +1,5 @@
 {
-  "releaseCount": 88,
+  "releaseCount": 89,
   "stable": {
     "channelLabel": "正式版",
     "version": "2.0.5",
@@ -14,13 +14,13 @@
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "2.0.5.1",
-    "title": "v2.0.5.1",
-    "publishedAt": "2026-07-20T06:47:37Z",
-    "body": "# v2.0.5.1\n\n### 新增\n\n- 问题反馈：支持微信公众号通道——一键复制「轻屿课表」并可拉起微信搜索关注\n- 考试提醒：支持系统级考试提醒调度，可设置考前多时段与自定义提醒时间\n- 考试安排：列表页增加概览（今日 / 临近 / 进行中）与更清晰的条目布局\n- 桌面小组件：考试进行中时优先展示考试状态\n\n### 优化\n\n- 应用内提示（Toast）改为系统风格胶囊样式，更轻、更不挡内容\n- 弹窗与底部弹层支持磨砂 / 浮层样式，模糊强度跟随外观设置；关闭模糊时保持不透明底\n- 表单内选择行、节假日编辑等控件对齐输入框样式，设置页观感更统一\n- 时间模板：切换到节次更少的方案时，若课表仍有课排在超出节次，会拦截并提示「有课排到第 N 节」\n- 添加考试：提醒时间支持自定义多档，编辑与展示更顺手\n- 课程统计「生成主图分享」：长图改为屏内捕获并铺不透明浅色底，修复部分安卓机（如 OPPO）导出大块黑底、标题与品牌条缺失；分享图统一浅色主题，更适合微信等场景\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.1",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.1/mikcb-2.0.5.1-arm64-v8a.apk",
-    "assetName": "mikcb-2.0.5.1-arm64-v8a.apk",
+    "version": "2.0.5.2",
+    "title": "v2.0.5.2",
+    "publishedAt": "2026-07-20T07:21:40Z",
+    "body": "# v2.0.5.2\n\n### 优化\n\n- 课程统计「生成主图分享」：修复正式包 / 预发布包下分享失败（提示 Local result 未初始化）的问题，导出长图更稳定\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.2",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.2/mikcb-2.0.5.2-arm64-v8a.apk",
+    "assetName": "mikcb-2.0.5.2-arm64-v8a.apk",
     "assetCount": 1,
     "assetDownloadCount": 0
   }

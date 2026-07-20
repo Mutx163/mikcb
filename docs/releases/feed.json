@@ -1,7 +1,24 @@
 {
-  "generatedAt": "2026-07-20T06:48:10.729Z",
-  "releaseCount": 88,
+  "generatedAt": "2026-07-20T07:22:15.046Z",
+  "releaseCount": 89,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.0.5.2",
+      "title": "v2.0.5.2",
+      "prerelease": true,
+      "publishedAt": "2026-07-20T07:21:40Z",
+      "description": "课程统计「生成主图分享」：修复正式包 / 预发布包下分享失败（提示 Local result 未初始化）的问题，导出长图更稳定",
+      "highlights": [
+        {
+          "type": "优化",
+          "text": "课程统计「生成主图分享」：修复正式包 / 预发布包下分享失败（提示 Local result 未初始化）的问题，导出长图更稳定"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.2",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.2/mikcb-2.0.5.2-arm64-v8a.apk",
+      "assetName": "mikcb-2.0.5.2-arm64-v8a.apk"
+    },
     {
       "channelLabel": "预发布",
       "version": "2.0.5.1",
@@ -264,27 +281,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3/mikcb-1.3-arm64-v8a.apk",
       "assetName": "mikcb-1.3-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "正式版",
-      "version": "1.2.1.15",
-      "title": "v1.2.1.15",
-      "prerelease": false,
-      "publishedAt": "2026-06-27T07:31:50Z",
-      "description": "优化超级岛在课程最后一周结束后，不再于下一周同一时刻误弹 · 优化应用启动时自动同步并结束已过期的超级岛提醒",
-      "highlights": [
-        {
-          "type": "优化",
-          "text": "优化超级岛在课程最后一周结束后，不再于下一周同一时刻误弹"
-        },
-        {
-          "type": "优化",
-          "text": "优化应用启动时自动同步并结束已过期的超级岛提醒"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.15",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.15/mikcb-1.2.1.15-arm64-v8a.apk",
-      "assetName": "mikcb-1.2.1.15-arm64-v8a.apk"
     }
   ]
 }
