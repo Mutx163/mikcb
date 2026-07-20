@@ -326,16 +326,20 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
+      // Floating [HyperosSheetFrame] (blur off on non-mobile CI): Material +
+      // [HyperosTokens.cardRadius], outer inset =
+      // [HyperosMiuixDialog.outsideMarginHorizontal] (+ safe area bottom).
       final cardMaterial = find.byWidgetPredicate(
         (widget) =>
             widget is Material &&
             widget.borderRadius is BorderRadius &&
             (widget.borderRadius as BorderRadius).topLeft.x ==
-                HyperosMiuixDialog.minBottomCornerRadius,
+                HyperosTokens.cardRadius,
       );
-      final cardRect = tester.getRect(cardMaterial);
-      const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
-      const bottomInset = HyperosMiuixBasicComponent.selectSheetBottomMargin;
+      expect(cardMaterial, findsWidgets);
+      final cardRect = tester.getRect(cardMaterial.first);
+      const horizontalInset = HyperosMiuixDialog.outsideMarginHorizontal;
+      const bottomInset = HyperosMiuixDialog.outsideMarginHorizontal;
       expect(cardRect.left, closeTo(horizontalInset, 1));
       expect(cardRect.right, closeTo(screenWidth - horizontalInset, 1));
       expect(cardRect.bottom, closeTo(screenHeight - bottomInset, 1));
@@ -422,15 +426,15 @@ void main() {
         ),
       );
 
-      final highlightRect = tester.getRect(
-        find
-            .byWidgetPredicate(
-              (widget) => widget is ColoredBox && widget.color.a > 0,
-            )
-            .first,
+      // Dialog selection is checkmark + primary title color, not a permanent
+      // fill. The pressable row still paints a full-width [ColoredBox] shell.
+      expect(find.byType(HyperosSelectedCheckmark), findsOneWidget);
+      final rowShell = find.byWidgetPredicate(
+        (widget) => widget is ColoredBox && widget.child is SizedBox,
       );
-
-      expect(highlightRect.width, cardWidth);
+      expect(rowShell, findsWidgets);
+      final shellRect = tester.getRect(rowShell.first);
+      expect(shellRect.width, cardWidth);
     });
   });
 
