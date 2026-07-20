@@ -463,9 +463,9 @@ class StatisticsShareService {
     if (renderObject is! RenderRepaintBoundary) {
       return null;
     }
-    if (renderObject.debugNeedsPaint) {
-      await _settleFrames();
-    }
+    // Do not read [RenderObject.debugNeedsPaint]: in release builds that
+    // getter throws LateInitializationError (assert-only assignment).
+    // Callers already settle frames before rasterizing.
     final snapshot = await renderObject.toImage(pixelRatio: pixelRatio);
     ui.Image? composited;
     try {

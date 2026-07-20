@@ -38,9 +38,8 @@ abstract final class FrostedCapture {
     if (renderObject is! RenderRepaintBoundary) {
       return null;
     }
-    if (renderObject.debugNeedsPaint) {
-      return null;
-    }
+    // Never gate on [RenderObject.debugNeedsPaint] — release mode strips the
+    // assert body and throws LateInitializationError: Local 'result'...
     try {
       return renderObject.toImage(pixelRatio: pixelRatio);
     } catch (_) {
