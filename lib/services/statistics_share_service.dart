@@ -473,33 +473,46 @@ class _ExportCaptureSession {
   }
 
   Widget build() {
+    // Host viewport may be only one screen tall; the document itself must be
+    // measured/captured from *inside* OverflowBox. Putting [RepaintBoundary]
+    // outside OverflowBox makes size == hostHeight (one screen) and kills
+    // long-image export.
     final hostHeight = mode == _ExportCaptureMode.slice
         ? sliceHeight
         : mediaQuery.size.height;
 
-    Widget content;
+    final Widget themedBody;
     if (mode == _ExportCaptureMode.slice) {
-      content = ClipRect(
-        child: OverflowBox(
-          alignment: Alignment.topLeft,
-          minWidth: exportWidth,
-          maxWidth: exportWidth,
-          minHeight: 0,
-          maxHeight: StatisticsShareService._maxExportLogicalHeight,
-          child: Transform.translate(
-            offset: Offset(0, -sliceTop),
-            child: SizedBox(width: exportWidth, child: document),
+      // Viewport-sized boundary: only the visible slice is rasterized.
+      themedBody = ClipRect(
+        child: RepaintBoundary(
+          key: boundaryKey,
+          child: OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: exportWidth,
+            maxWidth: exportWidth,
+            minHeight: 0,
+            maxHeight: StatisticsShareService._maxExportLogicalHeight,
+            child: Transform.translate(
+              offset: Offset(0, -sliceTop),
+              child: SizedBox(width: exportWidth, child: document),
+            ),
           ),
         ),
       );
     } else {
-      content = OverflowBox(
+      // Full document boundary lives under OverflowBox so its height is the
+      // intrinsic document height, not the screen height.
+      themedBody = OverflowBox(
         alignment: Alignment.topLeft,
         minWidth: exportWidth,
         maxWidth: exportWidth,
         minHeight: 0,
         maxHeight: StatisticsShareService._maxExportLogicalHeight,
-        child: SizedBox(width: exportWidth, child: document),
+        child: RepaintBoundary(
+          key: boundaryKey,
+          child: SizedBox(width: exportWidth, child: document),
+        ),
       );
     }
 
@@ -529,10 +542,7 @@ class _ExportCaptureSession {
                   data: foruiTheme,
                   child: Directionality(
                     textDirection: textDirection,
-                    child: Material(
-                      color: scaffoldColor,
-                      child: RepaintBoundary(key: boundaryKey, child: content),
-                    ),
+                    child: Material(color: scaffoldColor, child: themedBody),
                   ),
                 ),
               ),
