@@ -10,12 +10,7 @@ import 'data_transfer_service.dart';
 import 'partner_timetable_service.dart';
 import 'webdav_client_service.dart';
 
-enum CoupleWebdavPullStatus {
-  imported,
-  updated,
-  unchanged,
-  failed,
-}
+enum CoupleWebdavPullStatus { imported, updated, unchanged, failed }
 
 class CoupleWebdavPullResult {
   final CoupleWebdavPullStatus status;
@@ -89,8 +84,7 @@ class CoupleWebdavService {
   }) async {
     final resolvedConfig = config ?? await loadConfig();
     final resolvedUsername = username?.trim() ?? resolvedConfig.username.trim();
-    final resolvedPassword =
-        password ?? await _credentialsStore.readPassword();
+    final resolvedPassword = password ?? await _credentialsStore.readPassword();
     if (resolvedUsername.isEmpty ||
         resolvedPassword == null ||
         resolvedPassword.isEmpty) {
@@ -135,14 +129,20 @@ class CoupleWebdavService {
       client: client,
       remotePath: config.partnerTimetableRemotePath,
     );
-    if (bytes == null || bytes.isEmpty) {
+    final resolvedBytes =
+        bytes ??
+        await _clientService.getBytes(
+          client: client,
+          remotePath: config.legacyPartnerTimetableRemotePath,
+        );
+    if (resolvedBytes == null || resolvedBytes.isEmpty) {
       return const CoupleWebdavPullResult(
         status: CoupleWebdavPullStatus.failed,
         errorCode: 'couple_webdav_partner_file_missing',
       );
     }
 
-    final content = utf8.decode(bytes);
+    final content = utf8.decode(resolvedBytes);
     if (_dataTransferService.isFullBackupJson(content)) {
       return const CoupleWebdavPullResult(
         status: CoupleWebdavPullStatus.failed,
@@ -220,7 +220,7 @@ class CoupleWebdavService {
     );
     await _clientService.putBytes(
       client: client,
-      remotePath: config.partnerTimetableRemotePath,
+      remotePath: config.mineTimetableRemotePath,
       bytes: Uint8List.fromList(utf8.encode(content)),
     );
     return null;

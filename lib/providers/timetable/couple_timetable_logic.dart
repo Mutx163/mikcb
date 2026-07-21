@@ -2,21 +2,14 @@ import '../../models/course.dart';
 import '../../models/timetable_settings.dart';
 
 /// Semantic category for a course in couple overlay view.
-enum CoupleCourseKind {
-  mine,
-  partner,
-  together,
-}
+enum CoupleCourseKind { mine, partner, together }
 
 /// A minute-based time interval [startMinutes, endMinutes] within a day.
 class MinuteInterval {
   final int startMinutes;
   final int endMinutes;
 
-  const MinuteInterval({
-    required this.startMinutes,
-    required this.endMinutes,
-  });
+  const MinuteInterval({required this.startMinutes, required this.endMinutes});
 
   int get durationMinutes => endMinutes - startMinutes;
 }
@@ -69,29 +62,34 @@ class CoupleTimetableLogic {
       return false;
     }
 
-    final overlapStartWeek = left.startWeek > right.startWeek
-        ? left.startWeek
-        : right.startWeek;
-    final overlapEndWeek = left.endWeek < right.endWeek
-        ? left.endWeek
-        : right.endWeek;
-    if (overlapStartWeek > overlapEndWeek) {
-      return false;
-    }
-
     if (week != null) {
-      if (week < overlapStartWeek || week > overlapEndWeek) {
-        return false;
-      }
       return left.isInWeek(week) && right.isInWeek(week);
     }
 
-    for (var w = overlapStartWeek; w <= overlapEndWeek; w++) {
-      if (left.isInWeek(w) && right.isInWeek(w)) {
+    final candidateWeeks = <int>{
+      ..._courseWeekCandidates(left),
+      ..._courseWeekCandidates(right),
+    };
+    for (final candidateWeek in candidateWeeks) {
+      if (left.isInWeek(candidateWeek) && right.isInWeek(candidateWeek)) {
         return true;
       }
     }
     return false;
+  }
+
+  static Set<int> _courseWeekCandidates(Course course) {
+    final custom = course.normalizedCustomWeeks;
+    if (custom != null && custom.isNotEmpty) {
+      return custom.toSet();
+    }
+    final weeks = <int>{};
+    final start = course.startWeek < 1 ? 1 : course.startWeek;
+    final end = course.endWeek < start ? start : course.endWeek;
+    for (var week = start; week <= end; week++) {
+      weeks.add(week);
+    }
+    return weeks;
   }
 
   static bool isTogetherClass(
@@ -108,8 +106,7 @@ class CoupleTimetableLogic {
     )) {
       return false;
     }
-    return mine.name.trim().toLowerCase() ==
-        partner.name.trim().toLowerCase();
+    return mine.name.trim().toLowerCase() == partner.name.trim().toLowerCase();
   }
 
   static CoupleCourseKind classifyMineCourse(
@@ -174,8 +171,7 @@ class CoupleTimetableLogic {
   ) {
     return courses
         .where(
-          (course) =>
-              course.dayOfWeek == dayOfWeek && course.isInWeek(week),
+          (course) => course.dayOfWeek == dayOfWeek && course.isInWeek(week),
         )
         .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
@@ -215,11 +211,7 @@ class CoupleTimetableLogic {
       return const [];
     }
     final busy = busyIntervalsForDay(courses, dayOfWeek, week, sections);
-    return invertMinuteIntervals(
-      busy,
-      rangeStart: dayStart,
-      rangeEnd: dayEnd,
-    );
+    return invertMinuteIntervals(busy, rangeStart: dayStart, rangeEnd: dayEnd);
   }
 
   static List<MinuteInterval> sharedFreeIntervalsForDay({

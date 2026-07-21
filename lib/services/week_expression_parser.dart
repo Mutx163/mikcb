@@ -39,19 +39,24 @@ class WeekExpressionParser {
 
     final result = <int>{};
     final parts = normalized.split(_tokenSeparatorPattern);
+    var nonEmptyTokenCount = 0;
+    var anyTokenParity = false;
     for (final part in parts) {
       var token = part.trim();
       if (token.isEmpty) {
         continue;
       }
+      nonEmptyTokenCount += 1;
 
       String? tokenParity;
       if (token.endsWith('\u5355')) {
         tokenParity = '\u5355';
         token = token.substring(0, token.length - 1);
+        anyTokenParity = true;
       } else if (token.endsWith('\u53cc')) {
         tokenParity = '\u53cc';
         token = token.substring(0, token.length - 1);
+        anyTokenParity = true;
       }
 
       final rangeMatch = RegExp(r'^(\d+)-(\d+)$').firstMatch(token);
@@ -70,10 +75,12 @@ class WeekExpressionParser {
         }
         if (end > 30) {
           throw FormatException(
-            encodeServiceMessage('week_range_too_large', {'itemName': itemName}),
+            encodeServiceMessage('week_range_too_large', {
+              'itemName': itemName,
+            }),
           );
         }
-        var weeks = <int>[];
+        final weeks = <int>[];
         for (var week = start; week <= end; week++) {
           weeks.add(week);
         }
@@ -84,19 +91,23 @@ class WeekExpressionParser {
       final parsed = int.tryParse(token);
       if (parsed == null || parsed < 1) {
         throw FormatException(
-          encodeServiceMessage(
-            'week_token_unrecognized',
-            {'itemName': itemName, 'token': token},
-          ),
+          encodeServiceMessage('week_token_unrecognized', {
+            'itemName': itemName,
+            'token': token,
+          }),
         );
       }
       result.addAll(_applyParity([parsed], tokenParity));
     }
 
     var weeks = result.toList()..sort();
-    if (modeMatch == '\u5355') {
+    // Global (单)/(双) only applies to a single token expression, so multi-range
+    // strings like "1-5、7-11(单)" are not incorrectly filtered as a whole.
+    final applyGlobalParity =
+        modeMatch != null && !anyTokenParity && nonEmptyTokenCount <= 1;
+    if (applyGlobalParity && modeMatch == '\u5355') {
       weeks = weeks.where((week) => week.isOdd).toList();
-    } else if (modeMatch == '\u53cc') {
+    } else if (applyGlobalParity && modeMatch == '\u53cc') {
       weeks = weeks.where((week) => week.isEven).toList();
     }
 
@@ -122,14 +133,11 @@ class WeekExpressionParser {
       return weeks;
     }
     warnings?.add(
-      encodeServiceMessage(
-        'weeks_exceed_semester_clamped',
-        {
-          'itemName': itemName,
-          'semesterWeekCount': semesterWeekCount,
-          'weeks': over.join('\u3001'),
-        },
-      ),
+      encodeServiceMessage('weeks_exceed_semester_clamped', {
+        'itemName': itemName,
+        'semesterWeekCount': semesterWeekCount,
+        'weeks': over.join('\u3001'),
+      }),
     );
     return weeks.where((week) => week <= semesterWeekCount).toList();
   }

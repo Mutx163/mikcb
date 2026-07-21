@@ -104,10 +104,9 @@ class WarehouseRepositoryService {
         .toList(growable: false);
     if (adapters.isEmpty) {
       throw WarehouseRepositoryException(
-        encodeServiceMessage(
-          'warehouse_no_adapters',
-          {'schoolName': school.name},
-        ),
+        encodeServiceMessage('warehouse_no_adapters', {
+          'schoolName': school.name,
+        }),
       );
     }
     return WarehouseAdaptersIndex(adapters: adapters);
@@ -134,31 +133,32 @@ class WarehouseRepositoryService {
     final candidates = _buildCandidateUris(uri, effectiveOptions);
     _log('请求 $uri,候选 ${candidates.length} 个');
 
-    // 所有候选并行竞争,谁先返回 200 用谁
-    final result = await raceFutures<http.Response, String>(
-      candidates.map((candidate) {
-        return _client.get(
+    // Prefer the official raw URL first so a poisoned mirror cannot win a race.
+    // Fall back to remaining candidates only when the primary fetch fails.
+    final orderedCandidates = <Uri>[
+      uri,
+      ...candidates.where((candidate) => candidate != uri),
+    ];
+    Object? lastError;
+    for (final candidate in orderedCandidates) {
+      try {
+        final response = await _client.get(
           candidate,
           headers: const {
             'Accept': 'text/plain, */*',
             'User-Agent': 'mikcb-warehouse-client',
           },
         );
-      }).toList(),
-      (response) {
         if (response.statusCode == 200) {
           return utf8.decode(response.bodyBytes);
         }
-        return null;
-      },
-    );
-
-    if (result.winner != null) {
-      return result.winner!;
+        lastError = StateError('http_${response.statusCode}');
+      } catch (error) {
+        lastError = error;
+      }
     }
 
-    final lastError = result.errors.isNotEmpty ? result.errors.last : null;
-    final candidatesCount = candidates.length;
+    final candidatesCount = orderedCandidates.length;
     throw _buildFetchError(
       effectiveOptions,
       lastError,

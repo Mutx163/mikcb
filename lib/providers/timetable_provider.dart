@@ -2008,6 +2008,8 @@ class TimetableProvider with ChangeNotifier {
     final normalizedStart = _startOfWeek(semesterStart);
     final week = (normalizedNow.difference(normalizedStart).inDays ~/ 7) + 1;
     final targetWeek = week < 1 ? 1 : week;
+    // Stay within the user-configured semester length. Do not auto-expand
+    // semesterWeekCount when the calendar has moved past the last teaching week.
     _currentDateWeek = targetWeek > _settings.semesterWeekCount
         ? _settings.semesterWeekCount
         : targetWeek;
@@ -2078,30 +2080,36 @@ class TimetableProvider with ChangeNotifier {
       return false;
     }
 
-    final overlapStartWeek = left.startWeek > right.startWeek
-        ? left.startWeek
-        : right.startWeek;
-    final overlapEndWeek = left.endWeek < right.endWeek
-        ? left.endWeek
-        : right.endWeek;
-    if (overlapStartWeek > overlapEndWeek) {
-      return false;
-    }
-
+    // Use isInWeek (respects customWeeks), not startWeek/endWeek envelope alone.
+    // Warehouse imports often leave default 1–16 while customWeeks sits outside.
     if (week != null) {
-      if (week < overlapStartWeek || week > overlapEndWeek) {
-        return false;
-      }
       return left.isInWeek(week) && right.isInWeek(week);
     }
 
-    for (var week = overlapStartWeek; week <= overlapEndWeek; week++) {
-      if (left.isInWeek(week) && right.isInWeek(week)) {
+    final candidateWeeks = <int>{
+      ..._courseWeekCandidates(left),
+      ..._courseWeekCandidates(right),
+    };
+    for (final candidateWeek in candidateWeeks) {
+      if (left.isInWeek(candidateWeek) && right.isInWeek(candidateWeek)) {
         return true;
       }
     }
-
     return false;
+  }
+
+  Set<int> _courseWeekCandidates(Course course) {
+    final custom = course.normalizedCustomWeeks;
+    if (custom != null && custom.isNotEmpty) {
+      return custom.toSet();
+    }
+    final weeks = <int>{};
+    final start = course.startWeek < 1 ? 1 : course.startWeek;
+    final end = course.endWeek < start ? start : course.endWeek;
+    for (var week = start; week <= end; week++) {
+      weeks.add(week);
+    }
+    return weeks;
   }
 
   Course _normalizeCourse(Course course) {

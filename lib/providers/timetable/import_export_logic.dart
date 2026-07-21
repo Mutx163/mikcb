@@ -18,6 +18,9 @@ class ImportedCourseSyncResult {
 class ImportExportLogic {
   ImportExportLogic._();
 
+  /// Hard cap for semester week count expansion during import.
+  static const int maxAllowedSemesterWeekCount = 30;
+
   static int previewImportedCourseRequiredSectionCount({
     required List<Course> importedCourses,
     required int currentSectionCount,
@@ -36,12 +39,13 @@ class ImportExportLogic {
     required int fallbackWeekCount,
   }) {
     if (courses.isEmpty) {
-      return fallbackWeekCount;
+      return fallbackWeekCount.clamp(1, maxAllowedSemesterWeekCount);
     }
 
-    return courses
+    final raw = courses
         .map((course) => course.normalizedCustomWeeks?.last ?? course.endWeek)
         .reduce((left, right) => left > right ? left : right);
+    return raw.clamp(1, maxAllowedSemesterWeekCount);
   }
 
   static List<SectionTime> buildExpandedSections(

@@ -26,6 +26,7 @@ import '../models/timetable_settings.dart';
 import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
+import '../providers/timetable/import_export_logic.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
@@ -4382,12 +4383,36 @@ class _WarehouseAdapterWebLoginScreenState
     String requestId,
     Object? value,
   ) async {
-    final encoded = jsonEncode(value);
+    if (!_isSafeBridgeRequestId(requestId)) {
+      _debugImportLog('reject unsafe bridge requestId');
+      return;
+    }
+    final encodedValue = jsonEncode(value);
+    final encodedRequestId = jsonEncode(requestId);
     await _controller.runJavaScript(
       "window.__qingyuResolvers = window.__qingyuResolvers || {}; "
-      "window.__qingyuResolvers['$requestId']?.($encoded); "
-      "delete window.__qingyuResolvers['$requestId'];",
+      "window.__qingyuResolvers[$encodedRequestId]?.($encodedValue); "
+      "delete window.__qingyuResolvers[$encodedRequestId];",
     );
+  }
+
+  /// Bridge request ids must be alphanumeric tokens (no quotes / script).
+  bool _isSafeBridgeRequestId(String requestId) {
+    if (requestId.isEmpty || requestId.length > 128) {
+      return false;
+    }
+    for (var index = 0; index < requestId.length; index++) {
+      final codeUnit = requestId.codeUnitAt(index);
+      final isUpperLetter = codeUnit >= 65 && codeUnit <= 90;
+      final isLowerLetter = codeUnit >= 97 && codeUnit <= 122;
+      final isDigit = codeUnit >= 48 && codeUnit <= 57;
+      final isAllowedSymbol =
+          codeUnit == 95 || codeUnit == 46 || codeUnit == 45;
+      if (!isUpperLetter && !isLowerLetter && !isDigit && !isAllowedSymbol) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> _handleImportedCoursesJson(String payload) async {
@@ -4638,7 +4663,11 @@ class _WarehouseAdapterWebLoginScreenState
       final weeks =
           (map['weeks'] as List<dynamic>?)
               ?.map((item) => (item as num).toInt())
-              .where((item) => item > 0)
+              .where(
+                (item) =>
+                    item > 0 &&
+                    item <= ImportExportLogic.maxAllowedSemesterWeekCount,
+              )
               .toSet()
               .toList()
             ?..sort();
@@ -4650,6 +4679,11 @@ class _WarehouseAdapterWebLoginScreenState
           weeks.isEmpty) {
         continue;
       }
+      final normalizedDay = Course.normalizeDayOfWeek(day);
+      final normalizedSections = Course.normalizeSections(
+        startSection: startSection,
+        endSection: endSection,
+      );
       courses.add(
         Course(
           id: const Uuid().v4(),
@@ -4660,9 +4694,11 @@ class _WarehouseAdapterWebLoginScreenState
           location: location.isEmpty
               ? AppLocalizations.of(context)!.unknownLocation
               : location,
-          dayOfWeek: day,
-          startSection: startSection,
-          endSection: endSection,
+          dayOfWeek: normalizedDay,
+          startSection: normalizedSections.startSection,
+          endSection: normalizedSections.endSection,
+          startWeek: weeks.first,
+          endWeek: weeks.last,
           startTime: '',
           endTime: '',
           customWeeks: weeks,
