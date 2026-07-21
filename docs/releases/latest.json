@@ -1,5 +1,5 @@
 {
-  "releaseCount": 89,
+  "releaseCount": 90,
   "stable": {
     "channelLabel": "正式版",
     "version": "2.0.5",
@@ -14,14 +14,14 @@
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "2.0.5.2",
-    "title": "v2.0.5.2",
-    "publishedAt": "2026-07-20T07:21:40Z",
-    "body": "# v2.0.5.2\n\n### 优化\n\n- 课程统计「生成主图分享」：修复正式包 / 预发布包下分享失败（提示 Local result 未初始化）的问题，导出长图更稳定\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.2",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.2/mikcb-2.0.5.2-arm64-v8a.apk",
-    "assetName": "mikcb-2.0.5.2-arm64-v8a.apk",
+    "version": "2.0.5.4",
+    "title": "v2.0.5.4",
+    "publishedAt": "2026-07-21T04:02:20Z",
+    "body": "# v2.0.5.4\n\n### 优化\n\n- 课程统计「生成主图分享」：修复长图导出时高度被截成一屏的问题，完整长图可正确测量与生成\n- 考试提醒：仅展示本机已计划的提醒内容，通知标题与正文更可靠\n- 考试提醒：考试名称为空时，默认标题随系统语言显示\n- 考试提醒：修改或调整关联课程后自动刷新提醒内容，减少通知中地点等信息过期\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.4",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.4/mikcb-2.0.5.4-arm64-v8a.apk",
+    "assetName": "mikcb-2.0.5.4-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 2
+    "assetDownloadCount": 0
   }
 }
