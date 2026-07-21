@@ -147,6 +147,7 @@ class WebdavSyncService {
     CloudBackupSource backupSource = CloudBackupSource.auto,
     bool writeHistory = true,
     bool updateSyncTimestamps = true,
+
     /// Auto upload must not silently overwrite a drifted remote.
     /// Manual keep-local / force paths pass [force].
     WebdavUploadConflictPolicy conflictPolicy =
@@ -510,10 +511,13 @@ class WebdavSyncService {
         localContentSha256: localSnapshot.contentSha256,
         remoteContentSha256: remoteMeta.contentSha256,
       )) {
-        final localChangedSinceUpload =
-            config.lastUploadedLocalHash != null &&
-            localSnapshot.contentSha256 != config.lastUploadedLocalHash;
-        if (!allowConflictPrompt && localChangedSinceUpload) {
+        if (!allowConflictPrompt &&
+            webdavBackgroundPullShouldCancel(
+              lastUploadedLocalHash: config.lastUploadedLocalHash,
+              lastAppliedRemoteHash: config.lastAppliedRemoteHash,
+              localContentSha256: localSnapshot.contentSha256,
+              localHasUserData: _localSnapshotHasUserData(provider),
+            )) {
           return const WebdavSyncResult(
             kind: WebdavSyncResultKind.cancelled,
             message: 'local_changes_pending_sync',
@@ -551,6 +555,20 @@ class WebdavSyncService {
       }
 
       final content = utf8.decode(bytes);
+      final parsed = _snapshotService.parseSnapshotJson(content);
+      final snapshotHash = parsed.contentSha256.trim();
+      final metaHash = remoteMeta.contentSha256.trim();
+      if (snapshotHash.isNotEmpty &&
+          metaHash.isNotEmpty &&
+          snapshotHash != metaHash) {
+        return const WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: 'sync_snapshot_meta_mismatch',
+        );
+      }
+      final appliedContentHash = snapshotHash.isNotEmpty
+          ? snapshotHash
+          : metaHash;
       final error = await _snapshotService.applySnapshotJson(
         provider: provider,
         content: content,
@@ -565,8 +583,8 @@ class WebdavSyncService {
       await _configStore.save(
         config.copyWith(
           lastSyncedAt: DateTime.now(),
-          lastAppliedRemoteHash: remoteMeta.contentSha256,
-          lastUploadedLocalHash: remoteMeta.contentSha256,
+          lastAppliedRemoteHash: appliedContentHash,
+          lastUploadedLocalHash: appliedContentHash,
         ),
       );
       return const WebdavSyncResult(kind: WebdavSyncResultKind.downloaded);
@@ -697,6 +715,24 @@ class WebdavSyncService {
       config: config,
       index: nextIndex,
     );
+  }
+
+  /// True when the device already holds user-authored timetable content.
+  /// Used to refuse silent first-sync remote overwrite on auto-pull.
+  bool _localSnapshotHasUserData(TimetableProvider provider) {
+    if (provider.courses.isNotEmpty ||
+        provider.exams.isNotEmpty ||
+        provider.scheduleItems.isNotEmpty) {
+      return true;
+    }
+    for (final profile in provider.profiles) {
+      if (profile.courses.isNotEmpty ||
+          profile.exams.isNotEmpty ||
+          profile.scheduleItems.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<CloudBackupIndex> _loadRemoteBackupIndex({

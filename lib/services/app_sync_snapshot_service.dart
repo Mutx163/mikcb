@@ -113,8 +113,8 @@ class AppSyncSnapshotService {
     final customHolidays = await _holidayService.loadCustomHolidays();
     final teacherRecords = await _storageService.getTeacherRecords();
     final locationRecords = await _storageService.getLocationRecords();
-    final partnerTimetableBinding =
-        await _storageService.getPartnerTimetableBinding();
+    final partnerTimetableBinding = await _storageService
+        .getPartnerTimetableBinding();
     final timestamp = exportedAt ?? DateTime.now();
 
     final payload = _buildPayloadMap(
@@ -434,12 +434,37 @@ SyncConflictChoice resolveSyncConflictAutomatically(SyncConflictInfo info) {
 ///
 /// Local [exportedAt] is often `DateTime.now()` at collect time, so LWW would
 /// prefer empty new devices and wipe the cloud. Prefer remote without UI.
+///
+/// Callers must still refuse first-sync divergence when local already has
+/// user data (see [webdavBackgroundPullShouldCancel]) — this helper alone
+/// must not be used to silently wipe a non-empty device.
 SyncConflictChoice resolveSyncConflictForBackground(SyncConflictInfo info) {
   final automatic = resolveSyncConflictAutomatically(info);
   if (automatic == SyncConflictChoice.keepLocal) {
     return SyncConflictChoice.keepRemote;
   }
   return automatic;
+}
+
+/// Whether background auto-pull must cancel instead of applying remote.
+///
+/// Protects non-empty local data on first sync (no baseline hashes) and when
+/// local has diverged from last upload without a UI conflict prompt.
+bool webdavBackgroundPullShouldCancel({
+  required String? lastUploadedLocalHash,
+  required String? lastAppliedRemoteHash,
+  required String localContentSha256,
+  required bool localHasUserData,
+}) {
+  final isFirstSyncWithoutBaseline =
+      lastUploadedLocalHash == null && lastAppliedRemoteHash == null;
+  if (isFirstSyncWithoutBaseline && localHasUserData) {
+    return true;
+  }
+  final localChangedSinceUpload =
+      lastUploadedLocalHash != null &&
+      localContentSha256 != lastUploadedLocalHash;
+  return localChangedSinceUpload;
 }
 
 /// Whether auto-upload may PUT over the current remote snapshot.
@@ -470,7 +495,8 @@ WebdavAutoUploadDecision decideWebdavAutoUpload({
   if (remoteHash == localContentSha256) {
     return WebdavAutoUploadDecision.upToDate;
   }
-  final matchesBaseline = remoteHash == lastAppliedRemoteHash ||
+  final matchesBaseline =
+      remoteHash == lastAppliedRemoteHash ||
       remoteHash == lastUploadedLocalHash;
   if (matchesBaseline) {
     return WebdavAutoUploadDecision.allow;
@@ -484,11 +510,14 @@ bool webdavPullHasSyncConflict({
   required String localContentSha256,
   required String remoteContentSha256,
 }) {
-  final localChangedSinceSync = lastUploadedLocalHash != null &&
+  final localChangedSinceSync =
+      lastUploadedLocalHash != null &&
       localContentSha256 != lastUploadedLocalHash;
-  final remoteChangedSinceSync = lastAppliedRemoteHash != null &&
+  final remoteChangedSinceSync =
+      lastAppliedRemoteHash != null &&
       remoteContentSha256 != lastAppliedRemoteHash;
-  final divergedOnFirstSync = lastUploadedLocalHash == null &&
+  final divergedOnFirstSync =
+      lastUploadedLocalHash == null &&
       lastAppliedRemoteHash == null &&
       localContentSha256 != remoteContentSha256;
   return (localChangedSinceSync && remoteChangedSinceSync) ||

@@ -182,4 +182,40 @@ void main() {
       isTrue,
     );
   });
+
+  test('background pull cancels first sync when local has user data', () {
+    expect(
+      webdavBackgroundPullShouldCancel(
+        lastUploadedLocalHash: null,
+        lastAppliedRemoteHash: null,
+        localContentSha256: 'local-hash',
+        localHasUserData: true,
+      ),
+      isTrue,
+    );
+  });
+
+  test('background pull allows first sync when local is empty', () {
+    expect(
+      webdavBackgroundPullShouldCancel(
+        lastUploadedLocalHash: null,
+        lastAppliedRemoteHash: null,
+        localContentSha256: 'local-hash',
+        localHasUserData: false,
+      ),
+      isFalse,
+    );
+  });
+
+  test('background pull cancels when local changed since upload', () {
+    expect(
+      webdavBackgroundPullShouldCancel(
+        lastUploadedLocalHash: 'baseline',
+        lastAppliedRemoteHash: 'baseline',
+        localContentSha256: 'local-new',
+        localHasUserData: true,
+      ),
+      isTrue,
+    );
+  });
 }
