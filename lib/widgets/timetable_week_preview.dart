@@ -944,6 +944,8 @@ class TimetableWeekPreview extends StatelessWidget {
     return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
   }
 
+  /// Calendar week of today within the configured semester, or null if unset /
+  /// before week 1 / after [semesterWeekCount] (vacation / after term).
   int? _resolveCurrentSemesterWeek(TimetableSettings settings) {
     final semesterStart = settings.semesterStartDate;
     if (semesterStart == null) {
@@ -963,7 +965,10 @@ class TimetableWeekPreview extends StatelessWidget {
     ).subtract(Duration(days: semesterStart.weekday - 1));
     final resolvedWeek =
         (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
-    return resolvedWeek.clamp(1, settings.semesterWeekCount);
+    if (resolvedWeek < 1 || resolvedWeek > settings.semesterWeekCount) {
+      return null;
+    }
+    return resolvedWeek;
   }
 
   bool _canReturnToCurrentWeek(TimetableSettings settings, int week) {

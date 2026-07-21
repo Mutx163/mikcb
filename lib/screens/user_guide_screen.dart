@@ -362,6 +362,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Future<void> _runWelcomeAction(Future<bool> Function() action) async {
+    if (widget.requirePrivacyConsent && !_privacyChecked) {
+      // Must accept privacy before import/restore can complete onboarding.
+      await _pageController.animateToPage(
+        1,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
     final imported = await action();
     if (imported && mounted) {
       Navigator.of(context).pop(GuideAction.importCourses);

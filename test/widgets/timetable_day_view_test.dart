@@ -969,6 +969,53 @@ void main() {
     );
   });
 
+  testWidgets('hides back to today when calendar is past semesterWeekCount', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final todayWeekStart = _startOfCurrentWeek(now);
+    // Today is calendar week 21; configured term only has 20 weeks (vacation).
+    final semesterStart = todayWeekStart.subtract(const Duration(days: 20 * 7));
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterStartDate: semesterStart,
+          semesterWeekCount: 20,
+          timetableHideWeekends: false,
+        ),
+      );
+      await provider.setCurrentWeek(20);
+    });
+
+    final anotherDay = now.weekday == 1 ? 2 : 1;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-20-$anotherDay')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-20-$anotherDay')),
+      findsOneWidget,
+    );
+    // After term ends there is no real "today" page in the pager — hide the
+    // action instead of jumping to last week's same weekday or expanding weeks.
+    expect(find.byKey(const ValueKey('back-to-today-button')), findsNothing);
+    expect(provider.settings.semesterWeekCount, 20);
+  });
+
   testWidgets(
     'back to today jumps from a boundary-swiped earlier week',
     (tester) async {

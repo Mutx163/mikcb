@@ -530,7 +530,12 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
 
   @override
   void dispose() {
-    _autoSaveTimer?.cancel();
+    if (_autoSaveTimer?.isActive ?? false) {
+      _autoSaveTimer?.cancel();
+      _enqueuePersist(_draft);
+    } else {
+      _autoSaveTimer?.cancel();
+    }
     super.dispose();
   }
 
@@ -2408,8 +2413,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         .length;
     final hasFixtures = fixtureCount > 0;
     final canTrigger = sectionCount > 0;
-    final activeSchemeName =
-        provider.activeTimeScheme?.name ?? l10n.unsetLabel;
+    final activeSchemeName = provider.activeTimeScheme?.name ?? l10n.unsetLabel;
     final leadOptions = LiveTestingFixtureService.supportedLeadMinutes;
     final leadIndex = leadOptions
         .indexOf(_fixtureLeadMinutes)
@@ -2507,9 +2511,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         const HyperosSectionGap(),
         HyperosControlCard(
           title: '按节次发送',
-          subtitle: canTrigger
-              ? '点选某一节，立即写入并触发超级岛测试'
-              : '请先安装 24 时段测试课表',
+          subtitle: canTrigger ? '点选某一节，立即写入并触发超级岛测试' : '请先安装 24 时段测试课表',
           child: HyperosControlCardInset(
             child: canTrigger
                 ? GridView.builder(
@@ -2675,9 +2677,7 @@ class _QuickFixtureSectionCell extends StatelessWidget {
     final muted = HyperosColors.onSurfaceVariantSummary(context);
     final background = isCurrent ? primary : surface;
     final titleColor = isCurrent ? onPrimary : onSurface;
-    final captionColor = isCurrent
-        ? onPrimary.withValues(alpha: 0.86)
-        : muted;
+    final captionColor = isCurrent ? onPrimary.withValues(alpha: 0.86) : muted;
     final radius = BorderRadius.circular(HyperosTokens.cardRadius * 0.55);
 
     return Material(
@@ -3008,7 +3008,12 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 
   @override
   void dispose() {
-    _autoSaveTimer?.cancel();
+    if (_autoSaveTimer?.isActive ?? false) {
+      _autoSaveTimer?.cancel();
+      _enqueuePersist(_draft);
+    } else {
+      _autoSaveTimer?.cancel();
+    }
     super.dispose();
   }
 

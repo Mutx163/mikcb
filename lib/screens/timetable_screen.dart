@@ -1996,26 +1996,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                             fontWeight: FontWeight.w500,
                           ),
                         )
-                      else
+                      else if (_canNavigateDayViewToToday(settings))
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
                             key: const ValueKey('back-to-today-button'),
                             onTap: () async {
-                              final now = DateTime.now();
-                              final visibleDays = _visibleDayNumbers(settings);
-                              final currentSemesterWeek =
-                                  _resolveCurrentSemesterWeek(settings);
-                              if (!visibleDays.contains(now.weekday) ||
-                                  currentSemesterWeek == null) {
-                                return;
-                              }
-                              await _animateDayViewToWeek(
-                                provider,
-                                settings,
-                                currentSemesterWeek,
-                                now.weekday,
-                              );
+                              await _navigateDayViewToToday(provider);
                             },
                             borderRadius: BorderRadius.circular(999),
                             child: Ink(
@@ -2050,16 +2037,17 @@ class _TimetableScreenState extends State<TimetableScreen>
                             ),
                           ),
                         ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text(
-                          '·',
-                          style: foruiTheme.typography.body.sm.copyWith(
-                            color: foruiTheme.colors.mutedForeground,
-                            fontWeight: FontWeight.w500,
+                      if (isToday || _canNavigateDayViewToToday(settings))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text(
+                            '·',
+                            style: foruiTheme.typography.body.sm.copyWith(
+                              color: foruiTheme.colors.mutedForeground,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
                       Text(
                         l10n.weekLabel(week),
                         style: foruiTheme.typography.body.sm.copyWith(
@@ -3953,6 +3941,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
   }
 
+  /// Calendar week of today relative to [TimetableSettings.semesterStartDate].
+  ///
+  /// Returns null when semester start is unset, before week 1, or **past the
+  /// configured [TimetableSettings.semesterWeekCount]** (vacation / after term).
+  /// Callers must not invent weeks outside that range — never auto-expand the
+  /// semester just to "return to today".
   int? _resolveCurrentSemesterWeek(TimetableSettings settings) {
     final semesterStart = settings.semesterStartDate;
     if (semesterStart == null) {
@@ -3971,7 +3965,39 @@ class _TimetableScreenState extends State<TimetableScreen>
       semesterStart.day,
     ).subtract(Duration(days: semesterStart.weekday - 1));
     final week = (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
-    return _clampWeek(week < 1 ? 1 : week, settings.semesterWeekCount);
+    if (week < 1 || week > settings.semesterWeekCount) {
+      return null;
+    }
+    return week;
+  }
+
+  /// Whether day-view may show / act on "back to today".
+  ///
+  /// False when today is outside the configured semester (e.g. already on
+  /// vacation after the last teaching week) so we never jump to a wrong
+  /// "same weekday last week" or expand semesterWeekCount.
+  bool _canNavigateDayViewToToday(TimetableSettings settings) {
+    final now = DateTime.now();
+    final visibleDays = _visibleDayNumbers(settings);
+    if (!visibleDays.contains(now.weekday)) {
+      return false;
+    }
+    return _resolveCurrentSemesterWeek(settings) != null;
+  }
+
+  Future<void> _navigateDayViewToToday(TimetableProvider provider) async {
+    final now = DateTime.now();
+    final settings = provider.settings;
+    final currentSemesterWeek = _resolveCurrentSemesterWeek(settings);
+    if (!_canNavigateDayViewToToday(settings) || currentSemesterWeek == null) {
+      return;
+    }
+    await _animateDayViewToWeek(
+      provider,
+      settings,
+      currentSemesterWeek,
+      now.weekday,
+    );
   }
 
   bool _canReturnToCurrentWeek(TimetableSettings settings, int week) {
