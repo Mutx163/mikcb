@@ -3119,6 +3119,7 @@
   "examDateLabel": "Exam Date",
   "examDateHint": "Select date",
   "examDateRequired": "Please select exam date",
+  "examEndTimeBeforeStart": "End time cannot be earlier than start time",
   "examStartTimeLabel": "Start Time",
   "examEndTimeLabel": "End Time",
   "examLocationLabel": "Exam Room",

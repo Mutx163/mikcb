@@ -279,14 +279,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
 
   @override
-  String get coupleWebdavTitle => '坚果云拉取';
+  String get coupleWebdavTitle => '견과클라우드 가져오기';
 
   @override
   String get coupleWebdavSubtitle =>
-      '登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件，与「云同步」账号独立，互不影响';
+      '상대(또는 공용) 견과클라우드에 로그인하여 업로드된 시간표를 가져옵니다. 클라우드 동기화 계정과 별개입니다';
 
   @override
-  String get coupleWebdavNotConnected => '尚未连接坚果云';
+  String get coupleWebdavNotConnected => '견과클라우드 미연결';
 
   @override
   String coupleWebdavConnectedAs(String username) {
@@ -5394,6 +5394,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get examDateRequired => '시험일을 선택하세요';
+
+  @override
+  String get examEndTimeBeforeStart => '结束时间不能早于开始时间';
 
   @override
   String get examStartTimeLabel => '시작 시간';

@@ -9617,6 +9617,12 @@ abstract class AppLocalizations {
   /// **'请选择考试日期'**
   String get examDateRequired;
 
+  /// No description provided for @examEndTimeBeforeStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束时间不能早于开始时间'**
+  String get examEndTimeBeforeStart;
+
   /// No description provided for @examStartTimeLabel.
   ///
   /// In zh, this message translates to:

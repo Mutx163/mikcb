@@ -279,14 +279,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
 
   @override
-  String get coupleWebdavTitle => '坚果云拉取';
+  String get coupleWebdavTitle => 'Nutstoreで取得';
 
   @override
   String get coupleWebdavSubtitle =>
-      '登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件，与「云同步」账号独立，互不影响';
+      'パートナー（または共有）のNutstoreにログインし、相手がアップロードした時間割を取得します。クラウド同期のアカウントとは独立です';
 
   @override
-  String get coupleWebdavNotConnected => '尚未连接坚果云';
+  String get coupleWebdavNotConnected => 'Nutstore未接続';
 
   @override
   String coupleWebdavConnectedAs(String username) {
@@ -5362,6 +5362,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get examDateRequired => '試験日を選択してください';
+
+  @override
+  String get examEndTimeBeforeStart => '结束时间不能早于开始时间';
 
   @override
   String get examStartTimeLabel => '開始時間';

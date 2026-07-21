@@ -5286,6 +5286,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get examDateRequired => '请选择考试日期';
 
   @override
+  String get examEndTimeBeforeStart => '结束时间不能早于开始时间';
+
+  @override
   String get examStartTimeLabel => '开始时间';
 
   @override

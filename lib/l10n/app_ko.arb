@@ -4991,5 +4991,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "coupleWebdavTitle": "견과클라우드 가져오기",
+  "coupleWebdavSubtitle": "상대(또는 공용) 견과클라우드에 로그인하여 업로드된 시간표를 가져옵니다. 클라우드 동기화 계정과 별개입니다",
+  "coupleWebdavNotConnected": "견과클라우드 미연결"
 }

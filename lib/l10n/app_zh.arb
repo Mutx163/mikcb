@@ -3119,6 +3119,7 @@
   "examDateLabel": "考试日期",
   "examDateHint": "请选择日期",
   "examDateRequired": "请选择考试日期",
+  "examEndTimeBeforeStart": "结束时间不能早于开始时间",
   "examStartTimeLabel": "开始时间",
   "examEndTimeLabel": "结束时间",
   "examLocationLabel": "考场",

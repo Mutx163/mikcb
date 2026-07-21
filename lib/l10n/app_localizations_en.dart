@@ -5598,6 +5598,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get examDateRequired => 'Please select exam date';
 
   @override
+  String get examEndTimeBeforeStart =>
+      'End time cannot be earlier than start time';
+
+  @override
   String get examStartTimeLabel => 'Start Time';
 
   @override

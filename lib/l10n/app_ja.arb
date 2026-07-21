@@ -4991,5 +4991,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "coupleWebdavTitle": "Nutstoreで取得",
+  "coupleWebdavSubtitle": "パートナー（または共有）のNutstoreにログインし、相手がアップロードした時間割を取得します。クラウド同期のアカウントとは独立です",
+  "coupleWebdavNotConnected": "Nutstore未接続"
 }
