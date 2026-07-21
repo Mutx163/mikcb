@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-20T05:08:13+00:00",
+  "updatedAt": "2026-07-21T04:49:16+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 127,
-    "schools": 122,
+    "total": 128,
+    "schools": 123,
     "generic": 5
   },
   "schools": [
@@ -776,6 +776,13 @@
       "name": "新疆工程学院",
       "initial": "X",
       "resourceFolder": "XJIE",
+      "category": "school"
+    },
+    {
+      "id": "XJZFU",
+      "name": "新疆政法学院",
+      "initial": "X",
+      "resourceFolder": "XJZFU",
       "category": "school"
     },
     {
