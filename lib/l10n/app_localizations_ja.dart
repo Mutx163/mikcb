@@ -1496,7 +1496,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get followCurrentTimetableDescription =>
-      'デフォルトで現在の時間割のメインテンプレートに連携，ほとんどの授業に最適';
+      'Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme';
 
   @override
   String get overrideTimeSchemeDescription =>
@@ -5576,6 +5576,68 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseActionDeleteSecondary => '削除';
 
   @override
+  String get courseNoteSheetTitle => '课程备注';
+
+  @override
+  String get courseNoteAction => '备注';
+
+  @override
+  String get courseNoteSaveAction => '保存';
+
+  @override
+  String get courseNoteTabWholeCourse => '整节课';
+
+  @override
+  String get courseNoteTabThisSession => '本节课';
+
+  @override
+  String get courseNoteWholeCourseLabel => '整节课备注';
+
+  @override
+  String get courseNoteWholeCourseHint => '长期有效，适用于这门排课的固定说明（例如老师习惯、课堂注意点）。';
+
+  @override
+  String get courseNoteWholeCoursePlaceholder => '例如：这个老师容易逃课、教室在新楼…';
+
+  @override
+  String get courseNoteSessionLabel => '本节课备注';
+
+  @override
+  String courseNoteSessionHint(int week) {
+    return '仅对第 $week 周这一次课生效，适合记录作业或携带物品。';
+  }
+
+  @override
+  String get courseNoteSessionPlaceholder => '例如：交第三章习题、带电脑…';
+
+  @override
+  String get courseNoteHasHomeworkTitle => '有作业';
+
+  @override
+  String get courseNoteHasHomeworkSubtitle => '开启后，周视图课程卡片会显示作业圆标';
+
+  @override
+  String get courseNoteHomeworkMarked => '本节有作业';
+
+  @override
+  String get courseNoteTileSubtitleEmpty => '记录作业、带电脑或课堂提醒';
+
+  @override
+  String get courseNoteTileSubtitleWhole => '已有整节课备注';
+
+  @override
+  String get courseNoteTileSubtitleSession => '已有本节课备注';
+
+  @override
+  String get courseNoteTileSubtitleBoth => '整节课与本节课均有备注';
+
+  @override
+  String get courseNoteReadOnlyNotice => '对方课程仅可查看备注，无法编辑。';
+
+  @override
+  String get courseNoteDoneEditingAction => '完成';
+
+  @override
   String courseActionSheetNotice(int week) {
     return '第$week週を表示中です。試験や重複が発生した場合は、下からすぐに変更または休講できます。';
   }
@@ -8570,5 +8632,201 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String guidePermissionsProgressLabel(int ready, int total) {
     return 'Ready $ready/$total';
+  }
+
+  @override
+  String get locationTimeMatchEntryTitle => 'Location time match';
+
+  @override
+  String get locationTimeMatchEntrySubtitle =>
+      'Auto-pick time schemes by classroom keywords';
+
+  @override
+  String get locationTimeMatchTitle => 'Location time match';
+
+  @override
+  String get locationTimeMatchSubtitle =>
+      'Map classroom keywords to time schemes. Courses with a manual time scheme stay unchanged.';
+
+  @override
+  String get locationTimeMatchWeekAxisNote =>
+      'Note: the week-view time axis still shows the timetable default scheme. Card/live times use the matched scheme.';
+
+  @override
+  String get locationTimeMatchPreviewLabel => 'Try a location';
+
+  @override
+  String get locationTimeMatchPreviewHint => 'e.g. A1062 or A主201';
+
+  @override
+  String get locationTimeMatchPreviewNoMatch =>
+      'No group matched; the default timetable scheme will be used';
+
+  @override
+  String locationTimeMatchPreviewResult(
+    String group,
+    String scheme,
+    String keyword,
+  ) {
+    return 'Matches: $group · $scheme (keyword $keyword)';
+  }
+
+  @override
+  String get locationTimeMatchApplyActive => 'Apply to current timetable';
+
+  @override
+  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
+    return 'Done: matched $matched, updated $updated (unlocked $unlocked)';
+  }
+
+  @override
+  String get locationTimeMatchEmpty =>
+      'No place groups yet. Tap + to add e.g. Main building / Other buildings.';
+
+  @override
+  String get locationTimeMatchCreateGroup => 'New place group';
+
+  @override
+  String get locationTimeMatchEditGroup => 'Edit place group';
+
+  @override
+  String get locationTimeMatchUnknownScheme => 'Unknown time scheme';
+
+  @override
+  String get locationTimeMatchNoKeywords => 'No keywords';
+
+  @override
+  String locationTimeMatchBoundScheme(String name) {
+    return 'Time scheme: $name';
+  }
+
+  @override
+  String locationTimeMatchKeywordsLine(String keywords) {
+    return 'Keywords: $keywords';
+  }
+
+  @override
+  String get locationTimeMatchDeleteTitle => 'Delete place group?';
+
+  @override
+  String locationTimeMatchDeleteMessage(String name) {
+    return 'Delete \"$name\"? Related courses will fall back to the default scheme.';
+  }
+
+  @override
+  String get locationTimeMatchDeleted => 'Place group deleted';
+
+  @override
+  String get locationTimeMatchGroupNameLabel => 'Group name';
+
+  @override
+  String get locationTimeMatchGroupNameHint => 'e.g. Main building';
+
+  @override
+  String get locationTimeMatchBoundSchemeLabel => 'Bound time scheme';
+
+  @override
+  String get locationTimeMatchNeedTimeScheme =>
+      'Create at least one time scheme first';
+
+  @override
+  String get locationTimeMatchEnabledLabel => 'Enable this group';
+
+  @override
+  String get locationTimeMatchKeywordsSection => 'Location keywords';
+
+  @override
+  String get locationTimeMatchKeywordsHelp =>
+      'Pick buildings from your timetable locations, or type keywords (A主, A1, A6). Prefer prefix match; longer keywords win.';
+
+  @override
+  String get locationTimeMatchSelectedKeywords => 'Selected keywords';
+
+  @override
+  String get locationTimeMatchNoSelectedKeywords => 'No keywords yet';
+
+  @override
+  String get locationTimeMatchPickFromLocations =>
+      'Pick from timetable locations';
+
+  @override
+  String get locationTimeMatchBuildingSuggestions =>
+      'Buildings found in timetable';
+
+  @override
+  String get locationTimeMatchNoBuildingSuggestions =>
+      'No recognizable building locations yet';
+
+  @override
+  String get locationTimeMatchAddBuilding => 'Add';
+
+  @override
+  String get locationTimeMatchAddAllBuildings => 'Add all uncovered buildings';
+
+  @override
+  String locationTimeMatchBuildingRoomCount(int count) {
+    return '$count rooms';
+  }
+
+  @override
+  String locationTimeMatchBuildingGateTags(String tags) {
+    return 'Tags: $tags';
+  }
+
+  @override
+  String locationTimeMatchKeywordExtracted(String keyword) {
+    return 'Extracted keyword $keyword';
+  }
+
+  @override
+  String get locationTimeMatchKeywordAlreadyExists => 'Keyword already added';
+
+  @override
+  String get locationTimeMatchAddKeyword => 'Add keyword manually';
+
+  @override
+  String get locationTimeMatchKeywordLabel => 'Keyword';
+
+  @override
+  String get locationTimeMatchKeywordHint => 'A1 / A主';
+
+  @override
+  String get locationTimeMatchModeLabel => 'Match mode';
+
+  @override
+  String get locationTimeMatchModePrefix => 'Prefix';
+
+  @override
+  String get locationTimeMatchModeContains => 'Contains';
+
+  @override
+  String get locationTimeMatchModeExact => 'Exact';
+
+  @override
+  String get locationTimeMatchKeywordTooShort =>
+      'Keyword is very short and may mis-match';
+
+  @override
+  String get locationTimeMatchNameRequired => 'Enter a group name';
+
+  @override
+  String get locationTimeMatchKeywordRequired => 'Add at least one keyword';
+
+  @override
+  String get locationTimeMatchSaved => 'Place group saved';
+
+  @override
+  String get locationTimeMatchSaveFailed => 'Save failed';
+
+  @override
+  String get followLocationAutoTimeScheme => 'Follow timetable / location auto';
+
+  @override
+  String get followLocationAutoTimeSchemeDescription =>
+      'Without a manual override, match a time scheme by location keywords; otherwise use the timetable default';
+
+  @override
+  String locationTimeMatchedSchemeHint(String group, String scheme) {
+    return 'Location auto: $group · $scheme';
   }
 }

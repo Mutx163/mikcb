@@ -2768,7 +2768,7 @@ abstract class AppLocalizations {
   /// No description provided for @followCurrentTimetableDescription.
   ///
   /// In zh, this message translates to:
-  /// **'默认跟随当前课表主时间模板，适合大多数课程'**
+  /// **'未手动指定时，按上课地点自动匹配时间模板；未命中则跟随课表主时间模板'**
   String get followCurrentTimetableDescription;
 
   /// No description provided for @overrideTimeSchemeDescription.
@@ -10001,6 +10001,126 @@ abstract class AppLocalizations {
   /// **'删除'**
   String get courseActionDeleteSecondary;
 
+  /// No description provided for @courseNoteSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程备注'**
+  String get courseNoteSheetTitle;
+
+  /// No description provided for @courseNoteAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'备注'**
+  String get courseNoteAction;
+
+  /// No description provided for @courseNoteSaveAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get courseNoteSaveAction;
+
+  /// No description provided for @courseNoteTabWholeCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'整节课'**
+  String get courseNoteTabWholeCourse;
+
+  /// No description provided for @courseNoteTabThisSession.
+  ///
+  /// In zh, this message translates to:
+  /// **'本节课'**
+  String get courseNoteTabThisSession;
+
+  /// No description provided for @courseNoteWholeCourseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'整节课备注'**
+  String get courseNoteWholeCourseLabel;
+
+  /// No description provided for @courseNoteWholeCourseHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'长期有效，适用于这门排课的固定说明（例如老师习惯、课堂注意点）。'**
+  String get courseNoteWholeCourseHint;
+
+  /// No description provided for @courseNoteWholeCoursePlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：这个老师容易逃课、教室在新楼…'**
+  String get courseNoteWholeCoursePlaceholder;
+
+  /// No description provided for @courseNoteSessionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'本节课备注'**
+  String get courseNoteSessionLabel;
+
+  /// No description provided for @courseNoteSessionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅对第 {week} 周这一次课生效，适合记录作业或携带物品。'**
+  String courseNoteSessionHint(int week);
+
+  /// No description provided for @courseNoteSessionPlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：交第三章习题、带电脑…'**
+  String get courseNoteSessionPlaceholder;
+
+  /// No description provided for @courseNoteHasHomeworkTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'有作业'**
+  String get courseNoteHasHomeworkTitle;
+
+  /// No description provided for @courseNoteHasHomeworkSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，周视图课程卡片会显示作业圆标'**
+  String get courseNoteHasHomeworkSubtitle;
+
+  /// No description provided for @courseNoteHomeworkMarked.
+  ///
+  /// In zh, this message translates to:
+  /// **'本节有作业'**
+  String get courseNoteHomeworkMarked;
+
+  /// No description provided for @courseNoteTileSubtitleEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'记录作业、带电脑或课堂提醒'**
+  String get courseNoteTileSubtitleEmpty;
+
+  /// No description provided for @courseNoteTileSubtitleWhole.
+  ///
+  /// In zh, this message translates to:
+  /// **'已有整节课备注'**
+  String get courseNoteTileSubtitleWhole;
+
+  /// No description provided for @courseNoteTileSubtitleSession.
+  ///
+  /// In zh, this message translates to:
+  /// **'已有本节课备注'**
+  String get courseNoteTileSubtitleSession;
+
+  /// No description provided for @courseNoteTileSubtitleBoth.
+  ///
+  /// In zh, this message translates to:
+  /// **'整节课与本节课均有备注'**
+  String get courseNoteTileSubtitleBoth;
+
+  /// No description provided for @courseNoteReadOnlyNotice.
+  ///
+  /// In zh, this message translates to:
+  /// **'对方课程仅可查看备注，无法编辑。'**
+  String get courseNoteReadOnlyNotice;
+
+  /// No description provided for @courseNoteDoneEditingAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get courseNoteDoneEditingAction;
+
   /// No description provided for @courseActionSheetNotice.
   ///
   /// In zh, this message translates to:
@@ -15080,6 +15200,334 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已就绪 {ready}/{total}'**
   String guidePermissionsProgressLabel(int ready, int total);
+
+  /// No description provided for @locationTimeMatchEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点自动匹配'**
+  String get locationTimeMatchEntryTitle;
+
+  /// No description provided for @locationTimeMatchEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按上课地点关键词自动选择时间模板'**
+  String get locationTimeMatchEntrySubtitle;
+
+  /// No description provided for @locationTimeMatchTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点自动匹配'**
+  String get locationTimeMatchTitle;
+
+  /// No description provided for @locationTimeMatchSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。'**
+  String get locationTimeMatchSubtitle;
+
+  /// No description provided for @locationTimeMatchWeekAxisNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。'**
+  String get locationTimeMatchWeekAxisNote;
+
+  /// No description provided for @locationTimeMatchPreviewLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'试匹配地点'**
+  String get locationTimeMatchPreviewLabel;
+
+  /// No description provided for @locationTimeMatchPreviewHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如 A1062 或 A主201'**
+  String get locationTimeMatchPreviewHint;
+
+  /// No description provided for @locationTimeMatchPreviewNoMatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'未命中任何地点组，将使用课表默认时间模板'**
+  String get locationTimeMatchPreviewNoMatch;
+
+  /// No description provided for @locationTimeMatchPreviewResult.
+  ///
+  /// In zh, this message translates to:
+  /// **'将匹配：{group} · {scheme}（关键词 {keyword}）'**
+  String locationTimeMatchPreviewResult(
+    String group,
+    String scheme,
+    String keyword,
+  );
+
+  /// No description provided for @locationTimeMatchApplyActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用到当前课表'**
+  String get locationTimeMatchApplyActive;
+
+  /// No description provided for @locationTimeMatchApplyResult.
+  ///
+  /// In zh, this message translates to:
+  /// **'已处理：命中 {matched} 门，更新 {updated} 门（未锁定 {unlocked} 门）'**
+  String locationTimeMatchApplyResult(int matched, int updated, int unlocked);
+
+  /// No description provided for @locationTimeMatchEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。'**
+  String get locationTimeMatchEmpty;
+
+  /// No description provided for @locationTimeMatchCreateGroup.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建地点组'**
+  String get locationTimeMatchCreateGroup;
+
+  /// No description provided for @locationTimeMatchEditGroup.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑地点组'**
+  String get locationTimeMatchEditGroup;
+
+  /// No description provided for @locationTimeMatchUnknownScheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'未知时间模板'**
+  String get locationTimeMatchUnknownScheme;
+
+  /// No description provided for @locationTimeMatchNoKeywords.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设置关键词'**
+  String get locationTimeMatchNoKeywords;
+
+  /// No description provided for @locationTimeMatchBoundScheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间模板：{name}'**
+  String locationTimeMatchBoundScheme(String name);
+
+  /// No description provided for @locationTimeMatchKeywordsLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'关键词：{keywords}'**
+  String locationTimeMatchKeywordsLine(String keywords);
+
+  /// No description provided for @locationTimeMatchDeleteTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除地点组？'**
+  String get locationTimeMatchDeleteTitle;
+
+  /// No description provided for @locationTimeMatchDeleteMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除「{name}」？相关课程将恢复为课表默认时间模板。'**
+  String locationTimeMatchDeleteMessage(String name);
+
+  /// No description provided for @locationTimeMatchDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已删除地点组'**
+  String get locationTimeMatchDeleted;
+
+  /// No description provided for @locationTimeMatchGroupNameLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点组名称'**
+  String get locationTimeMatchGroupNameLabel;
+
+  /// No description provided for @locationTimeMatchGroupNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：主教学楼 / 其他教学楼'**
+  String get locationTimeMatchGroupNameHint;
+
+  /// No description provided for @locationTimeMatchBoundSchemeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'绑定时间模板'**
+  String get locationTimeMatchBoundSchemeLabel;
+
+  /// No description provided for @locationTimeMatchNeedTimeScheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先创建至少一套时间模板'**
+  String get locationTimeMatchNeedTimeScheme;
+
+  /// No description provided for @locationTimeMatchEnabledLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用此地点组'**
+  String get locationTimeMatchEnabledLabel;
+
+  /// No description provided for @locationTimeMatchKeywordsSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点关键词'**
+  String get locationTimeMatchKeywordsSection;
+
+  /// No description provided for @locationTimeMatchKeywordsHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。'**
+  String get locationTimeMatchKeywordsHelp;
+
+  /// No description provided for @locationTimeMatchSelectedKeywords.
+  ///
+  /// In zh, this message translates to:
+  /// **'已选关键词'**
+  String get locationTimeMatchSelectedKeywords;
+
+  /// No description provided for @locationTimeMatchNoSelectedKeywords.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未添加关键词'**
+  String get locationTimeMatchNoSelectedKeywords;
+
+  /// No description provided for @locationTimeMatchPickFromLocations.
+  ///
+  /// In zh, this message translates to:
+  /// **'从课表地点选择'**
+  String get locationTimeMatchPickFromLocations;
+
+  /// No description provided for @locationTimeMatchBuildingSuggestions.
+  ///
+  /// In zh, this message translates to:
+  /// **'从课表识别的楼栋'**
+  String get locationTimeMatchBuildingSuggestions;
+
+  /// No description provided for @locationTimeMatchNoBuildingSuggestions.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前课表没有可识别的楼栋地点'**
+  String get locationTimeMatchNoBuildingSuggestions;
+
+  /// No description provided for @locationTimeMatchAddBuilding.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加'**
+  String get locationTimeMatchAddBuilding;
+
+  /// No description provided for @locationTimeMatchAddAllBuildings.
+  ///
+  /// In zh, this message translates to:
+  /// **'一键添加全部未配置楼栋'**
+  String get locationTimeMatchAddAllBuildings;
+
+  /// No description provided for @locationTimeMatchBuildingRoomCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 间教室'**
+  String locationTimeMatchBuildingRoomCount(int count);
+
+  /// No description provided for @locationTimeMatchBuildingGateTags.
+  ///
+  /// In zh, this message translates to:
+  /// **'标签：{tags}'**
+  String locationTimeMatchBuildingGateTags(String tags);
+
+  /// No description provided for @locationTimeMatchKeywordExtracted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已从地点提取关键词 {keyword}'**
+  String locationTimeMatchKeywordExtracted(String keyword);
+
+  /// No description provided for @locationTimeMatchKeywordAlreadyExists.
+  ///
+  /// In zh, this message translates to:
+  /// **'关键词已存在'**
+  String get locationTimeMatchKeywordAlreadyExists;
+
+  /// No description provided for @locationTimeMatchAddKeyword.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动添加关键词'**
+  String get locationTimeMatchAddKeyword;
+
+  /// No description provided for @locationTimeMatchKeywordLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'关键词'**
+  String get locationTimeMatchKeywordLabel;
+
+  /// No description provided for @locationTimeMatchKeywordHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'A1 / A主 / 六教'**
+  String get locationTimeMatchKeywordHint;
+
+  /// No description provided for @locationTimeMatchModeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'匹配模式'**
+  String get locationTimeMatchModeLabel;
+
+  /// No description provided for @locationTimeMatchModePrefix.
+  ///
+  /// In zh, this message translates to:
+  /// **'前缀'**
+  String get locationTimeMatchModePrefix;
+
+  /// No description provided for @locationTimeMatchModeContains.
+  ///
+  /// In zh, this message translates to:
+  /// **'包含'**
+  String get locationTimeMatchModeContains;
+
+  /// No description provided for @locationTimeMatchModeExact.
+  ///
+  /// In zh, this message translates to:
+  /// **'精确'**
+  String get locationTimeMatchModeExact;
+
+  /// No description provided for @locationTimeMatchKeywordTooShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'关键词过短，容易误匹配'**
+  String get locationTimeMatchKeywordTooShort;
+
+  /// No description provided for @locationTimeMatchNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写地点组名称'**
+  String get locationTimeMatchNameRequired;
+
+  /// No description provided for @locationTimeMatchKeywordRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请至少添加一个关键词'**
+  String get locationTimeMatchKeywordRequired;
+
+  /// No description provided for @locationTimeMatchSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点组已保存'**
+  String get locationTimeMatchSaved;
+
+  /// No description provided for @locationTimeMatchSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败'**
+  String get locationTimeMatchSaveFailed;
+
+  /// No description provided for @followLocationAutoTimeScheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随课表 / 地点自动'**
+  String get followLocationAutoTimeScheme;
+
+  /// No description provided for @followLocationAutoTimeSchemeDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'未手动指定时，按上课地点关键词自动匹配时间模板；未命中则用课表默认模板'**
+  String get followLocationAutoTimeSchemeDescription;
+
+  /// No description provided for @locationTimeMatchedSchemeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点自动：{group} · {scheme}'**
+  String locationTimeMatchedSchemeHint(String group, String scheme);
 }
 
 class _AppLocalizationsDelegate

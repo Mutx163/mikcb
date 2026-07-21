@@ -1475,7 +1475,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get followCurrentTimetableDescription => '默认跟随当前课表主时间模板，适合大多数课程';
+  String get followCurrentTimetableDescription =>
+      '未手动指定时，按上课地点自动匹配时间模板；未命中则跟随课表主时间模板';
 
   @override
   String get overrideTimeSchemeDescription => '这门课会单独使用所选时间模板，不跟随当前课表主时间模板';
@@ -5497,6 +5498,68 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseActionDeleteSecondary => '删除';
 
   @override
+  String get courseNoteSheetTitle => '课程备注';
+
+  @override
+  String get courseNoteAction => '备注';
+
+  @override
+  String get courseNoteSaveAction => '保存';
+
+  @override
+  String get courseNoteTabWholeCourse => '整节课';
+
+  @override
+  String get courseNoteTabThisSession => '本节课';
+
+  @override
+  String get courseNoteWholeCourseLabel => '整节课备注';
+
+  @override
+  String get courseNoteWholeCourseHint => '长期有效，适用于这门排课的固定说明（例如老师习惯、课堂注意点）。';
+
+  @override
+  String get courseNoteWholeCoursePlaceholder => '例如：这个老师容易逃课、教室在新楼…';
+
+  @override
+  String get courseNoteSessionLabel => '本节课备注';
+
+  @override
+  String courseNoteSessionHint(int week) {
+    return '仅对第 $week 周这一次课生效，适合记录作业或携带物品。';
+  }
+
+  @override
+  String get courseNoteSessionPlaceholder => '例如：交第三章习题、带电脑…';
+
+  @override
+  String get courseNoteHasHomeworkTitle => '有作业';
+
+  @override
+  String get courseNoteHasHomeworkSubtitle => '开启后，周视图课程卡片会显示作业圆标';
+
+  @override
+  String get courseNoteHomeworkMarked => '本节有作业';
+
+  @override
+  String get courseNoteTileSubtitleEmpty => '记录作业、带电脑或课堂提醒';
+
+  @override
+  String get courseNoteTileSubtitleWhole => '已有整节课备注';
+
+  @override
+  String get courseNoteTileSubtitleSession => '已有本节课备注';
+
+  @override
+  String get courseNoteTileSubtitleBoth => '整节课与本节课均有备注';
+
+  @override
+  String get courseNoteReadOnlyNotice => '对方课程仅可查看备注，无法编辑。';
+
+  @override
+  String get courseNoteDoneEditingAction => '完成';
+
+  @override
   String courseActionSheetNotice(int week) {
     return '您正在查看第 $week 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课';
   }
@@ -8332,6 +8395,194 @@ class AppLocalizationsZh extends AppLocalizations {
   String guidePermissionsProgressLabel(int ready, int total) {
     return '已就绪 $ready/$total';
   }
+
+  @override
+  String get locationTimeMatchEntryTitle => '地点自动匹配';
+
+  @override
+  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选择时间模板';
+
+  @override
+  String get locationTimeMatchTitle => '地点自动匹配';
+
+  @override
+  String get locationTimeMatchSubtitle =>
+      '为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。';
+
+  @override
+  String get locationTimeMatchWeekAxisNote =>
+      '说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。';
+
+  @override
+  String get locationTimeMatchPreviewLabel => '试匹配地点';
+
+  @override
+  String get locationTimeMatchPreviewHint => '例如 A1062 或 A主201';
+
+  @override
+  String get locationTimeMatchPreviewNoMatch => '未命中任何地点组，将使用课表默认时间模板';
+
+  @override
+  String locationTimeMatchPreviewResult(
+    String group,
+    String scheme,
+    String keyword,
+  ) {
+    return '将匹配：$group · $scheme（关键词 $keyword）';
+  }
+
+  @override
+  String get locationTimeMatchApplyActive => '应用到当前课表';
+
+  @override
+  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
+    return '已处理：命中 $matched 门，更新 $updated 门（未锁定 $unlocked 门）';
+  }
+
+  @override
+  String get locationTimeMatchEmpty => '还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。';
+
+  @override
+  String get locationTimeMatchCreateGroup => '新建地点组';
+
+  @override
+  String get locationTimeMatchEditGroup => '编辑地点组';
+
+  @override
+  String get locationTimeMatchUnknownScheme => '未知时间模板';
+
+  @override
+  String get locationTimeMatchNoKeywords => '未设置关键词';
+
+  @override
+  String locationTimeMatchBoundScheme(String name) {
+    return '时间模板：$name';
+  }
+
+  @override
+  String locationTimeMatchKeywordsLine(String keywords) {
+    return '关键词：$keywords';
+  }
+
+  @override
+  String get locationTimeMatchDeleteTitle => '删除地点组？';
+
+  @override
+  String locationTimeMatchDeleteMessage(String name) {
+    return '确定删除「$name」？相关课程将恢复为课表默认时间模板。';
+  }
+
+  @override
+  String get locationTimeMatchDeleted => '已删除地点组';
+
+  @override
+  String get locationTimeMatchGroupNameLabel => '地点组名称';
+
+  @override
+  String get locationTimeMatchGroupNameHint => '例如：主教学楼 / 其他教学楼';
+
+  @override
+  String get locationTimeMatchBoundSchemeLabel => '绑定时间模板';
+
+  @override
+  String get locationTimeMatchNeedTimeScheme => '请先创建至少一套时间模板';
+
+  @override
+  String get locationTimeMatchEnabledLabel => '启用此地点组';
+
+  @override
+  String get locationTimeMatchKeywordsSection => '地点关键词';
+
+  @override
+  String get locationTimeMatchKeywordsHelp =>
+      '可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。';
+
+  @override
+  String get locationTimeMatchSelectedKeywords => '已选关键词';
+
+  @override
+  String get locationTimeMatchNoSelectedKeywords => '尚未添加关键词';
+
+  @override
+  String get locationTimeMatchPickFromLocations => '从课表地点选择';
+
+  @override
+  String get locationTimeMatchBuildingSuggestions => '从课表识别的楼栋';
+
+  @override
+  String get locationTimeMatchNoBuildingSuggestions => '当前课表没有可识别的楼栋地点';
+
+  @override
+  String get locationTimeMatchAddBuilding => '添加';
+
+  @override
+  String get locationTimeMatchAddAllBuildings => '一键添加全部未配置楼栋';
+
+  @override
+  String locationTimeMatchBuildingRoomCount(int count) {
+    return '$count 间教室';
+  }
+
+  @override
+  String locationTimeMatchBuildingGateTags(String tags) {
+    return '标签：$tags';
+  }
+
+  @override
+  String locationTimeMatchKeywordExtracted(String keyword) {
+    return '已从地点提取关键词 $keyword';
+  }
+
+  @override
+  String get locationTimeMatchKeywordAlreadyExists => '关键词已存在';
+
+  @override
+  String get locationTimeMatchAddKeyword => '手动添加关键词';
+
+  @override
+  String get locationTimeMatchKeywordLabel => '关键词';
+
+  @override
+  String get locationTimeMatchKeywordHint => 'A1 / A主 / 六教';
+
+  @override
+  String get locationTimeMatchModeLabel => '匹配模式';
+
+  @override
+  String get locationTimeMatchModePrefix => '前缀';
+
+  @override
+  String get locationTimeMatchModeContains => '包含';
+
+  @override
+  String get locationTimeMatchModeExact => '精确';
+
+  @override
+  String get locationTimeMatchKeywordTooShort => '关键词过短，容易误匹配';
+
+  @override
+  String get locationTimeMatchNameRequired => '请填写地点组名称';
+
+  @override
+  String get locationTimeMatchKeywordRequired => '请至少添加一个关键词';
+
+  @override
+  String get locationTimeMatchSaved => '地点组已保存';
+
+  @override
+  String get locationTimeMatchSaveFailed => '保存失败';
+
+  @override
+  String get followLocationAutoTimeScheme => '跟随课表 / 地点自动';
+
+  @override
+  String get followLocationAutoTimeSchemeDescription =>
+      '未手动指定时，按上课地点关键词自动匹配时间模板；未命中则用课表默认模板';
+
+  @override
+  String locationTimeMatchedSchemeHint(String group, String scheme) {
+    return '地点自动：$group · $scheme';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -9606,7 +9857,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get followCurrentTimetableDescription => '預設跟隨目前課表主時間範本，適合大多數課程';
+  String get followCurrentTimetableDescription =>
+      '未手動指定時，依上課地點自動匹配時間範本；未命中則跟隨課表主時間範本';
 
   @override
   String get overrideTimeSchemeDescription => '這門課會單独使用所選時間範本，不跟隨目前課表主時間範本';
@@ -16332,6 +16584,194 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String guidePermissionsProgressLabel(int ready, int total) {
     return '已就绪 $ready/$total';
   }
+
+  @override
+  String get locationTimeMatchEntryTitle => '地点自动匹配';
+
+  @override
+  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选择时间模板';
+
+  @override
+  String get locationTimeMatchTitle => '地点自动匹配';
+
+  @override
+  String get locationTimeMatchSubtitle =>
+      '为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。';
+
+  @override
+  String get locationTimeMatchWeekAxisNote =>
+      '说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。';
+
+  @override
+  String get locationTimeMatchPreviewLabel => '试匹配地点';
+
+  @override
+  String get locationTimeMatchPreviewHint => '例如 A1062 或 A主201';
+
+  @override
+  String get locationTimeMatchPreviewNoMatch => '未命中任何地点组，将使用课表默认时间模板';
+
+  @override
+  String locationTimeMatchPreviewResult(
+    String group,
+    String scheme,
+    String keyword,
+  ) {
+    return '将匹配：$group · $scheme（关键词 $keyword）';
+  }
+
+  @override
+  String get locationTimeMatchApplyActive => '应用到当前课表';
+
+  @override
+  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
+    return '已处理：命中 $matched 门，更新 $updated 门（未锁定 $unlocked 门）';
+  }
+
+  @override
+  String get locationTimeMatchEmpty => '还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。';
+
+  @override
+  String get locationTimeMatchCreateGroup => '新建地点组';
+
+  @override
+  String get locationTimeMatchEditGroup => '编辑地点组';
+
+  @override
+  String get locationTimeMatchUnknownScheme => '未知时间模板';
+
+  @override
+  String get locationTimeMatchNoKeywords => '未设置关键词';
+
+  @override
+  String locationTimeMatchBoundScheme(String name) {
+    return '时间模板：$name';
+  }
+
+  @override
+  String locationTimeMatchKeywordsLine(String keywords) {
+    return '关键词：$keywords';
+  }
+
+  @override
+  String get locationTimeMatchDeleteTitle => '删除地点组？';
+
+  @override
+  String locationTimeMatchDeleteMessage(String name) {
+    return '确定删除「$name」？相关课程将恢复为课表默认时间模板。';
+  }
+
+  @override
+  String get locationTimeMatchDeleted => '已删除地点组';
+
+  @override
+  String get locationTimeMatchGroupNameLabel => '地点组名称';
+
+  @override
+  String get locationTimeMatchGroupNameHint => '例如：主教学楼 / 其他教学楼';
+
+  @override
+  String get locationTimeMatchBoundSchemeLabel => '绑定时间模板';
+
+  @override
+  String get locationTimeMatchNeedTimeScheme => '请先创建至少一套时间模板';
+
+  @override
+  String get locationTimeMatchEnabledLabel => '启用此地点组';
+
+  @override
+  String get locationTimeMatchKeywordsSection => '地点关键词';
+
+  @override
+  String get locationTimeMatchKeywordsHelp =>
+      '可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。';
+
+  @override
+  String get locationTimeMatchSelectedKeywords => '已选关键词';
+
+  @override
+  String get locationTimeMatchNoSelectedKeywords => '尚未添加关键词';
+
+  @override
+  String get locationTimeMatchPickFromLocations => '从课表地点选择';
+
+  @override
+  String get locationTimeMatchBuildingSuggestions => '从课表识别的楼栋';
+
+  @override
+  String get locationTimeMatchNoBuildingSuggestions => '当前课表没有可识别的楼栋地点';
+
+  @override
+  String get locationTimeMatchAddBuilding => '添加';
+
+  @override
+  String get locationTimeMatchAddAllBuildings => '一键添加全部未配置楼栋';
+
+  @override
+  String locationTimeMatchBuildingRoomCount(int count) {
+    return '$count 间教室';
+  }
+
+  @override
+  String locationTimeMatchBuildingGateTags(String tags) {
+    return '标签：$tags';
+  }
+
+  @override
+  String locationTimeMatchKeywordExtracted(String keyword) {
+    return '已从地点提取关键词 $keyword';
+  }
+
+  @override
+  String get locationTimeMatchKeywordAlreadyExists => '关键词已存在';
+
+  @override
+  String get locationTimeMatchAddKeyword => '手动添加关键词';
+
+  @override
+  String get locationTimeMatchKeywordLabel => '关键词';
+
+  @override
+  String get locationTimeMatchKeywordHint => 'A1 / A主 / 六教';
+
+  @override
+  String get locationTimeMatchModeLabel => '匹配模式';
+
+  @override
+  String get locationTimeMatchModePrefix => '前缀';
+
+  @override
+  String get locationTimeMatchModeContains => '包含';
+
+  @override
+  String get locationTimeMatchModeExact => '精确';
+
+  @override
+  String get locationTimeMatchKeywordTooShort => '关键词过短，容易误匹配';
+
+  @override
+  String get locationTimeMatchNameRequired => '请填写地点组名称';
+
+  @override
+  String get locationTimeMatchKeywordRequired => '请至少添加一个关键词';
+
+  @override
+  String get locationTimeMatchSaved => '地点组已保存';
+
+  @override
+  String get locationTimeMatchSaveFailed => '保存失败';
+
+  @override
+  String get followLocationAutoTimeScheme => '跟隨課表 / 地點自動';
+
+  @override
+  String get followLocationAutoTimeSchemeDescription =>
+      '未手動指定時，依上課地點關鍵詞自動匹配時間範本；未命中則用課表預設範本';
+
+  @override
+  String locationTimeMatchedSchemeHint(String group, String scheme) {
+    return '地点自动：$group · $scheme';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -17606,7 +18046,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get followCurrentTimetableDescription => '預設跟隨目前課表主時間範本，適合大多數課程';
+  String get followCurrentTimetableDescription =>
+      '未手動指定時，依上課地點自動匹配時間範本；未命中則跟隨課表主時間範本';
 
   @override
   String get overrideTimeSchemeDescription => '這門課會單独使用所選時間範本，不跟隨目前課表主時間範本';
@@ -24331,5 +24772,193 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String guidePermissionsProgressLabel(int ready, int total) {
     return '已就绪 $ready/$total';
+  }
+
+  @override
+  String get locationTimeMatchEntryTitle => '地点自动匹配';
+
+  @override
+  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选择时间模板';
+
+  @override
+  String get locationTimeMatchTitle => '地点自动匹配';
+
+  @override
+  String get locationTimeMatchSubtitle =>
+      '为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。';
+
+  @override
+  String get locationTimeMatchWeekAxisNote =>
+      '说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。';
+
+  @override
+  String get locationTimeMatchPreviewLabel => '试匹配地点';
+
+  @override
+  String get locationTimeMatchPreviewHint => '例如 A1062 或 A主201';
+
+  @override
+  String get locationTimeMatchPreviewNoMatch => '未命中任何地点组，将使用课表默认时间模板';
+
+  @override
+  String locationTimeMatchPreviewResult(
+    String group,
+    String scheme,
+    String keyword,
+  ) {
+    return '将匹配：$group · $scheme（关键词 $keyword）';
+  }
+
+  @override
+  String get locationTimeMatchApplyActive => '应用到当前课表';
+
+  @override
+  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
+    return '已处理：命中 $matched 门，更新 $updated 门（未锁定 $unlocked 门）';
+  }
+
+  @override
+  String get locationTimeMatchEmpty => '还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。';
+
+  @override
+  String get locationTimeMatchCreateGroup => '新建地点组';
+
+  @override
+  String get locationTimeMatchEditGroup => '编辑地点组';
+
+  @override
+  String get locationTimeMatchUnknownScheme => '未知时间模板';
+
+  @override
+  String get locationTimeMatchNoKeywords => '未设置关键词';
+
+  @override
+  String locationTimeMatchBoundScheme(String name) {
+    return '时间模板：$name';
+  }
+
+  @override
+  String locationTimeMatchKeywordsLine(String keywords) {
+    return '关键词：$keywords';
+  }
+
+  @override
+  String get locationTimeMatchDeleteTitle => '删除地点组？';
+
+  @override
+  String locationTimeMatchDeleteMessage(String name) {
+    return '确定删除「$name」？相关课程将恢复为课表默认时间模板。';
+  }
+
+  @override
+  String get locationTimeMatchDeleted => '已删除地点组';
+
+  @override
+  String get locationTimeMatchGroupNameLabel => '地点组名称';
+
+  @override
+  String get locationTimeMatchGroupNameHint => '例如：主教学楼 / 其他教学楼';
+
+  @override
+  String get locationTimeMatchBoundSchemeLabel => '绑定时间模板';
+
+  @override
+  String get locationTimeMatchNeedTimeScheme => '请先创建至少一套时间模板';
+
+  @override
+  String get locationTimeMatchEnabledLabel => '启用此地点组';
+
+  @override
+  String get locationTimeMatchKeywordsSection => '地点关键词';
+
+  @override
+  String get locationTimeMatchKeywordsHelp =>
+      '可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。';
+
+  @override
+  String get locationTimeMatchSelectedKeywords => '已选关键词';
+
+  @override
+  String get locationTimeMatchNoSelectedKeywords => '尚未添加关键词';
+
+  @override
+  String get locationTimeMatchPickFromLocations => '从课表地点选择';
+
+  @override
+  String get locationTimeMatchBuildingSuggestions => '从课表识别的楼栋';
+
+  @override
+  String get locationTimeMatchNoBuildingSuggestions => '当前课表没有可识别的楼栋地点';
+
+  @override
+  String get locationTimeMatchAddBuilding => '添加';
+
+  @override
+  String get locationTimeMatchAddAllBuildings => '一键添加全部未配置楼栋';
+
+  @override
+  String locationTimeMatchBuildingRoomCount(int count) {
+    return '$count 间教室';
+  }
+
+  @override
+  String locationTimeMatchBuildingGateTags(String tags) {
+    return '标签：$tags';
+  }
+
+  @override
+  String locationTimeMatchKeywordExtracted(String keyword) {
+    return '已从地点提取关键词 $keyword';
+  }
+
+  @override
+  String get locationTimeMatchKeywordAlreadyExists => '关键词已存在';
+
+  @override
+  String get locationTimeMatchAddKeyword => '手动添加关键词';
+
+  @override
+  String get locationTimeMatchKeywordLabel => '关键词';
+
+  @override
+  String get locationTimeMatchKeywordHint => 'A1 / A主 / 六教';
+
+  @override
+  String get locationTimeMatchModeLabel => '匹配模式';
+
+  @override
+  String get locationTimeMatchModePrefix => '前缀';
+
+  @override
+  String get locationTimeMatchModeContains => '包含';
+
+  @override
+  String get locationTimeMatchModeExact => '精确';
+
+  @override
+  String get locationTimeMatchKeywordTooShort => '关键词过短，容易误匹配';
+
+  @override
+  String get locationTimeMatchNameRequired => '请填写地点组名称';
+
+  @override
+  String get locationTimeMatchKeywordRequired => '请至少添加一个关键词';
+
+  @override
+  String get locationTimeMatchSaved => '地点组已保存';
+
+  @override
+  String get locationTimeMatchSaveFailed => '保存失败';
+
+  @override
+  String get followLocationAutoTimeScheme => '跟隨課表 / 地點自動';
+
+  @override
+  String get followLocationAutoTimeSchemeDescription =>
+      '未手動指定時，依上課地點關鍵詞自動匹配時間範本；未命中則用課表預設範本';
+
+  @override
+  String locationTimeMatchedSchemeHint(String group, String scheme) {
+    return '地点自动：$group · $scheme';
   }
 }

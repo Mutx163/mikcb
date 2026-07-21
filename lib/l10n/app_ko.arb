@@ -736,7 +736,7 @@
       }
     }
   },
-  "followCurrentTimetableDescription": "기본으로 현재 시간표의 메인 템플릿에 연동됩니다. 대부분의 수업에 적합합니다",
+  "followCurrentTimetableDescription": "Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme",
   "overrideTimeSchemeDescription": "이 수업은 선택한 템플릿을 개별 사용하며 메인 템플릿에 연동되지 않습니다",
   "weekdayLabel": "요일",
   "startSectionLabel": "시작 교시",
@@ -4994,5 +4994,137 @@
   },
   "coupleWebdavTitle": "견과클라우드 가져오기",
   "coupleWebdavSubtitle": "상대(또는 공용) 견과클라우드에 로그인하여 업로드된 시간표를 가져옵니다. 클라우드 동기화 계정과 별개입니다",
-  "coupleWebdavNotConnected": "견과클라우드 미연결"
+  "coupleWebdavNotConnected": "견과클라우드 미연결",
+  "locationTimeMatchEntryTitle": "Location time match",
+  "locationTimeMatchEntrySubtitle": "Auto-pick time schemes by classroom keywords",
+  "locationTimeMatchTitle": "Location time match",
+  "locationTimeMatchSubtitle": "Map classroom keywords to time schemes. Courses with a manual time scheme stay unchanged.",
+  "locationTimeMatchWeekAxisNote": "Note: the week-view time axis still shows the timetable default scheme. Card/live times use the matched scheme.",
+  "locationTimeMatchPreviewLabel": "Try a location",
+  "locationTimeMatchPreviewHint": "e.g. A1062 or A主201",
+  "locationTimeMatchPreviewNoMatch": "No group matched; the default timetable scheme will be used",
+  "locationTimeMatchPreviewResult": "Matches: {group} · {scheme} (keyword {keyword})",
+  "@locationTimeMatchPreviewResult": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "scheme": {
+        "type": "String"
+      },
+      "keyword": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchApplyActive": "Apply to current timetable",
+  "locationTimeMatchApplyResult": "Done: matched {matched}, updated {updated} (unlocked {unlocked})",
+  "@locationTimeMatchApplyResult": {
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "unlocked": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchEmpty": "No place groups yet. Tap + to add e.g. Main building / Other buildings.",
+  "locationTimeMatchCreateGroup": "New place group",
+  "locationTimeMatchEditGroup": "Edit place group",
+  "locationTimeMatchUnknownScheme": "Unknown time scheme",
+  "locationTimeMatchNoKeywords": "No keywords",
+  "locationTimeMatchBoundScheme": "Time scheme: {name}",
+  "@locationTimeMatchBoundScheme": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchKeywordsLine": "Keywords: {keywords}",
+  "@locationTimeMatchKeywordsLine": {
+    "placeholders": {
+      "keywords": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchDeleteTitle": "Delete place group?",
+  "locationTimeMatchDeleteMessage": "Delete \"{name}\"? Related courses will fall back to the default scheme.",
+  "@locationTimeMatchDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchDeleted": "Place group deleted",
+  "locationTimeMatchGroupNameLabel": "Group name",
+  "locationTimeMatchGroupNameHint": "e.g. Main building",
+  "locationTimeMatchBoundSchemeLabel": "Bound time scheme",
+  "locationTimeMatchNeedTimeScheme": "Create at least one time scheme first",
+  "locationTimeMatchEnabledLabel": "Enable this group",
+  "locationTimeMatchKeywordsSection": "Location keywords",
+  "locationTimeMatchKeywordsHelp": "Pick buildings from your timetable locations, or type keywords (A主, A1, A6). Prefer prefix match; longer keywords win.",
+  "locationTimeMatchAddKeyword": "Add keyword manually",
+  "locationTimeMatchKeywordLabel": "Keyword",
+  "locationTimeMatchKeywordHint": "A1 / A主",
+  "locationTimeMatchModeLabel": "Match mode",
+  "locationTimeMatchModePrefix": "Prefix",
+  "locationTimeMatchModeContains": "Contains",
+  "locationTimeMatchModeExact": "Exact",
+  "locationTimeMatchKeywordTooShort": "Keyword is very short and may mis-match",
+  "locationTimeMatchNameRequired": "Enter a group name",
+  "locationTimeMatchKeywordRequired": "Add at least one keyword",
+  "locationTimeMatchSaved": "Place group saved",
+  "locationTimeMatchSaveFailed": "Save failed",
+  "followLocationAutoTimeScheme": "Follow timetable / location auto",
+  "followLocationAutoTimeSchemeDescription": "Without a manual override, match a time scheme by location keywords; otherwise use the timetable default",
+  "locationTimeMatchedSchemeHint": "Location auto: {group} · {scheme}",
+  "@locationTimeMatchedSchemeHint": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchSelectedKeywords": "Selected keywords",
+  "locationTimeMatchNoSelectedKeywords": "No keywords yet",
+  "locationTimeMatchPickFromLocations": "Pick from timetable locations",
+  "locationTimeMatchBuildingSuggestions": "Buildings found in timetable",
+  "locationTimeMatchNoBuildingSuggestions": "No recognizable building locations yet",
+  "locationTimeMatchAddBuilding": "Add",
+  "locationTimeMatchAddAllBuildings": "Add all uncovered buildings",
+  "locationTimeMatchBuildingRoomCount": "{count} rooms",
+  "@locationTimeMatchBuildingRoomCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchBuildingGateTags": "Tags: {tags}",
+  "@locationTimeMatchBuildingGateTags": {
+    "placeholders": {
+      "tags": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchKeywordExtracted": "Extracted keyword {keyword}",
+  "@locationTimeMatchKeywordExtracted": {
+    "placeholders": {
+      "keyword": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchKeywordAlreadyExists": "Keyword already added"
 }
