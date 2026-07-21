@@ -72,6 +72,9 @@ void main() {
         'locationTimeGroups': snapshot.locationTimeGroups
             .map((group) => group.toJson())
             .toList(),
+        'scheduleDateRules': snapshot.scheduleDateRules
+            .map((rule) => rule.toJson())
+            .toList(),
         'teacherRecords': snapshot.teacherRecords,
         'locationRecords': snapshot.locationRecords,
         'warehouse': {
@@ -195,6 +198,7 @@ void main() {
           .map((scheme) => scheme.toJson())
           .toList(),
       'locationTimeGroups': groups.map((group) => group.toJson()).toList(),
+      'scheduleDateRules': const <dynamic>[],
       'teacherRecords': const <String>[],
       'locationRecords': const <String>[],
       'warehouse': {
@@ -290,6 +294,7 @@ void main() {
       'profiles': snapshot.profiles.map((profile) => profile.toJson()).toList(),
       'timeSchemes': const <dynamic>[],
       'locationTimeGroups': const <dynamic>[],
+      'scheduleDateRules': const <dynamic>[],
       'teacherRecords': const <String>[],
       'locationRecords': const <String>[],
       'warehouse': {

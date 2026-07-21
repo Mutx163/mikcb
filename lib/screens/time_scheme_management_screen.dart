@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
+import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -63,6 +64,8 @@ class _TimeSchemeManagementScreenState
       builder: (context, provider, child) {
         final schemes = provider.timeSchemes;
         final activeSchemeId = provider.activeTimeScheme?.id;
+        final dateRules = provider.scheduleDateRules;
+        final activeDateRule = provider.matchScheduleDateRule(DateTime.now());
 
         return HyperosSubpage(
           onBack: () => Navigator.pop(context),
@@ -96,9 +99,132 @@ class _TimeSchemeManagementScreenState
                         );
                       },
                     ),
+                    HyperosListTile(
+                      icon: Icons.event_available_outlined,
+                      iconAccent: HyperosIconColors.teal,
+                      title: l10n.scheduleDateRuleSectionTitle,
+                      details: dateRules.isEmpty
+                          ? null
+                          : activeDateRule == null
+                          ? '${dateRules.length}'
+                          : l10n.scheduleDateRuleActiveToday,
+                      onTap: () =>
+                          _openScheduleDateRuleEditor(context, existing: null),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                if (dateRules.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...dateRules.map((rule) {
+                    final schemeName = provider.timeSchemes
+                        .where((scheme) => scheme.id == rule.timeSchemeId)
+                        .map((scheme) => scheme.name)
+                        .firstOrNull;
+                    final isActiveToday = activeDateRule?.id == rule.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Material(
+                        color: HyperosColors.card(context),
+                        shape: HyperosTheme.cardShape(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => _openScheduleDateRuleEditor(
+                            context,
+                            existing: rule,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        rule.name,
+                                        style: context.theme.typography.body.md
+                                            .copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        l10n.scheduleDateRuleRangeSummary(
+                                          rule.startDate,
+                                          rule.endDate,
+                                        ),
+                                        style: context.theme.typography.body.sm
+                                            .copyWith(
+                                              color: context
+                                                  .theme
+                                                  .colors
+                                                  .mutedForeground,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        schemeName ??
+                                            l10n.locationTimeMatchUnknownScheme,
+                                        style: context.theme.typography.body.sm
+                                            .copyWith(
+                                              color: context
+                                                  .theme
+                                                  .colors
+                                                  .mutedForeground,
+                                            ),
+                                      ),
+                                      if (isActiveToday) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          l10n.scheduleDateRuleActiveToday,
+                                          style: context
+                                              .theme
+                                              .typography
+                                              .body
+                                              .xs
+                                              .copyWith(
+                                                color: context
+                                                    .theme
+                                                    .colors
+                                                    .primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.deleteAction,
+                                  onPressed: () =>
+                                      _deleteScheduleDateRule(context, rule),
+                                  icon: const Icon(Icons.delete_outline),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ] else ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.scheduleDateRuleEmpty,
+                    style: context.theme.typography.body.sm.copyWith(
+                      color: context.theme.colors.mutedForeground,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  l10n.scheduleDateRuleNote,
+                  style: context.theme.typography.body.xs.copyWith(
+                    color: context.theme.colors.mutedForeground,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 ...List.generate(schemes.length, (index) {
                   final scheme = schemes[index];
                   final isActive = scheme.id == activeSchemeId;
@@ -120,6 +246,267 @@ class _TimeSchemeManagementScreenState
           ),
         );
       },
+    );
+  }
+
+  String _localizeScheduleDateRuleError(AppLocalizations l10n, String code) {
+    return switch (code) {
+      'schedule_date_rule_max_exceeded' => l10n.scheduleDateRuleErrorMax,
+      'schedule_date_rule_overlap' => l10n.scheduleDateRuleErrorOverlap,
+      'schedule_date_rule_invalid_date' =>
+        l10n.scheduleDateRuleErrorInvalidDate,
+      'schedule_date_rule_end_before_start' =>
+        l10n.scheduleDateRuleErrorEndBeforeStart,
+      'schedule_date_rule_scheme_required' =>
+        l10n.scheduleDateRuleErrorSchemeRequired,
+      'schedule_date_rule_name_required' =>
+        l10n.scheduleDateRuleErrorNameRequired,
+      'time_scheme_not_found' => l10n.serviceMsgTimeSchemeNotFound,
+      _ => code,
+    };
+  }
+
+  Future<void> _openScheduleDateRuleEditor(
+    BuildContext context, {
+    required ScheduleDateRule? existing,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    if (provider.timeSchemes.isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.scheduleDateRuleNeedScheme,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    if (existing == null &&
+        provider.scheduleDateRules.length >=
+            ScheduleDateRuleLogic.maxRulesPerDevice) {
+      showAppToast(
+        context,
+        message: l10n.scheduleDateRuleMaxReached,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    var startDate =
+        ScheduleDateRuleLogic.parseIsoDate(existing?.startDate) ??
+        DateTime.now();
+    var endDate =
+        ScheduleDateRuleLogic.parseIsoDate(existing?.endDate) ??
+        DateTime.now().add(const Duration(days: 90));
+    var selectedSchemeId =
+        existing?.timeSchemeId ??
+        provider.activeTimeScheme?.id ??
+        provider.timeSchemes.first.id;
+    var enabled = existing?.enabled ?? true;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Future<void> pickStart() async {
+              final picked = await showDatePicker(
+                context: dialogContext,
+                initialDate: startDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2040),
+              );
+              if (picked != null) {
+                setDialogState(() {
+                  startDate = picked;
+                  if (endDate.isBefore(startDate)) {
+                    endDate = startDate;
+                  }
+                });
+              }
+            }
+
+            Future<void> pickEnd() async {
+              final picked = await showDatePicker(
+                context: dialogContext,
+                initialDate: endDate.isBefore(startDate) ? startDate : endDate,
+                firstDate: startDate,
+                lastDate: DateTime(2040),
+              );
+              if (picked != null) {
+                setDialogState(() => endDate = picked);
+              }
+            }
+
+            return AlertDialog(
+              title: Text(
+                existing == null
+                    ? l10n.scheduleDateRuleAdd
+                    : l10n.scheduleDateRuleEdit,
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    HyperosTextField(
+                      controller: nameController,
+                      label: l10n.scheduleDateRuleNameLabel,
+                      hint: l10n.scheduleDateRuleNameHint,
+                    ),
+                    const SizedBox(height: 12),
+                    HyperosListTile(
+                      icon: Icons.event_outlined,
+                      title: l10n.scheduleDateRuleStartDate,
+                      details: ScheduleDateRuleLogic.formatIsoDate(startDate),
+                      onTap: pickStart,
+                    ),
+                    HyperosListTile(
+                      icon: Icons.event_outlined,
+                      title: l10n.scheduleDateRuleEndDate,
+                      details: ScheduleDateRuleLogic.formatIsoDate(endDate),
+                      onTap: pickEnd,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.scheduleDateRuleBoundScheme,
+                      style: dialogContext.theme.typography.body.sm,
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedSchemeId,
+                      items: provider.timeSchemes
+                          .map(
+                            (scheme) => DropdownMenuItem(
+                              value: scheme.id,
+                              child: Text(scheme.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        setDialogState(() => selectedSchemeId = value);
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.scheduleDateRuleEnabled),
+                      value: enabled,
+                      onChanged: (value) =>
+                          setDialogState(() => enabled = value),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: Text(l10n.cancelAction),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: Text(l10n.saveAction),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    final name = nameController.text.trim();
+    nameController.dispose();
+    if (saved != true || !context.mounted) {
+      return;
+    }
+    if (name.isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.scheduleDateRuleNameRequired,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+
+    try {
+      if (existing == null) {
+        await provider.createScheduleDateRule(
+          name: name,
+          timeSchemeId: selectedSchemeId,
+          startDate: ScheduleDateRuleLogic.formatIsoDate(startDate),
+          endDate: ScheduleDateRuleLogic.formatIsoDate(endDate),
+          enabled: enabled,
+        );
+      } else {
+        await provider.updateScheduleDateRule(
+          existing.copyWith(
+            name: name,
+            timeSchemeId: selectedSchemeId,
+            startDate: ScheduleDateRuleLogic.formatIsoDate(startDate),
+            endDate: ScheduleDateRuleLogic.formatIsoDate(endDate),
+            enabled: enabled,
+          ),
+        );
+      }
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.scheduleDateRuleSaved,
+        kind: AppToastKind.success,
+      );
+    } on ArgumentError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.scheduleDateRuleSaveFailed(
+          _localizeScheduleDateRuleError(l10n, error.message.toString()),
+        ),
+        kind: AppToastKind.error,
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.scheduleDateRuleSaveFailed(
+          l10n.locationTimeMatchSaveFailed,
+        ),
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
+  Future<void> _deleteScheduleDateRule(
+    BuildContext context,
+    ScheduleDateRule rule,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: l10n.scheduleDateRuleDeleteTitle,
+      message: l10n.scheduleDateRuleDeleteMessage(rule.name),
+      confirmLabel: l10n.deleteAction,
+      destructiveConfirm: true,
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    await context.read<TimetableProvider>().deleteScheduleDateRule(rule.id);
+    if (!context.mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: l10n.scheduleDateRuleDeleted,
+      kind: AppToastKind.success,
     );
   }
 

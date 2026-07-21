@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import '../models/holiday_entry.dart';
 import '../models/location_time_group.dart';
 import '../models/partner_timetable_binding.dart';
+import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/warehouse_macro_models.dart';
@@ -20,6 +21,7 @@ class AppSyncSnapshot {
   final String? activeProfileId;
   final List<TimeScheme> timeSchemes;
   final List<LocationTimeGroup> locationTimeGroups;
+  final List<ScheduleDateRule> scheduleDateRules;
   final List<String> teacherRecords;
   final List<String> locationRecords;
   final WarehouseSyncBundle warehouse;
@@ -36,6 +38,7 @@ class AppSyncSnapshot {
     required this.activeProfileId,
     required this.timeSchemes,
     this.locationTimeGroups = const [],
+    this.scheduleDateRules = const [],
     required this.teacherRecords,
     required this.locationRecords,
     required this.warehouse,
@@ -125,6 +128,7 @@ class AppSyncSnapshotService {
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
       locationTimeGroups: provider.locationTimeGroups,
+      scheduleDateRules: provider.scheduleDateRules,
       teacherRecords: teacherRecords,
       locationRecords: locationRecords,
       warehouse: warehouse,
@@ -141,6 +145,7 @@ class AppSyncSnapshotService {
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
       locationTimeGroups: provider.locationTimeGroups,
+      scheduleDateRules: provider.scheduleDateRules,
       teacherRecords: teacherRecords,
       locationRecords: locationRecords,
       warehouse: warehouse,
@@ -173,6 +178,7 @@ class AppSyncSnapshotService {
       activeProfileId: snapshot.activeProfileId,
       timeSchemes: snapshot.timeSchemes,
       locationTimeGroups: snapshot.locationTimeGroups,
+      scheduleDateRules: snapshot.scheduleDateRules,
       teacherRecords: snapshot.teacherRecords,
       locationRecords: snapshot.locationRecords,
       warehouse: snapshot.warehouse,
@@ -260,6 +266,14 @@ class AppSyncSnapshotService {
                     LocationTimeGroup.fromJson(Map<String, dynamic>.from(item)),
               )
               .toList(),
+      scheduleDateRules:
+          (json['scheduleDateRules'] as List<dynamic>? ?? const [])
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    ScheduleDateRule.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList(),
       teacherRecords: (json['teacherRecords'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .where((item) => item.isNotEmpty)
@@ -327,6 +341,7 @@ class AppSyncSnapshotService {
       await _storageService.saveTeacherRecords(snapshot.teacherRecords);
       await _storageService.saveLocationRecords(snapshot.locationRecords);
       await _storageService.saveLocationTimeGroups(snapshot.locationTimeGroups);
+      await _storageService.saveScheduleDateRules(snapshot.scheduleDateRules);
       await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
       await _warehouseMacroService.importAllMacros(snapshot.macros);
       await _holidayService.saveCustomHolidays(snapshot.customHolidays);
@@ -376,6 +391,7 @@ class AppSyncSnapshotService {
     required String? activeProfileId,
     required List<TimeScheme> timeSchemes,
     List<LocationTimeGroup> locationTimeGroups = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
     required List<String> teacherRecords,
     required List<String> locationRecords,
     required WarehouseSyncBundle warehouse,
@@ -396,6 +412,9 @@ class AppSyncSnapshotService {
       'timeSchemes': timeSchemes.map((scheme) => scheme.toJson()).toList(),
       'locationTimeGroups': locationTimeGroups
           .map((group) => group.toJson())
+          .toList(),
+      'scheduleDateRules': scheduleDateRules
+          .map((rule) => rule.toJson())
           .toList(),
       'teacherRecords': teacherRecords,
       'locationRecords': locationRecords,

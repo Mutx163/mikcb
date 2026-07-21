@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/location_time_group.dart';
+import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -182,6 +183,89 @@ void main() {
           locationTimeGroups: groups,
         ),
         overrideScheme,
+      );
+    });
+
+    test('uses date rule when no override and no location match', () {
+      final defaultScheme = _scheme('default');
+      final summerScheme = _scheme('summer');
+      final settings = TimetableSettings.defaults().copyWith(
+        activeTimeSchemeId: defaultScheme.id,
+      );
+      final course = _course(id: '1');
+      final rules = [
+        ScheduleDateRule(
+          id: 'r1',
+          name: '夏令时',
+          timeSchemeId: summerScheme.id,
+          startDate: '2026-05-01',
+          endDate: '2026-09-30',
+        ),
+      ];
+
+      expect(
+        TimeSchemeLogic.resolveCourseTimeScheme(
+          [defaultScheme, summerScheme],
+          settings,
+          course,
+          scheduleDateRules: rules,
+          onDate: DateTime(2026, 7, 1),
+        ),
+        summerScheme,
+      );
+      expect(
+        TimeSchemeLogic.resolveCourseTimeScheme(
+          [defaultScheme, summerScheme],
+          settings,
+          course,
+          scheduleDateRules: rules,
+          onDate: DateTime(2026, 1, 1),
+        ),
+        defaultScheme,
+      );
+    });
+
+    test('location match beats date rule', () {
+      final defaultScheme = _scheme('default');
+      final summerScheme = _scheme('summer');
+      final buildingScheme = _scheme('building');
+      final settings = TimetableSettings.defaults().copyWith(
+        activeTimeSchemeId: defaultScheme.id,
+      );
+      final course = _course(id: '1').copyWith(location: 'A1062');
+      final groups = [
+        LocationTimeGroup(
+          id: 'g1',
+          name: '其他教学楼',
+          timeSchemeId: buildingScheme.id,
+          keywords: const [
+            LocationKeyword(
+              pattern: 'A1',
+              mode: LocationKeywordMatchMode.prefix,
+            ),
+          ],
+        ),
+      ];
+      final rules = [
+        ScheduleDateRule(
+          id: 'r1',
+          name: '夏令时',
+          timeSchemeId: summerScheme.id,
+          startDate: '2026-05-01',
+          endDate: '2026-09-30',
+        ),
+      ];
+
+      expect(
+        TimeSchemeLogic.resolveCourseTimeScheme(
+          [defaultScheme, summerScheme, buildingScheme],
+          settings,
+          course,
+          locationTimeGroups: groups,
+          scheduleDateRules: rules,
+          onDate: DateTime(2026, 7, 1),
+        ),
+        buildingScheme,
       );
     });
   });

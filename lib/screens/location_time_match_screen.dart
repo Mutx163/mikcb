@@ -32,7 +32,6 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
 
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
@@ -58,112 +57,86 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
               onPress: () => _openEditor(context, provider),
             ),
           ],
-          child: HyperosBlurredBodyInset(
-            child: ListView(
-              padding: HyperosTokens.listPadding,
-              children: [
-                Text(
-                  l10n.locationTimeMatchSubtitle,
-                  style: theme.typography.body.sm.copyWith(
-                    color: theme.colors.mutedForeground,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.locationTimeMatchWeekAxisNote,
-                  style: theme.typography.body.xs.copyWith(
-                    color: theme.colors.mutedForeground,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                HyperosListGroup(
+          child: HyperosListView(
+            children: [
+              HyperosSectionLabel(text: l10n.locationTimeMatchTitle),
+              HyperosSectionDescription(text: l10n.locationTimeMatchSubtitle),
+              const SizedBox(height: 8),
+              HyperosSectionDescription(
+                text: l10n.locationTimeMatchWeekAxisNote,
+              ),
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.locationTimeMatchPreviewLabel),
+              HyperosControlCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          HyperosTextField(
-                            controller: _previewController,
-                            label: l10n.locationTimeMatchPreviewLabel,
-                            hint: l10n.locationTimeMatchPreviewHint,
-                            onChanged: (_) => setState(() {}),
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () async {
-                                final controller = TextEditingController(
-                                  text: _previewController.text,
-                                );
-                                await showCourseFieldPickerSheet(
-                                  context,
-                                  title: l10n.selectLocationTitle,
-                                  suggestions: provider.uniqueLocations,
-                                  controller: controller,
-                                  onConfirmed: () {
-                                    _previewController.text = controller.text;
-                                    setState(() {});
-                                  },
-                                );
-                                controller.dispose();
-                              },
-                              icon: const Icon(Icons.history_rounded, size: 18),
-                              label: Text(
-                                l10n.locationTimeMatchPickFromLocations,
-                              ),
+                    HyperosTextField(
+                      controller: _previewController,
+                      hint: l10n.locationTimeMatchPreviewHint,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    HyperosButton(
+                      label: l10n.locationTimeMatchPickFromLocations,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () async {
+                        final controller = TextEditingController(
+                          text: _previewController.text,
+                        );
+                        await showCourseFieldPickerSheet(
+                          context,
+                          title: l10n.selectLocationTitle,
+                          suggestions: provider.uniqueLocations,
+                          controller: controller,
+                          onConfirmed: () {
+                            _previewController.text = controller.text;
+                            setState(() {});
+                          },
+                        );
+                        controller.dispose();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      previewMatch == null
+                          ? l10n.locationTimeMatchPreviewNoMatch
+                          : l10n.locationTimeMatchPreviewResult(
+                              previewMatch.groupName,
+                              previewSchemeName ?? '',
+                              previewMatch.matchedKeyword.pattern,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            previewMatch == null
-                                ? l10n.locationTimeMatchPreviewNoMatch
-                                : l10n.locationTimeMatchPreviewResult(
-                                    previewMatch.groupName,
-                                    previewSchemeName ?? '',
-                                    previewMatch.matchedKeyword.pattern,
-                                  ),
-                            style: theme.typography.body.sm.copyWith(
-                              color: previewMatch == null
-                                  ? theme.colors.mutedForeground
-                                  : theme.colors.primary,
-                            ),
-                          ),
-                        ],
+                      style: HyperosTypography.listDetail(context).copyWith(
+                        color: previewMatch == null
+                            ? HyperosColors.secondaryText(context)
+                            : HyperosColors.primary(context),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                HyperosButton(
-                  label: l10n.locationTimeMatchApplyActive,
-                  variant: HyperosButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () => _applyToActive(context, provider),
-                ),
-                const SizedBox(height: 16),
-                if (groups.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        l10n.locationTimeMatchEmpty,
-                        style: theme.typography.body.sm.copyWith(
-                          color: theme.colors.mutedForeground,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ...groups.map(
-                    (group) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _buildGroupCard(context, provider, group),
-                    ),
+              ),
+              const HyperosSectionGap(),
+              HyperosListGroup(
+                children: [
+                  HyperosActionTile(
+                    icon: Icons.playlist_add_check_rounded,
+                    title: l10n.locationTimeMatchApplyActive,
+                    onTap: () => _applyToActive(context, provider),
                   ),
+                ],
+              ),
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.locationTimeMatchEntryTitle),
+              if (groups.isEmpty)
+                HyperosSectionDescription(text: l10n.locationTimeMatchEmpty)
+              else ...[
+                for (var index = 0; index < groups.length; index++) ...[
+                  if (index > 0) const HyperosSectionGap(),
+                  _buildGroupCard(context, provider, groups[index]),
+                ],
               ],
-            ),
+            ],
           ),
         );
       },
@@ -176,7 +149,6 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     LocationTimeGroup group,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
     final schemeName =
         provider.timeSchemes
             .where((scheme) => scheme.id == group.timeSchemeId)
@@ -187,74 +159,48 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
         ? l10n.locationTimeMatchNoKeywords
         : group.keywordSummary;
 
-    return Material(
-      color: HyperosColors.card(context),
-      shape: HyperosTheme.cardShape(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _openEditor(context, provider, existing: group),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return HyperosControlCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSwitchTile(
+            icon: Icons.place_outlined,
+            iconAccent: HyperosIconColors.orange,
+            title: group.name,
+            subtitle: l10n.locationTimeMatchBoundScheme(schemeName),
+            value: group.enabled,
+            onChanged: (value) async {
+              await provider.updateLocationTimeGroup(
+                group.copyWith(enabled: value),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.locationTimeMatchKeywordsLine(keywordText),
+            style: HyperosTypography.listDetail(context),
+          ),
+          const SizedBox(height: 12),
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      group.name,
-                      style: theme.typography.body.md.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Switch.adaptive(
-                    value: group.enabled,
-                    onChanged: (value) async {
-                      await provider.updateLocationTimeGroup(
-                        group.copyWith(enabled: value),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.locationTimeMatchBoundScheme(schemeName),
-                style: theme.typography.body.sm.copyWith(
-                  color: theme.colors.mutedForeground,
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.editAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () =>
+                      _openEditor(context, provider, existing: group),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                l10n.locationTimeMatchKeywordsLine(keywordText),
-                style: theme.typography.body.xs.copyWith(
-                  color: theme.colors.mutedForeground,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: HyperosButton(
-                      label: l10n.editAction,
-                      variant: HyperosButtonVariant.secondary,
-                      expand: true,
-                      onPressed: () =>
-                          _openEditor(context, provider, existing: group),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  HyperosButton(
-                    label: l10n.deleteAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: () => _deleteGroup(context, provider, group),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              HyperosButton(
+                label: l10n.deleteAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: () => _deleteGroup(context, provider, group),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -425,6 +371,63 @@ class _LocationTimeGroupEditorScreenState
     }
   }
 
+  /// Adds many building keywords in one rebuild, then scrolls back to the top.
+  ///
+  /// Without this, users often stand at the bottom of a long building list;
+  /// after one-tap add the suggestion cards vanish and content height collapses,
+  /// leaving a blank viewport while the real chips sit above the fold.
+  void _addAllUncoveredBuildings(
+    List<BuildingCluster> uncovered,
+    AppLocalizations l10n,
+  ) {
+    if (uncovered.isEmpty) {
+      return;
+    }
+
+    final addedPatterns = <String>[];
+    setState(() {
+      for (final cluster in uncovered) {
+        final pattern = cluster.suggestedKeyword.pattern.trim();
+        if (pattern.isEmpty || _hasKeyword(pattern)) {
+          continue;
+        }
+        _keywords.add(
+          _KeywordDraft(pattern: pattern, mode: cluster.suggestedKeyword.mode),
+        );
+        addedPatterns.add(pattern);
+      }
+    });
+
+    if (addedPatterns.isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.locationTimeMatchKeywordAlreadyExists,
+        kind: AppToastKind.info,
+      );
+      return;
+    }
+
+    showAppToast(
+      context,
+      message: l10n.locationTimeMatchKeywordExtracted(addedPatterns.join(', ')),
+      kind: AppToastKind.success,
+    );
+    _scrollEditorToTop();
+  }
+
+  void _scrollEditorToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final primaryController = PrimaryScrollController.maybeOf(context);
+      if (primaryController == null || !primaryController.hasClients) {
+        return;
+      }
+      primaryController.jumpTo(0);
+    });
+  }
+
   void _removeKeywordAt(int index) {
     setState(() {
       _keywords.removeAt(index).dispose();
@@ -472,9 +475,16 @@ class _LocationTimeGroupEditorScreenState
       locations: provider.uniqueLocations,
       existingKeywords: currentKeywords,
     );
+    final schemeItems = <String, String>{
+      for (final scheme in schemes) scheme.name: scheme.id,
+    };
+    final selectedSchemeId = schemes.any((scheme) => scheme.id == _timeSchemeId)
+        ? _timeSchemeId
+        : (schemes.isEmpty ? null : schemes.first.id);
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
+      resizeToAvoidBottomInset: true,
       title: Text(
         widget.existing == null
             ? l10n.locationTimeMatchCreateGroup
@@ -487,144 +497,127 @@ class _LocationTimeGroupEditorScreenState
           onPress: () => _save(context, provider),
         ),
       ],
-      child: HyperosBlurredBodyInset(
-        child: ListView(
-          padding: HyperosTokens.listPadding,
-          children: [
-            HyperosTextField(
+      child: HyperosListView(
+        pageStorageKey: const PageStorageKey<String>(
+          'location-time-group-editor',
+        ),
+        children: [
+          HyperosSectionLabel(text: l10n.locationTimeMatchGroupNameLabel),
+          HyperosControlCard(
+            child: HyperosTextField(
               controller: _nameController,
-              label: l10n.locationTimeMatchGroupNameLabel,
               hint: l10n.locationTimeMatchGroupNameHint,
             ),
-            const SizedBox(height: 12),
-            Text(l10n.locationTimeMatchBoundSchemeLabel),
-            const SizedBox(height: 8),
-            if (schemes.isEmpty)
-              Text(l10n.locationTimeMatchNeedTimeScheme)
-            else
-              DropdownButton<String>(
-                isExpanded: true,
-                value: schemes.any((scheme) => scheme.id == _timeSchemeId)
-                    ? _timeSchemeId
-                    : schemes.first.id,
-                items: [
-                  for (final scheme in schemes)
-                    DropdownMenuItem(
-                      value: scheme.id,
-                      child: Text(scheme.name),
-                    ),
-                ],
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() => _timeSchemeId = value);
-                },
-              ),
-            const SizedBox(height: 12),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.locationTimeMatchEnabledLabel),
-              value: _enabled,
-              onChanged: (value) => setState(() => _enabled = value),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.locationTimeMatchKeywordsSection,
-              style: context.theme.typography.body.md.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.locationTimeMatchKeywordsHelp,
-              style: context.theme.typography.body.xs.copyWith(
-                color: context.theme.colors.mutedForeground,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(l10n.locationTimeMatchSelectedKeywords),
-            const SizedBox(height: 8),
-            if (_keywords.isEmpty)
-              Text(
-                l10n.locationTimeMatchNoSelectedKeywords,
-                style: context.theme.typography.body.sm.copyWith(
-                  color: context.theme.colors.mutedForeground,
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.locationTimeMatchBoundSchemeLabel),
+          if (schemes.isEmpty)
+            HyperosSectionDescription(text: l10n.locationTimeMatchNeedTimeScheme)
+          else
+            HyperosListGroup(
+              children: [
+                HyperosSelectTile<String>(
+                  label: l10n.locationTimeMatchBoundSchemeLabel,
+                  items: schemeItems,
+                  value: selectedSchemeId,
+                  useSheetForPopup: true,
+                  onChanged: (value) {
+                    setState(() => _timeSchemeId = value);
+                  },
                 ),
-              )
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (var index = 0; index < _keywords.length; index++)
-                    InputChip(
-                      label: Text(
-                        '${_keywords[index].patternController.text} · ${_modeLabel(l10n, _keywords[index].mode)}',
-                      ),
-                      onDeleted: () => _removeKeywordAt(index),
-                      onPressed: () => _editKeywordDialog(context, l10n, index),
-                    ),
-                ],
-              ),
-            const SizedBox(height: 12),
-            HyperosButton(
-              label: l10n.locationTimeMatchPickFromLocations,
-              variant: HyperosButtonVariant.secondary,
-              expand: true,
-              onPressed: () => _pickLocationAsKeyword(context, provider),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(l10n.locationTimeMatchBuildingSuggestions),
-            const SizedBox(height: 8),
-            if (uncovered.isEmpty)
-              Text(
-                l10n.locationTimeMatchNoBuildingSuggestions,
-                style: context.theme.typography.body.sm.copyWith(
-                  color: context.theme.colors.mutedForeground,
-                ),
-              )
-            else ...[
-              for (final cluster in uncovered)
-                _buildBuildingClusterCard(context, l10n, cluster),
-              const SizedBox(height: 8),
-              HyperosButton(
-                label: l10n.locationTimeMatchAddAllBuildings,
-                variant: HyperosButtonVariant.secondary,
-                expand: true,
-                onPressed: () {
-                  for (final cluster in uncovered) {
-                    _addKeyword(cluster.suggestedKeyword, showToast: false);
-                  }
-                  if (uncovered.isNotEmpty) {
-                    showAppToast(
-                      context,
-                      message: l10n.locationTimeMatchKeywordExtracted(
-                        uncovered
-                            .map((cluster) => cluster.buildingKey)
-                            .join(', '),
-                      ),
-                      kind: AppToastKind.success,
-                    );
-                  }
-                },
+          const HyperosSectionGap(),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                icon: Icons.toggle_on_outlined,
+                iconAccent: HyperosIconColors.teal,
+                title: l10n.locationTimeMatchEnabledLabel,
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
               ),
             ],
-            const SizedBox(height: 12),
-            HyperosButton(
-              label: l10n.locationTimeMatchAddKeyword,
-              variant: HyperosButtonVariant.secondary,
-              expand: true,
-              onPressed: () => _addManualKeywordDialog(context, l10n),
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.locationTimeMatchKeywordsSection),
+          HyperosSectionDescription(text: l10n.locationTimeMatchKeywordsHelp),
+          const SizedBox(height: 8),
+          HyperosControlCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.locationTimeMatchSelectedKeywords,
+                  style: HyperosTypography.listTitle(context),
+                ),
+                const SizedBox(height: 8),
+                if (_keywords.isEmpty)
+                  Text(
+                    l10n.locationTimeMatchNoSelectedKeywords,
+                    style: HyperosTypography.listDetail(context),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (var index = 0; index < _keywords.length; index++)
+                        InputChip(
+                          label: Text(
+                            '${_keywords[index].patternController.text} · ${_modeLabel(l10n, _keywords[index].mode)}',
+                          ),
+                          onDeleted: () => _removeKeywordAt(index),
+                          onPressed: () =>
+                              _editKeywordDialog(context, l10n, index),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                HyperosButton(
+                  label: l10n.locationTimeMatchPickFromLocations,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => _pickLocationAsKeyword(context, provider),
+                ),
+                const SizedBox(height: 8),
+                HyperosButton(
+                  label: l10n.locationTimeMatchAddKeyword,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => _addManualKeywordDialog(context, l10n),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            HyperosButton(
-              label: l10n.saveAction,
-              expand: true,
-              onPressed: () => _save(context, provider),
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.locationTimeMatchBuildingSuggestions),
+          if (uncovered.isEmpty)
+            HyperosSectionDescription(
+              text: l10n.locationTimeMatchNoBuildingSuggestions,
+            )
+          else ...[
+            for (final cluster in uncovered) ...[
+              _buildBuildingClusterCard(context, l10n, cluster),
+              const HyperosSectionGap(),
+            ],
+            HyperosListGroup(
+              children: [
+                HyperosActionTile(
+                  icon: Icons.playlist_add_rounded,
+                  title: l10n.locationTimeMatchAddAllBuildings,
+                  onTap: () => _addAllUncoveredBuildings(uncovered, l10n),
+                ),
+              ],
             ),
           ],
-        ),
+          const HyperosSectionGap(),
+          HyperosButton(
+            label: l10n.saveAction,
+            expand: true,
+            onPressed: () => _save(context, provider),
+          ),
+        ],
       ),
     );
   }
@@ -634,74 +627,37 @@ class _LocationTimeGroupEditorScreenState
     AppLocalizations l10n,
     BuildingCluster cluster,
   ) {
-    final theme = context.theme;
     final samplesPreview = cluster.sampleLocations.take(3).join('、');
     final gateText = cluster.gateTags.isEmpty
         ? null
         : l10n.locationTimeMatchBuildingGateTags(cluster.gateTags.join('、'));
+    final detailParts = <String>[
+      l10n.locationTimeMatchBuildingRoomCount(cluster.locationCount),
+      if (samplesPreview.isNotEmpty) samplesPreview,
+      if (gateText != null) gateText,
+    ];
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: HyperosColors.card(context),
-        shape: HyperosTheme.cardShape(),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${cluster.buildingKey} · ${cluster.displayName}',
-                      style: theme.typography.body.md.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      l10n.locationTimeMatchBuildingRoomCount(
-                        cluster.locationCount,
-                      ),
-                      style: theme.typography.body.xs.copyWith(
-                        color: theme.colors.mutedForeground,
-                      ),
-                    ),
-                    if (samplesPreview.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        samplesPreview,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.typography.body.xs.copyWith(
-                          color: theme.colors.mutedForeground,
-                        ),
-                      ),
-                    ],
-                    if (gateText != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        gateText,
-                        style: theme.typography.body.xs.copyWith(
-                          color: theme.colors.primary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              HyperosButton(
-                label: l10n.locationTimeMatchAddBuilding,
-                variant: HyperosButtonVariant.secondary,
-                onPressed: () => _addKeyword(cluster.suggestedKeyword),
-              ),
-            ],
+    return HyperosControlCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '${cluster.buildingKey} · ${cluster.displayName}',
+            style: HyperosTypography.listTitle(context),
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(
+            detailParts.join(' · '),
+            style: HyperosTypography.listDetail(context),
+          ),
+          const SizedBox(height: 12),
+          HyperosButton(
+            label: l10n.locationTimeMatchAddBuilding,
+            variant: HyperosButtonVariant.secondary,
+            expand: true,
+            onPressed: () => _addKeyword(cluster.suggestedKeyword),
+          ),
+        ],
       ),
     );
   }
@@ -712,56 +668,49 @@ class _LocationTimeGroupEditorScreenState
   ) async {
     final controller = TextEditingController();
     var mode = LocationKeywordMatchMode.prefix;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showHyperosDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(l10n.locationTimeMatchAddKeyword),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  HyperosTextField(
-                    controller: controller,
-                    label: l10n.locationTimeMatchKeywordLabel,
-                    hint: l10n.locationTimeMatchKeywordHint,
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButton<LocationKeywordMatchMode>(
-                    isExpanded: true,
-                    value: mode,
-                    items: [
-                      for (final item in LocationKeywordMatchMode.values)
-                        DropdownMenuItem(
-                          value: item,
-                          child: Text(_modeLabel(l10n, item)),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setDialogState(() => mode = value);
-                    },
-                  ),
-                ],
+      title: l10n.locationTimeMatchAddKeyword,
+      body: StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HyperosTextField(
+                controller: controller,
+                label: l10n.locationTimeMatchKeywordLabel,
+                hint: l10n.locationTimeMatchKeywordHint,
+                autofocus: true,
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(l10n.cancelAction),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: Text(l10n.saveAction),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              const SizedBox(height: 12),
+              HyperosSelectTile<LocationKeywordMatchMode>(
+                label: l10n.locationTimeMatchModeLabel,
+                items: {
+                  for (final item in LocationKeywordMatchMode.values)
+                    _modeLabel(l10n, item): item,
+                },
+                value: mode,
+                useSheetForPopup: true,
+                onChanged: (value) {
+                  setDialogState(() => mode = value);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        HyperosDialogAction(
+          label: l10n.saveAction,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context, true),
+        ),
+      ],
     );
     final pattern = controller.text.trim();
     controller.dispose();
@@ -780,55 +729,48 @@ class _LocationTimeGroupEditorScreenState
       text: draft.patternController.text,
     );
     var mode = draft.mode;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showHyperosDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(l10n.locationTimeMatchKeywordLabel),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  HyperosTextField(
-                    controller: controller,
-                    label: l10n.locationTimeMatchKeywordLabel,
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButton<LocationKeywordMatchMode>(
-                    isExpanded: true,
-                    value: mode,
-                    items: [
-                      for (final item in LocationKeywordMatchMode.values)
-                        DropdownMenuItem(
-                          value: item,
-                          child: Text(_modeLabel(l10n, item)),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setDialogState(() => mode = value);
-                    },
-                  ),
-                ],
+      title: l10n.locationTimeMatchKeywordLabel,
+      body: StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HyperosTextField(
+                controller: controller,
+                label: l10n.locationTimeMatchKeywordLabel,
+                autofocus: true,
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(l10n.cancelAction),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: Text(l10n.saveAction),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              const SizedBox(height: 12),
+              HyperosSelectTile<LocationKeywordMatchMode>(
+                label: l10n.locationTimeMatchModeLabel,
+                items: {
+                  for (final item in LocationKeywordMatchMode.values)
+                    _modeLabel(l10n, item): item,
+                },
+                value: mode,
+                useSheetForPopup: true,
+                onChanged: (value) {
+                  setDialogState(() => mode = value);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        HyperosDialogAction(
+          label: l10n.saveAction,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context, true),
+        ),
+      ],
     );
     final pattern = controller.text.trim();
     controller.dispose();

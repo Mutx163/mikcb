@@ -10,6 +10,7 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/holiday_entry.dart';
 import '../models/location_time_group.dart';
+import '../models/schedule_date_rule.dart';
 import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
 import '../models/partner_timetable_binding.dart';
@@ -34,12 +35,14 @@ import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/home_page_background.dart';
 import 'timetable/location_time_match_logic.dart';
+import 'timetable/schedule_date_rule_logic.dart';
 import 'timetable/time_scheme_logic.dart';
 import 'timetable/import_export_logic.dart';
 import 'timetable/live_activity_logic.dart';
 
 export 'timetable/location_time_match_logic.dart'
     show LocationTimeMatchResult, LocationTimeMatchLogic;
+export 'timetable/schedule_date_rule_logic.dart' show ScheduleDateRuleLogic;
 export 'timetable/time_scheme_logic.dart' show TimeSchemeCourseUsageReference;
 export 'timetable/live_activity_logic.dart'
     show LiveActivityCourseSelection, LiveActivityStage;
@@ -146,6 +149,7 @@ class TimetableProvider with ChangeNotifier {
   int _currentDateWeek = 1;
   List<TimeScheme> _timeSchemes = [];
   List<LocationTimeGroup> _locationTimeGroups = [];
+  List<ScheduleDateRule> _scheduleDateRules = [];
   List<TimetableProfile> _profiles = [];
   String? _activeProfileId;
   int _currentDayOfWeek = DateTime.now().weekday;
@@ -271,6 +275,8 @@ class TimetableProvider with ChangeNotifier {
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
   List<LocationTimeGroup> get locationTimeGroups =>
       List.unmodifiable(_locationTimeGroups);
+  List<ScheduleDateRule> get scheduleDateRules =>
+      List.unmodifiable(_scheduleDateRules);
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
   String? get activeProfileId => _activeProfileId;
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
@@ -530,12 +536,14 @@ class TimetableProvider with ChangeNotifier {
     final profiles = await _storageService.getProfiles();
     final timeSchemes = await _storageService.getTimeSchemes();
     final locationTimeGroups = await _storageService.getLocationTimeGroups();
+    final scheduleDateRules = await _storageService.getScheduleDateRules();
     final activeProfileId = await _storageService.getActiveProfileId();
     final partnerBinding = await _storageService.getPartnerTimetableBinding();
 
     _profiles = profiles;
     _timeSchemes = timeSchemes;
     _locationTimeGroups = locationTimeGroups;
+    _scheduleDateRules = scheduleDateRules;
     _activeProfileId = activeProfileId;
     _partnerBinding = partnerBinding;
 
@@ -770,23 +778,35 @@ class TimetableProvider with ChangeNotifier {
   TimeScheme? resolveCourseTimeScheme(
     Course course, {
     TimetableSettings? settings,
+    DateTime? onDate,
   }) => TimeSchemeLogic.resolveCourseTimeScheme(
     _timeSchemes,
     _settings,
     course,
     settingsOverride: settings,
     locationTimeGroups: _locationTimeGroups,
+    scheduleDateRules: _scheduleDateRules,
+    onDate: onDate ?? DateTime.now(),
   );
 
   /// Preview location → place-group routing without writing course times.
   LocationTimeMatchResult? matchLocationTime(String? location) =>
       LocationTimeMatchLogic.match(location, _locationTimeGroups);
 
+  /// Preview which date rule applies on [date] (null = none).
+  ScheduleDateRule? matchScheduleDateRule(DateTime date) =>
+      ScheduleDateRuleLogic.match(date, _scheduleDateRules);
+
   List<SectionTime>? _resolveSectionsForCourse(
     Course course, {
     TimetableSettings? settings,
+    DateTime? onDate,
   }) {
-    final scheme = resolveCourseTimeScheme(course, settings: settings);
+    final scheme = resolveCourseTimeScheme(
+      course,
+      settings: settings,
+      onDate: onDate,
+    );
     if (scheme != null) {
       return scheme.sections;
     }
@@ -840,6 +860,8 @@ class TimetableProvider with ChangeNotifier {
     endSection: endSection,
     location: location,
     locationTimeGroups: _locationTimeGroups,
+    scheduleDateRules: _scheduleDateRules,
+    onDate: DateTime.now(),
   );
 
   Future<void> _persistActiveProfileState({
@@ -976,6 +998,115 @@ class TimetableProvider with ChangeNotifier {
     await initialize();
     _locationTimeGroups = List<LocationTimeGroup>.from(groups);
     await _persistLocationTimeGroups();
+    if (resync) {
+      await _resyncAllProfilesWithLocationRules();
+    } else {
+      _notifyStateChanged();
+    }
+  }
+
+  Future<void> _persistScheduleDateRules() async {
+    await _storageService.saveScheduleDateRules(_scheduleDateRules);
+    notifyUserDataChangedForSync();
+  }
+
+  /// Create a date-range rule that switches the default time scheme.
+  ///
+  /// Product cap: [ScheduleDateRuleLogic.maxRulesPerDevice] rules total.
+  Future<ScheduleDateRule> createScheduleDateRule({
+    required String name,
+    required String timeSchemeId,
+    required String startDate,
+    required String endDate,
+    bool enabled = true,
+  }) async {
+    await initialize();
+    if (_scheduleDateRules.length >= ScheduleDateRuleLogic.maxRulesPerDevice) {
+      throw ArgumentError('schedule_date_rule_max_exceeded');
+    }
+    if (_getTimeSchemeById(timeSchemeId) == null) {
+      throw ArgumentError('time_scheme_not_found');
+    }
+
+    final rule = ScheduleDateRule(
+      id: const Uuid().v4(),
+      name: name.trim(),
+      timeSchemeId: timeSchemeId,
+      startDate: startDate.trim(),
+      endDate: endDate.trim(),
+      enabled: enabled,
+    );
+    final next = [..._scheduleDateRules, rule];
+    final validationError = ScheduleDateRuleLogic.validateRules(next);
+    if (validationError != null) {
+      throw ArgumentError(validationError);
+    }
+
+    _scheduleDateRules = next;
+    await _persistScheduleDateRules();
+    await _resyncAllProfilesWithLocationRules();
+    return rule;
+  }
+
+  Future<ScheduleDateRule?> updateScheduleDateRule(
+    ScheduleDateRule rule,
+  ) async {
+    await initialize();
+    final index = _scheduleDateRules.indexWhere((item) => item.id == rule.id);
+    if (index == -1) {
+      return null;
+    }
+    if (_getTimeSchemeById(rule.timeSchemeId) == null) {
+      throw ArgumentError('time_scheme_not_found');
+    }
+
+    final updated = rule.copyWith(
+      name: rule.name.trim(),
+      startDate: rule.startDate.trim(),
+      endDate: rule.endDate.trim(),
+    );
+    final next = List<ScheduleDateRule>.from(_scheduleDateRules);
+    next[index] = updated;
+    final validationError = ScheduleDateRuleLogic.validateRules(next);
+    if (validationError != null) {
+      throw ArgumentError(validationError);
+    }
+
+    _scheduleDateRules = next;
+    await _persistScheduleDateRules();
+    await _resyncAllProfilesWithLocationRules();
+    return updated;
+  }
+
+  Future<bool> deleteScheduleDateRule(String ruleId) async {
+    await initialize();
+    final beforeCount = _scheduleDateRules.length;
+    _scheduleDateRules = _scheduleDateRules
+        .where((rule) => rule.id != ruleId)
+        .toList();
+    if (_scheduleDateRules.length == beforeCount) {
+      return false;
+    }
+    await _persistScheduleDateRules();
+    await _resyncAllProfilesWithLocationRules();
+    return true;
+  }
+
+  Future<void> replaceScheduleDateRules(
+    List<ScheduleDateRule> rules, {
+    bool resync = true,
+  }) async {
+    await initialize();
+    final next = List<ScheduleDateRule>.from(rules);
+    if (next.length > ScheduleDateRuleLogic.maxRulesPerDevice) {
+      throw ArgumentError('schedule_date_rule_max_exceeded');
+    }
+    final validationError = ScheduleDateRuleLogic.validateRules(next);
+    if (validationError != null) {
+      throw ArgumentError(validationError);
+    }
+    _scheduleDateRules = next;
+    await _persistScheduleDateRules();
     if (resync) {
       await _resyncAllProfilesWithLocationRules();
     } else {

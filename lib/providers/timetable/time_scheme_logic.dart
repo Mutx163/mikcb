@@ -1,10 +1,12 @@
 import '../../l10n/service_message_localizer.dart';
 import '../../models/course.dart';
 import '../../models/location_time_group.dart';
+import '../../models/schedule_date_rule.dart';
 import '../../models/time_scheme.dart';
 import '../../models/timetable_profile.dart';
 import '../../models/timetable_settings.dart';
 import 'location_time_match_logic.dart';
+import 'schedule_date_rule_logic.dart';
 
 class TimeSchemeCourseUsageReference {
   final String profileName;
@@ -44,13 +46,16 @@ class TimeSchemeLogic {
   /// Priority:
   /// 1. Manual [Course.timeSchemeIdOverride]
   /// 2. Location keyword match → group.timeSchemeId (if scheme exists)
-  /// 3. Profile [TimetableSettings.activeTimeSchemeId]
+  /// 3. Date rule match for [onDate] (if scheme exists)
+  /// 4. Profile [TimetableSettings.activeTimeSchemeId]
   static TimeScheme? resolveCourseTimeScheme(
     List<TimeScheme> schemes,
     TimetableSettings settings,
     Course course, {
     TimetableSettings? settingsOverride,
     List<LocationTimeGroup> locationTimeGroups = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
+    DateTime? onDate,
   }) {
     final effectiveSettings = settingsOverride ?? settings;
     final overrideScheme = getSchemeById(schemes, course.timeSchemeIdOverride);
@@ -66,6 +71,16 @@ class TimeSchemeLogic {
       final locationScheme = getSchemeById(schemes, locationMatch.timeSchemeId);
       if (locationScheme != null) {
         return locationScheme;
+      }
+    }
+
+    if (onDate != null) {
+      final dateRule = ScheduleDateRuleLogic.match(onDate, scheduleDateRules);
+      if (dateRule != null) {
+        final dateScheme = getSchemeById(schemes, dateRule.timeSchemeId);
+        if (dateScheme != null) {
+          return dateScheme;
+        }
       }
     }
 
@@ -190,22 +205,31 @@ class TimeSchemeLogic {
     required int endSection,
     String? location,
     List<LocationTimeGroup> locationTimeGroups = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
+    DateTime? onDate,
   }) {
     final TimeScheme? scheme;
     if (timeSchemeId != null) {
       scheme = getSchemeById(schemes, timeSchemeId);
     } else {
-      final locationMatch = LocationTimeMatchLogic.match(
-        location,
-        locationTimeGroups,
+      scheme = resolveCourseTimeScheme(
+        schemes,
+        settings,
+        Course(
+          id: '_validate',
+          name: '_',
+          teacher: '',
+          location: location ?? '',
+          dayOfWeek: 1,
+          startSection: startSection,
+          endSection: endSection,
+          startTime: '08:00',
+          endTime: '09:00',
+        ),
+        locationTimeGroups: locationTimeGroups,
+        scheduleDateRules: scheduleDateRules,
+        onDate: onDate,
       );
-      if (locationMatch != null) {
-        scheme =
-            getSchemeById(schemes, locationMatch.timeSchemeId) ??
-            getSchemeById(schemes, settings.activeTimeSchemeId);
-      } else {
-        scheme = getSchemeById(schemes, settings.activeTimeSchemeId);
-      }
     }
 
     final sectionCount = scheme?.sections.length ?? settings.sections.length;
@@ -228,11 +252,15 @@ class TimeSchemeLogic {
     String schemeId, {
     List<LocationTimeGroup> locationTimeGroups = const [],
     List<TimeScheme> schemes = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
   }) {
     if (LocationTimeMatchLogic.isSchemeReferencedByGroups(
       locationTimeGroups,
       schemeId,
     )) {
+      return true;
+    }
+    if (scheduleDateRules.any((rule) => rule.timeSchemeId == schemeId)) {
       return true;
     }
 

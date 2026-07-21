@@ -211,6 +211,7 @@ Future<bool> _timetableDeleteTimeScheme(
     schemeId,
     locationTimeGroups: host._locationTimeGroups,
     schemes: host._timeSchemes,
+    scheduleDateRules: host._scheduleDateRules,
   )) {
     return false;
   }
