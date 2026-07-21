@@ -1151,23 +1151,18 @@ object TodayWidgetSupport {
         if (semesterStartMillis == null) {
             return fallbackWeek.coerceIn(1, semesterWeekCount)
         }
-        val normalizedNow = Calendar.getInstance().apply {
-            timeInMillis = nowMillis
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+        // Align to Monday like Flutter getWeekIndex / LiveUpdateScheduler so
+        // desktop widgets do not show the wrong week when semesterStart is mid-week.
+        val week = liveSchedulerCalculateWeekForDate(
+            semesterStartMillis = semesterStartMillis,
+            currentWeek = fallbackWeek,
+            dateMillis = nowMillis,
+            semesterWeekCount = semesterWeekCount,
+        )
+        if (week < 1) {
+            // Before semester start: show week 1 content rather than empty (UI clamp).
+            return 1
         }
-        val normalizedStart = Calendar.getInstance().apply {
-            timeInMillis = semesterStartMillis
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val diffDays =
-            ((normalizedNow.timeInMillis - normalizedStart.timeInMillis) / 86_400_000L).toInt()
-        val week = (diffDays / 7) + 1
         return week.coerceIn(1, semesterWeekCount)
     }
 

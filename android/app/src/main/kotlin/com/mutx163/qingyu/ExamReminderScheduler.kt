@@ -141,14 +141,20 @@ object ExamReminderScheduler {
             appContext.getString(R.string.notification_exam_reminder_default_body)
         }
 
-        postNotification(
+        val posted = postNotification(
             context = appContext,
             notificationId = if (matched.requestCode != 0) matched.requestCode else matched.examId.hashCode(),
             title = title,
             body = body,
         )
 
-        // Drop the fired entry so later cancels / boot reschedule stay accurate.
+        // Only drop the fire after a successful notify. If POST_NOTIFICATIONS is
+        // denied (or NotificationManager is unavailable), keep the entry so the
+        // user can still receive it after granting permission / reboot.
+        if (!posted) {
+            Log.w(TAG, "keep fire after notify failure requestCode=$requestCode examId=$examId")
+            return
+        }
         val remaining = scheduled.filterNot {
             it.requestCode == matched.requestCode ||
                 (it.examId == matched.examId && it.offsetMinutes == matched.offsetMinutes)
@@ -161,15 +167,15 @@ object ExamReminderScheduler {
         notificationId: Int,
         title: String,
         body: String,
-    ) {
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+    ): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = context.checkSelfPermission(
                 android.Manifest.permission.POST_NOTIFICATIONS,
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
             if (!granted) {
                 Log.w(TAG, "skip notify: POST_NOTIFICATIONS not granted")
-                return
+                return false
             }
         }
 
@@ -202,6 +208,7 @@ object ExamReminderScheduler {
             .build()
 
         manager.notify(notificationId, notification)
+        return true
     }
 
     private fun scheduleAlarm(context: Context, fire: Fire) {
