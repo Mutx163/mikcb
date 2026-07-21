@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>轻屿课表 - 已适配学校</title>
+    <title data-i18n="meta.schoolsTitle">轻屿课表 - 已适配学校</title>
     <meta
       name="description"
-      content="查看轻屿课表已支持教务网页登录导入的高校与通用教务适配列表，持续更新中。"
+      content="查看轻屿课表已支持教务网页登录导入的高校与通用教务适配列表，持续更新中。" data-i18n-attr="content:meta.schoolsDescription"
     />
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#05070d" />
@@ -33,17 +33,17 @@
 
     <header class="global-nav">
       <div class="nav-inner">
-        <a class="nav-brand" href="./index.html" aria-label="轻屿课表首页">
+        <a class="nav-brand" href="./index.html" aria-label="轻屿课表首页" data-i18n-attr="aria-label:brand.homeAria">
           <span class="nav-brand-mark">
-            <img src="./app-icon.png" alt="轻屿课表图标" />
+            <img src="./app-icon.png" alt="轻屿课表图标" data-i18n-attr="alt:brand.iconAlt" />
           </span>
-          <span class="nav-brand-text">轻屿课表</span>
+          <span class="nav-brand-text" data-i18n="brand.name">轻屿课表</span>
         </a>
-        <nav id="nav-menu" class="nav-links" aria-label="站点导航">
-          <a href="./index.html#features">功能</a>
-          <a href="./index.html#changelog">更新</a>
-          <a href="./schools.html" class="is-active">适配学校</a>
-          <a href="./index.html#faq">常见问题</a>
+        <nav id="nav-menu" class="nav-links" aria-label="站点导航" data-i18n-attr="aria-label:nav.siteAria">
+          <a href="./index.html#features" data-i18n="nav.features">功能</a>
+          <a href="./index.html#changelog" data-i18n="nav.updates">更新</a>
+          <a href="./schools.html" class="is-active" data-i18n="nav.schools">适配学校</a>
+          <a href="./index.html#faq" data-i18n="nav.faq">常见问题</a>
         </nav>
         <div class="nav-actions">
           <a
@@ -51,19 +51,19 @@
             href="https://github.com/Mutx163/mikcb"
             target="_blank"
             rel="noreferrer"
-            aria-label="GitHub 仓库"
+            aria-label="GitHub 仓库" data-i18n-attr="aria-label:nav.githubAria"
           >
             <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
             </svg>
           </a>
-          <a class="cta-btn cta-primary nav-cta" href="./index.html#download">立即下载</a>
+          <a class="cta-btn cta-primary nav-cta" href="./index.html#download" data-i18n="nav.downloadCta">立即下载</a>
           <button
             class="nav-toggle"
             type="button"
             aria-expanded="false"
             aria-controls="nav-menu"
-            aria-label="切换导航"
+            aria-label="切换导航" data-i18n-attr="aria-label:nav.toggleAria"
           >
             <span></span>
             <span></span>
@@ -75,9 +75,9 @@
     <main class="schools-main">
       <section class="section-shell">
         <div class="schools-hero reveal">
-          <p class="section-label">教务导入</p>
-          <h1>已适配学校，<span class="grad-text">直接登录导课。</span></h1>
-          <p class="section-desc">
+          <p class="section-label" data-i18n="schools.label">教务导入</p>
+          <h1><span data-i18n="schools.title">已适配学校，</span><span class="grad-text" data-i18n="schools.titleGrad">直接登录导课。</span></h1>
+          <p class="section-desc" data-i18n-html="schools.descHtml">
             在 App 内选择「导入课程表 → 教务系统导入」，学校在列表中就能通过网页登录同步课表。列表每天自动与
             <a
               class="inline-link"
@@ -92,15 +92,15 @@
           <div class="schools-stats" aria-live="polite">
             <div class="dm-card">
               <strong id="schools-stat-count">—</strong>
-              <span>所高校已适配</span>
+              <span data-i18n="schools.statSchools">所高校已适配</span>
             </div>
             <div class="dm-card">
               <strong id="schools-stat-generic">—</strong>
-              <span>套通用教务适配</span>
+              <span data-i18n="schools.statGeneric">套通用教务适配</span>
             </div>
             <div class="dm-card">
               <strong id="schools-stat-total">—</strong>
-              <span>条导入入口</span>
+              <span data-i18n="schools.statTotal">条导入入口</span>
             </div>
           </div>
         </div>
@@ -111,36 +111,36 @@
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
               </svg>
-              <span class="visually-hidden">搜索学校</span>
+              <span class="visually-hidden" data-i18n="schools.searchAria">搜索学校</span>
               <input
                 id="schools-search"
                 type="search"
                 inputmode="search"
                 autocomplete="off"
-                placeholder="搜索学校名称…"
+                placeholder="搜索学校名称…" data-i18n-placeholder="schools.searchPlaceholder"
               />
             </label>
             <label class="schools-toggle">
               <input id="schools-show-generic" type="checkbox" />
-              <span>显示通用教务</span>
+              <span data-i18n="schools.showGeneric">显示通用教务</span>
             </label>
           </div>
 
           <div class="schools-layout">
             <div class="schools-list-scroll">
               <div id="schools-list" class="schools-list" aria-live="polite">
-                <p class="schools-status">正在加载学校列表…</p>
+                <p class="schools-status" data-i18n="schools.loading">正在加载学校列表…</p>
               </div>
             </div>
             <nav
               id="schools-index-bar"
               class="schools-index-bar"
-              aria-label="字母索引"
+              aria-label="字母索引" data-i18n-attr="aria-label:schools.indexAria"
               hidden
             ></nav>
           </div>
 
-          <p id="schools-empty" class="schools-empty" hidden>
+          <p id="schools-empty" class="schools-empty" hidden data-i18n-html="schools.emptyHtml">
             没有找到匹配的学校。你可以改用 .ics 导入，或到
             <a
               href="https://github.com/Mutx163/qingyu_warehouse/issues"
@@ -155,11 +155,12 @@
         </div>
 
         <div class="schools-foot-links reveal">
-          <a href="./index.html">← 返回首页</a>
+          <a href="./index.html" data-i18n="schools.back">← 返回首页</a>
           <a
             href="https://github.com/Mutx163/qingyu_warehouse/issues"
             target="_blank"
             rel="noreferrer"
+            data-i18n="schools.feedback"
           >
             缺少学校？去反馈 →
           </a>
@@ -167,6 +168,7 @@
       </section>
     </main>
 
+    <script src="./i18n.js"></script>
     <script src="./script.js"></script>
   </body>
 </html>

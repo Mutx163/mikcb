@@ -1797,3 +1797,83 @@ main {
     display: none !important;
   }
 }
+
+/* ---------- 语言切换（合规页等无 top nav 时右上角浮动） ---------- */
+
+.lang-switcher {
+  position: relative;
+  z-index: 70;
+}
+
+.lang-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 168px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.lang-switcher-btn:hover {
+  color: var(--text);
+  border-color: rgba(29, 29, 31, 0.16);
+}
+
+.lang-switcher-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lang-switcher-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 188px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
+}
+
+.lang-switcher.is-open .lang-switcher-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.lang-switcher-menu li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.lang-switcher-menu li:hover,
+.lang-switcher-menu li.is-active {
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.lang-switcher-floating {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 80;
+}

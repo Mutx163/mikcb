@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="baidu-site-verification" content="codeva-oyct9aOEbg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>轻屿课表 - 把课程信息做成系统体验</title>
+    <title data-i18n="meta.homeTitle">轻屿课表 - 把课程信息做成系统体验</title>
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
     <meta
       name="description"
-      content="轻屿课表是一款为 Android 与 HyperOS 打磨的课表应用，支持超级岛联动、情侣课表、教务导入、WebDAV 云同步、桌面小组件与分阶段提醒。免费开源，无广告。"
+      content="轻屿课表是一款为 Android 与 HyperOS 打磨的课表应用，支持超级岛联动、情侣课表、教务导入、WebDAV 云同步、桌面小组件与分阶段提醒。免费开源，无广告。" data-i18n-attr="content:meta.homeDescription"
     />
     <meta
       name="keywords"
@@ -38,6 +38,11 @@
     <meta name="google-analytics-measurement-id" content="G-W7H7MGWNSC" />
     <link rel="canonical" href="https://mutx.ccwu.cc/" />
     <link rel="alternate" hreflang="zh-CN" href="https://mutx.ccwu.cc/" />
+    <link rel="alternate" hreflang="zh-TW" href="https://mutx.ccwu.cc/" />
+    <link rel="alternate" hreflang="zh-HK" href="https://mutx.ccwu.cc/" />
+    <link rel="alternate" hreflang="en" href="https://mutx.ccwu.cc/" />
+    <link rel="alternate" hreflang="ja" href="https://mutx.ccwu.cc/" />
+    <link rel="alternate" hreflang="ko" href="https://mutx.ccwu.cc/" />
     <link rel="alternate" hreflang="x-default" href="https://mutx.ccwu.cc/" />
     <link rel="icon" href="./app-icon.png" type="image/png" />
     <link rel="apple-touch-icon" href="./app-icon.png" />
@@ -134,18 +139,18 @@
 
     <header class="global-nav">
       <div class="nav-inner">
-        <a class="nav-brand" href="#top" aria-label="轻屿课表首页">
+        <a class="nav-brand" href="#top" aria-label="轻屿课表首页" data-i18n-attr="aria-label:brand.homeAria">
           <span class="nav-brand-mark">
-            <img src="./app-icon.png" alt="轻屿课表图标" />
+            <img src="./app-icon.png" alt="轻屿课表图标" data-i18n-attr="alt:brand.iconAlt" data-i18n-attr="alt:brand.iconAlt" />
           </span>
-          <span class="nav-brand-text">轻屿课表</span>
+          <span class="nav-brand-text" data-i18n="brand.name">轻屿课表</span>
         </a>
-        <nav id="nav-menu" class="nav-links" aria-label="站点导航">
-          <a href="#features">功能</a>
-          <a href="#changelog">更新</a>
-          <a href="./schools.html">适配学校</a>
-          <a href="#faq">常见问题</a>
-          <a href="#download">下载</a>
+        <nav id="nav-menu" class="nav-links" aria-label="站点导航" data-i18n-attr="aria-label:nav.siteAria">
+          <a href="#features" data-i18n="nav.features">功能</a>
+          <a href="#changelog" data-i18n="nav.updates">更新</a>
+          <a href="./schools.html" data-i18n="nav.schools">适配学校</a>
+          <a href="#faq" data-i18n="nav.faq">常见问题</a>
+          <a href="#download" data-i18n="nav.download">下载</a>
         </nav>
         <div class="nav-actions">
           <a
@@ -153,7 +158,7 @@
             href="https://github.com/Mutx163/mikcb"
             target="_blank"
             rel="noreferrer"
-            aria-label="GitHub 仓库"
+            aria-label="GitHub 仓库" data-i18n-attr="aria-label:nav.githubAria"
           >
             <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
@@ -164,6 +169,7 @@
             type="button"
             aria-haspopup="dialog"
             aria-controls="release-modal"
+            data-i18n="nav.downloadCta"
           >
             立即下载
           </button>
@@ -172,7 +178,7 @@
             type="button"
             aria-expanded="false"
             aria-controls="nav-menu"
-            aria-label="切换导航"
+            aria-label="切换导航" data-i18n-attr="aria-label:nav.toggleAria"
           >
             <span></span>
             <span></span>
@@ -188,13 +194,13 @@
           <div class="hero-copy reveal">
             <p class="hero-eyebrow">
               <span class="pulse-dot" aria-hidden="true"></span>
-              为 Android 与 HyperOS 打造 · 免费开源
+              <span data-i18n="hero.eyebrow">为 Android 与 HyperOS 打造 · 免费开源</span>
             </p>
             <h1 class="hero-title">
-              上课这件事，<br />
-              <span class="grad-text">清楚一点。</span>
+              <span data-i18n="hero.titleLine">上课这件事，</span><br />
+              <span class="grad-text" data-i18n="hero.titleGrad">清楚一点。</span>
             </h1>
-            <p class="hero-subtitle">
+            <p class="hero-subtitle" data-i18n="hero.subtitle">
               超级岛上看下一节课，桌面组件里看整周，情侣课表里看你们的共同空闲。教务一键导入、分阶段提醒、WebDAV
               云同步——课表这次真的长在了系统里。
             </p>
@@ -208,26 +214,26 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 3v12" /><path d="m6 11 6 6 6-6" /><path d="M5 21h14" />
                 </svg>
-                下载最新版本
+                <span data-i18n="hero.download">下载最新版本</span>
               </button>
-              <a class="cta-btn cta-ghost cta-lg" href="#features">看看它能做什么</a>
+              <a class="cta-btn cta-ghost cta-lg" href="#features" data-i18n="hero.explore">看看它能做什么</a>
             </div>
             <dl class="hero-stats">
               <div class="hero-stat">
-                <dt>GitHub Stars</dt>
+                <dt data-i18n="hero.statStars">GitHub Stars</dt>
                 <dd id="trust-stars">—</dd>
               </div>
               <div class="hero-stat">
-                <dt>公开版本</dt>
+                <dt data-i18n="hero.statReleases">公开版本</dt>
                 <dd id="trust-releases">—</dd>
               </div>
               <div class="hero-stat">
-                <dt>已适配高校</dt>
+                <dt data-i18n="hero.statSchools">已适配高校</dt>
                 <dd><span id="hero-school-count">100+</span></dd>
               </div>
               <div class="hero-stat">
-                <dt>价格</dt>
-                <dd>￥0<span class="hero-stat-sub">· 无广告</span></dd>
+                <dt data-i18n="hero.statPrice">价格</dt>
+                <dd>￥0<span class="hero-stat-sub" data-i18n="hero.statFree">· 无广告</span></dd>
               </div>
             </dl>
           </div>
@@ -238,14 +244,14 @@
               <div class="phone-frame">
                 <div class="island-pill">
                   <span class="island-dot"></span>
-                  <span class="island-text">大学英语 · B201</span>
-                  <span class="island-time">剩 23 分钟</span>
+                  <span class="island-text" data-i18n="hero.islandCourse">大学英语 · B201</span>
+                  <span class="island-time" data-i18n="hero.islandTime">剩 23 分钟</span>
                 </div>
                 <div class="phone-screen">
                   <div class="ps-header">
                     <div>
-                      <p class="ps-week">第 15 周 · 周三</p>
-                      <p class="ps-date">今天还有 2 节课</p>
+                      <p class="ps-week" data-i18n="hero.psWeek">第 15 周 · 周三</p>
+                      <p class="ps-date" data-i18n="hero.psDate">今天还有 2 节课</p>
                     </div>
                     <span class="ps-heart">❤</span>
                   </div>
@@ -253,35 +259,35 @@
                     <div class="ps-row is-done">
                       <span class="ps-bar bar-blue"></span>
                       <div class="ps-info">
-                        <strong>高等数学</strong>
-                        <small>08:00 – 09:40 · A302</small>
+                        <strong data-i18n="hero.courseMath">高等数学</strong>
+                        <small data-i18n="hero.courseMathMeta">08:00 – 09:40 · A302</small>
                       </div>
-                      <span class="ps-state">已下课</span>
+                      <span class="ps-state" data-i18n="hero.courseDone">已下课</span>
                     </div>
                     <div class="ps-row is-now">
                       <span class="ps-bar bar-teal"></span>
                       <div class="ps-info">
-                        <strong>大学英语</strong>
-                        <small>10:05 – 11:45 · B201</small>
+                        <strong data-i18n="hero.courseEnglish">大学英语</strong>
+                        <small data-i18n="hero.courseEnglishMeta">10:05 – 11:45 · B201</small>
                       </div>
-                      <span class="ps-state state-live">正在上课</span>
+                      <span class="ps-state state-live" data-i18n="hero.courseLive">正在上课</span>
                       <span class="ps-progress"><i></i></span>
                     </div>
                     <div class="ps-row">
                       <span class="ps-bar bar-violet"></span>
                       <div class="ps-info">
-                        <strong>数据结构</strong>
-                        <small>14:00 – 15:40 · C412</small>
+                        <strong data-i18n="hero.courseDs">数据结构</strong>
+                        <small data-i18n="hero.courseDsMeta">14:00 – 15:40 · C412</small>
                       </div>
                       <span class="ps-state">14:00</span>
                     </div>
                     <div class="ps-row is-couple">
                       <span class="ps-bar bar-pink"></span>
                       <div class="ps-info">
-                        <strong>共同空闲 ❤</strong>
-                        <small>16:00 – 18:00 · 你们都有空</small>
+                        <strong data-i18n="hero.courseFree">共同空闲 ❤</strong>
+                        <small data-i18n="hero.courseFreeMeta">16:00 – 18:00 · 你们都有空</small>
                       </div>
-                      <span class="ps-state">情侣课表</span>
+                      <span class="ps-state" data-i18n="hero.courseCouple">情侣课表</span>
                     </div>
                   </div>
                 </div>
@@ -290,15 +296,15 @@
             <div class="float-card fc-1">
               <span class="fc-icon">🔔</span>
               <div>
-                <strong>课前提醒</strong>
-                <small>数据结构 · 15 分钟后 · C412</small>
+                <strong data-i18n="hero.floatRemind">课前提醒</strong>
+                <small data-i18n="hero.floatRemindMeta">数据结构 · 15 分钟后 · C412</small>
               </div>
             </div>
             <div class="float-card fc-2">
               <span class="fc-icon">☁️</span>
               <div>
-                <strong>WebDAV 已同步</strong>
-                <small>云备份 · 刚刚</small>
+                <strong data-i18n="hero.floatSync">WebDAV 已同步</strong>
+                <small data-i18n="hero.floatSyncMeta">云备份 · 刚刚</small>
               </div>
             </div>
           </div>
@@ -306,8 +312,8 @@
 
         <div class="marquee" aria-hidden="true">
           <div class="marquee-track">
-            <span>HyperOS 超级岛</span><span>情侣课表</span><span>教务一键导入</span><span>WebDAV 云同步</span><span>学期账单</span><span>桌面小组件</span><span>分阶段提醒</span><span>局域网编辑</span><span>时间模板</span><span>.ics 导入</span><span>AI 识图导入</span><span>多课表</span><span>免费开源</span>
-            <span>HyperOS 超级岛</span><span>情侣课表</span><span>教务一键导入</span><span>WebDAV 云同步</span><span>学期账单</span><span>桌面小组件</span><span>分阶段提醒</span><span>局域网编辑</span><span>时间模板</span><span>.ics 导入</span><span>AI 识图导入</span><span>多课表</span><span>免费开源</span>
+            <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">学期账单</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">AI 识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
+            <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">学期账单</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">AI 识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
           </div>
         </div>
       </section>
@@ -316,89 +322,89 @@
       <section id="features" class="section">
         <div class="section-shell">
           <div class="section-head reveal">
-            <p class="section-label">功能</p>
-            <h2>不只是课表，<span class="grad-text">是一整套系统体验。</span></h2>
-            <p class="section-desc">
+            <p class="section-label" data-i18n="features.label">功能</p>
+            <h2><span data-i18n="features.title">不只是课表，</span><span class="grad-text" data-i18n="features.titleGrad">是一整套系统体验。</span></h2>
+            <p class="section-desc" data-i18n="features.desc">
               从超级岛到桌面小组件，从两个人的课表到一学期的账单——每个功能都为「少看一次手机、多懂一点今天」而存在。
             </p>
           </div>
 
           <div class="bento">
             <article class="bento-card bento-lg reveal" data-spotlight>
-              <div class="bento-tag tag-blue">HyperOS 独占</div>
-              <h3>超级岛，替你盯着下一节课</h3>
-              <p>
+              <div class="bento-tag tag-blue" data-i18n="feature.island.tag">HyperOS 独占</div>
+              <h3 data-i18n="feature.island.title">超级岛，替你盯着下一节课</h3>
+              <p data-i18n="feature.island.desc">
                 课前预热、课中状态、下课承接，状态在灵动岛上连续流转。静音、免打扰这类课前快捷操作，下课后还会自动恢复。
               </p>
               <div class="island-demo">
                 <div class="island-demo-pill">
                   <span class="island-dot"></span>
-                  <span>数据结构 · C412</span>
-                  <b>14:00 上课</b>
+                  <span data-i18n="feature.island.demo">数据结构 · C412</span>
+                  <b data-i18n="feature.island.demoTime">14:00 上课</b>
                 </div>
-                <div class="island-demo-hint">需 HyperOS 3.0.300+</div>
+                <div class="island-demo-hint" data-i18n="feature.island.hint">需 HyperOS 3.0.300+</div>
               </div>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-pink">v2.0.3 新上线</div>
-              <h3>情侣课表</h3>
-              <p>
+              <div class="bento-tag tag-pink" data-i18n="feature.couple.tag">v2.0.3 新上线</div>
+              <h3 data-i18n="feature.couple.title">情侣课表</h3>
+              <p data-i18n="feature.couple.desc">
                 把课表导出给 TA，绑定后首页一键叠加：我的课、TA 的课、一起上课、共同空闲，四色一眼分清。约饭时间不用再互相截图。
               </p>
               <div class="couple-legend">
-                <span><i class="dot-blue"></i>我的课</span>
-                <span><i class="dot-violet"></i>TA 的课</span>
-                <span><i class="dot-teal"></i>一起上课</span>
-                <span><i class="dot-green"></i>共同空闲</span>
+                <span><i class="dot-blue"></i><span data-i18n="feature.couple.mine">我的课</span></span>
+                <span><i class="dot-violet"></i><span data-i18n="feature.couple.theirs">TA 的课</span></span>
+                <span><i class="dot-teal"></i><span data-i18n="feature.couple.together">一起上课</span></span>
+                <span><i class="dot-green"></i><span data-i18n="feature.couple.free">共同空闲</span></span>
               </div>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-teal">导入</div>
-              <h3>教务系统一键导入</h3>
-              <p>
+              <div class="bento-tag tag-teal" data-i18n="feature.import.tag">导入</div>
+              <h3 data-i18n="feature.import.title">教务系统一键导入</h3>
+              <p data-i18n="feature.import.desc">
                 100+ 所高校支持网页登录直接同步课表；没适配的学校也能走 .ics、AI 识图或表格模板导入。
               </p>
-              <a class="bento-link" href="./schools.html">查看已适配学校 →</a>
+              <a class="bento-link" href="./schools.html" data-i18n="feature.import.link">查看已适配学校 →</a>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-blue">v2.0 新增</div>
-              <h3>WebDAV 云同步</h3>
-              <p>
+              <div class="bento-tag tag-blue" data-i18n="feature.webdav.tag">v2.0 新增</div>
+              <h3 data-i18n="feature.webdav.title">WebDAV 云同步</h3>
+              <p data-i18n="feature.webdav.desc">
                 坚果云或自建服务，手机、平板之间同步课表与设置；云备份可查看历史版本、按条恢复或删除。
               </p>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-amber">统计</div>
-              <h3>学期账单</h3>
-              <p>
+              <div class="bento-tag tag-amber" data-i18n="feature.bill.tag">统计</div>
+              <h3 data-i18n="feature.bill.title">学期账单</h3>
+              <p data-i18n="feature.bill.desc">
                 总览、成就徽章、数据故事、每日课时分布、课程排名——学期结束，把这份账单生成长图分享出去。
               </p>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-teal">系统联动</div>
-              <h3>小组件 + 分阶段提醒</h3>
-              <p>
+              <div class="bento-tag tag-teal" data-i18n="feature.system.tag">系统联动</div>
+              <h3 data-i18n="feature.system.title">小组件 + 分阶段提醒</h3>
+              <p data-i18n="feature.system.desc">
                 桌面小组件常驻整周课表；提醒按课前、课中、下课前分阶段推进，是连续流程而不是一条孤立通知。
               </p>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-violet">效率</div>
-              <h3>电脑上改课表</h3>
-              <p>
+              <div class="bento-tag tag-violet" data-i18n="feature.lan.tag">效率</div>
+              <h3 data-i18n="feature.lan.title">电脑上改课表</h3>
+              <p data-i18n="feature.lan.desc">
                 手机开启局域网服务，电脑浏览器直接编辑课表，改完即时同步回手机。大批量调课不再戳小屏幕。
               </p>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-green">开源</div>
-              <h3>免费、无广告、可审计</h3>
-              <p>
+              <div class="bento-tag tag-green" data-i18n="feature.open.tag">开源</div>
+              <h3 data-i18n="feature.open.title">免费、无广告、可审计</h3>
+              <p data-i18n="feature.open.desc">
                 GPL-3.0 开源，无广告、无需注册，数据本地存储。代码公开透明，欢迎来 GitHub 提 issue 或 PR。
               </p>
               <a
@@ -406,6 +412,7 @@
                 href="https://github.com/Mutx163/mikcb"
                 target="_blank"
                 rel="noreferrer"
+                data-i18n="feature.open.link"
                 >GitHub 仓库 →</a
               >
             </article>
@@ -417,9 +424,9 @@
       <section id="changelog" class="section">
         <div class="section-shell">
           <div class="section-head reveal">
-            <p class="section-label">更新日志</p>
-            <h2>最近更新，<span class="grad-text">一直在变快变好。</span></h2>
-            <p class="section-desc">
+            <p class="section-label" data-i18n="changelog.label">更新日志</p>
+            <h2><span data-i18n="changelog.title">最近更新，</span><span class="grad-text" data-i18n="changelog.titleGrad">一直在变快变好。</span></h2>
+            <p class="section-desc" data-i18n-html="changelog.descHtml">
               官网会自动同步最近版本的关键更新。完整日志见
               <a class="inline-link" href="https://github.com/Mutx163/mikcb/releases" target="_blank" rel="noreferrer">GitHub Releases</a>。
             </p>
@@ -430,10 +437,10 @@
               <div class="tl-node"><span class="tl-dot tl-dot-live"></span></div>
               <div class="tl-card">
                 <header class="tl-head">
-                  <h3>正在读取更新日志</h3>
-                  <span class="tl-badge">自动同步</span>
+                  <h3 data-i18n="changelog.loadingTitle">正在读取更新日志</h3>
+                  <span class="tl-badge" data-i18n="changelog.loadingBadge">自动同步</span>
                 </header>
-                <p class="tl-status">稍等一下，官网会读取最新 Release 时间线。</p>
+                <p class="tl-status" data-i18n="changelog.loadingStatus">稍等一下，官网会读取最新 Release 时间线。</p>
               </div>
             </article>
           </div>
@@ -444,13 +451,13 @@
       <section id="faq" class="section">
         <div class="section-shell section-shell-narrow">
           <div class="section-head reveal">
-            <p class="section-label">常见问题</p>
-            <h2>你可能想知道的</h2>
+            <p class="section-label" data-i18n="faq.label">常见问题</p>
+            <h2 data-i18n="faq.title">你可能想知道的</h2>
           </div>
           <div class="faq-list reveal">
             <details class="faq-item">
-              <summary>轻屿课表怎么导入课表？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q1">轻屿课表怎么导入课表？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a1Html">
                 <p>支持三种导入方式：</p>
                 <ol>
                   <li><strong>教务系统导入</strong>：点击右上角菜单 → 导入课程表 → 选择你的学校 → 登录教务系统自动同步</li>
@@ -460,8 +467,8 @@
               </div>
             </details>
             <details class="faq-item">
-              <summary>支持哪些学校的教务导入？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q2">支持哪些学校的教务导入？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a2Html">
                 <p>
                   目前已适配 100+ 所高校，完整列表见
                   <a href="./schools.html">已适配学校页面</a>，持续扩展中。如果你的学校暂未适配，可以使用
@@ -472,32 +479,32 @@
               </div>
             </details>
             <details class="faq-item">
-              <summary>轻屿课表是免费的吗？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q3">轻屿课表是免费的吗？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a3Html">
                 <p>是的，轻屿课表完全免费，无广告，无需注册。开源项目，代码公开透明。</p>
               </div>
             </details>
             <details class="faq-item">
-              <summary>支持 iOS 或鸿蒙吗？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q4">支持 iOS 或鸿蒙吗？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a4Html">
                 <p>目前仅支持 Android 系统，重点适配 HyperOS（小米/红米）。暂无 iOS 和鸿蒙版本计划。</p>
               </div>
             </details>
             <details class="faq-item">
-              <summary>我的手机为什么不支持超级岛？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q5">我的手机为什么不支持超级岛？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a5Html">
                 <p>超级岛功能需要小米 HyperOS 3.0.300 及以上版本才能使用。请在「设置 → 我的设备」中检查系统版本，如果低于 3.0.300，请先升级系统。</p>
               </div>
             </details>
             <details class="faq-item">
-              <summary>课表数据会丢失吗？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q6">课表数据会丢失吗？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a6Html">
                 <p>课表数据存储在本地，支持 WebDAV 云同步与完整备份导出恢复。建议定期备份，换机时可通过云同步或备份文件迁移。</p>
               </div>
             </details>
             <details class="faq-item">
-              <summary>怎么设置单双周？<span class="faq-plus" aria-hidden="true"></span></summary>
-              <div class="faq-answer">
+              <summary><span data-i18n="faq.q7">怎么设置单双周？</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <div class="faq-answer" data-i18n-html="faq.a7Html">
                 <p>添加或编辑课程时，在「重复」选项中选择「单周」或「双周」即可。也支持自定义周次范围，灵活适配各种排课方式。</p>
               </div>
             </details>
@@ -509,12 +516,12 @@
       <section id="download" class="section section-download">
         <div class="section-shell">
           <div class="download-hero reveal" data-spotlight>
-            <p class="section-label">下载</p>
+            <p class="section-label" data-i18n="download.label">下载</p>
             <h2>
-              下一节课的事，<br />
-              <span class="grad-text">现在就交给它。</span>
+              <span data-i18n="download.title">下一节课的事，</span><br />
+              <span class="grad-text" data-i18n="download.titleGrad">现在就交给它。</span>
             </h2>
-            <p class="section-desc">
+            <p class="section-desc" data-i18n="download.desc">
               国内下载会自动测速选择最快镜像，也可以随时切到 GitHub 原始包或蒲公英直装。
             </p>
             <div class="download-cta">
@@ -527,34 +534,34 @@
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 3v12" /><path d="m6 11 6 6 6-6" /><path d="M5 21h14" />
                 </svg>
-                下载最新版本
+                <span data-i18n="download.cta">下载最新版本</span>
               </button>
-              <p class="download-note">点开后可在正式版 / 预发布版之间切换，先看更新内容再下载。</p>
+              <p class="download-note" data-i18n="download.note">点开后可在正式版 / 预发布版之间切换，先看更新内容再下载。</p>
             </div>
 
             <div class="download-meta">
               <div class="dm-card">
-                <small>系统要求</small>
-                <strong>Android 8.0+</strong>
-                <span>arm64-v8a · 暂不提供 32 位与 x86 包</span>
+                <small data-i18n="download.reqLabel">系统要求</small>
+                <strong data-i18n="download.reqValue">Android 8.0+</strong>
+                <span data-i18n="download.reqMeta">arm64-v8a · 暂不提供 32 位与 x86 包</span>
               </div>
               <div class="dm-card">
-                <small>下载线路</small>
-                <strong>国内镜像自动测速</strong>
-                <span>镜像 / 蒲公英 / GitHub 三线路可选</span>
+                <small data-i18n="download.routeLabel">下载线路</small>
+                <strong data-i18n="download.routeValue">国内镜像自动测速</strong>
+                <span data-i18n="download.routeMeta">镜像 / 蒲公英 / GitHub 三线路可选</span>
               </div>
               <div class="dm-card dm-card-wide">
-                <small>最新正式版更新</small>
+                <small data-i18n="download.latestLabel">最新正式版更新</small>
                 <ul class="dm-highlights" id="latest-stable-highlights">
-                  <li>正在读取最近版本更新内容…</li>
+                  <li data-i18n="download.latestLoading">正在读取最近版本更新内容…</li>
                 </ul>
               </div>
             </div>
 
             <div class="download-alt-links">
-              <a href="https://www.pgyer.com/qingyu" target="_blank" rel="noreferrer">蒲公英下载</a>
-              <a href="https://github.com/Mutx163/mikcb/releases" target="_blank" rel="noreferrer">GitHub Releases</a>
-              <a href="https://github.com/Mutx163/mikcb" target="_blank" rel="noreferrer">源代码</a>
+              <a href="https://www.pgyer.com/qingyu" target="_blank" rel="noreferrer" data-i18n="download.pgyer">蒲公英下载</a>
+              <a href="https://github.com/Mutx163/mikcb/releases" target="_blank" rel="noreferrer" data-i18n="download.releases">GitHub Releases</a>
+              <a href="https://github.com/Mutx163/mikcb" target="_blank" rel="noreferrer" data-i18n="download.source">源代码</a>
             </div>
           </div>
         </div>
@@ -566,33 +573,33 @@
         <div class="footer-brand">
           <img src="./app-icon.png" alt="轻屿课表图标" />
           <div>
-            <strong>轻屿课表</strong>
-            <small>把课程信息做成系统体验</small>
+            <strong data-i18n="brand.name">轻屿课表</strong>
+            <small data-i18n="brand.tagline">把课程信息做成系统体验</small>
           </div>
         </div>
-        <nav class="footer-cols" aria-label="页脚导航">
+        <nav class="footer-cols" aria-label="页脚导航" data-i18n-attr="aria-label:nav.footerAria">
           <div class="footer-col">
-            <small>产品</small>
-            <a href="#features">功能</a>
-            <a href="#changelog">更新日志</a>
-            <a href="./schools.html">适配学校</a>
-            <a href="#download">下载</a>
+            <small data-i18n="footer.product">产品</small>
+            <a href="#features" data-i18n="nav.features">功能</a>
+            <a href="#changelog" data-i18n="footer.changelog">更新日志</a>
+            <a href="./schools.html" data-i18n="nav.schools">适配学校</a>
+            <a href="#download" data-i18n="nav.download">下载</a>
           </div>
           <div class="footer-col">
-            <small>开源</small>
+            <small data-i18n="footer.openSource">开源</small>
             <a href="https://github.com/Mutx163/mikcb" target="_blank" rel="noreferrer">GitHub</a>
             <a href="https://github.com/Mutx163/mikcb/releases" target="_blank" rel="noreferrer">Releases</a>
-            <a href="https://github.com/Mutx163/mikcb/blob/main/LICENSE" target="_blank" rel="noreferrer">GPL-3.0 协议</a>
-            <a href="./contributing.html">贡献指南</a>
+            <a href="https://github.com/Mutx163/mikcb/blob/main/LICENSE" target="_blank" rel="noreferrer" data-i18n="footer.license">GPL-3.0 协议</a>
+            <a href="./contributing.html" data-i18n="footer.contributing">贡献指南</a>
           </div>
           <div class="footer-col">
-            <small>合规</small>
-            <a href="./privacy.html">隐私政策</a>
-            <a href="./terms.html">用户协议</a>
+            <small data-i18n="footer.legal">合规</small>
+            <a href="./privacy.html" data-i18n="footer.privacy">隐私政策</a>
+            <a href="./terms.html" data-i18n="footer.terms">用户协议</a>
           </div>
         </nav>
       </div>
-      <p class="footer-copy">Copyright © <span id="year"></span> 轻屿课表</p>
+      <p class="footer-copy" data-i18n="footer.copy" id="footer-copy">Copyright © {year} 轻屿课表</p>
     </footer>
 
     <!-- ===================== 下载弹窗（逻辑挂载点，勿改 ID） ===================== -->
@@ -608,14 +615,14 @@
         <button
           class="release-close"
           type="button"
-          aria-label="关闭下载弹窗"
+          aria-label="关闭下载弹窗" data-i18n-attr="aria-label:modal.closeAria"
           data-close-release-modal
         >
           ×
         </button>
-        <p class="release-label">下载</p>
-        <h2 id="release-dialog-title">最新版本</h2>
-        <div class="release-channel-label" id="release-channel-label" style="display: none;">正式版</div>
+        <p class="release-label" data-i18n="modal.label">下载</p>
+        <h2 id="release-dialog-title" data-i18n="modal.title">最新版本</h2>
+        <div class="release-channel-label" id="release-channel-label" style="display: none;" data-i18n="modal.stable">正式版</div>
         <div class="release-channel-switch" id="release-channel-switch" hidden>
           <button
             id="release-tab-stable"
@@ -623,6 +630,7 @@
             type="button"
             data-release-channel="stable"
             aria-pressed="true"
+            data-i18n="modal.stable"
           >
             正式版
           </button>
@@ -632,25 +640,26 @@
             type="button"
             data-release-channel="prerelease"
             aria-pressed="false"
+            data-i18n="modal.prerelease"
           >
             预发布版
           </button>
         </div>
-        <p class="release-description" id="release-description" aria-live="polite">
+        <p class="release-description" id="release-description" aria-live="polite" data-i18n="modal.loading">
           正在读取最新发行版信息...
         </p>
         <dl class="release-meta">
           <div>
-            <dt>版本类型</dt>
-            <dd id="release-channel">正式版</dd>
+            <dt data-i18n="modal.metaChannel">版本类型</dt>
+            <dd id="release-channel" data-i18n="modal.stable">正式版</dd>
           </div>
           <div>
-            <dt>版本</dt>
-            <dd id="release-version">读取中</dd>
+            <dt data-i18n="modal.metaVersion">版本</dt>
+            <dd id="release-version" data-i18n="modal.reading">读取中</dd>
           </div>
           <div>
-            <dt>发布时间</dt>
-            <dd id="release-published-at">读取中</dd>
+            <dt data-i18n="modal.metaPublished">发布时间</dt>
+            <dd id="release-published-at" data-i18n="modal.reading">读取中</dd>
           </div>
         </dl>
         <div class="release-actions">
@@ -660,6 +669,7 @@
             href="https://github.com/Mutx163/mikcb/releases"
             target="_blank"
             rel="noreferrer"
+            data-i18n="modal.mirror"
           >
             国内下载
           </a>
@@ -668,6 +678,7 @@
             href="https://www.pgyer.com/qingyu"
             target="_blank"
             rel="noreferrer"
+            data-i18n="modal.pgyer"
           >
             蒲公英下载
           </a>
@@ -677,11 +688,12 @@
             href="https://github.com/Mutx163/mikcb/releases"
             target="_blank"
             rel="noreferrer"
+            data-i18n="modal.github"
           >
             GitHub 下载
           </a>
         </div>
-        <p class="release-download-note">
+        <p class="release-download-note" data-i18n="modal.note">
           国内下载会自动测速选最快镜像；蒲公英支持直接安装；需要原始包再用 GitHub 下载。
         </p>
         <div class="release-links">
@@ -690,6 +702,7 @@
             href="https://github.com/Mutx163/mikcb/releases"
             target="_blank"
             rel="noreferrer"
+            data-i18n="modal.releasePage"
           >
             查看 Release 页面
           </a>
@@ -697,6 +710,7 @@
       </div>
     </div>
 
+    <script src="./i18n.js"></script>
     <script src="./script.js"></script>
     <script src="./home.js"></script>
   </body>

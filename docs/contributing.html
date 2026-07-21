@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>轻屿课表 - 贡献指南</title>
+    <title data-i18n="meta.contributingTitle">轻屿课表 - 贡献指南</title>
     <meta
       name="description"
-      content="轻屿课表贡献指南，帮助开发者快速了解源码、开源协议、Issue 反馈与教务适配参与方式。"
+      content="轻屿课表贡献指南，帮助开发者快速了解源码、开源协议、Issue 反馈与教务适配参与方式。" data-i18n-attr="content:meta.contributingDescription"
     />
     <link rel="icon" href="./app-icon.png" type="image/png" />
     <link rel="stylesheet" href="./styles.css" />
@@ -42,23 +42,25 @@
   <body>
     <main class="detail-page">
       <section class="section-shell reveal">
-        <p class="section-label">开源参与</p>
-        <h1>贡献指南</h1>
+        <p class="section-label" data-i18n="legal.openSourceLabel">开源参与</p>
+        <h1 data-i18n="legal.contributingTitle">贡献指南</h1>
         <div class="policy-content" id="contributing-content">
-          <p>加载中…</p>
+          <p data-i18n="legal.loading">加载中…</p>
         </div>
         <div class="inline-links">
-          <a href="./index.html">返回首页</a>
+          <a href="./index.html" data-i18n="legal.backHome">返回首页</a>
           <a
             href="https://github.com/Mutx163/mikcb"
             target="_blank"
             rel="noreferrer"
+            data-i18n="legal.openGithub"
           >
             打开 GitHub
           </a>
         </div>
       </section>
     </main>
+    <script src="./i18n.js"></script>
     <script src="./script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
@@ -75,11 +77,11 @@
           if (typeof marked !== "undefined") {
             container.innerHTML = marked.parse(md);
           } else {
-            container.innerHTML = "<p>Markdown 渲染器加载失败，请直接查看 GitHub 上的贡献指南。</p>";
+            container.innerHTML = "<p>" + (window.I18n ? window.I18n.t("legal.contribLoadFail") : "Markdown 渲染器加载失败，请直接查看 GitHub 上的贡献指南。") + "</p>";
           }
         } catch (e) {
           container.innerHTML =
-            '<p>无法加载贡献指南内容，请前往 <a href="https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">GitHub 查看</a>。</p>';
+            '<p>' + (window.I18n ? window.I18n.t("legal.contribFetchFailHtml") : '无法加载贡献指南内容，请前往 <a href="https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">GitHub 查看</a>。') + '</p>';
         }
       })();
     </script>
