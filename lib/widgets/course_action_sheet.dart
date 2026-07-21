@@ -858,7 +858,8 @@ class _CourseDetailTile extends StatelessWidget {
     final content = Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        // Center icon / text / trailing so chevrons sit mid-height on multi-line tiles.
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 18, color: colors.mutedForeground),
           const SizedBox(width: 10),

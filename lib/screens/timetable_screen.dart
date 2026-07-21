@@ -93,6 +93,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
   bool _coupleOverlayEnabled = false;
+  bool _sharedFreeSegmentsExpanded = false;
+  static const int _sharedFreeVisibleSegmentLimit = 2;
+  static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
 
   bool _isCoupleOverlayActive(TimetableProvider provider) =>
       _coupleOverlayEnabled && provider.hasPartnerBinding;
@@ -290,6 +293,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     onPress: () {
                       setState(() {
                         _coupleOverlayEnabled = !_coupleOverlayEnabled;
+                        _sharedFreeSegmentsExpanded = false;
                       });
                     },
                   ),
@@ -593,6 +597,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     setState(() {
       _selectedWeekForDayView = normalizedWeek;
       _selectedDayOfWeek = dayOfWeek;
+      _sharedFreeSegmentsExpanded = false;
     });
     _persistViewState(
       context.read<TimetableProvider>(),
@@ -2164,6 +2169,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ],
                     ),
                   ],
+                  if (_isCoupleOverlayActive(provider)) ...[
+                    const SizedBox(height: 12),
+                    _buildDayViewSharedFreeSummary(
+                      provider: provider,
+                      settings: settings,
+                      week: week,
+                      dayOfWeek: dayOfWeek,
+                      isToday: isToday,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -2214,6 +2229,282 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  List<SectionTime> _sectionsForSharedFree(
+    TimetableProvider provider,
+    TimetableSettings settings,
+  ) {
+    final schemeSections = provider.activeTimeScheme?.sections;
+    if (schemeSections != null && schemeSections.isNotEmpty) {
+      return schemeSections;
+    }
+    return settings.sections;
+  }
+
+  bool _isPartnerScheduleStale(TimetableProvider provider) {
+    final importedAt = provider.partnerBinding?.lastImportedAt;
+    if (importedAt == null) {
+      return true;
+    }
+    return DateTime.now().difference(importedAt) > _partnerScheduleStaleAfter;
+  }
+
+  List<MinuteInterval> _sharedFreeIntervalsForDayView({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+  }) {
+    final sections = _sectionsForSharedFree(provider, settings);
+    if (sections.isEmpty) {
+      return const [];
+    }
+    return CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: provider.courses,
+      partnerCourses: provider.partnerCourses,
+      dayOfWeek: dayOfWeek,
+      week: week,
+      partnerWeekOffset: provider.partnerWeekOffset,
+      sections: sections,
+    );
+  }
+
+  Widget _buildDayViewSharedFreeSummary({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+    required bool isToday,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final freeAccent = _colorFromHex(
+      CoupleTimetableLogic.freeSlotColorHex,
+      HyperosColors.primary(context),
+    );
+    final sections = _sectionsForSharedFree(provider, settings);
+    final isStale = _isPartnerScheduleStale(provider);
+    final title = isToday
+        ? l10n.coupleTimetableSharedFreeTitle
+        : l10n.coupleTimetableSharedFreeTitleOtherDay;
+    final emptyLabel = isToday
+        ? l10n.coupleTimetableNoSharedFree
+        : l10n.coupleTimetableNoSharedFreeOtherDay;
+    final hintParts = <String>[
+      l10n.coupleTimetableSharedFreeCourseOnlyHint,
+      if (isStale) l10n.coupleTimetableSharedFreeStaleHint,
+    ];
+    final hintStyle = HyperosTypography.listDetail(
+      context,
+    ).copyWith(color: HyperosColors.secondaryText(context), height: 1.25);
+
+    if (sections.isEmpty) {
+      return _buildSharedFreeSummaryShell(
+        key: const ValueKey('shared-free-summary-unavailable'),
+        child: _buildSharedFreeHeader(
+          title: title,
+          meta: l10n.coupleTimetableSharedFreeUnavailable,
+          accent: HyperosColors.secondaryText(context),
+          icon: Icons.event_busy_rounded,
+        ),
+      );
+    }
+
+    final intervals = _sharedFreeIntervalsForDayView(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: dayOfWeek,
+    );
+
+    if (intervals.isEmpty) {
+      return _buildSharedFreeSummaryShell(
+        key: const ValueKey('shared-free-summary-empty'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSharedFreeHeader(
+              title: title,
+              meta: emptyLabel,
+              accent: freeAccent,
+              icon: Icons.hourglass_empty_rounded,
+            ),
+            const SizedBox(height: 8),
+            Text(hintParts.join(' · '), style: hintStyle),
+          ],
+        ),
+      );
+    }
+
+    final visibleLimit = _sharedFreeSegmentsExpanded
+        ? intervals.length
+        : math.min(_sharedFreeVisibleSegmentLimit, intervals.length);
+    final visibleIntervals = intervals.take(visibleLimit).toList();
+    final hiddenCount = intervals.length - visibleIntervals.length;
+    final hoursLabel = CoupleTimetableLogic.formatDurationHours(
+      CoupleTimetableLogic.totalDurationMinutes(intervals),
+    );
+
+    return _buildSharedFreeSummaryShell(
+      key: const ValueKey('shared-free-summary'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSharedFreeHeader(
+            title: title,
+            meta: l10n.coupleTimetableSharedFreeMeta(
+              intervals.length,
+              hoursLabel,
+            ),
+            accent: freeAccent,
+            icon: Icons.event_available_rounded,
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final interval in visibleIntervals)
+                _buildSharedFreeTimeChip(
+                  label: CoupleTimetableLogic.formatMinuteInterval(interval),
+                  accent: freeAccent,
+                ),
+              if (hiddenCount > 0)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: const ValueKey('shared-free-expand-button'),
+                    onTap: () {
+                      setState(() {
+                        _sharedFreeSegmentsExpanded = true;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(999),
+                    child: Ink(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: freeAccent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        l10n.coupleTimetableSharedFreeMoreCount(hiddenCount),
+                        style: HyperosTypography.listDetail(context).copyWith(
+                          color: freeAccent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(hintParts.join(' · '), style: hintStyle),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSharedFreeHeader({
+    required String title,
+    required String meta,
+    required Color accent,
+    required IconData icon,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 16, color: accent),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: HyperosTypography.listTitle(context).copyWith(
+                  color: HyperosColors.primaryText(context),
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                meta,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: HyperosTypography.listDetail(context).copyWith(
+                  color: HyperosColors.secondaryText(context),
+                  height: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSharedFreeTimeChip({
+    required String label,
+    required Color accent,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: HyperosColors.surfaceContainerHigh(context),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: HyperosColors.primaryText(context),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSharedFreeSummaryShell({
+    required Key key,
+    required Widget child,
+  }) {
+    return DecoratedBox(
+      key: key,
+      decoration: BoxDecoration(
+        color: HyperosColors.surfaceContainer(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: HyperosColors.outline(context)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: child,
       ),
     );
   }
@@ -2572,45 +2863,54 @@ class _TimetableScreenState extends State<TimetableScreen>
       child: Ink(
         decoration: cardDecoration,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          size: 13,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          '${item.course.startTime} - ${item.course.endTime}',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.schedule_rounded,
+                                size: 13,
                                 color: Colors.white,
-                                fontWeight: FontWeight.w700,
                               ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${item.course.startTime} - ${item.course.endTime}',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
+                        ...statusBadges,
                       ],
                     ),
                   ),
-                  ...statusBadges,
+                  const SizedBox(width: 4),
+                  _buildDayAgendaNoteAction(l10n: l10n, onPressed: onOpenNotes),
                 ],
               ),
               const SizedBox(height: 8),
@@ -2641,8 +2941,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   text: sessionPreview,
                 ),
               ],
-              const SizedBox(height: 10),
-              _buildDayAgendaNoteAction(l10n: l10n, onPressed: onOpenNotes),
             ],
           ),
         ),
@@ -2722,57 +3020,71 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              const Icon(
-                                Icons.schedule_rounded,
-                                size: 13,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '${item.course.startTime} - ${item.course.endTime}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.schedule_rounded,
+                                      size: 13,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${item.course.startTime} - ${item.course.endTime}',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              _buildDayAgendaStatusBadge(
+                                text: progressInfo.statusText,
+                                textColor: progressInfo.statusTextColor,
+                                backgroundColor:
+                                    progressInfo.statusBackgroundColor,
+                              ),
+                              if (item.isConflicting)
+                                _buildDayAgendaStatusBadge(
+                                  text: l10n.conflictLabel,
+                                  textColor: Colors.white,
+                                  backgroundColor: colorScheme.error,
+                                ),
+                              if (!item.isPartnerCourse &&
+                                  item.course.hasHomeworkInWeek(week))
+                                _buildDayAgendaHomeworkDot(),
                             ],
                           ),
                         ),
-                        _buildDayAgendaStatusBadge(
-                          text: progressInfo.statusText,
-                          textColor: progressInfo.statusTextColor,
-                          backgroundColor: progressInfo.statusBackgroundColor,
+                        const SizedBox(width: 4),
+                        _buildDayAgendaNoteAction(
+                          l10n: l10n,
+                          onPressed: onOpenNotes,
                         ),
-                        if (item.isConflicting)
-                          _buildDayAgendaStatusBadge(
-                            text: l10n.conflictLabel,
-                            textColor: Colors.white,
-                            backgroundColor: colorScheme.error,
-                          ),
-                        if (!item.isPartnerCourse &&
-                            item.course.hasHomeworkInWeek(week))
-                          _buildDayAgendaHomeworkDot(),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -2804,11 +3116,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                         text: sessionPreview,
                       ),
                     ],
-                    const SizedBox(height: 10),
-                    _buildDayAgendaNoteAction(
-                      l10n: l10n,
-                      onPressed: onOpenNotes,
-                    ),
                   ],
                 ),
               ),
