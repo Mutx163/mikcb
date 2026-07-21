@@ -51,6 +51,7 @@ import 'feedback_screen.dart';
 import 'live_settings_subpages.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
 import 'time_scheme_management_screen.dart';
+import 'location_time_match_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'user_guide_screen.dart';
@@ -338,6 +339,22 @@ class TimetableSettingsScreen extends StatelessWidget {
                             ? null
                             : provider.activeTimeScheme?.name,
                         onTap: () => _openTimeSchemeQuickSwitcher(context),
+                      ),
+                      HyperosListTile(
+                        icon: Icons.place_outlined,
+                        iconAccent: HyperosIconColors.orange,
+                        title: l10n.locationTimeMatchEntryTitle,
+                        details: provider.locationTimeGroups.isEmpty
+                            ? null
+                            : '${provider.locationTimeGroups.length}',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            HyperosPageRoute(
+                              builder: (_) => const LocationTimeMatchScreen(),
+                            ),
+                          );
+                        },
                       ),
                       HyperosListTile(
                         icon: Icons.favorite_outline_rounded,

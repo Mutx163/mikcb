@@ -11,6 +11,7 @@ import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/time_scheme_quick_generate_sheet.dart';
+import 'location_time_match_screen.dart';
 
 class TimeSchemeManagementScreen extends StatefulWidget {
   final String? initialEditSchemeId;
@@ -74,21 +75,47 @@ class _TimeSchemeManagementScreenState
             ),
           ],
           child: HyperosBlurredBodyInset(
-            child: ListView.separated(
+            child: ListView(
               padding: HyperosTokens.listPadding,
-              itemCount: schemes.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final scheme = schemes[index];
-                final isActive = scheme.id == activeSchemeId;
-                final usage = _buildUsageSummary(provider, scheme.id);
-                return _buildSchemeCard(
-                  context,
-                  scheme: scheme,
-                  usage: usage,
-                  isActive: isActive,
-                );
-              },
+              children: [
+                HyperosListGroup(
+                  children: [
+                    HyperosListTile(
+                      icon: Icons.place_outlined,
+                      iconAccent: HyperosIconColors.orange,
+                      title: l10n.locationTimeMatchEntryTitle,
+                      details: provider.locationTimeGroups.isEmpty
+                          ? null
+                          : '${provider.locationTimeGroups.length}',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          HyperosPageRoute(
+                            builder: (_) => const LocationTimeMatchScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...List.generate(schemes.length, (index) {
+                  final scheme = schemes[index];
+                  final isActive = scheme.id == activeSchemeId;
+                  final usage = _buildUsageSummary(provider, scheme.id);
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == schemes.length - 1 ? 0 : 8,
+                    ),
+                    child: _buildSchemeCard(
+                      context,
+                      scheme: scheme,
+                      usage: usage,
+                      isActive: isActive,
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
         );

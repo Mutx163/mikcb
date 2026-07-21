@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/course.dart';
+import '../models/location_time_group.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
@@ -17,6 +18,7 @@ class StorageService {
   static const String _profilesKey = 'timetable_profiles';
   static const String _activeProfileIdKey = 'active_timetable_profile_id';
   static const String _timeSchemesKey = 'time_schemes';
+  static const String _locationTimeGroupsKey = 'location_time_groups';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
   static const String _acceptedPrivacyPolicyKey = 'accepted_privacy_policy';
   static const String _hasCompletedOnboardingKey = 'has_completed_onboarding';
@@ -41,6 +43,7 @@ class StorageService {
   bool _timeSchemesEnsured = false;
   List<TimetableProfile>? _profilesListCache;
   List<TimeScheme>? _timeSchemesListCache;
+  List<LocationTimeGroup>? _locationTimeGroupsListCache;
 
   void _invalidateProfilesListCache() {
     _profilesListCache = null;
@@ -66,6 +69,7 @@ class StorageService {
     _ensuredForPrefs = null;
     _profilesListCache = null;
     _timeSchemesListCache = null;
+    _locationTimeGroupsListCache = null;
     _profilesEnsured = false;
     _timeSchemesEnsured = false;
     _hidePrefixMigrated = false;
@@ -531,7 +535,9 @@ class StorageService {
     return parsed.profiles;
   }
 
-  Future<void> _writeProfilesWithoutLock(List<TimetableProfile> profiles) async {
+  Future<void> _writeProfilesWithoutLock(
+    List<TimetableProfile> profiles,
+  ) async {
     if (_prefs == null) await init();
     final payload = jsonEncode(
       profiles.map((profile) => profile.toJson()).toList(),
@@ -633,6 +639,52 @@ class StorageService {
     );
     await _prefs?.setString(_timeSchemesKey, payload);
     _timeSchemesListCache = List<TimeScheme>.from(schemes);
+  }
+
+  Future<List<LocationTimeGroup>> getLocationTimeGroups() async {
+    if (_prefs == null) await init();
+    final cached = _locationTimeGroupsListCache;
+    if (cached != null) {
+      return cached;
+    }
+
+    final rawGroups = _prefs?.getString(_locationTimeGroupsKey);
+    if (rawGroups == null || rawGroups.isEmpty) {
+      _locationTimeGroupsListCache = const [];
+      return const [];
+    }
+
+    final decoded = await _readJsonListPreference(_locationTimeGroupsKey);
+    if (decoded == null) {
+      _locationTimeGroupsListCache = const [];
+      return const [];
+    }
+    try {
+      final groups = decoded
+          .map(
+            (item) => LocationTimeGroup.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .where((group) => group.id.isNotEmpty)
+          .toList();
+      _locationTimeGroupsListCache = groups;
+      return groups;
+    } catch (_) {
+      final raw = _prefs?.getString(_locationTimeGroupsKey);
+      if (raw != null) {
+        await _backupAndRemoveCorruptString(_locationTimeGroupsKey, raw);
+      }
+      _locationTimeGroupsListCache = const [];
+      return const [];
+    }
+  }
+
+  Future<void> saveLocationTimeGroups(List<LocationTimeGroup> groups) async {
+    if (_prefs == null) await init();
+    final payload = jsonEncode(groups.map((group) => group.toJson()).toList());
+    await _prefs?.setString(_locationTimeGroupsKey, payload);
+    _locationTimeGroupsListCache = List<LocationTimeGroup>.from(groups);
   }
 
   // ---------------------------------------------------------------------------

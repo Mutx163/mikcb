@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import '../models/holiday_entry.dart';
+import '../models/location_time_group.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
@@ -18,6 +19,7 @@ class AppSyncSnapshot {
   final List<TimetableProfile> profiles;
   final String? activeProfileId;
   final List<TimeScheme> timeSchemes;
+  final List<LocationTimeGroup> locationTimeGroups;
   final List<String> teacherRecords;
   final List<String> locationRecords;
   final WarehouseSyncBundle warehouse;
@@ -33,6 +35,7 @@ class AppSyncSnapshot {
     required this.profiles,
     required this.activeProfileId,
     required this.timeSchemes,
+    this.locationTimeGroups = const [],
     required this.teacherRecords,
     required this.locationRecords,
     required this.warehouse,
@@ -121,6 +124,7 @@ class AppSyncSnapshotService {
       profiles: provider.profiles,
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
+      locationTimeGroups: provider.locationTimeGroups,
       teacherRecords: teacherRecords,
       locationRecords: locationRecords,
       warehouse: warehouse,
@@ -136,6 +140,7 @@ class AppSyncSnapshotService {
       profiles: provider.profiles,
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
+      locationTimeGroups: provider.locationTimeGroups,
       teacherRecords: teacherRecords,
       locationRecords: locationRecords,
       warehouse: warehouse,
@@ -167,6 +172,7 @@ class AppSyncSnapshotService {
       profiles: snapshot.profiles,
       activeProfileId: snapshot.activeProfileId,
       timeSchemes: snapshot.timeSchemes,
+      locationTimeGroups: snapshot.locationTimeGroups,
       teacherRecords: snapshot.teacherRecords,
       locationRecords: snapshot.locationRecords,
       warehouse: snapshot.warehouse,
@@ -246,6 +252,14 @@ class AppSyncSnapshotService {
                 TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList(),
+      locationTimeGroups:
+          (json['locationTimeGroups'] as List<dynamic>? ?? const [])
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    LocationTimeGroup.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList(),
       teacherRecords: (json['teacherRecords'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .where((item) => item.isNotEmpty)
@@ -312,6 +326,7 @@ class AppSyncSnapshotService {
 
       await _storageService.saveTeacherRecords(snapshot.teacherRecords);
       await _storageService.saveLocationRecords(snapshot.locationRecords);
+      await _storageService.saveLocationTimeGroups(snapshot.locationTimeGroups);
       await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
       await _warehouseMacroService.importAllMacros(snapshot.macros);
       await _holidayService.saveCustomHolidays(snapshot.customHolidays);
@@ -360,6 +375,7 @@ class AppSyncSnapshotService {
     required List<TimetableProfile> profiles,
     required String? activeProfileId,
     required List<TimeScheme> timeSchemes,
+    List<LocationTimeGroup> locationTimeGroups = const [],
     required List<String> teacherRecords,
     required List<String> locationRecords,
     required WarehouseSyncBundle warehouse,
@@ -378,6 +394,9 @@ class AppSyncSnapshotService {
       'activeProfileId': activeProfileId,
       'profiles': profiles.map((profile) => profile.toJson()).toList(),
       'timeSchemes': timeSchemes.map((scheme) => scheme.toJson()).toList(),
+      'locationTimeGroups': locationTimeGroups
+          .map((group) => group.toJson())
+          .toList(),
       'teacherRecords': teacherRecords,
       'locationRecords': locationRecords,
       // Never put teaching-system passwords into cloud sync JSON (C3).

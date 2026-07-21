@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -100,6 +101,87 @@ void main() {
       expect(
         TimeSchemeLogic.resolveCourseTimeScheme([scheme], settings, course),
         scheme,
+      );
+    });
+
+    test('uses location match when no override', () {
+      final defaultScheme = _scheme('default');
+      final otherScheme = _scheme('other');
+      final settings = TimetableSettings.defaults().copyWith(
+        activeTimeSchemeId: defaultScheme.id,
+      );
+      final course = Course(
+        id: '1',
+        name: 'Course',
+        teacher: 'T',
+        location: 'A1062',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+        color: '#FF0000',
+      );
+      final groups = [
+        LocationTimeGroup(
+          id: 'g1',
+          name: '其他教学楼',
+          timeSchemeId: otherScheme.id,
+          keywords: const [
+            LocationKeyword(
+              pattern: 'A1',
+              mode: LocationKeywordMatchMode.prefix,
+            ),
+          ],
+        ),
+      ];
+
+      expect(
+        TimeSchemeLogic.resolveCourseTimeScheme(
+          [defaultScheme, otherScheme],
+          settings,
+          course,
+          locationTimeGroups: groups,
+        ),
+        otherScheme,
+      );
+    });
+
+    test('manual override still beats location match', () {
+      final defaultScheme = _scheme('default');
+      final otherScheme = _scheme('other');
+      final overrideScheme = _scheme('override');
+      final settings = TimetableSettings.defaults().copyWith(
+        activeTimeSchemeId: defaultScheme.id,
+      );
+      final course = _course(
+        id: '1',
+        timeSchemeIdOverride: overrideScheme.id,
+      ).copyWith(location: 'A1062');
+      final groups = [
+        LocationTimeGroup(
+          id: 'g1',
+          name: '其他教学楼',
+          timeSchemeId: otherScheme.id,
+          keywords: const [
+            LocationKeyword(
+              pattern: 'A1',
+              mode: LocationKeywordMatchMode.prefix,
+            ),
+          ],
+        ),
+      ];
+
+      expect(
+        TimeSchemeLogic.resolveCourseTimeScheme(
+          [defaultScheme, otherScheme, overrideScheme],
+          settings,
+          course,
+          locationTimeGroups: groups,
+        ),
+        overrideScheme,
       );
     });
   });

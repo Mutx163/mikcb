@@ -9,6 +9,7 @@ import '../l10n/service_message_localizer.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/holiday_entry.dart';
+import '../models/location_time_group.dart';
 import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
 import '../models/partner_timetable_binding.dart';
@@ -32,10 +33,13 @@ import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/home_page_background.dart';
+import 'timetable/location_time_match_logic.dart';
 import 'timetable/time_scheme_logic.dart';
 import 'timetable/import_export_logic.dart';
 import 'timetable/live_activity_logic.dart';
 
+export 'timetable/location_time_match_logic.dart'
+    show LocationTimeMatchResult, LocationTimeMatchLogic;
 export 'timetable/time_scheme_logic.dart' show TimeSchemeCourseUsageReference;
 export 'timetable/live_activity_logic.dart'
     show LiveActivityCourseSelection, LiveActivityStage;
@@ -59,6 +63,19 @@ class CourseConflict {
   final Course otherCourse;
 
   const CourseConflict({required this.course, required this.otherCourse});
+}
+
+/// Stats returned after applying location-time rules to the active profile.
+class LocationTimeApplyStats {
+  final int unlockedCount;
+  final int matchedCount;
+  final int updatedCount;
+
+  const LocationTimeApplyStats({
+    required this.unlockedCount,
+    required this.matchedCount,
+    required this.updatedCount,
+  });
 }
 
 /// Groups courses that share the same name (i.e. the same subject with
@@ -128,6 +145,7 @@ class TimetableProvider with ChangeNotifier {
   int _currentWeek = 1;
   int _currentDateWeek = 1;
   List<TimeScheme> _timeSchemes = [];
+  List<LocationTimeGroup> _locationTimeGroups = [];
   List<TimetableProfile> _profiles = [];
   String? _activeProfileId;
   int _currentDayOfWeek = DateTime.now().weekday;
@@ -251,6 +269,8 @@ class TimetableProvider with ChangeNotifier {
   int get currentWeek => _currentWeek;
   int get currentDateWeek => _currentDateWeek;
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
+  List<LocationTimeGroup> get locationTimeGroups =>
+      List.unmodifiable(_locationTimeGroups);
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
   String? get activeProfileId => _activeProfileId;
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
@@ -509,11 +529,13 @@ class TimetableProvider with ChangeNotifier {
     // re-entrant wait deadlocks under Future.wait.
     final profiles = await _storageService.getProfiles();
     final timeSchemes = await _storageService.getTimeSchemes();
+    final locationTimeGroups = await _storageService.getLocationTimeGroups();
     final activeProfileId = await _storageService.getActiveProfileId();
     final partnerBinding = await _storageService.getPartnerTimetableBinding();
 
     _profiles = profiles;
     _timeSchemes = timeSchemes;
+    _locationTimeGroups = locationTimeGroups;
     _activeProfileId = activeProfileId;
     _partnerBinding = partnerBinding;
 
@@ -753,7 +775,12 @@ class TimetableProvider with ChangeNotifier {
     _settings,
     course,
     settingsOverride: settings,
+    locationTimeGroups: _locationTimeGroups,
   );
+
+  /// Preview location → place-group routing without writing course times.
+  LocationTimeMatchResult? matchLocationTime(String? location) =>
+      LocationTimeMatchLogic.match(location, _locationTimeGroups);
 
   List<SectionTime>? _resolveSectionsForCourse(
     Course course, {
@@ -774,6 +801,8 @@ class TimetableProvider with ChangeNotifier {
     _profiles,
     schemeId,
     profilesOverride: profiles,
+    schemes: _timeSchemes,
+    locationTimeGroups: _locationTimeGroups,
   );
 
   int maxUsedSectionForTimeScheme(
@@ -783,6 +812,8 @@ class TimetableProvider with ChangeNotifier {
     _profiles,
     schemeId,
     profilesOverride: profiles,
+    schemes: _timeSchemes,
+    locationTimeGroups: _locationTimeGroups,
   );
 
   TimeSchemeCourseUsageReference? maxSectionUsageForTimeScheme(
@@ -792,18 +823,23 @@ class TimetableProvider with ChangeNotifier {
     _profiles,
     schemeId,
     profilesOverride: profiles,
+    schemes: _timeSchemes,
+    locationTimeGroups: _locationTimeGroups,
   );
 
   String? validateCourseTimeSchemeOverride({
     String? timeSchemeId,
     required int startSection,
     required int endSection,
+    String? location,
   }) => TimeSchemeLogic.validateCourseTimeSchemeOverride(
     schemes: _timeSchemes,
     settings: _settings,
     timeSchemeId: timeSchemeId,
     startSection: startSection,
     endSection: endSection,
+    location: location,
+    locationTimeGroups: _locationTimeGroups,
   );
 
   Future<void> _persistActiveProfileState({
@@ -826,6 +862,170 @@ class TimetableProvider with ChangeNotifier {
   Future<void> _persistTimeSchemes() async {
     await _storageService.saveTimeSchemes(_timeSchemes);
     notifyUserDataChangedForSync();
+  }
+
+  Future<void> _persistLocationTimeGroups() async {
+    await _storageService.saveLocationTimeGroups(_locationTimeGroups);
+    notifyUserDataChangedForSync();
+  }
+
+  /// Re-sync course clock times for every profile after location rules change.
+  Future<void> _resyncAllProfilesWithLocationRules({bool notify = true}) async {
+    for (var index = 0; index < _profiles.length; index++) {
+      final profile = _profiles[index];
+      final syncedCourses = _syncCoursesWithEffectiveTimeSchemes(
+        List<Course>.from(profile.courses),
+        settings: profile.settings,
+      );
+      _profiles[index] = profile.copyWith(courses: syncedCourses);
+    }
+
+    final activeIndex = _profiles.indexWhere(
+      (profile) => profile.id == _activeProfileId,
+    );
+    if (activeIndex != -1) {
+      _courses = List<Course>.from(_profiles[activeIndex].courses);
+      _settings = _profiles[activeIndex].settings;
+    }
+
+    await _storageService.saveProfiles(_profiles);
+    notifyUserDataChangedForSync();
+    _currentLiveCourseId = null;
+    if (notify) {
+      _notifyStateChanged();
+    }
+    await _updateLiveActivity();
+  }
+
+  Future<LocationTimeGroup> createLocationTimeGroup({
+    required String name,
+    required String timeSchemeId,
+    List<LocationKeyword> keywords = const [],
+    bool enabled = true,
+    int priority = 0,
+  }) async {
+    await initialize();
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('location_time_group_name_required');
+    }
+    if (_getTimeSchemeById(timeSchemeId) == null) {
+      throw ArgumentError('time_scheme_not_found');
+    }
+
+    final group = LocationTimeGroup(
+      id: const Uuid().v4(),
+      name: trimmedName,
+      timeSchemeId: timeSchemeId,
+      enabled: enabled,
+      priority: priority,
+      keywords: List<LocationKeyword>.from(keywords),
+    );
+    _locationTimeGroups = [..._locationTimeGroups, group];
+    await _persistLocationTimeGroups();
+    await _resyncAllProfilesWithLocationRules();
+    return group;
+  }
+
+  Future<LocationTimeGroup?> updateLocationTimeGroup(
+    LocationTimeGroup group,
+  ) async {
+    await initialize();
+    final index = _locationTimeGroups.indexWhere((item) => item.id == group.id);
+    if (index == -1) {
+      return null;
+    }
+    final trimmedName = group.name.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('location_time_group_name_required');
+    }
+    if (_getTimeSchemeById(group.timeSchemeId) == null) {
+      throw ArgumentError('time_scheme_not_found');
+    }
+
+    final updated = group.copyWith(
+      name: trimmedName,
+      keywords: List<LocationKeyword>.from(group.keywords),
+    );
+    final next = List<LocationTimeGroup>.from(_locationTimeGroups);
+    next[index] = updated;
+    _locationTimeGroups = next;
+    await _persistLocationTimeGroups();
+    await _resyncAllProfilesWithLocationRules();
+    return updated;
+  }
+
+  Future<bool> deleteLocationTimeGroup(String groupId) async {
+    await initialize();
+    final beforeCount = _locationTimeGroups.length;
+    _locationTimeGroups = _locationTimeGroups
+        .where((group) => group.id != groupId)
+        .toList();
+    if (_locationTimeGroups.length == beforeCount) {
+      return false;
+    }
+    await _persistLocationTimeGroups();
+    await _resyncAllProfilesWithLocationRules();
+    return true;
+  }
+
+  Future<void> replaceLocationTimeGroups(
+    List<LocationTimeGroup> groups, {
+    bool resync = true,
+  }) async {
+    await initialize();
+    _locationTimeGroups = List<LocationTimeGroup>.from(groups);
+    await _persistLocationTimeGroups();
+    if (resync) {
+      await _resyncAllProfilesWithLocationRules();
+    } else {
+      _notifyStateChanged();
+    }
+  }
+
+  /// Apply location routing to unlocked courses on the active profile.
+  ///
+  /// Returns match/update counts for toast feedback.
+  Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() async {
+    await initialize();
+    var unlockedCount = 0;
+    var matchedCount = 0;
+    var updatedCount = 0;
+
+    final previousById = {for (final course in _courses) course.id: course};
+    final synced = _syncCoursesWithEffectiveTimeSchemes(
+      List<Course>.from(_courses),
+      settings: _settings,
+    );
+
+    for (final course in synced) {
+      if (course.timeSchemeIdOverride != null) {
+        continue;
+      }
+      unlockedCount += 1;
+      final match = matchLocationTime(course.location);
+      if (match != null && _getTimeSchemeById(match.timeSchemeId) != null) {
+        matchedCount += 1;
+      }
+      final previous = previousById[course.id];
+      if (previous != null &&
+          (previous.startTime != course.startTime ||
+              previous.endTime != course.endTime)) {
+        updatedCount += 1;
+      }
+    }
+
+    _courses = synced;
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    _notifyStateChanged();
+    await _updateLiveActivity();
+
+    return LocationTimeApplyStats(
+      unlockedCount: unlockedCount,
+      matchedCount: matchedCount,
+      updatedCount: updatedCount,
+    );
   }
 
   String _sectionSignature(List<SectionTime> sections) {
@@ -1766,6 +1966,7 @@ class TimetableProvider with ChangeNotifier {
             isOddWeek: false,
             isEvenWeek: false,
             customWeeks: remainingWeeks,
+            sessionNotes: originalCourse.sessionNotesExcludingWeek(sourceWeek),
           ),
         ),
       );

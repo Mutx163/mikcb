@@ -172,6 +172,7 @@ Course mergeImportedCourseWithExisting(Course existing, Course imported) {
     courseNature: existing.courseNature,
     description: existing.description,
     note: existing.note,
+    sessionNotes: existing.sessionNotes,
     timeSchemeIdOverride: existing.timeSchemeIdOverride,
   );
 }
@@ -214,6 +215,7 @@ Course mergeImportedSharedFieldsIntoExistingSchedule(
     courseNature: existing.courseNature,
     description: existing.description,
     note: existing.note,
+    sessionNotes: existing.sessionNotes,
     timeSchemeIdOverride: existing.timeSchemeIdOverride,
   );
 }

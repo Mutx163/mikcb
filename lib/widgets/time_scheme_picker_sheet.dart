@@ -77,8 +77,6 @@ class _TimeSchemePickerSheetBodyState
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final schemes = provider.timeSchemes;
-    final followLabel =
-        provider.activeTimeScheme?.name ?? l10n.timetableAppName;
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.38;
 
     return HyperosSheet(
@@ -93,7 +91,10 @@ class _TimeSchemePickerSheetBodyState
               child: HyperosChoiceGroup(
                 children: [
                   HyperosChoiceTile(
-                    title: l10n.followCurrentTimetableWithName(followLabel),
+                    title: l10n.followLocationAutoTimeScheme,
+                    subtitle: Text(
+                      l10n.followLocationAutoTimeSchemeDescription,
+                    ),
                     selected: widget.currentValue == null,
                     highlightSelectedText: true,
                     onTap: () => widget.onSelected(null),

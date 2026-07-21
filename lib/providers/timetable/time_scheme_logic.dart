@@ -1,18 +1,25 @@
 import '../../l10n/service_message_localizer.dart';
 import '../../models/course.dart';
+import '../../models/location_time_group.dart';
 import '../../models/time_scheme.dart';
 import '../../models/timetable_profile.dart';
 import '../../models/timetable_settings.dart';
+import 'location_time_match_logic.dart';
 
 class TimeSchemeCourseUsageReference {
   final String profileName;
   final Course course;
   final bool usesOverride;
 
+  /// True when the course has no manual override and is routed via a location
+  /// keyword group rather than the profile default scheme.
+  final bool usesLocationMatch;
+
   const TimeSchemeCourseUsageReference({
     required this.profileName,
     required this.course,
     required this.usesOverride,
+    this.usesLocationMatch = false,
   });
 }
 
@@ -32,17 +39,36 @@ class TimeSchemeLogic {
     return null;
   }
 
+  /// Resolves the effective time scheme for a course.
+  ///
+  /// Priority:
+  /// 1. Manual [Course.timeSchemeIdOverride]
+  /// 2. Location keyword match → group.timeSchemeId (if scheme exists)
+  /// 3. Profile [TimetableSettings.activeTimeSchemeId]
   static TimeScheme? resolveCourseTimeScheme(
     List<TimeScheme> schemes,
     TimetableSettings settings,
     Course course, {
     TimetableSettings? settingsOverride,
+    List<LocationTimeGroup> locationTimeGroups = const [],
   }) {
     final effectiveSettings = settingsOverride ?? settings;
     final overrideScheme = getSchemeById(schemes, course.timeSchemeIdOverride);
     if (overrideScheme != null) {
       return overrideScheme;
     }
+
+    final locationMatch = LocationTimeMatchLogic.match(
+      course.location,
+      locationTimeGroups,
+    );
+    if (locationMatch != null) {
+      final locationScheme = getSchemeById(schemes, locationMatch.timeSchemeId);
+      if (locationScheme != null) {
+        return locationScheme;
+      }
+    }
+
     return getSchemeById(schemes, effectiveSettings.activeTimeSchemeId);
   }
 
@@ -50,26 +76,60 @@ class TimeSchemeLogic {
     List<TimetableProfile> profiles,
     String schemeId, {
     List<TimetableProfile>? profilesOverride,
+    List<TimeScheme> schemes = const [],
+    List<LocationTimeGroup> locationTimeGroups = const [],
   }) {
     final sourceProfiles = profilesOverride ?? profiles;
     final usages = <TimeSchemeCourseUsageReference>[];
 
     for (final profile in sourceProfiles) {
       for (final course in profile.courses) {
-        final usesOverride = course.timeSchemeIdOverride == schemeId;
-        final followsProfileScheme =
-            course.timeSchemeIdOverride == null &&
-            profile.settings.activeTimeSchemeId == schemeId;
-        if (!usesOverride && !followsProfileScheme) {
+        if (course.timeSchemeIdOverride != null) {
+          if (course.timeSchemeIdOverride == schemeId) {
+            usages.add(
+              TimeSchemeCourseUsageReference(
+                profileName: profile.name,
+                course: course,
+                usesOverride: true,
+              ),
+            );
+          }
           continue;
         }
-        usages.add(
-          TimeSchemeCourseUsageReference(
-            profileName: profile.name,
-            course: course,
-            usesOverride: usesOverride,
-          ),
+
+        final locationMatch = LocationTimeMatchLogic.match(
+          course.location,
+          locationTimeGroups,
         );
+        if (locationMatch != null) {
+          final locationScheme = getSchemeById(
+            schemes,
+            locationMatch.timeSchemeId,
+          );
+          if (locationScheme != null) {
+            if (locationMatch.timeSchemeId == schemeId) {
+              usages.add(
+                TimeSchemeCourseUsageReference(
+                  profileName: profile.name,
+                  course: course,
+                  usesOverride: false,
+                  usesLocationMatch: true,
+                ),
+              );
+            }
+            continue;
+          }
+        }
+
+        if (profile.settings.activeTimeSchemeId == schemeId) {
+          usages.add(
+            TimeSchemeCourseUsageReference(
+              profileName: profile.name,
+              course: course,
+              usesOverride: false,
+            ),
+          );
+        }
       }
     }
 
@@ -80,11 +140,15 @@ class TimeSchemeLogic {
     List<TimetableProfile> profiles,
     String schemeId, {
     List<TimetableProfile>? profilesOverride,
+    List<TimeScheme> schemes = const [],
+    List<LocationTimeGroup> locationTimeGroups = const [],
   }) {
     final usages = getCourseUsages(
       profiles,
       schemeId,
       profilesOverride: profilesOverride,
+      schemes: schemes,
+      locationTimeGroups: locationTimeGroups,
     );
     if (usages.isEmpty) {
       return 0;
@@ -98,11 +162,15 @@ class TimeSchemeLogic {
     List<TimetableProfile> profiles,
     String schemeId, {
     List<TimetableProfile>? profilesOverride,
+    List<TimeScheme> schemes = const [],
+    List<LocationTimeGroup> locationTimeGroups = const [],
   }) {
     final usages = getCourseUsages(
       profiles,
       schemeId,
       profilesOverride: profilesOverride,
+      schemes: schemes,
+      locationTimeGroups: locationTimeGroups,
     );
     if (usages.isEmpty) {
       return null;
@@ -120,10 +188,26 @@ class TimeSchemeLogic {
     String? timeSchemeId,
     required int startSection,
     required int endSection,
+    String? location,
+    List<LocationTimeGroup> locationTimeGroups = const [],
   }) {
-    final scheme = timeSchemeId == null
-        ? getSchemeById(schemes, settings.activeTimeSchemeId)
-        : getSchemeById(schemes, timeSchemeId);
+    final TimeScheme? scheme;
+    if (timeSchemeId != null) {
+      scheme = getSchemeById(schemes, timeSchemeId);
+    } else {
+      final locationMatch = LocationTimeMatchLogic.match(
+        location,
+        locationTimeGroups,
+      );
+      if (locationMatch != null) {
+        scheme =
+            getSchemeById(schemes, locationMatch.timeSchemeId) ??
+            getSchemeById(schemes, settings.activeTimeSchemeId);
+      } else {
+        scheme = getSchemeById(schemes, settings.activeTimeSchemeId);
+      }
+    }
+
     final sectionCount = scheme?.sections.length ?? settings.sections.length;
     if (sectionCount <= 0) {
       return timeSchemeId == null
@@ -131,21 +215,49 @@ class TimeSchemeLogic {
           : 'time_scheme_not_found_selected';
     }
     if (startSection < 1 || endSection > sectionCount) {
-      return encodeServiceMessage(
-        'time_scheme_sections_insufficient',
-        {'startSection': startSection, 'endSection': endSection},
-      );
+      return encodeServiceMessage('time_scheme_sections_insufficient', {
+        'startSection': startSection,
+        'endSection': endSection,
+      });
     }
     return null;
   }
 
-  static bool isSchemeInUse(List<TimetableProfile> profiles, String schemeId) {
-    return profiles.any(
-      (profile) =>
-          profile.settings.activeTimeSchemeId == schemeId ||
-          profile.courses.any(
-            (course) => course.timeSchemeIdOverride == schemeId,
-          ),
-    );
+  static bool isSchemeInUse(
+    List<TimetableProfile> profiles,
+    String schemeId, {
+    List<LocationTimeGroup> locationTimeGroups = const [],
+    List<TimeScheme> schemes = const [],
+  }) {
+    if (LocationTimeMatchLogic.isSchemeReferencedByGroups(
+      locationTimeGroups,
+      schemeId,
+    )) {
+      return true;
+    }
+
+    return profiles.any((profile) {
+      if (profile.settings.activeTimeSchemeId == schemeId) {
+        return true;
+      }
+      for (final course in profile.courses) {
+        if (course.timeSchemeIdOverride == schemeId) {
+          return true;
+        }
+        if (course.timeSchemeIdOverride != null) {
+          continue;
+        }
+        final locationMatch = LocationTimeMatchLogic.match(
+          course.location,
+          locationTimeGroups,
+        );
+        if (locationMatch != null &&
+            locationMatch.timeSchemeId == schemeId &&
+            getSchemeById(schemes, schemeId) != null) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 }
