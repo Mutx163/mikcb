@@ -87,7 +87,31 @@
   "coupleTimetableLegendTogether": "Together",
   "coupleTimetableLegendFree": "Shared free",
   "coupleTimetableSharedFreeTitle": "Shared free time today",
+  "coupleTimetableSharedFreeTitleOtherDay": "Shared free time this day",
   "coupleTimetableNoSharedFree": "No shared free time today",
+  "coupleTimetableNoSharedFreeOtherDay": "No shared free time this day",
+  "coupleTimetableSharedFreeMeta": "{count} slots · about {hours}",
+  "@coupleTimetableSharedFreeMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleTimetableSharedFreeMoreCount": "{count} more slots",
+  "@coupleTimetableSharedFreeMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableSharedFreeCourseOnlyHint": "Based on both course schedules",
+  "coupleTimetableSharedFreeUnavailable": "Shared free time unavailable",
+  "coupleTimetableSharedFreeStaleHint": "Partner schedule may be outdated",
   "coupleTimetablePartnerReadOnlyBadge": "Partner timetable (read-only)",
   "coupleTimetableNotBoundMessage": "Import a partner timetable before opening the overlay view",
   "coupleTimetableShareText": "Here is my timetable. Import it in Qingyu Timetable > Couple Timetable to view together.",
@@ -5329,5 +5353,57 @@
         "type": "String"
       }
     }
-  }
+  },
+  "scheduleDateRuleSectionTitle": "Seasonal date rules",
+  "scheduleDateRuleSectionSubtitle": "Switch the default scheme by date (max 2, no overlap)",
+  "scheduleDateRuleAdd": "Add date rule",
+  "scheduleDateRuleEdit": "Edit date rule",
+  "scheduleDateRuleEmpty": "No date rules. Use the default scheme for everyday.",
+  "scheduleDateRuleNameLabel": "Rule name",
+  "scheduleDateRuleNameHint": "e.g. Summer / Winter",
+  "scheduleDateRuleStartDate": "Start date",
+  "scheduleDateRuleEndDate": "End date",
+  "scheduleDateRuleBoundScheme": "Time scheme",
+  "scheduleDateRuleEnabled": "Enabled",
+  "scheduleDateRuleActiveToday": "Active today",
+  "scheduleDateRuleRangeSummary": "{start} ~ {end}",
+  "@scheduleDateRuleRangeSummary": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleMaxReached": "At most 2 date rules",
+  "scheduleDateRuleNeedScheme": "Create a time scheme first",
+  "scheduleDateRuleNameRequired": "Enter a rule name",
+  "scheduleDateRuleSaved": "Date rule saved",
+  "scheduleDateRuleDeleted": "Date rule deleted",
+  "scheduleDateRuleDeleteTitle": "Delete date rule?",
+  "scheduleDateRuleDeleteMessage": "Delete “{name}”? That period will fall back to the default scheme.",
+  "@scheduleDateRuleDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleSaveFailed": "Save failed: {reason}",
+  "@scheduleDateRuleSaveFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleErrorMax": "Limit of 2 rules reached",
+  "scheduleDateRuleErrorOverlap": "Date range overlaps another rule",
+  "scheduleDateRuleErrorInvalidDate": "Invalid date",
+  "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",
+  "scheduleDateRuleErrorSchemeRequired": "Pick a time scheme",
+  "scheduleDateRuleErrorNameRequired": "Enter a name",
+  "scheduleDateRuleNote": "Note: location match beats date rules; week axis still uses the default scheme."
 }

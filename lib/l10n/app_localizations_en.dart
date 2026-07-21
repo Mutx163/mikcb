@@ -245,7 +245,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coupleTimetableSharedFreeTitle => 'Shared free time today';
 
   @override
+  String get coupleTimetableSharedFreeTitleOtherDay =>
+      'Shared free time this day';
+
+  @override
   String get coupleTimetableNoSharedFree => 'No shared free time today';
+
+  @override
+  String get coupleTimetableNoSharedFreeOtherDay =>
+      'No shared free time this day';
+
+  @override
+  String coupleTimetableSharedFreeMeta(int count, String hours) {
+    return '$count slots · about $hours';
+  }
+
+  @override
+  String coupleTimetableSharedFreeMoreCount(int count) {
+    return '$count more slots';
+  }
+
+  @override
+  String get coupleTimetableSharedFreeCourseOnlyHint =>
+      'Based on both course schedules';
+
+  @override
+  String get coupleTimetableSharedFreeUnavailable =>
+      'Shared free time unavailable';
+
+  @override
+  String get coupleTimetableSharedFreeStaleHint =>
+      'Partner schedule may be outdated';
 
   @override
   String get coupleTimetablePartnerReadOnlyBadge =>
@@ -9093,4 +9123,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String locationTimeMatchedSchemeHint(String group, String scheme) {
     return 'Location auto: $group · $scheme';
   }
+
+  @override
+  String get scheduleDateRuleSectionTitle => 'Seasonal date rules';
+
+  @override
+  String get scheduleDateRuleSectionSubtitle =>
+      'Switch the default scheme by date (max 2, no overlap)';
+
+  @override
+  String get scheduleDateRuleAdd => 'Add date rule';
+
+  @override
+  String get scheduleDateRuleEdit => 'Edit date rule';
+
+  @override
+  String get scheduleDateRuleEmpty =>
+      'No date rules. Use the default scheme for everyday.';
+
+  @override
+  String get scheduleDateRuleNameLabel => 'Rule name';
+
+  @override
+  String get scheduleDateRuleNameHint => 'e.g. Summer / Winter';
+
+  @override
+  String get scheduleDateRuleStartDate => 'Start date';
+
+  @override
+  String get scheduleDateRuleEndDate => 'End date';
+
+  @override
+  String get scheduleDateRuleBoundScheme => 'Time scheme';
+
+  @override
+  String get scheduleDateRuleEnabled => 'Enabled';
+
+  @override
+  String get scheduleDateRuleActiveToday => 'Active today';
+
+  @override
+  String scheduleDateRuleRangeSummary(String start, String end) {
+    return '$start ~ $end';
+  }
+
+  @override
+  String get scheduleDateRuleMaxReached => 'At most 2 date rules';
+
+  @override
+  String get scheduleDateRuleNeedScheme => 'Create a time scheme first';
+
+  @override
+  String get scheduleDateRuleNameRequired => 'Enter a rule name';
+
+  @override
+  String get scheduleDateRuleSaved => 'Date rule saved';
+
+  @override
+  String get scheduleDateRuleDeleted => 'Date rule deleted';
+
+  @override
+  String get scheduleDateRuleDeleteTitle => 'Delete date rule?';
+
+  @override
+  String scheduleDateRuleDeleteMessage(String name) {
+    return 'Delete “$name”? That period will fall back to the default scheme.';
+  }
+
+  @override
+  String scheduleDateRuleSaveFailed(String reason) {
+    return 'Save failed: $reason';
+  }
+
+  @override
+  String get scheduleDateRuleErrorMax => 'Limit of 2 rules reached';
+
+  @override
+  String get scheduleDateRuleErrorOverlap => 'Date range overlaps another rule';
+
+  @override
+  String get scheduleDateRuleErrorInvalidDate => 'Invalid date';
+
+  @override
+  String get scheduleDateRuleErrorEndBeforeStart =>
+      'End date cannot be before start date';
+
+  @override
+  String get scheduleDateRuleErrorSchemeRequired => 'Pick a time scheme';
+
+  @override
+  String get scheduleDateRuleErrorNameRequired => 'Enter a name';
+
+  @override
+  String get scheduleDateRuleNote =>
+      'Note: location match beats date rules; week axis still uses the default scheme.';
 }

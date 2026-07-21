@@ -234,7 +234,32 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleTimetableSharedFreeTitle => '今日共同空闲';
 
   @override
+  String get coupleTimetableSharedFreeTitleOtherDay => '该日共同空闲';
+
+  @override
   String get coupleTimetableNoSharedFree => '今天没有共同空闲时段';
+
+  @override
+  String get coupleTimetableNoSharedFreeOtherDay => '该日没有共同空闲时段';
+
+  @override
+  String coupleTimetableSharedFreeMeta(int count, String hours) {
+    return '共 $count 段 · 约 $hours';
+  }
+
+  @override
+  String coupleTimetableSharedFreeMoreCount(int count) {
+    return '还有 $count 段';
+  }
+
+  @override
+  String get coupleTimetableSharedFreeCourseOnlyHint => '按双方课程估算';
+
+  @override
+  String get coupleTimetableSharedFreeUnavailable => '暂时算不出共同空闲';
+
+  @override
+  String get coupleTimetableSharedFreeStaleHint => '对方课表可能不是最新';
 
   @override
   String get coupleTimetablePartnerReadOnlyBadge => '对方课表（只读）';
@@ -8829,4 +8854,94 @@ class AppLocalizationsJa extends AppLocalizations {
   String locationTimeMatchedSchemeHint(String group, String scheme) {
     return 'Location auto: $group · $scheme';
   }
+
+  @override
+  String get scheduleDateRuleSectionTitle => '按日期切换作息';
+
+  @override
+  String get scheduleDateRuleSectionSubtitle => '例如暑假前后用不同时间模板（最多 2 条，不重叠）';
+
+  @override
+  String get scheduleDateRuleAdd => '添加日期规则';
+
+  @override
+  String get scheduleDateRuleEdit => '编辑日期规则';
+
+  @override
+  String get scheduleDateRuleEmpty => '未设置日期切表。日常只用默认模板即可。';
+
+  @override
+  String get scheduleDateRuleNameLabel => '规则名称';
+
+  @override
+  String get scheduleDateRuleNameHint => '例如：夏令时 / 冬令时';
+
+  @override
+  String get scheduleDateRuleStartDate => '开始日期';
+
+  @override
+  String get scheduleDateRuleEndDate => '结束日期';
+
+  @override
+  String get scheduleDateRuleBoundScheme => '使用时间模板';
+
+  @override
+  String get scheduleDateRuleEnabled => '启用';
+
+  @override
+  String get scheduleDateRuleActiveToday => '今天生效';
+
+  @override
+  String scheduleDateRuleRangeSummary(String start, String end) {
+    return '$start ~ $end';
+  }
+
+  @override
+  String get scheduleDateRuleMaxReached => '最多只能添加 2 条日期规则';
+
+  @override
+  String get scheduleDateRuleNeedScheme => '请先创建至少一套时间模板';
+
+  @override
+  String get scheduleDateRuleNameRequired => '请填写规则名称';
+
+  @override
+  String get scheduleDateRuleSaved => '日期规则已保存';
+
+  @override
+  String get scheduleDateRuleDeleted => '已删除日期规则';
+
+  @override
+  String get scheduleDateRuleDeleteTitle => '删除日期规则？';
+
+  @override
+  String scheduleDateRuleDeleteMessage(String name) {
+    return '确定删除「$name」？该日期段将恢复使用课表默认时间模板。';
+  }
+
+  @override
+  String scheduleDateRuleSaveFailed(String reason) {
+    return '保存失败：$reason';
+  }
+
+  @override
+  String get scheduleDateRuleErrorMax => '已达到 2 条上限';
+
+  @override
+  String get scheduleDateRuleErrorOverlap => '日期区间与已有规则重叠';
+
+  @override
+  String get scheduleDateRuleErrorInvalidDate => '日期格式无效';
+
+  @override
+  String get scheduleDateRuleErrorEndBeforeStart => '结束日期不能早于开始日期';
+
+  @override
+  String get scheduleDateRuleErrorSchemeRequired => '请选择时间模板';
+
+  @override
+  String get scheduleDateRuleErrorNameRequired => '请填写名称';
+
+  @override
+  String get scheduleDateRuleNote => '说明：地点匹配优先于日期切表；左侧时间列仍显示默认模板。';
 }

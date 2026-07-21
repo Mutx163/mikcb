@@ -542,11 +542,53 @@ abstract class AppLocalizations {
   /// **'今日共同空闲'**
   String get coupleTimetableSharedFreeTitle;
 
+  /// No description provided for @coupleTimetableSharedFreeTitleOtherDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'该日共同空闲'**
+  String get coupleTimetableSharedFreeTitleOtherDay;
+
   /// No description provided for @coupleTimetableNoSharedFree.
   ///
   /// In zh, this message translates to:
   /// **'今天没有共同空闲时段'**
   String get coupleTimetableNoSharedFree;
+
+  /// No description provided for @coupleTimetableNoSharedFreeOtherDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'该日没有共同空闲时段'**
+  String get coupleTimetableNoSharedFreeOtherDay;
+
+  /// No description provided for @coupleTimetableSharedFreeMeta.
+  ///
+  /// In zh, this message translates to:
+  /// **'共 {count} 段 · 约 {hours}'**
+  String coupleTimetableSharedFreeMeta(int count, String hours);
+
+  /// No description provided for @coupleTimetableSharedFreeMoreCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有 {count} 段'**
+  String coupleTimetableSharedFreeMoreCount(int count);
+
+  /// No description provided for @coupleTimetableSharedFreeCourseOnlyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'按双方课程估算'**
+  String get coupleTimetableSharedFreeCourseOnlyHint;
+
+  /// No description provided for @coupleTimetableSharedFreeUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时算不出共同空闲'**
+  String get coupleTimetableSharedFreeUnavailable;
+
+  /// No description provided for @coupleTimetableSharedFreeStaleHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'对方课表可能不是最新'**
+  String get coupleTimetableSharedFreeStaleHint;
 
   /// No description provided for @coupleTimetablePartnerReadOnlyBadge.
   ///
@@ -15528,6 +15570,174 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'地点自动：{group} · {scheme}'**
   String locationTimeMatchedSchemeHint(String group, String scheme);
+
+  /// No description provided for @scheduleDateRuleSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按日期切换作息'**
+  String get scheduleDateRuleSectionTitle;
+
+  /// No description provided for @scheduleDateRuleSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如暑假前后用不同时间模板（最多 2 条，不重叠）'**
+  String get scheduleDateRuleSectionSubtitle;
+
+  /// No description provided for @scheduleDateRuleAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加日期规则'**
+  String get scheduleDateRuleAdd;
+
+  /// No description provided for @scheduleDateRuleEdit.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑日期规则'**
+  String get scheduleDateRuleEdit;
+
+  /// No description provided for @scheduleDateRuleEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设置日期切表。日常只用默认模板即可。'**
+  String get scheduleDateRuleEmpty;
+
+  /// No description provided for @scheduleDateRuleNameLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'规则名称'**
+  String get scheduleDateRuleNameLabel;
+
+  /// No description provided for @scheduleDateRuleNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：夏令时 / 冬令时'**
+  String get scheduleDateRuleNameHint;
+
+  /// No description provided for @scheduleDateRuleStartDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始日期'**
+  String get scheduleDateRuleStartDate;
+
+  /// No description provided for @scheduleDateRuleEndDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束日期'**
+  String get scheduleDateRuleEndDate;
+
+  /// No description provided for @scheduleDateRuleBoundScheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用时间模板'**
+  String get scheduleDateRuleBoundScheme;
+
+  /// No description provided for @scheduleDateRuleEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用'**
+  String get scheduleDateRuleEnabled;
+
+  /// No description provided for @scheduleDateRuleActiveToday.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天生效'**
+  String get scheduleDateRuleActiveToday;
+
+  /// No description provided for @scheduleDateRuleRangeSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'{start} ~ {end}'**
+  String scheduleDateRuleRangeSummary(String start, String end);
+
+  /// No description provided for @scheduleDateRuleMaxReached.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多只能添加 2 条日期规则'**
+  String get scheduleDateRuleMaxReached;
+
+  /// No description provided for @scheduleDateRuleNeedScheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先创建至少一套时间模板'**
+  String get scheduleDateRuleNeedScheme;
+
+  /// No description provided for @scheduleDateRuleNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写规则名称'**
+  String get scheduleDateRuleNameRequired;
+
+  /// No description provided for @scheduleDateRuleSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期规则已保存'**
+  String get scheduleDateRuleSaved;
+
+  /// No description provided for @scheduleDateRuleDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已删除日期规则'**
+  String get scheduleDateRuleDeleted;
+
+  /// No description provided for @scheduleDateRuleDeleteTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除日期规则？'**
+  String get scheduleDateRuleDeleteTitle;
+
+  /// No description provided for @scheduleDateRuleDeleteMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除「{name}」？该日期段将恢复使用课表默认时间模板。'**
+  String scheduleDateRuleDeleteMessage(String name);
+
+  /// No description provided for @scheduleDateRuleSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败：{reason}'**
+  String scheduleDateRuleSaveFailed(String reason);
+
+  /// No description provided for @scheduleDateRuleErrorMax.
+  ///
+  /// In zh, this message translates to:
+  /// **'已达到 2 条上限'**
+  String get scheduleDateRuleErrorMax;
+
+  /// No description provided for @scheduleDateRuleErrorOverlap.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期区间与已有规则重叠'**
+  String get scheduleDateRuleErrorOverlap;
+
+  /// No description provided for @scheduleDateRuleErrorInvalidDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期格式无效'**
+  String get scheduleDateRuleErrorInvalidDate;
+
+  /// No description provided for @scheduleDateRuleErrorEndBeforeStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束日期不能早于开始日期'**
+  String get scheduleDateRuleErrorEndBeforeStart;
+
+  /// No description provided for @scheduleDateRuleErrorSchemeRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择时间模板'**
+  String get scheduleDateRuleErrorSchemeRequired;
+
+  /// No description provided for @scheduleDateRuleErrorNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写名称'**
+  String get scheduleDateRuleErrorNameRequired;
+
+  /// No description provided for @scheduleDateRuleNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'说明：地点匹配优先于日期切表；左侧时间列仍显示默认模板。'**
+  String get scheduleDateRuleNote;
 }
 
 class _AppLocalizationsDelegate
