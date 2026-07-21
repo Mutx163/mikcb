@@ -251,12 +251,17 @@ class HyperosSheet extends StatelessWidget {
 /// Content should use [HyperosSheetFrame] / [HyperosSheet] / [HyperosDialog].
 /// Default chrome is [HyperosSheetChrome.floating] unless [chrome] or a
 /// [HyperosSheetChromeScope] says otherwise.
+///
+/// When [padForKeyboard] is true (default), the sheet is lifted by
+/// [MediaQuery.viewInsets] so it sits above the IME. Set it to false when the
+/// sheet body manages keyboard avoidance itself (e.g. scroll-to-field).
 Future<T?> showHyperosSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isDismissible = true,
   bool enableDrag = true,
   bool useRootNavigator = false,
+  bool padForKeyboard = true,
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) {
@@ -269,12 +274,13 @@ Future<T?> showHyperosSheet<T>({
     backgroundColor: Colors.transparent,
     barrierColor: barrierColor ?? HyperosColors.windowDimming(context),
     builder: (sheetContext) {
+      final keyboardInset = padForKeyboard
+          ? MediaQuery.viewInsetsOf(sheetContext).bottom
+          : 0.0;
       return HyperosSheetChromeScope(
         chrome: chrome,
         child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-          ),
+          padding: EdgeInsets.only(bottom: keyboardInset),
           child: builder(sheetContext),
         ),
       );
@@ -290,6 +296,7 @@ Future<T?> showHomeHyperosSheet<T>({
   bool isDismissible = true,
   bool enableDrag = true,
   bool useRootNavigator = false,
+  bool padForKeyboard = true,
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.edge,
 }) {
@@ -299,6 +306,7 @@ Future<T?> showHomeHyperosSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     useRootNavigator: useRootNavigator,
+    padForKeyboard: padForKeyboard,
     chrome: chrome,
     barrierColor:
         barrierColor ??

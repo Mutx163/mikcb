@@ -1184,8 +1184,25 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final entry = _scheduleEntries[index];
     final followLabel =
         provider.activeTimeScheme?.name ?? l10n.timetableAppName;
+    final locationText = index < _entryLocationControllers.length
+        ? _entryLocationControllers[index].text
+        : entry.location;
+    final locationMatch = entry.timeSchemeIdOverride == null
+        ? provider.matchLocationTime(locationText)
+        : null;
+    final matchedSchemeName = locationMatch == null
+        ? null
+        : provider.timeSchemes
+              .where((scheme) => scheme.id == locationMatch.timeSchemeId)
+              .map((scheme) => scheme.name)
+              .firstOrNull;
     final currentName = entry.timeSchemeIdOverride == null
-        ? l10n.followCurrentTimetableWithName(followLabel)
+        ? (locationMatch != null && matchedSchemeName != null
+              ? l10n.locationTimeMatchedSchemeHint(
+                  locationMatch.groupName,
+                  matchedSchemeName,
+                )
+              : l10n.followLocationAutoTimeScheme)
         : provider.timeSchemes
                   .where((s) => s.id == entry.timeSchemeIdOverride)
                   .firstOrNull

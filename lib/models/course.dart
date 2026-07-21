@@ -19,6 +19,58 @@ extension CourseNatureX on CourseNature {
   }
 }
 
+/// Per-occurrence (single week) note for a course schedule entry.
+class CourseSessionNote {
+  static const Object _unset = Object();
+
+  final String text;
+  final bool hasHomework;
+
+  const CourseSessionNote({this.text = '', this.hasHomework = false});
+
+  bool get isEmpty => text.trim().isEmpty && !hasHomework;
+
+  bool get isNotEmpty => !isEmpty;
+
+  String get trimmedText => text.trim();
+
+  CourseSessionNote? get normalizedOrNull {
+    final trimmed = trimmedText;
+    if (trimmed.isEmpty && !hasHomework) {
+      return null;
+    }
+    return CourseSessionNote(text: trimmed, hasHomework: hasHomework);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'text': text, 'hasHomework': hasHomework};
+  }
+
+  factory CourseSessionNote.fromJson(Map<String, dynamic> json) {
+    return CourseSessionNote(
+      text: (json['text'] as String?) ?? '',
+      hasHomework: json['hasHomework'] as bool? ?? false,
+    );
+  }
+
+  CourseSessionNote copyWith({Object? text = _unset, bool? hasHomework}) {
+    return CourseSessionNote(
+      text: identical(text, _unset) ? this.text : text as String,
+      hasHomework: hasHomework ?? this.hasHomework,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CourseSessionNote &&
+        other.text == text &&
+        other.hasHomework == hasHomework;
+  }
+
+  @override
+  int get hashCode => Object.hash(text, hasHomework);
+}
+
 class Course {
   static const Object _unset = Object();
 
@@ -41,7 +93,11 @@ class Course {
   final List<int>? suspendedWeeks; // 停课周次
   final CourseNature courseNature; // 课程性质
   final String? description; // 课程简介（同名课程共享）
-  final String? note; // 备注/备忘录
+  /// Whole-course note (long-lived, not shared across same-name courses).
+  final String? note;
+
+  /// Per-week session notes keyed by teaching week (1-based).
+  final Map<int, CourseSessionNote>? sessionNotes;
   final String? timeSchemeIdOverride; // 课程级时间模板覆盖
 
   Course({
@@ -65,6 +121,7 @@ class Course {
     this.courseNature = CourseNature.required,
     this.description,
     this.note,
+    this.sessionNotes,
     this.timeSchemeIdOverride,
   });
 
@@ -104,6 +161,7 @@ class Course {
   }
 
   Map<String, dynamic> toJson() {
+    final normalizedSessionNotes = normalizedSessionNotesMap;
     return {
       'id': id,
       'name': name,
@@ -125,6 +183,11 @@ class Course {
       'courseNature': courseNature.value,
       'description': description,
       'note': note,
+      if (normalizedSessionNotes != null)
+        'sessionNotes': {
+          for (final entry in normalizedSessionNotes.entries)
+            entry.key.toString(): entry.value.toJson(),
+        },
       'timeSchemeIdOverride': timeSchemeIdOverride,
     };
   }
@@ -190,8 +253,62 @@ class Course {
       courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
       description: json['description'] as String? ?? json['note'] as String?,
       note: json['note'] as String?,
+      sessionNotes: parseSessionNotes(json['sessionNotes']),
       timeSchemeIdOverride: json['timeSchemeIdOverride'] as String?,
     );
+  }
+
+  /// Parses persisted session-note maps (week key as string or int).
+  static Map<int, CourseSessionNote>? parseSessionNotes(Object? raw) {
+    if (raw is! Map) {
+      return null;
+    }
+    final parsed = <int, CourseSessionNote>{};
+    raw.forEach((key, value) {
+      final week = switch (key) {
+        final int number => number,
+        final String text => int.tryParse(text),
+        _ => null,
+      };
+      if (week == null || week < 1) {
+        return;
+      }
+      if (value is! Map) {
+        return;
+      }
+      final note = CourseSessionNote.fromJson(
+        Map<String, dynamic>.from(value),
+      ).normalizedOrNull;
+      if (note != null) {
+        parsed[week] = note;
+      }
+    });
+    if (parsed.isEmpty) {
+      return null;
+    }
+    return Map<int, CourseSessionNote>.unmodifiable(parsed);
+  }
+
+  static Map<int, CourseSessionNote>? normalizeSessionNotes(
+    Map<int, CourseSessionNote>? source,
+  ) {
+    if (source == null || source.isEmpty) {
+      return null;
+    }
+    final normalized = <int, CourseSessionNote>{};
+    for (final entry in source.entries) {
+      if (entry.key < 1) {
+        continue;
+      }
+      final note = entry.value.normalizedOrNull;
+      if (note != null) {
+        normalized[entry.key] = note;
+      }
+    }
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return Map<int, CourseSessionNote>.unmodifiable(normalized);
   }
 
   String toJsonString() => jsonEncode(toJson());
@@ -221,6 +338,7 @@ class Course {
     CourseNature? courseNature,
     Object? description = _unset,
     Object? note = _unset,
+    Object? sessionNotes = _unset,
     Object? timeSchemeIdOverride = _unset,
   }) {
     return Course(
@@ -252,6 +370,9 @@ class Course {
           ? this.description
           : description as String?,
       note: identical(note, _unset) ? this.note : note as String?,
+      sessionNotes: identical(sessionNotes, _unset)
+          ? this.sessionNotes
+          : normalizeSessionNotes(sessionNotes as Map<int, CourseSessionNote>?),
       timeSchemeIdOverride: identical(timeSchemeIdOverride, _unset)
           ? this.timeSchemeIdOverride
           : timeSchemeIdOverride as String?,
@@ -259,6 +380,73 @@ class Course {
   }
 
   int get sectionCount => endSection - startSection + 1;
+
+  Map<int, CourseSessionNote>? get normalizedSessionNotesMap =>
+      normalizeSessionNotes(sessionNotes);
+
+  CourseSessionNote? sessionNoteForWeek(int week) =>
+      normalizedSessionNotesMap?[week];
+
+  bool hasHomeworkInWeek(int week) =>
+      sessionNoteForWeek(week)?.hasHomework == true;
+
+  bool hasSessionNoteInWeek(int week) => sessionNoteForWeek(week) != null;
+
+  bool get hasAnyHomework =>
+      normalizedSessionNotesMap?.values.any((note) => note.hasHomework) ??
+      false;
+
+  /// Returns a new session-note map with [week] upserted or removed.
+  Map<int, CourseSessionNote>? withSessionNote(
+    int week,
+    CourseSessionNote? note,
+  ) {
+    final next = <int, CourseSessionNote>{...?normalizedSessionNotesMap};
+    final normalized = note?.normalizedOrNull;
+    if (normalized == null) {
+      next.remove(week);
+    } else {
+      next[week] = normalized;
+    }
+    return normalizeSessionNotes(next);
+  }
+
+  /// Removes the session note for [week] (e.g. delete this occurrence).
+  Map<int, CourseSessionNote>? withoutSessionNote(int week) =>
+      withSessionNote(week, null);
+
+  /// Moves a session note from [fromWeek] to [toWeek] (reschedule).
+  Map<int, CourseSessionNote>? relocatingSessionNote({
+    required int fromWeek,
+    required int toWeek,
+  }) {
+    if (fromWeek == toWeek) {
+      return normalizedSessionNotesMap;
+    }
+    final source = sessionNoteForWeek(fromWeek);
+    final next = <int, CourseSessionNote>{...?normalizedSessionNotesMap};
+    next.remove(fromWeek);
+    if (source != null) {
+      next[toWeek] = source;
+    }
+    return normalizeSessionNotes(next);
+  }
+
+  /// Session notes kept on the leftover multi-week course after moving one week.
+  Map<int, CourseSessionNote>? sessionNotesExcludingWeek(int week) =>
+      withoutSessionNote(week);
+
+  /// Session notes for a single-week course created by reschedule/split.
+  Map<int, CourseSessionNote>? sessionNotesForSingleWeek({
+    required int sourceWeek,
+    required int targetWeek,
+  }) {
+    final source = sessionNoteForWeek(sourceWeek);
+    if (source == null) {
+      return null;
+    }
+    return normalizeSessionNotes({targetWeek: source});
+  }
 
   List<int>? get normalizedCustomWeeks {
     final source = customWeeks;

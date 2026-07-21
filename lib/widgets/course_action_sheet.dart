@@ -10,6 +10,7 @@ import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
 import '../ui/hyperos/hyperos.dart';
+import 'course_note_sheet.dart';
 
 typedef CourseActionHandler = void Function(Course course);
 
@@ -502,15 +503,35 @@ class _CourseActionSheetContent extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.theme.colors;
     final typo = context.theme.typography.body;
-    final provider = context.read<TimetableProvider>();
-    final courseColor = _previewItemColor(context, previewItem, colors);
+    final provider = context.watch<TimetableProvider>();
+    var course = previewItem.course;
+    for (final item in provider.courses) {
+      if (item.id == previewItem.course.id) {
+        course = item;
+        break;
+      }
+    }
+    final courseColor = _previewItemColor(
+      context,
+      CourseActionPreviewItem(
+        course: course,
+        isPartnerCourse: previewItem.isPartnerCourse,
+        coupleKind: previewItem.coupleKind,
+        isConflict: previewItem.isConflict,
+      ),
+      colors,
+    );
     final coupleBadge = _previewItemBadgeLabel(l10n, previewItem);
     final natureLabel = course.courseNature == CourseNature.elective
         ? l10n.courseNatureElective
         : l10n.courseNatureRequired;
     final teacher = course.teacher.trim();
     final location = course.location.trim();
-    final description = (course.description ?? course.note)?.trim();
+    final description = course.description?.trim();
+    final wholeNote = course.note?.trim();
+    final sessionNote = course.sessionNoteForWeek(week);
+    final sessionNoteText = sessionNote?.trimmedText;
+    final hasHomework = sessionNote?.hasHomework == true;
     final headerDetail = description?.isNotEmpty == true
         ? description!
         : course.weekDescription(l10n);
@@ -540,6 +561,18 @@ class _CourseActionSheetContent extends StatelessWidget {
         : previewItem.isPartnerCourse
         ? Icons.person_outline_rounded
         : Icons.menu_book_rounded;
+    final noteTitle = _resolveNoteTileTitle(
+      l10n: l10n,
+      wholeNote: wholeNote,
+      sessionNoteText: sessionNoteText,
+      hasHomework: hasHomework,
+    );
+    final noteSubtitle = _resolveNoteTileSubtitle(
+      l10n: l10n,
+      wholeNote: wholeNote,
+      sessionNoteText: sessionNoteText,
+      hasHomework: hasHomework,
+    );
 
     return Column(
       key: ValueKey('course-action-content-${course.id}'),
@@ -632,6 +665,63 @@ class _CourseActionSheetContent extends StatelessWidget {
           title: location.isNotEmpty ? location : l10n.unknownLocation,
           subtitle: locationSubtitle,
         ),
+        const SizedBox(height: 8),
+        _CourseDetailTile(
+          icon: Icons.sticky_note_2_outlined,
+          title: noteTitle,
+          subtitle: noteSubtitle,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasHomework) ...[
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.assignment_outlined,
+                    size: 11,
+                    color: colors.primary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: colors.mutedForeground,
+              ),
+            ],
+          ),
+          onTap: () {
+            // Only one sheet at a time: close the action sheet, then open notes.
+            final hostNavigator = Navigator.of(context);
+            final courseSnapshot = course;
+            final weekSnapshot = week;
+            final isReadOnly = previewItem.isReadOnly;
+            hostNavigator.pop();
+            // Wait for the action sheet dismiss animation so the two never stack.
+            Future<void>.delayed(const Duration(milliseconds: 280), () {
+              final hostContext = hostNavigator.context;
+              if (!hostContext.mounted) {
+                return;
+              }
+              showCourseNoteSheet(
+                hostContext,
+                course: courseSnapshot,
+                week: weekSnapshot,
+                readOnly: isReadOnly,
+              );
+            });
+          },
+        ),
         const SizedBox(height: 12),
         _CourseDetailTile(
           icon: Icons.info_outline_rounded,
@@ -704,6 +794,45 @@ class _CourseActionSheetContent extends StatelessWidget {
   }
 }
 
+String _resolveNoteTileTitle({
+  required AppLocalizations l10n,
+  required String? wholeNote,
+  required String? sessionNoteText,
+  required bool hasHomework,
+}) {
+  if (sessionNoteText != null && sessionNoteText.isNotEmpty) {
+    return sessionNoteText;
+  }
+  if (hasHomework) {
+    return l10n.courseNoteHomeworkMarked;
+  }
+  if (wholeNote != null && wholeNote.isNotEmpty) {
+    return wholeNote;
+  }
+  return l10n.courseNoteAction;
+}
+
+String _resolveNoteTileSubtitle({
+  required AppLocalizations l10n,
+  required String? wholeNote,
+  required String? sessionNoteText,
+  required bool hasHomework,
+}) {
+  final hasSession =
+      hasHomework || (sessionNoteText != null && sessionNoteText.isNotEmpty);
+  final hasWhole = wholeNote != null && wholeNote.isNotEmpty;
+  if (hasSession && hasWhole) {
+    return l10n.courseNoteTileSubtitleBoth;
+  }
+  if (hasSession) {
+    return l10n.courseNoteTileSubtitleSession;
+  }
+  if (hasWhole) {
+    return l10n.courseNoteTileSubtitleWhole;
+  }
+  return l10n.courseNoteTileSubtitleEmpty;
+}
+
 class _CourseDetailTile extends StatelessWidget {
   const _CourseDetailTile({
     required this.icon,
@@ -711,6 +840,7 @@ class _CourseDetailTile extends StatelessWidget {
     this.subtitle,
     this.titleWidget,
     this.trailing,
+    this.onTap,
   });
 
   final IconData icon;
@@ -718,56 +848,70 @@ class _CourseDetailTile extends StatelessWidget {
   final String? subtitle;
   final Widget? titleWidget;
   final Widget? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
 
-    return HyperosFrostedSurface(
-      borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: colors.mutedForeground),
-            const SizedBox(width: 10),
-            if (titleWidget != null)
-              titleWidget!
-            else
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: colors.mutedForeground),
+          const SizedBox(width: 10),
+          if (titleWidget != null)
+            titleWidget!
+          else
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title!,
+                    style: typo.sm.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      title!,
-                      style: typo.sm.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.25,
+                      subtitle!,
+                      style: typo.xs2.copyWith(
+                        color: colors.mutedForeground,
+                        height: 1.3,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (subtitle != null && subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        style: typo.xs2.copyWith(
-                          color: colors.mutedForeground,
-                          height: 1.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
-          ],
-        ),
+            ),
+          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+        ],
       ),
+    );
+
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
+      child: onTap == null
+          ? content
+          : Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(
+                  HyperosTokens.controlRadius,
+                ),
+                child: content,
+              ),
+            ),
     );
   }
 }

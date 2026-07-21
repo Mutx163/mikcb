@@ -27,6 +27,9 @@ class CourseCard extends StatelessWidget {
   final String? detailColorHex;
   final String? compactOverlineText;
   final String? topRightBadgeText;
+
+  /// Shows a circular homework indicator on the card (typically week view).
+  final bool showHomeworkIndicator;
   final bool isHighlighted;
   final bool isHoliday;
   final bool isSuspended;
@@ -54,6 +57,7 @@ class CourseCard extends StatelessWidget {
     this.detailColorHex,
     this.compactOverlineText,
     this.topRightBadgeText,
+    this.showHomeworkIndicator = false,
     this.isHighlighted = false,
     this.isHoliday = false,
     this.isSuspended = false,
@@ -186,6 +190,12 @@ class CourseCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (showHomeworkIndicator)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: _buildHomeworkIndicator(size: 18, iconSize: 11),
+                ),
               if (topRightBadgeText != null)
                 Positioned(
                   top: 8,
@@ -336,6 +346,12 @@ class CourseCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (showHomeworkIndicator)
+              Positioned(
+                top: 4,
+                left: 4,
+                child: _buildHomeworkIndicator(size: 15, iconSize: 9),
+              ),
             if (topRightBadgeText != null)
               Positioned(
                 top: 6,
@@ -369,6 +385,38 @@ class CourseCard extends StatelessWidget {
       return Opacity(opacity: 0.4, child: card);
     }
     return card;
+  }
+
+  /// Circular outlined badge used for per-session homework marks.
+  Widget _buildHomeworkIndicator({
+    required double size,
+    required double iconSize,
+  }) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.95),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.assignment_outlined,
+        size: iconSize,
+        color: const Color(0xFFE05D44),
+      ),
+    );
   }
 
   Widget _buildBadge(String text, {Color? color}) {

@@ -26,6 +26,7 @@ import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
+import '../widgets/course_note_sheet.dart';
 import '../widgets/course_card.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
@@ -2402,6 +2403,9 @@ class _TimetableScreenState extends State<TimetableScreen>
           textColor: Colors.white,
           backgroundColor: Colors.red.shade700,
         ),
+      if (!courseItem.isPartnerCourse &&
+          courseItem.course.hasHomeworkInWeek(week))
+        _buildDayAgendaHomeworkDot(),
     ];
     final cardDecoration = BoxDecoration(
       color: palette.baseColor,
@@ -2441,6 +2445,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     final isSuspended = courseItem.course.isSuspendedInWeek(week);
     final effectiveOpacity = isSuspended ? 0.4 : courseItem.opacity;
 
+    Future<void> openCourseNotes() {
+      return showCourseNoteSheet(
+        context,
+        course: courseItem.course,
+        week: week,
+        readOnly: courseItem.isPartnerCourse,
+      );
+    }
+
     if (courseItem.isPartnerCourse) {
       void openCoursePreview() {
         _showCourseActions(courseItem.course, week, displayItem: courseItem);
@@ -2449,19 +2462,23 @@ class _TimetableScreenState extends State<TimetableScreen>
       final partnerCard = progressInfo != null
           ? _buildCurrentDayAgendaCard(
               item: courseItem,
+              week: week,
               progressInfo: progressInfo,
               l10n: l10n,
               colorScheme: colorScheme,
               openContainer: openCoursePreview,
+              onOpenNotes: openCourseNotes,
             )
           : _buildDefaultDayAgendaCard(
               item: courseItem,
+              week: week,
               settings: settings,
               l10n: l10n,
               palette: palette,
               statusBadges: statusBadges,
               cardDecoration: cardDecoration,
               openContainer: openCoursePreview,
+              onOpenNotes: openCourseNotes,
             );
 
       return Opacity(
@@ -2500,19 +2517,23 @@ class _TimetableScreenState extends State<TimetableScreen>
           final content = progressInfo != null
               ? _buildCurrentDayAgendaCard(
                   item: courseItem,
+                  week: week,
                   progressInfo: progressInfo,
                   l10n: l10n,
                   colorScheme: colorScheme,
                   openContainer: openContainer,
+                  onOpenNotes: openCourseNotes,
                 )
               : _buildDefaultDayAgendaCard(
                   item: courseItem,
+                  week: week,
                   settings: settings,
                   l10n: l10n,
                   palette: palette,
                   statusBadges: statusBadges,
                   cardDecoration: cardDecoration,
                   openContainer: openContainer,
+                  onOpenNotes: openCourseNotes,
                 );
           return Material(color: Colors.transparent, child: content);
         },
@@ -2522,12 +2543,14 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Widget _buildDefaultDayAgendaCard({
     required _DayCourseDisplayItem item,
+    required int week,
     required TimetableSettings settings,
     required AppLocalizations l10n,
     required _DayAgendaPalette palette,
     required List<Widget> statusBadges,
     required BoxDecoration cardDecoration,
     required VoidCallback openContainer,
+    required VoidCallback onOpenNotes,
   }) {
     final sectionLabel = l10n.sectionRangeLabel(
       item.course.startSection,
@@ -2541,6 +2564,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? item.course.location.trim()
         : l10n.unknownLocation;
     final locationLine = l10n.locationPrefix(locationValue);
+    final sessionNote = item.course.sessionNoteForWeek(week);
+    final sessionPreview = sessionNote?.trimmedText;
     return InkWell(
       onTap: openContainer,
       borderRadius: BorderRadius.circular(20),
@@ -2609,6 +2634,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                 icon: Icons.location_on_outlined,
                 text: locationLine,
               ),
+              if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildCurrentDayAgendaInfoRow(
+                  icon: Icons.sticky_note_2_outlined,
+                  text: sessionPreview,
+                ),
+              ],
+              const SizedBox(height: 10),
+              _buildDayAgendaNoteAction(l10n: l10n, onPressed: onOpenNotes),
             ],
           ),
         ),
@@ -2618,10 +2652,12 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Widget _buildCurrentDayAgendaCard({
     required _DayCourseDisplayItem item,
+    required int week,
     required _DayAgendaProgressInfo progressInfo,
     required AppLocalizations l10n,
     required ColorScheme colorScheme,
     required VoidCallback openContainer,
+    required VoidCallback onOpenNotes,
   }) {
     final theme = Theme.of(context);
     final sectionLabel = l10n.sectionRangeLabel(
@@ -2639,6 +2675,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final borderColor = item.isConflicting
         ? colorScheme.error.withValues(alpha: 0.30)
         : Colors.transparent;
+    final sessionNote = item.course.sessionNoteForWeek(week);
+    final sessionPreview = sessionNote?.trimmedText;
 
     return InkWell(
       onTap: openContainer,
@@ -2732,6 +2770,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                             textColor: Colors.white,
                             backgroundColor: colorScheme.error,
                           ),
+                        if (!item.isPartnerCourse &&
+                            item.course.hasHomeworkInWeek(week))
+                          _buildDayAgendaHomeworkDot(),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -2755,10 +2796,83 @@ class _TimetableScreenState extends State<TimetableScreen>
                       icon: Icons.location_on_outlined,
                       text: locationLine,
                     ),
+                    if (sessionPreview != null &&
+                        sessionPreview.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      _buildCurrentDayAgendaInfoRow(
+                        icon: Icons.sticky_note_2_outlined,
+                        text: sessionPreview,
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    _buildDayAgendaNoteAction(
+                      l10n: l10n,
+                      onPressed: onOpenNotes,
+                    ),
                   ],
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayAgendaHomeworkDot() {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.95),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 1.2),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.assignment_outlined,
+        size: 11,
+        color: Color(0xFFE05D44),
+      ),
+    );
+  }
+
+  Widget _buildDayAgendaNoteAction({
+    required AppLocalizations l10n,
+    required VoidCallback onPressed,
+  }) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.sticky_note_2_outlined,
+                  size: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  l10n.courseNoteAction,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -3505,6 +3619,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                   item,
                   showConflictBadge,
                 ),
+                showHomeworkIndicator:
+                    !item.isPartnerCourse &&
+                    item.course.hasHomeworkInWeek(week),
                 isHighlighted: item.isCurrentCourse,
                 isHoliday: isDayHoliday,
                 isSuspended: item.course.isSuspendedInWeek(week),
