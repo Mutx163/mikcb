@@ -11,6 +11,11 @@ Course _course({
   int endSection = 2,
   String startTime = '08:00',
   String endTime = '09:40',
+  int startWeek = 1,
+  int endWeek = 16,
+  bool isOddWeek = false,
+  bool isEvenWeek = false,
+  List<int>? customWeeks,
 }) {
   return Course(
     id: id,
@@ -22,6 +27,11 @@ Course _course({
     endSection: endSection,
     startTime: startTime,
     endTime: endTime,
+    startWeek: startWeek,
+    endWeek: endWeek,
+    isOddWeek: isOddWeek,
+    isEvenWeek: isEvenWeek,
+    customWeeks: customWeeks,
   );
 }
 
@@ -61,7 +71,7 @@ void main() {
     );
   });
 
-  test('computes shared free intervals with two-pointer intersection', () {
+  test('shared free is exact gap between staggered courses (G2)', () {
     final myCourses = [
       _course(
         id: 'mine',
@@ -91,9 +101,159 @@ void main() {
       sections: _sections,
     );
 
-    expect(shared, isNotEmpty);
-    expect(shared.first.startMinutes, greaterThanOrEqualTo(9 * 60 + 40));
-    expect(shared.last.endMinutes, lessThanOrEqualTo(10 * 60));
+    expect(shared, hasLength(1));
+    expect(shared.single.startMinutes, 9 * 60 + 40);
+    expect(shared.single.endMinutes, 10 * 60);
+  });
+
+  test('shared free uses partner week offset (G4/G5)', () {
+    final myCourses = [
+      _course(
+        id: 'mine',
+        name: '高数',
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 5,
+        endWeek: 5,
+      ),
+    ];
+    final partnerCourses = [
+      _course(
+        id: 'partner',
+        name: '英语',
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+        startWeek: 6,
+        endWeek: 6,
+      ),
+    ];
+
+    final withOffset = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: myCourses,
+      partnerCourses: partnerCourses,
+      dayOfWeek: 1,
+      week: 5,
+      partnerWeekOffset: 1,
+      sections: _sections,
+    );
+    expect(withOffset, hasLength(1));
+    expect(withOffset.single.startMinutes, 9 * 60 + 40);
+    expect(withOffset.single.endMinutes, 10 * 60);
+
+    final withoutOffset = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: myCourses,
+      partnerCourses: partnerCourses,
+      dayOfWeek: 1,
+      week: 5,
+      partnerWeekOffset: 0,
+      sections: _sections,
+    );
+    // Partner has no week-5 class → only my busy; free after 09:40 within R.
+    expect(withoutOffset, isNotEmpty);
+    expect(
+      withoutOffset.any(
+        (interval) =>
+            interval.startMinutes <= 10 * 60 &&
+            interval.endMinutes >= 10 * 60 + 45,
+      ),
+      isTrue,
+    );
+  });
+
+  test('shared free respects odd/even week busy (G6)', () {
+    final myCourses = [
+      _course(
+        id: 'mine',
+        name: '高数',
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        isOddWeek: true,
+      ),
+    ];
+    final partnerCourses = [
+      _course(
+        id: 'partner',
+        name: '英语',
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        isEvenWeek: true,
+      ),
+    ];
+
+    final oddWeek = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: myCourses,
+      partnerCourses: partnerCourses,
+      dayOfWeek: 1,
+      week: 1,
+      sections: _sections,
+    );
+    // Only mine is busy 08:00-09:40 on odd week.
+    expect(
+      oddWeek.any(
+        (interval) =>
+            interval.startMinutes <= 8 * 60 &&
+            interval.endMinutes >= 9 * 60 + 40,
+      ),
+      isFalse,
+    );
+    expect(
+      oddWeek.any((interval) => interval.startMinutes >= 9 * 60 + 40),
+      isTrue,
+    );
+
+    final evenWeek = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: myCourses,
+      partnerCourses: partnerCourses,
+      dayOfWeek: 1,
+      week: 2,
+      sections: _sections,
+    );
+    expect(
+      evenWeek.any(
+        (interval) =>
+            interval.startMinutes <= 8 * 60 &&
+            interval.endMinutes >= 9 * 60 + 40,
+      ),
+      isFalse,
+    );
+  });
+
+  test('together class slot is not shared free', () {
+    final mine = _course(id: 'mine', name: '高等数学');
+    final partner = _course(id: 'partner', name: '高等数学');
+    final shared = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: [mine],
+      partnerCourses: [partner],
+      dayOfWeek: 1,
+      week: 1,
+      sections: _sections,
+    );
+    expect(
+      shared.any(
+        (interval) =>
+            interval.startMinutes < 9 * 60 + 40 && interval.endMinutes > 8 * 60,
+      ),
+      isFalse,
+    );
+  });
+
+  test('empty sections yields no shared free', () {
+    final shared = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: [_course(id: 'mine', name: '高数')],
+      partnerCourses: [_course(id: 'partner', name: '英语')],
+      dayOfWeek: 1,
+      week: 1,
+      sections: const [],
+    );
+    expect(shared, isEmpty);
   });
 
   test('merge and intersect minute intervals', () {

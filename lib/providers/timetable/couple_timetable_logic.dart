@@ -177,6 +177,31 @@ class CoupleTimetableLogic {
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
+  /// Default daytime window used to clip shared free (reduces false positives
+  /// like "free at 3am"). Observation range [R] still comes from sections.
+  static const int defaultDayWindowStartMinutes = 8 * 60;
+  static const int defaultDayWindowEndMinutes = 22 * 60;
+
+  /// Prefer course wall-clock times; fall back to owner section table.
+  static MinuteInterval? courseBusyInterval(
+    Course course,
+    List<SectionTime> sections,
+  ) {
+    final clockStart = _clockToMinutes(course.startTime);
+    final clockEnd = _clockToMinutes(course.endTime);
+    if (clockEnd > clockStart) {
+      return MinuteInterval(startMinutes: clockStart, endMinutes: clockEnd);
+    }
+    final sectionStart = _sectionStartMinutes(sections, course.startSection);
+    final sectionEnd = _sectionEndMinutes(sections, course.endSection);
+    if (sectionStart == null ||
+        sectionEnd == null ||
+        sectionEnd <= sectionStart) {
+      return null;
+    }
+    return MinuteInterval(startMinutes: sectionStart, endMinutes: sectionEnd);
+  }
+
   static List<MinuteInterval> busyIntervalsForDay(
     List<Course> courses,
     int dayOfWeek,
@@ -186,12 +211,11 @@ class CoupleTimetableLogic {
     final dayCourses = coursesForDay(courses, dayOfWeek, week);
     final intervals = <MinuteInterval>[];
     for (final course in dayCourses) {
-      final start = _sectionStartMinutes(sections, course.startSection);
-      final end = _sectionEndMinutes(sections, course.endSection);
-      if (start == null || end == null || end <= start) {
+      final interval = courseBusyInterval(course, sections);
+      if (interval == null) {
         continue;
       }
-      intervals.add(MinuteInterval(startMinutes: start, endMinutes: end));
+      intervals.add(interval);
     }
     return mergeMinuteIntervals(intervals);
   }
@@ -202,33 +226,128 @@ class CoupleTimetableLogic {
     int week,
     List<SectionTime> sections,
   ) {
-    if (sections.isEmpty) {
-      return const [];
-    }
-    final dayStart = _clockToMinutes(sections.first.startTime);
-    final dayEnd = _clockToMinutes(sections.last.endTime);
-    if (dayEnd <= dayStart) {
+    final observationRange = observationRangeForSections(sections);
+    if (observationRange == null) {
       return const [];
     }
     final busy = busyIntervalsForDay(courses, dayOfWeek, week, sections);
-    return invertMinuteIntervals(busy, rangeStart: dayStart, rangeEnd: dayEnd);
+    return invertMinuteIntervals(
+      busy,
+      rangeStart: observationRange.startMinutes,
+      rangeEnd: observationRange.endMinutes,
+    );
   }
 
+  /// Shared free time on a calendar day: complement of the union of both
+  /// parties' busy intervals, clipped to [R] and optional daytime window.
+  ///
+  /// [week] is **my** teaching week; partner courses are filtered with
+  /// [partnerWeekOffset] (same semantics as [isTogetherClass]).
   static List<MinuteInterval> sharedFreeIntervalsForDay({
     required List<Course> myCourses,
     required List<Course> partnerCourses,
     required int dayOfWeek,
     required int week,
     required List<SectionTime> sections,
+    int partnerWeekOffset = 0,
+    int dayWindowStartMinutes = defaultDayWindowStartMinutes,
+    int dayWindowEndMinutes = defaultDayWindowEndMinutes,
+    int minIntervalMinutes = 0,
   }) {
-    final myFree = freeIntervalsForDay(myCourses, dayOfWeek, week, sections);
-    final partnerFree = freeIntervalsForDay(
+    final observationRange = observationRangeForSections(sections);
+    if (observationRange == null) {
+      return const [];
+    }
+
+    final partnerWeek = partnerWeekForMyWeek(week, partnerWeekOffset);
+    final myBusy = busyIntervalsForDay(myCourses, dayOfWeek, week, sections);
+    final partnerBusy = busyIntervalsForDay(
       partnerCourses,
       dayOfWeek,
-      week,
+      partnerWeek,
       sections,
     );
-    return intersectSortedMinuteIntervals(myFree, partnerFree);
+    final unionBusy = mergeMinuteIntervals([...myBusy, ...partnerBusy]);
+    var shared = invertMinuteIntervals(
+      unionBusy,
+      rangeStart: observationRange.startMinutes,
+      rangeEnd: observationRange.endMinutes,
+    );
+
+    if (dayWindowEndMinutes > dayWindowStartMinutes) {
+      shared = clipMinuteIntervals(
+        shared,
+        rangeStart: dayWindowStartMinutes,
+        rangeEnd: dayWindowEndMinutes,
+      );
+    }
+
+    if (minIntervalMinutes > 0) {
+      shared = shared
+          .where((interval) => interval.durationMinutes >= minIntervalMinutes)
+          .toList(growable: false);
+    }
+    return shared;
+  }
+
+  static MinuteInterval? observationRangeForSections(
+    List<SectionTime> sections,
+  ) {
+    if (sections.isEmpty) {
+      return null;
+    }
+    final dayStart = _clockToMinutes(sections.first.startTime);
+    final dayEnd = _clockToMinutes(sections.last.endTime);
+    if (dayEnd <= dayStart) {
+      return null;
+    }
+    return MinuteInterval(startMinutes: dayStart, endMinutes: dayEnd);
+  }
+
+  static List<MinuteInterval> clipMinuteIntervals(
+    List<MinuteInterval> intervals, {
+    required int rangeStart,
+    required int rangeEnd,
+  }) {
+    if (rangeEnd <= rangeStart || intervals.isEmpty) {
+      return const [];
+    }
+    final clipped = <MinuteInterval>[];
+    for (final interval in intervals) {
+      final start = interval.startMinutes > rangeStart
+          ? interval.startMinutes
+          : rangeStart;
+      final end = interval.endMinutes < rangeEnd
+          ? interval.endMinutes
+          : rangeEnd;
+      if (start < end) {
+        clipped.add(MinuteInterval(startMinutes: start, endMinutes: end));
+      }
+    }
+    return clipped;
+  }
+
+  static int totalDurationMinutes(List<MinuteInterval> intervals) {
+    var total = 0;
+    for (final interval in intervals) {
+      total += interval.durationMinutes;
+    }
+    return total;
+  }
+
+  static String formatDurationHours(int totalMinutes) {
+    if (totalMinutes <= 0) {
+      return '0h';
+    }
+    final hours = totalMinutes / 60.0;
+    if (hours >= 10) {
+      return '${hours.round()}h';
+    }
+    final roundedTenths = (hours * 10).round() / 10.0;
+    if (roundedTenths == roundedTenths.roundToDouble()) {
+      return '${roundedTenths.round()}h';
+    }
+    return '${roundedTenths.toStringAsFixed(1)}h';
   }
 
   static List<MinuteInterval> mergeMinuteIntervals(
