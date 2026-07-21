@@ -9,8 +9,9 @@ import '../ui/hyperos/hyperos.dart';
 
 /// Opens the dual-type course note editor as a home HyperOS sheet.
 ///
-/// Both whole-course and this-week notes are shown on the same page.
-/// Returns `true` when notes were saved, `false` when cancelled/dismissed.
+/// Both whole-course and this-week notes stay on one page. When the keyboard
+/// opens, the sheet lifts above the IME and the focused field scrolls into
+/// view — no separate editing layout.
 Future<bool> showCourseNoteSheet(
   BuildContext context, {
   required Course course,
@@ -25,8 +26,6 @@ Future<bool> showCourseNoteSheet(
   );
   return result ?? false;
 }
-
-enum _NoteFocusTarget { none, course, session }
 
 class CourseNoteSheetBody extends StatefulWidget {
   const CourseNoteSheetBody({
@@ -44,14 +43,18 @@ class CourseNoteSheetBody extends StatefulWidget {
   State<CourseNoteSheetBody> createState() => _CourseNoteSheetBodyState();
 }
 
-class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody> {
+class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
+    with WidgetsBindingObserver {
+  final _scrollController = ScrollController();
+  final _courseFieldKey = GlobalKey();
+  final _sessionFieldKey = GlobalKey();
   final _courseNoteFocusNode = FocusNode();
   final _sessionNoteFocusNode = FocusNode();
   late final TextEditingController _courseNoteController;
   late final TextEditingController _sessionNoteController;
   late bool _hasHomework;
   bool _isSaving = false;
-  _NoteFocusTarget _focusTarget = _NoteFocusTarget.none;
+  double _lastKeyboardHeight = 0;
 
   Course get _liveCourse {
     final provider = context.read<TimetableProvider>();
@@ -63,11 +66,10 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody> {
     return widget.course;
   }
 
-  bool get _isEditingField => _focusTarget != _NoteFocusTarget.none;
-
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final course = widget.course;
     final sessionNote = course.sessionNoteForWeek(widget.week);
     _courseNoteController = TextEditingController(text: course.note ?? '');
@@ -75,42 +77,76 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody> {
       text: sessionNote?.text ?? '',
     );
     _hasHomework = sessionNote?.hasHomework ?? false;
-    _courseNoteFocusNode.addListener(_syncFocusTarget);
-    _sessionNoteFocusNode.addListener(_syncFocusTarget);
+    _courseNoteFocusNode.addListener(_handleFocusChange);
+    _sessionNoteFocusNode.addListener(_handleFocusChange);
   }
 
   @override
   void dispose() {
-    _courseNoteFocusNode.removeListener(_syncFocusTarget);
-    _sessionNoteFocusNode.removeListener(_syncFocusTarget);
+    WidgetsBinding.instance.removeObserver(this);
+    _courseNoteFocusNode.removeListener(_handleFocusChange);
+    _sessionNoteFocusNode.removeListener(_handleFocusChange);
     _courseNoteFocusNode.dispose();
     _sessionNoteFocusNode.dispose();
     _courseNoteController.dispose();
     _sessionNoteController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  void _syncFocusTarget() {
-    final next = _courseNoteFocusNode.hasFocus
-        ? _NoteFocusTarget.course
-        : (_sessionNoteFocusNode.hasFocus
-              ? _NoteFocusTarget.session
-              : _NoteFocusTarget.none);
-    if (next == _focusTarget || !mounted) {
+  @override
+  void didChangeMetrics() {
+    if (!mounted) {
       return;
     }
-    setState(() => _focusTarget = next);
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    if ((keyboardHeight - _lastKeyboardHeight).abs() < 1) {
+      return;
+    }
+    _lastKeyboardHeight = keyboardHeight;
+    if (keyboardHeight > 0) {
+      _scrollFocusedFieldIntoView();
+    }
   }
 
-  void _dismissKeyboard() {
-    FocusScope.of(context).unfocus();
+  void _handleFocusChange() {
+    if (_courseNoteFocusNode.hasFocus || _sessionNoteFocusNode.hasFocus) {
+      _scrollFocusedFieldIntoView();
+    }
+  }
+
+  void _scrollFocusedFieldIntoView() {
+    final targetKey = _courseNoteFocusNode.hasFocus
+        ? _courseFieldKey
+        : (_sessionNoteFocusNode.hasFocus ? _sessionFieldKey : null);
+    if (targetKey == null) {
+      return;
+    }
+    // Wait one frame so viewInsets / sheet pad settle with the IME.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final targetContext = targetKey.currentContext;
+      if (targetContext == null) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        // Sit the field near the bottom of the visible sheet area (just
+        // above the keyboard after outer padForKeyboard lifts the sheet).
+        alignment: 0.9,
+      );
+    });
   }
 
   Future<void> _save() async {
     if (widget.readOnly || _isSaving) {
       return;
     }
-    _dismissKeyboard();
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _isSaving = true);
     try {
       final provider = context.read<TimetableProvider>();
@@ -145,70 +181,30 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody> {
     final typo = context.theme.typography.body;
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = mediaQuery.viewInsets.bottom;
+    // Outer sheet already pads for the keyboard; cap height to remaining space.
     final availableHeight =
         mediaQuery.size.height - keyboardHeight - mediaQuery.padding.top;
-    // While editing, keep the sheet compact so only the active field sits
-    // just above the IME — not the whole form + action row.
-    final maxHeight = _isEditingField
-        ? (availableHeight * 0.42).clamp(200.0, 320.0)
-        : (availableHeight * 0.88).clamp(280.0, mediaQuery.size.height * 0.88);
+    final maxHeight = (availableHeight * 0.9).clamp(
+      280.0,
+      mediaQuery.size.height * 0.88,
+    );
     final muted = typo.xs2.copyWith(color: colors.mutedForeground, height: 1.4);
     final subtitle =
         '${widget.course.name} · ${l10n.weekLabel(widget.week)} · '
         '${l10n.sectionRangeLabel(widget.course.startSection, widget.course.endSection)}';
 
-    final showCourseSection =
-        !_isEditingField || _focusTarget == _NoteFocusTarget.course;
-    final showSessionSection =
-        !_isEditingField || _focusTarget == _NoteFocusTarget.session;
-
     return HyperosSheetFrame(
       frosted: true,
       maxHeight: maxHeight,
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        _isEditingField ? 12 : 12 + mediaQuery.padding.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Compact header while typing; full header in overview mode.
-          if (_isEditingField)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _focusTarget == _NoteFocusTarget.course
-                        ? l10n.courseNoteWholeCourseLabel
-                        : l10n.courseNoteSessionLabel,
-                    style: typo.sm.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _dismissKeyboard,
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    l10n.courseNoteDoneEditingAction,
-                    style: typo.sm.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(0, 0, 0, 16 + mediaQuery.padding.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -250,113 +246,87 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody> {
                 ),
               ],
             ),
-          const SizedBox(height: 12),
-          if (showCourseSection) ...[
-            if (!_isEditingField) ...[
-              _buildSectionLabel(
-                context,
-                label: l10n.courseNoteWholeCourseLabel,
-                hint: l10n.courseNoteWholeCourseHint,
-              ),
-              const SizedBox(height: 8),
-            ],
-            HyperosTextField(
-              controller: _courseNoteController,
-              focusNode: _courseNoteFocusNode,
-              hint: l10n.courseNoteWholeCoursePlaceholder,
-              enabled: !widget.readOnly,
-              maxLines: _isEditingField ? 6 : 4,
-              minLines: _isEditingField ? 3 : 2,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
+            const SizedBox(height: 16),
+            _buildSectionLabel(
+              context,
+              label: l10n.courseNoteWholeCourseLabel,
+              hint: l10n.courseNoteWholeCourseHint,
             ),
-            if (!_isEditingField) const SizedBox(height: 18),
-          ],
-          if (showSessionSection) ...[
-            if (!_isEditingField) ...[
-              _buildSectionLabel(
-                context,
-                label: l10n.courseNoteSessionLabel,
-                hint: l10n.courseNoteSessionHint(widget.week),
+            const SizedBox(height: 8),
+            KeyedSubtree(
+              key: _courseFieldKey,
+              child: HyperosTextField(
+                controller: _courseNoteController,
+                focusNode: _courseNoteFocusNode,
+                hint: l10n.courseNoteWholeCoursePlaceholder,
+                enabled: !widget.readOnly,
+                maxLines: 4,
+                minLines: 2,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
               ),
-              const SizedBox(height: 8),
-              HyperosFrostedSurface(
-                borderRadius: BorderRadius.circular(
-                  HyperosTokens.controlRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.courseNoteHasHomeworkTitle,
-                              style: typo.sm.copyWith(
-                                fontWeight: FontWeight.w600,
-                                height: 1.25,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              l10n.courseNoteHasHomeworkSubtitle,
-                              style: muted,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      HyperosSwitch(
-                        value: _hasHomework,
-                        onChanged: widget.readOnly
-                            ? null
-                            : (value) => setState(() => _hasHomework = value),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ] else if (!widget.readOnly) ...[
-              // Keep homework toggle reachable while editing the session field.
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+            ),
+            const SizedBox(height: 18),
+            _buildSectionLabel(
+              context,
+              label: l10n.courseNoteSessionLabel,
+              hint: l10n.courseNoteSessionHint(widget.week),
+            ),
+            const SizedBox(height: 8),
+            HyperosFrostedSurface(
+              borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        l10n.courseNoteHasHomeworkTitle,
-                        style: typo.sm.copyWith(fontWeight: FontWeight.w600),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.courseNoteHasHomeworkTitle,
+                            style: typo.sm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.courseNoteHasHomeworkSubtitle,
+                            style: muted,
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 10),
                     HyperosSwitch(
                       value: _hasHomework,
-                      onChanged: (value) =>
-                          setState(() => _hasHomework = value),
+                      onChanged: widget.readOnly
+                          ? null
+                          : (value) => setState(() => _hasHomework = value),
                     ),
                   ],
                 ),
               ),
-            ],
-            HyperosTextField(
-              controller: _sessionNoteController,
-              focusNode: _sessionNoteFocusNode,
-              hint: l10n.courseNoteSessionPlaceholder,
-              enabled: !widget.readOnly,
-              maxLines: _isEditingField ? 6 : 4,
-              minLines: _isEditingField ? 3 : 2,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
             ),
-          ],
-          if (widget.readOnly && !_isEditingField) ...[
-            const SizedBox(height: 12),
-            Text(l10n.courseNoteReadOnlyNotice, style: muted),
-          ],
-          // Actions only in overview mode — never lifted with the IME field.
-          if (!_isEditingField) ...[
+            const SizedBox(height: 8),
+            KeyedSubtree(
+              key: _sessionFieldKey,
+              child: HyperosTextField(
+                controller: _sessionNoteController,
+                focusNode: _sessionNoteFocusNode,
+                hint: l10n.courseNoteSessionPlaceholder,
+                enabled: !widget.readOnly,
+                maxLines: 4,
+                minLines: 2,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
+              ),
+            ),
+            if (widget.readOnly) ...[
+              const SizedBox(height: 12),
+              Text(l10n.courseNoteReadOnlyNotice, style: muted),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [
@@ -383,7 +353,7 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody> {
               ],
             ),
           ],
-        ],
+        ),
       ),
     );
   }
