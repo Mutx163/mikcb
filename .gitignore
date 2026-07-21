@@ -76,6 +76,9 @@ package-lock.json
 _grep.ps1
 _layout.json
 
+# 误装的 Node 依赖（本仓库不以 npm 为构建入口，勿入库）
+node_modules/
+
 # 本地草稿 / 一次性脚本 / QA 产物（整目录不入库）
 tmp/
 local/
