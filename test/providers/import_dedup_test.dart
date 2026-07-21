@@ -104,50 +104,47 @@ void main() {
     expect(deduped, hasLength(1));
   });
 
-  test(
-    'syncImportedCourses does not soft-match across different weekdays',
-    () {
-      final existing = [
-        _course(
-          id: 'a',
-          name: '高等数学',
-          day: 1,
-          start: 1,
-          end: 2,
-          weeks: [1, 2, 3, 4, 5, 6],
-          teacher: '张老师',
-          location: 'A101',
-          shortName: '高数',
-          color: '#FF0000',
-          note: '验收备注',
-          description: '课程简介',
-          timeSchemeIdOverride: 'scheme_a',
-        ),
-      ];
-      final imported = [
-        _course(
-          id: 'b',
-          name: '高等数学',
-          day: 3,
-          start: 3,
-          end: 4,
-          weeks: [1, 2, 3, 4, 5, 6],
-          teacher: '张老师',
-          location: 'B202',
-        ),
-      ];
+  test('syncImportedCourses does not soft-match across different weekdays', () {
+    final existing = [
+      _course(
+        id: 'a',
+        name: '高等数学',
+        day: 1,
+        start: 1,
+        end: 2,
+        weeks: [1, 2, 3, 4, 5, 6],
+        teacher: '张老师',
+        location: 'A101',
+        shortName: '高数',
+        color: '#FF0000',
+        note: '验收备注',
+        description: '课程简介',
+        timeSchemeIdOverride: 'scheme_a',
+      ),
+    ];
+    final imported = [
+      _course(
+        id: 'b',
+        name: '高等数学',
+        day: 3,
+        start: 3,
+        end: 4,
+        weeks: [1, 2, 3, 4, 5, 6],
+        teacher: '张老师',
+        location: 'B202',
+      ),
+    ];
 
-      final result = syncImportedCourses(
-        existingCourses: existing,
-        importedCourses: imported,
-      );
+    final result = syncImportedCourses(
+      existingCourses: existing,
+      importedCourses: imported,
+    );
 
-      expect(result.addedCount, 1);
-      expect(result.updatedCount, 0);
-      expect(result.mergedCourses, hasLength(2));
-      expect(result.mergedCourses.map((c) => c.dayOfWeek).toSet(), {1, 3});
-    },
-  );
+    expect(result.addedCount, 1);
+    expect(result.updatedCount, 0);
+    expect(result.mergedCourses, hasLength(2));
+    expect(result.mergedCourses.map((c) => c.dayOfWeek).toSet(), {1, 3});
+  });
 
   test(
     'syncImportedCourses soft-matches same weekday and keeps local fields',

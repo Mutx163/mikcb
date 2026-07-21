@@ -42,11 +42,7 @@ void main() {
       isTrue,
     );
     expect(
-      CoupleTimetableLogic.classifyMineCourse(
-        mine,
-        [partner],
-        week: 1,
-      ),
+      CoupleTimetableLogic.classifyMineCourse(mine, [partner], week: 1),
       CoupleCourseKind.together,
     );
   });
@@ -60,11 +56,7 @@ void main() {
       isFalse,
     );
     expect(
-      CoupleTimetableLogic.classifyMineCourse(
-        mine,
-        [partner],
-        week: 1,
-      ),
+      CoupleTimetableLogic.classifyMineCourse(mine, [partner], week: 1),
       CoupleCourseKind.mine,
     );
   });
@@ -113,26 +105,22 @@ void main() {
     expect(merged.single.endMinutes, 180);
 
     final intersection = CoupleTimetableLogic.intersectSortedMinuteIntervals(
-      [
-        const MinuteInterval(startMinutes: 60, endMinutes: 180),
-      ],
-      [
-        const MinuteInterval(startMinutes: 120, endMinutes: 240),
-      ],
+      [const MinuteInterval(startMinutes: 60, endMinutes: 180)],
+      [const MinuteInterval(startMinutes: 120, endMinutes: 240)],
     );
     expect(intersection.single.startMinutes, 120);
     expect(intersection.single.endMinutes, 180);
   });
 
   test('maps partner week with offset when detecting together class', () {
-    final mine = _course(id: 'mine', name: '高等数学').copyWith(
-      startWeek: 5,
-      endWeek: 16,
-    );
-    final partner = _course(id: 'partner', name: '高等数学').copyWith(
-      startWeek: 6,
-      endWeek: 16,
-    );
+    final mine = _course(
+      id: 'mine',
+      name: '高等数学',
+    ).copyWith(startWeek: 5, endWeek: 16);
+    final partner = _course(
+      id: 'partner',
+      name: '高等数学',
+    ).copyWith(startWeek: 6, endWeek: 16);
 
     expect(
       CoupleTimetableLogic.isTogetherClass(mine, partner, week: 5),
