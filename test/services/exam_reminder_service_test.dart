@@ -110,6 +110,21 @@ void main() {
       expect(fires.first.body, contains('12'));
     });
 
+    test('body falls back to course location when exam location is empty', () {
+      final fires = ExamReminderService.buildFires(
+        exams: [
+          buildExam(
+            dateTime: DateTime(2026, 8, 1),
+            location: null,
+            seatNumber: null,
+          ),
+        ],
+        resolveCourse: (_) => buildCourse(),
+        now: DateTime(2026, 7, 1),
+      );
+      expect(fires.first.body, '08:30-10:30 · A101');
+    });
+
     test(
       'uses exam name as title and leaves blank for native i18n fallback',
       () {

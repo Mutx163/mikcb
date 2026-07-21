@@ -1232,6 +1232,7 @@ class TimetableProvider with ChangeNotifier {
         await _persistActiveProfileState();
         _currentLiveCourseId = null;
         notifyListeners();
+        unawaited(_syncExamReminders());
         _analytics.logEventLater(
           name: 'course_updated',
           parameters: {
@@ -1309,6 +1310,7 @@ class TimetableProvider with ChangeNotifier {
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
+      unawaited(_syncExamReminders());
       _analytics.logEventLater(
         name: 'course_group_updated',
         parameters: {
