@@ -193,21 +193,21 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
       description = null;
       toastKind = AppToastKind.info;
     }
-    // Defer toast one frame so Overlay work never races modal sheet layout.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: message,
-        description: description,
-        duration: const Duration(
-          milliseconds: HyperosMiuixSnackbar.durationLongMs,
-        ),
-        kind: toastKind,
-      );
-    });
+    // Show immediately: this is a full page (not a modal sheet). Deferring to
+    // postFrameCallback races Provider rebuild + Overlay insert and can drop
+    // the first toast (user has to tap again).
+    if (!context.mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: message,
+      description: description,
+      duration: const Duration(
+        milliseconds: HyperosMiuixSnackbar.durationLongMs,
+      ),
+      kind: toastKind,
+    );
   }
 
   Future<void> _deleteGroup(

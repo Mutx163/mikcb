@@ -14,38 +14,47 @@ void hideHyperosToast({bool animated = true}) {
   _HyperosToastController.hide(animated: animated);
 }
 
-Color _toastMessageColor() {
-  // System status toast is always black on milky glass — not theme primary blue.
-  return HyperosMiuixSnackbar.messageColor;
+Color _toastMessageColorFor({required bool withBlur, required bool isDark}) {
+  if (withBlur) {
+    return HyperosMiuixSnackbar.messageColor;
+  }
+  // Opaque surfaceContainer is dark in dark mode — black text becomes unreadable.
+  return isDark ? const Color(0xE6FFFFFF) : HyperosMiuixSnackbar.messageColor;
 }
 
-Color _toastDescriptionColor() {
-  return HyperosMiuixSnackbar.messageColor.withValues(alpha: 0.72);
+Color _toastDescriptionColorFor({
+  required bool withBlur,
+  required bool isDark,
+}) {
+  return _toastMessageColorFor(
+    withBlur: withBlur,
+    isDark: isDark,
+  ).withValues(alpha: 0.72);
 }
 
 Color _toastTint(BuildContext context, {required bool withBlur}) {
-  // Blur on: milky translucent glass. Blur off: solid white (never see-through).
+  // Blur on: milky translucent glass. Blur off: solid surface (never see-through).
   if (!withBlur) {
     return HyperosColors.surfaceContainer(context);
   }
   return Colors.white.withValues(alpha: HyperosMiuixSnackbar.tintAlphaWithBlur);
 }
 
-TextStyle _messageStyle() {
+TextStyle _messageStyle({required bool withBlur, required bool isDark}) {
   return TextStyle(
     fontSize: HyperosMiuixSnackbar.messageFontSize,
     fontWeight: HyperosMiuixSnackbar.messageFontWeight,
     height: HyperosMiuixSnackbar.messageLineHeight,
-    color: _toastMessageColor(),
+    color: _toastMessageColorFor(withBlur: withBlur, isDark: isDark),
   );
 }
 
-TextStyle _descriptionStyle() {
+TextStyle _descriptionStyle({required bool withBlur, required bool isDark}) {
   return TextStyle(
     fontSize: HyperosMiuixTypography.footnote1,
     fontWeight: FontWeight.w400,
     height: 1.25,
-    color: _toastDescriptionColor(),
+    color: _toastDescriptionColorFor(withBlur: withBlur, isDark: isDark),
   );
 }
 
@@ -86,7 +95,11 @@ class HyperosToastCapsule extends StatelessWidget {
     // Same sigma as 外观与配色 / sheet frosted glass.
     final blurSigma = HyperosBlurredHeader.blurSigmaOf(context);
     final hasAction = actionLabel != null && onAction != null;
-    final messageColor = _toastMessageColor();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final messageColor = _toastMessageColorFor(
+      withBlur: useBlur,
+      isDark: isDark,
+    );
     final hasDescription = description != null && description!.isNotEmpty;
 
     // Keep label wrapping within content-tight shell (not screen-wide).
@@ -111,7 +124,7 @@ class HyperosToastCapsule extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: _messageStyle(),
+            style: _messageStyle(withBlur: useBlur, isDark: isDark),
           ),
           if (hasDescription) ...[
             const SizedBox(height: HyperosTokens.titleCaptionGap),
@@ -121,7 +134,7 @@ class HyperosToastCapsule extends StatelessWidget {
               // Longer apply/result hints need more than two lines.
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: _descriptionStyle(),
+              style: _descriptionStyle(withBlur: useBlur, isDark: isDark),
             ),
           ],
         ],
@@ -284,6 +297,21 @@ abstract final class _HyperosToastController {
         return;
       }
 
+      // Stale OverlayEntry (host disposed without clearing controller): drop it
+      // before inserting a fresh host so the first show never fails silently.
+      if (_entry != null &&
+          (_HyperosToastHostState.current == null ||
+              !_HyperosToastHostState.current!.mounted)) {
+        final stale = _entry;
+        _entry = null;
+        _requestDismiss = null;
+        try {
+          stale?.remove();
+        } catch (_) {
+          // Entry may already be detached from the overlay tree.
+        }
+      }
+
       late final OverlayEntry entry;
       entry = OverlayEntry(
         builder: (overlayContext) {
@@ -413,6 +441,7 @@ class _HyperosToastHostState extends State<_HyperosToastHost> {
     if (_isExiting || !mounted) {
       return;
     }
+    final dismissGeneration = _showGeneration;
     _isExiting = true;
     _autoHideTimer?.cancel();
     setState(() {
@@ -422,7 +451,9 @@ class _HyperosToastHostState extends State<_HyperosToastHost> {
     await Future<void>.delayed(
       const Duration(milliseconds: HyperosMiuixSnackbar.exitMs),
     );
-    if (!mounted) {
+    // A newer showContent may have replaced this toast while we were exiting;
+    // do not tear down the host for a superseded dismiss.
+    if (!mounted || dismissGeneration != _showGeneration) {
       return;
     }
     widget.onDismissed();

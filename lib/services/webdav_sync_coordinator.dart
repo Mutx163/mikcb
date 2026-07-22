@@ -121,7 +121,9 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     return _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.createManualBackup(provider: provider);
+        final result = await _syncService.createManualBackup(
+          provider: provider,
+        );
         _applyResult(result);
         return result;
       } finally {
@@ -210,6 +212,18 @@ class WebdavSyncCoordinator extends ChangeNotifier {
   void _applyResult(WebdavSyncResult result) {
     if (result.kind == WebdavSyncResultKind.failed) {
       _setStatus(_status.copyWith(lastError: result.message ?? 'sync_failed'));
+      return;
+    }
+
+    // Background first-sync / local-divergence protection cancels without UI.
+    // Persist the reason so Cloud Sync can show a pending conflict hint.
+    if (result.kind == WebdavSyncResultKind.cancelled &&
+        result.message != null &&
+        result.message!.isNotEmpty) {
+      _setStatus(
+        _status.copyWith(lastError: result.message, lastResult: result.kind),
+      );
+      unawaited(refreshStatus());
       return;
     }
 

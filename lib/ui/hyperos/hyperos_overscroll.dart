@@ -357,6 +357,15 @@ class _OverscrollEdgeHapticState {
 /// One latch per scroll axis (vertical list / horizontal pager).
 final Map<Axis, _OverscrollEdgeHapticState> _overscrollEdgeHapticStates = {};
 
+/// Global gate for edge-arrival haptics (mirrors [TimetableSettings.enableHaptics]).
+/// Defaults to true; call [hyperosSetEdgeHapticsEnabled] when settings load/change.
+bool _hyperosEdgeHapticsEnabled = true;
+
+/// Enables or disables list edge-arrival haptic feedback app-wide.
+void hyperosSetEdgeHapticsEnabled(bool enabled) {
+  _hyperosEdgeHapticsEnabled = enabled;
+}
+
 /// Fraction of [ScrollMetrics.viewportDimension] that must be traveled into
 /// content before the same edge can fire again (~half screen).
 @visibleForTesting
@@ -439,6 +448,9 @@ bool hyperosObserveScrollEdgeHaptic({
   Object? key,
   String source = 'unknown',
 }) {
+  if (!_hyperosEdgeHapticsEnabled) {
+    return false;
+  }
   // Axis is the stable latch key (see class doc). Optional [key]/[source]
   // retained for call-site readability.
   final _ = (key, source);
