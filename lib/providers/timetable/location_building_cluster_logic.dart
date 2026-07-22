@@ -49,10 +49,16 @@ class _ParsedLocation {
 }
 
 /// Pure helpers that cluster timetable location strings into buildings.
+///
+/// Covers common naming worldwide, not only 城科 letter-digit codes:
+/// Chinese named buildings (理工楼/逸夫楼/…), ordinal 教学楼, letter blocks,
+/// classrooms, virtual platforms, and English Building/Hall labels.
 class LocationBuildingClusterLogic {
   LocationBuildingClusterLogic._();
 
   static final RegExp _whitespace = RegExp(r'\s+');
+
+  /// 一教 / 第六教学楼 / 第3教学楼
   static final RegExp _chineseTeachingBuilding = RegExp(
     r'(?:第)?([一二三四五六七八九十百零〇两\d]{1,3})教(?:学楼)?',
   );
@@ -63,23 +69,84 @@ class LocationBuildingClusterLogic {
   );
 
   /// Letter + Chinese building stem: A综 / B综合楼 / C教学楼…
-  /// Must run before bare letter+digit so "A综D101" becomes A综, not D1.
   static final RegExp _letterChineseBuilding = RegExp(
-    r'([A-Za-z]+)(综合楼|教学楼|实验楼|综合|综|实验|楼)',
+    r'([A-Za-z]+)(综合楼|教学楼|实验楼|实训楼|科研楼|信息楼|综合|综|实验|实训|楼)',
     caseSensitive: false,
   );
-  // Letter + digits building code anywhere: A1, A10, B2…
+
+  /// Letter + digits building code: A1, A10, B2…
   static final RegExp _letterDigitPrefix = RegExp(
     r'([A-Za-z]+)(\d+)',
     caseSensitive: false,
   );
+
+  /// Named buildings ending with common facility suffixes, then optional room.
+  ///
+  /// Examples: 理工楼201、逸夫楼A301、东区实验中心3楼、图书馆报告厅
+  static final RegExp _namedFacilityBuilding = RegExp(
+    r'([A-Za-z0-9]*[\u4e00-\u9fff]{1,12}(?:'
+    r'教学楼|实验楼|实训楼|综合楼|科研楼|行政楼|办公楼|信息楼|工学楼|理学楼|文理楼|'
+    r'艺术楼|音乐楼|体育楼|逸夫楼|求是楼|明德楼|博学楼|至善楼|知行楼|致远楼|行健楼|厚德楼|'
+    r'理工楼|基础楼|公共楼|图文中心|实验中心|实训中心|活动中心|学生中心|创新中心|'
+    r'会议中心|报告厅|阶梯教室|多媒体教室|机房|实验室|图书馆|体育馆|游泳馆|礼堂|'
+    r'楼|馆|厅|中心'
+    r'))',
+  );
+
+  /// Explicit classroom labels: 测试教室、多媒体教室A
+  static final RegExp _classroomLabel = RegExp(
+    r'([A-Za-z0-9]*[\u4e00-\u9fffA-Za-z0-9]{1,16}教室[A-Za-z0-9]?)',
+  );
+
+  /// Virtual / online course places (no physical building).
+  static final RegExp _virtualPlatform = RegExp(
+    r'([\u4e00-\u9fffA-Za-z0-9]{2,24}(?:'
+    r'测评平台|在线平台|学习平台|教学平台|实验平台|慕课|在线课堂|网络课堂|线上教室|'
+    r'平台|系统|网站'
+    r'))',
+  );
+
+  /// English-style: Building A, Science Hall, Lab Building 3
+  static final RegExp _englishFacility = RegExp(
+    r'((?:[A-Za-z][A-Za-z0-9.\-]{0,20}\s+){0,3}'
+    r'(?:Building|Bldg\.?|Hall|Tower|Block|Lab(?:oratory)?|Centre|Center)'
+    r'(?:\s+[A-Za-z0-9.\-]{1,12})?)',
+    caseSensitive: false,
+  );
+
+  /// Chinese (or mixed) stem + trailing room code: 博学B201、东12-305
+  static final RegExp _stemThenRoom = RegExp(
+    r'^((?:[A-Za-z]{1,4})?[\u4e00-\u9fff]{2,12})'
+    r'(?:[-–—·\s]*)'
+    r'(?:[A-Za-z]?\d{2,5}[A-Za-z]?|\d{1,2}[-–—]\d{2,4})$',
+  );
+
+  /// Pure short Chinese place with no room code (体育馆、操场).
+  static final RegExp _shortChinesePlace = RegExp(r'^[\u4e00-\u9fff]{2,12}$');
+
   static final RegExp _gateTagPattern = RegExp(
-    r'南门|北门|东门|西门|正门|侧门|西区|东区|南区|北区|老校区|新校区|虎溪|沙坪坝',
+    r'南门|北门|东门|西门|正门|侧门|西区|东区|南区|北区|老校区|新校区|虎溪|沙坪坝|大学城|本部|分校',
+  );
+
+  /// Optional campus-zone prefix to strip before using a full-string fallback.
+  static final RegExp _weakZonePrefix = RegExp(
+    r'^(?:西区|东区|南区|北区|老校区|新校区|本部|分校|大学城)',
+  );
+
+  /// Trailing room / floor noise to strip from named buildings.
+  static final RegExp _trailingRoomNoise = RegExp(
+    r'(?:[-–—·\s]*)(?:'
+    r'[A-Za-z]?\d{1,5}[A-Za-z]?'
+    r'|\d{1,2}[-–—]\d{2,4}'
+    // Require at least one digit so bare 楼/层 at the end of 理工楼 is kept.
+    r'|[东南西北]?[侧]?(?:楼|层)?\d{1,3}[F层]?'
+    r'|第?\d{1,2}(?:楼|层|F)'
+    r')$',
   );
 
   /// Suggests a keyword pattern from a full classroom location string.
   ///
-  /// Returns null when nothing reliable can be extracted.
+  /// Returns null only for empty input.
   static LocationKeyword? suggestKeywordFromLocation(String? location) {
     final parsed = _parseOne(location);
     if (parsed == null) {
@@ -92,8 +159,6 @@ class LocationBuildingClusterLogic {
   }
 
   /// Clusters unique location strings into buildings.
-  ///
-  /// Longer building keys are preferred when one location could match several.
   static List<BuildingCluster> clusterLocations(Iterable<String> locations) {
     final byKey = <String, List<_ParsedLocation>>{};
 
@@ -167,8 +232,24 @@ class LocationBuildingClusterLogic {
 
     final normalized = original.replaceAll(_whitespace, '');
     final gateTags = _extractGateTags(normalized);
+    final withoutZone = normalized.replaceFirst(_weakZonePrefix, '');
+    final parseSource = withoutZone.isEmpty ? normalized : withoutZone;
 
-    // 1) Chinese main building.
+    // 1) Virtual / online places first (avoid treating 平台 as room noise).
+    final virtual = _virtualPlatform.firstMatch(parseSource);
+    if (virtual != null) {
+      final key = (virtual.group(1) ?? parseSource).trim();
+      if (key.length >= 2) {
+        return _ParsedLocation(
+          original: original,
+          buildingKey: key,
+          confidence: BuildingClusterConfidence.high,
+          gateTags: gateTags,
+        );
+      }
+    }
+
+    // 2) Chinese main building.
     if (_mainBuildingChinese.hasMatch(normalized)) {
       return _ParsedLocation(
         original: original,
@@ -178,20 +259,20 @@ class LocationBuildingClusterLogic {
       );
     }
 
-    // 2) Chinese teaching-building ordinal: 一教 / 第六教学楼
+    // 3) Chinese teaching-building ordinal: 一教 / 第六教学楼.
+    // More specific than bare 综合楼 when both appear (综合楼一教301 → 一教).
     final chineseMatch = _chineseTeachingBuilding.firstMatch(normalized);
     if (chineseMatch != null) {
       final ordinal = chineseMatch.group(1) ?? '';
-      final key = '$ordinal教';
       return _ParsedLocation(
         original: original,
-        buildingKey: key,
+        buildingKey: '$ordinal教',
         confidence: BuildingClusterConfidence.high,
         gateTags: gateTags,
       );
     }
 
-    // 3) Letter + 主 (e.g. A主201)
+    // 4) Letter + 主 (e.g. A主201)
     final letterMain = _letterMainBuilding.firstMatch(normalized);
     if (letterMain != null) {
       final letter = (letterMain.group(1) ?? '').toUpperCase();
@@ -205,13 +286,37 @@ class LocationBuildingClusterLogic {
       }
     }
 
-    // 4) Letter + Chinese building stem (A综D101 → A综, not D1)
+    // 5) Letter + Chinese building stem (A综D101 → A综, not D1)
     final letterChinese = _letterChineseBuilding.firstMatch(normalized);
     if (letterChinese != null) {
       final letter = (letterChinese.group(1) ?? '').toUpperCase();
       final stem = letterChinese.group(2) ?? '';
       if (letter.isNotEmpty && stem.isNotEmpty) {
-        final key = _normalizeLetterChineseKey(letter, stem);
+        return _ParsedLocation(
+          original: original,
+          buildingKey: _normalizeLetterChineseKey(letter, stem),
+          confidence: BuildingClusterConfidence.high,
+          gateTags: gateTags,
+        );
+      }
+    }
+
+    // 6) Named Chinese facilities: 理工楼201、逸夫楼、实验中心…
+    final named = _bestNamedFacility(parseSource);
+    if (named != null) {
+      return _ParsedLocation(
+        original: original,
+        buildingKey: named,
+        confidence: BuildingClusterConfidence.high,
+        gateTags: gateTags,
+      );
+    }
+
+    // 7) Explicit classroom labels: 测试教室
+    final classroom = _classroomLabel.firstMatch(parseSource);
+    if (classroom != null) {
+      final key = (classroom.group(1) ?? '').trim();
+      if (key.length >= 2) {
         return _ParsedLocation(
           original: original,
           buildingKey: key,
@@ -221,10 +326,9 @@ class LocationBuildingClusterLogic {
       }
     }
 
-    // 5) Letter + digit building code (A1062 → A1, A6106 → A6)
-    // Prefer the left-most match that looks like a building, not a trailing room
-    // code after Chinese text (handled above) or after another letter block.
-    final letterDigit = _bestLetterDigitMatch(normalized);
+    // 8) Letter + digit building code (A1062 → A1, A6106 → A6)
+    // Use zone-stripped source so 西区A1062 still yields A1.
+    final letterDigit = _bestLetterDigitMatch(parseSource);
     if (letterDigit != null) {
       return _ParsedLocation(
         original: original,
@@ -234,7 +338,110 @@ class LocationBuildingClusterLogic {
       );
     }
 
+    // 9) English Building / Hall / Lab labels
+    final english =
+        _englishFacility.firstMatch(original) ??
+        _englishFacility.firstMatch(parseSource);
+    if (english != null) {
+      final rawEnglish = _collapseSpaces(english.group(1) ?? '');
+      final key = rawEnglish
+          .replaceFirst(RegExp(r'\s+[A-Za-z]?\d{1,5}[A-Za-z]?$'), '')
+          .trim();
+      if (key.length >= 3) {
+        return _ParsedLocation(
+          original: original,
+          buildingKey: key,
+          confidence: BuildingClusterConfidence.medium,
+          gateTags: gateTags,
+        );
+      }
+    }
+
+    // 10) Generic stem + room: 博学B201
+    final stemRoom = _stemThenRoom.firstMatch(parseSource);
+    if (stemRoom != null) {
+      final key = (stemRoom.group(1) ?? '').trim();
+      if (key.length >= 2) {
+        return _ParsedLocation(
+          original: original,
+          buildingKey: key,
+          confidence: BuildingClusterConfidence.medium,
+          gateTags: gateTags,
+        );
+      }
+    }
+
+    // 11) Short pure-Chinese place (体育馆、操场、报告厅)
+    if (_shortChinesePlace.hasMatch(parseSource)) {
+      return _ParsedLocation(
+        original: original,
+        buildingKey: parseSource,
+        confidence: BuildingClusterConfidence.medium,
+        gateTags: gateTags,
+      );
+    }
+
+    // 12) Fallback: cleaned full string so every timetable location can become
+    // a keyword (never silently drop 劳动测评平台 / odd custom rooms).
+    final fallback = _fallbackKeyword(parseSource);
+    if (fallback != null) {
+      return _ParsedLocation(
+        original: original,
+        buildingKey: fallback,
+        confidence: BuildingClusterConfidence.low,
+        gateTags: gateTags,
+      );
+    }
+
     return null;
+  }
+
+  /// Picks the longest named-facility match and strips trailing room codes.
+  static String? _bestNamedFacility(String text) {
+    final matches = _namedFacilityBuilding.allMatches(text).toList();
+    if (matches.isEmpty) {
+      return null;
+    }
+
+    Match? best;
+    for (final match in matches) {
+      final candidate = match.group(1) ?? '';
+      if (candidate.length < 2) {
+        continue;
+      }
+      if (best == null || candidate.length > (best.group(1)?.length ?? 0)) {
+        best = match;
+      }
+    }
+    if (best == null) {
+      return null;
+    }
+
+    var key = best.group(1)!.trim();
+    if (key.length == 1) {
+      return null;
+    }
+    key = key.replaceFirst(_trailingRoomNoise, '');
+    if (key.length < 2) {
+      return null;
+    }
+    return key;
+  }
+
+  static String? _fallbackKeyword(String normalized) {
+    var value = normalized.replaceFirst(_trailingRoomNoise, '');
+    value = value.trim();
+    if (value.length < 2) {
+      return null;
+    }
+    if (value.length > 24) {
+      value = value.substring(0, 24);
+    }
+    return value;
+  }
+
+  static String _collapseSpaces(String value) {
+    return value.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   /// Collapses A综合楼 / A综合 / A综 → stable key `A综`.
@@ -249,6 +456,9 @@ class LocationBuildingClusterLogic {
     if (stem.startsWith('实验')) {
       return '$upperLetter实验楼';
     }
+    if (stem.startsWith('实训')) {
+      return '$upperLetter实训楼';
+    }
     if (stem == '楼') {
       return '$upperLetter楼';
     }
@@ -262,13 +472,18 @@ class LocationBuildingClusterLogic {
       return null;
     }
 
-    // Returns the left-most letter+digit run. Trailing room codes that follow
-    // Chinese building stems (e.g. A综D101) are already handled by earlier
-    // matchers; this helper does not skip mid-string room tails itself.
     for (final match in matches) {
       final letter = (match.group(1) ?? '').toUpperCase();
       final digits = match.group(2) ?? '';
-      if (letter.isEmpty || digits.isEmpty) {
+      // Campus letter blocks are almost always 1–2 letters (A1, AB10).
+      // Longer letter runs are English words (ScienceHall201) — skip here.
+      if (letter.isEmpty || digits.isEmpty || letter.length > 2) {
+        continue;
+      }
+      // Skip letter+digit that is only a room tail after a Chinese stem
+      // (e.g. 理工楼A201 → room A201 should not become building A2).
+      final prefix = normalized.substring(0, match.start);
+      if (RegExp(r'[\u4e00-\u9fff]$').hasMatch(prefix)) {
         continue;
       }
       final buildingDigits = _splitBuildingDigits(digits);
@@ -283,26 +498,21 @@ class LocationBuildingClusterLogic {
 
   /// Splits a digit run into building number vs room number.
   ///
-  /// Heuristic: when total digits >= 3, keep 1 digit as building number if
-  /// the remainder looks like a room (3–4 digits), otherwise keep 2.
   /// Examples: `1062` → `1`, `6106` → `6`, `101` → `1`, `10` → `10`.
   static String _splitBuildingDigits(String digits) {
     if (digits.length <= 2) {
       return digits;
     }
-    // Prefer 1-digit building when remaining is 3–4 (typical room).
     final oneDigitRoom = digits.substring(1);
     if (oneDigitRoom.length >= 3 && oneDigitRoom.length <= 4) {
       return digits.substring(0, 1);
     }
-    // Prefer 2-digit building when remaining is 3–4.
     if (digits.length >= 5) {
       final twoDigitRoom = digits.substring(2);
       if (twoDigitRoom.length >= 3 && twoDigitRoom.length <= 4) {
         return digits.substring(0, 2);
       }
     }
-    // Fallback: first digit only for long runs.
     return digits.substring(0, 1);
   }
 
@@ -316,9 +526,16 @@ class LocationBuildingClusterLogic {
   }
 
   static LocationKeywordMatchMode _preferredModeForKey(String key) {
-    // Pure Chinese labels work better with contains (may appear mid-string).
+    // Pure Chinese / mixed labels often appear mid-string → contains.
     final hasLetterOrDigit = RegExp(r'[A-Za-z0-9]').hasMatch(key);
     if (!hasLetterOrDigit) {
+      return LocationKeywordMatchMode.contains;
+    }
+    // Virtual platforms and multi-word English labels also use contains.
+    if (key.contains(' ') ||
+        key.contains('平台') ||
+        key.contains('系统') ||
+        key.contains('教室')) {
       return LocationKeywordMatchMode.contains;
     }
     return LocationKeywordMatchMode.prefix;

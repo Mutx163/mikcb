@@ -53,8 +53,68 @@ void main() {
         isNull,
       );
       expect(
-        LocationBuildingClusterLogic.suggestKeywordFromLocation('体育馆'),
-        isNull,
+        LocationBuildingClusterLogic.suggestKeywordFromLocation('体育馆')?.pattern,
+        '体育馆',
+      );
+    });
+
+    test('extracts named Chinese buildings beyond 城科 letter codes', () {
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '理工楼201',
+        )?.pattern,
+        '理工楼',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '逸夫楼A301',
+        )?.pattern,
+        '逸夫楼',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '东区实验中心3楼',
+        )?.pattern,
+        '实验中心',
+      );
+    });
+
+    test('extracts classroom labels and virtual platforms', () {
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '测试教室',
+        )?.pattern,
+        '测试教室',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '劳动测评平台',
+        )?.pattern,
+        '劳动测评平台',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '在线测评平台',
+        )?.pattern,
+        '在线测评平台',
+      );
+    });
+
+    test('does not treat room code after Chinese building as letter block', () {
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '理工楼A201',
+        )?.pattern,
+        '理工楼',
+      );
+    });
+
+    test('extracts English building labels', () {
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          'Science Hall 201',
+        )?.pattern,
+        'Science Hall',
       );
     });
   });
