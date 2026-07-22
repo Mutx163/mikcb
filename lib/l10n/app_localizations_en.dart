@@ -8969,21 +8969,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationTimeMatchApplyActive => 'Apply to current timetable';
 
   @override
-  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
-    return 'Done: matched $matched, updated $updated (unlocked $unlocked)';
+  String locationTimeMatchApplyUpdated(int matched, int updated) {
+    return 'Applied to $matched courses, updated $updated clocks';
   }
 
   @override
-  String get locationTimeMatchApplyHint =>
-      'Course start/end clocks were written. The week-view time axis still uses the default scheme. If cards hide clocks, enable course-card times in Layout. Manually locked schemes are not overwritten.';
+  String locationTimeMatchApplyAlreadyAligned(int matched) {
+    return 'Aligned $matched courses; clocks already correct';
+  }
 
   @override
-  String get locationTimeMatchApplyNoChangeHint =>
-      'Rules matched, but clocks did not change. Usually: (1) the bound scheme has the same section times as the default, or (2) the bound scheme has fewer sections than some courses. Open the scheme and check section clocks.';
+  String get locationTimeMatchApplyNoneMatched =>
+      'No courses matched the place rules';
 
   @override
-  String locationTimeMatchApplyOverflowHint(int count, String names) {
-    return '$count courses need more sections than the bound scheme provides, so clocks were not rewritten. Examples: $names';
+  String locationTimeMatchApplyOverflowResult(int matched, int count) {
+    return 'Matched $matched; $count exceed the scheme sections';
+  }
+
+  @override
+  String locationTimeMatchApplyOverflowHint(String names) {
+    return 'Examples: $names';
   }
 
   @override

@@ -161,18 +161,38 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
           'overflow=${stats.sectionOverflowCount} '
           'overflowNames=${stats.sectionOverflowCourseNames.join(",")}',
     );
-    final description = stats.updatedCount > 0
-        ? l10n.locationTimeMatchApplyHint
-        : stats.sectionOverflowCount > 0
-        ? l10n.locationTimeMatchApplyOverflowHint(
-            stats.sectionOverflowCount,
-            stats.sectionOverflowCourseNames.isEmpty
-                ? '-'
-                : stats.sectionOverflowCourseNames.join('、'),
-          )
-        : (stats.alreadySameClockCount > 0 || stats.matchedCount > 0)
-        ? l10n.locationTimeMatchApplyNoChangeHint
-        : l10n.locationTimeMatchApplyHint;
+    // Scenario-based copy: "matched but updated 0" is usually success
+    // (clocks already aligned), not a failure — never show as "更新 0".
+    final String message;
+    final String? description;
+    final AppToastKind toastKind;
+    if (stats.updatedCount > 0) {
+      message = l10n.locationTimeMatchApplyUpdated(
+        stats.matchedCount,
+        stats.updatedCount,
+      );
+      description = null;
+      toastKind = AppToastKind.success;
+    } else if (stats.sectionOverflowCount > 0 && stats.matchedCount > 0) {
+      message = l10n.locationTimeMatchApplyOverflowResult(
+        stats.matchedCount,
+        stats.sectionOverflowCount,
+      );
+      description = stats.sectionOverflowCourseNames.isEmpty
+          ? null
+          : l10n.locationTimeMatchApplyOverflowHint(
+              stats.sectionOverflowCourseNames.join('、'),
+            );
+      toastKind = AppToastKind.warning;
+    } else if (stats.matchedCount > 0) {
+      message = l10n.locationTimeMatchApplyAlreadyAligned(stats.matchedCount);
+      description = null;
+      toastKind = AppToastKind.success;
+    } else {
+      message = l10n.locationTimeMatchApplyNoneMatched;
+      description = null;
+      toastKind = AppToastKind.info;
+    }
     // Defer toast one frame so Overlay work never races modal sheet layout.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) {
@@ -180,20 +200,12 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
       }
       showAppToast(
         context,
-        message: l10n.locationTimeMatchApplyResult(
-          stats.matchedCount,
-          stats.updatedCount,
-          stats.unlockedCount,
-        ),
+        message: message,
         description: description,
         duration: const Duration(
           milliseconds: HyperosMiuixSnackbar.durationLongMs,
         ),
-        kind: stats.updatedCount > 0
-            ? AppToastKind.success
-            : (stats.matchedCount > 0
-                  ? AppToastKind.warning
-                  : AppToastKind.info),
+        kind: toastKind,
       );
     });
   }

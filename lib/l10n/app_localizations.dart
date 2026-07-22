@@ -15307,29 +15307,35 @@ abstract class AppLocalizations {
   /// **'应用到当前课表'**
   String get locationTimeMatchApplyActive;
 
-  /// No description provided for @locationTimeMatchApplyResult.
+  /// No description provided for @locationTimeMatchApplyUpdated.
   ///
   /// In zh, this message translates to:
-  /// **'已处理：命中 {matched} 门，更新 {updated} 门（未锁定 {unlocked} 门）'**
-  String locationTimeMatchApplyResult(int matched, int updated, int unlocked);
+  /// **'已套用 {matched} 门，更新 {updated} 门钟点'**
+  String locationTimeMatchApplyUpdated(int matched, int updated);
 
-  /// No description provided for @locationTimeMatchApplyHint.
+  /// No description provided for @locationTimeMatchApplyAlreadyAligned.
   ///
   /// In zh, this message translates to:
-  /// **'已写入课程起止钟点。首页左侧时间列仍显示默认模板；若卡片上看不到钟点，请在「布局」里打开课程卡片显示时间。手动指定过时间模板的课不会被覆盖。'**
-  String get locationTimeMatchApplyHint;
+  /// **'已对齐 {matched} 门，钟点无需改写'**
+  String locationTimeMatchApplyAlreadyAligned(int matched);
 
-  /// No description provided for @locationTimeMatchApplyNoChangeHint.
+  /// No description provided for @locationTimeMatchApplyNoneMatched.
   ///
   /// In zh, this message translates to:
-  /// **'命中了地点规则，但钟点未变化。常见原因：①绑定的时间模板与主课表各节起止时间相同；②目标模板节次数少于课程最大节次。请打开该时间模板核对节次钟点。'**
-  String get locationTimeMatchApplyNoChangeHint;
+  /// **'没有匹配到可套用的课程'**
+  String get locationTimeMatchApplyNoneMatched;
+
+  /// No description provided for @locationTimeMatchApplyOverflowResult.
+  ///
+  /// In zh, this message translates to:
+  /// **'命中 {matched} 门，{count} 门节次超出模板'**
+  String locationTimeMatchApplyOverflowResult(int matched, int count);
 
   /// No description provided for @locationTimeMatchApplyOverflowHint.
   ///
   /// In zh, this message translates to:
-  /// **'有 {count} 门课的节次超出绑定模板（模板只有更少节次），无法改写钟点。例如：{names}'**
-  String locationTimeMatchApplyOverflowHint(int count, String names);
+  /// **'例如：{names}'**
+  String locationTimeMatchApplyOverflowHint(String names);
 
   /// No description provided for @locationTimeMatchEmpty.
   ///

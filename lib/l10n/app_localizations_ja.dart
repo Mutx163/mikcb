@@ -8700,21 +8700,27 @@ class AppLocalizationsJa extends AppLocalizations {
   String get locationTimeMatchApplyActive => 'Apply to current timetable';
 
   @override
-  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
-    return 'Done: matched $matched, updated $updated (unlocked $unlocked)';
+  String locationTimeMatchApplyUpdated(int matched, int updated) {
+    return 'Applied to $matched courses, updated $updated clocks';
   }
 
   @override
-  String get locationTimeMatchApplyHint =>
-      '授業の開始・終了時刻を書き込みました。週表示の時間軸は既定テンプレートのままです。カードに時刻が出ない場合は「レイアウト」でカード時刻表示をオンにしてください。手動で指定した時間テンプレートは上書きされません。';
+  String locationTimeMatchApplyAlreadyAligned(int matched) {
+    return 'Aligned $matched courses; clocks already correct';
+  }
 
   @override
-  String get locationTimeMatchApplyNoChangeHint =>
-      '場所ルールには一致しましたが、時刻は変わりませんでした。よくある原因：(1) 紐づけテンプレートの各限目が既定と同じ (2) 対象テンプレートの限目数が足りない。テンプレートの限目時刻を確認してください。';
+  String get locationTimeMatchApplyNoneMatched =>
+      'No courses matched the place rules';
 
   @override
-  String locationTimeMatchApplyOverflowHint(int count, String names) {
-    return '$count 件の授業が紐づけテンプレートの限目数を超えており、時刻を書き換えられませんでした。例：$names';
+  String locationTimeMatchApplyOverflowResult(int matched, int count) {
+    return 'Matched $matched; $count exceed the scheme sections';
+  }
+
+  @override
+  String locationTimeMatchApplyOverflowHint(String names) {
+    return 'Examples: $names';
   }
 
   @override

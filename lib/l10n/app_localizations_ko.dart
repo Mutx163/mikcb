@@ -8736,21 +8736,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get locationTimeMatchApplyActive => 'Apply to current timetable';
 
   @override
-  String locationTimeMatchApplyResult(int matched, int updated, int unlocked) {
-    return 'Done: matched $matched, updated $updated (unlocked $unlocked)';
+  String locationTimeMatchApplyUpdated(int matched, int updated) {
+    return 'Applied to $matched courses, updated $updated clocks';
   }
 
   @override
-  String get locationTimeMatchApplyHint =>
-      '수업 시작·종료 시각을 저장했습니다. 주간 보기의 시간축은 기본 템플릿을 유지합니다. 카드에 시각이 안 보이면 레이아웃에서 카드 시각 표시를 켜 주세요. 수동으로 지정한 시간 템플릿은 덮어쓰지 않습니다.';
+  String locationTimeMatchApplyAlreadyAligned(int matched) {
+    return 'Aligned $matched courses; clocks already correct';
+  }
 
   @override
-  String get locationTimeMatchApplyNoChangeHint =>
-      '장소 규칙은 일치했지만 시각은 바뀌지 않았습니다. 흔한 원인: (1) 연결된 템플릿 교시 시각이 기본과 같음 (2) 대상 템플릿 교시 수가 부족함. 템플릿 교시 시각을 확인하세요.';
+  String get locationTimeMatchApplyNoneMatched =>
+      'No courses matched the place rules';
 
   @override
-  String locationTimeMatchApplyOverflowHint(int count, String names) {
-    return '$count개 수업이 연결된 템플릿 교시 수를 초과해 시각을 바꿀 수 없습니다. 예: $names';
+  String locationTimeMatchApplyOverflowResult(int matched, int count) {
+    return 'Matched $matched; $count exceed the scheme sections';
+  }
+
+  @override
+  String locationTimeMatchApplyOverflowHint(String names) {
+    return 'Examples: $names';
   }
 
   @override

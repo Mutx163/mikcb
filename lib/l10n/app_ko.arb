@@ -5018,28 +5018,40 @@
     }
   },
   "locationTimeMatchApplyActive": "Apply to current timetable",
-  "locationTimeMatchApplyResult": "Done: matched {matched}, updated {updated} (unlocked {unlocked})",
-  "@locationTimeMatchApplyResult": {
+  "locationTimeMatchApplyUpdated": "Applied to {matched} courses, updated {updated} clocks",
+  "@locationTimeMatchApplyUpdated": {
     "placeholders": {
       "matched": {
         "type": "int"
       },
       "updated": {
         "type": "int"
-      },
-      "unlocked": {
+      }
+    }
+  },
+  "locationTimeMatchApplyAlreadyAligned": "Aligned {matched} courses; clocks already correct",
+  "@locationTimeMatchApplyAlreadyAligned": {
+    "placeholders": {
+      "matched": {
         "type": "int"
       }
     }
   },
-  "locationTimeMatchApplyHint": "수업 시작·종료 시각을 저장했습니다. 주간 보기의 시간축은 기본 템플릿을 유지합니다. 카드에 시각이 안 보이면 레이아웃에서 카드 시각 표시를 켜 주세요. 수동으로 지정한 시간 템플릿은 덮어쓰지 않습니다.",
-  "locationTimeMatchApplyNoChangeHint": "장소 규칙은 일치했지만 시각은 바뀌지 않았습니다. 흔한 원인: (1) 연결된 템플릿 교시 시각이 기본과 같음 (2) 대상 템플릿 교시 수가 부족함. 템플릿 교시 시각을 확인하세요.",
-  "locationTimeMatchApplyOverflowHint": "{count}개 수업이 연결된 템플릿 교시 수를 초과해 시각을 바꿀 수 없습니다. 예: {names}",
-  "@locationTimeMatchApplyOverflowHint": {
+  "locationTimeMatchApplyNoneMatched": "No courses matched the place rules",
+  "locationTimeMatchApplyOverflowResult": "Matched {matched}; {count} exceed the scheme sections",
+  "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
-      "count": {
+      "matched": {
         "type": "int"
       },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchApplyOverflowHint": "Examples: {names}",
+  "@locationTimeMatchApplyOverflowHint": {
+    "placeholders": {
       "names": {
         "type": "String"
       }

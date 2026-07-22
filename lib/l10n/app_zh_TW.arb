@@ -5015,17 +5015,42 @@
     }
   },
   "locationTimeMatchApplyActive": "应用到当前课表",
-  "locationTimeMatchApplyResult": "已处理：命中 {matched} 门，更新 {updated} 门（未锁定 {unlocked} 门）",
-  "@locationTimeMatchApplyResult": {
+  "locationTimeMatchApplyUpdated": "已套用 {matched} 門，更新 {updated} 門鐘點",
+  "@locationTimeMatchApplyUpdated": {
     "placeholders": {
       "matched": {
         "type": "int"
       },
       "updated": {
         "type": "int"
-      },
-      "unlocked": {
+      }
+    }
+  },
+  "locationTimeMatchApplyAlreadyAligned": "已對齊 {matched} 門，鐘點無需改寫",
+  "@locationTimeMatchApplyAlreadyAligned": {
+    "placeholders": {
+      "matched": {
         "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchApplyNoneMatched": "沒有匹配到可套用的課程",
+  "locationTimeMatchApplyOverflowResult": "命中 {matched} 門，{count} 門節次超出範本",
+  "@locationTimeMatchApplyOverflowResult": {
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchApplyOverflowHint": "例如：{names}",
+  "@locationTimeMatchApplyOverflowHint": {
+    "placeholders": {
+      "names": {
+        "type": "String"
       }
     }
   },

@@ -5245,28 +5245,40 @@
     }
   },
   "locationTimeMatchApplyActive": "应用到当前课表",
-  "locationTimeMatchApplyResult": "已处理：命中 {matched} 门，更新 {updated} 门（未锁定 {unlocked} 门）",
-  "@locationTimeMatchApplyResult": {
+  "locationTimeMatchApplyUpdated": "已套用 {matched} 门，更新 {updated} 门钟点",
+  "@locationTimeMatchApplyUpdated": {
     "placeholders": {
       "matched": {
         "type": "int"
       },
       "updated": {
         "type": "int"
-      },
-      "unlocked": {
+      }
+    }
+  },
+  "locationTimeMatchApplyAlreadyAligned": "已对齐 {matched} 门，钟点无需改写",
+  "@locationTimeMatchApplyAlreadyAligned": {
+    "placeholders": {
+      "matched": {
         "type": "int"
       }
     }
   },
-  "locationTimeMatchApplyHint": "已写入课程起止钟点。首页左侧时间列仍显示默认模板；若卡片上看不到钟点，请在「布局」里打开课程卡片显示时间。手动指定过时间模板的课不会被覆盖。",
-  "locationTimeMatchApplyNoChangeHint": "命中了地点规则，但钟点未变化。常见原因：①绑定的时间模板与主课表各节起止时间相同；②目标模板节次数少于课程最大节次。请打开该时间模板核对节次钟点。",
-  "locationTimeMatchApplyOverflowHint": "有 {count} 门课的节次超出绑定模板（模板只有更少节次），无法改写钟点。例如：{names}",
-  "@locationTimeMatchApplyOverflowHint": {
+  "locationTimeMatchApplyNoneMatched": "没有匹配到可套用的课程",
+  "locationTimeMatchApplyOverflowResult": "命中 {matched} 门，{count} 门节次超出模板",
+  "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
-      "count": {
+      "matched": {
         "type": "int"
       },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchApplyOverflowHint": "例如：{names}",
+  "@locationTimeMatchApplyOverflowHint": {
+    "placeholders": {
       "names": {
         "type": "String"
       }
