@@ -462,7 +462,7 @@ abstract final class HyperosMiuixSnackbar {
   static const enterMs = 220;
   static const exitMs = 180;
   static const enterScale = 0.96;
-  static const durationShortMs = 2500;
+  static const durationShortMs = 2000;
   static const durationLongMs = 10000;
 }
 

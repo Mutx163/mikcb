@@ -212,7 +212,7 @@ class TimetableProvider with ChangeNotifier {
     _undoThemeConfig = ThemeConfig.fromSettings(_settings);
     _undoThemeName = themeName;
     _undoTimer?.cancel();
-    _undoTimer = Timer(const Duration(seconds: 8), () {
+    _undoTimer = Timer(const Duration(seconds: 2), () {
       _undoThemeConfig = null;
       _undoThemeName = null;
       notifyListeners();

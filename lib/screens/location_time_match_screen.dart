@@ -203,9 +203,6 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
       context,
       message: message,
       description: description,
-      duration: const Duration(
-        milliseconds: HyperosMiuixSnackbar.durationLongMs,
-      ),
       kind: toastKind,
     );
   }

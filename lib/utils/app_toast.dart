@@ -6,7 +6,7 @@ enum AppToastKind { info, success, warning, error }
 const Duration _defaultToastDuration = Duration(
   milliseconds: HyperosMiuixSnackbar.durationShortMs,
 );
-const Duration _actionToastDuration = Duration(seconds: 8);
+const Duration _actionToastDuration = Duration(seconds: 2);
 
 IconData _defaultIconForKind(AppToastKind kind) {
   return switch (kind) {

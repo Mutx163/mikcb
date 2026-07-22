@@ -181,7 +181,7 @@ Future<void> _openWechatOfficialAccount(BuildContext context) async {
     urls: const [FeedbackScreen._wechatOpenUrl],
     fallbackCopyValue: FeedbackScreen._wechatOaName,
     openingMessage: l10n.feedbackWechatOaOpenHint,
-    openingDuration: const Duration(seconds: 4),
+    openingDuration: const Duration(seconds: 2),
   );
 }
 
@@ -247,7 +247,7 @@ Future<void> _openChannel({
     context,
     message: l10n.feedbackOpenChannelFailed,
     kind: AppToastKind.warning,
-    duration: const Duration(seconds: 4),
+    duration: const Duration(seconds: 2),
   );
 }
 

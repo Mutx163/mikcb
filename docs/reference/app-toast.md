@@ -24,9 +24,9 @@ Import: `import '../utils/app_toast.dart';` (adjust relative path).
 
 | Helper | When | Duration |
 |--------|------|----------|
-| `showAppToast` | Default success/info/warning/error | ~2.5s (override with `duration:`) |
+| `showAppToast` | Default success/info/warning/error | 2s (override with `duration:`) |
 | `showAppLightTip` | Lightweight validation / script hints | 2s |
-| `showAppToastWithAction` | Undo, switch mirror, etc. | 8s + action label |
+| `showAppToastWithAction` | Undo, switch mirror, etc. | 2s + action label |
 | `showThemeFeedbackToast` | Theme apply/export/import only | delegates to above; pass `onUndo:` for theme revert |
 | `hideHyperosToast` | Force dismiss | optional animated |
 
