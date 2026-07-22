@@ -32,7 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object FairMemoryAdapter {
     private const val TAG = "FairMemoryAdapter"
-    private const val ITGSA_ACTION = "itgsa.intent.action.TRIM"
+    /** 内存预警广播（官方文档 / 示例）。 */
+    const val ITGSA_ACTION_TRIM = "itgsa.intent.action.TRIM"
+    /** 应用查杀广播（官方「监听预警和异常广播」文字要求；示例代码未写，必须一并注册）。 */
+    const val ITGSA_ACTION_KILL = "itgsa.intent.action.KILL"
     private const val CHANNEL_NAME = "com.mutx163.qingyu/fair_memory"
     private const val TRANSACTION_EXCEPTION_REPLY = IBinder.FIRST_CALL_TRANSACTION
 
@@ -78,7 +81,12 @@ object FairMemoryAdapter {
             val handler = Handler(handlerThread.looper)
             workerHandler = handler
 
-            val filter = IntentFilter(ITGSA_ACTION)
+            // 文档 3.2：预警 TRIM + 查杀 KILL 两个 Action 都要监听。
+            // 官方示例只注册了 TRIM；按「代码层确认适配」检查时必须两个都有。
+            val filter = IntentFilter().apply {
+                addAction(ITGSA_ACTION_TRIM)
+                addAction(ITGSA_ACTION_KILL)
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 appContext.registerReceiver(
                     broadcastReceiver,
@@ -92,7 +100,11 @@ object FairMemoryAdapter {
                 appContext.registerReceiver(broadcastReceiver, filter, null, handler)
             }
             initialized = true
-            Log.i(TAG, "ITGSA fair-memory receiver registered")
+            Log.i(
+                TAG,
+                "ITGSA fair-memory receiver registered: " +
+                    "$ITGSA_ACTION_TRIM , $ITGSA_ACTION_KILL",
+            )
         }
     }
 
@@ -111,7 +123,10 @@ object FairMemoryAdapter {
 
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent?) {
-            if (intent == null || intent.action != ITGSA_ACTION) {
+            val action = intent?.action
+            if (intent == null ||
+                (action != ITGSA_ACTION_TRIM && action != ITGSA_ACTION_KILL)
+            ) {
                 return
             }
             val pendingResult = goAsync()
@@ -139,7 +154,12 @@ object FairMemoryAdapter {
         val notifyId = common.getInt("notifyId", 0)
         val reason = common.getString("reason").orEmpty()
         val actionRaw = common.getString("action").orEmpty()
-        val actionKind = classifyFairMemoryAction(actionRaw, notifyType)
+        // Intent.action 是系统级 TRIM/KILL；common.action 为额外说明字段。
+        val actionKind = classifyFairMemoryAction(
+            intentAction = intent.action,
+            actionRaw = actionRaw,
+            notifyType = notifyType,
+        )
         val callback = common.getBinder("callback")
         val extra = rootExtras.getBundle("extra") ?: Bundle()
 
@@ -364,10 +384,28 @@ internal enum class FairMemoryActionKind {
 }
 
 /**
- * 将系统广播中的 action / notifyType 归类为 TRIM 或 KILL。
- * 当 action 字符串缺失时，保守按 TRIM 处理（仍可释内存，避免误走查杀备份语义）。
+ * 将系统广播归类为 TRIM 或 KILL。
+ * 优先看 [intentAction]（itgsa.intent.action.TRIM / KILL），再看 common 里的 action 字段。
  */
-internal fun classifyFairMemoryAction(actionRaw: String?, notifyType: Int): FairMemoryActionKind {
+internal fun classifyFairMemoryAction(
+    intentAction: String?,
+    actionRaw: String?,
+    notifyType: Int,
+): FairMemoryActionKind {
+    val intentNormalized = intentAction?.trim().orEmpty()
+    if (intentNormalized == FairMemoryAdapter.ITGSA_ACTION_KILL ||
+        intentNormalized.endsWith(".KILL")
+    ) {
+        return FairMemoryActionKind.KILL
+    }
+    if (intentNormalized == FairMemoryAdapter.ITGSA_ACTION_TRIM ||
+        intentNormalized.endsWith(".TRIM")
+    ) {
+        // common.action 仍可能写 kill；以 Intent 为准时 TRIM 即预警。
+        // 若 Intent 已是 TRIM，不再被 common 字段误导成 KILL。
+        return FairMemoryActionKind.TRIM
+    }
+
     val normalized = actionRaw
         ?.trim()
         ?.lowercase(Locale.US)

@@ -8,23 +8,86 @@ import org.junit.Test
 class FairMemoryAdapterLogicTest {
     @Test
     fun classifiesKillActions() {
-        assertEquals(FairMemoryActionKind.KILL, classifyFairMemoryAction("kill", 1000))
-        assertEquals(FairMemoryActionKind.KILL, classifyFairMemoryAction("KILL", 2000))
-        assertEquals(FairMemoryActionKind.KILL, classifyFairMemoryAction("exception_kill", 0))
+        assertEquals(
+            FairMemoryActionKind.KILL,
+            classifyFairMemoryAction(
+                intentAction = FairMemoryAdapter.ITGSA_ACTION_KILL,
+                actionRaw = null,
+                notifyType = 1000,
+            ),
+        )
+        assertEquals(
+            FairMemoryActionKind.KILL,
+            classifyFairMemoryAction(
+                intentAction = null,
+                actionRaw = "kill",
+                notifyType = 1000,
+            ),
+        )
+        assertEquals(
+            FairMemoryActionKind.KILL,
+            classifyFairMemoryAction(
+                intentAction = null,
+                actionRaw = "exception_kill",
+                notifyType = 0,
+            ),
+        )
     }
 
     @Test
     fun classifiesTrimActions() {
-        assertEquals(FairMemoryActionKind.TRIM, classifyFairMemoryAction("trim", 1000))
-        assertEquals(FairMemoryActionKind.TRIM, classifyFairMemoryAction("TRIM_MEMORY", 2000))
-        assertEquals(FairMemoryActionKind.TRIM, classifyFairMemoryAction("warning", 0))
+        assertEquals(
+            FairMemoryActionKind.TRIM,
+            classifyFairMemoryAction(
+                intentAction = FairMemoryAdapter.ITGSA_ACTION_TRIM,
+                actionRaw = null,
+                notifyType = 1000,
+            ),
+        )
+        assertEquals(
+            FairMemoryActionKind.TRIM,
+            classifyFairMemoryAction(
+                intentAction = null,
+                actionRaw = "TRIM_MEMORY",
+                notifyType = 2000,
+            ),
+        )
+        assertEquals(
+            FairMemoryActionKind.TRIM,
+            classifyFairMemoryAction(
+                intentAction = null,
+                actionRaw = "warning",
+                notifyType = 0,
+            ),
+        )
     }
 
     @Test
     fun emptyActionDefaultsToTrimToAvoidDestructiveKillPath() {
-        assertEquals(FairMemoryActionKind.TRIM, classifyFairMemoryAction(null, 1000))
-        assertEquals(FairMemoryActionKind.TRIM, classifyFairMemoryAction("", 2000))
-        assertEquals(FairMemoryActionKind.TRIM, classifyFairMemoryAction("   ", 0))
+        assertEquals(
+            FairMemoryActionKind.TRIM,
+            classifyFairMemoryAction(null, null, 1000),
+        )
+        assertEquals(
+            FairMemoryActionKind.TRIM,
+            classifyFairMemoryAction(null, "", 2000),
+        )
+        assertEquals(
+            FairMemoryActionKind.TRIM,
+            classifyFairMemoryAction(null, "   ", 0),
+        )
+    }
+
+    @Test
+    fun intentKillWinsOverAmbiguousCommonField() {
+        assertEquals(
+            FairMemoryActionKind.KILL,
+            classifyFairMemoryAction(
+                intentAction = FairMemoryAdapter.ITGSA_ACTION_KILL,
+                actionRaw = "trim",
+                notifyType = 1000,
+            ),
+        )
     }
 
     @Test
