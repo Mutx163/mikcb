@@ -5032,7 +5032,20 @@
       }
     }
   },
-  "locationTimeMatchEmpty": "No place groups yet. Tap + to add e.g. Main building / Other buildings.",
+  "locationTimeMatchApplyHint": "授業の開始・終了時刻を書き込みました。週表示の時間軸は既定テンプレートのままです。カードに時刻が出ない場合は「レイアウト」でカード時刻表示をオンにしてください。手動で指定した時間テンプレートは上書きされません。",
+  "locationTimeMatchApplyNoChangeHint": "場所ルールには一致しましたが、時刻は変わりませんでした。よくある原因：(1) 紐づけテンプレートの各限目が既定と同じ (2) 対象テンプレートの限目数が足りない。テンプレートの限目時刻を確認してください。",
+  "locationTimeMatchApplyOverflowHint": "{count} 件の授業が紐づけテンプレートの限目数を超えており、時刻を書き換えられませんでした。例：{names}",
+  "@locationTimeMatchApplyOverflowHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",
   "locationTimeMatchUnknownScheme": "Unknown time scheme",
@@ -5084,12 +5097,28 @@
   "locationTimeMatchSaveFailed": "Save failed",
   "followLocationAutoTimeScheme": "Follow timetable / location auto",
   "followLocationAutoTimeSchemeDescription": "Without a manual override, match a time scheme by location keywords; otherwise use the timetable default",
-  "locationTimeMatchedSchemeHint": "Location auto: {group} · {scheme}",
+  "locationTimeMatchedSchemeHint": "Auto · {scheme}",
   "@locationTimeMatchedSchemeHint": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeAutoResolvedByGroup": "Place group \"{group}\" → {scheme}",
+  "@locationTimeAutoResolvedByGroup": {
     "placeholders": {
       "group": {
         "type": "String"
       },
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeAutoResolvedByTimetable": "Timetable default → {scheme}",
+  "@locationTimeAutoResolvedByTimetable": {
+    "placeholders": {
       "scheme": {
         "type": "String"
       }
@@ -5126,5 +5155,13 @@
       }
     }
   },
-  "locationTimeMatchKeywordAlreadyExists": "Keyword already added"
+  "locationTimeMatchKeywordAlreadyExists": "Keyword already added",
+  "locationTimeMatchKeywordUsedByGroup": "Keyword already used by \"{group}\"",
+  "@locationTimeMatchKeywordUsedByGroup": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  }
 }

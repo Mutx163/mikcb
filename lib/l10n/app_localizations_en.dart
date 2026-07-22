@@ -8974,8 +8974,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEmpty =>
-      'No place groups yet. Tap + to add e.g. Main building / Other buildings.';
+  String get locationTimeMatchApplyHint =>
+      'Course start/end clocks were written. The week-view time axis still uses the default scheme. If cards hide clocks, enable course-card times in Layout. Manually locked schemes are not overwritten.';
+
+  @override
+  String get locationTimeMatchApplyNoChangeHint =>
+      'Rules matched, but clocks did not change. Usually: (1) the bound scheme has the same section times as the default, or (2) the bound scheme has fewer sections than some courses. Open the scheme and check section clocks.';
+
+  @override
+  String locationTimeMatchApplyOverflowHint(int count, String names) {
+    return '$count courses need more sections than the bound scheme provides, so clocks were not rewritten. Examples: $names';
+  }
+
+  @override
+  String get locationTimeMatchEmpty => 'No place groups yet';
 
   @override
   String get locationTimeMatchCreateGroup => 'New place group';
@@ -9076,6 +9088,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationTimeMatchKeywordAlreadyExists => 'Keyword already added';
 
   @override
+  String locationTimeMatchKeywordUsedByGroup(String group) {
+    return 'Keyword already used by \"$group\"';
+  }
+
+  @override
   String get locationTimeMatchAddKeyword => 'Add keyword manually';
 
   @override
@@ -9120,8 +9137,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Without a manual override, match a time scheme by location keywords; otherwise use the timetable default';
 
   @override
-  String locationTimeMatchedSchemeHint(String group, String scheme) {
-    return 'Location auto: $group · $scheme';
+  String locationTimeMatchedSchemeHint(String scheme) {
+    return 'Auto · $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByGroup(String group, String scheme) {
+    return 'Place group \"$group\" → $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByTimetable(String scheme) {
+    return 'Timetable default → $scheme';
   }
 
   @override
@@ -9138,8 +9165,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDateRuleEdit => 'Edit date rule';
 
   @override
-  String get scheduleDateRuleEmpty =>
-      'No date rules. Use the default scheme for everyday.';
+  String get scheduleDateRuleEmpty => 'No date rules';
 
   @override
   String get scheduleDateRuleNameLabel => 'Rule name';

@@ -8741,8 +8741,20 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEmpty =>
-      'No place groups yet. Tap + to add e.g. Main building / Other buildings.';
+  String get locationTimeMatchApplyHint =>
+      '수업 시작·종료 시각을 저장했습니다. 주간 보기의 시간축은 기본 템플릿을 유지합니다. 카드에 시각이 안 보이면 레이아웃에서 카드 시각 표시를 켜 주세요. 수동으로 지정한 시간 템플릿은 덮어쓰지 않습니다.';
+
+  @override
+  String get locationTimeMatchApplyNoChangeHint =>
+      '장소 규칙은 일치했지만 시각은 바뀌지 않았습니다. 흔한 원인: (1) 연결된 템플릿 교시 시각이 기본과 같음 (2) 대상 템플릿 교시 수가 부족함. 템플릿 교시 시각을 확인하세요.';
+
+  @override
+  String locationTimeMatchApplyOverflowHint(int count, String names) {
+    return '$count개 수업이 연결된 템플릿 교시 수를 초과해 시각을 바꿀 수 없습니다. 예: $names';
+  }
+
+  @override
+  String get locationTimeMatchEmpty => 'No place groups yet';
 
   @override
   String get locationTimeMatchCreateGroup => 'New place group';
@@ -8843,6 +8855,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get locationTimeMatchKeywordAlreadyExists => 'Keyword already added';
 
   @override
+  String locationTimeMatchKeywordUsedByGroup(String group) {
+    return 'Keyword already used by \"$group\"';
+  }
+
+  @override
   String get locationTimeMatchAddKeyword => 'Add keyword manually';
 
   @override
@@ -8887,8 +8904,18 @@ class AppLocalizationsKo extends AppLocalizations {
       'Without a manual override, match a time scheme by location keywords; otherwise use the timetable default';
 
   @override
-  String locationTimeMatchedSchemeHint(String group, String scheme) {
-    return 'Location auto: $group · $scheme';
+  String locationTimeMatchedSchemeHint(String scheme) {
+    return 'Auto · $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByGroup(String group, String scheme) {
+    return 'Place group \"$group\" → $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByTimetable(String scheme) {
+    return 'Timetable default → $scheme';
   }
 
   @override
@@ -8904,7 +8931,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleDateRuleEdit => '编辑日期规则';
 
   @override
-  String get scheduleDateRuleEmpty => '未设置日期切表。日常只用默认模板即可。';
+  String get scheduleDateRuleEmpty => '未设置日期规则';
 
   @override
   String get scheduleDateRuleNameLabel => '规则名称';

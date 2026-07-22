@@ -15313,10 +15313,28 @@ abstract class AppLocalizations {
   /// **'已处理：命中 {matched} 门，更新 {updated} 门（未锁定 {unlocked} 门）'**
   String locationTimeMatchApplyResult(int matched, int updated, int unlocked);
 
+  /// No description provided for @locationTimeMatchApplyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已写入课程起止钟点。首页左侧时间列仍显示默认模板；若卡片上看不到钟点，请在「布局」里打开课程卡片显示时间。手动指定过时间模板的课不会被覆盖。'**
+  String get locationTimeMatchApplyHint;
+
+  /// No description provided for @locationTimeMatchApplyNoChangeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'命中了地点规则，但钟点未变化。常见原因：①绑定的时间模板与主课表各节起止时间相同；②目标模板节次数少于课程最大节次。请打开该时间模板核对节次钟点。'**
+  String get locationTimeMatchApplyNoChangeHint;
+
+  /// No description provided for @locationTimeMatchApplyOverflowHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'有 {count} 门课的节次超出绑定模板（模板只有更少节次），无法改写钟点。例如：{names}'**
+  String locationTimeMatchApplyOverflowHint(int count, String names);
+
   /// No description provided for @locationTimeMatchEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。'**
+  /// **'还没有地点组'**
   String get locationTimeMatchEmpty;
 
   /// No description provided for @locationTimeMatchCreateGroup.
@@ -15481,6 +15499,12 @@ abstract class AppLocalizations {
   /// **'关键词已存在'**
   String get locationTimeMatchKeywordAlreadyExists;
 
+  /// No description provided for @locationTimeMatchKeywordUsedByGroup.
+  ///
+  /// In zh, this message translates to:
+  /// **'关键词已被「{group}」使用'**
+  String locationTimeMatchKeywordUsedByGroup(String group);
+
   /// No description provided for @locationTimeMatchAddKeyword.
   ///
   /// In zh, this message translates to:
@@ -15568,8 +15592,20 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchedSchemeHint.
   ///
   /// In zh, this message translates to:
-  /// **'地点自动：{group} · {scheme}'**
-  String locationTimeMatchedSchemeHint(String group, String scheme);
+  /// **'自动 · {scheme}'**
+  String locationTimeMatchedSchemeHint(String scheme);
+
+  /// No description provided for @locationTimeAutoResolvedByGroup.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点组「{group}」→ {scheme}'**
+  String locationTimeAutoResolvedByGroup(String group, String scheme);
+
+  /// No description provided for @locationTimeAutoResolvedByTimetable.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表默认 → {scheme}'**
+  String locationTimeAutoResolvedByTimetable(String scheme);
 
   /// No description provided for @scheduleDateRuleSectionTitle.
   ///
@@ -15598,7 +15634,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'未设置日期切表。日常只用默认模板即可。'**
+  /// **'未设置日期规则'**
   String get scheduleDateRuleEmpty;
 
   /// No description provided for @scheduleDateRuleNameLabel.

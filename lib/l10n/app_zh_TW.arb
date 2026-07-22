@@ -5029,7 +5029,7 @@
       }
     }
   },
-  "locationTimeMatchEmpty": "还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。",
+  "locationTimeMatchEmpty": "還沒有地點組",
   "locationTimeMatchCreateGroup": "新建地点组",
   "locationTimeMatchEditGroup": "编辑地点组",
   "locationTimeMatchUnknownScheme": "未知时间模板",
@@ -5081,12 +5081,28 @@
   "locationTimeMatchSaveFailed": "保存失败",
   "followLocationAutoTimeScheme": "跟隨課表 / 地點自動",
   "followLocationAutoTimeSchemeDescription": "未手動指定時，依上課地點關鍵詞自動匹配時間範本；未命中則用課表預設範本",
-  "locationTimeMatchedSchemeHint": "地点自动：{group} · {scheme}",
+  "locationTimeMatchedSchemeHint": "自動 · {scheme}",
   "@locationTimeMatchedSchemeHint": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeAutoResolvedByGroup": "地點組「{group}」→ {scheme}",
+  "@locationTimeAutoResolvedByGroup": {
     "placeholders": {
       "group": {
         "type": "String"
       },
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeAutoResolvedByTimetable": "課表預設 → {scheme}",
+  "@locationTimeAutoResolvedByTimetable": {
+    "placeholders": {
       "scheme": {
         "type": "String"
       }
@@ -5123,5 +5139,13 @@
       }
     }
   },
-  "locationTimeMatchKeywordAlreadyExists": "关键词已存在"
+  "locationTimeMatchKeywordAlreadyExists": "关键词已存在",
+  "locationTimeMatchKeywordUsedByGroup": "關鍵詞已被「{group}」使用",
+  "@locationTimeMatchKeywordUsedByGroup": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  }
 }

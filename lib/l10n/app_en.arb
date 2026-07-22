@@ -5259,7 +5259,20 @@
       }
     }
   },
-  "locationTimeMatchEmpty": "No place groups yet. Tap + to add e.g. Main building / Other buildings.",
+  "locationTimeMatchApplyHint": "Course start/end clocks were written. The week-view time axis still uses the default scheme. If cards hide clocks, enable course-card times in Layout. Manually locked schemes are not overwritten.",
+  "locationTimeMatchApplyNoChangeHint": "Rules matched, but clocks did not change. Usually: (1) the bound scheme has the same section times as the default, or (2) the bound scheme has fewer sections than some courses. Open the scheme and check section clocks.",
+  "locationTimeMatchApplyOverflowHint": "{count} courses need more sections than the bound scheme provides, so clocks were not rewritten. Examples: {names}",
+  "@locationTimeMatchApplyOverflowHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",
   "locationTimeMatchUnknownScheme": "Unknown time scheme",
@@ -5329,6 +5342,14 @@
     }
   },
   "locationTimeMatchKeywordAlreadyExists": "Keyword already added",
+  "locationTimeMatchKeywordUsedByGroup": "Keyword already used by \"{group}\"",
+  "@locationTimeMatchKeywordUsedByGroup": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
   "locationTimeMatchAddKeyword": "Add keyword manually",
   "locationTimeMatchKeywordLabel": "Keyword",
   "locationTimeMatchKeywordHint": "A1 / A主",
@@ -5343,8 +5364,16 @@
   "locationTimeMatchSaveFailed": "Save failed",
   "followLocationAutoTimeScheme": "Follow timetable / location auto",
   "followLocationAutoTimeSchemeDescription": "Without a manual override, match a time scheme by location keywords; otherwise use the timetable default",
-  "locationTimeMatchedSchemeHint": "Location auto: {group} · {scheme}",
+  "locationTimeMatchedSchemeHint": "Auto · {scheme}",
   "@locationTimeMatchedSchemeHint": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeAutoResolvedByGroup": "Place group \"{group}\" → {scheme}",
+  "@locationTimeAutoResolvedByGroup": {
     "placeholders": {
       "group": {
         "type": "String"
@@ -5354,11 +5383,19 @@
       }
     }
   },
+  "locationTimeAutoResolvedByTimetable": "Timetable default → {scheme}",
+  "@locationTimeAutoResolvedByTimetable": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
   "scheduleDateRuleSectionTitle": "Seasonal date rules",
   "scheduleDateRuleSectionSubtitle": "Switch the default scheme by date (max 2, no overlap)",
   "scheduleDateRuleAdd": "Add date rule",
   "scheduleDateRuleEdit": "Edit date rule",
-  "scheduleDateRuleEmpty": "No date rules. Use the default scheme for everyday.",
+  "scheduleDateRuleEmpty": "No date rules",
   "scheduleDateRuleNameLabel": "Rule name",
   "scheduleDateRuleNameHint": "e.g. Summer / Winter",
   "scheduleDateRuleStartDate": "Start date",

@@ -5259,7 +5259,20 @@
       }
     }
   },
-  "locationTimeMatchEmpty": "还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。",
+  "locationTimeMatchApplyHint": "已写入课程起止钟点。首页左侧时间列仍显示默认模板；若卡片上看不到钟点，请在「布局」里打开课程卡片显示时间。手动指定过时间模板的课不会被覆盖。",
+  "locationTimeMatchApplyNoChangeHint": "命中了地点规则，但钟点未变化。常见原因：①绑定的时间模板与主课表各节起止时间相同；②目标模板节次数少于课程最大节次。请打开该时间模板核对节次钟点。",
+  "locationTimeMatchApplyOverflowHint": "有 {count} 门课的节次超出绑定模板（模板只有更少节次），无法改写钟点。例如：{names}",
+  "@locationTimeMatchApplyOverflowHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeMatchEmpty": "还没有地点组",
   "locationTimeMatchCreateGroup": "新建地点组",
   "locationTimeMatchEditGroup": "编辑地点组",
   "locationTimeMatchUnknownScheme": "未知时间模板",
@@ -5329,6 +5342,14 @@
     }
   },
   "locationTimeMatchKeywordAlreadyExists": "关键词已存在",
+  "locationTimeMatchKeywordUsedByGroup": "关键词已被「{group}」使用",
+  "@locationTimeMatchKeywordUsedByGroup": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
   "locationTimeMatchAddKeyword": "手动添加关键词",
   "locationTimeMatchKeywordLabel": "关键词",
   "locationTimeMatchKeywordHint": "A1 / A主 / 六教",
@@ -5343,8 +5364,16 @@
   "locationTimeMatchSaveFailed": "保存失败",
   "followLocationAutoTimeScheme": "跟随课表 / 地点自动",
   "followLocationAutoTimeSchemeDescription": "未手动指定时，按上课地点关键词自动匹配时间模板；未命中则用课表默认模板",
-  "locationTimeMatchedSchemeHint": "地点自动：{group} · {scheme}",
+  "locationTimeMatchedSchemeHint": "自动 · {scheme}",
   "@locationTimeMatchedSchemeHint": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
+  "locationTimeAutoResolvedByGroup": "地点组「{group}」→ {scheme}",
+  "@locationTimeAutoResolvedByGroup": {
     "placeholders": {
       "group": {
         "type": "String"
@@ -5354,11 +5383,19 @@
       }
     }
   },
+  "locationTimeAutoResolvedByTimetable": "课表默认 → {scheme}",
+  "@locationTimeAutoResolvedByTimetable": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
   "scheduleDateRuleSectionTitle": "按日期切换作息",
   "scheduleDateRuleSectionSubtitle": "例如暑假前后用不同时间模板（最多 2 条，不重叠）",
   "scheduleDateRuleAdd": "添加日期规则",
   "scheduleDateRuleEdit": "编辑日期规则",
-  "scheduleDateRuleEmpty": "未设置日期切表。日常只用默认模板即可。",
+  "scheduleDateRuleEmpty": "未设置日期规则",
   "scheduleDateRuleNameLabel": "规则名称",
   "scheduleDateRuleNameHint": "例如：夏令时 / 冬令时",
   "scheduleDateRuleStartDate": "开始日期",

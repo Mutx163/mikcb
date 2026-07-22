@@ -8465,7 +8465,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEmpty => '还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。';
+  String get locationTimeMatchApplyHint =>
+      '已写入课程起止钟点。首页左侧时间列仍显示默认模板；若卡片上看不到钟点，请在「布局」里打开课程卡片显示时间。手动指定过时间模板的课不会被覆盖。';
+
+  @override
+  String get locationTimeMatchApplyNoChangeHint =>
+      '命中了地点规则，但钟点未变化。常见原因：①绑定的时间模板与主课表各节起止时间相同；②目标模板节次数少于课程最大节次。请打开该时间模板核对节次钟点。';
+
+  @override
+  String locationTimeMatchApplyOverflowHint(int count, String names) {
+    return '有 $count 门课的节次超出绑定模板（模板只有更少节次），无法改写钟点。例如：$names';
+  }
+
+  @override
+  String get locationTimeMatchEmpty => '还没有地点组';
 
   @override
   String get locationTimeMatchCreateGroup => '新建地点组';
@@ -8562,6 +8575,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationTimeMatchKeywordAlreadyExists => '关键词已存在';
 
   @override
+  String locationTimeMatchKeywordUsedByGroup(String group) {
+    return '关键词已被「$group」使用';
+  }
+
+  @override
   String get locationTimeMatchAddKeyword => '手动添加关键词';
 
   @override
@@ -8605,8 +8623,18 @@ class AppLocalizationsZh extends AppLocalizations {
       '未手动指定时，按上课地点关键词自动匹配时间模板；未命中则用课表默认模板';
 
   @override
-  String locationTimeMatchedSchemeHint(String group, String scheme) {
-    return '地点自动：$group · $scheme';
+  String locationTimeMatchedSchemeHint(String scheme) {
+    return '自动 · $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByGroup(String group, String scheme) {
+    return '地点组「$group」→ $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByTimetable(String scheme) {
+    return '课表默认 → $scheme';
   }
 
   @override
@@ -8622,7 +8650,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleEdit => '编辑日期规则';
 
   @override
-  String get scheduleDateRuleEmpty => '未设置日期切表。日常只用默认模板即可。';
+  String get scheduleDateRuleEmpty => '未设置日期规则';
 
   @override
   String get scheduleDateRuleNameLabel => '规则名称';
@@ -16744,7 +16772,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get locationTimeMatchEmpty => '还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。';
+  String get locationTimeMatchEmpty => '還沒有地點組';
 
   @override
   String get locationTimeMatchCreateGroup => '新建地点组';
@@ -16841,6 +16869,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get locationTimeMatchKeywordAlreadyExists => '关键词已存在';
 
   @override
+  String locationTimeMatchKeywordUsedByGroup(String group) {
+    return '關鍵詞已被「$group」使用';
+  }
+
+  @override
   String get locationTimeMatchAddKeyword => '手动添加关键词';
 
   @override
@@ -16884,8 +16917,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '未手動指定時，依上課地點關鍵詞自動匹配時間範本；未命中則用課表預設範本';
 
   @override
-  String locationTimeMatchedSchemeHint(String group, String scheme) {
-    return '地点自动：$group · $scheme';
+  String locationTimeMatchedSchemeHint(String scheme) {
+    return '自動 · $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByGroup(String group, String scheme) {
+    return '地點組「$group」→ $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByTimetable(String scheme) {
+    return '課表預設 → $scheme';
   }
 }
 
@@ -24933,7 +24976,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get locationTimeMatchEmpty => '还没有地点组。点右上角添加，例如「主教学楼」「其他教学楼」。';
+  String get locationTimeMatchEmpty => '還沒有地點組';
 
   @override
   String get locationTimeMatchCreateGroup => '新建地点组';
@@ -25030,6 +25073,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get locationTimeMatchKeywordAlreadyExists => '关键词已存在';
 
   @override
+  String locationTimeMatchKeywordUsedByGroup(String group) {
+    return '關鍵詞已被「$group」使用';
+  }
+
+  @override
   String get locationTimeMatchAddKeyword => '手动添加关键词';
 
   @override
@@ -25073,7 +25121,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '未手動指定時，依上課地點關鍵詞自動匹配時間範本；未命中則用課表預設範本';
 
   @override
-  String locationTimeMatchedSchemeHint(String group, String scheme) {
-    return '地点自动：$group · $scheme';
+  String locationTimeMatchedSchemeHint(String scheme) {
+    return '自動 · $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByGroup(String group, String scheme) {
+    return '地點組「$group」→ $scheme';
+  }
+
+  @override
+  String locationTimeAutoResolvedByTimetable(String scheme) {
+    return '課表預設 → $scheme';
   }
 }
