@@ -138,4 +138,78 @@ class LocationTimeMatchLogic {
   ) {
     return groups.any((group) => group.timeSchemeId == schemeId);
   }
+
+  /// Normalized keyword patterns owned by groups other than [excludingGroupId].
+  static Set<String> patternsOwnedByOtherGroups(
+    List<LocationTimeGroup> groups, {
+    String? excludingGroupId,
+  }) {
+    final owned = <String>{};
+    for (final group in groups) {
+      if (excludingGroupId != null && group.id == excludingGroupId) {
+        continue;
+      }
+      for (final keyword in group.keywords) {
+        final pattern = normalizePattern(keyword.pattern);
+        if (pattern.isNotEmpty) {
+          owned.add(pattern);
+        }
+      }
+    }
+    return owned;
+  }
+
+  /// Name of another group that already owns [pattern], or null if free.
+  static String? groupNameOwningPattern(
+    List<LocationTimeGroup> groups,
+    String pattern, {
+    String? excludingGroupId,
+  }) {
+    final normalized = normalizePattern(pattern);
+    if (normalized.isEmpty) {
+      return null;
+    }
+    for (final group in groups) {
+      if (excludingGroupId != null && group.id == excludingGroupId) {
+        continue;
+      }
+      for (final keyword in group.keywords) {
+        if (normalizePattern(keyword.pattern) == normalized) {
+          return group.name;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// True when [location] already matches a keyword in another group.
+  ///
+  /// Used to hide classrooms from pickers so the same place cannot be claimed
+  /// by two place groups (match engine only returns one winner).
+  static bool isLocationClaimedByOtherGroups(
+    String? location,
+    List<LocationTimeGroup> groups, {
+    String? excludingGroupId,
+  }) {
+    final others = <LocationTimeGroup>[
+      for (final group in groups)
+        if (excludingGroupId == null || group.id != excludingGroupId) group,
+    ];
+    return match(location, others) != null;
+  }
+
+  /// Keywords from every group except [excludingGroupId] (for coverage UI).
+  static List<LocationKeyword> keywordsFromOtherGroups(
+    List<LocationTimeGroup> groups, {
+    String? excludingGroupId,
+  }) {
+    final keywords = <LocationKeyword>[];
+    for (final group in groups) {
+      if (excludingGroupId != null && group.id == excludingGroupId) {
+        continue;
+      }
+      keywords.addAll(group.keywords);
+    }
+    return keywords;
+  }
 }

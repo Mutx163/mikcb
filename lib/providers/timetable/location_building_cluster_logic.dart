@@ -61,6 +61,13 @@ class LocationBuildingClusterLogic {
     r'([A-Za-z]+)主',
     caseSensitive: false,
   );
+
+  /// Letter + Chinese building stem: A综 / B综合楼 / C教学楼…
+  /// Must run before bare letter+digit so "A综D101" becomes A综, not D1.
+  static final RegExp _letterChineseBuilding = RegExp(
+    r'([A-Za-z]+)(综合楼|教学楼|实验楼|综合|综|实验|楼)',
+    caseSensitive: false,
+  );
   // Letter + digits building code anywhere: A1, A10, B2…
   static final RegExp _letterDigitPrefix = RegExp(
     r'([A-Za-z]+)(\d+)',
@@ -198,25 +205,79 @@ class LocationBuildingClusterLogic {
       }
     }
 
-    // 4) Letter + digit building code (A1062 → A1, A6106 → A6)
-    final letterDigit = _letterDigitPrefix.firstMatch(normalized);
-    if (letterDigit != null) {
-      final letter = (letterDigit.group(1) ?? '').toUpperCase();
-      final digits = letterDigit.group(2) ?? '';
-      if (letter.isNotEmpty && digits.isNotEmpty) {
-        final buildingDigits = _splitBuildingDigits(digits);
-        final key = '$letter$buildingDigits';
+    // 4) Letter + Chinese building stem (A综D101 → A综, not D1)
+    final letterChinese = _letterChineseBuilding.firstMatch(normalized);
+    if (letterChinese != null) {
+      final letter = (letterChinese.group(1) ?? '').toUpperCase();
+      final stem = letterChinese.group(2) ?? '';
+      if (letter.isNotEmpty && stem.isNotEmpty) {
+        final key = _normalizeLetterChineseKey(letter, stem);
         return _ParsedLocation(
           original: original,
           buildingKey: key,
-          confidence: digits.length >= 3
-              ? BuildingClusterConfidence.high
-              : BuildingClusterConfidence.medium,
+          confidence: BuildingClusterConfidence.high,
           gateTags: gateTags,
         );
       }
     }
 
+    // 5) Letter + digit building code (A1062 → A1, A6106 → A6)
+    // Prefer the left-most match that looks like a building, not a trailing room
+    // code after Chinese text (handled above) or after another letter block.
+    final letterDigit = _bestLetterDigitMatch(normalized);
+    if (letterDigit != null) {
+      return _ParsedLocation(
+        original: original,
+        buildingKey: letterDigit.buildingKey,
+        confidence: letterDigit.confidence,
+        gateTags: gateTags,
+      );
+    }
+
+    return null;
+  }
+
+  /// Collapses A综合楼 / A综合 / A综 → stable key `A综`.
+  static String _normalizeLetterChineseKey(String letter, String stem) {
+    final upperLetter = letter.toUpperCase();
+    if (stem.startsWith('综')) {
+      return '$upperLetter综';
+    }
+    if (stem.startsWith('教学')) {
+      return '$upperLetter教学楼';
+    }
+    if (stem.startsWith('实验')) {
+      return '$upperLetter实验楼';
+    }
+    if (stem == '楼') {
+      return '$upperLetter楼';
+    }
+    return '$upperLetter$stem';
+  }
+
+  static ({String buildingKey, BuildingClusterConfidence confidence})?
+  _bestLetterDigitMatch(String normalized) {
+    final matches = _letterDigitPrefix.allMatches(normalized).toList();
+    if (matches.isEmpty) {
+      return null;
+    }
+
+    // Returns the left-most letter+digit run. Trailing room codes that follow
+    // Chinese building stems (e.g. A综D101) are already handled by earlier
+    // matchers; this helper does not skip mid-string room tails itself.
+    for (final match in matches) {
+      final letter = (match.group(1) ?? '').toUpperCase();
+      final digits = match.group(2) ?? '';
+      if (letter.isEmpty || digits.isEmpty) {
+        continue;
+      }
+      final buildingDigits = _splitBuildingDigits(digits);
+      final key = '$letter$buildingDigits';
+      final confidence = digits.length >= 3
+          ? BuildingClusterConfidence.high
+          : BuildingClusterConfidence.medium;
+      return (buildingKey: key, confidence: confidence);
+    }
     return null;
   }
 
@@ -266,6 +327,10 @@ class LocationBuildingClusterLogic {
   static String _displayNameForKey(String key) {
     if (key == '主教') {
       return '主教学楼';
+    }
+    final letterZong = RegExp(r'^([A-Za-z]+)综$').firstMatch(key);
+    if (letterZong != null) {
+      return '${letterZong.group(1)!.toUpperCase()}综合楼';
     }
     final chineseOrdinal = RegExp(r'^([一二三四五六七八九十百零〇两\d]+)教$').firstMatch(key);
     if (chineseOrdinal != null) {

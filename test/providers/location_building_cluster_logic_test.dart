@@ -33,6 +33,20 @@ void main() {
       expect(keyword?.mode, LocationKeywordMatchMode.contains);
     });
 
+    test('extracts A综 before trailing room code D101', () {
+      final keyword = LocationBuildingClusterLogic.suggestKeywordFromLocation(
+        'A综D101',
+      );
+      expect(keyword?.pattern, 'A综');
+      expect(keyword?.mode, LocationKeywordMatchMode.prefix);
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          'A综合楼201',
+        )?.pattern,
+        'A综',
+      );
+    });
+
     test('returns null for empty / unparseable', () {
       expect(
         LocationBuildingClusterLogic.suggestKeywordFromLocation(''),

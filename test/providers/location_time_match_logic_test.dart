@@ -175,6 +175,81 @@ void main() {
     });
   });
 
+  group('LocationTimeMatchLogic keyword exclusivity', () {
+    final mainBuilding = _group(
+      id: 'main',
+      name: '主教学楼',
+      schemeId: 'scheme-main',
+      keywords: const [
+        LocationKeyword(pattern: 'A主', mode: LocationKeywordMatchMode.prefix),
+      ],
+    );
+    final otherBuilding = _group(
+      id: 'other',
+      name: '其他教学楼',
+      schemeId: 'scheme-other',
+      keywords: const [
+        LocationKeyword(pattern: 'A1', mode: LocationKeywordMatchMode.prefix),
+      ],
+    );
+    final groups = [mainBuilding, otherBuilding];
+
+    test('patternsOwnedByOtherGroups excludes current group', () {
+      final owned = LocationTimeMatchLogic.patternsOwnedByOtherGroups(
+        groups,
+        excludingGroupId: 'main',
+      );
+      expect(owned, contains('a1'));
+      expect(owned, isNot(contains('a主')));
+    });
+
+    test('groupNameOwningPattern reports the owner', () {
+      expect(
+        LocationTimeMatchLogic.groupNameOwningPattern(groups, 'A主'),
+        '主教学楼',
+      );
+      expect(
+        LocationTimeMatchLogic.groupNameOwningPattern(
+          groups,
+          'A主',
+          excludingGroupId: 'main',
+        ),
+        isNull,
+      );
+    });
+
+    test('isLocationClaimedByOtherGroups hides claimed classrooms', () {
+      expect(
+        LocationTimeMatchLogic.isLocationClaimedByOtherGroups(
+          'A主201',
+          groups,
+          excludingGroupId: 'other',
+        ),
+        isTrue,
+      );
+      expect(
+        LocationTimeMatchLogic.isLocationClaimedByOtherGroups(
+          'A主201',
+          groups,
+          excludingGroupId: 'main',
+        ),
+        isFalse,
+      );
+      expect(
+        LocationTimeMatchLogic.isLocationClaimedByOtherGroups('体育馆', groups),
+        isFalse,
+      );
+    });
+
+    test('keywordsFromOtherGroups flattens foreign keywords', () {
+      final keywords = LocationTimeMatchLogic.keywordsFromOtherGroups(
+        groups,
+        excludingGroupId: 'main',
+      );
+      expect(keywords.map((keyword) => keyword.pattern), ['A1']);
+    });
+  });
+
   group('LocationTimeGroup serialization', () {
     test('round-trips json', () {
       final group = LocationTimeGroup(
