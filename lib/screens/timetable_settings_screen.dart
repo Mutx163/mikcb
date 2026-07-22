@@ -52,6 +52,7 @@ import 'feedback_screen.dart';
 import 'memory_stats_screen.dart';
 import 'live_settings_subpages.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
+import 'live_testing_fixture_screen.dart';
 import 'time_scheme_management_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'hyperos_showcase_screen.dart';
@@ -159,6 +160,24 @@ class TimetableSettingsScreen extends StatelessWidget {
             context,
             settings: const RouteSettings(name: '/settings/hyperos-showcase'),
             builder: (_) => const HyperosShowcaseScreen(),
+          );
+        }
+
+        void openMemoryStats() {
+          HyperosNavigation.push(
+            context,
+            settings: const RouteSettings(name: '/settings/memory-stats'),
+            builder: (_) => const MemoryStatsScreen(),
+          );
+        }
+
+        void openLiveTestingFixture() {
+          HyperosNavigation.push(
+            context,
+            settings: const RouteSettings(
+              name: '/settings/live-testing-fixture',
+            ),
+            builder: (_) => const LiveTestingFixtureScreen(),
           );
         }
 
@@ -371,41 +390,15 @@ class TimetableSettingsScreen extends StatelessWidget {
                     ],
                   ),
                   const HyperosSectionGap(),
-                  HyperosListGroup(
-                    children: [
-                      HyperosListTile(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        iconAccent: HyperosIconColors.green,
-                        title: l10n.feedbackEntryTitle,
-                        onTap: openFeedback,
-                      ),
-                      HyperosListTile(
-                        icon: Icons.info_outline_rounded,
-                        iconAccent: HyperosIconColors.blue,
-                        title: l10n.aboutEntryTitle,
-                        onTap: openAbout,
-                      ),
-                      if (!kReleaseMode) ...[
-                        HyperosListTile(
-                          icon: Icons.view_quilt_outlined,
-                          iconAccent: HyperosIconColors.purple,
-                          title: '澎湃 UI 组件库',
-                          details: '视觉验收',
-                          onTap: openHyperosShowcase,
-                        ),
-                        ListenableBuilder(
-                          listenable: DebugTuningPreferences.instance,
-                          builder: (context, _) => HyperosSwitchTile(
-                            icon: Icons.tune_outlined,
-                            iconAccent: HyperosIconColors.purple,
-                            title: '显示 UI 调试浮窗',
-                            value: DebugTuningPreferences.instance.visible,
-                            onChanged:
-                                DebugTuningPreferences.instance.setVisible,
-                          ),
-                        ),
-                      ],
-                    ],
+                  // 反馈 / 关于在最下方；内存监测仅诊断包可见，且在「澎湃 UI 组件库」之上。
+                  _SettingsFooterListGroup(
+                    feedbackTitle: l10n.feedbackEntryTitle,
+                    aboutTitle: l10n.aboutEntryTitle,
+                    onOpenFeedback: openFeedback,
+                    onOpenAbout: openAbout,
+                    onOpenMemoryStats: openMemoryStats,
+                    onOpenLiveTestingFixture: openLiveTestingFixture,
+                    onOpenHyperosShowcase: openHyperosShowcase,
                   ),
                   const HyperosSectionGap(),
                 ],
@@ -484,6 +477,98 @@ class TimetableSettingsScreen extends StatelessWidget {
       context,
       settings: const RouteSettings(name: '/settings/time-schemes'),
       builder: (_) => const TimeSchemeManagementScreen(),
+    );
+  }
+}
+
+/// 课表设置页底部列表：反馈 / 关于 / 内存监测 / 开发验收入口。
+///
+/// 内存监测、临时测试课程按包名门控（`.debug` / `.profile`），不依赖编译模式，
+/// 避免正式 release 产物误开入口；同时缓存 Future，避免 rebuild 重复读包信息。
+class _SettingsFooterListGroup extends StatefulWidget {
+  const _SettingsFooterListGroup({
+    required this.feedbackTitle,
+    required this.aboutTitle,
+    required this.onOpenFeedback,
+    required this.onOpenAbout,
+    required this.onOpenMemoryStats,
+    required this.onOpenLiveTestingFixture,
+    required this.onOpenHyperosShowcase,
+  });
+
+  final String feedbackTitle;
+  final String aboutTitle;
+  final VoidCallback onOpenFeedback;
+  final VoidCallback onOpenAbout;
+  final VoidCallback onOpenMemoryStats;
+  final VoidCallback onOpenLiveTestingFixture;
+  final VoidCallback onOpenHyperosShowcase;
+
+  @override
+  State<_SettingsFooterListGroup> createState() =>
+      _SettingsFooterListGroupState();
+}
+
+class _SettingsFooterListGroupState extends State<_SettingsFooterListGroup> {
+  late final Future<bool> _diagnosticsBuildFuture =
+      MemoryStatsService.isDiagnosticsBuild();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _diagnosticsBuildFuture,
+      builder: (context, snapshot) {
+        final showDiagnosticsTools = snapshot.data == true;
+        return HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.chat_bubble_outline_rounded,
+              iconAccent: HyperosIconColors.green,
+              title: widget.feedbackTitle,
+              onTap: widget.onOpenFeedback,
+            ),
+            HyperosListTile(
+              icon: Icons.info_outline_rounded,
+              iconAccent: HyperosIconColors.blue,
+              title: widget.aboutTitle,
+              onTap: widget.onOpenAbout,
+            ),
+            if (showDiagnosticsTools)
+              HyperosListTile(
+                icon: Icons.memory_outlined,
+                iconAccent: HyperosIconColors.orange,
+                title: '内存监测',
+                onTap: widget.onOpenMemoryStats,
+              ),
+            if (showDiagnosticsTools)
+              HyperosListTile(
+                icon: Icons.event_available_outlined,
+                iconAccent: HyperosIconColors.indigo,
+                title: '临时测试课程',
+                onTap: widget.onOpenLiveTestingFixture,
+              ),
+            if (!kReleaseMode) ...[
+              HyperosListTile(
+                icon: Icons.view_quilt_outlined,
+                iconAccent: HyperosIconColors.purple,
+                title: '澎湃 UI 组件库',
+                details: '视觉验收',
+                onTap: widget.onOpenHyperosShowcase,
+              ),
+              ListenableBuilder(
+                listenable: DebugTuningPreferences.instance,
+                builder: (context, _) => HyperosSwitchTile(
+                  icon: Icons.tune_outlined,
+                  iconAccent: HyperosIconColors.purple,
+                  title: '显示 UI 调试浮窗',
+                  value: DebugTuningPreferences.instance.visible,
+                  onChanged: DebugTuningPreferences.instance.setVisible,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -1721,21 +1806,22 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
             });
           },
         ),
-        if (kDebugMode)
-          HyperosListTile(
-            icon: Icons.science_outlined,
-            title: l10n.liveTestingEntryTitle,
-            onTap: () async {
-              await HyperosNavigation.push(
-                context,
-                builder: (_) => const _LiveTestingSettingsScreen(),
-              );
-              if (!mounted) return;
-              setState(() {
-                _draft = context.read<TimetableProvider>().settings;
-              });
-            },
-          ),
+        // 正式版 / 性能版 / 调试版均需展示：用户主动测试超级岛时依赖此入口。
+        // 页内敏感项（假日覆盖、快速造课、友盟崩溃按钮等）仍由 !kReleaseMode 门控。
+        HyperosListTile(
+          icon: Icons.science_outlined,
+          title: l10n.liveTestingEntryTitle,
+          onTap: () async {
+            await HyperosNavigation.push(
+              context,
+              builder: (_) => const _LiveTestingSettingsScreen(),
+            );
+            if (!mounted) return;
+            setState(() {
+              _draft = context.read<TimetableProvider>().settings;
+            });
+          },
+        ),
       ],
     );
   }
@@ -1765,10 +1851,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   bool _autoRefreshEnabled = true;
   DateTime? _lastDebugStatusUpdatedAt;
   bool _holidayOverrideEnabled = false;
-  int _fixtureLeadMinutes = 1;
-  bool _installingFixtureGrid = false;
-  bool _clearingFixtureGrid = false;
-  bool _showMemoryStatsEntry = false;
 
   @override
   void initState() {
@@ -1776,7 +1858,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     WidgetsBinding.instance.addObserver(this);
     final provider = context.read<TimetableProvider>();
     _holidayOverrideEnabled = provider.settings.holidayOverrideEnabled;
-    unawaited(_resolveMemoryStatsVisibility());
     unawaited(_refreshDebugStatus(showLoading: true));
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!mounted || !_isAppResumed) {
@@ -1799,16 +1880,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     _autoRefreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  Future<void> _resolveMemoryStatsVisibility() async {
-    final visible = await MemoryStatsService.isDiagnosticsBuild();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _showMemoryStatsEntry = visible;
-    });
   }
 
   Future<void> _refreshDebugStatus({bool showLoading = false}) async {
@@ -2004,8 +2075,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
 
   List<_LiveTestingSection> _liveTestingSections() => [
     if (!kReleaseMode) _LiveTestingSection.holidayOverride,
-    if (!kReleaseMode) _LiveTestingSection.quickFixtures,
-    if (_showMemoryStatsEntry) _LiveTestingSection.memoryStats,
     _LiveTestingSection.notification,
     _LiveTestingSection.islandStatus,
     if (_debugStatus != null) ...[
@@ -2068,31 +2137,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 subtitle: _holidayOverrideEnabled
                     ? l10n.liveTestingHolidayModeEnabledDesc
                     : l10n.liveTestingHolidayOverrideSubtitle,
-              ),
-            ],
-          ),
-          const HyperosSectionGap(),
-        ],
-      ),
-      _LiveTestingSection.quickFixtures => _buildQuickFixtureSection(
-        context,
-        l10n,
-      ),
-      _LiveTestingSection.memoryStats => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosListGroup(
-            children: [
-              HyperosListTile(
-                icon: Icons.memory_outlined,
-                title: '内存统计',
-                details: '公平运行内存 · 全应用监控',
-                onTap: () {
-                  HyperosNavigation.push(
-                    context,
-                    builder: (_) => const MemoryStatsScreen(),
-                  );
-                },
               ),
             ],
           ),
@@ -2428,254 +2472,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       ),
     };
   }
-
-  Widget _buildQuickFixtureSection(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
-    final provider = context.watch<TimetableProvider>();
-    final now = DateTime.now();
-    final sections = provider.settings.sections;
-    final sectionCount = sections.length;
-    final currentSection = LiveTestingFixtureService.sectionNumberForTime(
-      now,
-      sections,
-    );
-    final nextSection = LiveTestingFixtureService.nextSectionNumberForTime(
-      now,
-      sections,
-    );
-    final fixtureCount = provider.courses
-        .where(LiveTestingFixtureService.isFixtureCourse)
-        .length;
-    final hasFixtures = fixtureCount > 0;
-    final canTrigger = sectionCount > 0;
-    final activeSchemeName = provider.activeTimeScheme?.name ?? l10n.unsetLabel;
-    final leadOptions = LiveTestingFixtureService.supportedLeadMinutes;
-    final leadIndex = leadOptions
-        .indexOf(_fixtureLeadMinutes)
-        .clamp(0, leadOptions.length - 1);
-    final currentStart = canTrigger
-        ? sections[currentSection - 1].startTime
-        : '--:--';
-    final nextStart = canTrigger
-        ? sections[nextSection - 1].startTime
-        : '--:--';
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const HyperosSectionLabel(text: '快捷测试课表'),
-        HyperosListGroup(
-          children: [
-            HyperosListTile(
-              icon: Icons.download_outlined,
-              iconAccent: HyperosIconColors.indigo,
-              title: _installingFixtureGrid ? '正在安装…' : '安装 24 时段测试课表',
-              details: _installingFixtureGrid
-                  ? null
-                  : (canTrigger ? '$fixtureCount/$sectionCount' : '未安装'),
-              onTap: _installingFixtureGrid
-                  ? null
-                  : () => _installQuickFixtureGrid(context),
-            ),
-            HyperosListTile(
-              icon: Icons.delete_outline,
-              iconAccent: HyperosIconColors.orange,
-              title: _clearingFixtureGrid ? '正在清除…' : '清除测试课表',
-              details: hasFixtures ? '$fixtureCount 门' : null,
-              onTap: _clearingFixtureGrid || !hasFixtures
-                  ? null
-                  : () => _clearQuickFixtureGrid(context),
-            ),
-          ],
-        ),
-        HyperosSectionDescription(
-          text:
-              '当前方案：$activeSchemeName。安装会创建并自动套用「超级岛测试24时段」，按第 1～24 节生成测试课（与正常课程同一套逻辑）。'
-              '测完请先「清除测试课表」再切回自己的时间方案；若仍有第 11 节及以后的课，系统会拒绝切到更短的方案。',
-        ),
-        const HyperosSectionGap(),
-        HyperosControlCard(
-          title: '课前提醒',
-          subtitle: '发送超级岛测试时，提前多久进入课前态',
-          child: HyperosControlCardInset(
-            child: HyperosSegmentedControl(
-              tabs: [for (final minutes in leadOptions) '$minutes 分钟'],
-              selectedIndex: leadIndex,
-              onChanged: (index) {
-                setState(() => _fixtureLeadMinutes = leadOptions[index]);
-              },
-            ),
-          ),
-        ),
-        const HyperosSectionGap(),
-        const HyperosSectionLabel(text: '一键发送'),
-        HyperosListGroup(
-          children: [
-            HyperosListTile(
-              icon: Icons.play_circle_outline,
-              iconAccent: HyperosIconColors.blue,
-              title: '当前节次 · 第$currentSection节',
-              details: currentStart,
-              onTap: !canTrigger
-                  ? null
-                  : () => _triggerQuickFixtureSlot(
-                      context,
-                      sectionNumber: currentSection,
-                      source: 'quick_fixture_current_slot',
-                    ),
-            ),
-            HyperosListTile(
-              icon: Icons.skip_next_outlined,
-              iconAccent: HyperosIconColors.purple,
-              title: '下一节次 · 第$nextSection节',
-              details: nextStart,
-              onTap: !canTrigger
-                  ? null
-                  : () => _triggerQuickFixtureSlot(
-                      context,
-                      sectionNumber: nextSection,
-                      source: 'quick_fixture_next_slot',
-                    ),
-            ),
-          ],
-        ),
-        HyperosSectionDescription(
-          text: '将对应节次设为 $_fixtureLeadMinutes 分钟后上课，并发送超级岛测试（请回桌面查看）。',
-        ),
-        const HyperosSectionGap(),
-        HyperosControlCard(
-          title: '按节次发送',
-          subtitle: canTrigger ? '点选某一节，立即写入并触发超级岛测试' : '请先安装 24 时段测试课表',
-          child: HyperosControlCardInset(
-            child: canTrigger
-                ? GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: sectionCount,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 1.15,
-                        ),
-                    itemBuilder: (context, index) {
-                      final sectionNumber = index + 1;
-                      final section = sections[index];
-                      final installed =
-                          LiveTestingFixtureService.findFixtureForSection(
-                            provider,
-                            sectionNumber,
-                          ) !=
-                          null;
-                      final isCurrent = sectionNumber == currentSection;
-                      return _QuickFixtureSectionCell(
-                        sectionNumber: sectionNumber,
-                        startTime: section.startTime,
-                        installed: installed,
-                        isCurrent: isCurrent,
-                        onTap: () => _triggerQuickFixtureSlot(
-                          context,
-                          sectionNumber: sectionNumber,
-                          source: 'quick_fixture_grid',
-                        ),
-                      );
-                    },
-                  )
-                : Text(
-                    '安装后这里会列出全部节次',
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-          ),
-        ),
-        const HyperosSectionGap(),
-      ],
-    );
-  }
-
-  Future<void> _installQuickFixtureGrid(BuildContext context) async {
-    if (_installingFixtureGrid) return;
-    setState(() => _installingFixtureGrid = true);
-    try {
-      final provider = context.read<TimetableProvider>();
-      final count = await LiveTestingFixtureService.installSectionGrid(
-        provider,
-      );
-      if (!context.mounted) return;
-      final schemeName =
-          provider.activeTimeScheme?.name ??
-          LiveTestingFixtureService.timeSchemeName;
-      showAppToast(
-        context,
-        message:
-            '已套用「$schemeName」并安装 $count 门测试课（今天星期${DateTime.now().weekday}）',
-        kind: AppToastKind.success,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      showAppToast(context, message: '安装测试课表失败：$e', kind: AppToastKind.error);
-    } finally {
-      if (mounted) {
-        setState(() => _installingFixtureGrid = false);
-      }
-    }
-  }
-
-  Future<void> _clearQuickFixtureGrid(BuildContext context) async {
-    if (_clearingFixtureGrid) return;
-    setState(() => _clearingFixtureGrid = true);
-    try {
-      final provider = context.read<TimetableProvider>();
-      final count = await LiveTestingFixtureService.removeAllFixtureCourses(
-        provider,
-      );
-      if (!context.mounted) return;
-      showAppToast(
-        context,
-        message: '已清除 $count 门测试课',
-        kind: AppToastKind.success,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      showAppToast(context, message: '清除测试课表失败：$e', kind: AppToastKind.error);
-    } finally {
-      if (mounted) {
-        setState(() => _clearingFixtureGrid = false);
-      }
-    }
-  }
-
-  Future<void> _triggerQuickFixtureSlot(
-    BuildContext context, {
-    required int sectionNumber,
-    required String source,
-  }) async {
-    final provider = context.read<TimetableProvider>();
-    final lead = Duration(minutes: _fixtureLeadMinutes);
-    final result = await triggerLiveUpdateTestForSectionSlot(
-      context: context,
-      provider: provider,
-      sectionNumber: sectionNumber,
-      lead: lead,
-      source: source,
-    );
-    if (!context.mounted) return;
-    _showLiveTestingTriggerResult(context, result);
-    if (result.status == LiveTestingTriggerStatus.success) {
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      if (!context.mounted) return;
-      await _refreshDebugStatus(showLoading: true);
-    }
-  }
 }
 
 enum _LiveTestingSection {
   holidayOverride,
-  quickFixtures,
-  memoryStats,
   notification,
   islandStatus,
   debugEnvironment,
@@ -2688,91 +2488,6 @@ enum _LiveTestingSection {
   debugRecentLogs,
   rawJson,
   localLogs,
-}
-
-/// Compact section cell for the live-testing fixture grid (HyperOS surface style).
-class _QuickFixtureSectionCell extends StatelessWidget {
-  const _QuickFixtureSectionCell({
-    required this.sectionNumber,
-    required this.startTime,
-    required this.installed,
-    required this.isCurrent,
-    required this.onTap,
-  });
-
-  final int sectionNumber;
-  final String startTime;
-  final bool installed;
-  final bool isCurrent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = HyperosColors.primary(context);
-    final onPrimary = HyperosColors.onPrimary(context);
-    final surface = HyperosColors.surface(context);
-    final onSurface = HyperosColors.onSurface(context);
-    final muted = HyperosColors.onSurfaceVariantSummary(context);
-    final background = isCurrent ? primary : surface;
-    final titleColor = isCurrent ? onPrimary : onSurface;
-    final captionColor = isCurrent ? onPrimary.withValues(alpha: 0.86) : muted;
-    final radius = BorderRadius.circular(HyperosTokens.cardRadius * 0.55);
-
-    return Material(
-      color: background,
-      borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '第$sectionNumber节',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
-                  color: titleColor,
-                  height: 1.15,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                startTime,
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                  color: captionColor,
-                  height: 1.1,
-                ),
-              ),
-              if (installed || isCurrent) ...[
-                const SizedBox(height: 3),
-                Text(
-                  isCurrent ? '现在' : '已装',
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: captionColor,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 BuildContext? _debugL10nContext;
