@@ -11,10 +11,14 @@ class CoupleWebdavConnectResult {
   const CoupleWebdavConnectResult({
     required this.username,
     required this.password,
+    required this.mySlot,
   });
 
   final String username;
   final String password;
+
+  /// This device's dual-slot id (1 or 2). Must differ from the partner's.
+  final int mySlot;
 }
 
 class CoupleWebdavConnectSheet extends StatefulWidget {
@@ -37,12 +41,14 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
   late final TextEditingController _passwordController;
   bool _testing = false;
   bool _connecting = false;
+  late int _mySlot;
 
   @override
   void initState() {
     super.initState();
     _usernameController = TextEditingController(text: widget.config.username);
     _passwordController = TextEditingController();
+    _mySlot = widget.config.normalizedMySlot;
   }
 
   @override
@@ -60,7 +66,9 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
     setState(() => _testing = true);
     try {
       await widget.service.testConnection(
-        config: widget.config.copyWith(username: _usernameController.text.trim()),
+        config: widget.config.copyWith(
+          username: _usernameController.text.trim(),
+        ),
         username: _usernameController.text.trim(),
         password: password,
       );
@@ -104,6 +112,7 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
         CoupleWebdavConnectResult(
           username: _usernameController.text.trim(),
           password: _passwordController.text,
+          mySlot: _mySlot,
         ),
       );
     } finally {
@@ -162,6 +171,44 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
             label: l10n.cloudSyncPasswordLabel,
             hint: l10n.cloudSyncPasswordHint,
             obscureText: true,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.coupleWebdavMySlotLabel,
+            style: HyperosTypography.sectionDescription(context),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.coupleWebdavSlotOne,
+                  variant: _mySlot == 1
+                      ? HyperosButtonVariant.primary
+                      : HyperosButtonVariant.secondary,
+                  onPressed: _connecting || _testing
+                      ? null
+                      : () => setState(() => _mySlot = 1),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.coupleWebdavSlotTwo,
+                  variant: _mySlot == 2
+                      ? HyperosButtonVariant.primary
+                      : HyperosButtonVariant.secondary,
+                  onPressed: _connecting || _testing
+                      ? null
+                      : () => setState(() => _mySlot = 2),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.coupleWebdavMySlotHint,
+            style: HyperosTypography.sectionDescription(context),
           ),
         ],
       ),

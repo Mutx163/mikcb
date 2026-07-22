@@ -271,6 +271,7 @@ class _CoupleTimetableSettingsScreenState
       await _coupleWebdavService.connect(
         username: result.username,
         password: result.password,
+        mySlot: result.mySlot,
       );
       await _loadCoupleWebdavState();
       await _pullPartnerWebdav(force: true, showProgress: false);

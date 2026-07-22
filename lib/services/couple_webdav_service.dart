@@ -54,6 +54,7 @@ class CoupleWebdavService {
   Future<void> connect({
     required String username,
     required String password,
+    int mySlot = 1,
   }) async {
     final config = await loadConfig();
     await testConnection(
@@ -62,7 +63,10 @@ class CoupleWebdavService {
       password: password,
     );
     await _credentialsStore.writePassword(password);
-    await saveConfig(config.copyWith(username: username.trim()));
+    final normalizedSlot = mySlot == 2 ? 2 : 1;
+    await saveConfig(
+      config.copyWith(username: username.trim(), mySlot: normalizedSlot),
+    );
   }
 
   Future<void> disconnect() async {
@@ -129,12 +133,9 @@ class CoupleWebdavService {
       client: client,
       remotePath: config.partnerTimetableRemotePath,
     );
-    final resolvedBytes =
-        bytes ??
-        await _clientService.getBytes(
-          client: client,
-          remotePath: config.legacyPartnerTimetableRemotePath,
-        );
+    // Dual-slot is authoritative. Do not fall back to the legacy single file:
+    // both devices used to write/read the same path and import "self as partner".
+    final resolvedBytes = bytes;
     if (resolvedBytes == null || resolvedBytes.isEmpty) {
       return const CoupleWebdavPullResult(
         status: CoupleWebdavPullStatus.failed,
