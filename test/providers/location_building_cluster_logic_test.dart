@@ -79,6 +79,34 @@ void main() {
       );
     });
 
+    test('extracts arbitrary 楼 names without a whitelist', () {
+      // Specific famous names are examples only; any *楼/*馆/*厅/*中心 works.
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '傻逼楼201',
+        )?.pattern,
+        '傻逼楼',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '校长楼A301',
+        )?.pattern,
+        '校长楼',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '学生楼3层',
+        )?.pattern,
+        '学生楼',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '乱七八糟馆',
+        )?.pattern,
+        '乱七八糟馆',
+      );
+    });
+
     test('extracts classroom labels and virtual platforms', () {
       expect(
         LocationBuildingClusterLogic.suggestKeywordFromLocation(
@@ -116,6 +144,45 @@ void main() {
         )?.pattern,
         'Science Hall',
       );
+    });
+
+    test('covers 号楼/栋/座/教N/东西区/纯数字/全角/线上/操场 formats', () {
+      String? patternOf(String location) =>
+          LocationBuildingClusterLogic.suggestKeywordFromLocation(
+            location,
+          )?.pattern;
+
+      // Numbered buildings
+      expect(patternOf('1号楼201'), '1号楼');
+      expect(patternOf('12栋305'), '12栋');
+      expect(patternOf('教学3楼'), '3楼');
+      expect(patternOf('B座201'), 'B座');
+
+      // 教N reverse ordinal
+      expect(patternOf('教1-201'), '教1');
+      expect(patternOf('教A301'), '教A');
+
+      // Cardinal grid
+      expect(patternOf('东12-305'), '东12');
+      expect(patternOf('西3楼'), '西3');
+
+      // Pure digit building-room
+      expect(patternOf('1-201'), '1');
+      expect(patternOf('6A-301'), '6A');
+
+      // Fullwidth / punctuation
+      expect(patternOf('理工楼２０１'), '理工楼');
+      expect(patternOf('综合楼（201）'), '综合楼');
+      expect(patternOf('A主－314'), 'A主');
+
+      // Online / sports
+      expect(patternOf('腾讯会议'), '腾讯会议');
+      expect(patternOf('Zoom直播'), 'Zoom直播');
+      expect(patternOf('北区操场'), '操场');
+      expect(patternOf('风雨操场'), '风雨操场');
+
+      // School prefix stripped to place
+      expect(patternOf('重庆大学A主201'), 'A主');
     });
   });
 
