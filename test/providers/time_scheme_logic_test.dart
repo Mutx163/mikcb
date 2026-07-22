@@ -225,6 +225,36 @@ void main() {
       );
     });
 
+    test('omitting onDate ignores date rules (persist-safe)', () {
+      final defaultScheme = _scheme('default');
+      final summerScheme = _scheme('summer');
+      final settings = TimetableSettings.defaults().copyWith(
+        activeTimeSchemeId: defaultScheme.id,
+      );
+      final course = _course(id: '1');
+      final rules = [
+        ScheduleDateRule(
+          id: 'r1',
+          name: '夏令时',
+          timeSchemeId: summerScheme.id,
+          startDate: '2026-05-01',
+          endDate: '2026-09-30',
+        ),
+      ];
+
+      // List resync / save paths must not pass onDate, so summer clocks
+      // are never baked into every course just because "today" is summer.
+      expect(
+        TimeSchemeLogic.resolveCourseTimeScheme(
+          [defaultScheme, summerScheme],
+          settings,
+          course,
+          scheduleDateRules: rules,
+        ),
+        defaultScheme,
+      );
+    });
+
     test('location match beats date rule', () {
       final defaultScheme = _scheme('default');
       final summerScheme = _scheme('summer');

@@ -4,11 +4,17 @@ String _liveResolveRealTime(
   TimetableProvider host,
   Course course,
   bool isStart,
-) => LiveActivityLogic.resolveRealTime(
-  course,
-  isStart,
-  host._resolveSectionsForCourse(course),
-);
+) {
+  // Live always resolves against the calendar day being evaluated so date
+  // rules (e.g. summer timetable) apply for today without being baked into
+  // persisted Course clocks.
+  final onDate = DateTime.now();
+  return LiveActivityLogic.resolveRealTime(
+    course,
+    isStart,
+    host._resolveSectionsForCourse(course, onDate: onDate),
+  );
+}
 
 DateTime _liveApplyTimeCorrection(TimetableProvider host, DateTime dateTime) {
   final correctionSeconds = host._settings.liveTimeCorrectionSeconds;
@@ -488,7 +494,10 @@ Future<void> _liveUpdateActivityBody(
       DateTime.now(),
       _liveResolveRealTime(host, displayCourse, false),
     )?.millisecondsSinceEpoch;
-    final sections = host._resolveSectionsForCourse(displayCourse);
+    final sections = host._resolveSectionsForCourse(
+      displayCourse,
+      onDate: DateTime.now(),
+    );
     final progressMilestones = LiveActivityLogic.buildLiveProgressMilestones(
       displayCourse,
       sections,

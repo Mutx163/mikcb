@@ -74,10 +74,22 @@ class LocationTimeApplyStats {
   final int matchedCount;
   final int updatedCount;
 
+  /// Matched, but start/end clocks already equaled the target scheme.
+  final int alreadySameClockCount;
+
+  /// Matched a scheme, but the course section range exceeds that scheme.
+  final int sectionOverflowCount;
+
+  /// First few course names skipped for section overflow (for toast).
+  final List<String> sectionOverflowCourseNames;
+
   const LocationTimeApplyStats({
     required this.unlockedCount,
     required this.matchedCount,
     required this.updatedCount,
+    this.alreadySameClockCount = 0,
+    this.sectionOverflowCount = 0,
+    this.sectionOverflowCourseNames = const [],
   });
 }
 
@@ -754,20 +766,60 @@ class TimetableProvider with ChangeNotifier {
   Course _syncCourseWithEffectiveTimeScheme(
     Course course, {
     TimetableSettings? settings,
+    DateTime? onDate,
+    bool debugTrace = false,
+    String debugTag = 'LocationTimeApply',
   }) {
-    final sections = _resolveSectionsForCourse(course, settings: settings);
+    final resolvedScheme = debugTrace
+        ? resolveCourseTimeScheme(course, settings: settings, onDate: onDate)
+        : null;
+    final sections = _resolveSectionsForCourse(
+      course,
+      settings: settings,
+      onDate: onDate,
+    );
     final startIndex = course.startSection - 1;
     final endIndex = course.endSection - 1;
     if (sections == null || startIndex < 0 || endIndex >= sections.length) {
+      if (debugTrace) {
+        appDebugLog(
+          debugTag,
+          '跳过改写(节次越界/无sections): course=${course.name} '
+          'loc=${course.location} sections=${course.startSection}-${course.endSection} '
+          'scheme=${resolvedScheme?.name ?? "null"} '
+          'schemeSectionCount=${resolvedScheme?.sections.length ?? sections?.length ?? 0} '
+          'override=${course.timeSchemeIdOverride ?? "null"} '
+          'currentClock=${course.startTime}-${course.endTime}',
+        );
+      }
       return course.copyWith(timeSchemeIdOverride: course.timeSchemeIdOverride);
     }
 
     final startTime = sections[startIndex].startTime;
     final endTime = sections[endIndex].endTime;
     if (course.startTime == startTime && course.endTime == endTime) {
+      if (debugTrace) {
+        appDebugLog(
+          debugTag,
+          '钟点已相同(不改写): course=${course.name} '
+          'loc=${course.location} sections=${course.startSection}-${course.endSection} '
+          'scheme=${resolvedScheme?.name ?? "null"}(${resolvedScheme?.id ?? "-"}) '
+          'clock=$startTime-$endTime override=${course.timeSchemeIdOverride ?? "null"}',
+        );
+      }
       return course;
     }
 
+    if (debugTrace) {
+      appDebugLog(
+        debugTag,
+        '改写钟点: course=${course.name} loc=${course.location} '
+        'sections=${course.startSection}-${course.endSection} '
+        'scheme=${resolvedScheme?.name ?? "null"}(${resolvedScheme?.id ?? "-"}) '
+        '${course.startTime}-${course.endTime} -> $startTime-$endTime '
+        'override=${course.timeSchemeIdOverride ?? "null"}',
+      );
+    }
     return course.copyWith(
       startTime: startTime,
       endTime: endTime,
@@ -775,6 +827,15 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
+  /// Resolves the effective time scheme for a course.
+  ///
+  /// Priority: manual override → location group → date rule for [onDate] →
+  /// active profile scheme.
+  ///
+  /// **Persist / list resync must not pass [onDate].** Date rules are day-
+  /// scoped; baking "today" into [Course.startTime]/[Course.endTime] corrupts
+  /// the whole timetable. Pass [onDate] only for runtime preview (live island,
+  /// day view, validation that intentionally cares about a calendar day).
   TimeScheme? resolveCourseTimeScheme(
     Course course, {
     TimetableSettings? settings,
@@ -786,7 +847,7 @@ class TimetableProvider with ChangeNotifier {
     settingsOverride: settings,
     locationTimeGroups: _locationTimeGroups,
     scheduleDateRules: _scheduleDateRules,
-    onDate: onDate ?? DateTime.now(),
+    onDate: onDate,
   );
 
   /// Preview location → place-group routing without writing course times.
@@ -861,7 +922,8 @@ class TimetableProvider with ChangeNotifier {
     location: location,
     locationTimeGroups: _locationTimeGroups,
     scheduleDateRules: _scheduleDateRules,
-    onDate: DateTime.now(),
+    // No onDate: save/sync validation matches persisted clocks (override /
+    // location / active), not today's date-rule scheme.
   );
 
   Future<void> _persistActiveProfileState({
@@ -1119,29 +1181,169 @@ class TimetableProvider with ChangeNotifier {
   /// Returns match/update counts for toast feedback.
   Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() async {
     await initialize();
+    const debugTag = 'LocationTimeApply';
     var unlockedCount = 0;
     var matchedCount = 0;
     var updatedCount = 0;
+    var alreadySameClockCount = 0;
+    var sectionOverflowCount = 0;
+    final sectionOverflowCourseNames = <String>[];
+    var lockedCount = 0;
+    var noMatchCount = 0;
+    var matchMissingSchemeCount = 0;
+    final sampleLines = <String>[];
 
-    final previousById = {for (final course in _courses) course.id: course};
-    final synced = _syncCoursesWithEffectiveTimeSchemes(
-      List<Course>.from(_courses),
-      settings: _settings,
+    final activeScheme = activeTimeScheme;
+    appDebugLog(
+      debugTag,
+      '===== 开始应用到当前课表 ===== '
+      'profile=${activeProfile?.name ?? "null"}(${_activeProfileId ?? "-"}) '
+      'courses=${_courses.length} '
+      'locationGroups=${_locationTimeGroups.length} '
+      'activeScheme=${activeScheme?.name ?? "null"}(${activeScheme?.id ?? "-"}) '
+      'activeSections=${activeScheme?.sections.length ?? _settings.sections.length}',
     );
+    for (final group in _locationTimeGroups) {
+      final scheme = _getTimeSchemeById(group.timeSchemeId);
+      final keywords = group.keywords
+          .map((keyword) => '${keyword.pattern}(${keyword.mode.name})')
+          .join('|');
+      appDebugLog(
+        debugTag,
+        '地点组: id=${group.id} name=${group.name} enabled=${group.enabled} '
+        'priority=${group.priority} scheme=${scheme?.name ?? "MISSING"}(${group.timeSchemeId}) '
+        'schemeSections=${scheme?.sections.length ?? 0} keywords=[$keywords]',
+      );
+      if (scheme != null && scheme.sections.isNotEmpty) {
+        final first = scheme.sections.first;
+        final last = scheme.sections.last;
+        appDebugLog(
+          debugTag,
+          '  模板首末节: ${first.startTime}-${first.endTime} ... '
+          '${last.startTime}-${last.endTime}',
+        );
+      }
+    }
+    if (activeScheme != null && activeScheme.sections.isNotEmpty) {
+      final first = activeScheme.sections.first;
+      final last = activeScheme.sections.last;
+      appDebugLog(
+        debugTag,
+        '主课表模板首末节: ${first.startTime}-${first.endTime} ... '
+        '${last.startTime}-${last.endTime}',
+      );
+    }
 
-    for (final course in synced) {
+    final synced = <Course>[];
+    for (final course in _courses) {
+      final shouldTraceThisCourse = sampleLines.length < 12;
       if (course.timeSchemeIdOverride != null) {
+        lockedCount += 1;
+        if (shouldTraceThisCourse) {
+          appDebugLog(
+            debugTag,
+            '锁定跳过: course=${course.name} loc=${course.location} '
+            'override=${course.timeSchemeIdOverride} '
+            'clock=${course.startTime}-${course.endTime}',
+          );
+        }
+        synced.add(
+          _syncCourseWithEffectiveTimeScheme(
+            course,
+            settings: _settings,
+            debugTrace: false,
+            debugTag: debugTag,
+          ),
+        );
         continue;
       }
+
       unlockedCount += 1;
       final match = matchLocationTime(course.location);
-      if (match != null && _getTimeSchemeById(match.timeSchemeId) != null) {
+      final matchedScheme = match == null
+          ? null
+          : _getTimeSchemeById(match.timeSchemeId);
+
+      if (match == null) {
+        noMatchCount += 1;
+        if (shouldTraceThisCourse) {
+          appDebugLog(
+            debugTag,
+            '未命中地点: course=${course.name} loc=${course.location} '
+            'sections=${course.startSection}-${course.endSection} '
+            'clock=${course.startTime}-${course.endTime}',
+          );
+        }
+      } else if (matchedScheme == null) {
+        matchMissingSchemeCount += 1;
+        appDebugLog(
+          debugTag,
+          '命中但模板不存在: course=${course.name} loc=${course.location} '
+          'group=${match.groupName} schemeId=${match.timeSchemeId} '
+          'keyword=${match.matchedKeyword.pattern}/${match.matchedKeyword.mode.name}',
+        );
+      } else {
         matchedCount += 1;
+        final startIndex = course.startSection - 1;
+        final endIndex = course.endSection - 1;
+        final sectionCount = matchedScheme.sections.length;
+        if (startIndex < 0 ||
+            endIndex < startIndex ||
+            endIndex >= sectionCount) {
+          sectionOverflowCount += 1;
+          if (sectionOverflowCourseNames.length < 5) {
+            sectionOverflowCourseNames.add(course.name);
+          }
+          appDebugLog(
+            debugTag,
+            '命中但节次越界: course=${course.name} loc=${course.location} '
+            'need=${course.startSection}-${course.endSection} '
+            'scheme=${matchedScheme.name} has=$sectionCount '
+            'group=${match.groupName} keyword=${match.matchedKeyword.pattern}',
+          );
+        } else {
+          final expectedStart = matchedScheme.sections[startIndex].startTime;
+          final expectedEnd = matchedScheme.sections[endIndex].endTime;
+          final sameClock =
+              course.startTime == expectedStart &&
+              course.endTime == expectedEnd;
+          if (sameClock) {
+            alreadySameClockCount += 1;
+          }
+          // Compare matched scheme vs active scheme first-section for diagnosis.
+          final activeFirst = activeScheme?.sections.isNotEmpty == true
+              ? '${activeScheme!.sections.first.startTime}-${activeScheme.sections.first.endTime}'
+              : (_settings.sections.isNotEmpty
+                    ? '${_settings.sections.first.startTime}-${_settings.sections.first.endTime}'
+                    : '-');
+          final matchedFirst = matchedScheme.sections.isNotEmpty
+              ? '${matchedScheme.sections.first.startTime}-${matchedScheme.sections.first.endTime}'
+              : '-';
+          final line =
+              '${sameClock ? "SAME" : "DIFF"} course=${course.name} '
+              'loc=${course.location} group=${match.groupName} '
+              'keyword=${match.matchedKeyword.pattern}/${match.matchedKeyword.mode.name} '
+              'scheme=${matchedScheme.name} '
+              'current=${course.startTime}-${course.endTime} '
+              'expected=$expectedStart-$expectedEnd '
+              'activeFirst=$activeFirst matchedFirst=$matchedFirst';
+          if (sampleLines.length < 20) {
+            sampleLines.add(line);
+            appDebugLog(debugTag, line);
+          }
+        }
       }
-      final previous = previousById[course.id];
-      if (previous != null &&
-          (previous.startTime != course.startTime ||
-              previous.endTime != course.endTime)) {
+
+      final next = _syncCourseWithEffectiveTimeScheme(
+        course,
+        settings: _settings,
+        debugTrace: match != null && matchedScheme != null,
+        debugTag: debugTag,
+      );
+      synced.add(next);
+
+      if (next.startTime != course.startTime ||
+          next.endTime != course.endTime) {
         updatedCount += 1;
       }
     }
@@ -1152,10 +1354,30 @@ class TimetableProvider with ChangeNotifier {
     _notifyStateChanged();
     await _updateLiveActivity();
 
+    appDebugLog(
+      debugTag,
+      '===== 应用结束 ===== unlocked=$unlockedCount matched=$matchedCount '
+      'updated=$updatedCount sameClock=$alreadySameClockCount '
+      'overflow=$sectionOverflowCount locked=$lockedCount noMatch=$noMatchCount '
+      'missingScheme=$matchMissingSchemeCount '
+      'overflowNames=${sectionOverflowCourseNames.join(",")}',
+    );
+    if (matchedCount > 0 && updatedCount == 0) {
+      appDebugLog(
+        debugTag,
+        '结论: 地点规则已命中，但课程钟点未变化。'
+        'sameClock=$alreadySameClockCount overflow=$sectionOverflowCount。'
+        '请对比地点组绑定模板 vs 主课表模板各节起止时间是否完全一致。',
+      );
+    }
+
     return LocationTimeApplyStats(
       unlockedCount: unlockedCount,
       matchedCount: matchedCount,
       updatedCount: updatedCount,
+      alreadySameClockCount: alreadySameClockCount,
+      sectionOverflowCount: sectionOverflowCount,
+      sectionOverflowCourseNames: sectionOverflowCourseNames,
     );
   }
 
