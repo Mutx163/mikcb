@@ -50,7 +50,7 @@ class CoupleTimetableLogic {
       return false;
     }
     final partnerWeek = partnerWeekForMyWeek(myWeek, partnerWeekOffset);
-    return mine.isInWeek(myWeek) && partner.isInWeek(partnerWeek);
+    return mine.isActiveInWeek(myWeek) && partner.isActiveInWeek(partnerWeek);
   }
 
   static bool coursesOverlapInWeek(Course left, Course right, {int? week}) {
@@ -63,7 +63,7 @@ class CoupleTimetableLogic {
     }
 
     if (week != null) {
-      return left.isInWeek(week) && right.isInWeek(week);
+      return left.isActiveInWeek(week) && right.isActiveInWeek(week);
     }
 
     final candidateWeeks = <int>{
@@ -71,7 +71,8 @@ class CoupleTimetableLogic {
       ..._courseWeekCandidates(right),
     };
     for (final candidateWeek in candidateWeeks) {
-      if (left.isInWeek(candidateWeek) && right.isInWeek(candidateWeek)) {
+      if (left.isActiveInWeek(candidateWeek) &&
+          right.isActiveInWeek(candidateWeek)) {
         return true;
       }
     }
@@ -171,7 +172,8 @@ class CoupleTimetableLogic {
   ) {
     return courses
         .where(
-          (course) => course.dayOfWeek == dayOfWeek && course.isInWeek(week),
+          (course) =>
+              course.dayOfWeek == dayOfWeek && course.isActiveInWeek(week),
         )
         .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));

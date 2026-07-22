@@ -18,6 +18,7 @@ import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
+import '../ui/hyperos/hyperos_overscroll.dart';
 import '../services/app_analytics.dart';
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
@@ -232,6 +233,7 @@ class TimetableProvider with ChangeNotifier {
   /// 批量更新设置（用于主题导入）
   Future<void> updateSettings(TimetableSettings newSettings) async {
     _settings = _normalizeSettingsWithTimeScheme(newSettings);
+    hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _writeEpoch++;
     final epoch = _writeEpoch;
     await _persistActiveProfileState();
@@ -706,6 +708,7 @@ class TimetableProvider with ChangeNotifier {
 
   void _applyProfileState(TimetableProfile profile) {
     _settings = _normalizeSettingsWithTimeScheme(profile.settings);
+    hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _courses = _syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(profile.courses),
       settings: _settings,
@@ -1348,11 +1351,16 @@ class TimetableProvider with ChangeNotifier {
       }
     }
 
-    _courses = synced;
-    await _persistActiveProfileState();
-    _currentLiveCourseId = null;
-    _notifyStateChanged();
-    await _updateLiveActivity();
+    // When nothing changed, skip notify/persist/live rebuild. Always notifying
+    // races the result toast (Provider rebuild + Overlay insert) and can drop
+    // the first snackbar until the user taps apply again.
+    if (updatedCount > 0) {
+      _courses = synced;
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      _notifyStateChanged();
+      await _updateLiveActivity();
+    }
 
     appDebugLog(
       debugTag,
@@ -2410,6 +2418,10 @@ class TimetableProvider with ChangeNotifier {
           isEvenWeek: false,
           customWeeks: [targetWeek],
           timeSchemeIdOverride: normalizedTimeSchemeId,
+          sessionNotes: originalCourse.sessionNotesForSingleWeek(
+            sourceWeek: sourceWeek,
+            targetWeek: targetWeek,
+          ),
         ),
       ),
     );
@@ -2425,6 +2437,7 @@ class TimetableProvider with ChangeNotifier {
             isOddWeek: false,
             isEvenWeek: false,
             customWeeks: remainingWeeks,
+            sessionNotes: originalCourse.sessionNotesExcludingWeek(sourceWeek),
           ),
         ),
       );
@@ -2480,6 +2493,7 @@ class TimetableProvider with ChangeNotifier {
 
     final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);
     _settings = _normalizeSettingsWithTimeScheme(settings);
+    hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _currentDateWeek = _resolveCurrentDateWeek();
     await _persistActiveProfileState();
     unawaited(_syncNativeRuntimePreferences());
@@ -2637,7 +2651,8 @@ class TimetableProvider with ChangeNotifier {
     // Use isInWeek (respects customWeeks), not startWeek/endWeek envelope alone.
     // Warehouse imports often leave default 1–16 while customWeeks sits outside.
     if (week != null) {
-      return left.isInWeek(week) && right.isInWeek(week);
+      // Prefer isActiveInWeek so suspended weeks do not false-positive conflicts.
+      return left.isActiveInWeek(week) && right.isActiveInWeek(week);
     }
 
     final candidateWeeks = <int>{
@@ -2645,7 +2660,8 @@ class TimetableProvider with ChangeNotifier {
       ..._courseWeekCandidates(right),
     };
     for (final candidateWeek in candidateWeeks) {
-      if (left.isInWeek(candidateWeek) && right.isInWeek(candidateWeek)) {
+      if (left.isActiveInWeek(candidateWeek) &&
+          right.isActiveInWeek(candidateWeek)) {
         return true;
       }
     }

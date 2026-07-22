@@ -58,6 +58,7 @@ class _ScheduleEntryData {
   Set<int> selectedCustomWeeks;
   List<int>? suspendedWeeks;
   String? note;
+  Map<int, CourseSessionNote>? sessionNotes;
   String? timeSchemeIdOverride;
 
   _ScheduleEntryData({
@@ -75,6 +76,7 @@ class _ScheduleEntryData {
     Set<int>? selectedCustomWeeks,
     this.suspendedWeeks,
     this.note,
+    this.sessionNotes,
     this.timeSchemeIdOverride,
   }) : selectedCustomWeeks = selectedCustomWeeks ?? <int>{};
 
@@ -97,6 +99,7 @@ class _ScheduleEntryData {
       selectedCustomWeeks: customWeeks?.toSet() ?? <int>{},
       suspendedWeeks: course.normalizedSuspendedWeeks,
       note: course.note,
+      sessionNotes: course.sessionNotes,
       timeSchemeIdOverride: course.timeSchemeIdOverride,
     );
   }
@@ -136,6 +139,7 @@ class _ScheduleEntryData {
       courseNature: courseNature,
       description: description,
       note: note,
+      sessionNotes: sessionNotes,
       timeSchemeIdOverride: timeSchemeIdOverride,
     );
   }

@@ -16,6 +16,7 @@ Course _course({
   bool isOddWeek = false,
   bool isEvenWeek = false,
   List<int>? customWeeks,
+  List<int>? suspendedWeeks,
 }) {
   return Course(
     id: id,
@@ -32,6 +33,7 @@ Course _course({
     isOddWeek: isOddWeek,
     isEvenWeek: isEvenWeek,
     customWeeks: customWeeks,
+    suspendedWeeks: suspendedWeeks,
   );
 }
 
@@ -298,5 +300,63 @@ void main() {
     expect(CoupleTimetableLogic.partnerWeekForMyWeek(5, 1), 6);
     expect(CoupleTimetableLogic.clampWeekOffset(99), 15);
     expect(CoupleTimetableLogic.clampWeekOffset(-99), -15);
+  });
+
+  test('suspended week is not busy for shared free or together class', () {
+    final mine = _course(
+      id: 'mine',
+      name: '高等数学',
+      startTime: '08:00',
+      endTime: '09:40',
+      suspendedWeeks: [3],
+    );
+    final partner = _course(
+      id: 'partner',
+      name: '高等数学',
+      startTime: '08:00',
+      endTime: '09:40',
+    );
+
+    expect(
+      CoupleTimetableLogic.isTogetherClass(mine, partner, week: 3),
+      isFalse,
+    );
+    expect(
+      CoupleTimetableLogic.isTogetherClass(mine, partner, week: 1),
+      isTrue,
+    );
+
+    final freeOnSuspended = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: [mine],
+      partnerCourses: const [],
+      dayOfWeek: 1,
+      week: 3,
+      sections: _sections,
+    );
+    // Mine suspended → no busy → free covers morning class slot.
+    expect(
+      freeOnSuspended.any(
+        (interval) =>
+            interval.startMinutes <= 8 * 60 &&
+            interval.endMinutes >= 9 * 60 + 40,
+      ),
+      isTrue,
+    );
+
+    final freeOnActive = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: [mine],
+      partnerCourses: const [],
+      dayOfWeek: 1,
+      week: 1,
+      sections: _sections,
+    );
+    expect(
+      freeOnActive.any(
+        (interval) =>
+            interval.startMinutes <= 8 * 60 &&
+            interval.endMinutes >= 9 * 60 + 40,
+      ),
+      isFalse,
+    );
   });
 }

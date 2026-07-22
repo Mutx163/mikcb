@@ -311,6 +311,65 @@ void main() {
     );
   });
 
+  test('suspended week is not treated as course conflict', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '线性代数',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 2,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+        suspendedWeeks: [1],
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-b',
+        name: '大学物理',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 2,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+
+    // Week 1: A is suspended → no actual overlap week → no conflict map entry.
+    expect(
+      provider.courseConflictMapForWeek(1).containsKey('course-a'),
+      isFalse,
+    );
+    expect(
+      provider.courseConflictMapForWeek(1).containsKey('course-b'),
+      isFalse,
+    );
+    // Week 2: both active and same slot → conflict.
+    expect(
+      provider.courseConflictMapForWeek(2).containsKey('course-a'),
+      isTrue,
+    );
+    expect(
+      provider.courseConflictMapForWeek(2).containsKey('course-b'),
+      isTrue,
+    );
+  });
+
   test(
     'same slot on different non-overlapping weeks is not conflict',
     () async {

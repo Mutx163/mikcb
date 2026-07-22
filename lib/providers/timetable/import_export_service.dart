@@ -118,6 +118,9 @@ Future<int> _timetableImportParsedCourses(
       );
       effectiveImportedCount = dedupedImportedCourses.length;
       syncResult = null;
+      // Overwrite import replaces the active timetable: drop leftover agenda
+      // rows that belonged to the previous course set (aligns with backup path).
+      host._scheduleItems = [];
     } else {
       final result = syncImportedCourses(
         existingCourses: host._courses,

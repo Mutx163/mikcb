@@ -157,4 +157,42 @@ void main() {
     expect(moved?[10]?.hasHomework, isTrue);
     expect(moved?[7], isNull);
   });
+
+  test(
+    'relocatingSessionNote moves week key and excluding strips source week',
+    () {
+      final course = Course(
+        id: 'course-relocate',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        sessionNotes: {
+          5: const CourseSessionNote(text: '测验', hasHomework: true),
+          6: const CourseSessionNote(text: '复习'),
+        },
+      );
+
+      final relocated = course.relocatingSessionNote(fromWeek: 5, toWeek: 12);
+      expect(relocated?[12]?.text, '测验');
+      expect(relocated?[12]?.hasHomework, isTrue);
+      expect(relocated?[5], isNull);
+      expect(relocated?[6]?.text, '复习');
+
+      final remaining = course.sessionNotesExcludingWeek(5);
+      expect(remaining?[5], isNull);
+      expect(remaining?[6]?.text, '复习');
+
+      final single = course.sessionNotesForSingleWeek(
+        sourceWeek: 5,
+        targetWeek: 12,
+      );
+      expect(single?.keys, [12]);
+      expect(single?[12]?.hasHomework, isTrue);
+    },
+  );
 }
