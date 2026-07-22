@@ -41,6 +41,7 @@ import '../services/bundled_assets.dart';
 import '../services/live_testing_fixture_service.dart';
 import '../services/live_testing_trigger.dart';
 import '../widgets/bundled_asset_image.dart';
+import '../services/memory_stats_service.dart';
 import 'about_screen.dart';
 import 'course_overview_screen.dart';
 import 'couple_timetable_settings_screen.dart';
@@ -48,6 +49,7 @@ import 'data_transfer_screen.dart';
 import 'cloud_sync_screen.dart';
 import 'lan_edit_screen.dart';
 import 'feedback_screen.dart';
+import 'memory_stats_screen.dart';
 import 'live_settings_subpages.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
 import 'time_scheme_management_screen.dart';
@@ -1765,6 +1767,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   int _fixtureLeadMinutes = 1;
   bool _installingFixtureGrid = false;
   bool _clearingFixtureGrid = false;
+  bool _showMemoryStatsEntry = false;
 
   @override
   void initState() {
@@ -1772,6 +1775,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     WidgetsBinding.instance.addObserver(this);
     final provider = context.read<TimetableProvider>();
     _holidayOverrideEnabled = provider.settings.holidayOverrideEnabled;
+    unawaited(_resolveMemoryStatsVisibility());
     unawaited(_refreshDebugStatus(showLoading: true));
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!mounted || !_isAppResumed) {
@@ -1794,6 +1798,16 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     _autoRefreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _resolveMemoryStatsVisibility() async {
+    final visible = await MemoryStatsService.isDiagnosticsBuild();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _showMemoryStatsEntry = visible;
+    });
   }
 
   Future<void> _refreshDebugStatus({bool showLoading = false}) async {
@@ -1990,6 +2004,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   List<_LiveTestingSection> _liveTestingSections() => [
     if (!kReleaseMode) _LiveTestingSection.holidayOverride,
     if (!kReleaseMode) _LiveTestingSection.quickFixtures,
+    if (_showMemoryStatsEntry) _LiveTestingSection.memoryStats,
     _LiveTestingSection.notification,
     _LiveTestingSection.islandStatus,
     if (_debugStatus != null) ...[
@@ -2061,6 +2076,27 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       _LiveTestingSection.quickFixtures => _buildQuickFixtureSection(
         context,
         l10n,
+      ),
+      _LiveTestingSection.memoryStats => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HyperosListGroup(
+            children: [
+              HyperosListTile(
+                icon: Icons.memory_outlined,
+                title: '内存统计',
+                details: '公平运行内存 · 全应用监控',
+                onTap: () {
+                  HyperosNavigation.push(
+                    context,
+                    builder: (_) => const MemoryStatsScreen(),
+                  );
+                },
+              ),
+            ],
+          ),
+          const HyperosSectionGap(),
+        ],
       ),
       _LiveTestingSection.notification => Column(
         mainAxisSize: MainAxisSize.min,
@@ -2638,6 +2674,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
 enum _LiveTestingSection {
   holidayOverride,
   quickFixtures,
+  memoryStats,
   notification,
   islandStatus,
   debugEnvironment,

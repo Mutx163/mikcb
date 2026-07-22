@@ -76,6 +76,10 @@ abstract final class AppLogMessages {
   static const logExportTitle = 'log_export_title';
   static const liveUpdateSettingsSyncedKey = 'log_live_update_settings_synced';
 
+  /// 金标联盟公平运行内存（直接中文文案；未进 ARB 时 localizer 原样显示）
+  static const fairMemoryTrimHandled = '公平运行内存 TRIM：已清理内存图片缓存（未触碰超级岛/桌面小组件）';
+  static const fairMemoryKillHandled = '公平运行内存 KILL：已确认并清理内存缓存（未触碰超级岛/桌面小组件）';
+
   static String liveUpdateSettingsSynced({
     required bool beforeClass,
     required bool duringClass,

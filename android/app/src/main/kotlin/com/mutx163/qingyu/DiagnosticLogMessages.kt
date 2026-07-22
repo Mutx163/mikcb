@@ -70,4 +70,9 @@ object DiagnosticLogMessages {
     const val LOG_BUILD_ROUNDED_LAUNCHER_ICON_FAILED = "构建圆角启动图标失败"
     const val LOG_FGS_START_BLOCKED = "前台服务启动被阻止，回退为仅调度"
     const val LOG_LIVE_UPDATE_REFRESH_WORKER_FAILED = "超级岛刷新 Worker 失败"
+
+    // 金标联盟公平运行内存
+    const val FAIR_MEMORY_EVENT_RECEIVED = "收到公平运行内存广播"
+    const val FAIR_MEMORY_HANDLE_FAILED = "处理公平运行内存广播失败"
+    const val FAIR_MEMORY_BUSINESS_FAILED = "公平运行内存业务处理失败"
 }

@@ -165,6 +165,29 @@ class MainActivity : FlutterActivity() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannels()
 
+        // 公平运行内存：绑定 Flutter 通道（原生广播本身不依赖引擎）。
+        FairMemoryAdapter.attachFlutterEngine(flutterEngine.dartExecutor.binaryMessenger)
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            MemoryStatsCollector.methodChannelName,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getMemorySnapshot" -> {
+                    try {
+                        result.success(MemoryStatsCollector.buildSnapshot(applicationContext))
+                    } catch (error: Exception) {
+                        result.error(
+                            "MEMORY_SNAPSHOT_FAILED",
+                            error.message,
+                            null,
+                        )
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_UI_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {

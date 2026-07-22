@@ -24,6 +24,7 @@ import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
+import 'services/fair_memory_service.dart';
 import 'services/debug_deep_link_navigator.dart';
 import 'services/debug_deep_link_service.dart';
 import 'services/lan_edit_foreground_service.dart';
@@ -288,6 +289,7 @@ Future<void> main() async {
     () {
       WidgetsFlutterBinding.ensureInitialized();
       unawaited(AppLogService.instance.initialize());
+      FairMemoryService.instance.ensureInitialized();
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
       FlutterError.onError = (details) {
