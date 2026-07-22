@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
@@ -117,7 +118,8 @@ class HyperosToastCapsule extends StatelessWidget {
             Text(
               description!,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              // Longer apply/result hints need more than two lines.
+              maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: _descriptionStyle(),
             ),
@@ -221,8 +223,21 @@ abstract final class _HyperosToastController {
 
   static void _removeEntry() {
     _requestDismiss = null;
-    _entry?.remove();
+    final entry = _entry;
     _entry = null;
+    if (entry == null) {
+      return;
+    }
+    // Never remove mid-layout; bottom sheets may still be measuring.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      entry.remove();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        entry.remove();
+      });
+    }
   }
 
   static void show({
@@ -241,50 +256,72 @@ abstract final class _HyperosToastController {
       return;
     }
 
-    // Drop any legacy Material snackbars so only one toast channel is visible.
     ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
 
-    // Instantly replace any previous toast (system also replaces quickly).
-    _removeEntry();
-
-    late final OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (overlayContext) {
-        return _HyperosToastOverlay(
-          message: message,
-          description: description,
-          icon: icon,
-          iconColor: iconColor,
-          actionLabel: actionLabel,
-          onAction: onAction,
-          duration: duration,
-          registerDismiss: (requestDismiss) {
-            if (_entry == entry) {
-              _requestDismiss = requestDismiss;
-            }
-          },
-          onRemoved: () {
-            if (_entry == entry) {
-              _removeEntry();
-            } else {
-              entry.remove();
-            }
-          },
-        );
-      },
+    final content = _HyperosToastContent(
+      message: message,
+      description: description,
+      icon: icon,
+      iconColor: iconColor,
+      actionLabel: actionLabel,
+      onAction: onAction,
+      duration: duration,
     );
 
-    _entry = entry;
-    overlayState.insert(entry);
+    // Prefer in-place update on a long-lived host. Creating/destroying
+    // FadeTransition + AnimationController while a modal bottom sheet is
+    // laying out triggers ChangeNotifier.debugAssertNotDisposed.
+    final hostState = _HyperosToastHostState.current;
+    if (hostState != null && hostState.mounted && _entry != null) {
+      hostState.showContent(content);
+      return;
+    }
+
+    void insertHost() {
+      final liveHost = _HyperosToastHostState.current;
+      if (liveHost != null && liveHost.mounted && _entry != null) {
+        liveHost.showContent(content);
+        return;
+      }
+
+      late final OverlayEntry entry;
+      entry = OverlayEntry(
+        builder: (overlayContext) {
+          return _HyperosToastHost(
+            initialContent: content,
+            registerDismiss: (requestDismiss) {
+              if (_entry == entry) {
+                _requestDismiss = requestDismiss;
+              }
+            },
+            onDismissed: () {
+              if (_entry == entry) {
+                _removeEntry();
+              }
+            },
+          );
+        },
+      );
+      _entry = entry;
+      overlayState.insert(entry);
+    }
+
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      insertHost();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        insertHost();
+      });
+    }
   }
 }
 
-class _HyperosToastOverlay extends StatefulWidget {
-  const _HyperosToastOverlay({
+class _HyperosToastContent {
+  const _HyperosToastContent({
     required this.message,
     required this.duration,
-    required this.registerDismiss,
-    required this.onRemoved,
     this.description,
     this.icon,
     this.iconColor,
@@ -299,56 +336,77 @@ class _HyperosToastOverlay extends StatefulWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final Duration duration;
-  final void Function(VoidCallback requestDismiss) registerDismiss;
-  final VoidCallback onRemoved;
-
-  @override
-  State<_HyperosToastOverlay> createState() => _HyperosToastOverlayState();
 }
 
-class _HyperosToastOverlayState extends State<_HyperosToastOverlay>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _opacity;
-  late final Animation<double> _scale;
+class _HyperosToastHost extends StatefulWidget {
+  const _HyperosToastHost({
+    required this.initialContent,
+    required this.registerDismiss,
+    required this.onDismissed,
+  });
+
+  final _HyperosToastContent initialContent;
+  final void Function(VoidCallback requestDismiss) registerDismiss;
+  final VoidCallback onDismissed;
+
+  @override
+  State<_HyperosToastHost> createState() => _HyperosToastHostState();
+}
+
+class _HyperosToastHostState extends State<_HyperosToastHost> {
+  static _HyperosToastHostState? current;
+
+  late _HyperosToastContent _content = widget.initialContent;
+  double _opacity = 0;
+  double _scale = HyperosMiuixSnackbar.enterScale;
   Timer? _autoHideTimer;
   bool _isExiting = false;
+  int _showGeneration = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: HyperosMiuixSnackbar.enterMs),
-      reverseDuration: const Duration(
-        milliseconds: HyperosMiuixSnackbar.exitMs,
-      ),
-    );
-    _opacity = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-    _scale = Tween<double>(begin: HyperosMiuixSnackbar.enterScale, end: 1)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Curves.easeOutCubic,
-            reverseCurve: Curves.easeInCubic,
-          ),
-        );
-
+    current = this;
     widget.registerDismiss(_dismiss);
-    _controller.forward();
-    _scheduleAutoHide();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _opacity = 1;
+        _scale = 1;
+      });
+      _scheduleAutoHide(_content.duration);
+    });
   }
 
-  void _scheduleAutoHide() {
-    _autoHideTimer?.cancel();
-    if (widget.duration <= Duration.zero) {
+  void showContent(_HyperosToastContent content) {
+    if (!mounted) {
       return;
     }
-    _autoHideTimer = Timer(widget.duration, _dismiss);
+    _showGeneration += 1;
+    _isExiting = false;
+    _autoHideTimer?.cancel();
+    setState(() {
+      _content = content;
+      _opacity = 1;
+      _scale = 1;
+    });
+    _scheduleAutoHide(content.duration);
+  }
+
+  void _scheduleAutoHide(Duration duration) {
+    _autoHideTimer?.cancel();
+    if (duration <= Duration.zero) {
+      return;
+    }
+    final generation = _showGeneration;
+    _autoHideTimer = Timer(duration, () {
+      if (!mounted || generation != _showGeneration) {
+        return;
+      }
+      unawaited(_dismiss());
+    });
   }
 
   Future<void> _dismiss() async {
@@ -357,14 +415,21 @@ class _HyperosToastOverlayState extends State<_HyperosToastOverlay>
     }
     _isExiting = true;
     _autoHideTimer?.cancel();
-    await _controller.reverse();
-    if (mounted) {
-      widget.onRemoved();
+    setState(() {
+      _opacity = 0;
+      _scale = HyperosMiuixSnackbar.enterScale;
+    });
+    await Future<void>.delayed(
+      const Duration(milliseconds: HyperosMiuixSnackbar.exitMs),
+    );
+    if (!mounted) {
+      return;
     }
+    widget.onDismissed();
   }
 
   void _handleAction() {
-    final action = widget.onAction;
+    final action = _content.onAction;
     if (action == null) {
       return;
     }
@@ -375,7 +440,9 @@ class _HyperosToastOverlayState extends State<_HyperosToastOverlay>
   @override
   void dispose() {
     _autoHideTimer?.cancel();
-    _controller.dispose();
+    if (identical(current, this)) {
+      current = null;
+    }
     super.dispose();
   }
 
@@ -384,9 +451,10 @@ class _HyperosToastOverlayState extends State<_HyperosToastOverlay>
     final bottom =
         MediaQuery.paddingOf(context).bottom +
         HyperosMiuixSnackbar.hostBottomPadding;
+    final animMs = _opacity >= 1
+        ? HyperosMiuixSnackbar.enterMs
+        : HyperosMiuixSnackbar.exitMs;
 
-    // [Overlay] is a [Stack]. Pin to bottom center without stretching width:
-    // left+right together force a full-width child; use only bottom + Align.
     return Positioned(
       left: 0,
       right: 0,
@@ -397,19 +465,26 @@ class _HyperosToastOverlayState extends State<_HyperosToastOverlay>
           padding: const EdgeInsets.symmetric(
             horizontal: HyperosMiuixSnackbar.outerPaddingHorizontal,
           ),
-          child: FadeTransition(
+          // Implicit animations only — no AnimationController for the toast
+          // transitions, so modal sheet layout cannot addListener on a disposed
+          // ticker.
+          child: AnimatedOpacity(
             opacity: _opacity,
-            child: ScaleTransition(
+            duration: Duration(milliseconds: animMs),
+            curve: Curves.easeOutCubic,
+            child: AnimatedScale(
               scale: _scale,
+              duration: Duration(milliseconds: animMs),
+              curve: Curves.easeOutCubic,
               child: Material(
                 type: MaterialType.transparency,
                 child: HyperosToastCapsule(
-                  message: widget.message,
-                  description: widget.description,
-                  icon: widget.icon,
-                  iconColor: widget.iconColor,
-                  actionLabel: widget.actionLabel,
-                  onAction: widget.onAction == null ? null : _handleAction,
+                  message: _content.message,
+                  description: _content.description,
+                  icon: _content.icon,
+                  iconColor: _content.iconColor,
+                  actionLabel: _content.actionLabel,
+                  onAction: _content.onAction == null ? null : _handleAction,
                 ),
               ),
             ),

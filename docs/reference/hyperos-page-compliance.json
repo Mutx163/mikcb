@@ -132,6 +132,15 @@
       "notes": "Bottom sheet 入口；使用 showHyperosSheet"
     },
     {
+      "id": "location-time-match",
+      "file": "lib/screens/location_time_match_screen.dart",
+      "label": "地点匹配时间模板",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "时间方案管理子页：地点组 → 时间模板"
+    },
+    {
       "id": "live-settings-subpages",
       "file": "lib/screens/live_settings_subpages.dart",
       "label": "超级岛子页群",

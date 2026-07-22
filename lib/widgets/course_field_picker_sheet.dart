@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -98,149 +97,129 @@ class _CourseFieldPickerSheetBody extends StatelessWidget {
             ? suggestions
             : suggestions.where((s) => s.contains(query)).toList();
 
-        return PickerSheetScaffold(
-          actions: Row(
-            children: [
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.cancelAction,
-                  variant: HyperosButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.saveAction,
-                  expand: true,
-                  onPressed: () {
-                    onConfirmed();
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(title, style: HyperosTypography.sheetTitle(context)),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.search,
-                    size: 20,
-                    color: context.theme.colors.mutedForeground,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: HyperosTextField(
-                      controller: controller,
-                      hint: l10n.manualInputLabel,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) {
-                        onConfirmed();
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ),
-                  if (controller.text.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: controller.clear,
-                    ),
-                ],
-              ),
-              if (filtered.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  l10n.historyRecordsLabel,
-                  style: context.theme.typography.body.xs2.copyWith(
-                    color: context.theme.colors.mutedForeground,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+        // Fixed-height sheet + lazy ListView. Never paint every suggestion as a
+        // chip in one frame (uniqueLocations can be huge and freeze the UI).
+        final viewInsets = MediaQuery.viewInsetsOf(context);
+        final availableHeight =
+            MediaQuery.sizeOf(context).height - viewInsets.bottom;
+        final maxHeight = availableHeight * 0.72;
+
+        return HyperosSheetFrame(
+          maxHeight: maxHeight,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: SizedBox(
+            height: maxHeight - 48,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(title, style: HyperosTypography.sheetTitle(context)),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    for (final suggestion in filtered)
-                      _HistorySuggestionChip(
-                        label: suggestion,
-                        selected: query == suggestion,
-                        onSelected: () {
-                          controller.text = suggestion;
+                    Icon(
+                      Icons.search,
+                      size: 20,
+                      color: HyperosColors.secondaryText(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: HyperosTextField(
+                        controller: controller,
+                        hint: l10n.manualInputLabel,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) {
                           onConfirmed();
                           Navigator.of(context).pop();
                         },
                       ),
+                    ),
+                    if (controller.text.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: controller.clear,
+                      ),
                   ],
                 ),
-              ] else if (suggestions.isNotEmpty && query.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Text(
-                  l10n.noHistoryRecords,
-                  style: context.theme.typography.body.xs2.copyWith(
-                    color: context.theme.colors.mutedForeground,
-                  ),
+                  l10n.historyRecordsLabel,
+                  style: HyperosTypography.listDetail(context),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            l10n.noHistoryRecords,
+                            style: HyperosTypography.listDetail(context),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final suggestion = filtered[index];
+                            final selected = query == suggestion;
+                            return Material(
+                              type: MaterialType.transparency,
+                              child: InkWell(
+                                onTap: () {
+                                  controller.text = suggestion;
+                                  onConfirmed();
+                                  Navigator.of(context).pop();
+                                },
+                                borderRadius: BorderRadius.circular(
+                                  HyperosTokens.controlRadius,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 12,
+                                  ),
+                                  child: Text(
+                                    suggestion,
+                                    style: HyperosTypography.listTitle(context)
+                                        .copyWith(
+                                          color: selected
+                                              ? HyperosColors.primary(context)
+                                              : null,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: HyperosButton(
+                        label: l10n.cancelAction,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: HyperosButton(
+                        label: l10n.saveAction,
+                        expand: true,
+                        onPressed: () {
+                          onConfirmed();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ],
+            ),
           ),
         );
       },
-    );
-  }
-}
-
-class _HistorySuggestionChip extends StatelessWidget {
-  const _HistorySuggestionChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-    final typo = context.theme.typography.body;
-    final colorScheme = Theme.of(context).colorScheme;
-    final highlight = selected ? colorScheme.primary : colors.foreground;
-
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onSelected,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected
-                ? highlight.withValues(alpha: 0.14)
-                : colors.muted.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected
-                  ? highlight.withValues(alpha: 0.45)
-                  : colors.border,
-            ),
-          ),
-          child: Text(
-            label,
-            style: typo.xs2.copyWith(
-              color: highlight,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

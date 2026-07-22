@@ -1187,31 +1187,71 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final locationText = index < _entryLocationControllers.length
         ? _entryLocationControllers[index].text
         : entry.location;
-    final locationMatch = entry.timeSchemeIdOverride == null
+    // Never mutate draft entry during build — use [locationText] for resolve
+    // only. Controllers are flushed to entry on save / picker confirm.
+    final isAutoMode = entry.timeSchemeIdOverride == null;
+    final locationMatch = isAutoMode
         ? provider.matchLocationTime(locationText)
         : null;
-    final matchedSchemeName = locationMatch == null
-        ? null
-        : provider.timeSchemes
-              .where((scheme) => scheme.id == locationMatch.timeSchemeId)
-              .map((scheme) => scheme.name)
-              .firstOrNull;
-    final currentName = entry.timeSchemeIdOverride == null
-        ? (locationMatch != null && matchedSchemeName != null
-              ? l10n.locationTimeMatchedSchemeHint(
-                  locationMatch.groupName,
-                  matchedSchemeName,
-                )
-              : l10n.followLocationAutoTimeScheme)
-        : provider.timeSchemes
-                  .where((s) => s.id == entry.timeSchemeIdOverride)
-                  .firstOrNull
-                  ?.name ??
-              l10n.followCurrentTimetableWithName(followLabel);
+    final resolvedScheme = _resolveEntryTimeScheme(
+      provider,
+      entry,
+      locationOverride: locationText,
+    );
+    final sectionCount = resolvedScheme?.sections.length ?? 0;
+    final clockHint =
+        resolvedScheme != null &&
+            entry.startSection >= 1 &&
+            entry.endSection <= sectionCount
+        ? '${resolvedScheme.sections[entry.startSection - 1].startTime}'
+              '-${resolvedScheme.sections[entry.endSection - 1].endTime}'
+        : null;
+
+    // Always surface the *effective* scheme name. "Follow auto" is a mode, not
+    // a scheme — users expect to see which template will actually be used.
+    final String currentName;
+    String? autoResolvedSubtitle;
+    if (!isAutoMode) {
+      currentName =
+          provider.timeSchemes
+              .where((scheme) => scheme.id == entry.timeSchemeIdOverride)
+              .firstOrNull
+              ?.name ??
+          l10n.followCurrentTimetableWithName(followLabel);
+    } else if (resolvedScheme != null) {
+      if (locationMatch != null) {
+        currentName = compact
+            ? resolvedScheme.name
+            : l10n.locationTimeMatchedSchemeHint(resolvedScheme.name);
+        autoResolvedSubtitle = l10n.locationTimeAutoResolvedByGroup(
+          locationMatch.groupName,
+          resolvedScheme.name,
+        );
+      } else {
+        currentName = compact
+            ? resolvedScheme.name
+            : l10n.followCurrentTimetableWithName(resolvedScheme.name);
+        autoResolvedSubtitle = l10n.locationTimeAutoResolvedByTimetable(
+          resolvedScheme.name,
+        );
+      }
+    } else {
+      currentName = l10n.followLocationAutoTimeScheme;
+      autoResolvedSubtitle = null;
+    }
+
+    // Compact row is single-line with ellipsis: put the clock first so
+    // truncation eats the scheme name, not the times.
+    final displayValue = clockHint == null
+        ? currentName
+        : compact
+        ? '$clockHint · $currentName'
+        : '$currentName · $clockHint';
     void onPress() {
       showTimeSchemePickerSheet(
         context,
         currentValue: entry.timeSchemeIdOverride,
+        autoResolvedSubtitle: autoResolvedSubtitle,
         onSelected: (value) {
           setState(() {
             entry.timeSchemeIdOverride = value;
@@ -1225,13 +1265,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     if (compact) {
       return _buildCompactPickerField(
         label: l10n.timeSchemeLabel,
-        value: currentName,
+        value: displayValue,
         onPress: onPress,
       );
     }
     return _buildPickerTile(
       label: l10n.timeSchemeLabel,
-      value: currentName,
+      value: displayValue,
       icon: Icons.schedule_rounded,
       onPress: onPress,
     );
@@ -1876,6 +1916,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         timeSchemeId: entry.timeSchemeIdOverride,
         startSection: entry.startSection,
         endSection: entry.endSection,
+        location: entry.location,
       );
       if (validationMessage != null) {
         showAppToast(
@@ -1964,17 +2005,28 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   TimeScheme? _resolveEntryTimeScheme(
     TimetableProvider provider,
-    _ScheduleEntryData entry,
-  ) {
-    if (entry.timeSchemeIdOverride == null) {
-      return provider.activeTimeScheme;
-    }
-    for (final scheme in provider.timeSchemes) {
-      if (scheme.id == entry.timeSchemeIdOverride) {
-        return scheme;
-      }
-    }
-    return null;
+    _ScheduleEntryData entry, {
+    String? locationOverride,
+  }) {
+    // Keep the same priority as runtime resolve:
+    // override > location match > date rule > active timetable scheme.
+    // Using only [activeTimeScheme] here would discard location routing when
+    // the user leaves the entry on "follow auto", and overwrite applied clocks
+    // on the next save.
+    return provider.resolveCourseTimeScheme(
+      Course(
+        id: entry.id,
+        name: '_',
+        teacher: entry.teacher,
+        location: locationOverride ?? entry.location,
+        dayOfWeek: entry.dayOfWeek,
+        startSection: entry.startSection,
+        endSection: entry.endSection,
+        startTime: '08:00',
+        endTime: '09:00',
+        timeSchemeIdOverride: entry.timeSchemeIdOverride,
+      ),
+    );
   }
 }
 

@@ -33,6 +33,9 @@ class _TimeSchemeManagementScreenState
     extends State<TimeSchemeManagementScreen> {
   bool _didOpenInitialAction = false;
 
+  /// Stable menu anchors per scheme card (must not be recreated each build).
+  final Map<String, GlobalKey> _schemeMenuAnchorKeys = {};
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -77,175 +80,150 @@ class _TimeSchemeManagementScreenState
               onPress: () => _createScheme(context),
             ),
           ],
-          child: HyperosBlurredBodyInset(
-            child: ListView(
-              padding: HyperosTokens.listPadding,
-              children: [
-                HyperosListGroup(
-                  children: [
-                    HyperosListTile(
-                      icon: Icons.place_outlined,
-                      iconAccent: HyperosIconColors.orange,
-                      title: l10n.locationTimeMatchEntryTitle,
-                      details: provider.locationTimeGroups.isEmpty
-                          ? null
-                          : '${provider.locationTimeGroups.length}',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          HyperosPageRoute(
-                            builder: (_) => const LocationTimeMatchScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    HyperosListTile(
-                      icon: Icons.event_available_outlined,
-                      iconAccent: HyperosIconColors.teal,
-                      title: l10n.scheduleDateRuleSectionTitle,
-                      details: dateRules.isEmpty
-                          ? null
-                          : activeDateRule == null
-                          ? '${dateRules.length}'
-                          : l10n.scheduleDateRuleActiveToday,
-                      onTap: () =>
-                          _openScheduleDateRuleEditor(context, existing: null),
-                    ),
-                  ],
-                ),
-                if (dateRules.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  ...dateRules.map((rule) {
-                    final schemeName = provider.timeSchemes
-                        .where((scheme) => scheme.id == rule.timeSchemeId)
-                        .map((scheme) => scheme.name)
-                        .firstOrNull;
-                    final isActiveToday = activeDateRule?.id == rule.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Material(
-                        color: HyperosColors.card(context),
-                        shape: HyperosTheme.cardShape(),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () => _openScheduleDateRuleEditor(
-                            context,
-                            existing: rule,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        rule.name,
-                                        style: context.theme.typography.body.md
-                                            .copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        l10n.scheduleDateRuleRangeSummary(
-                                          rule.startDate,
-                                          rule.endDate,
-                                        ),
-                                        style: context.theme.typography.body.sm
-                                            .copyWith(
-                                              color: context
-                                                  .theme
-                                                  .colors
-                                                  .mutedForeground,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        schemeName ??
-                                            l10n.locationTimeMatchUnknownScheme,
-                                        style: context.theme.typography.body.sm
-                                            .copyWith(
-                                              color: context
-                                                  .theme
-                                                  .colors
-                                                  .mutedForeground,
-                                            ),
-                                      ),
-                                      if (isActiveToday) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          l10n.scheduleDateRuleActiveToday,
-                                          style: context
-                                              .theme
-                                              .typography
-                                              .body
-                                              .xs
-                                              .copyWith(
-                                                color: context
-                                                    .theme
-                                                    .colors
-                                                    .primary,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.deleteAction,
-                                  onPressed: () =>
-                                      _deleteScheduleDateRule(context, rule),
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                              ],
-                            ),
-                          ),
+          child: HyperosListView(
+            children: [
+              HyperosListGroup(
+                children: [
+                  HyperosListTile(
+                    icon: Icons.place_outlined,
+                    iconAccent: HyperosIconColors.orange,
+                    title: l10n.locationTimeMatchEntryTitle,
+                    details: provider.locationTimeGroups.isEmpty
+                        ? null
+                        : '${provider.locationTimeGroups.length}',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        HyperosPageRoute(
+                          builder: (_) => const LocationTimeMatchScreen(),
                         ),
-                      ),
-                    );
-                  }),
-                ] else ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.scheduleDateRuleEmpty,
-                    style: context.theme.typography.body.sm.copyWith(
-                      color: context.theme.colors.mutedForeground,
-                    ),
+                      );
+                    },
+                  ),
+                  HyperosListTile(
+                    icon: Icons.event_available_outlined,
+                    iconAccent: HyperosIconColors.teal,
+                    title: l10n.scheduleDateRuleSectionTitle,
+                    details: dateRules.isEmpty
+                        ? null
+                        : activeDateRule == null
+                        ? '${dateRules.length}'
+                        : l10n.scheduleDateRuleActiveToday,
+                    onTap: () =>
+                        _openScheduleDateRuleEditor(context, existing: null),
                   ),
                 ],
-                const SizedBox(height: 4),
-                Text(
-                  l10n.scheduleDateRuleNote,
-                  style: context.theme.typography.body.xs.copyWith(
-                    color: context.theme.colors.mutedForeground,
+              ),
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.scheduleDateRuleSectionTitle),
+              if (dateRules.isEmpty)
+                HyperosListGroup(
+                  children: [
+                    HyperosNavTile(
+                      title: l10n.scheduleDateRuleEmpty,
+                      enabled: false,
+                      showChevron: false,
+                    ),
+                  ],
+                )
+              else ...[
+                for (var index = 0; index < dateRules.length; index++) ...[
+                  if (index > 0) const HyperosSectionGap(),
+                  _buildDateRuleCard(
+                    context,
+                    provider,
+                    dateRules[index],
+                    isActiveToday: activeDateRule?.id == dateRules[index].id,
                   ),
-                ),
-                const SizedBox(height: 12),
-                ...List.generate(schemes.length, (index) {
-                  final scheme = schemes[index];
-                  final isActive = scheme.id == activeSchemeId;
-                  final usage = _buildUsageSummary(provider, scheme.id);
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == schemes.length - 1 ? 0 : 8,
-                    ),
-                    child: _buildSchemeCard(
-                      context,
-                      scheme: scheme,
-                      usage: usage,
-                      isActive: isActive,
-                    ),
-                  );
-                }),
+                ],
               ],
-            ),
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.timeSchemeEntryTitle),
+              if (schemes.isEmpty)
+                HyperosListGroup(
+                  children: [
+                    HyperosNavTile(
+                      title: l10n.locationTimeMatchNeedTimeScheme,
+                      enabled: false,
+                      showChevron: false,
+                    ),
+                  ],
+                )
+              else ...[
+                for (var index = 0; index < schemes.length; index++) ...[
+                  if (index > 0) const HyperosSectionGap(),
+                  _buildSchemeCard(
+                    context,
+                    scheme: schemes[index],
+                    usage: _buildUsageSummary(provider, schemes[index].id),
+                    isActive: schemes[index].id == activeSchemeId,
+                  ),
+                ],
+              ],
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDateRuleCard(
+    BuildContext context,
+    TimetableProvider provider,
+    ScheduleDateRule rule, {
+    required bool isActiveToday,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final schemeName =
+        provider.timeSchemes
+            .where((scheme) => scheme.id == rule.timeSchemeId)
+            .map((scheme) => scheme.name)
+            .firstOrNull ??
+        l10n.locationTimeMatchUnknownScheme;
+
+    return HyperosControlCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(rule.name, style: HyperosTypography.listTitle(context)),
+          const SizedBox(height: 4),
+          Text(
+            l10n.scheduleDateRuleRangeSummary(rule.startDate, rule.endDate),
+            style: HyperosTypography.listDetail(context),
+          ),
+          const SizedBox(height: 2),
+          Text(schemeName, style: HyperosTypography.listDetail(context)),
+          if (isActiveToday) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.scheduleDateRuleActiveToday,
+              style: HyperosTypography.listDetail(
+                context,
+              ).copyWith(color: HyperosColors.primary(context)),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.editAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () =>
+                      _openScheduleDateRuleEditor(context, existing: rule),
+                ),
+              ),
+              const SizedBox(width: 8),
+              HyperosButton(
+                label: l10n.deleteAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: () => _deleteScheduleDateRule(context, rule),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -304,117 +282,81 @@ class _TimeSchemeManagementScreenState
         provider.timeSchemes.first.id;
     var enabled = existing?.enabled ?? true;
 
-    final saved = await showDialog<bool>(
+    final saved = await showHyperosDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            Future<void> pickStart() async {
-              final picked = await showDatePicker(
-                context: dialogContext,
-                initialDate: startDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2040),
-              );
-              if (picked != null) {
-                setDialogState(() {
-                  startDate = picked;
-                  if (endDate.isBefore(startDate)) {
-                    endDate = startDate;
-                  }
-                });
-              }
-            }
-
-            Future<void> pickEnd() async {
-              final picked = await showDatePicker(
-                context: dialogContext,
-                initialDate: endDate.isBefore(startDate) ? startDate : endDate,
-                firstDate: startDate,
-                lastDate: DateTime(2040),
-              );
-              if (picked != null) {
-                setDialogState(() => endDate = picked);
-              }
-            }
-
-            return AlertDialog(
-              title: Text(
-                existing == null
-                    ? l10n.scheduleDateRuleAdd
-                    : l10n.scheduleDateRuleEdit,
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    HyperosTextField(
-                      controller: nameController,
-                      label: l10n.scheduleDateRuleNameLabel,
-                      hint: l10n.scheduleDateRuleNameHint,
-                    ),
-                    const SizedBox(height: 12),
-                    HyperosListTile(
-                      icon: Icons.event_outlined,
-                      title: l10n.scheduleDateRuleStartDate,
-                      details: ScheduleDateRuleLogic.formatIsoDate(startDate),
-                      onTap: pickStart,
-                    ),
-                    HyperosListTile(
-                      icon: Icons.event_outlined,
-                      title: l10n.scheduleDateRuleEndDate,
-                      details: ScheduleDateRuleLogic.formatIsoDate(endDate),
-                      onTap: pickEnd,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.scheduleDateRuleBoundScheme,
-                      style: dialogContext.theme.typography.body.sm,
-                    ),
-                    const SizedBox(height: 4),
-                    DropdownButton<String>(
-                      isExpanded: true,
-                      value: selectedSchemeId,
-                      items: provider.timeSchemes
-                          .map(
-                            (scheme) => DropdownMenuItem(
-                              value: scheme.id,
-                              child: Text(scheme.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value == null) {
-                          return;
-                        }
-                        setDialogState(() => selectedSchemeId = value);
-                      },
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.scheduleDateRuleEnabled),
-                      value: enabled,
-                      onChanged: (value) =>
-                          setDialogState(() => enabled = value),
-                    ),
-                  ],
+      title: existing == null
+          ? l10n.scheduleDateRuleAdd
+          : l10n.scheduleDateRuleEdit,
+      body: StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final schemeItems = _timeSchemeSelectItems(provider.timeSchemes);
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                HyperosTextField(
+                  controller: nameController,
+                  label: l10n.scheduleDateRuleNameLabel,
+                  hint: l10n.scheduleDateRuleNameHint,
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(l10n.cancelAction),
+                const SizedBox(height: 12),
+                HyperosDateTile(
+                  label: l10n.scheduleDateRuleStartDate,
+                  value: startDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2040),
+                  onChanged: (picked) {
+                    setDialogState(() {
+                      startDate = picked;
+                      if (endDate.isBefore(startDate)) {
+                        endDate = startDate;
+                      }
+                    });
+                  },
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: Text(l10n.saveAction),
+                const SizedBox(height: 8),
+                HyperosDateTile(
+                  label: l10n.scheduleDateRuleEndDate,
+                  value: endDate,
+                  firstDate: startDate,
+                  lastDate: DateTime(2040),
+                  onChanged: (picked) {
+                    setDialogState(() => endDate = picked);
+                  },
+                ),
+                const SizedBox(height: 8),
+                HyperosSelectTile<String>(
+                  label: l10n.scheduleDateRuleBoundScheme,
+                  items: schemeItems,
+                  value: selectedSchemeId,
+                  useSheetForPopup: true,
+                  onChanged: (value) {
+                    setDialogState(() => selectedSchemeId = value);
+                  },
+                ),
+                const SizedBox(height: 8),
+                HyperosSwitchTile(
+                  title: l10n.scheduleDateRuleEnabled,
+                  value: enabled,
+                  onChanged: (value) => setDialogState(() => enabled = value),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        HyperosDialogAction(
+          label: l10n.saveAction,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context, true),
+        ),
+      ],
     );
 
     final name = nameController.text.trim();
@@ -517,176 +459,165 @@ class _TimeSchemeManagementScreenState
     required bool isActive,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
-    return Material(
-      color: HyperosColors.card(context),
-      shape: HyperosTheme.cardShape(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isActive ? null : () => _applyScheme(context, scheme),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final menuAnchorKey = _schemeMenuAnchorKeys.putIfAbsent(
+      scheme.id,
+      GlobalKey.new,
+    );
+    return HyperosControlCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color:
-                          (isActive ? theme.colors.primary : theme.colors.muted)
-                              .withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      isActive
-                          ? Icons.schedule_rounded
-                          : Icons.access_time_rounded,
-                      color: isActive
-                          ? theme.colors.primary
-                          : theme.colors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          scheme.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.typography.body.md.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.timeSchemeSummary(
-                            scheme.sectionCount,
-                            usage.profileCount,
-                            usage.courseCount,
-                            usage.overrideCourseCount,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.typography.body.xs.copyWith(
-                            color: theme.colors.mutedForeground,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    tooltip: l10n.moreActionsTooltip,
-                    onSelected: (value) async {
-                      switch (value) {
-                        case 'usage':
-                          await _showUsageDetails(context, scheme, usage);
-                          break;
-                        case 'apply':
-                          await _applyScheme(context, scheme);
-                          break;
-                        case 'edit':
-                          await _openEditor(scheme.id);
-                          break;
-                        case 'rename':
-                          await _renameScheme(context, scheme);
-                          break;
-                        case 'duplicate':
-                          await context
-                              .read<TimetableProvider>()
-                              .duplicateTimeScheme(scheme.id);
-                          if (context.mounted) {
-                            showAppToast(
-                              context,
-                              message: l10n.copiedTimeSchemeMessage,
-                              kind: AppToastKind.success,
-                            );
-                          }
-                          break;
-                        case 'delete':
-                          await _deleteScheme(context, scheme);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      if (!usage.isUnused)
-                        PopupMenuItem(
-                          value: 'usage',
-                          child: Text(l10n.viewUsageAction),
-                        ),
-                      if (!isActive)
-                        PopupMenuItem(
-                          value: 'apply',
-                          child: Text(l10n.applyToCurrentTimetable),
-                        ),
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text(l10n.editSectionsAction),
-                      ),
-                      PopupMenuItem(
-                        value: 'rename',
-                        child: Text(l10n.renameAction),
-                      ),
-                      PopupMenuItem(
-                        value: 'duplicate',
-                        child: Text(l10n.duplicateAction),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        enabled: usage.isUnused,
-                        child: Text(
-                          l10n.deleteAction,
-                          style: TextStyle(
-                            color: usage.isUnused
-                                ? theme.colors.destructive
-                                : theme.colors.mutedForeground,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              HyperosIconBadge(
+                icon: isActive
+                    ? Icons.schedule_rounded
+                    : Icons.access_time_rounded,
+                accent: isActive
+                    ? HyperosIconColors.teal
+                    : HyperosIconColors.blue,
               ),
-              const SizedBox(height: 4),
-              Text(
-                scheme.sectionCount > 1
-                    ? l10n.timeSchemeStartsAt(scheme.sections.first.displayText)
-                    : scheme.sections.first.displayText,
-                style: theme.typography.body.sm.copyWith(
-                  color: theme.colors.mutedForeground,
+              const SizedBox(width: HyperosTokens.rowContentGap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      scheme.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.timeSchemeSummary(
+                        scheme.sectionCount,
+                        usage.profileCount,
+                        usage.courseCount,
+                        usage.overrideCourseCount,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HyperosTypography.listDetail(context),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: HyperosButton(
-                      label: isActive
-                          ? l10n.usingNow
-                          : l10n.applyToCurrentTimetable,
-                      variant: HyperosButtonVariant.secondary,
-                      expand: true,
-                      onPressed: isActive
-                          ? null
-                          : () => _applyScheme(context, scheme),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  HyperosButton(
-                    label: l10n.editSectionsAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: () => _openEditor(scheme.id),
-                  ),
-                ],
+              IconButton(
+                key: menuAnchorKey,
+                tooltip: l10n.moreActionsTooltip,
+                onPressed: () async {
+                  final value = await showHyperosListPopup<String>(
+                    context: context,
+                    position: hyperosPopupPositionBelow(context, menuAnchorKey),
+                    items: [
+                      if (!usage.isUnused)
+                        HyperosPopupMenuItem(
+                          label: l10n.viewUsageAction,
+                          value: 'usage',
+                        ),
+                      if (!isActive)
+                        HyperosPopupMenuItem(
+                          label: l10n.applyToCurrentTimetable,
+                          value: 'apply',
+                        ),
+                      HyperosPopupMenuItem(
+                        label: l10n.editSectionsAction,
+                        value: 'edit',
+                      ),
+                      HyperosPopupMenuItem(
+                        label: l10n.renameAction,
+                        value: 'rename',
+                      ),
+                      HyperosPopupMenuItem(
+                        label: l10n.duplicateAction,
+                        value: 'duplicate',
+                      ),
+                      HyperosPopupMenuItem(
+                        label: l10n.deleteAction,
+                        value: 'delete',
+                        destructive: true,
+                        enabled: usage.isUnused,
+                      ),
+                    ],
+                  );
+                  if (!context.mounted || value == null) {
+                    return;
+                  }
+                  switch (value) {
+                    case 'usage':
+                      await _showUsageDetails(context, scheme, usage);
+                      break;
+                    case 'apply':
+                      await _applyScheme(context, scheme);
+                      break;
+                    case 'edit':
+                      await _openEditor(scheme.id);
+                      break;
+                    case 'rename':
+                      await _renameScheme(context, scheme);
+                      break;
+                    case 'duplicate':
+                      await context
+                          .read<TimetableProvider>()
+                          .duplicateTimeScheme(scheme.id);
+                      if (context.mounted) {
+                        showAppToast(
+                          context,
+                          message: l10n.copiedTimeSchemeMessage,
+                          kind: AppToastKind.success,
+                        );
+                      }
+                      break;
+                    case 'delete':
+                      await _deleteScheme(context, scheme);
+                      break;
+                  }
+                },
+                icon: const Icon(Icons.more_horiz_rounded),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            scheme.sectionCount > 1
+                ? l10n.timeSchemeStartsAt(scheme.sections.first.displayText)
+                : scheme.sections.first.displayText,
+            style: HyperosTypography.listDetail(context),
+          ),
+          if (isActive) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.usingNow,
+              style: HyperosTypography.listDetail(
+                context,
+              ).copyWith(color: HyperosColors.primary(context)),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: isActive
+                      ? l10n.usingNow
+                      : l10n.applyToCurrentTimetable,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: isActive
+                      ? null
+                      : () => _applyScheme(context, scheme),
+                ),
+              ),
+              const SizedBox(width: 8),
+              HyperosButton(
+                label: l10n.editSectionsAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: () => _openEditor(scheme.id),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -868,7 +799,6 @@ class _TimeSchemeManagementScreenState
     final l10n = AppLocalizations.of(context)!;
     final directCourseReferences = usage.directCourseReferences;
     final overrideReferences = usage.overrideReferences;
-    final theme = context.theme;
     await showHyperosDialog<void>(
       context: context,
       title: l10n.timeSchemeUsageTitle(scheme.name),
@@ -881,9 +811,7 @@ class _TimeSchemeManagementScreenState
             children: [
               Text(
                 l10n.timeSchemeUsageIntro,
-                style: theme.typography.body.xs.copyWith(
-                  color: theme.colors.mutedForeground,
-                ),
+                style: HyperosTypography.listDetail(context),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -1399,40 +1327,23 @@ class _UsageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
+        color: HyperosColors.card(context),
+        borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
+        border: Border.all(color: HyperosColors.dividerLine(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(title, style: HyperosTypography.listTitle(context)),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(subtitle, style: HyperosTypography.listDetail(context)),
           const SizedBox(height: 10),
           if (items.isEmpty)
-            Text(
-              emptyText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            )
+            Text(emptyText, style: HyperosTypography.listDetail(context))
           else
             ...items.map((item) => item),
         ],
@@ -1449,8 +1360,6 @@ class _UsageLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1462,7 +1371,7 @@ class _UsageLine extends StatelessWidget {
               width: 5,
               height: 5,
               decoration: BoxDecoration(
-                color: colorScheme.primary,
+                color: HyperosColors.primary(context),
                 shape: BoxShape.circle,
               ),
             ),
@@ -1472,14 +1381,12 @@ class _UsageLine extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(primary, style: theme.textTheme.bodyMedium),
+                Text(primary, style: HyperosTypography.listTitle(context)),
                 if (secondary != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     secondary!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: HyperosTypography.listDetail(context),
                   ),
                 ],
               ],
@@ -1514,10 +1421,9 @@ class _TimeSchemeBadge extends StatelessWidget {
     return HyperosTag(
       label: text,
       backgroundColor: primary.withValues(alpha: 0.12),
-      textStyle: TextStyle(
-        fontSize: HyperosMiuixTypography.footnote2,
-        fontWeight: FontWeight.w700,
+      textStyle: HyperosTypography.listDetail(context).copyWith(
         color: primary,
+        fontSize: HyperosTokens.sectionDescriptionSize,
       ),
     );
   }
@@ -1526,6 +1432,24 @@ class _TimeSchemeBadge extends StatelessWidget {
 TimeOfDay _parseTimeOfDay(String value) {
   final parts = value.split(':');
   return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+}
+
+/// Select items for [HyperosSelectTile]: unique labels, values are scheme ids.
+/// Duplicate names get a short id suffix so Map keys never collapse.
+Map<String, String> _timeSchemeSelectItems(List<TimeScheme> schemes) {
+  final nameCounts = <String, int>{};
+  for (final scheme in schemes) {
+    nameCounts[scheme.name] = (nameCounts[scheme.name] ?? 0) + 1;
+  }
+  final items = <String, String>{};
+  for (final scheme in schemes) {
+    final hasDuplicateName = (nameCounts[scheme.name] ?? 0) > 1;
+    final label = hasDuplicateName
+        ? '${scheme.name} · ${scheme.id.substring(0, scheme.id.length.clamp(0, 8))}'
+        : scheme.name;
+    items[label] = scheme.id;
+  }
+  return items;
 }
 
 String _formatTimeOfDay(TimeOfDay time) {

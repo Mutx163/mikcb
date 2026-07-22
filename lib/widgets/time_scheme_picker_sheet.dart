@@ -12,12 +12,16 @@ Future<void> showTimeSchemePickerSheet(
   BuildContext context, {
   required String? currentValue,
   required ValueChanged<String?> onSelected,
+
+  /// When the entry is in auto mode, describes which scheme is currently used.
+  String? autoResolvedSubtitle,
 }) {
   return showHyperosSheet<void>(
     context: context,
     builder: (sheetContext) => _TimeSchemePickerSheetBody(
       hostContext: context,
       currentValue: currentValue,
+      autoResolvedSubtitle: autoResolvedSubtitle,
       onSelected: (value) {
         onSelected(value);
         Navigator.of(sheetContext).pop();
@@ -31,11 +35,13 @@ class _TimeSchemePickerSheetBody extends StatefulWidget {
     required this.hostContext,
     required this.currentValue,
     required this.onSelected,
+    this.autoResolvedSubtitle,
   });
 
   final BuildContext hostContext;
   final String? currentValue;
   final ValueChanged<String?> onSelected;
+  final String? autoResolvedSubtitle;
 
   @override
   State<_TimeSchemePickerSheetBody> createState() =>
@@ -93,7 +99,9 @@ class _TimeSchemePickerSheetBodyState
                   HyperosChoiceTile(
                     title: l10n.followLocationAutoTimeScheme,
                     subtitle: Text(
-                      l10n.followLocationAutoTimeSchemeDescription,
+                      widget.autoResolvedSubtitle?.trim().isNotEmpty == true
+                          ? widget.autoResolvedSubtitle!
+                          : l10n.followLocationAutoTimeSchemeDescription,
                     ),
                     selected: widget.currentValue == null,
                     highlightSelectedText: true,

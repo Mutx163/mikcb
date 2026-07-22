@@ -5,8 +5,10 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/location_time_group.dart';
+import '../models/time_scheme.dart';
 import '../providers/timetable/location_building_cluster_logic.dart';
 import '../providers/timetable_provider.dart';
+import '../logging/app_debug_log.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/course_field_picker_sheet.dart';
@@ -21,14 +23,6 @@ class LocationTimeMatchScreen extends StatefulWidget {
 }
 
 class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
-  final TextEditingController _previewController = TextEditingController();
-
-  @override
-  void dispose() {
-    _previewController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -36,17 +30,6 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
         final groups = provider.locationTimeGroups;
-        final previewMatch = provider.matchLocationTime(
-          _previewController.text,
-        );
-        final previewSchemeName = previewMatch == null
-            ? null
-            : provider.timeSchemes
-                      .where((scheme) => scheme.id == previewMatch.timeSchemeId)
-                      .map((scheme) => scheme.name)
-                      .firstOrNull ??
-                  l10n.locationTimeMatchUnknownScheme;
-
         return HyperosSubpage(
           onBack: () => Navigator.pop(context),
           title: Text(l10n.locationTimeMatchTitle),
@@ -59,82 +42,34 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
           ],
           child: HyperosListView(
             children: [
-              HyperosSectionLabel(text: l10n.locationTimeMatchTitle),
-              HyperosSectionDescription(text: l10n.locationTimeMatchSubtitle),
-              const SizedBox(height: 8),
-              HyperosSectionDescription(
-                text: l10n.locationTimeMatchWeekAxisNote,
-              ),
-              const HyperosSectionGap(),
-              HyperosSectionLabel(text: l10n.locationTimeMatchPreviewLabel),
-              HyperosControlCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    HyperosTextField(
-                      controller: _previewController,
-                      hint: l10n.locationTimeMatchPreviewHint,
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    HyperosButton(
-                      label: l10n.locationTimeMatchPickFromLocations,
-                      variant: HyperosButtonVariant.secondary,
-                      expand: true,
-                      onPressed: () async {
-                        final controller = TextEditingController(
-                          text: _previewController.text,
-                        );
-                        await showCourseFieldPickerSheet(
-                          context,
-                          title: l10n.selectLocationTitle,
-                          suggestions: provider.uniqueLocations,
-                          controller: controller,
-                          onConfirmed: () {
-                            _previewController.text = controller.text;
-                            setState(() {});
-                          },
-                        );
-                        controller.dispose();
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      previewMatch == null
-                          ? l10n.locationTimeMatchPreviewNoMatch
-                          : l10n.locationTimeMatchPreviewResult(
-                              previewMatch.groupName,
-                              previewSchemeName ?? '',
-                              previewMatch.matchedKeyword.pattern,
-                            ),
-                      style: HyperosTypography.listDetail(context).copyWith(
-                        color: previewMatch == null
-                            ? HyperosColors.secondaryText(context)
-                            : HyperosColors.primary(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const HyperosSectionGap(),
-              HyperosListGroup(
-                children: [
-                  HyperosActionTile(
-                    icon: Icons.playlist_add_check_rounded,
-                    title: l10n.locationTimeMatchApplyActive,
-                    onTap: () => _applyToActive(context, provider),
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.locationTimeMatchEntryTitle),
               if (groups.isEmpty)
-                HyperosSectionDescription(text: l10n.locationTimeMatchEmpty)
+                HyperosListGroup(
+                  children: [
+                    HyperosActionTile(
+                      icon: Icons.add_rounded,
+                      title: l10n.locationTimeMatchCreateGroup,
+                      onTap: () => _openEditor(context, provider),
+                    ),
+                  ],
+                )
               else ...[
                 for (var index = 0; index < groups.length; index++) ...[
                   if (index > 0) const HyperosSectionGap(),
                   _buildGroupCard(context, provider, groups[index]),
                 ],
+              ],
+              if (groups.isNotEmpty) ...[
+                const HyperosSectionGap(),
+                HyperosListGroup(
+                  children: [
+                    HyperosActionTile(
+                      icon: Icons.playlist_add_check_rounded,
+                      title: l10n.locationTimeMatchApplyActive,
+                      onTap: () => _applyToActive(context, provider),
+                    ),
+                  ],
+                ),
               ],
             ],
           ),
@@ -210,19 +145,57 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     TimetableProvider provider,
   ) async {
     final l10n = AppLocalizations.of(context)!;
+    appDebugLog(
+      'LocationTimeApplyUI',
+      '用户点击「应用到当前课表」 courses=${provider.courses.length} '
+          'groups=${provider.locationTimeGroups.length}',
+    );
     final stats = await provider.applyLocationTimeRulesToActiveProfile();
     if (!context.mounted) {
       return;
     }
-    showAppToast(
-      context,
-      message: l10n.locationTimeMatchApplyResult(
-        stats.matchedCount,
-        stats.updatedCount,
-        stats.unlockedCount,
-      ),
-      kind: AppToastKind.success,
+    appDebugLog(
+      'LocationTimeApplyUI',
+      '应用结果 toast: matched=${stats.matchedCount} updated=${stats.updatedCount} '
+          'unlocked=${stats.unlockedCount} sameClock=${stats.alreadySameClockCount} '
+          'overflow=${stats.sectionOverflowCount} '
+          'overflowNames=${stats.sectionOverflowCourseNames.join(",")}',
     );
+    final description = stats.updatedCount > 0
+        ? l10n.locationTimeMatchApplyHint
+        : stats.sectionOverflowCount > 0
+        ? l10n.locationTimeMatchApplyOverflowHint(
+            stats.sectionOverflowCount,
+            stats.sectionOverflowCourseNames.isEmpty
+                ? '-'
+                : stats.sectionOverflowCourseNames.join('、'),
+          )
+        : (stats.alreadySameClockCount > 0 || stats.matchedCount > 0)
+        ? l10n.locationTimeMatchApplyNoChangeHint
+        : l10n.locationTimeMatchApplyHint;
+    // Defer toast one frame so Overlay work never races modal sheet layout.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.locationTimeMatchApplyResult(
+          stats.matchedCount,
+          stats.updatedCount,
+          stats.unlockedCount,
+        ),
+        description: description,
+        duration: const Duration(
+          milliseconds: HyperosMiuixSnackbar.durationLongMs,
+        ),
+        kind: stats.updatedCount > 0
+            ? AppToastKind.success
+            : (stats.matchedCount > 0
+                  ? AppToastKind.warning
+                  : AppToastKind.info),
+      );
+    });
   }
 
   Future<void> _deleteGroup(
@@ -335,12 +308,37 @@ class _LocationTimeGroupEditorScreenState
         .toList();
   }
 
+  /// Editing an existing group must not treat its own keywords as conflicts.
+  String? get _editingGroupId => widget.existing?.id;
+
   bool _hasKeyword(String pattern) {
     final normalized = pattern.trim().toLowerCase();
     return _keywords.any(
       (draft) =>
           draft.patternController.text.trim().toLowerCase() == normalized,
     );
+  }
+
+  /// Returns owner group name when [pattern] is claimed elsewhere, else null.
+  String? _otherGroupOwningPattern(TimetableProvider provider, String pattern) {
+    return LocationTimeMatchLogic.groupNameOwningPattern(
+      provider.locationTimeGroups,
+      pattern,
+      excludingGroupId: _editingGroupId,
+    );
+  }
+
+  /// Classrooms free for this editor (not already matched by another group).
+  List<String> _availableLocations(TimetableProvider provider) {
+    return provider.uniqueLocations
+        .where(
+          (location) => !LocationTimeMatchLogic.isLocationClaimedByOtherGroups(
+            location,
+            provider.locationTimeGroups,
+            excludingGroupId: _editingGroupId,
+          ),
+        )
+        .toList();
   }
 
   void _addKeyword(LocationKeyword keyword, {bool showToast = true}) {
@@ -355,6 +353,18 @@ class _LocationTimeGroupEditorScreenState
           context,
           message: l10n.locationTimeMatchKeywordAlreadyExists,
           kind: AppToastKind.info,
+        );
+      }
+      return;
+    }
+    final provider = context.read<TimetableProvider>();
+    final ownerName = _otherGroupOwningPattern(provider, pattern);
+    if (ownerName != null) {
+      if (showToast) {
+        showAppToast(
+          context,
+          message: l10n.locationTimeMatchKeywordUsedByGroup(ownerName),
+          kind: AppToastKind.warning,
         );
       }
       return;
@@ -384,11 +394,14 @@ class _LocationTimeGroupEditorScreenState
       return;
     }
 
+    final provider = context.read<TimetableProvider>();
     final addedPatterns = <String>[];
     setState(() {
       for (final cluster in uncovered) {
         final pattern = cluster.suggestedKeyword.pattern.trim();
-        if (pattern.isEmpty || _hasKeyword(pattern)) {
+        if (pattern.isEmpty ||
+            _hasKeyword(pattern) ||
+            _otherGroupOwningPattern(provider, pattern) != null) {
           continue;
         }
         _keywords.add(
@@ -443,7 +456,7 @@ class _LocationTimeGroupEditorScreenState
     await showCourseFieldPickerSheet(
       context,
       title: l10n.selectLocationTitle,
-      suggestions: provider.uniqueLocations,
+      suggestions: _availableLocations(provider),
       controller: _locationPickController,
       onConfirmed: () {
         final raw = _locationPickController.text.trim();
@@ -473,10 +486,18 @@ class _LocationTimeGroupEditorScreenState
     final currentKeywords = _currentKeywords;
     final uncovered = LocationBuildingClusterLogic.uncoveredClusters(
       locations: provider.uniqueLocations,
-      existingKeywords: currentKeywords,
+      existingKeywords: [
+        ...currentKeywords,
+        ...LocationTimeMatchLogic.keywordsFromOtherGroups(
+          provider.locationTimeGroups,
+          excludingGroupId: _editingGroupId,
+        ),
+      ],
     );
     final schemeItems = <String, String>{
-      for (final scheme in schemes) scheme.name: scheme.id,
+      // Unique labels so duplicate scheme names never collapse Map keys.
+      for (final scheme in schemes)
+        _timeSchemeSelectLabel(schemes, scheme): scheme.id,
     };
     final selectedSchemeId = schemes.any((scheme) => scheme.id == _timeSchemeId)
         ? _timeSchemeId
@@ -512,7 +533,15 @@ class _LocationTimeGroupEditorScreenState
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.locationTimeMatchBoundSchemeLabel),
           if (schemes.isEmpty)
-            HyperosSectionDescription(text: l10n.locationTimeMatchNeedTimeScheme)
+            HyperosListGroup(
+              children: [
+                HyperosNavTile(
+                  title: l10n.locationTimeMatchNeedTimeScheme,
+                  enabled: false,
+                  showChevron: false,
+                ),
+              ],
+            )
           else
             HyperosListGroup(
               children: [
@@ -541,8 +570,6 @@ class _LocationTimeGroupEditorScreenState
           ),
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.locationTimeMatchKeywordsSection),
-          HyperosSectionDescription(text: l10n.locationTimeMatchKeywordsHelp),
-          const SizedBox(height: 8),
           HyperosControlCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -563,13 +590,35 @@ class _LocationTimeGroupEditorScreenState
                     runSpacing: 8,
                     children: [
                       for (var index = 0; index < _keywords.length; index++)
-                        InputChip(
-                          label: Text(
-                            '${_keywords[index].patternController.text} · ${_modeLabel(l10n, _keywords[index].mode)}',
-                          ),
-                          onDeleted: () => _removeKeywordAt(index),
-                          onPressed: () =>
-                              _editKeywordDialog(context, l10n, index),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () =>
+                                  _editKeywordDialog(context, l10n, index),
+                              child: HyperosTag(
+                                label:
+                                    '${_keywords[index].patternController.text} · ${_modeLabel(l10n, _keywords[index].mode)}',
+                                outlined: true,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Tooltip(
+                              message: l10n.deleteAction,
+                              child: InkWell(
+                                onTap: () => _removeKeywordAt(index),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 16,
+                                    color: HyperosColors.secondaryText(context),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),
@@ -593,8 +642,14 @@ class _LocationTimeGroupEditorScreenState
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.locationTimeMatchBuildingSuggestions),
           if (uncovered.isEmpty)
-            HyperosSectionDescription(
-              text: l10n.locationTimeMatchNoBuildingSuggestions,
+            HyperosListGroup(
+              children: [
+                HyperosNavTile(
+                  title: l10n.locationTimeMatchNoBuildingSuggestions,
+                  enabled: false,
+                  showChevron: false,
+                ),
+              ],
             )
           else ...[
             for (final cluster in uncovered) ...[
@@ -634,7 +689,7 @@ class _LocationTimeGroupEditorScreenState
     final detailParts = <String>[
       l10n.locationTimeMatchBuildingRoomCount(cluster.locationCount),
       if (samplesPreview.isNotEmpty) samplesPreview,
-      if (gateText != null) gateText,
+      ?gateText,
     ];
 
     return HyperosControlCard(
@@ -774,7 +829,27 @@ class _LocationTimeGroupEditorScreenState
     );
     final pattern = controller.text.trim();
     controller.dispose();
-    if (confirmed == true && pattern.isNotEmpty && mounted) {
+    if (confirmed == true && pattern.isNotEmpty && context.mounted) {
+      if (_hasKeyword(pattern) &&
+          pattern.toLowerCase() !=
+              draft.patternController.text.trim().toLowerCase()) {
+        showAppToast(
+          context,
+          message: l10n.locationTimeMatchKeywordAlreadyExists,
+          kind: AppToastKind.info,
+        );
+        return;
+      }
+      final provider = context.read<TimetableProvider>();
+      final ownerName = _otherGroupOwningPattern(provider, pattern);
+      if (ownerName != null) {
+        showAppToast(
+          context,
+          message: l10n.locationTimeMatchKeywordUsedByGroup(ownerName),
+          kind: AppToastKind.warning,
+        );
+        return;
+      }
       setState(() {
         draft.patternController.text = pattern;
         draft.mode = mode;
@@ -820,6 +895,18 @@ class _LocationTimeGroupEditorScreenState
       return;
     }
 
+    for (final keyword in keywords) {
+      final ownerName = _otherGroupOwningPattern(provider, keyword.pattern);
+      if (ownerName != null) {
+        showAppToast(
+          context,
+          message: l10n.locationTimeMatchKeywordUsedByGroup(ownerName),
+          kind: AppToastKind.error,
+        );
+        return;
+      }
+    }
+
     try {
       final existing = widget.existing;
       if (existing == null) {
@@ -859,4 +946,17 @@ class _LocationTimeGroupEditorScreenState
       );
     }
   }
+}
+
+/// Builds a unique select label for [scheme] so duplicate names never collapse
+/// [Map] keys in [HyperosSelectTile] items.
+String _timeSchemeSelectLabel(List<TimeScheme> schemes, TimeScheme scheme) {
+  final duplicateCount = schemes
+      .where((candidate) => candidate.name == scheme.name)
+      .length;
+  if (duplicateCount <= 1) {
+    return scheme.name;
+  }
+  final shortId = scheme.id.length <= 8 ? scheme.id : scheme.id.substring(0, 8);
+  return '${scheme.name} · $shortId';
 }
