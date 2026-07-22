@@ -431,7 +431,19 @@ object TodayWidgetSupport {
             month = nowCalendar.get(Calendar.MONTH) + 1,
             dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
         )
-        if (isHoliday) return null
+        // On a holiday there are no same-day course flip points, but still schedule
+        // a midnight refresh so the widget can leave holiday mode the next day.
+        if (isHoliday) {
+            val tomorrowStart = Calendar.getInstance().apply {
+                timeInMillis = nowMillis
+                add(Calendar.DAY_OF_YEAR, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            return if (tomorrowStart > nowMillis) tomorrowStart else null
+        }
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
         val currentWeek = calculateWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
@@ -1292,4 +1304,3 @@ object TodayWidgetSupport {
         }
     }
 }
-
