@@ -2091,7 +2091,7 @@
   "aboutParticipateWarehouseSubtitle": "パケットキャプチャ、Webデバッグ、JavaScriptができる場合、または自分の学校の教務システムを長期メンテナンスしたい場合は、qingyu_warehouseで新しい学校適応と修正の提出歓迎",
   "importFileReadFailed": "選択したファイルを読み込めません",
   "importReplaceExistingTitle": "授業インポート",
-  "importReplaceExistingMessage": "{name}をインポートする際、既存の授業を置換しますか？",
+  "importReplaceExistingMessage": "{name}をインポートする際、既存の授業を置換しますか？この操作では、現在の時間割上の独立した予定（自習・会議など）も削除されます。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -2179,7 +2179,7 @@
   "aiPasteJsonFirst": "まずAIが返したJSONを貼付してください",
   "aiParseFailedIncompleteJson": "解析失敗。完全なJSONが貼付されているか確認",
   "importAiResultTitle": "AI解析結果をインポート",
-  "importAiReplaceMessage": "現在のAI解析結果で既存の授業を置換しますか？",
+  "importAiReplaceMessage": "現在のAI解析結果で既存の授業を置換しますか？この操作では、現在の時間割上の独立した予定（自習・会議など）も削除されます。",
   "importConfirmSemesterMappingSubtitleAi": "学校の校暦の学期開始日を選択し、時間割の第1週が校暦の第何週に対応するかを確認，学校の第1週に授業がない場合、通常第2週に変更",
   "aiWarningExtraSuffix": "、さらに{count}件の認識注意事項",
   "@aiWarningExtraSuffix": {
@@ -4995,6 +4995,10 @@
   "coupleWebdavTitle": "Nutstoreで取得",
   "coupleWebdavSubtitle": "パートナー（または共有）のNutstoreにログインし、相手がアップロードした時間割を取得します。クラウド同期のアカウントとは独立です",
   "coupleWebdavNotConnected": "Nutstore未接続",
+  "coupleWebdavMySlotLabel": "この端末のスロット",
+  "coupleWebdavMySlotHint": "双方で異なるスロットを選んでください。一方が1、もう一方が2。同じだと相手の時間割を読めません",
+  "coupleWebdavSlotOne": "スロット 1",
+  "coupleWebdavSlotTwo": "スロット 2",
   "locationTimeMatchEntryTitle": "Location time match",
   "locationTimeMatchEntrySubtitle": "Auto-pick time schemes by classroom keywords",
   "locationTimeMatchTitle": "Location time match",

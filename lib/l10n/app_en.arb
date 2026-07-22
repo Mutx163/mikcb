@@ -175,6 +175,10 @@
   "coupleWebdavLoginSheetTitle": "Connect Nutstore (couple timetable)",
   "coupleWebdavLoginSheetSubtitle": "Use an app-specific password. Your partner must upload their timetable to the agreed path first, or upload from their device on the same account",
   "coupleWebdavConfirmConnect": "Connect and pull",
+  "coupleWebdavMySlotLabel": "This device slot",
+  "coupleWebdavMySlotHint": "Both devices must pick different slots: one chooses 1, the other 2, or neither can read the partner timetable",
+  "coupleWebdavSlotOne": "Slot 1",
+  "coupleWebdavSlotTwo": "Slot 2",
   "coupleWebdavTestSuccess": "Nutstore connection successful",
   "coupleWebdavTestFailed": "Connection failed. Check account, app password, and network.",
   "coupleWebdavPullImported": "Partner timetable imported from Nutstore",
@@ -2274,7 +2278,7 @@
   "aboutParticipateWarehouseSubtitle": "If you know packet capture, web debugging, JavaScript, or are willing to maintain your school's academic system long-term, you are welcome to submit new school adapters and fixes to qingyu_warehouse",
   "importFileReadFailed": "Unable to read the selected file",
   "importReplaceExistingTitle": "Import courses",
-  "importReplaceExistingMessage": "When importing {name}, replace existing courses?",
+  "importReplaceExistingMessage": "When importing {name}, replace existing courses? This also clears independent agenda items on the current timetable (such as study sessions or meetings).",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -2362,7 +2366,7 @@
   "aiPasteJsonFirst": "Please paste the JSON returned by AI first",
   "aiParseFailedIncompleteJson": "Parsing failed. Please make sure you pasted the complete JSON.",
   "importAiResultTitle": "Import AI parsing result",
-  "importAiReplaceMessage": "Replace the existing courses with the current AI parsing result?",
+  "importAiReplaceMessage": "Replace the existing courses with the current AI parsing result? This also clears independent agenda items on the current timetable (such as study sessions or meetings).",
   "importConfirmSemesterMappingSubtitleAi": "Please choose the semester start date from your school calendar, then confirm which calendar week corresponds to Week 1 in the timetable. If there are no classes in the first week, this usually needs to be changed to Week 2.",
   "aiWarningExtraSuffix": ", plus {count} recognition warnings",
   "@aiWarningExtraSuffix": {

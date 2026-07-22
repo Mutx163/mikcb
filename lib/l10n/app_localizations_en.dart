@@ -372,6 +372,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coupleWebdavConfirmConnect => 'Connect and pull';
 
   @override
+  String get coupleWebdavMySlotLabel => 'This device slot';
+
+  @override
+  String get coupleWebdavMySlotHint =>
+      'Both devices must pick different slots: one chooses 1, the other 2, or neither can read the partner timetable';
+
+  @override
+  String get coupleWebdavSlotOne => 'Slot 1';
+
+  @override
+  String get coupleWebdavSlotTwo => 'Slot 2';
+
+  @override
   String get coupleWebdavTestSuccess => 'Nutstore connection successful';
 
   @override
@@ -4343,7 +4356,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return 'When importing $name, replace existing courses?';
+    return 'When importing $name, replace existing courses? This also clears independent agenda items on the current timetable (such as study sessions or meetings).';
   }
 
   @override
@@ -4494,7 +4507,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importAiReplaceMessage =>
-      'Replace the existing courses with the current AI parsing result?';
+      'Replace the existing courses with the current AI parsing result? This also clears independent agenda items on the current timetable (such as study sessions or meetings).';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>

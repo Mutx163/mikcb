@@ -175,6 +175,10 @@
   "coupleWebdavLoginSheetTitle": "连接坚果云（情侣课表）",
   "coupleWebdavLoginSheetSubtitle": "请使用应用专用密码，对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传",
   "coupleWebdavConfirmConnect": "连接并拉取",
+  "coupleWebdavMySlotLabel": "本机槽位",
+  "coupleWebdavMySlotHint": "双方必须选不同槽位：一方选 1，另一方选 2，否则会互相读不到课表",
+  "coupleWebdavSlotOne": "槽位 1",
+  "coupleWebdavSlotTwo": "槽位 2",
   "coupleWebdavTestSuccess": "坚果云连接成功",
   "coupleWebdavTestFailed": "连接失败，请检查账号、应用专用密码与网络",
   "coupleWebdavPullImported": "已从坚果云导入对方课表",
@@ -2274,7 +2278,7 @@
   "aboutParticipateWarehouseSubtitle": "如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复",
   "importFileReadFailed": "无法读取所选文件",
   "importReplaceExistingTitle": "导入课程",
-  "importReplaceExistingMessage": "导入 {name} 时，是否替换现有课程？",
+  "importReplaceExistingMessage": "导入 {name} 时，是否替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -2362,7 +2366,7 @@
   "aiPasteJsonFirst": "请先粘贴 AI 返回的 JSON",
   "aiParseFailedIncompleteJson": "解析失败，请确认粘贴的是完整 JSON",
   "importAiResultTitle": "导入 AI 解析结果",
-  "importAiReplaceMessage": "是否用当前这份 AI 解析结果替换现有课程？",
+  "importAiReplaceMessage": "是否用当前这份 AI 解析结果替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。",
   "importConfirmSemesterMappingSubtitleAi": "请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周，如果学校第一周没课，这里通常要改成第 2 周",
   "aiWarningExtraSuffix": "，另有 {count} 条识别提醒",
   "@aiWarningExtraSuffix": {

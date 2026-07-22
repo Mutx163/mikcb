@@ -2088,7 +2088,7 @@
   "aboutParticipateWarehouseSubtitle": "如果你会抓包、網頁偵錯、JavaScript，或者愿意长期維護自己学校的教務系統，欢迎去 qingyu_warehouse 提交新的学校適配與修複",
   "importFileReadFailed": "無法讀取所选文件",
   "importReplaceExistingTitle": "匯入課程",
-  "importReplaceExistingMessage": "匯入 {name} 時，是否替换现有課程？",
+  "importReplaceExistingMessage": "匯入 {name} 時，是否替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -2176,7 +2176,7 @@
   "aiPasteJsonFirst": "请先粘贴 AI 返回的 JSON",
   "aiParseFailedIncompleteJson": "解析失败，请確認粘贴的是完整 JSON",
   "importAiResultTitle": "匯入 AI 解析结果",
-  "importAiReplaceMessage": "是否用目前這份 AI 解析结果替换现有課程？",
+  "importAiReplaceMessage": "是否用目前這份 AI 解析结果替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
   "importConfirmSemesterMappingSubtitleAi": "请选擇学校校歷的開学日期，再確認課表裡的第 1 周对應校歷第几周，如果学校第一周没課，這裡通常要改成第 2 周",
   "aiWarningExtraSuffix": "，另有 {count} 条識别提醒",
   "@aiWarningExtraSuffix": {
@@ -5172,5 +5172,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "coupleWebdavMySlotLabel": "本機槽位",
+  "coupleWebdavMySlotHint": "雙方必須選不同槽位：一方選 1，另一方選 2，否則會互相讀不到課表",
+  "coupleWebdavSlotOne": "槽位 1",
+  "coupleWebdavSlotTwo": "槽位 2"
 }

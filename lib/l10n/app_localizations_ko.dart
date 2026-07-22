@@ -351,6 +351,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleWebdavConfirmConnect => '连接并拉取';
 
   @override
+  String get coupleWebdavMySlotLabel => '이 기기 슬롯';
+
+  @override
+  String get coupleWebdavMySlotHint =>
+      '양쪽이 서로 다른 슬롯을 선택해야 합니다. 한쪽은 1, 다른 쪽은 2. 같으면 상대 시간표를 읽을 수 없습니다';
+
+  @override
+  String get coupleWebdavSlotOne => '슬롯 1';
+
+  @override
+  String get coupleWebdavSlotTwo => '슬롯 2';
+
+  @override
   String get coupleWebdavTestSuccess => '坚果云连接成功';
 
   @override
@@ -4174,7 +4187,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return '$name을(를) 가져올 때 기존 수업을 대체하시겠습니까?';
+    return '$name을(를) 가져올 때 기존 수업을 대체하시겠습니까? 이 작업은 현재 시간표의 독립 일정(자습, 회의 등)도 함께 비웁니다.';
   }
 
   @override
@@ -4315,7 +4328,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importAiResultTitle => 'AI 파싱 결과 가져오기';
 
   @override
-  String get importAiReplaceMessage => '현재 AI 파싱 결과로 기존 수업을 대체하시겠습니까?';
+  String get importAiReplaceMessage =>
+      '현재 AI 파싱 결과로 기존 수업을 대체하시겠습니까? 이 작업은 현재 시간표의 독립 일정(자습, 회의 등)도 함께 비웁니다.';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>

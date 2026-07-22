@@ -351,6 +351,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleWebdavConfirmConnect => '连接并拉取';
 
   @override
+  String get coupleWebdavMySlotLabel => 'この端末のスロット';
+
+  @override
+  String get coupleWebdavMySlotHint =>
+      '双方で異なるスロットを選んでください。一方が1、もう一方が2。同じだと相手の時間割を読めません';
+
+  @override
+  String get coupleWebdavSlotOne => 'スロット 1';
+
+  @override
+  String get coupleWebdavSlotTwo => 'スロット 2';
+
+  @override
   String get coupleWebdavTestSuccess => '坚果云连接成功';
 
   @override
@@ -4146,7 +4159,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return '$nameをインポートする際、既存の授業を置換しますか？';
+    return '$nameをインポートする際、既存の授業を置換しますか？この操作では、現在の時間割上の独立した予定（自習・会議など）も削除されます。';
   }
 
   @override
@@ -4287,7 +4300,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importAiResultTitle => 'AI解析結果をインポート';
 
   @override
-  String get importAiReplaceMessage => '現在のAI解析結果で既存の授業を置換しますか？';
+  String get importAiReplaceMessage =>
+      '現在のAI解析結果で既存の授業を置換しますか？この操作では、現在の時間割上の独立した予定（自習・会議など）も削除されます。';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>

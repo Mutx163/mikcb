@@ -351,6 +351,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleWebdavConfirmConnect => '连接并拉取';
 
   @override
+  String get coupleWebdavMySlotLabel => '本机槽位';
+
+  @override
+  String get coupleWebdavMySlotHint => '双方必须选不同槽位：一方选 1，另一方选 2，否则会互相读不到课表';
+
+  @override
+  String get coupleWebdavSlotOne => '槽位 1';
+
+  @override
+  String get coupleWebdavSlotTwo => '槽位 2';
+
+  @override
   String get coupleWebdavTestSuccess => '坚果云连接成功';
 
   @override
@@ -4072,7 +4084,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return '导入 $name 时，是否替换现有课程？';
+    return '导入 $name 时，是否替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。';
   }
 
   @override
@@ -4212,7 +4224,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importAiResultTitle => '导入 AI 解析结果';
 
   @override
-  String get importAiReplaceMessage => '是否用当前这份 AI 解析结果替换现有课程？';
+  String get importAiReplaceMessage =>
+      '是否用当前这份 AI 解析结果替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>
@@ -8882,6 +8895,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
 
   @override
+  String get coupleWebdavMySlotLabel => '本機槽位';
+
+  @override
+  String get coupleWebdavMySlotHint => '雙方必須選不同槽位：一方選 1，另一方選 2，否則會互相讀不到課表';
+
+  @override
+  String get coupleWebdavSlotOne => '槽位 1';
+
+  @override
+  String get coupleWebdavSlotTwo => '槽位 2';
+
+  @override
   String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
 
   @override
@@ -12424,7 +12449,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return '匯入 $name 時，是否替换现有課程？';
+    return '匯入 $name 時，是否替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。';
   }
 
   @override
@@ -12564,7 +12589,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importAiResultTitle => '匯入 AI 解析结果';
 
   @override
-  String get importAiReplaceMessage => '是否用目前這份 AI 解析结果替换现有課程？';
+  String get importAiReplaceMessage =>
+      '是否用目前這份 AI 解析结果替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>
@@ -17104,6 +17130,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
 
   @override
+  String get coupleWebdavMySlotLabel => '本機槽位';
+
+  @override
+  String get coupleWebdavMySlotHint => '雙方必須選不同槽位：一方選 1，另一方選 2，否則會互相讀不到課表';
+
+  @override
+  String get coupleWebdavSlotOne => '槽位 1';
+
+  @override
+  String get coupleWebdavSlotTwo => '槽位 2';
+
+  @override
   String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
 
   @override
@@ -20646,7 +20684,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return '匯入 $name 時，是否替换现有課程？';
+    return '匯入 $name 時，是否替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。';
   }
 
   @override
@@ -20786,7 +20824,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importAiResultTitle => '匯入 AI 解析结果';
 
   @override
-  String get importAiReplaceMessage => '是否用目前這份 AI 解析结果替换现有課程？';
+  String get importAiReplaceMessage =>
+      '是否用目前這份 AI 解析结果替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>

@@ -740,6 +740,30 @@ abstract class AppLocalizations {
   /// **'连接并拉取'**
   String get coupleWebdavConfirmConnect;
 
+  /// No description provided for @coupleWebdavMySlotLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机槽位'**
+  String get coupleWebdavMySlotLabel;
+
+  /// No description provided for @coupleWebdavMySlotHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'双方必须选不同槽位：一方选 1，另一方选 2，否则会互相读不到课表'**
+  String get coupleWebdavMySlotHint;
+
+  /// No description provided for @coupleWebdavSlotOne.
+  ///
+  /// In zh, this message translates to:
+  /// **'槽位 1'**
+  String get coupleWebdavSlotOne;
+
+  /// No description provided for @coupleWebdavSlotTwo.
+  ///
+  /// In zh, this message translates to:
+  /// **'槽位 2'**
+  String get coupleWebdavSlotTwo;
+
   /// No description provided for @coupleWebdavTestSuccess.
   ///
   /// In zh, this message translates to:
@@ -7482,7 +7506,7 @@ abstract class AppLocalizations {
   /// No description provided for @importReplaceExistingMessage.
   ///
   /// In zh, this message translates to:
-  /// **'导入 {name} 时，是否替换现有课程？'**
+  /// **'导入 {name} 时，是否替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。'**
   String importReplaceExistingMessage(String name);
 
   /// No description provided for @importNoCoursesRecognized.
@@ -7726,7 +7750,7 @@ abstract class AppLocalizations {
   /// No description provided for @importAiReplaceMessage.
   ///
   /// In zh, this message translates to:
-  /// **'是否用当前这份 AI 解析结果替换现有课程？'**
+  /// **'是否用当前这份 AI 解析结果替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。'**
   String get importAiReplaceMessage;
 
   /// No description provided for @importConfirmSemesterMappingSubtitleAi.
