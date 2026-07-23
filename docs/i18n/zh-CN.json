@@ -19,6 +19,7 @@
   "brand.iconAlt": "轻屿课表图标",
 
   "nav.features": "功能",
+  "nav.home": "首页",
   "nav.updates": "更新",
   "nav.schools": "适配学校",
   "nav.faq": "常见问题",
@@ -133,7 +134,7 @@
   "faq.q1": "轻屿课表怎么导入课表？",
   "faq.a1Html": "<p>支持三种导入方式：</p><ol><li><strong>教务系统导入</strong>：点击右上角菜单 → 导入课程表 → 选择你的学校 → 登录教务系统自动同步</li><li><strong>文件导入</strong>：支持 iCal (.ics) 格式，点击导入后选择手机中的 .ics 文件即可</li><li><strong>手动添加</strong>：点击课表空白处 → 添加课程 → 填写课程信息</li></ol>",
   "faq.q2": "支持哪些学校的教务导入？",
-  "faq.a2Html": "<p>目前已适配 100+ 所高校，完整列表见 <a href=\"./schools.html\">已适配学校页面</a>，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、AI 识图导入或手动添加课程，也欢迎在 <a href=\"https://github.com/Mutx163/qingyu_warehouse/issues\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 提交你学校的适配需求。</p>",
+  "faq.a2Html": "<p>目前已适配 100+ 所高校，完整列表见 <a href=\"#schools\">已适配学校列表</a>，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、AI 识图导入或手动添加课程，也欢迎在 <a href=\"https://github.com/Mutx163/qingyu_warehouse/issues\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 提交你学校的适配需求。</p>",
   "faq.q3": "轻屿课表是免费的吗？",
   "faq.a3Html": "<p>是的，轻屿课表完全免费，无广告，无需注册。开源项目，代码公开透明。</p>",
   "faq.q4": "支持 iOS 或鸿蒙吗？",
@@ -199,6 +200,8 @@
   "js.backupMirror1": "备用镜像 1",
   "js.backupMirror2": "备用镜像 2",
   "js.releaseBodyFallback": "当前弹窗提供 GitHub 原版与镜像下载入口，方便直接下载安装。",
+  "js.releaseNotesSourceLanguage": "完整版本说明目前以简体中文发布，可前往 Release 页面查看。",
+  "js.releaseLoaded": "已读取最新版本信息。",
   "js.highlightFallback": "最近版本更新内容会显示在这里。",
   "js.chipNew": "新增",
   "js.chipFix": "修复",
@@ -260,6 +263,7 @@
   "legal.openGithub": "打开 GitHub",
   "legal.loading": "加载中…",
   "legal.contribLoadFail": "Markdown 渲染器加载失败，请直接查看 GitHub 上的贡献指南。",
+  "legal.contribSourceLanguageHtml": "贡献指南以简体中文为准，请前往 <a href=\"https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md\" target=\"_blank\" rel=\"noreferrer\">GitHub 查看完整指南</a>。",
   "legal.contribFetchFailHtml": "无法加载贡献指南内容，请前往 <a href=\"https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md\" target=\"_blank\" rel=\"noreferrer\">GitHub 查看</a>。",
 
   "privacy.intro": "轻屿课表重视用户隐私。应用主要在本地保存课表、时间模板、导入记录和提醒配置，只有在你主动使用联网能力时，才会和外部服务发生数据交互。",

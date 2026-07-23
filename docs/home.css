@@ -2000,6 +2000,20 @@ button {
   }
 }
 
+@media (max-width: 359px) {
+  .nav-inner {
+    gap: 12px;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  html[lang="en"] .nav-cta {
+    display: none;
+  }
+}
+
 /* ---------- 适配学校页 ---------- */
 
 .visually-hidden {
@@ -2023,12 +2037,21 @@ button {
   margin-bottom: clamp(30px, 4.5vw, 48px);
 }
 
-.schools-hero h1 {
+.schools-hero h1,
+.schools-hero h2 {
   margin: 0 0 16px;
   font-size: clamp(2rem, 5vw, 3.2rem);
   font-weight: 800;
   line-height: 1.14;
   letter-spacing: -0.02em;
+}
+
+.section-schools {
+  padding-bottom: clamp(72px, 10vw, 128px);
+}
+
+.section-schools .schools-foot-links {
+  justify-content: flex-end;
 }
 
 .schools-stats {
@@ -2303,10 +2326,10 @@ button {
     flex-direction: column;
   }
 
-  /* 手机端不做内嵌滚动，跟随页面自然滚动 */
+  /* Keep the school list finite on mobile too; the page remains easy to scan. */
   .schools-list-scroll {
-    max-height: none;
-    overflow: visible;
+    max-height: min(62vh, 640px);
+    overflow-y: auto;
     padding-right: 0;
   }
 

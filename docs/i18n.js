@@ -22,6 +22,7 @@
   let currentLocale = DEFAULT_LOCALE;
   /** @type {Set<(locale: string) => void>} */
   const changeListeners = new Set();
+  let remainingCatalogsPrefetched = false;
 
   function getLocaleMeta(localeId) {
     return SUPPORTED.find((item) => item.id === localeId) || SUPPORTED[0];
@@ -298,6 +299,7 @@
       if (willOpen) {
         root.classList.add("is-open");
         button.setAttribute("aria-expanded", "true");
+        prefetchRemainingCatalogs();
       }
     });
 
@@ -351,6 +353,18 @@
     return data;
   }
 
+  function prefetchRemainingCatalogs() {
+    if (remainingCatalogsPrefetched) {
+      return;
+    }
+    remainingCatalogsPrefetched = true;
+    SUPPORTED_IDS.forEach((localeId) => {
+      if (!catalogs[localeId]) {
+        void loadCatalog(localeId).catch(() => {});
+      }
+    });
+  }
+
   async function bootstrap() {
     currentLocale = detectLocale();
     try {
@@ -370,12 +384,6 @@
     mountSwitcher();
     applyDocument();
 
-    // 预取其余语言，切换更顺滑
-    SUPPORTED_IDS.forEach((localeId) => {
-      if (!catalogs[localeId]) {
-        void loadCatalog(localeId).catch(() => {});
-      }
-    });
   }
 
   window.I18n = {

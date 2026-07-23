@@ -19,6 +19,10 @@ function currentUiLocale() {
   return window.I18n?.getLocale?.() || document.documentElement.lang || "zh-CN";
 }
 
+function isChineseUiLocale() {
+  return /^zh(?:-|$)/i.test(currentUiLocale());
+}
+
 if ("IntersectionObserver" in window) {
   const observer = new IntersectionObserver(
     (entries) => {
@@ -44,6 +48,8 @@ if ("IntersectionObserver" in window) {
 }
 
 const scrollRestoreStorageKey = "mikcb-docs-scroll-restore";
+const navigationEntry = performance.getEntriesByType?.("navigation")?.[0];
+const isReloadNavigation = navigationEntry?.type === "reload";
 
 function getCurrentPageKey() {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -64,14 +70,21 @@ function saveScrollPosition() {
 }
 
 function restoreScrollPositionOnReload() {
-  const navigationEntry = performance.getEntriesByType?.("navigation")?.[0];
-  if (navigationEntry?.type !== "reload") {
+  if (!isReloadNavigation) {
     return;
   }
+
+  const finishRestore = () => {
+    document.documentElement.removeAttribute("data-scroll-restoring");
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "auto";
+    }
+  };
 
   try {
     const raw = window.sessionStorage?.getItem(scrollRestoreStorageKey);
     if (!raw) {
+      finishRestore();
       return;
     }
 
@@ -81,6 +94,7 @@ function restoreScrollPositionOnReload() {
       saved.page !== getCurrentPageKey() ||
       typeof saved.scrollY !== "number"
     ) {
+      finishRestore();
       return;
     }
 
@@ -94,16 +108,16 @@ function restoreScrollPositionOnReload() {
       restore();
       window.setTimeout(() => {
         restore();
-        document.documentElement.removeAttribute("data-scroll-restoring");
+        finishRestore();
       }, 80);
     });
   } catch (error) {
-    document.documentElement.removeAttribute("data-scroll-restoring");
+    finishRestore();
   }
 }
 
 if ("scrollRestoration" in window.history) {
-  window.history.scrollRestoration = "manual";
+  window.history.scrollRestoration = isReloadNavigation ? "manual" : "auto";
 }
 
 restoreScrollPositionOnReload();
@@ -560,6 +574,8 @@ if (navToggle && navMenu) {
     }
   });
 
+  window.addEventListener("pageshow", closeNavMenu);
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeNavMenu();
@@ -567,13 +583,21 @@ if (navToggle && navMenu) {
   });
 }
 
-if ("IntersectionObserver" in window && navSectionLinks.length) {
+if (navSectionLinks.length) {
   const sections = navSectionLinks
     .map((link) => ({
       link,
       section: document.querySelector(link.getAttribute("href")),
     }))
-    .filter((item) => item.section);
+    .filter((item) => item.section)
+    .sort((left, right) => {
+      if (left.section === right.section) {
+        return 0;
+      }
+      return left.section.compareDocumentPosition(right.section) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1;
+    });
 
   const setActiveNavLink = (targetId) => {
     navSectionLinks.forEach((link) => {
@@ -587,31 +611,64 @@ if ("IntersectionObserver" in window && navSectionLinks.length) {
     });
   };
 
-  const sectionObserver = new IntersectionObserver(
-    (entries) => {
-      const visibleEntry = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-      if (visibleEntry?.target?.id) {
-        setActiveNavLink(visibleEntry.target.id);
-      }
-    },
-    {
-      rootMargin: "-35% 0px -45% 0px",
-      threshold: [0.2, 0.45, 0.7],
+  let scrollSpyFrame = 0;
+  const updateActiveNavFromScroll = () => {
+    scrollSpyFrame = 0;
+    if (!sections.length) {
+      return;
     }
-  );
 
-  sections.forEach((item) => {
-    sectionObserver.observe(item.section);
-  });
+    const navBottom = document.querySelector(".global-nav")?.getBoundingClientRect().bottom || 0;
+    const marker = Math.max(navBottom + 24, Math.min(window.innerHeight * 0.35, 300));
+    let activeId = "";
+    sections.forEach((item) => {
+      if (item.section.getBoundingClientRect().top <= marker) {
+        activeId = item.section.id;
+      }
+    });
+    setActiveNavLink(activeId);
+  };
 
-  const initialHash = window.location.hash.replace(/^#/, "");
-  if (initialHash) {
-    setActiveNavLink(initialHash);
-  } else if (sections[0]?.section?.id) {
-    setActiveNavLink(sections[0].section.id);
-  }
+  const scheduleScrollSpy = () => {
+    if (scrollSpyFrame) {
+      return;
+    }
+    scrollSpyFrame = window.requestAnimationFrame(updateActiveNavFromScroll);
+  };
+
+  window.addEventListener("scroll", scheduleScrollSpy, { passive: true });
+  window.addEventListener("resize", scheduleScrollSpy);
+
+  const syncActiveNavFromLocation = () => {
+    const targetId = window.location.hash.replace(/^#/, "");
+    if (targetId && document.getElementById(targetId)) {
+      setActiveNavLink(targetId);
+      if (sections.some((item) => item.section?.id === targetId)) {
+        window.setTimeout(() => {
+          const target = document.getElementById(targetId);
+          if (!target) {
+            return;
+          }
+          const rect = target.getBoundingClientRect();
+          if (rect.top < 0 || rect.top > 140) {
+            const root = document.documentElement;
+            const previousBehavior = root.style.scrollBehavior;
+            root.style.scrollBehavior = "auto";
+            target.scrollIntoView({ block: "start", behavior: "auto" });
+            root.style.scrollBehavior = previousBehavior;
+          }
+        }, 0);
+      }
+    } else if (sections[0]?.section?.id) {
+      updateActiveNavFromScroll();
+    }
+  };
+
+  syncActiveNavFromLocation();
+  updateActiveNavFromScroll();
+  window.addEventListener("hashchange", syncActiveNavFromLocation);
+  window.addEventListener("pageshow", syncActiveNavFromLocation);
+  window.addEventListener("load", syncActiveNavFromLocation);
 }
 
 const repoApiUrl = "https://api.github.com/repos/Mutx163/mikcb";
@@ -757,6 +814,13 @@ function extractLatestVersionSection(rawBody) {
 }
 
 function buildReleaseDescription(rawBody, releaseHints = []) {
+  if (rawBody && !isChineseUiLocale()) {
+    return t(
+      "js.releaseNotesSourceLanguage",
+      "完整版本说明目前以简体中文发布，可前往 Release 页面查看。"
+    );
+  }
+
   const normalizedHints = releaseHints
     .map((item) => cleanReleaseLine(item).toLowerCase())
     .filter(Boolean);
@@ -874,7 +938,7 @@ function normalizeCompactReleaseRecord(release, channelLabel) {
   const downloadUrl = release.downloadUrl || release.browser_download_url || releaseUrl;
 
   return {
-    channelLabel: String(release.channelLabel || channelLabel),
+    channelLabel,
     version,
     title,
     publishedAt: formatDateTime(
@@ -930,6 +994,15 @@ function formatCompactCount(value) {
 }
 
 function extractReleaseHighlights(rawBody, fallbackDescription) {
+  if (rawBody && !isChineseUiLocale()) {
+    return [
+      t(
+        "js.releaseNotesSourceLanguage",
+        "完整版本说明目前以简体中文发布，可前往 Release 页面查看。"
+      ),
+    ];
+  }
+
   const lines = extractLatestVersionSection(rawBody)
     .split(/\r?\n/)
     .map((line) => line.replace(/^[-*]\s*/, "").trim())
@@ -1040,7 +1113,11 @@ function renderReleaseTimeline(feed) {
     .map((release, index) => {
       const version = normalizeVersion(release.version || release.tagName || release.title);
       const dateLabel = formatReleaseDate(release.publishedAt);
-      const changes = Array.isArray(release.highlights) ? release.highlights.slice(0, 5) : [];
+      const showSourceReleaseText = isChineseUiLocale();
+      const changes =
+        showSourceReleaseText && Array.isArray(release.highlights)
+          ? release.highlights.slice(0, 5)
+          : [];
       const isLatest = index === 0;
       const isMajor = /^2\.0$/.test(version);
       const channelLabel = release.prerelease ? t("js.channelPrerelease", "预发布") : t("js.channelStable", "正式版");
@@ -1064,7 +1141,12 @@ function renderReleaseTimeline(feed) {
             })
             .join("")
         : `<li><i class="chip chip-opt">${escapeHtml(t("js.chipUpdate", "更新"))}</i>${escapeHtml(
-            release.description || t("js.timelineMore", "查看 Release 页面了解更多")
+            showSourceReleaseText
+              ? release.description || t("js.timelineMore", "查看 Release 页面了解更多")
+              : t(
+                  "js.releaseNotesSourceLanguage",
+                  "完整版本说明目前以简体中文发布，可前往 Release 页面查看。"
+                )
           )}</li>`;
 
       return (
@@ -1083,17 +1165,26 @@ function renderReleaseTimeline(feed) {
     .join("");
 }
 
+let releaseTimelineFeedPromise;
+
 async function loadReleaseTimeline() {
   if (!releaseTimeline) {
     return;
   }
   try {
-    const response = await fetch(releaseFeedApiUrl, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    if (!releaseTimelineFeedPromise) {
+      releaseTimelineFeedPromise = fetch(releaseFeedApiUrl, { cache: "no-store" }).then(
+        (response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.json();
+        }
+      );
     }
-    renderReleaseTimeline(await response.json());
+    renderReleaseTimeline(await releaseTimelineFeedPromise);
   } catch (error) {
+    releaseTimelineFeedPromise = undefined;
     renderReleaseTimeline({ releases: [] });
   }
 }
@@ -1117,16 +1208,23 @@ function renderTrustSignals({
 }
 
 async function loadTrustSignals(releases = 0) {
+  if (!heroStars && !trustStars && !trustReleases) {
+    return;
+  }
+
+  const releaseCount = Array.isArray(releases)
+    ? releases.length
+    : Number(releases || 0) || 0;
+  if (trustReleases && releaseCount > 0) {
+    trustReleases.textContent = formatCompactCount(releaseCount);
+  }
+
   if (trustSignalsLoaded) {
     return;
   }
   if (trustSignalsPromise) {
     return trustSignalsPromise;
   }
-
-  const releaseCount = Array.isArray(releases)
-    ? releases.length
-    : Number(releases || 0) || 0;
 
   trustSignalsPromise = (async () => {
     let stars = 0;
@@ -1662,7 +1760,7 @@ async function loadLatestRelease() {
         prerelease: normalizedPayload.prerelease,
         releaseCount: normalizedPayload.releaseCount,
         loadSource: "network",
-        successMessage: "已读取最新版本信息。",
+        successMessage: t("js.releaseLoaded", "已读取最新版本信息。"),
       });
     } catch (error) {
       trackStructuredEvent("release_data_load", {
@@ -1673,7 +1771,10 @@ async function loadLatestRelease() {
       setReleaseErrorState();
       renderLatestStableHighlights({
         rawBody: "",
-        description: "暂时无法读取最近更新，仍可直接打开 Releases 查看详情。",
+        description: t(
+          "js.highlightFallback",
+          "暂时无法读取最近更新，仍可直接打开 Releases 查看详情。"
+        ),
       });
       void loadTrustSignals(0);
       return null;
@@ -1685,7 +1786,6 @@ async function loadLatestRelease() {
   return releaseLoadPromise;
 }
 
-void loadTrustSignals([]);
 void loadReleaseTimeline();
 
 function openReleaseModal(triggerContext = {}) {
@@ -1798,6 +1898,22 @@ releaseGithubDownload?.addEventListener("click", (event) => {
 
 bindGeneralAnalytics();
 
+let schoolsDataPromise;
+
+function loadSchoolsData() {
+  if (!schoolsDataPromise) {
+    schoolsDataPromise = fetch("./schools.json", { cache: "no-store" }).then(
+      (response) => {
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        return response.json();
+      }
+    );
+  }
+  return schoolsDataPromise;
+}
+
 async function initHeroSchoolCount() {
   const countEl = document.getElementById("hero-school-count");
   if (!countEl) {
@@ -1805,11 +1921,7 @@ async function initHeroSchoolCount() {
   }
 
   try {
-    const response = await fetch("./schools.json", { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
-    const payload = await response.json();
+    const payload = await loadSchoolsData();
     const schoolCount = Number(payload?.counts?.schools);
     if (Number.isFinite(schoolCount) && schoolCount > 0) {
       countEl.textContent = String(schoolCount);
@@ -1857,6 +1969,7 @@ function initSchoolsPage() {
   const emptyEl = document.getElementById("schools-empty");
   const updatedEl = document.getElementById("schools-updated");
   const indexBarEl = document.getElementById("schools-index-bar");
+  const scrollEl = listEl.closest(".schools-list-scroll");
   const searchEl = document.getElementById("schools-search");
   const genericToggleEl = document.getElementById("schools-show-generic");
   const statCountEl = document.getElementById("schools-stat-count");
@@ -2022,11 +2135,7 @@ function initSchoolsPage() {
 
   async function loadSchools() {
     try {
-      const response = await fetch("./schools.json", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status);
-      }
-      const payload = await response.json();
+      const payload = await loadSchoolsData();
       allSchools = Array.isArray(payload?.schools) ? payload.schools : [];
       updateStats(payload?.counts);
 
@@ -2047,6 +2156,27 @@ function initSchoolsPage() {
 
   searchEl.addEventListener("input", renderList);
   genericToggleEl.addEventListener("change", renderList);
+  indexBarEl.addEventListener("click", (event) => {
+    const link = event.target instanceof Element
+      ? event.target.closest("a[href^='#schools-group-']")
+      : null;
+    if (!link || !scrollEl) {
+      return;
+    }
+    const target = document.getElementById(link.getAttribute("href").slice(1));
+    if (!target) {
+      return;
+    }
+    event.preventDefault();
+    const targetTop =
+      target.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop;
+    scrollEl.scrollTo({
+      top: targetTop,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  });
   window.__mikcbRerenderSchools = renderList;
   loadSchools();
 }
@@ -2071,10 +2201,22 @@ function refreshDynamicI18n() {
 
   if (stableReleaseData) {
     stableReleaseData.channelLabel = t("js.channelStable", "正式版");
+    stableReleaseData.description = buildReleaseDescription(
+      stableReleaseData.rawBody,
+      [stableReleaseData.title, stableReleaseData.version, `v${stableReleaseData.version}`]
+    );
     renderLatestStableHighlights(stableReleaseData);
   }
   if (prereleaseReleaseData) {
     prereleaseReleaseData.channelLabel = t("js.channelPrerelease", "预发布");
+    prereleaseReleaseData.description = buildReleaseDescription(
+      prereleaseReleaseData.rawBody,
+      [
+        prereleaseReleaseData.title,
+        prereleaseReleaseData.version,
+        `v${prereleaseReleaseData.version}`,
+      ]
+    );
   }
   if (stableReleaseData) {
     renderReleaseData(activeReleaseChannel);

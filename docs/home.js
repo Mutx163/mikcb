@@ -48,18 +48,5 @@
     if (typeof loadLatestRelease === "function") {
       void loadLatestRelease();
     }
-
-    fetch("./releases/latest.json", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => {
-        const count = Number(payload?.releaseCount || 0);
-        const releasesEl = document.getElementById("trust-releases");
-        if (count > 0 && releasesEl) {
-          releasesEl.textContent = String(count);
-        }
-      })
-      .catch(() => {
-        /* 保留占位符即可 */
-      });
   });
 })();

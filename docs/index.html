@@ -141,14 +141,14 @@
       <div class="nav-inner">
         <a class="nav-brand" href="#top" aria-label="轻屿课表首页" data-i18n-attr="aria-label:brand.homeAria">
           <span class="nav-brand-mark">
-            <img src="./app-icon.png" alt="轻屿课表图标" data-i18n-attr="alt:brand.iconAlt" data-i18n-attr="alt:brand.iconAlt" />
+            <img src="./app-icon.png" alt="轻屿课表图标" data-i18n-attr="alt:brand.iconAlt" />
           </span>
           <span class="nav-brand-text" data-i18n="brand.name">轻屿课表</span>
         </a>
         <nav id="nav-menu" class="nav-links" aria-label="站点导航" data-i18n-attr="aria-label:nav.siteAria">
           <a href="#features" data-i18n="nav.features">功能</a>
+          <a href="#schools" data-i18n="nav.schools">适配学校</a>
           <a href="#changelog" data-i18n="nav.updates">更新</a>
-          <a href="./schools.html" data-i18n="nav.schools">适配学校</a>
           <a href="#faq" data-i18n="nav.faq">常见问题</a>
           <a href="#download" data-i18n="nav.download">下载</a>
         </nav>
@@ -366,7 +366,7 @@
               <p data-i18n="feature.import.desc">
                 100+ 所高校支持网页登录直接同步课表；没适配的学校也能走 .ics、AI 识图或表格模板导入。
               </p>
-              <a class="bento-link" href="./schools.html" data-i18n="feature.import.link">查看已适配学校 →</a>
+              <a class="bento-link" href="#schools" data-i18n="feature.import.link">查看已适配学校 →</a>
             </article>
 
             <article class="bento-card reveal" data-spotlight>
@@ -416,6 +416,75 @@
                 >GitHub 仓库 →</a
               >
             </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== SCHOOLS ===================== -->
+      <section id="schools" class="section section-schools">
+        <div class="section-shell">
+          <div class="schools-hero reveal">
+            <p class="section-label" data-i18n="schools.label">教务导入</p>
+            <h2>
+              <span data-i18n="schools.title">已适配学校，</span><span class="grad-text" data-i18n="schools.titleGrad">直接登录导课。</span>
+            </h2>
+            <p class="section-desc" data-i18n-html="schools.descHtml">
+              在 App 内选择「导入课程表 → 教务系统导入」，学校在列表中就能通过网页登录同步课表。列表每天自动与
+              <a class="inline-link" href="https://github.com/Mutx163/qingyu_warehouse" target="_blank" rel="noreferrer">qingyu_warehouse</a>
+              同步更新。
+            </p>
+
+            <div class="schools-stats" aria-live="polite">
+              <div class="dm-card">
+                <strong id="schools-stat-count">—</strong>
+                <span data-i18n="schools.statSchools">所高校已适配</span>
+              </div>
+              <div class="dm-card">
+                <strong id="schools-stat-generic">—</strong>
+                <span data-i18n="schools.statGeneric">套通用教务适配</span>
+              </div>
+              <div class="dm-card">
+                <strong id="schools-stat-total">—</strong>
+                <span data-i18n="schools.statTotal">条导入入口</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="schools-panel reveal">
+            <div class="schools-toolbar">
+              <label class="schools-search-field">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+                </svg>
+                <span class="visually-hidden" data-i18n="schools.searchAria">搜索学校</span>
+                <input id="schools-search" type="search" inputmode="search" autocomplete="off" placeholder="搜索学校名称…" data-i18n-placeholder="schools.searchPlaceholder" />
+              </label>
+              <label class="schools-toggle">
+                <input id="schools-show-generic" type="checkbox" />
+                <span data-i18n="schools.showGeneric">显示通用教务</span>
+              </label>
+            </div>
+
+            <div class="schools-layout">
+              <div class="schools-list-scroll">
+                <div id="schools-list" class="schools-list" aria-live="polite">
+                  <p class="schools-status" data-i18n="schools.loading">正在加载学校列表…</p>
+                </div>
+              </div>
+              <nav id="schools-index-bar" class="schools-index-bar" aria-label="字母索引" data-i18n-attr="aria-label:schools.indexAria" hidden></nav>
+            </div>
+
+            <p id="schools-empty" class="schools-empty" hidden data-i18n-html="schools.emptyHtml">
+              没有找到匹配的学校。你可以改用 .ics 导入，或到
+              <a href="https://github.com/Mutx163/qingyu_warehouse/issues" target="_blank" rel="noreferrer">qingyu_warehouse</a>
+              提交适配需求。
+            </p>
+
+            <p id="schools-updated" class="schools-updated"></p>
+          </div>
+
+          <div class="schools-foot-links reveal">
+            <a href="https://github.com/Mutx163/qingyu_warehouse/issues" target="_blank" rel="noreferrer" data-i18n="schools.feedback">缺少学校？去反馈 →</a>
           </div>
         </div>
       </section>
@@ -471,7 +540,7 @@
               <div class="faq-answer" data-i18n-html="faq.a2Html">
                 <p>
                   目前已适配 100+ 所高校，完整列表见
-                  <a href="./schools.html">已适配学校页面</a>，持续扩展中。如果你的学校暂未适配，可以使用
+                  <a href="#schools">已适配学校列表</a>，持续扩展中。如果你的学校暂未适配，可以使用
                   .ics 文件导入、AI 识图导入或手动添加课程，也欢迎在
                   <a href="https://github.com/Mutx163/qingyu_warehouse/issues" target="_blank" rel="noreferrer">qingyu_warehouse</a>
                   提交你学校的适配需求。
@@ -581,8 +650,8 @@
           <div class="footer-col">
             <small data-i18n="footer.product">产品</small>
             <a href="#features" data-i18n="nav.features">功能</a>
+            <a href="#schools" data-i18n="nav.schools">适配学校</a>
             <a href="#changelog" data-i18n="footer.changelog">更新日志</a>
-            <a href="./schools.html" data-i18n="nav.schools">适配学校</a>
             <a href="#download" data-i18n="nav.download">下载</a>
           </div>
           <div class="footer-col">

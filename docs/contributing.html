@@ -62,27 +62,77 @@
     </main>
     <script src="./i18n.js"></script>
     <script src="./script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-      (async function () {
+      (async function initContributingContent() {
         const container = document.getElementById("contributing-content");
-        try {
-          const response = await fetch("./CONTRIBUTING.md", {
-            cache: "no-store",
-          });
-          if (!response.ok) {
-            throw new Error("HTTP " + response.status);
-          }
-          const md = await response.text();
-          if (typeof marked !== "undefined") {
-            container.innerHTML = marked.parse(md);
-          } else {
-            container.innerHTML = "<p>" + (window.I18n ? window.I18n.t("legal.contribLoadFail") : "Markdown 渲染器加载失败，请直接查看 GitHub 上的贡献指南。") + "</p>";
-          }
-        } catch (e) {
-          container.innerHTML =
-            '<p>' + (window.I18n ? window.I18n.t("legal.contribFetchFailHtml") : '无法加载贡献指南内容，请前往 <a href="https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">GitHub 查看</a>。') + '</p>';
+        let markdownTextPromise;
+
+        function t(key, fallback) {
+          return window.I18n?.t?.(key) || fallback;
         }
+
+        function isChineseLocale() {
+          const locale = window.I18n?.getLocale?.() || document.documentElement.lang || "zh-CN";
+          return /^zh(?:-|$)/i.test(locale);
+        }
+
+        function loadMarked() {
+          if (window.marked) {
+            return Promise.resolve(window.marked);
+          }
+          return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+            script.onload = () => resolve(window.marked);
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        async function loadMarkdown() {
+          if (!markdownTextPromise) {
+            markdownTextPromise = fetch("./CONTRIBUTING.md", {
+              cache: "force-cache",
+            }).then((response) => {
+              if (!response.ok) {
+                throw new Error("HTTP " + response.status);
+              }
+              return response.text();
+            });
+          }
+          return markdownTextPromise;
+        }
+
+        async function renderContent() {
+          if (!isChineseLocale()) {
+            container.innerHTML = "<p>" + t(
+              "legal.contribSourceLanguageHtml",
+              "贡献指南目前以简体中文发布，请前往 GitHub 查看完整指南。"
+            ) + "</p>";
+            return;
+          }
+
+          try {
+            const [md, renderer] = await Promise.all([loadMarkdown(), loadMarked()]);
+            container.innerHTML = renderer
+              ? renderer.parse(md)
+              : "<p>" + t("legal.contribLoadFail", "Markdown 渲染器加载失败，请直接查看 GitHub 上的贡献指南。") + "</p>";
+          } catch (error) {
+            container.innerHTML =
+              "<p>" + t(
+                "legal.contribFetchFailHtml",
+                '无法加载贡献指南内容，请前往 <a href="https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">GitHub 查看</a>。'
+              ) + "</p>";
+          }
+        }
+
+        if (window.I18n?.ready) {
+          await window.I18n.ready;
+        }
+        await renderContent();
+        window.I18n?.onChange?.(() => {
+          void renderContent();
+        });
       })();
     </script>
   </body>
