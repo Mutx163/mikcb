@@ -400,7 +400,11 @@ class HyperosSwitchTile extends StatelessWidget {
             ),
           ),
           SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
-          HyperosSwitch(value: value, onChanged: onChanged),
+          // Keep the row as the single toggle target. Without this guard the
+          // row and switch can compete for one tap on some touch surfaces.
+          AbsorbPointer(
+            child: HyperosSwitch(value: value, onChanged: onChanged),
+          ),
         ],
       ),
     );

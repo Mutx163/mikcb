@@ -94,6 +94,36 @@ void main() {
       expect(value, isTrue);
     });
 
+    testWidgets('switch tap is handled once by the row', (tester) async {
+      var value = false;
+      var changeCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return HyperosSwitchTile(
+                  title: 'Enabled',
+                  value: value,
+                  onChanged: (next) {
+                    changeCount += 1;
+                    setState(() => value = next);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tapAt(tester.getCenter(find.byType(HyperosSwitch)));
+      await tester.pumpAndSettle();
+
+      expect(changeCount, 1);
+      expect(value, isTrue);
+    });
+
     testWidgets('disabled tile does not toggle', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
