@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-22T04:48:50+00:00",
+  "updatedAt": "2026-07-23T04:53:58+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 128,
-    "schools": 123,
+    "total": 130,
+    "schools": 125,
     "generic": 5
   },
   "schools": [
@@ -450,6 +450,13 @@
       "category": "school"
     },
     {
+      "id": "JLU",
+      "name": "吉林大学",
+      "initial": "J",
+      "resourceFolder": "JLU",
+      "category": "school"
+    },
+    {
       "id": "JNU",
       "name": "暨南大学",
       "initial": "J",
@@ -867,6 +874,13 @@
       "name": "中国石油大学（北京）克拉玛依校区",
       "initial": "Z",
       "resourceFolder": "CUPK",
+      "category": "school"
+    },
+    {
+      "id": "USTC",
+      "name": "中国科学技术大学",
+      "initial": "Z",
+      "resourceFolder": "USTC",
       "category": "school"
     },
     {
