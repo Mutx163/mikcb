@@ -37,6 +37,24 @@ void main() {
       );
     });
 
+    test('enabled single-day rule matches that day', () {
+      final rule = ScheduleDateRule(
+        id: 'single-day',
+        name: '临时作息',
+        timeSchemeId: 'scheme-special',
+        startDate: '2026-07-23',
+        endDate: '2026-07-23',
+        enabled: true,
+      );
+
+      final matched = ScheduleDateRuleLogic.match(DateTime(2026, 7, 23), [
+        rule,
+      ]);
+
+      expect(matched?.id, rule.id);
+      expect(matched?.enabled, isTrue);
+    });
+
     test('validateRules rejects overlap and over cap', () {
       final first = ScheduleDateRule(
         id: 'a',

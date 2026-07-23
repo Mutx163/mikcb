@@ -1,8 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
+import 'package:university_timetable/services/storage_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    StorageService().resetForTesting();
+    SharedPreferences.setMockInitialValues({});
+  });
+
   const sampleSections = [
     SectionTime(startTime: '08:00', endTime: '08:45'),
     SectionTime(startTime: '08:55', endTime: '09:40'),
@@ -141,4 +151,53 @@ void main() {
     expect(timed.endSection, 3);
     expect(timed.dayOfWeek, now.weekday);
   });
+
+  test('buildTimedTestCourse rejects a range that crosses midnight', () {
+    final now = DateTime(2026, 3, 23, 23, 58);
+    final template = LiveTestingFixtureService.buildSlotTemplate(
+      sectionNumber: 24,
+      section: const SectionTime(startTime: '23:00', endTime: '23:59'),
+      dayOfWeek: now.weekday,
+      semesterWeekCount: 20,
+    );
+
+    expect(
+      () => LiveTestingFixtureService.buildTimedTestCourse(
+        template: template,
+        now: now,
+        lead: const Duration(minutes: 1),
+      ),
+      throwsA(isA<StateError>()),
+    );
+  });
+
+  test(
+    'upsert keeps fixture clocks and production Live can select it',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+      final now = DateTime(2026, 3, 23, 10, 15);
+
+      final timed = await LiveTestingFixtureService.upsertTimedFixtureCourse(
+        provider: provider,
+        sectionNumber: 1,
+        now: now,
+        lead: const Duration(minutes: 3),
+      );
+
+      expect(provider.getCourseById(timed.id)?.startTime, '10:18');
+      expect(provider.getCourseById(timed.id)?.endTime, '10:21');
+      expect(
+        provider
+            .getLiveActivityCourseSelection(now: now, week: 1)
+            ?.currentCourse
+            .id,
+        timed.id,
+      );
+      provider.dispose();
+    },
+  );
 }

@@ -458,8 +458,11 @@ class _TimeSchemeManagementScreenState
     }
 
     try {
+      final previousAppliedSignature =
+          provider.scheduleDateRuleLastAppliedSignature;
+      late final ScheduleDateRule savedRule;
       if (existing == null) {
-        await provider.createScheduleDateRule(
+        savedRule = await provider.createScheduleDateRule(
           name: name,
           timeSchemeId: selectedSchemeId,
           startDate: ScheduleDateRuleLogic.formatIsoDate(startDate),
@@ -467,7 +470,7 @@ class _TimeSchemeManagementScreenState
           enabled: enabled,
         );
       } else {
-        await provider.updateScheduleDateRule(
+        savedRule = (await provider.updateScheduleDateRule(
           existing.copyWith(
             name: name,
             timeSchemeId: selectedSchemeId,
@@ -475,14 +478,28 @@ class _TimeSchemeManagementScreenState
             endDate: ScheduleDateRuleLogic.formatIsoDate(endDate),
             enabled: enabled,
           ),
-        );
+        ))!;
       }
       if (!context.mounted) {
         return;
       }
+      final didApplyToday =
+          provider.scheduleDateRuleLastAppliedSignature !=
+              previousAppliedSignature &&
+          provider.scheduleDateRuleLastAppliedSignature ==
+              ScheduleDateRuleLogic.appliedSignature(savedRule);
+      final willApplyLater =
+          savedRule.enabled &&
+          ScheduleDateRuleLogic.dateOnly(
+            DateTime.now(),
+          ).isBefore(ScheduleDateRuleLogic.dateOnly(startDate));
       showAppToast(
         context,
-        message: l10n.scheduleDateRuleSaved,
+        message: didApplyToday
+            ? l10n.scheduleDateRuleSavedAndApplied
+            : willApplyLater
+            ? l10n.scheduleDateRuleSavedForFuture
+            : l10n.scheduleDateRuleSaved,
         kind: AppToastKind.success,
       );
     } on ArgumentError catch (error) {
@@ -1598,7 +1615,12 @@ class _DateRuleSwitchField extends StatelessWidget {
                     style: TextStyle(fontSize: fontSize, color: onSurface),
                   ),
                 ),
-                HyperosSwitch(value: value, onChanged: onChanged),
+                // The row owns the toggle action. Prevent the nested switch's
+                // GestureDetector from competing for the same tap, which can
+                // make one user tap appear to toggle twice on some devices.
+                AbsorbPointer(
+                  child: HyperosSwitch(value: value, onChanged: onChanged),
+                ),
               ],
             ),
           ),

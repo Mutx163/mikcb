@@ -62,6 +62,8 @@ part 'timetable/time_scheme_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
+bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
+
 class CourseConflict {
   final Course course;
   final Course otherCourse;
@@ -79,7 +81,7 @@ class LocationTimeApplyStats {
   final int alreadySameClockCount;
 
   /// Location hit a group, but course section range cannot map into that
-  /// scheme — apply is rejected (no pin, no clock rewrite).
+  /// scheme — synchronization is rejected (no mode or clock rewrite).
   final int sectionOverflowCount;
 
   /// First few course names rejected for section overflow (for toast).
@@ -871,6 +873,11 @@ class TimetableProvider with ChangeNotifier {
   ScheduleDateRule? matchScheduleDateRule(DateTime date) =>
       ScheduleDateRuleLogic.match(date, _scheduleDateRules);
 
+  /// Signature of the last date-rule bulk apply, used to explain save results
+  /// without exposing the provider's mutable internal state.
+  String? get scheduleDateRuleLastAppliedSignature =>
+      _scheduleDateRuleLastAppliedSignature;
+
   List<SectionTime>? _resolveSectionsForCourse(
     Course course, {
     TimetableSettings? settings,
@@ -1198,7 +1205,11 @@ class TimetableProvider with ChangeNotifier {
   ///    that default; unlocked clocks rewrite).
   /// 2. Runs on the first open at/after the rule start while still in range.
   /// 3. Does not re-run daily once applied, so manual course edits stick.
-  Future<bool> applyDueScheduleDateRules({DateTime? now}) async {
+  Future<bool> applyDueScheduleDateRules({DateTime? now}) {
+    return _runMutation(() => _applyDueScheduleDateRules(now: now));
+  }
+
+  Future<bool> _applyDueScheduleDateRules({DateTime? now}) async {
     await initialize();
     final reference = now ?? DateTime.now();
     final matched = ScheduleDateRuleLogic.match(reference, _scheduleDateRules);
@@ -1219,15 +1230,22 @@ class TimetableProvider with ChangeNotifier {
       return false;
     }
 
-    // Section coverage check (same as applyTimeScheme) against active courses.
-    Course? highestSectionCourse;
-    for (final course in _courses) {
-      if (highestSectionCourse == null ||
-          course.endSection > highestSectionCourse.endSection) {
-        highestSectionCourse = course;
+    // The apply below rewrites every profile, so validate every profile before
+    // changing any settings. Checking only the active profile can leave an
+    // inactive profile pointing at a scheme that cannot represent its courses.
+    var requiredMaxSection = 0;
+    for (final profile in _profiles) {
+      for (final course in profile.courses) {
+        if (course.endSection > requiredMaxSection) {
+          requiredMaxSection = course.endSection;
+        }
       }
     }
-    final requiredMaxSection = highestSectionCourse?.endSection ?? 0;
+    for (final course in _courses) {
+      if (course.endSection > requiredMaxSection) {
+        requiredMaxSection = course.endSection;
+      }
+    }
     if (requiredMaxSection > scheme.sections.length) {
       appDebugLog(
         'ScheduleDateRule',
@@ -1329,8 +1347,7 @@ class TimetableProvider with ChangeNotifier {
     final sectionOverflowCourseNames = <String>[];
     var noMatchCount = 0;
     var matchMissingSchemeCount = 0;
-    var pinnedCount = 0;
-    var rebindCount = 0;
+    var autoReleasedCount = 0;
     var clockRewriteCount = 0;
     final changeSamples = <String>[];
 
@@ -1353,13 +1370,13 @@ class TimetableProvider with ChangeNotifier {
       'locationGroups=${_locationTimeGroups.length} '
       'activeScheme=${activeScheme?.name ?? "null"}(${activeScheme?.id ?? "-"}) '
       'activeSections=${activeScheme?.sections.length ?? _settings.sections.length} '
-      'alreadyPinnedBefore=${_courses.where((c) => c.timeSchemeIdOverride != null).length}',
+      'manualOverridesBefore=${_courses.where((c) => c.timeSchemeIdOverride != null).length}',
       extras: {
         'profileId': _activeProfileId,
         'courseCount': _courses.length,
         'groupCount': _locationTimeGroups.length,
         'activeSchemeId': activeScheme?.id,
-        'alreadyPinnedBefore': _courses
+        'manualOverridesBefore': _courses
             .where((course) => course.timeSchemeIdOverride != null)
             .length,
       },
@@ -1457,9 +1474,9 @@ class TimetableProvider with ChangeNotifier {
       final startIndex = course.startSection - 1;
       final endIndex = course.endSection - 1;
       final sectionCount = matchedScheme.sections.length;
-      // HARD RULE: only fully seat-mapable courses may be bound.
-      // Pinning a 13-slot scheme onto section 20 with old clocks is a product
-      // bug (looks "applied", times are nonsense). Reject instead.
+      // HARD RULE: only fully seat-mapable courses may be synchronized.
+      // Applying a short scheme to a later section would produce nonsense
+      // clocks, so leave the course untouched and report it.
       if (startIndex < 0 || endIndex < startIndex || endIndex >= sectionCount) {
         sectionOverflowCount += 1;
         if (sectionOverflowCourseNames.length < 5) {
@@ -1472,7 +1489,7 @@ class TimetableProvider with ChangeNotifier {
           'beforeOverride=${beforeOverride ?? "null"} clock=$beforeClock '
           '→ 不写 override、不改钟点',
           extras: {
-            'action': 'overflow_reject_no_pin',
+            'action': 'overflow_reject_no_sync',
             'courseId': course.id,
             'courseName': course.name,
             'location': course.location,
@@ -1496,15 +1513,14 @@ class TimetableProvider with ChangeNotifier {
         continue;
       }
 
-      // Only fully seat-mapped courses count as matched/applied.
+      // Only fully seat-mapped courses count as matched/synchronized.
       matchedCount += 1;
-      // Sections fit: pin scheme + rewrite clocks from that scheme.
-      courseToSync = course.copyWith(timeSchemeIdOverride: matchedScheme.id);
-      if (beforeOverride != matchedScheme.id) {
-        pinnedCount += 1;
-        if (beforeOverride != null) {
-          rebindCount += 1;
-        }
+      // Return the course to automatic mode, then resolve it through the
+      // current location rule. This keeps future rule edits automatic instead
+      // of turning a rematch into another permanent manual override.
+      courseToSync = course.copyWith(timeSchemeIdOverride: null);
+      if (beforeOverride != null) {
+        autoReleasedCount += 1;
       }
 
       final expectedStart = matchedScheme.sections[startIndex].startTime;
@@ -1549,7 +1565,9 @@ class TimetableProvider with ChangeNotifier {
         'beforeClock=$beforeClock afterClock=${next.startTime}-${next.endTime} '
         'clockChanged=$clockChanged overrideChanged=$overrideChanged',
         extras: {
-          'action': sameClock ? 'pin_same_clock' : 'pin_and_rewrite_clock',
+          'action': sameClock
+              ? 'auto_match_same_clock'
+              : 'auto_match_and_rewrite_clock',
           'courseId': course.id,
           'courseName': course.name,
           'location': course.location,
@@ -1576,10 +1594,10 @@ class TimetableProvider with ChangeNotifier {
       await _updateLiveActivity();
     }
 
-    final pinnedAfter = _courses
+    final overridesAfter = _courses
         .where((course) => course.timeSchemeIdOverride != null)
         .length;
-    final profilePinned =
+    final profileOverrides =
         activeProfile?.courses
             .where((course) => course.timeSchemeIdOverride != null)
             .length ??
@@ -1589,8 +1607,8 @@ class TimetableProvider with ChangeNotifier {
       'updated=$updatedCount sameClock=$alreadySameClockCount '
       'overflow=$sectionOverflowCount noMatch=$noMatchCount '
       'missingScheme=$matchMissingSchemeCount '
-      'pinnedNewOrChanged=$pinnedCount rebind=$rebindCount clockRewrite=$clockRewriteCount '
-      'pinnedInMemoryAfter=$pinnedAfter pinnedInActiveProfile=$profilePinned '
+      'autoReleased=$autoReleasedCount clockRewrite=$clockRewriteCount '
+      'overridesInMemoryAfter=$overridesAfter overridesInActiveProfile=$profileOverrides '
       'didPersist=${updatedCount > 0} '
       'overflowNames=${sectionOverflowCourseNames.join(",")} '
       'samples=${changeSamples.take(12).join(" || ")}',
@@ -1602,11 +1620,10 @@ class TimetableProvider with ChangeNotifier {
         'overflow': sectionOverflowCount,
         'noMatch': noMatchCount,
         'missingScheme': matchMissingSchemeCount,
-        'pinnedNewOrChanged': pinnedCount,
-        'rebind': rebindCount,
+        'autoReleased': autoReleasedCount,
         'clockRewrite': clockRewriteCount,
-        'pinnedInMemoryAfter': pinnedAfter,
-        'pinnedInActiveProfile': profilePinned,
+        'overridesInMemoryAfter': overridesAfter,
+        'overridesInActiveProfile': profileOverrides,
         'didPersist': updatedCount > 0,
         'changeSamples': changeSamples,
         'overflowNames': sectionOverflowCourseNames,
@@ -1619,19 +1636,13 @@ class TimetableProvider with ChangeNotifier {
         '请对比地点组绑定模板 vs 主课表模板各节起止时间是否完全一致。',
       );
     }
-    if (updatedCount > 0 && pinnedAfter == 0) {
+    if (overridesAfter != profileOverrides && profileOverrides >= 0) {
       audit(
-        '严重异常: updatedCount>0 但内存中没有任何 timeSchemeIdOverride。编辑页仍会显示「自动」。',
-        extras: {'fatal': true, 'updatedCount': updatedCount},
-      );
-    }
-    if (pinnedAfter > 0 && profilePinned == 0) {
-      audit(
-        '严重异常: 内存课表已绑定 override，但 activeProfile.courses 里全是 null。持久化/合并失败。',
+        '严重异常: 内存课表与 activeProfile 的模板覆盖数量不一致。持久化/合并失败。',
         extras: {
           'fatal': true,
-          'pinnedInMemoryAfter': pinnedAfter,
-          'pinnedInActiveProfile': profilePinned,
+          'overridesInMemoryAfter': overridesAfter,
+          'overridesInActiveProfile': profileOverrides,
         },
       );
     }
@@ -1985,9 +1996,10 @@ class TimetableProvider with ChangeNotifier {
       if (validationMessage != null) {
         throw ArgumentError(validationMessage);
       }
-      final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
-        _normalizeCourse(course),
-      );
+      final normalized = _normalizeCourse(course);
+      final normalizedCourse = _isLiveTestingFixture(normalized)
+          ? normalized
+          : _syncCourseWithEffectiveTimeScheme(normalized);
       final existingSharedCourse = _courses.cast<Course?>().firstWhere(
         (item) =>
             item != null &&
@@ -2030,9 +2042,10 @@ class TimetableProvider with ChangeNotifier {
         if (validationMessage != null) {
           throw ArgumentError(validationMessage);
         }
-        final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
-          _normalizeCourse(course),
-        );
+        final normalized = _normalizeCourse(course);
+        final normalizedCourse = _isLiveTestingFixture(normalized)
+            ? normalized
+            : _syncCourseWithEffectiveTimeScheme(normalized);
         final originalCourse = _courses[index];
         final previousKey = _sharedCourseKeyFromName(
           previousSharedName ?? originalCourse.name,
@@ -2358,12 +2371,12 @@ class TimetableProvider with ChangeNotifier {
 
   List<Exam> getExamsForCourse(String courseId) {
     return _exams.where((exam) => exam.courseId == courseId).toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      ..sort(Exam.compareByStart);
   }
 
   List<Exam> getUpcomingExams({int? limit}) {
     final upcoming = _exams.where((exam) => !exam.isExpired).toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      ..sort(Exam.compareByStart);
     if (limit != null && upcoming.length > limit) {
       return upcoming.sublist(0, limit);
     }

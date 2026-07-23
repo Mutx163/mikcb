@@ -619,7 +619,7 @@ void main() {
   });
 
   test(
-    'apply location time rules pins matched scheme override and clocks',
+    'apply location time rules returns matched courses to automatic routing',
     () async {
       final provider = TimetableProvider(
         autoInitialize: false,
@@ -662,15 +662,29 @@ void main() {
 
       expect(provider.courses.single.timeSchemeIdOverride, isNull);
 
+      final manualScheme = await provider.createTimeScheme(
+        name: '手动模板',
+        sections: [
+          const SectionTime(startTime: '07:30', endTime: '08:15'),
+          const SectionTime(startTime: '08:25', endTime: '09:10'),
+          ...provider.settings.sections.skip(2),
+        ],
+      );
+      await provider.updateCourse(
+        provider.courses.single.copyWith(timeSchemeIdOverride: manualScheme.id),
+      );
+      expect(provider.courses.single.timeSchemeIdOverride, manualScheme.id);
+
       final stats = await provider.applyLocationTimeRulesToActiveProfile();
 
       expect(stats.matchedCount, 1);
       expect(stats.updatedCount, 1);
-      expect(provider.courses.single.timeSchemeIdOverride, locationScheme.id);
+      expect(provider.courses.single.timeSchemeIdOverride, isNull);
       expect(provider.courses.single.startTime, '08:30');
       expect(provider.courses.single.endTime, '09:15');
 
-      // Second apply still rewrites matched courses (not locked forever).
+      // A later rematch follows the updated location rule without creating a
+      // permanent course-level override.
       final otherScheme = await provider.createTimeScheme(
         name: '教学楼A作息-改',
         sections: [
@@ -686,8 +700,8 @@ void main() {
 
       final statsAgain = await provider.applyLocationTimeRulesToActiveProfile();
       expect(statsAgain.matchedCount, 1);
-      expect(statsAgain.updatedCount, 1);
-      expect(provider.courses.single.timeSchemeIdOverride, otherScheme.id);
+      expect(statsAgain.updatedCount, 0);
+      expect(provider.courses.single.timeSchemeIdOverride, isNull);
       expect(provider.courses.single.startTime, '08:40');
       expect(provider.courses.single.endTime, '09:25');
     },

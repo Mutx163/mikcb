@@ -78,8 +78,8 @@ void main() {
         async.flushMicrotasks();
         expect(provider.hasPendingUndo, isTrue);
 
-        // Advance time to just before timeout
-        async.elapse(const Duration(seconds: 7));
+        // Advance time to just before the two-second action window expires.
+        async.elapse(const Duration(seconds: 1));
         expect(provider.hasPendingUndo, isTrue);
 
         // Advance past timeout

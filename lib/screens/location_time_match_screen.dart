@@ -149,23 +149,43 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     TimetableProvider provider,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final pinnedBefore = provider.courses
+    final candidateCount = provider.courses
+        .where((course) => provider.matchLocationTime(course.location) != null)
+        .length;
+    if (candidateCount == 0) {
+      showAppToast(
+        context,
+        message: l10n.locationTimeMatchApplyNoneMatched,
+        kind: AppToastKind.info,
+      );
+      return;
+    }
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: l10n.locationTimeMatchApplyTitle,
+      message: l10n.locationTimeMatchApplyMessage(candidateCount),
+      confirmLabel: l10n.locationTimeMatchApplyConfirm,
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    final overridesBefore = provider.courses
         .where((course) => course.timeSchemeIdOverride != null)
         .length;
     appDebugLog(
       'LocationTimeApplyUI',
-      '用户点击「应用到当前课表」 courses=${provider.courses.length} '
+      '用户点击「重新匹配当前课表」 courses=${provider.courses.length} '
           'groups=${provider.locationTimeGroups.length} '
-          'pinnedBefore=$pinnedBefore',
+          'overridesBefore=$overridesBefore',
     );
     unawaited(
       AppLogService.instance.info(
         'location_time_apply_ui',
-        '用户点击「应用到当前课表」',
+        '用户点击「重新匹配当前课表」',
         extras: {
           'courses': provider.courses.length,
           'groups': provider.locationTimeGroups.length,
-          'pinnedBefore': pinnedBefore,
+          'overridesBefore': overridesBefore,
         },
       ),
     );
@@ -173,7 +193,7 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     if (!context.mounted) {
       return;
     }
-    final pinnedAfter = provider.courses
+    final overridesAfter = provider.courses
         .where((course) => course.timeSchemeIdOverride != null)
         .length;
     final sampleOverrides = provider.courses
@@ -189,13 +209,13 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
           'unlocked=${stats.unlockedCount} sameClock=${stats.alreadySameClockCount} '
           'overflow=${stats.sectionOverflowCount} '
           'overflowNames=${stats.sectionOverflowCourseNames.join(",")} '
-          'pinnedAfter=$pinnedAfter samples=$sampleOverrides',
+          'overridesAfter=$overridesAfter samples=$sampleOverrides',
     );
     unawaited(
       AppLogService.instance.info(
         'location_time_apply_ui',
         '应用结果: matched=${stats.matchedCount} updated=${stats.updatedCount} '
-            'pinnedAfter=$pinnedAfter',
+            'overridesAfter=$overridesAfter',
         extras: {
           'matched': stats.matchedCount,
           'updated': stats.updatedCount,
@@ -203,7 +223,7 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
           'sameClock': stats.alreadySameClockCount,
           'overflow': stats.sectionOverflowCount,
           'overflowNames': stats.sectionOverflowCourseNames,
-          'pinnedAfter': pinnedAfter,
+          'overridesAfter': overridesAfter,
           'samples': sampleOverrides,
         },
       ),

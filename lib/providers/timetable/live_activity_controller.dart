@@ -5,6 +5,12 @@ String _liveResolveRealTime(
   Course course,
   bool isStart,
 ) {
+  // Diagnostic fixtures intentionally carry temporary free-form clocks. They
+  // must exercise the production selection path without mutating a user's
+  // active time scheme.
+  if (_isLiveTestingFixture(course)) {
+    return isStart ? course.startTime : course.endTime;
+  }
   // Live always resolves against the calendar day being evaluated so date
   // rules (e.g. summer timetable) apply for today without being baked into
   // persisted Course clocks.

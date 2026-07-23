@@ -203,10 +203,23 @@ class LiveTestingFixtureService {
     Duration duration = defaultCourseDuration,
     String? note,
   }) {
-    final start = now.add(lead);
-    final end = start.add(duration);
+    if (duration <= Duration.zero) {
+      throw ArgumentError.value(duration, 'duration', 'must be positive');
+    }
+    var start = now.add(lead);
+    var end = start.add(duration);
+    // Course clocks are date-less and the timetable does not support
+    // overnight lessons. Near midnight, a normal lead+duration pair can
+    // otherwise become e.g. 23:59 -> 00:02, which is rejected by the live
+    // selector as an invalid course. Refuse that fixture instead of writing
+    // an impossible clock range.
+    if (start.year != end.year ||
+        start.month != end.month ||
+        start.day != end.day) {
+      throw StateError('当前时间距离午夜太近，无法生成不跨日测试课，请在午夜后重试');
+    }
     return template.copyWith(
-      dayOfWeek: now.weekday,
+      dayOfWeek: start.weekday,
       startTime: formatClock(start),
       endTime: formatClock(end),
       note: note ?? template.note,
