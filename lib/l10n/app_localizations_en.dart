@@ -8953,7 +8953,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      'Map classroom keywords to time schemes. Courses with a manual time scheme stay unchanged.';
+      'Time schemes are selected automatically from course locations. Rematching returns matched courses to automatic routing and updates their clocks; unmatched courses stay unchanged.';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -8979,16 +8979,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchApplyActive => 'Apply to current timetable';
+  String get locationTimeMatchApplyActive => 'Rematch current timetable';
+
+  @override
+  String get locationTimeMatchApplyTitle => 'Rematch current timetable?';
+
+  @override
+  String locationTimeMatchApplyMessage(int count) {
+    return '$count courses currently match a location rule. Courses whose sections fit will return to automatic routing and update their clocks; any manual scheme on those courses will be cleared. Unmatched courses will remain unchanged.';
+  }
+
+  @override
+  String get locationTimeMatchApplyConfirm => 'Rematch';
 
   @override
   String locationTimeMatchApplyUpdated(int matched, int updated) {
-    return 'Applied to $matched courses, updated $updated clocks';
+    return 'Rematched $matched courses, updated $updated clocks';
   }
 
   @override
   String locationTimeMatchApplyAlreadyAligned(int matched) {
-    return 'Aligned $matched courses; clocks already correct';
+    return 'Rematched $matched courses; clocks already correct';
   }
 
   @override
@@ -9035,7 +9046,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String locationTimeMatchDeleteMessage(String name) {
-    return 'Delete \"$name\"? Related courses will fall back to the default scheme.';
+    return 'Delete \"$name\"? Automatically matched courses will return to the timetable default; manually selected schemes will stay unchanged.';
   }
 
   @override
@@ -9175,7 +9186,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'On the start day, bulk-apply that scheme as the timetable default once (same as applying the scheme); edit courses freely after. Max 2 rules, no overlap';
+      'On the start date, apply the selected scheme once as the default for every timetable. Fixed course schemes and location matches are unaffected. Max 2 non-overlapping rules';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';
@@ -9223,6 +9234,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSaved => 'Date rule saved';
+
+  @override
+  String get scheduleDateRuleSavedAndApplied =>
+      'Date rule saved; every timetable\'s default schedule has been updated today';
+
+  @override
+  String get scheduleDateRuleSavedForFuture =>
+      'Date rule saved; every timetable\'s default schedule will update on the start date';
 
   @override
   String get scheduleDateRuleDeleted => 'Date rule deleted';

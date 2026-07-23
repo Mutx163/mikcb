@@ -15288,7 +15288,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'为不同教学楼配置地点关键词。点「应用到当前课表」会对当前课表里命中地点的课程一次性绑定模板并同步钟点；之后可在编辑页单独改。若要再次批量覆盖，需回到本页再点一次应用。'**
+  /// **'系统会按课程地点自动选择时间模板。点「重新匹配当前课表」会让命中课程恢复自动匹配并同步钟点；未命中的课程不会改变。'**
   String get locationTimeMatchSubtitle;
 
   /// No description provided for @locationTimeMatchWeekAxisNote.
@@ -15328,19 +15328,37 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchApplyActive.
   ///
   /// In zh, this message translates to:
-  /// **'应用到当前课表'**
+  /// **'重新匹配当前课表'**
   String get locationTimeMatchApplyActive;
+
+  /// No description provided for @locationTimeMatchApplyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新匹配当前课表？'**
+  String get locationTimeMatchApplyTitle;
+
+  /// No description provided for @locationTimeMatchApplyMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前有 {count} 门课程命中地点规则。节次适配的课程会恢复自动匹配并同步钟点；此前手动指定的模板将被清除，未命中的课程不会改变。'**
+  String locationTimeMatchApplyMessage(int count);
+
+  /// No description provided for @locationTimeMatchApplyConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新匹配'**
+  String get locationTimeMatchApplyConfirm;
 
   /// No description provided for @locationTimeMatchApplyUpdated.
   ///
   /// In zh, this message translates to:
-  /// **'已套用 {matched} 门，更新 {updated} 门钟点'**
+  /// **'已重新匹配 {matched} 门，更新 {updated} 门钟点'**
   String locationTimeMatchApplyUpdated(int matched, int updated);
 
   /// No description provided for @locationTimeMatchApplyAlreadyAligned.
   ///
   /// In zh, this message translates to:
-  /// **'已对齐 {matched} 门，钟点无需改写'**
+  /// **'已重新匹配 {matched} 门，钟点无需改写'**
   String locationTimeMatchApplyAlreadyAligned(int matched);
 
   /// No description provided for @locationTimeMatchApplyNoneMatched.
@@ -15412,7 +15430,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchDeleteMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确定删除「{name}」？相关课程将恢复为课表默认时间模板。'**
+  /// **'确定删除「{name}」？自动匹配的课程将恢复课表默认模板；手动指定模板的课程不受影响。'**
   String locationTimeMatchDeleteMessage(String name);
 
   /// No description provided for @locationTimeMatchDeleted.
@@ -15646,7 +15664,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'到开始日自动把课表默认时间模板批量套用一次（等同于应用该模板），之后可再手动改；最多 2 条且区间不重叠'**
+  /// **'到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠'**
   String get scheduleDateRuleSectionSubtitle;
 
   /// No description provided for @scheduleDateRuleAdd.
@@ -15738,6 +15756,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'日期规则已保存'**
   String get scheduleDateRuleSaved;
+
+  /// No description provided for @scheduleDateRuleSavedAndApplied.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期规则已保存，今天已更新所有课表的默认作息'**
+  String get scheduleDateRuleSavedAndApplied;
+
+  /// No description provided for @scheduleDateRuleSavedForFuture.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期规则已保存，将在开始日期更新所有课表的默认作息'**
+  String get scheduleDateRuleSavedForFuture;
 
   /// No description provided for @scheduleDateRuleDeleted.
   ///

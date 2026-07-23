@@ -8445,7 +8445,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      '为不同教学楼配置地点关键词。点「应用到当前课表」会对当前课表里命中地点的课程一次性绑定模板并同步钟点；之后可在编辑页单独改。若要再次批量覆盖，需回到本页再点一次应用。';
+      '系统会按课程地点自动选择时间模板。点「重新匹配当前课表」会让命中课程恢复自动匹配并同步钟点；未命中的课程不会改变。';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -8470,16 +8470,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchApplyActive => '应用到当前课表';
+  String get locationTimeMatchApplyActive => '重新匹配当前课表';
+
+  @override
+  String get locationTimeMatchApplyTitle => '重新匹配当前课表？';
+
+  @override
+  String locationTimeMatchApplyMessage(int count) {
+    return '当前有 $count 门课程命中地点规则。节次适配的课程会恢复自动匹配并同步钟点；此前手动指定的模板将被清除，未命中的课程不会改变。';
+  }
+
+  @override
+  String get locationTimeMatchApplyConfirm => '重新匹配';
 
   @override
   String locationTimeMatchApplyUpdated(int matched, int updated) {
-    return '已套用 $matched 门，更新 $updated 门钟点';
+    return '已重新匹配 $matched 门，更新 $updated 门钟点';
   }
 
   @override
   String locationTimeMatchApplyAlreadyAligned(int matched) {
-    return '已对齐 $matched 门，钟点无需改写';
+    return '已重新匹配 $matched 门，钟点无需改写';
   }
 
   @override
@@ -8525,7 +8536,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String locationTimeMatchDeleteMessage(String name) {
-    return '确定删除「$name」？相关课程将恢复为课表默认时间模板。';
+    return '确定删除「$name」？自动匹配的课程将恢复课表默认模板；手动指定模板的课程不受影响。';
   }
 
   @override
@@ -8660,7 +8671,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '到开始日自动把课表默认时间模板批量套用一次（等同于应用该模板），之后可再手动改；最多 2 条且区间不重叠';
+      '到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠';
 
   @override
   String get scheduleDateRuleAdd => '添加日期规则';
@@ -8708,6 +8719,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSaved => '日期规则已保存';
+
+  @override
+  String get scheduleDateRuleSavedAndApplied => '日期规则已保存，今天已更新所有课表的默认作息';
+
+  @override
+  String get scheduleDateRuleSavedForFuture => '日期规则已保存，将在开始日期更新所有课表的默认作息';
 
   @override
   String get scheduleDateRuleDeleted => '已删除日期规则';
@@ -16771,7 +16788,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get locationTimeMatchSubtitle =>
-      '为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。';
+      '系統會按課程地點自動選擇時間模板。點「重新匹配目前課表」會讓命中課程恢復自動匹配並同步鐘點；未命中的課程不會改變。';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -16796,16 +16813,27 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get locationTimeMatchApplyActive => '应用到当前课表';
+  String get locationTimeMatchApplyActive => '重新匹配目前課表';
+
+  @override
+  String get locationTimeMatchApplyTitle => '重新匹配目前課表？';
+
+  @override
+  String locationTimeMatchApplyMessage(int count) {
+    return '目前有 $count 門課程命中地點規則。節次適配的課程會恢復自動匹配並同步鐘點；此前手動指定的模板將被清除，未命中的課程不會改變。';
+  }
+
+  @override
+  String get locationTimeMatchApplyConfirm => '重新匹配';
 
   @override
   String locationTimeMatchApplyUpdated(int matched, int updated) {
-    return '已套用 $matched 門，更新 $updated 門鐘點';
+    return '已重新匹配 $matched 門，更新 $updated 門鐘點';
   }
 
   @override
   String locationTimeMatchApplyAlreadyAligned(int matched) {
-    return '已對齊 $matched 門，鐘點無需改寫';
+    return '已重新匹配 $matched 門，鐘點無需改寫';
   }
 
   @override
@@ -16851,7 +16879,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String locationTimeMatchDeleteMessage(String name) {
-    return '确定删除「$name」？相关课程将恢复为课表默认时间模板。';
+    return '確定刪除「$name」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受影響。';
   }
 
   @override
@@ -16980,6 +17008,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String locationTimeAutoResolvedByTimetable(String scheme) {
     return '課表預設 → $scheme';
   }
+
+  @override
+  String get scheduleDateRuleSavedAndApplied => '日期規則已儲存，今天已更新所有課表的預設作息';
+
+  @override
+  String get scheduleDateRuleSavedForFuture => '日期規則已儲存，將在開始日期更新所有課表的預設作息';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -25006,7 +25040,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get locationTimeMatchSubtitle =>
-      '为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。';
+      '系統會按課程地點自動選擇時間模板。點「重新匹配目前課表」會讓命中課程恢復自動匹配並同步鐘點；未命中的課程不會改變。';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -25031,16 +25065,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get locationTimeMatchApplyActive => '应用到当前课表';
+  String get locationTimeMatchApplyActive => '重新匹配目前課表';
+
+  @override
+  String get locationTimeMatchApplyTitle => '重新匹配目前課表？';
+
+  @override
+  String locationTimeMatchApplyMessage(int count) {
+    return '目前有 $count 門課程命中地點規則。節次適配的課程會恢復自動匹配並同步鐘點；此前手動指定的模板將被清除，未命中的課程不會改變。';
+  }
+
+  @override
+  String get locationTimeMatchApplyConfirm => '重新匹配';
 
   @override
   String locationTimeMatchApplyUpdated(int matched, int updated) {
-    return '已套用 $matched 門，更新 $updated 門鐘點';
+    return '已重新匹配 $matched 門，更新 $updated 門鐘點';
   }
 
   @override
   String locationTimeMatchApplyAlreadyAligned(int matched) {
-    return '已對齊 $matched 門，鐘點無需改寫';
+    return '已重新匹配 $matched 門，鐘點無需改寫';
   }
 
   @override
@@ -25086,7 +25131,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String locationTimeMatchDeleteMessage(String name) {
-    return '确定删除「$name」？相关课程将恢复为课表默认时间模板。';
+    return '確定刪除「$name」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受影響。';
   }
 
   @override
@@ -25215,4 +25260,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String locationTimeAutoResolvedByTimetable(String scheme) {
     return '課表預設 → $scheme';
   }
+
+  @override
+  String get scheduleDateRuleSavedAndApplied => '日期規則已儲存，今天已更新所有課表的預設作息';
+
+  @override
+  String get scheduleDateRuleSavedForFuture => '日期規則已儲存，將在開始日期更新所有課表的預設作息';
 }

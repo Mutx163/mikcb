@@ -4995,7 +4995,7 @@
   "locationTimeMatchEntryTitle": "地点自动匹配",
   "locationTimeMatchEntrySubtitle": "按上课地点关键词自动选择时间模板",
   "locationTimeMatchTitle": "地点自动匹配",
-  "locationTimeMatchSubtitle": "为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。",
+  "locationTimeMatchSubtitle": "系統會按課程地點自動選擇時間模板。點「重新匹配目前課表」會讓命中課程恢復自動匹配並同步鐘點；未命中的課程不會改變。",
   "locationTimeMatchWeekAxisNote": "说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。",
   "locationTimeMatchPreviewLabel": "试匹配地点",
   "locationTimeMatchPreviewHint": "例如 A1062 或 A主201",
@@ -5014,8 +5014,18 @@
       }
     }
   },
-  "locationTimeMatchApplyActive": "应用到当前课表",
-  "locationTimeMatchApplyUpdated": "已套用 {matched} 門，更新 {updated} 門鐘點",
+  "locationTimeMatchApplyActive": "重新匹配目前課表",
+  "locationTimeMatchApplyTitle": "重新匹配目前課表？",
+  "locationTimeMatchApplyMessage": "目前有 {count} 門課程命中地點規則。節次適配的課程會恢復自動匹配並同步鐘點；此前手動指定的模板將被清除，未命中的課程不會改變。",
+  "@locationTimeMatchApplyMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchApplyConfirm": "重新匹配",
+  "locationTimeMatchApplyUpdated": "已重新匹配 {matched} 門，更新 {updated} 門鐘點",
   "@locationTimeMatchApplyUpdated": {
     "placeholders": {
       "matched": {
@@ -5026,7 +5036,7 @@
       }
     }
   },
-  "locationTimeMatchApplyAlreadyAligned": "已對齊 {matched} 門，鐘點無需改寫",
+  "locationTimeMatchApplyAlreadyAligned": "已重新匹配 {matched} 門，鐘點無需改寫",
   "@locationTimeMatchApplyAlreadyAligned": {
     "placeholders": {
       "matched": {
@@ -5076,7 +5086,7 @@
     }
   },
   "locationTimeMatchDeleteTitle": "删除地点组？",
-  "locationTimeMatchDeleteMessage": "确定删除「{name}」？相关课程将恢复为课表默认时间模板。",
+  "locationTimeMatchDeleteMessage": "確定刪除「{name}」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受影響。",
   "@locationTimeMatchDeleteMessage": {
     "placeholders": {
       "name": {
@@ -5176,5 +5186,7 @@
   "coupleWebdavMySlotLabel": "本機槽位",
   "coupleWebdavMySlotHint": "雙方必須選不同槽位：一方選 1，另一方選 2，否則會互相讀不到課表",
   "coupleWebdavSlotOne": "槽位 1",
-  "coupleWebdavSlotTwo": "槽位 2"
+  "coupleWebdavSlotTwo": "槽位 2",
+  "scheduleDateRuleSavedAndApplied": "日期規則已儲存，今天已更新所有課表的預設作息",
+  "scheduleDateRuleSavedForFuture": "日期規則已儲存，將在開始日期更新所有課表的預設作息"
 }

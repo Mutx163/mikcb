@@ -5229,7 +5229,7 @@
   "locationTimeMatchEntryTitle": "Location time match",
   "locationTimeMatchEntrySubtitle": "Auto-pick time schemes by classroom keywords",
   "locationTimeMatchTitle": "Location time match",
-  "locationTimeMatchSubtitle": "Map classroom keywords to time schemes. Courses with a manual time scheme stay unchanged.",
+  "locationTimeMatchSubtitle": "Time schemes are selected automatically from course locations. Rematching returns matched courses to automatic routing and updates their clocks; unmatched courses stay unchanged.",
   "locationTimeMatchWeekAxisNote": "Note: the week-view time axis still shows the timetable default scheme. Card/live times use the matched scheme.",
   "locationTimeMatchPreviewLabel": "Try a location",
   "locationTimeMatchPreviewHint": "e.g. A1062 or A主201",
@@ -5248,8 +5248,18 @@
       }
     }
   },
-  "locationTimeMatchApplyActive": "Apply to current timetable",
-  "locationTimeMatchApplyUpdated": "Applied to {matched} courses, updated {updated} clocks",
+  "locationTimeMatchApplyActive": "Rematch current timetable",
+  "locationTimeMatchApplyTitle": "Rematch current timetable?",
+  "locationTimeMatchApplyMessage": "{count} courses currently match a location rule. Courses whose sections fit will return to automatic routing and update their clocks; any manual scheme on those courses will be cleared. Unmatched courses will remain unchanged.",
+  "@locationTimeMatchApplyMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationTimeMatchApplyConfirm": "Rematch",
+  "locationTimeMatchApplyUpdated": "Rematched {matched} courses, updated {updated} clocks",
   "@locationTimeMatchApplyUpdated": {
     "placeholders": {
       "matched": {
@@ -5260,7 +5270,7 @@
       }
     }
   },
-  "locationTimeMatchApplyAlreadyAligned": "Aligned {matched} courses; clocks already correct",
+  "locationTimeMatchApplyAlreadyAligned": "Rematched {matched} courses; clocks already correct",
   "@locationTimeMatchApplyAlreadyAligned": {
     "placeholders": {
       "matched": {
@@ -5310,7 +5320,7 @@
     }
   },
   "locationTimeMatchDeleteTitle": "Delete place group?",
-  "locationTimeMatchDeleteMessage": "Delete \"{name}\"? Related courses will fall back to the default scheme.",
+  "locationTimeMatchDeleteMessage": "Delete \"{name}\"? Automatically matched courses will return to the timetable default; manually selected schemes will stay unchanged.",
   "@locationTimeMatchDeleteMessage": {
     "placeholders": {
       "name": {
@@ -5408,7 +5418,7 @@
     }
   },
   "scheduleDateRuleSectionTitle": "Seasonal date rules",
-  "scheduleDateRuleSectionSubtitle": "On the start day, bulk-apply that scheme as the timetable default once (same as applying the scheme); edit courses freely after. Max 2 rules, no overlap",
+  "scheduleDateRuleSectionSubtitle": "On the start date, apply the selected scheme once as the default for every timetable. Fixed course schemes and location matches are unaffected. Max 2 non-overlapping rules",
   "scheduleDateRuleAdd": "Add date rule",
   "scheduleDateRuleEdit": "Edit date rule",
   "scheduleDateRuleEmpty": "No date rules",
@@ -5434,6 +5444,8 @@
   "scheduleDateRuleNeedScheme": "Create a time scheme first",
   "scheduleDateRuleNameRequired": "Enter a rule name",
   "scheduleDateRuleSaved": "Date rule saved",
+  "scheduleDateRuleSavedAndApplied": "Date rule saved; every timetable's default schedule has been updated today",
+  "scheduleDateRuleSavedForFuture": "Date rule saved; every timetable's default schedule will update on the start date",
   "scheduleDateRuleDeleted": "Date rule deleted",
   "scheduleDateRuleDeleteTitle": "Delete date rule?",
   "scheduleDateRuleDeleteMessage": "Delete “{name}”? That period will fall back to the default scheme.",

@@ -8685,7 +8685,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      'Map classroom keywords to time schemes. Courses with a manual time scheme stay unchanged.';
+      'Time schemes are selected automatically from course locations. Rematching returns matched courses to automatic routing and updates their clocks; unmatched courses stay unchanged.';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -8711,16 +8711,27 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchApplyActive => 'Apply to current timetable';
+  String get locationTimeMatchApplyActive => 'Rematch current timetable';
+
+  @override
+  String get locationTimeMatchApplyTitle => 'Rematch current timetable?';
+
+  @override
+  String locationTimeMatchApplyMessage(int count) {
+    return '$count courses currently match a location rule. Courses whose sections fit will return to automatic routing and update their clocks; any manual scheme on those courses will be cleared. Unmatched courses will remain unchanged.';
+  }
+
+  @override
+  String get locationTimeMatchApplyConfirm => 'Rematch';
 
   @override
   String locationTimeMatchApplyUpdated(int matched, int updated) {
-    return 'Applied to $matched courses, updated $updated clocks';
+    return 'Rematched $matched courses, updated $updated clocks';
   }
 
   @override
   String locationTimeMatchApplyAlreadyAligned(int matched) {
-    return 'Aligned $matched courses; clocks already correct';
+    return 'Rematched $matched courses; clocks already correct';
   }
 
   @override
@@ -8767,7 +8778,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String locationTimeMatchDeleteMessage(String name) {
-    return 'Delete \"$name\"? Related courses will fall back to the default scheme.';
+    return 'Delete \"$name\"? Automatically matched courses will return to the timetable default; manually selected schemes will stay unchanged.';
   }
 
   @override
@@ -8907,7 +8918,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '到开始日自动把课表默认时间模板批量套用一次（等同于应用该模板），之后可再手动改；最多 2 条且区间不重叠';
+      '到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠';
 
   @override
   String get scheduleDateRuleAdd => '添加日期规则';
@@ -8955,6 +8966,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSaved => '日期规则已保存';
+
+  @override
+  String get scheduleDateRuleSavedAndApplied =>
+      'Date rule saved; every timetable\'s default schedule has been updated today';
+
+  @override
+  String get scheduleDateRuleSavedForFuture =>
+      'Date rule saved; every timetable\'s default schedule will update on the start date';
 
   @override
   String get scheduleDateRuleDeleted => '已删除日期规则';
