@@ -1889,13 +1889,19 @@ class TimetableProvider with ChangeNotifier {
         return;
       }
 
-      await _persistActiveProfileState();
+      // Capture the outgoing profile in memory, then switch immediately. The
+      // single save below contains both the outgoing snapshot and the newly
+      // active profile, so there is no need to block the UI on two full writes.
+      _mergeActiveProfileIntoProfilesList();
       _activeProfileId = profileId;
       _applyProfileState(targetProfile);
-      await _persistActiveProfileState(touchLastUsedAt: true);
       _currentLiveCourseId = null;
       _lastLiveSnapshotSignature = null;
+
+      final persistFuture = _persistActiveProfileState(touchLastUsedAt: true);
       notifyListeners();
+
+      await persistFuture;
       await _liveActivitiesService.stopLiveUpdate();
       _lastLiveActivityStageKey = null;
       await _syncLiveScheduleSnapshot();

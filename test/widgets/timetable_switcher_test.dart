@@ -10,6 +10,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_profiles_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import '../helpers_test_app.dart';
 
 Future<void> _pumpTimetableFrame(WidgetTester tester) async {
@@ -193,6 +194,42 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(TimetableProfilesScreen), findsOneWidget);
+  });
+
+  testWidgets('profile actions use transparent dialog rows in frosted sheet', (
+    tester,
+  ) async {
+    final provider = await createInitializedTestProvider(tester);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableProfilesScreen()),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+    await _pumpTimetableFrame(tester);
+
+    final sheet = find.byType(HyperosSheet);
+    final actionTiles = find.descendant(
+      of: sheet,
+      matching: find.byType(HyperosChoiceTile),
+    );
+
+    expect(sheet, findsOneWidget);
+    expect(actionTiles, findsWidgets);
+    expect(
+      tester
+          .widgetList<HyperosChoiceTile>(actionTiles)
+          .every((tile) => tile.variant == HyperosChoiceVariant.dialog),
+      isTrue,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.byType(HyperosChoiceGroup)),
+      findsNothing,
+    );
   });
 
   testWidgets('switching profiles restores each profile timetable view state', (

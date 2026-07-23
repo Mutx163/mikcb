@@ -287,24 +287,33 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
       context: context,
       builder: (sheetContext) => HyperosSheet(
         title: widget.profile.name,
-        child: HyperosChoiceGroup(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (!widget.isActive)
               HyperosChoiceTile(
                 title: l10n.switchToThisTimetable,
+                variant: HyperosChoiceVariant.dialog,
+                showDivider: true,
                 onTap: () => Navigator.pop(sheetContext, 'switch'),
               ),
             HyperosChoiceTile(
               title: l10n.renameAction,
+              variant: HyperosChoiceVariant.dialog,
+              showDivider: true,
               onTap: () => Navigator.pop(sheetContext, 'rename'),
             ),
             HyperosChoiceTile(
               title: l10n.duplicateAction,
+              variant: HyperosChoiceVariant.dialog,
+              showDivider: true,
               onTap: () => Navigator.pop(sheetContext, 'duplicate'),
             ),
             if (widget.isActive)
               HyperosChoiceTile(
                 title: l10n.clearCoursesAction,
+                variant: HyperosChoiceVariant.dialog,
+                showDivider: true,
                 enabled:
                     widget.profile.courses.isNotEmpty && widget.onClear != null,
                 titleStyle: destructiveStyle,
@@ -315,6 +324,7 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
               ),
             HyperosChoiceTile(
               title: l10n.deleteAction,
+              variant: HyperosChoiceVariant.dialog,
               enabled: widget.canDelete && widget.onDelete != null,
               titleStyle: destructiveStyle,
               onTap: widget.canDelete && widget.onDelete != null
