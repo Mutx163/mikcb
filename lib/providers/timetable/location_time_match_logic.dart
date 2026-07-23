@@ -58,11 +58,30 @@ class LocationTimeMatchLogic {
       } else if (unit == 0x20 || unit == 0x09 || unit == 0x0A || unit == 0x0D) {
         // Collapse all whitespace so "测试教室 01" matches keyword "测试教室".
         continue;
+      } else if (unit == 0x00B7 ||
+          unit == 0x30FB ||
+          unit == 0x2022 ||
+          unit == 0x2027 ||
+          unit == 0x2219) {
+        // Middle dots / bullets (cluster strips these; keep match in sync).
+        continue;
+      } else if (unit == 0x2014 || unit == 0x2013 || unit == 0xFF0D) {
+        // Em/en dash / fullwidth hyphen → ASCII hyphen (cluster maps these).
+        buffer.writeCharCode(0x2D);
+      } else if (unit == 0xFF0F) {
+        // Fullwidth solidus → '/'.
+        buffer.writeCharCode(0x2F);
       } else {
         buffer.writeCharCode(unit);
       }
     }
-    return buffer.toString().toLowerCase();
+    var normalized = buffer.toString();
+    // Align with building-cluster normalization so suggested keywords match.
+    normalized = normalized.replaceAllMapped(
+      RegExp(r'[（(]([^）)]{1,12})[）)]'),
+      (match) => match.group(1) ?? '',
+    );
+    return normalized.toLowerCase();
   }
 
   /// Matches [location] against enabled groups.

@@ -161,6 +161,47 @@ void main() {
       expect(glued?.groupId, 'fixture');
     });
 
+    test('aligns with cluster punctuation normalization (dot slash paren)', () {
+      final dottedMain = [
+        _group(
+          id: 'main-dot',
+          name: '主教学楼',
+          schemeId: 'scheme-main',
+          keywords: const [
+            LocationKeyword(
+              pattern: 'A主',
+              mode: LocationKeywordMatchMode.prefix,
+            ),
+          ],
+        ),
+      ];
+
+      // Use explicit code points so the test is independent of editor glyph
+      // substitution (U+00B7 middle dot, U+2014 em dash).
+      final withMiddleDot = 'A\u00B7\u4e3b201';
+      final withEmDash = 'A\u2014\u4e3b201';
+      final withParen = 'A\u4e3b\uff08\u4e1c\uff09201';
+
+      expect(
+        LocationTimeMatchLogic.normalizeLocation(withMiddleDot),
+        'a\u4e3b201',
+      );
+      expect(
+        LocationTimeMatchLogic.match(withMiddleDot, dottedMain)?.groupId,
+        'main-dot',
+      );
+      // Em dash becomes ASCII hyphen (same as cluster); not a free strip.
+      expect(
+        LocationTimeMatchLogic.normalizeLocation(withEmDash),
+        'a-\u4e3b201',
+      );
+      // Parentheses unwrap content: A主（东）201 → a主东201, still prefix of A主.
+      expect(
+        LocationTimeMatchLogic.match(withParen, dottedMain)?.groupId,
+        'main-dot',
+      );
+    });
+
     test('supports exact and contains modes', () {
       final exactGroups = [
         _group(
