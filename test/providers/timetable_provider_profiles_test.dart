@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/holiday_entry.dart';
+import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable/live_activity_logic.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
@@ -616,6 +617,137 @@ void main() {
       greaterThanOrEqualTo(0),
     );
   });
+
+  test(
+    'apply location time rules pins matched scheme override and clocks',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      final locationScheme = await provider.createTimeScheme(
+        name: '教学楼A作息',
+        sections: [
+          const SectionTime(startTime: '08:30', endTime: '09:15'),
+          const SectionTime(startTime: '09:25', endTime: '10:10'),
+          ...provider.settings.sections.skip(2),
+        ],
+      );
+      await provider.createLocationTimeGroup(
+        name: 'A楼',
+        timeSchemeId: locationScheme.id,
+        keywords: const [
+          LocationKeyword(
+            pattern: '测试教室',
+            mode: LocationKeywordMatchMode.contains,
+          ),
+        ],
+      );
+
+      await provider.addCourse(
+        Course(
+          id: 'loc-apply-course',
+          name: '测试 第1节',
+          teacher: '测试教师',
+          location: '测试教室 01',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 1,
+          startTime: '08:00',
+          endTime: '08:45',
+        ),
+      );
+
+      expect(provider.courses.single.timeSchemeIdOverride, isNull);
+
+      final stats = await provider.applyLocationTimeRulesToActiveProfile();
+
+      expect(stats.matchedCount, 1);
+      expect(stats.updatedCount, 1);
+      expect(provider.courses.single.timeSchemeIdOverride, locationScheme.id);
+      expect(provider.courses.single.startTime, '08:30');
+      expect(provider.courses.single.endTime, '09:15');
+
+      // Second apply still rewrites matched courses (not locked forever).
+      final otherScheme = await provider.createTimeScheme(
+        name: '教学楼A作息-改',
+        sections: [
+          const SectionTime(startTime: '08:40', endTime: '09:25'),
+          const SectionTime(startTime: '09:35', endTime: '10:20'),
+          ...provider.settings.sections.skip(2),
+        ],
+      );
+      final group = provider.locationTimeGroups.single;
+      await provider.updateLocationTimeGroup(
+        group.copyWith(timeSchemeId: otherScheme.id),
+      );
+
+      final statsAgain = await provider.applyLocationTimeRulesToActiveProfile();
+      expect(statsAgain.matchedCount, 1);
+      expect(statsAgain.updatedCount, 1);
+      expect(provider.courses.single.timeSchemeIdOverride, otherScheme.id);
+      expect(provider.courses.single.startTime, '08:40');
+      expect(provider.courses.single.endTime, '09:25');
+    },
+  );
+
+  test(
+    'apply location rules rejects overflow without pinning or clock rewrite',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      final shortScheme = await provider.createTimeScheme(
+        name: '仅4节模板',
+        sections: [
+          for (var index = 0; index < 4; index++)
+            SectionTime(
+              startTime: '${(8 + index).toString().padLeft(2, '0')}:00',
+              endTime: '${(8 + index).toString().padLeft(2, '0')}:45',
+            ),
+        ],
+      );
+      await provider.createLocationTimeGroup(
+        name: '测试楼',
+        timeSchemeId: shortScheme.id,
+        keywords: const [
+          LocationKeyword(
+            pattern: '测试教室',
+            mode: LocationKeywordMatchMode.contains,
+          ),
+        ],
+      );
+
+      await provider.addCourse(
+        Course(
+          id: 'overflow-course',
+          name: '测试 第8节',
+          teacher: '测试教师',
+          location: '测试教室 08',
+          dayOfWeek: 1,
+          startSection: 8,
+          endSection: 8,
+          startTime: '15:00',
+          endTime: '15:45',
+        ),
+      );
+
+      final stats = await provider.applyLocationTimeRulesToActiveProfile();
+
+      // Location may hit the group, but apply is fully rejected → not matched.
+      expect(stats.matchedCount, 0);
+      expect(stats.sectionOverflowCount, 1);
+      expect(stats.updatedCount, 0);
+      expect(provider.courses.single.timeSchemeIdOverride, isNull);
+      expect(provider.courses.single.startTime, '15:00');
+      expect(provider.courses.single.endTime, '15:45');
+    },
+  );
 
   test(
     'deleting time scheme referenced by course override is rejected',
@@ -1593,6 +1725,57 @@ void main() {
 
       final week17Time = DateTime(2026, 6, 15, 8, 30);
       expect(provider.getLiveActivityCourseSelection(now: week17Time), isNull);
+    },
+  );
+
+  test(
+    'home widget has no courses after semesterWeekCount even when UI week clamps',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterWeekCount: 16,
+          semesterStartDate: DateTime(2026, 2, 23),
+        ),
+      );
+      await provider.addCourse(
+        Course(
+          id: '16week-course',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 1,
+          endWeek: 16,
+        ),
+      );
+
+      // Week 16 Monday — still teaching.
+      final week16Snapshot = provider.buildHomeWidgetSnapshot(
+        now: DateTime(2026, 6, 8, 8, 30),
+      );
+      expect(week16Snapshot, isNotNull);
+      expect(week16Snapshot!.currentWeek, 16);
+      expect(week16Snapshot.todayCourses, isNotEmpty);
+
+      // Week 17 Monday — past semesterWeekCount; UI would clamp to 16, but
+      // widget must not revive week-16 courses.
+      final week17Snapshot = provider.buildHomeWidgetSnapshot(
+        now: DateTime(2026, 6, 15, 8, 30),
+      );
+      expect(week17Snapshot, isNotNull);
+      expect(week17Snapshot!.currentWeek, 17);
+      expect(week17Snapshot.todayCourses, isEmpty);
+      expect(week17Snapshot.state, HomeWidgetSnapshotState.noCourse);
     },
   );
 

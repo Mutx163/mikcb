@@ -30,12 +30,14 @@ class HyperosDialog extends StatelessWidget {
     this.body,
     this.message,
     this.actions = const [],
+    this.maxBodyHeightFactor = 0.55,
   });
 
   final String? title;
   final Widget? body;
   final String? message;
   final List<HyperosDialogAction> actions;
+  final double maxBodyHeightFactor;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,7 @@ class HyperosDialog extends StatelessWidget {
     }
 
     final maxCardHeight = MediaQuery.sizeOf(context).height * 0.72;
-    final maxBodyHeight = maxCardHeight * 0.55;
+    final maxBodyHeight = maxCardHeight * maxBodyHeightFactor;
 
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
@@ -155,12 +157,14 @@ Future<T?> showHyperosDialog<T>({
   String? message,
   List<HyperosDialogAction>? actions,
   bool barrierDismissible = true,
+  bool? enableDrag,
+  double maxBodyHeightFactor = 0.55,
   bool useRootNavigator = false,
 }) {
   return showHyperosSheet<T>(
     context: context,
     isDismissible: barrierDismissible,
-    enableDrag: barrierDismissible,
+    enableDrag: enableDrag ?? barrierDismissible,
     useRootNavigator: useRootNavigator,
     barrierColor: HyperosColors.windowDimming(context),
     builder: (sheetContext) => HyperosDialog(
@@ -168,6 +172,7 @@ Future<T?> showHyperosDialog<T>({
       body: body,
       message: message,
       actions: actions ?? const [],
+      maxBodyHeightFactor: maxBodyHeightFactor,
     ),
   );
 }

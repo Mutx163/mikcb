@@ -186,7 +186,7 @@ void main() {
       );
     });
 
-    test('uses date rule when no override and no location match', () {
+    test('date rules do not soft-overlay resolve (bulk apply is separate)', () {
       final defaultScheme = _scheme('default');
       final summerScheme = _scheme('summer');
       final settings = TimetableSettings.defaults().copyWith(
@@ -211,21 +211,11 @@ void main() {
           scheduleDateRules: rules,
           onDate: DateTime(2026, 7, 1),
         ),
-        summerScheme,
-      );
-      expect(
-        TimeSchemeLogic.resolveCourseTimeScheme(
-          [defaultScheme, summerScheme],
-          settings,
-          course,
-          scheduleDateRules: rules,
-          onDate: DateTime(2026, 1, 1),
-        ),
         defaultScheme,
       );
     });
 
-    test('omitting onDate ignores date rules (persist-safe)', () {
+    test('resolve always uses profile default when no override/location', () {
       final defaultScheme = _scheme('default');
       final summerScheme = _scheme('summer');
       final settings = TimetableSettings.defaults().copyWith(
@@ -242,8 +232,6 @@ void main() {
         ),
       ];
 
-      // List resync / save paths must not pass onDate, so summer clocks
-      // are never baked into every course just because "today" is summer.
       expect(
         TimeSchemeLogic.resolveCourseTimeScheme(
           [defaultScheme, summerScheme],

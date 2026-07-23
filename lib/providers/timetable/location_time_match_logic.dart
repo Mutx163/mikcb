@@ -28,12 +28,41 @@ class LocationTimeMatchLogic {
 
   /// Normalizes a location string for matching: trim + case-fold.
   static String normalizeLocation(String? location) {
-    return (location ?? '').trim().toLowerCase();
+    return _normalizeForMatch(location);
   }
 
   /// Normalizes a keyword pattern the same way as locations.
   static String normalizePattern(String pattern) {
-    return pattern.trim().toLowerCase();
+    return _normalizeForMatch(pattern);
+  }
+
+  /// Shared match-side normalization.
+  ///
+  /// Must stay compatible with [LocationBuildingClusterLogic] suggestions:
+  /// clustering collapses whitespace/fullwidth before extracting building keys
+  /// (e.g. `测试教室 01` → key `测试教室`), so matching must also collapse spaces
+  /// or auto-imported keywords never hit the original timetable strings.
+  static String _normalizeForMatch(String? text) {
+    final raw = (text ?? '').trim();
+    if (raw.isEmpty) {
+      return '';
+    }
+    final buffer = StringBuffer();
+    for (final unit in raw.runes) {
+      if (unit >= 0xFF01 && unit <= 0xFF5E) {
+        // Fullwidth ASCII → halfwidth (same as building cluster).
+        buffer.writeCharCode(unit - 0xFEE0);
+      } else if (unit == 0x3000) {
+        // Fullwidth space.
+        continue;
+      } else if (unit == 0x20 || unit == 0x09 || unit == 0x0A || unit == 0x0D) {
+        // Collapse all whitespace so "测试教室 01" matches keyword "测试教室".
+        continue;
+      } else {
+        buffer.writeCharCode(unit);
+      }
+    }
+    return buffer.toString().toLowerCase();
   }
 
   /// Matches [location] against enabled groups.

@@ -5269,7 +5269,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "No courses matched the place rules",
-  "locationTimeMatchApplyOverflowResult": "Matched {matched}; {count} exceed the scheme sections",
+  "locationTimeMatchApplyOverflowResult": "{count} courses cannot map into the scheme (too few sections); apply rejected",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {
@@ -5408,7 +5408,7 @@
     }
   },
   "scheduleDateRuleSectionTitle": "Seasonal date rules",
-  "scheduleDateRuleSectionSubtitle": "Switch the default scheme by date (max 2, no overlap)",
+  "scheduleDateRuleSectionSubtitle": "On the start day, bulk-apply that scheme as the timetable default once (same as applying the scheme); edit courses freely after. Max 2 rules, no overlap",
   "scheduleDateRuleAdd": "Add date rule",
   "scheduleDateRuleEdit": "Edit date rule",
   "scheduleDateRuleEmpty": "No date rules",
@@ -5418,7 +5418,7 @@
   "scheduleDateRuleEndDate": "End date",
   "scheduleDateRuleBoundScheme": "Time scheme",
   "scheduleDateRuleEnabled": "Enabled",
-  "scheduleDateRuleActiveToday": "Active today",
+  "scheduleDateRuleActiveToday": "In range today",
   "scheduleDateRuleRangeSummary": "{start} ~ {end}",
   "@scheduleDateRuleRangeSummary": {
     "placeholders": {

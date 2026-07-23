@@ -105,4 +105,38 @@ class FairMemoryAdapterLogicTest {
             FairMemoryAdapter.PROTECTED_SHARED_PREFS_NAMES.contains("fair_memory_runtime"),
         )
     }
+
+    @Test
+    fun onlyCompletedOrEngineUnavailableCanReturnSuccess() {
+        assertTrue(
+            isFairMemoryHandlingSuccessful(
+                nativeHandlingSucceeded = true,
+                flutterOutcome = FlutterHandlingOutcome.COMPLETED,
+            ),
+        )
+        assertTrue(
+            isFairMemoryHandlingSuccessful(
+                nativeHandlingSucceeded = true,
+                flutterOutcome = FlutterHandlingOutcome.ENGINE_UNAVAILABLE,
+            ),
+        )
+        assertFalse(
+            isFairMemoryHandlingSuccessful(
+                nativeHandlingSucceeded = true,
+                flutterOutcome = FlutterHandlingOutcome.FAILED,
+            ),
+        )
+        assertFalse(
+            isFairMemoryHandlingSuccessful(
+                nativeHandlingSucceeded = true,
+                flutterOutcome = FlutterHandlingOutcome.TIMED_OUT,
+            ),
+        )
+        assertFalse(
+            isFairMemoryHandlingSuccessful(
+                nativeHandlingSucceeded = false,
+                flutterOutcome = FlutterHandlingOutcome.ENGINE_UNAVAILABLE,
+            ),
+        )
+    }
 }

@@ -137,6 +137,10 @@ class _TimeSchemeManagementScreenState
                   ),
                 ],
               ],
+              HyperosSectionDescription(
+                text: l10n.scheduleDateRuleSectionSubtitle,
+              ),
+              HyperosSectionDescription(text: l10n.scheduleDateRuleNote),
               const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.timeSchemeEntryTitle),
               if (schemes.isEmpty)
@@ -269,7 +273,7 @@ class _TimeSchemeManagementScreenState
       return;
     }
 
-    final nameController = TextEditingController(text: existing?.name ?? '');
+    var nameDraft = existing?.name ?? '';
     var startDate =
         ScheduleDateRuleLogic.parseIsoDate(existing?.startDate) ??
         DateTime.now();
@@ -281,68 +285,149 @@ class _TimeSchemeManagementScreenState
         provider.activeTimeScheme?.id ??
         provider.timeSchemes.first.id;
     var enabled = existing?.enabled ?? true;
+    const dialogFieldFontSize = 16.0;
+
+    String formatDate(DateTime date) {
+      final year = date.year.toString().padLeft(4, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      final day = date.day.toString().padLeft(2, '0');
+      return '$year-$month-$day';
+    }
+
+    Future<DateTime?> pickDate(
+      BuildContext pickerContext, {
+      required DateTime initialDate,
+      required DateTime firstDate,
+    }) {
+      return showDatePicker(
+        context: pickerContext,
+        initialDate: initialDate,
+        firstDate: firstDate,
+        lastDate: DateTime(2040),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: HyperosColors.primary(context),
+                brightness: Theme.of(context).brightness,
+              ),
+            ),
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
+      );
+    }
 
     final saved = await showHyperosDialog<bool>(
       context: context,
+      enableDrag: false,
+      maxBodyHeightFactor: 0.65,
       title: existing == null
           ? l10n.scheduleDateRuleAdd
           : l10n.scheduleDateRuleEdit,
       body: StatefulBuilder(
         builder: (dialogContext, setDialogState) {
           final schemeItems = _timeSchemeSelectItems(provider.timeSchemes);
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                HyperosTextField(
-                  controller: nameController,
-                  label: l10n.scheduleDateRuleNameLabel,
-                  hint: l10n.scheduleDateRuleNameHint,
-                ),
-                const SizedBox(height: 12),
-                HyperosDateTile(
-                  label: l10n.scheduleDateRuleStartDate,
-                  value: startDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2040),
-                  onChanged: (picked) {
-                    setDialogState(() {
-                      startDate = picked;
-                      if (endDate.isBefore(startDate)) {
-                        endDate = startDate;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _DateRuleNameField(
+                initialValue: nameDraft,
+                label: l10n.scheduleDateRuleNameLabel,
+                hint: l10n.scheduleDateRuleNameHint,
+                fontSize: dialogFieldFontSize,
+                onChanged: (value) => nameDraft = value,
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final startField = HyperosPickerField(
+                    label: l10n.scheduleDateRuleStartDate,
+                    value: formatDate(startDate),
+                    fontSize: dialogFieldFontSize,
+                    onTap: () async {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      final picked = await pickDate(
+                        dialogContext,
+                        initialDate: startDate,
+                        firstDate: DateTime(2020),
+                      );
+                      if (picked == null) return;
+                      setDialogState(() {
+                        startDate = picked;
+                        if (endDate.isBefore(startDate)) {
+                          endDate = startDate;
+                        }
+                      });
+                    },
+                  );
+                  final endField = HyperosPickerField(
+                    label: l10n.scheduleDateRuleEndDate,
+                    value: formatDate(endDate),
+                    fontSize: dialogFieldFontSize,
+                    onTap: () async {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      final picked = await pickDate(
+                        dialogContext,
+                        initialDate: endDate,
+                        firstDate: startDate,
+                      );
+                      if (picked != null) {
+                        setDialogState(() => endDate = picked);
                       }
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                HyperosDateTile(
-                  label: l10n.scheduleDateRuleEndDate,
-                  value: endDate,
-                  firstDate: startDate,
-                  lastDate: DateTime(2040),
-                  onChanged: (picked) {
-                    setDialogState(() => endDate = picked);
-                  },
-                ),
-                const SizedBox(height: 8),
-                HyperosSelectTile<String>(
-                  label: l10n.scheduleDateRuleBoundScheme,
-                  items: schemeItems,
-                  value: selectedSchemeId,
-                  useSheetForPopup: true,
-                  onChanged: (value) {
+                    },
+                  );
+                  if (constraints.maxWidth < 300) {
+                    return Column(
+                      children: [
+                        startField,
+                        const SizedBox(height: 12),
+                        endField,
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: startField),
+                      const SizedBox(width: 12),
+                      Expanded(child: endField),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              HyperosPickerField(
+                label: l10n.scheduleDateRuleBoundScheme,
+                value:
+                    hyperosSelectLabelFor(schemeItems, selectedSchemeId) ??
+                    selectedSchemeId,
+                fontSize: dialogFieldFontSize,
+                icon: Icons.schedule_outlined,
+                onTap: () async {
+                  final value = await showHyperosSelectSheet<String>(
+                    context: dialogContext,
+                    title: l10n.scheduleDateRuleBoundScheme,
+                    items: schemeItems,
+                    currentValue: selectedSchemeId,
+                    cancelLabel: MaterialLocalizations.of(
+                      dialogContext,
+                    ).cancelButtonLabel,
+                  );
+                  if (value != null) {
                     setDialogState(() => selectedSchemeId = value);
-                  },
-                ),
-                const SizedBox(height: 8),
-                HyperosSwitchTile(
-                  title: l10n.scheduleDateRuleEnabled,
-                  value: enabled,
-                  onChanged: (value) => setDialogState(() => enabled = value),
-                ),
-              ],
-            ),
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _DateRuleSwitchField(
+                label: l10n.scheduleDateRuleEnabled,
+                value: enabled,
+                fontSize: dialogFieldFontSize,
+                onChanged: (value) => setDialogState(() => enabled = value),
+              ),
+            ],
           );
         },
       ),
@@ -359,11 +444,10 @@ class _TimeSchemeManagementScreenState
       ],
     );
 
-    final name = nameController.text.trim();
-    nameController.dispose();
     if (saved != true || !context.mounted) {
       return;
     }
+    final name = nameDraft.trim();
     if (name.isEmpty) {
       showAppToast(
         context,
@@ -1424,6 +1508,101 @@ class _TimeSchemeBadge extends StatelessWidget {
       textStyle: HyperosTypography.listDetail(context).copyWith(
         color: primary,
         fontSize: HyperosTokens.sectionDescriptionSize,
+      ),
+    );
+  }
+}
+
+class _DateRuleNameField extends StatefulWidget {
+  const _DateRuleNameField({
+    required this.initialValue,
+    required this.label,
+    required this.hint,
+    required this.fontSize,
+    required this.onChanged,
+  });
+
+  final String initialValue;
+  final String label;
+  final String hint;
+  final double fontSize;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_DateRuleNameField> createState() => _DateRuleNameFieldState();
+}
+
+class _DateRuleNameFieldState extends State<_DateRuleNameField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HyperosTextField(
+      controller: _controller,
+      label: widget.label,
+      hint: widget.hint,
+      fontSize: widget.fontSize,
+      onChanged: widget.onChanged,
+    );
+  }
+}
+
+/// Switch control with the same frosted form chrome as [HyperosPickerField].
+class _DateRuleSwitchField extends StatelessWidget {
+  const _DateRuleSwitchField({
+    required this.label,
+    required this.value,
+    required this.fontSize,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(HyperosMiuixTextField.cornerRadius);
+    final fill = HyperosColors.secondaryVariant(context);
+    final outline = HyperosColors.outline(context);
+    final onSurface = HyperosColors.onSurface(context);
+
+    return Material(
+      color: fill,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        borderRadius: radius,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: outline, width: 1),
+          ),
+          child: Padding(
+            padding: HyperosMiuixTextField.insideMargin,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(fontSize: fontSize, color: onSurface),
+                  ),
+                ),
+                HyperosSwitch(value: value, onChanged: onChanged),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

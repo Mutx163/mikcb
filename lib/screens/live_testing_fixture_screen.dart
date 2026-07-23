@@ -90,7 +90,9 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
           ),
           HyperosSectionDescription(
             text:
-                '当前方案：$activeSchemeName。安装会创建并自动套用「超级岛测试24时段」，按第 1～24 节生成测试课（与正常课程同一套逻辑）。'
+                '当前方案：$activeSchemeName。安装会创建并自动套用「超级岛测试24时段」，按第 1～24 节生成普通课程数据'
+                '（写入当前课表、周次/放假/选课规则与正式课完全一致）。'
+                '一键发送只会改该节的起止时间，然后走正式超级岛刷新路径，不会强制弹岛。'
                 '测完请先「清除测试课表」再切回自己的时间方案；若仍有第 11 节及以后的课，系统会拒绝切到更短的方案。',
           ),
           const HyperosSectionGap(),
@@ -140,12 +142,14 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
             ],
           ),
           HyperosSectionDescription(
-            text: '将对应节次设为 $_fixtureLeadMinutes 分钟后上课，并发送超级岛测试（请回桌面查看）。',
+            text:
+                '将对应节次改为 $_fixtureLeadMinutes 分钟后上课，再按正式逻辑刷新超级岛。'
+                '若当前日历周超过课程 endWeek、放假或未到课前窗口，会提示无课而不是硬弹出岛。',
           ),
           const HyperosSectionGap(),
           HyperosControlCard(
             title: '按节次发送',
-            subtitle: canTrigger ? '点选某一节，立即写入并触发超级岛测试' : '请先安装 24 时段测试课表',
+            subtitle: canTrigger ? '点选某一节：改时间后走正式超级岛刷新' : '请先安装 24 时段测试课表',
             child: HyperosControlCardInset(
               child: canTrigger
                   ? GridView.builder(

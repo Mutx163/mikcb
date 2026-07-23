@@ -136,6 +136,31 @@ void main() {
       expect(result?.groupId, 'main');
     });
 
+    test('collapses whitespace so auto-cluster keywords hit spaced rooms', () {
+      // Building cluster normalizes "测试教室 01" → key "测试教室" (no space).
+      // Match must collapse spaces too, or 一键应用 leaves live_test_* on auto.
+      final classroomGroups = [
+        _group(
+          id: 'fixture',
+          name: '测试教室楼',
+          schemeId: 'scheme-fixture',
+          keywords: const [
+            LocationKeyword(
+              pattern: '测试教室',
+              mode: LocationKeywordMatchMode.contains,
+            ),
+          ],
+        ),
+      ];
+
+      final spaced = LocationTimeMatchLogic.match('测试教室 01', classroomGroups);
+      expect(spaced?.groupId, 'fixture');
+      expect(spaced?.matchedKeyword.pattern, '测试教室');
+
+      final glued = LocationTimeMatchLogic.match('测试教室24', classroomGroups);
+      expect(glued?.groupId, 'fixture');
+    });
+
     test('supports exact and contains modes', () {
       final exactGroups = [
         _group(

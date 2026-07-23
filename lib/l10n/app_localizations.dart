@@ -15288,7 +15288,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'为不同教学楼配置地点关键词，系统会按课表地点自动套用对应时间模板。手动指定过时间模板的课程不会被覆盖。'**
+  /// **'为不同教学楼配置地点关键词。点「应用到当前课表」会对当前课表里命中地点的课程一次性绑定模板并同步钟点；之后可在编辑页单独改。若要再次批量覆盖，需回到本页再点一次应用。'**
   String get locationTimeMatchSubtitle;
 
   /// No description provided for @locationTimeMatchWeekAxisNote.
@@ -15352,13 +15352,13 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchApplyOverflowResult.
   ///
   /// In zh, this message translates to:
-  /// **'命中 {matched} 门，{count} 门节次超出模板'**
+  /// **'有 {count} 门课节次无法对号入座（模板节数不足），已拒绝套用'**
   String locationTimeMatchApplyOverflowResult(int matched, int count);
 
   /// No description provided for @locationTimeMatchApplyOverflowHint.
   ///
   /// In zh, this message translates to:
-  /// **'例如：{names}'**
+  /// **'未套用示例：{names}'**
   String locationTimeMatchApplyOverflowHint(String names);
 
   /// No description provided for @locationTimeMatchEmpty.
@@ -15622,7 +15622,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchedSchemeHint.
   ///
   /// In zh, this message translates to:
-  /// **'自动 · {scheme}'**
+  /// **'地点匹配 · {scheme}'**
   String locationTimeMatchedSchemeHint(String scheme);
 
   /// No description provided for @locationTimeAutoResolvedByGroup.
@@ -15646,7 +15646,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'例如暑假前后用不同时间模板（最多 2 条，不重叠）'**
+  /// **'到开始日自动把课表默认时间模板批量套用一次（等同于应用该模板），之后可再手动改；最多 2 条且区间不重叠'**
   String get scheduleDateRuleSectionSubtitle;
 
   /// No description provided for @scheduleDateRuleAdd.
@@ -15706,7 +15706,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleActiveToday.
   ///
   /// In zh, this message translates to:
-  /// **'今天生效'**
+  /// **'今天在区间内'**
   String get scheduleDateRuleActiveToday;
 
   /// No description provided for @scheduleDateRuleRangeSummary.

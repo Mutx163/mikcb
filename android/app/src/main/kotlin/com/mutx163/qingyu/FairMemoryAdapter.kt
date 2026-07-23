@@ -9,12 +9,16 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
+import android.os.Looper
 import android.os.Parcel
 import android.os.RemoteException
+import android.os.SystemClock
 import android.util.Log
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -25,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - 不清理 `home_widget_prefs` / 桌面小组件调度
  * - 不清理 Flutter SharedPreferences、课表数据、考试提醒等持久化
  * - 不 cancel AlarmManager / WorkManager（超级岛与小组件依赖它们）
- * - TRIM 仅做易失内存回收；KILL 仅做轻量现场确认并在 3s 内 Binder 回执
+ * - TRIM 回收易失内存；KILL 先等待现场快照完成，再在 3s 内 Binder 回执
  *
  * 官方文档：
  * https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2304
@@ -38,6 +42,7 @@ object FairMemoryAdapter {
     const val ITGSA_ACTION_KILL = "itgsa.intent.action.KILL"
     private const val CHANNEL_NAME = "com.mutx163.qingyu/fair_memory"
     private const val TRANSACTION_EXCEPTION_REPLY = IBinder.FIRST_CALL_TRANSACTION
+    private const val HANDLING_BUDGET_MILLIS = 2_500L
 
     /** 与官方示例一致：0 表示处理完成。 */
     const val RESULT_OK = 0
@@ -47,8 +52,9 @@ object FairMemoryAdapter {
     const val NOTIFY_TYPE_JAVA_HEAP = 2000
 
     /**
-     * 绝对禁止在 TRIM/KILL 路径中删除或改写的 SharedPreferences 名称。
-     * 单元测试会断言此集合，防止误伤超级岛 / 桌面小组件。
+     * 绝对禁止在 TRIM/KILL 路径中删除、清空或覆盖业务键的
+     * SharedPreferences 名称。公平内存专用快照键只能追加写入 Flutter
+     * SharedPreferences，不能影响其中已有的课表和设置键。
      */
     val PROTECTED_SHARED_PREFS_NAMES: Set<String> = setOf(
         "live_update_scheduler",
@@ -108,7 +114,7 @@ object FairMemoryAdapter {
         }
     }
 
-    /** Flutter 引擎就绪后绑定通道，用于可选的 Dart 侧缓存清理。 */
+    /** Flutter 引擎就绪后绑定通道，用于内存清理和 KILL 现场快照。 */
     fun attachFlutterEngine(messenger: BinaryMessenger) {
         synchronized(this) {
             methodChannel = MethodChannel(messenger, CHANNEL_NAME)
@@ -148,6 +154,7 @@ object FairMemoryAdapter {
     }
 
     private fun handleFairMemoryIntent(context: Context, intent: Intent) {
+        val startedAt = SystemClock.elapsedRealtime()
         val rootExtras = intent.extras ?: return
         val common = rootExtras.getBundle("common") ?: return
         val notifyType = common.getInt("notifyType", 0)
@@ -185,12 +192,13 @@ object FairMemoryAdapter {
             ),
         )
 
-        val handledOk = AtomicBoolean(true)
+        var handledOk = true
+        var flutterOutcome = FlutterHandlingOutcome.ENGINE_UNAVAILABLE
         try {
             when (actionKind) {
                 FairMemoryActionKind.TRIM -> {
                     releaseVolatileMemoryOnly(context)
-                    notifyFlutterBestEffort(
+                    flutterOutcome = notifyFlutterAndWait(
                         method = "onTrim",
                         payload = buildFlutterPayload(
                             actionKind = actionKind,
@@ -202,14 +210,13 @@ object FairMemoryAdapter {
                             heapAlloc = heapAlloc,
                             heapCapacity = heapCapacity,
                         ),
+                        timeoutMillis = remainingHandlingTime(startedAt),
                     )
                 }
                 FairMemoryActionKind.KILL -> {
-                    // 关键现场已在 SharedPreferences / 磁盘；此处只做轻量确认与诊断落盘，
-                    // 绝不停止超级岛服务、不删快照、不 cancel 调度。
-                    persistKillMarker(context, notifyType, notifyId, reason)
+                    handledOk = persistKillMarker(context, notifyType, notifyId, reason)
                     releaseVolatileMemoryOnly(context)
-                    notifyFlutterBestEffort(
+                    flutterOutcome = notifyFlutterAndWait(
                         method = "onKill",
                         payload = buildFlutterPayload(
                             actionKind = actionKind,
@@ -221,14 +228,16 @@ object FairMemoryAdapter {
                             heapAlloc = heapAlloc,
                             heapCapacity = heapCapacity,
                         ),
+                        timeoutMillis = remainingHandlingTime(startedAt),
                     )
                 }
                 FairMemoryActionKind.UNKNOWN -> {
                     releaseVolatileMemoryOnly(context)
                 }
             }
+            handledOk = isFairMemoryHandlingSuccessful(handledOk, flutterOutcome)
         } catch (error: Exception) {
-            handledOk.set(false)
+            handledOk = false
             Log.e(TAG, "fair-memory business handling failed", error)
             UmengDiagnosticReporter.report(
                 context = context,
@@ -240,10 +249,9 @@ object FairMemoryAdapter {
         }
 
         if (callback != null) {
-            val resultCode = if (handledOk.get()) RESULT_OK else RESULT_FAILED
+            val resultCode = if (handledOk) RESULT_OK else RESULT_FAILED
             val replyExtra = Bundle().apply {
                 putString("reply", "qingyu_fair_memory_${actionKind.name.lowercase(Locale.US)}")
-                putBoolean("protectedLiveAndWidget", true)
             }
             replyToSystem(
                 callback = callback,
@@ -251,6 +259,11 @@ object FairMemoryAdapter {
                 notifyId = notifyId,
                 result = resultCode,
                 extra = replyExtra,
+            )
+            Log.i(
+                TAG,
+                "fair-memory handled action=$actionKind flutter=$flutterOutcome " +
+                    "elapsed=${SystemClock.elapsedRealtime() - startedAt}ms result=$resultCode",
             )
         } else {
             Log.w(TAG, "ITGSA callback binder missing; cannot reply within 3s protocol")
@@ -279,18 +292,18 @@ object FairMemoryAdapter {
         notifyType: Int,
         notifyId: Int,
         reason: String,
-    ) {
+    ): Boolean {
         val prefsName = "fair_memory_runtime"
         check(prefsName !in PROTECTED_SHARED_PREFS_NAMES) {
             "fair_memory prefs must not collide with protected names"
         }
-        context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+        return context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
             .edit()
             .putLong("last_kill_at_millis", System.currentTimeMillis())
             .putInt("last_kill_notify_type", notifyType)
             .putInt("last_kill_notify_id", notifyId)
             .putString("last_kill_reason", reason.take(200))
-            .apply()
+            .commit()
     }
 
     private fun assertProtectedPrefsUntouched() {
@@ -321,15 +334,67 @@ object FairMemoryAdapter {
         )
     }
 
-    private fun notifyFlutterBestEffort(method: String, payload: Map<String, Any?>) {
-        val channel = methodChannel ?: return
-        val handler = Handler(android.os.Looper.getMainLooper())
-        handler.post {
+    private fun remainingHandlingTime(startedAt: Long): Long {
+        return (HANDLING_BUDGET_MILLIS - (SystemClock.elapsedRealtime() - startedAt))
+            .coerceAtLeast(0L)
+    }
+
+    private fun notifyFlutterAndWait(
+        method: String,
+        payload: Map<String, Any?>,
+        timeoutMillis: Long,
+    ): FlutterHandlingOutcome {
+        val channel = synchronized(this) { methodChannel }
+            ?: return FlutterHandlingOutcome.ENGINE_UNAVAILABLE
+        if (timeoutMillis <= 0L) {
+            return FlutterHandlingOutcome.TIMED_OUT
+        }
+
+        val completed = CountDownLatch(1)
+        val succeeded = AtomicBoolean(false)
+        Handler(Looper.getMainLooper()).post {
             try {
-                channel.invokeMethod(method, payload)
+                channel.invokeMethod(
+                    method,
+                    payload,
+                    object : MethodChannel.Result {
+                        override fun success(result: Any?) {
+                            succeeded.set(result == true)
+                            completed.countDown()
+                        }
+
+                        override fun error(
+                            errorCode: String,
+                            errorMessage: String?,
+                            errorDetails: Any?,
+                        ) {
+                            Log.w(TAG, "Flutter $method failed: $errorCode $errorMessage")
+                            completed.countDown()
+                        }
+
+                        override fun notImplemented() {
+                            Log.w(TAG, "Flutter $method is not implemented")
+                            completed.countDown()
+                        }
+                    },
+                )
             } catch (error: Exception) {
                 Log.w(TAG, "notify Flutter $method failed (engine may be gone)", error)
+                completed.countDown()
             }
+        }
+
+        return try {
+            if (!completed.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
+                FlutterHandlingOutcome.TIMED_OUT
+            } else if (succeeded.get()) {
+                FlutterHandlingOutcome.COMPLETED
+            } else {
+                FlutterHandlingOutcome.FAILED
+            }
+        } catch (error: InterruptedException) {
+            Thread.currentThread().interrupt()
+            FlutterHandlingOutcome.FAILED
         }
     }
 
@@ -381,6 +446,22 @@ internal enum class FairMemoryActionKind {
     TRIM,
     KILL,
     UNKNOWN,
+}
+
+internal enum class FlutterHandlingOutcome {
+    COMPLETED,
+    ENGINE_UNAVAILABLE,
+    FAILED,
+    TIMED_OUT,
+}
+
+internal fun isFairMemoryHandlingSuccessful(
+    nativeHandlingSucceeded: Boolean,
+    flutterOutcome: FlutterHandlingOutcome,
+): Boolean {
+    return nativeHandlingSucceeded &&
+        flutterOutcome != FlutterHandlingOutcome.FAILED &&
+        flutterOutcome != FlutterHandlingOutcome.TIMED_OUT
 }
 
 /**

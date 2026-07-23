@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +11,7 @@ import '../models/time_scheme.dart';
 import '../providers/timetable/location_building_cluster_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../logging/app_debug_log.dart';
+import '../services/app_log_service.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/course_field_picker_sheet.dart';
@@ -59,6 +62,7 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
                   _buildGroupCard(context, provider, groups[index]),
                 ],
               ],
+              HyperosSectionDescription(text: l10n.locationTimeMatchSubtitle),
               if (groups.isNotEmpty) ...[
                 const HyperosSectionGap(),
                 HyperosListGroup(
@@ -145,28 +149,82 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     TimetableProvider provider,
   ) async {
     final l10n = AppLocalizations.of(context)!;
+    final pinnedBefore = provider.courses
+        .where((course) => course.timeSchemeIdOverride != null)
+        .length;
     appDebugLog(
       'LocationTimeApplyUI',
       '用户点击「应用到当前课表」 courses=${provider.courses.length} '
-          'groups=${provider.locationTimeGroups.length}',
+          'groups=${provider.locationTimeGroups.length} '
+          'pinnedBefore=$pinnedBefore',
+    );
+    unawaited(
+      AppLogService.instance.info(
+        'location_time_apply_ui',
+        '用户点击「应用到当前课表」',
+        extras: {
+          'courses': provider.courses.length,
+          'groups': provider.locationTimeGroups.length,
+          'pinnedBefore': pinnedBefore,
+        },
+      ),
     );
     final stats = await provider.applyLocationTimeRulesToActiveProfile();
     if (!context.mounted) {
       return;
     }
+    final pinnedAfter = provider.courses
+        .where((course) => course.timeSchemeIdOverride != null)
+        .length;
+    final sampleOverrides = provider.courses
+        .take(12)
+        .map(
+          (course) =>
+              '${course.name}|${course.id}|override=${course.timeSchemeIdOverride ?? "null"}|${course.startTime}-${course.endTime}|loc=${course.location}',
+        )
+        .join(' || ');
     appDebugLog(
       'LocationTimeApplyUI',
       '应用结果 toast: matched=${stats.matchedCount} updated=${stats.updatedCount} '
           'unlocked=${stats.unlockedCount} sameClock=${stats.alreadySameClockCount} '
           'overflow=${stats.sectionOverflowCount} '
-          'overflowNames=${stats.sectionOverflowCourseNames.join(",")}',
+          'overflowNames=${stats.sectionOverflowCourseNames.join(",")} '
+          'pinnedAfter=$pinnedAfter samples=$sampleOverrides',
+    );
+    unawaited(
+      AppLogService.instance.info(
+        'location_time_apply_ui',
+        '应用结果: matched=${stats.matchedCount} updated=${stats.updatedCount} '
+            'pinnedAfter=$pinnedAfter',
+        extras: {
+          'matched': stats.matchedCount,
+          'updated': stats.updatedCount,
+          'unlocked': stats.unlockedCount,
+          'sameClock': stats.alreadySameClockCount,
+          'overflow': stats.sectionOverflowCount,
+          'overflowNames': stats.sectionOverflowCourseNames,
+          'pinnedAfter': pinnedAfter,
+          'samples': sampleOverrides,
+        },
+      ),
     );
     // Scenario-based copy: "matched but updated 0" is usually success
     // (clocks already aligned), not a failure — never show as "更新 0".
     final String message;
     final String? description;
     final AppToastKind toastKind;
-    if (stats.updatedCount > 0) {
+    if (stats.updatedCount > 0 && stats.sectionOverflowCount > 0) {
+      // Partial success: some fully mapped, some rejected for overflow.
+      message =
+          '${l10n.locationTimeMatchApplyUpdated(stats.matchedCount, stats.updatedCount)}；'
+          '${l10n.locationTimeMatchApplyOverflowResult(stats.matchedCount, stats.sectionOverflowCount)}';
+      description = stats.sectionOverflowCourseNames.isEmpty
+          ? null
+          : l10n.locationTimeMatchApplyOverflowHint(
+              stats.sectionOverflowCourseNames.join('、'),
+            );
+      toastKind = AppToastKind.warning;
+    } else if (stats.updatedCount > 0) {
       message = l10n.locationTimeMatchApplyUpdated(
         stats.matchedCount,
         stats.updatedCount,
@@ -269,6 +327,50 @@ class _KeywordDraft {
 
   void dispose() {
     patternController.dispose();
+  }
+}
+
+class _LocationKeywordDialogField extends StatefulWidget {
+  const _LocationKeywordDialogField({
+    required this.initialValue,
+    required this.label,
+    required this.onChanged,
+    this.hint,
+    this.autofocus = false,
+  });
+
+  final String initialValue;
+  final String label;
+  final String? hint;
+  final bool autofocus;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_LocationKeywordDialogField> createState() =>
+      _LocationKeywordDialogFieldState();
+}
+
+class _LocationKeywordDialogFieldState
+    extends State<_LocationKeywordDialogField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HyperosTextField(
+      controller: _controller,
+      label: widget.label,
+      hint: widget.hint,
+      autofocus: widget.autofocus,
+      onChanged: widget.onChanged,
+    );
   }
 }
 
@@ -648,6 +750,7 @@ class _LocationTimeGroupEditorScreenState
               ],
             ),
           ),
+          HyperosSectionDescription(text: l10n.locationTimeMatchKeywordsHelp),
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.locationTimeMatchBuildingSuggestions),
           if (uncovered.isEmpty)
@@ -730,7 +833,7 @@ class _LocationTimeGroupEditorScreenState
     BuildContext context,
     AppLocalizations l10n,
   ) async {
-    final controller = TextEditingController();
+    var patternDraft = '';
     var mode = LocationKeywordMatchMode.prefix;
     final confirmed = await showHyperosDialog<bool>(
       context: context,
@@ -741,11 +844,12 @@ class _LocationTimeGroupEditorScreenState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              HyperosTextField(
-                controller: controller,
+              _LocationKeywordDialogField(
+                initialValue: patternDraft,
                 label: l10n.locationTimeMatchKeywordLabel,
                 hint: l10n.locationTimeMatchKeywordHint,
                 autofocus: true,
+                onChanged: (value) => patternDraft = value,
               ),
               const SizedBox(height: 12),
               HyperosSelectTile<LocationKeywordMatchMode>(
@@ -776,8 +880,7 @@ class _LocationTimeGroupEditorScreenState
         ),
       ],
     );
-    final pattern = controller.text.trim();
-    controller.dispose();
+    final pattern = patternDraft.trim();
     if (confirmed == true && pattern.isNotEmpty && context.mounted) {
       _addKeyword(LocationKeyword(pattern: pattern, mode: mode));
     }
@@ -789,9 +892,7 @@ class _LocationTimeGroupEditorScreenState
     int index,
   ) async {
     final draft = _keywords[index];
-    final controller = TextEditingController(
-      text: draft.patternController.text,
-    );
+    var patternDraft = draft.patternController.text;
     var mode = draft.mode;
     final confirmed = await showHyperosDialog<bool>(
       context: context,
@@ -802,10 +903,11 @@ class _LocationTimeGroupEditorScreenState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              HyperosTextField(
-                controller: controller,
+              _LocationKeywordDialogField(
+                initialValue: patternDraft,
                 label: l10n.locationTimeMatchKeywordLabel,
                 autofocus: true,
+                onChanged: (value) => patternDraft = value,
               ),
               const SizedBox(height: 12),
               HyperosSelectTile<LocationKeywordMatchMode>(
@@ -836,8 +938,7 @@ class _LocationTimeGroupEditorScreenState
         ),
       ],
     );
-    final pattern = controller.text.trim();
-    controller.dispose();
+    final pattern = patternDraft.trim();
     if (confirmed == true && pattern.isNotEmpty && context.mounted) {
       if (_hasKeyword(pattern) &&
           pattern.toLowerCase() !=

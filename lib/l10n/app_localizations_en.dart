@@ -8997,7 +8997,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String locationTimeMatchApplyOverflowResult(int matched, int count) {
-    return 'Matched $matched; $count exceed the scheme sections';
+    return '$count courses cannot map into the scheme (too few sections); apply rejected';
   }
 
   @override
@@ -9175,7 +9175,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'Switch the default scheme by date (max 2, no overlap)';
+      'On the start day, bulk-apply that scheme as the timetable default once (same as applying the scheme); edit courses freely after. Max 2 rules, no overlap';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';
@@ -9205,7 +9205,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDateRuleEnabled => 'Enabled';
 
   @override
-  String get scheduleDateRuleActiveToday => 'Active today';
+  String get scheduleDateRuleActiveToday => 'In range today';
 
   @override
   String scheduleDateRuleRangeSummary(String start, String end) {

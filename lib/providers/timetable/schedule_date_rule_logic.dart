@@ -176,4 +176,30 @@ class ScheduleDateRuleLogic {
     });
     return hits.first;
   }
+
+  /// Stable signature for a bulk-apply event.
+  ///
+  /// When the signature changes (new rule, new scheme, new range), the default
+  /// time scheme is re-applied once. While it stays the same, daily opens do
+  /// not rewrite clocks so manual edits remain.
+  static String appliedSignature(ScheduleDateRule rule) {
+    return '${rule.id}|${rule.timeSchemeId}|${rule.startDate}|${rule.endDate}';
+  }
+
+  /// Whether [today] should trigger a one-shot bulk apply of [matchedRule].
+  ///
+  /// [lastAppliedSignature] is the last successful apply for any rule (or null).
+  static bool shouldBulkApply({
+    required ScheduleDateRule? matchedRule,
+    required String? lastAppliedSignature,
+  }) {
+    if (matchedRule == null || !matchedRule.enabled) {
+      return false;
+    }
+    if (matchedRule.timeSchemeId.isEmpty) {
+      return false;
+    }
+    final signature = appliedSignature(matchedRule);
+    return signature != lastAppliedSignature;
+  }
 }

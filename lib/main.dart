@@ -20,6 +20,7 @@ import 'screens/course_import_screen.dart';
 import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
+import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
 import 'services/app_log_service.dart';
@@ -449,6 +450,7 @@ class MyApp extends StatelessWidget {
                 onUnknownRoute: _buildUnknownPlatformRoute,
                 navigatorObservers: <NavigatorObserver>[
                   _AppRouteLogObserver(),
+                  FairMemoryService.instance.routeObserver,
                   hyperosRouteObserver,
                 ],
                 builder: (context, child) {
@@ -531,11 +533,21 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   bool _startupHandled = false;
   bool _isBootstrapping = true;
   bool _mainContentReady = false;
+  bool _fairMemoryRecoveryHandled = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final provider = context.read<TimetableProvider>();
+    FairMemoryService.instance.registerSnapshotProvider(() async {
+      return <String, Object?>{
+        'activeProfileId': provider.activeProfileId,
+        'currentWeek': provider.currentWeek,
+        'currentDateWeek': provider.currentDateWeek,
+        'currentDayOfWeek': provider.currentDayOfWeek,
+      };
+    });
     scheduleCloudSyncUpload = _cloudSyncCoordinator.scheduleUpload;
     // Shared MethodChannel handler for external import + debug deep links.
     // Installed early so routes that arrive during splash are not dropped.
@@ -804,6 +816,89 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       return;
     }
     setState(() => _isBootstrapping = false);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) {
+      await _restoreFairMemoryScene();
+    }
+  }
+
+  Future<void> _restoreFairMemoryScene() async {
+    if (_fairMemoryRecoveryHandled) {
+      return;
+    }
+    _fairMemoryRecoveryHandled = true;
+    final snapshot = await FairMemoryService.instance
+        .takePendingRecoverySnapshot();
+    if (!mounted) {
+      return;
+    }
+    if (snapshot != null) {
+      await _restoreFairMemoryBusinessState(snapshot.businessState);
+      if (!mounted) {
+        return;
+      }
+    }
+    final lastRoute = snapshot?.lastNamedRoute;
+    if (lastRoute == null || lastRoute == '/') {
+      return;
+    }
+
+    final navigator = Navigator.of(context);
+    if (lastRoute == '/settings/lan-edit') {
+      unawaited(
+        navigator.push<void>(
+          HyperosPageRoute(
+            settings: const RouteSettings(name: '/settings/lan-edit'),
+            builder: (_) => const LanEditScreen(),
+          ),
+        ),
+      );
+      return;
+    }
+    if (lastRoute.startsWith('/settings')) {
+      unawaited(
+        navigator.push<void>(
+          HyperosPageRoute(
+            settings: const RouteSettings(name: '/settings'),
+            builder: (_) => const TimetableSettingsScreen(),
+          ),
+        ),
+      );
+      return;
+    }
+    if (lastRoute.startsWith('/courses/import')) {
+      unawaited(
+        navigator.push<void>(
+          HyperosPageRoute(
+            settings: const RouteSettings(name: '/courses/import'),
+            builder: (_) => const CourseImportScreen(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreFairMemoryBusinessState(
+    Map<String, Object?> businessState,
+  ) async {
+    final provider = context.read<TimetableProvider>();
+    try {
+      await provider.initialize();
+      final profileId = businessState['activeProfileId'];
+      if (profileId is String &&
+          profileId.isNotEmpty &&
+          profileId != provider.activeProfileId &&
+          provider.profiles.any((profile) => profile.id == profileId)) {
+        await provider.switchProfile(profileId);
+      }
+      final weekValue = businessState['currentWeek'];
+      final week = weekValue is num ? weekValue.toInt() : 0;
+      if (week > 0 && week != provider.currentWeek) {
+        await provider.setCurrentWeek(week);
+      }
+    } catch (_) {
+      // Normal startup state remains the fallback if recovery is incomplete.
+    }
   }
 
   Future<bool> _openGuide({

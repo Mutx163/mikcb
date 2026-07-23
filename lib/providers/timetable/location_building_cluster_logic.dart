@@ -126,8 +126,10 @@ class LocationBuildingClusterLogic {
   );
 
   static final RegExp _classroomLabel = RegExp(
+    // Do NOT glue trailing room digits onto the label: "测试教室01" must yield
+    // "测试教室" so match-side contains/prefix can still hit "测试教室 01".
     r'([A-Za-z0-9]*[\u4e00-\u9fffA-Za-z0-9]{1,20}'
-    r'(?:教室|阶教|阶梯教室|语音室|机房|实验室)[A-Za-z0-9]?)',
+    r'(?:教室|阶教|阶梯教室|语音室|机房|实验室))',
   );
 
   static final RegExp _sportsPlace = RegExp(

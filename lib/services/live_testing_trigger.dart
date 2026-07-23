@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../logging/app_log_messages.dart';
-import '../models/course.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
@@ -21,15 +20,16 @@ class LiveTestingTriggerResult {
 
 bool liveTestingTriggerInFlight = false;
 
-Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
+/// Runs the same production live-update path used after normal course edits.
+///
+/// Does **not** force-start the island, suspend schedule triggers, or invent a
+/// temporary course payload. Selection honors calendar week, endWeek, holiday,
+/// and before-class windows exactly like a normal tick.
+Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
   required BuildContext context,
   required TimetableProvider provider,
-  required Course testCourse,
-  Course? previewNextCourse,
-  Duration beforeClassLead = const Duration(minutes: 1),
-  Duration totalCourseDuration =
-      LiveTestingFixtureService.defaultCourseDuration,
-  String source = 'settings_screen',
+  required String source,
+  String? seededCourseId,
 }) async {
   if (liveTestingTriggerInFlight) {
     final locale = Localizations.localeOf(context);
@@ -44,149 +44,120 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
 
   final locale = Localizations.localeOf(context);
   final l10n = AppLocalizations.of(context)!;
-  final now = DateTime.now();
-  final start = now.add(beforeClassLead);
-  final end = start.add(totalCourseDuration);
   final liveService = MiuiLiveActivitiesService();
 
   try {
     await provider.initialize();
     await liveService.initialize();
+
+    final now = DateTime.now();
+    final selectionPreview = provider.getLiveActivityCourseSelection(now: now);
     await liveService.recordDiagnosticEvent(
       'live_update_test_requested',
       AppLogMessages.liveUpdateTestRequested,
       extras: {
         'from': source,
+        'path': 'production_refresh',
         'currentWeek': provider.currentWeek,
-        'courseId': testCourse.id,
+        'courseId': seededCourseId,
+        'hasImmediateSelection': selectionPreview != null,
       },
     );
 
-    final settings = provider.settings;
-    final displaySettings = settings.beforeClassDisplaySettings;
-    provider.suspendLiveActivitySyncFor(
-      end.difference(now) + const Duration(seconds: 20),
-    );
-    await liveService.suspendScheduleTriggers(
-      end.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
-    );
-    await liveService.recordDiagnosticEvent(
-      'live_update_test_suspend_sync',
-      AppLogMessages.liveUpdateTestSuspendSync,
-      extras: {
-        'untilMillis': end
-            .add(const Duration(seconds: 20))
-            .millisecondsSinceEpoch,
-      },
-    );
+    // Older test helpers paused Flutter/native schedule sync; production refresh
+    // must not inherit that pause or the real path appears broken.
+    provider.clearLiveActivitySyncSuspend();
+    await liveService.suspendScheduleTriggers(0);
 
-    final progressMilestones = provider.buildLiveProgressMilestones(
-      testCourse,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
-    );
-    final progressBreakOffsetsMillis = provider
-        .buildLiveProgressBreakOffsetsMillis(
-          testCourse,
-          startAtMillis: start.millisecondsSinceEpoch,
-          endAtMillis: end.millisecondsSinceEpoch,
-        );
+    // Same entry used after resume / settings changes: re-select from courses.
+    await provider.refreshLiveActivityNow(forceSnapshotSync: true);
 
-    await liveService.recordDiagnosticEvent(
-      'live_update_test_starting',
-      AppLogMessages.liveUpdateTestStarting,
-      extras: {
-        'courseName': testCourse.name,
-        'startAtMillis': start.millisecondsSinceEpoch,
-        'endAtMillis': end.millisecondsSinceEpoch,
-        'milestoneCount': progressMilestones.length,
-      },
-    );
+    if (!context.mounted) {
+      return const LiveTestingTriggerResult(
+        status: LiveTestingTriggerStatus.error,
+        message: null,
+      );
+    }
 
-    await liveService.startLiveUpdate(
-      testCourse,
-      previewNextCourse,
-      stage: LiveActivityStage.beforeClass.name,
-      beforeClassLeadMillis: beforeClassLead.inMilliseconds,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
-      endReminderLeadMillis: 0,
-      endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
-      promoteDuringClass: settings.livePromoteDuringClass,
-      showNotificationDuringClass: settings.liveShowDuringClassNotification,
-      enableBeforeClass: true,
-      enableDuringClass: true,
-      enableBeforeEnd: false,
-      showCountdown: displaySettings.showCountdown,
-      countdownTextStyle: displaySettings.countdownTextStyle,
-      showStageText: displaySettings.showStageText,
-      showCourseNameInIsland: displaySettings.showCourseName,
-      showLocationInIsland: displaySettings.showLocation,
-      useShortNameInIsland: displaySettings.useShortName,
-      hidePrefixText: displaySettings.hidePrefixText,
-      duringClassTimeDisplayMode: displaySettings.duringClassTimeDisplayMode,
-      enableMiuiIslandLabelImage: displaySettings.enableMiuiIslandLabelImage,
-      miuiIslandLabelStyle: displaySettings.miuiIslandLabelStyle,
-      miuiIslandLabelContent: displaySettings.miuiIslandLabelContent,
-      miuiIslandLabelFontColor: displaySettings.miuiIslandLabelFontColor,
-      miuiIslandLabelFontWeight: displaySettings.miuiIslandLabelFontWeight,
-      miuiIslandLabelRenderQuality:
-          displaySettings.miuiIslandLabelRenderQuality,
-      miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
-      miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
-      miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
-      miuiIslandLabelLogoPath: displaySettings.miuiIslandLabelLogoPath,
-      miuiIslandLabelLogoCornerRadius:
-          displaySettings.miuiIslandLabelLogoCornerRadius,
-      miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
-      miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
-      beforeClassQuickAction: settings.liveBeforeClassQuickAction,
-      progressBreakOffsetsMillis: progressBreakOffsetsMillis,
-      progressMilestoneLabels: progressMilestones
-          .map((milestone) => milestone['label'] as String)
-          .toList(),
-      progressMilestoneTimeTexts: progressMilestones
-          .map((milestone) => milestone['timeText'] as String)
-          .toList(),
-    );
+    final selection = provider.getLiveActivityCourseSelection();
+    if (selection == null) {
+      await liveService.recordDiagnosticEvent(
+        'live_update_test_no_selection',
+        AppLogMessages.liveUpdateTestNoSelection,
+        extras: {
+          'from': source,
+          'path': 'production_refresh',
+          'weekday': DateTime.now().weekday,
+          'currentWeek': provider.currentWeek,
+          'seededCourseId': seededCourseId,
+        },
+      );
+      return LiveTestingTriggerResult(
+        status: LiveTestingTriggerStatus.error,
+        message: l10n.liveTestingNoCourseAvailable,
+      );
+    }
 
     await liveService.recordDiagnosticEvent(
       'live_update_test_started',
       AppLogMessages.liveUpdateTestStarted,
       extras: {
-        'courseName': testCourse.name,
-        'stage': LiveActivityStage.beforeClass.name,
+        'from': source,
+        'path': 'production_refresh',
+        'courseName': selection.currentCourse.name,
+        'stage': selection.stage.name,
       },
     );
 
     final homeHint = locale.languageCode == 'zh'
-        ? '请按 Home 键回到桌面查看超级岛（停留在应用内时系统通常不会弹出）'
-        : 'Press Home and watch the island; it usually will not pop while the app stays open.';
+        ? '已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）'
+        : 'Used the production island selection path. Press Home to watch it; it usually will not pop while the app stays open.';
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
-      message: '${l10n.liveTestingNotificationSent}\n$homeHint',
+      message:
+          '${l10n.liveTestingNotificationSent}\n'
+          '${selection.currentCourse.name} · ${selection.stage.name}\n'
+          '$homeHint',
     );
-  } catch (e, stackTrace) {
+  } catch (error, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
       'live_update_test_failed',
       AppLogMessages.liveUpdateTestFailed,
-      error: e,
+      error: error,
       stackTrace: stackTrace,
       dedupeKey: 'live_update_test_failed',
     );
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.error,
-      message: l10n.sendFailedWithError('$e'),
+      message: l10n.sendFailedWithError('$error'),
     );
   } finally {
     unawaited(
-      Future<void>.delayed(const Duration(seconds: 12), () {
+      Future<void>.delayed(const Duration(seconds: 2), () {
         liveTestingTriggerInFlight = false;
       }),
     );
   }
 }
 
+/// Settings entry: only re-run production live selection (no forced payload).
+Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
+  required BuildContext context,
+  required TimetableProvider provider,
+  String source = 'settings_screen',
+}) {
+  return triggerLiveUpdateProductionRefresh(
+    context: context,
+    provider: provider,
+    source: source,
+  );
+}
+
+/// Fixture slot entry: write a normal course time change, then production refresh.
+///
+/// The written course is a regular [Course] in the active profile (same storage
+/// and week rules as user-created courses). Starting the island is left entirely
+/// to [TimetableProvider.refreshLiveActivityNow].
 Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({
   required BuildContext context,
   required TimetableProvider provider,
@@ -207,21 +178,10 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({
       message: null,
     );
   }
-  final sections = provider.settings.sections;
-  final nextSection = LiveTestingFixtureService.nextSectionNumberForTime(
-    now,
-    sections,
-  );
-  final nextTemplate = LiveTestingFixtureService.findFixtureForSection(
-    provider,
-    nextSection,
-  );
-  return triggerLiveUpdateTest(
+  return triggerLiveUpdateProductionRefresh(
     context: context,
     provider: provider,
-    testCourse: timedCourse,
-    previewNextCourse: nextTemplate,
-    beforeClassLead: lead,
     source: source,
+    seededCourseId: timedCourse.id,
   );
 }

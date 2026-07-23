@@ -1222,6 +1222,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               .firstOrNull
               ?.name ??
           l10n.followCurrentTimetableWithName(followLabel);
+      autoResolvedSubtitle = null;
     } else if (resolvedScheme != null) {
       if (locationMatch != null) {
         currentName = compact

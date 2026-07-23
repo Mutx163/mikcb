@@ -190,23 +190,32 @@ object TodayWidgetSupport {
             null
         }
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
-        val currentWeek = calculateWeekForDate(
+        val semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L }
+        // Course filtering must use calendar week (no semesterWeekCount clamp).
+        // Clamping to the last teaching week after the term ends would revive
+        // endWeek=N courses on every matching weekday forever.
+        val scheduleWeek = liveSchedulerCalculateCalendarWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
-            fallbackWeek = profileJson.optInt("currentWeek", 1).coerceAtLeast(1),
-            semesterWeekCount = semesterWeekCount,
-            nowMillis = nowMillis,
+            currentWeek = profileJson.optInt("currentWeek", 1).coerceAtLeast(1),
+            dateMillis = nowMillis,
         )
+        // Label can stay UI-clamped for browsing consistency; filtering uses scheduleWeek.
+        val currentWeek = if (scheduleWeek < 1) {
+            1
+        } else {
+            scheduleWeek.coerceIn(1, semesterWeekCount)
+        }
         val todayWeekday = nowCalendar.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
         val allCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
         // 含停课的原始课程数（用于区分"没课"和"课都停了"）
         val originalTodayCourseCount = if (isHoliday) 0 else {
-            allCourses.count { it.dayOfWeek == todayWeekday && it.isInWeekIgnoringSuspension(currentWeek) }
+            allCourses.count { it.dayOfWeek == todayWeekday && it.isInWeekIgnoringSuspension(scheduleWeek) }
         }
         val todayCourses = if (isHoliday) {
             emptyList()
         } else {
             allCourses
-                .filter { it.dayOfWeek == todayWeekday && it.isInWeek(currentWeek) }
+                .filter { it.dayOfWeek == todayWeekday && it.isInWeek(scheduleWeek) }
                 .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
         }
         val currentCourse = if (isHoliday) {
@@ -350,12 +359,16 @@ object TodayWidgetSupport {
             }
             tomorrowDayOfWeek = tomorrowCal.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
             val tomorrowWeekday = tomorrowDayOfWeek
-            tomorrowWeek = calculateWeekForDate(
-                semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
-                fallbackWeek = currentWeek,
-                semesterWeekCount = semesterWeekCount,
-                nowMillis = tomorrowCal.timeInMillis,
+            val tomorrowScheduleWeek = liveSchedulerCalculateCalendarWeekForDate(
+                semesterStartMillis = semesterStartMillis,
+                currentWeek = currentWeek,
+                dateMillis = tomorrowCal.timeInMillis,
             )
+            tomorrowWeek = if (tomorrowScheduleWeek < 1) {
+                1
+            } else {
+                tomorrowScheduleWeek.coerceIn(1, semesterWeekCount)
+            }
             val tomorrowDateStr = widgetFormatDate(
                 year = tomorrowCal.get(Calendar.YEAR),
                 month = tomorrowCal.get(Calendar.MONTH) + 1,
@@ -372,7 +385,7 @@ object TodayWidgetSupport {
                 emptyList()
             } else {
                 allCourses
-                    .filter { it.dayOfWeek == tomorrowWeekday && it.isInWeek(tomorrowWeek) }
+                    .filter { it.dayOfWeek == tomorrowWeekday && it.isInWeek(tomorrowScheduleWeek) }
                     .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
                     .map { it.toWidgetCourseInfo() }
             }

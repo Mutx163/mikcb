@@ -69,6 +69,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
   final Map<int, PageController> _dayViewPageControllers = {};
+  final Set<PageController> _pendingDayViewControllerDisposals = {};
   bool _isSyncingWeekPage = false;
   bool _isSyncingDayViewPage = false;
   int? _pendingSyncedWeek;
@@ -148,6 +149,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     for (final controller in _dayViewPageControllers.values) {
       controller.dispose();
     }
+    for (final controller in _pendingDayViewControllerDisposals) {
+      controller.dispose();
+    }
+    _pendingDayViewControllerDisposals.clear();
     super.dispose();
   }
 
@@ -438,16 +443,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewTransitionSourceDayOfWeek = null;
     _isSyncingDayViewPage = false;
     _isDaySwipeAnimating = false;
-    // Defer disposal to after the current frame so that AnimatedBuilder
-    // widgets that are still attached to these controllers can detach
-    // gracefully during the ongoing build pass.
+    // Keep old controllers alive through the replacement frame. AnimatedBuilder
+    // detaches from the old PageController during that rebuild; disposing at
+    // the first post-frame callback is still early enough to race didUpdateWidget.
     final oldControllers = _dayViewPageControllers.values.toList();
     _dayViewPageControllers.clear();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      for (final c in oldControllers) {
-        c.dispose();
-      }
-    });
+    for (final controller in oldControllers) {
+      _disposeDayViewControllerAfterReplacement(controller);
+    }
     if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
       _selectedWeekForDayView = _visibleWeek;
       _selectedDayOfWeek = restoredDayOfWeek;
@@ -700,6 +703,30 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  void _disposeDayViewControllerAfterReplacement(PageController controller) {
+    if (!_pendingDayViewControllerDisposals.add(controller)) {
+      return;
+    }
+
+    // Two post-frame hops allow the replacement widget tree to build and let
+    // AnimatedBuilder detach its listener before the controller is disposed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        if (_pendingDayViewControllerDisposals.remove(controller)) {
+          controller.dispose();
+        }
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pendingDayViewControllerDisposals.remove(controller)) {
+          controller.dispose();
+        }
+      });
+      WidgetsBinding.instance.scheduleFrame();
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
   void _prepareDayViewPageController(
     TimetableSettings settings,
     int week,
@@ -709,8 +736,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
     final existing = _dayViewPageControllers[week];
     if (forceRecreate && existing != null) {
-      // Defer disposal so AnimatedBuilder can detach its listener first.
-      WidgetsBinding.instance.addPostFrameCallback((_) => existing.dispose());
+      _disposeDayViewControllerAfterReplacement(existing);
       _dayViewPageControllers[week] = PageController(initialPage: targetPage);
       return;
     }
@@ -727,7 +753,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => existing.dispose());
+    _disposeDayViewControllerAfterReplacement(existing);
     _dayViewPageControllers[week] = PageController(initialPage: targetPage);
   }
 

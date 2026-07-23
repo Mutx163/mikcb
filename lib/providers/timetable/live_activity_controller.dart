@@ -371,7 +371,9 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
   }
 
   final currentTime = now ?? DateTime.now();
-  final targetWeek = host._calculateWeekForDate(currentTime);
+  // Must use calendar week (no semesterWeekCount clamp). Clamping to the last
+  // teaching week after the term ends would revive endWeek=N courses forever.
+  final targetWeek = host._calculateCalendarWeekForDate(currentTime);
   final originalTodayCount = host
       .getCoursesForDay(currentTime.weekday, week: targetWeek)
       .length;
@@ -384,7 +386,7 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
             .toList(growable: false);
 
   final tomorrow = currentTime.add(const Duration(days: 1));
-  final tomorrowWeek = host._calculateWeekForDate(tomorrow);
+  final tomorrowWeek = host._calculateCalendarWeekForDate(tomorrow);
   final tomorrowIsHoliday = host.isHoliday(tomorrow);
   final tomorrowCourses = tomorrowIsHoliday
       ? const <Course>[]

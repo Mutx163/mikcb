@@ -2,8 +2,12 @@ import 'dart:convert';
 
 /// A date-range rule that switches the profile default time scheme.
 ///
-/// Priority in resolve: course override > location group > **this layer** >
-/// [TimetableSettings.activeTimeSchemeId].
+/// Product semantics (not a continuous soft overlay):
+/// - On the rule's start day (or the first app open after that day while the
+///   range is still active), bulk-apply [timeSchemeId] as the profile default
+///   and rewrite unlocked course clocks (same path as applying a time scheme).
+/// - Afterwards users may manually edit courses; daily opens do not re-apply.
+/// - Course override and location groups still win for individual courses.
 ///
 /// Product cap: at most 2 enabled rules per device (enforced by provider).
 class ScheduleDateRule {

@@ -114,6 +114,20 @@ void main() {
         )?.pattern,
         '测试教室',
       );
+      // Spaced room codes must still cluster as the facility label, not
+      // "测试教室0"/"测试教室1" fragments that fail match-side contains.
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '测试教室 01',
+        )?.pattern,
+        '测试教室',
+      );
+      expect(
+        LocationBuildingClusterLogic.suggestKeywordFromLocation(
+          '测试教室24',
+        )?.pattern,
+        '测试教室',
+      );
       expect(
         LocationBuildingClusterLogic.suggestKeywordFromLocation(
           '劳动测评平台',

@@ -1658,6 +1658,11 @@ class MainActivity : FlutterActivity() {
             getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         }
     }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        FairMemoryAdapter.detachFlutterEngine()
+        super.cleanUpFlutterEngine(flutterEngine)
+    }
 }
 
 internal fun liveShouldMirrorStatusIntoMiuiFocusHint(

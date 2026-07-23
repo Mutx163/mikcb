@@ -81,5 +81,53 @@ void main() {
       );
       expect(ScheduleDateRuleLogic.match(DateTime(2026, 6, 1), [rule]), isNull);
     });
+
+    test('shouldBulkApply only when signature differs', () {
+      final rule = ScheduleDateRule(
+        id: 'summer',
+        name: '夏令时',
+        timeSchemeId: 'scheme-summer',
+        startDate: '2026-05-01',
+        endDate: '2026-09-30',
+      );
+      final signature = ScheduleDateRuleLogic.appliedSignature(rule);
+
+      expect(
+        ScheduleDateRuleLogic.shouldBulkApply(
+          matchedRule: rule,
+          lastAppliedSignature: null,
+        ),
+        isTrue,
+      );
+      expect(
+        ScheduleDateRuleLogic.shouldBulkApply(
+          matchedRule: rule,
+          lastAppliedSignature: signature,
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleDateRuleLogic.shouldBulkApply(
+          matchedRule: null,
+          lastAppliedSignature: signature,
+        ),
+        isFalse,
+      );
+
+      final winter = rule.copyWith(
+        id: 'winter',
+        name: '冬令时',
+        timeSchemeId: 'scheme-winter',
+        startDate: '2026-10-01',
+        endDate: '2027-04-30',
+      );
+      expect(
+        ScheduleDateRuleLogic.shouldBulkApply(
+          matchedRule: winter,
+          lastAppliedSignature: signature,
+        ),
+        isTrue,
+      );
+    });
   });
 }

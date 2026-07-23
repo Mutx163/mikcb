@@ -24,6 +24,7 @@ class HyperosTextField extends StatelessWidget {
     this.enabled = true,
     this.obscureText = false,
     this.autofocus = false,
+    this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
   });
 
   final TextEditingController? controller;
@@ -41,6 +42,7 @@ class HyperosTextField extends StatelessWidget {
   final bool enabled;
   final bool obscureText;
   final bool autofocus;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +61,7 @@ class HyperosTextField extends StatelessWidget {
           Text(
             label!,
             style: TextStyle(
-              fontSize: HyperosMiuixTextField.labelFontSizeNormal,
+              fontSize: fontSize,
               color: enabled ? onSurface : disabled,
             ),
           ),
@@ -81,7 +83,7 @@ class HyperosTextField extends StatelessWidget {
             onChanged: onChanged,
             onSubmitted: onSubmitted,
             style: TextStyle(
-              fontSize: HyperosMiuixTextField.labelFontSizeNormal,
+              fontSize: fontSize,
               color: enabled ? onSurface : disabled,
             ),
             decoration: InputDecoration(
@@ -147,6 +149,7 @@ class HyperosPickerField extends StatelessWidget {
     this.icon,
     this.enabled = true,
     this.isPlaceholder = false,
+    this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
   });
 
   final String label;
@@ -155,6 +158,7 @@ class HyperosPickerField extends StatelessWidget {
   final IconData? icon;
   final bool enabled;
   final bool isPlaceholder;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +181,7 @@ class HyperosPickerField extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: HyperosMiuixTextField.labelFontSizeNormal,
+            fontSize: fontSize,
             color: canTap ? onSurface : disabled,
           ),
         ),
@@ -207,10 +211,7 @@ class HyperosPickerField extends StatelessWidget {
                         value.isEmpty ? '—' : value,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: HyperosMiuixTextField.labelFontSizeNormal,
-                          color: valueColor,
-                        ),
+                        style: TextStyle(fontSize: fontSize, color: valueColor),
                       ),
                     ),
                     Icon(

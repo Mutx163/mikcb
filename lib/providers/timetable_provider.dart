@@ -78,10 +78,11 @@ class LocationTimeApplyStats {
   /// Matched, but start/end clocks already equaled the target scheme.
   final int alreadySameClockCount;
 
-  /// Matched a scheme, but the course section range exceeds that scheme.
+  /// Location hit a group, but course section range cannot map into that
+  /// scheme — apply is rejected (no pin, no clock rewrite).
   final int sectionOverflowCount;
 
-  /// First few course names skipped for section overflow (for toast).
+  /// First few course names rejected for section overflow (for toast).
   final List<String> sectionOverflowCourseNames;
 
   const LocationTimeApplyStats({
@@ -291,6 +292,9 @@ class TimetableProvider with ChangeNotifier {
       List.unmodifiable(_locationTimeGroups);
   List<ScheduleDateRule> get scheduleDateRules =>
       List.unmodifiable(_scheduleDateRules);
+
+  /// Last successful bulk-apply signature for seasonal date rules.
+  String? _scheduleDateRuleLastAppliedSignature;
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
   String? get activeProfileId => _activeProfileId;
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
@@ -553,6 +557,8 @@ class TimetableProvider with ChangeNotifier {
     final scheduleDateRules = await _storageService.getScheduleDateRules();
     final activeProfileId = await _storageService.getActiveProfileId();
     final partnerBinding = await _storageService.getPartnerTimetableBinding();
+    final lastAppliedSignature = await _storageService
+        .getScheduleDateRuleLastAppliedSignature();
 
     _profiles = profiles;
     _timeSchemes = timeSchemes;
@@ -560,6 +566,7 @@ class TimetableProvider with ChangeNotifier {
     _scheduleDateRules = scheduleDateRules;
     _activeProfileId = activeProfileId;
     _partnerBinding = partnerBinding;
+    _scheduleDateRuleLastAppliedSignature = lastAppliedSignature;
 
     if (_activeProfileId != null) {
       final storedActive = _getProfileById(_activeProfileId);
@@ -599,6 +606,9 @@ class TimetableProvider with ChangeNotifier {
 
     // --- 首帧已可渲染，立即通知 ---
     notifyListeners();
+
+    // Seasonal bulk-apply may rewrite default scheme/clocks after first paint.
+    unawaited(applyDueScheduleDateRules());
 
     // Holiday must finish before the first live/widget push so cold start on a
     // holiday day does not briefly publish courses (empty holidayData ⇒ false).
@@ -1109,7 +1119,8 @@ class TimetableProvider with ChangeNotifier {
 
     _scheduleDateRules = next;
     await _persistScheduleDateRules();
-    await _resyncAllProfilesWithLocationRules();
+    // Bulk-apply if today falls in the new range; otherwise wait for start day.
+    await applyDueScheduleDateRules();
     return rule;
   }
 
@@ -1139,7 +1150,8 @@ class TimetableProvider with ChangeNotifier {
 
     _scheduleDateRules = next;
     await _persistScheduleDateRules();
-    await _resyncAllProfilesWithLocationRules();
+    // Signature change (dates/scheme) re-triggers bulk apply when still due.
+    await applyDueScheduleDateRules();
     return updated;
   }
 
@@ -1153,7 +1165,7 @@ class TimetableProvider with ChangeNotifier {
       return false;
     }
     await _persistScheduleDateRules();
-    await _resyncAllProfilesWithLocationRules();
+    _notifyStateChanged();
     return true;
   }
 
@@ -1173,10 +1185,134 @@ class TimetableProvider with ChangeNotifier {
     _scheduleDateRules = next;
     await _persistScheduleDateRules();
     if (resync) {
-      await _resyncAllProfilesWithLocationRules();
+      await applyDueScheduleDateRules();
     } else {
       _notifyStateChanged();
     }
+  }
+
+  /// One-shot bulk apply of the seasonal date rule that matches [now].
+  ///
+  /// Product rules:
+  /// 1. Same as tapping「应用时间模板」on the matched scheme (all profiles get
+  ///    that default; unlocked clocks rewrite).
+  /// 2. Runs on the first open at/after the rule start while still in range.
+  /// 3. Does not re-run daily once applied, so manual course edits stick.
+  Future<bool> applyDueScheduleDateRules({DateTime? now}) async {
+    await initialize();
+    final reference = now ?? DateTime.now();
+    final matched = ScheduleDateRuleLogic.match(reference, _scheduleDateRules);
+    if (!ScheduleDateRuleLogic.shouldBulkApply(
+      matchedRule: matched,
+      lastAppliedSignature: _scheduleDateRuleLastAppliedSignature,
+    )) {
+      return false;
+    }
+
+    final rule = matched!;
+    final scheme = _getTimeSchemeById(rule.timeSchemeId);
+    if (scheme == null) {
+      appDebugLog(
+        'ScheduleDateRule',
+        '跳过批量套用: 模板不存在 rule=${rule.name} schemeId=${rule.timeSchemeId}',
+      );
+      return false;
+    }
+
+    // Section coverage check (same as applyTimeScheme) against active courses.
+    Course? highestSectionCourse;
+    for (final course in _courses) {
+      if (highestSectionCourse == null ||
+          course.endSection > highestSectionCourse.endSection) {
+        highestSectionCourse = course;
+      }
+    }
+    final requiredMaxSection = highestSectionCourse?.endSection ?? 0;
+    if (requiredMaxSection > scheme.sections.length) {
+      appDebugLog(
+        'ScheduleDateRule',
+        '跳过批量套用: 节次超出模板 rule=${rule.name} need=$requiredMaxSection '
+            'has=${scheme.sections.length}',
+      );
+      await AppLogService.instance.warn(
+        'schedule_date_rule',
+        '日期规则批量套用失败：节次超出模板',
+        extras: {
+          'ruleId': rule.id,
+          'ruleName': rule.name,
+          'schemeId': scheme.id,
+          'requiredMaxSection': requiredMaxSection,
+          'schemeSections': scheme.sections.length,
+        },
+      );
+      return false;
+    }
+
+    final signature = ScheduleDateRuleLogic.appliedSignature(rule);
+    appDebugLog(
+      'ScheduleDateRule',
+      '批量套用作息: rule=${rule.name} scheme=${scheme.name} '
+          'range=${rule.startDate}~${rule.endDate} signature=$signature',
+    );
+
+    // Apply as profile default + rewrite clocks for every profile.
+    for (var index = 0; index < _profiles.length; index++) {
+      final profile = _profiles[index];
+      final nextSettings = profile.settings.copyWith(
+        activeTimeSchemeId: scheme.id,
+        sections: List<SectionTime>.from(scheme.sections),
+      );
+      final syncedCourses = _syncCoursesWithEffectiveTimeSchemes(
+        List<Course>.from(profile.courses),
+        settings: nextSettings,
+      );
+      _profiles[index] = profile.copyWith(
+        settings: nextSettings,
+        courses: syncedCourses,
+      );
+    }
+
+    final activeIndex = _profiles.indexWhere(
+      (profile) => profile.id == _activeProfileId,
+    );
+    if (activeIndex != -1) {
+      _courses = List<Course>.from(_profiles[activeIndex].courses);
+      _settings = _profiles[activeIndex].settings;
+    } else {
+      _settings = _settings.copyWith(
+        activeTimeSchemeId: scheme.id,
+        sections: List<SectionTime>.from(scheme.sections),
+      );
+      _courses = _syncCoursesWithEffectiveTimeSchemes(
+        List<Course>.from(_courses),
+        settings: _settings,
+      );
+    }
+
+    await _storageService.saveProfiles(_profiles);
+    _scheduleDateRuleLastAppliedSignature = signature;
+    await _storageService.saveScheduleDateRuleLastAppliedSignature(signature);
+    notifyUserDataChangedForSync();
+    _currentLiveCourseId = null;
+    _notifyStateChanged();
+    await _updateLiveActivity();
+
+    unawaited(
+      AppLogService.instance.info(
+        'schedule_date_rule',
+        '已按日期规则批量套用作息',
+        extras: {
+          'ruleId': rule.id,
+          'ruleName': rule.name,
+          'schemeId': scheme.id,
+          'schemeName': scheme.name,
+          'startDate': rule.startDate,
+          'endDate': rule.endDate,
+          'signature': signature,
+        },
+      ),
+    );
+    return true;
   }
 
   /// Apply location routing to unlocked courses on the active profile.
@@ -1191,37 +1327,66 @@ class TimetableProvider with ChangeNotifier {
     var alreadySameClockCount = 0;
     var sectionOverflowCount = 0;
     final sectionOverflowCourseNames = <String>[];
-    var lockedCount = 0;
     var noMatchCount = 0;
     var matchMissingSchemeCount = 0;
-    final sampleLines = <String>[];
+    var pinnedCount = 0;
+    var rebindCount = 0;
+    var clockRewriteCount = 0;
+    final changeSamples = <String>[];
+
+    void audit(String message, {Map<String, Object?> extras = const {}}) {
+      appDebugLog(debugTag, message);
+      unawaited(
+        AppLogService.instance.info(
+          'location_time_apply',
+          message,
+          extras: extras,
+        ),
+      );
+    }
 
     final activeScheme = activeTimeScheme;
-    appDebugLog(
-      debugTag,
+    audit(
       '===== 开始应用到当前课表 ===== '
       'profile=${activeProfile?.name ?? "null"}(${_activeProfileId ?? "-"}) '
       'courses=${_courses.length} '
       'locationGroups=${_locationTimeGroups.length} '
       'activeScheme=${activeScheme?.name ?? "null"}(${activeScheme?.id ?? "-"}) '
-      'activeSections=${activeScheme?.sections.length ?? _settings.sections.length}',
+      'activeSections=${activeScheme?.sections.length ?? _settings.sections.length} '
+      'alreadyPinnedBefore=${_courses.where((c) => c.timeSchemeIdOverride != null).length}',
+      extras: {
+        'profileId': _activeProfileId,
+        'courseCount': _courses.length,
+        'groupCount': _locationTimeGroups.length,
+        'activeSchemeId': activeScheme?.id,
+        'alreadyPinnedBefore': _courses
+            .where((course) => course.timeSchemeIdOverride != null)
+            .length,
+      },
     );
     for (final group in _locationTimeGroups) {
       final scheme = _getTimeSchemeById(group.timeSchemeId);
       final keywords = group.keywords
           .map((keyword) => '${keyword.pattern}(${keyword.mode.name})')
           .join('|');
-      appDebugLog(
-        debugTag,
+      audit(
         '地点组: id=${group.id} name=${group.name} enabled=${group.enabled} '
         'priority=${group.priority} scheme=${scheme?.name ?? "MISSING"}(${group.timeSchemeId}) '
         'schemeSections=${scheme?.sections.length ?? 0} keywords=[$keywords]',
+        extras: {
+          'groupId': group.id,
+          'groupName': group.name,
+          'enabled': group.enabled,
+          'schemeId': group.timeSchemeId,
+          'schemeName': scheme?.name,
+          'schemeSections': scheme?.sections.length ?? 0,
+          'keywords': keywords,
+        },
       );
       if (scheme != null && scheme.sections.isNotEmpty) {
         final first = scheme.sections.first;
         final last = scheme.sections.last;
-        appDebugLog(
-          debugTag,
+        audit(
           '  模板首末节: ${first.startTime}-${first.endTime} ... '
           '${last.startTime}-${last.endTime}',
         );
@@ -1230,8 +1395,7 @@ class TimetableProvider with ChangeNotifier {
     if (activeScheme != null && activeScheme.sections.isNotEmpty) {
       final first = activeScheme.sections.first;
       final last = activeScheme.sections.last;
-      appDebugLog(
-        debugTag,
+      audit(
         '主课表模板首末节: ${first.startTime}-${first.endTime} ... '
         '${last.startTime}-${last.endTime}',
       );
@@ -1239,121 +1403,171 @@ class TimetableProvider with ChangeNotifier {
 
     final synced = <Course>[];
     for (final course in _courses) {
-      final shouldTraceThisCourse = sampleLines.length < 12;
-      if (course.timeSchemeIdOverride != null) {
-        lockedCount += 1;
-        if (shouldTraceThisCourse) {
-          appDebugLog(
-            debugTag,
-            '锁定跳过: course=${course.name} loc=${course.location} '
-            'override=${course.timeSchemeIdOverride} '
-            'clock=${course.startTime}-${course.endTime}',
-          );
-        }
-        synced.add(
-          _syncCourseWithEffectiveTimeScheme(
-            course,
-            settings: _settings,
-            debugTrace: false,
-            debugTag: debugTag,
-          ),
-        );
-        continue;
-      }
-
       unlockedCount += 1;
+      final beforeOverride = course.timeSchemeIdOverride;
+      final beforeClock = '${course.startTime}-${course.endTime}';
       final match = matchLocationTime(course.location);
       final matchedScheme = match == null
           ? null
           : _getTimeSchemeById(match.timeSchemeId);
 
+      Course courseToSync = course;
+
       if (match == null) {
         noMatchCount += 1;
-        if (shouldTraceThisCourse) {
-          appDebugLog(
-            debugTag,
-            '未命中地点: course=${course.name} loc=${course.location} '
+        if (changeSamples.length < 40) {
+          audit(
+            '未命中地点: course=${course.name} id=${course.id} loc=${course.location} '
             'sections=${course.startSection}-${course.endSection} '
-            'clock=${course.startTime}-${course.endTime}',
+            'override=${beforeOverride ?? "null"} clock=$beforeClock',
+            extras: {
+              'action': 'no_match',
+              'courseId': course.id,
+              'courseName': course.name,
+              'location': course.location,
+              'beforeOverride': beforeOverride,
+              'beforeClock': beforeClock,
+            },
           );
         }
-      } else if (matchedScheme == null) {
+        synced.add(course);
+        continue;
+      }
+
+      if (matchedScheme == null) {
         matchMissingSchemeCount += 1;
-        appDebugLog(
-          debugTag,
-          '命中但模板不存在: course=${course.name} loc=${course.location} '
+        audit(
+          '命中但模板不存在: course=${course.name} id=${course.id} loc=${course.location} '
           'group=${match.groupName} schemeId=${match.timeSchemeId} '
           'keyword=${match.matchedKeyword.pattern}/${match.matchedKeyword.mode.name}',
+          extras: {
+            'action': 'match_missing_scheme',
+            'courseId': course.id,
+            'courseName': course.name,
+            'location': course.location,
+            'groupName': match.groupName,
+            'schemeId': match.timeSchemeId,
+            'beforeOverride': beforeOverride,
+          },
         );
-      } else {
-        matchedCount += 1;
-        final startIndex = course.startSection - 1;
-        final endIndex = course.endSection - 1;
-        final sectionCount = matchedScheme.sections.length;
-        if (startIndex < 0 ||
-            endIndex < startIndex ||
-            endIndex >= sectionCount) {
-          sectionOverflowCount += 1;
-          if (sectionOverflowCourseNames.length < 5) {
-            sectionOverflowCourseNames.add(course.name);
-          }
-          appDebugLog(
-            debugTag,
-            '命中但节次越界: course=${course.name} loc=${course.location} '
-            'need=${course.startSection}-${course.endSection} '
-            'scheme=${matchedScheme.name} has=$sectionCount '
-            'group=${match.groupName} keyword=${match.matchedKeyword.pattern}',
+        synced.add(course);
+        continue;
+      }
+
+      final startIndex = course.startSection - 1;
+      final endIndex = course.endSection - 1;
+      final sectionCount = matchedScheme.sections.length;
+      // HARD RULE: only fully seat-mapable courses may be bound.
+      // Pinning a 13-slot scheme onto section 20 with old clocks is a product
+      // bug (looks "applied", times are nonsense). Reject instead.
+      if (startIndex < 0 || endIndex < startIndex || endIndex >= sectionCount) {
+        sectionOverflowCount += 1;
+        if (sectionOverflowCourseNames.length < 5) {
+          sectionOverflowCourseNames.add(course.name);
+        }
+        audit(
+          '拒绝套用(节次无法对号入座): course=${course.name} id=${course.id} '
+          'loc=${course.location} need=${course.startSection}-${course.endSection} '
+          'scheme=${matchedScheme.name} has=$sectionCount '
+          'beforeOverride=${beforeOverride ?? "null"} clock=$beforeClock '
+          '→ 不写 override、不改钟点',
+          extras: {
+            'action': 'overflow_reject_no_pin',
+            'courseId': course.id,
+            'courseName': course.name,
+            'location': course.location,
+            'startSection': course.startSection,
+            'endSection': course.endSection,
+            'schemeId': matchedScheme.id,
+            'schemeName': matchedScheme.name,
+            'schemeSections': sectionCount,
+            'beforeOverride': beforeOverride,
+            'beforeClock': beforeClock,
+          },
+        );
+        // Leave course completely unchanged.
+        synced.add(course);
+        if (changeSamples.length < 30) {
+          changeSamples.add(
+            '${course.name}|${course.id}|REJECT overflow '
+            'need=${course.startSection}-${course.endSection} schemeHas=$sectionCount',
           );
-        } else {
-          final expectedStart = matchedScheme.sections[startIndex].startTime;
-          final expectedEnd = matchedScheme.sections[endIndex].endTime;
-          final sameClock =
-              course.startTime == expectedStart &&
-              course.endTime == expectedEnd;
-          if (sameClock) {
-            alreadySameClockCount += 1;
-          }
-          // Compare matched scheme vs active scheme first-section for diagnosis.
-          final activeFirst = activeScheme?.sections.isNotEmpty == true
-              ? '${activeScheme!.sections.first.startTime}-${activeScheme.sections.first.endTime}'
-              : (_settings.sections.isNotEmpty
-                    ? '${_settings.sections.first.startTime}-${_settings.sections.first.endTime}'
-                    : '-');
-          final matchedFirst = matchedScheme.sections.isNotEmpty
-              ? '${matchedScheme.sections.first.startTime}-${matchedScheme.sections.first.endTime}'
-              : '-';
-          final line =
-              '${sameClock ? "SAME" : "DIFF"} course=${course.name} '
-              'loc=${course.location} group=${match.groupName} '
-              'keyword=${match.matchedKeyword.pattern}/${match.matchedKeyword.mode.name} '
-              'scheme=${matchedScheme.name} '
-              'current=${course.startTime}-${course.endTime} '
-              'expected=$expectedStart-$expectedEnd '
-              'activeFirst=$activeFirst matchedFirst=$matchedFirst';
-          if (sampleLines.length < 20) {
-            sampleLines.add(line);
-            appDebugLog(debugTag, line);
-          }
+        }
+        continue;
+      }
+
+      // Only fully seat-mapped courses count as matched/applied.
+      matchedCount += 1;
+      // Sections fit: pin scheme + rewrite clocks from that scheme.
+      courseToSync = course.copyWith(timeSchemeIdOverride: matchedScheme.id);
+      if (beforeOverride != matchedScheme.id) {
+        pinnedCount += 1;
+        if (beforeOverride != null) {
+          rebindCount += 1;
         }
       }
 
+      final expectedStart = matchedScheme.sections[startIndex].startTime;
+      final expectedEnd = matchedScheme.sections[endIndex].endTime;
+      final sameClock =
+          course.startTime == expectedStart && course.endTime == expectedEnd;
+      if (sameClock) {
+        alreadySameClockCount += 1;
+      }
+
       final next = _syncCourseWithEffectiveTimeScheme(
-        course,
+        courseToSync,
         settings: _settings,
-        debugTrace: match != null && matchedScheme != null,
+        debugTrace: true,
         debugTag: debugTag,
       );
       synced.add(next);
 
-      if (next.startTime != course.startTime ||
-          next.endTime != course.endTime) {
+      final clockChanged =
+          next.startTime != course.startTime || next.endTime != course.endTime;
+      final overrideChanged =
+          next.timeSchemeIdOverride != course.timeSchemeIdOverride;
+      if (clockChanged || overrideChanged) {
         updatedCount += 1;
+        if (clockChanged) {
+          clockRewriteCount += 1;
+        }
+        if (changeSamples.length < 30) {
+          changeSamples.add(
+            '${course.name}|${course.id}|'
+            'override ${beforeOverride ?? "null"}->${next.timeSchemeIdOverride ?? "null"}|'
+            'clock $beforeClock->${next.startTime}-${next.endTime}',
+          );
+        }
       }
+      audit(
+        '${sameClock ? "SAME" : "DIFF"} course=${course.name} id=${course.id} '
+        'loc=${course.location} group=${match.groupName} '
+        'scheme=${matchedScheme.name} '
+        'beforeOverride=${beforeOverride ?? "null"} '
+        'afterOverride=${next.timeSchemeIdOverride ?? "null"} '
+        'beforeClock=$beforeClock afterClock=${next.startTime}-${next.endTime} '
+        'clockChanged=$clockChanged overrideChanged=$overrideChanged',
+        extras: {
+          'action': sameClock ? 'pin_same_clock' : 'pin_and_rewrite_clock',
+          'courseId': course.id,
+          'courseName': course.name,
+          'location': course.location,
+          'groupName': match.groupName,
+          'schemeId': matchedScheme.id,
+          'schemeName': matchedScheme.name,
+          'beforeOverride': beforeOverride,
+          'afterOverride': next.timeSchemeIdOverride,
+          'beforeClock': beforeClock,
+          'afterClock': '${next.startTime}-${next.endTime}',
+          'expectedClock': '$expectedStart-$expectedEnd',
+          'sameClock': sameClock,
+          'clockChanged': clockChanged,
+          'overrideChanged': overrideChanged,
+        },
+      );
     }
 
-    // When nothing changed, skip notify/persist/live rebuild. Always notifying
-    // races the result toast (Provider rebuild + Overlay insert) and can drop
-    // the first snackbar until the user taps apply again.
     if (updatedCount > 0) {
       _courses = synced;
       await _persistActiveProfileState();
@@ -1362,20 +1576,63 @@ class TimetableProvider with ChangeNotifier {
       await _updateLiveActivity();
     }
 
-    appDebugLog(
-      debugTag,
+    final pinnedAfter = _courses
+        .where((course) => course.timeSchemeIdOverride != null)
+        .length;
+    final profilePinned =
+        activeProfile?.courses
+            .where((course) => course.timeSchemeIdOverride != null)
+            .length ??
+        -1;
+    audit(
       '===== 应用结束 ===== unlocked=$unlockedCount matched=$matchedCount '
       'updated=$updatedCount sameClock=$alreadySameClockCount '
-      'overflow=$sectionOverflowCount locked=$lockedCount noMatch=$noMatchCount '
+      'overflow=$sectionOverflowCount noMatch=$noMatchCount '
       'missingScheme=$matchMissingSchemeCount '
-      'overflowNames=${sectionOverflowCourseNames.join(",")}',
+      'pinnedNewOrChanged=$pinnedCount rebind=$rebindCount clockRewrite=$clockRewriteCount '
+      'pinnedInMemoryAfter=$pinnedAfter pinnedInActiveProfile=$profilePinned '
+      'didPersist=${updatedCount > 0} '
+      'overflowNames=${sectionOverflowCourseNames.join(",")} '
+      'samples=${changeSamples.take(12).join(" || ")}',
+      extras: {
+        'unlocked': unlockedCount,
+        'matched': matchedCount,
+        'updated': updatedCount,
+        'sameClock': alreadySameClockCount,
+        'overflow': sectionOverflowCount,
+        'noMatch': noMatchCount,
+        'missingScheme': matchMissingSchemeCount,
+        'pinnedNewOrChanged': pinnedCount,
+        'rebind': rebindCount,
+        'clockRewrite': clockRewriteCount,
+        'pinnedInMemoryAfter': pinnedAfter,
+        'pinnedInActiveProfile': profilePinned,
+        'didPersist': updatedCount > 0,
+        'changeSamples': changeSamples,
+        'overflowNames': sectionOverflowCourseNames,
+      },
     );
     if (matchedCount > 0 && updatedCount == 0) {
-      appDebugLog(
-        debugTag,
-        '结论: 地点规则已命中，但课程钟点未变化。'
+      audit(
+        '结论: 地点规则已命中，但课程未改写（钟点已相同且未绑定 override，或全部节次越界）。'
         'sameClock=$alreadySameClockCount overflow=$sectionOverflowCount。'
         '请对比地点组绑定模板 vs 主课表模板各节起止时间是否完全一致。',
+      );
+    }
+    if (updatedCount > 0 && pinnedAfter == 0) {
+      audit(
+        '严重异常: updatedCount>0 但内存中没有任何 timeSchemeIdOverride。编辑页仍会显示「自动」。',
+        extras: {'fatal': true, 'updatedCount': updatedCount},
+      );
+    }
+    if (pinnedAfter > 0 && profilePinned == 0) {
+      audit(
+        '严重异常: 内存课表已绑定 override，但 activeProfile.courses 里全是 null。持久化/合并失败。',
+        extras: {
+          'fatal': true,
+          'pinnedInMemoryAfter': pinnedAfter,
+          'pinnedInActiveProfile': profilePinned,
+        },
       );
     }
 
@@ -2600,8 +2857,12 @@ class TimetableProvider with ChangeNotifier {
         _settings.semesterStartDate != null && targetWeek != _currentDateWeek;
     final didChangeDay = targetDayOfWeek != _currentDayOfWeek;
 
+    // Seasonal bulk-apply must run even when week/day labels did not change
+    // (e.g. cold start after midnight, or rule starts mid-session).
+    final didApplySeasonal = await applyDueScheduleDateRules(now: reference);
+
     if (!didChangeWeek && !didChangeDay) {
-      return false;
+      return didApplySeasonal;
     }
 
     if (didChangeWeek) {
@@ -2611,9 +2872,15 @@ class TimetableProvider with ChangeNotifier {
       _currentDayOfWeek = targetDayOfWeek;
     }
 
-    _currentLiveCourseId = null;
-    notifyListeners();
-    await _updateLiveActivity();
+    // applyDueScheduleDateRules already notified if it mutated; still refresh
+    // week/day surfaces when only temporal labels changed.
+    if (!didApplySeasonal) {
+      _currentLiveCourseId = null;
+      notifyListeners();
+      await _updateLiveActivity();
+    } else {
+      notifyListeners();
+    }
     return true;
   }
 
@@ -2825,7 +3092,13 @@ class TimetableProvider with ChangeNotifier {
   }
 
   List<Course> getTodayCourses() {
-    return getCoursesForDay(_currentDayOfWeek, week: _currentDateWeek);
+    // After the term ends, UI currentDateWeek is clamped to semesterWeekCount.
+    // "Today's courses" must use the real calendar week so finished courses do
+    // not keep appearing every weekday that matches the last teaching week.
+    final targetWeek = _settings.semesterStartDate == null
+        ? _currentDateWeek
+        : _calculateCalendarWeekForDate(DateTime.now());
+    return getCoursesForDay(_currentDayOfWeek, week: targetWeek);
   }
 
   Course? getCurrentCourse() {
@@ -2991,6 +3264,11 @@ class TimetableProvider with ChangeNotifier {
 
   void suspendLiveActivitySyncFor(Duration duration) {
     _liveActivitySuspendedUntil = DateTime.now().add(duration);
+  }
+
+  /// Clears a temporary live-sync pause (e.g. leftover from older test helpers).
+  void clearLiveActivitySyncSuspend() {
+    _liveActivitySuspendedUntil = null;
   }
 
   Future<void> refreshLiveActivityNow({bool forceSnapshotSync = false}) =>

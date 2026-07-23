@@ -21,6 +21,8 @@ class StorageService {
   static const String _timeSchemesKey = 'time_schemes';
   static const String _locationTimeGroupsKey = 'location_time_groups';
   static const String _scheduleDateRulesKey = 'schedule_date_rules';
+  static const String _scheduleDateRuleLastAppliedSignatureKey =
+      'schedule_date_rule_last_applied_signature';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
   static const String _acceptedPrivacyPolicyKey = 'accepted_privacy_policy';
   static const String _hasCompletedOnboardingKey = 'has_completed_onboarding';
@@ -735,6 +737,30 @@ class StorageService {
     final payload = jsonEncode(rules.map((rule) => rule.toJson()).toList());
     await _prefs?.setString(_scheduleDateRulesKey, payload);
     _scheduleDateRulesListCache = List<ScheduleDateRule>.from(rules);
+  }
+
+  /// Last bulk-applied date-rule signature (ruleId|schemeId|start|end).
+  Future<String?> getScheduleDateRuleLastAppliedSignature() async {
+    if (_prefs == null) await init();
+    final value = _prefs
+        ?.getString(_scheduleDateRuleLastAppliedSignatureKey)
+        ?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  Future<void> saveScheduleDateRuleLastAppliedSignature(
+    String? signature,
+  ) async {
+    if (_prefs == null) await init();
+    final trimmed = signature?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      await _prefs?.remove(_scheduleDateRuleLastAppliedSignatureKey);
+      return;
+    }
+    await _prefs?.setString(_scheduleDateRuleLastAppliedSignatureKey, trimmed);
   }
 
   // ---------------------------------------------------------------------------

@@ -77,6 +77,41 @@ void main() {
 
       expect(result, isTrue);
     });
+
+    testWidgets('can keep a form dialog fixed while remaining dismissible', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return TextButton(
+                onPressed: () {
+                  showHyperosDialog<void>(
+                    context: context,
+                    title: 'Fixed form',
+                    message: 'Form content',
+                    enableDrag: false,
+                  );
+                },
+                child: const Text('open'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Fixed form'), const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fixed form'), findsOneWidget);
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(find.text('Fixed form'), findsNothing);
+    });
   });
 
   group('HyperosNavTile', () {

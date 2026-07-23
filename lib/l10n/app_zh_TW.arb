@@ -5035,7 +5035,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "沒有匹配到可套用的課程",
-  "locationTimeMatchApplyOverflowResult": "命中 {matched} 門，{count} 門節次超出範本",
+  "locationTimeMatchApplyOverflowResult": "有 {count} 門課節次無法對號入座（範本節數不足），已拒絕套用",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {
@@ -5046,7 +5046,7 @@
       }
     }
   },
-  "locationTimeMatchApplyOverflowHint": "例如：{names}",
+  "locationTimeMatchApplyOverflowHint": "未套用示例：{names}",
   "@locationTimeMatchApplyOverflowHint": {
     "placeholders": {
       "names": {

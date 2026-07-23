@@ -14,8 +14,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../logging/app_log_messages.dart';
-import '../models/course.dart';
 import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -38,7 +36,6 @@ import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../services/bundled_assets.dart';
-import '../services/live_testing_fixture_service.dart';
 import '../services/live_testing_trigger.dart';
 import '../widgets/bundled_asset_image.dart';
 import '../services/memory_stats_service.dart';
@@ -2653,71 +2650,12 @@ void _showLiveTestingTriggerResult(
 }
 
 Future<void> _showTestOptions(BuildContext context) async {
-  final l10n = AppLocalizations.of(context)!;
-  final now = DateTime.now();
-  const beforeClassLead = Duration(seconds: 8);
-
   final provider = context.read<TimetableProvider>();
   await provider.initialize();
-  final liveService = MiuiLiveActivitiesService();
-  await liveService.initialize();
-
-  final selection = provider.getTestLiveActivityCourseSelection(now: now);
-  if (selection == null) {
-    await liveService.recordDiagnosticEvent(
-      'live_update_test_no_selection',
-      AppLogMessages.liveUpdateTestNoSelection,
-      extras: {'weekday': now.weekday},
-    );
-    if (!context.mounted) return;
-    showAppToast(
-      context,
-      message: l10n.liveTestingNoCourseAvailable,
-      kind: AppToastKind.warning,
-    );
-    return;
-  }
-
-  final baseCourse = selection.currentCourse;
-  final previewNextCourse = selection.nextCourse;
-  final resolvedShortName = provider.resolveCourseShortName(baseCourse);
-  await liveService.recordDiagnosticEvent(
-    'live_update_test_selection_ready',
-    AppLogMessages.liveUpdateTestSelectionReady,
-    extras: {
-      'courseName': baseCourse.name,
-      'stage': selection.stage.name,
-      'hasNextCourse': previewNextCourse != null,
-    },
-  );
-
-  final start = now.add(beforeClassLead);
-  final end = start.add(LiveTestingFixtureService.defaultCourseDuration);
-  final testCourse = Course(
-    id: 'test_auto_id',
-    name: baseCourse.name,
-    shortName: resolvedShortName,
-    teacher: baseCourse.teacher,
-    location: baseCourse.location,
-    dayOfWeek: now.weekday,
-    startSection: baseCourse.startSection,
-    endSection: baseCourse.endSection,
-    startWeek: baseCourse.startWeek,
-    endWeek: baseCourse.endWeek,
-    startTime: LiveTestingFixtureService.formatClock(start),
-    endTime: LiveTestingFixtureService.formatClock(end),
-    color: baseCourse.color,
-    note: l10n.liveTestingTestCourseNote,
-  );
-
   if (!context.mounted) return;
-
   final result = await triggerLiveUpdateTest(
     context: context,
     provider: provider,
-    testCourse: testCourse,
-    previewNextCourse: previewNextCourse,
-    beforeClassLead: beforeClassLead,
     source: 'settings_screen',
   );
   if (!context.mounted) return;

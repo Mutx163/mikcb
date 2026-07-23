@@ -6,7 +6,6 @@ import '../../models/time_scheme.dart';
 import '../../models/timetable_profile.dart';
 import '../../models/timetable_settings.dart';
 import 'location_time_match_logic.dart';
-import 'schedule_date_rule_logic.dart';
 
 class TimeSchemeCourseUsageReference {
   final String profileName;
@@ -46,8 +45,10 @@ class TimeSchemeLogic {
   /// Priority:
   /// 1. Manual [Course.timeSchemeIdOverride]
   /// 2. Location keyword match → group.timeSchemeId (if scheme exists)
-  /// 3. Date rule match for [onDate] (if scheme exists)
-  /// 4. Profile [TimetableSettings.activeTimeSchemeId]
+  /// 3. Profile [TimetableSettings.activeTimeSchemeId]
+  ///
+  /// Seasonal date rules do **not** soft-overlay here. They bulk-apply the
+  /// profile default scheme once on the rule start day (see provider).
   static TimeScheme? resolveCourseTimeScheme(
     List<TimeScheme> schemes,
     TimetableSettings settings,
@@ -71,16 +72,6 @@ class TimeSchemeLogic {
       final locationScheme = getSchemeById(schemes, locationMatch.timeSchemeId);
       if (locationScheme != null) {
         return locationScheme;
-      }
-    }
-
-    if (onDate != null) {
-      final dateRule = ScheduleDateRuleLogic.match(onDate, scheduleDateRules);
-      if (dateRule != null) {
-        final dateScheme = getSchemeById(schemes, dateRule.timeSchemeId);
-        if (dateScheme != null) {
-          return dateScheme;
-        }
       }
     }
 

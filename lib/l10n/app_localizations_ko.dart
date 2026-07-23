@@ -8942,7 +8942,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleDateRuleSectionTitle => '按日期切换作息';
 
   @override
-  String get scheduleDateRuleSectionSubtitle => '例如暑假前后用不同时间模板（最多 2 条，不重叠）';
+  String get scheduleDateRuleSectionSubtitle =>
+      '到开始日自动把课表默认时间模板批量套用一次（等同于应用该模板），之后可再手动改；最多 2 条且区间不重叠';
 
   @override
   String get scheduleDateRuleAdd => '添加日期规则';
@@ -8972,7 +8973,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleDateRuleEnabled => '启用';
 
   @override
-  String get scheduleDateRuleActiveToday => '今天生效';
+  String get scheduleDateRuleActiveToday => '今天在区间内';
 
   @override
   String scheduleDateRuleRangeSummary(String start, String end) {
