@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../services/memory_stats_service.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../utils/app_toast.dart';
 
 /// 公平运行内存 / 全应用内存监控页（仅调试版、性能版入口）。
 ///
@@ -125,7 +126,8 @@ class _MemoryStatsScreenState extends State<MemoryStatsScreen>
     final peakPssText = MemoryStatsService.formatKb(
       MemoryStatsService.asInt(app['peakTotalPssKb']),
     );
-    final heapUsage = MemoryStatsService.asDouble(javaHeap['usageRatio']);
+    final heapUsage =
+        MemoryStatsService.asDouble(javaHeap['usageRatio']) ?? 0.0;
     final refreshedText = _lastRefreshedAt == null
         ? '尚未刷新'
         : _formatClock(_lastRefreshedAt!);
@@ -157,608 +159,789 @@ class _MemoryStatsScreenState extends State<MemoryStatsScreen>
       snapshot?['memoryStats'],
     );
 
+    final copyJson = snapshot == null
+        ? null
+        : () async {
+            final text = const JsonEncoder.withIndent('  ').convert(snapshot);
+            await Clipboard.setData(ClipboardData(text: text));
+            if (context.mounted) {
+              showAppToast(
+                context,
+                message: '已复制内存快照 JSON',
+                kind: AppToastKind.success,
+              );
+            }
+          };
+
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: const Text('内存统计'),
+      suffixes: [
+        HyperosIconButton(
+          icon: _loading ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
+          tooltip: '立即刷新',
+          onPressed: _loading ? null : () => _refresh(showLoading: true),
+        ),
+        HyperosIconButton(
+          icon: Icons.content_copy_outlined,
+          tooltip: '复制 JSON',
+          onPressed: copyJson,
+        ),
+      ],
       child: HyperosListView(
-        itemCount: 1,
-        itemBuilder: (context, index) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionLabel(text: '运行概览'),
+          HyperosSummaryCard(
+            leading: HyperosIconBadge(
+              icon: Icons.memory_rounded,
+              accent: _pressureColor(pressureLevel),
+            ),
+            summary: totalPssText,
+            title: '整包总 PSS',
+            subtitle: '压力 $pressureLabel · $appStateLabel · 峰值 $peakPssText',
+            onTap: () =>
+                _showOverviewSheet(context, snapshot: snapshot, app: app),
+          ),
+          HyperosSectionDescription(
+            text:
+                '统计主进程与同 UID 的其它进程（含超级岛服务）。数据每 ${_autoRefreshInterval.inSeconds} 秒更新一次，可在下方关闭自动采样。最近刷新：$refreshedText',
+          ),
+          const HyperosSectionGap(),
+          if (_loading && snapshot == null) ...[
+            HyperosHintBanner(
+              icon: const HyperosCircularProgress(size: 18, strokeWidth: 2),
+              title: const Text('正在读取当前内存快照…'),
+            ),
+            const HyperosSectionGap(),
+          ],
+          if (_errorText != null) ...[
+            HyperosHintBanner(
+              icon: Icon(
+                Icons.error_outline_rounded,
+                color: HyperosIconColors.red,
+              ),
+              title: Text(_errorText!),
+            ),
+            const HyperosSectionGap(),
+          ],
+          const HyperosSectionLabel(text: '采样控制'),
+          HyperosListGroup(
             children: [
-              HyperosControlCard(
-                title: '公平运行内存 · 全应用监控',
-                subtitle: '统计主进程 + 同包其它进程（含超级岛服务）。仅调试版/性能版可见。',
-                child: HyperosControlCardInset(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _MemoryChip(
-                            label: '压力 $pressureLabel',
-                            color: _pressureColor(context, pressureLevel),
-                          ),
-                          _MemoryChip(
-                            label: '状态 $appStateLabel',
-                            color: appInForeground
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.tertiary,
-                          ),
-                          _MemoryChip(
-                            label: '总 PSS $totalPssText',
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          _MemoryChip(
-                            label: '峰值 $peakPssText',
-                            color: Theme.of(context).colorScheme.tertiary,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (_errorText != null) ...[
-                        Text(
-                          _errorText!,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          HyperosButton(
-                            label: _loading ? '刷新中…' : '立即刷新',
-                            variant: HyperosButtonVariant.secondary,
-                            loading: _loading,
-                            onPressed: _loading
-                                ? null
-                                : () => _refresh(showLoading: true),
-                          ),
-                          HyperosButton(
-                            label: '复制 JSON',
-                            variant: HyperosButtonVariant.secondary,
-                            onPressed: snapshot == null
-                                ? null
-                                : () async {
-                                    final text = const JsonEncoder.withIndent(
-                                      '  ',
-                                    ).convert(snapshot);
-                                    await Clipboard.setData(
-                                      ClipboardData(text: text),
-                                    );
-                                    if (!context.mounted) {
-                                      return;
-                                    }
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('已复制内存快照 JSON'),
-                                      ),
-                                    );
-                                  },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      HyperosSwitchTile(
-                        value: _autoRefreshEnabled,
-                        onChanged: (value) {
-                          setState(() {
-                            _autoRefreshEnabled = value;
-                          });
-                        },
-                        title: '自动刷新',
-                        subtitle: _autoRefreshEnabled
-                            ? '每 ${_autoRefreshInterval.inSeconds} 秒采样一次'
-                            : '已关闭自动刷新',
-                      ),
-                      Text(
-                        '最近刷新：$refreshedText',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
+              HyperosSwitchTile(
+                icon: Icons.autorenew_rounded,
+                iconAccent: HyperosIconColors.blue,
+                value: _autoRefreshEnabled,
+                onChanged: (value) =>
+                    setState(() => _autoRefreshEnabled = value),
+                title: '自动刷新',
+                subtitle: _autoRefreshEnabled
+                    ? '每 ${_autoRefreshInterval.inSeconds} 秒采样一次'
+                    : '已关闭自动刷新，使用右上角按钮手动更新',
               ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: '总览',
-                rows: [
-                  _Kv(
-                    '运行时长',
-                    MemoryStatsService.formatDuration(
-                      MemoryStatsService.asInt(snapshot?['uptimeMillis']),
-                    ),
-                  ),
-                  _Kv('包名', snapshot?['packageName']?.toString() ?? '—'),
-                  _Kv('进程数', '${app['processCount'] ?? '—'}'),
-                  _Kv('会话采样次数', '${app['sampleCount'] ?? 0}'),
-                  _Kv(
-                    '前台/后台采样次数',
-                    '${app['foregroundSampleCount'] ?? 0} / ${app['backgroundSampleCount'] ?? 0}',
-                  ),
-                  _Kv(
-                    '系统 onLowMemory 次数',
-                    '${app['lowMemoryEventCount'] ?? 0}',
-                  ),
-                  _Kv(
-                    '当前进程 PSS',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(app['selfPssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    '进程接口合计 PSS',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(app['processSumPssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    'Private Dirty 合计',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(app['totalPrivateDirtyKb']),
-                    ),
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: '后台内存统计',
-                rows: [
-                  _Kv(
-                    '当前是否后台',
-                    backgroundStats['currentlyBackground'] == true ? '是' : '否',
-                  ),
-                  _Kv(
-                    '采样间隔 前台/后台',
-                    '${backgroundStats['foregroundSampleIntervalSec'] ?? 15}s / '
-                        '${backgroundStats['backgroundSampleIntervalSec'] ?? 30}s',
-                  ),
-                  _Kv(
-                    '是否已有后台采样',
-                    backgroundStats['hasBackgroundSamples'] == true
-                        ? '是（${backgroundStats['backgroundPointCount'] ?? 0} 点）'
-                        : '否（回桌面待一会儿再回来）',
-                  ),
-                  _Kv(
-                    '最近前台 PSS',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(
-                        backgroundStats['lastForegroundPssKb'],
-                      ),
-                    ),
-                  ),
-                  _Kv(
-                    '最近后台 PSS',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(
-                        backgroundStats['lastBackgroundPssKb'],
-                      ),
-                    ),
-                  ),
-                  _Kv(
-                    '后台 − 前台（最近）',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(
-                        backgroundStats['backgroundMinusLastForegroundKb'],
-                      ),
-                    ),
-                  ),
-                  _Kv(
-                    '前台峰值 / 均值',
-                    '${MemoryStatsService.formatKb(MemoryStatsService.asInt(backgroundStats['peakForegroundPssKb']))} / '
-                        '${MemoryStatsService.formatKb(MemoryStatsService.asInt(backgroundStats['avgForegroundPssKb']))}',
-                  ),
-                  _Kv(
-                    '后台峰值 / 均值',
-                    '${MemoryStatsService.formatKb(MemoryStatsService.asInt(backgroundStats['peakBackgroundPssKb']))} / '
-                        '${MemoryStatsService.formatKb(MemoryStatsService.asInt(backgroundStats['avgBackgroundPssKb']))}',
-                  ),
-                  _Kv(
-                    '上次进前台',
-                    _formatEpochMillis(
-                      MemoryStatsService.asInt(
-                        backgroundStats['lastForegroundAtMillis'],
-                      ),
-                    ),
-                  ),
-                  _Kv(
-                    '上次进后台',
-                    _formatEpochMillis(
-                      MemoryStatsService.asInt(
-                        backgroundStats['lastBackgroundAtMillis'],
-                      ),
-                    ),
-                  ),
-                  _Kv(
-                    '说明',
-                    backgroundStats['note']?.toString() ?? '进程被杀后无法继续后台采样',
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              HyperosControlCard(
-                title: analysis['headline']?.toString() ?? '自动分析',
-                subtitle:
-                    '严重度：${analysis['severityLabel'] ?? '—'} · 基于当前 PSS 拆解与包类型',
-                child: HyperosControlCardInset(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '可节约粗估：易清 ${cleanable['easyMb'] ?? 0} MB · '
-                        '中等 ${cleanable['mediumMb'] ?? 0} MB · '
-                        '难清 ${cleanable['hardMb'] ?? 0} MB',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (cleanable['note'] != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          cleanable['note'].toString(),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      if (analysisBullets.isEmpty)
-                        Text(
-                          '暂无分析结论，请刷新。',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        )
-                      else
-                        ...analysisBullets.map(
-                          (bullet) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '· ',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    bullet,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const HyperosSectionGap(),
-              HyperosControlCard(
-                title: 'PSS 分类详解（可清性）',
-                subtitle: '占比相对总 PSS；易清/中等/难清是应用层能否主动释放的判断。',
-                child: HyperosControlCardInset(
-                  child: Column(
-                    children: [
-                      for (
-                        var index = 0;
-                        index < orderedKeys.length;
-                        index++
-                      ) ...[
-                        if (index > 0) const Divider(height: 18),
-                        _BreakdownRow(
-                          data: MemoryStatsService.asStringKeyMap(
-                            breakdown[orderedKeys[index]],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: 'Java 堆（接近 OOM 监控）',
-                rows: [
-                  _Kv(
-                    '已用 / 上限',
-                    '${MemoryStatsService.formatBytes(MemoryStatsService.asInt(javaHeap['allocBytes']))} / ${MemoryStatsService.formatBytes(MemoryStatsService.asInt(javaHeap['maxBytes']))}',
-                  ),
-                  _Kv('使用率', MemoryStatsService.formatPercent(heapUsage)),
-                  _Kv('接近 OOM (≥85%)', javaHeap['nearOom'] == true ? '是' : '否'),
-                  _Kv(
-                    '会话峰值堆占用',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(app['peakJavaHeapAllocKb']),
-                    ),
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: 'PSS 拆解（当前进程 Debug.MemoryInfo）',
-                rows: [
-                  _Kv(
-                    'Java/Dalvik',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(debugMemory['dalvikPssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    'Native',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(debugMemory['nativePssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    'Graphics',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(debugMemory['graphicsPssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    'Code',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(debugMemory['codePssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    'Stack',
-                    MemoryStatsService.formatKb(
-                      MemoryStatsService.asInt(debugMemory['stackPssKb']),
-                    ),
-                  ),
-                  _Kv(
-                    'Other / System',
-                    '${MemoryStatsService.formatKb(MemoryStatsService.asInt(debugMemory['otherPssKb']))} / ${MemoryStatsService.formatKb(MemoryStatsService.asInt(debugMemory['systemPssKb']))}',
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              HyperosControlCard(
-                title: '系统 memoryStats 原始字段',
-                subtitle:
-                    'Android Debug.MemoryInfo.getMemoryStats() 全量键值，便于对照 dumpsys。',
-                child: HyperosControlCardInset(
-                  child: memoryStats.isEmpty
-                      ? Text(
-                          '当前系统未提供 memoryStats（或 API 过低）。',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (final entry in memoryStats.entries)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: Text(
-                                  '${entry.key} = ${entry.value}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontFamily: 'monospace'),
-                                ),
-                              ),
-                          ],
-                        ),
-                ),
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: 'Dart / Flutter 图片缓存',
-                rows: [
-                  _Kv(
-                    'Dart RSS',
-                    MemoryStatsService.formatBytes(
-                      MemoryStatsService.asInt(dartVm['currentRssBytes']),
-                    ),
-                  ),
-                  _Kv(
-                    'Dart max RSS',
-                    MemoryStatsService.formatBytes(
-                      MemoryStatsService.asInt(dartVm['maxRssBytes']),
-                    ),
-                  ),
-                  _Kv(
-                    '图片缓存占用',
-                    MemoryStatsService.formatBytes(
-                      MemoryStatsService.asInt(imageCache['currentSizeBytes']),
-                    ),
-                  ),
-                  _Kv(
-                    '图片缓存上限',
-                    MemoryStatsService.formatBytes(
-                      MemoryStatsService.asInt(imageCache['maximumSizeBytes']),
-                    ),
-                  ),
-                  _Kv(
-                    '图片条目 live / pending',
-                    '${imageCache['liveImageCount'] ?? 0} / ${imageCache['pendingImageCount'] ?? 0}',
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: '超级岛（LiveUpdateService）',
-                rows: [
-                  _Kv(
-                    '服务是否在跑',
-                    liveIsland['serviceRunning'] == true ? '是' : '否',
-                  ),
-                  _Kv('服务类名', liveIsland['serviceClass']?.toString() ?? '—'),
-                  _Kv(
-                    '说明',
-                    liveIsland['note']?.toString() ?? '与主进程同 UID，计入总 PSS',
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: '系统内存',
-                rows: [
-                  _Kv(
-                    '设备可用 / 总量',
-                    '${MemoryStatsService.formatBytes(MemoryStatsService.asInt(system['availMemBytes']))} / ${MemoryStatsService.formatBytes(MemoryStatsService.asInt(system['totalMemBytes']))}',
-                  ),
-                  _Kv(
-                    '低内存阈值',
-                    MemoryStatsService.formatBytes(
-                      MemoryStatsService.asInt(system['thresholdBytes']),
-                    ),
-                  ),
-                  _Kv(
-                    '系统 isLowMemory',
-                    system['isLowMemory'] == true ? '是' : '否',
-                  ),
-                  _Kv(
-                    'memoryClass / large',
-                    '${system['memoryClassMb'] ?? '—'} / ${system['largeMemoryClassMb'] ?? '—'} MB',
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              _KvCard(
-                title: '公平运行内存事件（本地标记）',
-                rows: [
-                  _Kv(
-                    '最近 KILL 时间',
-                    _formatEpochMillis(
-                      MemoryStatsService.asInt(fairMemory['lastKillAtMillis']),
-                    ),
-                  ),
-                  _Kv(
-                    'notifyType / notifyId',
-                    '${fairMemory['lastKillNotifyType'] ?? 0} / ${fairMemory['lastKillNotifyId'] ?? 0}',
-                  ),
-                  _Kv(
-                    'reason',
-                    (fairMemory['lastKillReason']?.toString().isNotEmpty ==
-                            true)
-                        ? fairMemory['lastKillReason'].toString()
-                        : '—',
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              HyperosControlCard(
-                title: '进程列表（整包）',
-                subtitle: '同 applicationId 下各进程 PSS；超级岛一般在主进程或同 UID 服务内。',
-                child: HyperosControlCardInset(
-                  child: processes.isEmpty
-                      ? Text(
-                          '暂无进程数据',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        )
-                      : Column(
-                          children: [
-                            for (
-                              var index = 0;
-                              index < processes.length;
-                              index++
-                            ) ...[
-                              if (index > 0) const Divider(height: 16),
-                              _ProcessRow(process: processes[index]),
-                            ],
-                          ],
-                        ),
-                ),
-              ),
-              const HyperosSectionGap(),
-              HyperosControlCard(
-                title: '会话采样历史',
-                subtitle:
-                    '前台约 15s、后台约 30s 采一次；进出前后台会立即补采。最多 240 点。进程被杀后无法再记后台点。',
-                child: HyperosControlCardInset(
-                  child: history.isEmpty
-                      ? Text(
-                          '采样尚未积累。可先回桌面 1～2 分钟再回来，查看后台 PSS。',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '共 ${history.length} 点 · 最早→最晚',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 8),
-                            ...history.reversed.take(20).map((sample) {
-                              final at = MemoryStatsService.asInt(
-                                sample['atMillis'],
-                              );
-                              final pss = MemoryStatsService.formatKb(
-                                MemoryStatsService.asInt(sample['totalPssKb']),
-                              );
-                              final ratio = MemoryStatsService.formatPercent(
-                                MemoryStatsService.asDouble(
-                                  sample['javaHeapUsageRatio'],
-                                ),
-                              );
-                              final live = sample['liveServiceRunning'] == true
-                                  ? '岛开'
-                                  : '岛关';
-                              final state = sample['appInForeground'] == false
-                                  ? '后台'
-                                  : '前台';
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Text(
-                                  '${_formatEpochMillis(at)}  [$state]  PSS $pss  堆 $ratio  $live  压力 ${sample['pressureLevel'] ?? '—'}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontFamily: 'monospace'),
-                                ),
-                              );
-                            }),
-                            if (history.length > 20)
-                              Text(
-                                '仅显示最近 20 条；完整数据请复制 JSON。',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                          ],
-                        ),
-                ),
-              ),
-              const HyperosSectionGap(),
-              HyperosControlCard(
-                title: '原始 JSON',
-                subtitle: '便于粘贴到 issue / 对照公平内存 TRIM·KILL。',
-                child: HyperosControlCardInset(
-                  child: HyperosAccordion(
-                    items: [
-                      HyperosAccordionItem(
-                        title: const Text('展开完整快照'),
-                        child: SelectableText(
-                          snapshot == null
-                              ? '—'
-                              : const JsonEncoder.withIndent(
-                                  '  ',
-                                ).convert(snapshot),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(height: 1.35, fontFamily: 'monospace'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
             ],
-          );
-        },
+          ),
+          const HyperosSectionGap(),
+          const HyperosSectionLabel(text: '内存构成'),
+          HyperosListGroup(
+            children: [
+              HyperosListTile(
+                icon: Icons.data_usage_rounded,
+                iconAccent: heapUsage >= 0.85
+                    ? HyperosIconColors.red
+                    : HyperosIconColors.blue,
+                title: 'Java 堆',
+                details: MemoryStatsService.formatPercent(heapUsage),
+                onTap: () => _showKvSheet(
+                  context,
+                  title: 'Java 堆',
+                  description: '用于观察接近 OOM 的风险，不代表整包 PSS。',
+                  rows: [
+                    _Kv(
+                      '已用 / 上限',
+                      '${MemoryStatsService.formatBytes(MemoryStatsService.asInt(javaHeap['allocBytes']))} / ${MemoryStatsService.formatBytes(MemoryStatsService.asInt(javaHeap['maxBytes']))}',
+                    ),
+                    _Kv('使用率', MemoryStatsService.formatPercent(heapUsage)),
+                    _Kv(
+                      '接近 OOM（≥85%）',
+                      javaHeap['nearOom'] == true ? '是' : '否',
+                    ),
+                    _Kv(
+                      '会话峰值堆占用',
+                      MemoryStatsService.formatKb(
+                        MemoryStatsService.asInt(app['peakJavaHeapAllocKb']),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              HyperosListTile(
+                icon: Icons.pie_chart_outline_rounded,
+                iconAccent: HyperosIconColors.indigo,
+                title: 'PSS 分类与可清性',
+                details: totalPssText,
+                onTap: () =>
+                    _showBreakdownSheet(context, breakdown, orderedKeys),
+              ),
+              HyperosListTile(
+                icon: Icons.tune_rounded,
+                iconAccent: HyperosIconColors.cyan,
+                title: '当前进程 Debug.MemoryInfo',
+                details: MemoryStatsService.formatKb(
+                  MemoryStatsService.asInt(debugMemory['totalPssKb']),
+                ),
+                onTap: () => _showKvSheet(
+                  context,
+                  title: '当前进程 Debug.MemoryInfo',
+                  description: 'Android 当前进程的 PSS 分类，不包含同 UID 的其它进程。',
+                  rows: [
+                    _Kv(
+                      'Java / Dalvik',
+                      MemoryStatsService.formatKb(
+                        MemoryStatsService.asInt(debugMemory['dalvikPssKb']),
+                      ),
+                    ),
+                    _Kv(
+                      'Native',
+                      MemoryStatsService.formatKb(
+                        MemoryStatsService.asInt(debugMemory['nativePssKb']),
+                      ),
+                    ),
+                    _Kv(
+                      'Graphics',
+                      MemoryStatsService.formatKb(
+                        MemoryStatsService.asInt(debugMemory['graphicsPssKb']),
+                      ),
+                    ),
+                    _Kv(
+                      'Code',
+                      MemoryStatsService.formatKb(
+                        MemoryStatsService.asInt(debugMemory['codePssKb']),
+                      ),
+                    ),
+                    _Kv(
+                      'Stack',
+                      MemoryStatsService.formatKb(
+                        MemoryStatsService.asInt(debugMemory['stackPssKb']),
+                      ),
+                    ),
+                    _Kv(
+                      'Other / System',
+                      '${MemoryStatsService.formatKb(MemoryStatsService.asInt(debugMemory['otherPssKb']))} / ${MemoryStatsService.formatKb(MemoryStatsService.asInt(debugMemory['systemPssKb']))}',
+                    ),
+                  ],
+                ),
+              ),
+              HyperosListTile(
+                icon: Icons.code_rounded,
+                iconAccent: HyperosIconColors.purple,
+                title: 'Dart / Flutter 图片缓存',
+                details: MemoryStatsService.formatBytes(
+                  MemoryStatsService.asInt(imageCache['currentSizeBytes']),
+                ),
+                onTap: () => _showKvSheet(
+                  context,
+                  title: 'Dart / Flutter 图片缓存',
+                  rows: [
+                    _Kv(
+                      'Dart RSS',
+                      MemoryStatsService.formatBytes(
+                        MemoryStatsService.asInt(dartVm['currentRssBytes']),
+                      ),
+                    ),
+                    _Kv(
+                      'Dart max RSS',
+                      MemoryStatsService.formatBytes(
+                        MemoryStatsService.asInt(dartVm['maxRssBytes']),
+                      ),
+                    ),
+                    _Kv(
+                      '图片缓存占用',
+                      MemoryStatsService.formatBytes(
+                        MemoryStatsService.asInt(
+                          imageCache['currentSizeBytes'],
+                        ),
+                      ),
+                    ),
+                    _Kv(
+                      '图片缓存上限',
+                      MemoryStatsService.formatBytes(
+                        MemoryStatsService.asInt(
+                          imageCache['maximumSizeBytes'],
+                        ),
+                      ),
+                    ),
+                    _Kv(
+                      '图片条目 live / pending',
+                      '${imageCache['liveImageCount'] ?? 0} / ${imageCache['pendingImageCount'] ?? 0}',
+                    ),
+                  ],
+                ),
+              ),
+              HyperosListTile(
+                icon: Icons.phone_android_rounded,
+                iconAccent: HyperosIconColors.teal,
+                title: '系统内存',
+                details: system['isLowMemory'] == true ? '低内存' : '正常',
+                onTap: () => _showKvSheet(
+                  context,
+                  title: '系统内存',
+                  rows: [
+                    _Kv(
+                      '设备可用 / 总量',
+                      '${MemoryStatsService.formatBytes(MemoryStatsService.asInt(system['availMemBytes']))} / ${MemoryStatsService.formatBytes(MemoryStatsService.asInt(system['totalMemBytes']))}',
+                    ),
+                    _Kv(
+                      '低内存阈值',
+                      MemoryStatsService.formatBytes(
+                        MemoryStatsService.asInt(system['thresholdBytes']),
+                      ),
+                    ),
+                    _Kv(
+                      '系统 isLowMemory',
+                      system['isLowMemory'] == true ? '是' : '否',
+                    ),
+                    _Kv(
+                      'memoryClass / large',
+                      '${system['memoryClassMb'] ?? '—'} / ${system['largeMemoryClassMb'] ?? '—'} MB',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          HyperosSectionDescription(text: 'PSS 详情按需展开，避免常驻技术字段干扰当前状态。'),
+          const HyperosSectionGap(),
+          const HyperosSectionLabel(text: '运行环境'),
+          HyperosListGroup(
+            children: [
+              HyperosListTile(
+                icon: Icons.dashboard_outlined,
+                iconAccent: HyperosIconColors.blue,
+                title: '应用总览',
+                details: '${app['processCount'] ?? '—'} 个进程',
+                onTap: () =>
+                    _showOverviewSheet(context, snapshot: snapshot, app: app),
+              ),
+              HyperosListTile(
+                icon: Icons.swap_vert_rounded,
+                iconAccent: HyperosIconColors.orange,
+                title: '前台 / 后台采样',
+                details: backgroundStats['currentlyBackground'] == true
+                    ? '后台'
+                    : '前台',
+                onTap: () => _showBackgroundSheet(context, backgroundStats),
+              ),
+              HyperosListTile(
+                icon: Icons.bolt_outlined,
+                iconAccent: liveIsland['serviceRunning'] == true
+                    ? HyperosIconColors.green
+                    : HyperosIconColors.indigo,
+                title: '超级岛服务',
+                details: liveIsland['serviceRunning'] == true ? '运行中' : '未运行',
+                onTap: () => _showKvSheet(
+                  context,
+                  title: '超级岛（LiveUpdateService）',
+                  rows: [
+                    _Kv(
+                      '服务是否在跑',
+                      liveIsland['serviceRunning'] == true ? '是' : '否',
+                    ),
+                    _Kv('服务类名', liveIsland['serviceClass']?.toString() ?? '—'),
+                    _Kv(
+                      '说明',
+                      liveIsland['note']?.toString() ?? '与主进程同 UID，计入总 PSS',
+                    ),
+                  ],
+                ),
+              ),
+              HyperosListTile(
+                icon: Icons.account_tree_outlined,
+                iconAccent: HyperosIconColors.cyan,
+                title: '整包进程列表',
+                details: '${processes.length} 个',
+                onTap: () => _showProcessesSheet(context, processes),
+              ),
+            ],
+          ),
+          const HyperosSectionGap(),
+          const HyperosSectionLabel(text: '诊断工具'),
+          HyperosListGroup(
+            children: [
+              HyperosListTile(
+                icon: Icons.analytics_outlined,
+                iconAccent: _pressureColor(pressureLevel),
+                title: analysis['headline']?.toString() ?? '自动分析',
+                details: analysis['severityLabel']?.toString() ?? '暂无结论',
+                onTap: () => _showAnalysisSheet(
+                  context,
+                  analysis,
+                  cleanable,
+                  analysisBullets,
+                ),
+              ),
+              HyperosListTile(
+                icon: Icons.timeline_rounded,
+                iconAccent: HyperosIconColors.purple,
+                title: '会话采样历史',
+                details: '${history.length} 条',
+                onTap: () => _showHistorySheet(context, history),
+              ),
+              HyperosListTile(
+                icon: Icons.memory_outlined,
+                iconAccent: HyperosIconColors.teal,
+                title: '系统 memoryStats 原始字段',
+                details: '${memoryStats.length} 项',
+                onTap: () => _showMemoryStatsSheet(context, memoryStats),
+              ),
+              HyperosListTile(
+                icon: Icons.data_object_rounded,
+                iconAccent: HyperosIconColors.orange,
+                title: '复制 / 查看原始 JSON',
+                details: snapshot == null ? '暂无快照' : '完整快照',
+                onTap: snapshot == null
+                    ? null
+                    : () => _showJsonSheet(context, snapshot),
+                onLongPress: copyJson,
+              ),
+              HyperosListTile(
+                icon: Icons.notifications_none_rounded,
+                iconAccent: HyperosIconColors.red,
+                title: '公平运行内存事件',
+                details: _formatEpochMillis(
+                  MemoryStatsService.asInt(fairMemory['lastKillAtMillis']),
+                ),
+                onTap: () => _showKvSheet(
+                  context,
+                  title: '公平运行内存事件',
+                  rows: [
+                    _Kv(
+                      '最近 KILL 时间',
+                      _formatEpochMillis(
+                        MemoryStatsService.asInt(
+                          fairMemory['lastKillAtMillis'],
+                        ),
+                      ),
+                    ),
+                    _Kv(
+                      'notifyType / notifyId',
+                      '${fairMemory['lastKillNotifyType'] ?? 0} / ${fairMemory['lastKillNotifyId'] ?? 0}',
+                    ),
+                    _Kv(
+                      'reason',
+                      (fairMemory['lastKillReason']?.toString().isNotEmpty ==
+                              true)
+                          ? fairMemory['lastKillReason'].toString()
+                          : '—',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
 
-  Color _pressureColor(BuildContext context, String level) {
-    final scheme = Theme.of(context).colorScheme;
+  Future<void> _showOverviewSheet(
+    BuildContext context, {
+    required Map<String, dynamic>? snapshot,
+    required Map<String, dynamic> app,
+  }) {
+    return _showKvSheet(
+      context,
+      title: '应用总览',
+      description: '公平运行内存页统计的是同 UID 进程总量。',
+      rows: [
+        _Kv(
+          '运行时长',
+          MemoryStatsService.formatDuration(
+            MemoryStatsService.asInt(snapshot?['uptimeMillis']),
+          ),
+        ),
+        _Kv('包名', snapshot?['packageName']?.toString() ?? '—'),
+        _Kv('进程数', '${app['processCount'] ?? '—'}'),
+        _Kv('会话采样次数', '${app['sampleCount'] ?? 0}'),
+        _Kv(
+          '前台 / 后台采样次数',
+          '${app['foregroundSampleCount'] ?? 0} / ${app['backgroundSampleCount'] ?? 0}',
+        ),
+        _Kv('系统 onLowMemory 次数', '${app['lowMemoryEventCount'] ?? 0}'),
+        _Kv(
+          '当前进程 PSS',
+          MemoryStatsService.formatKb(
+            MemoryStatsService.asInt(app['selfPssKb']),
+          ),
+        ),
+        _Kv(
+          '进程接口合计 PSS',
+          MemoryStatsService.formatKb(
+            MemoryStatsService.asInt(app['processSumPssKb']),
+          ),
+        ),
+        _Kv(
+          'Private Dirty 合计',
+          MemoryStatsService.formatKb(
+            MemoryStatsService.asInt(app['totalPrivateDirtyKb']),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showBackgroundSheet(
+    BuildContext context,
+    Map<String, dynamic> stats,
+  ) {
+    return _showKvSheet(
+      context,
+      title: '前台 / 后台采样',
+      description: '前台约 15 秒、后台约 30 秒采样；进出前后台会立即补采。',
+      rows: [
+        _Kv('当前是否后台', stats['currentlyBackground'] == true ? '是' : '否'),
+        _Kv(
+          '采样间隔 前台 / 后台',
+          '${stats['foregroundSampleIntervalSec'] ?? 15}s / ${stats['backgroundSampleIntervalSec'] ?? 30}s',
+        ),
+        _Kv(
+          '是否已有后台采样',
+          stats['hasBackgroundSamples'] == true
+              ? '是（${stats['backgroundPointCount'] ?? 0} 点）'
+              : '否（回桌面待一会儿再回来）',
+        ),
+        _Kv(
+          '最近前台 PSS',
+          MemoryStatsService.formatKb(
+            MemoryStatsService.asInt(stats['lastForegroundPssKb']),
+          ),
+        ),
+        _Kv(
+          '最近后台 PSS',
+          MemoryStatsService.formatKb(
+            MemoryStatsService.asInt(stats['lastBackgroundPssKb']),
+          ),
+        ),
+        _Kv(
+          '后台 − 前台（最近）',
+          MemoryStatsService.formatKb(
+            MemoryStatsService.asInt(stats['backgroundMinusLastForegroundKb']),
+          ),
+        ),
+        _Kv(
+          '前台峰值 / 均值',
+          '${MemoryStatsService.formatKb(MemoryStatsService.asInt(stats['peakForegroundPssKb']))} / ${MemoryStatsService.formatKb(MemoryStatsService.asInt(stats['avgForegroundPssKb']))}',
+        ),
+        _Kv(
+          '后台峰值 / 均值',
+          '${MemoryStatsService.formatKb(MemoryStatsService.asInt(stats['peakBackgroundPssKb']))} / ${MemoryStatsService.formatKb(MemoryStatsService.asInt(stats['avgBackgroundPssKb']))}',
+        ),
+        _Kv(
+          '上次进前台',
+          _formatEpochMillis(
+            MemoryStatsService.asInt(stats['lastForegroundAtMillis']),
+          ),
+        ),
+        _Kv(
+          '上次进后台',
+          _formatEpochMillis(
+            MemoryStatsService.asInt(stats['lastBackgroundAtMillis']),
+          ),
+        ),
+        _Kv('说明', stats['note']?.toString() ?? '进程被杀后无法继续后台采样'),
+      ],
+    );
+  }
+
+  Future<void> _showKvSheet(
+    BuildContext context, {
+    required String title,
+    required List<_Kv> rows,
+    String? description,
+  }) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: title,
+        description: description,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.62,
+          ),
+          child: SingleChildScrollView(child: _KvTable(rows: rows)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAnalysisSheet(
+    BuildContext context,
+    Map<String, dynamic> analysis,
+    Map<String, dynamic> cleanable,
+    List<String> bullets,
+  ) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: analysis['headline']?.toString() ?? '自动分析',
+        description:
+            '严重度：${analysis['severityLabel'] ?? '—'} · 基于当前 PSS 拆解与包类型',
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.62,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '可节约粗估：易清 ${cleanable['easyMb'] ?? 0} MB · 中等 ${cleanable['mediumMb'] ?? 0} MB · 难清 ${cleanable['hardMb'] ?? 0} MB',
+                  style: HyperosTypography.listTitle(sheetContext),
+                ),
+                if (cleanable['note'] != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    cleanable['note'].toString(),
+                    style: HyperosTypography.listDetail(sheetContext),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                if (bullets.isEmpty)
+                  Text(
+                    '暂无分析结论，请刷新。',
+                    style: HyperosTypography.listDetail(sheetContext),
+                  )
+                else
+                  ...bullets.map(
+                    (bullet) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('· '),
+                          Expanded(
+                            child: Text(
+                              bullet,
+                              style: HyperosTypography.listDetail(sheetContext),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showBreakdownSheet(
+    BuildContext context,
+    Map<String, dynamic> breakdown,
+    List<String> orderedKeys,
+  ) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: 'PSS 分类与可清性',
+        description: '占比相对总 PSS；可清性是应用层能否主动释放的判断。',
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.68,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                for (var index = 0; index < orderedKeys.length; index++) ...[
+                  if (index > 0) const HyperosInsetDivider(indent: 0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: _BreakdownRow(
+                      data: MemoryStatsService.asStringKeyMap(
+                        breakdown[orderedKeys[index]],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMemoryStatsSheet(
+    BuildContext context,
+    Map<String, dynamic> memoryStats,
+  ) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: '系统 memoryStats 原始字段',
+        description:
+            'Android Debug.MemoryInfo.getMemoryStats() 全量键值，便于对照 dumpsys。',
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.68,
+          ),
+          child: SingleChildScrollView(
+            child: memoryStats.isEmpty
+                ? Text(
+                    '当前系统未提供 memoryStats（或 API 过低）。',
+                    style: HyperosTypography.listDetail(sheetContext),
+                  )
+                : Text(
+                    memoryStats.entries
+                        .map((entry) => '${entry.key} = ${entry.value}')
+                        .join('\n'),
+                    style: HyperosTypography.listDetail(
+                      sheetContext,
+                    ).copyWith(fontFamily: 'monospace', height: 1.4),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showProcessesSheet(
+    BuildContext context,
+    List<Map<String, dynamic>> processes,
+  ) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: '整包进程列表',
+        description: '同 applicationId 下各进程 PSS；超级岛一般在主进程或同 UID 服务内。',
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.68,
+          ),
+          child: SingleChildScrollView(
+            child: processes.isEmpty
+                ? Text(
+                    '暂无进程数据',
+                    style: HyperosTypography.listDetail(sheetContext),
+                  )
+                : Column(
+                    children: [
+                      for (
+                        var index = 0;
+                        index < processes.length;
+                        index++
+                      ) ...[
+                        if (index > 0) const HyperosInsetDivider(indent: 0),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: _ProcessRow(process: processes[index]),
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showHistorySheet(
+    BuildContext context,
+    List<Map<String, dynamic>> history,
+  ) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: '会话采样历史',
+        description: '最多保留 240 点；这里展示最近 20 条，完整数据请复制 JSON。',
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.68,
+          ),
+          child: SingleChildScrollView(
+            child: history.isEmpty
+                ? Text(
+                    '采样尚未积累。可先回桌面 1～2 分钟再回来，查看后台 PSS。',
+                    style: HyperosTypography.listDetail(sheetContext),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '共 ${history.length} 点 · 最早→最晚',
+                        style: HyperosTypography.listDetail(sheetContext),
+                      ),
+                      const SizedBox(height: 10),
+                      ...history.reversed.take(20).map((sample) {
+                        final at = MemoryStatsService.asInt(sample['atMillis']);
+                        final pss = MemoryStatsService.formatKb(
+                          MemoryStatsService.asInt(sample['totalPssKb']),
+                        );
+                        final ratio = MemoryStatsService.formatPercent(
+                          MemoryStatsService.asDouble(
+                            sample['javaHeapUsageRatio'],
+                          ),
+                        );
+                        final live = sample['liveServiceRunning'] == true
+                            ? '岛开'
+                            : '岛关';
+                        final state = sample['appInForeground'] == false
+                            ? '后台'
+                            : '前台';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '${_formatEpochMillis(at)}  [$state]  PSS $pss  堆 $ratio  $live  压力 ${sample['pressureLevel'] ?? '—'}',
+                            style: HyperosTypography.listDetail(
+                              sheetContext,
+                            ).copyWith(fontFamily: 'monospace'),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showJsonSheet(
+    BuildContext context,
+    Map<String, dynamic>? snapshot,
+  ) {
+    return showHyperosSheet<void>(
+      context: context,
+      builder: (sheetContext) => HyperosSheet(
+        title: '原始 JSON',
+        description: '便于粘贴到 issue / 对照公平内存 TRIM·KILL。长按列表行也可直接复制。',
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.72,
+          ),
+          child: SingleChildScrollView(
+            child: Text(
+              snapshot == null
+                  ? '—'
+                  : const JsonEncoder.withIndent('  ').convert(snapshot),
+              style: HyperosTypography.listDetail(
+                sheetContext,
+              ).copyWith(fontFamily: 'monospace', height: 1.35),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _pressureColor(String level) {
     return switch (level) {
-      'critical' => scheme.error,
-      'high' => Colors.orange,
-      'elevated' => Colors.amber.shade800,
-      _ => Colors.green,
+      'critical' => HyperosIconColors.red,
+      'high' => HyperosIconColors.orange,
+      'elevated' => HyperosIconColors.yellow,
+      _ => HyperosIconColors.green,
     };
   }
 
@@ -785,45 +968,42 @@ class _Kv {
   final String value;
 }
 
-class _KvCard extends StatelessWidget {
-  const _KvCard({required this.title, required this.rows});
+class _KvTable extends StatelessWidget {
+  const _KvTable({required this.rows});
 
-  final String title;
   final List<_Kv> rows;
 
   @override
   Widget build(BuildContext context) {
-    return HyperosControlCard(
-      title: title,
-      child: HyperosControlCardInset(
-        child: Column(
-          children: [
-            for (var index = 0; index < rows.length; index++) ...[
-              if (index > 0) const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 128,
-                    child: Text(
-                      rows[index].label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < rows.length; index++) ...[
+          if (index > 0) const HyperosInsetDivider(indent: 0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 128,
+                  child: Text(
+                    rows[index].label,
+                    style: HyperosTypography.listDetail(context),
                   ),
-                  Expanded(
-                    child: Text(
-                      rows[index].value,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    rows[index].value,
+                    style: HyperosTypography.listTitle(context),
                   ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -848,12 +1028,7 @@ class _ProcessRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          name,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-        ),
+        Text(name, style: HyperosTypography.listTitle(context)),
         const SizedBox(height: 4),
         Text(
           'pid=$pid  PSS=$pss  privateDirty=$privateDirty'
@@ -864,32 +1039,6 @@ class _ProcessRow extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
         ),
       ],
-    );
-  }
-}
-
-class _MemoryChip extends StatelessWidget {
-  const _MemoryChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
     );
   }
 }
@@ -916,9 +1065,9 @@ class _BreakdownRow extends StatelessWidget {
       _ => '难清',
     };
     final cleanableColor = switch (cleanable) {
-      'partial' => Colors.orange,
-      'no' => Theme.of(context).colorScheme.outline,
-      _ => Theme.of(context).colorScheme.error,
+      'partial' => HyperosIconColors.orange,
+      'no' => HyperosColors.secondaryText(context),
+      _ => HyperosColors.error(context),
     };
 
     return Column(
@@ -927,39 +1076,25 @@ class _BreakdownRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
+              child: Text(label, style: HyperosTypography.listTitle(context)),
             ),
             Text(
               '$pssText · $ratioText',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: HyperosTypography.listTitle(context),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: cleanableColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            cleanableLabel,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: cleanableColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+        HyperosTag(
+          label: cleanableLabel,
+          backgroundColor: cleanableColor.withValues(alpha: 0.12),
+          textStyle: HyperosTypography.listDetail(
+            context,
+          ).copyWith(color: cleanableColor),
         ),
         if (meaning.isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text(meaning, style: Theme.of(context).textTheme.bodySmall),
+          Text(meaning, style: HyperosTypography.listDetail(context)),
         ],
       ],
     );
