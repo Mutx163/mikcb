@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>轻屿课表 - 页面不存在</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#05070d" />
+    <link rel="icon" href="./app-icon.png" type="image/png" />
+    <link rel="stylesheet" href="./home.css" />
+    <style>
+      .not-found {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 70vh;
+        text-align: center;
+        padding: 40px 20px;
+      }
+      .not-found-code {
+        font-size: clamp(4rem, 12vw, 8rem);
+        font-weight: 800;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin: 0 0 16px;
+        line-height: 1;
+      }
+      .not-found-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 0 0 12px;
+      }
+      .not-found-desc {
+        color: var(--text-soft);
+        margin: 0 0 32px;
+        max-width: 400px;
+        line-height: 1.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sky" aria-hidden="true">
+      <div class="sky-grid"></div>
+      <div class="aurora aurora-a"></div>
+      <div class="aurora aurora-b"></div>
+    </div>
+    <header class="global-nav">
+      <div class="nav-inner">
+        <a class="nav-brand" href="/" aria-label="轻屿课表首页">
+          <span class="nav-brand-mark">
+            <img src="./app-icon.png" alt="轻屿课表图标" width="32" height="32" decoding="async" />
+          </span>
+          <span class="nav-brand-text">轻屿课表</span>
+        </a>
+      </div>
+    </header>
+    <main class="not-found">
+      <p class="not-found-code">404</p>
+      <h1 class="not-found-title">这节课不存在</h1>
+      <p class="not-found-desc">你要找的页面可能已被移除或地址有误。回到首页，继续探索轻屿课表的功能吧。</p>
+      <a class="cta-btn cta-primary cta-lg" href="/">返回首页</a>
+    </main>
+  </body>
+</html>

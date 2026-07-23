@@ -136,11 +136,34 @@ const isDoNotTrackEnabled =
   navigator.doNotTrack === "1" ||
   window.doNotTrack === "1" ||
   navigator.msDoNotTrack === "1";
-const canSendAnalytics = isGoogleAnalyticsEnabled && !isDoNotTrackEnabled;
+const analyticsConsentStorageKey = "mikcb_analytics_consent";
+
+function hasAnalyticsConsent() {
+  try {
+    return localStorage.getItem(analyticsConsentStorageKey) === "granted";
+  } catch (error) {
+    return false;
+  }
+}
+
+function canSendAnalytics() {
+  return (
+    isGoogleAnalyticsEnabled && !isDoNotTrackEnabled && hasAnalyticsConsent()
+  );
+}
 let googleAnalyticsSetupPromise = null;
+let hasConfiguredGoogleAnalytics = false;
+
+function grantAnalyticsConsent() {
+  try {
+    localStorage.setItem(analyticsConsentStorageKey, "granted");
+  } catch (error) {
+    // Ignore storage failures and still try to enable analytics for this page.
+  }
+}
 
 function ensureGoogleAnalytics() {
-  if (!canSendAnalytics) {
+  if (!canSendAnalytics()) {
     return Promise.resolve(false);
   }
 
@@ -157,8 +180,13 @@ function ensureGoogleAnalytics() {
     }
 
     const finishSetup = () => {
-      window.gtag("js", new Date());
-      window.gtag("config", googleAnalyticsMeasurementId);
+      if (!hasConfiguredGoogleAnalytics) {
+        window.gtag("js", new Date());
+        window.gtag("config", googleAnalyticsMeasurementId, {
+          anonymize_ip: true,
+        });
+        hasConfiguredGoogleAnalytics = true;
+      }
       resolve(true);
     };
 
@@ -246,7 +274,7 @@ function isSafeExternalUrl(url) {
 }
 
 function trackGoogleAnalyticsEvent(eventName, params = {}, onComplete) {
-  if (!canSendAnalytics) {
+  if (!canSendAnalytics()) {
     onComplete?.();
     return;
   }

@@ -4,28 +4,41 @@
    ========================================================================== */
 
 :root {
+  color-scheme: dark;
   --bg: #05070d;
   --bg-soft: #0a0e18;
+  --surface-1: #0a0e18;
+  --surface-2: #10151f;
+  --surface-3: #121826;
   --card: rgba(255, 255, 255, 0.04);
   --card-strong: rgba(255, 255, 255, 0.07);
   --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.16);
   --text: #f2f5fa;
-  --text-soft: rgba(226, 232, 244, 0.62);
-  --text-faint: rgba(226, 232, 244, 0.4);
+  --text-soft: rgba(226, 232, 244, 0.72);
+  --text-faint: rgba(226, 232, 244, 0.55);
   --blue: #3482ff;
+  --blue-soft: #8ab8ff;
+  --link: #7ab4ff;
   --teal: #2dd4bf;
+  --teal-soft: #6ee7d8;
   --violet: #a78bfa;
   --pink: #f472b6;
   --amber: #fbbf24;
   --green: #4ade80;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
   --grad: linear-gradient(120deg, #4f9dff 0%, #2dd4bf 55%, #a78bfa 100%);
   --content-width: 1180px;
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
+  --radius-sm: 8px;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --font: "MiSans", "SF Pro Text", "PingFang SC", "HarmonyOS Sans SC",
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
+    "Noto Sans SC", sans-serif;
 }
 
 * {
@@ -47,9 +60,24 @@ body {
   color: var(--text);
   background: var(--bg);
   font-family: var(--font);
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+p, li {
+  overflow-wrap: break-word;
 }
 
 a {
@@ -247,7 +275,7 @@ button {
 
 .cta-primary {
   color: #fff;
-  background: linear-gradient(120deg, #3482ff, #2fb8d6);
+  background: linear-gradient(120deg, var(--blue), var(--teal));
   box-shadow: 0 8px 30px rgba(52, 130, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
@@ -285,6 +313,7 @@ button {
   position: sticky;
   top: 0;
   z-index: 60;
+  padding-top: env(safe-area-inset-top, 0px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(5, 7, 13, 0.7);
   backdrop-filter: saturate(160%) blur(18px);
@@ -479,9 +508,9 @@ button {
   flex-direction: column;
   justify-content: center;
   gap: 6px;
-  width: 40px;
-  height: 40px;
-  padding: 0 9px;
+  width: 44px;
+  height: 44px;
+  padding: 0 11px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: transparent;
@@ -1561,7 +1590,7 @@ button {
   margin-top: clamp(48px, 7vw, 88px);
   border-top: 1px solid var(--line);
   background: rgba(5, 7, 13, 0.6);
-  padding: clamp(40px, 6vw, 64px) 0 32px;
+  padding: clamp(40px, 6vw, 64px) 0 calc(32px + env(safe-area-inset-bottom, 0px));
 }
 
 .footer-inner {
@@ -1679,12 +1708,12 @@ button {
 
 .release-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 11px;
+  right: 11px;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--card);
@@ -1949,6 +1978,20 @@ button {
     display: none;
   }
 
+  .aurora {
+    filter: none;
+    opacity: 0.35;
+    animation: none;
+  }
+
+  .cta-ghost {
+    backdrop-filter: none;
+  }
+
+  .hero-eyebrow {
+    backdrop-filter: none;
+  }
+
   .bento {
     grid-template-columns: 1fr;
   }
@@ -2111,7 +2154,7 @@ button {
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 0.94rem;
+  font-size: max(16px, 0.94rem);
   outline: none;
 }
 
@@ -2241,8 +2284,8 @@ button {
 .schools-index-bar a {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   color: var(--text-faint);
   font-size: 0.72rem;
@@ -2353,6 +2396,57 @@ button {
 
   .feature-stack {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Cookie 同意横幅 ---------- */
+
+.cookie-consent {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(calc(100% - 32px), 640px);
+  padding: 16px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.cookie-consent-text {
+  margin: 0;
+  flex: 1;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.cookie-consent-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cookie-accept,
+.cookie-decline {
+  padding: 8px 16px;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 560px) {
+  .cookie-consent {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .cookie-consent-actions {
+    justify-content: center;
   }
 }
 
