@@ -183,6 +183,23 @@ void main() {
       },
     );
 
+    test('getUpcomingExams sorts same-day exams by start time', () async {
+      final provider = await createProvider();
+      await addTestCourse(provider);
+      final date = DateTime.now().add(const Duration(days: 10));
+      await provider.addExam(
+        buildExam(id: 'late', dateTime: date).copyWith(startTime: '15:00'),
+      );
+      await provider.addExam(
+        buildExam(id: 'early', dateTime: date).copyWith(startTime: '09:00'),
+      );
+
+      expect(provider.getUpcomingExams().map((exam) => exam.id), [
+        'early',
+        'late',
+      ]);
+    });
+
     test('getUpcomingExams respects limit', () async {
       final provider = await createProvider();
       await addTestCourse(provider);

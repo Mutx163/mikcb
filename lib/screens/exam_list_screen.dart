@@ -21,9 +21,9 @@ class ExamListScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     final upcomingExams = exams.where((e) => !e.isExpired).toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      ..sort(Exam.compareByStart);
     final pastExams = exams.where((e) => e.isExpired).toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      ..sort((a, b) => Exam.compareByStart(b, a));
     final todayExamCount = upcomingExams.where((e) => e.daysUntil == 0).length;
 
     return HyperosSubpage(

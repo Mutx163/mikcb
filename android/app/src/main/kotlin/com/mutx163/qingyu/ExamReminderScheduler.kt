@@ -31,6 +31,7 @@ object ExamReminderScheduler {
     private const val EXTRA_OFFSET_MINUTES = "offsetMinutes"
     private const val EXTRA_TITLE = "title"
     private const val EXTRA_BODY = "body"
+    private const val OVERDUE_DELIVERY_WINDOW_MILLIS = 24L * 60L * 60L * 1000L
 
     data class Fire(
         val examId: String,
@@ -61,7 +62,11 @@ object ExamReminderScheduler {
         manager.createNotificationChannel(channel)
     }
 
-    fun reconcile(context: Context, firesPayload: List<*>) {
+    fun reconcile(
+        context: Context,
+        firesPayload: List<*>,
+        activeExamIds: Set<String> = emptySet(),
+    ) {
         ensureChannel(context)
         val appContext = context.applicationContext
         val newFires = parseFires(firesPayload)
@@ -70,11 +75,30 @@ object ExamReminderScheduler {
 
         val nowMillis = System.currentTimeMillis()
         val futureFires = newFires.filter { it.fireAtMillis > nowMillis - 30_000L }
-        for (fire in futureFires) {
+        val futureRequestCodes = futureFires.mapTo(mutableSetOf()) { it.requestCode }
+        val failedOverdueFires = oldFires.mapNotNull { fire ->
+            val originalFireAt = originalFireAtMillis(fire)
+            val isRecentFailure = originalFireAt <= nowMillis &&
+                originalFireAt > nowMillis - OVERDUE_DELIVERY_WINDOW_MILLIS
+            if (
+                fire.examId !in activeExamIds ||
+                fire.requestCode in futureRequestCodes ||
+                !isRecentFailure
+            ) {
+                null
+            } else {
+                // Successful notifications remove themselves from oldFires.
+                // Only a retained entry can represent a permission/posting
+                // failure, so retry it once the app reconciles again.
+                fire.copy(fireAtMillis = nowMillis + 1_000L)
+            }
+        }
+        val schedulableFires = futureFires + failedOverdueFires
+        for (fire in schedulableFires) {
             scheduleAlarm(appContext, fire)
         }
-        persistFires(appContext, futureFires)
-        Log.d(TAG, "reconcile scheduled=${futureFires.size} cancelledOld=${oldFires.size}")
+        persistFires(appContext, schedulableFires)
+        Log.d(TAG, "reconcile scheduled=${schedulableFires.size} cancelledOld=${oldFires.size}")
     }
 
     fun clear(context: Context) {
@@ -96,13 +120,11 @@ object ExamReminderScheduler {
         cancelFires(appContext, fires)
         val nowMillis = System.currentTimeMillis()
         val rearmed = fires.mapNotNull { fire ->
-            val fireAt = if (fire.examStartMillis > 0L && fire.offsetMinutes > 0) {
-                fire.examStartMillis - fire.offsetMinutes * 60_000L
-            } else {
-                fire.fireAtMillis
-            }
-            if (fireAt <= nowMillis) {
+            val fireAt = originalFireAtMillis(fire)
+            if (fireAt <= nowMillis - OVERDUE_DELIVERY_WINDOW_MILLIS) {
                 null
+            } else if (fireAt <= nowMillis) {
+                fire.copy(fireAtMillis = nowMillis + 1_000L)
             } else {
                 fire.copy(fireAtMillis = fireAt)
             }
@@ -112,6 +134,14 @@ object ExamReminderScheduler {
         }
         persistFires(appContext, rearmed)
         Log.d(TAG, "boot reschedule count=${rearmed.size}")
+    }
+
+    private fun originalFireAtMillis(fire: Fire): Long {
+        return if (fire.examStartMillis > 0L && fire.offsetMinutes > 0) {
+            fire.examStartMillis - fire.offsetMinutes * 60_000L
+        } else {
+            fire.fireAtMillis
+        }
     }
 
     fun handleFire(context: Context, intent: Intent) {

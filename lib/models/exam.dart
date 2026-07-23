@@ -221,6 +221,32 @@ class Exam {
     );
   }
 
+  /// Stable chronological ordering for exams, including same-day times.
+  static int compareByStart(Exam left, Exam right) {
+    final startCompare = left.examStartDateTime.compareTo(
+      right.examStartDateTime,
+    );
+    if (startCompare != 0) {
+      return startCompare;
+    }
+    final leftEnd = _dateTimeWithTime(left.dateTime, left.endTime);
+    final rightEnd = _dateTimeWithTime(right.dateTime, right.endTime);
+    final endCompare = leftEnd.compareTo(rightEnd);
+    if (endCompare != 0) {
+      return endCompare;
+    }
+    return left.id.compareTo(right.id);
+  }
+
+  static DateTime _dateTimeWithTime(DateTime date, String rawTime) {
+    final parts = parseTimeOfDayParts(
+      rawTime,
+      fallbackHour: 23,
+      fallbackMinute: 59,
+    );
+    return DateTime(date.year, date.month, date.day, parts.$1, parts.$2);
+  }
+
   /// 考试是否已过期
   bool get isExpired {
     final now = DateTime.now();

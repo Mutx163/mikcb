@@ -106,6 +106,8 @@ class ExamReminderService {
         }
         final fireAt = examStart.subtract(Duration(minutes: offsetMinutes));
         // Skip fires already in the past (with a small grace for clock skew).
+        // Native separately retains only points that actually fired but could
+        // not post, so reconstructing past points here would cause duplicates.
         if (!fireAt.isAfter(
           referenceNow.subtract(const Duration(seconds: 30)),
         )) {
@@ -154,16 +156,24 @@ class ExamReminderService {
     required Course? Function(Exam exam) resolveCourse,
   }) async {
     final fires = buildFires(exams: exams, resolveCourse: resolveCourse);
-    return syncFires(fires);
+    final activeExamIds = exams
+        .where((exam) => !exam.isExpired)
+        .map((exam) => exam.id)
+        .toSet();
+    return syncFires(fires, activeExamIds: activeExamIds);
   }
 
-  Future<bool> syncFires(List<ExamReminderFire> fires) async {
+  Future<bool> syncFires(
+    List<ExamReminderFire> fires, {
+    Set<String> activeExamIds = const {},
+  }) async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return true;
     }
     try {
       await _channel.invokeMethod<void>('reconcile', {
         'fires': fires.map((fire) => fire.toNativeMap()).toList(),
+        'activeExamIds': activeExamIds.toList(growable: false),
       });
       return true;
     } on MissingPluginException {

@@ -579,8 +579,16 @@ class MainActivity : FlutterActivity() {
                     "reconcile" -> {
                         val payload = call.arguments as? Map<*, *>
                         val fires = payload?.get("fires") as? List<*>
+                        val activeExamIds = (payload?.get("activeExamIds") as? List<*>)
+                            ?.mapNotNull { it as? String }
+                            ?.toSet()
+                            ?: emptySet()
                         if (fires != null) {
-                            ExamReminderScheduler.reconcile(applicationContext, fires)
+                            ExamReminderScheduler.reconcile(
+                                applicationContext,
+                                fires,
+                                activeExamIds,
+                            )
                             result.success(true)
                         } else {
                             result.error("INVALID_ARGUMENTS", "Missing exam reminder fires", null)
@@ -1066,9 +1074,15 @@ class MainActivity : FlutterActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            permissionResult?.success(
-                grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            )
+            val granted = grantResults.isNotEmpty() &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED
+            if (granted) {
+                // Retry any reminder whose alarm fired while notification
+                // permission was denied, without rebuilding past fires in
+                // Flutter (which could duplicate successful notifications).
+                ExamReminderScheduler.handleBootReschedule(applicationContext)
+            }
+            permissionResult?.success(granted)
             permissionResult = null
         }
     }
