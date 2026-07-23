@@ -1,15 +1,16 @@
 :root {
-  --bg: #fbfbfd;
-  --surface: #ffffff;
-  --surface-alt: #f5f5f7;
-  --surface-tint: #f7f9fc;
-  --text: #1d1d1f;
-  --text-soft: #6e6e73;
-  --line: rgba(29, 29, 31, 0.08);
-  --line-soft: rgba(29, 29, 31, 0.05);
-  --blue: #0066cc;
-  --blue-hover: #0071e3;
-  --shadow: 0 18px 40px rgba(17, 24, 39, 0.04);
+  color-scheme: dark;
+  --bg: #05070d;
+  --surface: #10151f;
+  --surface-alt: #0a0e18;
+  --surface-tint: #121826;
+  --text: #f2f5fa;
+  --text-soft: rgba(226, 232, 244, 0.72);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-soft: rgba(255, 255, 255, 0.05);
+  --blue: #3482ff;
+  --blue-hover: #4f9dff;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
   --content-width: 1200px;
   --radius-xl: 32px;
   --radius-lg: 24px;
@@ -32,8 +33,9 @@ body {
   min-width: 320px;
   color: var(--text);
   background: var(--bg);
-  font-family: "SF Pro Text", "PingFang SC", -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", sans-serif;
+  font-family: "MiSans", "SF Pro Text", "PingFang SC", "HarmonyOS Sans SC",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
+    "Noto Sans SC", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -47,9 +49,9 @@ body::before {
   height: min(58vw, 760px);
   background: radial-gradient(
     circle,
-    rgba(0, 102, 204, 0.12) 0%,
-    rgba(0, 102, 204, 0.05) 34%,
-    rgba(0, 102, 204, 0) 72%
+    rgba(52, 130, 255, 0.16) 0%,
+    rgba(52, 130, 255, 0.06) 34%,
+    rgba(52, 130, 255, 0) 72%
   );
   transform: translateX(-50%);
   pointer-events: none;
@@ -79,8 +81,8 @@ button {
   position: sticky;
   top: 0;
   z-index: 60;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  background: rgba(251, 251, 253, 0.82);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(5, 7, 13, 0.82);
   backdrop-filter: saturate(180%) blur(20px);
 }
 
@@ -160,7 +162,7 @@ button {
 
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid rgba(0, 102, 204, 0.28);
+  outline: 3px solid rgba(122, 180, 255, 0.45);
   outline-offset: 3px;
 }
 
@@ -1486,16 +1488,16 @@ main {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --surface: #1c1c1e;
-    --surface-alt: #2c2c2e;
-    --surface-tint: #2c2c2e;
-    --text: #f5f5f7;
-    --text-soft: #86868b;
+    --bg: #05070d;
+    --surface: #10151f;
+    --surface-alt: #0a0e18;
+    --surface-tint: #121826;
+    --text: #f2f5fa;
+    --text-soft: rgba(226, 232, 244, 0.72);
     --line: rgba(255, 255, 255, 0.1);
     --line-soft: rgba(255, 255, 255, 0.05);
-    --blue: #2997ff;
-    --blue-hover: #51a9ff;
+    --blue: #3482ff;
+    --blue-hover: #4f9dff;
     --shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
   }
 
