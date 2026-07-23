@@ -223,6 +223,12 @@ class WebdavSyncService {
         }
       }
 
+      // Write snapshot before meta so a meta-only success cannot advertise a
+      // hash whose body never landed. Meta is the publish pointer; if meta
+      // fails after snapshot, the next upload retries with the same content.
+      final metaBytes = Uint8List.fromList(
+        utf8.encode(_snapshotService.buildMetaJson(meta)),
+      );
       await _clientService.putBytes(
         client: client,
         remotePath: config.snapshotRemotePath,
@@ -232,9 +238,7 @@ class WebdavSyncService {
       await _clientService.putBytes(
         client: client,
         remotePath: config.metaRemotePath,
-        bytes: Uint8List.fromList(
-          utf8.encode(_snapshotService.buildMetaJson(meta)),
-        ),
+        bytes: metaBytes,
       );
       wroteMeta = true;
 

@@ -654,7 +654,7 @@ Future<void> _liveSyncHomeWidgetSnapshot(TimetableProvider host) async {
     return;
   }
 
-  final snapshotSignature = jsonEncode(snapshot.toJson());
+  final snapshotSignature = jsonEncode(snapshot.toDedupJson());
   if (host._lastHomeWidgetSnapshotSignature != snapshotSignature) {
     final synced = await host._homeWidgetService.syncSnapshot(snapshot);
     if (synced) {

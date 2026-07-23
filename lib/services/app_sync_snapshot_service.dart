@@ -33,6 +33,10 @@ class AppSyncSnapshot {
   final PartnerTimetableBinding? partnerTimetableBinding;
   final bool includesPartnerTimetableBinding;
 
+  /// Last successful seasonal date-rule bulk-apply signature (ruleId|scheme|range).
+  /// Absent on older snapshots; treated as null so apply can re-run once if needed.
+  final String? scheduleDateRuleLastAppliedSignature;
+
   const AppSyncSnapshot({
     required this.profiles,
     required this.activeProfileId,
@@ -49,6 +53,7 @@ class AppSyncSnapshot {
     required this.contentSha256,
     this.partnerTimetableBinding,
     this.includesPartnerTimetableBinding = false,
+    this.scheduleDateRuleLastAppliedSignature,
   });
 
   /// True when this snapshot contains user-authored business data that must
@@ -171,8 +176,11 @@ class AppSyncSnapshotService {
         .getPartnerTimetableBinding();
     final timestamp = exportedAt ?? DateTime.now();
 
+    final profilesForSync = stripLiveTestingFixtureCourses(provider.profiles);
+    final lastAppliedSignature = provider.scheduleDateRuleLastAppliedSignature;
+
     final payload = _buildPayloadMap(
-      profiles: provider.profiles,
+      profiles: profilesForSync,
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
       locationTimeGroups: provider.locationTimeGroups,
@@ -185,11 +193,12 @@ class AppSyncSnapshotService {
       exportedAt: timestamp,
       deviceId: deviceId,
       partnerTimetableBinding: partnerTimetableBinding,
+      scheduleDateRuleLastAppliedSignature: lastAppliedSignature,
     );
     final contentSha256 = computeContentSha256(payload);
 
     return AppSyncSnapshot(
-      profiles: provider.profiles,
+      profiles: profilesForSync,
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
       locationTimeGroups: provider.locationTimeGroups,
@@ -204,6 +213,7 @@ class AppSyncSnapshotService {
       contentSha256: contentSha256,
       partnerTimetableBinding: partnerTimetableBinding,
       includesPartnerTimetableBinding: true,
+      scheduleDateRuleLastAppliedSignature: lastAppliedSignature,
     );
   }
 
@@ -235,6 +245,8 @@ class AppSyncSnapshotService {
       exportedAt: snapshot.exportedAt,
       deviceId: snapshot.deviceId,
       partnerTimetableBinding: snapshot.partnerTimetableBinding,
+      scheduleDateRuleLastAppliedSignature:
+          snapshot.scheduleDateRuleLastAppliedSignature,
     );
     payload['contentSha256'] = snapshot.contentSha256;
     return const JsonEncoder.withIndent('  ').convert(payload);
@@ -298,6 +310,8 @@ class AppSyncSnapshotService {
               Map<String, dynamic>.from(item as Map),
             ),
           )
+          .toList()
+          .map(_stripLiveTestingFixtureCoursesFromProfile)
           .toList(),
       activeProfileId: json['activeProfileId'] as String?,
       timeSchemes: rawTimeSchemes
@@ -353,6 +367,13 @@ class AppSyncSnapshotService {
       contentSha256: expectedHash.isEmpty ? actualHash : expectedHash,
       partnerTimetableBinding: partnerTimetableBinding,
       includesPartnerTimetableBinding: includesPartnerTimetableBinding,
+      scheduleDateRuleLastAppliedSignature:
+          (json['scheduleDateRuleLastAppliedSignature'] as String?)
+                  ?.trim()
+                  .isEmpty ==
+              true
+          ? null
+          : (json['scheduleDateRuleLastAppliedSignature'] as String?)?.trim(),
     );
   }
 
@@ -403,6 +424,9 @@ class AppSyncSnapshotService {
       await _storageService.saveLocationRecords(snapshot.locationRecords);
       await _storageService.saveLocationTimeGroups(snapshot.locationTimeGroups);
       await _storageService.saveScheduleDateRules(snapshot.scheduleDateRules);
+      await _storageService.saveScheduleDateRuleLastAppliedSignature(
+        snapshot.scheduleDateRuleLastAppliedSignature,
+      );
       await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
       await _warehouseMacroService.importAllMacros(snapshot.macros);
       await _holidayService.saveCustomHolidays(snapshot.customHolidays);
@@ -461,6 +485,7 @@ class AppSyncSnapshotService {
     required DateTime exportedAt,
     required String deviceId,
     PartnerTimetableBinding? partnerTimetableBinding,
+    String? scheduleDateRuleLastAppliedSignature,
   }) {
     return {
       'app': 'mikcb',
@@ -477,6 +502,8 @@ class AppSyncSnapshotService {
       'scheduleDateRules': scheduleDateRules
           .map((rule) => rule.toJson())
           .toList(),
+      'scheduleDateRuleLastAppliedSignature':
+          scheduleDateRuleLastAppliedSignature,
       'teacherRecords': teacherRecords,
       'locationRecords': locationRecords,
       // Never put teaching-system passwords into cloud sync JSON (C3).
@@ -487,6 +514,25 @@ class AppSyncSnapshotService {
       'customHolidays': customHolidays.map((entry) => entry.toJson()).toList(),
       'partnerTimetableBinding': partnerTimetableBinding?.toJson(),
     };
+  }
+
+  /// Drops debug-only `live_test_*` courses so they never leave the device via cloud sync.
+  static List<TimetableProfile> stripLiveTestingFixtureCourses(
+    List<TimetableProfile> profiles,
+  ) {
+    return profiles.map(_stripLiveTestingFixtureCoursesFromProfile).toList();
+  }
+
+  static TimetableProfile _stripLiveTestingFixtureCoursesFromProfile(
+    TimetableProfile profile,
+  ) {
+    final filtered = profile.courses
+        .where((course) => !course.id.startsWith('live_test_'))
+        .toList();
+    if (filtered.length == profile.courses.length) {
+      return profile;
+    }
+    return profile.copyWith(courses: filtered);
   }
 
   static dynamic _canonicalize(dynamic value) {

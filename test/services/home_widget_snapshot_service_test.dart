@@ -142,4 +142,47 @@ void main() {
       contains(DateTime(2026, 3, 27, 9, 40).millisecondsSinceEpoch),
     );
   });
+
+  test(
+    'dedup json excludes generatedAtMillis so identical content collapses',
+    () {
+      const service = HomeWidgetSnapshotService();
+      final settings = TimetableSettings.defaults();
+      final courses = [
+        Course(
+          id: 'course-1',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      ];
+
+      final first = service.build(
+        profileId: 'profile-1',
+        profileName: '默认课表',
+        currentWeek: 6,
+        settings: settings,
+        todayCourses: courses,
+        now: DateTime(2026, 3, 27, 8, 0),
+      );
+      final second = service.build(
+        profileId: 'profile-1',
+        profileName: '默认课表',
+        currentWeek: 6,
+        settings: settings,
+        todayCourses: courses,
+        now: DateTime(2026, 3, 27, 8, 1),
+      );
+
+      expect(first.generatedAtMillis, isNot(second.generatedAtMillis));
+      expect(first.toJson()['generatedAtMillis'], isNotNull);
+      expect(first.toDedupJson().containsKey('generatedAtMillis'), isFalse);
+      expect(first.toDedupJson(), second.toDedupJson());
+    },
+  );
 }

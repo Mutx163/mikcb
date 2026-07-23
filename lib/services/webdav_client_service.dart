@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:webdav_plus/webdav_plus.dart';
@@ -68,6 +69,10 @@ class WebdavRemoteMetaResult {
 class WebdavClientService {
   const WebdavClientService();
 
+  /// Default network timeout for list/get/put/delete. Weak networks should fail
+  /// instead of hanging the sync UI indefinitely.
+  static const Duration defaultOperationTimeout = Duration(seconds: 30);
+
   WebdavClient createClient(WebdavConnectionParams params) {
     return WebdavClient.withCredentials(
       params.username,
@@ -78,12 +83,13 @@ class WebdavClientService {
 
   Future<void> testConnection(WebdavConnectionParams params) async {
     final client = createClient(params);
-    await client.list('/');
+    await _withTimeout(client.list('/'));
   }
 
   Future<void> ensureRemoteFolder({
     required WebdavClient client,
     required String remoteFolder,
+    Duration timeout = defaultOperationTimeout,
   }) async {
     final segments = remoteFolder
         .split('/')
@@ -93,7 +99,10 @@ class WebdavClientService {
     for (final segment in segments) {
       current = '$current/$segment';
       try {
-        await client.createDirectory('$current/');
+        await _withTimeout(
+          client.createDirectory('$current/'),
+          timeout: timeout,
+        );
       } catch (_) {
         // Directory may already exist.
       }
@@ -104,15 +113,21 @@ class WebdavClientService {
     required WebdavClient client,
     required String remotePath,
     required Uint8List bytes,
+    Duration timeout = defaultOperationTimeout,
   }) async {
-    await client.put(remotePath, bytes);
+    await _withTimeout(client.put(remotePath, bytes), timeout: timeout);
   }
 
   Future<Uint8List?> getBytes({
     required WebdavClient client,
     required String remotePath,
+    Duration timeout = defaultOperationTimeout,
   }) async {
-    final result = await getBytesResult(client: client, remotePath: remotePath);
+    final result = await getBytesResult(
+      client: client,
+      remotePath: remotePath,
+      timeout: timeout,
+    );
     return result.bytes;
   }
 
@@ -120,25 +135,19 @@ class WebdavClientService {
   Future<WebdavGetBytesResult> getBytesResult({
     required WebdavClient client,
     required String remotePath,
+    Duration timeout = defaultOperationTimeout,
   }) async {
     try {
-      final bytes = await client.get(remotePath);
+      final bytes = await _withTimeout(
+        client.get(remotePath),
+        timeout: timeout,
+      );
       if (bytes.isEmpty) {
         return const WebdavGetBytesResult.notFound();
       }
       return WebdavGetBytesResult.ok(bytes);
     } catch (error) {
-      final message = error.toString().toLowerCase();
-      final looksMissing =
-          message.contains('404') ||
-          message.contains('not found') ||
-          message.contains('not_found') ||
-          message.contains('does not exist') ||
-          message.contains('no such file');
-      if (looksMissing) {
-        return const WebdavGetBytesResult.notFound();
-      }
-      return WebdavGetBytesResult.failed(error.toString());
+      return classifyGetBytesFailure(error);
     }
   }
 
@@ -185,16 +194,21 @@ class WebdavClientService {
   Future<void> deleteRemoteFile({
     required WebdavClient client,
     required String remotePath,
+    Duration timeout = defaultOperationTimeout,
   }) async {
-    await client.delete(remotePath);
+    await _withTimeout(client.delete(remotePath), timeout: timeout);
   }
 
   Future<List<String>> listHistoryBackupFiles({
     required WebdavClient client,
     required String historyRemoteFolder,
+    Duration timeout = defaultOperationTimeout,
   }) async {
     try {
-      final resources = await client.list(historyRemoteFolder);
+      final resources = await _withTimeout(
+        client.list(historyRemoteFolder),
+        timeout: timeout,
+      );
       return resources
           .where((resource) => !resource.isDirectory)
           .map((resource) => resource.href.pathSegments.last)
@@ -203,5 +217,34 @@ class WebdavClientService {
     } catch (_) {
       return const [];
     }
+  }
+
+  Future<T> _withTimeout<T>(
+    Future<T> future, {
+    Duration timeout = defaultOperationTimeout,
+  }) {
+    return future.timeout(
+      timeout,
+      onTimeout: () =>
+          throw TimeoutException('webdav_operation_timeout', timeout),
+    );
+  }
+
+  /// Maps transport / protocol failures from [get] into a structured result.
+  static WebdavGetBytesResult classifyGetBytesFailure(Object error) {
+    if (error is TimeoutException) {
+      return const WebdavGetBytesResult.failed('connection_timeout');
+    }
+    final message = error.toString().toLowerCase();
+    final looksMissing =
+        message.contains('404') ||
+        message.contains('not found') ||
+        message.contains('not_found') ||
+        message.contains('does not exist') ||
+        message.contains('no such file');
+    if (looksMissing) {
+      return const WebdavGetBytesResult.notFound();
+    }
+    return WebdavGetBytesResult.failed(error.toString());
   }
 }

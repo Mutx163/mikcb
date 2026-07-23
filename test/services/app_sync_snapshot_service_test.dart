@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/partner_timetable_binding.dart';
 import 'package:university_timetable/models/time_scheme.dart';
@@ -75,6 +76,7 @@ void main() {
         'scheduleDateRules': snapshot.scheduleDateRules
             .map((rule) => rule.toJson())
             .toList(),
+        'scheduleDateRuleLastAppliedSignature': null,
         'teacherRecords': snapshot.teacherRecords,
         'locationRecords': snapshot.locationRecords,
         'warehouse': {
@@ -199,6 +201,7 @@ void main() {
           .toList(),
       'locationTimeGroups': groups.map((group) => group.toJson()).toList(),
       'scheduleDateRules': const <dynamic>[],
+      'scheduleDateRuleLastAppliedSignature': null,
       'teacherRecords': const <String>[],
       'locationRecords': const <String>[],
       'warehouse': {
@@ -295,6 +298,7 @@ void main() {
       'timeSchemes': const <dynamic>[],
       'locationTimeGroups': const <dynamic>[],
       'scheduleDateRules': const <dynamic>[],
+      'scheduleDateRuleLastAppliedSignature': null,
       'teacherRecords': const <String>[],
       'locationRecords': const <String>[],
       'warehouse': {
@@ -347,4 +351,116 @@ void main() {
     );
     expect(choice, SyncConflictChoice.keepRemote);
   });
+
+  test(
+    'sync snapshot strips live_test courses and keeps lastAppliedSignature',
+    () {
+      final service = AppSyncSnapshotService();
+      final exportedAt = DateTime.utc(2026, 7, 23, 12);
+      final profileWithFixtures = TimetableProfile(
+        id: 'profile-1',
+        name: '主课表',
+        courses: [
+          Course(
+            id: 'live_test_01',
+            name: '测试课',
+            teacher: '',
+            location: '',
+            dayOfWeek: 1,
+            startSection: 1,
+            endSection: 1,
+            startTime: '08:00',
+            endTime: '08:45',
+          ),
+          Course(
+            id: 'real-course',
+            name: '真实课',
+            teacher: '',
+            location: '',
+            dayOfWeek: 2,
+            startSection: 1,
+            endSection: 1,
+            startTime: '08:00',
+            endTime: '08:45',
+          ),
+        ],
+        settings: TimetableSettings.defaults(),
+        currentWeek: 1,
+        createdAt: exportedAt,
+        lastUsedAt: exportedAt,
+      );
+      final stripped = AppSyncSnapshotService.stripLiveTestingFixtureCourses([
+        profileWithFixtures,
+      ]);
+      expect(stripped.single.courses.map((course) => course.id), [
+        'real-course',
+      ]);
+
+      final snapshot = AppSyncSnapshot(
+        profiles: stripped,
+        activeProfileId: 'profile-1',
+        timeSchemes: const [],
+        teacherRecords: const [],
+        locationRecords: const [],
+        warehouse: const WarehouseSyncBundle(),
+        macros: const [],
+        customHolidays: const [],
+        exportedAt: exportedAt,
+        deviceId: 'device-a',
+        contentSha256: '',
+        scheduleDateRuleLastAppliedSignature:
+            'rule-1|scheme-1|2026-07-01|2026-08-31',
+      );
+      final payloadWithoutHash = {
+        'app': 'mikcb',
+        'schemaVersion': AppSyncSnapshotService.schemaVersion,
+        'backupType': AppSyncSnapshotService.backupType,
+        'exportedAt': exportedAt.toIso8601String(),
+        'deviceId': 'device-a',
+        'activeProfileId': 'profile-1',
+        'profiles': stripped.map((item) => item.toJson()).toList(),
+        'timeSchemes': const <dynamic>[],
+        'locationTimeGroups': const <dynamic>[],
+        'scheduleDateRules': const <dynamic>[],
+        'scheduleDateRuleLastAppliedSignature':
+            'rule-1|scheme-1|2026-07-01|2026-08-31',
+        'teacherRecords': const <String>[],
+        'locationRecords': const <String>[],
+        'warehouse': {
+          ...const WarehouseSyncBundle().toJson(),
+          'macros': const <dynamic>[],
+        },
+        'customHolidays': const <dynamic>[],
+        'partnerTimetableBinding': null,
+      };
+      final hash = AppSyncSnapshotService.computeContentSha256(
+        payloadWithoutHash,
+      );
+      final json = service.buildSnapshotJsonFromSnapshot(
+        AppSyncSnapshot(
+          profiles: stripped,
+          activeProfileId: 'profile-1',
+          timeSchemes: const [],
+          teacherRecords: const [],
+          locationRecords: const [],
+          warehouse: const WarehouseSyncBundle(),
+          macros: const [],
+          customHolidays: const [],
+          exportedAt: exportedAt,
+          deviceId: 'device-a',
+          contentSha256: hash,
+          scheduleDateRuleLastAppliedSignature:
+              'rule-1|scheme-1|2026-07-01|2026-08-31',
+        ),
+      );
+      final parsed = service.parseSnapshotJson(json);
+      expect(
+        parsed.scheduleDateRuleLastAppliedSignature,
+        'rule-1|scheme-1|2026-07-01|2026-08-31',
+      );
+      expect(parsed.profiles.single.courses.map((course) => course.id), [
+        'real-course',
+      ]);
+    },
+  );
 }

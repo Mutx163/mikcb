@@ -161,6 +161,16 @@ class HomeWidgetSnapshot {
       'tomorrowDayOfWeek': tomorrowDayOfWeek,
     };
   }
+
+  /// Identity payload for push de-duplication.
+  ///
+  /// Excludes [generatedAtMillis] so periodic rebuilds with identical business
+  /// content do not force a native widget rewrite every tick.
+  Map<String, dynamic> toDedupJson() {
+    final payload = Map<String, dynamic>.from(toJson())
+      ..remove('generatedAtMillis');
+    return payload;
+  }
 }
 
 class HomeWidgetSnapshotService {
