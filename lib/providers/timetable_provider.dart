@@ -251,57 +251,65 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// 批量更新设置（用于主题导入）
-  Future<void> updateSettings(TimetableSettings newSettings) async {
-    _settings = _normalizeSettingsWithTimeScheme(newSettings);
-    hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
-    _writeEpoch++;
-    final epoch = _writeEpoch;
-    await _persistActiveProfileState();
-    if (_writeEpoch == epoch) {
-      notifyListeners();
-    }
+  Future<void> updateSettings(TimetableSettings newSettings) {
+    return _runMutation(() async {
+      _settings = _normalizeSettingsWithTimeScheme(newSettings);
+      hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
+      _writeEpoch++;
+      final epoch = _writeEpoch;
+      await _persistActiveProfileState();
+      if (_writeEpoch == epoch) {
+        notifyListeners();
+      }
+    });
   }
 
   /// 保存主题
-  Future<void> saveTheme(String name, Map<String, dynamic> themeData) async {
-    final theme = SavedTheme(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: name,
-      config: ThemeConfig.fromJson(themeData),
-      createdAt: DateTime.now(),
-    );
-    final updatedThemes = [..._settings.savedThemes, theme];
-    _settings = _settings.copyWith(savedThemes: updatedThemes);
-    await _persistActiveProfileState();
-    notifyListeners();
+  Future<void> saveTheme(String name, Map<String, dynamic> themeData) {
+    return _runMutation(() async {
+      final theme = SavedTheme(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        config: ThemeConfig.fromJson(themeData),
+        createdAt: DateTime.now(),
+      );
+      final updatedThemes = [..._settings.savedThemes, theme];
+      _settings = _settings.copyWith(savedThemes: updatedThemes);
+      await _persistActiveProfileState();
+      notifyListeners();
+    });
   }
 
   /// 删除主题
-  Future<void> deleteTheme(String themeId) async {
-    final updatedThemes = _settings.savedThemes
-        .where((t) => t.id != themeId)
-        .toList();
-    _settings = _settings.copyWith(savedThemes: updatedThemes);
-    await _persistActiveProfileState();
-    notifyListeners();
+  Future<void> deleteTheme(String themeId) {
+    return _runMutation(() async {
+      final updatedThemes = _settings.savedThemes
+          .where((theme) => theme.id != themeId)
+          .toList();
+      _settings = _settings.copyWith(savedThemes: updatedThemes);
+      await _persistActiveProfileState();
+      notifyListeners();
+    });
   }
 
   /// 重命名主题
-  Future<void> renameTheme(String themeId, String newName) async {
-    final updatedThemes = _settings.savedThemes.map((t) {
-      if (t.id == themeId) {
-        return SavedTheme(
-          id: t.id,
-          name: newName,
-          config: t.config,
-          createdAt: t.createdAt,
-        );
-      }
-      return t;
-    }).toList();
-    _settings = _settings.copyWith(savedThemes: updatedThemes);
-    await _persistActiveProfileState();
-    notifyListeners();
+  Future<void> renameTheme(String themeId, String newName) {
+    return _runMutation(() async {
+      final updatedThemes = _settings.savedThemes.map((theme) {
+        if (theme.id == themeId) {
+          return SavedTheme(
+            id: theme.id,
+            name: newName,
+            config: theme.config,
+            createdAt: theme.createdAt,
+          );
+        }
+        return theme;
+      }).toList();
+      _settings = _settings.copyWith(savedThemes: updatedThemes);
+      await _persistActiveProfileState();
+      notifyListeners();
+    });
   }
 
   int get currentWeek => _currentWeek;
@@ -1118,113 +1126,121 @@ class TimetableProvider with ChangeNotifier {
     required String startDate,
     required String endDate,
     bool enabled = true,
-  }) async {
-    await initialize();
-    if (_scheduleDateRules.length >= ScheduleDateRuleLogic.maxRulesPerDevice) {
-      throw ArgumentError('schedule_date_rule_max_exceeded');
-    }
-    if (_getTimeSchemeById(timeSchemeId) == null) {
-      throw ArgumentError('time_scheme_not_found');
-    }
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      if (_scheduleDateRules.length >=
+          ScheduleDateRuleLogic.maxRulesPerDevice) {
+        throw ArgumentError('schedule_date_rule_max_exceeded');
+      }
+      if (_getTimeSchemeById(timeSchemeId) == null) {
+        throw ArgumentError('time_scheme_not_found');
+      }
 
-    final rule = ScheduleDateRule(
-      id: const Uuid().v4(),
-      name: name.trim(),
-      timeSchemeId: timeSchemeId,
-      startDate: startDate.trim(),
-      endDate: endDate.trim(),
-      enabled: enabled,
-    );
-    final next = [..._scheduleDateRules, rule];
-    final validationError = ScheduleDateRuleLogic.validateRules(next);
-    if (validationError != null) {
-      throw ArgumentError(validationError);
-    }
+      final rule = ScheduleDateRule(
+        id: const Uuid().v4(),
+        name: name.trim(),
+        timeSchemeId: timeSchemeId,
+        startDate: startDate.trim(),
+        endDate: endDate.trim(),
+        enabled: enabled,
+      );
+      final next = [..._scheduleDateRules, rule];
+      final validationError = ScheduleDateRuleLogic.validateRules(next);
+      if (validationError != null) {
+        throw ArgumentError(validationError);
+      }
 
-    _scheduleDateRules = next;
-    await _persistScheduleDateRules();
-    // Bulk-apply if today falls in the new range; otherwise wait for start day.
-    // Even when no bulk apply is needed, the rule list itself changed and the
-    // settings screen must rebuild from the new enabled state.
-    final applyResult = await applyDueScheduleDateRulesDetailed();
-    if (!applyResult.didApply) {
-      _notifyStateChanged();
-    }
-    return ScheduleDateRuleSaveResult(rule: rule, applyResult: applyResult);
+      _scheduleDateRules = next;
+      await _persistScheduleDateRules();
+      // Nested under the same mutation gate (re-entrant).
+      final applyResult = await applyDueScheduleDateRulesDetailed();
+      if (!applyResult.didApply) {
+        _notifyStateChanged();
+      }
+      return ScheduleDateRuleSaveResult(rule: rule, applyResult: applyResult);
+    });
   }
 
   Future<ScheduleDateRuleSaveResult?> updateScheduleDateRule(
     ScheduleDateRule rule,
-  ) async {
-    await initialize();
-    final index = _scheduleDateRules.indexWhere((item) => item.id == rule.id);
-    if (index == -1) {
-      return null;
-    }
-    if (_getTimeSchemeById(rule.timeSchemeId) == null) {
-      throw ArgumentError('time_scheme_not_found');
-    }
+  ) {
+    return _runMutation(() async {
+      await initialize();
+      final index = _scheduleDateRules.indexWhere((item) => item.id == rule.id);
+      if (index == -1) {
+        return null;
+      }
+      if (_getTimeSchemeById(rule.timeSchemeId) == null) {
+        throw ArgumentError('time_scheme_not_found');
+      }
 
-    final updated = rule.copyWith(
-      name: rule.name.trim(),
-      startDate: rule.startDate.trim(),
-      endDate: rule.endDate.trim(),
-    );
-    final next = List<ScheduleDateRule>.from(_scheduleDateRules);
-    next[index] = updated;
-    final validationError = ScheduleDateRuleLogic.validateRules(next);
-    if (validationError != null) {
-      throw ArgumentError(validationError);
-    }
+      final updated = rule.copyWith(
+        name: rule.name.trim(),
+        startDate: rule.startDate.trim(),
+        endDate: rule.endDate.trim(),
+      );
+      final next = List<ScheduleDateRule>.from(_scheduleDateRules);
+      next[index] = updated;
+      final validationError = ScheduleDateRuleLogic.validateRules(next);
+      if (validationError != null) {
+        throw ArgumentError(validationError);
+      }
 
-    _scheduleDateRules = next;
-    await _persistScheduleDateRules();
-    // Signature change (dates/scheme) re-triggers bulk apply when still due.
-    // Enabling/disabling without a signature change still needs a UI refresh.
-    final applyResult = await applyDueScheduleDateRulesDetailed();
-    if (!applyResult.didApply) {
-      _notifyStateChanged();
-    }
-    return ScheduleDateRuleSaveResult(rule: updated, applyResult: applyResult);
+      _scheduleDateRules = next;
+      await _persistScheduleDateRules();
+      final applyResult = await applyDueScheduleDateRulesDetailed();
+      if (!applyResult.didApply) {
+        _notifyStateChanged();
+      }
+      return ScheduleDateRuleSaveResult(
+        rule: updated,
+        applyResult: applyResult,
+      );
+    });
   }
 
-  Future<bool> deleteScheduleDateRule(String ruleId) async {
-    await initialize();
-    final beforeCount = _scheduleDateRules.length;
-    _scheduleDateRules = _scheduleDateRules
-        .where((rule) => rule.id != ruleId)
-        .toList();
-    if (_scheduleDateRules.length == beforeCount) {
-      return false;
-    }
-    await _persistScheduleDateRules();
-    _notifyStateChanged();
-    return true;
+  Future<bool> deleteScheduleDateRule(String ruleId) {
+    return _runMutation(() async {
+      await initialize();
+      final beforeCount = _scheduleDateRules.length;
+      _scheduleDateRules = _scheduleDateRules
+          .where((rule) => rule.id != ruleId)
+          .toList();
+      if (_scheduleDateRules.length == beforeCount) {
+        return false;
+      }
+      await _persistScheduleDateRules();
+      _notifyStateChanged();
+      return true;
+    });
   }
 
   Future<void> replaceScheduleDateRules(
     List<ScheduleDateRule> rules, {
     bool resync = true,
-  }) async {
-    await initialize();
-    final next = List<ScheduleDateRule>.from(rules);
-    if (next.length > ScheduleDateRuleLogic.maxRulesPerDevice) {
-      throw ArgumentError('schedule_date_rule_max_exceeded');
-    }
-    final validationError = ScheduleDateRuleLogic.validateRules(next);
-    if (validationError != null) {
-      throw ArgumentError(validationError);
-    }
-    _scheduleDateRules = next;
-    await _persistScheduleDateRules();
-    if (resync) {
-      final didApply = await applyDueScheduleDateRules();
-      if (!didApply) {
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      final next = List<ScheduleDateRule>.from(rules);
+      if (next.length > ScheduleDateRuleLogic.maxRulesPerDevice) {
+        throw ArgumentError('schedule_date_rule_max_exceeded');
+      }
+      final validationError = ScheduleDateRuleLogic.validateRules(next);
+      if (validationError != null) {
+        throw ArgumentError(validationError);
+      }
+      _scheduleDateRules = next;
+      await _persistScheduleDateRules();
+      if (resync) {
+        final didApply = await applyDueScheduleDateRules();
+        if (!didApply) {
+          _notifyStateChanged();
+        }
+      } else {
         _notifyStateChanged();
       }
-    } else {
-      _notifyStateChanged();
-    }
+    });
   }
 
   /// One-shot bulk apply of the seasonal date rule that matches [now].
@@ -2058,15 +2074,30 @@ class TimetableProvider with ChangeNotifier {
       // single save below contains both the outgoing snapshot and the newly
       // active profile, so there is no need to block the UI on two full writes.
       _mergeActiveProfileIntoProfilesList();
+      final previousProfileId = _activeProfileId;
       _activeProfileId = profileId;
       _applyProfileState(targetProfile);
       _currentLiveCourseId = null;
       _lastLiveSnapshotSignature = null;
-
-      final persistFuture = _persistActiveProfileState(touchLastUsedAt: true);
       notifyListeners();
 
-      await persistFuture;
+      try {
+        await _persistActiveProfileState(touchLastUsedAt: true);
+      } catch (_) {
+        // Persist failed: roll memory back so UI does not diverge from disk.
+        if (previousProfileId != null) {
+          _activeProfileId = previousProfileId;
+          final previousProfile = _getProfileById(previousProfileId);
+          if (previousProfile != null) {
+            _applyProfileState(previousProfile);
+          }
+        }
+        _currentLiveCourseId = null;
+        _lastLiveSnapshotSignature = null;
+        notifyListeners();
+        rethrow;
+      }
+
       await _liveActivitiesService.stopLiveUpdate();
       _lastLiveActivityStageKey = null;
       await _syncLiveScheduleSnapshot();
@@ -2554,55 +2585,62 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
-  Future<void> addExam(Exam exam) async {
-    await initialize();
-    if (getCourseForExam(exam) == null) {
-      throw ArgumentError('linked_course_not_found');
-    }
-    _exams.add(exam);
-    await _persistActiveProfileState();
-    notifyListeners();
-    unawaited(_syncExamReminders());
-    // Native widgets re-read profiles; force a snapshot push so exam line
-    // appears without waiting for the next course-boundary refresh.
-    _lastHomeWidgetSnapshotSignature = null;
-    unawaited(_syncHomeWidgetSnapshot());
-    _analytics.logEventLater(
-      name: 'exam_created',
-      parameters: {
-        'has_location': exam.location?.isNotEmpty == true ? 1 : 0,
-        'has_seat': exam.seatNumber?.isNotEmpty == true ? 1 : 0,
-      },
-    );
+  Future<void> addExam(Exam exam) {
+    return _runMutation(() async {
+      await initialize();
+      if (getCourseForExam(exam) == null) {
+        throw ArgumentError('linked_course_not_found');
+      }
+      _exams.add(exam);
+      await _persistActiveProfileState();
+      notifyListeners();
+      unawaited(_syncExamReminders());
+      // Native widgets re-read profiles; force a snapshot push so exam line
+      // appears without waiting for the next course-boundary refresh.
+      _lastHomeWidgetSnapshotSignature = null;
+      unawaited(_syncHomeWidgetSnapshot());
+      _analytics.logEventLater(
+        name: 'exam_created',
+        parameters: {
+          'has_location': exam.location?.isNotEmpty == true ? 1 : 0,
+          'has_seat': exam.seatNumber?.isNotEmpty == true ? 1 : 0,
+        },
+      );
+    });
   }
 
-  Future<void> updateExam(Exam exam) async {
-    await initialize();
-    final index = _exams.indexWhere((e) => e.id == exam.id);
-    if (index == -1) return;
-    _exams[index] = exam;
-    await _persistActiveProfileState();
-    notifyListeners();
-    unawaited(_syncExamReminders());
-    _lastHomeWidgetSnapshotSignature = null;
-    unawaited(_syncHomeWidgetSnapshot());
-    _analytics.logEventLater(
-      name: 'exam_updated',
-      parameters: {'exam_id': exam.id},
-    );
+  Future<void> updateExam(Exam exam) {
+    return _runMutation(() async {
+      await initialize();
+      final index = _exams.indexWhere((e) => e.id == exam.id);
+      if (index == -1) return;
+      _exams[index] = exam;
+      await _persistActiveProfileState();
+      notifyListeners();
+      unawaited(_syncExamReminders());
+      _lastHomeWidgetSnapshotSignature = null;
+      unawaited(_syncHomeWidgetSnapshot());
+      _analytics.logEventLater(
+        name: 'exam_updated',
+        parameters: {'exam_id': exam.id},
+      );
+    });
   }
 
-  Future<void> deleteExam(String examId) async {
-    _exams.removeWhere((e) => e.id == examId);
-    await _persistActiveProfileState();
-    notifyListeners();
-    unawaited(_syncExamReminders());
-    _lastHomeWidgetSnapshotSignature = null;
-    unawaited(_syncHomeWidgetSnapshot());
-    _analytics.logEventLater(
-      name: 'exam_deleted',
-      parameters: {'remaining_exam_count': _exams.length},
-    );
+  Future<void> deleteExam(String examId) {
+    return _runMutation(() async {
+      await initialize();
+      _exams.removeWhere((e) => e.id == examId);
+      await _persistActiveProfileState();
+      notifyListeners();
+      unawaited(_syncExamReminders());
+      _lastHomeWidgetSnapshotSignature = null;
+      unawaited(_syncHomeWidgetSnapshot());
+      _analytics.logEventLater(
+        name: 'exam_deleted',
+        parameters: {'remaining_exam_count': _exams.length},
+      );
+    });
   }
 
   /// Reconcile native exam-reminder alarms with the active profile exam list.

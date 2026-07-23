@@ -496,7 +496,9 @@ class _TimeSchemeManagementScreenState
             : willApplyLater
             ? l10n.scheduleDateRuleSavedForFuture
             : l10n.scheduleDateRuleSaved,
-        kind: AppToastKind.success,
+        kind: saveResult.failedWhileDue
+            ? AppToastKind.warning
+            : AppToastKind.success,
       );
     } on ArgumentError catch (error) {
       if (!context.mounted) {

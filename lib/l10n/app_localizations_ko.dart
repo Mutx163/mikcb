@@ -8950,41 +8950,41 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get scheduleDateRuleSectionTitle => '按日期切换作息';
+  String get scheduleDateRuleSectionTitle => 'Seasonal date rules';
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠';
+      'On the start date, apply the selected scheme once as the default for every timetable. Fixed course schemes and location matches are unaffected. Max 2 non-overlapping rules';
 
   @override
-  String get scheduleDateRuleAdd => '添加日期规则';
+  String get scheduleDateRuleAdd => 'Add date rule';
 
   @override
-  String get scheduleDateRuleEdit => '编辑日期规则';
+  String get scheduleDateRuleEdit => 'Edit date rule';
 
   @override
-  String get scheduleDateRuleEmpty => '未设置日期规则';
+  String get scheduleDateRuleEmpty => 'No date rules';
 
   @override
-  String get scheduleDateRuleNameLabel => '规则名称';
+  String get scheduleDateRuleNameLabel => 'Rule name';
 
   @override
-  String get scheduleDateRuleNameHint => '例如：夏令时 / 冬令时';
+  String get scheduleDateRuleNameHint => 'e.g. Summer / Winter';
 
   @override
-  String get scheduleDateRuleStartDate => '开始日期';
+  String get scheduleDateRuleStartDate => 'Start date';
 
   @override
-  String get scheduleDateRuleEndDate => '结束日期';
+  String get scheduleDateRuleEndDate => 'End date';
 
   @override
-  String get scheduleDateRuleBoundScheme => '使用时间模板';
+  String get scheduleDateRuleBoundScheme => 'Time scheme';
 
   @override
-  String get scheduleDateRuleEnabled => '启用';
+  String get scheduleDateRuleEnabled => 'Enabled';
 
   @override
-  String get scheduleDateRuleActiveToday => '今天在区间内';
+  String get scheduleDateRuleActiveToday => 'In range today';
 
   @override
   String scheduleDateRuleRangeSummary(String start, String end) {
@@ -8992,16 +8992,16 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get scheduleDateRuleMaxReached => '最多只能添加 2 条日期规则';
+  String get scheduleDateRuleMaxReached => 'At most 2 date rules';
 
   @override
-  String get scheduleDateRuleNeedScheme => '请先创建至少一套时间模板';
+  String get scheduleDateRuleNeedScheme => 'Create a time scheme first';
 
   @override
-  String get scheduleDateRuleNameRequired => '请填写规则名称';
+  String get scheduleDateRuleNameRequired => 'Enter a rule name';
 
   @override
-  String get scheduleDateRuleSaved => '日期规则已保存';
+  String get scheduleDateRuleSaved => 'Date rule saved';
 
   @override
   String get scheduleDateRuleSavedAndApplied =>
@@ -9016,39 +9016,41 @@ class AppLocalizationsKo extends AppLocalizations {
       'Date rule saved, but today\'s auto-apply failed (check scheme section count)';
 
   @override
-  String get scheduleDateRuleDeleted => '已删除日期规则';
+  String get scheduleDateRuleDeleted => 'Date rule deleted';
 
   @override
-  String get scheduleDateRuleDeleteTitle => '删除日期规则？';
+  String get scheduleDateRuleDeleteTitle => 'Delete date rule?';
 
   @override
   String scheduleDateRuleDeleteMessage(String name) {
-    return '确定删除「$name」？该日期段将恢复使用课表默认时间模板。';
+    return 'Delete “$name”? Already-applied schedules are not rolled back automatically; adjust them manually if needed.';
   }
 
   @override
   String scheduleDateRuleSaveFailed(String reason) {
-    return '保存失败：$reason';
+    return 'Save failed: $reason';
   }
 
   @override
-  String get scheduleDateRuleErrorMax => '已达到 2 条上限';
+  String get scheduleDateRuleErrorMax => 'Limit of 2 rules reached';
 
   @override
-  String get scheduleDateRuleErrorOverlap => '日期区间与已有规则重叠';
+  String get scheduleDateRuleErrorOverlap => 'Date range overlaps another rule';
 
   @override
-  String get scheduleDateRuleErrorInvalidDate => '日期格式无效';
+  String get scheduleDateRuleErrorInvalidDate => 'Invalid date';
 
   @override
-  String get scheduleDateRuleErrorEndBeforeStart => '结束日期不能早于开始日期';
+  String get scheduleDateRuleErrorEndBeforeStart =>
+      'End date cannot be before start date';
 
   @override
-  String get scheduleDateRuleErrorSchemeRequired => '请选择时间模板';
+  String get scheduleDateRuleErrorSchemeRequired => 'Pick a time scheme';
 
   @override
-  String get scheduleDateRuleErrorNameRequired => '请填写名称';
+  String get scheduleDateRuleErrorNameRequired => 'Enter a name';
 
   @override
-  String get scheduleDateRuleNote => '说明：地点匹配优先于日期切表；左侧时间列仍显示默认模板。';
+  String get scheduleDateRuleNote =>
+      'Note: location match beats date rules; after apply, course clocks are updated and can be edited manually.';
 }

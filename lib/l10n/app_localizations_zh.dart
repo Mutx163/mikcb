@@ -8738,7 +8738,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String scheduleDateRuleDeleteMessage(String name) {
-    return '确定删除「$name」？该日期段将恢复使用课表默认时间模板。';
+    return '确定删除「$name」？删除后不会自动恢复已套用的作息，需手动调整。';
   }
 
   @override
@@ -8765,7 +8765,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleErrorNameRequired => '请填写名称';
 
   @override
-  String get scheduleDateRuleNote => '说明：地点匹配优先于日期切表；左侧时间列仍显示默认模板。';
+  String get scheduleDateRuleNote => '说明：地点匹配优先于日期规则；套用后课程钟点已更新，可手动修改。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -17014,6 +17014,60 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get scheduleDateRuleSectionTitle => '按日期切換作息';
+
+  @override
+  String get scheduleDateRuleSectionSubtitle =>
+      '到開始日自動把所選模板一次性套用為所有課表的預設作息；課程固定模板和地點匹配不受影響。最多 2 條且區間不重疊';
+
+  @override
+  String get scheduleDateRuleAdd => '新增日期規則';
+
+  @override
+  String get scheduleDateRuleEdit => '編輯日期規則';
+
+  @override
+  String get scheduleDateRuleEmpty => '未設定日期規則';
+
+  @override
+  String get scheduleDateRuleNameLabel => '規則名稱';
+
+  @override
+  String get scheduleDateRuleNameHint => '例如：夏令時 / 冬令時';
+
+  @override
+  String get scheduleDateRuleStartDate => '開始日期';
+
+  @override
+  String get scheduleDateRuleEndDate => '結束日期';
+
+  @override
+  String get scheduleDateRuleBoundScheme => '使用時間模板';
+
+  @override
+  String get scheduleDateRuleEnabled => '啟用';
+
+  @override
+  String get scheduleDateRuleActiveToday => '今天在區間內';
+
+  @override
+  String scheduleDateRuleRangeSummary(String start, String end) {
+    return '$start ~ $end';
+  }
+
+  @override
+  String get scheduleDateRuleMaxReached => '最多只能新增 2 條日期規則';
+
+  @override
+  String get scheduleDateRuleNeedScheme => '請先建立至少一套時間模板';
+
+  @override
+  String get scheduleDateRuleNameRequired => '請填寫規則名稱';
+
+  @override
+  String get scheduleDateRuleSaved => '日期規則已儲存';
+
+  @override
   String get scheduleDateRuleSavedAndApplied => '日期規則已儲存，今天已更新所有課表的預設作息';
 
   @override
@@ -17022,6 +17076,43 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get scheduleDateRuleSavedButApplyFailed =>
       '日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）';
+
+  @override
+  String get scheduleDateRuleDeleted => '已刪除日期規則';
+
+  @override
+  String get scheduleDateRuleDeleteTitle => '刪除日期規則？';
+
+  @override
+  String scheduleDateRuleDeleteMessage(String name) {
+    return '確定刪除「$name」？刪除後不會自動還原已套用的作息，需手動調整。';
+  }
+
+  @override
+  String scheduleDateRuleSaveFailed(String reason) {
+    return '儲存失敗：$reason';
+  }
+
+  @override
+  String get scheduleDateRuleErrorMax => '已達到 2 條上限';
+
+  @override
+  String get scheduleDateRuleErrorOverlap => '日期區間與已有規則重疊';
+
+  @override
+  String get scheduleDateRuleErrorInvalidDate => '日期格式無效';
+
+  @override
+  String get scheduleDateRuleErrorEndBeforeStart => '結束日期不能早於開始日期';
+
+  @override
+  String get scheduleDateRuleErrorSchemeRequired => '請選擇時間模板';
+
+  @override
+  String get scheduleDateRuleErrorNameRequired => '請填寫名稱';
+
+  @override
+  String get scheduleDateRuleNote => '說明：地點匹配優先於日期規則；套用後課程鐘點已更新，可手動修改。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -25270,6 +25361,60 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get scheduleDateRuleSectionTitle => '按日期切換作息';
+
+  @override
+  String get scheduleDateRuleSectionSubtitle =>
+      '到開始日自動把所選模板一次性套用為所有課表的預設作息；課程固定模板和地點匹配不受影響。最多 2 條且區間不重疊';
+
+  @override
+  String get scheduleDateRuleAdd => '新增日期規則';
+
+  @override
+  String get scheduleDateRuleEdit => '編輯日期規則';
+
+  @override
+  String get scheduleDateRuleEmpty => '未設定日期規則';
+
+  @override
+  String get scheduleDateRuleNameLabel => '規則名稱';
+
+  @override
+  String get scheduleDateRuleNameHint => '例如：夏令時 / 冬令時';
+
+  @override
+  String get scheduleDateRuleStartDate => '開始日期';
+
+  @override
+  String get scheduleDateRuleEndDate => '結束日期';
+
+  @override
+  String get scheduleDateRuleBoundScheme => '使用時間模板';
+
+  @override
+  String get scheduleDateRuleEnabled => '啟用';
+
+  @override
+  String get scheduleDateRuleActiveToday => '今天在區間內';
+
+  @override
+  String scheduleDateRuleRangeSummary(String start, String end) {
+    return '$start ~ $end';
+  }
+
+  @override
+  String get scheduleDateRuleMaxReached => '最多只能新增 2 條日期規則';
+
+  @override
+  String get scheduleDateRuleNeedScheme => '請先建立至少一套時間模板';
+
+  @override
+  String get scheduleDateRuleNameRequired => '請填寫規則名稱';
+
+  @override
+  String get scheduleDateRuleSaved => '日期規則已儲存';
+
+  @override
   String get scheduleDateRuleSavedAndApplied => '日期規則已儲存，今天已更新所有課表的預設作息';
 
   @override
@@ -25278,4 +25423,41 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get scheduleDateRuleSavedButApplyFailed =>
       '日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）';
+
+  @override
+  String get scheduleDateRuleDeleted => '已刪除日期規則';
+
+  @override
+  String get scheduleDateRuleDeleteTitle => '刪除日期規則？';
+
+  @override
+  String scheduleDateRuleDeleteMessage(String name) {
+    return '確定刪除「$name」？刪除後不會自動還原已套用的作息，需手動調整。';
+  }
+
+  @override
+  String scheduleDateRuleSaveFailed(String reason) {
+    return '儲存失敗：$reason';
+  }
+
+  @override
+  String get scheduleDateRuleErrorMax => '已達到 2 條上限';
+
+  @override
+  String get scheduleDateRuleErrorOverlap => '日期區間與已有規則重疊';
+
+  @override
+  String get scheduleDateRuleErrorInvalidDate => '日期格式無效';
+
+  @override
+  String get scheduleDateRuleErrorEndBeforeStart => '結束日期不能早於開始日期';
+
+  @override
+  String get scheduleDateRuleErrorSchemeRequired => '請選擇時間模板';
+
+  @override
+  String get scheduleDateRuleErrorNameRequired => '請填寫名稱';
+
+  @override
+  String get scheduleDateRuleNote => '說明：地點匹配優先於日期規則；套用後課程鐘點已更新，可手動修改。';
 }

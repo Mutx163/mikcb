@@ -5192,5 +5192,57 @@
   },
   "scheduleDateRuleSavedAndApplied": "Date rule saved; every timetable's default schedule has been updated today",
   "scheduleDateRuleSavedForFuture": "Date rule saved; every timetable's default schedule will update on the start date",
-  "scheduleDateRuleSavedButApplyFailed": "Date rule saved, but today's auto-apply failed (check scheme section count)"
+  "scheduleDateRuleSavedButApplyFailed": "Date rule saved, but today's auto-apply failed (check scheme section count)",
+  "scheduleDateRuleSectionTitle": "Seasonal date rules",
+  "scheduleDateRuleSectionSubtitle": "On the start date, apply the selected scheme once as the default for every timetable. Fixed course schemes and location matches are unaffected. Max 2 non-overlapping rules",
+  "scheduleDateRuleAdd": "Add date rule",
+  "scheduleDateRuleEdit": "Edit date rule",
+  "scheduleDateRuleEmpty": "No date rules",
+  "scheduleDateRuleNameLabel": "Rule name",
+  "scheduleDateRuleNameHint": "e.g. Summer / Winter",
+  "scheduleDateRuleStartDate": "Start date",
+  "scheduleDateRuleEndDate": "End date",
+  "scheduleDateRuleBoundScheme": "Time scheme",
+  "scheduleDateRuleEnabled": "Enabled",
+  "scheduleDateRuleActiveToday": "In range today",
+  "scheduleDateRuleRangeSummary": "{start} ~ {end}",
+  "@scheduleDateRuleRangeSummary": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleMaxReached": "At most 2 date rules",
+  "scheduleDateRuleNeedScheme": "Create a time scheme first",
+  "scheduleDateRuleNameRequired": "Enter a rule name",
+  "scheduleDateRuleSaved": "Date rule saved",
+  "scheduleDateRuleDeleted": "Date rule deleted",
+  "scheduleDateRuleDeleteTitle": "Delete date rule?",
+  "scheduleDateRuleDeleteMessage": "Delete “{name}”? Already-applied schedules are not rolled back automatically; adjust them manually if needed.",
+  "@scheduleDateRuleDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleSaveFailed": "Save failed: {reason}",
+  "@scheduleDateRuleSaveFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleErrorMax": "Limit of 2 rules reached",
+  "scheduleDateRuleErrorOverlap": "Date range overlaps another rule",
+  "scheduleDateRuleErrorInvalidDate": "Invalid date",
+  "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",
+  "scheduleDateRuleErrorSchemeRequired": "Pick a time scheme",
+  "scheduleDateRuleErrorNameRequired": "Enter a name",
+  "scheduleDateRuleNote": "Note: location match beats date rules; after apply, course clocks are updated and can be edited manually."
 }

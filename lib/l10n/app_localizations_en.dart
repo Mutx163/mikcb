@@ -9255,7 +9255,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String scheduleDateRuleDeleteMessage(String name) {
-    return 'Delete “$name”? That period will fall back to the default scheme.';
+    return 'Delete “$name”? Already-applied schedules are not rolled back automatically; adjust them manually if needed.';
   }
 
   @override
@@ -9284,5 +9284,5 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scheduleDateRuleNote =>
-      'Note: location match beats date rules; week axis still uses the default scheme.';
+      'Note: location match beats date rules; after apply, course clocks are updated and can be edited manually.';
 }

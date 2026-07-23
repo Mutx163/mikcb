@@ -5189,5 +5189,57 @@
   "coupleWebdavSlotTwo": "槽位 2",
   "scheduleDateRuleSavedAndApplied": "日期規則已儲存，今天已更新所有課表的預設作息",
   "scheduleDateRuleSavedForFuture": "日期規則已儲存，將在開始日期更新所有課表的預設作息",
-  "scheduleDateRuleSavedButApplyFailed": "日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）"
+  "scheduleDateRuleSavedButApplyFailed": "日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）",
+  "scheduleDateRuleSectionTitle": "按日期切換作息",
+  "scheduleDateRuleSectionSubtitle": "到開始日自動把所選模板一次性套用為所有課表的預設作息；課程固定模板和地點匹配不受影響。最多 2 條且區間不重疊",
+  "scheduleDateRuleAdd": "新增日期規則",
+  "scheduleDateRuleEdit": "編輯日期規則",
+  "scheduleDateRuleEmpty": "未設定日期規則",
+  "scheduleDateRuleNameLabel": "規則名稱",
+  "scheduleDateRuleNameHint": "例如：夏令時 / 冬令時",
+  "scheduleDateRuleStartDate": "開始日期",
+  "scheduleDateRuleEndDate": "結束日期",
+  "scheduleDateRuleBoundScheme": "使用時間模板",
+  "scheduleDateRuleEnabled": "啟用",
+  "scheduleDateRuleActiveToday": "今天在區間內",
+  "scheduleDateRuleRangeSummary": "{start} ~ {end}",
+  "@scheduleDateRuleRangeSummary": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleMaxReached": "最多只能新增 2 條日期規則",
+  "scheduleDateRuleNeedScheme": "請先建立至少一套時間模板",
+  "scheduleDateRuleNameRequired": "請填寫規則名稱",
+  "scheduleDateRuleSaved": "日期規則已儲存",
+  "scheduleDateRuleDeleted": "已刪除日期規則",
+  "scheduleDateRuleDeleteTitle": "刪除日期規則？",
+  "scheduleDateRuleDeleteMessage": "確定刪除「{name}」？刪除後不會自動還原已套用的作息，需手動調整。",
+  "@scheduleDateRuleDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleSaveFailed": "儲存失敗：{reason}",
+  "@scheduleDateRuleSaveFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDateRuleErrorMax": "已達到 2 條上限",
+  "scheduleDateRuleErrorOverlap": "日期區間與已有規則重疊",
+  "scheduleDateRuleErrorInvalidDate": "日期格式無效",
+  "scheduleDateRuleErrorEndBeforeStart": "結束日期不能早於開始日期",
+  "scheduleDateRuleErrorSchemeRequired": "請選擇時間模板",
+  "scheduleDateRuleErrorNameRequired": "請填寫名稱",
+  "scheduleDateRuleNote": "說明：地點匹配優先於日期規則；套用後課程鐘點已更新，可手動修改。"
 }

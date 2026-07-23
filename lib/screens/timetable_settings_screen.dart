@@ -602,6 +602,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     '#607D8B',
   ];
 
+  late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
@@ -609,7 +610,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = context.read<TimetableProvider>().settings;
+    _timetableProvider = context.read<TimetableProvider>();
+    _draft = _timetableProvider.settings;
   }
 
   @override
@@ -1214,7 +1216,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             next.liveMiuiIslandExpandedIconPath!.isEmpty)) {
       return;
     }
-    final provider = context.read<TimetableProvider>();
+    // Use the cached provider — dispose may fire after the Element is unmounted.
+    final provider = _timetableProvider;
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) {
       return;
@@ -2682,6 +2685,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   static const double _defaultWidgetCornerRadius = 22;
 
   final HomeWidgetService _homeWidgetService = HomeWidgetService();
+  late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
   bool _isPersisting = false;
@@ -2693,7 +2697,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = context.read<TimetableProvider>().settings;
+    _timetableProvider = context.read<TimetableProvider>();
+    _draft = _timetableProvider.settings;
     _loadPinWidgetSupport();
   }
 
@@ -2973,7 +2978,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
-    final provider = context.read<TimetableProvider>();
+    final provider = _timetableProvider;
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) {
       return;
@@ -3045,6 +3050,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 }
 
 class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
+  late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
@@ -3052,7 +3058,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = context.read<TimetableProvider>().settings;
+    _timetableProvider = context.read<TimetableProvider>();
+    _draft = _timetableProvider.settings;
   }
 
   @override
@@ -3561,7 +3568,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
-    final provider = context.read<TimetableProvider>();
+    final provider = _timetableProvider;
     final message = await provider.updateTimetableSettings(
       next.copyWith(
         activeTimeSchemeId: provider.settings.activeTimeSchemeId,
@@ -3897,6 +3904,7 @@ class _HolidaySettingsScreen extends StatefulWidget {
 }
 
 class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
+  late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Future<void> _saveQueue = Future<void>.value();
   List<HolidayEntry> _customHolidays = [];
@@ -3904,12 +3912,13 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = context.read<TimetableProvider>().settings;
+    _timetableProvider = context.read<TimetableProvider>();
+    _draft = _timetableProvider.settings;
     _loadCustomHolidays();
   }
 
   Future<void> _loadCustomHolidays() async {
-    final provider = context.read<TimetableProvider>();
+    final provider = _timetableProvider;
     final entries = await provider.getCustomHolidays();
     if (mounted) {
       setState(() {
@@ -3930,7 +3939,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
-    final provider = context.read<TimetableProvider>();
+    final provider = _timetableProvider;
     await provider.updateTimetableSettings(next);
   }
 

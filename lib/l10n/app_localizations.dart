@@ -15790,7 +15790,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleDeleteMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确定删除「{name}」？该日期段将恢复使用课表默认时间模板。'**
+  /// **'确定删除「{name}」？删除后不会自动恢复已套用的作息，需手动调整。'**
   String scheduleDateRuleDeleteMessage(String name);
 
   /// No description provided for @scheduleDateRuleSaveFailed.
@@ -15838,7 +15838,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleNote.
   ///
   /// In zh, this message translates to:
-  /// **'说明：地点匹配优先于日期切表；左侧时间列仍显示默认模板。'**
+  /// **'说明：地点匹配优先于日期规则；套用后课程钟点已更新，可手动修改。'**
   String get scheduleDateRuleNote;
 }
 
