@@ -458,11 +458,9 @@ class _TimeSchemeManagementScreenState
     }
 
     try {
-      final previousAppliedSignature =
-          provider.scheduleDateRuleLastAppliedSignature;
-      late final ScheduleDateRule savedRule;
+      late final ScheduleDateRuleSaveResult saveResult;
       if (existing == null) {
-        savedRule = await provider.createScheduleDateRule(
+        saveResult = await provider.createScheduleDateRule(
           name: name,
           timeSchemeId: selectedSchemeId,
           startDate: ScheduleDateRuleLogic.formatIsoDate(startDate),
@@ -470,7 +468,7 @@ class _TimeSchemeManagementScreenState
           enabled: enabled,
         );
       } else {
-        savedRule = (await provider.updateScheduleDateRule(
+        saveResult = (await provider.updateScheduleDateRule(
           existing.copyWith(
             name: name,
             timeSchemeId: selectedSchemeId,
@@ -483,11 +481,7 @@ class _TimeSchemeManagementScreenState
       if (!context.mounted) {
         return;
       }
-      final didApplyToday =
-          provider.scheduleDateRuleLastAppliedSignature !=
-              previousAppliedSignature &&
-          provider.scheduleDateRuleLastAppliedSignature ==
-              ScheduleDateRuleLogic.appliedSignature(savedRule);
+      final savedRule = saveResult.rule;
       final willApplyLater =
           savedRule.enabled &&
           ScheduleDateRuleLogic.dateOnly(
@@ -495,7 +489,9 @@ class _TimeSchemeManagementScreenState
           ).isBefore(ScheduleDateRuleLogic.dateOnly(startDate));
       showAppToast(
         context,
-        message: didApplyToday
+        message: saveResult.failedWhileDue
+            ? l10n.scheduleDateRuleSavedButApplyFailed
+            : saveResult.didApply
             ? l10n.scheduleDateRuleSavedAndApplied
             : willApplyLater
             ? l10n.scheduleDateRuleSavedForFuture

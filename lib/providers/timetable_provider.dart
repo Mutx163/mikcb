@@ -43,7 +43,11 @@ import 'timetable/live_activity_logic.dart';
 
 export 'timetable/location_time_match_logic.dart'
     show LocationTimeMatchResult, LocationTimeMatchLogic;
-export 'timetable/schedule_date_rule_logic.dart' show ScheduleDateRuleLogic;
+export 'timetable/schedule_date_rule_logic.dart'
+    show
+        ScheduleDateRuleLogic,
+        ScheduleDateRuleApplyOutcome,
+        ScheduleDateRuleApplyResult;
 export 'timetable/time_scheme_logic.dart' show TimeSchemeCourseUsageReference;
 export 'timetable/live_activity_logic.dart'
     show LiveActivityCourseSelection, LiveActivityStage;
@@ -140,6 +144,19 @@ String _weekdayShortLabel(AppLocalizations l10n, int dayOfWeek) {
     7 => l10n.weekdayShortSunday,
     _ => dayOfWeek.toString(),
   };
+}
+
+class ScheduleDateRuleSaveResult {
+  final ScheduleDateRule rule;
+  final ScheduleDateRuleApplyResult applyResult;
+
+  const ScheduleDateRuleSaveResult({
+    required this.rule,
+    required this.applyResult,
+  });
+
+  bool get didApply => applyResult.didApply;
+  bool get failedWhileDue => applyResult.failedWhileDue;
 }
 
 class TimetableProvider with ChangeNotifier {
@@ -1095,7 +1112,7 @@ class TimetableProvider with ChangeNotifier {
   /// Create a date-range rule that switches the default time scheme.
   ///
   /// Product cap: [ScheduleDateRuleLogic.maxRulesPerDevice] rules total.
-  Future<ScheduleDateRule> createScheduleDateRule({
+  Future<ScheduleDateRuleSaveResult> createScheduleDateRule({
     required String name,
     required String timeSchemeId,
     required String startDate,
@@ -1129,14 +1146,14 @@ class TimetableProvider with ChangeNotifier {
     // Bulk-apply if today falls in the new range; otherwise wait for start day.
     // Even when no bulk apply is needed, the rule list itself changed and the
     // settings screen must rebuild from the new enabled state.
-    final didApply = await applyDueScheduleDateRules();
-    if (!didApply) {
+    final applyResult = await applyDueScheduleDateRulesDetailed();
+    if (!applyResult.didApply) {
       _notifyStateChanged();
     }
-    return rule;
+    return ScheduleDateRuleSaveResult(rule: rule, applyResult: applyResult);
   }
 
-  Future<ScheduleDateRule?> updateScheduleDateRule(
+  Future<ScheduleDateRuleSaveResult?> updateScheduleDateRule(
     ScheduleDateRule rule,
   ) async {
     await initialize();
@@ -1164,11 +1181,11 @@ class TimetableProvider with ChangeNotifier {
     await _persistScheduleDateRules();
     // Signature change (dates/scheme) re-triggers bulk apply when still due.
     // Enabling/disabling without a signature change still needs a UI refresh.
-    final didApply = await applyDueScheduleDateRules();
-    if (!didApply) {
+    final applyResult = await applyDueScheduleDateRulesDetailed();
+    if (!applyResult.didApply) {
       _notifyStateChanged();
     }
-    return updated;
+    return ScheduleDateRuleSaveResult(rule: updated, applyResult: applyResult);
   }
 
   Future<bool> deleteScheduleDateRule(String ruleId) async {
@@ -1219,6 +1236,14 @@ class TimetableProvider with ChangeNotifier {
   /// 3. Does not re-run daily once applied, so manual course edits stick.
   Future<bool> applyDueScheduleDateRules({DateTime? now}) {
     return _runMutation(() => _applyDueScheduleDateRules(now: now));
+  }
+
+  /// Variant that returns structured outcome instead of plain bool, so callers
+  /// (e.g. date-rule editor) can show specific failure feedback (B3).
+  Future<ScheduleDateRuleApplyResult> applyDueScheduleDateRulesDetailed({
+    DateTime? now,
+  }) {
+    return _runMutation(() => _applyDueScheduleDateRulesDetailed(now: now));
   }
 
   Future<bool> _applyDueScheduleDateRules({DateTime? now}) async {
@@ -1343,6 +1368,123 @@ class TimetableProvider with ChangeNotifier {
       ),
     );
     return true;
+  }
+
+  /// Detailed variant of [_applyDueScheduleDateRules] for callers that need
+  /// the structured outcome (e.g. date-rule editor UI toast, B3).
+  Future<ScheduleDateRuleApplyResult> _applyDueScheduleDateRulesDetailed({
+    DateTime? now,
+  }) async {
+    await initialize();
+    final reference = now ?? DateTime.now();
+    final matched = ScheduleDateRuleLogic.match(reference, _scheduleDateRules);
+    if (!ScheduleDateRuleLogic.shouldBulkApply(
+      matchedRule: matched,
+      lastAppliedSignature: _scheduleDateRuleLastAppliedSignature,
+    )) {
+      return const ScheduleDateRuleApplyResult(
+        outcome: ScheduleDateRuleApplyOutcome.notDue,
+      );
+    }
+
+    final rule = matched!;
+    final scheme = _getTimeSchemeById(rule.timeSchemeId);
+    if (scheme == null) {
+      appDebugLog(
+        'ScheduleDateRule',
+        '跳过批量套用: 模板不存在 rule=${rule.name} schemeId=${rule.timeSchemeId}',
+      );
+      return const ScheduleDateRuleApplyResult(
+        outcome: ScheduleDateRuleApplyOutcome.schemeMissing,
+      );
+    }
+
+    var requiredMaxSection = 0;
+    for (final profile in _profiles) {
+      for (final course in profile.courses) {
+        if (course.endSection > requiredMaxSection) {
+          requiredMaxSection = course.endSection;
+        }
+      }
+    }
+    for (final course in _courses) {
+      if (course.endSection > requiredMaxSection) {
+        requiredMaxSection = course.endSection;
+      }
+    }
+    if (requiredMaxSection > scheme.sections.length) {
+      appDebugLog(
+        'ScheduleDateRule',
+        '跳过批量套用: 节次超出模板 rule=${rule.name} need=$requiredMaxSection '
+            'has=${scheme.sections.length}',
+      );
+      return ScheduleDateRuleApplyResult(
+        outcome: ScheduleDateRuleApplyOutcome.sectionOverflow,
+        requiredMaxSection: requiredMaxSection,
+        schemeSectionCount: scheme.sections.length,
+      );
+    }
+
+    final signature = ScheduleDateRuleLogic.appliedSignature(rule);
+    for (var index = 0; index < _profiles.length; index++) {
+      final profile = _profiles[index];
+      final nextSettings = profile.settings.copyWith(
+        activeTimeSchemeId: scheme.id,
+        sections: List<SectionTime>.from(scheme.sections),
+      );
+      final syncedCourses = _syncCoursesWithEffectiveTimeSchemes(
+        List<Course>.from(profile.courses),
+        settings: nextSettings,
+      );
+      _profiles[index] = profile.copyWith(
+        settings: nextSettings,
+        courses: syncedCourses,
+      );
+    }
+
+    final activeIndex = _profiles.indexWhere(
+      (profile) => profile.id == _activeProfileId,
+    );
+    if (activeIndex != -1) {
+      _courses = List<Course>.from(_profiles[activeIndex].courses);
+      _settings = _profiles[activeIndex].settings;
+    } else {
+      _settings = _settings.copyWith(
+        activeTimeSchemeId: scheme.id,
+        sections: List<SectionTime>.from(scheme.sections),
+      );
+      _courses = _syncCoursesWithEffectiveTimeSchemes(
+        List<Course>.from(_courses),
+        settings: _settings,
+      );
+    }
+
+    await _storageService.saveProfiles(_profiles);
+    _scheduleDateRuleLastAppliedSignature = signature;
+    await _storageService.saveScheduleDateRuleLastAppliedSignature(signature);
+    notifyUserDataChangedForSync();
+    _currentLiveCourseId = null;
+    _notifyStateChanged();
+    await _updateLiveActivity();
+
+    unawaited(
+      AppLogService.instance.info(
+        'schedule_date_rule',
+        '已按日期规则批量套用作息',
+        extras: {
+          'ruleId': rule.id,
+          'ruleName': rule.name,
+          'schemeId': scheme.id,
+          'schemeName': scheme.name,
+          'startDate': rule.startDate,
+          'endDate': rule.endDate,
+          'signature': signature,
+        },
+      ),
+    );
+    return const ScheduleDateRuleApplyResult(
+      outcome: ScheduleDateRuleApplyOutcome.applied,
+    );
   }
 
   /// Apply location routing to unlocked courses on the active profile.

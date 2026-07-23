@@ -8976,6 +8976,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Date rule saved; every timetable\'s default schedule will update on the start date';
 
   @override
+  String get scheduleDateRuleSavedButApplyFailed =>
+      'Date rule saved, but today\'s auto-apply failed (check scheme section count)';
+
+  @override
   String get scheduleDateRuleDeleted => '已删除日期规则';
 
   @override

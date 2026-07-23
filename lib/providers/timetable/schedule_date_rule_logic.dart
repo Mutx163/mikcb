@@ -1,5 +1,41 @@
 import '../../models/schedule_date_rule.dart';
 
+/// Outcome of attempting a seasonal bulk-apply after a date rule save.
+///
+/// Distinguishes "rule persisted but clocks not rewritten" from plain save so
+/// the settings UI can show a non-success toast when apply was due but failed.
+enum ScheduleDateRuleApplyOutcome {
+  /// No matching enabled rule for today, or already applied (signature match).
+  notDue,
+
+  /// Bulk-apply rewrote profile defaults and course clocks.
+  applied,
+
+  /// Matched rule points at a missing time scheme.
+  schemeMissing,
+
+  /// Some course endSection exceeds the target scheme section count.
+  sectionOverflow,
+}
+
+class ScheduleDateRuleApplyResult {
+  final ScheduleDateRuleApplyOutcome outcome;
+  final int? requiredMaxSection;
+  final int? schemeSectionCount;
+
+  const ScheduleDateRuleApplyResult({
+    required this.outcome,
+    this.requiredMaxSection,
+    this.schemeSectionCount,
+  });
+
+  bool get didApply => outcome == ScheduleDateRuleApplyOutcome.applied;
+
+  bool get failedWhileDue =>
+      outcome == ScheduleDateRuleApplyOutcome.schemeMissing ||
+      outcome == ScheduleDateRuleApplyOutcome.sectionOverflow;
+}
+
 /// Pure helpers for [ScheduleDateRule] matching and validation.
 class ScheduleDateRuleLogic {
   ScheduleDateRuleLogic._();

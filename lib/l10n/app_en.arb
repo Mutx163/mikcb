@@ -5446,6 +5446,7 @@
   "scheduleDateRuleSaved": "Date rule saved",
   "scheduleDateRuleSavedAndApplied": "Date rule saved; every timetable's default schedule has been updated today",
   "scheduleDateRuleSavedForFuture": "Date rule saved; every timetable's default schedule will update on the start date",
+  "scheduleDateRuleSavedButApplyFailed": "Date rule saved, but today's auto-apply failed (check scheme section count)",
   "scheduleDateRuleDeleted": "Date rule deleted",
   "scheduleDateRuleDeleteTitle": "Delete date rule?",
   "scheduleDateRuleDeleteMessage": "Delete “{name}”? That period will fall back to the default scheme.",

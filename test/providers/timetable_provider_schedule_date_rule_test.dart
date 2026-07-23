@@ -19,13 +19,14 @@ void main() {
     await provider.initialize();
 
     final today = ScheduleDateRuleLogic.formatIsoDate(DateTime.now());
-    final rule = await provider.createScheduleDateRule(
+    final saveResult = await provider.createScheduleDateRule(
       name: '临时作息',
       timeSchemeId: provider.activeTimeScheme!.id,
       startDate: today,
       endDate: today,
       enabled: true,
     );
+    final rule = saveResult.rule;
     await provider.updateScheduleDateRule(rule.copyWith(enabled: false));
 
     var notifications = 0;

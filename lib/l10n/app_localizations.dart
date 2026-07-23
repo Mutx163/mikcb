@@ -15769,6 +15769,12 @@ abstract class AppLocalizations {
   /// **'日期规则已保存，将在开始日期更新所有课表的默认作息'**
   String get scheduleDateRuleSavedForFuture;
 
+  /// No description provided for @scheduleDateRuleSavedButApplyFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期规则已保存，但今天自动套用失败（请检查模板节次是否足够）'**
+  String get scheduleDateRuleSavedButApplyFailed;
+
   /// No description provided for @scheduleDateRuleDeleted.
   ///
   /// In zh, this message translates to:

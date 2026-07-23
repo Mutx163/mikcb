@@ -5191,5 +5191,6 @@
     }
   },
   "scheduleDateRuleSavedAndApplied": "Date rule saved; every timetable's default schedule has been updated today",
-  "scheduleDateRuleSavedForFuture": "Date rule saved; every timetable's default schedule will update on the start date"
+  "scheduleDateRuleSavedForFuture": "Date rule saved; every timetable's default schedule will update on the start date",
+  "scheduleDateRuleSavedButApplyFailed": "Date rule saved, but today's auto-apply failed (check scheme section count)"
 }

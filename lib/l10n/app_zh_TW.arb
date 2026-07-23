@@ -5188,5 +5188,6 @@
   "coupleWebdavSlotOne": "槽位 1",
   "coupleWebdavSlotTwo": "槽位 2",
   "scheduleDateRuleSavedAndApplied": "日期規則已儲存，今天已更新所有課表的預設作息",
-  "scheduleDateRuleSavedForFuture": "日期規則已儲存，將在開始日期更新所有課表的預設作息"
+  "scheduleDateRuleSavedForFuture": "日期規則已儲存，將在開始日期更新所有課表的預設作息",
+  "scheduleDateRuleSavedButApplyFailed": "日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）"
 }

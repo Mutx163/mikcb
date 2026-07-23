@@ -5446,6 +5446,7 @@
   "scheduleDateRuleSaved": "日期规则已保存",
   "scheduleDateRuleSavedAndApplied": "日期规则已保存，今天已更新所有课表的默认作息",
   "scheduleDateRuleSavedForFuture": "日期规则已保存，将在开始日期更新所有课表的默认作息",
+  "scheduleDateRuleSavedButApplyFailed": "日期规则已保存，但今天自动套用失败（请检查模板节次是否足够）",
   "scheduleDateRuleDeleted": "已删除日期规则",
   "scheduleDateRuleDeleteTitle": "删除日期规则？",
   "scheduleDateRuleDeleteMessage": "确定删除「{name}」？该日期段将恢复使用课表默认时间模板。",

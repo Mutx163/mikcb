@@ -8727,6 +8727,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleSavedForFuture => '日期规则已保存，将在开始日期更新所有课表的默认作息';
 
   @override
+  String get scheduleDateRuleSavedButApplyFailed =>
+      '日期规则已保存，但今天自动套用失败（请检查模板节次是否足够）';
+
+  @override
   String get scheduleDateRuleDeleted => '已删除日期规则';
 
   @override
@@ -17014,6 +17018,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleSavedForFuture => '日期規則已儲存，將在開始日期更新所有課表的預設作息';
+
+  @override
+  String get scheduleDateRuleSavedButApplyFailed =>
+      '日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -25266,4 +25274,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleSavedForFuture => '日期規則已儲存，將在開始日期更新所有課表的預設作息';
+
+  @override
+  String get scheduleDateRuleSavedButApplyFailed =>
+      '日期規則已儲存，但今天自動套用失敗（請檢查模板節次是否足夠）';
 }
