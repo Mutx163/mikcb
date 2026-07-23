@@ -1127,7 +1127,12 @@ class TimetableProvider with ChangeNotifier {
     _scheduleDateRules = next;
     await _persistScheduleDateRules();
     // Bulk-apply if today falls in the new range; otherwise wait for start day.
-    await applyDueScheduleDateRules();
+    // Even when no bulk apply is needed, the rule list itself changed and the
+    // settings screen must rebuild from the new enabled state.
+    final didApply = await applyDueScheduleDateRules();
+    if (!didApply) {
+      _notifyStateChanged();
+    }
     return rule;
   }
 
@@ -1158,7 +1163,11 @@ class TimetableProvider with ChangeNotifier {
     _scheduleDateRules = next;
     await _persistScheduleDateRules();
     // Signature change (dates/scheme) re-triggers bulk apply when still due.
-    await applyDueScheduleDateRules();
+    // Enabling/disabling without a signature change still needs a UI refresh.
+    final didApply = await applyDueScheduleDateRules();
+    if (!didApply) {
+      _notifyStateChanged();
+    }
     return updated;
   }
 
@@ -1192,7 +1201,10 @@ class TimetableProvider with ChangeNotifier {
     _scheduleDateRules = next;
     await _persistScheduleDateRules();
     if (resync) {
-      await applyDueScheduleDateRules();
+      final didApply = await applyDueScheduleDateRules();
+      if (!didApply) {
+        _notifyStateChanged();
+      }
     } else {
       _notifyStateChanged();
     }
