@@ -50,6 +50,54 @@ class AppSyncSnapshot {
     this.partnerTimetableBinding,
     this.includesPartnerTimetableBinding = false,
   });
+
+  /// True when this snapshot contains user-authored business data that must
+  /// not be silently overwritten on first-sync background pull.
+  ///
+  /// Covers full snapshot identity fields (courses, schemes, place-routing,
+  /// date rules, warehouse prefs, macros, holidays, partner binding), not
+  /// only non-empty timetable lists.
+  bool get hasUserAuthoredData {
+    if (teacherRecords.isNotEmpty || locationRecords.isNotEmpty) {
+      return true;
+    }
+    if (locationTimeGroups.isNotEmpty || scheduleDateRules.isNotEmpty) {
+      return true;
+    }
+    if (customHolidays.isNotEmpty || macros.isNotEmpty) {
+      return true;
+    }
+    if (partnerTimetableBinding != null) {
+      return true;
+    }
+    if (warehouse.rememberedLogins.isNotEmpty ||
+        warehouse.customImportUrls.isNotEmpty ||
+        warehouse.recentSchoolIds.isNotEmpty ||
+        warehouse.customDebugRecords.isNotEmpty) {
+      return true;
+    }
+    if (timeSchemes.length > 1) {
+      return true;
+    }
+    if (profiles.length > 1) {
+      return true;
+    }
+    for (final profile in profiles) {
+      if (profile.courses.isNotEmpty ||
+          profile.exams.isNotEmpty ||
+          profile.scheduleItems.isNotEmpty) {
+        return true;
+      }
+      if (profile.isPartnerImported) {
+        return true;
+      }
+      // Renamed away from the factory default profile name.
+      if (profile.name.trim().isNotEmpty && profile.name.trim() != '默认课表') {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 class AppSyncSnapshotMeta {
@@ -325,6 +373,19 @@ class AppSyncSnapshotService {
       if (snapshot.profiles.isEmpty) {
         return 'sync_snapshot_no_profiles';
       }
+
+      // Seed location groups (and schemes) before profile import so
+      // _syncCoursesWithEffectiveTimeSchemes resolves remote place-routing
+      // instead of rewriting clocks with the device's previous groups (B1).
+      // resync:false avoids applying rules against the still-local profile list.
+      await provider.replaceLocationTimeGroups(
+        snapshot.locationTimeGroups,
+        resync: false,
+      );
+      await provider.replaceScheduleDateRules(
+        snapshot.scheduleDateRules,
+        resync: false,
+      );
 
       final fullBackupJson = _dataTransferService.buildFullBackupJson(
         profiles: snapshot.profiles,

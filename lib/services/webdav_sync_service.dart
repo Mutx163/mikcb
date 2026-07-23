@@ -516,7 +516,7 @@ class WebdavSyncService {
               lastUploadedLocalHash: config.lastUploadedLocalHash,
               lastAppliedRemoteHash: config.lastAppliedRemoteHash,
               localContentSha256: localSnapshot.contentSha256,
-              localHasUserData: _localSnapshotHasUserData(provider),
+              localHasUserData: localSnapshot.hasUserAuthoredData,
             )) {
           return const WebdavSyncResult(
             kind: WebdavSyncResultKind.cancelled,
@@ -715,24 +715,6 @@ class WebdavSyncService {
       config: config,
       index: nextIndex,
     );
-  }
-
-  /// True when the device already holds user-authored timetable content.
-  /// Used to refuse silent first-sync remote overwrite on auto-pull.
-  bool _localSnapshotHasUserData(TimetableProvider provider) {
-    if (provider.courses.isNotEmpty ||
-        provider.exams.isNotEmpty ||
-        provider.scheduleItems.isNotEmpty) {
-      return true;
-    }
-    for (final profile in provider.profiles) {
-      if (profile.courses.isNotEmpty ||
-          profile.exams.isNotEmpty ||
-          profile.scheduleItems.isNotEmpty) {
-        return true;
-      }
-    }
-    return false;
   }
 
   Future<CloudBackupIndex> _loadRemoteBackupIndex({
