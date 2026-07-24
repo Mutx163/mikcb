@@ -8451,7 +8451,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      '系统会按课程地点自动选择时间模板。点「重新匹配当前课表」会让命中课程恢复自动匹配并同步钟点；未命中的课程不会改变。';
+      '按地点关键词自动匹配时间模板。重新匹配仅更新命中课程的钟点，未命中课程保持不变。';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -8677,7 +8677,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠';
+      '开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点匹配优先。';
 
   @override
   String get scheduleDateRuleAdd => '添加日期规则';
@@ -8771,7 +8771,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleErrorNameRequired => '请填写名称';
 
   @override
-  String get scheduleDateRuleNote => '说明：地点匹配优先于日期规则；套用后课程钟点已更新，可手动修改。';
+  String get scheduleDateRuleNote => '地点匹配优先于日期规则。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -16807,7 +16807,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get locationTimeMatchSubtitle =>
-      '系統會按課程地點自動選擇時間模板。點「重新匹配目前課表」會讓命中課程恢復自動匹配並同步鐘點；未命中的課程不會改變。';
+      '按地點關鍵詞自動匹配時間範本。重新匹配僅更新命中課程的鐘點，未命中課程保持不變。';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -17033,7 +17033,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '到開始日自動把所選模板一次性套用為所有課表的預設作息；課程固定模板和地點匹配不受影響。最多 2 條且區間不重疊';
+      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點匹配優先。';
 
   @override
   String get scheduleDateRuleAdd => '新增日期規則';
@@ -17127,7 +17127,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateRuleErrorNameRequired => '請填寫名稱';
 
   @override
-  String get scheduleDateRuleNote => '說明：地點匹配優先於日期規則；套用後課程鐘點已更新，可手動修改。';
+  String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -25163,7 +25163,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get locationTimeMatchSubtitle =>
-      '系統會按課程地點自動選擇時間模板。點「重新匹配目前課表」會讓命中課程恢復自動匹配並同步鐘點；未命中的課程不會改變。';
+      '按地點關鍵詞自動匹配時間範本。重新匹配僅更新命中課程的鐘點，未命中課程保持不變。';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -25389,7 +25389,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '到開始日自動把所選模板一次性套用為所有課表的預設作息；課程固定模板和地點匹配不受影響。最多 2 條且區間不重疊';
+      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點匹配優先。';
 
   @override
   String get scheduleDateRuleAdd => '新增日期規則';
@@ -25483,5 +25483,5 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleDateRuleErrorNameRequired => '請填寫名稱';
 
   @override
-  String get scheduleDateRuleNote => '說明：地點匹配優先於日期規則；套用後課程鐘點已更新，可手動修改。';
+  String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 }

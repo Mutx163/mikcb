@@ -8692,7 +8692,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      'Time schemes are selected automatically from course locations. Rematching returns matched courses to automatic routing and updates their clocks; unmatched courses stay unchanged.';
+      'Match time schemes by location keywords. Rematching updates clocks for matched courses only; unmatched courses stay unchanged.';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -8925,7 +8925,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'On the start date, apply the selected scheme once as the default for every timetable. Fixed course schemes and location matches are unaffected. Max 2 non-overlapping rules';
+      'On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location match takes priority.';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';
@@ -9023,5 +9023,5 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleDateRuleNote =>
-      'Note: location match beats date rules; after apply, course clocks are updated and can be edited manually.';
+      'Location match takes priority over date rules.';
 }

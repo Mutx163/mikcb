@@ -15300,7 +15300,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'系统会按课程地点自动选择时间模板。点「重新匹配当前课表」会让命中课程恢复自动匹配并同步钟点；未命中的课程不会改变。'**
+  /// **'按地点关键词自动匹配时间模板。重新匹配仅更新命中课程的钟点，未命中课程保持不变。'**
   String get locationTimeMatchSubtitle;
 
   /// No description provided for @locationTimeMatchWeekAxisNote.
@@ -15676,7 +15676,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠'**
+  /// **'开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点匹配优先。'**
   String get scheduleDateRuleSectionSubtitle;
 
   /// No description provided for @scheduleDateRuleAdd.
@@ -15850,7 +15850,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleNote.
   ///
   /// In zh, this message translates to:
-  /// **'说明：地点匹配优先于日期规则；套用后课程钟点已更新，可手动修改。'**
+  /// **'地点匹配优先于日期规则。'**
   String get scheduleDateRuleNote;
 }
 

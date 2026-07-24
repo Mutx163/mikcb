@@ -5235,7 +5235,7 @@
   "locationTimeMatchEntryTitle": "地点自动匹配",
   "locationTimeMatchEntrySubtitle": "按上课地点关键词自动选择时间模板",
   "locationTimeMatchTitle": "地点自动匹配",
-  "locationTimeMatchSubtitle": "系统会按课程地点自动选择时间模板。点「重新匹配当前课表」会让命中课程恢复自动匹配并同步钟点；未命中的课程不会改变。",
+  "locationTimeMatchSubtitle": "按地点关键词自动匹配时间模板。重新匹配仅更新命中课程的钟点，未命中课程保持不变。",
   "locationTimeMatchWeekAxisNote": "说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。",
   "locationTimeMatchPreviewLabel": "试匹配地点",
   "locationTimeMatchPreviewHint": "例如 A1062 或 A主201",
@@ -5424,7 +5424,7 @@
     }
   },
   "scheduleDateRuleSectionTitle": "按日期切换作息",
-  "scheduleDateRuleSectionSubtitle": "到开始日自动把所选模板一次性套用为所有课表的默认作息；课程固定模板和地点匹配不受影响。最多 2 条且区间不重叠",
+  "scheduleDateRuleSectionSubtitle": "开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点匹配优先。",
   "scheduleDateRuleAdd": "添加日期规则",
   "scheduleDateRuleEdit": "编辑日期规则",
   "scheduleDateRuleEmpty": "未设置日期规则",
@@ -5477,5 +5477,5 @@
   "scheduleDateRuleErrorEndBeforeStart": "结束日期不能早于开始日期",
   "scheduleDateRuleErrorSchemeRequired": "请选择时间模板",
   "scheduleDateRuleErrorNameRequired": "请填写名称",
-  "scheduleDateRuleNote": "说明：地点匹配优先于日期规则；套用后课程钟点已更新，可手动修改。"
+  "scheduleDateRuleNote": "地点匹配优先于日期规则。"
 }
