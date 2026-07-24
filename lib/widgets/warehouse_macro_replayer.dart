@@ -125,16 +125,60 @@ class WarehouseMacroReplayer {
   Future<void> execute(WarehouseMacroRecord macro) async {
     _isCancelled = false;
     // 旧宏可能含逐字 fillField；加载时压缩，避免「已填满又重输」。
-    final steps = compactMacroFillSteps(macro.steps);
-    if (steps.isEmpty) {
+    final fullSteps = compactMacroFillSteps(macro.steps);
+    if (fullSteps.isEmpty) {
       _callbacks.onComplete(false, 'macro_no_steps');
       return;
     }
 
+    final acceleratedSteps = buildAcceleratedMacroSteps(
+      fullSteps,
+      scriptPageUrl: macro.scriptPageUrl,
+      importUrl: macro.importUrl,
+    );
+    final useAcceleratedPath = acceleratedSteps.length < fullSteps.length;
+    debugPrint(
+      'WarehouseMacroReplayer: full=${fullSteps.length} '
+      'accelerated=${acceleratedSteps.length} '
+      'useAccelerated=$useAcceleratedPath '
+      'scriptPageUrl=${macro.scriptPageUrl} '
+      'importUrl=${macro.importUrl}',
+    );
+
+    if (useAcceleratedPath) {
+      final acceleratedSucceeded = await _runSteps(
+        acceleratedSteps,
+        // Do not notify host failure yet — full path may still succeed.
+        reportFailureToHost: false,
+      );
+      if (acceleratedSucceeded || _isCancelled) {
+        return;
+      }
+      // Navigate/DOM shortcut failed — fall back to the full click path.
+      _callbacks.onShowTip(_l10n.macroReplayAcceleratedFallbackTip);
+      // Reload the entry URL so the full click path starts from a clean page.
+      final entryUrl = sanitizeWarehouseScriptPageUrl(macro.importUrl);
+      if (entryUrl != null) {
+        try {
+          await _executeNavigate(MacroStep.navigate(entryUrl));
+        } catch (_) {
+          // Full path will report its own failures if reload also fails.
+        }
+      }
+    }
+
+    await _runSteps(fullSteps, reportFailureToHost: true);
+  }
+
+  /// Runs [steps] sequentially. Returns true when every step succeeded.
+  Future<bool> _runSteps(
+    List<MacroStep> steps, {
+    required bool reportFailureToHost,
+  }) async {
     for (var i = 0; i < steps.length; i++) {
       if (_isCancelled) {
         _callbacks.onComplete(false, 'macro_user_cancelled');
-        return;
+        return false;
       }
 
       final step = steps[i];
@@ -168,21 +212,25 @@ class WarehouseMacroReplayer {
             errorMessage: detail,
           ),
         );
-        _callbacks.onComplete(
-          false,
-          encodeServiceMessage('macro_step_failed', {
-            'stepIndex': i + 1,
-            'totalSteps': steps.length,
-            'detail': detail,
-          }),
-        );
-        return;
+        if (reportFailureToHost) {
+          _callbacks.onComplete(
+            false,
+            encodeServiceMessage('macro_step_failed', {
+              'stepIndex': i + 1,
+              'totalSteps': steps.length,
+              'detail': detail,
+            }),
+          );
+        }
+        return false;
       }
     }
 
     if (!_isCancelled) {
       _callbacks.onComplete(true, null);
+      return true;
     }
+    return false;
   }
 
   /// 执行单步操作

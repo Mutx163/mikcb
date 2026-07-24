@@ -192,6 +192,11 @@ class WarehouseMacroRecord {
   final DateTime updatedAt;
   final int successfulImportCount;
 
+  /// Page URL when the import script was executed successfully.
+  /// Used by accelerated replay: after login, navigate here and skip
+  /// intermediate menu clicks. Null for legacy macros.
+  final String? scriptPageUrl;
+
   /// WebView desktop UA mode used during recording; null defaults to desktop.
   final bool? useDesktopMode;
 
@@ -208,6 +213,7 @@ class WarehouseMacroRecord {
     required this.createdAt,
     required this.updatedAt,
     this.successfulImportCount = 0,
+    this.scriptPageUrl,
     this.useDesktopMode,
   });
 
@@ -224,6 +230,8 @@ class WarehouseMacroRecord {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'successfulImportCount': successfulImportCount,
+    if (scriptPageUrl != null && scriptPageUrl!.isNotEmpty)
+      'scriptPageUrl': scriptPageUrl,
     if (useDesktopMode != null) 'useDesktopMode': useDesktopMode,
   };
 
@@ -253,6 +261,9 @@ class WarehouseMacroRecord {
           DateTime.fromMillisecondsSinceEpoch(0),
       successfulImportCount:
           (json['successfulImportCount'] as num?)?.toInt() ?? 0,
+      scriptPageUrl: sanitizeWarehouseScriptPageUrl(
+        json['scriptPageUrl'] as String?,
+      ),
       useDesktopMode: json['useDesktopMode'] as bool?,
     );
   }
@@ -270,6 +281,8 @@ class WarehouseMacroRecord {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? successfulImportCount,
+    String? scriptPageUrl,
+    bool clearScriptPageUrl = false,
     bool? useDesktopMode,
   }) {
     return WarehouseMacroRecord(
@@ -286,6 +299,9 @@ class WarehouseMacroRecord {
       updatedAt: updatedAt ?? this.updatedAt,
       successfulImportCount:
           successfulImportCount ?? this.successfulImportCount,
+      scriptPageUrl: clearScriptPageUrl
+          ? null
+          : (scriptPageUrl ?? this.scriptPageUrl),
       useDesktopMode: useDesktopMode ?? this.useDesktopMode,
     );
   }
@@ -296,6 +312,157 @@ class WarehouseMacroRecord {
 
   /// 所有宏记录索引的 key
   static const String indexKey = 'warehouse_macro_record_index';
+}
+
+/// Strips one-time / session query params so a saved script page URL can be
+/// reused across sessions. Returns null when the URL is not a usable absolute
+/// http(s) location.
+String? sanitizeWarehouseScriptPageUrl(String? rawUrl) {
+  final trimmed = rawUrl?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+    return null;
+  }
+  if (uri.scheme != 'http' && uri.scheme != 'https') {
+    return null;
+  }
+
+  const volatileQueryKeys = <String>{
+    'jsessionid',
+    'jsessionId',
+    'JSESSIONID',
+    'ticket',
+    'token',
+    'access_token',
+    'refresh_token',
+    'state',
+    'nonce',
+    'timestamp',
+    'ts',
+    't',
+    'random',
+    'rnd',
+    'sid',
+    'sessionid',
+    'sessionId',
+  };
+
+  final keptQueryParameters = <String, String>{};
+  uri.queryParameters.forEach((key, value) {
+    final lowerKey = key.toLowerCase();
+    if (volatileQueryKeys.contains(key) ||
+        volatileQueryKeys.contains(lowerKey) ||
+        lowerKey.contains('token') ||
+        lowerKey.contains('ticket') ||
+        lowerKey.contains('jsession')) {
+      return;
+    }
+    keptQueryParameters[key] = value;
+  });
+
+  // Drop path-embedded ;jsessionid=...
+  final cleanedPath = uri.path.replaceAll(
+    RegExp(r';jsessionid=[^;/]+', caseSensitive: false),
+    '',
+  );
+
+  return Uri(
+    scheme: uri.scheme,
+    host: uri.host,
+    port: uri.hasPort ? uri.port : null,
+    path: cleanedPath.isEmpty ? '/' : cleanedPath,
+    queryParameters: keptQueryParameters.isEmpty ? null : keptQueryParameters,
+  ).toString();
+}
+
+/// Builds a shorter replay path for quick import:
+/// login-related steps + navigate(scriptPageUrl), dropping intermediate menu
+/// clicks after authentication. Returns [originalSteps] when acceleration is
+/// not beneficial or [scriptPageUrl] is missing.
+List<MacroStep> buildAcceleratedMacroSteps(
+  List<MacroStep> originalSteps, {
+  String? scriptPageUrl,
+  String? importUrl,
+}) {
+  if (originalSteps.isEmpty) {
+    return originalSteps;
+  }
+
+  final authPrefix = _macroAuthPrefixSteps(originalSteps);
+  // No identifiable login prefix → cannot safely skip anything.
+  if (authPrefix.isEmpty) {
+    return originalSteps;
+  }
+  final droppedStepCount = originalSteps.length - authPrefix.length;
+  // Need at least two post-auth steps to make skipping worthwhile.
+  if (droppedStepCount < 2) {
+    return originalSteps;
+  }
+
+  final sanitizedScriptPageUrl = sanitizeWarehouseScriptPageUrl(scriptPageUrl);
+  final sanitizedImportUrl = sanitizeWarehouseScriptPageUrl(importUrl);
+
+  // Prefer an explicit script page (e.g. schedule HTML). Fall back to dropping
+  // post-login menu clicks only — many API adapters can run on any logged-in page.
+  if (sanitizedScriptPageUrl != null) {
+    if (sanitizedImportUrl != null &&
+        sanitizedImportUrl == sanitizedScriptPageUrl) {
+      // Entry page already is the script page: still skip redundant post-login
+      // clicks when the full recording has extra navigation.
+      return authPrefix;
+    }
+    return <MacroStep>[
+      ...authPrefix,
+      MacroStep.navigate(sanitizedScriptPageUrl),
+      MacroStep.delay(1000),
+    ];
+  }
+
+  // Legacy macros without scriptPageUrl: keep login, drop the rest.
+  return authPrefix;
+}
+
+/// Steps up to and including login submit after the last fill / password wait.
+List<MacroStep> _macroAuthPrefixSteps(List<MacroStep> originalSteps) {
+  var lastAuthStepIndex = -1;
+  for (var index = 0; index < originalSteps.length; index++) {
+    final stepType = originalSteps[index].type;
+    if (stepType == MacroStepType.fillField ||
+        stepType == MacroStepType.waitForManualInput) {
+      lastAuthStepIndex = index;
+    }
+  }
+
+  if (lastAuthStepIndex < 0) {
+    return const <MacroStep>[];
+  }
+
+  var authPrefixEndIndex = lastAuthStepIndex;
+  for (
+    var index = lastAuthStepIndex + 1;
+    index < originalSteps.length && index <= lastAuthStepIndex + 3;
+    index++
+  ) {
+    final stepType = originalSteps[index].type;
+    if (stepType == MacroStepType.click) {
+      authPrefixEndIndex = index;
+      if (index + 1 < originalSteps.length &&
+          originalSteps[index + 1].type == MacroStepType.delay) {
+        authPrefixEndIndex = index + 1;
+      }
+      break;
+    }
+    if (stepType == MacroStepType.delay) {
+      authPrefixEndIndex = index;
+      continue;
+    }
+    break;
+  }
+
+  return originalSteps.sublist(0, authPrefixEndIndex + 1);
 }
 
 /// 录制状态

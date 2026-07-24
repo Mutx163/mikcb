@@ -138,6 +138,13 @@ sequenceDiagram
 
 ## 八、后续可选改进
 
-- 录制开始时自动插入 `navigate(initialUrl)` 步
+- ~~录制开始时自动插入 `navigate(initialUrl)` 步~~（部分落地：成功导入后写入 `scriptPageUrl`，回放优先「登录步 + navigate(scriptPageUrl)」，失败回退完整点击宏）
 - 宏版本号与教务站点 fingerprint，便于提示「可能已过期」
 - 导出/导入宏 JSON（跨设备，需注意不含密码）
+
+### 已落地：快捷导入加速路径（App）
+
+1. `WarehouseMacroRecord.scriptPageUrl`：录制保存 / 快捷导入成功时写入当前页 URL（去掉 ticket/session 等易变参数）。
+2. `buildAcceleratedMacroSteps`：保留登录相关步（填表、验证码、登录点击），丢弃登录后菜单点击，改为 `navigate(scriptPageUrl)`。
+3. `WarehouseMacroReplayer`：先跑加速路径；失败则提示并回退完整宏（必要时先回到 `importUrl`）。
+4. 宏回放中未录制的 `confirm` 默认确认，避免脚本二次确认框被当成取消导致「未返回课程」。

@@ -3931,6 +3931,11 @@ class _WarehouseAdapterWebLoginScreenState
           existing.copyWith(
             successfulImportCount: existing.successfulImportCount + 1,
             updatedAt: DateTime.now(),
+            scriptPageUrl:
+                sanitizeWarehouseScriptPageUrl(
+                  _currentUrl ?? widget.initialUrl,
+                ) ??
+                existing.scriptPageUrl,
           ),
         );
       }
@@ -4246,7 +4251,10 @@ class _WarehouseAdapterWebLoginScreenState
     if (macroRecord != null) {
       final key = _dialogResponseKey('confirm', message);
       final recorded = macroRecord.dialogResponses[key];
-      await _resolveJavaScriptRequest(requestId, recorded == true);
+      // Unrecorded confirms default to true so automated import scripts are
+      // not cancelled just because the old macro never saw this dialog.
+      final shouldConfirm = recorded == null ? true : recorded == true;
+      await _resolveJavaScriptRequest(requestId, shouldConfirm);
       return;
     }
     final l10n = AppLocalizations.of(context)!;
@@ -5050,6 +5058,9 @@ class _WarehouseAdapterWebLoginScreenState
         schoolName: widget.school.name,
         adapterName: widget.adapter.adapterName,
         importUrl: widget.initialUrl,
+        scriptPageUrl: sanitizeWarehouseScriptPageUrl(
+          _currentUrl ?? widget.initialUrl,
+        ),
         schoolResourceFolder: widget.school.resourceFolder,
         adapterAssetJsPath: widget.adapter.assetJsPath,
         steps: steps,
@@ -5150,6 +5161,9 @@ class _WarehouseAdapterWebLoginScreenState
       schoolName: widget.school.name,
       adapterName: widget.adapter.adapterName,
       importUrl: widget.initialUrl,
+      scriptPageUrl: sanitizeWarehouseScriptPageUrl(
+        _currentUrl ?? widget.initialUrl,
+      ),
       schoolResourceFolder: widget.school.resourceFolder,
       adapterAssetJsPath: widget.adapter.assetJsPath,
       steps: steps,
@@ -5178,8 +5192,20 @@ class _WarehouseAdapterWebLoginScreenState
   // ============ 宏回放方法 ============
 
   Future<void> _startPlayback(WarehouseMacroRecord macro) async {
+    final acceleratedPreview = buildAcceleratedMacroSteps(
+      compactMacroFillSteps(macro.steps),
+      scriptPageUrl: macro.scriptPageUrl,
+      importUrl: macro.importUrl,
+    );
+    final willAccelerate =
+        acceleratedPreview.length < compactMacroFillSteps(macro.steps).length;
     _debugImportLog(
-      'start playback macro steps=${macro.steps.length} adapter=${macro.adapterId}',
+      'start playback macro steps=${macro.steps.length} '
+      'acceleratedSteps=${acceleratedPreview.length} '
+      'willAccelerate=$willAccelerate '
+      'scriptPageUrl=${macro.scriptPageUrl ?? "(null)"} '
+      'importUrl=${macro.importUrl} '
+      'adapter=${macro.adapterId}',
     );
     setState(() {
       _playbackState = PlaybackUiState.playing;
