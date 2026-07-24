@@ -21,6 +21,7 @@ class CourseOverviewScreen extends StatefulWidget {
 
 class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
   _SortMode _sortMode = _SortMode.added;
+  final GlobalKey _sortActionKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +37,13 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseOverviewTitle),
       suffixes: [
-        FHeaderAction(
-          icon: const Icon(Icons.sort_rounded),
-          semanticsLabel: l10n.sortAction,
-          onPress: _showSortSheet,
+        KeyedSubtree(
+          key: _sortActionKey,
+          child: FHeaderAction(
+            icon: const Icon(Icons.sort_rounded),
+            semanticsLabel: l10n.sortAction,
+            onPress: _showSortPopup,
+          ),
         ),
         FHeaderAction(
           icon: const Icon(Icons.add_rounded),
@@ -114,42 +118,22 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     return groups;
   }
 
-  Future<void> _showSortSheet() async {
+  Future<void> _showSortPopup() async {
     final l10n = AppLocalizations.of(context)!;
-    await showHyperosSheet<void>(
+    final selected = await showHyperosSelectPopup<_SortMode>(
       context: context,
-      builder: (sheetContext) => HyperosSheet(
-        title: l10n.sortAction,
-        child: HyperosChoiceGroup(
-          children: [
-            HyperosChoiceTile(
-              title: l10n.sortByAdded,
-              selected: _sortMode == _SortMode.added,
-              onTap: () {
-                setState(() => _sortMode = _SortMode.added);
-                Navigator.of(sheetContext).pop();
-              },
-            ),
-            HyperosChoiceTile(
-              title: l10n.sortByName,
-              selected: _sortMode == _SortMode.name,
-              onTap: () {
-                setState(() => _sortMode = _SortMode.name);
-                Navigator.of(sheetContext).pop();
-              },
-            ),
-            HyperosChoiceTile(
-              title: l10n.sortBySchedule,
-              selected: _sortMode == _SortMode.schedule,
-              onTap: () {
-                setState(() => _sortMode = _SortMode.schedule);
-                Navigator.of(sheetContext).pop();
-              },
-            ),
-          ],
-        ),
-      ),
+      anchorRect: hyperosSelectPopupAnchorRect(context, _sortActionKey),
+      currentValue: _sortMode,
+      items: {
+        l10n.sortByAdded: _SortMode.added,
+        l10n.sortByName: _SortMode.name,
+        l10n.sortBySchedule: _SortMode.schedule,
+      },
     );
+    if (selected == null || !mounted) {
+      return;
+    }
+    setState(() => _sortMode = selected);
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {

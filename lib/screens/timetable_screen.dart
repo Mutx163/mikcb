@@ -4798,7 +4798,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         return HyperosSheet(
           frosted: true,
           title: l10n.addCourseSheetTitle,
-          description: l10n.addCourseSheetSubtitle,
           child: Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -5635,7 +5634,7 @@ class _HomeActionButtonBody extends StatelessWidget {
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w400,
                     height: 1.25,
                     color: enabled ? null : colors.mutedForeground,
                   ),
