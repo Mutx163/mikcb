@@ -579,7 +579,10 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
-  static const _appearanceSectionCount = 12;
+  /// Visual groups on this page (not one card per control).
+  /// 0 preview · 1 app display · 2 home title · 3 theme colors · 4 frosted ·
+  /// 5 home background · 6 text colors.
+  static const _appearanceSectionCount = 7;
 
   static const List<String> _backgroundColors = [
     '#F8FAFC',
@@ -654,7 +657,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         padding: EdgeInsets.zero,
         child: ColoredBox(
           color: Theme.of(context).brightness == Brightness.dark
-              ? Theme.of(context).colorScheme.surfaceContainerHighest
+              ? HyperosColors.surfaceContainerHighest(context)
               : _colorFromHex(_draft.timetablePageBackgroundColor),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -663,14 +666,14 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               children: [
                 Text(
                   l10n.previewTitle,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: HyperosTypography.title(context),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(
+                    color: HyperosColors.surfaceContainer(
                       context,
-                    ).colorScheme.surfaceContainer.withValues(alpha: 0.82),
+                    ).withValues(alpha: 0.82),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: const EdgeInsets.all(12),
@@ -681,7 +684,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                           height: 72,
                           decoration: BoxDecoration(
                             color: _colorFromHex(previewCardColor),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.all(10),
                           child: Column(
@@ -692,7 +695,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                                 l10n.sampleCourseNumericalControl,
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               Text(
@@ -708,19 +711,15 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                         child: Container(
                           height: 72,
                           decoration: BoxDecoration(
-                            color: Theme.of(
+                            color: HyperosColors.surface(
                               context,
-                            ).colorScheme.surface.withValues(alpha: 0.72),
-                            borderRadius: BorderRadius.circular(14),
+                            ).withValues(alpha: 0.72),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             l10n.timetableBackgroundPreview,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
+                            style: HyperosTypography.listDetail(context),
                           ),
                         ),
                       ),
@@ -732,104 +731,100 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
         ),
       ),
-      1 => HyperosSettingsBlock(
-        title: l10n.displayModeTitle,
-        child: HyperosListGroup(
-          children: [
-            HyperosSelectTile<AppThemeMode>(
-              label: l10n.themeModeLabel,
-              subtitle: l10n.displayModeSubtitle,
-              items: {
-                for (final v in AppThemeMode.values)
-                  appThemeModeLabel(l10n, v): v,
-              },
-              value: _draft.appThemeMode,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(appThemeMode: value));
-              },
-            ),
-          ],
-        ),
+      // 主题 / 字体 / 语言 / 转场 — 同一张白卡，不再各占一块
+      1 => HyperosListGroup(
+        children: [
+          HyperosSelectTile<AppThemeMode>(
+            label: l10n.themeModeLabel,
+            subtitle: l10n.displayModeSubtitle,
+            items: {
+              for (final v in AppThemeMode.values)
+                appThemeModeLabel(l10n, v): v,
+            },
+            value: _draft.appThemeMode,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(appThemeMode: value));
+            },
+          ),
+          HyperosSelectTile<AppFontMode>(
+            label: l10n.fontModeLabel,
+            sheetDescription: l10n.fontSectionFootnote,
+            useSheetForPopup: true,
+            items: {
+              for (final v in AppFontMode.values) appFontModeLabel(l10n, v): v,
+            },
+            value: _draft.appFontMode,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(appFontMode: value));
+            },
+            itemTitleStyleBuilder: (mode) {
+              final spec = mode.fontSpec;
+              if (spec.fontFamily == null || spec.fontFamily!.isEmpty) {
+                return null;
+              }
+              return TextStyle(
+                fontFamily: spec.fontFamily,
+                fontFamilyFallback: spec.fontFamilyFallback,
+              );
+            },
+          ),
+          HyperosSelectTile<String>(
+            label: l10n.languageModeLabel,
+            subtitle: l10n.languageSectionSubtitle,
+            items: buildLocaleMenuMap(context),
+            value: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(appLocaleTag: value));
+            },
+          ),
+          HyperosSliderTile(
+            title: l10n.pageTransitionSpeedTitle,
+            value: _draft.pageTransitionSpeed,
+            min: TimetableSettings.minPageTransitionSpeed,
+            max: TimetableSettings.maxPageTransitionSpeed,
+            divisions: 20,
+            valueLabel: '${_draft.pageTransitionSpeed.toStringAsFixed(1)}×',
+            onChanged: (value) {
+              HyperosNavigation.applyUserTransitionSpeed(context, value);
+              _updateDraft(
+                _draft.copyWith(pageTransitionSpeed: value),
+                debounce: true,
+              );
+            },
+          ),
+          HyperosSwitchTile(
+            title: l10n.layoutEnableHapticsTitle,
+            subtitle: l10n.layoutEnableHapticsSubtitle,
+            value: _draft.enableHaptics,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(enableHaptics: value));
+            },
+          ),
+        ],
       ),
       2 => HyperosSettingsBlock(
-        title: l10n.fontSectionTitle,
+        title: l10n.homeTitleSectionTitle,
         child: HyperosListGroup(
           children: [
-            HyperosSelectTile<AppFontMode>(
-              label: l10n.fontModeLabel,
-              sheetDescription: l10n.fontSectionFootnote,
-              useSheetForPopup: true,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: _HomeTitleStylePreview(style: _draft.homeTitleStyle),
+            ),
+            HyperosSelectTile<HomeTitleStyle>(
+              label: l10n.homeTitleStyleLabel,
               items: {
-                for (final v in AppFontMode.values)
-                  appFontModeLabel(l10n, v): v,
+                for (final v in HomeTitleStyle.values)
+                  homeTitleStyleLabel(l10n, v): v,
               },
-              value: _draft.appFontMode,
+              value: _draft.homeTitleStyle,
               onChanged: (value) {
-                _updateDraft(_draft.copyWith(appFontMode: value));
-              },
-              itemTitleStyleBuilder: (mode) {
-                final spec = mode.fontSpec;
-                if (spec.fontFamily == null || spec.fontFamily!.isEmpty) {
-                  return null;
-                }
-                return TextStyle(
-                  fontFamily: spec.fontFamily,
-                  fontFamilyFallback: spec.fontFamilyFallback,
-                );
+                _updateDraft(_draft.copyWith(homeTitleStyle: value));
               },
             ),
           ],
         ),
       ),
       3 => HyperosSettingsBlock(
-        title: l10n.languageSectionTitle,
-        child: HyperosListGroup(
-          children: [
-            HyperosSelectTile<String>(
-              label: l10n.languageModeLabel,
-              subtitle: l10n.languageSectionSubtitle,
-              items: buildLocaleMenuMap(context),
-              value: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(appLocaleTag: value));
-              },
-            ),
-          ],
-        ),
-      ),
-      4 => HyperosSettingsBlock(
-        title: l10n.homeTitleSectionTitle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            HyperosControlCard(
-              edgeToEdge: true,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: _HomeTitleStylePreview(style: _draft.homeTitleStyle),
-              ),
-            ),
-            const SizedBox(height: 12),
-            HyperosListGroup(
-              children: [
-                HyperosSelectTile<HomeTitleStyle>(
-                  label: l10n.homeTitleStyleLabel,
-                  items: {
-                    for (final v in HomeTitleStyle.values)
-                      homeTitleStyleLabel(l10n, v): v,
-                  },
-                  value: _draft.homeTitleStyle,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(homeTitleStyle: value));
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      5 => HyperosSettingsBlock(
         title: l10n.themeSeedSectionTitle,
         child: HyperosListGroup(
           children: [
@@ -849,13 +844,13 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
-          ],
-        ),
-      ),
-      6 => HyperosSettingsBlock(
-        title: l10n.timetableBackgroundColorSectionTitle,
-        child: HyperosListGroup(
-          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                l10n.timetableBackgroundColorSectionTitle,
+                style: HyperosTypography.listDetail(context),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
               child: HyperosHexColorChipGroup(
@@ -869,10 +864,34 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 },
               ),
             ),
+            HyperosSwitchTile(
+              title: l10n.unifiedCourseCardColorTitle,
+              subtitle: l10n.unifiedCourseCardColorSubtitle,
+              value: _draft.timetableUseUnifiedCardColor,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(timetableUseUnifiedCardColor: value),
+                );
+              },
+            ),
+            if (_draft.timetableUseUnifiedCardColor)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                child: HyperosHexColorChipGroup(
+                  colorHexes: _cardColors,
+                  selectedHex: _draft.timetableUnifiedCardColor,
+                  colorParser: _colorFromHex,
+                  onSelectedHex: (color) {
+                    _updateDraft(
+                      _draft.copyWith(timetableUnifiedCardColor: color),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),
-      7 => HyperosSettingsBlock(
+      4 => HyperosSettingsBlock(
         title: l10n.frostedSheetSectionTitle,
         child: HyperosListGroup(
           children: [
@@ -927,61 +946,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      // After frosted blur, above background display scope.
-      8 => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          HyperosSectionLabel(text: l10n.pageTransitionSpeedTitle),
-          HyperosListGroup(
-            children: [
-              HyperosSliderTile(
-                title: l10n.pageTransitionSpeedTitle,
-                value: _draft.pageTransitionSpeed,
-                min: TimetableSettings.minPageTransitionSpeed,
-                max: TimetableSettings.maxPageTransitionSpeed,
-                divisions: 20,
-                valueLabel: '${_draft.pageTransitionSpeed.toStringAsFixed(1)}×',
-                onChanged: (value) {
-                  HyperosNavigation.applyUserTransitionSpeed(context, value);
-                  _updateDraft(
-                    _draft.copyWith(pageTransitionSpeed: value),
-                    debounce: true,
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-      9 => HyperosListGroup(
-        children: [
-          HyperosSwitchTile(
-            title: l10n.unifiedCourseCardColorTitle,
-            value: _draft.timetableUseUnifiedCardColor,
-            onChanged: (value) {
-              _updateDraft(
-                _draft.copyWith(timetableUseUnifiedCardColor: value),
-              );
-            },
-          ),
-          if (_draft.timetableUseUnifiedCardColor)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-              child: HyperosHexColorChipGroup(
-                colorHexes: _cardColors,
-                selectedHex: _draft.timetableUnifiedCardColor,
-                colorParser: _colorFromHex,
-                onSelectedHex: (color) {
-                  _updateDraft(
-                    _draft.copyWith(timetableUnifiedCardColor: color),
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-      10 => HyperosSettingsBlock(
+      5 => HyperosSettingsBlock(
         title: l10n.homePageBackgroundScopeTitle,
         child: HyperosListGroup(
           children: [
@@ -1112,7 +1077,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      11 => TimetableTextColorSettings(
+      6 => TimetableTextColorSettings(
         settings: _draft,
         onChanged: (next) => _updateDraft(next),
       ),
@@ -1688,8 +1653,8 @@ class _HomeTitleStylePreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(18),
+        color: HyperosColors.surfaceContainer(context).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Align(alignment: Alignment.center, child: child),
     );
@@ -3126,13 +3091,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             value: _draft.timetableHideWeekends,
             onChanged: (value) {
               _updateDraft(_draft.copyWith(timetableHideWeekends: value));
-            },
-          ),
-          HyperosSwitchTile(
-            title: l10n.layoutEnableHapticsTitle,
-            value: _draft.enableHaptics,
-            onChanged: (value) {
-              _updateDraft(_draft.copyWith(enableHaptics: value));
             },
           ),
         ],

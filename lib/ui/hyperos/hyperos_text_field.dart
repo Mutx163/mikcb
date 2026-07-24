@@ -84,11 +84,19 @@ class HyperosTextField extends StatelessWidget {
             onSubmitted: onSubmitted,
             style: TextStyle(
               fontSize: fontSize,
+              fontWeight: FontWeight.w400,
               color: enabled ? onSurface : disabled,
             ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: summary),
+              // Fully specify size/weight so hint does not inherit a larger or
+              // bolder theme body style (mixed Chinese glyphs otherwise look uneven).
+              hintStyle: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w400,
+                color: summary,
+                height: 1.25,
+              ),
               filled: true,
               fillColor: enabled ? fill : fill.withValues(alpha: 0.5),
               contentPadding: HyperosMiuixTextField.insideMargin,

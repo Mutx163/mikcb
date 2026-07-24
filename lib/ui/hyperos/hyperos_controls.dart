@@ -799,7 +799,7 @@ class HyperosButton extends StatelessWidget {
           ? HyperosMiuixTypography.footnote1
           : HyperosMiuixTypography.button,
       color: enabled ? fg : disabledFg,
-      fontWeight: dense ? FontWeight.w600 : FontWeight.w400,
+      fontWeight: FontWeight.w400,
       height: 1.1,
     );
 
@@ -905,7 +905,11 @@ class HyperosFrostedSheetButton extends StatelessWidget {
     final fg = enabled
         ? HyperosColors.onSecondaryVariant(context)
         : HyperosColors.disabledOnSecondaryVariant(context);
-    final outline = HyperosColors.outline(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Neutral grey edge — theme outline reads slightly cool/blue on frosted glass.
+    final outline = isDark
+        ? Colors.white.withValues(alpha: 0.16)
+        : Colors.black.withValues(alpha: 0.10);
     final radius = BorderRadius.circular(HyperosMiuixButton.cornerRadius);
     final fontSize = dense
         ? HyperosMiuixTypography.footnote1
@@ -922,7 +926,7 @@ class HyperosFrostedSheetButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize,
                 color: fg,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w400,
                 height: 1.1,
               ),
             ),
@@ -932,7 +936,7 @@ class HyperosFrostedSheetButton extends StatelessWidget {
             style: TextStyle(
               fontSize: fontSize,
               color: fg,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
             ),
           );
 
