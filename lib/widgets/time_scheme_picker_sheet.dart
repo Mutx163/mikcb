@@ -50,22 +50,13 @@ class _TimeSchemePickerSheetBody extends StatefulWidget {
 
 class _TimeSchemePickerSheetBodyState
     extends State<_TimeSchemePickerSheetBody> {
-  Future<void> _openManagement({
-    String? initialEditSchemeId,
-    bool openCreateOnOpen = false,
-    bool popSheetFirst = false,
-  }) async {
-    if (popSheetFirst && mounted) {
-      Navigator.of(context).pop();
-    }
-
+  Future<void> _openManagement({String? initialEditSchemeId}) async {
     await Navigator.push<void>(
       widget.hostContext,
       HyperosPageRoute<void>(
         settings: const RouteSettings(name: '/settings/time-schemes'),
         builder: (_) => TimeSchemeManagementScreen(
           initialEditSchemeId: initialEditSchemeId,
-          openCreateOnOpen: openCreateOnOpen,
         ),
       ),
     );
@@ -132,31 +123,6 @@ class _TimeSchemePickerSheetBodyState
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.manageTimeSchemesAction,
-                  variant: HyperosButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () => _openManagement(popSheetFirst: true),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.createTimeSchemeTitle,
-                  variant: HyperosButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () => _openManagement(
-                    popSheetFirst: true,
-                    openCreateOnOpen: true,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
