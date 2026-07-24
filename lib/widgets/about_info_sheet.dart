@@ -6,6 +6,8 @@ import '../ui/hyperos/hyperos.dart';
 ///
 /// Bullet rows use primary (black) body text and wrap fully — do not reuse
 /// disabled [HyperosChoiceTile]s (those force gray + single-line ellipsis).
+/// Content sits on the frosted [HyperosSheet] surface without an extra solid
+/// white [HyperosControlCard] (that block looked opaque vs other sheets).
 class AboutInfoSheetBody extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -29,26 +31,15 @@ class AboutInfoSheetBody extends StatelessWidget {
     return HyperosSheet(
       title: title,
       description: subtitle,
-      child: HyperosControlCard(
-        edgeToEdge: true,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            HyperosControlCardScope.defaultHorizontalPadding,
-            16,
-            HyperosControlCardScope.defaultHorizontalPadding,
-            HyperosControlCardScope.defaultBodyBottomInset + 4,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var index = 0; index < items.length; index++) ...[
-                if (index > 0) const SizedBox(height: 12),
-                Text(items[index], style: bodyStyle, softWrap: true),
-              ],
-            ],
-          ),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var index = 0; index < items.length; index++) ...[
+            if (index > 0) const SizedBox(height: 12),
+            Text(items[index], style: bodyStyle, softWrap: true),
+          ],
+        ],
       ),
     );
   }

@@ -369,32 +369,26 @@ class _AboutScreenState extends State<AboutScreen> {
               style: HyperosTypography.listDetail(sheetContext),
             ),
             const SizedBox(height: 16),
-            HyperosCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  HyperosButton(
-                    label: l10n.aboutOpenGitHubAction,
-                    expand: true,
-                    onPressed: _openRepository,
-                  ),
-                  const SizedBox(height: 10),
-                  HyperosButton(
-                    label: l10n.aboutOpenWarehouseRepoAction,
-                    variant: HyperosButtonVariant.secondary,
-                    expand: true,
-                    onPressed: _openWarehouseRepository,
-                  ),
-                  const SizedBox(height: 10),
-                  HyperosButton(
-                    label: l10n.copyAddress,
-                    variant: HyperosButtonVariant.secondary,
-                    expand: true,
-                    onPressed: _copyRepositoryUrl,
-                  ),
-                ],
-              ),
+            // Buttons sit on the frosted sheet surface — do not wrap in
+            // HyperosCard (solid white) or the action block looks opaque.
+            HyperosButton(
+              label: l10n.aboutOpenGitHubAction,
+              expand: true,
+              onPressed: _openRepository,
+            ),
+            const SizedBox(height: 10),
+            HyperosButton(
+              label: l10n.aboutOpenWarehouseRepoAction,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: _openWarehouseRepository,
+            ),
+            const SizedBox(height: 10),
+            HyperosButton(
+              label: l10n.copyAddress,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: _copyRepositoryUrl,
             ),
           ],
         ),
