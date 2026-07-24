@@ -98,25 +98,6 @@ bool shouldAutoRecordWarehouseImport({
   return forceRecord || !hasExistingMacro;
 }
 
-Widget _buildImportMethodChoiceTile({
-  required IconData icon,
-  required String title,
-  required String subtitle,
-  required String footer,
-  required VoidCallback onTap,
-}) {
-  return HyperosChoiceTile(
-    prefix: Icon(icon),
-    title: title,
-    subtitle: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(subtitle), const SizedBox(height: 4), Text(footer)],
-    ),
-    trailing: const HyperosChevron(),
-    onTap: onTap,
-  );
-}
-
 Widget _buildWarehouseAdapterListItem({
   required BuildContext context,
   required WarehouseAdapterEntry adapter,
@@ -176,43 +157,43 @@ class CourseImportScreen extends StatelessWidget {
               const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
               const HyperosSectionGap(),
-              HyperosChoiceGroup(
+              HyperosListGroup(
                 children: [
-                  _buildImportMethodChoiceTile(
+                  HyperosNavTile(
                     icon: Icons.event_note_rounded,
+                    iconAccent: HyperosIconColors.blue,
                     title: l10n.importMethodIcsTitle,
                     subtitle: l10n.importMethodIcsSubtitle,
-                    footer: l10n.importMethodIcsFooter,
                     onTap: () => _openImportPage<bool>(
                       context,
                       builder: (_) => const IcsCourseImportScreen(),
                     ),
                   ),
-                  _buildImportMethodChoiceTile(
+                  HyperosNavTile(
                     icon: Icons.auto_awesome_rounded,
+                    iconAccent: HyperosIconColors.purple,
                     title: l10n.importMethodAiTitle,
                     subtitle: l10n.importMethodAiSubtitle,
-                    footer: l10n.importMethodAiFooter,
                     onTap: () => _openImportPage<bool>(
                       context,
                       builder: (_) => const AiImageCourseImportScreen(),
                     ),
                   ),
-                  _buildImportMethodChoiceTile(
+                  HyperosNavTile(
                     icon: Icons.school_outlined,
+                    iconAccent: HyperosIconColors.green,
                     title: l10n.importMethodWarehouseTitle,
                     subtitle: l10n.importMethodWarehouseSubtitle,
-                    footer: l10n.importMethodWarehouseFooter,
                     onTap: () => _openImportPage<bool>(
                       context,
                       builder: (_) => const WarehouseCourseImportScreen(),
                     ),
                   ),
-                  _buildImportMethodChoiceTile(
+                  HyperosNavTile(
                     icon: Icons.table_chart_outlined,
+                    iconAccent: HyperosIconColors.orange,
                     title: l10n.importMethodSpreadsheetTitle,
                     subtitle: l10n.importMethodSpreadsheetSubtitle,
-                    footer: l10n.importMethodSpreadsheetFooter,
                     onTap: () => _openImportPage<bool>(
                       context,
                       builder: (_) => const SpreadsheetCourseImportScreen(),
@@ -3302,6 +3283,37 @@ class _WarehouseAdapterWebLoginScreenState
     return 'type=$type keys=[$keys] payloadLength=$payloadLength message=$errorMessage';
   }
 
+  /// Adapter scripts often toast "成功导入 N 条课程" right before the host shows
+  /// the quick-import completion sheet. Match common success phrasings so we
+  /// can suppress the redundant light tip during macro replay.
+  bool _isScriptImportSuccessToast(String message) {
+    final text = message.trim();
+    if (text.isEmpty) {
+      return false;
+    }
+    final lower = text.toLowerCase();
+    return text.contains('成功导入') ||
+        text.contains('导入成功') ||
+        text.contains('导入完成') ||
+        (text.contains('导入') && text.contains('条课程')) ||
+        lower.contains('import success') ||
+        lower.contains('imported') && lower.contains('course');
+  }
+
+  /// Progress toasts from adapter scripts ("正在获取课表…") are redundant with
+  /// the quick-import playback overlay / completion sheet.
+  bool _isScriptImportProgressToast(String message) {
+    final text = message.trim();
+    if (text.isEmpty) {
+      return false;
+    }
+    return text.contains('正在通过接口') ||
+        text.contains('正在获取') ||
+        text.contains('正在导入') ||
+        text.contains('请稍候') ||
+        text.contains('请稍等');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3967,11 +3979,20 @@ class _WarehouseAdapterWebLoginScreenState
       builder: (sheetContext) {
         return HyperosSheet(
           title: l10n.quickImportFinishedTitle,
-          description: description,
-          child: HyperosButton(
-            label: l10n.quickImportDismissAction,
-            expand: true,
-            onPressed: () => Navigator.pop(sheetContext),
+          // Put result text above the dismiss button. HyperosSheet renders
+          // [child] before [description], so compose layout in [child].
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HyperosSectionDescription(text: description),
+              const SizedBox(height: 16),
+              HyperosButton(
+                label: l10n.quickImportDismissAction,
+                expand: true,
+                onPressed: () => Navigator.pop(sheetContext),
+              ),
+            ],
           ),
         );
       },
@@ -4159,7 +4180,22 @@ class _WarehouseAdapterWebLoginScreenState
         break;
       case 'toast':
         if (!mounted) return;
-        _showLightTip(context, (message['message'] as String?) ?? '');
+        final toastMessage = (message['message'] as String?)?.trim() ?? '';
+        if (toastMessage.isEmpty) {
+          break;
+        }
+        // During quick-import / macro replay the host already shows a
+        // completion sheet; suppress script success toasts that only report
+        // "imported N courses" so users are not hit by two stacked tips.
+        if (_isMacroReplay &&
+            (_isScriptImportSuccessToast(toastMessage) ||
+                _isScriptImportProgressToast(toastMessage))) {
+          _debugImportLog(
+            'bridge toast suppressed during macro replay message="$toastMessage"',
+          );
+          break;
+        }
+        _showLightTip(context, toastMessage);
         break;
       case 'confirm':
         await _showScriptConfirmDialog(message);
@@ -4641,12 +4677,16 @@ class _WarehouseAdapterWebLoginScreenState
             : AppLocalizations.of(context)!.importNoCourseChanges;
       });
       final navigator = Navigator.of(context);
-      _showLightTip(
-        context,
-        importedCount > 0
-            ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
-            : AppLocalizations.of(context)!.importNoCourseChanges,
-      );
+      // Quick-import replay already shows a completion sheet with the same
+      // status text; skip the 2s light tip to avoid a double toast.
+      if (!replaying) {
+        _showLightTip(
+          context,
+          importedCount > 0
+              ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
+              : AppLocalizations.of(context)!.importNoCourseChanges,
+        );
+      }
       _cancelImportTimeout();
       _debugImportLog('courses import success path -> set executing false');
       setState(() {
