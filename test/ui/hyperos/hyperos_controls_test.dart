@@ -314,6 +314,71 @@ void main() {
       expect(find.byType(HyperosChevron), findsOneWidget);
     });
 
+    testWidgets(
+      'ListGroup lone slider presses full tile including track, not title-only pill',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: HyperosListScrollScope(
+                isUserScrolling: false,
+                pressHighlightGeneration: 0,
+                child: HyperosListGroup(
+                  children: [
+                    HyperosSliderTile(
+                      title: 'Conflict opacity',
+                      value: 0.7,
+                      min: 0.2,
+                      max: 1.0,
+                      divisions: 16,
+                      valueLabel: '70%',
+                      onChanged: (_) {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // One press shell wraps the whole tile (title + value + slider).
+        expect(find.byType(HyperosPressableRow), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(HyperosPressableRow),
+            matching: find.byType(HyperosSlider),
+          ),
+          findsOneWidget,
+        );
+
+        final titleCenter = tester.getCenter(find.text('Conflict opacity'));
+        final gesture = await tester.startGesture(titleCenter);
+        await tester.pump(const Duration(milliseconds: 30));
+
+        final pressableRect = tester.getRect(find.byType(HyperosPressableRow));
+        final sliderRect = tester.getRect(find.byType(HyperosSlider));
+        // Highlight covers the full preference block, not a short title strip.
+        expect(pressableRect.height, greaterThan(sliderRect.height + 24));
+        expect(pressableRect.top, lessThanOrEqualTo(titleCenter.dy));
+        expect(pressableRect.bottom, greaterThanOrEqualTo(sliderRect.bottom));
+
+        // Lone ListGroup row is first+last → rounded card corners, not mid square.
+        final clip = tester.widget<ClipRRect>(
+          find.descendant(
+            of: find.byType(HyperosPressableRow),
+            matching: find.byType(ClipRRect),
+          ),
+        );
+        final radius = clip.borderRadius.resolve(TextDirection.ltr);
+        expect(radius.topLeft.x, greaterThan(0));
+        expect(radius.bottomLeft.x, greaterThan(0));
+
+        await gesture.up();
+      },
+    );
+
     testWidgets('tap editing dialog updates slider value', (tester) async {
       var value = 9.0;
 

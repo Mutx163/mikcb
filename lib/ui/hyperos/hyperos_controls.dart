@@ -691,25 +691,19 @@ class HyperosSliderTile extends StatelessWidget {
       ],
     );
 
-    return Padding(
+    // Full-bleed tile shell: title + value + slider share one press fill, same
+    // as [HyperosSwitchTile]. Nesting [HyperosPressableRow] only around the
+    // title strip produced a tiny pill when ListGroup marked the strip
+    // first+last (card-radius clip on a short label row).
+    final tileBody = Padding(
       padding: _hyperosSliderTilePadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null || valueLabel != null || rowEnabled) ...[
-            if (rowEnabled)
-              HyperosPressableRow(
-                onTap: () => _openValueDialog(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: row,
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: row,
-              ),
+            // No extra title vertical inset: outer [rowPadding] already matches
+            // switch/select tiles so press-fill edge gaps stay balanced top/bottom.
+            row,
             const SizedBox(height: 8),
           ],
           HyperosSlider(
@@ -722,6 +716,17 @@ class HyperosSliderTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (!rowEnabled) {
+      return tileBody;
+    }
+
+    return HyperosPressableRow(
+      onTap: () => _openValueDialog(context),
+      backgroundColor: HyperosColors.card(context),
+      highlightColor: HyperosColors.rowHighlight(context),
+      child: tileBody,
     );
   }
 }

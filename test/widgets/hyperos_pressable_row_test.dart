@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_widgets.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../helpers_test_app.dart';
 
 const _bg = Colors.white;
 const _highlight = Color(0xFFE0E0E0);
+const _idleFill = Color(0x00000000);
 const _transitionHighlight = Duration(
   milliseconds: HyperosMiuixNavigation.transitionDurationMs,
 );
@@ -62,7 +63,7 @@ void main() {
     expect(_rowBackground(tester), _highlight);
 
     await tester.pump(_transitionHighlight);
-    expect(_rowBackground(tester), _bg);
+    expect(_rowBackground(tester), _idleFill);
   });
 
   testWidgets('quick tap clears highlight on release by default', (
@@ -77,7 +78,7 @@ void main() {
     await tester.pump();
 
     expect(tapped, isTrue);
-    expect(_rowBackground(tester), _bg);
+    expect(_rowBackground(tester), _idleFill);
   });
 
   testWidgets('quick tap keeps highlight through page transition', (
@@ -103,7 +104,7 @@ void main() {
     expect(_rowBackground(tester), _highlight);
 
     await tester.pump(_transitionHighlight);
-    expect(_rowBackground(tester), _bg);
+    expect(_rowBackground(tester), _idleFill);
   });
 
   testWidgets('vertical drag does not highlight row', (tester) async {
@@ -115,7 +116,7 @@ void main() {
     await gesture.moveBy(const Offset(0, 20));
     await tester.pump();
 
-    expect(_rowBackground(tester), _bg);
+    expect(_rowBackground(tester), _idleFill);
     await gesture.up();
   });
 
@@ -153,8 +154,110 @@ void main() {
 
     setState(() => generation++);
     await tester.pump();
-    expect(_rowBackground(tester), _bg);
+    expect(_rowBackground(tester), _idleFill);
 
     await gesture.up();
   });
+
+  testWidgets(
+    'mixed ControlCard row without edge scope keeps square press clip',
+    (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosListScrollScope(
+            isUserScrolling: false,
+            pressHighlightGeneration: 0,
+            child: HyperosControlCard(
+              edgeToEdge: true,
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Above'),
+                  ),
+                  HyperosPressableRow(
+                    onTap: () {},
+                    backgroundColor: _bg,
+                    highlightColor: _highlight,
+                    child: const SizedBox(
+                      height: 56,
+                      child: Center(child: Text('Middle')),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Below'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final center = tester.getCenter(find.text('Middle'));
+      final gesture = await tester.startGesture(center);
+      await tester.pump(const Duration(milliseconds: 30));
+
+      expect(_rowBackground(tester), _highlight);
+      expect(
+        find.descendant(
+          of: find.byType(HyperosPressableRow),
+          matching: find.byType(ClipRRect),
+        ),
+        findsNothing,
+      );
+
+      await gesture.up();
+    },
+  );
+
+  testWidgets(
+    'explicit first+last ControlCardRows clip press to card corners',
+    (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosListScrollScope(
+            isUserScrolling: false,
+            pressHighlightGeneration: 0,
+            child: HyperosControlCard(
+              edgeToEdge: true,
+              child: HyperosControlCardRows(
+                children: [
+                  HyperosPressableRow(
+                    onTap: () {},
+                    backgroundColor: _bg,
+                    highlightColor: _highlight,
+                    child: const SizedBox(
+                      height: 56,
+                      child: Center(child: Text('Only')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final center = tester.getCenter(find.text('Only'));
+      final gesture = await tester.startGesture(center);
+      await tester.pump(const Duration(milliseconds: 30));
+
+      expect(_rowBackground(tester), _highlight);
+      final clip = tester.widget<ClipRRect>(
+        find.descendant(
+          of: find.byType(HyperosPressableRow),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+      final radius = clip.borderRadius.resolve(TextDirection.ltr);
+      expect(radius.topLeft.x, greaterThan(0));
+      expect(radius.topRight.x, greaterThan(0));
+      expect(radius.bottomLeft.x, greaterThan(0));
+      expect(radius.bottomRight.x, greaterThan(0));
+
+      await gesture.up();
+    },
+  );
 }

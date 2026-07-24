@@ -151,6 +151,33 @@ void main() {
     expect(find.text('Item 19'), findsNothing);
   });
 
+  testWidgets('HyperosListView children mode keeps all items mounted', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          onBack: () {},
+          title: const Text('Eager list'),
+          child: HyperosListView(
+            children: [
+              for (var index = 0; index < 20; index++)
+                HyperosListTile(
+                  icon: Icons.settings_outlined,
+                  title: 'Item $index',
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // SingleChildScrollView + Column keeps every child mounted off-screen.
+    expect(find.text('Item 0', skipOffstage: false), findsOneWidget);
+    expect(find.text('Item 19', skipOffstage: false), findsOneWidget);
+  });
+
   testWidgets('HyperosSubpage provides HyperosOverscrollPhysics to ListView', (
     WidgetTester tester,
   ) async {

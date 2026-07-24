@@ -416,8 +416,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 /// [HyperosSubpage] / [HyperosRootPage]). Prefer this for settings-style
 /// pages; raw [ListView] inside those shells also inherits the physics.
 ///
-/// Provide either [children] (light pages) or [itemCount] + [itemBuilder] for
-/// lazy per-section construction on heavy settings subpages.
+/// Provide either:
+/// - [children] for light / form pages — [SingleChildScrollView] + [Column]
+///   so every child stays mounted while scrolling ([ListView] still
+///   disposes off-screen rows, which can blank [TextField] text until
+///   re-focus).
+/// - [itemCount] + [itemBuilder] for heavy settings subpages that need lazy
+///   per-section construction.
 class HyperosListView extends StatefulWidget {
   const HyperosListView({
     super.key,
@@ -472,29 +477,46 @@ class _HyperosListViewState extends State<HyperosListView> {
 
   @override
   Widget build(BuildContext context) {
-    final children = widget.children;
-    final resolvedItemCount = children?.length ?? widget.itemCount!;
-    final resolvedItemBuilder =
-        widget.itemBuilder ?? (context, index) => children![index];
-
     final listKey = widget.pageStorageKey ?? _pageStorageKeyFromRoute(context);
+    final scrollPhysics = HyperosOverscrollPhysics(
+      parent: const AlwaysScrollableScrollPhysics(),
+      topInset: widget.includeHeaderInset
+          ? HyperosBlurredHeaderScope.insetOf(context)
+          : 0,
+    );
+    final listPadding = _resolveListPadding(context);
+
+    // [children] mode: SingleChildScrollView + Column keeps every child
+    // mounted (forms / TextFields). Plain ListView(children:) still only
+    // mounts the visible window and disposes the rest.
+    // [itemBuilder] mode: keep lazy builder for long lists.
+    final Widget list;
+    final children = widget.children;
+    if (children != null) {
+      list = SingleChildScrollView(
+        key: listKey,
+        physics: scrollPhysics,
+        padding: listPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      );
+    } else {
+      list = ListView.builder(
+        key: listKey,
+        physics: scrollPhysics,
+        padding: listPadding,
+        itemCount: widget.itemCount!,
+        itemBuilder: widget.itemBuilder!,
+      );
+    }
 
     return _HyperosListScrollHost(
       child: hyperosBlockStretchOverscroll(
         child: ScrollConfiguration(
           behavior: const HyperosScrollBehavior(),
-          child: ListView.builder(
-            key: listKey,
-            physics: HyperosOverscrollPhysics(
-              parent: const AlwaysScrollableScrollPhysics(),
-              topInset: widget.includeHeaderInset
-                  ? HyperosBlurredHeaderScope.insetOf(context)
-                  : 0,
-            ),
-            padding: _resolveListPadding(context),
-            itemCount: resolvedItemCount,
-            itemBuilder: resolvedItemBuilder,
-          ),
+          child: list,
         ),
       ),
     );

@@ -177,22 +177,28 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.backgroundColor ?? HyperosColors.card(context);
     final highlight =
         widget.highlightColor ?? HyperosColors.rowHighlight(context);
     final enabled = widget.onTap != null || widget.onLongPress != null;
 
     if (!enabled) {
-      return Material(color: bg, child: widget.child);
+      // Transparent shell: parent [HyperosAdaptiveCard] / [HyperosListGroup]
+      // already paints the rounded surface. An opaque child Material would
+      // square-fill the bottom corners of the last row.
+      return widget.child;
     }
 
     final cardScope = HyperosControlCardScope.maybeOf(context);
     final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
     final listScope = HyperosListTileScope.maybeOf(context);
-    final isFirst =
-        listScope?.isFirst ?? cardRowScope?.isFirst ?? cardScope != null;
-    final isLast =
-        listScope?.isLast ?? cardRowScope?.isLast ?? cardScope != null;
+    // Round press fill only when this row is an explicit card/list edge.
+    // Without [HyperosListTileScope] / [HyperosControlCardRowScope], treat the
+    // row as mid-card (square highlight). Falling back to "first+last" whenever
+    // [HyperosControlCardScope] is present wrongly rounds middle mixed rows
+    // (e.g. select between inset fields). Parent [HyperosAdaptiveCard] still
+    // clips true top/bottom edges to the card radius.
+    final isFirst = listScope?.isFirst ?? cardRowScope?.isFirst ?? false;
+    final isLast = listScope?.isLast ?? cardRowScope?.isLast ?? false;
     final surfaceRadius = HyperosSurfaceRadiusScope.of(
       context,
       fallback: cardScope?.cornerRadius,
@@ -201,8 +207,11 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
     final clipTop = _showHighlight && isFirst;
     final clipBottom = _showHighlight && isLast;
 
+    // Idle: transparent fill so list/card corner radius stays visible.
+    // Pressed: gray fill; first/last rows clip to [surfaceRadius] so the
+    // highlight follows the card arc (mid rows stay square).
     Widget highlighted = ColoredBox(
-      color: _showHighlight ? highlight : bg,
+      color: _showHighlight ? highlight : const Color(0x00000000),
       child: SizedBox(width: double.infinity, child: widget.child),
     );
 
@@ -221,7 +230,7 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
     }
 
     return Material(
-      color: bg,
+      type: MaterialType.transparency,
       child: Listener(
         onPointerMove: _handlePointerMove,
         onPointerCancel: (_) => _resetGesture(),
