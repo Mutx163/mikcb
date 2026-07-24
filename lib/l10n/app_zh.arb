@@ -5237,9 +5237,9 @@
       }
     }
   },
-  "locationTimeMatchEntryTitle": "地点自动匹配",
-  "locationTimeMatchEntrySubtitle": "按上课地点关键词自动选择时间模板",
-  "locationTimeMatchTitle": "地点自动匹配",
+  "locationTimeMatchEntryTitle": "地点作息匹配",
+  "locationTimeMatchEntrySubtitle": "按上课地点关键词自动选用时间模板",
+  "locationTimeMatchTitle": "地点作息匹配",
   "locationTimeMatchSubtitle": "按地点关键词自动匹配时间模板。重新匹配仅更新命中课程的钟点，未命中课程保持不变。",
   "locationTimeMatchWeekAxisNote": "说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。",
   "locationTimeMatchPreviewLabel": "试匹配地点",
@@ -5428,8 +5428,8 @@
       }
     }
   },
-  "scheduleDateRuleSectionTitle": "按日期切换作息",
-  "scheduleDateRuleSectionSubtitle": "开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点匹配优先。",
+  "scheduleDateRuleSectionTitle": "日期作息规则",
+  "scheduleDateRuleSectionSubtitle": "开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点作息匹配优先。",
   "scheduleDateRuleAdd": "添加日期规则",
   "scheduleDateRuleEdit": "编辑日期规则",
   "scheduleDateRuleEmpty": "未设置日期规则",

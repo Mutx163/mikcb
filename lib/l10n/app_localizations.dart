@@ -15312,19 +15312,19 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'地点自动匹配'**
+  /// **'地点作息匹配'**
   String get locationTimeMatchEntryTitle;
 
   /// No description provided for @locationTimeMatchEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'按上课地点关键词自动选择时间模板'**
+  /// **'按上课地点关键词自动选用时间模板'**
   String get locationTimeMatchEntrySubtitle;
 
   /// No description provided for @locationTimeMatchTitle.
   ///
   /// In zh, this message translates to:
-  /// **'地点自动匹配'**
+  /// **'地点作息匹配'**
   String get locationTimeMatchTitle;
 
   /// No description provided for @locationTimeMatchSubtitle.
@@ -15700,13 +15700,13 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'按日期切换作息'**
+  /// **'日期作息规则'**
   String get scheduleDateRuleSectionTitle;
 
   /// No description provided for @scheduleDateRuleSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点匹配优先。'**
+  /// **'开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点作息匹配优先。'**
   String get scheduleDateRuleSectionSubtitle;
 
   /// No description provided for @scheduleDateRuleAdd.

@@ -8458,13 +8458,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => '地点自动匹配';
+  String get locationTimeMatchEntryTitle => '地点作息匹配';
 
   @override
-  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选择时间模板';
+  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选用时间模板';
 
   @override
-  String get locationTimeMatchTitle => '地点自动匹配';
+  String get locationTimeMatchTitle => '地点作息匹配';
 
   @override
   String get locationTimeMatchSubtitle =>
@@ -8690,11 +8690,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get scheduleDateRuleSectionTitle => '按日期切换作息';
+  String get scheduleDateRuleSectionTitle => '日期作息规则';
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点匹配优先。';
+      '开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点作息匹配优先。';
 
   @override
   String get scheduleDateRuleAdd => '添加日期规则';
@@ -16831,13 +16831,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => '地点自动匹配';
+  String get locationTimeMatchEntryTitle => '地點作息匹配';
 
   @override
-  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选择时间模板';
+  String get locationTimeMatchEntrySubtitle => '按上課地點關鍵詞自動選用時間範本';
 
   @override
-  String get locationTimeMatchTitle => '地点自动匹配';
+  String get locationTimeMatchTitle => '地點作息匹配';
 
   @override
   String get locationTimeMatchSubtitle =>
@@ -17063,11 +17063,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get scheduleDateRuleSectionTitle => '按日期切換作息';
+  String get scheduleDateRuleSectionTitle => '日期作息規則';
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點匹配優先。';
+      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點作息匹配優先。';
 
   @override
   String get scheduleDateRuleAdd => '新增日期規則';
@@ -25204,13 +25204,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => '地点自动匹配';
+  String get locationTimeMatchEntryTitle => '地點作息匹配';
 
   @override
-  String get locationTimeMatchEntrySubtitle => '按上课地点关键词自动选择时间模板';
+  String get locationTimeMatchEntrySubtitle => '按上課地點關鍵詞自動選用時間範本';
 
   @override
-  String get locationTimeMatchTitle => '地点自动匹配';
+  String get locationTimeMatchTitle => '地點作息匹配';
 
   @override
   String get locationTimeMatchSubtitle =>
@@ -25436,11 +25436,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get scheduleDateRuleSectionTitle => '按日期切換作息';
+  String get scheduleDateRuleSectionTitle => '日期作息規則';
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點匹配優先。';
+      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點作息匹配優先。';
 
   @override
   String get scheduleDateRuleAdd => '新增日期規則';

@@ -5237,9 +5237,9 @@
       }
     }
   },
-  "locationTimeMatchEntryTitle": "Location time match",
-  "locationTimeMatchEntrySubtitle": "Auto-pick time schemes by classroom keywords",
-  "locationTimeMatchTitle": "Location time match",
+  "locationTimeMatchEntryTitle": "Location-based schedule",
+  "locationTimeMatchEntrySubtitle": "Auto-select time schemes by classroom keywords",
+  "locationTimeMatchTitle": "Location-based schedule",
   "locationTimeMatchSubtitle": "Match time schemes by location keywords. Rematching updates clocks for matched courses only; unmatched courses stay unchanged.",
   "locationTimeMatchWeekAxisNote": "Note: the week-view time axis still shows the timetable default scheme. Card/live times use the matched scheme.",
   "locationTimeMatchPreviewLabel": "Try a location",
@@ -5428,8 +5428,8 @@
       }
     }
   },
-  "scheduleDateRuleSectionTitle": "Seasonal date rules",
-  "scheduleDateRuleSectionSubtitle": "On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location match takes priority.",
+  "scheduleDateRuleSectionTitle": "Date-based schedule",
+  "scheduleDateRuleSectionSubtitle": "On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location-based schedule takes priority.",
   "scheduleDateRuleAdd": "Add date rule",
   "scheduleDateRuleEdit": "Edit date rule",
   "scheduleDateRuleEmpty": "No date rules",

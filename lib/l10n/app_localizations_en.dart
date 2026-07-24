@@ -8967,14 +8967,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get locationTimeMatchEntryTitle => 'Location time match';
+  String get locationTimeMatchEntryTitle => 'Location-based schedule';
 
   @override
   String get locationTimeMatchEntrySubtitle =>
-      'Auto-pick time schemes by classroom keywords';
+      'Auto-select time schemes by classroom keywords';
 
   @override
-  String get locationTimeMatchTitle => 'Location time match';
+  String get locationTimeMatchTitle => 'Location-based schedule';
 
   @override
   String get locationTimeMatchSubtitle =>
@@ -9207,11 +9207,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get scheduleDateRuleSectionTitle => 'Seasonal date rules';
+  String get scheduleDateRuleSectionTitle => 'Date-based schedule';
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location match takes priority.';
+      'On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location-based schedule takes priority.';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';
