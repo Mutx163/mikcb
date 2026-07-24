@@ -33,6 +33,7 @@ import '../services/import_random_color_preferences.dart';
 import '../services/import_week_alignment_service.dart';
 import '../services/spreadsheet_import_service.dart';
 import '../services/warehouse_import_preferences_service.dart';
+import '../services/warehouse_import_session_log.dart';
 import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
 import '../utils/app_toast.dart';
@@ -44,6 +45,7 @@ import '../widgets/warehouse_macro_recorder.dart';
 import '../widgets/warehouse_macro_replayer.dart';
 import '../widgets/warehouse_playback_overlay.dart';
 import 'feedback_screen.dart';
+import 'live_diagnostics_log_viewer_screen.dart';
 
 Future<List<Course>> _coursesWithOptionalRandomColors(
   List<Course> courses,
@@ -54,7 +56,51 @@ Future<List<Course>> _coursesWithOptionalRandomColors(
   return applyRandomImportCourseColors(courses);
 }
 
-enum _WarehouseImportMenuAction { feedback, customDebug }
+enum _WarehouseImportMenuAction { feedback, customDebug, executionLog }
+
+Future<void> openWarehouseImportExecutionLogViewer(BuildContext context) async {
+  final l10n = AppLocalizations.of(context)!;
+  final sessionLog = WarehouseImportSessionLog.instance;
+  final title = l10n.warehouseImportExecutionLogTitle;
+  await Navigator.of(context).push(
+    HyperosPageRoute(
+      settings: const RouteSettings(
+        name: '/courses/import/warehouse/execution-log',
+      ),
+      builder: (_) => LiveDiagnosticsLogViewerScreen(
+        title: title,
+        rawLog: sessionLog.readText(title: title),
+        watchRawLog: () => sessionLog.watchText(title: title),
+        onLoadEmpty: () {
+          if (context.mounted) {
+            showAppLightTip(
+              context,
+              message: l10n.warehouseImportExecutionLogEmpty,
+            );
+          }
+        },
+        onExport: (text) async {
+          final directory = await getTemporaryDirectory();
+          final fileName =
+              'qingyu-warehouse-import-log-${DateTime.now().millisecondsSinceEpoch}.txt';
+          final file = File('${directory.path}/$fileName');
+          await file.writeAsString(text, flush: true);
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(file.path)],
+              text: l10n.warehouseImportExecutionLogShareText,
+              subject: l10n.warehouseImportExecutionLogShareSubject,
+            ),
+          );
+        },
+        onClear: () async {
+          sessionLog.clear();
+          return true;
+        },
+      ),
+    ),
+  );
+}
 
 Widget _importListTitle(BuildContext context, String text) {
   return Text(text, style: HyperosTypography.listTitle(context));
@@ -1501,6 +1547,9 @@ class _WarehouseCourseImportScreenState
       case _WarehouseImportMenuAction.customDebug:
         await _openCustomDebugRecords();
         break;
+      case _WarehouseImportMenuAction.executionLog:
+        await openWarehouseImportExecutionLogViewer(context);
+        break;
     }
   }
 
@@ -1517,6 +1566,10 @@ class _WarehouseCourseImportScreenState
         HyperosPopupMenuItem(
           label: l10n.warehouseCustomDebugTitle,
           value: _WarehouseImportMenuAction.customDebug,
+        ),
+        HyperosPopupMenuItem(
+          label: l10n.warehouseImportExecutionLogMenuLabel,
+          value: _WarehouseImportMenuAction.executionLog,
         ),
       ],
     );
@@ -3261,17 +3314,31 @@ class _WarehouseAdapterWebLoginScreenState
   bool get _isUsingLocalDebugScript =>
       (widget.debugScriptOverride ?? '').trim().isNotEmpty;
 
-  void _debugImportLog(String message) {
-    if (!kDebugMode) return;
-    appDebugLog(
-      'WarehouseImportDebug',
-      'macro=$_isMacroReplay '
-          'playback=$_playbackState '
-          'executing=$_isExecutingImport '
-          'recording=$_macroRecordingState '
-          'status="${_lastScriptStatus ?? ''}" '
-          '$message',
+  void _debugImportLog(String message, {String level = 'info'}) {
+    final detail =
+        'macro=$_isMacroReplay '
+        'playback=$_playbackState '
+        'executing=$_isExecutingImport '
+        'recording=$_macroRecordingState '
+        'status="${_lastScriptStatus ?? ''}" '
+        '$message';
+    WarehouseImportSessionLog.instance.append(
+      message: detail,
+      level: level,
+      extras: {
+        'schoolId': widget.school.id,
+        'schoolName': widget.school.name,
+        'adapterId': widget.adapter.adapterId,
+        'adapterName': widget.adapter.adapterName,
+        'url': _currentUrl ?? widget.initialUrl,
+        'macroReplay': _isMacroReplay,
+        'executingImport': _isExecutingImport,
+        'playbackState': '$_playbackState',
+        'recordingState': '$_macroRecordingState',
+      },
     );
+    if (!kDebugMode) return;
+    appDebugLog('WarehouseImportDebug', detail);
   }
 
   String _bridgeMessageSummary(Map<String, dynamic> message) {
@@ -3320,6 +3387,18 @@ class _WarehouseAdapterWebLoginScreenState
     _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
+    WarehouseImportSessionLog.instance.append(
+      message:
+          'open web login school=${widget.school.name}(${widget.school.id}) '
+          'adapter=${widget.adapter.adapterName}(${widget.adapter.adapterId}) '
+          'url=${widget.initialUrl} macro=${widget.macroRecord != null} '
+          'autoRecord=${widget.autoRecord} localDebug=$_isUsingLocalDebugScript',
+      extras: {
+        'schoolId': widget.school.id,
+        'adapterId': widget.adapter.adapterId,
+        'url': widget.initialUrl,
+      },
+    );
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..enableZoom(true)
@@ -3330,6 +3409,18 @@ class _WarehouseAdapterWebLoginScreenState
           _handleBridgeMessage(message.message);
         },
       )
+      ..setOnConsoleMessage((consoleMessage) {
+        WarehouseImportSessionLog.instance.append(
+          message:
+              'console.${consoleMessage.level.name}: ${consoleMessage.message}',
+          level: consoleMessage.level.name == 'error' ? 'error' : 'debug',
+          extras: {
+            'schoolId': widget.school.id,
+            'adapterId': widget.adapter.adapterId,
+            'url': _currentUrl ?? widget.initialUrl,
+          },
+        );
+      })
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (progress) {
@@ -3539,6 +3630,10 @@ class _WarehouseAdapterWebLoginScreenState
           label: l10n.copyCurrentAddressTooltip,
           value: 'copy',
         ),
+        HyperosPopupMenuItem(
+          label: l10n.warehouseImportExecutionLogMenuLabel,
+          value: 'executionLog',
+        ),
       ],
     );
     if (!mounted || value == null) {
@@ -3567,6 +3662,9 @@ class _WarehouseAdapterWebLoginScreenState
             kind: AppToastKind.success,
           );
         }
+        break;
+      case 'executionLog':
+        await openWarehouseImportExecutionLogViewer(context);
         break;
     }
   }
