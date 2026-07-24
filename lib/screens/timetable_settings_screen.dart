@@ -2171,119 +2171,130 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               HyperosControlCard(
                 title: l10n.liveTestingIslandStatusTitle,
                 subtitle: l10n.liveTestingIslandStatusSubtitle,
-                child: HyperosControlCardInset(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (semesterUnset) ...[
-                        Text(
-                          l10n.pleaseSetSemesterStartDate,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                // Mixed inset content + full-bleed [HyperosSwitchTile]: do not
+                // wrap the switch in [HyperosControlCardInset] (double 16dp).
+                edgeToEdge: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    HyperosControlCardInset(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _DebugStatusChip(
-                            icon: serviceRunning
-                                ? Icons.play_circle_outline_rounded
-                                : Icons.stop_circle_outlined,
-                            label: serviceRunning
-                                ? l10n.liveTestingServiceStatusRunning
-                                : l10n.liveTestingServiceStatusStopped,
-                            color: serviceRunning
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outline,
+                          if (semesterUnset) ...[
+                            Text(
+                              l10n.pleaseSetSemesterStartDate,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _DebugStatusChip(
+                                icon: serviceRunning
+                                    ? Icons.play_circle_outline_rounded
+                                    : Icons.stop_circle_outlined,
+                                label: serviceRunning
+                                    ? l10n.liveTestingServiceStatusRunning
+                                    : l10n.liveTestingServiceStatusStopped,
+                                color: serviceRunning
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.outline,
+                              ),
+                              _DebugStatusChip(
+                                icon: isActuallyPromotable
+                                    ? Icons.verified_outlined
+                                    : Icons.warning_amber_rounded,
+                                label: statusText,
+                                color: isActuallyPromotable
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                            ],
                           ),
-                          _DebugStatusChip(
-                            icon: isActuallyPromotable
-                                ? Icons.verified_outlined
-                                : Icons.warning_amber_rounded,
-                            label: statusText,
-                            color: isActuallyPromotable
-                                ? Colors.green
-                                : Colors.orange,
+                          const SizedBox(height: 12),
+                          Text(
+                            l10n.liveTestingNoIslandReasonTitle,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            notIslandReason.isEmpty
+                                ? l10n.liveTestingNoIslandReasonEmpty
+                                : notIslandReason,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              HyperosButton(
+                                label: _loadingDebugStatus
+                                    ? l10n.liveTestingRefreshing
+                                    : l10n.liveTestingRefreshAction,
+                                variant: HyperosButtonVariant.secondary,
+                                loading: _loadingDebugStatus,
+                                onPressed: _loadingDebugStatus
+                                    ? null
+                                    : () => _refreshDebugStatus(
+                                        showLoading: true,
+                                      ),
+                              ),
+                              HyperosButton(
+                                label: _exportingDiagnostics
+                                    ? l10n.liveTestingExporting
+                                    : l10n.liveTestingExportAction,
+                                variant: HyperosButtonVariant.secondary,
+                                loading: _exportingDiagnostics,
+                                onPressed: _exportingDiagnostics
+                                    ? null
+                                    : _exportLiveDiagnostics,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.liveTestingNoIslandReasonTitle,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                    ),
+                    // Mid-card preference row: square press fill, single 16dp.
+                    HyperosControlCardRowScope(
+                      isFirst: false,
+                      isLast: false,
+                      child: HyperosSwitchTile(
+                        value: _autoRefreshEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _autoRefreshEnabled = value;
+                          });
+                        },
+                        title: l10n.liveTestingAutoRefreshTitle,
+                        subtitle: _autoRefreshEnabled
+                            ? l10n.liveTestingAutoRefreshOn(
+                                _autoRefreshInterval.inSeconds,
+                              )
+                            : l10n.liveTestingAutoRefreshOff,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notIslandReason.isEmpty
-                            ? l10n.liveTestingNoIslandReasonEmpty
-                            : notIslandReason,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        HyperosControlCardScope.defaultHorizontalPadding,
+                        0,
+                        HyperosControlCardScope.defaultHorizontalPadding,
+                        HyperosControlCardScope.defaultBodyBottomInset,
                       ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                HyperosButton(
-                                  label: _loadingDebugStatus
-                                      ? l10n.liveTestingRefreshing
-                                      : l10n.liveTestingRefreshAction,
-                                  variant: HyperosButtonVariant.secondary,
-                                  loading: _loadingDebugStatus,
-                                  onPressed: _loadingDebugStatus
-                                      ? null
-                                      : () => _refreshDebugStatus(
-                                          showLoading: true,
-                                        ),
-                                ),
-                                HyperosButton(
-                                  label: _exportingDiagnostics
-                                      ? l10n.liveTestingExporting
-                                      : l10n.liveTestingExportAction,
-                                  variant: HyperosButtonVariant.secondary,
-                                  loading: _exportingDiagnostics,
-                                  onPressed: _exportingDiagnostics
-                                      ? null
-                                      : _exportLiveDiagnostics,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            HyperosSwitchTile(
-                              value: _autoRefreshEnabled,
-                              onChanged: (value) {
-                                setState(() {
-                                  _autoRefreshEnabled = value;
-                                });
-                              },
-                              title: l10n.liveTestingAutoRefreshTitle,
-                              subtitle: _autoRefreshEnabled
-                                  ? l10n.liveTestingAutoRefreshOn(
-                                      _autoRefreshInterval.inSeconds,
-                                    )
-                                  : l10n.liveTestingAutoRefreshOff,
-                            ),
-                            Text(
-                              l10n.liveTestingRefreshedAt(refreshedAtText),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
+                      child: Text(
+                        l10n.liveTestingRefreshedAt(refreshedAtText),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               const HyperosSectionGap(),
@@ -3358,26 +3369,30 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                HyperosSwitchTile(
-                  title: l10n.textColorIndependentDetail,
-                  value: !_draft.linkCourseCardColors,
-                  onChanged: (value) {
-                    if (!value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          linkCourseCardColors: true,
-                          courseCardDetailColorLight:
-                              _draft.courseCardTitleColorLight,
-                          courseCardDetailColorDark:
-                              _draft.courseCardTitleColorDark,
-                        ),
-                      );
-                    } else {
-                      _updateDraft(
-                        _draft.copyWith(linkCourseCardColors: false),
-                      );
-                    }
-                  },
+                HyperosControlCardRowScope(
+                  isFirst: true,
+                  isLast: false,
+                  child: HyperosSwitchTile(
+                    title: l10n.textColorIndependentDetail,
+                    value: !_draft.linkCourseCardColors,
+                    onChanged: (value) {
+                      if (!value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            linkCourseCardColors: true,
+                            courseCardDetailColorLight:
+                                _draft.courseCardTitleColorLight,
+                            courseCardDetailColorDark:
+                                _draft.courseCardTitleColorDark,
+                          ),
+                        );
+                      } else {
+                        _updateDraft(
+                          _draft.copyWith(linkCourseCardColors: false),
+                        );
+                      }
+                    },
+                  ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

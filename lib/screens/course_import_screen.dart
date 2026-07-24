@@ -5974,7 +5974,8 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                     edgeToEdge: true,
                     child: HyperosControlCardRowScope(
                       isFirst: true,
-                      isLast: false,
+                      // Lone select row is also the card bottom edge.
+                      isLast: true,
                       child: HyperosSelectTile<int>(
                         label: l10n.importFirstCourseWeekMappingLabel,
                         subtitle: l10n.importFirstCourseWeekMappingSubtitle,

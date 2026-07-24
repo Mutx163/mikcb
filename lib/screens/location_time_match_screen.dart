@@ -99,45 +99,50 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
         : group.keywordSummary;
 
     return HyperosControlCard(
+      edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          HyperosSwitchTile(
-            icon: Icons.place_outlined,
-            iconAccent: HyperosIconColors.orange,
-            title: group.name,
-            subtitle: l10n.locationTimeMatchBoundScheme(schemeName),
-            value: group.enabled,
-            onChanged: (value) async {
-              await provider.updateLocationTimeGroup(
-                group.copyWith(enabled: value),
-              );
-            },
+          // Top edge of card (no header): round top press; bottom is button row.
+          HyperosControlCardRowScope(
+            isFirst: true,
+            isLast: false,
+            child: HyperosSwitchTile(
+              icon: Icons.place_outlined,
+              iconAccent: HyperosIconColors.orange,
+              title: group.name,
+              subtitle:
+                  '${l10n.locationTimeMatchBoundScheme(schemeName)} · '
+                  '${l10n.locationTimeMatchKeywordsLine(keywordText)}',
+              value: group.enabled,
+              onChanged: (value) async {
+                await provider.updateLocationTimeGroup(
+                  group.copyWith(enabled: value),
+                );
+              },
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.locationTimeMatchKeywordsLine(keywordText),
-            style: HyperosTypography.listDetail(context),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.editAction,
-                  variant: HyperosButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () =>
-                      _openEditor(context, provider, existing: group),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: HyperosButton(
+                    label: l10n.editAction,
+                    variant: HyperosButtonVariant.secondary,
+                    expand: true,
+                    onPressed: () =>
+                        _openEditor(context, provider, existing: group),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              HyperosButton(
-                label: l10n.deleteAction,
-                variant: HyperosButtonVariant.secondary,
-                onPressed: () => _deleteGroup(context, provider, group),
-              ),
-            ],
+                const SizedBox(width: 8),
+                HyperosButton(
+                  label: l10n.deleteAction,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: () => _deleteGroup(context, provider, group),
+                ),
+              ],
+            ),
           ),
         ],
       ),

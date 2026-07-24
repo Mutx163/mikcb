@@ -29,24 +29,28 @@ class TimetableTextColorSettings extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HyperosSwitchTile(
-                title: l10n.textColorIndependentDetail,
-                value: !settings.linkCourseCardColors,
-                onChanged: (value) {
-                  if (!value) {
-                    onChanged(
-                      settings.copyWith(
-                        linkCourseCardColors: true,
-                        courseCardDetailColorLight:
-                            settings.courseCardTitleColorLight,
-                        courseCardDetailColorDark:
-                            settings.courseCardTitleColorDark,
-                      ),
-                    );
-                  } else {
-                    onChanged(settings.copyWith(linkCourseCardColors: false));
-                  }
-                },
+              HyperosControlCardRowScope(
+                isFirst: true,
+                isLast: false,
+                child: HyperosSwitchTile(
+                  title: l10n.textColorIndependentDetail,
+                  value: !settings.linkCourseCardColors,
+                  onChanged: (value) {
+                    if (!value) {
+                      onChanged(
+                        settings.copyWith(
+                          linkCourseCardColors: true,
+                          courseCardDetailColorLight:
+                              settings.courseCardTitleColorLight,
+                          courseCardDetailColorDark:
+                              settings.courseCardTitleColorDark,
+                        ),
+                      );
+                    } else {
+                      onChanged(settings.copyWith(linkCourseCardColors: false));
+                    }
+                  },
+                ),
               ),
               const SizedBox(height: 12),
               _ModeColorSettings(

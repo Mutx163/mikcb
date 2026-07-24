@@ -413,61 +413,97 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
     return HyperosControlCard(
+      // Mixed inset fields + full-bleed [HyperosSelectTile]: edge-to-edge card
+      // so the select row applies its own 16dp padding once (not stacked on
+      // [HyperosControlCard.headerlessBodyPadding]).
+      edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.sharedInfoTitle,
-                    style: typo.sm.copyWith(fontWeight: FontWeight.w600),
+            padding: const EdgeInsets.fromLTRB(
+              HyperosControlCardScope.defaultHorizontalPadding,
+              HyperosControlCardScope.defaultHorizontalPadding,
+              HyperosControlCardScope.defaultHorizontalPadding,
+              0,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.sharedInfoTitle,
+                      style: typo.sm.copyWith(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    tooltip: l10n.sharedInfoHint,
+                    onPressed: () => _showSharedInfoHintSheet(l10n),
+                    icon: Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: colors.mutedForeground,
+                    ),
                   ),
-                  tooltip: l10n.sharedInfoHint,
-                  onPressed: () => _showSharedInfoHintSheet(l10n),
-                  icon: Icon(
-                    Icons.info_outline_rounded,
-                    size: 18,
-                    color: colors.mutedForeground,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          ..._withSpacing([
-            _buildCourseNameField(provider, l10n),
-            _buildShortNameField(l10n),
-            HyperosSelectTile<CourseNature>(
-              label: l10n.courseNatureLabel,
-              items: {
-                for (final item in CourseNature.values)
-                  courseNatureLabel(l10n, item): item,
-              },
-              value: _courseNature,
-              onChanged: (value) => setState(() => _courseNature = value),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: HyperosControlCardScope.defaultHorizontalPadding,
             ),
-            HyperosTextField(
-              controller: _descriptionController,
-              label: l10n.courseDescriptionOptional,
-              minLines: 2,
-              maxLines: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _withSpacing([
+                _buildCourseNameField(provider, l10n),
+                _buildShortNameField(l10n),
+              ], spacing: 8),
             ),
-            Text(
-              l10n.courseColorTitle,
-              style: typo.xs2.copyWith(color: colors.mutedForeground),
+          ),
+          const SizedBox(height: 8),
+          // Full-bleed preference row; owns its own horizontal insets.
+          HyperosSelectTile<CourseNature>(
+            label: l10n.courseNatureLabel,
+            items: {
+              for (final item in CourseNature.values)
+                courseNatureLabel(l10n, item): item,
+            },
+            value: _courseNature,
+            onChanged: (value) => setState(() => _courseNature = value),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              HyperosControlCardScope.defaultHorizontalPadding,
+              0,
+              HyperosControlCardScope.defaultHorizontalPadding,
+              HyperosControlCardScope.defaultBodyBottomInset,
             ),
-            _buildCompactColorPalette(l10n),
-          ], spacing: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _withSpacing([
+                HyperosTextField(
+                  controller: _descriptionController,
+                  label: l10n.courseDescriptionOptional,
+                  minLines: 2,
+                  maxLines: 4,
+                ),
+                Text(
+                  l10n.courseColorTitle,
+                  style: typo.xs2.copyWith(color: colors.mutedForeground),
+                ),
+                _buildCompactColorPalette(l10n),
+              ], spacing: 8),
+            ),
+          ),
         ],
       ),
     );

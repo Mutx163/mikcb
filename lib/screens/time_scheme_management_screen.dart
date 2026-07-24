@@ -140,7 +140,6 @@ class _TimeSchemeManagementScreenState
               HyperosSectionDescription(
                 text: l10n.scheduleDateRuleSectionSubtitle,
               ),
-              HyperosSectionDescription(text: l10n.scheduleDateRuleNote),
               const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.timeSchemeEntryTitle),
               if (schemes.isEmpty)
