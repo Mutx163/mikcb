@@ -93,7 +93,8 @@ class Course {
   final List<int>? suspendedWeeks; // 停课周次
   final CourseNature courseNature; // 课程性质
   final String? description; // 课程简介（同名课程共享）
-  /// Whole-course note (long-lived, not shared across same-name courses).
+  /// Legacy per-entry free text. Prefer [description] for shared course intro;
+  /// kept for import/back-compat. UI should not write new values here.
   final String? note;
 
   /// Per-week session notes keyed by teaching week (1-based).

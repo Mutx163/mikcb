@@ -256,10 +256,7 @@ class _RelatedCoursesPanel extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: typo.sm.copyWith(
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
+                            style: typo.sm.copyWith(height: 1.25),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -385,10 +382,7 @@ class _RelatedCourseCompactRow extends StatelessWidget {
                           Expanded(
                             child: Text(
                               course.name,
-                              style: typo.sm.copyWith(
-                                fontWeight: FontWeight.w600,
-                                height: 1.25,
-                              ),
+                              style: typo.sm.copyWith(height: 1.25),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -397,10 +391,7 @@ class _RelatedCourseCompactRow extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               badgeLabel,
-                              style: typo.xs2.copyWith(
-                                color: courseColor,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: typo.xs2.copyWith(color: courseColor),
                             ),
                           ],
                         ],
@@ -427,10 +418,7 @@ class _RelatedCourseCompactRow extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   l10n.courseActionConflictSwitchAction,
-                  style: typo.xs2.copyWith(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: typo.xs2.copyWith(color: colors.primary),
                 ),
               ],
             ),
@@ -528,13 +516,15 @@ class _CourseActionSheetContent extends StatelessWidget {
     final teacher = course.teacher.trim();
     final location = course.location.trim();
     final description = course.description?.trim();
-    final wholeNote = course.note?.trim();
+    // Course intro is shared [description]; fall back to legacy per-entry note.
+    final legacyNote = course.note?.trim();
+    final courseIntroText = (description != null && description.isNotEmpty)
+        ? description
+        : ((legacyNote != null && legacyNote.isNotEmpty) ? legacyNote : null);
     final sessionNote = course.sessionNoteForWeek(week);
     final sessionNoteText = sessionNote?.trimmedText;
     final hasHomework = sessionNote?.hasHomework == true;
-    final headerDetail = description?.isNotEmpty == true
-        ? description!
-        : course.weekDescription(l10n);
+    final headerDetail = courseIntroText ?? course.weekDescription(l10n);
     final sectionTitle =
         '${_weekdayLabel(l10n, course.dayOfWeek)} · ${l10n.sectionRangeLabel(course.startSection, course.endSection)}';
     final timeSubtitle = _formatTimeTileSubtitle(
@@ -543,14 +533,13 @@ class _CourseActionSheetContent extends StatelessWidget {
       week: week,
       settings: provider.settings,
     );
-    final teacherSubtitle = description?.isNotEmpty == true
+    final teacherSubtitle = courseIntroText != null
         ? course.weekDescription(l10n)
         : (course.shortName?.trim().isNotEmpty == true
               ? l10n.shortNamePrefix(course.shortName!.trim())
               : course.weekDescription(l10n));
     final locationSubtitle =
-        course.shortName?.trim().isNotEmpty == true &&
-            description?.isNotEmpty == true
+        course.shortName?.trim().isNotEmpty == true && courseIntroText != null
         ? l10n.shortNamePrefix(course.shortName!.trim())
         : course.weekDescription(l10n);
     final canReschedule = !previewItem.isReadOnly && course.isInWeek(week);
@@ -563,13 +552,13 @@ class _CourseActionSheetContent extends StatelessWidget {
         : Icons.menu_book_rounded;
     final noteTitle = _resolveNoteTileTitle(
       l10n: l10n,
-      wholeNote: wholeNote,
+      wholeNote: courseIntroText,
       sessionNoteText: sessionNoteText,
       hasHomework: hasHomework,
     );
     final noteSubtitle = _resolveNoteTileSubtitle(
       l10n: l10n,
-      wholeNote: wholeNote,
+      wholeNote: courseIntroText,
       sessionNoteText: sessionNoteText,
       hasHomework: hasHomework,
     );
@@ -601,33 +590,18 @@ class _CourseActionSheetContent extends StatelessWidget {
                     runSpacing: 6,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        course.name,
-                        style: typo.sm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
+                      Text(course.name, style: typo.sm.copyWith(height: 1.2)),
                       if (!previewItem.isPartnerCourse)
-                        Text(
-                          natureLabel,
-                          style: muted.copyWith(fontWeight: FontWeight.w600),
-                        ),
+                        Text(natureLabel, style: muted),
                       if (previewItem.isConflict)
                         Text(
                           l10n.conflictLabel,
-                          style: typo.xs2.copyWith(
-                            color: colors.destructive,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: typo.xs2.copyWith(color: colors.destructive),
                         ),
                       if (coupleBadge != null)
                         Text(
                           coupleBadge,
-                          style: typo.xs2.copyWith(
-                            color: courseColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: typo.xs2.copyWith(color: courseColor),
                         ),
                     ],
                   ),
@@ -648,10 +622,7 @@ class _CourseActionSheetContent extends StatelessWidget {
           icon: Icons.schedule_outlined,
           title: sectionTitle,
           subtitle: timeSubtitle,
-          trailing: Text(
-            '${course.startTime}-${course.endTime}',
-            style: muted.copyWith(fontWeight: FontWeight.w600),
-          ),
+          trailing: Text('${course.startTime}-${course.endTime}', style: muted),
         ),
         const SizedBox(height: 8),
         _CourseDetailTile(
@@ -754,7 +725,7 @@ class _CourseActionSheetContent extends StatelessWidget {
                 child: HyperosFrostedSheetButton(
                   key: ValueKey('course-action-reschedule-${course.id}'),
                   label: l10n.courseActionRescheduleSecondary,
-                  bordered: true,
+                  bordered: false,
                   expand: true,
                   onPressed: canReschedule
                       ? () =>
@@ -769,7 +740,7 @@ class _CourseActionSheetContent extends StatelessWidget {
                   label: isSuspended
                       ? l10n.courseActionUnsuspend
                       : l10n.courseActionSuspendSecondary,
-                  bordered: true,
+                  bordered: false,
                   expand: true,
                   onPressed: () =>
                       _closeSheetThen(context, () => onSuspend(course)),
@@ -872,10 +843,7 @@ class _CourseDetailTile extends StatelessWidget {
                 children: [
                   Text(
                     title!,
-                    style: typo.sm.copyWith(
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
-                    ),
+                    style: typo.sm.copyWith(height: 1.25),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -944,10 +912,7 @@ class _CourseActionNoticeText extends StatelessWidget {
           TextSpan(text: notice.substring(0, weekIndex)),
           TextSpan(
             text: weekToken,
-            style: TextStyle(
-              color: colors.foreground,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(color: colors.foreground),
           ),
           TextSpan(text: notice.substring(weekIndex + weekToken.length)),
         ],

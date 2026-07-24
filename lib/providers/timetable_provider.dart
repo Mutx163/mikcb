@@ -3072,6 +3072,15 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Course _normalizeCourse(Course course) {
+    final trimmedDescription = course.description?.trim();
+    final trimmedNote = course.note?.trim();
+    final resolvedDescription =
+        (trimmedDescription != null && trimmedDescription.isNotEmpty)
+        ? trimmedDescription
+        // Promote legacy per-entry note into the shared course description.
+        : ((trimmedNote != null && trimmedNote.isNotEmpty)
+              ? trimmedNote
+              : null);
     return course.copyWith(
       name: course.name.trim(),
       shortName: course.shortName?.trim().isEmpty == true
@@ -3079,10 +3088,10 @@ class TimetableProvider with ChangeNotifier {
           : course.shortName?.trim(),
       teacher: course.teacher.trim(),
       location: course.location.trim(),
-      description: course.description?.trim().isEmpty == true
-          ? null
-          : course.description?.trim(),
-      note: course.note?.trim().isEmpty == true ? null : course.note?.trim(),
+      description: resolvedDescription,
+      note: (trimmedNote != null && trimmedNote.isNotEmpty)
+          ? trimmedNote
+          : null,
     );
   }
 
@@ -3130,13 +3139,24 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Course _applySharedCourseFields(Course target, Course source) {
+    final sharedDescription = () {
+      final description = source.description?.trim();
+      if (description != null && description.isNotEmpty) {
+        return description;
+      }
+      final legacyNote = source.note?.trim();
+      if (legacyNote != null && legacyNote.isNotEmpty) {
+        return legacyNote;
+      }
+      return null;
+    }();
     return target.copyWith(
       name: source.name,
       shortName: source.shortName,
       teacher: source.teacher,
       color: source.color,
       courseNature: source.courseNature,
-      description: source.description,
+      description: sharedDescription,
     );
   }
 

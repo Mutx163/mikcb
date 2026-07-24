@@ -1233,6 +1233,178 @@ void main() {
   });
 
   test(
+    'adding same-name course inherits shared description from existing entry',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      await provider.addCourse(
+        Course(
+          id: 'course-range',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 1,
+          endWeek: 20,
+          description: '带计算器',
+        ),
+      );
+
+      // New single-week schedule entry for the same course name.
+      await provider.addCourse(
+        Course(
+          id: 'course-single-week',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'B202',
+          dayOfWeek: 3,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+          startWeek: 8,
+          endWeek: 8,
+        ),
+      );
+
+      final sameNameCourses = provider.courses
+          .where((course) => course.name == '高等数学')
+          .toList();
+      expect(sameNameCourses, hasLength(2));
+      expect(sameNameCourses.map((course) => course.description).toSet(), {
+        '带计算器',
+      });
+
+      final singleWeek = sameNameCourses.singleWhere(
+        (course) => course.id == 'course-single-week',
+      );
+      expect(singleWeek.description, '带计算器');
+      expect(singleWeek.location, 'B202');
+    },
+  );
+
+  test(
+    'adding same-name course promotes legacy per-entry note into description',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      // Legacy data: intro only lived on [Course.note], not description.
+      await provider.addCourse(
+        Course(
+          id: 'course-legacy',
+          name: '线性代数',
+          teacher: '李老师',
+          location: 'C101',
+          dayOfWeek: 2,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          note: '旧版整节课备注',
+        ),
+      );
+
+      final legacy = provider.courses.singleWhere(
+        (course) => course.id == 'course-legacy',
+      );
+      // Normalize promotes note into shared description on write.
+      expect(legacy.description, '旧版整节课备注');
+
+      await provider.addCourse(
+        Course(
+          id: 'course-new-slot',
+          name: '线性代数',
+          teacher: '李老师',
+          location: 'D303',
+          dayOfWeek: 4,
+          startSection: 5,
+          endSection: 6,
+          startTime: '14:00',
+          endTime: '15:40',
+          startWeek: 5,
+          endWeek: 5,
+        ),
+      );
+
+      final sameNameCourses = provider.courses
+          .where((course) => course.name == '线性代数')
+          .toList();
+      expect(sameNameCourses, hasLength(2));
+      expect(sameNameCourses.map((course) => course.description).toSet(), {
+        '旧版整节课备注',
+      });
+    },
+  );
+
+  test(
+    'updating description on one course syncs to all same-name schedule entries',
+    () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      await provider.addCourse(
+        Course(
+          id: 'course-a',
+          name: '大学英语',
+          teacher: '王老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          description: '旧简介',
+        ),
+      );
+      await provider.addCourse(
+        Course(
+          id: 'course-b',
+          name: '大学英语',
+          teacher: '王老师',
+          location: 'B202',
+          dayOfWeek: 3,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+          startWeek: 10,
+          endWeek: 10,
+        ),
+      );
+
+      final originalA = provider.courses.singleWhere(
+        (course) => course.id == 'course-a',
+      );
+      await provider.updateCourse(
+        originalA.copyWith(description: '新课程简介', note: null),
+      );
+
+      final sameNameCourses = provider.courses
+          .where((course) => course.name == '大学英语')
+          .toList();
+      expect(sameNameCourses, hasLength(2));
+      expect(sameNameCourses.map((course) => course.description).toSet(), {
+        '新课程简介',
+      });
+    },
+  );
+
+  test(
     'clearing short name falls back to course name for live island payload',
     () async {
       final provider = TimetableProvider(

@@ -9,7 +9,8 @@ import '../ui/hyperos/hyperos.dart';
 
 /// Opens the dual-type course note editor as a home HyperOS sheet.
 ///
-/// Both whole-course and this-week notes stay on one page. When the keyboard
+/// The sheet edits the shared course description (same field as the edit-course
+/// screen) plus this-week session notes. When the keyboard
 /// opens, the sheet lifts above the IME and the focused field scrolls into
 /// view — no separate editing layout.
 Future<bool> showCourseNoteSheet(
@@ -72,7 +73,12 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
     WidgetsBinding.instance.addObserver(this);
     final course = widget.course;
     final sessionNote = course.sessionNoteForWeek(widget.week);
-    _courseNoteController = TextEditingController(text: course.note ?? '');
+    // Prefer shared [Course.description]; fall back to legacy per-entry
+    // [Course.note] so older data still appears until the user saves once.
+    final courseDescriptionText = course.description?.trim().isNotEmpty == true
+        ? course.description!.trim()
+        : (course.note ?? '');
+    _courseNoteController = TextEditingController(text: courseDescriptionText);
     _sessionNoteController = TextEditingController(
       text: sessionNote?.text ?? '',
     );
@@ -158,7 +164,10 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
         hasHomework: _hasHomework,
       ).normalizedOrNull;
       final updated = current.copyWith(
-        note: courseNoteText.isEmpty ? null : courseNoteText,
+        // Write shared description so all same-name schedule entries see it.
+        // Clear legacy per-entry note to avoid dual-field drift.
+        description: courseNoteText.isEmpty ? null : courseNoteText,
+        note: null,
         sessionNotes: current.withSessionNote(widget.week, sessionNote),
       );
       await provider.updateCourse(updated);
@@ -229,10 +238,7 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
                     children: [
                       Text(
                         l10n.courseNoteSheetTitle,
-                        style: typo.sm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
+                        style: typo.sm.copyWith(height: 1.2),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -285,10 +291,7 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
                         children: [
                           Text(
                             l10n.courseNoteHasHomeworkTitle,
-                            style: typo.sm.copyWith(
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
+                            style: typo.sm.copyWith(height: 1.25),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -371,10 +374,7 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: typo.sm.copyWith(fontWeight: FontWeight.w600, height: 1.2),
-        ),
+        Text(label, style: typo.sm.copyWith(height: 1.2)),
         const SizedBox(height: 3),
         Text(hint, style: muted, maxLines: 2, overflow: TextOverflow.ellipsis),
       ],
