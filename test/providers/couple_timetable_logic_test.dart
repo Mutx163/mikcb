@@ -108,6 +108,46 @@ void main() {
     expect(shared.single.endMinutes, 10 * 60);
   });
 
+  test('shared free covers full observation range, not only 08:00-22:00', () {
+    final earlyAndLateSections = [
+      const SectionTime(startTime: '07:00', endTime: '07:45'),
+      const SectionTime(startTime: '07:55', endTime: '08:40'),
+      const SectionTime(startTime: '21:00', endTime: '21:45'),
+      const SectionTime(startTime: '21:55', endTime: '22:40'),
+    ];
+    final myCourses = [
+      _course(
+        id: 'mine',
+        name: '晚课',
+        startSection: 3,
+        endSection: 4,
+        startTime: '21:00',
+        endTime: '22:40',
+      ),
+    ];
+
+    final shared = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: myCourses,
+      partnerCourses: const [],
+      dayOfWeek: 1,
+      week: 1,
+      sections: earlyAndLateSections,
+    );
+
+    // Before first busy slot: full morning observation (07:00 → 21:00).
+    expect(
+      shared.any(
+        (interval) =>
+            interval.startMinutes == 7 * 60 && interval.endMinutes == 21 * 60,
+      ),
+      isTrue,
+    );
+    // No artificial clip at 08:00 or 22:00 — free ends at last section end only
+    // when there is no late busy; with late busy, free does not include 21:00+.
+    expect(shared.any((interval) => interval.endMinutes > 22 * 60), isFalse);
+    expect(shared.any((interval) => interval.startMinutes < 8 * 60), isTrue);
+  });
+
   test('shared free uses partner week offset (G4/G5)', () {
     final myCourses = [
       _course(

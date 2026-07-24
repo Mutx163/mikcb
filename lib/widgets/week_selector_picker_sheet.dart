@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -68,20 +69,9 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
                 ),
                 itemBuilder: (context, index) {
                   final week = availableWeeks[index];
-                  final isCurrentSemesterWeek = week == currentSemesterWeek;
-                  if (isCurrentSemesterWeek) {
-                    return HyperosButton(
-                      label: l10n.goToWeekLabel(week),
-                      variant: HyperosButtonVariant.primary,
-                      dense: true,
-                      expand: true,
-                      onPressed: () => Navigator.of(context).pop(week),
-                    );
-                  }
-                  return HyperosFrostedSheetButton(
+                  return _WeekSelectorCell(
                     label: l10n.goToWeekLabel(week),
-                    dense: true,
-                    expand: true,
+                    highlighted: week == currentSemesterWeek,
                     onPressed: () => Navigator.of(context).pop(week),
                   );
                 },
@@ -98,6 +88,75 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Compact week tile: single-line label, smaller than sheet title, fills the grid cell.
+class _WeekSelectorCell extends StatelessWidget {
+  const _WeekSelectorCell({
+    required this.label,
+    required this.highlighted,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool highlighted;
+  final VoidCallback onPressed;
+
+  /// Below [HyperosTypography.sheetTitle] (~preference title), above dense footnote.
+  static const double _labelFontSize = HyperosMiuixTypography.body2;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const minHeight = 40.0;
+    final cornerRadius = HyperosRadius.clampCornerRadius(
+      HyperosMiuixButton.cornerRadius,
+      minHeight,
+    );
+    final borderRadius = BorderRadius.circular(cornerRadius);
+
+    final backgroundColor = highlighted
+        ? HyperosColors.primary(context)
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.14)
+              : const Color(0xFFE8E8E8));
+    final foregroundColor = highlighted
+        ? HyperosColors.onPrimary(context)
+        : HyperosColors.onSecondaryVariant(context);
+
+    final labelWidget = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        label,
+        maxLines: 1,
+        softWrap: false,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: _labelFontSize,
+          color: foregroundColor,
+          fontWeight: FontWeight.w400,
+          height: 1.1,
+        ),
+      ),
+    );
+
+    return Material(
+      color: backgroundColor,
+      borderRadius: borderRadius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onPressed();
+        },
+        borderRadius: borderRadius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Center(child: labelWidget),
+        ),
       ),
     );
   }

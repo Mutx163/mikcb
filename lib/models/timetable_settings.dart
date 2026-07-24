@@ -1009,6 +1009,9 @@ class TimetableSettings {
   final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
   final double timetableFloatingBackToCurrentWeekButtonOpacity;
   final int timetableLastViewedDayOfWeek;
+
+  /// Whether couple-timetable overlay (header heart) was last left on.
+  final bool coupleTimetableOverlayEnabled;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
   final bool enableHaptics;
@@ -1152,6 +1155,7 @@ class TimetableSettings {
         BackToCurrentWeekButtonStyle.floating,
     this.timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
     this.timetableLastViewedDayOfWeek = 1,
+    this.coupleTimetableOverlayEnabled = false,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
@@ -1312,6 +1316,7 @@ class TimetableSettings {
           BackToCurrentWeekButtonStyle.floating,
       timetableFloatingBackToCurrentWeekButtonOpacity: 0.96,
       timetableLastViewedDayOfWeek: 1,
+      coupleTimetableOverlayEnabled: false,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
       enableHaptics: true,
@@ -1447,6 +1452,7 @@ class TimetableSettings {
       'timetableFloatingBackToCurrentWeekButtonOpacity':
           timetableFloatingBackToCurrentWeekButtonOpacity,
       'timetableLastViewedDayOfWeek': timetableLastViewedDayOfWeek,
+      'coupleTimetableOverlayEnabled': coupleTimetableOverlayEnabled,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
@@ -1678,6 +1684,8 @@ class TimetableSettings {
             1,
             7,
           ),
+      coupleTimetableOverlayEnabled:
+          json['coupleTimetableOverlayEnabled'] as bool? ?? false,
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
         json['timetableSectionTimeDisplayMode'] as String?,
       ),
@@ -1981,6 +1989,7 @@ class TimetableSettings {
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
     int? timetableLastViewedDayOfWeek,
+    bool? coupleTimetableOverlayEnabled,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
     bool? enableHaptics,
@@ -2160,6 +2169,8 @@ class TimetableSettings {
       timetableLastViewedDayOfWeek:
           (timetableLastViewedDayOfWeek ?? this.timetableLastViewedDayOfWeek)
               .clamp(1, 7),
+      coupleTimetableOverlayEnabled:
+          coupleTimetableOverlayEnabled ?? this.coupleTimetableOverlayEnabled,
       timetableSectionTimeDisplayMode:
           timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,

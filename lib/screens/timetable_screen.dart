@@ -300,6 +300,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                         _coupleOverlayEnabled = !_coupleOverlayEnabled;
                         _sharedFreeSegmentsExpanded = false;
                       });
+                      _persistCoupleOverlayEnabled(
+                        provider,
+                        enabled: _coupleOverlayEnabled,
+                      );
                     },
                   ),
                 FHeaderAction(
@@ -460,6 +464,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       _selectedDayOfWeek = null;
       _dayViewExpandController.value = 0;
     }
+    _coupleOverlayEnabled = settings.coupleTimetableOverlayEnabled;
+    _sharedFreeSegmentsExpanded = false;
   }
 
   void _applyVisibleWeek(
@@ -517,6 +523,20 @@ class _TimetableScreenState extends State<TimetableScreen>
           timetableHomeViewMode: mode,
           timetableLastViewedDayOfWeek: resolvedDayOfWeek,
         ),
+      ),
+    );
+  }
+
+  void _persistCoupleOverlayEnabled(
+    TimetableProvider provider, {
+    required bool enabled,
+  }) {
+    if (provider.settings.coupleTimetableOverlayEnabled == enabled) {
+      return;
+    }
+    unawaited(
+      provider.updateTimetableSettings(
+        provider.settings.copyWith(coupleTimetableOverlayEnabled: enabled),
       ),
     );
   }
@@ -1024,10 +1044,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   onTap: _showWeekSelector,
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 2,
-                    ),
+                    // 时间列偏窄，略向右让周次与节次数字视觉中心对齐。
+                    padding: const EdgeInsets.fromLTRB(8, 2, 2, 2),
                     child: Text(
                       l10n.currentWeekCompact(week),
                       textAlign: TextAlign.center,
@@ -2009,15 +2027,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         border: Border.all(color: foruiTheme.colors.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (isToday)
@@ -2089,138 +2107,138 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    dateLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: foruiTheme.typography.display.lg.copyWith(
+                ),
+                IconButton(
+                  key: const ValueKey('back-to-week-view-button'),
+                  onPressed: () => _closeDayView(settings),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  tooltip: l10n.backToWeekViewAction,
+                  style: IconButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
+                    minimumSize: const Size(32, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: foruiTheme.colors.mutedForeground,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              dateLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: foruiTheme.typography.display.lg.copyWith(
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.1,
+                height: 1.15,
+                color: foruiTheme.colors.foreground,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: countBadgeColor,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(
+                    hasAgenda
+                        ? (courseCount > 0
+                              ? l10n.courseCountSummary(courseCount)
+                              : l10n.scheduleCountSummary(scheduleCount))
+                        : l10n.courseCountSummary(0),
+                    style: foruiTheme.typography.body.xs2.copyWith(
+                      color: countBadgeTextColor,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.1,
-                      height: 1.15,
-                      color: foruiTheme.colors.foreground,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: countBadgeColor,
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                        child: Text(
-                          hasAgenda
-                              ? (courseCount > 0
-                                    ? l10n.courseCountSummary(courseCount)
-                                    : l10n.scheduleCountSummary(scheduleCount))
-                              : l10n.courseCountSummary(0),
-                          style: foruiTheme.typography.body.xs2.copyWith(
-                            color: countBadgeTextColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                ),
+                if (scheduleCount > 0 && courseCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Text(
+                      l10n.scheduleCountSummary(scheduleCount),
+                      style: foruiTheme.typography.body.xs2.copyWith(
+                        color: foruiTheme.colors.mutedForeground,
+                        fontWeight: FontWeight.w600,
                       ),
-                      if (scheduleCount > 0 && courseCount > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Text(
-                            l10n.scheduleCountSummary(scheduleCount),
-                            style: foruiTheme.typography.body.xs2.copyWith(
-                              color: foruiTheme.colors.mutedForeground,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      if (firstAgenda != null)
-                        Text(
-                          '${l10n.classStartsAtLabel(firstAgenda.startTime)} · ${l10n.classEndsAtLabel(lastAgenda!.endTime)}',
-                          style: foruiTheme.typography.body.xs2.copyWith(
-                            color: foruiTheme.colors.mutedForeground,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
-                  if (currentCourse != null ||
-                      conflictCount > 0 ||
-                      nonCurrentWeekCourseCount > 0 ||
-                      dayExams.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        if (currentCourse != null)
-                          _buildDayViewSummaryChip(
-                            icon: Icons.bolt_rounded,
-                            text:
-                                '${l10n.ongoingCourseBadge} · ${currentCourse.name}',
-                            accentColor: colorScheme.primary,
-                          ),
-                        if (conflictCount > 0)
-                          _buildDayViewSummaryChip(
-                            icon: Icons.warning_amber_rounded,
-                            text: l10n.conflictCountLabel(conflictCount),
-                            accentColor: colorScheme.error,
-                          ),
-                        if (nonCurrentWeekCourseCount > 0)
-                          _buildDayViewSummaryChip(
-                            icon: Icons.visibility_rounded,
-                            text:
-                                '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
-                          ),
-                        ...dayExams.map(
-                          (exam) => _buildDayViewSummaryChip(
-                            icon: Icons.school_outlined,
-                            text:
-                                '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
-                            accentColor: colorScheme.error,
-                          ),
-                        ),
-                      ],
+                if (firstAgenda != null)
+                  Text(
+                    '${l10n.classStartsAtLabel(firstAgenda.startTime)} · ${l10n.classEndsAtLabel(lastAgenda!.endTime)}',
+                    style: foruiTheme.typography.body.xs2.copyWith(
+                      color: foruiTheme.colors.mutedForeground,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                  if (_isCoupleOverlayActive(provider)) ...[
-                    const SizedBox(height: 12),
-                    _buildDayViewSharedFreeSummary(
-                      provider: provider,
-                      settings: settings,
-                      week: week,
-                      dayOfWeek: dayOfWeek,
-                      isToday: isToday,
+                  ),
+              ],
+            ),
+            if (currentCourse != null ||
+                conflictCount > 0 ||
+                nonCurrentWeekCourseCount > 0 ||
+                dayExams.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  if (currentCourse != null)
+                    _buildDayViewSummaryChip(
+                      icon: Icons.bolt_rounded,
+                      text:
+                          '${l10n.ongoingCourseBadge} · ${currentCourse.name}',
+                      accentColor: colorScheme.primary,
                     ),
-                  ],
+                  if (conflictCount > 0)
+                    _buildDayViewSummaryChip(
+                      icon: Icons.warning_amber_rounded,
+                      text: l10n.conflictCountLabel(conflictCount),
+                      accentColor: colorScheme.error,
+                    ),
+                  if (nonCurrentWeekCourseCount > 0)
+                    _buildDayViewSummaryChip(
+                      icon: Icons.visibility_rounded,
+                      text:
+                          '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
+                    ),
+                  ...dayExams.map(
+                    (exam) => _buildDayViewSummaryChip(
+                      icon: Icons.school_outlined,
+                      text:
+                          '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
+                      accentColor: colorScheme.error,
+                    ),
+                  ),
                 ],
               ),
-            ),
-            IconButton(
-              key: const ValueKey('back-to-week-view-button'),
-              onPressed: () => _closeDayView(settings),
-              icon: const Icon(Icons.close_rounded, size: 18),
-              tooltip: l10n.backToWeekViewAction,
-              style: IconButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.all(6),
-                minimumSize: const Size(32, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                foregroundColor: foruiTheme.colors.mutedForeground,
+            ],
+            if (_isCoupleOverlayActive(provider)) ...[
+              const SizedBox(height: 12),
+              _buildDayViewSharedFreeSummary(
+                provider: provider,
+                settings: settings,
+                week: week,
+                dayOfWeek: dayOfWeek,
+                isToday: isToday,
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -2306,9 +2324,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     required bool isToday,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final foruiTheme = context.theme;
     final freeAccent = _colorFromHex(
       CoupleTimetableLogic.freeSlotColorHex,
-      HyperosColors.primary(context),
+      foruiTheme.colors.primary,
     );
     final sections = _sectionsForSharedFree(provider, settings);
     final isStale = _isPartnerScheduleStale(provider);
@@ -2318,22 +2337,29 @@ class _TimetableScreenState extends State<TimetableScreen>
     final emptyLabel = isToday
         ? l10n.coupleTimetableNoSharedFree
         : l10n.coupleTimetableNoSharedFreeOtherDay;
-    final hintParts = <String>[
-      l10n.coupleTimetableSharedFreeCourseOnlyHint,
-      if (isStale) l10n.coupleTimetableSharedFreeStaleHint,
-    ];
-    final hintStyle = HyperosTypography.listDetail(
-      context,
-    ).copyWith(color: HyperosColors.secondaryText(context), height: 1.25);
+    final mutedStyle = foruiTheme.typography.body.xs2.copyWith(
+      color: foruiTheme.colors.mutedForeground,
+      fontWeight: FontWeight.w400,
+      height: 1.25,
+    );
 
     if (sections.isEmpty) {
       return _buildSharedFreeSummaryShell(
         key: const ValueKey('shared-free-summary-unavailable'),
-        child: _buildSharedFreeHeader(
-          title: title,
-          meta: l10n.coupleTimetableSharedFreeUnavailable,
-          accent: HyperosColors.secondaryText(context),
-          icon: Icons.event_busy_rounded,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: foruiTheme.typography.body.sm.copyWith(
+                color: foruiTheme.colors.foreground,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(l10n.coupleTimetableSharedFreeUnavailable, style: mutedStyle),
+          ],
         ),
       );
     }
@@ -2351,14 +2377,20 @@ class _TimetableScreenState extends State<TimetableScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSharedFreeHeader(
-              title: title,
-              meta: emptyLabel,
-              accent: freeAccent,
-              icon: Icons.hourglass_empty_rounded,
+            Text(
+              title,
+              style: foruiTheme.typography.body.sm.copyWith(
+                color: foruiTheme.colors.foreground,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(hintParts.join(' · '), style: hintStyle),
+            const SizedBox(height: 6),
+            Text(emptyLabel, style: mutedStyle),
+            if (isStale) ...[
+              const SizedBox(height: 4),
+              Text(l10n.coupleTimetableSharedFreeStaleHint, style: mutedStyle),
+            ],
           ],
         ),
       );
@@ -2369,23 +2401,43 @@ class _TimetableScreenState extends State<TimetableScreen>
         : math.min(_sharedFreeVisibleSegmentLimit, intervals.length);
     final visibleIntervals = intervals.take(visibleLimit).toList();
     final hiddenCount = intervals.length - visibleIntervals.length;
-    final hoursLabel = CoupleTimetableLogic.formatDurationHours(
-      CoupleTimetableLogic.totalDurationMinutes(intervals),
-    );
 
     return _buildSharedFreeSummaryShell(
       key: const ValueKey('shared-free-summary'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSharedFreeHeader(
-            title: title,
-            meta: l10n.coupleTimetableSharedFreeMeta(
-              intervals.length,
-              hoursLabel,
-            ),
-            accent: freeAccent,
-            icon: Icons.event_available_rounded,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: foruiTheme.typography.body.sm.copyWith(
+                    color: foruiTheme.colors.foreground,
+                    fontWeight: FontWeight.w400,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: freeAccent.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(
+                  l10n.coupleTimetableSharedFreeMeta(intervals.length),
+                  style: foruiTheme.typography.body.xs2.copyWith(
+                    color: freeAccent,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -2410,18 +2462,18 @@ class _TimetableScreenState extends State<TimetableScreen>
                     borderRadius: BorderRadius.circular(999),
                     child: Ink(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 9,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: freeAccent.withValues(alpha: 0.12),
+                        color: freeAccent.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         l10n.coupleTimetableSharedFreeMoreCount(hiddenCount),
-                        style: HyperosTypography.listDetail(context).copyWith(
+                        style: foruiTheme.typography.body.xs.copyWith(
                           color: freeAccent,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
@@ -2429,58 +2481,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(hintParts.join(' · '), style: hintStyle),
+          if (isStale) ...[
+            const SizedBox(height: 8),
+            Text(l10n.coupleTimetableSharedFreeStaleHint, style: mutedStyle),
+          ],
         ],
       ),
-    );
-  }
-
-  Widget _buildSharedFreeHeader({
-    required String title,
-    required String meta,
-    required Color accent,
-    required IconData icon,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(9),
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon, size: 16, color: accent),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: HyperosTypography.listTitle(context).copyWith(
-                  color: HyperosColors.primaryText(context),
-                  height: 1.15,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                meta,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: HyperosTypography.listDetail(context).copyWith(
-                  color: HyperosColors.secondaryText(context),
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -2488,31 +2494,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     required String label,
     required Color accent,
   }) {
+    final foruiTheme = context.theme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: HyperosColors.surfaceContainerHigh(context),
+        color: accent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.16)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.primaryText(context),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.1,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: foruiTheme.typography.body.xs.copyWith(
+          color: accent,
+          fontWeight: FontWeight.w400,
+        ),
       ),
     );
   }
@@ -2521,14 +2515,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     required Key key,
     required Widget child,
   }) {
+    final foruiTheme = context.theme;
     return DecoratedBox(
       key: key,
       decoration: BoxDecoration(
-        color: HyperosColors.surfaceContainer(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: HyperosColors.outline(context)),
+        color: foruiTheme.colors.secondary,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
+        // 与摘要卡内其它区块同一套水平节奏，避免再套一层 14 造成左右过空。
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: child,
       ),
@@ -2546,33 +2541,11 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Widget _buildDayViewEmptyState({required int week}) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.event_busy_rounded,
-            size: 32,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.dayViewEmptyTitle,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            l10n.weekLabel(week),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: HyperosEmptyState(
+        icon: Icons.event_busy_outlined,
+        title: l10n.dayViewEmptyTitle,
+        subtitle: l10n.weekLabel(week),
       ),
     );
   }
@@ -2925,7 +2898,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                                 style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w400,
                                     ),
                               ),
                             ],
@@ -2946,7 +2919,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: palette.foregroundColor,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w400,
                   height: 1.10,
                 ),
               ),
@@ -3082,7 +3055,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                                       style: theme.textTheme.labelSmall
                                           ?.copyWith(
                                             color: Colors.white,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w400,
                                           ),
                                     ),
                                   ],
@@ -3120,7 +3093,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w400,
                         height: 1.10,
                       ),
                     ),
@@ -3201,7 +3174,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   l10n.courseNoteAction,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -3710,7 +3683,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.92),
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w400,
               fontSize: 11.5,
               height: 1.15,
             ),
@@ -3862,7 +3835,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelSmall?.copyWith(
           color: textColor,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w400,
           fontSize: 10.5,
           height: 1.0,
         ),

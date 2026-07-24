@@ -179,11 +179,6 @@ class CoupleTimetableLogic {
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
-  /// Default daytime window used to clip shared free (reduces false positives
-  /// like "free at 3am"). Observation range [R] still comes from sections.
-  static const int defaultDayWindowStartMinutes = 8 * 60;
-  static const int defaultDayWindowEndMinutes = 22 * 60;
-
   /// Prefer course wall-clock times; fall back to owner section table.
   static MinuteInterval? courseBusyInterval(
     Course course,
@@ -241,7 +236,8 @@ class CoupleTimetableLogic {
   }
 
   /// Shared free time on a calendar day: complement of the union of both
-  /// parties' busy intervals, clipped to [R] and optional daytime window.
+  /// parties' busy intervals within the full observation range [R]
+  /// (first section start → last section end). No extra daytime window.
   ///
   /// [week] is **my** teaching week; partner courses are filtered with
   /// [partnerWeekOffset] (same semantics as [isTogetherClass]).
@@ -252,8 +248,6 @@ class CoupleTimetableLogic {
     required int week,
     required List<SectionTime> sections,
     int partnerWeekOffset = 0,
-    int dayWindowStartMinutes = defaultDayWindowStartMinutes,
-    int dayWindowEndMinutes = defaultDayWindowEndMinutes,
     int minIntervalMinutes = 0,
   }) {
     final observationRange = observationRangeForSections(sections);
@@ -276,14 +270,6 @@ class CoupleTimetableLogic {
       rangeEnd: observationRange.endMinutes,
     );
 
-    if (dayWindowEndMinutes > dayWindowStartMinutes) {
-      shared = clipMinuteIntervals(
-        shared,
-        rangeStart: dayWindowStartMinutes,
-        rangeEnd: dayWindowEndMinutes,
-      );
-    }
-
     if (minIntervalMinutes > 0) {
       shared = shared
           .where((interval) => interval.durationMinutes >= minIntervalMinutes)
@@ -304,29 +290,6 @@ class CoupleTimetableLogic {
       return null;
     }
     return MinuteInterval(startMinutes: dayStart, endMinutes: dayEnd);
-  }
-
-  static List<MinuteInterval> clipMinuteIntervals(
-    List<MinuteInterval> intervals, {
-    required int rangeStart,
-    required int rangeEnd,
-  }) {
-    if (rangeEnd <= rangeStart || intervals.isEmpty) {
-      return const [];
-    }
-    final clipped = <MinuteInterval>[];
-    for (final interval in intervals) {
-      final start = interval.startMinutes > rangeStart
-          ? interval.startMinutes
-          : rangeStart;
-      final end = interval.endMinutes < rangeEnd
-          ? interval.endMinutes
-          : rangeEnd;
-      if (start < end) {
-        clipped.add(MinuteInterval(startMinutes: start, endMinutes: end));
-      }
-    }
-    return clipped;
   }
 
   static int totalDurationMinutes(List<MinuteInterval> intervals) {
