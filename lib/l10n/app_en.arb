@@ -90,14 +90,11 @@
   "coupleTimetableSharedFreeTitleOtherDay": "Shared free time this day",
   "coupleTimetableNoSharedFree": "No shared free time today",
   "coupleTimetableNoSharedFreeOtherDay": "No shared free time this day",
-  "coupleTimetableSharedFreeMeta": "{count} slots · about {hours}",
+  "coupleTimetableSharedFreeMeta": "{count} slots",
   "@coupleTimetableSharedFreeMeta": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "hours": {
-        "type": "String"
       }
     }
   },
@@ -109,7 +106,6 @@
       }
     }
   },
-  "coupleTimetableSharedFreeCourseOnlyHint": "Based on both course schedules",
   "coupleTimetableSharedFreeUnavailable": "Shared free time unavailable",
   "coupleTimetableSharedFreeStaleHint": "Partner schedule may be outdated",
   "coupleTimetablePartnerReadOnlyBadge": "Partner timetable (read-only)",
@@ -3280,11 +3276,11 @@
   "courseNoteSheetTitle": "Course Notes",
   "courseNoteAction": "Notes",
   "courseNoteSaveAction": "Save",
-  "courseNoteTabWholeCourse": "Whole course",
+  "courseNoteTabWholeCourse": "Course description",
   "courseNoteTabThisSession": "This class",
-  "courseNoteWholeCourseLabel": "Whole-course note",
-  "courseNoteWholeCourseHint": "Long-lived notes for this schedule entry (e.g. teacher habits or classroom tips).",
-  "courseNoteWholeCoursePlaceholder": "e.g. This teacher often skips class, classroom is in the new building…",
+  "courseNoteWholeCourseLabel": "Course description",
+  "courseNoteWholeCourseHint": "Shared across same-name courses (e.g. syllabus notes or classroom tips).",
+  "courseNoteWholeCoursePlaceholder": "e.g. This teacher often takes attendance, classroom is in the new building…",
   "courseNoteSessionLabel": "This-class note",
   "courseNoteSessionHint": "Applies only to week {week} for this class — good for homework or what to bring.",
   "@courseNoteSessionHint": {
@@ -3299,9 +3295,9 @@
   "courseNoteHasHomeworkSubtitle": "When on, week-view cards show a homework badge",
   "courseNoteHomeworkMarked": "Homework this class",
   "courseNoteTileSubtitleEmpty": "Note homework, what to bring, or class reminders",
-  "courseNoteTileSubtitleWhole": "Whole-course note set",
+  "courseNoteTileSubtitleWhole": "Course description set",
   "courseNoteTileSubtitleSession": "This-class note set",
-  "courseNoteTileSubtitleBoth": "Both whole-course and this-class notes set",
+  "courseNoteTileSubtitleBoth": "Course description and this-class notes set",
   "courseNoteReadOnlyNotice": "Partner courses are view-only for notes.",
   "courseNoteDoneEditingAction": "Done",
   "courseActionSheetNotice": "You are viewing Week {week}. If an exam or conflict comes up, you can quickly reschedule or suspend below.",
@@ -4653,6 +4649,7 @@
   "macroReplayStepWaitManual": "Waiting for user action",
   "macroReplayStepExecuteScript": "Running import script…",
   "macroReplayStepDelay": "Waiting…",
+  "macroReplayAcceleratedFallbackTip": "Quick path failed; retrying with the full recorded steps…",
   "macroReplayNoSteps": "No recorded steps",
   "macroReplayUserCancelled": "Cancelled by user",
   "macroReplayStepFailed": "Step {current}/{total} failed: {error}",

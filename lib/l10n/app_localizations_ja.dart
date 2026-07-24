@@ -243,17 +243,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleTimetableNoSharedFreeOtherDay => '该日没有共同空闲时段';
 
   @override
-  String coupleTimetableSharedFreeMeta(int count, String hours) {
-    return '共 $count 段 · 约 $hours';
+  String coupleTimetableSharedFreeMeta(int count) {
+    return '共 $count 段';
   }
 
   @override
   String coupleTimetableSharedFreeMoreCount(int count) {
     return '还有 $count 段';
   }
-
-  @override
-  String get coupleTimetableSharedFreeCourseOnlyHint => '按双方课程估算';
 
   @override
   String get coupleTimetableSharedFreeUnavailable => '暂时算不出共同空闲';
@@ -5624,19 +5621,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseNoteSaveAction => '保存';
 
   @override
-  String get courseNoteTabWholeCourse => '整节课';
+  String get courseNoteTabWholeCourse => '课程简介';
 
   @override
   String get courseNoteTabThisSession => '本节课';
 
   @override
-  String get courseNoteWholeCourseLabel => '整节课备注';
+  String get courseNoteWholeCourseLabel => '课程简介';
 
   @override
-  String get courseNoteWholeCourseHint => '长期有效，适用于这门排课的固定说明（例如老师习惯、课堂注意点）。';
+  String get courseNoteWholeCourseHint => '同名课程共享，长期有效（例如课程说明、课堂注意点）。';
 
   @override
-  String get courseNoteWholeCoursePlaceholder => '例如：这个老师容易逃课、教室在新楼…';
+  String get courseNoteWholeCoursePlaceholder => '例如：这个老师容易点名、教室在新楼…';
 
   @override
   String get courseNoteSessionLabel => '本节课备注';
@@ -5662,13 +5659,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseNoteTileSubtitleEmpty => '记录作业、带电脑或课堂提醒';
 
   @override
-  String get courseNoteTileSubtitleWhole => '已有整节课备注';
+  String get courseNoteTileSubtitleWhole => '已有课程简介';
 
   @override
   String get courseNoteTileSubtitleSession => '已有本节课备注';
 
   @override
-  String get courseNoteTileSubtitleBoth => '整节课与本节课均有备注';
+  String get courseNoteTileSubtitleBoth => '课程简介与本节课均有备注';
 
   @override
   String get courseNoteReadOnlyNotice => '对方课程仅可查看备注，无法编辑。';
@@ -7415,6 +7412,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get macroReplayStepDelay => 'Waiting…';
+
+  @override
+  String get macroReplayAcceleratedFallbackTip =>
+      'Quick path failed; retrying with the full recorded steps…';
 
   @override
   String get macroReplayNoSteps => 'No recorded steps';

@@ -4419,6 +4419,7 @@
   "macroReplayStepWaitManual": "等待用户操作",
   "macroReplayStepExecuteScript": "正在执行导入脚本...",
   "macroReplayStepDelay": "等待中...",
+  "macroReplayAcceleratedFallbackTip": "快捷路径失败，正在使用完整录制步骤重试…",
   "macroReplayNoSteps": "没有录制的步骤",
   "macroReplayUserCancelled": "用户取消",
   "macroReplayStepFailed": "第 {current}/{total} 步失败: {error}",

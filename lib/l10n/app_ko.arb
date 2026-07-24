@@ -4419,6 +4419,7 @@
   "macroReplayStepWaitManual": "Waiting for user action",
   "macroReplayStepExecuteScript": "Running import script…",
   "macroReplayStepDelay": "Waiting…",
+  "macroReplayAcceleratedFallbackTip": "Quick path failed; retrying with the full recorded steps…",
   "macroReplayNoSteps": "No recorded steps",
   "macroReplayUserCancelled": "Cancelled by user",
   "macroReplayStepFailed": "Step {current}/{total} failed: {error}",

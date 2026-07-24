@@ -563,20 +563,14 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableSharedFreeMeta.
   ///
   /// In zh, this message translates to:
-  /// **'共 {count} 段 · 约 {hours}'**
-  String coupleTimetableSharedFreeMeta(int count, String hours);
+  /// **'共 {count} 段'**
+  String coupleTimetableSharedFreeMeta(int count);
 
   /// No description provided for @coupleTimetableSharedFreeMoreCount.
   ///
   /// In zh, this message translates to:
   /// **'还有 {count} 段'**
   String coupleTimetableSharedFreeMoreCount(int count);
-
-  /// No description provided for @coupleTimetableSharedFreeCourseOnlyHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'按双方课程估算'**
-  String get coupleTimetableSharedFreeCourseOnlyHint;
 
   /// No description provided for @coupleTimetableSharedFreeUnavailable.
   ///
@@ -10088,7 +10082,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNoteTabWholeCourse.
   ///
   /// In zh, this message translates to:
-  /// **'整节课'**
+  /// **'课程简介'**
   String get courseNoteTabWholeCourse;
 
   /// No description provided for @courseNoteTabThisSession.
@@ -10100,19 +10094,19 @@ abstract class AppLocalizations {
   /// No description provided for @courseNoteWholeCourseLabel.
   ///
   /// In zh, this message translates to:
-  /// **'整节课备注'**
+  /// **'课程简介'**
   String get courseNoteWholeCourseLabel;
 
   /// No description provided for @courseNoteWholeCourseHint.
   ///
   /// In zh, this message translates to:
-  /// **'长期有效，适用于这门排课的固定说明（例如老师习惯、课堂注意点）。'**
+  /// **'同名课程共享，长期有效（例如课程说明、课堂注意点）。'**
   String get courseNoteWholeCourseHint;
 
   /// No description provided for @courseNoteWholeCoursePlaceholder.
   ///
   /// In zh, this message translates to:
-  /// **'例如：这个老师容易逃课、教室在新楼…'**
+  /// **'例如：这个老师容易点名、教室在新楼…'**
   String get courseNoteWholeCoursePlaceholder;
 
   /// No description provided for @courseNoteSessionLabel.
@@ -10160,7 +10154,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNoteTileSubtitleWhole.
   ///
   /// In zh, this message translates to:
-  /// **'已有整节课备注'**
+  /// **'已有课程简介'**
   String get courseNoteTileSubtitleWhole;
 
   /// No description provided for @courseNoteTileSubtitleSession.
@@ -10172,7 +10166,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNoteTileSubtitleBoth.
   ///
   /// In zh, this message translates to:
-  /// **'整节课与本节课均有备注'**
+  /// **'课程简介与本节课均有备注'**
   String get courseNoteTileSubtitleBoth;
 
   /// No description provided for @courseNoteReadOnlyNotice.
@@ -13072,6 +13066,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'等待中...'**
   String get macroReplayStepDelay;
+
+  /// No description provided for @macroReplayAcceleratedFallbackTip.
+  ///
+  /// In zh, this message translates to:
+  /// **'快捷路径失败，正在使用完整录制步骤重试…'**
+  String get macroReplayAcceleratedFallbackTip;
 
   /// No description provided for @macroReplayNoSteps.
   ///

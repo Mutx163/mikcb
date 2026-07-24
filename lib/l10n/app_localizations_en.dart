@@ -256,18 +256,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'No shared free time this day';
 
   @override
-  String coupleTimetableSharedFreeMeta(int count, String hours) {
-    return '$count slots · about $hours';
+  String coupleTimetableSharedFreeMeta(int count) {
+    return '$count slots';
   }
 
   @override
   String coupleTimetableSharedFreeMoreCount(int count) {
     return '$count more slots';
   }
-
-  @override
-  String get coupleTimetableSharedFreeCourseOnlyHint =>
-      'Based on both course schedules';
 
   @override
   String get coupleTimetableSharedFreeUnavailable =>
@@ -5866,21 +5862,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseNoteSaveAction => 'Save';
 
   @override
-  String get courseNoteTabWholeCourse => 'Whole course';
+  String get courseNoteTabWholeCourse => 'Course description';
 
   @override
   String get courseNoteTabThisSession => 'This class';
 
   @override
-  String get courseNoteWholeCourseLabel => 'Whole-course note';
+  String get courseNoteWholeCourseLabel => 'Course description';
 
   @override
   String get courseNoteWholeCourseHint =>
-      'Long-lived notes for this schedule entry (e.g. teacher habits or classroom tips).';
+      'Shared across same-name courses (e.g. syllabus notes or classroom tips).';
 
   @override
   String get courseNoteWholeCoursePlaceholder =>
-      'e.g. This teacher often skips class, classroom is in the new building…';
+      'e.g. This teacher often takes attendance, classroom is in the new building…';
 
   @override
   String get courseNoteSessionLabel => 'This-class note';
@@ -5909,14 +5905,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Note homework, what to bring, or class reminders';
 
   @override
-  String get courseNoteTileSubtitleWhole => 'Whole-course note set';
+  String get courseNoteTileSubtitleWhole => 'Course description set';
 
   @override
   String get courseNoteTileSubtitleSession => 'This-class note set';
 
   @override
   String get courseNoteTileSubtitleBoth =>
-      'Both whole-course and this-class notes set';
+      'Course description and this-class notes set';
 
   @override
   String get courseNoteReadOnlyNotice =>
@@ -7683,6 +7679,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get macroReplayStepDelay => 'Waiting…';
+
+  @override
+  String get macroReplayAcceleratedFallbackTip =>
+      'Quick path failed; retrying with the full recorded steps…';
 
   @override
   String get macroReplayNoSteps => 'No recorded steps';
