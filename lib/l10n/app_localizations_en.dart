@@ -4562,6 +4562,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get warehouseCustomDebugTitle => 'Custom debug';
 
   @override
+  String get warehouseImportExecutionLogTitle => 'Import execution log';
+
+  @override
+  String get warehouseImportExecutionLogMenuLabel => 'Import execution log';
+
+  @override
+  String get warehouseImportExecutionLogShareText =>
+      'This is the academic-system import execution log exported from Qingyu Timetable. It includes script injection, bridge messages, timeouts, and import results for troubleshooting.';
+
+  @override
+  String get warehouseImportExecutionLogShareSubject =>
+      'Qingyu Timetable - Import execution log';
+
+  @override
+  String get warehouseImportExecutionLogEmpty =>
+      'No import execution records yet. Open the academic-system page, run the import script, then check again.';
+
+  @override
   String get warehouseRootLoadFailedTitle =>
       'Unable to read the adapter repository right now';
 

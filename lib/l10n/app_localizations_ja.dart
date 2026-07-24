@@ -4354,6 +4354,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get warehouseCustomDebugTitle => 'カスタムデバッグ';
 
   @override
+  String get warehouseImportExecutionLogTitle => '時間割インポート実行ログ';
+
+  @override
+  String get warehouseImportExecutionLogMenuLabel => '時間割インポート実行ログ';
+
+  @override
+  String get warehouseImportExecutionLogShareText =>
+      '軽屿時間割から書き出した教務インポート実行ログです。スクリプト注入、ブリッジ通信、タイムアウト、インポート結果などの過程記録が含まれ、開発者へのフィードバックに使えます。';
+
+  @override
+  String get warehouseImportExecutionLogShareSubject => '軽屿時間割 - 時間割インポート実行ログ';
+
+  @override
+  String get warehouseImportExecutionLogEmpty =>
+      'インポート実行記録はまだありません。教務ページを開き、インポートスクリプトを実行してから再度確認してください。';
+
+  @override
   String get warehouseRootLoadFailedTitle => '適応倉庫を一時的に読み込めません';
 
   @override

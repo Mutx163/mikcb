@@ -4279,6 +4279,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get warehouseCustomDebugTitle => '自定义调试';
 
   @override
+  String get warehouseImportExecutionLogTitle => '课表导入执行日志';
+
+  @override
+  String get warehouseImportExecutionLogMenuLabel => '课表导入执行日志';
+
+  @override
+  String get warehouseImportExecutionLogShareText =>
+      '这是轻屿课表导出的教务导入执行日志，包含脚本注入、桥接消息、超时与导入结果等过程记录，可直接反馈给开发人员排查问题';
+
+  @override
+  String get warehouseImportExecutionLogShareSubject => '轻屿课表 - 课表导入执行日志';
+
+  @override
+  String get warehouseImportExecutionLogEmpty =>
+      '暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。';
+
+  @override
   String get warehouseRootLoadFailedTitle => '暂时无法读取适配仓';
 
   @override
@@ -12675,6 +12692,23 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get warehouseCustomDebugTitle => '自訂偵錯';
 
   @override
+  String get warehouseImportExecutionLogTitle => '課表匯入執行日誌';
+
+  @override
+  String get warehouseImportExecutionLogMenuLabel => '課表匯入執行日誌';
+
+  @override
+  String get warehouseImportExecutionLogShareText =>
+      '這是輕嶼課表匯出的教務匯入執行日誌，包含腳本注入、橋接訊息、逾時與匯入結果等過程記錄，可直接回饋給開發人員排查問題';
+
+  @override
+  String get warehouseImportExecutionLogShareSubject => '輕嶼課表 - 課表匯入執行日誌';
+
+  @override
+  String get warehouseImportExecutionLogEmpty =>
+      '暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。';
+
+  @override
   String get warehouseRootLoadFailedTitle => '暫時無法讀取適配倉';
 
   @override
@@ -21029,6 +21063,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get warehouseCustomDebugTitle => '自訂偵錯';
+
+  @override
+  String get warehouseImportExecutionLogTitle => '課表匯入執行日誌';
+
+  @override
+  String get warehouseImportExecutionLogMenuLabel => '課表匯入執行日誌';
+
+  @override
+  String get warehouseImportExecutionLogShareText =>
+      '這是輕嶼課表匯出的教務匯入執行日誌，包含腳本注入、橋接訊息、逾時與匯入結果等過程記錄，可直接回饋給開發人員排查問題';
+
+  @override
+  String get warehouseImportExecutionLogShareSubject => '輕嶼課表 - 課表匯入執行日誌';
+
+  @override
+  String get warehouseImportExecutionLogEmpty =>
+      '暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。';
 
   @override
   String get warehouseRootLoadFailedTitle => '暫時無法讀取適配倉';

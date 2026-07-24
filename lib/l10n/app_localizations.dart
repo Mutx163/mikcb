@@ -7837,6 +7837,36 @@ abstract class AppLocalizations {
   /// **'自定义调试'**
   String get warehouseCustomDebugTitle;
 
+  /// No description provided for @warehouseImportExecutionLogTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表导入执行日志'**
+  String get warehouseImportExecutionLogTitle;
+
+  /// No description provided for @warehouseImportExecutionLogMenuLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表导入执行日志'**
+  String get warehouseImportExecutionLogMenuLabel;
+
+  /// No description provided for @warehouseImportExecutionLogShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表导出的教务导入执行日志，包含脚本注入、桥接消息、超时与导入结果等过程记录，可直接反馈给开发人员排查问题'**
+  String get warehouseImportExecutionLogShareText;
+
+  /// No description provided for @warehouseImportExecutionLogShareSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表 - 课表导入执行日志'**
+  String get warehouseImportExecutionLogShareSubject;
+
+  /// No description provided for @warehouseImportExecutionLogEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。'**
+  String get warehouseImportExecutionLogEmpty;
+
   /// No description provided for @warehouseRootLoadFailedTitle.
   ///
   /// In zh, this message translates to:

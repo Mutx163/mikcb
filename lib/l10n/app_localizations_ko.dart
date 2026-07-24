@@ -4380,6 +4380,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get warehouseCustomDebugTitle => '사용자 정의 디버그';
 
   @override
+  String get warehouseImportExecutionLogTitle => '시간표 가져오기 실행 로그';
+
+  @override
+  String get warehouseImportExecutionLogMenuLabel => '시간표 가져오기 실행 로그';
+
+  @override
+  String get warehouseImportExecutionLogShareText =>
+      '경屿 시간표에서 내보낸 교무 가져오기 실행 로그입니다. 스크립트 주입, 브리지 메시지, 시간 초과, 가져오기 결과 등 과정 기록이 포함되어 개발자에게 피드백할 수 있습니다.';
+
+  @override
+  String get warehouseImportExecutionLogShareSubject =>
+      '경屿 시간표 - 시간표 가져오기 실행 로그';
+
+  @override
+  String get warehouseImportExecutionLogEmpty =>
+      '가져오기 실행 기록이 아직 없습니다. 교무 웹페이지를 열고 가져오기 스크립트를 실행한 뒤 다시 확인하세요.';
+
+  @override
   String get warehouseRootLoadFailedTitle => '적응 저장소를 일시적으로 읽을 수 없습니다';
 
   @override
