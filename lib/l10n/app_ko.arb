@@ -4580,11 +4580,20 @@
   "courseImportScriptFailed": "Script execution failed",
   "courseImportRecordingStatus": "Recording… tap Stop to finish",
   "courseImportRecordingStartedTip": "Recording started. Continue through the academic portal as usual",
+  "courseImportAutoRecordingStartedTip": "조작을 백그라운드에서 기록 중입니다. 가져오기 성공 후 빠른 가져오기로 저장할 수 있습니다",
   "courseImportRecordingEmptyStatus": "No actions recorded",
   "courseImportRecordingEmptyTip": "No actions recorded",
   "courseImportSaveRecordingTitle": "Save recording",
   "courseImportSaveRecordingMessage": "Recorded {count} steps. Save as quick import?",
   "@courseImportSaveRecordingMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportSaveAutoRecordingMessage": "가져오기에 성공했습니다. {count}개 단계를 기록했습니다. 다음 빠른 가져오기를 위해 이 경로를 저장할까요?",
+  "@courseImportSaveAutoRecordingMessage": {
     "placeholders": {
       "count": {
         "type": "int"

@@ -61,14 +61,16 @@ sequenceDiagram
   participant JS as 适配脚本
 
   Note over U,JS: 录制（首次成功导入）
-  U->>App: 开启录制 / 自动录制
+  U->>App: 网页登录导入（无已存宏时自动录制）/ 录制导入
   App->>WV: 注入 MacroRecorderJs
   U->>WV: 登录、导航
   WV-->>App: macro:event（input/click/submit）
   U->>App: 响应脚本弹窗（confirm/prompt/选择）
-  App->>App: 保存 dialogResponses
+  App->>App: 记录 dialogResponses
   U->>App: 导入成功
   App->>App: MacroRecordingConverter → MacroStep[]
+  App->>U: 询问是否保存导入路径
+  U->>App: 确认保存
   App->>App: 持久化 WarehouseMacroRecord
 
   Note over U,JS: 回放（快捷导入）

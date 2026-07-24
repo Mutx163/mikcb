@@ -164,8 +164,24 @@ class MacroRecordingConverter {
 
     final steps = <MacroStep>[];
     final sensitiveSelectors = <String>{};
+    // 同一输入框连续按键只保留最终值，避免回放时「先整段填充再逐字覆盖」。
+    final pendingFillBySelector = <String, _PendingFillField>{};
     final startTime = dedupedEvents.first['timestamp'] as num? ?? 0;
     var lastTimestamp = startTime;
+
+    void flushPendingFillFields() {
+      if (pendingFillBySelector.isEmpty) return;
+      for (final pending in pendingFillBySelector.values) {
+        steps.add(
+          MacroStep.fillField(
+            selector: pending.selector,
+            value: pending.value,
+            fieldType: pending.fieldType,
+          ),
+        );
+      }
+      pendingFillBySelector.clear();
+    }
 
     for (final event in dedupedEvents) {
       final eventType = event['eventType'] as String? ?? '';
@@ -177,6 +193,8 @@ class MacroRecordingConverter {
       // 如果事件间隔超过 1.5 秒，插入一个 delay 步
       final gap = timestamp - lastTimestamp;
       if (gap > 1500 && gap < 60000) {
+        // 先落盘已有输入，再插入等待，避免 delay 夹在同一字段的中间按键之间。
+        flushPendingFillFields();
         // 如果间隔在 1.5~5 秒之间，精确记录
         if (gap <= 5000) {
           steps.add(MacroStep.delay(gap.toInt()));
@@ -190,6 +208,7 @@ class MacroRecordingConverter {
         case 'input':
         case 'change':
           if (isSensitiveMacroFieldType(fieldType)) {
+            flushPendingFillFields();
             final sensitiveKey = selector.isNotEmpty
                 ? selector
                 : fieldType ?? '';
@@ -204,16 +223,16 @@ class MacroRecordingConverter {
               );
             }
           } else if (selector.isNotEmpty) {
-            steps.add(
-              MacroStep.fillField(
-                selector: selector,
-                value: value,
-                fieldType: fieldType,
-              ),
+            // 连续 keystroke 只更新缓存，最终 flush 时写成单步 fillField。
+            pendingFillBySelector[selector] = _PendingFillField(
+              selector: selector,
+              value: value,
+              fieldType: fieldType,
             );
           }
           break;
         case 'click':
+          flushPendingFillFields();
           if (selector.isNotEmpty) {
             steps.add(MacroStep.click(selector));
             // Allow navigation/DOM updates before the next step.
@@ -221,6 +240,7 @@ class MacroRecordingConverter {
           }
           break;
         case 'submit':
+          flushPendingFillFields();
           // 表单提交通常需要等待页面导航
           if (selector.isNotEmpty) {
             steps.add(MacroStep.click(selector));
@@ -232,7 +252,8 @@ class MacroRecordingConverter {
       lastTimestamp = timestamp;
     }
 
-    return steps;
+    flushPendingFillFields();
+    return compactMacroFillSteps(steps);
   }
 
   static List<Map<String, dynamic>> _dedupeRawEvents(
@@ -274,4 +295,65 @@ class MacroRecordingConverter {
     if (password != null) result['password'] = password;
     return result;
   }
+}
+
+class _PendingFillField {
+  final String selector;
+  final String value;
+  final String? fieldType;
+
+  const _PendingFillField({
+    required this.selector,
+    required this.value,
+    required this.fieldType,
+  });
+}
+
+/// 将相邻的同选择器 `fillField` 合并为最终值。
+///
+/// 旧宏可能按按键逐步记录 `a` → `ab` → `abc`，回放时会先清空再像打字一样重输。
+/// 新录制与加载旧录制都应走此压缩，只保留每个连续输入序列的最终值。
+List<MacroStep> compactMacroFillSteps(List<MacroStep> steps) {
+  if (steps.isEmpty) return const [];
+
+  final compacted = <MacroStep>[];
+  for (final step in steps) {
+    if (step.type != MacroStepType.fillField) {
+      compacted.add(step);
+      continue;
+    }
+
+    final selector = step.selector ?? '';
+    if (selector.isEmpty) {
+      compacted.add(step);
+      continue;
+    }
+
+    // 跳过中间 delay：用户逐字输入时的自然停顿不应拆成多次填充。
+    var mergeIndex = compacted.length - 1;
+    while (mergeIndex >= 0 &&
+        compacted[mergeIndex].type == MacroStepType.delay) {
+      mergeIndex--;
+    }
+
+    if (mergeIndex >= 0 &&
+        compacted[mergeIndex].type == MacroStepType.fillField &&
+        compacted[mergeIndex].selector == selector) {
+      final previous = compacted[mergeIndex];
+      compacted[mergeIndex] = MacroStep.fillField(
+        selector: selector,
+        value: step.value ?? previous.value ?? '',
+        fieldType: step.fieldType ?? previous.fieldType,
+      );
+      // 合并后去掉夹在两次 fill 之间的 delay。
+      if (mergeIndex < compacted.length - 1) {
+        compacted.removeRange(mergeIndex + 1, compacted.length);
+      }
+      continue;
+    }
+
+    compacted.add(step);
+  }
+
+  return compacted;
 }

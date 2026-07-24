@@ -7567,6 +7567,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
 
   @override
+  String get courseImportAutoRecordingStartedTip => '已在后台记录操作，导入成功后可保存为快捷导入';
+
+  @override
   String get courseImportRecordingEmptyStatus => '未录制到任何操作';
 
   @override
@@ -7578,6 +7581,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String courseImportSaveRecordingMessage(int count) {
     return '录制了 $count 个操作步骤，是否保存为快捷导入？';
+  }
+
+  @override
+  String courseImportSaveAutoRecordingMessage(int count) {
+    return '导入成功。已记录 $count 个操作步骤，是否保存本次导入路径，以便下次快捷导入？';
   }
 
   @override
@@ -15914,6 +15922,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
 
   @override
+  String get courseImportAutoRecordingStartedTip => '已在背景記錄操作，匯入成功後可儲存為快捷匯入';
+
+  @override
   String get courseImportRecordingEmptyStatus => '未录制到任何操作';
 
   @override
@@ -15925,6 +15936,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String courseImportSaveRecordingMessage(int count) {
     return '录制了 $count 个操作步骤，是否保存为快捷导入？';
+  }
+
+  @override
+  String courseImportSaveAutoRecordingMessage(int count) {
+    return '匯入成功。已記錄 $count 個操作步驟，是否儲存本次匯入路徑，以便下次快捷匯入？';
   }
 
   @override
@@ -24261,6 +24277,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
 
   @override
+  String get courseImportAutoRecordingStartedTip => '已在背景記錄操作，匯入成功後可儲存為快捷匯入';
+
+  @override
   String get courseImportRecordingEmptyStatus => '未录制到任何操作';
 
   @override
@@ -24272,6 +24291,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String courseImportSaveRecordingMessage(int count) {
     return '录制了 $count 个操作步骤，是否保存为快捷导入？';
+  }
+
+  @override
+  String courseImportSaveAutoRecordingMessage(int count) {
+    return '匯入成功。已記錄 $count 個操作步驟，是否儲存本次匯入路徑，以便下次快捷匯入？';
   }
 
   @override

@@ -4814,11 +4814,20 @@
   "courseImportScriptFailed": "Script execution failed",
   "courseImportRecordingStatus": "Recording… tap Stop to finish",
   "courseImportRecordingStartedTip": "Recording started. Continue through the academic portal as usual",
+  "courseImportAutoRecordingStartedTip": "Recording your steps in the background. You can save them as quick import after a successful import",
   "courseImportRecordingEmptyStatus": "No actions recorded",
   "courseImportRecordingEmptyTip": "No actions recorded",
   "courseImportSaveRecordingTitle": "Save recording",
   "courseImportSaveRecordingMessage": "Recorded {count} steps. Save as quick import?",
   "@courseImportSaveRecordingMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportSaveAutoRecordingMessage": "Import succeeded. Recorded {count} steps. Save this path for next quick import?",
+  "@courseImportSaveAutoRecordingMessage": {
     "placeholders": {
       "count": {
         "type": "int"

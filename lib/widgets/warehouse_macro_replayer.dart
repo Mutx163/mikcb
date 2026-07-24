@@ -8,6 +8,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 
 import '../models/warehouse_macro_models.dart';
+import 'warehouse_macro_recorder.dart';
 
 /// 回放步骤的当前状态
 enum ReplayStepStatus { pending, running, succeeded, failed, pausedForInput }
@@ -45,9 +46,7 @@ class ReplayProgress {
         );
       case ReplayStepStatus.pausedForInput:
         return l10n.macroReplayStatusPaused(
-          pauseReason != null
-              ? localizeServiceMessage(l10n, pauseReason!)
-              : '',
+          pauseReason != null ? localizeServiceMessage(l10n, pauseReason!) : '',
         );
       case ReplayStepStatus.pending:
       case ReplayStepStatus.succeeded:
@@ -125,7 +124,8 @@ class WarehouseMacroReplayer {
   /// 执行整个宏录制
   Future<void> execute(WarehouseMacroRecord macro) async {
     _isCancelled = false;
-    final steps = macro.steps;
+    // 旧宏可能含逐字 fillField；加载时压缩，避免「已填满又重输」。
+    final steps = compactMacroFillSteps(macro.steps);
     if (steps.isEmpty) {
       _callbacks.onComplete(false, 'macro_no_steps');
       return;
@@ -170,14 +170,11 @@ class WarehouseMacroReplayer {
         );
         _callbacks.onComplete(
           false,
-          encodeServiceMessage(
-            'macro_step_failed',
-            {
-              'stepIndex': i + 1,
-              'totalSteps': steps.length,
-              'detail': detail,
-            },
-          ),
+          encodeServiceMessage('macro_step_failed', {
+            'stepIndex': i + 1,
+            'totalSteps': steps.length,
+            'detail': detail,
+          }),
         );
         return;
       }
@@ -280,6 +277,15 @@ class WarehouseMacroReplayer {
     el = document.querySelector('input[name="${selector.split('"').join('\\"')}"]');
   }
   if (!el) return JSON.stringify({found: false, selector: ${jsonEncode(selector)}});
+  // 已有正确值则跳过改写，避免覆盖浏览器/记住登录的自动填充后再逐字重输。
+  if (String(el.value || '') === $escapedValue) {
+    return JSON.stringify({
+      found: true,
+      skipped: true,
+      tag: el.tagName,
+      type: el.type || ''
+    });
+  }
   el.focus();
   el.value = $escapedValue;
   el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -447,14 +453,11 @@ document.querySelector(${jsonEncode(selector)}) !== null
     }
 
     throw Exception(
-      encodeServiceMessage(
-        'macro_poll_timeout',
-        {
-          'stepLabel': stepLabel,
-          'timeoutSeconds': timeout.inSeconds,
-          'lastError': lastError.isNotEmpty ? ': $lastError' : '',
-        },
-      ),
+      encodeServiceMessage('macro_poll_timeout', {
+        'stepLabel': stepLabel,
+        'timeoutSeconds': timeout.inSeconds,
+        'lastError': lastError.isNotEmpty ? ': $lastError' : '',
+      }),
     );
   }
 }

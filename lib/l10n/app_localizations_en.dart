@@ -7983,6 +7983,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Recording started. Continue through the academic portal as usual';
 
   @override
+  String get courseImportAutoRecordingStartedTip =>
+      'Recording your steps in the background. You can save them as quick import after a successful import';
+
+  @override
   String get courseImportRecordingEmptyStatus => 'No actions recorded';
 
   @override
@@ -7994,6 +7998,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String courseImportSaveRecordingMessage(int count) {
     return 'Recorded $count steps. Save as quick import?';
+  }
+
+  @override
+  String courseImportSaveAutoRecordingMessage(int count) {
+    return 'Import succeeded. Recorded $count steps. Save this path for next quick import?';
   }
 
   @override

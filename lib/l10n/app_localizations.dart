@@ -13610,6 +13610,12 @@ abstract class AppLocalizations {
   /// **'录制已开始，请按正常流程操作教务网站'**
   String get courseImportRecordingStartedTip;
 
+  /// No description provided for @courseImportAutoRecordingStartedTip.
+  ///
+  /// In zh, this message translates to:
+  /// **'已在后台记录操作，导入成功后可保存为快捷导入'**
+  String get courseImportAutoRecordingStartedTip;
+
   /// No description provided for @courseImportRecordingEmptyStatus.
   ///
   /// In zh, this message translates to:
@@ -13633,6 +13639,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'录制了 {count} 个操作步骤，是否保存为快捷导入？'**
   String courseImportSaveRecordingMessage(int count);
+
+  /// No description provided for @courseImportSaveAutoRecordingMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入成功。已记录 {count} 个操作步骤，是否保存本次导入路径，以便下次快捷导入？'**
+  String courseImportSaveAutoRecordingMessage(int count);
 
   /// No description provided for @courseImportRecordingSavedStatus.
   ///

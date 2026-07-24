@@ -7751,6 +7751,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Recording started. Continue through the academic portal as usual';
 
   @override
+  String get courseImportAutoRecordingStartedTip =>
+      '조작을 백그라운드에서 기록 중입니다. 가져오기 성공 후 빠른 가져오기로 저장할 수 있습니다';
+
+  @override
   String get courseImportRecordingEmptyStatus => 'No actions recorded';
 
   @override
@@ -7762,6 +7766,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String courseImportSaveRecordingMessage(int count) {
     return 'Recorded $count steps. Save as quick import?';
+  }
+
+  @override
+  String courseImportSaveAutoRecordingMessage(int count) {
+    return '가져오기에 성공했습니다. $count개 단계를 기록했습니다. 다음 빠른 가져오기를 위해 이 경로를 저장할까요?';
   }
 
   @override

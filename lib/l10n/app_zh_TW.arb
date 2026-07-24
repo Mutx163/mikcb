@@ -4580,11 +4580,20 @@
   "courseImportScriptFailed": "脚本执行失败",
   "courseImportRecordingStatus": "录制中…点击停止完成录制",
   "courseImportRecordingStartedTip": "录制已开始，请按正常流程操作教务网站",
+  "courseImportAutoRecordingStartedTip": "已在背景記錄操作，匯入成功後可儲存為快捷匯入",
   "courseImportRecordingEmptyStatus": "未录制到任何操作",
   "courseImportRecordingEmptyTip": "未录制到任何操作",
   "courseImportSaveRecordingTitle": "保存录制",
   "courseImportSaveRecordingMessage": "录制了 {count} 个操作步骤，是否保存为快捷导入？",
   "@courseImportSaveRecordingMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportSaveAutoRecordingMessage": "匯入成功。已記錄 {count} 個操作步驟，是否儲存本次匯入路徑，以便下次快捷匯入？",
+  "@courseImportSaveAutoRecordingMessage": {
     "placeholders": {
       "count": {
         "type": "int"

@@ -100,6 +100,45 @@ void main() {
     );
   });
 
+  group('shouldAutoRecordWarehouseImport', () {
+    test('auto-records first ordinary import when no macro exists', () {
+      expect(
+        shouldAutoRecordWarehouseImport(
+          forceRecord: false,
+          hasExistingMacro: false,
+        ),
+        isTrue,
+      );
+    });
+
+    test('skips auto-record when a macro already exists', () {
+      expect(
+        shouldAutoRecordWarehouseImport(
+          forceRecord: false,
+          hasExistingMacro: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('always records when user explicitly chooses record import', () {
+      expect(
+        shouldAutoRecordWarehouseImport(
+          forceRecord: true,
+          hasExistingMacro: true,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAutoRecordWarehouseImport(
+          forceRecord: true,
+          hasExistingMacro: false,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   testWidgets('ai import screen keeps keyboard-aware resizing enabled', (
     tester,
   ) async {

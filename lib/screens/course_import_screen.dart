@@ -87,6 +87,17 @@ bool shouldPromptRememberedLoginAutofill({
       !isPromptShowing;
 }
 
+/// Whether ordinary web-login import should start background path recording.
+///
+/// Explicit "record import" always records. Automatic first-import recording
+/// only runs when this school+adapter has no saved macro yet.
+bool shouldAutoRecordWarehouseImport({
+  required bool forceRecord,
+  required bool hasExistingMacro,
+}) {
+  return forceRecord || !hasExistingMacro;
+}
+
 Widget _buildImportMethodChoiceTile({
   required IconData icon,
   required String title,
@@ -2576,6 +2587,19 @@ class _WarehouseSchoolAdaptersScreenState
     if (initialUrl == null || !mounted) {
       return;
     }
+    // Explicit "record import" always records. Ordinary import auto-records
+    // only when this school+adapter has no saved macro yet (first import).
+    final hasExistingMacro = await _macroService.hasMacro(
+      widget.school.id,
+      adapter.adapterId,
+    );
+    if (!mounted) {
+      return;
+    }
+    final shouldRecord = shouldAutoRecordWarehouseImport(
+      forceRecord: autoRecord,
+      hasExistingMacro: hasExistingMacro,
+    );
     final imported = await Navigator.of(context).push<bool>(
       HyperosPageRoute(
         settings: const RouteSettings(name: '/courses/import/warehouse/login'),
@@ -2586,7 +2610,7 @@ class _WarehouseSchoolAdaptersScreenState
           school: widget.school,
           adapter: adapter,
           fetchOptions: widget.fetchOptions,
-          autoRecord: autoRecord,
+          autoRecord: shouldRecord,
         ),
       ),
     );
@@ -2843,6 +2867,7 @@ class _WarehouseAdapterDetailScreenState
       WarehouseRepositoryService();
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();
+  final WarehouseMacroService _macroService = WarehouseMacroService();
   late Future<String> _scriptFuture;
   String? _customImportUrl;
 
@@ -3084,6 +3109,17 @@ class _WarehouseAdapterDetailScreenState
       );
       return;
     }
+    final hasExistingMacro = await _macroService.hasMacro(
+      widget.school.id,
+      widget.adapter.adapterId,
+    );
+    if (!mounted) {
+      return;
+    }
+    final shouldRecord = shouldAutoRecordWarehouseImport(
+      forceRecord: false,
+      hasExistingMacro: hasExistingMacro,
+    );
     await Navigator.of(context)
         .push(
           HyperosPageRoute(
@@ -3097,6 +3133,7 @@ class _WarehouseAdapterDetailScreenState
               school: widget.school,
               adapter: widget.adapter,
               fetchOptions: widget.fetchOptions,
+              autoRecord: shouldRecord,
             ),
           ),
         )
@@ -4815,17 +4852,21 @@ class _WarehouseAdapterWebLoginScreenState
     return ['text','email','tel','number'].includes(type) && !input.disabled;
   });
   const passwordInput = Array.from(document.querySelectorAll('input[type="password"]')).find((input) => !input.disabled);
+  const setInputValue = (input, nextValue) => {
+    if (!input) return false;
+    // 已是目标值则不改写，避免触发页面「清空再输入」监听。
+    if (String(input.value || '') === nextValue) return false;
+    input.focus();
+    input.value = nextValue;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  };
   if (textInputs[0]) {
-    textInputs[0].focus();
-    textInputs[0].value = ${jsonEncode(login.username)};
-    textInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-    textInputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+    setInputValue(textInputs[0], ${jsonEncode(login.username)});
   }
   if (passwordInput) {
-    passwordInput.focus();
-    passwordInput.value = ${jsonEncode(login.password)};
-    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+    setInputValue(passwordInput, ${jsonEncode(login.password)});
   }
 })();
 ''';
@@ -4932,9 +4973,18 @@ class _WarehouseAdapterWebLoginScreenState
       _macroRawEvents = [];
       _lastScriptStatus = l10n.courseImportRecordingStatus;
     });
+    // Each recording session must start with a clean dialog map so a previous
+    // stop-and-discard (or re-record on the same WebView) cannot leak answers.
+    _macroDialogResponses.clear();
     // 在当前页面注入录制 JS
     _injectMacroRecorderJs();
-    _showLightTip(context, l10n.courseImportRecordingStartedTip);
+    // First-import auto-record uses a lighter tip so users are not startled.
+    _showLightTip(
+      context,
+      widget.autoRecord
+          ? l10n.courseImportAutoRecordingStartedTip
+          : l10n.courseImportRecordingStartedTip,
+    );
   }
 
   /// 导入成功时自动完成录制并返回
@@ -4958,7 +5008,41 @@ class _WarehouseAdapterWebLoginScreenState
     final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
     final steps = MacroRecordingConverter.convert(capturedEvents);
 
-    if (steps.isNotEmpty && mounted) {
+    if (!mounted) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _macroRecordingState = MacroRecordingState.stopped;
+    });
+
+    // No steps captured: finish import without offering to save a path.
+    if (steps.isEmpty) {
+      setState(() {
+        _macroRecordingState = MacroRecordingState.idle;
+        _macroRawEvents = [];
+      });
+      _macroDialogResponses.clear();
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    // Ask whether to keep this first-import (or explicit-record) path.
+    final shouldSave = await showAppConfirmDialog(
+      context,
+      title: l10n.courseImportSaveRecordingTitle,
+      message: widget.autoRecord
+          ? l10n.courseImportSaveAutoRecordingMessage(steps.length)
+          : l10n.courseImportSaveRecordingMessage(steps.length),
+      confirmLabel: l10n.saveAction,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (shouldSave == true) {
       final now = DateTime.now();
       final record = WarehouseMacroRecord(
         schoolId: widget.school.id,
@@ -4975,11 +5059,28 @@ class _WarehouseAdapterWebLoginScreenState
         successfulImportCount: 1,
         useDesktopMode: _useDesktopMode,
       );
+      _macroDialogResponses.clear();
       await _macroService.saveMacro(record);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _macroRecordingState = MacroRecordingState.idle;
+        _macroRawEvents = [];
+        _lastScriptStatus = l10n.courseImportRecordingSavedStatus(steps.length);
+      });
+    } else {
+      setState(() {
+        _macroRecordingState = MacroRecordingState.idle;
+        _macroRawEvents = [];
+        _lastScriptStatus = null;
+      });
+      _macroDialogResponses.clear();
     }
 
     if (mounted) {
-      Navigator.of(context).pop(false);
+      // Import already succeeded; always return true so parent can close.
+      Navigator.of(context).pop(true);
     }
   }
 
@@ -5018,6 +5119,7 @@ class _WarehouseAdapterWebLoginScreenState
         _macroRawEvents = [];
         _lastScriptStatus = l10n.courseImportRecordingEmptyStatus;
       });
+      _macroDialogResponses.clear();
       _showLightTip(context, l10n.courseImportRecordingEmptyTip);
       return;
     }
@@ -5036,6 +5138,7 @@ class _WarehouseAdapterWebLoginScreenState
         _macroRawEvents = [];
         _lastScriptStatus = null;
       });
+      _macroDialogResponses.clear();
       return;
     }
 
@@ -5057,6 +5160,7 @@ class _WarehouseAdapterWebLoginScreenState
       useDesktopMode: _useDesktopMode,
     );
 
+    _macroDialogResponses.clear();
     await _macroService.saveMacro(record);
     if (!mounted) return;
 
@@ -5117,6 +5221,8 @@ class _WarehouseAdapterWebLoginScreenState
                   _rememberedLogin = remembered;
                 });
               }
+              // 始终走 autofill：内部 setInputValue 对已有正确值会跳过改写，
+              // 但不会连带跳过学号/用户名（避免密码已满、用户名为空）。
               await _autofillRememberedLogin();
               await Future.delayed(const Duration(milliseconds: 300));
               if (!mounted) return false;

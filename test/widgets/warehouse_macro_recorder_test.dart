@@ -48,6 +48,75 @@ void main() {
       expect(steps[2].waitMs, 800);
     });
 
+    test('collapses sequential keystrokes into one fillField', () {
+      final rawEvents = <Map<String, dynamic>>[
+        {
+          'eventType': 'input',
+          'selector': '#username',
+          'value': 's',
+          'fieldType': 'username',
+          'timestamp': 1000,
+        },
+        {
+          'eventType': 'input',
+          'selector': '#username',
+          'value': 'st',
+          'fieldType': 'username',
+          'timestamp': 1050,
+        },
+        {
+          'eventType': 'input',
+          'selector': '#username',
+          'value': 'stu',
+          'fieldType': 'username',
+          'timestamp': 1100,
+        },
+        {
+          'eventType': 'click',
+          'selector': '#login',
+          'value': '登录',
+          'fieldType': 'button',
+          'timestamp': 1500,
+        },
+      ];
+
+      final steps = MacroRecordingConverter.convert(rawEvents);
+
+      final fillSteps = steps
+          .where((step) => step.type == MacroStepType.fillField)
+          .toList();
+      expect(fillSteps, hasLength(1));
+      expect(fillSteps.single.selector, '#username');
+      expect(fillSteps.single.value, 'stu');
+    });
+
+    test('compactMacroFillSteps merges legacy per-keystroke fills', () {
+      final steps = compactMacroFillSteps([
+        MacroStep.fillField(
+          selector: '#username',
+          value: 'a',
+          fieldType: 'username',
+        ),
+        MacroStep.delay(200),
+        MacroStep.fillField(
+          selector: '#username',
+          value: 'ab',
+          fieldType: 'username',
+        ),
+        MacroStep.fillField(
+          selector: '#username',
+          value: 'abc',
+          fieldType: 'username',
+        ),
+        MacroStep.click('#login'),
+      ]);
+
+      expect(steps, hasLength(2));
+      expect(steps[0].type, MacroStepType.fillField);
+      expect(steps[0].value, 'abc');
+      expect(steps[1].type, MacroStepType.click);
+    });
+
     test('does not produce fill steps with password or captcha values', () {
       final rawEvents = <Map<String, dynamic>>[
         {
@@ -122,11 +191,15 @@ void main() {
         hasLength(2),
       );
       expect(
-        steps.where((step) => step.value?.contains('manual_input_password') ?? false),
+        steps.where(
+          (step) => step.value?.contains('manual_input_password') ?? false,
+        ),
         hasLength(1),
       );
       expect(
-        steps.where((step) => step.value?.contains('manual_input_captcha') ?? false),
+        steps.where(
+          (step) => step.value?.contains('manual_input_captcha') ?? false,
+        ),
         hasLength(1),
       );
     });

@@ -7715,6 +7715,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Recording started. Continue through the academic portal as usual';
 
   @override
+  String get courseImportAutoRecordingStartedTip =>
+      '操作をバックグラウンドで記録中です。インポート成功後にクイックインポートとして保存できます';
+
+  @override
   String get courseImportRecordingEmptyStatus => 'No actions recorded';
 
   @override
@@ -7726,6 +7730,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String courseImportSaveRecordingMessage(int count) {
     return 'Recorded $count steps. Save as quick import?';
+  }
+
+  @override
+  String courseImportSaveAutoRecordingMessage(int count) {
+    return 'インポートに成功しました。$count ステップを記録しました。次回のクイックインポート用にこの経路を保存しますか？';
   }
 
   @override
