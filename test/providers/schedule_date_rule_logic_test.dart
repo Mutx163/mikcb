@@ -147,5 +147,43 @@ void main() {
         isTrue,
       );
     });
+
+    group('ScheduleDateRuleApplyResult outcomes', () {
+      test('notDue is neither didApply nor failedWhileDue', () {
+        const result = ScheduleDateRuleApplyResult(
+          outcome: ScheduleDateRuleApplyOutcome.notDue,
+        );
+        expect(result.didApply, isFalse);
+        expect(result.failedWhileDue, isFalse);
+      });
+
+      test('applied sets didApply only', () {
+        const result = ScheduleDateRuleApplyResult(
+          outcome: ScheduleDateRuleApplyOutcome.applied,
+        );
+        expect(result.didApply, isTrue);
+        expect(result.failedWhileDue, isFalse);
+      });
+
+      test('schemeMissing is failedWhileDue', () {
+        const result = ScheduleDateRuleApplyResult(
+          outcome: ScheduleDateRuleApplyOutcome.schemeMissing,
+        );
+        expect(result.didApply, isFalse);
+        expect(result.failedWhileDue, isTrue);
+      });
+
+      test('sectionOverflow is failedWhileDue and keeps section stats', () {
+        const result = ScheduleDateRuleApplyResult(
+          outcome: ScheduleDateRuleApplyOutcome.sectionOverflow,
+          requiredMaxSection: 10,
+          schemeSectionCount: 8,
+        );
+        expect(result.didApply, isFalse);
+        expect(result.failedWhileDue, isTrue);
+        expect(result.requiredMaxSection, 10);
+        expect(result.schemeSectionCount, 8);
+      });
+    });
   });
 }

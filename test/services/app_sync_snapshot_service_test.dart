@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/partner_timetable_binding.dart';
+import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -9,6 +10,246 @@ import 'package:university_timetable/services/app_sync_snapshot_service.dart';
 import 'package:university_timetable/services/warehouse_import_preferences_service.dart';
 
 void main() {
+  final exportedAt = DateTime.utc(2026, 7, 5, 12);
+
+  TimetableProfile factoryDefaultProfile({
+    List<Course> courses = const [],
+    String name = '默认课表',
+    TimetableProfileKind profileKind = TimetableProfileKind.normal,
+  }) {
+    return TimetableProfile(
+      id: 'profile-1',
+      name: name,
+      courses: courses,
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+      createdAt: exportedAt,
+      lastUsedAt: exportedAt,
+      profileKind: profileKind,
+    );
+  }
+
+  TimeScheme singleScheme() {
+    return TimeScheme(
+      id: 'scheme-1',
+      name: '默认作息',
+      sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
+      createdAt: exportedAt,
+      updatedAt: exportedAt,
+    );
+  }
+
+  /// Baseline first-install snapshot: one default profile, one scheme, no user data.
+  AppSyncSnapshot emptyAuthoredSnapshot({
+    List<TimetableProfile>? profiles,
+    List<TimeScheme>? timeSchemes,
+    List<LocationTimeGroup> locationTimeGroups = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
+    List<String> teacherRecords = const [],
+    List<String> locationRecords = const [],
+    WarehouseSyncBundle warehouse = const WarehouseSyncBundle(),
+    PartnerTimetableBinding? partnerTimetableBinding,
+  }) {
+    return AppSyncSnapshot(
+      profiles: profiles ?? [factoryDefaultProfile()],
+      activeProfileId: 'profile-1',
+      timeSchemes: timeSchemes ?? [singleScheme()],
+      locationTimeGroups: locationTimeGroups,
+      scheduleDateRules: scheduleDateRules,
+      teacherRecords: teacherRecords,
+      locationRecords: locationRecords,
+      warehouse: warehouse,
+      macros: const [],
+      customHolidays: const [],
+      exportedAt: exportedAt,
+      deviceId: 'device-a',
+      contentSha256: '',
+      partnerTimetableBinding: partnerTimetableBinding,
+      includesPartnerTimetableBinding: partnerTimetableBinding != null,
+    );
+  }
+
+  group('AppSyncSnapshot.hasUserAuthoredData', () {
+    test('false for factory-default empty snapshot', () {
+      expect(emptyAuthoredSnapshot().hasUserAuthoredData, isFalse);
+    });
+
+    test('true when teacher or location records exist', () {
+      expect(
+        emptyAuthoredSnapshot(
+          teacherRecords: const ['张老师'],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+      expect(
+        emptyAuthoredSnapshot(
+          locationRecords: const ['A101'],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
+
+    test('true when locationTimeGroups exist', () {
+      expect(
+        emptyAuthoredSnapshot(
+          locationTimeGroups: [
+            LocationTimeGroup(
+              id: 'group-1',
+              name: '主教学楼',
+              timeSchemeId: 'scheme-1',
+              keywords: const [LocationKeyword(pattern: 'A主')],
+            ),
+          ],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
+
+    test('true when scheduleDateRules list is non-empty', () {
+      expect(
+        emptyAuthoredSnapshot(
+          scheduleDateRules: const [
+            ScheduleDateRule(
+              id: 'rule-1',
+              name: '夏令时',
+              timeSchemeId: 'scheme-1',
+              startDate: '2026-05-01',
+              endDate: '2026-09-30',
+            ),
+          ],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
+
+    test(
+      'true when warehouse prefs, partner binding, or multi scheme/profile',
+      () {
+        expect(
+          emptyAuthoredSnapshot(
+            warehouse: const WarehouseSyncBundle(recentSchoolIds: ['school-a']),
+          ).hasUserAuthoredData,
+          isTrue,
+        );
+        expect(
+          emptyAuthoredSnapshot(
+            partnerTimetableBinding: PartnerTimetableBinding(
+              partnerProfileId: 'partner-1',
+              partnerName: '小明',
+              linkedAt: exportedAt,
+            ),
+          ).hasUserAuthoredData,
+          isTrue,
+        );
+        expect(
+          emptyAuthoredSnapshot(
+            timeSchemes: [
+              singleScheme(),
+              TimeScheme(
+                id: 'scheme-2',
+                name: '第二套',
+                sections: const [
+                  SectionTime(startTime: '09:00', endTime: '09:45'),
+                ],
+                createdAt: exportedAt,
+                updatedAt: exportedAt,
+              ),
+            ],
+          ).hasUserAuthoredData,
+          isTrue,
+        );
+        expect(
+          emptyAuthoredSnapshot(
+            profiles: [
+              factoryDefaultProfile(),
+              TimetableProfile(
+                id: 'profile-2',
+                name: '第二课表',
+                courses: const [],
+                settings: TimetableSettings.defaults(),
+                currentWeek: 1,
+                createdAt: exportedAt,
+                lastUsedAt: exportedAt,
+              ),
+            ],
+          ).hasUserAuthoredData,
+          isTrue,
+        );
+      },
+    );
+
+    test('true when profile has courses or renamed away from 默认课表', () {
+      expect(
+        emptyAuthoredSnapshot(
+          profiles: [
+            factoryDefaultProfile(
+              courses: [
+                Course(
+                  id: 'c1',
+                  name: '高数',
+                  teacher: '张',
+                  location: 'A1',
+                  dayOfWeek: 1,
+                  startSection: 1,
+                  endSection: 2,
+                  startTime: '08:00',
+                  endTime: '09:40',
+                  startWeek: 1,
+                  endWeek: 16,
+                ),
+              ],
+            ),
+          ],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+      expect(
+        emptyAuthoredSnapshot(
+          profiles: [factoryDefaultProfile(name: '我的课表')],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
+
+    test('true when profile is partner-imported even without courses', () {
+      expect(
+        emptyAuthoredSnapshot(
+          profiles: [
+            factoryDefaultProfile(
+              profileKind: TimetableProfileKind.partnerImported,
+            ),
+          ],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
+
+    test(
+      'false when only default scheme is customized but profile still empty',
+      () {
+        // Documented gap: deep edits to the single default scheme alone do not
+        // trip hasUserAuthoredData (threshold is length > 1, not content).
+        expect(
+          emptyAuthoredSnapshot(
+            timeSchemes: [
+              TimeScheme(
+                id: 'scheme-1',
+                name: '深度自定义',
+                sections: const [
+                  SectionTime(startTime: '07:30', endTime: '08:10'),
+                  SectionTime(startTime: '08:20', endTime: '09:00'),
+                ],
+                createdAt: exportedAt,
+                updatedAt: exportedAt,
+              ),
+            ],
+          ).hasUserAuthoredData,
+          isFalse,
+        );
+      },
+    );
+  });
+
   test(
     'sync snapshot json round trip preserves timetable and warehouse data',
     () {

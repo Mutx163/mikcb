@@ -1262,7 +1262,18 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(() => _applyDueScheduleDateRulesDetailed(now: now));
   }
 
+  /// Bool facade kept for existing callers; always delegates to the detailed
+  /// path so failure logging and apply side effects cannot drift.
   Future<bool> _applyDueScheduleDateRules({DateTime? now}) async {
+    final applyResult = await _applyDueScheduleDateRulesDetailed(now: now);
+    return applyResult.didApply;
+  }
+
+  /// Single implementation of seasonal bulk-apply. Returns structured outcome
+  /// for UI toasts; [applyDueScheduleDateRules] maps [didApply] to bool.
+  Future<ScheduleDateRuleApplyResult> _applyDueScheduleDateRulesDetailed({
+    DateTime? now,
+  }) async {
     await initialize();
     final reference = now ?? DateTime.now();
     final matched = ScheduleDateRuleLogic.match(reference, _scheduleDateRules);
@@ -1270,7 +1281,9 @@ class TimetableProvider with ChangeNotifier {
       matchedRule: matched,
       lastAppliedSignature: _scheduleDateRuleLastAppliedSignature,
     )) {
-      return false;
+      return const ScheduleDateRuleApplyResult(
+        outcome: ScheduleDateRuleApplyOutcome.notDue,
+      );
     }
 
     final rule = matched!;
@@ -1280,12 +1293,22 @@ class TimetableProvider with ChangeNotifier {
         'ScheduleDateRule',
         '跳过批量套用: 模板不存在 rule=${rule.name} schemeId=${rule.timeSchemeId}',
       );
-      return false;
+      await AppLogService.instance.warn(
+        'schedule_date_rule',
+        '日期规则批量套用失败：时间模板不存在',
+        extras: {
+          'ruleId': rule.id,
+          'ruleName': rule.name,
+          'schemeId': rule.timeSchemeId,
+        },
+      );
+      return const ScheduleDateRuleApplyResult(
+        outcome: ScheduleDateRuleApplyOutcome.schemeMissing,
+      );
     }
 
-    // The apply below rewrites every profile, so validate every profile before
-    // changing any settings. Checking only the active profile can leave an
-    // inactive profile pointing at a scheme that cannot represent its courses.
+    // Validate every profile before rewriting clocks; active-only checks can
+    // leave inactive profiles pointing at a scheme that cannot represent them.
     var requiredMaxSection = 0;
     for (final profile in _profiles) {
       for (final course in profile.courses) {
@@ -1316,7 +1339,11 @@ class TimetableProvider with ChangeNotifier {
           'schemeSections': scheme.sections.length,
         },
       );
-      return false;
+      return ScheduleDateRuleApplyResult(
+        outcome: ScheduleDateRuleApplyOutcome.sectionOverflow,
+        requiredMaxSection: requiredMaxSection,
+        schemeSectionCount: scheme.sections.length,
+      );
     }
 
     final signature = ScheduleDateRuleLogic.appliedSignature(rule);
@@ -1326,122 +1353,6 @@ class TimetableProvider with ChangeNotifier {
           'range=${rule.startDate}~${rule.endDate} signature=$signature',
     );
 
-    // Apply as profile default + rewrite clocks for every profile.
-    for (var index = 0; index < _profiles.length; index++) {
-      final profile = _profiles[index];
-      final nextSettings = profile.settings.copyWith(
-        activeTimeSchemeId: scheme.id,
-        sections: List<SectionTime>.from(scheme.sections),
-      );
-      final syncedCourses = _syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(profile.courses),
-        settings: nextSettings,
-      );
-      _profiles[index] = profile.copyWith(
-        settings: nextSettings,
-        courses: syncedCourses,
-      );
-    }
-
-    final activeIndex = _profiles.indexWhere(
-      (profile) => profile.id == _activeProfileId,
-    );
-    if (activeIndex != -1) {
-      _courses = List<Course>.from(_profiles[activeIndex].courses);
-      _settings = _profiles[activeIndex].settings;
-    } else {
-      _settings = _settings.copyWith(
-        activeTimeSchemeId: scheme.id,
-        sections: List<SectionTime>.from(scheme.sections),
-      );
-      _courses = _syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(_courses),
-        settings: _settings,
-      );
-    }
-
-    await _storageService.saveProfiles(_profiles);
-    _scheduleDateRuleLastAppliedSignature = signature;
-    await _storageService.saveScheduleDateRuleLastAppliedSignature(signature);
-    notifyUserDataChangedForSync();
-    _currentLiveCourseId = null;
-    _notifyStateChanged();
-    await _updateLiveActivity();
-
-    unawaited(
-      AppLogService.instance.info(
-        'schedule_date_rule',
-        '已按日期规则批量套用作息',
-        extras: {
-          'ruleId': rule.id,
-          'ruleName': rule.name,
-          'schemeId': scheme.id,
-          'schemeName': scheme.name,
-          'startDate': rule.startDate,
-          'endDate': rule.endDate,
-          'signature': signature,
-        },
-      ),
-    );
-    return true;
-  }
-
-  /// Detailed variant of [_applyDueScheduleDateRules] for callers that need
-  /// the structured outcome (e.g. date-rule editor UI toast, B3).
-  Future<ScheduleDateRuleApplyResult> _applyDueScheduleDateRulesDetailed({
-    DateTime? now,
-  }) async {
-    await initialize();
-    final reference = now ?? DateTime.now();
-    final matched = ScheduleDateRuleLogic.match(reference, _scheduleDateRules);
-    if (!ScheduleDateRuleLogic.shouldBulkApply(
-      matchedRule: matched,
-      lastAppliedSignature: _scheduleDateRuleLastAppliedSignature,
-    )) {
-      return const ScheduleDateRuleApplyResult(
-        outcome: ScheduleDateRuleApplyOutcome.notDue,
-      );
-    }
-
-    final rule = matched!;
-    final scheme = _getTimeSchemeById(rule.timeSchemeId);
-    if (scheme == null) {
-      appDebugLog(
-        'ScheduleDateRule',
-        '跳过批量套用: 模板不存在 rule=${rule.name} schemeId=${rule.timeSchemeId}',
-      );
-      return const ScheduleDateRuleApplyResult(
-        outcome: ScheduleDateRuleApplyOutcome.schemeMissing,
-      );
-    }
-
-    var requiredMaxSection = 0;
-    for (final profile in _profiles) {
-      for (final course in profile.courses) {
-        if (course.endSection > requiredMaxSection) {
-          requiredMaxSection = course.endSection;
-        }
-      }
-    }
-    for (final course in _courses) {
-      if (course.endSection > requiredMaxSection) {
-        requiredMaxSection = course.endSection;
-      }
-    }
-    if (requiredMaxSection > scheme.sections.length) {
-      appDebugLog(
-        'ScheduleDateRule',
-        '跳过批量套用: 节次超出模板 rule=${rule.name} need=$requiredMaxSection '
-            'has=${scheme.sections.length}',
-      );
-      return ScheduleDateRuleApplyResult(
-        outcome: ScheduleDateRuleApplyOutcome.sectionOverflow,
-        requiredMaxSection: requiredMaxSection,
-        schemeSectionCount: scheme.sections.length,
-      );
-    }
-
-    final signature = ScheduleDateRuleLogic.appliedSignature(rule);
     for (var index = 0; index < _profiles.length; index++) {
       final profile = _profiles[index];
       final nextSettings = profile.settings.copyWith(
