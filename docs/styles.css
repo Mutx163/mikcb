@@ -138,8 +138,9 @@ button {
   font-size: 0.78rem;
   font-weight: 600;
   box-shadow: none;
-  border-color: rgba(29, 29, 31, 0.08);
-  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(16, 21, 31, 0.82);
+  color: var(--text);
 }
 
 .nav-links a:hover {
@@ -286,7 +287,7 @@ main {
 .primary-cta {
   color: #fff;
   background: var(--blue);
-  box-shadow: 0 16px 30px rgba(0, 102, 204, 0.18);
+  box-shadow: 0 16px 30px rgba(52, 130, 255, 0.22);
 }
 
 .primary-cta:hover {
@@ -295,7 +296,7 @@ main {
 
 .secondary-cta {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(16, 21, 31, 0.82);
   border: 1px solid var(--line);
 }
 
@@ -330,10 +331,10 @@ main {
 
 .hero-proof-card {
   padding: 18px 18px 16px;
-  border: 1px solid rgba(0, 102, 204, 0.08);
+  border: 1px solid rgba(52, 130, 255, 0.12);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 16px 36px rgba(17, 24, 39, 0.04);
+  background: rgba(16, 21, 31, 0.86);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
   text-align: left;
 }
 
@@ -363,7 +364,7 @@ main {
 .hero-trust-row span {
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.74);
+  background: rgba(16, 21, 31, 0.74);
   color: var(--text-soft);
   font-size: 0.84rem;
   line-height: 1.4;
@@ -532,7 +533,7 @@ main {
 }
 
 .detail-band-unified .section-shell {
-  background: linear-gradient(180deg, #ffffff, #fbfbfd);
+  background: linear-gradient(180deg, #10151f, #05070d);
 }
 
 .split-layout {
@@ -590,9 +591,9 @@ main {
 .experience-highlight {
   padding: 28px;
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(0, 102, 204, 0.1), rgba(0, 102, 204, 0.03));
-  border: 1px solid rgba(0, 102, 204, 0.08);
-  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.04);
+  background: linear-gradient(180deg, rgba(52, 130, 255, 0.12), rgba(52, 130, 255, 0.03));
+  border: 1px solid rgba(52, 130, 255, 0.12);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .experience-highlight small,
@@ -629,8 +630,8 @@ main {
 .feature-item {
   padding: 24px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.03);
+  background: rgba(16, 21, 31, 0.82);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
 }
 
 .feature-item.compact {
@@ -674,8 +675,8 @@ main {
   align-items: flex-start;
   padding: 22px 22px 20px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.04);
+  background: rgba(16, 21, 31, 0.82);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
 }
 
 .scenario-step {
@@ -684,7 +685,7 @@ main {
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  background: rgba(0, 102, 204, 0.08);
+  background: rgba(52, 130, 255, 0.12);
   color: var(--blue);
   font-size: 1rem;
   font-weight: 700;
@@ -699,14 +700,14 @@ main {
 .template-card {
   padding: 22px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.04);
+  background: rgba(16, 21, 31, 0.82);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
 }
 
 .template-card-primary {
   grid-column: span 2;
-  background: linear-gradient(180deg, rgba(0, 102, 204, 0.08), rgba(0, 102, 204, 0.02));
-  border: 1px solid rgba(0, 102, 204, 0.08);
+  background: linear-gradient(180deg, rgba(52, 130, 255, 0.1), rgba(52, 130, 255, 0.02));
+  border: 1px solid rgba(52, 130, 255, 0.12);
 }
 
 .platform-panels {
@@ -733,7 +734,7 @@ main {
 .download-shell {
   padding: 72px 24px;
   border-radius: 36px;
-  background: linear-gradient(180deg, #ffffff, #f7f7fa);
+  background: linear-gradient(180deg, #10151f, #05070d);
   text-align: center;
   box-shadow: var(--shadow);
 }
@@ -756,8 +757,8 @@ main {
 .download-summary-card {
   padding: 22px 20px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.04);
+  background: rgba(16, 21, 31, 0.82);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
   text-align: left;
 }
 
@@ -819,7 +820,7 @@ main {
 .release-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.38);
+  background: rgba(5, 7, 13, 0.72);
   backdrop-filter: blur(8px);
 }
 
@@ -828,17 +829,18 @@ main {
   width: min(100%, 560px);
   padding: 34px 28px 28px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 28px 60px rgba(17, 24, 39, 0.18);
+  background: rgba(16, 21, 31, 0.98);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .release-dialog[data-release-channel="stable"] {
-  border: 1px solid rgba(0, 102, 204, 0.08);
+  border-color: rgba(52, 130, 255, 0.16);
 }
 
 .release-dialog[data-release-channel="prerelease"] {
   border: 1px solid rgba(140, 82, 255, 0.14);
-  background: linear-gradient(180deg, rgba(250, 247, 255, 0.98), rgba(255, 255, 255, 0.98));
+  background: linear-gradient(180deg, rgba(35, 25, 55, 0.98), rgba(16, 21, 31, 0.98));
 }
 
 .release-close {
@@ -855,12 +857,12 @@ main {
   color: var(--text-soft);
   font-size: 1.5rem;
   line-height: 1;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .release-close:hover {
   color: var(--text);
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .release-description {
@@ -980,7 +982,7 @@ main {
 }
 
 .site-footer {
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .footer-inner {
@@ -1706,7 +1708,7 @@ main {
 }
 
 .schools-search-field input:focus-visible {
-  outline: 3px solid rgba(0, 102, 204, 0.28);
+  outline: 3px solid rgba(122, 180, 255, 0.45);
   outline-offset: 2px;
 }
 
@@ -1787,7 +1789,7 @@ main {
 .schools-index-bar a:hover,
 .schools-index-bar a:focus-visible {
   color: var(--blue);
-  background: rgba(0, 102, 204, 0.1);
+  background: rgba(52, 130, 255, 0.12);
 }
 
 @media (max-width: 760px) {
