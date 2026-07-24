@@ -805,8 +805,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importRandomCourseColorTitle => '수업 색상 무작위';
 
   @override
-  String get importRandomCourseColorSubtitle =>
-      '켜면 수업명과 교수로 프리셋 색을 배정하여 전부 같은 파란색이 되지 않게 합니다';
+  String get importRandomCourseColorSubtitle => '수업명과 교수로 프리셋 색을 자동 배정';
 
   @override
   String get courseImportTitle => '수업 가져오기';
@@ -822,8 +821,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodIcsTitle => '.ics 캘린더 가져오기';
 
   @override
-  String get importMethodIcsSubtitle =>
-      'WakeUp 등 시간표 앱에서 내보낸 캘린더 파일에 적합하며, 절차가 가장 짧습니다';
+  String get importMethodIcsSubtitle => '다른 시간표 앱에서 내보낸 캘린더 파일';
 
   @override
   String get importMethodIcsFooter =>
@@ -833,8 +831,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodAiTitle => '이미지 인식 가져오기';
 
   @override
-  String get importMethodAiSubtitle =>
-      '시간표 스크린샷에서 바로 가져오기에 적합합니다. 1장 또는 연속 여러 장을 지원합니다';
+  String get importMethodAiSubtitle => '시간표 스크린샷에서 인식해 가져오기';
 
   @override
   String get importMethodAiFooter =>
@@ -844,8 +841,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodWarehouseTitle => '교무 시스템 가져오기';
 
   @override
-  String get importMethodWarehouseSubtitle =>
-      'qingyu_warehouse에서 학교와 어댑터를 읽어 웹 로그인으로 수업을 가져옵니다';
+  String get importMethodWarehouseSubtitle => '학교 교무 시스템에 로그인하여 가져오기';
 
   @override
   String get importMethodWarehouseFooter =>
@@ -855,8 +851,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodSpreadsheetTitle => '표 가져오기';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      'Excel/WPS에서 경량섬 시간표 템플릿을 작성한 뒤 가져오기. .ics 사전보내기 불필요';
+  String get importMethodSpreadsheetSubtitle => 'Excel / CSV 템플릿을 작성해 가져오기';
 
   @override
   String get importMethodSpreadsheetFooter =>

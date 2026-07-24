@@ -796,7 +796,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importRandomCourseColorTitle => '随机课程颜色';
 
   @override
-  String get importRandomCourseColorSubtitle => '开启后按课程名与教师分配预设色，避免整批同一蓝色';
+  String get importRandomCourseColorSubtitle => '按课程名与教师自动分配预设色';
 
   @override
   String get courseImportTitle => '导入课程';
@@ -812,7 +812,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importMethodIcsTitle => '.ics 日历导入';
 
   @override
-  String get importMethodIcsSubtitle => '适合从 WakeUp 等课表应用导出的日历文件，流程最短';
+  String get importMethodIcsSubtitle => '从其他课表应用导出的日历文件';
 
   @override
   String get importMethodIcsFooter => '进入后直接选择 .ics 文件，可追加导入或替换现有课程';
@@ -821,7 +821,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importMethodAiTitle => '识图导入';
 
   @override
-  String get importMethodAiSubtitle => '适合直接从课表截图导入，支持 1 张或多张连续截图';
+  String get importMethodAiSubtitle => '从课表截图识别并导入';
 
   @override
   String get importMethodAiFooter =>
@@ -831,8 +831,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importMethodWarehouseTitle => '教务系统导入';
 
   @override
-  String get importMethodWarehouseSubtitle =>
-      '从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程';
+  String get importMethodWarehouseSubtitle => '登录学校教务系统导入';
 
   @override
   String get importMethodWarehouseFooter => '进入后选择学校和适配器，可直接打开教务网页登录并执行导入';
@@ -841,8 +840,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importMethodSpreadsheetTitle => '表格导入';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      '适合用 Excel/WPS 填写轻屿课表模板后导入，无需先导出 .ics';
+  String get importMethodSpreadsheetSubtitle => '填写 Excel / CSV 模板后导入';
 
   @override
   String get importMethodSpreadsheetFooter =>
@@ -9347,7 +9345,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importRandomCourseColorTitle => '隨機課程顏色';
 
   @override
-  String get importRandomCourseColorSubtitle => '開啟後依課程名與教師分配預設色，避免整批同一藍色';
+  String get importRandomCourseColorSubtitle => '依課程名與教師自動分配預設色';
 
   @override
   String get courseImportTitle => '匯入課程';
@@ -9363,7 +9361,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importMethodIcsTitle => '.ics 日歷匯入';
 
   @override
-  String get importMethodIcsSubtitle => '適合從 WakeUp 等課表應用匯出的日歷檔案，流程最短';
+  String get importMethodIcsSubtitle => '從其他課表應用匯出的日歷檔案';
 
   @override
   String get importMethodIcsFooter => '進入後直接選擇 .ics 檔案，可追加匯入或替換現有課程';
@@ -9372,7 +9370,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importMethodAiTitle => '識圖匯入';
 
   @override
-  String get importMethodAiSubtitle => '適合直接從課表截圖匯入，支持 1 張或多張連續截圖';
+  String get importMethodAiSubtitle => '從課表截圖識別並匯入';
 
   @override
   String get importMethodAiFooter =>
@@ -9382,8 +9380,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importMethodWarehouseTitle => '教務系統匯入';
 
   @override
-  String get importMethodWarehouseSubtitle =>
-      '從 qingyu_warehouse 讀取學校與適配器，支持網頁登錄匯入課程';
+  String get importMethodWarehouseSubtitle => '登入學校教務系統匯入';
 
   @override
   String get importMethodWarehouseFooter => '進入後選擇學校和適配器，可直接打開教務網頁登錄並執行匯入';
@@ -9392,8 +9389,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importMethodSpreadsheetTitle => '表格匯入';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      '適合用 Excel/WPS 填寫輕嶼課表模板後匯入，無需先匯出 .ics';
+  String get importMethodSpreadsheetSubtitle => '填寫 Excel / CSV 模板後匯入';
 
   @override
   String get importMethodSpreadsheetFooter =>
@@ -17705,7 +17701,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importRandomCourseColorTitle => '隨機課程顏色';
 
   @override
-  String get importRandomCourseColorSubtitle => '開啟後依課程名與教師分配預設色，避免整批同一藍色';
+  String get importRandomCourseColorSubtitle => '依課程名與教師自動分配預設色';
 
   @override
   String get courseImportTitle => '匯入課程';
@@ -17721,7 +17717,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importMethodIcsTitle => '.ics 日歷匯入';
 
   @override
-  String get importMethodIcsSubtitle => '適合從 WakeUp 等課表應用匯出的日歷檔案，流程最短';
+  String get importMethodIcsSubtitle => '從其他課表應用匯出的日歷檔案';
 
   @override
   String get importMethodIcsFooter => '進入後直接選擇 .ics 檔案，可追加匯入或替換現有課程';
@@ -17730,7 +17726,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importMethodAiTitle => '識圖匯入';
 
   @override
-  String get importMethodAiSubtitle => '適合直接從課表截圖匯入，支持 1 張或多張連續截圖';
+  String get importMethodAiSubtitle => '從課表截圖識別並匯入';
 
   @override
   String get importMethodAiFooter =>
@@ -17740,8 +17736,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importMethodWarehouseTitle => '教務系統匯入';
 
   @override
-  String get importMethodWarehouseSubtitle =>
-      '從 qingyu_warehouse 讀取學校與適配器，支持網頁登錄匯入課程';
+  String get importMethodWarehouseSubtitle => '登入學校教務系統匯入';
 
   @override
   String get importMethodWarehouseFooter => '進入後選擇學校和適配器，可直接打開教務網頁登錄並執行匯入';
@@ -17750,8 +17745,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importMethodSpreadsheetTitle => '表格匯入';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      '適合用 Excel/WPS 填寫輕嶼課表模板後匯入，無需先匯出 .ics';
+  String get importMethodSpreadsheetSubtitle => '填寫 Excel / CSV 模板後匯入';
 
   @override
   String get importMethodSpreadsheetFooter =>

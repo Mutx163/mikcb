@@ -1571,7 +1571,7 @@ abstract class AppLocalizations {
   /// No description provided for @importRandomCourseColorSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后按课程名与教师分配预设色，避免整批同一蓝色'**
+  /// **'按课程名与教师自动分配预设色'**
   String get importRandomCourseColorSubtitle;
 
   /// No description provided for @courseImportTitle.
@@ -1601,7 +1601,7 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodIcsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合从 WakeUp 等课表应用导出的日历文件，流程最短'**
+  /// **'从其他课表应用导出的日历文件'**
   String get importMethodIcsSubtitle;
 
   /// No description provided for @importMethodIcsFooter.
@@ -1619,7 +1619,7 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodAiSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合直接从课表截图导入，支持 1 张或多张连续截图'**
+  /// **'从课表截图识别并导入'**
   String get importMethodAiSubtitle;
 
   /// No description provided for @importMethodAiFooter.
@@ -1637,7 +1637,7 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodWarehouseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程'**
+  /// **'登录学校教务系统导入'**
   String get importMethodWarehouseSubtitle;
 
   /// No description provided for @importMethodWarehouseFooter.
@@ -1655,7 +1655,7 @@ abstract class AppLocalizations {
   /// No description provided for @importMethodSpreadsheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合用 Excel/WPS 填写轻屿课表模板后导入，无需先导出 .ics'**
+  /// **'填写 Excel / CSV 模板后导入'**
   String get importMethodSpreadsheetSubtitle;
 
   /// No description provided for @importMethodSpreadsheetFooter.

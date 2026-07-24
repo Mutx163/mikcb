@@ -852,7 +852,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importRandomCourseColorSubtitle =>
-      'When on, assign preset colors by course name and teacher instead of one default blue';
+      'Assign preset colors by course name and teacher';
 
   @override
   String get courseImportTitle => 'Import Courses';
@@ -869,7 +869,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importMethodIcsSubtitle =>
-      'Best for calendar files exported from apps like WakeUp';
+      'Calendar files from other timetable apps';
 
   @override
   String get importMethodIcsFooter =>
@@ -879,8 +879,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importMethodAiTitle => 'Image Import';
 
   @override
-  String get importMethodAiSubtitle =>
-      'Best for direct timetable screenshots, including multiple continuous screenshots';
+  String get importMethodAiSubtitle => 'Import from timetable screenshots';
 
   @override
   String get importMethodAiFooter =>
@@ -890,8 +889,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importMethodWarehouseTitle => 'Academic System Import';
 
   @override
-  String get importMethodWarehouseSubtitle =>
-      'Read schools and adapters from qingyu_warehouse and import through the web login flow';
+  String get importMethodWarehouseSubtitle => 'Sign in to your school system';
 
   @override
   String get importMethodWarehouseFooter =>
@@ -902,7 +900,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importMethodSpreadsheetSubtitle =>
-      'Fill in the mikcb template in Excel/WPS and import without exporting .ics first';
+      'Import from an Excel or CSV template';
 
   @override
   String get importMethodSpreadsheetFooter =>

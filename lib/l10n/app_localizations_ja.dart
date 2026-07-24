@@ -805,8 +805,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importRandomCourseColorTitle => '授業カラーをランダム';
 
   @override
-  String get importRandomCourseColorSubtitle =>
-      'オンにすると授業名と教員でプリセット色を割り当て、一括で同じ青になるのを防ぎます';
+  String get importRandomCourseColorSubtitle => '授業名と教員でプリセット色を自動割り当て';
 
   @override
   String get courseImportTitle => '授業インポート';
@@ -822,7 +821,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodIcsTitle => '.icsカレンダーインポート';
 
   @override
-  String get importMethodIcsSubtitle => 'WakeUpなどの時間割アプリからエクスポートしたカレンダーファイルに最適';
+  String get importMethodIcsSubtitle => '他の時間割アプリから書き出したカレンダー';
 
   @override
   String get importMethodIcsFooter => '進入後、.icsファイルを選択して追加インポートまたは既存授業を置換可能。';
@@ -831,7 +830,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodAiTitle => '画像認識インポート';
 
   @override
-  String get importMethodAiSubtitle => '時間割のスクリーンショットから直接インポート，1枚または連続複数枚に対応';
+  String get importMethodAiSubtitle => '時間割のスクリーンショットから認識';
 
   @override
   String get importMethodAiFooter =>
@@ -841,8 +840,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodWarehouseTitle => '教務システムインポート';
 
   @override
-  String get importMethodWarehouseSubtitle =>
-      'qingyu_warehouseから学校とアダプタを読み込み、Webログインで授業をインポート';
+  String get importMethodWarehouseSubtitle => '学校の教務システムにログインして取込';
 
   @override
   String get importMethodWarehouseFooter =>
@@ -852,8 +850,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodSpreadsheetTitle => '表インポート';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      'Excel/WPSで軽嶼課表テンプレートを記入してインポート，.icsの事前エクスポートは不要';
+  String get importMethodSpreadsheetSubtitle => 'Excel / CSV テンプレートから取込';
 
   @override
   String get importMethodSpreadsheetFooter =>
