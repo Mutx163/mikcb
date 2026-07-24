@@ -51,9 +51,6 @@ class HyperosDialog extends StatelessWidget {
       content = null;
     }
 
-    final maxCardHeight = MediaQuery.sizeOf(context).height * 0.72;
-    final maxBodyHeight = maxCardHeight * maxBodyHeightFactor;
-
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
       frosted: true,
@@ -63,34 +60,70 @@ class HyperosDialog extends StatelessWidget {
         HyperosMiuixDialog.insideMarginHorizontal,
         HyperosMiuixDialog.insideMarginVertical,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null) ...[
-            Text(
-              title!,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.sheetTitle(context),
+      // Cap the whole card so title + scroll body + actions never overflow when
+      // the IME shrinks the bottom sheet (e.g. multi-field date-rule forms).
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final mediaQuery = MediaQuery.of(context);
+          final screenHeight = mediaQuery.size.height;
+          final factorCap = screenHeight * 0.72;
+          // showHyperosSheet pads by viewInsets but does not bound max height;
+          // subtract IME + outer sheet margin so the card stays on-screen.
+          final keyboardAwareCap =
+              screenHeight -
+              mediaQuery.viewInsets.bottom -
+              mediaQuery.padding.bottom -
+              HyperosMiuixDialog.outsideMarginHorizontal * 2 -
+              HyperosMiuixDialog.insideMarginVertical * 2;
+          final parentCap = constraints.hasBoundedHeight
+              ? constraints.maxHeight
+              : double.infinity;
+          final maxCardHeight =
+              [factorCap, keyboardAwareCap, if (parentCap.isFinite) parentCap]
+                  .reduce((left, right) => left < right ? left : right)
+                  .clamp(160.0, factorCap);
+          final maxBodyHeight = maxCardHeight * maxBodyHeightFactor;
+
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxCardHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    textAlign: TextAlign.center,
+                    style: HyperosTypography.sheetTitle(context),
+                  ),
+                  SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
+                ],
+                if (content != null) ...[
+                  // Loose flex: shrink-wrap short content; cap + scroll when the
+                  // remaining height after title/actions is tight (keyboard up).
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxBodyHeight),
+                      child: SingleChildScrollView(
+                        child: DefaultTextStyle(
+                          style: detailStyle,
+                          textAlign: TextAlign.center,
+                          child: content,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (actions.isNotEmpty)
+                    SizedBox(
+                      height: HyperosMiuixDialog.summaryBottomPadding + 8,
+                    ),
+                ],
+                if (actions.isNotEmpty) _HyperosDialogActions(actions: actions),
+              ],
             ),
-            SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
-          ],
-          if (content != null) ...[
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxBodyHeight),
-              child: SingleChildScrollView(
-                child: DefaultTextStyle(
-                  style: detailStyle,
-                  textAlign: TextAlign.center,
-                  child: content,
-                ),
-              ),
-            ),
-            if (actions.isNotEmpty)
-              SizedBox(height: HyperosMiuixDialog.summaryBottomPadding + 8),
-          ],
-          if (actions.isNotEmpty) _HyperosDialogActions(actions: actions),
-        ],
+          );
+        },
       ),
     );
   }
