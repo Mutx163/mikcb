@@ -22,6 +22,15 @@ class CoupleTimetableLogic {
   static const int minWeekOffset = -15;
   static const int maxWeekOffset = 15;
 
+  /// Full calendar day used for free-time math: 00:00–24:00 (not section span).
+  /// Overnight / early-morning courses (e.g. 00:00–02:00) must count as busy.
+  static const int dayObservationStartMinutes = 0;
+  static const int dayObservationEndMinutes = 24 * 60;
+  static const MinuteInterval fullDayObservationRange = MinuteInterval(
+    startMinutes: dayObservationStartMinutes,
+    endMinutes: dayObservationEndMinutes,
+  );
+
   static int clampWeekOffset(int offset) {
     if (offset < minWeekOffset) {
       return minWeekOffset;
@@ -223,21 +232,18 @@ class CoupleTimetableLogic {
     int week,
     List<SectionTime> sections,
   ) {
-    final observationRange = observationRangeForSections(sections);
-    if (observationRange == null) {
-      return const [];
-    }
     final busy = busyIntervalsForDay(courses, dayOfWeek, week, sections);
     return invertMinuteIntervals(
       busy,
-      rangeStart: observationRange.startMinutes,
-      rangeEnd: observationRange.endMinutes,
+      rangeStart: dayObservationStartMinutes,
+      rangeEnd: dayObservationEndMinutes,
     );
   }
 
   /// Shared free time on a calendar day: complement of the union of both
-  /// parties' busy intervals within the full observation range [R]
-  /// (first section start → last section end). No extra daytime window.
+  /// parties' busy intervals within the full calendar day [00:00, 24:00].
+  /// Section tables are only used as a fallback when a course lacks valid
+  /// wall-clock times — they no longer clip the free-time window.
   ///
   /// [week] is **my** teaching week; partner courses are filtered with
   /// [partnerWeekOffset] (same semantics as [isTogetherClass]).
@@ -250,11 +256,6 @@ class CoupleTimetableLogic {
     int partnerWeekOffset = 0,
     int minIntervalMinutes = 0,
   }) {
-    final observationRange = observationRangeForSections(sections);
-    if (observationRange == null) {
-      return const [];
-    }
-
     final partnerWeek = partnerWeekForMyWeek(week, partnerWeekOffset);
     final myBusy = busyIntervalsForDay(myCourses, dayOfWeek, week, sections);
     final partnerBusy = busyIntervalsForDay(
@@ -266,8 +267,8 @@ class CoupleTimetableLogic {
     final unionBusy = mergeMinuteIntervals([...myBusy, ...partnerBusy]);
     var shared = invertMinuteIntervals(
       unionBusy,
-      rangeStart: observationRange.startMinutes,
-      rangeEnd: observationRange.endMinutes,
+      rangeStart: dayObservationStartMinutes,
+      rangeEnd: dayObservationEndMinutes,
     );
 
     if (minIntervalMinutes > 0) {
@@ -278,6 +279,9 @@ class CoupleTimetableLogic {
     return shared;
   }
 
+  /// Historical helper: previously returned first-section start → last-section
+  /// end. Free-time math now always uses [fullDayObservationRange]; this still
+  /// reports the section span for callers that need layout bounds only.
   static MinuteInterval? observationRangeForSections(
     List<SectionTime> sections,
   ) {

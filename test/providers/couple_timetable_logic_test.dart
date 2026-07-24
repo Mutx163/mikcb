@@ -103,12 +103,17 @@ void main() {
       sections: _sections,
     );
 
-    expect(shared, hasLength(1));
-    expect(shared.single.startMinutes, 9 * 60 + 40);
-    expect(shared.single.endMinutes, 10 * 60);
+    // Full day: free before first busy, gap between courses, free after last busy.
+    expect(shared, hasLength(3));
+    expect(shared[0].startMinutes, 0);
+    expect(shared[0].endMinutes, 8 * 60);
+    expect(shared[1].startMinutes, 9 * 60 + 40);
+    expect(shared[1].endMinutes, 10 * 60);
+    expect(shared[2].startMinutes, 11 * 60 + 40);
+    expect(shared[2].endMinutes, 24 * 60);
   });
 
-  test('shared free covers full observation range, not only 08:00-22:00', () {
+  test('shared free covers full calendar day 00:00-24:00', () {
     final earlyAndLateSections = [
       const SectionTime(startTime: '07:00', endTime: '07:45'),
       const SectionTime(startTime: '07:55', endTime: '08:40'),
@@ -134,18 +139,59 @@ void main() {
       sections: earlyAndLateSections,
     );
 
-    // Before first busy slot: full morning observation (07:00 → 21:00).
+    // Before first busy: midnight → 21:00 (not clipped to section start 07:00).
     expect(
       shared.any(
         (interval) =>
-            interval.startMinutes == 7 * 60 && interval.endMinutes == 21 * 60,
+            interval.startMinutes == 0 && interval.endMinutes == 21 * 60,
       ),
       isTrue,
     );
-    // No artificial clip at 08:00 or 22:00 — free ends at last section end only
-    // when there is no late busy; with late busy, free does not include 21:00+.
-    expect(shared.any((interval) => interval.endMinutes > 22 * 60), isFalse);
-    expect(shared.any((interval) => interval.startMinutes < 8 * 60), isTrue);
+    // After late busy: free continues to midnight (24:00), not last section end.
+    expect(
+      shared.any(
+        (interval) =>
+            interval.startMinutes == 22 * 60 + 40 &&
+            interval.endMinutes == 24 * 60,
+      ),
+      isTrue,
+    );
+  });
+
+  test('early morning course 00:00-02:00 is busy, not shared free', () {
+    final myCourses = [
+      _course(
+        id: 'mine',
+        name: '夜班实验',
+        startSection: 1,
+        endSection: 1,
+        startTime: '00:00',
+        endTime: '02:00',
+      ),
+    ];
+
+    final shared = CoupleTimetableLogic.sharedFreeIntervalsForDay(
+      myCourses: myCourses,
+      partnerCourses: const [],
+      dayOfWeek: 1,
+      week: 1,
+      // Section table starts at 08:20 like a typical school schedule — must not
+      // hide the 00:00–02:00 busy slot or clip free to 08:20–23:15.
+      sections: [
+        const SectionTime(startTime: '08:20', endTime: '09:05'),
+        const SectionTime(startTime: '22:30', endTime: '23:15'),
+      ],
+    );
+
+    expect(
+      shared.any(
+        (interval) => interval.startMinutes < 2 * 60 && interval.endMinutes > 0,
+      ),
+      isFalse,
+    );
+    expect(shared, hasLength(1));
+    expect(shared.single.startMinutes, 2 * 60);
+    expect(shared.single.endMinutes, 24 * 60);
   });
 
   test('shared free uses partner week offset (G4/G5)', () {
@@ -182,9 +228,14 @@ void main() {
       partnerWeekOffset: 1,
       sections: _sections,
     );
-    expect(withOffset, hasLength(1));
-    expect(withOffset.single.startMinutes, 9 * 60 + 40);
-    expect(withOffset.single.endMinutes, 10 * 60);
+    expect(
+      withOffset.any(
+        (interval) =>
+            interval.startMinutes == 9 * 60 + 40 &&
+            interval.endMinutes == 10 * 60,
+      ),
+      isTrue,
+    );
 
     final withoutOffset = CoupleTimetableLogic.sharedFreeIntervalsForDay(
       myCourses: myCourses,
@@ -194,13 +245,20 @@ void main() {
       partnerWeekOffset: 0,
       sections: _sections,
     );
-    // Partner has no week-5 class → only my busy; free after 09:40 within R.
+    // Partner has no week-5 class → only my busy; free after 09:40 and before 08:00.
     expect(withoutOffset, isNotEmpty);
     expect(
       withoutOffset.any(
         (interval) =>
             interval.startMinutes <= 10 * 60 &&
             interval.endMinutes >= 10 * 60 + 45,
+      ),
+      isTrue,
+    );
+    expect(
+      withoutOffset.any(
+        (interval) =>
+            interval.startMinutes == 0 && interval.endMinutes == 8 * 60,
       ),
       isTrue,
     );
@@ -295,7 +353,12 @@ void main() {
       week: 1,
       sections: const [],
     );
-    expect(shared, isEmpty);
+    // Courses carry wall-clock times, so free is still the full-day complement.
+    expect(shared, isNotEmpty);
+    expect(shared.first.startMinutes, 0);
+    expect(shared.first.endMinutes, 8 * 60);
+    expect(shared.last.startMinutes, 9 * 60 + 40);
+    expect(shared.last.endMinutes, 24 * 60);
   });
 
   test('merge and intersect minute intervals', () {

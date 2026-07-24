@@ -2303,9 +2303,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int dayOfWeek,
   }) {
     final sections = _sectionsForSharedFree(provider, settings);
-    if (sections.isEmpty) {
-      return const [];
-    }
     return CoupleTimetableLogic.sharedFreeIntervalsForDay(
       myCourses: provider.courses,
       partnerCourses: provider.partnerCourses,
@@ -2329,7 +2326,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       CoupleTimetableLogic.freeSlotColorHex,
       foruiTheme.colors.primary,
     );
-    final sections = _sectionsForSharedFree(provider, settings);
     final isStale = _isPartnerScheduleStale(provider);
     final title = isToday
         ? l10n.coupleTimetableSharedFreeTitle
@@ -2342,27 +2338,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       fontWeight: FontWeight.w400,
       height: 1.25,
     );
-
-    if (sections.isEmpty) {
-      return _buildSharedFreeSummaryShell(
-        key: const ValueKey('shared-free-summary-unavailable'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: foruiTheme.typography.body.sm.copyWith(
-                color: foruiTheme.colors.foreground,
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(l10n.coupleTimetableSharedFreeUnavailable, style: mutedStyle),
-          ],
-        ),
-      );
-    }
 
     final intervals = _sharedFreeIntervalsForDayView(
       provider: provider,
