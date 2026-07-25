@@ -15,7 +15,7 @@ void main() {
   PageRoute<void> route(String name) {
     return PageRouteBuilder<void>(
       settings: RouteSettings(name: name),
-      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      pageBuilder: (_, _, _) => const SizedBox.shrink(),
     );
   }
 

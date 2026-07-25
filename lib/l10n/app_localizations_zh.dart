@@ -4495,7 +4495,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePullQuickImportTitle => '首页下拉快捷导入';
 
   @override
-  String get homePullQuickImportSubtitle => '在首页下拉时自动执行教务快捷导入（需先保存过导入路径）';
+  String get homePullQuickImportSubtitle => '在首页下拉时自动执行教务快捷导入';
 
   @override
   String get homePullQuickImportFetchingCourses => '正在获取新课程…';
@@ -12920,7 +12920,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePullQuickImportTitle => '首頁下拉快捷匯入';
 
   @override
-  String get homePullQuickImportSubtitle => '在首頁下拉時自動執行教務快捷匯入（需先儲存過匯入路徑）';
+  String get homePullQuickImportSubtitle => '在首頁下拉時自動執行教務快捷匯入';
 
   @override
   String get homePullQuickImportFetchingCourses => '正在獲取新課程…';
@@ -21305,7 +21305,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePullQuickImportTitle => '首頁下拉快捷匯入';
 
   @override
-  String get homePullQuickImportSubtitle => '在首頁下拉時自動執行教務快捷匯入（需先儲存過匯入路徑）';
+  String get homePullQuickImportSubtitle => '在首頁下拉時自動執行教務快捷匯入';
 
   @override
   String get homePullQuickImportFetchingCourses => '正在取得新課程…';

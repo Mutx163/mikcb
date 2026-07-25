@@ -2524,7 +2524,7 @@
   "quickImportDismissAction": "Done",
   "quickImportRetryAction": "Retry",
   "homePullQuickImportTitle": "Pull to quick-import",
-  "homePullQuickImportSubtitle": "Pull down on the home timetable to run warehouse quick import in the background (requires a saved import path)",
+  "homePullQuickImportSubtitle": "Pull down on the home timetable to run warehouse quick import in the background",
   "homePullQuickImportFetchingCourses": "Fetching new courses…",
   "homePullQuickImportNeedsManualAction": "Manual action needed. Open the warehouse import page to continue",
   "quickImportPlaybackStepProgress": "Step {current} / {total}",

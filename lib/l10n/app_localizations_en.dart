@@ -4791,7 +4791,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePullQuickImportSubtitle =>
-      'Pull down on the home timetable to run warehouse quick import in the background (requires a saved import path)';
+      'Pull down on the home timetable to run warehouse quick import in the background';
 
   @override
   String get homePullQuickImportFetchingCourses => 'Fetching new courses…';

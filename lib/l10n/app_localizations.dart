@@ -8236,7 +8236,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePullQuickImportSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'在首页下拉时自动执行教务快捷导入（需先保存过导入路径）'**
+  /// **'在首页下拉时自动执行教务快捷导入'**
   String get homePullQuickImportSubtitle;
 
   /// No description provided for @homePullQuickImportFetchingCourses.

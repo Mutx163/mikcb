@@ -2338,7 +2338,7 @@
   "quickImportDismissAction": "完成",
   "quickImportRetryAction": "重試",
   "homePullQuickImportTitle": "首頁下拉快捷匯入",
-  "homePullQuickImportSubtitle": "在首頁下拉時自動執行教務快捷匯入（需先儲存過匯入路徑）",
+  "homePullQuickImportSubtitle": "在首頁下拉時自動執行教務快捷匯入",
   "homePullQuickImportFetchingCourses": "正在取得新課程…",
   "homePullQuickImportNeedsManualAction": "需要手動操作，請前往教務匯入頁面繼續",
   "quickImportPlaybackStepProgress": "步驟 {current} / {total}",

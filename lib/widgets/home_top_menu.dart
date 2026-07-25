@@ -61,6 +61,10 @@ class _HomeTopMenuSheet extends StatelessWidget {
     final typo = context.theme.typography;
     const tileSpacing = 10.0;
     const tileHorizontalPadding = 14.0;
+    // Phone visual cap: tiles stay at most this wide so icon wells don't stretch.
+    const maxTileWidth = 112.0;
+    const minTileWidth = 64.0;
+    const columnsPerRow = 4;
 
     final menuTitles = [
       l10n.homeMenuUpdateTitle,
@@ -83,8 +87,22 @@ class _HomeTopMenuSheet extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Width is already after floating outer inset + frame padding.
-          final itemWidth = ((constraints.maxWidth - tileSpacing * 3) / 4)
-              .clamp(64.0, 112.0);
+          final gapCount = columnsPerRow - 1;
+          final availableWidth = constraints.maxWidth;
+          final hasBoundedWidth = availableWidth.isFinite && availableWidth > 0;
+          final rawItemWidth = hasBoundedWidth
+              ? (availableWidth - tileSpacing * gapCount) / columnsPerRow
+              : maxTileWidth;
+          // Keep phone sizing: never grow past [maxTileWidth]. Extra sheet
+          // width on tablets is distributed as equal gaps between tiles.
+          final itemWidth = rawItemWidth.clamp(minTileWidth, maxTileWidth);
+          final shouldSpreadAcrossWidth =
+              hasBoundedWidth && rawItemWidth > maxTileWidth;
+          // Explicit gap so the row's intrinsic width equals the sheet width
+          // (spaceBetween alone fails when the Row shrink-wraps).
+          final itemGap = shouldSpreadAcrossWidth
+              ? (availableWidth - itemWidth * columnsPerRow) / gapCount
+              : tileSpacing;
           final titleAreaHeight = _maxMenuTitleHeight(
             titles: menuTitles,
             style: titleStyle,
@@ -114,11 +132,13 @@ class _HomeTopMenuSheet extends StatelessWidget {
           }
 
           Widget menuRow(List<Widget> tiles) {
+            // Phone: fixed 10px gaps (existing look).
+            // Tablet: same tile width, larger equal gaps so the row fills width.
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (var index = 0; index < tiles.length; index++) ...[
-                  if (index > 0) const SizedBox(width: tileSpacing),
+                  if (index > 0) SizedBox(width: itemGap),
                   tiles[index],
                 ],
               ],
@@ -127,7 +147,7 @@ class _HomeTopMenuSheet extends StatelessWidget {
 
           return SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 menuRow([
                   tile(

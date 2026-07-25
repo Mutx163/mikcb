@@ -2524,7 +2524,7 @@
   "quickImportDismissAction": "完成",
   "quickImportRetryAction": "重试",
   "homePullQuickImportTitle": "首页下拉快捷导入",
-  "homePullQuickImportSubtitle": "在首页下拉时自动执行教务快捷导入（需先保存过导入路径）",
+  "homePullQuickImportSubtitle": "在首页下拉时自动执行教务快捷导入",
   "homePullQuickImportFetchingCourses": "正在获取新课程…",
   "homePullQuickImportNeedsManualAction": "需要手动操作，请前往教务导入页面继续",
   "quickImportPlaybackStepProgress": "步骤 {current} / {total}",

@@ -4571,7 +4571,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homePullQuickImportSubtitle =>
-      'ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します（保存済みの経路が必要）';
+      'ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します';
 
   @override
   String get homePullQuickImportFetchingCourses => '新しい授業を取得中…';

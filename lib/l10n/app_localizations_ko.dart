@@ -4599,7 +4599,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homePullQuickImportSubtitle =>
-      '홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다(저장된 가져오기 경로 필요)';
+      '홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다';
 
   @override
   String get homePullQuickImportFetchingCourses => '새 수업을 가져오는 중…';

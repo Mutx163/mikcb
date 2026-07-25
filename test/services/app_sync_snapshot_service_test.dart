@@ -637,21 +637,6 @@ void main() {
         'real-course',
       ]);
 
-      final snapshot = AppSyncSnapshot(
-        profiles: stripped,
-        activeProfileId: 'profile-1',
-        timeSchemes: const [],
-        teacherRecords: const [],
-        locationRecords: const [],
-        warehouse: const WarehouseSyncBundle(),
-        macros: const [],
-        customHolidays: const [],
-        exportedAt: exportedAt,
-        deviceId: 'device-a',
-        contentSha256: '',
-        scheduleDateRuleLastAppliedSignature:
-            'rule-1|scheme-1|2026-07-01|2026-08-31',
-      );
       final payloadWithoutHash = {
         'app': 'mikcb',
         'schemaVersion': AppSyncSnapshotService.schemaVersion,

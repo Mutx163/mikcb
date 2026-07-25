@@ -801,8 +801,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             },
           ),
           HyperosSwitchTile(
-            icon: Icons.flash_on_rounded,
-            iconAccent: HyperosIconColors.yellow,
             title: l10n.homePullQuickImportTitle,
             subtitle: l10n.homePullQuickImportSubtitle,
             value: _draft.homePullQuickImportEnabled,
