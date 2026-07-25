@@ -2222,7 +2222,11 @@ void main() {
 
     expect(find.byType(AddCourseScreen), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -350));
+    final addCourseScrollable = find.descendant(
+      of: find.byType(AddCourseScreen),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(addCourseScrollable.first, const Offset(0, -350));
     await _pumpTimetableFrame(tester);
 
     expect(

@@ -146,7 +146,11 @@ void main() {
       ),
     );
     await _pumpScreen(tester);
-    await tester.drag(find.byType(ListView), const Offset(0, -350));
+    final formScrollable = find.descendant(
+      of: find.byType(AddCourseScreen),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(formScrollable.first, const Offset(0, -350));
     await _pumpScreen(tester);
 
     expect(
@@ -171,7 +175,11 @@ void main() {
     );
     await _pumpScreen(tester);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -900));
+    final formScrollable = find.descendant(
+      of: find.byType(AddCourseScreen),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(formScrollable.first, const Offset(0, -900));
     await _pumpScreen(tester);
     await tester.tap(find.textContaining('哪些周上'));
     await tester.pumpAndSettle();
@@ -205,7 +213,11 @@ void main() {
     );
     await _pumpScreen(tester);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -900));
+    final formScrollable = find.descendant(
+      of: find.byType(AddCourseScreen),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(formScrollable.first, const Offset(0, -900));
     await _pumpScreen(tester);
 
     await tester.tap(find.textContaining('哪些周上'));

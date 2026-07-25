@@ -76,13 +76,14 @@ void main() {
     );
     expect(scope.contentTopInset, greaterThan(0));
 
-    final listView = tester.widget<ListView>(
+    // children mode uses SingleChildScrollView (keeps form fields mounted).
+    final scrollView = tester.widget<SingleChildScrollView>(
       find.descendant(
         of: find.byType(HyperosListView).last,
-        matching: find.byType(ListView),
+        matching: find.byType(SingleChildScrollView),
       ),
     );
-    final padding = listView.padding!.resolve(TextDirection.ltr);
+    final padding = scrollView.padding!.resolve(TextDirection.ltr);
     expect(padding.top, greaterThanOrEqualTo(scope.contentTopInset));
 
     final scrollable = find.descendant(
