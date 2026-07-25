@@ -1485,6 +1485,144 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 }
 
+/// Runs warehouse quick import without showing the WebView login page.
+///
+/// Equivalent to tapping the lightning icon on the warehouse import school list,
+/// but keeps the browser off-screen for home pull-to-refresh.
+///
+/// Hosted in an [Overlay] (not a route) so the home page stays interactive.
+/// Call [onCancelAvailable] with a cancel callback while the session is active.
+Future<bool> runHomePullWarehouseQuickImport(
+  BuildContext context, {
+  VoidCallback? onNeedsManualAction,
+  void Function(VoidCallback cancel)? onCancelAvailable,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final macroService = WarehouseMacroService();
+  final preferencesService = WarehouseImportPreferencesService();
+  final allEntries = await macroService.getAllMacroEntries();
+  if (!context.mounted) {
+    return false;
+  }
+  if (allEntries.isEmpty) {
+    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+    return false;
+  }
+
+  WarehouseMacroRecord? macro;
+  for (final entry in allEntries) {
+    final record = await macroService.getMacro(entry.schoolId, entry.adapterId);
+    if (record != null) {
+      macro = record;
+      break;
+    }
+  }
+  if (!context.mounted) {
+    return false;
+  }
+  if (macro == null) {
+    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+    return false;
+  }
+
+  final customUrl = await preferencesService.getCustomImportUrl(
+    macro.adapterId,
+  );
+  final initialUrl = resolveWarehouseImportUrl(
+    customImportUrl: customUrl,
+    defaultUrl: macro.importUrl,
+  );
+  if (!context.mounted) {
+    return false;
+  }
+  if (initialUrl == null) {
+    showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl);
+    return false;
+  }
+
+  final settings = context.read<TimetableProvider>().settings;
+  final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
+  final source = WarehouseRepositorySource.fromGitHubUrl(
+    'https://github.com/Mutx163/qingyu_warehouse',
+  );
+  final selectedMacro = macro;
+  final completer = Completer<bool>();
+  var sessionFinished = false;
+  OverlayEntry? overlayEntry;
+
+  void completeSession(bool success) {
+    if (sessionFinished) {
+      return;
+    }
+    sessionFinished = true;
+    overlayEntry?.remove();
+    overlayEntry = null;
+    if (!completer.isCompleted) {
+      completer.complete(success);
+    }
+  }
+
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) {
+    showAppLightTip(context, message: l10n.quickImportUnknownError);
+    return false;
+  }
+
+  overlayEntry = OverlayEntry(
+    builder: (overlayContext) {
+      // Keep a tiny on-screen platform view so WebView keeps running, but do
+      // not intercept home-page touches.
+      return IgnorePointer(
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 1,
+            height: 1,
+            child: WarehouseAdapterWebLoginScreen(
+              title: l10n.quickImportTitle(selectedMacro.schoolName),
+              initialUrl: initialUrl,
+              source: source,
+              school: WarehouseSchoolEntry(
+                id: selectedMacro.schoolId,
+                name: selectedMacro.schoolName,
+                initial: selectedMacro.schoolName.isNotEmpty
+                    ? selectedMacro.schoolName[0]
+                    : '#',
+                resourceFolder: selectedMacro.schoolResourceFolder.isNotEmpty
+                    ? selectedMacro.schoolResourceFolder
+                    : selectedMacro.schoolId,
+              ),
+              adapter: WarehouseAdapterEntry(
+                adapterId: selectedMacro.adapterId,
+                adapterName: selectedMacro.adapterName,
+                category: 'macro',
+                assetJsPath: selectedMacro.adapterAssetJsPath.isNotEmpty
+                    ? selectedMacro.adapterAssetJsPath
+                    : 'macro/${selectedMacro.adapterId}.js',
+                importUrl: selectedMacro.importUrl,
+                maintainer: 'macro',
+                description: l10n.courseImportQuickImportDescription(
+                  selectedMacro.schoolName,
+                  selectedMacro.adapterName,
+                ),
+              ),
+              fetchOptions: fetchOptions,
+              macroRecord: selectedMacro,
+              runInBackground: true,
+              onBackgroundNeedsManualAction: onNeedsManualAction,
+              onBackgroundFinished: completeSession,
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  overlay.insert(overlayEntry!);
+  onCancelAvailable?.call(() => completeSession(false));
+  return completer.future;
+}
+
 class WarehouseCourseImportScreen extends StatefulWidget {
   const WarehouseCourseImportScreen({super.key});
 
@@ -3235,6 +3373,16 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
   final WarehouseMacroRecord? macroRecord;
   final bool autoRecord;
 
+  /// When true, the WebView runs off-screen and UI chrome is hidden. Used by
+  /// home pull-to-refresh quick import so the page never appears.
+  final bool runInBackground;
+
+  /// Called when background playback needs user input (captcha / password).
+  final VoidCallback? onBackgroundNeedsManualAction;
+
+  /// Called when background import finishes (success or failure).
+  final ValueChanged<bool>? onBackgroundFinished;
+
   const WarehouseAdapterWebLoginScreen({
     super.key,
     required this.title,
@@ -3247,6 +3395,9 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
     this.debugScriptName,
     this.macroRecord,
     this.autoRecord = false,
+    this.runInBackground = false,
+    this.onBackgroundNeedsManualAction,
+    this.onBackgroundFinished,
   });
 
   @override
@@ -3681,6 +3832,18 @@ class _WarehouseAdapterWebLoginScreenState
         (_isUsingLocalDebugScript
             ? l10n.localDebugModeScriptStatus(effectiveDebugScriptName)
             : null);
+    if (widget.runInBackground) {
+      // Keep the platform WebView attached (size > 0) but fully off-screen so
+      // JS / cookies / navigation still work without showing any UI chrome.
+      return Offstage(
+        offstage: true,
+        child: SizedBox(
+          width: 1,
+          height: 1,
+          child: WebViewWidget(controller: _controller),
+        ),
+      );
+    }
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.title),
@@ -4022,6 +4185,10 @@ class _WarehouseAdapterWebLoginScreenState
       );
       _playbackState = PlaybackUiState.error;
     });
+    if (widget.runInBackground) {
+      _debugImportLog('background import error message="$message"');
+      widget.onBackgroundFinished?.call(false);
+    }
   }
 
   Future<void> _markMacroImportCompleted({
@@ -4063,6 +4230,11 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     _quickImportResultHandled = true;
+    if (widget.runInBackground) {
+      _debugImportLog('background quick import finished successfully');
+      widget.onBackgroundFinished?.call(true);
+      return;
+    }
     final l10n = AppLocalizations.of(context)!;
     final status = (_lastScriptStatus ?? '').trim();
     final description = [
@@ -4471,6 +4643,12 @@ class _WarehouseAdapterWebLoginScreenState
         await _resolveJavaScriptRequest(requestId, '$recorded');
         return;
       }
+      if (widget.runInBackground) {
+        // Prefer the script-provided selection; fall back to first option.
+        final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
+        await _resolveJavaScriptRequest(requestId, selectedIndex);
+        return;
+      }
     }
     final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
     final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
@@ -4638,13 +4816,15 @@ class _WarehouseAdapterWebLoginScreenState
       final replaceExisting = provider.courses.isEmpty
           ? true
           : recordedReplaceExisting ??
-                await _askReplaceExisting(
-                  context,
-                  title: AppLocalizations.of(context)!.courseImportTitle,
-                  content: AppLocalizations.of(
-                    context,
-                  )!.importCourseCountPrompt(parsedCourses.length),
-                );
+                (widget.runInBackground
+                    ? false
+                    : await _askReplaceExisting(
+                        context,
+                        title: AppLocalizations.of(context)!.courseImportTitle,
+                        content: AppLocalizations.of(
+                          context,
+                        )!.importCourseCountPrompt(parsedCourses.length),
+                      ));
       if (replaceExisting == null || !mounted) {
         _debugImportLog(
           'courses import aborted at replaceExisting mounted=$mounted value=$replaceExisting',
@@ -4665,18 +4845,24 @@ class _WarehouseAdapterWebLoginScreenState
 
       final semesterConfig =
           recordedSemesterConfig ??
-          await _pickImportSemesterConfig(
-            context,
-            initialSemesterStartDate:
-                provider.settings.semesterStartDate ?? DateTime.now(),
-            initialFirstCourseWeek: 1,
-            title: AppLocalizations.of(
-              context,
-            )!.importConfirmSemesterMappingTitle,
-            subtitle: AppLocalizations.of(
-              context,
-            )!.importConfirmSemesterMappingSubtitleWarehouse,
-          );
+          (widget.runInBackground
+              ? _ImportSemesterConfig(
+                  semesterStartDate:
+                      provider.settings.semesterStartDate ?? DateTime.now(),
+                  firstCourseWeek: 1,
+                )
+              : await _pickImportSemesterConfig(
+                  context,
+                  initialSemesterStartDate:
+                      provider.settings.semesterStartDate ?? DateTime.now(),
+                  initialFirstCourseWeek: 1,
+                  title: AppLocalizations.of(
+                    context,
+                  )!.importConfirmSemesterMappingTitle,
+                  subtitle: AppLocalizations.of(
+                    context,
+                  )!.importConfirmSemesterMappingSubtitleWarehouse,
+                ));
       if (semesterConfig == null || !mounted) {
         _debugImportLog(
           'courses import aborted at semesterConfig mounted=$mounted hasConfig=${semesterConfig != null}',
@@ -5396,6 +5582,14 @@ class _WarehouseAdapterWebLoginScreenState
               return true;
             }
           }
+          if (widget.runInBackground) {
+            _debugImportLog(
+              'background playback needs manual input reason=$reason',
+            );
+            widget.onBackgroundNeedsManualAction?.call();
+            widget.onBackgroundFinished?.call(false);
+            return false;
+          }
           setState(() {
             _playbackState = PlaybackUiState.pausedForInput;
           });
@@ -5422,6 +5616,10 @@ class _WarehouseAdapterWebLoginScreenState
           } else {
             if (!mounted) return;
             _debugImportLog('playback failed -> playback error');
+            if (widget.runInBackground) {
+              widget.onBackgroundFinished?.call(false);
+              return;
+            }
             setState(() {
               _playbackState = PlaybackUiState.error;
             });
@@ -6159,21 +6357,24 @@ Future<bool> _ensureSectionCapacity(
   BuildContext context, {
   required int requiredSectionCount,
   required TimetableProvider provider,
+  bool autoConfirm = false,
 }) async {
   if (requiredSectionCount <= provider.settings.sectionCount) {
     return true;
   }
 
   final l10n = AppLocalizations.of(context)!;
-  final shouldContinue = await showAppConfirmDialog(
-    context,
-    title: l10n.courseImportSectionCountInsufficientTitle,
-    message: l10n.courseImportSectionCountInsufficientMessage(
-      provider.settings.sectionCount,
-      requiredSectionCount,
-    ),
-    confirmLabel: l10n.courseImportAutoFillAndImportAction,
-  );
+  final shouldContinue = autoConfirm
+      ? true
+      : await showAppConfirmDialog(
+          context,
+          title: l10n.courseImportSectionCountInsufficientTitle,
+          message: l10n.courseImportSectionCountInsufficientMessage(
+            provider.settings.sectionCount,
+            requiredSectionCount,
+          ),
+          confirmLabel: l10n.courseImportAutoFillAndImportAction,
+        );
 
   if (shouldContinue != true || !context.mounted) {
     return false;
