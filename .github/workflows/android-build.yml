@@ -200,6 +200,8 @@ jobs:
           ls -lh "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
       - name: Upload to pgyer
+        # Secondary mirror only; network blips must not block GitHub Release.
+        continue-on-error: true
         uses: PGYER/pgyer-upload-app-action@v1.3
         with:
           _api_key: ${{ secrets.PGYER_API_KEY }}
