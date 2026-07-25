@@ -75,6 +75,7 @@ layout_dump.json
 package-lock.json
 _grep.ps1
 _layout.json
+.tmp_*.js
 
 # 误装的 Node 依赖（本仓库不以 npm 为构建入口，勿入库）
 node_modules/

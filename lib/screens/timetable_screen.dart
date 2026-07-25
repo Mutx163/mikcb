@@ -1464,8 +1464,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     final showLabel =
         _isHomePullQuickImportRunning ||
         _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.55;
+    // Sit just under the weekday (Mon–Sun) row so the bar is not covered.
+    const indicatorTopInset = _weekDayHeaderHeight + 8;
     return Positioned(
-      top: 12,
+      top: indicatorTopInset,
       left: 0,
       right: 0,
       child: Center(
