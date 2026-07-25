@@ -1,7 +1,52 @@
 {
-  "generatedAt": "2026-07-25T03:41:30.293Z",
-  "releaseCount": 90,
+  "generatedAt": "2026-07-25T07:58:15.096Z",
+  "releaseCount": 91,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.0.5.5",
+      "title": "v2.0.5.5",
+      "prerelease": true,
+      "publishedAt": "2026-07-25T07:57:38Z",
+      "description": "地点时间匹配：按教室关键词自动绑定时间模板（前缀/包含/精确匹配，长词优先），支持预览命中与一键应用到当前课表 · 地点时间匹配：教学楼关键词可聚类辅助配置；手动指定过时间模板的课程不会被覆盖 · 课程备注：支持「整门课」与「本节课（按周）」两套备注，本节课可标记作业",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "地点时间匹配：按教室关键词自动绑定时间模板（前缀/包含/精确匹配，长词优先），支持预览命中与一键应用到当前课表"
+        },
+        {
+          "type": "新增",
+          "text": "地点时间匹配：教学楼关键词可聚类辅助配置；手动指定过时间模板的课程不会被覆盖"
+        },
+        {
+          "type": "新增",
+          "text": "课程备注：支持「整门课」与「本节课（按周）」两套备注，本节课可标记作业"
+        },
+        {
+          "type": "新增",
+          "text": "课程卡片与日视图：有备注/作业时显示角标；点备注可打开编辑（情侣课表只读）"
+        },
+        {
+          "type": "新增",
+          "text": "情侣课表日视图：开启叠加后显示「共同空闲」摘要（具体时段、段数与时长；对方课表过久未更新时提示可能不准）"
+        },
+        {
+          "type": "新增",
+          "text": "时间模板：支持按日期区间切换作息（例如暑期前后不同作息，最多 2 条且区间不重叠），规则可随云同步"
+        },
+        {
+          "type": "新增",
+          "text": "首页下拉快捷导入：外观设置可开启；在课表首页下拉后于后台执行教务快捷导入（需已保存导入路径）"
+        },
+        {
+          "type": "新增",
+          "text": "首页下拉快捷导入：进行中可取消；需验证码等手动操作时提示前往教务导入页继续"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.5",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.5/mikcb-2.0.5.5-arm64-v8a.apk",
+      "assetName": "mikcb-2.0.5.5-arm64-v8a.apk"
+    },
     {
       "channelLabel": "预发布",
       "version": "2.0.5.4",
@@ -244,27 +289,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3.2",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3.2/mikcb-1.3.2-arm64-v8a.apk",
       "assetName": "mikcb-1.3.2-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "正式版",
-      "version": "1.3.1",
-      "title": "v1.3.1",
-      "prerelease": false,
-      "publishedAt": "2026-07-05T09:46:01Z",
-      "description": "优化主页课表顶部布局，紧凑化应用栏与星期栏间距，更充分利用屏幕空间 · 优化课程总览入口：课表设置中新增课程总览入口，列表改为紧凑型 Forui 行布局与排序 Sheet",
-      "highlights": [
-        {
-          "type": "优化",
-          "text": "优化主页课表顶部布局，紧凑化应用栏与星期栏间距，更充分利用屏幕空间"
-        },
-        {
-          "type": "优化",
-          "text": "优化课程总览入口：课表设置中新增课程总览入口，列表改为紧凑型 Forui 行布局与排序 Sheet"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3.1",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3.1/mikcb-1.3.1-arm64-v8a.apk",
-      "assetName": "mikcb-1.3.1-arm64-v8a.apk"
     }
   ]
 }
