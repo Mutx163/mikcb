@@ -800,6 +800,16 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               _updateDraft(_draft.copyWith(enableHaptics: value));
             },
           ),
+          HyperosSwitchTile(
+            icon: Icons.flash_on_rounded,
+            iconAccent: HyperosIconColors.yellow,
+            title: l10n.homePullQuickImportTitle,
+            subtitle: l10n.homePullQuickImportSubtitle,
+            value: _draft.homePullQuickImportEnabled,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(homePullQuickImportEnabled: value));
+            },
+          ),
         ],
       ),
       2 => HyperosSettingsBlock(

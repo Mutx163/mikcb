@@ -1016,6 +1016,9 @@ class TimetableSettings {
   final bool timetableHideWeekends;
   final bool enableHaptics;
   final double pageTransitionSpeed;
+
+  /// When true, home-page pull-down runs warehouse quick import in the background.
+  final bool homePullQuickImportEnabled;
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
@@ -1160,6 +1163,7 @@ class TimetableSettings {
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
     this.pageTransitionSpeed = defaultPageTransitionSpeed,
+    this.homePullQuickImportEnabled = false,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
@@ -1321,6 +1325,7 @@ class TimetableSettings {
       timetableHideWeekends: false,
       enableHaptics: true,
       pageTransitionSpeed: defaultPageTransitionSpeed,
+      homePullQuickImportEnabled: false,
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
@@ -1457,6 +1462,7 @@ class TimetableSettings {
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
       'pageTransitionSpeed': pageTransitionSpeed,
+      'homePullQuickImportEnabled': homePullQuickImportEnabled,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
@@ -1695,6 +1701,8 @@ class TimetableSettings {
           ((json['pageTransitionSpeed'] as num?)?.toDouble() ??
                   defaultPageTransitionSpeed)
               .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
+      homePullQuickImportEnabled:
+          json['homePullQuickImportEnabled'] as bool? ?? false,
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
@@ -1994,6 +2002,7 @@ class TimetableSettings {
     bool? timetableHideWeekends,
     bool? enableHaptics,
     double? pageTransitionSpeed,
+    bool? homePullQuickImportEnabled,
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
@@ -2179,6 +2188,8 @@ class TimetableSettings {
       enableHaptics: enableHaptics ?? this.enableHaptics,
       pageTransitionSpeed: (pageTransitionSpeed ?? this.pageTransitionSpeed)
           .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
+      homePullQuickImportEnabled:
+          homePullQuickImportEnabled ?? this.homePullQuickImportEnabled,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
