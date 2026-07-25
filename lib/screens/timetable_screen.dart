@@ -97,6 +97,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _sharedFreeSegmentsExpanded = false;
   static const int _sharedFreeVisibleSegmentLimit = 2;
   static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
+  static const double _homePullQuickImportTriggerDistance = 72;
+  static const double _homePullQuickImportMaxDistance = 120;
+  double _homePullDragDistance = 0;
+  bool _isHomePullQuickImportRunning = false;
+  VoidCallback? _homePullQuickImportCancel;
 
   bool _isCoupleOverlayActive(TimetableProvider provider) =>
       _coupleOverlayEnabled && provider.hasPartnerBinding;
@@ -142,6 +147,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _homePullQuickImportCancel?.call();
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
@@ -346,22 +352,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                         removeBottom: true,
                         child: Stack(
                           children: [
-                            Padding(
-                              key: _timetableSurfaceKey,
-                              padding: EdgeInsets.only(
-                                bottom: hasBackdrop ? 0 : 8,
-                              ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return _buildWeekPager(
-                                    provider,
-                                    provider.settings,
-                                    constraints.maxWidth,
-                                    constraints.maxHeight,
-                                  );
-                                },
-                              ),
+                            _buildHomePullQuickImportSurface(
+                              provider: provider,
+                              settings: settings,
+                              hasBackdrop: hasBackdrop,
                             ),
+                            if (_isHomePullQuickImportRunning ||
+                                _homePullDragDistance > 0)
+                              _buildHomePullQuickImportIndicator(l10n),
                             ValueListenableBuilder<int>(
                               valueListenable: _visibleWeekListenable,
                               builder: (context, visibleWeek, child) {
@@ -1407,6 +1405,273 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  Widget _buildHomePullQuickImportSurface({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required bool hasBackdrop,
+  }) {
+    // Home timetable only: no HyperOS rubber-band. Other pages keep
+    // [HyperosScrollBehavior] from [HyperosRootPage].
+    Widget surface = ScrollConfiguration(
+      behavior: const _TimetableHomeScrollBehavior(),
+      child: Padding(
+        key: _timetableSurfaceKey,
+        padding: EdgeInsets.only(bottom: hasBackdrop ? 0 : 8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return _buildWeekPager(
+              provider,
+              settings,
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
+          },
+        ),
+      ),
+    );
+
+    if (!settings.homePullQuickImportEnabled) {
+      return surface;
+    }
+
+    // Prefer scroll overscroll (clamping) so left/right week paging stays free.
+    surface = NotificationListener<ScrollNotification>(
+      onNotification: _handleHomePullScrollNotification,
+      child: surface,
+    );
+
+    // Auto-fit week grid has no vertical Scrollable; use a vertical-only drag
+    // that does not claim the arena until the gesture is clearly vertical.
+    if (settings.timetableAutoFitSectionHeight && !_isDayView) {
+      surface = _HomePullVerticalDragDetector(
+        enabled: !_isHomePullQuickImportRunning,
+        onPullUpdate: _updateHomePullDragDistance,
+        onPullEnd: _finishHomePullDrag,
+        onPullCancel: _cancelHomePullDrag,
+        child: surface,
+      );
+    }
+
+    return surface;
+  }
+
+  Widget _buildHomePullQuickImportIndicator(AppLocalizations l10n) {
+    final pullProgress =
+        (_homePullDragDistance / _homePullQuickImportTriggerDistance).clamp(
+          0.0,
+          1.0,
+        );
+    final showLabel =
+        _isHomePullQuickImportRunning ||
+        _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.55;
+    return Positioned(
+      top: 12,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 120),
+          opacity: _isHomePullQuickImportRunning
+              ? 1
+              : (0.35 + pullProgress * 0.65),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    value: _isHomePullQuickImportRunning
+                        ? null
+                        : math.max(pullProgress, 0.08),
+                  ),
+                ),
+                if (showLabel) ...[
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.homePullQuickImportFetchingCourses,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+                if (_isHomePullQuickImportRunning) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: _cancelHomePullQuickImport,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          l10n.quickImportCancelImportAction,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _updateHomePullDragDistance(double deltaDy) {
+    if (_isHomePullQuickImportRunning) {
+      return;
+    }
+    if (deltaDy <= 0 && _homePullDragDistance <= 0) {
+      return;
+    }
+    final nextDistance = (_homePullDragDistance + deltaDy).clamp(
+      0.0,
+      _homePullQuickImportMaxDistance,
+    );
+    if (nextDistance == _homePullDragDistance) {
+      return;
+    }
+    setState(() {
+      _homePullDragDistance = nextDistance;
+    });
+  }
+
+  void _finishHomePullDrag() {
+    final shouldTrigger =
+        _homePullDragDistance >= _homePullQuickImportTriggerDistance;
+    if (_homePullDragDistance != 0) {
+      setState(() {
+        _homePullDragDistance = 0;
+      });
+    }
+    if (shouldTrigger) {
+      unawaited(_runHomePullQuickImport());
+    }
+  }
+
+  void _cancelHomePullDrag() {
+    if (_homePullDragDistance == 0) {
+      return;
+    }
+    setState(() {
+      _homePullDragDistance = 0;
+    });
+  }
+
+  /// Clamping overscroll at the top of the week/day vertical scrollables.
+  bool _handleHomePullScrollNotification(ScrollNotification notification) {
+    if (_isHomePullQuickImportRunning) {
+      return false;
+    }
+    final metrics = notification.metrics;
+    if (metrics.axis != Axis.vertical) {
+      return false;
+    }
+
+    final atTop = metrics.pixels <= metrics.minScrollExtent + 0.5;
+
+    if (notification is OverscrollNotification && atTop) {
+      // Negative overscroll = past the leading edge (top) while pulling down.
+      if (notification.overscroll < 0) {
+        _updateHomePullDragDistance(-notification.overscroll);
+      }
+      return false;
+    }
+
+    if (notification is ScrollUpdateNotification &&
+        !atTop &&
+        _homePullDragDistance > 0) {
+      _cancelHomePullDrag();
+      return false;
+    }
+
+    if (notification is ScrollEndNotification && _homePullDragDistance > 0) {
+      _finishHomePullDrag();
+      return false;
+    }
+
+    return false;
+  }
+
+  void _cancelHomePullQuickImport() {
+    final cancel = _homePullQuickImportCancel;
+    if (cancel == null) {
+      return;
+    }
+    cancel();
+    if (mounted) {
+      setState(() {
+        _isHomePullQuickImportRunning = false;
+        _homePullQuickImportCancel = null;
+      });
+    }
+  }
+
+  Future<void> _runHomePullQuickImport() async {
+    if (_isHomePullQuickImportRunning || !mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isHomePullQuickImportRunning = true;
+      _homePullDragDistance = 0;
+      _homePullQuickImportCancel = null;
+    });
+    try {
+      await runHomePullWarehouseQuickImport(
+        context,
+        onNeedsManualAction: () {
+          if (!mounted) {
+            return;
+          }
+          showAppLightTip(
+            context,
+            message: l10n.homePullQuickImportNeedsManualAction,
+          );
+        },
+        onCancelAvailable: (cancel) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _homePullQuickImportCancel = cancel;
+          });
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isHomePullQuickImportRunning = false;
+          _homePullQuickImportCancel = null;
+        });
+      }
+    }
+  }
+
   Widget _buildWeekPager(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -1597,6 +1862,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? grid
         : SingleChildScrollView(
             key: PageStorageKey<String>('week-scroll-$week'),
+            // Explicit clamp: do not inherit HyperOS rubber-band here.
+            physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             child: grid,
           );
     return IgnorePointer(
@@ -2575,6 +2844,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     return ListView.separated(
       key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+      physics: const ClampingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       itemCount: agendaItems.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, itemIndex) {
@@ -5742,4 +6014,113 @@ class _DayAgendaPalette {
     required this.fillColor,
     required this.foregroundColor,
   });
+}
+
+/// Home timetable only: clamping scroll, no HyperOS rubber-band overscroll.
+class _TimetableHomeScrollBehavior extends ScrollBehavior {
+  const _TimetableHomeScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+  }
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // No Material stretch / glow — keep the grid hard-edged.
+    return child;
+  }
+}
+
+/// Vertical pull detector that yields to horizontal week paging.
+///
+/// Claims the gesture arena only after the drag is clearly more vertical than
+/// horizontal, so left/right week swipes stay smooth.
+class _HomePullVerticalDragDetector extends StatefulWidget {
+  const _HomePullVerticalDragDetector({
+    required this.child,
+    required this.enabled,
+    required this.onPullUpdate,
+    required this.onPullEnd,
+    required this.onPullCancel,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final ValueChanged<double> onPullUpdate;
+  final VoidCallback onPullEnd;
+  final VoidCallback onPullCancel;
+
+  @override
+  State<_HomePullVerticalDragDetector> createState() =>
+      _HomePullVerticalDragDetectorState();
+}
+
+class _HomePullVerticalDragDetectorState
+    extends State<_HomePullVerticalDragDetector> {
+  double _accumulatedDx = 0;
+  double _accumulatedDy = 0;
+  bool _isTrackingVerticalPull = false;
+
+  static const double _axisDecisionDistance = 10;
+
+  void _resetTracking() {
+    _accumulatedDx = 0;
+    _accumulatedDy = 0;
+    _isTrackingVerticalPull = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) {
+      return widget.child;
+    }
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) {
+        _resetTracking();
+      },
+      onPointerMove: (event) {
+        final delta = event.delta;
+        _accumulatedDx += delta.dx;
+        _accumulatedDy += delta.dy;
+
+        if (!_isTrackingVerticalPull) {
+          final absDx = _accumulatedDx.abs();
+          final absDy = _accumulatedDy.abs();
+          if (absDx < _axisDecisionDistance && absDy < _axisDecisionDistance) {
+            return;
+          }
+          // Prefer horizontal week paging when the gesture is not clearly vertical.
+          if (absDy <= absDx * 1.15) {
+            return;
+          }
+          _isTrackingVerticalPull = true;
+        }
+
+        if (_isTrackingVerticalPull) {
+          widget.onPullUpdate(delta.dy);
+        }
+      },
+      onPointerUp: (_) {
+        if (_isTrackingVerticalPull) {
+          widget.onPullEnd();
+        } else {
+          widget.onPullCancel();
+        }
+        _resetTracking();
+      },
+      onPointerCancel: (_) {
+        if (_isTrackingVerticalPull) {
+          widget.onPullCancel();
+        }
+        _resetTracking();
+      },
+      child: widget.child,
+    );
+  }
 }
