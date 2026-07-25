@@ -2340,6 +2340,10 @@
   "quickImportFinishedTitle": "インポート完了",
   "quickImportDismissAction": "完了",
   "quickImportRetryAction": "再試行",
+  "homePullQuickImportTitle": "ホーム下引きでクイックインポート",
+  "homePullQuickImportSubtitle": "ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します（保存済みの経路が必要）",
+  "homePullQuickImportFetchingCourses": "新しい授業を取得中…",
+  "homePullQuickImportNeedsManualAction": "手動操作が必要です。教務インポート画面で続行してください",
   "quickImportPlaybackStepProgress": "ステップ {current} / {total}",
   "@quickImportPlaybackStepProgress": {
     "placeholders": {

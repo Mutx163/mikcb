@@ -8227,6 +8227,30 @@ abstract class AppLocalizations {
   /// **'重试'**
   String get quickImportRetryAction;
 
+  /// No description provided for @homePullQuickImportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页下拉快捷导入'**
+  String get homePullQuickImportTitle;
+
+  /// No description provided for @homePullQuickImportSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在首页下拉时自动执行教务快捷导入（需先保存过导入路径）'**
+  String get homePullQuickImportSubtitle;
+
+  /// No description provided for @homePullQuickImportFetchingCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在获取新课程…'**
+  String get homePullQuickImportFetchingCourses;
+
+  /// No description provided for @homePullQuickImportNeedsManualAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要手动操作，请前往教务导入页面继续'**
+  String get homePullQuickImportNeedsManualAction;
+
   /// No description provided for @quickImportPlaybackStepProgress.
   ///
   /// In zh, this message translates to:

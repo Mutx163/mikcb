@@ -4595,6 +4595,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get quickImportRetryAction => '재시도';
 
   @override
+  String get homePullQuickImportTitle => '홈 당겨서 빠른 가져오기';
+
+  @override
+  String get homePullQuickImportSubtitle =>
+      '홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다(저장된 가져오기 경로 필요)';
+
+  @override
+  String get homePullQuickImportFetchingCourses => '새 수업을 가져오는 중…';
+
+  @override
+  String get homePullQuickImportNeedsManualAction =>
+      '수동 작업이 필요합니다. 교무 가져오기 페이지에서 계속하세요';
+
+  @override
   String quickImportPlaybackStepProgress(int current, int total) {
     return '단계 $current / $total';
   }

@@ -4567,6 +4567,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get quickImportRetryAction => '再試行';
 
   @override
+  String get homePullQuickImportTitle => 'ホーム下引きでクイックインポート';
+
+  @override
+  String get homePullQuickImportSubtitle =>
+      'ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します（保存済みの経路が必要）';
+
+  @override
+  String get homePullQuickImportFetchingCourses => '新しい授業を取得中…';
+
+  @override
+  String get homePullQuickImportNeedsManualAction =>
+      '手動操作が必要です。教務インポート画面で続行してください';
+
+  @override
   String quickImportPlaybackStepProgress(int current, int total) {
     return 'ステップ $current / $total';
   }

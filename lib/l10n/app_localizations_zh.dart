@@ -4492,6 +4492,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickImportRetryAction => '重试';
 
   @override
+  String get homePullQuickImportTitle => '首页下拉快捷导入';
+
+  @override
+  String get homePullQuickImportSubtitle => '在首页下拉时自动执行教务快捷导入（需先保存过导入路径）';
+
+  @override
+  String get homePullQuickImportFetchingCourses => '正在获取新课程…';
+
+  @override
+  String get homePullQuickImportNeedsManualAction => '需要手动操作，请前往教务导入页面继续';
+
+  @override
   String quickImportPlaybackStepProgress(int current, int total) {
     return '步骤 $current / $total';
   }
@@ -12905,6 +12917,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get quickImportRetryAction => '重試';
 
   @override
+  String get homePullQuickImportTitle => '首頁下拉快捷匯入';
+
+  @override
+  String get homePullQuickImportSubtitle => '在首頁下拉時自動執行教務快捷匯入（需先儲存過匯入路徑）';
+
+  @override
+  String get homePullQuickImportFetchingCourses => '正在獲取新課程…';
+
+  @override
+  String get homePullQuickImportNeedsManualAction => '需要手動操作，請前往教務匯入頁面繼續';
+
+  @override
   String quickImportPlaybackStepProgress(int current, int total) {
     return '步驟 $current / $total';
   }
@@ -21276,6 +21300,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get quickImportRetryAction => '重試';
+
+  @override
+  String get homePullQuickImportTitle => '首頁下拉快捷匯入';
+
+  @override
+  String get homePullQuickImportSubtitle => '在首頁下拉時自動執行教務快捷匯入（需先儲存過匯入路徑）';
+
+  @override
+  String get homePullQuickImportFetchingCourses => '正在取得新課程…';
+
+  @override
+  String get homePullQuickImportNeedsManualAction => '需要手動操作，請前往教務匯入頁面繼續';
 
   @override
   String quickImportPlaybackStepProgress(int current, int total) {

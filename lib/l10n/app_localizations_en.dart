@@ -4787,6 +4787,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickImportRetryAction => 'Retry';
 
   @override
+  String get homePullQuickImportTitle => 'Pull to quick-import';
+
+  @override
+  String get homePullQuickImportSubtitle =>
+      'Pull down on the home timetable to run warehouse quick import in the background (requires a saved import path)';
+
+  @override
+  String get homePullQuickImportFetchingCourses => 'Fetching new courses…';
+
+  @override
+  String get homePullQuickImportNeedsManualAction =>
+      'Manual action needed. Open the warehouse import page to continue';
+
+  @override
   String quickImportPlaybackStepProgress(int current, int total) {
     return 'Step $current / $total';
   }
