@@ -1,0 +1,3 @@
+# better-harness ignore rules
+# JSON Lines; one ignored Proactive Insights finding per line.
+{"version":1,"type":"finding-ignore","id":"cursor-mcp-plaintext-token","title":".cursor/mcp.json 中存在明文 GitHub 个人访问令牌","category":"controlled-execution","severity":"High","dimensionRefs":["controlled-execution"],"source":"proactive-insights","createdAt":"2026-07-28T06:58:30.839Z"}
