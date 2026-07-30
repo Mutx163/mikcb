@@ -943,13 +943,17 @@ class _HyperosCollapsibleTopAppBarState
                         Positioned(
                           left: widget.navigationIconPadding,
                           top: verticalCenter - navigationHeight / 2,
-                          child: widget.navigationIcon!,
+                          child: KeyedSubtree(
+                            key: _navigationIconKey,
+                            child: widget.navigationIcon!,
+                          ),
                         ),
                       if (widget.actions?.isNotEmpty ?? false)
                         Positioned(
                           right: widget.actionIconPadding,
                           top: verticalCenter - actionsHeight / 2,
                           child: Row(
+                            key: _actionsKey,
                             mainAxisSize: MainAxisSize.min,
                             children: widget.actions!,
                           ),
@@ -1002,21 +1006,9 @@ class _HyperosCollapsibleTopAppBarState
               ),
             ),
           ),
-          if (widget.navigationIcon != null)
-            Padding(
-              key: _navigationIconKey,
-              padding: EdgeInsets.only(left: widget.navigationIconPadding),
-              child: widget.navigationIcon!,
-            ),
-          if (widget.actions?.isNotEmpty ?? false)
-            Padding(
-              key: _actionsKey,
-              padding: EdgeInsets.only(right: widget.actionIconPadding),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: widget.actions!,
-              ),
-            ),
+          // Navigation icon and actions are measured from their live instances
+          // (see [_navigationIconKey] / [_actionsKey] above): remounting the
+          // caller's widgets offstage would duplicate any GlobalKey they carry.
           Padding(
             key: _subtitleKey,
             padding: EdgeInsets.zero,

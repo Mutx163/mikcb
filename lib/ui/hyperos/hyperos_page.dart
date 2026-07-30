@@ -457,9 +457,23 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     if ((delta - _collapseInsetDelta.value).abs() < 0.1) {
       return;
     }
-    // Same-frame: notifications fire before this frame's build, and the
-    // listener below only repaints the body transform (no relayout).
-    _collapseInsetDelta.value = delta;
+    // Normally a scroll notification fires in the idle phase → apply the delta
+    // immediately so the body transform lands in the same frame. If instead it
+    // arrives mid build/layout/paint (e.g. the first layout at a constrained
+    // size in a widget test), defer to a post-frame callback so the
+    // [ValueListenableBuilder] is not marked dirty during the current frame
+    // ("Build scheduled during frame").
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      _collapseInsetDelta.value = delta;
+    } else {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _collapseInsetDelta.value = delta;
+        }
+      });
+    }
   }
 
   HyperosBlurredHeaderScope _buildHeaderScope({
