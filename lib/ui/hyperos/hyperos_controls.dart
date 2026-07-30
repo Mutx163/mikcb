@@ -187,6 +187,7 @@ class HyperosSlider extends StatelessWidget {
 
     return SizedBox(
       height: HyperosMiuixSlider.minHeight,
+      width: double.infinity,
       child: MiuixSlider(
         value: value.clamp(lo, hi),
         onValueChanged: enabled && onChanged != null
@@ -206,6 +207,9 @@ class HyperosSlider extends StatelessWidget {
         colors: colors,
         height: HyperosMiuixSlider.minHeight,
         showKeyPoints: false,
+        hapticEffect: (divisions ?? 0) > 0
+            ? MiuixSliderHapticEffect.step
+            : MiuixSliderHapticEffect.edge,
       ),
     );
   }
