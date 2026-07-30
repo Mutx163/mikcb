@@ -559,14 +559,19 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          _buildBody(
-            pageBackground: pageBackground,
-            child: widget.childPad
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: widget.child,
-                  )
-                : widget.child,
+          Padding(
+            padding: EdgeInsets.only(
+              top: HyperosBlurredHeader.contentTopInset(context),
+            ),
+            child: _buildBody(
+              pageBackground: pageBackground,
+              child: widget.childPad
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: widget.child,
+                    )
+                  : widget.child,
+            ),
           ),
           Positioned(
             top: 0,
