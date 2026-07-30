@@ -150,11 +150,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
           onTap: () => Navigator.of(context).pop(),
           child: AnimatedBuilder(
             animation: _alpha,
-            builder: (context, _) => ColoredBox(
-              color: HyperosBlurredHeader.modalBarrierColor(
-                context,
-              ).withValues(alpha: _alpha.value.clamp(0.0, 1.0)),
-            ),
+            builder: (context, _) {
+              final base = HyperosBlurredHeader.modalBarrierColor(context);
+              return ColoredBox(
+                color: base.withValues(alpha: base.a * _alpha.value.clamp(0.0, 1.0)),
+              );
+            },
           ),
         ),
         Positioned(
@@ -186,10 +187,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     cornerRadius: cornerRadius,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minWidth: 160,
+                        minWidth: 200,
                         maxWidth: (screen.width - margin * 2).clamp(
-                          160.0,
-                          288.0,
+                          200.0,
+                          320.0,
                         ),
                         maxHeight: maxHeight,
                       ),

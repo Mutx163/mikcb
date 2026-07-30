@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 
-import 'hyperos_theme.dart';
-
-/// HyperOS floating action button (primary accent, circular).
+/// HyperOS floating action button — delegates to [MiuixFloatingActionButton].
 class HyperosFab extends StatelessWidget {
   const HyperosFab({
     super.key,
@@ -20,35 +18,19 @@ class HyperosFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    final bg = enabled
-        ? HyperosColors.primary(context)
-        : HyperosColors.disabledPrimaryButton(context);
-    final fg = enabled
-        ? HyperosColors.onPrimary(context)
-        : HyperosColors.disabledOnPrimaryButton(context);
-
     final size = mini ? 40.0 : 56.0;
     final iconSize = mini ? 22.0 : 26.0;
+    final theme = MiuixTheme.of(context);
 
-    final button = Material(
-      color: bg,
-      elevation: 3,
-      shadowColor: Colors.black.withValues(alpha: 0.18),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: enabled
-            ? () {
-                HapticFeedback.lightImpact();
-                onPressed!();
-              }
-            : null,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Icon(icon, size: iconSize, color: fg),
-        ),
+    // MiuixFAB 使用 onSurface 作为默认内容色，我们需要 onPrimary。
+    final button = MiuixContentColor(
+      color: theme.colors.onPrimary,
+      child: MiuixFloatingActionButton(
+        onPressed: onPressed,
+        enabled: onPressed != null,
+        minWidth: size,
+        minHeight: size,
+        child: Icon(icon, size: iconSize),
       ),
     );
 

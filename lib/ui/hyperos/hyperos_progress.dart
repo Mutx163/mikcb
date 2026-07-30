@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 
-import 'hyperos_theme.dart';
-
-/// HyperOS circular progress indicator (primary accent).
+/// HyperOS circular progress — delegates to [MiuixCircularProgressIndicator].
 class HyperosCircularProgress extends StatelessWidget {
   const HyperosCircularProgress({
     super.key,
@@ -15,17 +14,15 @@ class HyperosCircularProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = HyperosColors.primary(context);
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CircularProgressIndicator(strokeWidth: strokeWidth, color: color),
+    return MiuixCircularProgressIndicator(
+      progress: null,
+      strokeWidth: strokeWidth,
+      size: size,
     );
   }
 }
 
-/// HyperOS linear progress bar (primary on muted track).
+/// HyperOS linear progress — delegates to [MiuixLinearProgressIndicator].
 class HyperosLinearProgress extends StatelessWidget {
   const HyperosLinearProgress({super.key, this.value, this.minHeight = 4});
 
@@ -34,23 +31,6 @@ class HyperosLinearProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = HyperosColors.primary(context);
-    final track = HyperosColors.sliderBackground(context);
-
-    return SizedBox(
-      height: minHeight,
-      child: value == null
-          ? LinearProgressIndicator(
-              minHeight: minHeight,
-              color: active,
-              backgroundColor: track,
-            )
-          : LinearProgressIndicator(
-              value: value!.clamp(0, 1),
-              minHeight: minHeight,
-              color: active,
-              backgroundColor: track,
-            ),
-    );
+    return MiuixLinearProgressIndicator(progress: value, height: minHeight);
   }
 }
