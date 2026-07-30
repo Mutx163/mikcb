@@ -2366,6 +2366,35 @@ class _TimetableScreenState extends State<TimetableScreen>
               week: visibleDayViewWeek,
             ),
           ),
+        // Swipeable weekday bar: when day view is open, horizontal drags on
+        // the weekday bar area switch the day view to the prev/next week.
+        if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: _weekDayHeaderHeight,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (details) {
+                final velocity = details.primaryVelocity;
+                if (velocity == null || velocity == 0) return;
+                final direction = velocity < 0 ? 1 : -1;
+                final currentWeek = visibleDayViewWeek;
+                final targetWeek = (currentWeek + direction).clamp(
+                  1,
+                  settings.semesterWeekCount,
+                );
+                if (targetWeek == currentWeek) return;
+                _animateDayViewToWeek(
+                  provider,
+                  settings,
+                  targetWeek,
+                  _displayedDayForWeek(targetWeek),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
