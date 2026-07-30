@@ -563,18 +563,24 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     return Scaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
       backgroundColor: pageBackground,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(0),
-        child: header,
-      ),
-      body: _buildBody(
-        pageBackground: pageBackground,
-        child: widget.childPad
-            ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: widget.child,
-              )
-            : widget.child,
+      body: Stack(
+        children: [
+          _buildBody(
+            pageBackground: pageBackground,
+            child: widget.childPad
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: widget.child,
+                  )
+                : widget.child,
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: header,
+          ),
+        ],
       ),
     );
   }
