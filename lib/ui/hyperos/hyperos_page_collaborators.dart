@@ -419,6 +419,12 @@ class HyperosOverlayHeaderMetrics {
     // hyperos_page.dart) so short pages rest at the small-title height once
     // collapsed, while scrollable pages keep this expanded inset.
     if (useCollapsibleTopAppBar?.call() ?? false) {
+      // When a header extension is present (progress bar, search field),
+      // use the measured total height if available, otherwise fall back to
+      // the base collapsible inset (which covers title + bar only).
+      if (hasHeaderExtension() && measuredOverlayHeaderHeight > 0) {
+        return measuredOverlayHeaderHeight;
+      }
       return HyperosBlurredHeader.contentTopInsetCollapsible(context);
     }
     if (measuredOverlayHeaderHeight > 0) {
@@ -433,7 +439,11 @@ class HyperosOverlayHeaderMetrics {
   void requestOverlayHeaderMeasure() {
     // Collapsible bars keep a fixed expanded inset — measuring live height only
     // feeds padding churn. Extension rows still need measure.
-    if (!useOverlayLayout() || (useCollapsibleTopAppBar?.call() ?? false)) {
+    if (!useOverlayLayout()) {
+      return;
+    }
+    final isCollapsible = useCollapsibleTopAppBar?.call() ?? false;
+    if (isCollapsible && !hasHeaderExtension()) {
       return;
     }
     if (_overlayHeaderMeasurePending) {
