@@ -37,7 +37,6 @@ dependencies:
   table_parser: ^1.0.1
   qr_flutter: ^4.1.0
   fl_chart: ^1.2.0
-  forui: ^0.23.0
   fast_gbk: ^1.0.0
   flutter_svg: ^2.3.0
   image: ^4.8.0
