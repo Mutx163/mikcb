@@ -94,6 +94,19 @@ progress.md
 # 测试覆盖率
 coverage/
 
+# 编辑器本地历史快照（JetBrains Rider .head_ 前缀）
+.head_*
+
+# 临时分析输出（dart analyze 结果转储）
+analyze_*.txt
+
+# 工具本地配置
+.qoder/
+.reasonix/
+
+# Python 缓存
+tool/__pycache__/
+
 # Pi 工具目录
 .pi/
 
