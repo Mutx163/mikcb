@@ -353,7 +353,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
             builder: (context, _) {
               final fraction = _fraction.value.clamp(0.0, 1.0);
               final alpha = _alpha.value.clamp(0.0, 1.0);
-              final scale = 0.3 + 0.7 * fraction;
+              final scale = 0.15 + 0.85 * fraction;
               return Transform.scale(
                 scale: scale,
                 alignment: Alignment(1.0, localOriginY * 2 - 1),
@@ -464,9 +464,9 @@ class _HyperosSelectPopupGlass extends StatelessWidget {
     // Liquid glass mode.
     if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
       return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.sheet,
+        role: HyperosLiquidGlassRole.nestedTile,
         borderRadius: cornerRadius,
-        contentLegibilityFill: true,
+        contentLegibilityFill: false,
         // FakeGlass underlay paints immediately so the first frames are not
         // black while the real Impeller shader warms up.
         instantUnderlay: true,
