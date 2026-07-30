@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:forui/forui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
@@ -23,14 +22,11 @@ class TestApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       navigatorObservers: [hyperosRouteObserver],
       builder: (context, child) {
-        return FTheme(
-          data: FThemes.zinc.light.touch,
-          child: ScaffoldMessenger(
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              resizeToAvoidBottomInset: false,
-              body: child ?? const SizedBox.shrink(),
-            ),
+        return ScaffoldMessenger(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            resizeToAvoidBottomInset: false,
+            body: child ?? const SizedBox.shrink(),
           ),
         );
       },

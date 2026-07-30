@@ -26,6 +26,72 @@ class HyperosScrollRevealedTitle extends StatelessWidget {
   }
 }
 
+/// Root-header clone of Forui's `FHeader` (root variant): the title is
+/// left-aligned, wrapped in [Expanded] and stays interactive — unlike
+/// [HyperosOverlayNestedHeader] whose centered title sits under an
+/// [IgnorePointer]. Used by root pages such as the timetable home, where the
+/// title itself is a tap target (profile quick-switch).
+class HyperosRootHeader extends StatelessWidget {
+  const HyperosRootHeader({
+    super.key,
+    required this.title,
+    this.suffixes = const [],
+    this.padding = const EdgeInsets.fromLTRB(8, 0, 8, 2),
+    this.minHeight = 44,
+  });
+
+  final Widget title;
+  final List<Widget> suffixes;
+
+  /// Content padding inside the bar (below the status-bar SafeArea).
+  final EdgeInsetsGeometry padding;
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MiuixTheme.of(context).colors;
+    final font = DefaultTextStyle.of(context).style;
+    return SafeArea(
+      bottom: false,
+      child: Semantics(
+        header: true,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: minHeight),
+          child: Padding(
+            padding: padding,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: DefaultTextStyle.merge(
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w400,
+                      height: 1.1,
+                      color: colors.onBackground,
+                      fontFamily: font.fontFamily,
+                      fontFamilyFallback: font.fontFamilyFallback,
+                    ),
+                    textHeightBehavior: const TextHeightBehavior(
+                      applyHeightToFirstAscent: false,
+                      applyHeightToLastDescent: false,
+                    ),
+                    child: title,
+                  ),
+                ),
+                Row(mainAxisSize: MainAxisSize.min, children: suffixes),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class HyperosOverlayNestedHeader extends StatelessWidget {
   const HyperosOverlayNestedHeader({
     super.key,

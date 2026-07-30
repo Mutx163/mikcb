@@ -372,6 +372,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
+        // Status-bar icon polarity: with wallpaper showing through the status
+        // bar the backdrop reads dark (dim mask / frosted chrome), otherwise
+        // follow the opaque page background. The page's own background is
+        // transparent over wallpaper, so the shell cannot derive this itself.
         final systemOverlayBackground = statusBarShowsBackdrop
             ? (hasBackdrop
                   ? (headerUsesFrostedChrome
@@ -379,6 +383,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         : Colors.black)
                   : pageBackgroundColor)
             : pageBackgroundColor;
+
         _scheduleWallpaperLuminanceSampleIfNeeded(settings);
         // After the sample lands: a hand-picked weekday ink can be invisible
         // over this wallpaper — never silently override it, explain instead.
@@ -394,14 +399,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         final chromeMutedForeground = hasBackdrop
             ? homePageChromeMutedForeground(chromeForeground)
             : foruiTheme.colors.mutedForeground;
-        final headerTitleStyle = foruiTheme.typography.display.xl.copyWith(
-          fontWeight: FontWeight.w400,
-          height: 1.1,
-          color: chromeForeground,
-        );
-        const headerHorizontalInset = 8.0;
-        const headerTopInset = 0.0;
-        final headerBottomInset = headerUsesFrostedChrome ? 0.0 : 2.0;
+
         final followsWeekPager =
             hasBackdrop && settings.homePageBackdropFollowsWeekPager;
         // Keep the same frosted chrome band in day view. The weekday header
@@ -475,6 +473,15 @@ class _TimetableScreenState extends State<TimetableScreen>
               resizeToAvoidBottomInset: false,
               backgroundColor: scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
+              headerPadding: EdgeInsets.fromLTRB(
+                8,
+                0,
+                8,
+                headerUsesFrostedChrome ? 0.0 : 2.0,
+              ),
+              systemOverlayStyle: HyperosColors.systemOverlayForBackground(
+                systemOverlayBackground,
+              ),
               title: _buildProfileSwitcherTrigger(
                 provider,
                 foreground: chromeForeground,

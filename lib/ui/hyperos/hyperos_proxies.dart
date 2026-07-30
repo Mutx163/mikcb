@@ -16,15 +16,14 @@ class FHeaderAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    IconData? iconData;
-    if (icon is Icon) {
-      iconData = (icon as Icon).icon;
-    }
+    // Pass the caller's widget through untouched: rebuilding `Icon(iconData)`
+    // dropped the Icon's explicit color/size (e.g. the couple-mode pink heart
+    // and the wallpaper chrome foreground on the home header).
     return Semantics(
       label: semanticsLabel,
       button: true,
       child: IconButton(
-        icon: iconData != null ? Icon(iconData) : icon,
+        icon: icon,
         onPressed: onPress,
         tooltip: semanticsLabel,
       ),

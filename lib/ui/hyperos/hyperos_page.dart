@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -19,66 +18,7 @@ export 'hyperos_page_collaborators.dart'
         hyperosIsIncomingRouteSettled,
         hyperosIsRouteTransitioning;
 
-// ── Temporary FScaffold replacement ─────────────────────────────────────────
-// Forui's FScaffold was used for the frosted header layout (header as floating
-// overlay on top of child). This local implementation replicates that behavior
-// without requiring the Forui dependency.
 
-class _FScaffoldStyleDelta {
-  const _FScaffoldStyleDelta({this.backgroundColor, this.systemOverlayStyle});
-  final Color? backgroundColor;
-  final SystemUiOverlayStyle? systemOverlayStyle;
-
-  static _FScaffoldStyleDelta delta({
-    Color? backgroundColor,
-    SystemUiOverlayStyle? systemOverlayStyle,
-  }) =>
-      _FScaffoldStyleDelta(
-        backgroundColor: backgroundColor,
-        systemOverlayStyle: systemOverlayStyle,
-      );
-}
-
-class _FScaffold extends StatelessWidget {
-  const _FScaffold({
-    required this.child,
-    required this.header,
-    this.resizeToAvoidBottomInset = false,
-    this.childPad = false,
-    this.scaffoldStyle,
-  });
-
-  final Widget child;
-  final Widget header;
-  final bool resizeToAvoidBottomInset;
-  final bool childPad;
-  final _FScaffoldStyleDelta? scaffoldStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = scaffoldStyle?.backgroundColor;
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: scaffoldStyle?.systemOverlayStyle ??
-          const SystemUiOverlayStyle(),
-      child: Scaffold(
-        resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-        backgroundColor: bg,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            child,
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: header,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Root settings page without a back button (HyperOS settings home pattern).
 class HyperosRootPage extends StatelessWidget {
@@ -91,6 +31,8 @@ class HyperosRootPage extends StatelessWidget {
     this.childPad = false,
     this.backgroundColor,
     this.headerDecoration,
+    this.headerPadding,
+    this.systemOverlayStyle,
     this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
   });
@@ -105,6 +47,14 @@ class HyperosRootPage extends StatelessWidget {
   final bool childPad;
   final Color? backgroundColor;
   final BoxDecoration? headerDecoration;
+
+  /// Content padding of the stacked root header bar (non-overlay layout only).
+  final EdgeInsetsGeometry? headerPadding;
+
+  /// Status-bar icon style override. When null, derived from the page
+  /// background — pages with a transparent background over wallpaper must
+  /// pass this explicitly or the derived style is always light-on-dark.
+  final SystemUiOverlayStyle? systemOverlayStyle;
 
   /// Defaults to false so modal sheets/dialogs handle keyboard insets themselves
   /// without lifting the page behind them. Enable on inline form subpages.
@@ -121,16 +71,27 @@ class HyperosRootPage extends StatelessWidget {
       childPad: childPad,
       backgroundColor: backgroundColor,
       headerDecoration: headerDecoration,
+      systemOverlayStyle: systemOverlayStyle,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       overlayHeader: overlayHeader,
       headerExtension: headerExtension,
       collapsibleTitle: collapsibleTitle,
       collapsibleActions: suffixes,
-      header: HyperosOverlayNestedHeader(
-        prefixes: const [],
-        suffixes: suffixes ?? const [],
-        title: title,
-      ),
+      // Root semantics (Forui root header): left-aligned interactive title.
+      // The nested variant centers the title under an IgnorePointer, which
+      // killed tap targets like the home profile switcher.
+      header: overlayHeader
+          ? HyperosOverlayNestedHeader(
+              prefixes: const [],
+              suffixes: suffixes ?? const [],
+              title: title,
+            )
+          : HyperosRootHeader(
+              title: title,
+              suffixes: suffixes ?? const [],
+              padding:
+                  headerPadding ?? const EdgeInsets.fromLTRB(8, 0, 8, 2),
+            ),
       child: child,
     );
   }
@@ -231,6 +192,7 @@ class _HyperosBlurredPage extends StatefulWidget {
     this.headerExtension,
     this.backgroundColor,
     this.headerDecoration,
+    this.systemOverlayStyle,
     this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
     this.collapsibleTitle,
@@ -244,6 +206,7 @@ class _HyperosBlurredPage extends StatefulWidget {
   final bool childPad;
   final Color? backgroundColor;
   final BoxDecoration? headerDecoration;
+  final SystemUiOverlayStyle? systemOverlayStyle;
   final bool resizeToAvoidBottomInset;
   final bool overlayHeader;
 
@@ -599,7 +562,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   Widget _buildBody({required Color pageBackground, required Widget child}) {
     final body = Material(
       type: MaterialType.transparency,
-      color: pageBackground,
       child: ScrollConfiguration(
         behavior: const HyperosScrollBehavior(),
         child: child,
@@ -623,26 +585,29 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       child: blurredHeader,
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: HyperosColors.systemOverlayForBackground(pageBackground),
+      value: widget.systemOverlayStyle ??
+          HyperosColors.systemOverlayForBackground(pageBackground),
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-        body: Stack(
-          fit: StackFit.expand,
+        backgroundColor: pageBackground,
+        // FScaffold semantics: the header participates in layout above the
+        // body (Column + Expanded), so the body clears the header's real
+        // height — including taller variants like the two-line brand title —
+        // without a hardcoded top inset.
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildBody(
-              pageBackground: pageBackground,
-              child: widget.childPad
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: widget.child,
-                    )
-                  : widget.child,
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: header,
+            header,
+            Expanded(
+              child: _buildBody(
+                pageBackground: pageBackground,
+                child: widget.childPad
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: widget.child,
+                      )
+                    : widget.child,
+              ),
             ),
           ],
         ),
@@ -671,7 +636,8 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     final headerInset = _overlayMetrics.overlayContentTopInset(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: HyperosColors.systemOverlayForBackground(pageBackground),
+      value: widget.systemOverlayStyle ??
+          HyperosColors.systemOverlayForBackground(pageBackground),
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
         backgroundColor: pageBackground,

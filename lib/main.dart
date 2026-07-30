@@ -279,8 +279,6 @@ class MyApp extends StatelessWidget {
                   hyperosRouteObserver,
                 ],
                 builder: (context, child) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
                   final frostedAppearance = context
                       .watch<TimetableProvider>()
                       .settings

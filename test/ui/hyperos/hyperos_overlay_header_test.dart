@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:forui/forui.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_icon_button.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_overlay_header.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_proxies.dart';
 
 import '../../helpers_test_app.dart';
 
@@ -17,7 +18,7 @@ void main() {
           body: HyperosOverlayNestedHeader(
             title: const Text('添加课程'),
             prefixes: [
-              FHeaderAction.back(onPress: () {}),
+              HyperosIconButton(icon: Icons.arrow_back, onPressed: () {}),
             ],
             suffixes: [
               FHeaderAction(

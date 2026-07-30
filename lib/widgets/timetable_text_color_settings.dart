@@ -43,134 +43,133 @@ class TimetableTextColorSettings extends StatelessWidget {
       children: [
         const HyperosSectionGap(),
         HyperosSectionLabel(text: l10n.appearanceTextColorsSectionTitle),
+
+        // 卡片 1：链接课程卡片颜色（开关）
         HyperosControlCard(
           edgeToEdge: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              HyperosControlCardRowScope(
-                isFirst: true,
-                isLast: false,
-                child: HyperosSwitchTile(
-                  title: l10n.textColorIndependentDetail,
-                  value: !settings.linkCourseCardColors,
-                  onChanged: (value) {
-                    if (!value) {
-                      onChanged(
-                        settings.copyWith(
-                          linkCourseCardColors: true,
-                          courseCardDetailColorLight:
-                              settings.courseCardTitleColorLight,
-                          courseCardDetailColorDark:
-                              settings.courseCardTitleColorDark,
-                        ),
-                      );
-                    } else {
-                      onChanged(settings.copyWith(linkCourseCardColors: false));
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              _ModeColorSettings(
-                settings: settings,
-                onChanged: onChanged,
-                modeLabel: l10n.themeModeLight,
-                containerColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerLow,
-                titleColor: settings.courseCardTitleColorLight,
-                detailColor: settings.courseCardDetailColorLight,
-                weekdayColor: settings.weekdayBarFontColorLight,
-                timeAxisColor: settings.timeAxisFontColorLight,
-                accentColor: settings.weekdayBarAccentColorLight,
-                onTitleColorChanged: (color) {
-                  if (settings.linkCourseCardColors) {
-                    onChanged(
-                      settings.copyWith(
-                        courseCardTitleColorLight: color,
-                        courseCardDetailColorLight: color,
-                      ),
-                    );
-                  } else {
-                    onChanged(
-                      settings.copyWith(courseCardTitleColorLight: color),
-                    );
-                  }
-                },
-                onDetailColorChanged: (color) => onChanged(
-                  settings.copyWith(courseCardDetailColorLight: color),
-                ),
-                onWeekdayColorChanged: (color) => onChanged(
-                  settings.copyWith(weekdayBarFontColorLight: color),
-                ),
-                onTimeAxisColorChanged: (color) =>
-                    onChanged(settings.copyWith(timeAxisFontColorLight: color)),
-                onAccentColorChanged: (color) => onChanged(
-                  settings.copyWith(weekdayBarAccentColorLight: color),
-                ),
-                defaultTitleColor:
-                    TimetableSettings.defaultCourseCardTitleColor,
-                defaultDetailColor:
-                    TimetableSettings.defaultCourseCardDetailColor,
-                defaultWeekdayColor:
-                    TimetableSettings.defaultWeekdayBarFontColorLight,
-                defaultTimeAxisColor:
-                    TimetableSettings.defaultTimeAxisFontColorLight,
-                defaultAccentColor:
-                    TimetableSettings.defaultWeekdayBarAccentColorLight,
-              ),
-              const SizedBox(height: 12),
-              _ModeColorSettings(
-                settings: settings,
-                onChanged: onChanged,
-                modeLabel: l10n.themeModeDark,
-                containerColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHigh,
-                titleColor: settings.courseCardTitleColorDark,
-                detailColor: settings.courseCardDetailColorDark,
-                weekdayColor: settings.weekdayBarFontColorDark,
-                timeAxisColor: settings.timeAxisFontColorDark,
-                accentColor: settings.weekdayBarAccentColorDark,
-                onTitleColorChanged: (color) {
-                  if (settings.linkCourseCardColors) {
-                    onChanged(
-                      settings.copyWith(
-                        courseCardTitleColorDark: color,
-                        courseCardDetailColorDark: color,
-                      ),
-                    );
-                  } else {
-                    onChanged(
-                      settings.copyWith(courseCardTitleColorDark: color),
-                    );
-                  }
-                },
-                onDetailColorChanged: (color) => onChanged(
-                  settings.copyWith(courseCardDetailColorDark: color),
-                ),
-                onWeekdayColorChanged: (color) => onChanged(
-                  settings.copyWith(weekdayBarFontColorDark: color),
-                ),
-                onTimeAxisColorChanged: (color) =>
-                    onChanged(settings.copyWith(timeAxisFontColorDark: color)),
-                onAccentColorChanged: (color) => onChanged(
-                  settings.copyWith(weekdayBarAccentColorDark: color),
-                ),
-                defaultTitleColor:
-                    TimetableSettings.defaultCourseCardTitleColor,
-                defaultDetailColor:
-                    TimetableSettings.defaultCourseCardDetailColor,
-                defaultWeekdayColor:
-                    TimetableSettings.defaultWeekdayBarFontColorDark,
-                defaultTimeAxisColor:
-                    TimetableSettings.defaultTimeAxisFontColorDark,
-                defaultAccentColor:
-                    TimetableSettings.defaultWeekdayBarAccentColorDark,
-              ),
-            ],
+          child: HyperosControlCardRowScope(
+            isFirst: true,
+            isLast: true,
+            child: HyperosSwitchTile(
+              title: l10n.textColorIndependentDetail,
+              value: !settings.linkCourseCardColors,
+              onChanged: (value) {
+                if (!value) {
+                  onChanged(
+                    settings.copyWith(
+                      linkCourseCardColors: true,
+                      courseCardDetailColorLight:
+                          settings.courseCardTitleColorLight,
+                      courseCardDetailColorDark:
+                          settings.courseCardTitleColorDark,
+                    ),
+                  );
+                } else {
+                  onChanged(settings.copyWith(linkCourseCardColors: false));
+                }
+              },
+            ),
           ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // 卡片 2：浅色模式颜色设置
+        const HyperosSectionGap(),
+        HyperosSectionLabel(text: l10n.themeModeLight),
+        _ModeColorSettings(
+          settings: settings,
+          onChanged: onChanged,
+          titleColor: settings.courseCardTitleColorLight,
+          detailColor: settings.courseCardDetailColorLight,
+          weekdayColor: settings.weekdayBarFontColorLight,
+          timeAxisColor: settings.timeAxisFontColorLight,
+          accentColor: settings.weekdayBarAccentColorLight,
+          onTitleColorChanged: (color) {
+            if (settings.linkCourseCardColors) {
+              onChanged(
+                settings.copyWith(
+                  courseCardTitleColorLight: color,
+                  courseCardDetailColorLight: color,
+                ),
+              );
+            } else {
+              onChanged(
+                settings.copyWith(courseCardTitleColorLight: color),
+              );
+            }
+          },
+          onDetailColorChanged: (color) => onChanged(
+            settings.copyWith(courseCardDetailColorLight: color),
+          ),
+          onWeekdayColorChanged: (color) => onChanged(
+            settings.copyWith(weekdayBarFontColorLight: color),
+          ),
+          onTimeAxisColorChanged: (color) =>
+              onChanged(settings.copyWith(timeAxisFontColorLight: color)),
+          onAccentColorChanged: (color) => onChanged(
+            settings.copyWith(weekdayBarAccentColorLight: color),
+          ),
+          defaultTitleColor:
+              TimetableSettings.defaultCourseCardTitleColor,
+          defaultDetailColor:
+              TimetableSettings.defaultCourseCardDetailColor,
+          defaultWeekdayColor:
+              TimetableSettings.defaultWeekdayBarFontColorLight,
+          defaultTimeAxisColor:
+              TimetableSettings.defaultTimeAxisFontColorLight,
+          defaultAccentColor:
+              TimetableSettings.defaultWeekdayBarAccentColorLight,
+        ),
+
+        const SizedBox(height: 12),
+
+        // 卡片 3：深色模式颜色设置
+        const HyperosSectionGap(),
+        HyperosSectionLabel(text: l10n.themeModeDark),
+        _ModeColorSettings(
+          settings: settings,
+          onChanged: onChanged,
+          titleColor: settings.courseCardTitleColorDark,
+          detailColor: settings.courseCardDetailColorDark,
+          weekdayColor: settings.weekdayBarFontColorDark,
+          timeAxisColor: settings.timeAxisFontColorDark,
+          accentColor: settings.weekdayBarAccentColorDark,
+          onTitleColorChanged: (color) {
+            if (settings.linkCourseCardColors) {
+              onChanged(
+                settings.copyWith(
+                  courseCardTitleColorDark: color,
+                  courseCardDetailColorDark: color,
+                ),
+              );
+            } else {
+              onChanged(
+                settings.copyWith(courseCardTitleColorDark: color),
+              );
+            }
+          },
+          onDetailColorChanged: (color) => onChanged(
+            settings.copyWith(courseCardDetailColorDark: color),
+          ),
+          onWeekdayColorChanged: (color) => onChanged(
+            settings.copyWith(weekdayBarFontColorDark: color),
+          ),
+          onTimeAxisColorChanged: (color) =>
+              onChanged(settings.copyWith(timeAxisFontColorDark: color)),
+          onAccentColorChanged: (color) => onChanged(
+            settings.copyWith(weekdayBarAccentColorDark: color),
+          ),
+          defaultTitleColor:
+              TimetableSettings.defaultCourseCardTitleColor,
+          defaultDetailColor:
+              TimetableSettings.defaultCourseCardDetailColor,
+          defaultWeekdayColor:
+              TimetableSettings.defaultWeekdayBarFontColorDark,
+          defaultTimeAxisColor:
+              TimetableSettings.defaultTimeAxisFontColorDark,
+          defaultAccentColor:
+              TimetableSettings.defaultWeekdayBarAccentColorDark,
         ),
       ],
     );
@@ -181,8 +180,6 @@ class _ModeColorSettings extends StatelessWidget {
   const _ModeColorSettings({
     required this.settings,
     required this.onChanged,
-    required this.modeLabel,
-    required this.containerColor,
     required this.titleColor,
     required this.detailColor,
     required this.weekdayColor,
@@ -202,8 +199,6 @@ class _ModeColorSettings extends StatelessWidget {
 
   final TimetableSettings settings;
   final ValueChanged<TimetableSettings> onChanged;
-  final String modeLabel;
-  final Color containerColor;
   final String titleColor;
   final String detailColor;
   final String weekdayColor;
@@ -223,23 +218,11 @@ class _ModeColorSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final radius = MiuixCardDefaults.cornerRadius;
-    return Material(
-      color: containerColor,
-      borderRadius: BorderRadius.circular(radius),
-      clipBehavior: Clip.antiAlias,
+    return HyperosControlCard(
+      edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-            child: Text(
-              modeLabel,
-              style: HyperosTypography.sectionLabel(
-                context,
-              ).copyWith(fontWeight: FontWeight.w400),
-            ),
-          ),
           _ColorSettingRow(
             label: l10n.textColorCourseCardTitle,
             currentColor: titleColor,

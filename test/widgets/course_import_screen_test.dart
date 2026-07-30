@@ -1,5 +1,5 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/screens/course_import_screen.dart';
 import 'package:university_timetable/services/warehouse_import_preferences_service.dart';
 import '../helpers_test_app.dart';
@@ -145,7 +145,16 @@ void main() {
     await tester.pumpWidget(const TestApp(home: AiImageCourseImportScreen()));
     await tester.pumpAndSettle();
 
-    final scaffold = tester.widget<FScaffold>(find.byType(FScaffold).first);
+    // The screen's own Scaffold (inside HyperosSubpage), not the TestApp
+    // builder's outer Scaffold which pins resizeToAvoidBottomInset to false.
+    final scaffold = tester.widget<Scaffold>(
+      find
+          .descendant(
+            of: find.byType(AiImageCourseImportScreen),
+            matching: find.byType(Scaffold),
+          )
+          .first,
+    );
     expect(scaffold.resizeToAvoidBottomInset, isTrue);
   });
 }

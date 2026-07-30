@@ -109,128 +109,142 @@ class CourseCard extends StatelessWidget {
     final titleAlignment = _contentAlignment;
     final titleTextAlign = _textAlign;
 
-    final card = Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      elevation: isHighlighted ? 6 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isHighlighted
-            ? BorderSide(
-                color: Colors.white.withValues(alpha: 0.92),
-                width: 1.6,
-              )
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withValues(alpha: 0.9),
-                color.withValues(alpha: 0.7),
-              ],
-            ),
-            boxShadow: isHighlighted
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.28),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Stack(
+    // Content layout (shared between full and compact paths).
+    final content = Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
+              if (showName)
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Expanded(
+                      child: Text(
+                        course.name,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: titleColor,
+                        ),
+                        textAlign: titleTextAlign,
+                        softWrap: true,
+                      ),
+                    ),
                     if (showName)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              course.name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: titleColor,
-                              ),
-                              textAlign: titleTextAlign,
-                              softWrap: true,
+                      Align(
+                        alignment: titleAlignment,
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            l10n.sectionRangeLabel(
+                              course.startSection,
+                              course.endSection,
+                            ),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: titleColor,
                             ),
                           ),
-                          if (showName)
-                            Align(
-                              alignment: titleAlignment,
-                              child: Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  l10n.sectionRangeLabel(
-                                    course.startSection,
-                                    course.endSection,
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: titleColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                    if (showName && detailLines.isNotEmpty)
-                      const SizedBox(height: 8),
-                    ...detailLines,
                   ],
                 ),
-              ),
-              if (showHomeworkIndicator)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: _buildHomeworkIndicator(size: 18, iconSize: 11),
-                ),
-              if (topRightBadgeText != null)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _buildBadgeRow(
-                    context,
-                    customBadgeText: topRightBadgeText,
-                  ),
-                ),
-              if (isHoliday && topRightBadgeText == null)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _buildBadgeRow(context, showHoliday: true),
-                ),
-              if (isSuspended && topRightBadgeText == null && !isHoliday)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _buildBadgeRow(context, showSuspended: true),
-                ),
+              if (showName && detailLines.isNotEmpty)
+                const SizedBox(height: 8),
+              ...detailLines,
             ],
           ),
         ),
+        if (showHomeworkIndicator)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: _buildHomeworkIndicator(size: 18, iconSize: 11),
+          ),
+        if (topRightBadgeText != null)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _buildBadgeRow(
+              context,
+              customBadgeText: topRightBadgeText,
+            ),
+          ),
+        if (isHoliday && topRightBadgeText == null)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _buildBadgeRow(context, showHoliday: true),
+          ),
+        if (isSuspended && topRightBadgeText == null && !isHoliday)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _buildBadgeRow(context, showSuspended: true),
+          ),
+      ],
+    );
+
+    // Tap target with ink ripple, identical to the day-view approach.
+    final tapTarget = onTap != null
+        ? Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: content,
+            ),
+          )
+        : content;
+
+    // Use CourseSurface (same as _buildCompactCard) instead of Material Card +
+    // inner Container gradient. The old Card wrapper added its own default
+    // background color (surfaceContainerLow), creating a "card within a card"
+    // look around the inner gradient's rounded corners. CourseSurface paints
+    // the surface in one pass and supports all four surface styles including
+    // HyperOS liquid glass / gaussian blur.
+    final card = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: CourseSurface(
+        style: surfaceStyle,
+        color: color,
+        borderRadius: 12,
+        opacityScale: surfaceOpacity,
+        solidGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.9),
+            color.withValues(alpha: 0.7),
+          ],
+        ),
+        outerShadow: isHighlighted
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.28),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
+        border: isHighlighted
+            ? Border.all(
+                color: Colors.white.withValues(alpha: 0.92),
+                width: 1.6,
+              )
+            : null,
+        child: tapTarget,
       ),
     );
 

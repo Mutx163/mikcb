@@ -36,10 +36,6 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
   /// Subtitle / summary size (Miuix `body2`).
   static const double subtitleFontSize = HyperosMiuixTypography.body2;
 
-  /// Release snap threshold on short pages: a collapse fraction at or above
-  /// this parks the title collapsed on release, below it re-expands.
-  static const double titleCoverHandoff = 0.50;
-
   /// Large-title fade slope. Upstream Miuix `TopAppBarLayout`:
   /// `alpha = 1 - (collapsedFraction * 3)` — greying/fading starts on the very
   /// first collapse pixel and the large title is fully gone at 1/3 collapse,
@@ -144,6 +140,11 @@ class HyperosCollapsibleTopAppBarState extends ChangeNotifier {
     }
     return (_heightOffset / _heightOffsetLimit).clamp(0.0, 1.0);
   }
+
+  /// Height of the large title text in logical pixels, set by
+  /// [_HyperosCollapsibleTopAppBarState] after measurement. Used by the snap
+  /// logic to decide the "cut in half" threshold.
+  double largeTitleTextHeight = 0;
 }
 
 /// Scroll policy that drives [HyperosCollapsibleTopAppBarState].
@@ -269,6 +270,16 @@ class HyperosExitUntilCollapsedScrollBehavior
 
     _syncOffsetToPosition(notification.metrics);
 
+    // Snap on release — must run BEFORE the small-title lock check, otherwise
+    // a mid-scroll release that falls into the lock path will never snap and
+    // the title stays frozen at a half-collapsed position forever.
+    if (snapOnRelease && notification is ScrollEndNotification) {
+      _snapToNearestEndpoint(notification);
+      _smallTitleLocked = false;
+      state.contentOffset = pixels;
+      return false;
+    }
+
     // Small-title lock: once the title is collapsed, keep it collapsed until
     // the user scrolls all the way back to the top (pixels ≈ 0). Fling
     // animations that happen to reach the top must NOT unlock — only a
@@ -287,9 +298,6 @@ class HyperosExitUntilCollapsedScrollBehavior
       }
     }
 
-    if (snapOnRelease && notification is ScrollEndNotification) {
-      _snapToNearestEndpoint(notification);
-    }
     return false;
   }
 
@@ -311,13 +319,14 @@ class HyperosExitUntilCollapsedScrollBehavior
     }
 
     if (notification is ScrollEndNotification) {
-      // Title stayed frozen through spring-back, so the current fraction still
-      // reflects where the user released — snap it to the nearer endpoint.
-      final fraction = state.collapsedFraction;
-      state.heightOffset =
-          fraction >= HyperosCollapsibleTopAppBarDefaults.titleCoverHandoff
-          ? limit
-          : 0.0;
+      // Title stayed frozen through spring-back, so the current offset still
+      // reflects where the user released — snap it to the nearer endpoint
+      // based on the large title text's visual cut position.
+      final scrolled = -state.heightOffset;
+      final textHeight = state.largeTitleTextHeight;
+      final snapThreshold =
+          textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
+      state.heightOffset = scrolled >= snapThreshold ? limit : 0.0;
       state.contentOffset = metrics.pixels;
       return false;
     }
@@ -371,25 +380,34 @@ class HyperosExitUntilCollapsedScrollBehavior
     state.contentOffset = metrics.pixels;
   }
 
-  /// On release, snap to nearest endpoint: fraction < 0.5 → expanded,
-  /// fraction >= 0.5 → collapsed. Matches Miuix `snapAnimationSpec`.
+  /// On release, snap to nearest endpoint. The decision is based on the large
+  /// title text's visual cut position (not the scroll fraction), so releasing
+  /// with the text cut in half always snaps to the side that leaves the
+  /// majority of the text visible — matching the feel of a physical "cut in
+  /// half" gesture.
+  ///
+  /// - Upper half of the text visible → snap to expanded (scroll back to top).
+  /// - Lower half of the text visible → snap to collapsed (park under the bar).
   void _snapToNearestEndpoint(ScrollEndNotification notification) {
     final limit = state.heightOffsetLimit;
     if (!limit.isFinite || limit >= 0) {
       return;
     }
-    final fraction = state.collapsedFraction;
+    final scrolled = -state.heightOffset; // pixels the title has been pushed up
+    final textHeight = state.largeTitleTextHeight;
+    final snapThreshold =
+        textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
     // Already parked at an end — nothing to do.
-    if (fraction <= 0.02 || fraction >= 0.98) {
+    if (scrolled <= 0.5 || scrolled >= -limit - 0.5) {
       return;
     }
 
     final metrics = notification.metrics;
     final expansion = -limit;
     final minExtent = metrics.minScrollExtent;
-    // Closer to expanded (fraction < 0.5) → scroll back to top.
-    // Closer to collapsed → scroll to fully collapsed offset.
-    final targetPixels = fraction < 0.5 ? minExtent : minExtent + expansion;
+    // Text is less than half cut → snap back to expanded (top).
+    // Text is more than half cut → snap to collapsed (fully scrolled down).
+    final targetPixels = scrolled < snapThreshold ? minExtent : minExtent + expansion;
 
     final notificationContext = notification.context;
     final ScrollPosition? position = notificationContext == null
@@ -1043,6 +1061,15 @@ class _HyperosCollapsibleTopAppBarState
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             behavior.state.heightOffsetLimit = limit;
+          }
+        });
+      }
+      // Sync the large-title text height so the snap threshold can detect
+      // "cut in half" by the visual text position, not the total widget height.
+      if (behavior.state.largeTitleTextHeight != _largeTitleTextHeight) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            behavior.state.largeTitleTextHeight = _largeTitleTextHeight;
           }
         });
       }

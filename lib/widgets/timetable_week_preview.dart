@@ -10,7 +10,6 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/hyperos_blurred_header.dart';
 import 'home_page_region_blur.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
