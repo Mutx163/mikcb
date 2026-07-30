@@ -1,11 +1,9 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../utils/hex_color.dart';
-import 'course_field_picker_sheet.dart';
 
 String colorToHex(Color color) {
   final red = (color.r * 255).round().clamp(0, 255);
@@ -17,7 +15,7 @@ String colorToHex(Color color) {
       .toUpperCase();
 }
 
-/// Bottom sheet for picking a custom course color via palette / wheel.
+/// Bottom sheet for picking a custom course color via Miuix HSV slider picker.
 Future<String?> showCourseColorPickerSheet(
   BuildContext context, {
   required String initialColorHex,
@@ -55,78 +53,56 @@ class _CourseColorPickerSheetBodyState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.theme.colors;
-    final typo = context.theme.typography.body;
 
-    return PickerSheetScaffold(
-      actions: Row(
-        children: [
-          Expanded(
-            child: HyperosButton(
-              label: l10n.cancelAction,
-              variant: HyperosButtonVariant.secondary,
-              expand: true,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: HyperosButton(
-              label: l10n.useThisColor,
-              expand: true,
-              onPressed: () =>
-                  Navigator.of(context).pop(colorToHex(_pickerColor)),
-            ),
-          ),
-        ],
-      ),
+    return HyperosSheet(
+      title: l10n.colorPaletteTitle,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            l10n.colorPaletteTitle,
-            style: HyperosTypography.sheetTitle(context),
-          ),
-          const SizedBox(height: 12),
+          // 当前颜色预览条
           Container(
             width: double.infinity,
-            height: 56,
+            height: 48,
             decoration: BoxDecoration(
               color: _pickerColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.border),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          ColorPicker(
+          const SizedBox(height: 16),
+          // Miuix HSV 滑块取色器
+          MiuixColorPicker(
             color: _pickerColor,
             onColorChanged: (color) => setState(() => _pickerColor = color),
-            width: 36,
-            height: 36,
-            borderRadius: 8,
-            spacing: 6,
-            runSpacing: 6,
-            wheelDiameter: 220,
-            wheelWidth: 22,
-            enableOpacity: false,
-            showColorCode: true,
-            showColorName: false,
-            showMaterialName: false,
-            copyPasteBehavior: const ColorPickerCopyPasteBehavior(
-              copyButton: true,
-              pasteButton: true,
-              longPressMenu: true,
-            ),
-            colorCodeTextStyle: typo.sm,
-            pickersEnabled: const <ColorPickerType, bool>{
-              ColorPickerType.both: false,
-              ColorPickerType.primary: true,
-              ColorPickerType.accent: false,
-              ColorPickerType.bw: true,
-              ColorPickerType.custom: false,
-              ColorPickerType.wheel: true,
-            },
+            showPreview: false,
+            hapticEffect: MiuixSliderHapticEffect.step,
+            colorSpace: MiuixColorSpace.hsv,
+          ),
+          const SizedBox(height: 24),
+          // 底部操作按钮
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.cancelAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.useThisColor,
+                  expand: true,
+                  onPressed: () =>
+                      Navigator.of(context).pop(colorToHex(_pickerColor)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

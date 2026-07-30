@@ -344,7 +344,7 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
                   ),
                 ),
                 if (!widget.readOnly) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: HyperosButton(
                       label: l10n.courseNoteSaveAction,

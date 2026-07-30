@@ -34,7 +34,6 @@ dependencies:
   webview_flutter: 4.11.0
   azlistview: ^2.0.0
   animations: ^2.0.11
-  flex_color_picker: ^3.7.0
   table_parser: ^1.0.1
   qr_flutter: ^4.1.0
   fl_chart: ^1.2.0

@@ -452,6 +452,7 @@ class _HyperosSliderValueSheetBodyState
                   label: widget.cancelLabel,
                   variant: HyperosButtonVariant.secondary,
                   expand: true,
+                  fitLabel: true,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -460,6 +461,7 @@ class _HyperosSliderValueSheetBodyState
                 child: HyperosButton(
                   label: widget.confirmLabel,
                   expand: true,
+                  fitLabel: true,
                   onPressed: _submit,
                 ),
               ),
@@ -674,11 +676,11 @@ class HyperosButton extends StatelessWidget {
             ? (
                 isDark
                     ? Colors.white.withValues(alpha: 0.16)
-                    : const Color(0xFFD8D8D8),
+                    : Colors.white.withValues(alpha: 0.32),
                 HyperosColors.onSecondaryVariant(context),
                 isDark
                     ? Colors.white.withValues(alpha: 0.08)
-                    : const Color(0xFFE8E8E8),
+                    : Colors.white.withValues(alpha: 0.16),
                 HyperosColors.disabledOnSecondaryVariant(context),
               )
             : (

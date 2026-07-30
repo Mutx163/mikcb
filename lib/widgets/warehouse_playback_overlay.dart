@@ -169,7 +169,7 @@ class PlaybackOverlay extends StatelessWidget {
                               onPressed: onCancel,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: HyperosButton(
                               label: l10n.quickImportContinueAction,
@@ -254,7 +254,7 @@ class PlaybackOverlay extends StatelessWidget {
                         ),
                       ),
                       if (onRetry != null) ...[
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: HyperosButton(
                             label: l10n.quickImportRetryAction,

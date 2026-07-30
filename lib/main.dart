@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -472,7 +473,16 @@ class MyApp extends StatelessWidget {
                                 backgroundColor: Colors.transparent,
                                 resizeToAvoidBottomInset: false,
                                 body: DebugTuningOverlayHost(
-                                  child: MiuixFontWeightScope(child: child!),
+                                  child: MiuixFontWeightScope(
+                                    child: MiuixPopupScope(
+                                      child: Stack(
+                                        children: [
+                                          child!,
+                                          const MiuixPopupHost(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),

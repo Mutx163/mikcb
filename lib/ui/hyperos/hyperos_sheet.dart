@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
@@ -131,7 +134,6 @@ class HyperosSheetFrame extends StatelessWidget {
     // corners naturally.  The shadow sits BEHIND the frosted glass, so
     // BackdropFilter inside the glass samples the bright page content, not
     // the shadow.
-    final dimColor = HyperosBlurredHeader.modalBarrierColor(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         outerInset,
@@ -143,9 +145,7 @@ class HyperosSheetFrame extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: dimColor.withValues(
-                alpha: dimColor.a.clamp(0.0, 0.45),
-              ),
+              color: Colors.black.withValues(alpha: 0.20),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -292,11 +292,9 @@ class HyperosSheet extends StatelessWidget {
 /// [MediaQuery.viewInsets] so it sits above the IME. Set it to false when the
 /// sheet body manages keyboard avoidance itself (e.g. scroll-to-field).
 ///
-/// Dimming uses a [BoxShadow] drawn behind the panel (see [_buildFloatingPanel])
-/// instead of a full-screen overlay with hole-cutting.  This avoids the
-/// tracking/keyboard bugs of the evenOdd approach while keeping the frosted
-/// glass bright: the shadow is behind the panel, not between the glass and the
-/// page content.
+/// Dimming, animation are now handled by flutter_miuix [MiuixDialogLayout]
+/// through [MiuixPopupHost] registered at the app root — no custom evenOdd
+/// hole or BoxShadow needed.
 Future<T?> showHyperosSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -307,35 +305,115 @@ Future<T?> showHyperosSheet<T>({
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) {
-  return showGeneralDialog<T>(
+  final navigator = Navigator.of(context, rootNavigator: useRootNavigator);
+  final completer = Completer<T?>.sync();
+
+  // Show a transparent route as the imperative shell; the actual dialog
+  // rendering (dim + animation + content) is handled by MiuixDialogLayout
+  // registered with the app-level MiuixPopupHost.
+  showGeneralDialog<T>(
     context: context,
-    barrierDismissible: isDismissible,
-    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierDismissible: false,
     barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
+    useRootNavigator: useRootNavigator,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return _HyperosSheetPanel(
-        padForKeyboard: padForKeyboard,
-        chrome: chrome,
+      return _MiuixSheetHost<T>(
         builder: builder,
+        chrome: chrome,
+        padForKeyboard: padForKeyboard,
+        isDismissible: isDismissible,
+        onResult: (result) {
+          if (!completer.isCompleted) {
+            completer.complete(result);
+          }
+          navigator.pop();
+        },
       );
     },
   );
+
+  return completer.future;
 }
 
-/// Wraps the sheet panel with keyboard avoidance — no dim overlay, no
-/// hole-cutting.  A [BoxShadow] around the panel (see [_buildFloatingPanel])
-/// creates the visual dimming effect without any of the tracking bugs.
-class _HyperosSheetPanel extends StatelessWidget {
-  const _HyperosSheetPanel({
-    required this.padForKeyboard,
-    required this.chrome,
+/// Invisible host that registers a dialog entry via [MiuixDialogLayout].
+/// The popup host renders the actual UI; this widget is just a shell.
+class _MiuixSheetHost<T> extends StatefulWidget {
+  const _MiuixSheetHost({
     required this.builder,
+    required this.chrome,
+    required this.padForKeyboard,
+    required this.isDismissible,
+    required this.onResult,
   });
 
-  final bool padForKeyboard;
-  final HyperosSheetChrome chrome;
   final WidgetBuilder builder;
+  final HyperosSheetChrome chrome;
+  final bool padForKeyboard;
+  final bool isDismissible;
+  final ValueChanged<T?> onResult;
+
+  @override
+  State<_MiuixSheetHost<T>> createState() => _MiuixSheetHostState<T>();
+}
+
+class _MiuixSheetHostState<T> extends State<_MiuixSheetHost<T>> {
+  late final MiuixPopupController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MiuixPopupController(visible: true);
+    _controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    // When the library finishes the exit animation (visible → false),
+    // complete the future.
+    if (!_controller.visible && mounted) {
+      widget.onResult(null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MiuixDialogLayout(
+      controller: _controller,
+      enableWindowDim: true,
+      renderInRoot: true,
+      content: (_) => _MiuixSheetContent<T>(
+        chrome: widget.chrome,
+        padForKeyboard: widget.padForKeyboard,
+        isDismissible: widget.isDismissible,
+        builder: widget.builder,
+        onResult: widget.onResult,
+      ),
+    );
+  }
+}
+
+/// The actual sheet content rendered by the popup host.
+class _MiuixSheetContent<T> extends StatelessWidget {
+  const _MiuixSheetContent({
+    required this.chrome,
+    required this.padForKeyboard,
+    required this.isDismissible,
+    required this.builder,
+    required this.onResult,
+  });
+
+  final HyperosSheetChrome chrome;
+  final bool padForKeyboard;
+  final bool isDismissible;
+  final WidgetBuilder builder;
+  final ValueChanged<T?> onResult;
 
   @override
   Widget build(BuildContext context) {
@@ -354,6 +432,8 @@ class _HyperosSheetPanel extends StatelessWidget {
     );
   }
 }
+
+
 
 /// Home timetable sheets: edge-flush chrome + lighter barrier.
 /// Nested [HyperosSheetFrame]s default to frosted glass.
