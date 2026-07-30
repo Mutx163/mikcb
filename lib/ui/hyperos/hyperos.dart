@@ -5,6 +5,7 @@ export 'hyperos_accordion.dart';
 export 'hyperos_badge.dart';
 export 'hyperos_blurred_header.dart';
 export 'hyperos_checkbox.dart';
+export 'hyperos_collapsible_top_app_bar.dart';
 export 'hyperos_color_chip.dart';
 export 'hyperos_controls.dart';
 export 'hyperos_dialog.dart';

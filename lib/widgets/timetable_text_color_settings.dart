@@ -6,15 +6,33 @@ import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/hex_color.dart';
 
+/// Scope identifier for text color settings.
+///
+/// Determines which text color section is being configured.
+class TextColorScope {
+  const TextColorScope._(this.name);
+
+  /// The name of this scope, for identification purposes.
+  final String name;
+
+  /// Text colors for course cards (title, detail).
+  static const courseCard = TextColorScope._('courseCard');
+
+  /// Text colors for the timetable page (weekday bar, time axis).
+  static const page = TextColorScope._('page');
+}
+
 class TimetableTextColorSettings extends StatelessWidget {
   const TimetableTextColorSettings({
     super.key,
     required this.settings,
     required this.onChanged,
+    this.scope,
   });
 
   final TimetableSettings settings;
   final ValueChanged<TimetableSettings> onChanged;
+  final TextColorScope? scope;
 
   @override
   Widget build(BuildContext context) {

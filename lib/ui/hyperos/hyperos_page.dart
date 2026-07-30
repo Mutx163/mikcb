@@ -87,6 +87,7 @@ class HyperosSubpage extends StatelessWidget {
     this.headerExtension,
     this.childPad = false,
     this.overlayHeader = true,
+    this.collapsibleLargeTitle = true,
     this.resizeToAvoidBottomInset = false,
   });
 
@@ -103,6 +104,9 @@ class HyperosSubpage extends StatelessWidget {
   /// When true, the header floats above scrollable content for live backdrop blur.
   /// Set false only when the body must not scroll under the bar.
   final bool overlayHeader;
+
+  /// When false, the large title is always visible and does not collapse on scroll.
+  final bool collapsibleLargeTitle;
 
   /// Defaults to false so modal sheets/dialogs handle keyboard insets themselves
   /// without lifting the page behind them. Enable on inline form subpages.

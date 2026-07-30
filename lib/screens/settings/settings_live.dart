@@ -5,6 +5,16 @@ Widget createLiveSettingsScreen() => const _LiveSettingsScreen();
 /// Public factory for debug deep-link navigation (debug builds only).
 Widget createLiveTestingSettingsScreen() => const _LiveTestingSettingsScreen();
 
+String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
+  if (seconds == 0) {
+    return l10n.liveTimeCorrectionNone;
+  }
+  if (seconds > 0) {
+    return l10n.liveTimeCorrectionDelay(seconds);
+  }
+  return l10n.liveTimeCorrectionAdvance(seconds.abs());
+}
+
 class _LiveSettingsScreen extends StatefulWidget {
   const _LiveSettingsScreen();
 
@@ -822,13 +832,6 @@ enum _LiveTestingSection {
 
 BuildContext? _debugL10nContext;
 
-Map<String, dynamic> _debugSectionMap(dynamic value) {
-  if (value is Map) {
-    return value.map((key, item) => MapEntry(key.toString(), item));
-  }
-  return const <String, dynamic>{};
-}
-
 String _debugValueText(dynamic value) {
   if (value == null) return '';
   if (value is bool) {
@@ -944,28 +947,6 @@ class _DebugValueRow extends StatelessWidget {
   }
 }
 
-Future<void> _triggerUmengTestCrash(BuildContext context) async {
-  if (!context.mounted) return;
-  showAppToast(
-    context,
-    message: AppLocalizations.of(context)!.liveTestingCrashSoon,
-    kind: AppToastKind.warning,
-  );
-  await Future<void>.delayed(const Duration(milliseconds: 300));
-  await UmengAnalyticsService.triggerTestCrash();
-}
-
-Future<void> _triggerUmengTestAnr(BuildContext context) async {
-  if (!context.mounted) return;
-  showAppToast(
-    context,
-    message: AppLocalizations.of(context)!.liveTestingAnrSoon,
-    kind: AppToastKind.warning,
-  );
-  await Future<void>.delayed(const Duration(milliseconds: 300));
-  await UmengAnalyticsService.triggerTestAnr();
-}
-
 void _showLiveTestingTriggerResult(
   BuildContext context,
   LiveTestingTriggerResult result,
@@ -980,17 +961,4 @@ void _showLiveTestingTriggerResult(
       LiveTestingTriggerStatus.error => AppToastKind.error,
     },
   );
-}
-
-Future<void> _showTestOptions(BuildContext context) async {
-  final provider = context.read<TimetableProvider>();
-  await provider.initialize();
-  if (!context.mounted) return;
-  final result = await triggerLiveUpdateTest(
-    context: context,
-    provider: provider,
-    source: 'settings_screen',
-  );
-  if (!context.mounted) return;
-  _showLiveTestingTriggerResult(context, result);
 }

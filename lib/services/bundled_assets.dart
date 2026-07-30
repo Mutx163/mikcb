@@ -14,6 +14,10 @@ class BundledAssets {
   static const wechatPayQr = 'assets/donate/wechatpay.png';
   static const alipayQr = 'assets/donate/alipay.png';
 
+  /// Cached launcher icon dimensions (set during warm-up in AppBootScreen).
+  static int bootLauncherIconCacheWidth = 0;
+  static int bootLauncherIconCacheHeight = 0;
+
   static const _warmUpPaths = <String>[launcherIcon, wechatPayQr, alipayQr];
 
   static final Map<String, Uint8List> _bytesByPath = {};

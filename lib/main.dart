@@ -41,7 +41,6 @@ import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_layout_debug_tuning.dart';
 import 'ui/hyperos/hyperos_motion.dart';
-import 'ui/hyperos_app_bridge.dart';
 import 'ui/hyperos_motion_bridge.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {

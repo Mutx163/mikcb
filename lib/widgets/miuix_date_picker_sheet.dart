@@ -295,7 +295,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
                   clipBehavior: Clip.antiAlias,
                   child: Padding(
-                    padding: HyperosSheetContentInsets.content,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [

@@ -9,6 +9,7 @@ import '../models/time_scheme.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
+import '../widgets/miuix_date_picker_sheet.dart';
 
 /// Secondary settings page for seasonal / date-range schedule rules.
 class ScheduleDateRuleScreen extends StatelessWidget {
@@ -214,22 +215,11 @@ Future<void> _openScheduleDateRuleEditor(
     required DateTime initialDate,
     required DateTime firstDate,
   }) {
-    return showDatePicker(
-      context: pickerContext,
+    return showMiuixDatePickerSheet(
+      pickerContext,
       initialDate: initialDate,
       firstDate: firstDate,
       lastDate: DateTime(2040),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: HyperosColors.primary(context),
-              brightness: Theme.of(context).brightness,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
     );
   }
 

@@ -193,6 +193,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
   }
 
+  String normalizeLocaleTagForDropdown(String? tag) {
+    if (tag == null || tag.isEmpty) return '';
+    return tag.replaceAll('_', '-');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

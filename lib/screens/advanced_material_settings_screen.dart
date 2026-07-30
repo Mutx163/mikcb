@@ -9,7 +9,7 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos_app_bridge.dart';
+import '../l10n/app_localizations_extensions.dart';
 import '../utils/app_toast.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 
@@ -109,7 +109,7 @@ class _AdvancedMaterialSettingsScreenState
                     );
                   },
                 ),
-                if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
+if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                     child: Text(
@@ -119,17 +119,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassThicknessLabel,
-                    value: _draft.liquidGlassTuning.thickness,
+                    value: _draft.liquidGlassTuning!.thickness,
                     min: LiquidGlassTuning.minThickness,
                     max: LiquidGlassTuning.maxThickness,
                     divisions: 40,
-                    valueLabel: _draft.liquidGlassTuning.thickness
+                    valueLabel: _draft.liquidGlassTuning!.thickness
                         .toStringAsFixed(0),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             thickness: value,
                           ),
                         ),
@@ -139,18 +139,18 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassBlurLabel,
-                    value: _draft.liquidGlassTuning.blur,
+                    value: _draft.liquidGlassTuning!.blur,
                     min: LiquidGlassTuning.minBlur,
                     max: LiquidGlassTuning.maxBlur,
                     divisions: 24,
-                    valueLabel: _draft.liquidGlassTuning.blur.toStringAsFixed(
+                    valueLabel: _draft.liquidGlassTuning!.blur.toStringAsFixed(
                       0,
                     ),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             blur: value,
                           ),
                         ),
@@ -160,17 +160,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassTintLabel,
-                    value: _draft.liquidGlassTuning.tintAlpha,
+                    value: _draft.liquidGlassTuning!.tintAlpha,
                     min: LiquidGlassTuning.minTintAlpha,
                     max: LiquidGlassTuning.maxTintAlpha,
                     divisions: 55,
                     valueLabel:
-                        '${(_draft.liquidGlassTuning.tintAlpha * 100).round()}%',
+                        '${(_draft.liquidGlassTuning!.tintAlpha * 100).round()}%',
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             tintAlpha: value,
                           ),
                         ),
@@ -180,17 +180,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassLightIntensityLabel,
-                    value: _draft.liquidGlassTuning.lightIntensity,
+                    value: _draft.liquidGlassTuning!.lightIntensity,
                     min: LiquidGlassTuning.minLightIntensity,
                     max: LiquidGlassTuning.maxLightIntensity,
                     divisions: 40,
-                    valueLabel: _draft.liquidGlassTuning.lightIntensity
+                    valueLabel: _draft.liquidGlassTuning!.lightIntensity
                         .toStringAsFixed(2),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             lightIntensity: value,
                           ),
                         ),
@@ -200,17 +200,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassAmbientStrengthLabel,
-                    value: _draft.liquidGlassTuning.ambientStrength,
+                    value: _draft.liquidGlassTuning!.ambientStrength,
                     min: LiquidGlassTuning.minAmbientStrength,
                     max: LiquidGlassTuning.maxAmbientStrength,
                     divisions: 20,
-                    valueLabel: _draft.liquidGlassTuning.ambientStrength
+                    valueLabel: _draft.liquidGlassTuning!.ambientStrength
                         .toStringAsFixed(2),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             ambientStrength: value,
                           ),
                         ),
@@ -220,17 +220,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassRefractiveIndexLabel,
-                    value: _draft.liquidGlassTuning.refractiveIndex,
+                    value: _draft.liquidGlassTuning!.refractiveIndex,
                     min: LiquidGlassTuning.minRefractiveIndex,
                     max: LiquidGlassTuning.maxRefractiveIndex,
                     divisions: 50,
-                    valueLabel: _draft.liquidGlassTuning.refractiveIndex
+                    valueLabel: _draft.liquidGlassTuning!.refractiveIndex
                         .toStringAsFixed(2),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             refractiveIndex: value,
                           ),
                         ),
@@ -240,17 +240,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassSaturationLabel,
-                    value: _draft.liquidGlassTuning.saturation,
+                    value: _draft.liquidGlassTuning!.saturation,
                     min: LiquidGlassTuning.minSaturation,
                     max: LiquidGlassTuning.maxSaturation,
                     divisions: 30,
-                    valueLabel: _draft.liquidGlassTuning.saturation
+                    valueLabel: _draft.liquidGlassTuning!.saturation
                         .toStringAsFixed(2),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             saturation: value,
                           ),
                         ),
@@ -260,17 +260,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassChromaticAberrationLabel,
-                    value: _draft.liquidGlassTuning.chromaticAberration,
+                    value: _draft.liquidGlassTuning!.chromaticAberration,
                     min: LiquidGlassTuning.minChromaticAberration,
                     max: LiquidGlassTuning.maxChromaticAberration,
                     divisions: 24,
-                    valueLabel: _draft.liquidGlassTuning.chromaticAberration
+                    valueLabel: _draft.liquidGlassTuning!.chromaticAberration
                         .toStringAsFixed(3),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             chromaticAberration: value,
                           ),
                         ),
@@ -280,17 +280,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassLightAngleLabel,
-                    value: _draft.liquidGlassTuning.lightAngleDegrees,
+                    value: _draft.liquidGlassTuning!.lightAngleDegrees,
                     min: LiquidGlassTuning.minLightAngleDegrees,
                     max: LiquidGlassTuning.maxLightAngleDegrees,
                     divisions: 72,
                     valueLabel:
-                        '${_draft.liquidGlassTuning.lightAngleDegrees.round()}°',
+                        '${_draft.liquidGlassTuning!.lightAngleDegrees.round()}°',
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             lightAngleDegrees: value,
                           ),
                         ),
@@ -300,17 +300,17 @@ class _AdvancedMaterialSettingsScreenState
                   ),
                   HyperosSliderTile(
                     title: l10n.liquidGlassVisibilityLabel,
-                    value: _draft.liquidGlassTuning.visibility,
+                    value: _draft.liquidGlassTuning!.visibility,
                     min: LiquidGlassTuning.minVisibility,
                     max: LiquidGlassTuning.maxVisibility,
                     divisions: 20,
                     valueLabel:
-                        '${(_draft.liquidGlassTuning.visibility * 100).round()}%',
+                        '${(_draft.liquidGlassTuning!.visibility * 100).round()}%',
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
                           liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning.copyWith(
+                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
                             visibility: value,
                           ),
                         ),

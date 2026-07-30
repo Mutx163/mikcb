@@ -1,5 +1,8 @@
 import '../models/course.dart';
 import '../models/exam.dart';
+import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import '../models/timetable_settings.dart';
 import 'app_localizations.dart';
 
@@ -12,36 +15,33 @@ String courseNatureLabel(AppLocalizations l10n, CourseNature nature) =>
 String examReminderPresetLabel(
   AppLocalizations l10n,
   ExamReminderPreset preset,
-) =>
-    switch (preset) {
-      ExamReminderPreset.none => l10n.examReminderNone,
-      ExamReminderPreset.min30 => l10n.examReminderMin30,
-      ExamReminderPreset.hour1 => l10n.examReminderHour1,
-      ExamReminderPreset.hour1AndMin30 => l10n.examReminderHour1AndMin30,
-      ExamReminderPreset.day1 => l10n.examReminderDay1,
-      ExamReminderPreset.day1AndHour1 => l10n.examReminderDay1AndHour1,
-      ExamReminderPreset.custom => l10n.examReminderCustom,
-    };
+) => switch (preset) {
+  ExamReminderPreset.none => l10n.examReminderNone,
+  ExamReminderPreset.min30 => l10n.examReminderMin30,
+  ExamReminderPreset.hour1 => l10n.examReminderHour1,
+  ExamReminderPreset.hour1AndMin30 => l10n.examReminderHour1AndMin30,
+  ExamReminderPreset.day1 => l10n.examReminderDay1,
+  ExamReminderPreset.day1AndHour1 => l10n.examReminderDay1AndHour1,
+  ExamReminderPreset.custom => l10n.examReminderCustom,
+};
 
 String sectionTimeDisplayModeLabel(
   AppLocalizations l10n,
   SectionTimeDisplayMode mode,
-) =>
-    switch (mode) {
-      SectionTimeDisplayMode.hidden => l10n.sectionTimeDisplayHidden,
-      SectionTimeDisplayMode.startOnly => l10n.sectionTimeDisplayStartOnly,
-      SectionTimeDisplayMode.startAndEnd => l10n.sectionTimeDisplayStartAndEnd,
-    };
+) => switch (mode) {
+  SectionTimeDisplayMode.hidden => l10n.sectionTimeDisplayHidden,
+  SectionTimeDisplayMode.startOnly => l10n.sectionTimeDisplayStartOnly,
+  SectionTimeDisplayMode.startAndEnd => l10n.sectionTimeDisplayStartAndEnd,
+};
 
 String widgetBackgroundStyleLabel(
   AppLocalizations l10n,
   WidgetBackgroundStyle style,
-) =>
-    switch (style) {
-      WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
-      WidgetBackgroundStyle.solid => l10n.widgetBackgroundStyleSolid,
-      WidgetBackgroundStyle.gradient => l10n.widgetBackgroundStyleGradient,
-    };
+) => switch (style) {
+  WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
+  WidgetBackgroundStyle.solid => l10n.widgetBackgroundStyleSolid,
+  WidgetBackgroundStyle.gradient => l10n.widgetBackgroundStyleGradient,
+};
 
 String appThemeModeLabel(AppLocalizations l10n, AppThemeMode mode) =>
     switch (mode) {
@@ -79,201 +79,207 @@ String homeTitleStyleDescription(AppLocalizations l10n, HomeTitleStyle style) =>
 String liveDuringClassTimeDisplayModeLabel(
   AppLocalizations l10n,
   LiveDuringClassTimeDisplayMode mode,
-) =>
-    switch (mode) {
-      LiveDuringClassTimeDisplayMode.nearest =>
-        l10n.liveDuringClassTimeNearest,
-      LiveDuringClassTimeDisplayMode.total =>
-        l10n.liveDuringClassTimeTotal,
-    };
+) => switch (mode) {
+  LiveDuringClassTimeDisplayMode.nearest => l10n.liveDuringClassTimeNearest,
+  LiveDuringClassTimeDisplayMode.total => l10n.liveDuringClassTimeTotal,
+};
 
 String liveCountdownTextStyleLabel(
   AppLocalizations l10n,
   LiveCountdownTextStyle style,
-) =>
-    switch (style) {
-      LiveCountdownTextStyle.smart => l10n.liveCountdownTextStyleSmart,
-      LiveCountdownTextStyle.smartMinS => l10n.liveCountdownTextStyleSmartMinS,
-      LiveCountdownTextStyle.minuteSecondCn =>
-        l10n.liveCountdownTextStyleMinuteSecondCn,
-      LiveCountdownTextStyle.minuteSecondColon =>
-        l10n.liveCountdownTextStyleMinuteSecondColon,
-      LiveCountdownTextStyle.minuteSecondMinS =>
-        l10n.liveCountdownTextStyleMinuteSecondMinS,
-      LiveCountdownTextStyle.minuteSecondMinSlashS =>
-        l10n.liveCountdownTextStyleMinuteSecondMinSlashS,
-      LiveCountdownTextStyle.minuteOnlyCn =>
-        l10n.liveCountdownTextStyleMinuteOnlyCn,
-      LiveCountdownTextStyle.minuteOnlyMin =>
-        l10n.liveCountdownTextStyleMinuteOnlyMin,
-      LiveCountdownTextStyle.minuteOnlySlash =>
-        l10n.liveCountdownTextStyleMinuteOnlySlash,
-      LiveCountdownTextStyle.secondOnlyCn =>
-        l10n.liveCountdownTextStyleSecondOnlyCn,
-      LiveCountdownTextStyle.secondOnlyShort =>
-        l10n.liveCountdownTextStyleSecondOnlyShort,
-      LiveCountdownTextStyle.secondOnlySlash =>
-        l10n.liveCountdownTextStyleSecondOnlySlash,
-    };
+) => switch (style) {
+  LiveCountdownTextStyle.smart => l10n.liveCountdownTextStyleSmart,
+  LiveCountdownTextStyle.smartMinS => l10n.liveCountdownTextStyleSmartMinS,
+  LiveCountdownTextStyle.minuteSecondCn =>
+    l10n.liveCountdownTextStyleMinuteSecondCn,
+  LiveCountdownTextStyle.minuteSecondColon =>
+    l10n.liveCountdownTextStyleMinuteSecondColon,
+  LiveCountdownTextStyle.minuteSecondMinS =>
+    l10n.liveCountdownTextStyleMinuteSecondMinS,
+  LiveCountdownTextStyle.minuteSecondMinSlashS =>
+    l10n.liveCountdownTextStyleMinuteSecondMinSlashS,
+  LiveCountdownTextStyle.minuteOnlyCn =>
+    l10n.liveCountdownTextStyleMinuteOnlyCn,
+  LiveCountdownTextStyle.minuteOnlyMin =>
+    l10n.liveCountdownTextStyleMinuteOnlyMin,
+  LiveCountdownTextStyle.minuteOnlySlash =>
+    l10n.liveCountdownTextStyleMinuteOnlySlash,
+  LiveCountdownTextStyle.secondOnlyCn =>
+    l10n.liveCountdownTextStyleSecondOnlyCn,
+  LiveCountdownTextStyle.secondOnlyShort =>
+    l10n.liveCountdownTextStyleSecondOnlyShort,
+  LiveCountdownTextStyle.secondOnlySlash =>
+    l10n.liveCountdownTextStyleSecondOnlySlash,
+};
 
 String miuiIslandLabelStyleLabel(
   AppLocalizations l10n,
   MiuiIslandLabelStyle style,
-) =>
-    switch (style) {
-      MiuiIslandLabelStyle.textOnly => l10n.miuiIslandLabelStyleTextOnly,
-      MiuiIslandLabelStyle.iconAndText => l10n.miuiIslandLabelStyleIconAndText,
-    };
+) => switch (style) {
+  MiuiIslandLabelStyle.textOnly => l10n.miuiIslandLabelStyleTextOnly,
+  MiuiIslandLabelStyle.iconAndText => l10n.miuiIslandLabelStyleIconAndText,
+};
 
 String miuiIslandLabelContentLabel(
   AppLocalizations l10n,
   MiuiIslandLabelContent content,
-) =>
-    switch (content) {
-      MiuiIslandLabelContent.courseName =>
-        l10n.miuiIslandLabelContentCourseName,
-      MiuiIslandLabelContent.location => l10n.miuiIslandLabelContentLocation,
-      MiuiIslandLabelContent.courseNameAndLocation =>
-        l10n.miuiIslandLabelContentCourseNameAndLocation,
-    };
+) => switch (content) {
+  MiuiIslandLabelContent.courseName => l10n.miuiIslandLabelContentCourseName,
+  MiuiIslandLabelContent.location => l10n.miuiIslandLabelContentLocation,
+  MiuiIslandLabelContent.courseNameAndLocation =>
+    l10n.miuiIslandLabelContentCourseNameAndLocation,
+};
 
 String miuiIslandLabelFontWeightLabel(
   AppLocalizations l10n,
   MiuiIslandLabelFontWeight weight,
-) =>
-    switch (weight) {
-      MiuiIslandLabelFontWeight.regular =>
-        l10n.miuiIslandLabelFontWeightRegular,
-      MiuiIslandLabelFontWeight.medium => l10n.miuiIslandLabelFontWeightMedium,
-      MiuiIslandLabelFontWeight.bold => l10n.miuiIslandLabelFontWeightBold,
-    };
+) => switch (weight) {
+  MiuiIslandLabelFontWeight.regular => l10n.miuiIslandLabelFontWeightRegular,
+  MiuiIslandLabelFontWeight.medium => l10n.miuiIslandLabelFontWeightMedium,
+  MiuiIslandLabelFontWeight.bold => l10n.miuiIslandLabelFontWeightBold,
+};
 
 String miuiIslandLabelRenderQualityLabel(
   AppLocalizations l10n,
   MiuiIslandLabelRenderQuality quality,
-) =>
-    switch (quality) {
-      MiuiIslandLabelRenderQuality.standard =>
-        l10n.miuiIslandLabelRenderQualityStandard,
-      MiuiIslandLabelRenderQuality.high => l10n.miuiIslandLabelRenderQualityHigh,
-      MiuiIslandLabelRenderQuality.ultra =>
-        l10n.miuiIslandLabelRenderQualityUltra,
-    };
+) => switch (quality) {
+  MiuiIslandLabelRenderQuality.standard =>
+    l10n.miuiIslandLabelRenderQualityStandard,
+  MiuiIslandLabelRenderQuality.high => l10n.miuiIslandLabelRenderQualityHigh,
+  MiuiIslandLabelRenderQuality.ultra => l10n.miuiIslandLabelRenderQualityUltra,
+};
 
 String miuiIslandExpandedIconModeLabel(
   AppLocalizations l10n,
   MiuiIslandExpandedIconMode mode,
-) =>
-    switch (mode) {
-      MiuiIslandExpandedIconMode.appIcon => l10n.miuiIslandExpandedIconAppIcon,
-      MiuiIslandExpandedIconMode.customImage =>
-        l10n.miuiIslandExpandedIconCustomImage,
-      MiuiIslandExpandedIconMode.hidden => l10n.miuiIslandExpandedIconHidden,
-    };
+) => switch (mode) {
+  MiuiIslandExpandedIconMode.appIcon => l10n.miuiIslandExpandedIconAppIcon,
+  MiuiIslandExpandedIconMode.customImage =>
+    l10n.miuiIslandExpandedIconCustomImage,
+  MiuiIslandExpandedIconMode.hidden => l10n.miuiIslandExpandedIconHidden,
+};
 
 String liveBeforeClassQuickActionLabel(
   AppLocalizations l10n,
   LiveBeforeClassQuickAction action,
-) =>
-    switch (action) {
-      LiveBeforeClassQuickAction.none => l10n.liveBeforeClassQuickActionNone,
-      LiveBeforeClassQuickAction.silent => l10n.liveBeforeClassQuickActionSilent,
-      LiveBeforeClassQuickAction.doNotDisturb =>
-        l10n.liveBeforeClassQuickActionDoNotDisturb,
-    };
+) => switch (action) {
+  LiveBeforeClassQuickAction.none => l10n.liveBeforeClassQuickActionNone,
+  LiveBeforeClassQuickAction.silent => l10n.liveBeforeClassQuickActionSilent,
+  LiveBeforeClassQuickAction.doNotDisturb =>
+    l10n.liveBeforeClassQuickActionDoNotDisturb,
+};
 
 String courseCardVerticalAlignLabel(
   AppLocalizations l10n,
   CourseCardVerticalAlign align,
-) =>
-    switch (align) {
-      CourseCardVerticalAlign.top => l10n.courseCardVerticalAlignTop,
-      CourseCardVerticalAlign.center => l10n.courseCardVerticalAlignCenter,
-      CourseCardVerticalAlign.bottom => l10n.courseCardVerticalAlignBottom,
-      CourseCardVerticalAlign.spaceEvenly =>
-        l10n.courseCardVerticalAlignSpaceEvenly,
-    };
+) => switch (align) {
+  CourseCardVerticalAlign.top => l10n.courseCardVerticalAlignTop,
+  CourseCardVerticalAlign.center => l10n.courseCardVerticalAlignCenter,
+  CourseCardVerticalAlign.bottom => l10n.courseCardVerticalAlignBottom,
+  CourseCardVerticalAlign.spaceEvenly =>
+    l10n.courseCardVerticalAlignSpaceEvenly,
+};
 
 String courseCardHorizontalAlignLabel(
   AppLocalizations l10n,
   CourseCardHorizontalAlign align,
-) =>
-    switch (align) {
-      CourseCardHorizontalAlign.left => l10n.courseCardHorizontalAlignLeft,
-      CourseCardHorizontalAlign.center => l10n.courseCardHorizontalAlignCenter,
-      CourseCardHorizontalAlign.right => l10n.courseCardHorizontalAlignRight,
-    };
+) => switch (align) {
+  CourseCardHorizontalAlign.left => l10n.courseCardHorizontalAlignLeft,
+  CourseCardHorizontalAlign.center => l10n.courseCardHorizontalAlignCenter,
+  CourseCardHorizontalAlign.right => l10n.courseCardHorizontalAlignRight,
+};
 
 String timetableTimeColumnWidthModeLabel(
   AppLocalizations l10n,
   TimetableTimeColumnWidthMode mode,
-) =>
-    switch (mode) {
-      TimetableTimeColumnWidthMode.narrow =>
-        l10n.timetableTimeColumnWidthNarrow,
-      TimetableTimeColumnWidthMode.wide => l10n.timetableTimeColumnWidthWide,
-    };
+) => switch (mode) {
+  TimetableTimeColumnWidthMode.narrow => l10n.timetableTimeColumnWidthNarrow,
+  TimetableTimeColumnWidthMode.wide => l10n.timetableTimeColumnWidthWide,
+};
 
 String timetableCourseSpacingModeLabel(
   AppLocalizations l10n,
   TimetableCourseSpacingMode mode,
-) =>
-    switch (mode) {
-      TimetableCourseSpacingMode.narrow => l10n.timetableCourseSpacingNarrow,
-      TimetableCourseSpacingMode.wide => l10n.timetableCourseSpacingWide,
-    };
+) => switch (mode) {
+  TimetableCourseSpacingMode.narrow => l10n.timetableCourseSpacingNarrow,
+  TimetableCourseSpacingMode.wide => l10n.timetableCourseSpacingWide,
+};
 
 String appUpdateDownloadSourceLabel(
   AppLocalizations l10n,
   AppUpdateDownloadSource source,
-) =>
-    switch (source) {
-      AppUpdateDownloadSource.original => l10n.appUpdateDownloadSourceOriginal,
-      AppUpdateDownloadSource.mirror => l10n.appUpdateDownloadSourceMirror,
-    };
+) => switch (source) {
+  AppUpdateDownloadSource.original => l10n.appUpdateDownloadSourceOriginal,
+  AppUpdateDownloadSource.mirror => l10n.appUpdateDownloadSourceMirror,
+};
 
 String appUpdateDownloadChannelLabel(
   AppLocalizations l10n,
   AppUpdateDownloadChannel channel,
-) =>
-    switch (channel) {
-      AppUpdateDownloadChannel.pgyer => l10n.appUpdateDownloadChannelPgyer,
-      AppUpdateDownloadChannel.github => l10n.appUpdateDownloadChannelGithub,
-    };
+) => switch (channel) {
+  AppUpdateDownloadChannel.pgyer => l10n.appUpdateDownloadChannelPgyer,
+  AppUpdateDownloadChannel.github => l10n.appUpdateDownloadChannelGithub,
+};
 
 String appUpdateDownloadChannelDescription(
   AppLocalizations l10n,
   AppUpdateDownloadChannel channel,
-) =>
-    switch (channel) {
-      AppUpdateDownloadChannel.pgyer =>
-        l10n.appUpdateDownloadChannelPgyerDescription,
-      AppUpdateDownloadChannel.github =>
-        l10n.appUpdateDownloadChannelGithubDescription,
-    };
+) => switch (channel) {
+  AppUpdateDownloadChannel.pgyer =>
+    l10n.appUpdateDownloadChannelPgyerDescription,
+  AppUpdateDownloadChannel.github =>
+    l10n.appUpdateDownloadChannelGithubDescription,
+};
 
 String appUpdateMirrorPresetLabel(
   AppLocalizations l10n,
   AppUpdateMirrorPreset preset,
-) =>
-    switch (preset) {
-      AppUpdateMirrorPreset.ghfast => l10n.appUpdateMirrorPresetGhfast,
-      AppUpdateMirrorPreset.ghproxyCn => l10n.appUpdateMirrorPresetGhproxyCn,
-      AppUpdateMirrorPreset.ghLlkk => l10n.appUpdateMirrorPresetGhLlkk,
-      AppUpdateMirrorPreset.ghProxyCom => l10n.appUpdateMirrorPresetGhProxyCom,
-      AppUpdateMirrorPreset.ghproxyNet => l10n.appUpdateMirrorPresetGhproxyNet,
-      AppUpdateMirrorPreset.custom => l10n.appUpdateMirrorPresetCustom,
-    };
+) => switch (preset) {
+  AppUpdateMirrorPreset.ghfast => l10n.appUpdateMirrorPresetGhfast,
+  AppUpdateMirrorPreset.ghproxyCn => l10n.appUpdateMirrorPresetGhproxyCn,
+  AppUpdateMirrorPreset.ghLlkk => l10n.appUpdateMirrorPresetGhLlkk,
+  AppUpdateMirrorPreset.ghProxyCom => l10n.appUpdateMirrorPresetGhProxyCom,
+  AppUpdateMirrorPreset.ghproxyNet => l10n.appUpdateMirrorPresetGhproxyNet,
+  AppUpdateMirrorPreset.custom => l10n.appUpdateMirrorPresetCustom,
+};
 
 String appUpdateMirrorPresetDescription(
   AppLocalizations l10n,
   AppUpdateMirrorPreset preset,
-) =>
-    switch (preset) {
-      AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
-      AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
-      AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
-      AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
-      AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,
-      AppUpdateMirrorPreset.custom => l10n.appUpdateMirrorPresetCustomDescription,
+) => switch (preset) {
+  AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
+  AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
+  AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
+  AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
+  AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,
+  AppUpdateMirrorPreset.custom => l10n.appUpdateMirrorPresetCustomDescription,
+};
+
+String frostedGlassModeLabel(AppLocalizations l10n, FrostedGlassMode mode) =>
+    switch (mode) {
+      FrostedGlassMode.frosted => l10n.frostedGlassModeFrosted,
+      FrostedGlassMode.liquidGlass => l10n.frostedGlassModeLiquid,
+      FrostedGlassMode.gaussian => l10n.frostedGlassModeGaussian,
+      FrostedGlassMode.translucent => l10n.frostedGlassModeTranslucent,
     };
+
+String liquidGlassPresetLabel(
+  AppLocalizations l10n,
+  LiquidGlassPreset preset,
+) => switch (preset) {
+  LiquidGlassPreset.clear => l10n.liquidGlassPresetClear,
+  LiquidGlassPreset.light => l10n.liquidGlassPresetLight,
+  LiquidGlassPreset.standard => l10n.liquidGlassPresetStandard,
+  LiquidGlassPreset.dense => l10n.liquidGlassPresetDense,
+  LiquidGlassPreset.custom => l10n.liquidGlassPresetCustom,
+};
+
+String courseCardSurfaceStyleLabel(
+  AppLocalizations l10n,
+  CourseCardSurfaceStyle style,
+) => switch (style) {
+  CourseCardSurfaceStyle.solid => l10n.courseCardSurfaceStyleSolid,
+  CourseCardSurfaceStyle.translucent => l10n.courseCardSurfaceStyleTranslucent,
+  CourseCardSurfaceStyle.liquidGlass => l10n.courseCardSurfaceStyleLiquidGlass,
+  CourseCardSurfaceStyle.gaussian => l10n.courseCardSurfaceStyleGaussian,
+};

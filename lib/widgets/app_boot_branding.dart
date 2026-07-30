@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
+import '../ui/hyperos/hyperos_tokens.dart';
 import 'bundled_asset_image.dart';
 
 /// Shared boot branding: rounded launcher icon + flavor-aware app name.
@@ -25,7 +26,7 @@ class AppBootBranding extends StatelessWidget {
 
   /// Splash / scaffold fill used while branding is on screen.
   static Color backgroundColor({required bool isDark}) {
-    return isDark ? const HyperosTokens.primaryText : const HyperosTokens.card;
+    return isDark ? HyperosTokens.primaryText : HyperosTokens.card;
   }
 
   /// Flavor-aware label: 正式 / 调试版 / 性能版.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
@@ -18,9 +19,13 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
     required this.barrierAlpha,
     required this.blurEnabled,
     required this.onOpenDemoSheet,
+    required this.glassMode,
+    this.liquidGlassTuning,
     super.key,
   });
 
+  final FrostedGlassMode glassMode;
+  final LiquidGlassTuning? liquidGlassTuning;
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
@@ -40,6 +45,8 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       sheetTintAlpha: tintAlpha,
       sheetBarrierAlpha: barrierAlpha,
       blurEnabled: blurEnabled,
+      glassMode: glassMode,
+      liquidGlassTuning: liquidGlassTuning,
     );
 
     return FrostedAppearanceScope(

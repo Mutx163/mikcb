@@ -357,7 +357,8 @@ abstract final class HyperosMiuixTopAppBar {
   static const actionIconPadding = 16.0;
   static const collapsedHeight = 52.0;
   static const smallCenterHeight = 50.0;
-  static const largeTitleBottomPadding = 4.0;
+ static const largeTitleBottomPadding = 4.0;
+  static const largeTitleContentGap = 16.0;
   static const subtitleBottomPadding = 8.0;
 }
 

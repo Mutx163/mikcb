@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/models/liquid_glass_tuning.dart';
 
 enum AppUpdateDownloadSource { original, mirror }
 
@@ -405,6 +407,32 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
     return LiveBeforeClassQuickAction.values.firstWhere(
       (item) => item.value == value,
       orElse: () => LiveBeforeClassQuickAction.none,
+    );
+  }
+}
+
+/// Visual surface style for course cards.
+enum CourseCardSurfaceStyle {
+  /// Solid opaque card with gradient wash (default).
+  solid,
+
+  /// Semi-transparent milky card.
+  translucent,
+
+  /// Liquid-glass refraction shader (high-end devices only).
+  liquidGlass,
+
+  /// Gaussian blur backdrop over the page background.
+  gaussian,
+}
+
+extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
+  String get value => name;
+
+  static CourseCardSurfaceStyle fromValue(String? value) {
+    return CourseCardSurfaceStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => CourseCardSurfaceStyle.solid,
     );
   }
 }
@@ -1101,11 +1129,26 @@ class TimetableSettings {
   final String weekdayBarAccentColorDark;
   final String timeAxisFontColorLight;
   final String timeAxisFontColorDark;
+
+  /// Convenience getter that maps frosted-glass fields to a [FrostedAppearance].
+  FrostedAppearance get frostedAppearance => FrostedAppearance(
+    sheetBlurSigma: frostedSheetBlurSigma,
+    sheetTintAlpha: frostedSheetTintAlpha,
+    sheetBarrierAlpha: frostedSheetBarrierAlpha,
+    blurEnabled: frostedBlurEnabled,
+    glassMode: frostedGlassMode,
+    liquidGlassTuning: liquidGlassTuning,
+  );
+
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
   final double frostedSheetBlurSigma;
   final double frostedSheetTintAlpha;
   final double frostedSheetBarrierAlpha;
   final bool frostedBlurEnabled;
+  final FrostedGlassMode frostedGlassMode;
+  final CourseCardSurfaceStyle courseCardSurfaceStyle;
+  final LiquidGlassPreset liquidGlassPreset;
+  final LiquidGlassTuning? liquidGlassTuning;
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
   final bool homePageTimeColumnBlurEnabled;
@@ -1257,6 +1300,10 @@ class TimetableSettings {
     this.frostedSheetTintAlpha = defaultFrostedSheetTintAlpha,
     this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
+    this.frostedGlassMode = FrostedGlassMode.frosted,
+    this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
+    this.liquidGlassPreset = LiquidGlassPreset.standard,
+    this.liquidGlassTuning,
     this.homePageHeaderBlurEnabled = false,
     this.homePageWeekdayBarBlurEnabled = false,
     this.homePageTimeColumnBlurEnabled = false,
@@ -1567,6 +1614,11 @@ class TimetableSettings {
       'frostedSheetTintAlpha': frostedSheetTintAlpha,
       'frostedSheetBarrierAlpha': frostedSheetBarrierAlpha,
       'frostedBlurEnabled': frostedBlurEnabled,
+      'frostedGlassMode': frostedGlassMode.value,
+      'courseCardSurfaceStyle': courseCardSurfaceStyle.value,
+      'liquidGlassPreset': liquidGlassPreset.value,
+      if (liquidGlassTuning != null)
+        'liquidGlassTuning': liquidGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
@@ -1924,6 +1976,20 @@ class TimetableSettings {
           defaultFrostedSheetBarrierAlpha,
       frostedBlurEnabled:
           json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
+      frostedGlassMode: FrostedGlassModeX.fromValue(
+        json['frostedGlassMode'] as String?,
+      ),
+      courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
+        json['courseCardSurfaceStyle'] as String?,
+      ),
+      liquidGlassPreset: LiquidGlassPresetX.fromValue(
+        json['liquidGlassPreset'] as String?,
+      ),
+      liquidGlassTuning: json['liquidGlassTuning'] != null
+          ? LiquidGlassTuning.fromJson(
+              json['liquidGlassTuning'] as Map<String, dynamic>,
+            )
+          : null,
       homePageHeaderBlurEnabled:
           json['homePageHeaderBlurEnabled'] as bool? ?? false,
       homePageWeekdayBarBlurEnabled:
@@ -2096,6 +2162,10 @@ class TimetableSettings {
     double? frostedSheetTintAlpha,
     double? frostedSheetBarrierAlpha,
     bool? frostedBlurEnabled,
+    FrostedGlassMode? frostedGlassMode,
+    CourseCardSurfaceStyle? courseCardSurfaceStyle,
+    LiquidGlassPreset? liquidGlassPreset,
+    LiquidGlassTuning? liquidGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     bool? homePageTimeColumnBlurEnabled,
@@ -2377,6 +2447,11 @@ class TimetableSettings {
       frostedSheetBarrierAlpha:
           frostedSheetBarrierAlpha ?? this.frostedSheetBarrierAlpha,
       frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
+      frostedGlassMode: frostedGlassMode ?? this.frostedGlassMode,
+      courseCardSurfaceStyle:
+          courseCardSurfaceStyle ?? this.courseCardSurfaceStyle,
+      liquidGlassPreset: liquidGlassPreset ?? this.liquidGlassPreset,
+      liquidGlassTuning: liquidGlassTuning ?? this.liquidGlassTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:

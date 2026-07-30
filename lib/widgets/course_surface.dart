@@ -3,7 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
-import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'course_card_liquid_glass_host.dart';
 import 'preblurred_wallpaper_glass.dart';
@@ -68,7 +68,7 @@ class CourseSurface extends StatelessWidget {
   static const double frostedFillAlpha = 0.42;
 
   /// Second stop of the default [CourseCardSurfaceStyle.solid] gradient.
-  static Color secondaryFillColor(Color color) {
+  static Color secondaryFillColor(Color color, BuildContext context) {
     return Color.lerp(color, HyperosColors.onPrimary(context), 0.08) ?? color;
   }
 
@@ -81,7 +81,7 @@ class CourseSurface extends StatelessWidget {
     final radius = BorderRadius.circular(borderRadius);
 
     final surface = switch (style) {
-      CourseCardSurfaceStyle.solid => _buildSolid(radius),
+      CourseCardSurfaceStyle.solid => _buildSolid(context, radius),
       CourseCardSurfaceStyle.translucent => _buildTranslucent(radius),
       CourseCardSurfaceStyle.gaussian => _buildGaussian(context, radius),
       CourseCardSurfaceStyle.liquidGlass => _buildLiquidGlass(context, radius),
@@ -98,7 +98,7 @@ class CourseSurface extends StatelessWidget {
     );
   }
 
-  Widget _buildSolid(BorderRadius radius) {
+  Widget _buildSolid(BuildContext context, BorderRadius radius) {
     final gradient =
         solidGradient ??
         LinearGradient(
@@ -106,7 +106,7 @@ class CourseSurface extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             color.withValues(alpha: _scaledAlpha(1.0)),
-            secondaryFillColor(color).withValues(alpha: _scaledAlpha(1.0)),
+            secondaryFillColor(color, context).withValues(alpha: _scaledAlpha(1.0)),
           ],
         );
     return DecoratedBox(
@@ -185,9 +185,9 @@ class CourseSurface extends StatelessWidget {
     // identical while pages slide (no live BackdropFilter) and, because it is a
     // plain bitmap sample, it works even under an isolating ancestor layer.
     final preblur = PreblurredWallpaperScope.maybeOf(context);
-    final glassTintAlpha = _scaledAlpha(
-      (tuning.tintAlpha * 0.70).clamp(0.14, 0.42),
-    );
+    final glassTintAlpha = tuning != null
+        ? _scaledAlpha((tuning.tintAlpha * 0.70).clamp(0.14, 0.42))
+        : _scaledAlpha(frostedFillAlpha);
     final washAlpha = _scaledAlpha(frostedFillAlpha);
     final highlightAlpha = _scaledAlpha(0.55);
 
