@@ -85,6 +85,7 @@ class Course {
   final String startTime; // 格式: HH:mm
   final String endTime; // 格式: HH:mm
   final String color; // 课程颜色
+  final String? textColor; // 课程卡片文字颜色（hex），为空表示跟随全局设置
   final int startWeek; // 开始周次
   final int endWeek; // 结束周次
   final bool isOddWeek; // 是否单周
@@ -113,6 +114,7 @@ class Course {
     required this.startTime,
     required this.endTime,
     this.color = '#2196F3',
+    this.textColor,
     this.startWeek = 1,
     this.endWeek = 16,
     this.isOddWeek = false,
@@ -175,6 +177,7 @@ class Course {
       'startTime': startTime,
       'endTime': endTime,
       'color': color,
+      'textColor': textColor,
       'startWeek': startWeek,
       'endWeek': endWeek,
       'isOddWeek': isOddWeek,
@@ -245,6 +248,7 @@ class Course {
       startTime: json['startTime'] as String,
       endTime: json['endTime'] as String,
       color: json['color'] as String? ?? '#2196F3',
+      textColor: json['textColor'] as String?,
       startWeek: weeks.startWeek,
       endWeek: weeks.endWeek,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
@@ -330,6 +334,7 @@ class Course {
     String? startTime,
     String? endTime,
     String? color,
+    Object? textColor = _unset,
     int? startWeek,
     int? endWeek,
     bool? isOddWeek,
@@ -356,6 +361,9 @@ class Course {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       color: color ?? this.color,
+      textColor: identical(textColor, _unset)
+          ? this.textColor
+          : textColor as String?,
       startWeek: startWeek ?? this.startWeek,
       endWeek: endWeek ?? this.endWeek,
       isOddWeek: isOddWeek ?? this.isOddWeek,

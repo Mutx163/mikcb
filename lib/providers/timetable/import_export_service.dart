@@ -100,6 +100,7 @@ Future<int> _timetableImportParsedCourses(
   required bool replaceExisting,
   DateTime? semesterStart,
   required String source,
+  bool preserveLocalColors = true,
 }) {
   return host._runMutation(() async {
     if (importedCourses.isEmpty) {
@@ -115,6 +116,7 @@ Future<int> _timetableImportParsedCourses(
       mergedCourses = replaceImportedCoursesPreservingLocalFields(
         existingCourses: host._courses,
         importedCourses: dedupedImportedCourses,
+        preserveLocalColors: preserveLocalColors,
       );
       effectiveImportedCount = dedupedImportedCourses.length;
       syncResult = null;
@@ -125,6 +127,7 @@ Future<int> _timetableImportParsedCourses(
       final result = syncImportedCourses(
         existingCourses: host._courses,
         importedCourses: importedCourses,
+        preserveLocalColors: preserveLocalColors,
       );
       if (courseListsEqual(host._courses, result.mergedCourses)) {
         return 0;

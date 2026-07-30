@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
+import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
@@ -440,7 +441,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           }
           if (useCoursePreblur ||
               appearance.glassMode == FrostedGlassMode.liquidGlass) {
-            return (appearance.liquidGlassTuning.blur * 0.45).clamp(2.0, 8.0);
+            return ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur * 0.45).clamp(2.0, 8.0);
           }
           // Gaussian chrome: match the band's BackdropFilter sigma so the
           // summary card's stand-in frost reads like the band above it.

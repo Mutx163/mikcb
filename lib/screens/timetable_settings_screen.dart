@@ -29,7 +29,6 @@ import '../utils/managed_image_storage.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';
 import '../ui/debug/debug.dart';
-import '../ui/hyperos_app_bridge.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';

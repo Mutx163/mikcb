@@ -157,7 +157,11 @@ List<Course> dedupeImportedCourses(
 }
 
 @visibleForTesting
-Course mergeImportedCourseWithExisting(Course existing, Course imported) {
+Course mergeImportedCourseWithExisting(
+  Course existing,
+  Course imported, {
+  bool preserveLocalColors = true,
+}) {
   return imported.copyWith(
     id: existing.id,
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
@@ -168,7 +172,8 @@ Course mergeImportedCourseWithExisting(Course existing, Course imported) {
         ? existing.location
         : imported.location,
     shortName: existing.shortName,
-    color: existing.color,
+    color: preserveLocalColors ? existing.color : imported.color,
+    textColor: preserveLocalColors ? existing.textColor : imported.textColor,
     courseNature: existing.courseNature,
     description: existing.description,
     note: existing.note,
@@ -180,8 +185,9 @@ Course mergeImportedCourseWithExisting(Course existing, Course imported) {
 @visibleForTesting
 Course preserveImportedCourseLocalSharedFields(
   Course existing,
-  Course imported,
-) {
+  Course imported, {
+  bool preserveLocalColors = true,
+}) {
   return imported.copyWith(
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
     teacher: imported.teacher.trim().isEmpty
@@ -191,7 +197,8 @@ Course preserveImportedCourseLocalSharedFields(
         ? existing.location
         : imported.location,
     shortName: existing.shortName,
-    color: existing.color,
+    color: preserveLocalColors ? existing.color : imported.color,
+    textColor: preserveLocalColors ? existing.textColor : imported.textColor,
     courseNature: existing.courseNature,
     description: existing.description,
   );
@@ -200,8 +207,9 @@ Course preserveImportedCourseLocalSharedFields(
 @visibleForTesting
 Course mergeImportedSharedFieldsIntoExistingSchedule(
   Course existing,
-  Course imported,
-) {
+  Course imported, {
+  bool preserveLocalColors = true,
+}) {
   return existing.copyWith(
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
     teacher: imported.teacher.trim().isEmpty
@@ -211,7 +219,8 @@ Course mergeImportedSharedFieldsIntoExistingSchedule(
         ? existing.location
         : imported.location,
     shortName: existing.shortName,
-    color: existing.color,
+    color: preserveLocalColors ? existing.color : imported.color,
+    textColor: preserveLocalColors ? existing.textColor : imported.textColor,
     courseNature: existing.courseNature,
     description: existing.description,
     note: existing.note,
@@ -223,6 +232,7 @@ Course mergeImportedSharedFieldsIntoExistingSchedule(
 List<Course> replaceImportedCoursesPreservingLocalFields({
   required List<Course> existingCourses,
   required List<Course> importedCourses,
+  bool preserveLocalColors = true,
 }) {
   final dedupedImported = dedupeImportedCourses(importedCourses);
   final existingSharedCoursesByName = <String, Course>{};
@@ -244,6 +254,7 @@ List<Course> replaceImportedCoursesPreservingLocalFields({
       rebuilt = preserveImportedCourseLocalSharedFields(
         sharedExisting,
         rebuilt,
+        preserveLocalColors: preserveLocalColors,
       );
     }
 
@@ -257,7 +268,11 @@ List<Course> replaceImportedCoursesPreservingLocalFields({
       matchedExistingIds.addAll(
         groupedMatchIndices.map((index) => existingCourses[index].id),
       );
-      rebuilt = mergeImportedCourseWithExisting(existing, rebuilt);
+      rebuilt = mergeImportedCourseWithExisting(
+        existing,
+        rebuilt,
+        preserveLocalColors: preserveLocalColors,
+      );
       replacedCourses.add(rebuilt);
       continue;
     }
@@ -278,7 +293,11 @@ List<Course> replaceImportedCoursesPreservingLocalFields({
     if (matchedIndex != -1) {
       final existing = existingCourses[matchedIndex];
       matchedExistingIds.add(existing.id);
-      rebuilt = mergeImportedCourseWithExisting(existing, rebuilt);
+      rebuilt = mergeImportedCourseWithExisting(
+        existing,
+        rebuilt,
+        preserveLocalColors: preserveLocalColors,
+      );
     }
 
     replacedCourses.add(rebuilt);
@@ -290,6 +309,7 @@ List<Course> replaceImportedCoursesPreservingLocalFields({
 ImportedCourseSyncResult syncImportedCourses({
   required List<Course> existingCourses,
   required List<Course> importedCourses,
+  bool preserveLocalColors = true,
 }) {
   final dedupedImported = dedupeImportedCourses(importedCourses);
   final merged = List<Course>.from(existingCourses);
@@ -310,6 +330,7 @@ ImportedCourseSyncResult syncImportedCourses({
         merged[index] = mergeImportedSharedFieldsIntoExistingSchedule(
           existing,
           imported,
+          preserveLocalColors: preserveLocalColors,
         );
         updatedCount += 1;
       }
@@ -335,6 +356,7 @@ ImportedCourseSyncResult syncImportedCourses({
       merged[matchedIndex] = mergeImportedCourseWithExisting(
         existing,
         imported,
+        preserveLocalColors: preserveLocalColors,
       );
       updatedCount += 1;
     } else {

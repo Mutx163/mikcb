@@ -3,7 +3,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../../models/timetable_settings.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
 export 'frosted/frosted_appearance.dart';

@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
@@ -180,7 +181,7 @@ class CourseSurface extends StatelessWidget {
   Widget _buildLiquidGlass(BuildContext context, BorderRadius radius) {
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
-    final tuning = appearance.liquidGlassTuning;
+    final tuning = appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults;
     // Prefer the pre-blurred wallpaper fill when available: frost stays
     // identical while pages slide (no live BackdropFilter) and, because it is a
     // plain bitmap sample, it works even under an isolating ancestor layer.

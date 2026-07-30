@@ -4,6 +4,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../utils/hex_color.dart';
+import 'course_surface.dart';
 
 class CourseCard extends StatelessWidget {
   final Course course;
@@ -25,6 +26,14 @@ class CourseCard extends StatelessWidget {
   final String? overrideColorHex;
   final String? titleColorHex;
   final String? detailColorHex;
+
+  /// Surface material style behind the card content (solid / translucent /
+  /// gaussian / liquid glass).
+  final CourseCardSurfaceStyle surfaceStyle;
+
+  /// Dim factor for conflict / holiday / suspended states (0–1); scales the
+  /// surface fill and tint alphas.
+  final double surfaceOpacity;
   final String? compactOverlineText;
   final String? topRightBadgeText;
 
@@ -55,6 +64,8 @@ class CourseCard extends StatelessWidget {
     this.overrideColorHex,
     this.titleColorHex,
     this.detailColorHex,
+    this.surfaceStyle = CourseCardSurfaceStyle.solid,
+    this.surfaceOpacity = 1.0,
     this.compactOverlineText,
     this.topRightBadgeText,
     this.showHomeworkIndicator = false,
@@ -248,18 +259,13 @@ class CourseCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Container(
-              margin: EdgeInsets.all(compactOuterInset),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color.withValues(alpha: 0.9),
-                    color.withValues(alpha: 0.7),
-                  ],
-                ),
+            Padding(
+              padding: EdgeInsets.all(compactOuterInset),
+              child: CourseSurface(
+                style: surfaceStyle,
+                color: color,
+                borderRadius: 8,
+                opacityScale: surfaceOpacity,
                 border: isHighlighted
                     ? Border.all(
                         color: Colors.white.withValues(alpha: 0.9),
@@ -275,75 +281,81 @@ class CourseCard extends StatelessWidget {
                         ),
                       ]
                     : null,
-              ),
-              padding: EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: compactVerticalPadding,
-              ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ClipRect(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final content = Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: crossAxisAlignment,
-                            children: [
-                              for (var i = 0; i < textLines.length; i++) ...[
-                                if (i > 0) const SizedBox(height: 2),
-                                Text(
-                                  textLines[i].text,
-                                  style: textLines[i].style,
-                                  textAlign: textAlign,
-                                  softWrap: true,
-                                ),
-                              ],
-                            ],
-                          );
-
-                          if (verticalAlign ==
-                              CourseCardVerticalAlign.spaceEvenly) {
-                            return FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.center,
-                              child: SizedBox(
-                                width: constraints.maxWidth,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: crossAxisAlignment,
-                                  children: [
-                                    for (final line in textLines)
-                                      Text(
-                                        line.text,
-                                        style: line.style,
-                                        textAlign: textAlign,
-                                        softWrap: true,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-
-                          return Align(
-                            alignment: _verticalContentAlignment,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: _verticalContentAlignment,
-                              child: SizedBox(
-                                width: constraints.maxWidth,
-                                child: content,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: compactVerticalPadding,
                   ),
-                ],
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ClipRect(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final content = Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: crossAxisAlignment,
+                                children: [
+                                  for (
+                                    var i = 0;
+                                    i < textLines.length;
+                                    i++
+                                  ) ...[
+                                    if (i > 0) const SizedBox(height: 2),
+                                    Text(
+                                      textLines[i].text,
+                                      style: textLines[i].style,
+                                      textAlign: textAlign,
+                                      softWrap: true,
+                                    ),
+                                  ],
+                                ],
+                              );
+
+                              if (verticalAlign ==
+                                  CourseCardVerticalAlign.spaceEvenly) {
+                                return FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.center,
+                                  child: SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      crossAxisAlignment: crossAxisAlignment,
+                                      children: [
+                                        for (final line in textLines)
+                                          Text(
+                                            line.text,
+                                            style: line.style,
+                                            textAlign: textAlign,
+                                            softWrap: true,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return Align(
+                                alignment: _verticalContentAlignment,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: _verticalContentAlignment,
+                                  child: SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: content,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             if (showHomeworkIndicator)

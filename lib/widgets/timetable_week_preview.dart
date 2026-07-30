@@ -7,6 +7,7 @@ import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
+import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
@@ -1277,7 +1278,7 @@ class _PreviewChromeGlassBand extends StatelessWidget {
     // matches the band's BackdropFilter sigma; liquid glass approximates the
     // shader's softer blur (see homePreblurSigma in timetable_screen.dart).
     final sigma = appearance.glassMode == FrostedGlassMode.liquidGlass
-        ? (appearance.liquidGlassTuning.blur * 0.45).clamp(2.0, 8.0).toDouble()
+        ? ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur * 0.45).clamp(2.0, 8.0).toDouble()
         : HyperosBlurredHeader.blurSigmaOf(context);
     final image = useBlur && sigma > 0
         ? homePageBackdropImageWidget(settings: settings, isDark: isDark)
