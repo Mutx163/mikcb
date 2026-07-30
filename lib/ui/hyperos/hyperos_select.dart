@@ -464,9 +464,9 @@ class _HyperosSelectPopupGlass extends StatelessWidget {
     // Liquid glass mode.
     if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
       return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.nestedTile,
+        role: HyperosLiquidGlassRole.sheet,
         borderRadius: cornerRadius,
-        contentLegibilityFill: false,
+        contentLegibilityFill: true,
         // FakeGlass underlay paints immediately so the first frames are not
         // black while the real Impeller shader warms up.
         instantUnderlay: true,

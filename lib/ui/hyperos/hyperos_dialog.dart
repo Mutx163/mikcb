@@ -55,12 +55,7 @@ class HyperosDialog extends StatelessWidget {
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
       frosted: true,
-      padding: const EdgeInsets.fromLTRB(
-        HyperosMiuixDialog.insideMarginHorizontal,
-        HyperosMiuixDialog.insideMarginVertical,
-        HyperosMiuixDialog.insideMarginHorizontal,
-        HyperosMiuixDialog.insideMarginVertical,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       // Cap the whole card so title + scroll body + actions never overflow when
       // the IME shrinks the bottom sheet (e.g. multi-field date-rule forms).
       child: LayoutBuilder(

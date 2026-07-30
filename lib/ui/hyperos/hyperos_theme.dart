@@ -112,7 +112,7 @@ abstract final class HyperosColors {
   static Color sliderBackground(BuildContext context) {
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.sliderBackground
-        : const Color(0x33000000);
+        : HyperosMiuixLightColors.sliderBackground;
   }
 
   /// On-surface color (text on surface).

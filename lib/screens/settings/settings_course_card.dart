@@ -66,6 +66,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
           Expanded(
             flex: 4,
             child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               key: const PageStorageKey<String>('course-card-settings-preview'),
               child: HyperosBlurredBodyInset(
                 child: FrostedAppearanceScope(

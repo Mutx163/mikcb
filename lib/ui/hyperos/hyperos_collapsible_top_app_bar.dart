@@ -4,6 +4,7 @@ import 'dart:ui' as ui show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
@@ -645,10 +646,21 @@ class _HyperosCollapsibleTopAppBarState
     });
   }
 
+  /// Compensates for [MiuixFontWeightScope]'s font weight adjustment.
+  /// When the system has a non-zero fontWeightAdjustment, hardcoded w400/w500
+  /// raw [TextStyle]s get the system delta applied on top and appear bold,
+  /// while MiuixTheme-based text styles are already compensated.  Reading the
+  /// adjustment from [MiuixTheme] and subtracting it keeps the titles visually
+  /// consistent with the rest of the page.
+  int get _fontWeightDelta =>
+      MiuixTheme.maybeOf(context)?.fontWeightAdjustment ?? 0;
+
   TextStyle _largeTitleStyle(Color color) {
     return TextStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.largeTitleFontSize,
-      fontWeight: FontWeight.w400,
+      fontWeight: FontWeight(
+        (400 - _fontWeightDelta).clamp(100, 900),
+      ),
       color: color,
       height: 1.2,
     );
@@ -657,7 +669,9 @@ class _HyperosCollapsibleTopAppBarState
   TextStyle _smallTitleStyle(Color color) {
     return TextStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.smallTitleFontSize,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight(
+        (500 - _fontWeightDelta).clamp(100, 900),
+      ),
       color: color,
       height: 1.2,
     );
@@ -666,7 +680,9 @@ class _HyperosCollapsibleTopAppBarState
   TextStyle _subtitleStyle(Color color) {
     return TextStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.subtitleFontSize,
-      fontWeight: FontWeight.w400,
+      fontWeight: FontWeight(
+        (400 - _fontWeightDelta).clamp(100, 900),
+      ),
       color: color,
       height: 1.3,
     );

@@ -1,5 +1,5 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
@@ -41,6 +41,7 @@ class TimetableTextColorSettings extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const HyperosSectionGap(),
         HyperosSectionLabel(text: l10n.appearanceTextColorsSectionTitle),
         HyperosControlCard(
           edgeToEdge: true,
@@ -222,11 +223,11 @@ class _ModeColorSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Container(
-      decoration: BoxDecoration(
-        color: containerColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final radius = MiuixCardDefaults.cornerRadius;
+    return Material(
+      color: containerColor,
+      borderRadius: BorderRadius.circular(radius),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -366,38 +367,14 @@ class _ColorSettingRow extends StatelessWidget {
     showHyperosDialog<void>(
       context: context,
       title: l10n.textColorSelectColor,
-      body: SingleChildScrollView(
-        child: ColorPicker(
-          color: pickerColor,
-          onColorChanged: (Color color) {
-            pickerColor = color;
-          },
-          width: 40,
-          height: 40,
-          borderRadius: 4,
-          spacing: 5,
-          runSpacing: 5,
-          wheelDiameter: 260,
-          wheelWidth: 26,
-          enableOpacity: false,
-          showColorCode: true,
-          showColorName: false,
-          showMaterialName: false,
-          copyPasteBehavior: const ColorPickerCopyPasteBehavior(
-            copyButton: true,
-            pasteButton: true,
-            longPressMenu: true,
-          ),
-          colorCodeTextStyle: Theme.of(context).textTheme.bodyMedium,
-          pickersEnabled: const <ColorPickerType, bool>{
-            ColorPickerType.both: false,
-            ColorPickerType.primary: true,
-            ColorPickerType.accent: false,
-            ColorPickerType.bw: true,
-            ColorPickerType.custom: false,
-            ColorPickerType.wheel: true,
-          },
-        ),
+      body: MiuixColorPicker(
+        color: pickerColor,
+        onColorChanged: (Color c) {
+          pickerColor = c;
+        },
+        showPreview: false,
+        hapticEffect: MiuixSliderHapticEffect.step,
+        colorSpace: MiuixColorSpace.hsv,
       ),
       actions: [
         if (defaultValue != null &&

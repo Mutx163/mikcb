@@ -113,6 +113,25 @@ class HyperosSheetFrame extends StatelessWidget {
     final borderRadius = BorderRadius.circular(HyperosTokens.cardRadius);
     final content = Padding(padding: padding, child: child);
 
+    final panel = frosted
+        ? _buildFrostedSurface(
+            context: context,
+            borderRadius: borderRadius,
+            content: content,
+          )
+        : Material(
+            color: HyperosColors.surfaceContainer(context),
+            shape: HyperosTheme.cardShape(),
+            clipBehavior: Clip.antiAlias,
+            child: content,
+          );
+
+    // BoxShadow creates a dark ring around the panel — visible on all sides,
+    // moves with the panel (no tracking), and matches the panel's rounded
+    // corners naturally.  The shadow sits BEHIND the frosted glass, so
+    // BackdropFilter inside the glass samples the bright page content, not
+    // the shadow.
+    final dimColor = HyperosBlurredHeader.modalBarrierColor(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         outerInset,
@@ -120,18 +139,20 @@ class HyperosSheetFrame extends StatelessWidget {
         outerInset,
         outerInset + bottomSafeInset,
       ),
-      child: frosted
-          ? _buildFrostedSurface(
-              context: context,
-              borderRadius: borderRadius,
-              content: content,
-            )
-          : Material(
-              color: HyperosColors.surfaceContainer(context),
-              shape: HyperosTheme.cardShape(),
-              clipBehavior: Clip.antiAlias,
-              child: content,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: dimColor.withValues(
+                alpha: dimColor.a.clamp(0.0, 0.45),
+              ),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
+          ],
+        ),
+        child: panel,
+      ),
     );
   }
 
@@ -271,9 +292,11 @@ class HyperosSheet extends StatelessWidget {
 /// [MediaQuery.viewInsets] so it sits above the IME. Set it to false when the
 /// sheet body manages keyboard avoidance itself (e.g. scroll-to-field).
 ///
-/// The dim layer is painted as a **sibling** of the glass panel (not below it)
-/// so [BackdropFilter] inside the glass samples only the original page content
-/// — the glass interior stays bright while the surrounding area darkens.
+/// Dimming uses a [BoxShadow] drawn behind the panel (see [_buildFloatingPanel])
+/// instead of a full-screen overlay with hole-cutting.  This avoids the
+/// tracking/keyboard bugs of the evenOdd approach while keeping the frosted
+/// glass bright: the shadow is behind the panel, not between the glass and the
+/// page content.
 Future<T?> showHyperosSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -284,21 +307,14 @@ Future<T?> showHyperosSheet<T>({
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) {
-  final resolvedDim =
-      barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context);
-
   return showGeneralDialog<T>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: isDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.transparent,
-    // No route-level FadeTransition: wrapping LiquidGlass in an animated
-    // Opacity layer causes a black flash on shader warmup / teardown.
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return _HyperosSheetRouteBody(
-        dimColor: resolvedDim,
-        isDismissible: isDismissible,
+      return _HyperosSheetPanel(
         padForKeyboard: padForKeyboard,
         chrome: chrome,
         builder: builder,
@@ -307,181 +323,35 @@ Future<T?> showHyperosSheet<T>({
   );
 }
 
-/// Full-screen route body: dim sibling + bottom-aligned sheet panel.
-///
-/// 压暗层以渐变（300ms fade-in）淡入，并通过 [_SheetDimPainter]（evenOdd 路径挖孔）
-/// 排除面板所在区域，使面板内的液态玻璃 / BackdropFilter 只采样未被压暗的页面内容。
-///
-/// Layout 顺序：
-/// 1. dim 层先渲染（面板之下），用 evenOdd 路径在面板位置"挖洞"，只压暗面板以外的区域
-/// 2. 面板后渲染（dim 之上），Stack hitTest 反向遍历，面板先接收事件 → 按钮正常响应
-///    dim 后接收事件 → 点击面板外部时关闭弹窗
-///
-/// 面板位置通过 [GlobalKey] 在首帧布局完成后测量，随后启动 dim 动画。
-/// 首帧测量的延迟（~1 frame）对视觉效果无影响，因为 dim 从 alpha=0 开始淡入。
-///
-/// 退出时 route 被直接 pop（无 route-level 过渡），dim 随 widget 一同销毁，
-/// 未经渐隐—与旧行为一致。如需渐隐退出，后续可改用 [_dimController.reverse()]
-/// 并在完成时回调 Navigator.pop。
-class _HyperosSheetRouteBody extends StatefulWidget {
-  const _HyperosSheetRouteBody({
-    required this.dimColor,
-    required this.isDismissible,
+/// Wraps the sheet panel with keyboard avoidance — no dim overlay, no
+/// hole-cutting.  A [BoxShadow] around the panel (see [_buildFloatingPanel])
+/// creates the visual dimming effect without any of the tracking bugs.
+class _HyperosSheetPanel extends StatelessWidget {
+  const _HyperosSheetPanel({
     required this.padForKeyboard,
     required this.chrome,
     required this.builder,
   });
 
-  final Color dimColor;
-  final bool isDismissible;
   final bool padForKeyboard;
   final HyperosSheetChrome chrome;
   final WidgetBuilder builder;
 
   @override
-  State<_HyperosSheetRouteBody> createState() => _HyperosSheetRouteBodyState();
-}
-
-class _HyperosSheetRouteBodyState extends State<_HyperosSheetRouteBody>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _dimController;
-  final GlobalKey _panelKey = GlobalKey();
-  Rect? _panelGlobalRect;
-
-  @override
-  void initState() {
-    super.initState();
-    _dimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    // 延后一帧以便面板布局就绪后再测量
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _measurePanel();
-      _dimController.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _dimController.dispose();
-    super.dispose();
-  }
-
-  void _measurePanel() {
-    final renderBox =
-        _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null || !renderBox.hasSize || !renderBox.attached) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measurePanel());
-      return;
-    }
-    setState(() {
-      _panelGlobalRect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final keyboardInset = widget.padForKeyboard
+    final keyboardInset = padForKeyboard
         ? MediaQuery.viewInsetsOf(context).bottom
         : 0.0;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 压暗层先渲染（面板之下），用 evenOdd 挖空面板区域，
-        // 使面板的 BackdropFilter / 液态玻璃只采样未压暗的原始页面内容。
-        GestureDetector(
-          behavior: HitTestBehavior.deferToChild,
-          onTap: widget.isDismissible
-              ? () => Navigator.of(context).pop()
-              : null,
-          child: AnimatedBuilder(
-            animation: _dimController,
-            builder: (context, _) {
-              return CustomPaint(
-                painter: _SheetDimPainter(
-                  dimColor: widget.dimColor,
-                  dimProgress: _dimController.value,
-                  excludeRect: _panelGlobalRect,
-                ),
-                child: const SizedBox.expand(),
-              );
-            },
-          ),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        child: HyperosSheetChromeScope(
+          chrome: chrome,
+          child: builder(context),
         ),
-        // 面板后渲染（压暗层之上），正常接收触摸事件
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Padding(
-            key: _panelKey,
-            padding: EdgeInsets.only(bottom: keyboardInset),
-            child: HyperosSheetChromeScope(
-              chrome: widget.chrome,
-              child: widget.builder(context),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
-  }
-}
-
-/// 在面板区域以外绘制压暗层（evenOdd 挖孔），避免 BackdropFilter / 液态玻璃采样到已压暗内容。
-///
-/// dim 先渲染（全屏 ColoredBox），然后面板的 BackdropFilter 采样时会把 dim 也包含进去，
-/// 导致玻璃面板看起来也被压暗了。这个 painter 用 evenOdd 路径在面板区域"挖洞"，
-/// 让压暗只覆盖面板以外的区域。
-class _SheetDimPainter extends CustomPainter {
-  _SheetDimPainter({
-    required this.dimColor,
-    required this.dimProgress,
-    this.excludeRect,
-  });
-
-  final Color dimColor;
-  final double dimProgress;
-  final Rect? excludeRect;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (dimProgress <= 0.001) return;
-
-    final paint = Paint()
-      ..color = dimColor.withValues(alpha: dimColor.a * dimProgress);
-    final fullRect = Offset.zero & size;
-
-    if (excludeRect == null ||
-        excludeRect!.isEmpty ||
-        excludeRect!.isInfinite) {
-      canvas.drawRect(fullRect, paint);
-      return;
-    }
-
-    // 确保挖孔区域不超出画布边界
-    final hole = excludeRect!.intersect(fullRect);
-    if (hole.isEmpty || hole.width <= 0 || hole.height <= 0) {
-      canvas.drawRect(fullRect, paint);
-      return;
-    }
-
-    // evenOdd 模式：外框（全屏）填色，内框（面板）挖空
-    final path = Path()
-      ..addRect(fullRect)
-      ..addRect(hole)
-      ..fillType = PathFillType.evenOdd;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_SheetDimPainter oldDelegate) {
-    return oldDelegate.dimColor != dimColor ||
-        oldDelegate.dimProgress != dimProgress ||
-        oldDelegate.excludeRect != excludeRect;
   }
 }
 
