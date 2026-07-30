@@ -308,6 +308,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       useOverlayLayout: () => widget.overlayHeader,
       hasHeaderExtension: () => widget.headerExtension != null,
       useCollapsibleTopAppBar: () => _useCollapsibleTopAppBar,
+      collapsibleBarSettled: _collapsibleBarSettled,
       onChanged: _deferredSetState,
     );
     // Page shell listens above nested list NotificationListeners → accept any depth.
@@ -324,6 +325,21 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   }
 
   bool get _useOverlayLayout => widget.overlayHeader;
+
+  /// Measurement gate for [HyperosOverlayHeaderMetrics.collapsibleBarSettled]:
+  /// `null` until the bar publishes its large-title expansion (its height is
+  /// still the collapsed placeholder — recording it froze the inset at the
+  /// small height and read as a jump once the title expanded), `false` while
+  /// mid-collapse (the inset must keep the expanded height), `true` at rest.
+  bool? _collapsibleBarSettled() {
+    final state = _collapsibleScrollBehavior.state;
+    final limit = state.heightOffsetLimit;
+    if (!limit.isFinite || limit >= 0) {
+      return null;
+    }
+    final offset = state.heightOffset;
+    return offset.isFinite && offset.abs() < 0.5;
+  }
 
   bool get _backdropBlurEnabled => _routeBlurGate.backdropBlurEnabled;
 

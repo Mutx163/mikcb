@@ -453,8 +453,6 @@ class HyperosOverlayHeaderMetrics {
       return;
     }
     final isCollapsible = useCollapsibleTopAppBar?.call() ?? false;
-    debugPrint('[MEASURE] request isCollapsible=$isCollapsible '
-        'hasExt=${hasHeaderExtension()} gateNull=${collapsibleBarSettled == null}');
     if (isCollapsible && !hasHeaderExtension()) {
       return;
     }
@@ -469,7 +467,6 @@ class HyperosOverlayHeaderMetrics {
       }
       if (isCollapsible && collapsibleBarSettled != null) {
         final settled = collapsibleBarSettled!();
-        debugPrint('[MEASURE] gate settled=$settled');
         if (settled == null) {
           // Expansion still pending — the bar height is provisional.
           requestOverlayHeaderMeasure();
@@ -485,7 +482,6 @@ class HyperosOverlayHeaderMetrics {
         return;
       }
       final height = box.size.height;
-      debugPrint('[MEASURE] record height=$height prev=$measuredOverlayHeaderHeight');
       if ((height - measuredOverlayHeaderHeight).abs() > 0.5) {
         measuredOverlayHeaderHeight = height;
         onChanged();
