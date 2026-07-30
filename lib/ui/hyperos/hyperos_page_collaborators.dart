@@ -391,6 +391,7 @@ class HyperosOverlayHeaderMetrics {
     required this.hasHeaderExtension,
     required this.onChanged,
     this.useCollapsibleTopAppBar,
+    this.collapsibleBarSettled,
   });
 
   final bool Function() useOverlayLayout;
@@ -399,6 +400,15 @@ class HyperosOverlayHeaderMetrics {
 
   /// When true, fallback inset uses collapsible large-title estimate.
   final bool Function()? useCollapsibleTopAppBar;
+
+  /// Collapsible-bar measurement gate:
+  /// - `null` — large-title expansion not yet published; the bar still renders
+  ///   at collapsed height, so retry next frame instead of recording it (the
+  ///   stale value read as an inset jump once the bar finished expanding).
+  /// - `false` — bar is mid-collapse; skip recording (the inset must keep the
+  ///   expanded height, the collapse delta is applied separately).
+  /// - `true` — resting fully expanded; safe to record.
+  final bool? Function()? collapsibleBarSettled;
 
   final GlobalKey overlayHeaderKey = GlobalKey();
   double measuredOverlayHeaderHeight = 0;
@@ -454,6 +464,17 @@ class HyperosOverlayHeaderMetrics {
       _overlayHeaderMeasurePending = false;
       if (!isMounted()) {
         return;
+      }
+      if (isCollapsible && collapsibleBarSettled != null) {
+        final settled = collapsibleBarSettled!();
+        if (settled == null) {
+          // Expansion still pending — the bar height is provisional.
+          requestOverlayHeaderMeasure();
+          return;
+        }
+        if (!settled) {
+          return;
+        }
       }
       final box =
           overlayHeaderKey.currentContext?.findRenderObject() as RenderBox?;

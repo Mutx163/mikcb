@@ -376,20 +376,14 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         notification.metrics.axis,
       );
       _routeBlurGate.tryEnableBlurOnUserScroll();
+      debugPrint('[SNAP] _handleBodyScrollForBlur '
+          '${notification.runtimeType} '
+          'pixels=${notification.metrics.pixels.toStringAsFixed(1)} '
+          'useCollapsible=$_useCollapsibleTopAppBar');
       if (_useCollapsibleTopAppBar) {
-        debugPrint('[SNAP] _handleBodyScrollForBlur '
-            '${notification.runtimeType} '
-            'pixels=${notification.metrics.pixels.toStringAsFixed(1)} '
-            'useCollapsible=$_useCollapsibleTopAppBar');
         _collapsibleScrollBehavior.handleScroll(notification);
         // Keep the inset delta fresh before the frost check below reads it.
         _syncCollapseInsetDelta(notification);
-      } else {
-        debugPrint('[SNAP] SKIP _handleBodyScrollForBlur '
-            '${notification.runtimeType} '
-            'useCollapsible=$_useCollapsibleTopAppBar '
-            'overlayHeader=${widget.overlayHeader} '
-            'collapsibleTitle=${widget.collapsibleTitle}');
       }
       _headerFrost.syncHeaderFrostForScroll(notification.metrics.pixels);
     }
@@ -600,24 +594,34 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
         backgroundColor: pageBackground,
-        appBar: PreferredSize(
-          preferredSize: Size.fromHeight(
-            MediaQuery.paddingOf(context).top + 44,
+        body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.paddingOf(context).top + 44,
+            ),
+            child: _buildBody(
+              pageBackground: pageBackground,
+              child: widget.childPad
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: widget.child,
+                    )
+                  : widget.child,
+            ),
           ),
-          child: header,
-        ),
-        body: _buildBody(
-          pageBackground: pageBackground,
-          child: widget.childPad
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: widget.child,
-                )
-              : widget.child,
-        ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: header,
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

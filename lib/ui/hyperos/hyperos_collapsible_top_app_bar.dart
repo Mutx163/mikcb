@@ -239,10 +239,17 @@ class HyperosExitUntilCollapsedScrollBehavior
     final canParkViaScroll =
         expansion <= 0 || (maxExtent - minExtent) >= expansion - 1.0;
     if (!canParkViaScroll) {
+      debugPrint('[SNAP] handleScroll → SHORT PAGE path '
+          'pixels=${pixels.toStringAsFixed(1)} '
+          'expansion=${expansion.toStringAsFixed(1)} '
+          'scrollRange=${(maxExtent - minExtent).toStringAsFixed(1)} '
+          '${notification.runtimeType}');
       return _handleShortPageScroll(notification);
     }
 
     if (_snapInProgress && notification is! ScrollEndNotification) {
+      debugPrint('[SNAP] handleScroll snapInProgress skip '
+          '${notification.runtimeType}');
       // Keep heightOffset in sync while the snap animation runs.
       _syncOffsetToPosition(notification.metrics);
       return false;
@@ -296,9 +303,13 @@ class HyperosExitUntilCollapsedScrollBehavior
     if (_smallTitleLocked) {
       if (notification is ScrollStartNotification) {
         // New gesture: clear lock so the user can freely interact.
+        debugPrint('[SNAP] handleScroll unlock on ScrollStart');
         _smallTitleLocked = false;
       } else {
         // During the current gesture (drag or fling), keep the title frozen.
+        debugPrint('[SNAP] handleScroll smallTitleLocked block '
+            '${notification.runtimeType} '
+            'heightOffset=${state.heightOffset.toStringAsFixed(1)}');
         state.contentOffset = pixels;
         return false;
       }
@@ -332,6 +343,11 @@ class HyperosExitUntilCollapsedScrollBehavior
       final textHeight = state.largeTitleTextHeight;
       final snapThreshold =
           textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
+      debugPrint('[SNAP] _handleShortPageScroll ScrollEnd '
+          'scrolled=${scrolled.toStringAsFixed(1)} '
+          'textHeight=${textHeight.toStringAsFixed(1)} '
+          'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
+          '${scrolled >= snapThreshold ? "COLLAPSE" : "EXPAND"}');
       state.heightOffset = scrolled >= snapThreshold ? limit : 0.0;
       state.contentOffset = metrics.pixels;
       return false;
