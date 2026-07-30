@@ -611,6 +611,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
                   : widget.child,
             ),
           ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: header,
+          ),
         ],
       ),
     ),
