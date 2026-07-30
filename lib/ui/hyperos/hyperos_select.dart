@@ -353,7 +353,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
             builder: (context, _) {
               final fraction = _fraction.value.clamp(0.0, 1.0);
               final alpha = _alpha.value.clamp(0.0, 1.0);
-              final scale = 0.15 + 0.85 * fraction;
+              final scale = 0.3 + 0.7 * fraction;
               return Transform.scale(
                 scale: scale,
                 alignment: Alignment(1.0, localOriginY * 2 - 1),

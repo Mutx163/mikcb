@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 
-/// HyperOS / Miuix checkbox (26dp, primary fill when checked).
+/// HyperOS-style checkbox — delegates to [MiuixCheckbox].
 class HyperosCheckbox extends StatelessWidget {
   const HyperosCheckbox({
     super.key,
@@ -19,54 +19,15 @@ class HyperosCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onChanged != null;
-    final primary = HyperosColors.primary(context);
-    final border = HyperosColors.outline(context);
-    final disabled = HyperosColors.disabledOnSurface(context);
-
-    final size = HyperosMiuixCheckbox.size;
-    final radius = size * 0.22;
-
-    return Semantics(
-      checked: value,
-      enabled: enabled,
-      child: GestureDetector(
-        onTap: enabled
-            ? () {
-                HapticFeedback.selectionClick();
-                onChanged!(!value);
-              }
-            : null,
-        child: AnimatedContainer(
-          duration: const Duration(
-            milliseconds: HyperosMiuixCheckbox.colorAnimMs,
-          ),
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: value ? (enabled ? primary : disabled) : Colors.transparent,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(
-              color: value
-                  ? (enabled ? primary : disabled)
-                  : (enabled ? border : disabled),
-              width: value ? 0 : 1.5,
-            ),
-          ),
-          child: value
-              ? Icon(
-                  Icons.check_rounded,
-                  size: size * 0.72,
-                  color: HyperosColors.onPrimary(context),
-                )
-              : null,
-        ),
-      ),
+    return MiuixCheckbox(
+      value: value,
+      onChanged: onChanged != null ? (v) => onChanged!(v ?? false) : null,
+      enabled: onChanged != null,
     );
   }
 }
 
-/// HyperOS / Miuix radio button (26dp outer ring).
+/// HyperOS-style radio button — delegates to [MiuixRadioButton].
 class HyperosRadio<T> extends StatelessWidget {
   const HyperosRadio({
     super.key,
@@ -83,59 +44,10 @@ class HyperosRadio<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onChanged != null;
-    final primary = HyperosColors.primary(context);
-    final border = HyperosColors.outline(context);
-    final disabled = HyperosColors.disabledOnSurface(context);
-
-    const size = HyperosMiuixCheckbox.size;
-    const inner = 10.0;
-
-    return Semantics(
-      checked: _selected,
-      enabled: enabled,
-      child: GestureDetector(
-        onTap: enabled
-            ? () {
-                HapticFeedback.selectionClick();
-                onChanged!(value);
-              }
-            : null,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(
-                milliseconds: HyperosMiuixCheckbox.colorAnimMs,
-              ),
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _selected
-                      ? (enabled ? primary : disabled)
-                      : (enabled ? border : disabled),
-                  width: 2,
-                ),
-              ),
-              child: _selected
-                  ? Center(
-                      child: Container(
-                        width: inner,
-                        height: inner,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: enabled ? primary : disabled,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      ),
+    return MiuixRadioButton(
+      selected: _selected,
+      onChanged: onChanged != null ? (_) => onChanged!(value) : null,
+      enabled: onChanged != null,
     );
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
-import 'hyperos_theme.dart';
 
-/// HyperOS floating pill toolbar (Miuix `FloatingToolbar`).
+/// HyperOS floating pill toolbar — delegates to [MiuixFloatingToolbar].
 class HyperosFloatingToolbar extends StatelessWidget {
   const HyperosFloatingToolbar({
     super.key,
@@ -19,36 +19,21 @@ class HyperosFloatingToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = HyperosColors.elevatedSurface(context);
-    final divider = HyperosColors.dividerLine(context);
-
-    return Padding(
-      padding: padding,
-      child: Material(
-        color: background,
-        elevation: HyperosMiuixFloatingToolbar.defaultShadowElevation,
-        shadowColor: Colors.black.withValues(
-          alpha: HyperosMiuixFloatingToolbar.shadowAlpha,
-        ),
-        borderRadius: BorderRadius.circular(
-          HyperosMiuixFloatingToolbar.cornerRadius,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicHeight(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0)
-                  VerticalDivider(
-                    width: HyperosMiuixFloatingToolbar.dividerWidth,
-                    thickness: HyperosMiuixFloatingToolbar.dividerWidth,
-                    color: divider,
-                  ),
-                children[i],
-              ],
+    return MiuixFloatingToolbar(
+      outSidePadding: padding,
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0)
+                VerticalDivider(
+                  width: HyperosMiuixFloatingToolbar.dividerWidth,
+                  thickness: HyperosMiuixFloatingToolbar.dividerWidth,
+                ),
+              children[i],
             ],
-          ),
+          ],
         ),
       ),
     );

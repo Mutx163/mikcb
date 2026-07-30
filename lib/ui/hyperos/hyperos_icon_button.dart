@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 
-import 'hyperos_miuix_spec.dart';
-import 'hyperos_theme.dart';
-
-/// HyperOS / Miuix circular icon button (40×40, full round hit target).
+/// HyperOS-style icon button — delegates to [MiuixIconButton].
 class HyperosIconButton extends StatelessWidget {
   const HyperosIconButton({
     super.key,
@@ -25,34 +22,12 @@ class HyperosIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    final iconColor = color ?? HyperosColors.onSurface(context);
-    final splash = HyperosColors.surfaceContainerHigh(context);
-
-    final button = Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: enabled
-            ? () {
-                HapticFeedback.lightImpact();
-                onPressed!();
-              }
-            : null,
-        splashColor: splash,
-        highlightColor: splash.withValues(alpha: 0.6),
-        radius: splashRadius ?? HyperosMiuixIconButton.cornerRadius / 2,
-        child: SizedBox(
-          width: HyperosMiuixIconButton.minWidth,
-          height: HyperosMiuixIconButton.minHeight,
-          child: Icon(
-            icon,
-            size: iconSize,
-            color: enabled ? iconColor : iconColor.withValues(alpha: 0.38),
-          ),
-        ),
-      ),
+    final effectiveEnabled = onPressed != null;
+    final iconColor = color;
+    final button = MiuixIconButton(
+      onPressed: onPressed,
+      enabled: effectiveEnabled,
+      child: Icon(icon, size: iconSize, color: iconColor),
     );
 
     if (tooltip != null && tooltip!.isNotEmpty) {

@@ -437,9 +437,6 @@ class _HyperosSliderValueSheetBodyState
             controller: _controller,
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-            ],
             helper:
                 _errorText ?? widget.helper ?? '${widget.min} - ${widget.max}',
             onSubmitted: (_) => _submit(),
