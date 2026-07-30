@@ -3,11 +3,13 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../models/timetable_settings.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
 export 'frosted/frosted_appearance.dart';
 export 'frosted/frosted_header_background.dart'
     show FrostedHeaderBackground, HyperosFrostedSurface;
+// HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 
@@ -41,6 +43,21 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
 
   static double insetOf(BuildContext context) {
     return maybeOf(context)?.contentTopInset ?? 0;
+  }
+
+  /// Reads [contentTopInset] WITHOUT registering an inherited dependency.
+  ///
+  /// Must be used from [ScrollBehavior.getScrollPhysics]: that runs inside
+  /// `Scrollable._updatePosition` with the Scrollable's own context, so a
+  /// `dependOnInheritedWidgetOfExactType` there subscribes the Scrollable
+  /// element to this scope — every frost flip / inset change then triggers
+  /// `didChangeDependencies → _updatePosition`, which tears down and
+  /// recreates the ScrollPosition mid-gesture (pixels silently reset to 0,
+  /// title flickers). See the collapse/frost regression on short pages.
+  static double insetOfUntracked(BuildContext context) {
+    final scope = context
+        .getInheritedWidgetOfExactType<HyperosBlurredHeaderScope>();
+    return scope?.contentTopInset ?? 0;
   }
 
   static bool blurEnabledOf(BuildContext context) {
@@ -90,6 +107,20 @@ abstract final class HyperosBlurredHeader {
     return safeTop + minHeaderHeight + headerPaddingBottom;
   }
 
+  /// Approximate body top inset for expanded [HyperosCollapsibleTopAppBar]
+  /// before the overlay header is measured (safe top + collapsed row + large title).
+  static double contentTopInsetCollapsible(BuildContext context) {
+    final safeTop = MediaQuery.paddingOf(context).top;
+    // Match expanded layout: action row + large title 1 line + bottom pad,
+    // plus the app-side title→content gap (see largeTitleContentGap).
+    const expandedContentHeight =
+        HyperosMiuixTopAppBar.collapsedHeight +
+        HyperosMiuixTypography.title1 * 1.2 +
+        HyperosMiuixTopAppBar.largeTitleBottomPadding +
+        HyperosMiuixTopAppBar.largeTitleContentGap;
+    return safeTop + expandedContentHeight;
+  }
+
   /// Default vertical size for a single-line [HyperosBlurredHeaderExtension]
   /// row (padding + ~48dp field) before the overlay header is measured.
   static const defaultExtensionHeight = 68.0;
@@ -115,6 +146,28 @@ abstract final class HyperosBlurredHeader {
 
   static double sheetBarrierAlphaOf(BuildContext context) {
     return _appearanceOf(context).sheetBarrierAlpha;
+  }
+
+  /// Soft black dim behind liquid-glass modals (sheets, select popups, dialogs).
+  ///
+  /// Stronger scrims muddy refraction because the glass samples through the
+  /// barrier. Fully transparent barriers make the modal hard to spot as a
+  /// modal. Keep this lighter than the gaussian default (~0.20).
+  static const liquidGlassModalBarrierAlpha = 0.10;
+
+  /// Modal scrim shared by home menu, sheets, dialogs, and select popups.
+  ///
+  /// - **Gaussian**: black scrim from [FrostedAppearance.sheetBarrierAlpha]
+  ///   (外观与配色), matching the home top-right menu.
+  /// - **Liquid glass**: fixed light dim ([liquidGlassModalBarrierAlpha]).
+  ///   Just enough hierarchy that the popup reads as a modal, without a heavy
+  ///   grey wash that flattens the refractive glass.
+  static Color modalBarrierColor(BuildContext context) {
+    final appearance = _appearanceOf(context);
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+      return Colors.black.withValues(alpha: liquidGlassModalBarrierAlpha);
+    }
+    return Colors.black.withValues(alpha: sheetBarrierAlphaOf(context));
   }
 
   /// Whether live [BackdropFilter] blur is allowed (platform + user setting).
@@ -164,10 +217,13 @@ abstract final class HyperosBlurredHeader {
     Color? base,
   }) {
     if (!withBlur) {
-      // Parent sheet is already opaque surfaceContainer. Nested tiles must use a
-      // different solid fill so their frames stay visible (never pure white-on-white).
-      // Do not touch the withBlur:true path — appearance tuning is frozen there.
-      return HyperosColors.secondaryVariant(context);
+      // Parent may be liquid glass or solid. Prefer a translucent wash so nested
+      // icon wells never punch opaque blocks through the panel.
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      if (isDark) {
+        return Colors.white.withValues(alpha: 0.10);
+      }
+      return Colors.black.withValues(alpha: 0.05);
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (!isDark) {
@@ -178,6 +234,17 @@ abstract final class HyperosBlurredHeader {
     }
     final surface = base ?? HyperosColors.card(context);
     return surface.withValues(alpha: 0.52);
+  }
+
+  /// Nested tile wash when the parent sheet already uses liquid glass.
+  ///
+  /// Must stay translucent — solid secondaryVariant reads as dead blocks.
+  static Color nestedLiquidTileTintColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isDark) {
+      return Colors.white.withValues(alpha: 0.12);
+    }
+    return Colors.white.withValues(alpha: 0.28);
   }
 
   /// Frosted tint for home timetable regions over a full-screen backdrop.

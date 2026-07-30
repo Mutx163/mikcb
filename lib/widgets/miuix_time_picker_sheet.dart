@@ -60,7 +60,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
     final sheetTitle = widget.title ?? l10n.selectTimeTitle;
     final textStyles = MiuixTheme.of(context).textStyles;
     // 与日期滚轮对话框一致，title3 保证两列均分时数字完整显示。
-    final pickerStyle = textStyles.title3.copyWith(fontWeight: FontWeight.w400);
+    final pickerStyle = textStyles.title3.copyWith(fontWeight: FontWeight.w600);
 
     return HyperosSheet(
       title: sheetTitle,

@@ -90,7 +90,6 @@ class HyperosHintBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return HyperosAdaptiveCard(
-      preferredRadius: HyperosTokens.controlRadius,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

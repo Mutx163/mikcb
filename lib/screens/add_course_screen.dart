@@ -17,6 +17,7 @@ import '../widgets/course_color_picker_sheet.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_template_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../widgets/miuix_number_picker_sheet.dart';
 import '../widgets/time_scheme_picker_sheet.dart';
 
 enum _WeekSelectionMode { range, custom }
@@ -391,6 +392,30 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     onSelected(selected);
   }
 
+  /// Miuix wheel sheet for numeric ranges (sections / weeks) — same picker as
+  /// the semester week count sheet on the settings home page.
+  Future<void> _pickFromNumberWheelSheet({
+    required String title,
+    required int currentValue,
+    required int minValue,
+    required int maxValue,
+    required String Function(int value) label,
+    required ValueChanged<int> onSelected,
+  }) async {
+    final selected = await showMiuixNumberPickerSheet(
+      context,
+      title: title,
+      currentValue: currentValue,
+      minValue: minValue,
+      maxValue: maxValue,
+      label: label,
+    );
+    if (!mounted || selected == null || selected == currentValue) {
+      return;
+    }
+    onSelected(selected);
+  }
+
   Widget _buildGroupEditingBody(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -602,16 +627,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       return swatch;
     }
     return Tooltip(message: tooltip, child: swatch);
-  }
-
-  Map<String, int> _sectionSelectItems(
-    Iterable<int> sectionNumbers,
-    AppLocalizations l10n,
-  ) {
-    return {
-      for (final section in sectionNumbers)
-        l10n.scheduleSectionNumberLabel(section): section,
-    };
   }
 
   void _autofillShortNameFromCourseName() {
@@ -1000,10 +1015,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final startSelect = _buildCompactPickerField(
       label: l10n.startSectionLabel,
       value: l10n.scheduleSectionNumberLabel(entry.startSection),
-      onPress: () => _pickFromSelectSheet(
+      onPress: () => _pickFromNumberWheelSheet(
         title: l10n.startSectionLabel,
-        items: _sectionSelectItems(sectionNumbers, l10n),
         currentValue: entry.startSection,
+        minValue: sectionNumbers.first,
+        maxValue: sectionNumbers.last,
+        label: (section) => l10n.scheduleSectionNumberLabel(section),
         onSelected: (value) {
           setState(() {
             entry.startSection = value;
@@ -1017,13 +1034,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final endSelect = _buildCompactPickerField(
       label: l10n.endSectionLabel,
       value: l10n.scheduleSectionNumberLabel(entry.endSection),
-      onPress: () => _pickFromSelectSheet(
+      onPress: () => _pickFromNumberWheelSheet(
         title: l10n.endSectionLabel,
-        items: _sectionSelectItems(
-          sectionNumbers.where((s) => s >= entry.startSection),
-          l10n,
-        ),
         currentValue: entry.endSection,
+        minValue: entry.startSection,
+        maxValue: sectionNumbers.last,
+        label: (section) => l10n.scheduleSectionNumberLabel(section),
         onSelected: (value) => setState(() => entry.endSection = value),
       ),
     );
@@ -1536,33 +1552,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required bool isSelected,
     required VoidCallback onPress,
   }) {
-    final theme = context.theme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: theme.style.borderRadius.md,
-        onTap: onPress,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: isSelected ? theme.colors.primary : theme.colors.secondary,
-            borderRadius: theme.style.borderRadius.md,
-            border: Border.all(
-              color: isSelected ? theme.colors.primary : theme.colors.border,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              '$week',
-              style: theme.typography.body.sm.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? theme.colors.primaryForeground
-                    : theme.colors.secondaryForeground,
-              ),
-            ),
-          ),
-        ),
-      ),
+    // Ready-made Miuix button; dense variant is tuned for grid / chip layouts.
+    return HyperosButton(
+      label: '$week',
+      variant: isSelected
+          ? HyperosButtonVariant.primary
+          : HyperosButtonVariant.secondary,
+      dense: true,
+      onPressed: onPress,
     );
   }
 
@@ -1703,16 +1700,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                               if (tempMode == _WeekSelectionMode.range) ...[
                                 _buildResponsiveFieldPair(
                                   spacing: 8,
-                                  leading: _buildCompactPickerField(
+                                  leading: HyperosPickerField(
                                     label: l10n.startWeekLabel,
                                     value: l10n.weekLabel(tempStartWeek),
-                                    onPress: () => _pickFromSelectSheet(
+                                    onTap: () => _pickFromNumberWheelSheet(
                                       title: l10n.startWeekLabel,
-                                      items: {
-                                        for (final week in availableWeeks)
-                                          l10n.weekLabel(week): week,
-                                      },
                                       currentValue: tempStartWeek,
+                                      minValue: availableWeeks.first,
+                                      maxValue: availableWeeks.last,
+                                      label: (week) => l10n.weekLabel(week),
                                       onSelected: (value) {
                                         setDialogState(() {
                                           tempStartWeek = value;
@@ -1723,18 +1719,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                       },
                                     ),
                                   ),
-                                  trailing: _buildCompactPickerField(
+                                  trailing: HyperosPickerField(
                                     label: l10n.endWeekLabel,
                                     value: l10n.weekLabel(tempEndWeek),
-                                    onPress: () => _pickFromSelectSheet(
+                                    onTap: () => _pickFromNumberWheelSheet(
                                       title: l10n.endWeekLabel,
-                                      items: {
-                                        for (final week in availableWeeks.where(
-                                          (w) => w >= tempStartWeek,
-                                        ))
-                                          l10n.weekLabel(week): week,
-                                      },
                                       currentValue: tempEndWeek,
+                                      minValue: tempStartWeek,
+                                      maxValue: availableWeeks.last,
+                                      label: (week) => l10n.weekLabel(week),
                                       onSelected: (value) {
                                         setDialogState(
                                           () => tempEndWeek = value,
@@ -1818,8 +1811,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: [
-                                    ActionChip(
-                                      label: Text(l10n.selectAllAction),
+                                    HyperosButton(
+                                      label: l10n.selectAllAction,
+                                      variant: HyperosButtonVariant.secondary,
+                                      dense: true,
                                       onPressed: () {
                                         setDialogState(() {
                                           tempCustomWeeks = availableWeeks
@@ -1827,8 +1822,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                         });
                                       },
                                     ),
-                                    ActionChip(
-                                      label: Text(l10n.selectOddWeeksAction),
+                                    HyperosButton(
+                                      label: l10n.selectOddWeeksAction,
+                                      variant: HyperosButtonVariant.secondary,
+                                      dense: true,
                                       onPressed: () {
                                         setDialogState(() {
                                           tempCustomWeeks = availableWeeks
@@ -1837,8 +1834,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                         });
                                       },
                                     ),
-                                    ActionChip(
-                                      label: Text(l10n.selectEvenWeeksAction),
+                                    HyperosButton(
+                                      label: l10n.selectEvenWeeksAction,
+                                      variant: HyperosButtonVariant.secondary,
+                                      dense: true,
                                       onPressed: () {
                                         setDialogState(() {
                                           tempCustomWeeks = availableWeeks
@@ -1856,7 +1855,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                   selectedWeeks.length,
                                   _formatWeekList(selectedWeeks),
                                 ),
-                                style: context.theme.typography.body.sm,
+                                style: HyperosTypography.listDetail(context),
                               ),
                             ],
                           ),

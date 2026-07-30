@@ -2,7 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 
+import 'hyperos_blurred_header.dart';
 import 'hyperos_theme.dart';
+
+/// Title that stays hidden while the page rests and fades in once content
+/// scrolls under the frosted bar (MIUI updater style: bar is empty at rest,
+/// a small centered title appears together with the frost).
+///
+/// Reads [HyperosBlurredHeaderScope.contentUnderHeader], so it only works
+/// inside an overlay-header page shell ([HyperosSubpage] and friends).
+/// Reveal/hide timings mirror the Miuix small-title folme spring
+/// (show 300ms / hide 150ms, easeOutCubic + slight upward rise).
+class HyperosScrollRevealedTitle extends StatelessWidget {
+  const HyperosScrollRevealedTitle({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = HyperosBlurredHeaderScope.contentUnderHeaderOf(context);
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedSlide(
+        offset: visible ? Offset.zero : const Offset(0, 0.4),
+        duration: Duration(milliseconds: visible ? 300 : 150),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: visible ? 1.0 : 0.0,
+          duration: Duration(milliseconds: visible ? 300 : 150),
+          curve: Curves.easeOutCubic,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
 
 /// Nested settings header safe for blur overlay stacks.
 ///

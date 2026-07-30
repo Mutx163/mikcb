@@ -4,19 +4,27 @@ import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
 
-/// Overlap between adjacent home frosted bands to hide backdrop seams.
+/// Reserved clearance between the weekday chrome band and the course grid.
+///
+/// Also used historically as frosted-band seam overlap between header and
+/// weekday glass. Keep this value so glass/cards are not flush.
 const homePageFrostedRegionSeamOverlap = 4.0;
 
-bool homePageUsesUnifiedChromeBlur(
+/// Whether any home chrome frosted band should paint over the wallpaper.
+///
+/// Time column is intentionally excluded: it never uses blur / liquid glass.
+bool homePageHasAnyChromeBlur(
   TimetableSettings settings, {
   required bool hasBackdrop,
 }) {
-  return hasBackdrop &&
-      settings.homePageHeaderBlurEnabled &&
-      settings.homePageWeekdayBarBlurEnabled &&
-      settings.homePageTimeColumnBlurEnabled;
+  if (!hasBackdrop) {
+    return false;
+  }
+  return settings.homePageHeaderBlurEnabled ||
+      settings.homePageWeekdayBarBlurEnabled;
 }
 
 HomePageBackgroundVisual homePageRegionChromeVisual({
@@ -37,46 +45,243 @@ HomePageBackgroundVisual homePageRegionChromeVisual({
   );
 }
 
-/// Frosted band behind the stacked home header (status bar + title row).
-class HomePageHeaderBlurBand extends StatelessWidget {
-  const HomePageHeaderBlurBand({
-    required this.enabled,
-    this.includeStatusBar = true,
-    this.extendBottom = 0,
+/// Layout of the chrome glass band (status/title and optional weekday row).
+///
+/// Exposed for unit tests so the band never extends into the course grid.
+({double top, double height}) homePageChromeGlassLayout({
+  required double safeAreaTop,
+  required bool includeStatusBar,
+  required bool headerBlurEnabled,
+  required bool weekdayBarBlurEnabled,
+  required double weekdayBarHeight,
+}) {
+  // Title row always occupies this band under the status bar, whether or not
+  // header blur is enabled — weekday glass must start after it.
+  final titleBandTop = includeStatusBar ? 0.0 : safeAreaTop;
+  final titleBandHeight = includeStatusBar
+      ? safeAreaTop + homePageHeaderContentHeight
+      : homePageHeaderContentHeight;
+  final titleBandBottom = titleBandTop + titleBandHeight;
+
+  if (headerBlurEnabled && weekdayBarBlurEnabled) {
+    return (
+      top: titleBandTop,
+      height: titleBandHeight + math.max(0.0, weekdayBarHeight),
+    );
+  }
+  if (headerBlurEnabled) {
+    return (top: titleBandTop, height: titleBandHeight);
+  }
+  // Weekday-only glass: sit on the weekday row. Grid clearance is layout
+  // padding under the weekday header, not a shorter glass band.
+  return (top: titleBandBottom, height: math.max(0.0, weekdayBarHeight));
+}
+
+/// One continuous frosted / liquid-glass chrome mask for the home timetable.
+///
+/// Covers status bar + title and/or the weekday bar only. The glass layer is
+/// physically bounded to that band (not a full-screen ClipPath), so liquid
+/// glass / BackdropFilter cannot bleed into the course grid.
+class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
+  const HomePageContinuousChromeFrostedOverlay({
+    required this.headerBlurEnabled,
+    required this.weekdayBarBlurEnabled,
+    required this.includeStatusBar,
+    required this.weekdayBarHeight,
+    this.wallpaperTopLuminance,
     super.key,
   });
 
-  final bool enabled;
+  final bool headerBlurEnabled;
+  final bool weekdayBarBlurEnabled;
   final bool includeStatusBar;
-  final double extendBottom;
+  final double weekdayBarHeight;
+
+  /// Sampled luminance of the wallpaper behind this band, when known.
+  ///
+  /// Drives the legibility scrim's polarity so it never fights the ink colour
+  /// picked by [homePageChromeForegroundForLuminance]: a dark wallpaper gets a
+  /// dark scrim under light ink, not a white wash that flattens contrast.
+  final double? wallpaperTopLuminance;
+
+  bool get _hasAnyBand => headerBlurEnabled || weekdayBarBlurEnabled;
 
   @override
   Widget build(BuildContext context) {
-    if (!enabled) {
+    if (!_hasAnyBand) {
       return const SizedBox.shrink();
     }
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final layout = homePageHeaderBlurBandRect(
+
+    final layout = homePageChromeGlassLayout(
       safeAreaTop: MediaQuery.paddingOf(context).top,
       includeStatusBar: includeStatusBar,
-      extendBottom: extendBottom,
+      headerBlurEnabled: headerBlurEnabled,
+      weekdayBarBlurEnabled: weekdayBarBlurEnabled,
+      weekdayBarHeight: weekdayBarHeight,
     );
+    if (layout.height <= 0) {
+      return const SizedBox.shrink();
+    }
+
     return Positioned(
       top: layout.top,
       left: 0,
       right: 0,
       height: layout.height,
       child: IgnorePointer(
-        child: FrostedHeaderBackground(
-          blurEnabled: useBlur,
-          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          tint: HyperosBlurredHeader.homePageRegionTintColor(
-            context,
-            withBlur: useBlur,
+        child: ClipRect(
+          clipBehavior: Clip.hardEdge,
+          child: HomePageChromeGlassFill(
+            wallpaperTopLuminance: wallpaperTopLuminance,
           ),
-          child: const SizedBox.expand(),
         ),
       ),
+    );
+  }
+}
+
+/// The chrome glass *material* — liquid glass or gaussian frost, per settings.
+///
+/// Public so the settings previews can paint the same material as the home
+/// page while positioning the band themselves:
+/// [HomePageContinuousChromeFrostedOverlay] derives its geometry from the real
+/// status-bar inset and home-page constants, neither of which applies inside a
+/// scaled-down preview box.
+class HomePageChromeGlassFill extends StatelessWidget {
+  const HomePageChromeGlassFill({
+    this.wallpaperTopLuminance,
+    this.borderRadius = 0,
+    super.key,
+  });
+
+  final double? wallpaperTopLuminance;
+
+  /// Corner radius of the glass shape itself. The chrome band is square (0);
+  /// the day-view summary card reuses this material with its card radius —
+  /// the liquid-glass shape must be rounded at the source, an outer ClipRRect
+  /// alone leaves square refraction / edge lighting.
+  final double borderRadius;
+
+  /// Polarity-correct legibility scrim colour for this band.
+  ///
+  /// Public so Opacity-safe stand-ins (day-view summary during the overlay
+  /// open/close ramp) can paint the exact same wash over a pre-blurred
+  /// wallpaper sample and read as the same glass.
+  static Color scrimColor(
+    BuildContext context, {
+    double? wallpaperTopLuminance,
+  }) {
+    final luminance = wallpaperTopLuminance;
+    final bool wantsDarkScrim = luminance != null
+        ? luminance < 0.45
+        : Theme.of(context).brightness == Brightness.dark;
+    return wantsDarkScrim
+        ? Colors.black.withValues(alpha: 0.28)
+        : Colors.white.withValues(alpha: 0.30);
+  }
+
+  /// Wash colour a pre-blur stand-in must paint to read as this material.
+  ///
+  /// Mirrors [build] exactly. The gaussian-frost path tints with
+  /// [HyperosBlurredHeader.homePageRegionTintColor] and paints **no** scrim.
+  /// The liquid-glass path is the header glassColor's milky wash **plus**
+  /// [scrimColor] over it — the scrim alone reads clearly darker than the
+  /// band, so the two layers are composited into one equivalent colour.
+  static Color standInWashColor(
+    BuildContext context, {
+    double? wallpaperTopLuminance,
+  }) {
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final appearance = FrostedAppearanceScope.of(context);
+    if (useBlur && appearance.glassMode == FrostedGlassMode.liquidGlass) {
+      final glass = HyperosLiquidGlassSurface.settingsForRole(
+        role: HyperosLiquidGlassRole.header,
+        brightness: Theme.of(context).brightness,
+        tuning: appearance.liquidGlassTuning,
+      ).glassColor;
+      return _stackedWash(
+        glass,
+        scrimColor(context, wallpaperTopLuminance: wallpaperTopLuminance),
+      );
+    }
+    return HyperosBlurredHeader.homePageRegionTintColor(
+      context,
+      withBlur: useBlur,
+    );
+  }
+
+  /// Composites two translucent washes into the one equivalent translucent
+  /// colour of painting [over] on top of [under], over any backdrop.
+  static Color _stackedWash(Color under, Color over) {
+    final overA = over.a;
+    final underA = under.a * (1 - overA);
+    final outA = overA + underA;
+    if (outA <= 0) {
+      return const Color(0x00000000);
+    }
+    double channel(double u, double o) => (o * overA + u * underA) / outA;
+    return Color.from(
+      alpha: outA,
+      red: channel(under.r, over.r),
+      green: channel(under.g, over.g),
+      blue: channel(under.b, over.b),
+    );
+  }
+
+  /// Polarity-correct legibility scrim for this band.
+  ///
+  /// The generic sheet/header fill in [HyperosLiquidGlassSurface] keys off the
+  /// *theme* brightness, which is wrong here: with a light theme over a dark
+  /// wallpaper it washes the band white while the ink is already white. Follow
+  /// the sampled wallpaper luminance instead, and fall back to the theme when
+  /// no sample is available.
+  Widget _scrim(BuildContext context) {
+    final color = scrimColor(
+      context,
+      wallpaperTopLuminance: wallpaperTopLuminance,
+    );
+    return Positioned.fill(
+      child: IgnorePointer(child: ColoredBox(color: color)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final glassMode = FrostedAppearanceScope.of(context).glassMode;
+    final useLiquidGlass = useBlur && glassMode == FrostedGlassMode.liquidGlass;
+
+    const fill = SizedBox.expand();
+
+    if (useLiquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.header,
+        borderRadius: borderRadius,
+        instantUnderlay: false,
+        // This band paints its own wallpaper-aware scrim below.
+        contentLegibilityFill: false,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [_scrim(context), fill],
+        ),
+      );
+    }
+
+    final frost = FrostedHeaderBackground(
+      blurEnabled: useBlur,
+      blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+      tint: HyperosBlurredHeader.homePageRegionTintColor(
+        context,
+        withBlur: useBlur,
+      ),
+      child: fill,
+    );
+    if (borderRadius <= 0) {
+      return frost;
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: frost,
     );
   }
 }
@@ -100,122 +305,5 @@ class HomePageStatusBarBackdropMask extends StatelessWidget {
       height: height,
       child: ColoredBox(color: color),
     );
-  }
-}
-
-/// Single frosted L-shape for weekday bar + time column (continuous blur).
-class HomePageUnifiedWeekFrostedOverlay extends StatelessWidget {
-  const HomePageUnifiedWeekFrostedOverlay({
-    required this.weekdayBarHeight,
-    required this.timeColumnWidth,
-    this.overlapTop = 0,
-    super.key,
-  });
-
-  final double weekdayBarHeight;
-  final double timeColumnWidth;
-  final double overlapTop;
-
-  @override
-  Widget build(BuildContext context) {
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final frosted = LayoutBuilder(
-      builder: (context, constraints) {
-        return ClipPath(
-          clipper: _HomePageWeekChromeClipper(
-            weekdayBarHeight: weekdayBarHeight + overlapTop,
-            timeColumnWidth: timeColumnWidth,
-          ),
-          child: FrostedHeaderBackground(
-            blurEnabled: useBlur,
-            blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-            tint: HyperosBlurredHeader.homePageRegionTintColor(
-              context,
-              withBlur: useBlur,
-            ),
-            child: SizedBox(
-              width: constraints.maxWidth,
-              height: constraints.maxHeight + overlapTop,
-            ),
-          ),
-        );
-      },
-    );
-    if (overlapTop <= 0) {
-      return IgnorePointer(child: frosted);
-    }
-    return IgnorePointer(
-      child: Transform.translate(
-        offset: Offset(0, -overlapTop),
-        child: frosted,
-      ),
-    );
-  }
-}
-
-class _HomePageWeekChromeClipper extends CustomClipper<Path> {
-  const _HomePageWeekChromeClipper({
-    required this.weekdayBarHeight,
-    required this.timeColumnWidth,
-  });
-
-  final double weekdayBarHeight;
-  final double timeColumnWidth;
-
-  @override
-  Path getClip(Size size) {
-    final weekdayRect = Rect.fromLTWH(0, 0, size.width, weekdayBarHeight);
-    final timeColumnRect = Rect.fromLTWH(
-      0,
-      weekdayBarHeight,
-      timeColumnWidth,
-      math.max(0, size.height - weekdayBarHeight),
-    );
-    return Path()
-      ..addRect(weekdayRect)
-      ..addRect(timeColumnRect);
-  }
-
-  @override
-  bool shouldReclip(covariant _HomePageWeekChromeClipper oldClipper) {
-    return oldClipper.weekdayBarHeight != weekdayBarHeight ||
-        oldClipper.timeColumnWidth != timeColumnWidth;
-  }
-}
-
-/// Optional frosted backdrop for a home timetable region over wallpaper.
-class HomePageFrostedRegion extends StatelessWidget {
-  const HomePageFrostedRegion({
-    required this.enabled,
-    required this.child,
-    this.overlapTop = 0,
-    super.key,
-  });
-
-  final bool enabled;
-  final Widget child;
-  final double overlapTop;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!enabled) {
-      return child;
-    }
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final frosted = ClipRect(
-      child: FrostedHeaderBackground(
-        blurEnabled: useBlur,
-        blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-        tint: HyperosBlurredHeader.homePageRegionTintColor(
-          context,
-          withBlur: useBlur,
-        ),
-        child: child,
-      ),
-    );
-    if (overlapTop <= 0) {
-      return frosted;
-    }
-    return Transform.translate(offset: Offset(0, -overlapTop), child: frosted);
   }
 }

@@ -4,6 +4,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/time_scheme.dart';
 import '../utils/app_toast.dart';
+import 'miuix_time_picker_sheet.dart';
 
 /// Preset values returned by [showTimeSchemeQuickGenerateSheet].
 class TimeSchemeQuickGeneratePreset {
@@ -145,7 +146,6 @@ class _TimeSchemeQuickGenerateSheetState
       chrome: HyperosSheetChrome.floating,
       frosted: true,
       maxHeight: maxSheetHeight,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -170,6 +170,7 @@ class _TimeSchemeQuickGenerateSheetState
                     label: l10n.morningFirstSectionTimeLabel,
                     value: _morningStartTime,
                     onTap: () => _pickTime(
+                      title: l10n.morningFirstSectionTimeLabel,
                       currentValue: _morningStartTime,
                       onSelected: (value) {
                         setState(() {
@@ -188,6 +189,7 @@ class _TimeSchemeQuickGenerateSheetState
                     label: l10n.afternoonFirstSectionTimeLabel,
                     value: _afternoonStartTime,
                     onTap: () => _pickTime(
+                      title: l10n.afternoonFirstSectionTimeLabel,
                       currentValue: _afternoonStartTime,
                       onSelected: (value) {
                         setState(() {
@@ -206,6 +208,7 @@ class _TimeSchemeQuickGenerateSheetState
                     label: l10n.eveningFirstSectionTimeLabel,
                     value: _eveningStartTime,
                     onTap: () => _pickTime(
+                      title: l10n.eveningFirstSectionTimeLabel,
                       currentValue: _eveningStartTime,
                       onSelected: (value) {
                         setState(() {
@@ -344,12 +347,14 @@ class _TimeSchemeQuickGenerateSheetState
   }
 
   Future<void> _pickTime({
+    required String title,
     required String currentValue,
     required ValueChanged<String> onSelected,
   }) async {
-    final selected = await showTimePicker(
-      context: context,
+    final selected = await showMiuixTimePickerSheet(
+      context,
       initialTime: _parseTimeOfDay(currentValue),
+      title: title,
     );
     if (selected == null || !mounted) {
       return;

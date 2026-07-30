@@ -2857,6 +2857,28 @@ class TimetableProvider with ChangeNotifier {
     return true;
   }
 
+  /// Persists home view mode / last viewed day without the full settings
+  /// pipeline: no notifyListeners (the home State owns this UI state locally),
+  /// no live-activity / native pref sync — nothing there reads these fields.
+  ///
+  /// Routing this through [updateTimetableSettings] made every day-view page
+  /// switch broadcast a whole-app rebuild plus platform-channel work while the
+  /// pager was still animating.
+  Future<void> persistHomeViewState({
+    required TimetableHomeViewMode mode,
+    required int dayOfWeek,
+  }) async {
+    if (_settings.timetableHomeViewMode == mode &&
+        _settings.timetableLastViewedDayOfWeek == dayOfWeek) {
+      return;
+    }
+    _settings = _settings.copyWith(
+      timetableHomeViewMode: mode,
+      timetableLastViewedDayOfWeek: dayOfWeek,
+    );
+    await _persistActiveProfileState();
+  }
+
   Future<String?> updateTimetableSettings(TimetableSettings settings) async {
     final sectionConfigChanged =
         settings.sectionCount != _settings.sectionCount ||
@@ -2921,12 +2943,14 @@ class TimetableProvider with ChangeNotifier {
     required bool replaceExisting,
     DateTime? semesterStart,
     required String source,
+    bool preserveLocalColors = true,
   }) => _timetableImportParsedCourses(
     this,
     importedCourses,
     replaceExisting: replaceExisting,
     semesterStart: semesterStart,
     source: source,
+    preserveLocalColors: preserveLocalColors,
   );
 
   Future<String?> importAppDataBackup(String content) =>
@@ -3155,6 +3179,7 @@ class TimetableProvider with ChangeNotifier {
       shortName: source.shortName,
       teacher: source.teacher,
       color: source.color,
+      textColor: source.textColor,
       courseNature: source.courseNature,
       description: sharedDescription,
     );

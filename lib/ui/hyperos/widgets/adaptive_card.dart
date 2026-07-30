@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart'
+    show MiuixCardDefaults, MiuixSquircleBorder;
 
-import '../hyperos_radius.dart';
 import '../hyperos_theme.dart';
-import '../hyperos_tokens.dart';
 
 /// Publishes the corner radius actually applied by [HyperosAdaptiveCard].
 ///
-/// Row press highlights must clip to this value — not a fixed
-/// [HyperosTokens.cardRadius] — or short cards look mismatched under the finger.
+/// Row press highlights must clip to this value so first/last rows follow
+/// the card arc exactly.
 class HyperosSurfaceRadiusScope extends InheritedWidget {
   const HyperosSurfaceRadiusScope({
     super.key,
@@ -23,7 +23,9 @@ class HyperosSurfaceRadiusScope extends InheritedWidget {
   }
 
   static double of(BuildContext context, {double? fallback}) {
-    return maybeOf(context)?.radius ?? fallback ?? HyperosTokens.cardRadius;
+    return maybeOf(context)?.radius ??
+        fallback ??
+        MiuixCardDefaults.cornerRadius;
   }
 
   @override
@@ -32,78 +34,43 @@ class HyperosSurfaceRadiusScope extends InheritedWidget {
   }
 }
 
-/// Settings-style card whose corner radius follows measured height.
+/// White settings card using the upstream flutter_miuix radius strategy:
+/// fixed [MiuixCardDefaults.cornerRadius] (16) squircle on every surface,
+/// regardless of content height.
 ///
-/// Short content (single row, collapsed accordion, one action button) uses
-/// [HyperosTokens.controlRadius]; tall multi-row groups keep
-/// [HyperosTokens.cardRadius]. See [HyperosRadius].
-class HyperosAdaptiveCard extends StatefulWidget {
+/// Replaces the former height-adaptive policy (short card 16 / tall group
+/// 24) after the upstream strategy was adopted app-wide. The squircle path
+/// itself clamps geometrically to half the shorter side, so pathologically
+/// short content still cannot overflow into a capsule beyond that limit.
+class HyperosAdaptiveCard extends StatelessWidget {
   const HyperosAdaptiveCard({
     super.key,
     required this.child,
     this.color,
-    this.preferredRadius,
     this.padding,
     this.clipBehavior = Clip.antiAlias,
   });
 
   final Widget child;
   final Color? color;
-
-  /// Preferred radius for tall surfaces. Defaults to [HyperosTokens.cardRadius].
-  final double? preferredRadius;
   final EdgeInsetsGeometry? padding;
   final Clip clipBehavior;
 
   @override
-  State<HyperosAdaptiveCard> createState() => _HyperosAdaptiveCardState();
-}
-
-class _HyperosAdaptiveCardState extends State<HyperosAdaptiveCard> {
-  /// Seed with a single-row height so the first frame already uses control radius.
-  double _height = HyperosTokens.listRowMinHeight;
-
-  void _handleSize(Size size) {
-    if (!mounted) {
-      return;
-    }
-    final nextHeight = size.height;
-    if ((nextHeight - _height).abs() < 0.5) {
-      return;
-    }
-    final previousRadius = HyperosRadius.surfaceRadiusForHeight(
-      _height,
-      preferred: widget.preferredRadius,
-    );
-    final nextRadius = HyperosRadius.surfaceRadiusForHeight(
-      nextHeight,
-      preferred: widget.preferredRadius,
-    );
-    // Skip rebuild when only height noise changes and radius stays the same.
-    if ((nextRadius - previousRadius).abs() < 0.01) {
-      _height = nextHeight;
-      return;
-    }
-    setState(() => _height = nextHeight);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final radius = HyperosRadius.surfaceRadiusForHeight(
-      _height,
-      preferred: widget.preferredRadius,
-    );
-    Widget content = widget.child;
-    if (widget.padding != null) {
-      content = Padding(padding: widget.padding!, child: content);
+    Widget content = child;
+    if (padding != null) {
+      content = Padding(padding: padding!, child: content);
     }
     return Material(
-      color: widget.color ?? HyperosColors.card(context),
-      shape: HyperosTheme.roundedShape(radius),
-      clipBehavior: widget.clipBehavior,
+      color: color ?? HyperosColors.card(context),
+      shape: const MiuixSquircleBorder(
+        cornerRadius: MiuixCardDefaults.cornerRadius,
+      ),
+      clipBehavior: clipBehavior,
       child: HyperosSurfaceRadiusScope(
-        radius: radius,
-        child: HyperosSizeReporter(onSize: _handleSize, child: content),
+        radius: MiuixCardDefaults.cornerRadius,
+        child: content,
       ),
     );
   }

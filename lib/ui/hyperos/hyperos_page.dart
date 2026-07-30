@@ -4,6 +4,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:forui/forui.dart';
 
 import 'hyperos_blurred_header.dart';
+import 'hyperos_collapsible_top_app_bar.dart';
+import 'hyperos_icon_button.dart';
 import 'hyperos_overscroll.dart';
 import 'hyperos_overlay_header.dart';
 import 'hyperos_page_collaborators.dart';
@@ -55,6 +57,7 @@ class HyperosRootPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final collapsibleTitle = hyperosExtractPageTitleText(title);
     return _HyperosBlurredPage(
       childPad: childPad,
       backgroundColor: backgroundColor,
@@ -62,6 +65,8 @@ class HyperosRootPage extends StatelessWidget {
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       overlayHeader: overlayHeader,
       headerExtension: headerExtension,
+      collapsibleTitle: collapsibleTitle,
+      collapsibleActions: suffixes,
       header: FHeader(
         style: headerStyle ?? HyperosTheme.nestedHeaderStyle(context),
         suffixes: suffixes ?? const [],
@@ -76,6 +81,10 @@ class HyperosRootPage extends StatelessWidget {
 ///
 /// [HyperosSubpage] defaults to overlay layout so [BackdropFilter] can sample
 /// scrollable content under the header (settings home and sub-routes).
+///
+/// When [overlayHeader] is true and [title] is a plain [Text], the shell uses
+/// [HyperosCollapsibleTopAppBar] (Miuix-style large-title collapse). Complex
+/// title widgets fall back to the nested frosted header.
 class HyperosSubpage extends StatelessWidget {
   const HyperosSubpage({
     super.key,
@@ -87,8 +96,8 @@ class HyperosSubpage extends StatelessWidget {
     this.headerExtension,
     this.childPad = false,
     this.overlayHeader = true,
-    this.collapsibleLargeTitle = true,
     this.resizeToAvoidBottomInset = false,
+    this.collapsibleLargeTitle = true,
   });
 
   final Widget title;
@@ -105,20 +114,41 @@ class HyperosSubpage extends StatelessWidget {
   /// Set false only when the body must not scroll under the bar.
   final bool overlayHeader;
 
-  /// When false, the large title is always visible and does not collapse on scroll.
-  final bool collapsibleLargeTitle;
-
   /// Defaults to false so modal sheets/dialogs handle keyboard insets themselves
   /// without lifting the page behind them. Enable on inline form subpages.
   final bool resizeToAvoidBottomInset;
 
+  /// When true (default) and [title] is plain [Text], uses
+  /// [HyperosCollapsibleTopAppBar]. Set false for split preview+editor pages
+  /// (course card / timetable page settings) where a lower list must not drive
+  /// large-title collapse.
+  final bool collapsibleLargeTitle;
+
   @override
   Widget build(BuildContext context) {
+    final collapsibleTitle = collapsibleLargeTitle
+        ? hyperosExtractPageTitleText(title)
+        : null;
+    final Widget? navigationIcon;
+    if (onBack != null) {
+      navigationIcon = HyperosIconButton(
+        icon: Icons.arrow_back,
+        onPressed: onBack,
+      );
+    } else if (prefixes != null && prefixes!.isNotEmpty) {
+      navigationIcon = Row(mainAxisSize: MainAxisSize.min, children: prefixes!);
+    } else {
+      navigationIcon = null;
+    }
+
     return _HyperosBlurredPage(
       childPad: childPad,
       overlayHeader: overlayHeader,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       headerExtension: headerExtension,
+      collapsibleTitle: collapsibleTitle,
+      collapsibleNavigationIcon: navigationIcon,
+      collapsibleActions: suffixes,
       header: HyperosOverlayNestedHeader(
         prefixes:
             prefixes ??
@@ -141,6 +171,9 @@ class _HyperosBlurredPage extends StatefulWidget {
     this.headerDecoration,
     this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
+    this.collapsibleTitle,
+    this.collapsibleNavigationIcon,
+    this.collapsibleActions,
   });
 
   final Widget header;
@@ -151,6 +184,12 @@ class _HyperosBlurredPage extends StatefulWidget {
   final BoxDecoration? headerDecoration;
   final bool resizeToAvoidBottomInset;
   final bool overlayHeader;
+
+  /// When non-null and [overlayHeader] is true, drives
+  /// [HyperosCollapsibleTopAppBar] instead of the nested frosted header.
+  final String? collapsibleTitle;
+  final Widget? collapsibleNavigationIcon;
+  final List<Widget>? collapsibleActions;
 
   @override
   State<_HyperosBlurredPage> createState() => _HyperosBlurredPageState();
@@ -163,37 +202,71 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   late final HyperosRouteBlurGate _routeBlurGate;
   late final HyperosHeaderFrostFromScroll _headerFrost;
   late final HyperosOverlayHeaderMetrics _overlayMetrics;
+  late final HyperosExitUntilCollapsedScrollBehavior _collapsibleScrollBehavior;
+
+  /// Keeps the collapsible bar's State alive across frost flips.
+  /// [HyperosFrostedHeaderShell] swaps between structurally different
+  /// subtrees (liquid glass ↔ frosted background) when the frost state
+  /// toggles; without this key the bar element is torn down and re-inflated
+  /// — the small-title animation restarts from transparent (visible blink)
+  /// and the large-title measurement is lost mid-gesture.
+  final GlobalKey _collapsibleBarKey = GlobalKey();
+
+  /// Difference applied to the body top inset by the collapsed large title.
+  /// `0` while expanded, or on pages whose scroll position holds the collapse
+  /// (offset tracks pixels 1:1). `-expansion` once a short page parks the
+  /// title collapsed while its scroll position rests at the top — the resting
+  /// gap then matches the small-title bar instead of the expanded one.
+  ///
+  /// A [ValueNotifier] driving [Transform.translate] directly: the value
+  /// changes on every spring-back frame and must land in the SAME frame as
+  /// the scroll update — routing it through a page-level deferred setState
+  /// applied it one frame late, which read as visible stutter.
+  final ValueNotifier<double> _collapseInsetDelta = ValueNotifier<double>(0);
+
+  /// Pixels at the moment the finger released into the overscroll spring.
+  /// Used to release the parked-title inset proportionally across the whole
+  /// spring travel instead of pinning content dead once pixels drop below
+  /// the expansion (which stopped ~700px/s motion instantly — visible jolt).
+  double? _springReleasePixels;
+  double _lastDragPixels = 0;
+
+  /// setState guarded against build/layout/paint phases. Post-frame callbacks
+  /// run at the end of the current frame; see the note below about not
+  /// calling [SchedulerBinding.scheduleFrame] here.
+  void _deferredSetState() {
+    if (!mounted) {
+      return;
+    }
+    // setState is safe in idle and post-frame phases. Defer only while the
+    // pipeline is mid build/layout/paint.
+    //
+    // Do NOT call [SchedulerBinding.scheduleFrame] here: during
+    // build/layout/paint it throws "Build scheduled during frame" in debug
+    // (e.g. route-animation listeners notifying while the transition paints).
+    // Post-frame callbacks already run at the end of the current frame.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      setState(() {});
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    void notify() {
-      if (!mounted) {
-        return;
-      }
-      // setState is safe in idle and post-frame phases. Defer only while the
-      // pipeline is mid build/layout/paint. Always scheduleFrame when deferring
-      // so nested post-frame work still flushes under WidgetTester (and after
-      // route animation status flips without an extra vsync tick).
-      final phase = SchedulerBinding.instance.schedulerPhase;
-      if (phase == SchedulerPhase.idle ||
-          phase == SchedulerPhase.postFrameCallbacks) {
-        setState(() {});
-        return;
-      }
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {});
-      });
-      SchedulerBinding.instance.scheduleFrame();
-    }
 
     _routeBlurGate = HyperosRouteBlurGate(
       isLiveBlurActive: () => widget.overlayHeader,
       onChanged: () {
-        notify();
+        _deferredSetState();
         _headerFrost.scheduleResyncHeaderFrostAfterLayout();
       },
       onDidPopNext: () {
@@ -202,13 +275,19 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     );
     _headerFrost = HyperosHeaderFrostFromScroll(
       useOverlayLayout: () => widget.overlayHeader,
-      onChanged: notify,
+      onChanged: _deferredSetState,
       scrollFrostThreshold: scrollFrostThreshold,
+      frostThresholdOverride: _collapsibleFrostThreshold,
     );
     _overlayMetrics = HyperosOverlayHeaderMetrics(
       useOverlayLayout: () => widget.overlayHeader,
       hasHeaderExtension: () => widget.headerExtension != null,
-      onChanged: notify,
+      useCollapsibleTopAppBar: () => _useCollapsibleTopAppBar,
+      onChanged: _deferredSetState,
+    );
+    // Page shell listens above nested list NotificationListeners → accept any depth.
+    _collapsibleScrollBehavior = HyperosExitUntilCollapsedScrollBehavior(
+      requireOuterScrollable: false,
     );
     _bindCollaboratorHosts();
   }
@@ -222,6 +301,11 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   bool get _useOverlayLayout => widget.overlayHeader;
 
   bool get _backdropBlurEnabled => _routeBlurGate.backdropBlurEnabled;
+
+  bool get _useCollapsibleTopAppBar =>
+      widget.overlayHeader &&
+      widget.collapsibleTitle != null &&
+      widget.collapsibleTitle!.isNotEmpty;
 
   @override
   void didUpdateWidget(covariant _HyperosBlurredPage oldWidget) {
@@ -267,9 +351,115 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         notification.metrics.axis,
       );
       _routeBlurGate.tryEnableBlurOnUserScroll();
+      if (_useCollapsibleTopAppBar) {
+        _collapsibleScrollBehavior.handleScroll(notification);
+        // Keep the inset delta fresh before the frost check below reads it.
+        _syncCollapseInsetDelta(notification);
+      }
       _headerFrost.syncHeaderFrostForScroll(notification.metrics.pixels);
     }
     return false;
+  }
+
+  /// Frost threshold for collapsible large-title pages.
+  ///
+  /// While the large title is collapsing, the band bottom and the content top
+  /// move in sync — nothing is under the header yet, so the bar must keep the
+  /// plain page color (no blur, no tint flip). Content only tucks under the
+  /// band after scrolling past the large-title zone; that zone shrinks
+  /// together with the body inset once a short page parks the title small.
+  /// The fixed 0.5px default would frost on the first scrolled pixel and then
+  /// flash back seconds later when the overscroll spring's asymptotic tail
+  /// finally crossed back under it.
+  double? _collapsibleFrostThreshold() {
+    if (!_useCollapsibleTopAppBar) {
+      return null;
+    }
+    final limit = _collapsibleScrollBehavior.state.heightOffsetLimit;
+    if (!limit.isFinite || limit >= 0) {
+      // Expansion unmeasured — suppress frost instead of flashing early.
+      return double.infinity;
+    }
+    final threshold =
+        -limit +
+        _collapseInsetDelta.value +
+        HyperosCollapsibleTopAppBarDefaults.largeTitleBottomPadding +
+        // Content rests this much lower than the upstream layout (see
+        // largeTitleContentGap) — frost must not light up until the content
+        // edge actually reaches the band.
+        HyperosCollapsibleTopAppBarDefaults.largeTitleContentGap;
+    return threshold < scrollFrostThreshold ? scrollFrostThreshold : threshold;
+  }
+
+  /// Tracks how much the collapsed large title should shrink the body inset.
+  ///
+  /// `delta = heightOffset + clamp(pixels - min, 0, expansion)`:
+  /// - Scrollable pages: offset tracks pixels 1:1 inside the collapse zone →
+  ///   delta stays 0 → inset keeps the expanded height (content scrolls under
+  ///   the bar as before).
+  /// - Short pages: after release the title stays collapsed while pixels
+  ///   spring back to 0 → delta settles at `-expansion` → content rests right
+  ///   below the small-title bar. During the spring-back the shrinking inset
+  ///   compensates the returning pixels, so content stays visually pinned.
+  ///
+  /// Gestures that *start* from the parked-small state skip the pixel
+  /// compensation ([_insetFollowsGesture] = false): the inset stays frozen at
+  /// `-expansion` so content follows the finger under the band instead of
+  /// being dead-pinned, and rubber-bands back naturally on release.
+  bool _insetFollowsGesture = true;
+
+  void _syncCollapseInsetDelta(ScrollNotification notification) {
+    final metrics = notification.metrics;
+    final state = _collapsibleScrollBehavior.state;
+    final limit = state.heightOffsetLimit;
+    final expansion = limit.isFinite ? -limit : 0.0;
+    final pixels = metrics.pixels - metrics.minScrollExtent;
+    var delta = 0.0;
+    if (expansion > 0 && state.heightOffset.isFinite) {
+      if (notification is ScrollStartNotification) {
+        _insetFollowsGesture = _collapseInsetDelta.value > -expansion + 1.0;
+        _springReleasePixels = null;
+      }
+      final isDragFrame =
+          notification is ScrollUpdateNotification &&
+          notification.dragDetails != null;
+      final isBallisticFrame =
+          notification is ScrollUpdateNotification &&
+          notification.dragDetails == null;
+      if (isDragFrame) {
+        _lastDragPixels = pixels;
+        _springReleasePixels = null;
+      } else if (isBallisticFrame) {
+        // First spring frame: remember the release depth.
+        _springReleasePixels ??= _lastDragPixels > pixels
+            ? _lastDragPixels
+            : pixels;
+      }
+      final releasePixels = _springReleasePixels;
+      if (_insetFollowsGesture &&
+          isBallisticFrame &&
+          state.heightOffset <= -expansion + 0.01 &&
+          releasePixels != null &&
+          releasePixels > expansion) {
+        // Fully collapsed spring-back from deep overscroll: release the
+        // parked inset proportionally over the whole spring travel so the
+        // content decelerates with the spring and lands exactly as it
+        // settles — instead of freezing dead the instant pixels < expansion.
+        final progress = (pixels / releasePixels).clamp(0.0, 1.0);
+        delta = -expansion * (1.0 - progress);
+      } else {
+        final scrolled = _insetFollowsGesture
+            ? pixels.clamp(0.0, expansion)
+            : 0.0;
+        delta = (state.heightOffset + scrolled).clamp(-expansion, 0.0);
+      }
+    }
+    if ((delta - _collapseInsetDelta.value).abs() < 0.1) {
+      return;
+    }
+    // Same-frame: notifications fire before this frame's build, and the
+    // listener below only repaints the body transform (no relayout).
+    _collapseInsetDelta.value = delta;
   }
 
   HyperosBlurredHeaderScope _buildHeaderScope({
@@ -289,6 +479,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   @override
   void dispose() {
+    _collapseInsetDelta.dispose();
     _routeBlurGate.dispose();
     super.dispose();
   }
@@ -308,6 +499,35 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   }
 
   Widget _buildHeaderContent() {
+    if (_useCollapsibleTopAppBar) {
+      // Transparent fill: frosted shell (or page background) shows through.
+      // Collapse is driven by [_collapsibleScrollBehavior] from body scroll.
+      // [FHeaderAction] requires [FHeaderData] ancestor for actionStyle.
+      final headerStyleDelta = HyperosTheme.nestedHeaderStyle(context);
+      final resolvedHeaderStyle = headerStyleDelta(
+        context.theme.headerStyles.resolve({
+          context.platformVariant,
+          FHeaderVariant.nested,
+        }),
+      );
+      // Wrap the whole bar so any [FHeaderAction] in suffixes/prefixes works
+      // (same pattern as [HyperosOverlayNestedHeader]).
+      return FHeaderData(
+        actionStyle: resolvedHeaderStyle.actionStyle,
+        child: HyperosCollapsibleTopAppBar(
+          key: _collapsibleBarKey,
+          title: widget.collapsibleTitle!,
+          color: Colors.transparent,
+          scrollBehavior: _collapsibleScrollBehavior,
+          navigationIcon: widget.collapsibleNavigationIcon,
+          actions: widget.collapsibleActions,
+          bottomContent: widget.headerExtension,
+          // SafeArea is applied inside the bar; outer shell already sits under
+          // the status bar region via the overlay stack.
+          defaultWindowInsetsPadding: false,
+        ),
+      );
+    }
     if (widget.headerExtension == null) {
       return widget.header;
     }
@@ -369,6 +589,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
     final headerContent = _buildHeaderContent();
     final blurredHeader = _buildHeaderShell(headerContent, pageBackground);
+    // Collapsed large title shifts the body up to the small-title resting gap
+    // via a PAINT translation, never via the scope inset / list padding:
+    // changing the scroll content's padding mid-overscroll forces a relayout,
+    // and _RenderSingleChildViewport.performLayout silently clamps
+    // out-of-range pixels back to the boundary (correctBy, no notification)
+    // — which restarted the spring from 0 every frame and made the whole
+    // page thrash. Transform.translate is paint-only: no relayout, no clamp.
     final headerInset = _overlayMetrics.overlayContentTopInset(context);
 
     return FScaffold(
@@ -384,9 +611,18 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           clipBehavior: Clip.hardEdge,
           children: [
             Positioned.fill(
-              child: _buildBody(
-                pageBackground: pageBackground,
-                child: widget.child,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _collapseInsetDelta,
+                child: _buildBody(
+                  pageBackground: pageBackground,
+                  child: widget.child,
+                ),
+                builder: (context, delta, body) {
+                  return Transform.translate(
+                    offset: Offset(0, delta),
+                    child: body,
+                  );
+                },
               ),
             ),
             Positioned(
@@ -435,6 +671,7 @@ class HyperosListView extends StatefulWidget {
     this.itemBuilder,
     this.padding,
     this.includeHeaderInset = true,
+    this.blockVerticalScrollBubbling,
     this.pageStorageKey,
   }) : assert(
          (children != null) ^ (itemCount != null && itemBuilder != null),
@@ -449,6 +686,11 @@ class HyperosListView extends StatefulWidget {
   /// When false, skip overlay-header top inset (e.g. a fixed preview above the
   /// list already clears the frosted bar via [HyperosBlurredBodyInset]).
   final bool includeHeaderInset;
+
+  /// When true, vertical [ScrollNotification]s do not bubble to ancestors.
+  /// Defaults to `!includeHeaderInset` (preview+editor split). Set false when
+  /// an outer shell (e.g. Miuix TopAppBar) must receive scroll for collapse.
+  final bool? blockVerticalScrollBubbling;
 
   /// Restores scroll offset when the list is rebuilt (e.g. after route pop).
   final PageStorageKey<String>? pageStorageKey;
@@ -516,7 +758,7 @@ class _HyperosListViewState extends State<HyperosListView> {
       );
     }
 
-    return _HyperosListScrollHost(
+    Widget scrollable = _HyperosListScrollHost(
       child: hyperosBlockStretchOverscroll(
         child: ScrollConfiguration(
           behavior: const HyperosScrollBehavior(),
@@ -524,6 +766,25 @@ class _HyperosListViewState extends State<HyperosListView> {
         ),
       ),
     );
+
+    // Fixed preview + editor split: the lower list does not sit under the
+    // frosted title. Stop vertical scroll from bubbling so it cannot drive
+    // large-title collapse or header frost (avoids distant-preview flicker).
+    final blockBubbling =
+        widget.blockVerticalScrollBubbling ?? !widget.includeHeaderInset;
+    if (blockBubbling) {
+      scrollable = NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.metrics.axis == Axis.vertical) {
+            return true;
+          }
+          return false;
+        },
+        child: scrollable,
+      );
+    }
+
+    return scrollable;
   }
 
   PageStorageKey<String>? _pageStorageKeyFromRoute(BuildContext context) {

@@ -638,9 +638,17 @@ class HyperosScrollBehavior extends MaterialScrollBehavior {
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
+    // Called from Scrollable._updatePosition with the Scrollable's OWN
+    // context. Reading the header scope here must NOT register a dependency:
+    // otherwise every scope change (frost flip, collapse inset) triggers
+    // didChangeDependencies → _updatePosition → ScrollPosition recreation
+    // mid-gesture, silently resetting pixels to 0 (title flicker on short
+    // collapsible pages). Untracked read: topInset only shapes the
+    // rubber-band cap, staleness until the next natural rebuild is fine.
+    final inset = HyperosBlurredHeaderScope.insetOfUntracked(context);
     return HyperosOverscrollPhysics(
       parent: const AlwaysScrollableScrollPhysics(),
-      topInset: HyperosBlurredHeaderScope.insetOf(context),
+      topInset: inset,
     );
   }
 

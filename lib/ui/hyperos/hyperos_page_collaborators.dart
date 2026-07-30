@@ -190,9 +190,10 @@ class HyperosRouteBlurGate with RouteAware {
     final generation = _blurSettleGeneration;
     _blurSettlePending = true;
 
-    // Count down post-frame hops. Always scheduleFrame so the chain still
-    // flushes under WidgetTester (nested post-frame callbacks do not run on
-    // the next pump unless a frame is explicitly scheduled).
+    // Count down post-frame hops. Only scheduleFrame when the scheduler is
+    // idle / already in post-frame — never mid build/layout/paint (debug
+    // asserts "Build scheduled during frame"). WidgetTester still gets an
+    // explicit frame when pump runs after idle.
     var remaining = blurSettleFrameCount;
     void step(Duration _) {
       if (!isMounted() ||
@@ -206,11 +207,19 @@ class HyperosRouteBlurGate with RouteAware {
         return;
       }
       SchedulerBinding.instance.addPostFrameCallback(step);
-      SchedulerBinding.instance.scheduleFrame();
+      _scheduleFrameIfSafe();
     }
 
     SchedulerBinding.instance.addPostFrameCallback(step);
-    SchedulerBinding.instance.scheduleFrame();
+    _scheduleFrameIfSafe();
+  }
+
+  static void _scheduleFrameIfSafe() {
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      SchedulerBinding.instance.scheduleFrame();
+    }
   }
 
   void tryEnableBlurOnUserScroll() {
@@ -286,11 +295,18 @@ class HyperosHeaderFrostFromScroll {
     required this.useOverlayLayout,
     required this.onChanged,
     this.scrollFrostThreshold = 0.5,
+    this.frostThresholdOverride,
   });
 
   final bool Function() useOverlayLayout;
   final VoidCallback onChanged;
   final double scrollFrostThreshold;
+
+  /// Optional dynamic threshold. Collapsible large-title pages frost only
+  /// once content actually tucks under the collapsed band (pixels ≥ large
+  /// title expansion) — during the collapse itself the header keeps the plain
+  /// page color. Returning null falls back to [scrollFrostThreshold].
+  final double? Function()? frostThresholdOverride;
 
   bool contentUnderHeader = false;
   BuildContext? lastBodyScrollContext;
@@ -304,7 +320,7 @@ class HyperosHeaderFrostFromScroll {
     }
     final underHeader = hyperosContentUnderHeader(
       scrollPixels: pixels,
-      threshold: scrollFrostThreshold,
+      threshold: frostThresholdOverride?.call() ?? scrollFrostThreshold,
     );
     if (contentUnderHeader == underHeader) {
       return;
@@ -374,11 +390,15 @@ class HyperosOverlayHeaderMetrics {
     required this.useOverlayLayout,
     required this.hasHeaderExtension,
     required this.onChanged,
+    this.useCollapsibleTopAppBar,
   });
 
   final bool Function() useOverlayLayout;
   final bool Function() hasHeaderExtension;
   final VoidCallback onChanged;
+
+  /// When true, fallback inset uses collapsible large-title estimate.
+  final bool Function()? useCollapsibleTopAppBar;
 
   final GlobalKey overlayHeaderKey = GlobalKey();
   double measuredOverlayHeaderHeight = 0;
@@ -394,6 +414,13 @@ class HyperosOverlayHeaderMetrics {
     if (!useOverlayLayout()) {
       return 0;
     }
+    // Collapsible large-title bar: return the *expanded* height as the base.
+    // The page shell adds a collapse delta on top (_collapseInsetDelta in
+    // hyperos_page.dart) so short pages rest at the small-title height once
+    // collapsed, while scrollable pages keep this expanded inset.
+    if (useCollapsibleTopAppBar?.call() ?? false) {
+      return HyperosBlurredHeader.contentTopInsetCollapsible(context);
+    }
     if (measuredOverlayHeaderHeight > 0) {
       return measuredOverlayHeaderHeight;
     }
@@ -404,7 +431,9 @@ class HyperosOverlayHeaderMetrics {
   }
 
   void requestOverlayHeaderMeasure() {
-    if (!useOverlayLayout() || !hasHeaderExtension()) {
+    // Collapsible bars keep a fixed expanded inset — measuring live height only
+    // feeds padding churn. Extension rows still need measure.
+    if (!useOverlayLayout() || (useCollapsibleTopAppBar?.call() ?? false)) {
       return;
     }
     if (_overlayHeaderMeasurePending) {

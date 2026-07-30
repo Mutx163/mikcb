@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show PlatformDispatcher;
+import 'dart:math' as math;
+import 'dart:ui'
+    as ui
+    show Image, ImageByteFormat, PlatformDispatcher, instantiateImageCodec;
 
 import 'package:flutter/material.dart';
 
@@ -38,7 +41,7 @@ ImageProvider? homePageImageProvider(String? path) {
 
 /// Decode width for full-screen wallpaper (matches device, capped for memory).
 int homePageBackdropDecodeWidth() {
-  final views = PlatformDispatcher.instance.views;
+  final views = ui.PlatformDispatcher.instance.views;
   if (views.isEmpty) {
     return 1440;
   }
@@ -101,6 +104,9 @@ void evictHomePageImageCache(String? path) {
     return;
   }
   PaintingBinding.instance.imageCache.evict(FileImage(file));
+  PaintingBinding.instance.imageCache.evict(
+    ResizeImage(FileImage(file), width: homePageBackdropDecodeWidth()),
+  );
 }
 
 Color resolveHomePageBackgroundColor({
@@ -225,11 +231,266 @@ Widget? homePageBackdropImageWidget({
     image: provider,
     fit: BoxFit.cover,
     gaplessPlayback: true,
+    alignment: Alignment.center,
   );
 }
 
 /// Title row height under the status bar on the home timetable header.
+///
+/// Matches [FHeader] min height (44) plus a small frosted-chrome padding budget
+/// so the continuous glass band meets the weekday bar without a 1鈥?px seam.
 const homePageHeaderContentHeight = 46.0;
+
+/// Full-screen wallpaper strip driven by a week [PageController].
+///
+/// Each page paints the same cover image at full-screen size. Translating the
+/// strip with [controller.page] keeps the title-bar band continuous with the
+/// body while the user swipes weeks.
+class HomePageSlidingBackdropLayer extends StatelessWidget {
+  const HomePageSlidingBackdropLayer({
+    required this.controller,
+    required this.pageCount,
+    required this.settings,
+    required this.isDark,
+    super.key,
+  });
+
+  final PageController controller;
+  final int pageCount;
+  final TimetableSettings settings;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final image = homePageBackdropImageWidget(
+      settings: settings,
+      isDark: isDark,
+    );
+    if (image == null || pageCount <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) {
+          final size = MediaQuery.sizeOf(context);
+          final pageWidth = size.width;
+          if (!pageWidth.isFinite || pageWidth <= 0) {
+            return const SizedBox.shrink();
+          }
+          final rawPage = controller.hasClients
+              ? (controller.page ?? controller.initialPage.toDouble())
+              : controller.initialPage.toDouble();
+          final first = math.max(0, rawPage.floor() - 1);
+          final last = math.min(pageCount - 1, rawPage.ceil() + 1);
+          return Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              for (var index = first; index <= last; index++)
+                Positioned(
+                  left: (index - rawPage) * pageWidth,
+                  top: 0,
+                  width: pageWidth,
+                  height: size.height,
+                  child: child!,
+                ),
+            ],
+          );
+        },
+        child: image,
+      ),
+    );
+  }
+}
+
+/// Foreground on a light wallpaper.
+const homePageChromeForegroundOnLight = Color(0xFF1A1A1A);
+
+/// Foreground on a dark wallpaper (title / menu icons).
+const homePageChromeForegroundOnDark = Color(0xFFFFFFFF);
+
+/// Contrast ink for home chrome over a wallpaper sample.
+Color homePageChromeForegroundForLuminance(
+  double? luminance, {
+  double darkThreshold = 0.45,
+  Color fallback = homePageChromeForegroundOnLight,
+}) {
+  if (luminance == null) {
+    return fallback;
+  }
+  return luminance < darkThreshold
+      ? homePageChromeForegroundOnDark
+      : homePageChromeForegroundOnLight;
+}
+
+/// Secondary/muted ink derived from the primary chrome foreground.
+Color homePageChromeMutedForeground(Color foreground) {
+  final isLightInk = foreground == homePageChromeForegroundOnDark;
+  return foreground.withValues(alpha: isLightInk ? 0.72 : 0.62);
+}
+
+/// Whether [configuredHex] is unset or matches the built-in default.
+///
+/// Used so wallpaper auto-contrast only replaces **default** ink; a user-picked
+/// hex (including a deliberate black/white that equals a default of the other
+/// theme mode) is left alone when it differs from [defaultHex].
+bool homePageInkUsesBuiltInDefault(String? configuredHex, String defaultHex) {
+  final configured = tryParseHexColor(configuredHex);
+  if (configured == null) {
+    return true;
+  }
+  final builtIn = tryParseHexColor(defaultHex);
+  if (builtIn == null) {
+    return false;
+  }
+  return configured.toARGB32() == builtIn.toARGB32();
+}
+
+/// Ink for weekday / time-axis chrome over the home wallpaper.
+///
+/// - No wallpaper → [themeFallback] (or the configured hex when set).
+/// - User customized away from [defaultHex] → always the configured color.
+/// - Still on the built-in default + dark/light wallpaper → same black/white
+///   flip as the title logo ([homePageChromeForegroundForLuminance]).
+Color homePageOverWallpaperInk({
+  required String? configuredHex,
+  required String defaultHex,
+  required Color themeFallback,
+  required bool hasBackdrop,
+  required double? wallpaperLuminance,
+  double darkThreshold = 0.45,
+}) {
+  final configured = tryParseHexColor(configuredHex);
+  final usesDefault = homePageInkUsesBuiltInDefault(configuredHex, defaultHex);
+
+  if (!hasBackdrop) {
+    return configured ?? themeFallback;
+  }
+  if (!usesDefault && configured != null) {
+    return configured;
+  }
+  return homePageChromeForegroundForLuminance(
+    wallpaperLuminance,
+    darkThreshold: darkThreshold,
+    fallback: configured ?? themeFallback,
+  );
+}
+
+/// Accent (today / selected day) over wallpaper: **never** auto-inverted.
+///
+/// Custom blues etc. stay as the user set them; only the unset path falls back
+/// to [themeFallback] (usually [ColorScheme.primary]).
+Color homePageOverWallpaperAccent({
+  required String? configuredHex,
+  required Color themeFallback,
+}) {
+  return tryParseHexColor(configuredHex) ?? themeFallback;
+}
+
+/// Secondary/muted label derived from an already-resolved primary ink.
+Color homePageOverWallpaperMutedInk(
+  Color primaryInk, {
+  double lightInkAlpha = 0.72,
+  double darkInkAlpha = 0.70,
+}) {
+  final isLightInk =
+      primaryInk.toARGB32() == homePageChromeForegroundOnDark.toARGB32() ||
+      primaryInk.computeLuminance() > 0.55;
+  return primaryInk.withValues(
+    alpha: isLightInk ? lightInkAlpha : darkInkAlpha,
+  );
+}
+
+/// Average luminance of the top band of a wallpaper file (for chrome contrast).
+///
+/// Returns null when the file is missing or decoding fails.
+Future<double?> sampleHomePageWallpaperTopLuminance(String? path) async {
+  return (await sampleHomePageWallpaperLuminanceBands(path))?.top;
+}
+
+/// Top-band + card-region luminance of a wallpaper file, from one decode.
+///
+/// `top` covers the status bar / title region (chrome ink); `body` covers the
+/// vertical band where day-view cards live — a wallpaper can be dark at the
+/// top and bright behind the cards (or vice versa), so chrome ink and card
+/// ink must not share one sample.
+Future<({double top, double body})?> sampleHomePageWallpaperLuminanceBands(
+  String? path,
+) async {
+  if (path == null || path.isEmpty) {
+    return null;
+  }
+  final file = File(path);
+  if (!await file.exists()) {
+    return null;
+  }
+  try {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      return null;
+    }
+    final codec = await ui.instantiateImageCodec(
+      bytes,
+      targetWidth: 64,
+      targetHeight: 64,
+    );
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    codec.dispose();
+    return _averageBandLuminances(image);
+  } catch (error, stackTrace) {
+    debugPrint(
+      'sampleHomePageWallpaperLuminanceBands failed: $error\n$stackTrace',
+    );
+    return null;
+  }
+}
+
+Future<({double top, double body})?> _averageBandLuminances(
+  ui.Image image,
+) async {
+  final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (byteData == null) {
+    image.dispose();
+    return null;
+  }
+  final width = image.width;
+  final height = image.height;
+  image.dispose();
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+  final buffer = byteData.buffer.asUint8List();
+
+  double? band(double fromFraction, double toFraction) {
+    final fromRow = (height * fromFraction).round().clamp(0, height - 1);
+    final toRow = (height * toFraction).round().clamp(fromRow + 1, height);
+    var total = 0.0;
+    var count = 0;
+    for (var row = fromRow; row < toRow; row++) {
+      final rowOffset = row * width * 4;
+      for (var column = 0; column < width; column++) {
+        final offset = rowOffset + column * 4;
+        final red = buffer[offset] / 255.0;
+        final green = buffer[offset + 1] / 255.0;
+        final blue = buffer[offset + 2] / 255.0;
+        total += 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+        count++;
+      }
+    }
+    return count == 0 ? null : total / count;
+  }
+
+  // Top: roughly the status bar + title region of a cover-fitted wallpaper.
+  // Body: the band the day-view summary/agenda cards sit over.
+  final top = band(0.0, 0.22);
+  final body = band(0.22, 0.72);
+  if (top == null || body == null) {
+    return null;
+  }
+  return (top: top, body: body);
+}
 
 /// Approximate stacked header band: optional status bar + title row.
 double homePageHeaderBandHeight(
@@ -240,7 +501,7 @@ double homePageHeaderBandHeight(
   return safeTop + homePageHeaderContentHeight;
 }
 
-/// [Stack] geometry for [HomePageHeaderBlurBand].
+/// [Stack] geometry for a home chrome blur band.
 ///
 /// When the status bar is masked (scope off), the band starts below [safeAreaTop]
 /// so it aligns with [FHeader] content instead of the status bar inset.
@@ -256,15 +517,4 @@ double homePageHeaderBandHeight(
     );
   }
   return (top: safeAreaTop, height: homePageHeaderContentHeight + extendBottom);
-}
-
-@Deprecated('Use homePageBackdropLayer')
-Widget homePageWallpaperLayer({required String? wallpaperPath}) {
-  final image = homePageImageProvider(wallpaperPath);
-  if (image == null) {
-    return const SizedBox.shrink();
-  }
-  return Positioned.fill(
-    child: Image(image: image, fit: BoxFit.cover, gaplessPlayback: true),
-  );
 }

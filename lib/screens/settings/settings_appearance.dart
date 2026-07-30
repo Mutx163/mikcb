@@ -390,6 +390,22 @@ String _foruiThemeLabel(ForuiTheme theme) {
   return name[0].toUpperCase() + name.substring(1);
 }
 
+Map<String, String> buildLocaleMenuMap(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final seen = <String>{''};
+  final map = <String, String>{l10n.languageModeSystem: ''};
+  for (final locale in AppLocalizations.supportedLocales) {
+    final tag = locale.countryCode?.isNotEmpty == true
+        ? '${locale.languageCode}_${locale.countryCode}'
+        : locale.languageCode;
+    if (!seen.add(tag)) {
+      continue;
+    }
+    map[nativeNameFor(locale)] = tag;
+  }
+  return map;
+}
+
 class _ThemeManageScreen extends StatefulWidget {
   const _ThemeManageScreen();
 

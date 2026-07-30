@@ -295,7 +295,6 @@ class _ExamOverviewCard extends StatelessWidget {
         : secondaryText;
 
     return HyperosAdaptiveCard(
-      preferredRadius: HyperosTokens.cardRadius,
       color: HyperosColors.card(context),
       child: HyperosPressableRow(
         onTap: onTap,

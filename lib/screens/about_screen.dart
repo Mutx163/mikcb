@@ -1,5 +1,3 @@
-// ignore_for_file: unused_element, unused_field
-
 import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -8,12 +6,12 @@ import 'package:forui/forui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,11 +19,9 @@ import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
-import '../services/app_log_service.dart';
 import 'changelog_screen.dart';
 import 'open_source_licenses_screen.dart';
 import '../services/app_update_service.dart';
-import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/about_info_sheet.dart';
@@ -34,7 +30,8 @@ import '../widgets/bundled_asset_image.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../services/warehouse_repository_service.dart';
-import 'live_diagnostics_log_viewer_screen.dart';
+import 'feedback_screen.dart';
+import 'log_viewer_entry.dart';
 
 enum AboutUpdatePrimaryAction {
   openReleasePage,
@@ -109,7 +106,6 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   PackageInfo? _packageInfo;
-  bool _openingAppLogs = false;
 
   @override
   void initState() {
@@ -214,8 +210,23 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
           const HyperosSectionGap(),
+          // 支持与更新：反馈、版本、日志
+          HyperosSectionLabel(text: l10n.aboutSupportUpdatesSectionTitle),
           HyperosListGroup(
             children: [
+              _AboutEntryTile(
+                icon: Icons.chat_bubble_outline_rounded,
+                iconAccent: HyperosIconColors.green,
+                title: l10n.feedbackEntryTitle,
+                subtitle: l10n.feedbackEntrySubtitle,
+                onTap: () {
+                  HyperosNavigation.push(
+                    context,
+                    settings: const RouteSettings(name: '/feedback'),
+                    builder: (_) => const FeedbackScreen(),
+                  );
+                },
+              ),
               _AboutEntryTile(
                 icon: Icons.system_update_alt_rounded,
                 iconAccent: HyperosIconColors.orange,
@@ -243,6 +254,21 @@ class _AboutScreenState extends State<AboutScreen> {
                   );
                 },
               ),
+              // 日志入口保留在此，但排障工具的正门是「设置 → 关于 → 诊断与日志」。
+              _AboutEntryTile(
+                icon: Icons.article_outlined,
+                iconAccent: HyperosIconColors.cyan,
+                title: l10n.aboutAppLogsTitle,
+                subtitle: l10n.aboutAppLogsSubtitle,
+                onTap: _openAppLogsPage,
+              ),
+            ],
+          ),
+          const HyperosSectionGap(),
+          // 产品说明：定位、导入迁移
+          HyperosSectionLabel(text: l10n.aboutProductSectionTitle),
+          HyperosListGroup(
+            children: [
               _AboutEntryTile(
                 icon: Icons.flag_outlined,
                 iconAccent: HyperosIconColors.purple,
@@ -281,6 +307,13 @@ class _AboutScreenState extends State<AboutScreen> {
                   );
                 },
               ),
+            ],
+          ),
+          const HyperosSectionGap(),
+          // 社区与开源
+          HyperosSectionLabel(text: l10n.aboutCommunitySectionTitle),
+          HyperosListGroup(
+            children: [
               _AboutEntryTile(
                 icon: Icons.group_outlined,
                 iconAccent: HyperosIconColors.green,
@@ -321,13 +354,6 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   );
                 },
-              ),
-              _AboutEntryTile(
-                icon: Icons.article_outlined,
-                iconAccent: HyperosIconColors.cyan,
-                title: l10n.aboutAppLogsTitle,
-                subtitle: l10n.aboutAppLogsSubtitle,
-                onTap: _openAppLogsPage,
               ),
             ],
           ),
@@ -396,82 +422,8 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Future<void> _openAppLogsPage() async {
-    if (_openingAppLogs) {
-      return;
-    }
-    _openingAppLogs = true;
-    final settings = context.read<TimetableProvider>().settings;
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      await Navigator.of(context).push(
-        HyperosPageRoute(
-          settings: const RouteSettings(name: '/about/app-logs'),
-          builder: (_) => LiveDiagnosticsLogViewerScreen(
-            title: l10n.aboutAppLogsTitle,
-            watchRawLog: () => AppLogService.instance.watchMergedLogsText(
-              loadNativeRawLog:
-                  MiuiLiveActivitiesService().readLiveDiagnosticsText,
-            ),
-            isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-            onRecordingChanged: (value) =>
-                _updateLiveDiagnosticsPreference(value),
-            onExport: (text) async {
-              final nativeRawLog = await MiuiLiveActivitiesService()
-                  .readLiveDiagnosticsText();
-              final path = await AppLogService.instance.exportMergedLogsFile(
-                nativeRawLog: nativeRawLog,
-              );
-              if (path == null || path.isEmpty) {
-                return;
-              }
-              await SharePlus.instance.share(
-                ShareParams(
-                  files: [XFile(path)],
-                  text: l10n.appLogsShareText,
-                  subject: l10n.appLogsShareSubject,
-                ),
-              );
-            },
-            onClear: () async {
-              final clearedAppLogs = await AppLogService.instance
-                  .clearAppLogs();
-              if (defaultTargetPlatform != TargetPlatform.android) {
-                return clearedAppLogs;
-              }
-              final clearedNativeLogs = await MiuiLiveActivitiesService()
-                  .clearLiveDiagnostics();
-              return clearedAppLogs && clearedNativeLogs;
-            },
-          ),
-        ),
-      );
-    } finally {
-      _openingAppLogs = false;
-    }
-  }
-
-  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
-    final provider = context.read<TimetableProvider>();
-    final l10n = AppLocalizations.of(context)!;
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(liveEnableLocalDiagnostics: value),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-      return;
-    }
-    showAppToast(
-      context,
-      message: value
-          ? l10n.aboutLiveDiagnosticsEnabled
-          : l10n.aboutLiveDiagnosticsDisabled,
-      kind: AppToastKind.success,
-    );
-  }
+  Future<void> _openAppLogsPage() =>
+      openLogViewer(context, AppLogSource.merged);
 
   Widget _buildHeroMetaStrip(
     BuildContext context, {
@@ -566,13 +518,16 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
   bool _isCancellingDownload = false;
-  bool _isProbingMirrors = false;
   bool _useSystemDownloader = false;
-  bool _openingDiagnosticsViewer = false;
   int _downloadedBytes = 0;
   int? _downloadTotalBytes;
   AppUpdateDownloadController? _downloadController;
-  List<_MirrorProbeState> _mirrorProbeStates = const [];
+  /// Always empty on this screen.
+  ///
+  /// Mirror speed-testing lives in [_AdvancedOptionsScreen], which keeps its
+  /// own probe state. This screen only forwards the (empty) list so the shared
+  /// builder signature stays uniform.
+  static const List<_MirrorProbeState> _mirrorProbeStates = [];
 
   @override
   void initState() {
@@ -598,7 +553,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
-      title: Text(l10n.aboutUpdateScreenTitle),
+      // MIUI updater style: no large title; the bar rests empty and a small
+      // centered title fades in once content scrolls under it.
+      collapsibleLargeTitle: false,
+      title: HyperosScrollRevealedTitle(
+        child: Text(l10n.aboutUpdateScreenTitle),
+      ),
       suffixes: [
         FHeaderAction(
           icon: const Icon(Icons.tune_rounded),
@@ -606,13 +566,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           onPress: () => _openAdvancedOptions(theme, settings),
         ),
       ],
-      child: HyperosBlurredBodyInset(
-        child: Column(
-          children: [
-            Expanded(child: _buildUpdateList(theme, settings)),
-            if (_isDownloading) _buildDownloadProgressBar(theme),
-          ],
-        ),
+      child: Column(
+        children: [
+          Expanded(child: _buildUpdateList(theme, settings)),
+          if (_isDownloading) _buildDownloadProgressBar(theme),
+        ],
       ),
     );
   }
@@ -625,13 +583,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       builder: (context, snapshot) {
         if (widget.packageInfo == null ||
             snapshot.connectionState == ConnectionState.waiting) {
-          return _buildUpdateCheckingView(context, theme);
+          // Non-scroll centered view: inset below the bar manually.
+          return HyperosBlurredBodyInset(
+            child: _buildUpdateCheckingView(context, theme),
+          );
         }
 
         final result = snapshot.data;
         if (result == null) {
           return HyperosListView(
-            includeHeaderInset: false,
             children: [
               Material(
                 color: HyperosColors.card(context),
@@ -662,7 +622,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         }
 
         return HyperosListView(
-          includeHeaderInset: false,
           children: [
             _buildStatusCard(theme, result),
             if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
@@ -942,26 +901,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
   }
 
-  void _handlePrimaryUpdateAction({
-    required AboutUpdatePrimaryAction primaryAction,
-    required String? effectiveDownloadUrl,
-    required String? releaseUrl,
-  }) {
-    switch (primaryAction) {
-      case AboutUpdatePrimaryAction.downloadInApp:
-        if ((effectiveDownloadUrl ?? '').isNotEmpty) {
-          _downloadAndInstall(effectiveDownloadUrl!);
-        }
-        break;
-      case AboutUpdatePrimaryAction.openDownloadLink:
-        _openUrl(effectiveDownloadUrl);
-        break;
-      case AboutUpdatePrimaryAction.openReleasePage:
-        _openUrl(releaseUrl);
-        break;
-    }
-  }
-
   Future<void> _openUrl(String? url) async {
     final uri = Uri.tryParse(url ?? '');
     if (uri == null) {
@@ -986,9 +925,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           onUseSystemDownloaderChanged: (value) {
             setState(() => _useSystemDownloader = value);
           },
-          onExportLiveDiagnostics: _exportLiveDiagnostics,
-          onOpenLiveDiagnosticsViewer: _openLiveDiagnosticsViewer,
-          onClearLiveDiagnostics: _clearLiveDiagnostics,
+          onOpenLiveDiagnosticsViewer: () =>
+              openLogViewer(context, AppLogSource.merged),
         ),
       ),
     );
@@ -1020,119 +958,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     });
   }
 
-  Future<void> _updatePrereleasePreference(bool value) async {
-    final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateIncludePrerelease: value),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-      return;
-    }
-    _analytics.logEventLater(
-      name: 'update_prerelease_toggled',
-      parameters: {'enabled': value},
-    );
-    _refreshUpdate();
-  }
-
-  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
-    final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(liveEnableLocalDiagnostics: value),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-      return;
-    }
-    showAppToast(
-      context,
-      message: value
-          ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
-          : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled,
-      kind: AppToastKind.success,
-    );
-  }
-
-  Future<void> _openLiveDiagnosticsViewer() async {
-    if (_openingDiagnosticsViewer) {
-      return;
-    }
-    _openingDiagnosticsViewer = true;
-    final settings = context.read<TimetableProvider>().settings;
-    try {
-      await Navigator.of(context).push(
-        HyperosPageRoute(
-          builder: (_) => LiveDiagnosticsLogViewerScreen(
-            title: AppLocalizations.of(context)!.aboutAppLogsTitle,
-            watchRawLog: () => AppLogService.instance.watchMergedLogsText(
-              loadNativeRawLog:
-                  MiuiLiveActivitiesService().readLiveDiagnosticsText,
-            ),
-            isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-            onRecordingChanged: _updateLiveDiagnosticsPreference,
-            onExport: _exportLiveDiagnostics,
-            onClear: _clearLiveDiagnostics,
-          ),
-        ),
-      );
-    } finally {
-      _openingDiagnosticsViewer = false;
-    }
-  }
-
-  Future<void> _exportLiveDiagnostics([String? _]) async {
-    final nativeRawLog = await MiuiLiveActivitiesService()
-        .readLiveDiagnosticsText();
-    final path = await AppLogService.instance.exportMergedLogsFile(
-      nativeRawLog: nativeRawLog,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (path == null || path.isEmpty) {
-      showAppToast(
-        context,
-        message: AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet,
-        kind: AppToastKind.warning,
-      );
-      return;
-    }
-
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(path)],
-        text: AppLocalizations.of(context)!.appLogsShareText,
-        subject: AppLocalizations.of(context)!.appLogsShareSubject,
-      ),
-    );
-  }
-
-  Future<bool> _clearLiveDiagnostics() async {
-    final clearedAppLogs = await AppLogService.instance.clearAppLogs();
-    final clearedNativeLogs = defaultTargetPlatform != TargetPlatform.android
-        ? true
-        : await MiuiLiveActivitiesService().clearLiveDiagnostics();
-    final cleared = clearedAppLogs && clearedNativeLogs;
-    if (!mounted) {
-      return cleared;
-    }
-    showAppToast(
-      context,
-      message: cleared
-          ? AppLocalizations.of(context)!.liveDiagnosticsCleared
-          : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
-      kind: cleared ? AppToastKind.success : AppToastKind.error,
-    );
-    return cleared;
-  }
-
   Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
@@ -1147,24 +972,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       _analytics.logEventLater(
         name: 'update_source_changed',
         parameters: {'source': source.value},
-      );
-    }
-  }
-
-  Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
-    final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateDownloadChannel: channel.value),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-    } else {
-      _analytics.logEventLater(
-        name: 'update_channel_changed',
-        parameters: {'channel': channel.value},
       );
     }
   }
@@ -1185,27 +992,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       name: 'update_mirror_preset_changed',
       parameters: {'preset': preset.value},
     );
-  }
-
-  _MirrorProbeState? _findMirrorProbeState(AppUpdateMirrorPreset preset) {
-    for (final item in _mirrorProbeStates) {
-      if (item.preset == preset) {
-        return item;
-      }
-    }
-    return null;
-  }
-
-  Future<void> _handleMirrorPresetTap(
-    AppUpdateMirrorPreset preset,
-    TimetableSettings settings,
-  ) async {
-    if (preset.usesCustomUrl &&
-        settings.appUpdateMirrorUrlPrefix.trim().isEmpty) {
-      await _editMirrorUrlPrefix();
-      return;
-    }
-    await _updateMirrorPreset(preset);
   }
 
   List<MapEntry<AppUpdateMirrorPreset, String>> _buildMirrorPresetCandidates(
@@ -1259,97 +1045,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     return candidates;
   }
 
-  Future<List<_MirrorProbeState>> _probeMirrorCandidates(
-    String originalDownloadUrl, {
-    required String customMirrorUrlPrefix,
-  }) async {
-    final candidates = _buildMirrorPresetCandidates(customMirrorUrlPrefix);
-    return Future.wait(
-      candidates.map((candidate) async {
-        final probeUrl = _updateService.buildDownloadUrl(
-          originalUrl: originalDownloadUrl,
-          source: AppUpdateDownloadSource.mirror,
-          mirrorUrlPrefix: candidate.value,
-        );
-        final probeResult = await _updateService.probeDownloadUrl(probeUrl);
-        return _MirrorProbeState(
-          preset: candidate.key,
-          prefix: candidate.value,
-          result: probeResult,
-        );
-      }),
-    );
-  }
-
-  Future<void> _probeAndRecommendMirrors(
-    String originalDownloadUrl, {
-    required String customMirrorUrlPrefix,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    if (_buildMirrorPresetCandidates(customMirrorUrlPrefix).isEmpty) {
-      return;
-    }
-
-    _analytics.logEventLater(name: 'update_mirror_probe_started');
-    setState(() {
-      _isProbingMirrors = true;
-      _mirrorProbeStates = const [];
-    });
-
-    final nextStates = await _probeMirrorCandidates(
-      originalDownloadUrl,
-      customMirrorUrlPrefix: customMirrorUrlPrefix,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isProbingMirrors = false;
-      _mirrorProbeStates = nextStates;
-    });
-
-    final recommendedPreset = resolveRecommendedMirrorPreset({
-      for (final item in nextStates) item.preset: item.result,
-    });
-    if (recommendedPreset == null) {
-      showAppToast(
-        context,
-        message: l10n.aboutProbeNoMirrorFound,
-        kind: AppToastKind.warning,
-      );
-      return;
-    }
-
-    final currentPreset = AppUpdateMirrorPresetX.fromValue(
-      context.read<TimetableProvider>().settings.appUpdateMirrorPreset,
-    );
-    _analytics.logEventLater(
-      name: 'update_mirror_probe_completed',
-      parameters: {'recommended': recommendedPreset.value},
-    );
-    if (recommendedPreset == currentPreset) {
-      showAppToast(
-        context,
-        message: l10n.aboutProbeCurrentFastest(
-          appUpdateMirrorPresetLabel(l10n, currentPreset),
-        ),
-        kind: AppToastKind.success,
-      );
-      return;
-    }
-
-    showAppToastWithAction(
-      context,
-      message: l10n.aboutProbeRecommendSwitch(
-        appUpdateMirrorPresetLabel(l10n, recommendedPreset),
-      ),
-      actionLabel: l10n.switchAction,
-      onAction: () => _updateMirrorPreset(recommendedPreset),
-    );
-  }
-
   void _showDownloadFailureSnackBar(String error) {
     final l10n = AppLocalizations.of(context)!;
     final localizedError = localizeServiceMessage(l10n, error);
@@ -1401,55 +1096,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
 
     showAppToast(context, message: localizedError, kind: AppToastKind.error);
-  }
-
-  Future<void> _editMirrorUrlPrefix() async {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<TimetableProvider>();
-    final result = await showAppTextInputDialog(
-      context,
-      title: l10n.aboutSetMirrorSourceTitle,
-      initialValue: provider.settings.appUpdateMirrorUrlPrefix,
-      bodyBuilder: (controller) => HyperosTextField(
-        controller: controller,
-        label: l10n.aboutMirrorPrefixLabel,
-        hint: 'https://ghfast.top/',
-        autofocus: true,
-      ),
-    );
-
-    if (result == null || !mounted) {
-      return;
-    }
-
-    final normalizedPrefix = _normalizeMirrorUrlPrefix(result);
-    if (normalizedPrefix == null) {
-      showAppToast(
-        context,
-        message: l10n.aboutMirrorPrefixInvalid,
-        kind: AppToastKind.error,
-      );
-      return;
-    }
-
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateMirrorPreset: AppUpdateMirrorPreset.custom.value,
-        appUpdateMirrorUrlPrefix: normalizedPrefix,
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _mirrorProbeStates = const [];
-    });
-    showAppToast(
-      context,
-      message: message ?? l10n.aboutMirrorSaved,
-      kind: AppToastKind.success,
-    );
-    _analytics.logEventLater(name: 'update_mirror_saved');
   }
 
   Future<void> _downloadAndInstall(String url) async {
@@ -1698,9 +1344,7 @@ class _AdvancedOptionsScreen extends StatefulWidget {
   final bool isDownloading;
   final bool useSystemDownloader;
   final ValueChanged<bool> onUseSystemDownloaderChanged;
-  final Future<void> Function([String? rawLog]) onExportLiveDiagnostics;
   final Future<void> Function() onOpenLiveDiagnosticsViewer;
-  final Future<bool> Function() onClearLiveDiagnostics;
 
   const _AdvancedOptionsScreen({
     required this.theme,
@@ -1713,9 +1357,7 @@ class _AdvancedOptionsScreen extends StatefulWidget {
     required this.isDownloading,
     required this.useSystemDownloader,
     required this.onUseSystemDownloaderChanged,
-    required this.onExportLiveDiagnostics,
     required this.onOpenLiveDiagnosticsViewer,
-    required this.onClearLiveDiagnostics,
   });
 
   @override
@@ -2003,6 +1645,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
   }
 
+  /// Export and clear used to sit here as separate rows, duplicating the log
+  /// page's own header actions (and double-toasting on clear). One door now.
   Widget _buildDiagnosticsCard(TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
@@ -2013,22 +1657,10 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
         HyperosListGroup(
           children: [
             HyperosListTile(
-              icon: Icons.upload_outlined,
-              iconAccent: HyperosIconColors.indigo,
-              title: l10n.aboutExportDiagnosticsAction,
-              onTap: () => widget.onExportLiveDiagnostics(),
-            ),
-            HyperosListTile(
               icon: Icons.article_outlined,
               iconAccent: HyperosIconColors.cyan,
               title: l10n.aboutViewPhoneLogsAction,
               onTap: () => widget.onOpenLiveDiagnosticsViewer(),
-            ),
-            HyperosListTile(
-              icon: Icons.delete_outline_rounded,
-              iconAccent: HyperosIconColors.orange,
-              title: l10n.aboutClearAndRecollectAction,
-              onTap: () => widget.onClearLiveDiagnostics(),
             ),
           ],
         ),
@@ -2714,3 +2346,4 @@ class _ContributorRow extends StatelessWidget {
     );
   }
 }
+

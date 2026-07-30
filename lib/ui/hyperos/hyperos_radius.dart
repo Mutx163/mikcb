@@ -3,22 +3,13 @@ import 'package:flutter/widgets.dart';
 
 import 'hyperos_tokens.dart';
 
-/// Corner-radius policy for HyperOS / Miuix surfaces.
+/// Corner-radius helpers for HyperOS / Miuix chips, popups, and controls.
 ///
-/// **Why this exists**
-///
-/// A fixed large radius (settings group `24`) on a short surface makes the top
-/// and bottom arcs meet (stadium / capsule). That looks fine for a true pill
-/// control, but settings cards, single list rows, and nested pickers should keep
-/// a visible flat side wall.
-///
-/// Miuix pairs each component with a radius that fits its height:
-/// - settings group / tall card → [HyperosTokens.cardRadius] (24)
-/// - button / text field → [HyperosTokens.controlRadius] (16) + min height 40
-/// - tiny chips → proportional radius ≪ size/2
-///
-/// Use [surfaceRadiusForHeight] (or [HyperosAdaptiveCard]) instead of hard-coding
-/// [HyperosTokens.cardRadius] on unknown-height content.
+/// **Note** Card surfaces ([HyperosAdaptiveCard] and everything built on it)
+/// now use the upstream flutter_miuix strategy — fixed 16dp squircle — and no
+/// longer consult [surfaceRadiusForHeight]. The helpers below remain for
+/// proportional chip radii and for popups/controls that clamp a preferred
+/// radius against a measured height.
 abstract final class HyperosRadius {
   /// Minimum flat side wall (dp) kept after clamping, so arcs never merge.
   static const minStraightEdge = 6.0;

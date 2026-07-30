@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../hyperos_theme.dart';
 import '../hyperos_tokens.dart';
 import 'adaptive_card.dart';
+import 'indicators.dart';
 import 'tiles.dart';
 
 /// HyperOS card: white rounded card with optional title, subtitle, and child.
@@ -80,7 +81,6 @@ class HyperosSummaryCard extends StatelessWidget {
 
     return HyperosAdaptiveCard(
       color: cardColor,
-      preferredRadius: HyperosTokens.controlRadius,
       child: HyperosPressableRow(
         onTap: onTap,
         backgroundColor: cardColor,
@@ -120,6 +120,12 @@ class HyperosSummaryCard extends StatelessWidget {
                   ],
                 ),
               ),
+              // Same affordance as [HyperosListTile]: only tappable summary
+              // cards show a right chevron so the entry is not a dead-end look.
+              if (onTap != null) ...[
+                SizedBox(width: HyperosTokens.titleChevronGap),
+                const HyperosChevron(),
+              ],
             ],
           ),
         ),

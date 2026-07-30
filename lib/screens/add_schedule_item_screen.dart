@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:intl/intl.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -9,6 +10,8 @@ import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../widgets/miuix_date_picker_sheet.dart';
+import '../widgets/miuix_time_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
 
 class AddScheduleItemScreen extends StatefulWidget {
@@ -388,8 +391,8 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
   Future<void> _pickDate({required bool isStart}) async {
     final current = isStart ? _selectedStartDate : _selectedEndDate;
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showMiuixDatePickerSheet(
+      context,
       initialDate: current,
       firstDate: DateTime(2020, 1, 1),
       lastDate: DateTime(2100, 12, 31),
@@ -414,8 +417,13 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
+    final l10n = AppLocalizations.of(context)!;
     final current = isStart ? _startTime : _endTime;
-    final picked = await showTimePicker(context: context, initialTime: current);
+    final picked = await showMiuixTimePickerSheet(
+      context,
+      initialTime: current,
+      title: isStart ? l10n.selectStartTimeTitle : l10n.selectEndTimeTitle,
+    );
     if (picked == null) {
       return;
     }

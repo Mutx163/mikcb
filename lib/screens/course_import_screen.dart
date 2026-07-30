@@ -2,6 +2,7 @@ import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
 import 'dart:async';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/widgets/miuix_date_picker_sheet.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -45,7 +46,7 @@ import '../widgets/warehouse_macro_recorder.dart';
 import '../widgets/warehouse_macro_replayer.dart';
 import '../widgets/warehouse_playback_overlay.dart';
 import 'feedback_screen.dart';
-import 'live_diagnostics_log_viewer_screen.dart';
+import 'log_viewer_entry.dart';
 
 Future<List<Course>> _coursesWithOptionalRandomColors(
   List<Course> courses,
@@ -53,54 +54,24 @@ Future<List<Course>> _coursesWithOptionalRandomColors(
   if (!await ImportRandomColorPreferences.isEnabled()) {
     return courses;
   }
-  return applyRandomImportCourseColors(courses);
+  final assignMatchingTextColor =
+      await ImportRandomColorPreferences.isTextColorEnabled();
+  return applyRandomImportCourseColors(
+    courses,
+    assignMatchingTextColor: assignMatchingTextColor,
+  );
+}
+
+/// When random colors are on, import must apply the new palette (and optional
+/// text colors) even for courses that match existing local rows.
+Future<bool> _shouldPreserveLocalColorsOnImport() async {
+  return !(await ImportRandomColorPreferences.isEnabled());
 }
 
 enum _WarehouseImportMenuAction { feedback, customDebug, executionLog }
 
-Future<void> openWarehouseImportExecutionLogViewer(BuildContext context) async {
-  final l10n = AppLocalizations.of(context)!;
-  final sessionLog = WarehouseImportSessionLog.instance;
-  final title = l10n.warehouseImportExecutionLogTitle;
-  await Navigator.of(context).push(
-    HyperosPageRoute(
-      settings: const RouteSettings(
-        name: '/courses/import/warehouse/execution-log',
-      ),
-      builder: (_) => LiveDiagnosticsLogViewerScreen(
-        title: title,
-        rawLog: sessionLog.readText(title: title),
-        watchRawLog: () => sessionLog.watchText(title: title),
-        onLoadEmpty: () {
-          if (context.mounted) {
-            showAppLightTip(
-              context,
-              message: l10n.warehouseImportExecutionLogEmpty,
-            );
-          }
-        },
-        onExport: (text) async {
-          final directory = await getTemporaryDirectory();
-          final fileName =
-              'qingyu-warehouse-import-log-${DateTime.now().millisecondsSinceEpoch}.txt';
-          final file = File('${directory.path}/$fileName');
-          await file.writeAsString(text, flush: true);
-          await SharePlus.instance.share(
-            ShareParams(
-              files: [XFile(file.path)],
-              text: l10n.warehouseImportExecutionLogShareText,
-              subject: l10n.warehouseImportExecutionLogShareSubject,
-            ),
-          );
-        },
-        onClear: () async {
-          sessionLog.clear();
-          return true;
-        },
-      ),
-    ),
-  );
-}
+Future<void> openWarehouseImportExecutionLogViewer(BuildContext context) =>
+    openLogViewer(context, AppLogSource.warehouseImport);
 
 Widget _importListTitle(BuildContext context, String text) {
   return Text(text, style: HyperosTypography.listTitle(context));
@@ -193,63 +164,61 @@ class CourseImportScreen extends StatelessWidget {
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseImportTitle),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: HyperosListView(
-            includeHeaderInset: false,
+      // Standard list path (header inset inside the scrollable + notification
+      // bubbling) so the large title collapses with scroll; the old
+      // BodyInset + includeHeaderInset:false combo swallowed vertical scroll
+      // notifications and froze the large title.
+      child: HyperosListView(
+        children: [
+          const ImportRandomColorToggle(),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
+          const HyperosSectionGap(),
+          HyperosListGroup(
             children: [
-              const ImportRandomColorToggle(),
-              const HyperosSectionGap(),
-              HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
-              const HyperosSectionGap(),
-              HyperosListGroup(
-                children: [
-                  HyperosNavTile(
-                    icon: Icons.event_note_rounded,
-                    iconAccent: HyperosIconColors.blue,
-                    title: l10n.importMethodIcsTitle,
-                    subtitle: l10n.importMethodIcsSubtitle,
-                    onTap: () => _openImportPage<bool>(
-                      context,
-                      builder: (_) => const IcsCourseImportScreen(),
-                    ),
-                  ),
-                  HyperosNavTile(
-                    icon: Icons.auto_awesome_rounded,
-                    iconAccent: HyperosIconColors.purple,
-                    title: l10n.importMethodAiTitle,
-                    subtitle: l10n.importMethodAiSubtitle,
-                    onTap: () => _openImportPage<bool>(
-                      context,
-                      builder: (_) => const AiImageCourseImportScreen(),
-                    ),
-                  ),
-                  HyperosNavTile(
-                    icon: Icons.school_outlined,
-                    iconAccent: HyperosIconColors.green,
-                    title: l10n.importMethodWarehouseTitle,
-                    subtitle: l10n.importMethodWarehouseSubtitle,
-                    onTap: () => _openImportPage<bool>(
-                      context,
-                      builder: (_) => const WarehouseCourseImportScreen(),
-                    ),
-                  ),
-                  HyperosNavTile(
-                    icon: Icons.table_chart_outlined,
-                    iconAccent: HyperosIconColors.orange,
-                    title: l10n.importMethodSpreadsheetTitle,
-                    subtitle: l10n.importMethodSpreadsheetSubtitle,
-                    onTap: () => _openImportPage<bool>(
-                      context,
-                      builder: (_) => const SpreadsheetCourseImportScreen(),
-                    ),
-                  ),
-                ],
+              HyperosNavTile(
+                icon: Icons.event_note_rounded,
+                iconAccent: HyperosIconColors.blue,
+                title: l10n.importMethodIcsTitle,
+                subtitle: l10n.importMethodIcsSubtitle,
+                onTap: () => _openImportPage<bool>(
+                  context,
+                  builder: (_) => const IcsCourseImportScreen(),
+                ),
+              ),
+              HyperosNavTile(
+                icon: Icons.auto_awesome_rounded,
+                iconAccent: HyperosIconColors.purple,
+                title: l10n.importMethodAiTitle,
+                subtitle: l10n.importMethodAiSubtitle,
+                onTap: () => _openImportPage<bool>(
+                  context,
+                  builder: (_) => const AiImageCourseImportScreen(),
+                ),
+              ),
+              HyperosNavTile(
+                icon: Icons.school_outlined,
+                iconAccent: HyperosIconColors.green,
+                title: l10n.importMethodWarehouseTitle,
+                subtitle: l10n.importMethodWarehouseSubtitle,
+                onTap: () => _openImportPage<bool>(
+                  context,
+                  builder: (_) => const WarehouseCourseImportScreen(),
+                ),
+              ),
+              HyperosNavTile(
+                icon: Icons.table_chart_outlined,
+                iconAccent: HyperosIconColors.orange,
+                title: l10n.importMethodSpreadsheetTitle,
+                subtitle: l10n.importMethodSpreadsheetSubtitle,
+                onTap: () => _openImportPage<bool>(
+                  context,
+                  builder: (_) => const SpreadsheetCourseImportScreen(),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -302,15 +271,15 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       onBack: () => Navigator.pop(context),
       title: Text(l10n.icsImportTitle),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: Column(
-            children: [
-              Expanded(
-                child: HyperosListView(
-                  includeHeaderInset: false,
-                  children: [
+      // Standard list path (header inset inside the scrollable + notification
+      // bubbling) so the large title collapses; the old BodyInset +
+      // includeHeaderInset:false combo swallowed vertical scroll notifications
+      // and froze the large title.
+      child: Column(
+        children: [
+          Expanded(
+            child: HyperosListView(
+              children: [
                     _ImportGuidePanel(
                       scenarioIntro: l10n.icsScenarioIntro,
                       step1Subtitle: l10n.icsStep1Subtitle,
@@ -336,8 +305,6 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
@@ -490,6 +457,7 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       replaceExisting: replaceExisting,
       semesterStart: semesterConfig.semesterStartDate,
       source: 'ics',
+      preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
     );
     if (!mounted) return;
     showAppToast(
@@ -546,15 +514,13 @@ class _SpreadsheetCourseImportScreenState
       onBack: () => Navigator.pop(context),
       title: Text(l10n.spreadsheetImportTitle),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: Column(
-            children: [
-              Expanded(
-                child: HyperosListView(
-                  includeHeaderInset: false,
-                  children: [
+      // Standard list path so the large title collapses with scroll (see the
+      // ICS import screen above).
+      child: Column(
+        children: [
+          Expanded(
+            child: HyperosListView(
+              children: [
                     _ImportGuidePanel(
                       scenarioIntro: l10n.spreadsheetScenarioIntro,
                       step1Subtitle: l10n.spreadsheetStep1Subtitle,
@@ -593,8 +559,6 @@ class _SpreadsheetCourseImportScreenState
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
@@ -832,6 +796,7 @@ Future<void> _completeParsedCourseImport({
     replaceExisting: replaceExisting,
     semesterStart: semesterStart,
     source: source,
+    preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
   );
   if (!context.mounted) return;
 
@@ -1038,17 +1003,15 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       title: Text(l10n.aiImportTitle),
       childPad: false,
       resizeToAvoidBottomInset: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: SafeArea(
-          top: false,
-          child: HyperosBlurredBodyInset(
-            child: Column(
-              children: [
-                Expanded(
-                  child: HyperosListView(
-                    includeHeaderInset: false,
-                    children: [
+      // Standard list path so the large title collapses with scroll (see the
+      // ICS import screen above).
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: HyperosListView(
+                children: [
                       _AiWorkflowGuideCard(l10n: l10n),
                       const HyperosSectionGap(),
                       HyperosControlCard(
@@ -1145,7 +1108,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       ],
                     ],
                   ),
-                ),
+            ),
                 Material(
                   color: HyperosColors.card(context),
                   child: Padding(
@@ -1178,8 +1141,6 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
               ],
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -1457,6 +1418,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         replaceExisting: replaceExisting,
         semesterStart: semesterConfig.semesterStartDate,
         source: 'ai',
+        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
       );
       if (!mounted) {
         return;
@@ -1939,21 +1901,22 @@ class _WarehouseCourseImportScreenState
         ),
       ),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: Column(
-            children: [
-              Expanded(
-                child: FutureBuilder<WarehouseRootIndex>(
+      // Standard scroll path so the large title collapses with scroll (see the
+      // ICS import screen above); centered states inset manually below.
+      child: Column(
+        children: [
+          Expanded(
+            child: FutureBuilder<WarehouseRootIndex>(
                   future: _rootIndexFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return _importLoadingCenter();
+                      // Non-scroll centered view: inset below the bar manually.
+                      return HyperosBlurredBodyInset(
+                        child: _importLoadingCenter(),
+                      );
                     }
                     if (snapshot.hasError) {
                       return HyperosListView(
-                        includeHeaderInset: false,
                         children: [
                           HyperosSectionLabel(
                             text: l10n.warehouseRootLoadFailedTitle,
@@ -2017,22 +1980,30 @@ class _WarehouseCourseImportScreenState
                         .toList(growable: false);
                     final isSearching = _searchQuery.trim().isNotEmpty;
                     if (sections.isEmpty) {
-                      return Center(
-                        child: HyperosEmptyState(
-                          icon: Icons.search_off_rounded,
-                          title: isSearching
-                              ? l10n.noMatchingSchools
-                              : l10n.noAvailableSchools,
-                          subtitle: isSearching
-                              ? l10n.searchSchoolSuggestion
-                              : null,
+                      // Non-scroll centered view: inset below the bar manually.
+                      return HyperosBlurredBodyInset(
+                        child: Center(
+                          child: HyperosEmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: isSearching
+                                ? l10n.noMatchingSchools
+                                : l10n.noAvailableSchools,
+                            subtitle: isSearching
+                                ? l10n.searchSchoolSuggestion
+                                : null,
+                          ),
                         ),
                       );
                     }
+                    // Header inset inside the scrollable so rows slide under
+                    // the frosted bar (mirrors HyperosListView's default).
+                    final headerInset = HyperosBlurredHeaderScope.insetOf(
+                      context,
+                    );
                     return AzListView(
                       data: sections,
                       itemCount: sections.length,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      padding: EdgeInsets.fromLTRB(16, headerInset, 16, 16),
                       indexBarData: isSearching ? const [] : indexTags,
                       indexBarOptions: IndexBarOptions(
                         needRebuild: true,
@@ -2112,8 +2083,6 @@ class _WarehouseCourseImportScreenState
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
@@ -2278,13 +2247,10 @@ class _WarehouseCustomDebugRecordsScreenState
         ),
       ],
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: _isLoading
-              ? _importLoadingCenter()
-              : HyperosListView(
-                  includeHeaderInset: false,
+      child: _isLoading
+          // Non-scroll centered view: inset below the bar manually.
+          ? HyperosBlurredBodyInset(child: _importLoadingCenter())
+          : HyperosListView(
                   children: [
                     HyperosControlCard(
                       title: l10n.customDebugIntroTitle,
@@ -2371,8 +2337,6 @@ class _WarehouseCustomDebugRecordsScreenState
                       ),
                   ],
                 ),
-        ),
-      ),
     );
   }
 }
@@ -2519,11 +2483,9 @@ class _WarehouseCustomDebugEditScreenState
         ),
       ],
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: HyperosListView(
-            includeHeaderInset: false,
+      // Standard list path so the large title collapses with scroll (see the
+      // ICS import screen above).
+      child: HyperosListView(
             children: [
               HyperosSectionLabel(text: l10n.debugRecordFormula),
               const HyperosSectionGap(),
@@ -2571,8 +2533,6 @@ class _WarehouseCustomDebugEditScreenState
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 }
@@ -2633,18 +2593,19 @@ class _WarehouseSchoolAdaptersScreenState
       onBack: () => Navigator.pop(context),
       title: Text(widget.school.name),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: FutureBuilder<WarehouseAdaptersIndex>(
+      // Standard scroll path so the large title collapses with scroll (see the
+      // ICS import screen above); the loading state insets manually.
+      child: FutureBuilder<WarehouseAdaptersIndex>(
             future: _adaptersFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return _importLoadingCenter();
+                // Non-scroll centered view: inset below the bar manually.
+                return HyperosBlurredBodyInset(
+                  child: _importLoadingCenter(),
+                );
               }
               if (snapshot.hasError) {
                 return HyperosListView(
-                  includeHeaderInset: false,
                   children: [
                     HyperosSectionLabel(
                       text: l10n.warehouseAdaptersLoadFailedTitle,
@@ -2678,7 +2639,6 @@ class _WarehouseSchoolAdaptersScreenState
               _scheduleMacroCacheCheck(adapters);
               _scheduleCustomImportUrlCacheCheck(adapters);
               return HyperosListView(
-                includeHeaderInset: false,
                 children: [
                   HyperosListGroup(
                     children: [
@@ -2728,8 +2688,6 @@ class _WarehouseSchoolAdaptersScreenState
               );
             },
           ),
-        ),
-      ),
     );
   }
 
@@ -3064,11 +3022,9 @@ class _WarehouseAdapterDetailScreenState
       onBack: () => Navigator.pop(context),
       title: Text(adapter.adapterName),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: HyperosListView(
-            includeHeaderInset: false,
+      // Standard list path so the large title collapses with scroll (see the
+      // ICS import screen above).
+      child: HyperosListView(
             children: [
               _WarehouseIntroCard(
                 title: adapter.adapterName,
@@ -3212,8 +3168,6 @@ class _WarehouseAdapterDetailScreenState
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
@@ -4946,6 +4900,7 @@ class _WarehouseAdapterWebLoginScreenState
         replaceExisting: replaceExisting,
         semesterStart: semesterConfig.semesterStartDate,
         source: 'warehouse',
+        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
       if (!mounted) {
@@ -6215,8 +6170,8 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
       return StatefulBuilder(
         builder: (context, setModalState) {
           Future<void> pickStartDate() async {
-            final picked = await showDatePicker(
-              context: context,
+            final picked = await showMiuixDatePickerSheet(
+              context,
               initialDate: selectedSemesterStartDate,
               firstDate: DateTime(2020),
               lastDate: DateTime(2035),

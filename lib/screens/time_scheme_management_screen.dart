@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +11,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
+import '../widgets/miuix_time_picker_sheet.dart';
 import '../widgets/time_scheme_quick_generate_sheet.dart';
 import 'location_time_match_screen.dart';
 import 'schedule_date_rule_screen.dart';
@@ -669,143 +671,142 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
           onPress: _save,
         ),
       ],
-      child: HyperosBlurredBodyInset(
-        child: HyperosListView(
-          includeHeaderInset: false,
-          children: [
-            HyperosControlCard(
-              title: l10n.timeSchemeNameLabel,
-              child: HyperosControlCardInset(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    HyperosTextField(
-                      controller: _nameController,
-                      hint: l10n.timeSchemeNameHint,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (isActive) _TimeSchemeBadge(text: l10n.currentInUse),
-                        _TimeSchemeInfoChip(
-                          label: l10n.profileCountLabel,
-                          value: l10n.profileCountValue(usage.profileCount),
-                        ),
-                        _TimeSchemeInfoChip(
-                          label: l10n.courseCountLabel,
-                          value: l10n.courseSectionCountValue(
-                            usage.courseCount,
-                          ),
-                        ),
-                        _TimeSchemeInfoChip(
-                          label: l10n.overrideTimeSchemeLabel,
-                          value: l10n.courseSectionCountValue(
-                            usage.overrideCourseCount,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (isActive || usage.courseCount > 0) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        isActive && usage.courseCount > 0
-                            ? l10n.timeSchemeEditorActiveAndCoursesHint
-                            : isActive
-                            ? l10n.timeSchemeEditorActiveHint
-                            : l10n.timeSchemeEditorOverrideHint,
-                        style: HyperosTypography.sectionDescription(context),
-                      ),
-                    ],
-                    if (usage.previewText != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        usage.previewText!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: HyperosTypography.sectionDescription(context),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const HyperosSectionGap(),
-            HyperosControlCard(
-              title: l10n.sectionTimesTitle,
-              subtitle: l10n.sectionTimesSubtitle,
+      // Standard list path (header inset inside the scrollable + notification
+      // bubbling) so the large title collapses; the old BodyInset +
+      // includeHeaderInset:false combo swallowed vertical scroll notifications
+      // and froze the large title.
+      child: HyperosListView(
+        children: [
+          HyperosControlCard(
+            title: l10n.timeSchemeNameLabel,
+            child: HyperosControlCardInset(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  HyperosControlCardInset(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        HyperosButton(
-                          label: l10n.quickGenerateAction,
-                          variant: HyperosButtonVariant.secondary,
-                          onPressed: _openQuickGenerate,
-                        ),
-                        HyperosButton(
-                          label: l10n.addSectionAction,
-                          variant: HyperosButtonVariant.secondary,
-                          onPressed: _sections.length >= 20
-                              ? null
-                              : _addSection,
-                        ),
-                        HyperosButton(
-                          label: l10n.removeLastSectionAction,
-                          variant: HyperosButtonVariant.secondary,
-                          onPressed: _sections.length <= 1
-                              ? null
-                              : _removeSection,
-                        ),
-                        HyperosButton(
-                          label: l10n.resetDefaultAction,
-                          variant: HyperosButtonVariant.secondary,
-                          onPressed: _resetSections,
-                        ),
-                      ],
-                    ),
+                  HyperosTextField(
+                    controller: _nameController,
+                    hint: l10n.timeSchemeNameHint,
                   ),
-                  if (_sections.isNotEmpty)
-                    HyperosControlCardRows(
-                      children: [
-                        for (var index = 0; index < _sections.length; index++)
-                          HyperosListTile(
-                            icon: Icons.access_time_rounded,
-                            iconAccent: HyperosIconColors.teal,
-                            title: l10n.sectionLabel(index + 1),
-                            details:
-                                '${_sections[index].startTime} - ${_sections[index].endTime}',
-                            onTap: () => _editSectionTime(index),
-                          ),
-                      ],
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (isActive) _TimeSchemeBadge(text: l10n.currentInUse),
+                      _TimeSchemeInfoChip(
+                        label: l10n.profileCountLabel,
+                        value: l10n.profileCountValue(usage.profileCount),
+                      ),
+                      _TimeSchemeInfoChip(
+                        label: l10n.courseCountLabel,
+                        value: l10n.courseSectionCountValue(usage.courseCount),
+                      ),
+                      _TimeSchemeInfoChip(
+                        label: l10n.overrideTimeSchemeLabel,
+                        value: l10n.courseSectionCountValue(
+                          usage.overrideCourseCount,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (isActive || usage.courseCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      isActive && usage.courseCount > 0
+                          ? l10n.timeSchemeEditorActiveAndCoursesHint
+                          : isActive
+                          ? l10n.timeSchemeEditorActiveHint
+                          : l10n.timeSchemeEditorOverrideHint,
+                      style: HyperosTypography.sectionDescription(context),
                     ),
+                  ],
+                  if (usage.previewText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      usage.previewText!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: HyperosTypography.sectionDescription(context),
+                    ),
+                  ],
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          const HyperosSectionGap(),
+          HyperosControlCard(
+            title: l10n.sectionTimesTitle,
+            subtitle: l10n.sectionTimesSubtitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                HyperosControlCardInset(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      HyperosButton(
+                        label: l10n.quickGenerateAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _openQuickGenerate,
+                      ),
+                      HyperosButton(
+                        label: l10n.addSectionAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _sections.length >= 20 ? null : _addSection,
+                      ),
+                      HyperosButton(
+                        label: l10n.removeLastSectionAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _sections.length <= 1
+                            ? null
+                            : _removeSection,
+                      ),
+                      HyperosButton(
+                        label: l10n.resetDefaultAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _resetSections,
+                      ),
+                    ],
+                  ),
+                ),
+                if (_sections.isNotEmpty)
+                  HyperosControlCardRows(
+                    children: [
+                      for (var index = 0; index < _sections.length; index++)
+                        HyperosListTile(
+                          icon: Icons.access_time_rounded,
+                          iconAccent: HyperosIconColors.teal,
+                          title: l10n.sectionLabel(index + 1),
+                          details:
+                              '${_sections[index].startTime} - ${_sections[index].endTime}',
+                          onTap: () => _editSectionTime(index),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _editSectionTime(int index) async {
     final l10n = AppLocalizations.of(context)!;
-    final start = await showTimePicker(
-      context: context,
+    final start = await showMiuixTimePickerSheet(
+      context,
       initialTime: _parseTimeOfDay(_sections[index].startTime),
+      title: l10n.selectStartTimeTitle,
     );
     if (start == null || !mounted) {
       return;
     }
 
-    final end = await showTimePicker(
-      context: context,
+    final end = await showMiuixTimePickerSheet(
+      context,
       initialTime: _parseTimeOfDay(_sections[index].endTime),
+      title: l10n.selectEndTimeTitle,
     );
     if (end == null || !mounted) {
       return;

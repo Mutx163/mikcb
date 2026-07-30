@@ -84,7 +84,7 @@ class _MiuixNumberPickerSheetBodyState
               max: widget.maxValue,
               visibleItemCount: _visibleItemCount,
               textStyle: textStyles.title3.copyWith(
-                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w600,
               ),
               label: widget.label,
               onValueChanged: (value) {

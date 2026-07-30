@@ -156,21 +156,22 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       onBack: () => Navigator.pop(context),
       title: Text(l10n.aboutChangelogTitle),
       childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: HyperosBlurredBodyInset(
-          child: _loading
-              ? const Center(child: HyperosCircularProgress())
-              : HyperosListView(
-                  includeHeaderInset: false,
-                  itemCount: _entries.length,
-                  itemBuilder: (context, index) {
-                    final entry = _entries[index];
-                    return _ChangelogCard(entry: entry);
-                  },
-                ),
-        ),
-      ),
+      // Standard list path (header inset inside the scrollable + notification
+      // bubbling) so the large title collapses; the old BodyInset +
+      // includeHeaderInset:false combo swallowed vertical scroll notifications
+      // and froze the large title.
+      child: _loading
+          // Non-scroll centered view: inset below the bar manually.
+          ? const HyperosBlurredBodyInset(
+              child: Center(child: HyperosCircularProgress()),
+            )
+          : HyperosListView(
+              itemCount: _entries.length,
+              itemBuilder: (context, index) {
+                final entry = _entries[index];
+                return _ChangelogCard(entry: entry);
+              },
+            ),
     );
   }
 }
