@@ -7,11 +7,18 @@ import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
 
+// Course chrome tests reference the glass mode through this library.
+export '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
+
 /// Reserved clearance between the weekday chrome band and the course grid.
 ///
 /// Also used historically as frosted-band seam overlap between header and
 /// weekday glass. Keep this value so glass/cards are not flush.
 const homePageFrostedRegionSeamOverlap = 4.0;
+
+/// Extra height painted above the chrome glass band's top edge so the liquid
+/// glass specular fringe is clipped off-screen instead of showing a seam.
+const homePageChromeGlassTopEdgeOverdraw = 4.0;
 
 /// Whether any home chrome frosted band should paint over the wallpaper.
 ///
@@ -25,6 +32,27 @@ bool homePageHasAnyChromeBlur(
   }
   return settings.homePageHeaderBlurEnabled ||
       settings.homePageWeekdayBarBlurEnabled;
+}
+
+/// Number of frames the home chrome glass needs to settle after a wallpaper
+/// swap so the backdrop capture is stable before showing the frost.
+///
+/// Zero when nothing frosted paints (no backdrop, global blur off, or both
+/// chrome bands off). Gaussian settles in one frame; liquid glass needs two.
+int homePageChromeSettleFrameCount({
+  required bool hasBackdrop,
+  required bool frostedBlurEnabled,
+  required bool headerBlurEnabled,
+  required bool weekdayBarBlurEnabled,
+  required FrostedGlassMode glassMode,
+}) {
+  if (!hasBackdrop || !frostedBlurEnabled) {
+    return 0;
+  }
+  if (!headerBlurEnabled && !weekdayBarBlurEnabled) {
+    return 0;
+  }
+  return glassMode == FrostedGlassMode.liquidGlass ? 2 : 1;
 }
 
 HomePageBackgroundVisual homePageRegionChromeVisual({

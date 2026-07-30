@@ -147,6 +147,38 @@ bool hasHomePageBackdropImage(
       null;
 }
 
+/// Result of pre-resolving the home page's wallpaper backdrop before first
+/// paint, so chrome frost does not flash a stale/blank capture.
+class HomePageVisualReadiness {
+  const HomePageVisualReadiness({this.hasBackdrop = false});
+
+  /// Nothing to prepare (dark theme, no wallpaper, or missing file).
+  static const HomePageVisualReadiness empty = HomePageVisualReadiness();
+
+  /// Whether a usable wallpaper backdrop image was resolved.
+  final bool hasBackdrop;
+
+  bool get isEmpty => !hasBackdrop;
+}
+
+/// Pre-resolves whether the home page needs wallpaper backdrop work.
+///
+/// Returns [HomePageVisualReadiness.empty] for the dark theme (solid chrome),
+/// when no wallpaper path is configured, or when the file is missing; those
+/// paths never paint a wallpaper backdrop so no preparation is required.
+Future<HomePageVisualReadiness> prepareHomePageVisualReadiness(
+  TimetableSettings settings, {
+  required bool isDark,
+}) async {
+  if (isDark) {
+    return HomePageVisualReadiness.empty;
+  }
+  if (!hasHomePageBackdropImage(settings, isDark: isDark)) {
+    return HomePageVisualReadiness.empty;
+  }
+  return const HomePageVisualReadiness(hasBackdrop: true);
+}
+
 bool homePageRegionShowsBackdrop(
   TimetableSettings settings,
   int region, {
