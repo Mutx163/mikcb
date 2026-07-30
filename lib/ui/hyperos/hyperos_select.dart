@@ -341,8 +341,14 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => Navigator.of(context).pop(),
-          child: ColoredBox(
-            color: HyperosBlurredHeader.modalBarrierColor(context),
+          child: AnimatedBuilder(
+            animation: _alpha,
+            builder: (context, _) {
+              final base = HyperosBlurredHeader.modalBarrierColor(context);
+              return ColoredBox(
+                color: base.withValues(alpha: base.a * _alpha.value.clamp(0.0, 1.0)),
+              );
+            },
           ),
         ),
         Positioned(

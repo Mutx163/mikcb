@@ -389,6 +389,53 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
   }
 }
 
+/// Internal slide-up animation for sheet entrance. Uses a simple spring on
+/// initial build — no route-level transition needed, so frosted glass never
+/// sits inside an animated Opacity layer (which breaks LiquidGlass shaders).
+class _SheetSlideUp extends StatefulWidget {
+  const _SheetSlideUp({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_SheetSlideUp> createState() => _SheetSlideUpState();
+}
+
+class _SheetSlideUpState extends State<_SheetSlideUp>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 350),
+  );
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.3),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  ));
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slide,
+      child: widget.child,
+    );
+  }
+}
+
 /// Shows a HyperOS-styled modal bottom sheet (replaces Forui `showFSheet`).
 ///
 /// Content should use [HyperosSheetFrame] / [HyperosSheet] / [HyperosDialog].
@@ -416,24 +463,8 @@ Future<T?> showHyperosSheet<T>({
     barrierDismissible: isDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: dimColor,
-    transitionDuration: const Duration(milliseconds: 350),
+    transitionDuration: Duration.zero,
     useRootNavigator: useRootNavigator,
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final offset = Tween<Offset>(
-        begin: const Offset(0, 0.35),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      ));
-      return SlideTransition(
-        position: offset,
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      );
-    },
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       final keyboardInset = padForKeyboard
           ? MediaQuery.viewInsetsOf(dialogContext).bottom
@@ -449,11 +480,13 @@ Future<T?> showHyperosSheet<T>({
           ? _DragDismissableSheet(child: sheetContent)
           : sheetContent;
 
-      return Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: keyboardInset),
-          child: sheet,
+      return _SheetSlideUp(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: keyboardInset),
+            child: sheet,
+          ),
         ),
       );
     },
