@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -52,133 +51,21 @@ ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   };
 }
 
-FTypeface _typefaceWithFontFamily(FTypeface source, AppFontSpec fontSpec) {
-  TextStyle withFont(TextStyle style) => style.copyWith(
-    fontFamily: fontSpec.fontFamily,
-    fontFamilyFallback: fontSpec.fontFamilyFallback.isEmpty
-        ? style.fontFamilyFallback
-        : fontSpec.fontFamilyFallback,
+ThemeData _appThemeData(Brightness brightness, {required AppFontSpec fontSpec}) {
+  final theme = ThemeData(
+    brightness: brightness,
+    useMaterial3: true,
+    pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
   );
-
-  return source.copyWith(
-    xs3: withFont(source.xs3),
-    xs2: withFont(source.xs2),
-    xs: withFont(source.xs),
-    sm: withFont(source.sm),
-    md: withFont(source.md),
-    lg: withFont(source.lg),
-    xl: withFont(source.xl),
-    xl2: withFont(source.xl2),
-    xl3: withFont(source.xl3),
-    xl4: withFont(source.xl4),
-    xl5: withFont(source.xl5),
-    xl6: withFont(source.xl6),
-    xl7: withFont(source.xl7),
-    xl8: withFont(source.xl8),
-  );
-}
-
-FThemeData _foruiThemeDataWithFont(FThemeData theme, AppFontSpec fontSpec) {
   final fontFamily = fontSpec.fontFamily;
   if (fontFamily == null || fontFamily.isEmpty) {
     return theme;
   }
-
-  final typography = theme.typography;
-  final nextTypography = typography.copyWith(
-    display: _typefaceWithFontFamily(typography.display, fontSpec),
-    body: _typefaceWithFontFamily(typography.body, fontSpec),
-  );
-  final nextHeaderStyles = FHeaderStyles.inherit(
-    colors: theme.colors,
-    typography: nextTypography,
-    style: theme.style,
-    touch: true,
-  );
-  final headerStylesDelta =
-      FVariantsDelta<
-        FHeaderVariantConstraint,
-        FHeaderVariant,
-        FHeaderStyle,
-        FHeaderStyleDelta
-      >.delta([
-        FVariantOperation<
-          FHeaderVariantConstraint,
-          FHeaderVariant,
-          FHeaderStyle,
-          FHeaderStyleDelta
-        >.all(
-          FHeaderStyleDelta.delta(
-            titleTextStyle: TextStyleDelta.delta(
-              fontSize: 20,
-              fontWeight: FontWeight.w400,
-              height: 1.2,
-            ),
-          ),
-        ),
-      ]);
-  final patchedHeaderStyles = headerStylesDelta(nextHeaderStyles);
-
-  return FThemeData(
-    colors: theme.colors,
-    touch: true,
-    debugLabel: theme.debugLabel,
-    breakpoints: theme.breakpoints,
-    typography: nextTypography,
-    icons: theme.icons,
-    style: theme.style,
-    hapticFeedback: theme.hapticFeedback,
-    accordionStyle: theme.accordionStyle,
-    autocompleteStyle: theme.autocompleteStyle,
-    alertStyles: theme.alertStyles,
-    avatarStyle: theme.avatarStyle,
-    badgeStyles: theme.badgeStyles,
-    bottomNavigationBarStyle: theme.bottomNavigationBarStyle,
-    breadcrumbStyle: theme.breadcrumbStyle,
-    buttonStyles: theme.buttonStyles,
-    calendarStyle: theme.calendarStyle,
-    cardStyle: theme.cardStyle,
-    checkboxStyle: theme.checkboxStyle,
-    circularProgressStyles: theme.circularProgressStyles,
-    dateFieldStyle: theme.dateFieldStyle,
-    dateTimePickerStyle: theme.dateTimePickerStyle,
-    determinateProgressStyle: theme.determinateProgressStyle,
-    dialogRouteStyle: theme.dialogRouteStyle,
-    dialogStyle: theme.dialogStyle,
-    dividerStyles: theme.dividerStyles,
-    headerStyles: patchedHeaderStyles,
-    itemStyles: theme.itemStyles,
-    itemGroupStyle: theme.itemGroupStyle,
-    labelStyles: theme.labelStyles,
-    lineCalendarStyle: theme.lineCalendarStyle,
-    multiSelectStyle: theme.multiSelectStyle,
-    modalSheetStyle: theme.modalSheetStyle,
-    otpFieldStyle: theme.otpFieldStyle,
-    paginationStyle: theme.paginationStyle,
-    persistentSheetStyle: theme.persistentSheetStyle,
-    pickerStyle: theme.pickerStyle,
-    popoverStyle: theme.popoverStyle,
-    popoverMenuStyle: theme.popoverMenuStyle,
-    progressStyle: theme.progressStyle,
-    radioStyle: theme.radioStyle,
-    resizableStyles: theme.resizableStyles,
-    scaffoldStyle: theme.scaffoldStyle,
-    selectStyle: theme.selectStyle,
-    selectGroupStyle: theme.selectGroupStyle,
-    selectMenuTileStyle: theme.selectMenuTileStyle,
-    sidebarStyle: theme.sidebarStyle,
-    sliderStyles: theme.sliderStyles,
-    toasterStyle: theme.toasterStyle,
-    switchStyle: theme.switchStyle,
-    tabsStyle: theme.tabsStyle,
-    tappableStyle: theme.tappableStyle,
-    textFieldStyles: theme.textFieldStyles,
-    tileStyles: theme.tileStyles,
-    tileGroupStyle: theme.tileGroupStyle,
-    timeFieldStyle: theme.timeFieldStyle,
-    timePickerStyle: theme.timePickerStyle,
-    tooltipStyle: theme.tooltipStyle,
-    extensions: theme.extensions,
+  return theme.copyWith(
+    textTheme: theme.textTheme.apply(
+      fontFamily: fontFamily,
+      fontFamilyFallback: fontSpec.fontFamilyFallback,
+    ),
   );
 }
 
@@ -203,58 +90,6 @@ Locale? _localeFromSettings(String localeTag) {
     }
   }
   return Locale(languageCode);
-}
-
-FThemeData _foruiThemeData(ForuiTheme theme, Brightness brightness) {
-  final pair = switch (theme) {
-    ForuiTheme.neutral => FThemes.neutral,
-    ForuiTheme.zinc => FThemes.zinc,
-    ForuiTheme.slate => FThemes.slate,
-    ForuiTheme.blue => FThemes.blue,
-    ForuiTheme.green => FThemes.green,
-    ForuiTheme.orange => FThemes.orange,
-    ForuiTheme.red => FThemes.red,
-    ForuiTheme.rose => FThemes.rose,
-    ForuiTheme.violet => FThemes.violet,
-    ForuiTheme.yellow => FThemes.yellow,
-  };
-  final base = brightness == Brightness.dark
-      ? pair.dark.touch
-      : pair.light.touch;
-  return base.copyWith(
-    headerStyles: FVariantsDelta.delta([
-      FVariantOperation.all(
-        FHeaderStyleDelta.delta(
-          titleTextStyle: TextStyleDelta.delta(
-            fontSize: 20,
-            fontWeight: FontWeight.w400,
-            height: 1.2,
-          ),
-        ),
-      ),
-    ]),
-  );
-}
-
-ThemeData _appThemeData(FThemeData forui, {required AppFontSpec fontSpec}) {
-  final material = forui.toApproximateMaterialTheme();
-  final themed = material.copyWith(
-    pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
-  );
-  final fontFamily = fontSpec.fontFamily;
-  if (fontFamily == null || fontFamily.isEmpty) {
-    return themed;
-  }
-  return themed.copyWith(
-    textTheme: themed.textTheme.apply(
-      fontFamily: fontFamily,
-      fontFamilyFallback: fontSpec.fontFamilyFallback,
-    ),
-    primaryTextTheme: themed.primaryTextTheme.apply(
-      fontFamily: fontFamily,
-      fontFamilyFallback: fontSpec.fontFamilyFallback,
-    ),
-  );
 }
 
 String _bootSwitcherLabel(PackageInfo packageInfo, AppLocalizations l10n) {
@@ -403,28 +238,18 @@ class MyApp extends StatelessWidget {
           Selector<
             TimetableProvider,
             ({
-              ForuiTheme foruiTheme,
               AppFontMode fontMode,
               AppThemeMode themeMode,
               String localeTag,
             })
           >(
             selector: (_, p) => (
-              foruiTheme: p.settings.foruiTheme,
               fontMode: p.settings.appFontMode,
               themeMode: p.settings.appThemeMode,
               localeTag: p.settings.appLocaleTag,
             ),
             builder: (context, settings, child) {
               final fontSpec = settings.fontMode.fontSpec;
-              final foruiLight = _foruiThemeDataWithFont(
-                _foruiThemeData(settings.foruiTheme, Brightness.light),
-                fontSpec,
-              );
-              final foruiDark = _foruiThemeDataWithFont(
-                _foruiThemeData(settings.foruiTheme, Brightness.dark),
-                fontSpec,
-              );
 
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
@@ -441,8 +266,8 @@ class MyApp extends StatelessWidget {
                 supportedLocales: AppLocalizations.supportedLocales,
                 locale: _localeFromSettings(settings.localeTag),
                 themeMode: _themeModeFromSettings(settings.themeMode),
-                theme: _appThemeData(foruiLight, fontSpec: fontSpec),
-                darkTheme: _appThemeData(foruiDark, fontSpec: fontSpec),
+                theme: _appThemeData(Brightness.light, fontSpec: fontSpec),
+                darkTheme: _appThemeData(Brightness.dark, fontSpec: fontSpec),
                 // Android VIEW deep links (mikcb-debug://...) are also delivered
                 // as Flutter pushNamed routes. We navigate via MethodChannel +
                 // DebugDeepLinkNavigator; swallow unknown platform routes so
@@ -464,10 +289,7 @@ class MyApp extends StatelessWidget {
                     child: HyperosMotionHost(
                       child: FrostedAppearanceScope(
                         appearance: frostedAppearance,
-                        child: FTheme(
-                          data: isDark ? foruiDark : foruiLight,
-                          child: FTooltipGroup(
-                            child: ScaffoldMessenger(
+                        child: ScaffoldMessenger(
                               child: Scaffold(
                                 backgroundColor: Colors.transparent,
                                 resizeToAvoidBottomInset: false,
@@ -476,8 +298,6 @@ class MyApp extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ),
-                        ),
                       ),
                     ),
                   );
