@@ -553,32 +553,30 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   Widget _buildScaffoldHeaderLayout(Color pageBackground) {
     final headerContent = _buildHeaderContent();
     final blurredHeader = _buildHeaderShell(headerContent, pageBackground);
-    final header = _buildHeaderScope(
-      contentTopInset: 0,
-      routeBlurEnabled: _backdropBlurEnabled,
-      headerBackgroundColor: pageBackground,
-      child: blurredHeader,
-    );
     return Scaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
       backgroundColor: pageBackground,
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          header,
-          Expanded(
-            child: SafeArea(
-              top: false,
-              maintainBottomViewPadding: true,
-              child: _buildBody(
-                pageBackground: pageBackground,
-                child: widget.childPad
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: widget.child,
-                      )
-                    : widget.child,
-              ),
+          _buildBody(
+            pageBackground: pageBackground,
+            child: widget.childPad
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: widget.child,
+                  )
+                : widget.child,
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildHeaderScope(
+              contentTopInset: 0,
+              routeBlurEnabled: _backdropBlurEnabled,
+              headerBackgroundColor: pageBackground,
+              child: blurredHeader,
             ),
           ),
         ],
