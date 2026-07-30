@@ -2928,30 +2928,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeSeedSectionSubtitle => 'トップバー、アクセントカラーとグローバルメインカラーに影響';
 
   @override
-  String get frostedSheetSectionTitle => '弹窗磨砂玻璃';
+  String get frostedSheetSectionTitle => 'フロストガラス';
 
   @override
   String get frostedSheetSectionSubtitle =>
       '调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显';
 
   @override
-  String get frostedBlurEnabledTitle => '高斯模糊';
+  String get frostedBlurEnabledTitle => 'ぼかしを有効にする';
 
   @override
   String get frostedBlurEnabledSubtitle =>
       '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊';
 
   @override
-  String get frostedSheetPreviewOpenAction => '打开弹窗预览';
+  String get frostedSheetPreviewOpenAction => 'プレビューパネルを開く';
 
   @override
-  String get frostedSheetPreviewDemoTitle => '弹窗预览';
+  String get frostedSheetPreviewDemoTitle => 'プレビュー';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '与首页右上角菜单相同的磨砂玻璃效果';
+  String get frostedSheetPreviewDemoSubtitle => 'フロストガラス効果のリアルタイムプレビュー';
 
   @override
-  String get frostedSheetBlurLabel => '模糊强度';
+  String get frostedSheetBlurLabel => 'ぼかし強度';
 
   @override
   String get frostedSheetTintLabel => '磨砂亮度';
@@ -9054,4 +9054,253 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get scheduleDateRuleNote =>
       'Location match takes priority over date rules.';
+
+  @override
+  String get frostedGlassModeLabel => 'ガラスモード';
+
+  @override
+  String get frostedGlassModeFrosted => 'クラシックフロスト';
+
+  @override
+  String get frostedGlassModeLiquid => 'リキッドガラス';
+
+  @override
+  String get frostedGlassModeGaussian => 'ガウスぼかし';
+
+  @override
+  String get frostedGlassModeTranslucent => '半透明';
+
+  @override
+  String get frostedLiquidGlassHint => 'リキッドガラスには高性能デバイスが必要です';
+
+  @override
+  String get advancedMaterialTitle => '高度なマテリアル';
+
+  @override
+  String get advancedMaterialEntrySubtitle => 'リキッドガラスのパラメータ調整';
+
+  @override
+  String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
+
+  @override
+  String get liquidGlassPresetClear => 'クリア';
+
+  @override
+  String get liquidGlassPresetLight => 'ライトミスト';
+
+  @override
+  String get liquidGlassPresetStandard => 'スタンダード';
+
+  @override
+  String get liquidGlassPresetDense => 'デンス';
+
+  @override
+  String get liquidGlassPresetCustom => 'カスタム';
+
+  @override
+  String get courseCardSettingsTitle => 'コースカード';
+
+  @override
+  String get courseCardSectionFields => '表示フィールド';
+
+  @override
+  String get courseCardSectionLayout => 'レイアウト';
+
+  @override
+  String get courseCardSurfaceStyleLabel => 'カードの外観';
+
+  @override
+  String get courseCardSurfaceStyleSubtitle => 'コースカードのビジュアルスタイルを選択';
+
+  @override
+  String get courseCardSurfaceStyleSolid => 'ソリッド';
+
+  @override
+  String get courseCardSurfaceStyleTranslucent => '半透明';
+
+  @override
+  String get courseCardSurfaceStyleLiquidGlass => 'リキッドガラス';
+
+  @override
+  String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
+
+  @override
+  String get courseCardSectionColor => '色';
+
+  @override
+  String get liveSelfCheckTitle => 'セルフチェック';
+
+  @override
+  String get collapsibleLargeTitle => '折りたたみ大タイトル';
+
+  @override
+  String get liquidGlassCustomExpandedTitle => 'カスタムパラメータ';
+
+  @override
+  String get liquidGlassThicknessLabel => '厚さ';
+
+  @override
+  String get liquidGlassBlurLabel => 'ぼかし強度';
+
+  @override
+  String get liquidGlassTintLabel => '色合い強度';
+
+  @override
+  String get liquidGlassLightIntensityLabel => '光の強度';
+
+  @override
+  String get liquidGlassAmbientStrengthLabel => '環境光の強度';
+
+  @override
+  String get liquidGlassRefractiveIndexLabel => '屈折率';
+
+  @override
+  String get liquidGlassSaturationLabel => '彩度';
+
+  @override
+  String get liquidGlassChromaticAberrationLabel => '色収差';
+
+  @override
+  String get liquidGlassLightAngleLabel => '光の角度';
+
+  @override
+  String get liquidGlassVisibilityLabel => '可視性';
+
+  @override
+  String get liquidGlassResetAction => 'デフォルトに戻す';
+
+  @override
+  String get diagnosticsEntryTitle => '診断';
+
+  @override
+  String get memoryStatsEntryTitle => 'メモリ統計';
+
+  @override
+  String get generalSettingsTitle => '一般';
+
+  @override
+  String get settingsResetDefaultsTitle => 'デフォルトにリセット';
+
+  @override
+  String get settingsResetDefaultsConfirmTitle => 'リセットの確認';
+
+  @override
+  String get settingsResetDefaultsConfirmBody => 'すべての設定が出荷時デフォルトにリセットされます。';
+
+  @override
+  String get settingsResetDoneMessage => '設定がリセットされました';
+
+  @override
+  String get timetablePageSettingsTitle => '時間割ページ';
+
+  @override
+  String get timetablePageSectionDensity => '密度';
+
+  @override
+  String get timetablePageSectionBackToWeek => '現在の週に戻る';
+
+  @override
+  String get timetablePageSectionBackground => '背景';
+
+  @override
+  String get largeTitleContentGap => '16.0';
+
+  @override
+  String get selectTimeTitle => '時間を選択';
+
+  @override
+  String get liveSelfCheckSubtitle => 'セルフチェックを実行';
+
+  @override
+  String get frostedSheetPreviewShowTitle => 'プレビューを表示';
+
+  @override
+  String get frostedSheetPreviewShowSubtitle => '上部にフロストガラスプレビューを表示';
+
+  @override
+  String get aboutSupportUpdatesSectionTitle => 'サポートと更新';
+
+  @override
+  String get aboutProductSectionTitle => '製品';
+
+  @override
+  String get aboutCommunitySectionTitle => 'コミュニティ';
+
+  @override
+  String get selectStartTimeTitle => '開始時間を選択';
+
+  @override
+  String get selectEndTimeTitle => '終了時間を選択';
+
+  @override
+  String get weekdayInkContrastTitle => 'テキストコントラスト強化';
+
+  @override
+  String get weekdayInkContrastBodyDark => 'ダークモードでコーステキストのコントラストを強化';
+
+  @override
+  String get weekdayInkContrastBodyLight => 'ライトモードでコーステキストのコントラストを強化';
+
+  @override
+  String get keepCurrentColorAction => '現在の色を保持';
+
+  @override
+  String get settingsTimetableSectionTitle => '時間割';
+
+  @override
+  String get liveIslandLabelEntryEnabled => '有効';
+
+  @override
+  String get liveIslandLabelEntryDisabled => '無効';
+
+  @override
+  String get settingsDisplayAppearanceSectionTitle => '表示と外観';
+
+  @override
+  String get settingsReminderDesktopSectionTitle => 'リマインダーとデスクトップ';
+
+  @override
+  String get settingsAppSectionTitle => 'アプリ';
+
+  @override
+  String get settingsDataShareSectionTitle => 'データと共有';
+
+  @override
+  String get coupleTimetableEntryUnboundLabel => '未バインド';
+
+  @override
+  String get settingsAboutSectionTitle => 'このアプリについて';
+
+  @override
+  String get diagnosticsEntrySubtitle => 'ランタイム診断ログを表示';
+
+  @override
+  String get settingsSemesterScreenTitle => '学期設定';
+
+  @override
+  String get syncCurrentWeekNeedsStartDate => '先に学期開始日を設定してください';
+
+  @override
+  String get liveNotificationPermissionMissing => '通知権限がありません';
+
+  @override
+  String get developerSectionTitle => '開発者向けオプション';
+
+  @override
+  String get liveTestingFixtureEntryTitle => 'ライブテストフィクスチャ';
+
+  @override
+  String get hyperosShowcaseEntryTitle => 'HyperOS コンポーネントショーケース';
+
+  @override
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS コンポーネントプレビュー';
+
+  @override
+  String get miuixShowcaseEntryTitle => 'Miuix コンポーネントショーケース';
+
+  @override
+  String get miuixShowcaseEntrySubtitle => 'Miuix コンポーネントプレビュー';
+
+  @override
+  String get debugUiOverlayToggleTitle => 'デバッグ UI オーバーレイ';
 }

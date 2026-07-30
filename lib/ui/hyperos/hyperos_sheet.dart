@@ -279,6 +279,116 @@ class HyperosSheet extends StatelessWidget {
   }
 }
 
+/// Bottom velocity threshold to dismiss (pixels/second).
+const double _kDismissVelocity = 600.0;
+
+/// Bottom distance threshold to dismiss (fraction of sheet height).
+const double _kDismissFraction = 0.3;
+
+/// A wrapper that adds vertical drag-to-dismiss for the sheet content.
+///
+/// Wraps the sheet content (not the full-screen Align) so that the
+/// [LayoutBuilder] measures the actual sheet height, enabling the
+/// distance-based dismiss threshold.
+class _DragDismissableSheet extends StatefulWidget {
+  const _DragDismissableSheet({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_DragDismissableSheet> createState() => _DragDismissableSheetState();
+}
+
+class _DragDismissableSheetState extends State<_DragDismissableSheet>
+    with SingleTickerProviderStateMixin {
+  double _dragOffset = 0.0;
+  double _sheetHeight = 0.0;
+
+  late AnimationController _resetController;
+  late final CurvedAnimation _resetCurve;
+  Animation<double> _resetAnimation = const AlwaysStoppedAnimation<double>(0);
+
+  @override
+  void initState() {
+    super.initState();
+    _resetController = AnimationController(vsync: this);
+    _resetCurve = CurvedAnimation(parent: _resetController, curve: Curves.easeOutCubic);
+    _resetAnimation = Tween<double>(begin: 0, end: 0).animate(_resetCurve)
+      ..addListener(_onResetTick);
+  }
+
+  @override
+  void dispose() {
+    _resetAnimation.removeListener(_onResetTick);
+    _resetCurve.dispose();
+    _resetController.dispose();
+    super.dispose();
+  }
+
+  void _onResetTick() {
+    setState(() => _dragOffset = _resetAnimation.value);
+  }
+
+  void _onVerticalDragUpdate(DragUpdateDetails details) {
+    final dy = details.primaryDelta ?? 0;
+    if (dy > 0 || _dragOffset > 0) {
+      setState(() => _dragOffset = (_dragOffset + dy).clamp(0.0, double.infinity));
+    }
+  }
+
+  void _onVerticalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+
+    // Dismiss if velocity or distance exceeds threshold.
+    if (velocity > _kDismissVelocity ||
+        (_sheetHeight > 0 && _dragOffset > _sheetHeight * _kDismissFraction)) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    // Animate back to origin.
+    if (_dragOffset > 0) {
+      final startOffset = _dragOffset;
+      _resetController.stop();
+      _resetAnimation.removeListener(_onResetTick);
+      _resetAnimation = Tween<double>(begin: startOffset, end: 0)
+          .animate(_resetCurve)..addListener(_onResetTick);
+      final durationMs =
+          (250 * (startOffset / (_sheetHeight > 0 ? _sheetHeight : 300)))
+              .clamp(100, 350);
+      _resetController
+        ..duration = Duration(milliseconds: durationMs.toInt())
+        ..forward(from: 1.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _sheetHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height * 0.5;
+        final progress = _sheetHeight > 0
+            ? (_dragOffset / _sheetHeight).clamp(0.0, 1.0)
+            : 0.0;
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onVerticalDragUpdate: _onVerticalDragUpdate,
+          onVerticalDragEnd: _onVerticalDragEnd,
+          child: Transform.translate(
+            offset: Offset(0, _dragOffset),
+            child: Opacity(
+              opacity: 1.0 - progress * 0.4,
+              child: widget.child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// Shows a HyperOS-styled modal bottom sheet (replaces Forui `showFSheet`).
 ///
 /// Content should use [HyperosSheetFrame] / [HyperosSheet] / [HyperosDialog].
@@ -312,14 +422,22 @@ Future<T?> showHyperosSheet<T>({
       final keyboardInset = padForKeyboard
           ? MediaQuery.viewInsetsOf(dialogContext).bottom
           : 0.0;
+      final sheetContent = HyperosSheetChromeScope(
+        chrome: chrome,
+        child: builder(dialogContext),
+      );
+
+      // Wrap drag-to-dismiss around the sheet content (not the full-screen
+      // Align) so LayoutBuilder measures the actual sheet height.
+      final sheet = enableDrag
+          ? _DragDismissableSheet(child: sheetContent)
+          : sheetContent;
+
       return Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: EdgeInsets.only(bottom: keyboardInset),
-          child: HyperosSheetChromeScope(
-            chrome: chrome,
-            child: builder(dialogContext),
-          ),
+          child: sheet,
         ),
       );
     },

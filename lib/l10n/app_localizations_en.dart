@@ -3065,31 +3065,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Affects the top bar, accent color, and global primary tone';
 
   @override
-  String get frostedSheetSectionTitle => 'Sheet frosted glass';
+  String get frostedSheetSectionTitle => 'Frosted Glass';
 
   @override
   String get frostedSheetSectionSubtitle =>
       'Adjust home popup blur and milky frosted brightness. Further right = brighter white glass';
 
   @override
-  String get frostedBlurEnabledTitle => 'Gaussian blur';
+  String get frostedBlurEnabledTitle => 'Enable Blur';
 
   @override
   String get frostedBlurEnabledSubtitle =>
       'When off, sheets and home frosted areas keep tint only, without backdrop blur';
 
   @override
-  String get frostedSheetPreviewOpenAction => 'Open sheet preview';
+  String get frostedSheetPreviewOpenAction => 'Open Preview Panel';
 
   @override
-  String get frostedSheetPreviewDemoTitle => 'Sheet preview';
+  String get frostedSheetPreviewDemoTitle => 'Preview';
 
   @override
   String get frostedSheetPreviewDemoSubtitle =>
-      'Same frosted glass as the home top-right menu';
+      'Live preview of frosted glass effect';
 
   @override
-  String get frostedSheetBlurLabel => 'Blur strength';
+  String get frostedSheetBlurLabel => 'Blur Intensity';
 
   @override
   String get frostedSheetTintLabel => 'Frost brightness';
@@ -9323,4 +9323,261 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scheduleDateRuleNote =>
       'Location match takes priority over date rules.';
+
+  @override
+  String get frostedGlassModeLabel => 'Glass Mode';
+
+  @override
+  String get frostedGlassModeFrosted => 'Classic Frosted';
+
+  @override
+  String get frostedGlassModeLiquid => 'Liquid Glass';
+
+  @override
+  String get frostedGlassModeGaussian => 'Gaussian Blur';
+
+  @override
+  String get frostedGlassModeTranslucent => 'Translucent';
+
+  @override
+  String get frostedLiquidGlassHint =>
+      'Liquid glass requires a high-performance device';
+
+  @override
+  String get advancedMaterialTitle => 'Advanced Material';
+
+  @override
+  String get advancedMaterialEntrySubtitle => 'Liquid glass parameter tuning';
+
+  @override
+  String get liquidGlassPresetLabel => 'Liquid Glass Preset';
+
+  @override
+  String get liquidGlassPresetClear => 'Clear';
+
+  @override
+  String get liquidGlassPresetLight => 'Light Mist';
+
+  @override
+  String get liquidGlassPresetStandard => 'Standard';
+
+  @override
+  String get liquidGlassPresetDense => 'Dense';
+
+  @override
+  String get liquidGlassPresetCustom => 'Custom';
+
+  @override
+  String get courseCardSettingsTitle => 'Course Card';
+
+  @override
+  String get courseCardSectionFields => 'Display Fields';
+
+  @override
+  String get courseCardSectionLayout => 'Layout';
+
+  @override
+  String get courseCardSurfaceStyleLabel => 'Card Appearance';
+
+  @override
+  String get courseCardSurfaceStyleSubtitle =>
+      'Choose the visual style for course cards';
+
+  @override
+  String get courseCardSurfaceStyleSolid => 'Solid';
+
+  @override
+  String get courseCardSurfaceStyleTranslucent => 'Translucent';
+
+  @override
+  String get courseCardSurfaceStyleLiquidGlass => 'Liquid Glass';
+
+  @override
+  String get courseCardSurfaceStyleGaussian => 'Gaussian Blur';
+
+  @override
+  String get courseCardSectionColor => 'Color';
+
+  @override
+  String get liveSelfCheckTitle => 'Self-Check';
+
+  @override
+  String get collapsibleLargeTitle => 'Collapsible Large Title';
+
+  @override
+  String get liquidGlassCustomExpandedTitle => 'Custom Parameters';
+
+  @override
+  String get liquidGlassThicknessLabel => 'Thickness';
+
+  @override
+  String get liquidGlassBlurLabel => 'Blur Intensity';
+
+  @override
+  String get liquidGlassTintLabel => 'Tint Intensity';
+
+  @override
+  String get liquidGlassLightIntensityLabel => 'Light Intensity';
+
+  @override
+  String get liquidGlassAmbientStrengthLabel => 'Ambient Light Strength';
+
+  @override
+  String get liquidGlassRefractiveIndexLabel => 'Refractive Index';
+
+  @override
+  String get liquidGlassSaturationLabel => 'Saturation';
+
+  @override
+  String get liquidGlassChromaticAberrationLabel => 'Chromatic Aberration';
+
+  @override
+  String get liquidGlassLightAngleLabel => 'Light Angle';
+
+  @override
+  String get liquidGlassVisibilityLabel => 'Visibility';
+
+  @override
+  String get liquidGlassResetAction => 'Reset to Default';
+
+  @override
+  String get diagnosticsEntryTitle => 'Diagnostics';
+
+  @override
+  String get memoryStatsEntryTitle => 'Memory Stats';
+
+  @override
+  String get generalSettingsTitle => 'General';
+
+  @override
+  String get settingsResetDefaultsTitle => 'Reset to Defaults';
+
+  @override
+  String get settingsResetDefaultsConfirmTitle => 'Confirm Reset';
+
+  @override
+  String get settingsResetDefaultsConfirmBody =>
+      'All settings will be restored to factory defaults.';
+
+  @override
+  String get settingsResetDoneMessage => 'Settings have been reset';
+
+  @override
+  String get timetablePageSettingsTitle => 'Timetable Page';
+
+  @override
+  String get timetablePageSectionDensity => 'Density';
+
+  @override
+  String get timetablePageSectionBackToWeek => 'Back to Current Week';
+
+  @override
+  String get timetablePageSectionBackground => 'Background';
+
+  @override
+  String get largeTitleContentGap => '16.0';
+
+  @override
+  String get selectTimeTitle => 'Select Time';
+
+  @override
+  String get liveSelfCheckSubtitle => 'Run Self-Check';
+
+  @override
+  String get frostedSheetPreviewShowTitle => 'Show Preview';
+
+  @override
+  String get frostedSheetPreviewShowSubtitle =>
+      'Show frosted glass preview at the top';
+
+  @override
+  String get aboutSupportUpdatesSectionTitle => 'Support & Updates';
+
+  @override
+  String get aboutProductSectionTitle => 'Product';
+
+  @override
+  String get aboutCommunitySectionTitle => 'Community';
+
+  @override
+  String get selectStartTimeTitle => 'Select Start Time';
+
+  @override
+  String get selectEndTimeTitle => 'Select End Time';
+
+  @override
+  String get weekdayInkContrastTitle => 'Text Contrast Enhancement';
+
+  @override
+  String get weekdayInkContrastBodyDark =>
+      'Enhance course text contrast in dark mode';
+
+  @override
+  String get weekdayInkContrastBodyLight =>
+      'Enhance course text contrast in light mode';
+
+  @override
+  String get keepCurrentColorAction => 'Keep Current Color';
+
+  @override
+  String get settingsTimetableSectionTitle => 'Timetable';
+
+  @override
+  String get liveIslandLabelEntryEnabled => 'Enabled';
+
+  @override
+  String get liveIslandLabelEntryDisabled => 'Disabled';
+
+  @override
+  String get settingsDisplayAppearanceSectionTitle => 'Display & Appearance';
+
+  @override
+  String get settingsReminderDesktopSectionTitle => 'Reminders & Desktop';
+
+  @override
+  String get settingsAppSectionTitle => 'App';
+
+  @override
+  String get settingsDataShareSectionTitle => 'Data & Sharing';
+
+  @override
+  String get coupleTimetableEntryUnboundLabel => 'Unbound';
+
+  @override
+  String get settingsAboutSectionTitle => 'About';
+
+  @override
+  String get diagnosticsEntrySubtitle => 'View runtime diagnostics logs';
+
+  @override
+  String get settingsSemesterScreenTitle => 'Semester Settings';
+
+  @override
+  String get syncCurrentWeekNeedsStartDate =>
+      'Please set the semester start date first';
+
+  @override
+  String get liveNotificationPermissionMissing =>
+      'Notification permission missing';
+
+  @override
+  String get developerSectionTitle => 'Developer Options';
+
+  @override
+  String get liveTestingFixtureEntryTitle => 'Live Test Fixture';
+
+  @override
+  String get hyperosShowcaseEntryTitle => 'HyperOS Component Showcase';
+
+  @override
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS component preview';
+
+  @override
+  String get miuixShowcaseEntryTitle => 'Miuix Component Showcase';
+
+  @override
+  String get miuixShowcaseEntrySubtitle => 'Miuix component preview';
+
+  @override
+  String get debugUiOverlayToggleTitle => 'Debug UI Overlay';
 }

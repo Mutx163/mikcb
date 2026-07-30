@@ -2,7 +2,6 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import '../models/timetable_settings.dart';
 import 'app_localizations.dart';
 

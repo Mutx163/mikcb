@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 
 import '../ui/hyperos/hyperos.dart';
 import 'miuix_fling_number_picker.dart';

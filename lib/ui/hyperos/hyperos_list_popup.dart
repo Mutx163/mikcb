@@ -188,7 +188,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                         minWidth: 200,
                         maxWidth: (screen.width - margin * 2).clamp(
                           200.0,
-                          320.0,
+                          364.0,
                         ),
                         maxHeight: maxHeight,
                       ),
@@ -201,8 +201,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               for (var i = 0; i < widget.items.length; i++)
                                 _ListPopupTile(
                                   item: widget.items[i],
-                                  isFirst: i == 0,
-                                  isLast: i == widget.items.length - 1,
                                   onTap: widget.items[i].enabled
                                       ? () => Navigator.of(
                                           context,
@@ -229,14 +227,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
 class _ListPopupTile extends StatelessWidget {
   const _ListPopupTile({
     required this.item,
-    required this.isFirst,
-    required this.isLast,
     this.onTap,
   });
 
   final HyperosPopupMenuItem<dynamic> item;
-  final bool isFirst;
-  final bool isLast;
   final VoidCallback? onTap;
 
   @override
@@ -246,29 +240,30 @@ class _ListPopupTile extends StatelessWidget {
         : (item.enabled
               ? HyperosColors.onSurface(context)
               : HyperosColors.disabledOnSurface(context));
-    final verticalPadding = (isFirst || isLast)
-        ? HyperosMiuixDropdown.firstLastVerticalPadding
-        : HyperosMiuixDropdown.middleVerticalPadding;
 
     return HyperosPressableRow(
       onTap: onTap,
       backgroundColor: Colors.transparent,
       highlightColor: HyperosColors.rowHighlight(context),
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(
-          start: HyperosMiuixDropdown.insideHorizontalPadding,
-          end: HyperosMiuixDropdown.insideHorizontalPadding,
-          top: isFirst ? verticalPadding : verticalPadding * 0.5,
-          bottom: isLast ? verticalPadding : verticalPadding * 0.5,
-        ),
-        child: Text(
-          item.label,
-          style: TextStyle(
-            fontSize: HyperosMiuixTypography.body1,
-            color: color,
+      child: SizedBox(
+        height: HyperosMiuixBasicComponent.minHeight,
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: HyperosMiuixDropdown.insideHorizontalPadding,
+            end: HyperosMiuixDropdown.insideHorizontalPadding,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              item.label,
+              style: TextStyle(
+                fontSize: HyperosMiuixTypography.body1,
+                color: color,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ),
       ),
     );

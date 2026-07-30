@@ -5334,7 +5334,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedSheetSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'弹窗磨砂玻璃'**
+  /// **'磨砂玻璃'**
   String get frostedSheetSectionTitle;
 
   /// No description provided for @frostedSheetSectionSubtitle.
@@ -5346,7 +5346,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedBlurEnabledTitle.
   ///
   /// In zh, this message translates to:
-  /// **'高斯模糊'**
+  /// **'启用模糊'**
   String get frostedBlurEnabledTitle;
 
   /// No description provided for @frostedBlurEnabledSubtitle.
@@ -5358,19 +5358,19 @@ abstract class AppLocalizations {
   /// No description provided for @frostedSheetPreviewOpenAction.
   ///
   /// In zh, this message translates to:
-  /// **'打开弹窗预览'**
+  /// **'打开预览面板'**
   String get frostedSheetPreviewOpenAction;
 
   /// No description provided for @frostedSheetPreviewDemoTitle.
   ///
   /// In zh, this message translates to:
-  /// **'弹窗预览'**
+  /// **'预览'**
   String get frostedSheetPreviewDemoTitle;
 
   /// No description provided for @frostedSheetPreviewDemoSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'与首页右上角菜单相同的磨砂玻璃效果'**
+  /// **'磨砂玻璃效果实时预览'**
   String get frostedSheetPreviewDemoSubtitle;
 
   /// No description provided for @frostedSheetBlurLabel.
@@ -15906,6 +15906,504 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'地点匹配优先于日期规则。'**
   String get scheduleDateRuleNote;
+
+  /// No description provided for @frostedGlassModeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'玻璃模式'**
+  String get frostedGlassModeLabel;
+
+  /// No description provided for @frostedGlassModeFrosted.
+  ///
+  /// In zh, this message translates to:
+  /// **'经典磨砂'**
+  String get frostedGlassModeFrosted;
+
+  /// No description provided for @frostedGlassModeLiquid.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃'**
+  String get frostedGlassModeLiquid;
+
+  /// No description provided for @frostedGlassModeGaussian.
+  ///
+  /// In zh, this message translates to:
+  /// **'高斯模糊'**
+  String get frostedGlassModeGaussian;
+
+  /// No description provided for @frostedGlassModeTranslucent.
+  ///
+  /// In zh, this message translates to:
+  /// **'半透明'**
+  String get frostedGlassModeTranslucent;
+
+  /// No description provided for @frostedLiquidGlassHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃需要高性能设备支持'**
+  String get frostedLiquidGlassHint;
+
+  /// No description provided for @advancedMaterialTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级材质'**
+  String get advancedMaterialTitle;
+
+  /// No description provided for @advancedMaterialEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃参数微调'**
+  String get advancedMaterialEntrySubtitle;
+
+  /// No description provided for @liquidGlassPresetLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃预设'**
+  String get liquidGlassPresetLabel;
+
+  /// No description provided for @liquidGlassPresetClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清澈'**
+  String get liquidGlassPresetClear;
+
+  /// No description provided for @liquidGlassPresetLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻雾'**
+  String get liquidGlassPresetLight;
+
+  /// No description provided for @liquidGlassPresetStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get liquidGlassPresetStandard;
+
+  /// No description provided for @liquidGlassPresetDense.
+  ///
+  /// In zh, this message translates to:
+  /// **'浓密'**
+  String get liquidGlassPresetDense;
+
+  /// No description provided for @liquidGlassPresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get liquidGlassPresetCustom;
+
+  /// No description provided for @courseCardSettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡片'**
+  String get courseCardSettingsTitle;
+
+  /// No description provided for @courseCardSectionFields.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示字段'**
+  String get courseCardSectionFields;
+
+  /// No description provided for @courseCardSectionLayout.
+  ///
+  /// In zh, this message translates to:
+  /// **'布局'**
+  String get courseCardSectionLayout;
+
+  /// No description provided for @courseCardSurfaceStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'卡片外观'**
+  String get courseCardSurfaceStyleLabel;
+
+  /// No description provided for @courseCardSurfaceStyleSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择课程卡片的视觉风格'**
+  String get courseCardSurfaceStyleSubtitle;
+
+  /// No description provided for @courseCardSurfaceStyleSolid.
+  ///
+  /// In zh, this message translates to:
+  /// **'实心'**
+  String get courseCardSurfaceStyleSolid;
+
+  /// No description provided for @courseCardSurfaceStyleTranslucent.
+  ///
+  /// In zh, this message translates to:
+  /// **'半透明'**
+  String get courseCardSurfaceStyleTranslucent;
+
+  /// No description provided for @courseCardSurfaceStyleLiquidGlass.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃'**
+  String get courseCardSurfaceStyleLiquidGlass;
+
+  /// No description provided for @courseCardSurfaceStyleGaussian.
+  ///
+  /// In zh, this message translates to:
+  /// **'高斯模糊'**
+  String get courseCardSurfaceStyleGaussian;
+
+  /// No description provided for @courseCardSectionColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'颜色'**
+  String get courseCardSectionColor;
+
+  /// No description provided for @liveSelfCheckTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自检'**
+  String get liveSelfCheckTitle;
+
+  /// No description provided for @collapsibleLargeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'折叠大标题'**
+  String get collapsibleLargeTitle;
+
+  /// No description provided for @liquidGlassCustomExpandedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义参数'**
+  String get liquidGlassCustomExpandedTitle;
+
+  /// No description provided for @liquidGlassThicknessLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'厚度'**
+  String get liquidGlassThicknessLabel;
+
+  /// No description provided for @liquidGlassBlurLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊强度'**
+  String get liquidGlassBlurLabel;
+
+  /// No description provided for @liquidGlassTintLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'染色强度'**
+  String get liquidGlassTintLabel;
+
+  /// No description provided for @liquidGlassLightIntensityLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'灯光强度'**
+  String get liquidGlassLightIntensityLabel;
+
+  /// No description provided for @liquidGlassAmbientStrengthLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'环境光强度'**
+  String get liquidGlassAmbientStrengthLabel;
+
+  /// No description provided for @liquidGlassRefractiveIndexLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射率'**
+  String get liquidGlassRefractiveIndexLabel;
+
+  /// No description provided for @liquidGlassSaturationLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'饱和度'**
+  String get liquidGlassSaturationLabel;
+
+  /// No description provided for @liquidGlassChromaticAberrationLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'色差'**
+  String get liquidGlassChromaticAberrationLabel;
+
+  /// No description provided for @liquidGlassLightAngleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'光照角度'**
+  String get liquidGlassLightAngleLabel;
+
+  /// No description provided for @liquidGlassVisibilityLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'可见性'**
+  String get liquidGlassVisibilityLabel;
+
+  /// No description provided for @liquidGlassResetAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认'**
+  String get liquidGlassResetAction;
+
+  /// No description provided for @diagnosticsEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'诊断'**
+  String get diagnosticsEntryTitle;
+
+  /// No description provided for @memoryStatsEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'内存状态'**
+  String get memoryStatsEntryTitle;
+
+  /// No description provided for @generalSettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'通用'**
+  String get generalSettingsTitle;
+
+  /// No description provided for @settingsResetDefaultsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认设置'**
+  String get settingsResetDefaultsTitle;
+
+  /// No description provided for @settingsResetDefaultsConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认恢复'**
+  String get settingsResetDefaultsConfirmTitle;
+
+  /// No description provided for @settingsResetDefaultsConfirmBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将重置所有设置为出厂默认值。'**
+  String get settingsResetDefaultsConfirmBody;
+
+  /// No description provided for @settingsResetDoneMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置已重置'**
+  String get settingsResetDoneMessage;
+
+  /// No description provided for @timetablePageSettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表页面'**
+  String get timetablePageSettingsTitle;
+
+  /// No description provided for @timetablePageSectionDensity.
+  ///
+  /// In zh, this message translates to:
+  /// **'密度'**
+  String get timetablePageSectionDensity;
+
+  /// No description provided for @timetablePageSectionBackToWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'回到当前周'**
+  String get timetablePageSectionBackToWeek;
+
+  /// No description provided for @timetablePageSectionBackground.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景'**
+  String get timetablePageSectionBackground;
+
+  /// No description provided for @largeTitleContentGap.
+  ///
+  /// In zh, this message translates to:
+  /// **'16.0'**
+  String get largeTitleContentGap;
+
+  /// No description provided for @selectTimeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择时间'**
+  String get selectTimeTitle;
+
+  /// No description provided for @liveSelfCheckSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'运行自检'**
+  String get liveSelfCheckSubtitle;
+
+  /// No description provided for @frostedSheetPreviewShowTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示预览'**
+  String get frostedSheetPreviewShowTitle;
+
+  /// No description provided for @frostedSheetPreviewShowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在顶部显示磨砂玻璃预览'**
+  String get frostedSheetPreviewShowSubtitle;
+
+  /// No description provided for @aboutSupportUpdatesSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'支持与更新'**
+  String get aboutSupportUpdatesSectionTitle;
+
+  /// No description provided for @aboutProductSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'产品'**
+  String get aboutProductSectionTitle;
+
+  /// No description provided for @aboutCommunitySectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'社区'**
+  String get aboutCommunitySectionTitle;
+
+  /// No description provided for @selectStartTimeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择开始时间'**
+  String get selectStartTimeTitle;
+
+  /// No description provided for @selectEndTimeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择结束时间'**
+  String get selectEndTimeTitle;
+
+  /// No description provided for @weekdayInkContrastTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'文字对比度增强'**
+  String get weekdayInkContrastTitle;
+
+  /// No description provided for @weekdayInkContrastBodyDark.
+  ///
+  /// In zh, this message translates to:
+  /// **'深色模式下增强课程文字对比度'**
+  String get weekdayInkContrastBodyDark;
+
+  /// No description provided for @weekdayInkContrastBodyLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'浅色模式下增强课程文字对比度'**
+  String get weekdayInkContrastBodyLight;
+
+  /// No description provided for @keepCurrentColorAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留当前颜色'**
+  String get keepCurrentColorAction;
+
+  /// No description provided for @settingsTimetableSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表'**
+  String get settingsTimetableSectionTitle;
+
+  /// No description provided for @liveIslandLabelEntryEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已启用'**
+  String get liveIslandLabelEntryEnabled;
+
+  /// No description provided for @liveIslandLabelEntryDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已关闭'**
+  String get liveIslandLabelEntryDisabled;
+
+  /// No description provided for @settingsDisplayAppearanceSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示与外观'**
+  String get settingsDisplayAppearanceSectionTitle;
+
+  /// No description provided for @settingsReminderDesktopSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'提醒与桌面'**
+  String get settingsReminderDesktopSectionTitle;
+
+  /// No description provided for @settingsAppSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用'**
+  String get settingsAppSectionTitle;
+
+  /// No description provided for @settingsDataShareSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据与共享'**
+  String get settingsDataShareSectionTitle;
+
+  /// No description provided for @coupleTimetableEntryUnboundLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'未绑定'**
+  String get coupleTimetableEntryUnboundLabel;
+
+  /// No description provided for @settingsAboutSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'关于'**
+  String get settingsAboutSectionTitle;
+
+  /// No description provided for @diagnosticsEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看运行诊断日志'**
+  String get diagnosticsEntrySubtitle;
+
+  /// No description provided for @settingsSemesterScreenTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期设置'**
+  String get settingsSemesterScreenTitle;
+
+  /// No description provided for @syncCurrentWeekNeedsStartDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先设置开学日期'**
+  String get syncCurrentWeekNeedsStartDate;
+
+  /// No description provided for @liveNotificationPermissionMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'缺少通知权限'**
+  String get liveNotificationPermissionMissing;
+
+  /// No description provided for @developerSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开发者选项'**
+  String get developerSectionTitle;
+
+  /// No description provided for @liveTestingFixtureEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'实况测试样例'**
+  String get liveTestingFixtureEntryTitle;
+
+  /// No description provided for @hyperosShowcaseEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'HyperOS 组件展示'**
+  String get hyperosShowcaseEntryTitle;
+
+  /// No description provided for @hyperosShowcaseEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'HyperOS 组件预览'**
+  String get hyperosShowcaseEntrySubtitle;
+
+  /// No description provided for @miuixShowcaseEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Miuix 组件展示'**
+  String get miuixShowcaseEntryTitle;
+
+  /// No description provided for @miuixShowcaseEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Miuix 组件预览'**
+  String get miuixShowcaseEntrySubtitle;
+
+  /// No description provided for @debugUiOverlayToggleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'调试 UI 叠层'**
+  String get debugUiOverlayToggleTitle;
 }
 
 class _AppLocalizationsDelegate

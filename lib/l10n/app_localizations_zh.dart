@@ -2884,27 +2884,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSeedSectionSubtitle => '影响顶部栏、强调色和全局主色调';
 
   @override
-  String get frostedSheetSectionTitle => '弹窗磨砂玻璃';
+  String get frostedSheetSectionTitle => '磨砂玻璃';
 
   @override
   String get frostedSheetSectionSubtitle =>
       '调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显';
 
   @override
-  String get frostedBlurEnabledTitle => '高斯模糊';
+  String get frostedBlurEnabledTitle => '启用模糊';
 
   @override
   String get frostedBlurEnabledSubtitle =>
       '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊';
 
   @override
-  String get frostedSheetPreviewOpenAction => '打开弹窗预览';
+  String get frostedSheetPreviewOpenAction => '打开预览面板';
 
   @override
-  String get frostedSheetPreviewDemoTitle => '弹窗预览';
+  String get frostedSheetPreviewDemoTitle => '预览';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '与首页右上角菜单相同的磨砂玻璃效果';
+  String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果实时预览';
 
   @override
   String get frostedSheetBlurLabel => '模糊强度';
@@ -8800,6 +8800,255 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleDateRuleNote => '地点匹配优先于日期规则。';
+
+  @override
+  String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get frostedGlassModeFrosted => '经典磨砂';
+
+  @override
+  String get frostedGlassModeLiquid => '液态玻璃';
+
+  @override
+  String get frostedGlassModeGaussian => '高斯模糊';
+
+  @override
+  String get frostedGlassModeTranslucent => '半透明';
+
+  @override
+  String get frostedLiquidGlassHint => '液态玻璃需要高性能设备支持';
+
+  @override
+  String get advancedMaterialTitle => '高级材质';
+
+  @override
+  String get advancedMaterialEntrySubtitle => '液态玻璃参数微调';
+
+  @override
+  String get liquidGlassPresetLabel => '液态玻璃预设';
+
+  @override
+  String get liquidGlassPresetClear => '清澈';
+
+  @override
+  String get liquidGlassPresetLight => '轻雾';
+
+  @override
+  String get liquidGlassPresetStandard => '标准';
+
+  @override
+  String get liquidGlassPresetDense => '浓密';
+
+  @override
+  String get liquidGlassPresetCustom => '自定义';
+
+  @override
+  String get courseCardSettingsTitle => '课程卡片';
+
+  @override
+  String get courseCardSectionFields => '显示字段';
+
+  @override
+  String get courseCardSectionLayout => '布局';
+
+  @override
+  String get courseCardSurfaceStyleLabel => '卡片外观';
+
+  @override
+  String get courseCardSurfaceStyleSubtitle => '选择课程卡片的视觉风格';
+
+  @override
+  String get courseCardSurfaceStyleSolid => '实心';
+
+  @override
+  String get courseCardSurfaceStyleTranslucent => '半透明';
+
+  @override
+  String get courseCardSurfaceStyleLiquidGlass => '液态玻璃';
+
+  @override
+  String get courseCardSurfaceStyleGaussian => '高斯模糊';
+
+  @override
+  String get courseCardSectionColor => '颜色';
+
+  @override
+  String get liveSelfCheckTitle => '自检';
+
+  @override
+  String get collapsibleLargeTitle => '折叠大标题';
+
+  @override
+  String get liquidGlassCustomExpandedTitle => '自定义参数';
+
+  @override
+  String get liquidGlassThicknessLabel => '厚度';
+
+  @override
+  String get liquidGlassBlurLabel => '模糊强度';
+
+  @override
+  String get liquidGlassTintLabel => '染色强度';
+
+  @override
+  String get liquidGlassLightIntensityLabel => '灯光强度';
+
+  @override
+  String get liquidGlassAmbientStrengthLabel => '环境光强度';
+
+  @override
+  String get liquidGlassRefractiveIndexLabel => '折射率';
+
+  @override
+  String get liquidGlassSaturationLabel => '饱和度';
+
+  @override
+  String get liquidGlassChromaticAberrationLabel => '色差';
+
+  @override
+  String get liquidGlassLightAngleLabel => '光照角度';
+
+  @override
+  String get liquidGlassVisibilityLabel => '可见性';
+
+  @override
+  String get liquidGlassResetAction => '恢复默认';
+
+  @override
+  String get diagnosticsEntryTitle => '诊断';
+
+  @override
+  String get memoryStatsEntryTitle => '内存状态';
+
+  @override
+  String get generalSettingsTitle => '通用';
+
+  @override
+  String get settingsResetDefaultsTitle => '恢复默认设置';
+
+  @override
+  String get settingsResetDefaultsConfirmTitle => '确认恢复';
+
+  @override
+  String get settingsResetDefaultsConfirmBody => '将重置所有设置为出厂默认值。';
+
+  @override
+  String get settingsResetDoneMessage => '设置已重置';
+
+  @override
+  String get timetablePageSettingsTitle => '课表页面';
+
+  @override
+  String get timetablePageSectionDensity => '密度';
+
+  @override
+  String get timetablePageSectionBackToWeek => '回到当前周';
+
+  @override
+  String get timetablePageSectionBackground => '背景';
+
+  @override
+  String get largeTitleContentGap => '16.0';
+
+  @override
+  String get selectTimeTitle => '选择时间';
+
+  @override
+  String get liveSelfCheckSubtitle => '运行自检';
+
+  @override
+  String get frostedSheetPreviewShowTitle => '显示预览';
+
+  @override
+  String get frostedSheetPreviewShowSubtitle => '在顶部显示磨砂玻璃预览';
+
+  @override
+  String get aboutSupportUpdatesSectionTitle => '支持与更新';
+
+  @override
+  String get aboutProductSectionTitle => '产品';
+
+  @override
+  String get aboutCommunitySectionTitle => '社区';
+
+  @override
+  String get selectStartTimeTitle => '选择开始时间';
+
+  @override
+  String get selectEndTimeTitle => '选择结束时间';
+
+  @override
+  String get weekdayInkContrastTitle => '文字对比度增强';
+
+  @override
+  String get weekdayInkContrastBodyDark => '深色模式下增强课程文字对比度';
+
+  @override
+  String get weekdayInkContrastBodyLight => '浅色模式下增强课程文字对比度';
+
+  @override
+  String get keepCurrentColorAction => '保留当前颜色';
+
+  @override
+  String get settingsTimetableSectionTitle => '课表';
+
+  @override
+  String get liveIslandLabelEntryEnabled => '已启用';
+
+  @override
+  String get liveIslandLabelEntryDisabled => '已关闭';
+
+  @override
+  String get settingsDisplayAppearanceSectionTitle => '显示与外观';
+
+  @override
+  String get settingsReminderDesktopSectionTitle => '提醒与桌面';
+
+  @override
+  String get settingsAppSectionTitle => '应用';
+
+  @override
+  String get settingsDataShareSectionTitle => '数据与共享';
+
+  @override
+  String get coupleTimetableEntryUnboundLabel => '未绑定';
+
+  @override
+  String get settingsAboutSectionTitle => '关于';
+
+  @override
+  String get diagnosticsEntrySubtitle => '查看运行诊断日志';
+
+  @override
+  String get settingsSemesterScreenTitle => '学期设置';
+
+  @override
+  String get syncCurrentWeekNeedsStartDate => '请先设置开学日期';
+
+  @override
+  String get liveNotificationPermissionMissing => '缺少通知权限';
+
+  @override
+  String get developerSectionTitle => '开发者选项';
+
+  @override
+  String get liveTestingFixtureEntryTitle => '实况测试样例';
+
+  @override
+  String get hyperosShowcaseEntryTitle => 'HyperOS 组件展示';
+
+  @override
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS 组件预览';
+
+  @override
+  String get miuixShowcaseEntryTitle => 'Miuix 组件展示';
+
+  @override
+  String get miuixShowcaseEntrySubtitle => 'Miuix 组件预览';
+
+  @override
+  String get debugUiOverlayToggleTitle => '调试 UI 叠层';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -11436,6 +11685,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themeSeedSectionSubtitle => '影響頂部欄、強調色和全局主色調';
+
+  @override
+  String get frostedSheetSectionTitle => '磨砂玻璃';
+
+  @override
+  String get frostedBlurEnabledTitle => '啟用模糊';
+
+  @override
+  String get frostedSheetPreviewOpenAction => '開啟預覽面板';
+
+  @override
+  String get frostedSheetPreviewDemoTitle => '預覽';
+
+  @override
+  String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果即時預覽';
+
+  @override
+  String get frostedSheetBlurLabel => '模糊強度';
 
   @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
@@ -17184,6 +17451,255 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
+
+  @override
+  String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get frostedGlassModeFrosted => '經典磨砂';
+
+  @override
+  String get frostedGlassModeLiquid => '液態玻璃';
+
+  @override
+  String get frostedGlassModeGaussian => '高斯模糊';
+
+  @override
+  String get frostedGlassModeTranslucent => '半透明';
+
+  @override
+  String get frostedLiquidGlassHint => '液態玻璃需要高效能裝置';
+
+  @override
+  String get advancedMaterialTitle => '進階材質';
+
+  @override
+  String get advancedMaterialEntrySubtitle => '液態玻璃參數微調';
+
+  @override
+  String get liquidGlassPresetLabel => '液態玻璃預設';
+
+  @override
+  String get liquidGlassPresetClear => '清澈';
+
+  @override
+  String get liquidGlassPresetLight => '輕霧';
+
+  @override
+  String get liquidGlassPresetStandard => '標準';
+
+  @override
+  String get liquidGlassPresetDense => '濃密';
+
+  @override
+  String get liquidGlassPresetCustom => '自訂';
+
+  @override
+  String get courseCardSettingsTitle => '課程卡片';
+
+  @override
+  String get courseCardSectionFields => '顯示欄位';
+
+  @override
+  String get courseCardSectionLayout => '版面配置';
+
+  @override
+  String get courseCardSurfaceStyleLabel => '卡片外觀';
+
+  @override
+  String get courseCardSurfaceStyleSubtitle => '選擇課程卡片的視覺風格';
+
+  @override
+  String get courseCardSurfaceStyleSolid => '實心';
+
+  @override
+  String get courseCardSurfaceStyleTranslucent => '半透明';
+
+  @override
+  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
+
+  @override
+  String get courseCardSurfaceStyleGaussian => '高斯模糊';
+
+  @override
+  String get courseCardSectionColor => '顏色';
+
+  @override
+  String get liveSelfCheckTitle => '自檢';
+
+  @override
+  String get collapsibleLargeTitle => '摺疊大標題';
+
+  @override
+  String get liquidGlassCustomExpandedTitle => '自訂參數';
+
+  @override
+  String get liquidGlassThicknessLabel => '厚度';
+
+  @override
+  String get liquidGlassBlurLabel => '模糊強度';
+
+  @override
+  String get liquidGlassTintLabel => '染色強度';
+
+  @override
+  String get liquidGlassLightIntensityLabel => '燈光強度';
+
+  @override
+  String get liquidGlassAmbientStrengthLabel => '環境光強度';
+
+  @override
+  String get liquidGlassRefractiveIndexLabel => '折射率';
+
+  @override
+  String get liquidGlassSaturationLabel => '飽和度';
+
+  @override
+  String get liquidGlassChromaticAberrationLabel => '色差';
+
+  @override
+  String get liquidGlassLightAngleLabel => '光照角度';
+
+  @override
+  String get liquidGlassVisibilityLabel => '可見性';
+
+  @override
+  String get liquidGlassResetAction => '還原預設';
+
+  @override
+  String get diagnosticsEntryTitle => '診斷';
+
+  @override
+  String get memoryStatsEntryTitle => '記憶體狀態';
+
+  @override
+  String get generalSettingsTitle => '一般';
+
+  @override
+  String get settingsResetDefaultsTitle => '還原預設設定';
+
+  @override
+  String get settingsResetDefaultsConfirmTitle => '確認還原';
+
+  @override
+  String get settingsResetDefaultsConfirmBody => '將會重設所有設定為出廠預設值。';
+
+  @override
+  String get settingsResetDoneMessage => '設定已重設';
+
+  @override
+  String get timetablePageSettingsTitle => '時間表頁面';
+
+  @override
+  String get timetablePageSectionDensity => '密度';
+
+  @override
+  String get timetablePageSectionBackToWeek => '返回目前週次';
+
+  @override
+  String get timetablePageSectionBackground => '背景';
+
+  @override
+  String get largeTitleContentGap => '16.0';
+
+  @override
+  String get selectTimeTitle => '選擇時間';
+
+  @override
+  String get liveSelfCheckSubtitle => '執行自檢';
+
+  @override
+  String get frostedSheetPreviewShowTitle => '顯示預覽';
+
+  @override
+  String get frostedSheetPreviewShowSubtitle => '在頂部顯示磨砂玻璃預覽';
+
+  @override
+  String get aboutSupportUpdatesSectionTitle => '支援與更新';
+
+  @override
+  String get aboutProductSectionTitle => '產品';
+
+  @override
+  String get aboutCommunitySectionTitle => '社群';
+
+  @override
+  String get selectStartTimeTitle => '選擇開始時間';
+
+  @override
+  String get selectEndTimeTitle => '選擇結束時間';
+
+  @override
+  String get weekdayInkContrastTitle => '文字對比度增強';
+
+  @override
+  String get weekdayInkContrastBodyDark => '深色模式下增強課程文字對比度';
+
+  @override
+  String get weekdayInkContrastBodyLight => '淺色模式下增強課程文字對比度';
+
+  @override
+  String get keepCurrentColorAction => '保留目前顏色';
+
+  @override
+  String get settingsTimetableSectionTitle => '時間表';
+
+  @override
+  String get liveIslandLabelEntryEnabled => '已啟用';
+
+  @override
+  String get liveIslandLabelEntryDisabled => '已關閉';
+
+  @override
+  String get settingsDisplayAppearanceSectionTitle => '顯示與外觀';
+
+  @override
+  String get settingsReminderDesktopSectionTitle => '提醒與桌面';
+
+  @override
+  String get settingsAppSectionTitle => '應用程式';
+
+  @override
+  String get settingsDataShareSectionTitle => '資料與共享';
+
+  @override
+  String get coupleTimetableEntryUnboundLabel => '未綁定';
+
+  @override
+  String get settingsAboutSectionTitle => '關於';
+
+  @override
+  String get diagnosticsEntrySubtitle => '查看運行診斷日誌';
+
+  @override
+  String get settingsSemesterScreenTitle => '學期設定';
+
+  @override
+  String get syncCurrentWeekNeedsStartDate => '請先設定開學日期';
+
+  @override
+  String get liveNotificationPermissionMissing => '缺少通知權限';
+
+  @override
+  String get developerSectionTitle => '開發者選項';
+
+  @override
+  String get liveTestingFixtureEntryTitle => '實況測試樣例';
+
+  @override
+  String get hyperosShowcaseEntryTitle => 'HyperOS 組件展示';
+
+  @override
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS 組件預覽';
+
+  @override
+  String get miuixShowcaseEntryTitle => 'Miuix 組件展示';
+
+  @override
+  String get miuixShowcaseEntrySubtitle => 'Miuix 組件預覽';
+
+  @override
+  String get debugUiOverlayToggleTitle => '除錯 UI 疊層';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -19820,6 +20336,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themeSeedSectionSubtitle => '影響頂部欄、強調色和全局主色調';
+
+  @override
+  String get frostedSheetSectionTitle => '磨砂玻璃';
+
+  @override
+  String get frostedBlurEnabledTitle => '啟用模糊';
+
+  @override
+  String get frostedSheetPreviewOpenAction => '開啟預覽面板';
+
+  @override
+  String get frostedSheetPreviewDemoTitle => '預覽';
+
+  @override
+  String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果即時預覽';
+
+  @override
+  String get frostedSheetBlurLabel => '模糊強度';
 
   @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
@@ -25568,4 +26102,253 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
+
+  @override
+  String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get frostedGlassModeFrosted => '經典磨砂';
+
+  @override
+  String get frostedGlassModeLiquid => '液態玻璃';
+
+  @override
+  String get frostedGlassModeGaussian => '高斯模糊';
+
+  @override
+  String get frostedGlassModeTranslucent => '半透明';
+
+  @override
+  String get frostedLiquidGlassHint => '液態玻璃需要高效能裝置支援';
+
+  @override
+  String get advancedMaterialTitle => '進階材質';
+
+  @override
+  String get advancedMaterialEntrySubtitle => '液態玻璃參數微調';
+
+  @override
+  String get liquidGlassPresetLabel => '液態玻璃預設';
+
+  @override
+  String get liquidGlassPresetClear => '清澈';
+
+  @override
+  String get liquidGlassPresetLight => '輕霧';
+
+  @override
+  String get liquidGlassPresetStandard => '標準';
+
+  @override
+  String get liquidGlassPresetDense => '濃密';
+
+  @override
+  String get liquidGlassPresetCustom => '自訂';
+
+  @override
+  String get courseCardSettingsTitle => '課程卡片';
+
+  @override
+  String get courseCardSectionFields => '顯示欄位';
+
+  @override
+  String get courseCardSectionLayout => '版面配置';
+
+  @override
+  String get courseCardSurfaceStyleLabel => '卡片外觀';
+
+  @override
+  String get courseCardSurfaceStyleSubtitle => '選擇課程卡片的視覺風格';
+
+  @override
+  String get courseCardSurfaceStyleSolid => '實心';
+
+  @override
+  String get courseCardSurfaceStyleTranslucent => '半透明';
+
+  @override
+  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
+
+  @override
+  String get courseCardSurfaceStyleGaussian => '高斯模糊';
+
+  @override
+  String get courseCardSectionColor => '顏色';
+
+  @override
+  String get liveSelfCheckTitle => '自我檢查';
+
+  @override
+  String get collapsibleLargeTitle => '折疊大標題';
+
+  @override
+  String get liquidGlassCustomExpandedTitle => '自訂參數';
+
+  @override
+  String get liquidGlassThicknessLabel => '厚度';
+
+  @override
+  String get liquidGlassBlurLabel => '模糊強度';
+
+  @override
+  String get liquidGlassTintLabel => '染色強度';
+
+  @override
+  String get liquidGlassLightIntensityLabel => '燈光強度';
+
+  @override
+  String get liquidGlassAmbientStrengthLabel => '環境光強度';
+
+  @override
+  String get liquidGlassRefractiveIndexLabel => '折射率';
+
+  @override
+  String get liquidGlassSaturationLabel => '飽和度';
+
+  @override
+  String get liquidGlassChromaticAberrationLabel => '色差';
+
+  @override
+  String get liquidGlassLightAngleLabel => '光照角度';
+
+  @override
+  String get liquidGlassVisibilityLabel => '可見性';
+
+  @override
+  String get liquidGlassResetAction => '還原預設';
+
+  @override
+  String get diagnosticsEntryTitle => '診斷';
+
+  @override
+  String get memoryStatsEntryTitle => '記憶體狀態';
+
+  @override
+  String get generalSettingsTitle => '一般';
+
+  @override
+  String get settingsResetDefaultsTitle => '還原預設值';
+
+  @override
+  String get settingsResetDefaultsConfirmTitle => '確認還原';
+
+  @override
+  String get settingsResetDefaultsConfirmBody => '將會重設所有設定為出廠預設值。';
+
+  @override
+  String get settingsResetDoneMessage => '設定已重設';
+
+  @override
+  String get timetablePageSettingsTitle => '課表頁面';
+
+  @override
+  String get timetablePageSectionDensity => '密度';
+
+  @override
+  String get timetablePageSectionBackToWeek => '回到目前週次';
+
+  @override
+  String get timetablePageSectionBackground => '背景';
+
+  @override
+  String get largeTitleContentGap => '16.0';
+
+  @override
+  String get selectTimeTitle => '選擇時間';
+
+  @override
+  String get liveSelfCheckSubtitle => '執行自我檢查';
+
+  @override
+  String get frostedSheetPreviewShowTitle => '顯示預覽';
+
+  @override
+  String get frostedSheetPreviewShowSubtitle => '在頂部顯示磨砂玻璃預覽';
+
+  @override
+  String get aboutSupportUpdatesSectionTitle => '支援與更新';
+
+  @override
+  String get aboutProductSectionTitle => '產品';
+
+  @override
+  String get aboutCommunitySectionTitle => '社群';
+
+  @override
+  String get selectStartTimeTitle => '選擇開始時間';
+
+  @override
+  String get selectEndTimeTitle => '選擇結束時間';
+
+  @override
+  String get weekdayInkContrastTitle => '文字對比度增強';
+
+  @override
+  String get weekdayInkContrastBodyDark => '深色模式下增強課程文字對比度';
+
+  @override
+  String get weekdayInkContrastBodyLight => '淺色模式下增強課程文字對比度';
+
+  @override
+  String get keepCurrentColorAction => '保留目前顏色';
+
+  @override
+  String get settingsTimetableSectionTitle => '課表';
+
+  @override
+  String get liveIslandLabelEntryEnabled => '已啟用';
+
+  @override
+  String get liveIslandLabelEntryDisabled => '已關閉';
+
+  @override
+  String get settingsDisplayAppearanceSectionTitle => '顯示與外觀';
+
+  @override
+  String get settingsReminderDesktopSectionTitle => '提醒與桌面';
+
+  @override
+  String get settingsAppSectionTitle => '應用程式';
+
+  @override
+  String get settingsDataShareSectionTitle => '資料與共享';
+
+  @override
+  String get coupleTimetableEntryUnboundLabel => '未綁定';
+
+  @override
+  String get settingsAboutSectionTitle => '關於';
+
+  @override
+  String get diagnosticsEntrySubtitle => '查看執行診斷日誌';
+
+  @override
+  String get settingsSemesterScreenTitle => '學期設定';
+
+  @override
+  String get syncCurrentWeekNeedsStartDate => '請先設定開學日期';
+
+  @override
+  String get liveNotificationPermissionMissing => '缺少通知權限';
+
+  @override
+  String get developerSectionTitle => '開發人員選項';
+
+  @override
+  String get liveTestingFixtureEntryTitle => '實況測試樣例';
+
+  @override
+  String get hyperosShowcaseEntryTitle => 'HyperOS 元件展示';
+
+  @override
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS 元件預覽';
+
+  @override
+  String get miuixShowcaseEntryTitle => 'Miuix 元件展示';
+
+  @override
+  String get miuixShowcaseEntrySubtitle => 'Miuix 元件預覽';
+
+  @override
+  String get debugUiOverlayToggleTitle => '除錯 UI 疊層';
 }

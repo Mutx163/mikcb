@@ -10,7 +10,6 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/holiday_log_localizer.dart';
 import 'package:university_timetable/l10n/holiday_name_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
-import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';

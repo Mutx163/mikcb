@@ -9,7 +9,6 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../l10n/app_localizations_extensions.dart';
 import '../utils/app_toast.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 

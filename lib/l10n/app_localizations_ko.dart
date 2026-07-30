@@ -2943,30 +2943,30 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeSeedSectionSubtitle => '상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다';
 
   @override
-  String get frostedSheetSectionTitle => '弹窗磨砂玻璃';
+  String get frostedSheetSectionTitle => '프로스트 글래스';
 
   @override
   String get frostedSheetSectionSubtitle =>
       '调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显';
 
   @override
-  String get frostedBlurEnabledTitle => '高斯模糊';
+  String get frostedBlurEnabledTitle => '블러 활성화';
 
   @override
   String get frostedBlurEnabledSubtitle =>
       '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊';
 
   @override
-  String get frostedSheetPreviewOpenAction => '打开弹窗预览';
+  String get frostedSheetPreviewOpenAction => '미리보기 패널 열기';
 
   @override
-  String get frostedSheetPreviewDemoTitle => '弹窗预览';
+  String get frostedSheetPreviewDemoTitle => '미리보기';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '与首页右上角菜单相同的磨砂玻璃效果';
+  String get frostedSheetPreviewDemoSubtitle => '프로스트 글래스 효과 실시간 미리보기';
 
   @override
-  String get frostedSheetBlurLabel => '模糊强度';
+  String get frostedSheetBlurLabel => '블러 강도';
 
   @override
   String get frostedSheetTintLabel => '磨砂亮度';
@@ -9089,4 +9089,253 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get scheduleDateRuleNote =>
       'Location match takes priority over date rules.';
+
+  @override
+  String get frostedGlassModeLabel => '유리 모드';
+
+  @override
+  String get frostedGlassModeFrosted => '클래식 프로스트';
+
+  @override
+  String get frostedGlassModeLiquid => '리퀴드 글래스';
+
+  @override
+  String get frostedGlassModeGaussian => '가우시안 블러';
+
+  @override
+  String get frostedGlassModeTranslucent => '반투명';
+
+  @override
+  String get frostedLiquidGlassHint => '리퀴드 글래스는 고성능 기기가 필요합니다';
+
+  @override
+  String get advancedMaterialTitle => '고급 재질';
+
+  @override
+  String get advancedMaterialEntrySubtitle => '리퀴드 글래스 매개변수 미세 조정';
+
+  @override
+  String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
+
+  @override
+  String get liquidGlassPresetClear => '클리어';
+
+  @override
+  String get liquidGlassPresetLight => '라이트 미스트';
+
+  @override
+  String get liquidGlassPresetStandard => '표준';
+
+  @override
+  String get liquidGlassPresetDense => '덴스';
+
+  @override
+  String get liquidGlassPresetCustom => '사용자 정의';
+
+  @override
+  String get courseCardSettingsTitle => '강의 카드';
+
+  @override
+  String get courseCardSectionFields => '표시 필드';
+
+  @override
+  String get courseCardSectionLayout => '레이아웃';
+
+  @override
+  String get courseCardSurfaceStyleLabel => '카드 외관';
+
+  @override
+  String get courseCardSurfaceStyleSubtitle => '강의 카드의 시각적 스타일을 선택하세요';
+
+  @override
+  String get courseCardSurfaceStyleSolid => '솔리드';
+
+  @override
+  String get courseCardSurfaceStyleTranslucent => '반투명';
+
+  @override
+  String get courseCardSurfaceStyleLiquidGlass => '리퀴드 글래스';
+
+  @override
+  String get courseCardSurfaceStyleGaussian => '가우시안 블러';
+
+  @override
+  String get courseCardSectionColor => '색상';
+
+  @override
+  String get liveSelfCheckTitle => '자체 점검';
+
+  @override
+  String get collapsibleLargeTitle => '접을 수 있는 큰 제목';
+
+  @override
+  String get liquidGlassCustomExpandedTitle => '사용자 정의 매개변수';
+
+  @override
+  String get liquidGlassThicknessLabel => '두께';
+
+  @override
+  String get liquidGlassBlurLabel => '블러 강도';
+
+  @override
+  String get liquidGlassTintLabel => '색조 강도';
+
+  @override
+  String get liquidGlassLightIntensityLabel => '조명 강도';
+
+  @override
+  String get liquidGlassAmbientStrengthLabel => '환경광 강도';
+
+  @override
+  String get liquidGlassRefractiveIndexLabel => '굴절률';
+
+  @override
+  String get liquidGlassSaturationLabel => '채도';
+
+  @override
+  String get liquidGlassChromaticAberrationLabel => '색수차';
+
+  @override
+  String get liquidGlassLightAngleLabel => '조명 각도';
+
+  @override
+  String get liquidGlassVisibilityLabel => '가시성';
+
+  @override
+  String get liquidGlassResetAction => '기본값으로 초기화';
+
+  @override
+  String get diagnosticsEntryTitle => '진단';
+
+  @override
+  String get memoryStatsEntryTitle => '메모리 상태';
+
+  @override
+  String get generalSettingsTitle => '일반';
+
+  @override
+  String get settingsResetDefaultsTitle => '기본 설정으로 초기화';
+
+  @override
+  String get settingsResetDefaultsConfirmTitle => '초기화 확인';
+
+  @override
+  String get settingsResetDefaultsConfirmBody => '모든 설정이 공장 기본값으로 초기화됩니다.';
+
+  @override
+  String get settingsResetDoneMessage => '설정이 초기화되었습니다';
+
+  @override
+  String get timetablePageSettingsTitle => '시간표 페이지';
+
+  @override
+  String get timetablePageSectionDensity => '밀도';
+
+  @override
+  String get timetablePageSectionBackToWeek => '현재 주로 돌아가기';
+
+  @override
+  String get timetablePageSectionBackground => '배경';
+
+  @override
+  String get largeTitleContentGap => '16.0';
+
+  @override
+  String get selectTimeTitle => '시간 선택';
+
+  @override
+  String get liveSelfCheckSubtitle => '자체 점검 실행';
+
+  @override
+  String get frostedSheetPreviewShowTitle => '미리보기 표시';
+
+  @override
+  String get frostedSheetPreviewShowSubtitle => '상단에 프로스트 글래스 미리보기를 표시합니다';
+
+  @override
+  String get aboutSupportUpdatesSectionTitle => '지원 및 업데이트';
+
+  @override
+  String get aboutProductSectionTitle => '제품';
+
+  @override
+  String get aboutCommunitySectionTitle => '커뮤니티';
+
+  @override
+  String get selectStartTimeTitle => '시작 시간 선택';
+
+  @override
+  String get selectEndTimeTitle => '종료 시간 선택';
+
+  @override
+  String get weekdayInkContrastTitle => '텍스트 대비 향상';
+
+  @override
+  String get weekdayInkContrastBodyDark => '다크 모드에서 강의 텍스트 대비를 향상시킵니다';
+
+  @override
+  String get weekdayInkContrastBodyLight => '라이트 모드에서 강의 텍스트 대비를 향상시킵니다';
+
+  @override
+  String get keepCurrentColorAction => '현재 색상 유지';
+
+  @override
+  String get settingsTimetableSectionTitle => '시간표';
+
+  @override
+  String get liveIslandLabelEntryEnabled => '활성화됨';
+
+  @override
+  String get liveIslandLabelEntryDisabled => '비활성화됨';
+
+  @override
+  String get settingsDisplayAppearanceSectionTitle => '디스플레이 및 외관';
+
+  @override
+  String get settingsReminderDesktopSectionTitle => '알림 및 데스크톱';
+
+  @override
+  String get settingsAppSectionTitle => '앱';
+
+  @override
+  String get settingsDataShareSectionTitle => '데이터 및 공유';
+
+  @override
+  String get coupleTimetableEntryUnboundLabel => '연결 안 됨';
+
+  @override
+  String get settingsAboutSectionTitle => '정보';
+
+  @override
+  String get diagnosticsEntrySubtitle => '런타임 진단 로그 보기';
+
+  @override
+  String get settingsSemesterScreenTitle => '학기 설정';
+
+  @override
+  String get syncCurrentWeekNeedsStartDate => '먼저 시작일을 설정해 주세요';
+
+  @override
+  String get liveNotificationPermissionMissing => '알림 권한이 없습니다';
+
+  @override
+  String get developerSectionTitle => '개발자 옵션';
+
+  @override
+  String get liveTestingFixtureEntryTitle => '라이브 테스트 픽스처';
+
+  @override
+  String get hyperosShowcaseEntryTitle => 'HyperOS 컴포넌트 쇼케이스';
+
+  @override
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS 컴포넌트 미리보기';
+
+  @override
+  String get miuixShowcaseEntryTitle => 'Miuix 컴포넌트 쇼케이스';
+
+  @override
+  String get miuixShowcaseEntrySubtitle => 'Miuix 컴포넌트 미리보기';
+
+  @override
+  String get debugUiOverlayToggleTitle => '디버그 UI 오버레이';
 }

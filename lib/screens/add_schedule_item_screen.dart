@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:intl/intl.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 

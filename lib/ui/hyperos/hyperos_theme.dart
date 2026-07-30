@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:forui/forui.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_radius.dart';
 import 'hyperos_tokens.dart';
 
-/// Resolves HyperOS palette values for light / dark and Forui themes.
+/// Resolves HyperOS palette values for light / dark via Miuix colors.
 abstract final class HyperosColors {
   static Brightness _brightness(BuildContext context) =>
       Theme.of(context).brightness;
 
-  static FColors _colors(BuildContext context) => context.theme.colors;
+  static MiuixColors _colors(BuildContext context) =>
+      MiuixTheme.of(context).colors;
 
   static Color scaffoldBackground(BuildContext context) {
     return _brightness(context) == Brightness.dark
@@ -21,26 +21,26 @@ abstract final class HyperosColors {
 
   static Color card(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).card
+        ? _colors(context).surfaceContainer
         : HyperosTokens.card;
   }
 
   static Color primaryText(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).foreground
+        ? _colors(context).onBackground
         : HyperosTokens.primaryText;
   }
 
   static Color secondaryText(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).mutedForeground
+        ? _colors(context).onSurfaceVariantSummary
         : HyperosTokens.secondaryText;
   }
 
   /// Miuix `onSurfaceVariantActions` — chevrons and tertiary actions.
   static Color actionIcon(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).mutedForeground
+        ? _colors(context).onSurfaceVariantActions
         : HyperosTokens.actionIcon;
   }
 
@@ -430,37 +430,6 @@ abstract final class HyperosTheme {
       decoration: DecorationDelta.shapeDelta(
         color: cardColor,
         shape: cardShape(),
-      ),
-    );
-  }
-
-  /// Header content style for pages that wrap [FHeader] in
-  /// [HyperosBlurredHeaderShell] (blur + tint live on the shell).
-  static FHeaderStyleDelta nestedHeaderStyle(BuildContext context) {
-    final appFont = DefaultTextStyle.of(context).style;
-    return FHeaderStyleDelta.delta(
-      decoration: DecorationDelta.boxDelta(color: Colors.transparent),
-      backgroundFilter: null,
-      titleTextStyle: TextStyleDelta.delta(
-        fontSize: HyperosTokens.nestedHeaderTitleSize,
-        fontWeight: FontWeight.w400,
-        height: 1.2,
-        color: HyperosColors.primaryText(context),
-        fontFamily: appFont.fontFamily,
-        fontFamilyFallback: appFont.fontFamilyFallback,
-      ),
-      padding: EdgeInsetsGeometryDelta.value(
-        const EdgeInsets.fromLTRB(4, 0, 4, 4),
-      ),
-      constraints: const BoxConstraints(minHeight: 44),
-      actionStyle: FHeaderActionStyleDelta.delta(
-        iconStyle: FVariantsDelta.delta([
-          FVariantOperation.all(
-            IconThemeDataDelta.delta(
-              size: HyperosTokens.nestedHeaderBackIconSize,
-            ),
-          ),
-        ]),
       ),
     );
   }

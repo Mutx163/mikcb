@@ -6,7 +6,6 @@ import 'package:forui/forui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
