@@ -274,6 +274,12 @@ class HyperosExitUntilCollapsedScrollBehavior
     // a mid-scroll release that falls into the lock path will never snap and
     // the title stays frozen at a half-collapsed position forever.
     if (snapOnRelease && notification is ScrollEndNotification) {
+      debugPrint('[SNAP] handleScroll ScrollEnd '
+          'pixels=${pixels.toStringAsFixed(1)} '
+          'heightOffset=${state.heightOffset.toStringAsFixed(1)} '
+          'limit=${limit.toStringAsFixed(1)} '
+          'smallTitleLocked=$_smallTitleLocked '
+          'frozenOverscroll=$_frozenDuringOverscrollSpringBack');
       _snapToNearestEndpoint(notification);
       _smallTitleLocked = false;
       state.contentOffset = pixels;
@@ -391,6 +397,7 @@ class HyperosExitUntilCollapsedScrollBehavior
   void _snapToNearestEndpoint(ScrollEndNotification notification) {
     final limit = state.heightOffsetLimit;
     if (!limit.isFinite || limit >= 0) {
+      debugPrint('[SNAP] _snapToNearestEndpoint EARLY: limit not finite');
       return;
     }
     final scrolled = -state.heightOffset; // pixels the title has been pushed up
@@ -399,6 +406,8 @@ class HyperosExitUntilCollapsedScrollBehavior
         textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
     // Already parked at an end — nothing to do.
     if (scrolled <= 0.5 || scrolled >= -limit - 0.5) {
+      debugPrint('[SNAP] _snapToNearestEndpoint EARLY: already at end '
+          'scrolled=$scrolled limit=$limit');
       return;
     }
 
@@ -408,6 +417,13 @@ class HyperosExitUntilCollapsedScrollBehavior
     // Text is less than half cut → snap back to expanded (top).
     // Text is more than half cut → snap to collapsed (fully scrolled down).
     final targetPixels = scrolled < snapThreshold ? minExtent : minExtent + expansion;
+    debugPrint('[SNAP] _snapToNearestEndpoint '
+        'scrolled=${scrolled.toStringAsFixed(1)} '
+        'textHeight=${textHeight.toStringAsFixed(1)} '
+        'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
+        'expansion=${expansion.toStringAsFixed(1)} '
+        'targetPixels=${targetPixels.toStringAsFixed(1)} '
+        '${scrolled < snapThreshold ? "EXPAND" : "COLLAPSE"}');
 
     final notificationContext = notification.context;
     final ScrollPosition? position = notificationContext == null

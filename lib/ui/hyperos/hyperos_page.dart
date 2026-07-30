@@ -377,9 +377,19 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       );
       _routeBlurGate.tryEnableBlurOnUserScroll();
       if (_useCollapsibleTopAppBar) {
+        debugPrint('[SNAP] _handleBodyScrollForBlur '
+            '${notification.runtimeType} '
+            'pixels=${notification.metrics.pixels.toStringAsFixed(1)} '
+            'useCollapsible=$_useCollapsibleTopAppBar');
         _collapsibleScrollBehavior.handleScroll(notification);
         // Keep the inset delta fresh before the frost check below reads it.
         _syncCollapseInsetDelta(notification);
+      } else {
+        debugPrint('[SNAP] SKIP _handleBodyScrollForBlur '
+            '${notification.runtimeType} '
+            'useCollapsible=$_useCollapsibleTopAppBar '
+            'overlayHeader=${widget.overlayHeader} '
+            'collapsibleTitle=${widget.collapsibleTitle}');
       }
       _headerFrost.syncHeaderFrostForScroll(notification.metrics.pixels);
     }
@@ -584,22 +594,27 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       headerBackgroundColor: pageBackground,
       child: blurredHeader,
     );
-    return Scaffold(
-      resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(
-          MediaQuery.paddingOf(context).top + 44,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: widget.systemOverlayStyle ??
+          HyperosColors.systemOverlayForBackground(pageBackground),
+      child: Scaffold(
+        resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+        backgroundColor: pageBackground,
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(
+            MediaQuery.paddingOf(context).top + 44,
+          ),
+          child: header,
         ),
-        child: header,
-      ),
-      body: _buildBody(
-        pageBackground: pageBackground,
-        child: widget.childPad
-            ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: widget.child,
-              )
-            : widget.child,
+        body: _buildBody(
+          pageBackground: pageBackground,
+          child: widget.childPad
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: widget.child,
+                )
+              : widget.child,
+        ),
       ),
     );
   }
