@@ -1076,12 +1076,35 @@ class _MiuixSettingsPreference extends StatelessWidget {
       child: MiuixArrowPreference(
         startAction: startAction,
         title: title,
-        endActions: endActions,
+        // MiuixArrowPreference 会把 endActions 放进 mainAxisSize.min 的 Row，
+        // 里面的 Text 拿到的是无界宽度，值过长时会溢出而不是省略。
+        // 逐个包 Flexible 让它们服从右侧受限宽度，并默认单行省略。
+        endActions: _constrainEndActions(endActions),
         // 禁用内层点击和按压，由外层 HyperosPressableRow 处理
         onClick: null,
         enabled: onClick != null,
       ),
     );
+  }
+
+  /// 把每个末尾操作包成可收缩的 [Flexible]，并让其中的 [Text] 默认单行省略，
+  /// 避免超长详情值撑破 [MiuixArrowPreference] 的末尾槽位。
+  List<Widget>? _constrainEndActions(List<Widget>? actions) {
+    if (actions == null || actions.isEmpty) {
+      return actions;
+    }
+    return [
+      for (final action in actions)
+        Flexible(
+          fit: FlexFit.loose,
+          child: DefaultTextStyle.merge(
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            child: action,
+          ),
+        ),
+    ];
   }
 }
 
