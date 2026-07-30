@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
 import '../ui/hyperos/hyperos_tokens.dart';
-import 'bundled_asset_image.dart';
 
 /// Shared boot branding: rounded launcher icon + flavor-aware app name.
 ///
 /// Mirrors the native [SplashLayerDrawable] layout (96dp icon, 16dp gap, 20sp
 /// medium label) so the handoff from the system splash feels continuous.
-class AppBootBranding extends StatelessWidget {
+
+/// Returns a positive cache dimension or null (0/negative → no constraint).
+int? _positiveCacheDimension(int? value) =>
+    (value != null && value > 0) ? value : null;
+
+class AppBootBranding extends StatefulWidget {
   const AppBootBranding({
     super.key,
     required this.appLabel,
@@ -45,33 +50,86 @@ class AppBootBranding extends StatelessWidget {
   }
 
   @override
+  State<AppBootBranding> createState() => _AppBootBrandingState();
+}
+
+class _AppBootBrandingState extends State<AppBootBranding> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveIcon();
+  }
+
+  Future<void> _resolveIcon() async {
+    // Fast path: already in the global warm-up cache.
+    final cached = BundledAssets.bytesFor(BundledAssets.launcherIcon);
+    if (cached != null) {
+      if (mounted) setState(() => _bytes = cached);
+      return;
+    }
+    // Slow path: warm-up hasn't completed yet; load independently so the icon
+    // swaps in from the Material placeholder as soon as bytes are available.
+    try {
+      final data = await rootBundle.load(BundledAssets.launcherIcon);
+      if (!mounted) return;
+      final bytes = data.buffer.asUint8List();
+      // Store into the global cache so other widgets benefit too.
+      BundledAssets.remember(BundledAssets.launcherIcon, bytes);
+      if (mounted) setState(() => _bytes = bytes);
+    } catch (_) {
+      // Non-critical: the placeholder Icon stays visible.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final labelColor = isDark
+    final labelColor = widget.isDark
         ? const Color(0xE6FFFFFF)
         : const Color(0xE6000000);
+
+    // First frame: _bytes is null → Material calendar icon (synchronous, same
+    // frame as the text).  After _resolveIcon completes: _bytes is set → the
+    // real launcher icon swaps in via setState without any flash.
+    final iconWidget = _bytes != null
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(
+              AppBootBranding.iconCornerRadius,
+            ),
+            child: SizedBox(
+              width: AppBootBranding.iconSize,
+              height: AppBootBranding.iconSize,
+              child: Image.memory(
+                _bytes!,
+                width: AppBootBranding.iconSize,
+                height: AppBootBranding.iconSize,
+                fit: BoxFit.cover,
+                cacheWidth: _positiveCacheDimension(
+                  BundledAssets.bootLauncherIconCacheWidth,
+                ),
+                cacheHeight: _positiveCacheDimension(
+                  BundledAssets.bootLauncherIconCacheHeight,
+                ),
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
+              ),
+            ),
+          )
+        : Icon(
+            Icons.calendar_month_rounded,
+            size: AppBootBranding.iconSize,
+            color: labelColor,
+          );
 
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(iconCornerRadius),
-            child: SizedBox(
-              width: iconSize,
-              height: iconSize,
-              child: BundledAssetImage(
-                assetPath: BundledAssets.launcherIcon,
-                width: iconSize,
-                height: iconSize,
-                fit: BoxFit.cover,
-                cacheWidth: BundledAssets.bootLauncherIconCacheWidth,
-                cacheHeight: BundledAssets.bootLauncherIconCacheHeight,
-              ),
-            ),
-          ),
-          const SizedBox(height: labelGap),
+          iconWidget,
+          const SizedBox(height: AppBootBranding.labelGap),
           Text(
-            appLabel,
+            widget.appLabel,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: labelColor,

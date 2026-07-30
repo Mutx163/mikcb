@@ -708,9 +708,7 @@ class _HyperosCollapsibleTopAppBarState
   TextStyle _largeTitleStyle(Color color) {
     return TextStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.largeTitleFontSize,
-      fontWeight: FontWeight(
-        (400 - _fontWeightDelta).clamp(100, 900),
-      ),
+      fontWeight: FontWeight((400 - _fontWeightDelta).clamp(100, 900)),
       color: color,
       height: 1.2,
     );
@@ -719,9 +717,7 @@ class _HyperosCollapsibleTopAppBarState
   TextStyle _smallTitleStyle(Color color) {
     return TextStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.smallTitleFontSize,
-      fontWeight: FontWeight(
-        (500 - _fontWeightDelta).clamp(100, 900),
-      ),
+      fontWeight: FontWeight((500 - _fontWeightDelta).clamp(100, 900)),
       color: color,
       height: 1.2,
     );
@@ -730,9 +726,7 @@ class _HyperosCollapsibleTopAppBarState
   TextStyle _subtitleStyle(Color color) {
     return TextStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.subtitleFontSize,
-      fontWeight: FontWeight(
-        (400 - _fontWeightDelta).clamp(100, 900),
-      ),
+      fontWeight: FontWeight((400 - _fontWeightDelta).clamp(100, 900)),
       color: color,
       height: 1.3,
     );
