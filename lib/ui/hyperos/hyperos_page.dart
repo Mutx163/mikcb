@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
 import 'hyperos_icon_button.dart';
@@ -16,6 +18,67 @@ export 'hyperos_page_collaborators.dart'
         hyperosContentUnderHeader,
         hyperosIsIncomingRouteSettled,
         hyperosIsRouteTransitioning;
+
+// ── Temporary FScaffold replacement ─────────────────────────────────────────
+// Forui's FScaffold was used for the frosted header layout (header as floating
+// overlay on top of child). This local implementation replicates that behavior
+// without requiring the Forui dependency.
+
+class _FScaffoldStyleDelta {
+  const _FScaffoldStyleDelta({this.backgroundColor, this.systemOverlayStyle});
+  final Color? backgroundColor;
+  final SystemUiOverlayStyle? systemOverlayStyle;
+
+  static _FScaffoldStyleDelta delta({
+    Color? backgroundColor,
+    SystemUiOverlayStyle? systemOverlayStyle,
+  }) =>
+      _FScaffoldStyleDelta(
+        backgroundColor: backgroundColor,
+        systemOverlayStyle: systemOverlayStyle,
+      );
+}
+
+class _FScaffold extends StatelessWidget {
+  const _FScaffold({
+    required this.child,
+    required this.header,
+    this.resizeToAvoidBottomInset = false,
+    this.childPad = false,
+    this.scaffoldStyle,
+  });
+
+  final Widget child;
+  final Widget header;
+  final bool resizeToAvoidBottomInset;
+  final bool childPad;
+  final _FScaffoldStyleDelta? scaffoldStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = scaffoldStyle?.backgroundColor;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: scaffoldStyle?.systemOverlayStyle ??
+          const SystemUiOverlayStyle(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+        backgroundColor: bg,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            child,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: header,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Root settings page without a back button (HyperOS settings home pattern).
 class HyperosRootPage extends StatelessWidget {
@@ -553,17 +616,20 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   Widget _buildScaffoldHeaderLayout(Color pageBackground) {
     final headerContent = _buildHeaderContent();
     final blurredHeader = _buildHeaderShell(headerContent, pageBackground);
-    return Scaffold(
-      resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      backgroundColor: pageBackground,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(
-              top: HyperosBlurredHeader.contentTopInset(context),
-            ),
-            child: _buildBody(
+    final header = _buildHeaderScope(
+      contentTopInset: 0,
+      routeBlurEnabled: _backdropBlurEnabled,
+      headerBackgroundColor: pageBackground,
+      child: blurredHeader,
+    );
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: HyperosColors.systemOverlayForBackground(pageBackground),
+      child: Scaffold(
+        resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildBody(
               pageBackground: pageBackground,
               child: widget.childPad
                   ? Padding(
@@ -572,19 +638,14 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
                     )
                   : widget.child,
             ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _buildHeaderScope(
-              contentTopInset: 0,
-              routeBlurEnabled: _backdropBlurEnabled,
-              headerBackgroundColor: pageBackground,
-              child: blurredHeader,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: header,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -609,10 +670,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // page thrash. Transform.translate is paint-only: no relayout, no clamp.
     final headerInset = _overlayMetrics.overlayContentTopInset(context);
 
-    return Scaffold(
-      resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      backgroundColor: pageBackground,
-      body: _buildHeaderScope(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: HyperosColors.systemOverlayForBackground(pageBackground),
+      child: Scaffold(
+        resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+        backgroundColor: pageBackground,
+        body: _buildHeaderScope(
         contentTopInset: headerInset,
         routeBlurEnabled: _backdropBlurEnabled,
         headerBackgroundColor: pageBackground,
@@ -656,8 +719,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 /// Scrollable HyperOS settings list with standard page padding.
