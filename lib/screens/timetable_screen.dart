@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show VelocityTracker, kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
