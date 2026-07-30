@@ -269,11 +269,11 @@ class CourseCard extends StatelessWidget {
 
     final card = GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.translucent,
       child: SizedBox.expand(
         child: Stack(
           fit: StackFit.expand,
           children: [
+            const ColoredBox(color: Colors.transparent),
             Padding(
               padding: EdgeInsets.all(compactOuterInset),
               child: CourseSurface(
