@@ -987,7 +987,7 @@
   "aboutOpenSourceLicensesLoadFailed": "Failed to load licenses. Please try again later.",
   "aboutOpenSourceLicensesEmpty": "No matching packages",
   "aboutAppLogsTitle": "App logs",
-  "aboutAppLogsSubtitle": "Open the dedicated page for full app logs across error / warn / info / debug / verbose levels",
+  "aboutAppLogsSubtitle": "View all-level runtime logs",
   "appLogsShareText": "These are the app logs exported from Qingyu Timetable. They include local runtime records across the whole app for troubleshooting updates, imports, notifications, screens, and crashes.",
   "appLogsShareSubject": "Qingyu Timetable - App logs",
   "appLogsRecordingEnabled": "App log recording is on",

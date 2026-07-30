@@ -3,6 +3,7 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../ui/hyperos/hyperos.dart';
+import 'miuix_fling_number_picker.dart';
 
 /// 弹出 HyperOS 底部 sheet，内嵌 [MiuixDatePicker] 月历。
 ///
@@ -310,7 +311,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                           child: Row(
                             children: [
                               Expanded(
-                                child: MiuixNumberPicker(
+                                child: MiuixFlingNumberPicker(
                                   value: year,
                                   min: minYear,
                                   max: maxYear,
@@ -320,7 +321,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                                 ),
                               ),
                               Expanded(
-                                child: MiuixNumberPicker(
+                                child: MiuixFlingNumberPicker(
                                   value: month,
                                   min: 1,
                                   max: 12,
@@ -331,7 +332,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                                 ),
                               ),
                               Expanded(
-                                child: MiuixNumberPicker(
+                                child: MiuixFlingNumberPicker(
                                   value: day.clamp(1, _maxDay),
                                   min: 1,
                                   max: _maxDay,

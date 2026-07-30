@@ -4,8 +4,9 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 
 import '../ui/hyperos/hyperos.dart';
+import 'miuix_fling_number_picker.dart';
 
-/// 弹出 HyperOS 底部 sheet，内嵌时 / 分双列 [MiuixNumberPicker] 滚轮。
+/// 弹出 HyperOS 底部 sheet，内嵌时 / 分双列 [MiuixFlingNumberPicker] 滚轮。
 ///
 /// 返回用户确认的时间；取消 / 点遮罩返回 `null`。
 /// 用于替换 Material [showTimePicker]，保持与 [showMiuixDatePickerSheet]
@@ -73,7 +74,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
             child: Row(
               children: [
                 Expanded(
-                  child: MiuixNumberPicker(
+                  child: MiuixFlingNumberPicker(
                     value: _hour,
                     min: 0,
                     max: 23,
@@ -85,7 +86,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
                   ),
                 ),
                 Expanded(
-                  child: MiuixNumberPicker(
+                  child: MiuixFlingNumberPicker(
                     value: _minute,
                     min: 0,
                     max: 59,

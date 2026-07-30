@@ -582,10 +582,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                     l10n.backToCurrentWeekAction,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 8,
-                      color: weekLabelMutedColor,
-                    ),
+                    style: TextStyle(fontSize: 8, color: weekLabelMutedColor),
                   ),
               ],
             ),
@@ -1278,7 +1275,10 @@ class _PreviewChromeGlassBand extends StatelessWidget {
     // matches the band's BackdropFilter sigma; liquid glass approximates the
     // shader's softer blur (see homePreblurSigma in timetable_screen.dart).
     final sigma = appearance.glassMode == FrostedGlassMode.liquidGlass
-        ? ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur * 0.45).clamp(2.0, 8.0).toDouble()
+        ? ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur *
+                  0.45)
+              .clamp(2.0, 8.0)
+              .toDouble()
         : HyperosBlurredHeader.blurSigmaOf(context);
     final image = useBlur && sigma > 0
         ? homePageBackdropImageWidget(settings: settings, isDark: isDark)

@@ -3,8 +3,9 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../ui/hyperos/hyperos.dart';
+import 'miuix_fling_number_picker.dart';
 
-/// 弹出通用数值选择 sheet，使用 [MiuixNumberPicker] 滚轮。
+/// 弹出通用数值选择 sheet，使用 [MiuixFlingNumberPicker] 滚轮。
 ///
 /// 与学期周数弹窗同款滚轮：[label] 决定每行文案（如「第 N 周」「第 N 节」）。
 /// 确认返回选中值；取消 / 点遮罩返回 `null`。
@@ -78,7 +79,7 @@ class _MiuixNumberPickerSheetBodyState
         children: [
           SizedBox(
             height: _pickerHeight,
-            child: MiuixNumberPicker(
+            child: MiuixFlingNumberPicker(
               value: _selectedValue,
               min: widget.minValue,
               max: widget.maxValue,

@@ -264,256 +264,36 @@ class TimetableSettingsScreen extends StatelessWidget {
                 pageStorageKey: const PageStorageKey<String>(
                   'timetable-settings-main',
                 ),
-                  children: [
-                    HyperosSummaryCard(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          HyperosSummaryCard.leadingRadius,
-                        ),
-                        child: BundledAssetImage(
-                          assetPath: BundledAssets.launcherIcon,
-                          width: HyperosSummaryCard.leadingSize,
-                          height: HyperosSummaryCard.leadingSize,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      title: l10n.semesterOverviewCurrentWeek(
-                        provider.currentWeek,
-                        settings.semesterWeekCount,
-                      ),
-                      subtitle: settings.semesterStartDate == null
-                          ? l10n.semesterStartUnset
-                          : l10n.semesterStartSet(
-                              _formatDate(settings.semesterStartDate!),
-                            ),
-                      // 摘要卡即学期设置入口：它承载「开学日期未设置」这类待办态，
-                      // 不可点等于把首屏最大的目标浪费掉。
-                      onTap: openSemesterSettings,
-                    ),
-                    const HyperosSectionGap(),
-                    HyperosSectionLabel(
-                      text: l10n.settingsTimetableSectionTitle,
-                    ),
-                    HyperosListGroup(
-                      children: [
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.layers_outlined,
-                            HyperosIconColors.blue,
-                          ),
-                          title: l10n.timetableManagement,
-                          endActions: provider.activeProfile?.name != null
-                              ? [
-                                  Text(
-                                    provider.activeProfile!.name,
-                                    style: HyperosTypography.listDetail(
-                                      context,
-                                    ),
-                                  ),
-                                ]
-                              : null,
-                          onClick: openProfiles,
-                        ),
-                        // 「课程总览」是内容操作而非偏好，入口只保留在首页顶部菜单。
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.schedule_rounded,
-                            HyperosIconColors.teal,
-                          ),
-                          title: l10n.timeSchemeEntryTitle,
-                          endActions: provider.activeTimeScheme?.name != null
-                              ? [
-                                  Text(
-                                    provider.activeTimeScheme!.name,
-                                    style: HyperosTypography.listDetail(
-                                      context,
-                                    ),
-                                  ),
-                                ]
-                              : null,
-                          onClick: () => _openTimeSchemeQuickSwitcher(context),
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.celebration_outlined,
-                            HyperosIconColors.yellow,
-                          ),
-                          title: l10n.holidaySettingsEntryTitle,
-                          endActions: [
-                            Text(
-                              settings.enableHolidayMarking
-                                  ? l10n.liveIslandLabelEntryEnabled
-                                  : l10n.liveIslandLabelEntryDisabled,
-                              style: HyperosTypography.listDetail(context),
-                            ),
-                          ],
-                          onClick: openHolidaySettings,
-                        ),
-                      ],
-                    ),
-                    const HyperosSectionGap(),
-                    // 显示组只装「课表里怎么画」：课卡 → 课表页。
-                    // 超级岛 / 小组件是系统表面，单独进「提醒与桌面」，避免和「外观」撞名。
-                    HyperosSectionLabel(
-                      text: l10n.settingsDisplayAppearanceSectionTitle,
-                    ),
-                    HyperosListGroup(
-                      children: [
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.dashboard_customize_rounded,
-                            HyperosIconColors.purple,
-                          ),
-                          title: l10n.courseCardSettingsTitle,
-                          onClick: openCourseCardSettings,
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.view_week_outlined,
-                            HyperosIconColors.orange,
-                          ),
-                          title: l10n.timetablePageSettingsTitle,
-                          onClick: openTimetablePageSettings,
-                        ),
-                      ],
-                    ),
-                    const HyperosSectionGap(),
-                    HyperosSectionLabel(
-                      text: l10n.settingsReminderDesktopSectionTitle,
-                    ),
-                    HyperosListGroup(
-                      children: [
-                        // 通知权限没开时超级岛不会显示，这是最常见的求助场景。
-                        // 把状态前置到入口上，用户不用进两层才发现问题。
-                        _LiveEntryTile(onTap: openLiveSettings),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.widgets_outlined,
-                            HyperosIconColors.green,
-                          ),
-                          title: l10n.homeWidgetEntryTitle,
-                          onClick: openHomeWidgetSettings,
-                        ),
-                      ],
-                    ),
-                    const HyperosSectionGap(),
-                    // 应用级：外观管「长什么样」，通用管「怎么交互」，都不限于课表。
-                    HyperosSectionLabel(text: l10n.settingsAppSectionTitle),
-                    HyperosListGroup(
-                      children: [
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.palette_outlined,
-                            HyperosIconColors.blue,
-                          ),
-                          title: l10n.appearanceEntryTitle,
-                          onClick: openAppearance,
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.tune_rounded,
-                            HyperosIconColors.indigo,
-                          ),
-                          title: l10n.generalSettingsTitle,
-                          onClick: openGeneralSettings,
-                        ),
-                      ],
-                    ),
-                    const HyperosSectionGap(),
-                    // 情侣课表并入本组：单项无名分组无法被预判归属，是首页唯一的孤岛。
-                    HyperosSectionLabel(
-                      text: l10n.settingsDataShareSectionTitle,
-                    ),
-                    HyperosListGroup(
-                      children: [
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.swap_horiz_rounded,
-                            HyperosIconColors.green,
-                          ),
-                          title: l10n.dataTransferEntryTitle,
-                          onClick: openDataTransfer,
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.cloud_sync_rounded,
-                            HyperosIconColors.cyan,
-                          ),
-                          title: l10n.cloudSyncEntryTitle,
-                          onClick: openCloudSync,
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.lan_rounded,
-                            HyperosIconColors.indigo,
-                          ),
-                          title: l10n.lanEditEntryTitle,
-                          onClick: openLanEdit,
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.favorite_outline_rounded,
-                            HyperosIconColors.purple,
-                          ),
-                          title: l10n.coupleTimetableEntryTitle,
-                          endActions: [
-                            Text(
-                              provider.hasPartnerBinding
-                                  ? l10n.coupleTimetableEntryBound
-                                  : l10n.coupleTimetableEntryUnboundLabel,
-                              style: HyperosTypography.listDetail(context),
-                            ),
-                          ],
-                          onClick: openCoupleTimetable,
-                        ),
-                      ],
-                    ),
-                    const HyperosSectionGap(),
-                    HyperosSectionLabel(text: l10n.settingsAboutSectionTitle),
-                    HyperosListGroup(
-                      children: [
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.info_outline_rounded,
-                            HyperosIconColors.blue,
-                          ),
-                          title: l10n.aboutEntryTitle,
-                          onClick: openAbout,
-                        ),
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.menu_book_outlined,
-                            HyperosIconColors.cyan,
-                          ),
-                          title: l10n.userGuideEntryTitle,
-                          onClick: openUserGuide,
-                        ),
-                        // 排障工具的唯一正门：日志、自检、内存监测都在这后面。
-                        _MiuixSettingsPreference(
-                          startAction: _settingsIconBadge(
-                            Icons.health_and_safety_outlined,
-                            HyperosIconColors.teal,
-                          ),
-                          title: l10n.diagnosticsEntryTitle,
-                          endActions: [
-                            Text(
-                              l10n.diagnosticsEntrySubtitle,
-                              style: HyperosTypography.listDetail(context),
-                            ),
-                          ],
-                          onClick: openDiagnostics,
-                        ),
-                      ],
-                    ),
-                    // 开发者工具单独成组：门控项不与「关于 / 使用引导」同权同卡。
-                    _SettingsDeveloperListGroup(
-                      onOpenMemoryStats: openMemoryStats,
-                      onOpenLiveTestingFixture: openLiveTestingFixture,
-                      onOpenHyperosShowcase: openHyperosShowcase,
-                      onOpenMiuixShowcase: openMiuixShowcase,
-                    ),
-                    const HyperosSectionGap(),
-                  ],
+                // Lazy builder: only visible sections are mounted, reducing
+                // per-frame composite cost vs the old SingleChildScrollView.
+                itemCount: 8,
+                itemBuilder: (context, index) => _buildSettingsHomeSection(
+                  context,
+                  index,
+                  provider: provider,
+                  settings: settings,
+                  l10n: l10n,
+                  openSemesterSettings: openSemesterSettings,
+                  openProfiles: openProfiles,
+                  openHolidaySettings: openHolidaySettings,
+                  openCourseCardSettings: openCourseCardSettings,
+                  openTimetablePageSettings: openTimetablePageSettings,
+                  openLiveSettings: openLiveSettings,
+                  openHomeWidgetSettings: openHomeWidgetSettings,
+                  openAppearance: openAppearance,
+                  openGeneralSettings: openGeneralSettings,
+                  openDataTransfer: openDataTransfer,
+                  openCloudSync: openCloudSync,
+                  openLanEdit: openLanEdit,
+                  openCoupleTimetable: openCoupleTimetable,
+                  openAbout: openAbout,
+                  openUserGuide: openUserGuide,
+                  openDiagnostics: openDiagnostics,
+                  openMemoryStats: openMemoryStats,
+                  openLiveTestingFixture: openLiveTestingFixture,
+                  openHyperosShowcase: openHyperosShowcase,
+                  openMiuixShowcase: openMiuixShowcase,
+                ),
               ),
             );
           },
@@ -528,6 +308,312 @@ class TimetableSettingsScreen extends StatelessWidget {
       settings: const RouteSettings(name: '/settings/time-schemes'),
       builder: (_) => const TimeSchemeManagementScreen(),
     );
+  }
+
+  /// Lazy section builder for the settings home list.
+  ///
+  /// Sections: 0 summary · 1 timetable · 2 display · 3 reminder/desktop
+  /// · 4 app · 5 data/share · 6 about · 7 developer tools.
+  Widget _buildSettingsHomeSection(
+    BuildContext context,
+    int index, {
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required AppLocalizations l10n,
+    required VoidCallback openSemesterSettings,
+    required VoidCallback openProfiles,
+    required VoidCallback openHolidaySettings,
+    required VoidCallback openCourseCardSettings,
+    required VoidCallback openTimetablePageSettings,
+    required VoidCallback openLiveSettings,
+    required VoidCallback openHomeWidgetSettings,
+    required VoidCallback openAppearance,
+    required VoidCallback openGeneralSettings,
+    required VoidCallback openDataTransfer,
+    required VoidCallback openCloudSync,
+    required VoidCallback openLanEdit,
+    required VoidCallback openCoupleTimetable,
+    required VoidCallback openAbout,
+    required VoidCallback openUserGuide,
+    required VoidCallback openDiagnostics,
+    required VoidCallback openMemoryStats,
+    required VoidCallback openLiveTestingFixture,
+    required VoidCallback openHyperosShowcase,
+    required VoidCallback openMiuixShowcase,
+  }) {
+    return switch (index) {
+      // 0 — Summary card (semester overview).
+      0 => HyperosSummaryCard(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(HyperosSummaryCard.leadingRadius),
+          child: BundledAssetImage(
+            assetPath: BundledAssets.launcherIcon,
+            width: HyperosSummaryCard.leadingSize,
+            height: HyperosSummaryCard.leadingSize,
+            fit: BoxFit.cover,
+          ),
+        ),
+        title: l10n.semesterOverviewCurrentWeek(
+          provider.currentWeek,
+          settings.semesterWeekCount,
+        ),
+        subtitle: settings.semesterStartDate == null
+            ? l10n.semesterStartUnset
+            : l10n.semesterStartSet(_formatDate(settings.semesterStartDate!)),
+        onTap: openSemesterSettings,
+      ),
+      // 1 — Timetable management.
+      1 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.settingsTimetableSectionTitle),
+          HyperosListGroup(
+            children: [
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('layers')!,
+                  HyperosIconColors.blue,
+                ),
+                title: l10n.timetableManagement,
+                endActions: provider.activeProfile?.name != null
+                    ? [
+                        Text(
+                          provider.activeProfile!.name,
+                          style: HyperosTypography.listDetail(context),
+                        ),
+                      ]
+                    : null,
+                onClick: openProfiles,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('weeks')!,
+                  HyperosIconColors.teal,
+                ),
+                title: l10n.timeSchemeEntryTitle,
+                endActions: provider.activeTimeScheme?.name != null
+                    ? [
+                        Text(
+                          provider.activeTimeScheme!.name,
+                          style: HyperosTypography.listDetail(context),
+                        ),
+                      ]
+                    : null,
+                onClick: () => _openTimeSchemeQuickSwitcher(context),
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('favorites')!,
+                  HyperosIconColors.yellow,
+                ),
+                title: l10n.holidaySettingsEntryTitle,
+                endActions: [
+                  Text(
+                    settings.enableHolidayMarking
+                        ? l10n.liveIslandLabelEntryEnabled
+                        : l10n.liveIslandLabelEntryDisabled,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: openHolidaySettings,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 2 — Display & appearance (course card / timetable page).
+      2 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.settingsDisplayAppearanceSectionTitle),
+          HyperosListGroup(
+            children: [
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('gridView')!,
+                  HyperosIconColors.purple,
+                ),
+                title: l10n.courseCardSettingsTitle,
+                onClick: openCourseCardSettings,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('months')!,
+                  HyperosIconColors.orange,
+                ),
+                title: l10n.timetablePageSettingsTitle,
+                onClick: openTimetablePageSettings,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 3 — Reminder & desktop (live island / home widget).
+      3 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.settingsReminderDesktopSectionTitle),
+          HyperosListGroup(
+            children: [
+              _LiveEntryTile(onTap: openLiveSettings),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('home')!,
+                  HyperosIconColors.green,
+                ),
+                title: l10n.homeWidgetEntryTitle,
+                onClick: openHomeWidgetSettings,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 4 — App-level (appearance / general).
+      4 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.settingsAppSectionTitle),
+          HyperosListGroup(
+            children: [
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('theme')!,
+                  HyperosIconColors.blue,
+                ),
+                title: l10n.appearanceEntryTitle,
+                onClick: openAppearance,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('tune')!,
+                  HyperosIconColors.indigo,
+                ),
+                title: l10n.generalSettingsTitle,
+                onClick: openGeneralSettings,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 5 — Data & sharing.
+      5 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.settingsDataShareSectionTitle),
+          HyperosListGroup(
+            children: [
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('convertFile')!,
+                  HyperosIconColors.green,
+                ),
+                title: l10n.dataTransferEntryTitle,
+                onClick: openDataTransfer,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('backup')!,
+                  HyperosIconColors.cyan,
+                ),
+                title: l10n.cloudSyncEntryTitle,
+                onClick: openCloudSync,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('link')!,
+                  HyperosIconColors.indigo,
+                ),
+                title: l10n.lanEditEntryTitle,
+                onClick: openLanEdit,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('favoritesFill')!,
+                  HyperosIconColors.purple,
+                ),
+                title: l10n.coupleTimetableEntryTitle,
+                endActions: [
+                  Text(
+                    provider.hasPartnerBinding
+                        ? l10n.coupleTimetableEntryBound
+                        : l10n.coupleTimetableEntryUnboundLabel,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: openCoupleTimetable,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 6 — About & help.
+      6 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.settingsAboutSectionTitle),
+          HyperosListGroup(
+            children: [
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('info')!,
+                  HyperosIconColors.blue,
+                ),
+                title: l10n.aboutEntryTitle,
+                onClick: openAbout,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('notes')!,
+                  HyperosIconColors.cyan,
+                ),
+                title: l10n.userGuideEntryTitle,
+                onClick: openUserGuide,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('help')!,
+                  HyperosIconColors.teal,
+                ),
+                title: l10n.diagnosticsEntryTitle,
+                endActions: [
+                  Text(
+                    l10n.diagnosticsEntrySubtitle,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: openDiagnostics,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 7 — Developer tools + trailing gap.
+      _ => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SettingsDeveloperListGroup(
+            onOpenMemoryStats: openMemoryStats,
+            onOpenLiveTestingFixture: openLiveTestingFixture,
+            onOpenHyperosShowcase: openHyperosShowcase,
+            onOpenMiuixShowcase: openMiuixShowcase,
+          ),
+          const HyperosSectionGap(),
+        ],
+      ),
+    };
   }
 }
 
@@ -597,10 +683,22 @@ class _MiuixSettingsHomeShellState extends State<_MiuixSettingsHomeShell> {
     // Frost only after the large title is fully collapsed (small title settled).
     // During the large-title tuck / small-title reveal the bar stays solid page
     // color — no gaussian/liquid glass while the title is still transitioning.
+    //
+    // Hysteresis: activate 24px past the collapse point, deactivate 24px below.
+    // Without this gap, short flings oscillate around the threshold and rapidly
+    // mount/unmount the BackdropFilter layer — the primary jank source.
+    const hysteresis = 24.0;
     final expansion = -_scrollBehavior.state.heightOffsetLimit;
-    final fullyCollapsed =
-        expansion.isFinite && expansion > 0 && pixels >= expansion - 1.0;
-    final underHeader = fullyCollapsed;
+    final bool underHeader;
+    if (!expansion.isFinite || expansion <= 0) {
+      underHeader = false;
+    } else if (_contentUnderHeader.value) {
+      // Already frosted: stay on until well below the collapse point.
+      underHeader = pixels >= expansion - hysteresis;
+    } else {
+      // Not frosted: activate only well past the collapse point.
+      underHeader = pixels >= expansion + hysteresis;
+    }
     if (_contentUnderHeader.value != underHeader) {
       _contentUnderHeader.value = underHeader;
     }
@@ -710,7 +808,7 @@ class _SemesterSettingsScreen extends StatelessWidget {
                 children: [
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.event_outlined,
+                      MiuixIcons.extended.byName('months')!,
                       HyperosIconColors.blue,
                     ),
                     title: settings.semesterStartDate == null
@@ -728,7 +826,7 @@ class _SemesterSettingsScreen extends StatelessWidget {
                   ),
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.view_week_outlined,
+                      MiuixIcons.extended.byName('weeks')!,
                       HyperosIconColors.indigo,
                     ),
                     title: l10n.selectSemesterWeekCountTitle,
@@ -745,7 +843,7 @@ class _SemesterSettingsScreen extends StatelessWidget {
                   // 纠偏动作放组末，避免与「开学日期 / 周数」配置同权。
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.sync_outlined,
+                      MiuixIcons.extended.byName('refresh')!,
                       HyperosIconColors.teal,
                     ),
                     title: l10n.syncCurrentWeekAction,
@@ -910,7 +1008,7 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
         : null;
     return _MiuixSettingsPreference(
       startAction: _settingsIconBadge(
-        Icons.notifications_active_outlined,
+        MiuixIcons.extended.byName('alarm')!,
         HyperosIconColors.orange,
       ),
       title: l10n.liveSettingsTitle,
@@ -971,7 +1069,7 @@ class _SettingsDeveloperListGroupState
                 if (showDiagnosticsTools)
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.memory_outlined,
+                      MiuixIcons.extended.byName('background')!,
                       HyperosIconColors.orange,
                     ),
                     title: l10n.memoryStatsEntryTitle,
@@ -980,7 +1078,7 @@ class _SettingsDeveloperListGroupState
                 if (showDiagnosticsTools)
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.event_available_outlined,
+                      MiuixIcons.extended.byName('stopwatch')!,
                       HyperosIconColors.indigo,
                     ),
                     title: l10n.liveTestingFixtureEntryTitle,
@@ -989,7 +1087,7 @@ class _SettingsDeveloperListGroupState
                 if (!kReleaseMode) ...[
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.view_quilt_outlined,
+                      MiuixIcons.extended.byName('all')!,
                       HyperosIconColors.purple,
                     ),
                     title: l10n.hyperosShowcaseEntryTitle,
@@ -1003,7 +1101,7 @@ class _SettingsDeveloperListGroupState
                   ),
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
-                      Icons.widgets_outlined,
+                      MiuixIcons.extended.byName('listView')!,
                       HyperosIconColors.cyan,
                     ),
                     title: l10n.miuixShowcaseEntryTitle,
@@ -1019,7 +1117,7 @@ class _SettingsDeveloperListGroupState
                     listenable: DebugTuningPreferences.instance,
                     builder: (context, _) => MiuixSwitchPreference(
                       startAction: _settingsIconBadge(
-                        Icons.tune_outlined,
+                        MiuixIcons.extended.byName('show')!,
                         HyperosIconColors.purple,
                       ),
                       title: l10n.debugUiOverlayToggleTitle,
@@ -1038,7 +1136,7 @@ class _SettingsDeveloperListGroupState
 }
 
 /// 设置首页图标 Badge：彩色圆角背景 + 白色图标（与 HyperosIconBadge 一致）。
-Widget _settingsIconBadge(IconData icon, Color accent) {
+Widget _settingsIconBadge(MiuixVectorIcon icon, Color accent) {
   return Container(
     width: HyperosTokens.iconBadgeSize,
     height: HyperosTokens.iconBadgeSize,
@@ -1047,7 +1145,11 @@ Widget _settingsIconBadge(IconData icon, Color accent) {
       borderRadius: BorderRadius.circular(HyperosTokens.iconBadgeRadius),
     ),
     alignment: Alignment.center,
-    child: Icon(icon, size: HyperosTokens.iconGlyphSize, color: Colors.white),
+    child: MiuixIcon(
+      vector: icon,
+      size: HyperosTokens.iconGlyphSize,
+      tint: Colors.white,
+    ),
   );
 }
 
@@ -1076,6 +1178,10 @@ class _MiuixSettingsPreference extends StatelessWidget {
       child: MiuixArrowPreference(
         startAction: startAction,
         title: title,
+        // 上游 MiuixBasicComponent 标题硬编码 Medium(w500)，比全 App 其余设置行
+        // 所用的 HyperosTypography.title(w400) 重一档。这里下调到 w400 与之统一
+        // （仍会随系统字重经 MiuixText 分级平移）。
+        titleFontWeight: FontWeight.w400,
         // MiuixArrowPreference 会把 endActions 放进 mainAxisSize.min 的 Row，
         // 里面的 Text 拿到的是无界宽度，值过长时会溢出而不是省略。
         // 逐个包 Flexible 让它们服从右侧受限宽度，并默认单行省略。

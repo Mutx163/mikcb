@@ -96,8 +96,8 @@ extension FrostedGlassL10n on AppLocalizations {
   String get developerSectionTitle => '开发者选项';
   String get liveTestingFixtureEntryTitle => '实况测试样例';
   String get hyperosShowcaseEntryTitle => 'HyperOS 组件展示';
-  String get hyperosShowcaseEntrySubtitle => '自研 HyperOS 组件库预览';
+  String get hyperosShowcaseEntrySubtitle => 'HyperOS 组件预览';
   String get miuixShowcaseEntryTitle => 'Miuix 组件展示';
-  String get miuixShowcaseEntrySubtitle => 'flutter_miuix 组件库预览';
+  String get miuixShowcaseEntrySubtitle => 'Miuix 组件预览';
   String get debugUiOverlayToggleTitle => '调试 UI 叠层';
 }

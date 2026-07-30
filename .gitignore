@@ -110,3 +110,6 @@ tool/chrome-devtools-mcp-guide.md
 # Android堆转储文件
 *.hprof
 *.patch
+
+# Local clone of flutter_miuix used via dependency_overrides for the system-font-weight PR
+.vendor/

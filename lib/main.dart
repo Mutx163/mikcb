@@ -23,6 +23,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
 import 'services/fair_memory_service.dart';
@@ -470,7 +471,9 @@ class MyApp extends StatelessWidget {
                               child: Scaffold(
                                 backgroundColor: Colors.transparent,
                                 resizeToAvoidBottomInset: false,
-                                body: DebugTuningOverlayHost(child: child!),
+                                body: DebugTuningOverlayHost(
+                                  child: MiuixFontWeightScope(child: child!),
+                                ),
                               ),
                             ),
                           ),

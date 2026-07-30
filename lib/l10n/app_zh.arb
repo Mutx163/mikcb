@@ -1018,7 +1018,7 @@
   "aboutOpenSourceLicensesLoadFailed": "加载许可证失败，请稍后重试",
   "aboutOpenSourceLicensesEmpty": "没有匹配的组件",
   "aboutAppLogsTitle": "应用日志",
-  "aboutAppLogsSubtitle": "查看整个软件的 error / warn / info / debug / verbose 全等级日志",
+  "aboutAppLogsSubtitle": "查看全等级运行日志",
   "appLogsShareText": "这是轻屿课表导出的应用日志，包含整个软件的本地运行记录，可用于排查更新、导入、通知、页面和崩溃问题",
   "appLogsShareSubject": "轻屿课表 - 应用日志",
   "appLogsRecordingEnabled": "正在记录应用日志",

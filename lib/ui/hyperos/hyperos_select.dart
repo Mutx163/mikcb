@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 
 import 'package:flutter/services.dart';
 
+import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
+import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Row padding for [HyperosSelectTile] (and similar chevron rows).
 ///
@@ -109,22 +113,19 @@ Future<T?> showHyperosSelectPopup<T>({
 
   return showGeneralDialog<T>(
     context: context,
-    barrierDismissible: true,
+    barrierDismissible: false,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.black.withValues(alpha: 0.32),
-    transitionDuration: const Duration(milliseconds: 160),
+    barrierColor: Colors.transparent,
+    // No route-level transition: the popup runs its own spring + alpha
+    // animation internally. A route FadeTransition would wrap the glass in an
+    // Opacity layer that degrades the LiquidGlass shader (black flash).
+    transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return _HyperosSelectPopupBody<T>(
         anchorRect: anchorRect,
         entries: entries,
         currentValue: currentValue,
         itemTitleStyleBuilder: itemTitleStyleBuilder,
-      );
-    },
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(
-        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-        child: child,
       );
     },
   );
@@ -148,10 +149,30 @@ class _HyperosSelectPopupBody<T> extends StatefulWidget {
       _HyperosSelectPopupBodyState<T>();
 }
 
-class _HyperosSelectPopupBodyState<T>
-    extends State<_HyperosSelectPopupBody<T>> {
+/// Miuix spring spec for popup fraction (scale + reveal) animation.
+/// Matches `MiuixListPopupDefaults.fractionAnimationSpec`.
+final _popupSpringDesc = SpringDescription.withDampingRatio(
+  mass: 1,
+  stiffness: 362.5,
+  ratio: 0.82,
+);
+
+class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
+    with TickerProviderStateMixin {
   final _scrollController = ScrollController();
   final _itemKeys = <int, GlobalKey>{};
+
+  /// Spring-driven fraction (0→1) for scale + reveal clip.
+  late final AnimationController _fraction = AnimationController.unbounded(
+    vsync: this,
+    value: 0,
+  );
+
+  /// Tween-driven alpha for content fade-in.
+  late final AnimationController _alpha = AnimationController(
+    vsync: this,
+    value: 0,
+  );
 
   /// Visual selection while the popup is open. Starts as [currentValue] and
   /// moves to the tapped option immediately so blue title + checkmark update
@@ -167,8 +188,30 @@ class _HyperosSelectPopupBodyState<T>
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Enter animation: spring fraction + tween alpha (miuix ListPopup spec).
+    _fraction.animateWith(
+      SpringSimulation(
+        _popupSpringDesc,
+        0,
+        1,
+        0,
+        tolerance: const Tolerance(distance: 0.0001, velocity: 0.0001),
+      ),
+    );
+    _alpha.animateTo(
+      1,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.fastOutSlowIn,
+    );
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
+    _fraction.dispose();
+    _alpha.dispose();
     super.dispose();
   }
 
@@ -200,7 +243,6 @@ class _HyperosSelectPopupBodyState<T>
 
   @override
   Widget build(BuildContext context) {
-    final surface = HyperosColors.surfaceContainer(context);
     final screen = MediaQuery.sizeOf(context);
     const margin = 12.0;
     final safeTop = MediaQuery.paddingOf(context).top + margin;
@@ -223,96 +265,111 @@ class _HyperosSelectPopupBodyState<T>
       screen.width - margin,
     );
 
+    // Determine popup position relative to anchor for transform origin.
+    final showBelow = layout.top >= widget.anchorRect.bottom;
+    // Right-aligned popup: transform origin at top-right (or bottom-right).
+    final localOriginY = showBelow ? 0.0 : 1.0;
+
+    final popupChild = ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: 132 + HyperosMiuixDropdown.popupExtraLeadingWidth,
+        maxWidth: (screen.width - margin * 2).clamp(
+          132.0 + HyperosMiuixDropdown.popupExtraLeadingWidth,
+          HyperosMiuixDropdown.maxItemTextWidth +
+              HyperosMiuixDropdown.popupExtraLeadingWidth +
+              HyperosMiuixDropdown.insideHorizontalPadding * 2 +
+              HyperosMiuixDropdown.checkIconSize +
+              28,
+        ),
+        maxHeight: layout.maxHeight,
+      ),
+      child: _HyperosSelectPopupGlass(
+        cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
+        child: HyperosSurfaceRadiusScope(
+          radius: HyperosMiuixDropdown.popupCornerRadius,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: IntrinsicWidth(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < widget.entries.length; i++)
+                    Builder(
+                      builder: (tileContext) {
+                        _itemKeys[i] = GlobalKey();
+                        final entry = widget.entries[i];
+                        final isSelected = entry.value == _displayedValue;
+                        return KeyedSubtree(
+                          key: _itemKeys[i],
+                          child: HyperosListTileScope(
+                            isFirst: i == 0,
+                            isLast: i == widget.entries.length - 1,
+                            child: HyperosChoiceTile(
+                              title: entry.key,
+                              selected: isSelected,
+                              highlightSelectedText: true,
+                              variant: HyperosChoiceVariant.popup,
+                              isFirstInPopup: i == 0,
+                              isLastInPopup: i == widget.entries.length - 1,
+                              titleStyle: widget.itemTitleStyleBuilder?.call(
+                                entry.value,
+                              ),
+                              forceHighlighted: _isCommitting && isSelected,
+                              onTap: _isCommitting
+                                  ? () {}
+                                  : () => _onOptionTapped(entry.value),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     return Stack(
+      fit: StackFit.expand,
       children: [
+        // Dim layer as sibling (not below) the glass — BackdropFilter in the
+        // popup samples only the page content, not this dim, so the glass
+        // interior stays bright while the surrounding area darkens.
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(),
+          child: ColoredBox(
+            color: HyperosBlurredHeader.modalBarrierColor(context),
+          ),
+        ),
         Positioned(
           top: layout.top,
           right: screen.width - anchorRight,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              // Right-aligned: larger min/max width expands left by ~6 chars.
-              minWidth: 132 + HyperosMiuixDropdown.popupExtraLeadingWidth,
-              maxWidth: (screen.width - margin * 2).clamp(
-                132.0 + HyperosMiuixDropdown.popupExtraLeadingWidth,
-                HyperosMiuixDropdown.maxItemTextWidth +
-                    HyperosMiuixDropdown.popupExtraLeadingWidth +
-                    HyperosMiuixDropdown.insideHorizontalPadding * 2 +
-                    HyperosMiuixDropdown.checkIconSize +
-                    28,
-              ),
-              maxHeight: layout.maxHeight,
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(
-                  HyperosMiuixDropdown.popupCornerRadius,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.14),
-                    blurRadius: 20,
-                    spreadRadius: 0,
-                    offset: Offset.zero,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  HyperosMiuixDropdown.popupCornerRadius,
-                ),
-                child: HyperosSurfaceRadiusScope(
-                  radius: HyperosMiuixDropdown.popupCornerRadius,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: IntrinsicWidth(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var i = 0; i < widget.entries.length; i++)
-                            Builder(
-                              builder: (tileContext) {
-                                _itemKeys[i] = GlobalKey();
-                                final entry = widget.entries[i];
-                                final isSelected =
-                                    entry.value == _displayedValue;
-                                return KeyedSubtree(
-                                  key: _itemKeys[i],
-                                  child: HyperosListTileScope(
-                                    isFirst: i == 0,
-                                    isLast: i == widget.entries.length - 1,
-                                    child: HyperosChoiceTile(
-                                      title: entry.key,
-                                      selected: isSelected,
-                                      highlightSelectedText: true,
-                                      variant: HyperosChoiceVariant.popup,
-                                      isFirstInPopup: i == 0,
-                                      isLastInPopup:
-                                          i == widget.entries.length - 1,
-                                      titleStyle: widget.itemTitleStyleBuilder
-                                          ?.call(entry.value),
-                                      // Keep the tapped row gray while blue
-                                      // title + checkmark have already moved.
-                                      // Use a no-op (not null) so the row stays
-                                      // enabled and forceHighlighted still paints.
-                                      forceHighlighted:
-                                          _isCommitting && isSelected,
-                                      onTap: _isCommitting
-                                          ? () {}
-                                          : () => _onOptionTapped(entry.value),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                        ],
-                      ),
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_fraction, _alpha]),
+            builder: (context, _) {
+              final fraction = _fraction.value.clamp(0.0, 1.0);
+              final alpha = _alpha.value.clamp(0.0, 1.0);
+              final scale = 0.15 + 0.85 * fraction;
+              return Transform.scale(
+                scale: scale,
+                alignment: Alignment(1.0, localOriginY * 2 - 1),
+                child: Opacity(
+                  opacity: alpha,
+                  child: ClipPath(
+                    clipper: _SelectPopupRevealClipper(
+                      progress: fraction,
+                      showBelow: showBelow,
+                      cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
                     ),
+                    child: popupChild,
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -326,6 +383,137 @@ class _HyperosSelectPopupBodyState<T>
       if (mounted) _scrollToSelected();
     });
   }
+}
+
+/// Squircle-ish reveal clipper for select popup enter animation.
+///
+/// Mirrors `MiuixListPopupContent._PopupRevealClipper`: progressively reveals
+/// the popup from the anchor-facing edge (top when below, bottom when above).
+class _SelectPopupRevealClipper extends CustomClipper<Path> {
+  const _SelectPopupRevealClipper({
+    required this.progress,
+    required this.showBelow,
+    required this.cornerRadius,
+  });
+
+  final double progress;
+  final bool showBelow;
+  final double cornerRadius;
+
+  @override
+  Path getClip(Size size) {
+    final value = progress.clamp(0.0, 1.0);
+    if (value <= 0 || size.isEmpty) return Path();
+    final visibleHeight = size.height * value;
+    final top = showBelow ? 0.0 : size.height - visibleHeight;
+    final r = cornerRadius
+        .clamp(0.0, visibleHeight / 2)
+        .clamp(0.0, size.width / 2);
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, top, size.width, visibleHeight),
+          Radius.circular(r),
+        ),
+      );
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_SelectPopupRevealClipper oldClipper) {
+    return oldClipper.progress != progress ||
+        oldClipper.showBelow != showBelow ||
+        oldClipper.cornerRadius != cornerRadius;
+  }
+}
+
+/// Glass background for the select popup.
+///
+/// Renders the appropriate surface based on [FrostedGlassMode]:
+/// - **liquidGlass**: [HyperosLiquidGlassSurface] with nestedTile role.
+/// - **frosted / gaussian**: [BackdropFilter] blur + tint scrim.
+/// - **translucent**: lighter blur + minimal tint.
+/// - **blur disabled**: solid [HyperosColors.surfaceContainer].
+class _HyperosSelectPopupGlass extends StatelessWidget {
+  const _HyperosSelectPopupGlass({
+    required this.cornerRadius,
+    required this.child,
+  });
+
+  final double cornerRadius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final appearance = FrostedAppearanceScope.of(context);
+    final borderRadius = BorderRadius.circular(cornerRadius);
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+
+    // Blur disabled → solid opaque surface.
+    if (!useBlur) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: HyperosColors.surfaceContainer(context),
+          borderRadius: borderRadius,
+          boxShadow: _kPopupShadow,
+        ),
+        child: ClipRRect(borderRadius: borderRadius, child: child),
+      );
+    }
+
+    // Liquid glass mode.
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.nestedTile,
+        borderRadius: cornerRadius,
+        contentLegibilityFill: false,
+        // FakeGlass underlay paints immediately so the first frames are not
+        // black while the real Impeller shader warms up.
+        instantUnderlay: true,
+        child: child,
+      );
+    }
+
+    // Frosted / gaussian / translucent: BackdropFilter + tint.
+    final sigma = switch (appearance.glassMode) {
+      FrostedGlassMode.gaussian => appearance.sheetBlurSigma,
+      FrostedGlassMode.translucent => (appearance.sheetBlurSigma * 0.4).clamp(
+        4.0,
+        30.0,
+      ),
+      _ => appearance.sheetBlurSigma,
+    };
+    final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: sigma,
+                sigmaY: sigma,
+                tileMode: TileMode.clamp,
+              ),
+              child: ColoredBox(color: tint),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+
+  static const _kPopupShadow = [
+    BoxShadow(
+      color: Color(0x24000000),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: Offset.zero,
+    ),
+  ];
 }
 
 /// Opens a HyperOS dialog-style bottom sheet for longer single-choice lists.

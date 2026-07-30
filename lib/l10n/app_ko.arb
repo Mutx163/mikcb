@@ -885,7 +885,7 @@
   "aboutOpenSourceLicensesLoadFailed": "라이선스를 불러오지 못했습니다. 나중에 다시 시도하세요.",
   "aboutOpenSourceLicensesEmpty": "일치하는 패키지가 없습니다",
   "aboutAppLogsTitle": "앱 로그",
-  "aboutAppLogsSubtitle": "error / warn / info / debug / verbose 전 레벨의 로그 확인",
+  "aboutAppLogsSubtitle": "전 레벨 로그 확인",
   "appLogsShareText": "경屿 시간표가 내보낸 앱 로그입니다. 로컬 실행 기록을 포함하며, 업데이트, 가져오기, 알림, 페이지, 충돌 문제의 트러블슈팅에 사용할 수 있습니다.",
   "appLogsShareSubject": "경屿 시간표 - 앱 로그",
   "appLogsRecordingEnabled": "앱 로그 기록 중",

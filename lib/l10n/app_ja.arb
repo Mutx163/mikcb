@@ -885,7 +885,7 @@
   "aboutOpenSourceLicensesLoadFailed": "ライセンスの読み込みに失敗しました。後でもう一度お試しください。",
   "aboutOpenSourceLicensesEmpty": "一致するパッケージがありません",
   "aboutAppLogsTitle": "アプリログ",
-  "aboutAppLogsSubtitle": "error / warn / info / debug / verbose全レベルのログを確認",
+  "aboutAppLogsSubtitle": "全レベルのログを確認",
   "appLogsShareText": "軽屿時間割がエクスポートしたアプリログです。ローカル実行記録を含み、更新、インポート、通知、ページ、クラッシュ問題のトラブルシュートに使用できます。",
   "appLogsShareSubject": "軽屿時間割 - アプリログ",
   "appLogsRecordingEnabled": "アプリログを記録中",

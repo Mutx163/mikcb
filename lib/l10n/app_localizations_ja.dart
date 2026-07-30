@@ -1816,8 +1816,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutAppLogsTitle => 'アプリログ';
 
   @override
-  String get aboutAppLogsSubtitle =>
-      'error / warn / info / debug / verbose全レベルのログを確認';
+  String get aboutAppLogsSubtitle => '全レベルのログを確認';
 
   @override
   String get appLogsShareText =>

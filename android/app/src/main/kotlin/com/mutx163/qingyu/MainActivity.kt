@@ -202,6 +202,26 @@ class MainActivity : FlutterActivity() {
                     "getDisplayCornerRadiusDp" -> {
                         result.success(readDisplayCornerRadiusDp())
                     }
+                    "getFontWeightAdjustment" -> {
+                        // Android 12+ (API 31) 暴露系统字体粗细增量；未设置为
+                        // FONT_WEIGHT_ADJUSTMENT_UNDEFINED(Int.MAX_VALUE)。低版本/未定义
+                        // 时返回 null，交由 Dart 侧回退到 MediaQuery.boldText。
+                        val value: Int? =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                val adj = resources.configuration.fontWeightAdjustment
+                                if (adj ==
+                                    android.content.res.Configuration
+                                        .FONT_WEIGHT_ADJUSTMENT_UNDEFINED
+                                ) {
+                                    null
+                                } else {
+                                    adj
+                                }
+                            } else {
+                                null
+                            }
+                        result.success(value)
+                    }
                     else -> result.notImplemented()
                 }
             }

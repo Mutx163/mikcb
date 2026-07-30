@@ -1826,8 +1826,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutAppLogsTitle => '앱 로그';
 
   @override
-  String get aboutAppLogsSubtitle =>
-      'error / warn / info / debug / verbose 전 레벨의 로그 확인';
+  String get aboutAppLogsSubtitle => '전 레벨 로그 확인';
 
   @override
   String get appLogsShareText =>

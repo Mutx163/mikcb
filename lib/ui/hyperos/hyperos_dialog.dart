@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_sheet.dart';
@@ -199,7 +200,7 @@ Future<T?> showHyperosDialog<T>({
     isDismissible: barrierDismissible,
     enableDrag: enableDrag ?? barrierDismissible,
     useRootNavigator: useRootNavigator,
-    barrierColor: HyperosColors.windowDimming(context),
+    barrierColor: HyperosBlurredHeader.modalBarrierColor(context),
     builder: (sheetContext) => HyperosDialog(
       title: title,
       body: body,

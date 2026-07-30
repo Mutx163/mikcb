@@ -884,7 +884,7 @@
   "aboutOpenSourceLicensesLoadFailed": "載入授權失敗，請稍後再試",
   "aboutOpenSourceLicensesEmpty": "沒有符合的元件",
   "aboutAppLogsTitle": "應用日誌",
-  "aboutAppLogsSubtitle": "查看整個軟體的 error / warn / info / debug / verbose 全等級日誌",
+  "aboutAppLogsSubtitle": "查看全等級運行日誌",
   "appLogsShareText": "這是輕嶼課表匯出的應用日誌，包含整個軟體的本地執行記錄，可用於排查更新、匯入、通知、頁面與崩潰問題",
   "appLogsShareSubject": "輕嶼課表 - 應用日誌",
   "appLogsRecordingEnabled": "正在記錄應用日誌",

@@ -1900,8 +1900,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutAppLogsTitle => 'App logs';
 
   @override
-  String get aboutAppLogsSubtitle =>
-      'Open the dedicated page for full app logs across error / warn / info / debug / verbose levels';
+  String get aboutAppLogsSubtitle => 'View all-level runtime logs';
 
   @override
   String get appLogsShareText =>

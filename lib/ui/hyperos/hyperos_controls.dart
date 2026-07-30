@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
@@ -150,99 +151,6 @@ class HyperosControlCard extends StatelessWidget {
   }
 }
 
-/// Track shape for [HyperosSlider]: HyperOS volume-style full-height capsule.
-///
-/// The whole track is a capsule as tall as the slider (28dp). The active fill
-/// is a capsule whose rounded right end wraps the thumb; at the minimum value
-/// it collapses to a circle around the thumb (the "ring" look in HyperOS
-/// system settings).
-class _HyperosCapsuleTrackShape extends SliderTrackShape {
-  const _HyperosCapsuleTrackShape();
-
-  @override
-  Rect getPreferredRect({
-    required RenderBox parentBox,
-    Offset offset = Offset.zero,
-    required SliderThemeData sliderTheme,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-  }) {
-    final trackHeight = sliderTheme.trackHeight ?? HyperosMiuixSlider.minHeight;
-    final top = offset.dy + (parentBox.size.height - trackHeight) / 2;
-    // Inset by half the track height so the thumb (and the rounded end of the
-    // fill capsule around it) always stays inside the capsule.
-    final width = parentBox.size.width - trackHeight;
-    return Rect.fromLTWH(
-      offset.dx + trackHeight / 2,
-      top,
-      width > 0 ? width : 0,
-      trackHeight,
-    );
-  }
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset offset, {
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required Animation<double> enableAnimation,
-    required Offset thumbCenter,
-    Offset? secondaryOffset,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-    required TextDirection textDirection,
-  }) {
-    final trackHeight = sliderTheme.trackHeight ?? HyperosMiuixSlider.minHeight;
-    final radius = Radius.circular(trackHeight / 2);
-    final top = offset.dy + (parentBox.size.height - trackHeight) / 2;
-    final fullRect = Rect.fromLTWH(
-      offset.dx,
-      top,
-      parentBox.size.width,
-      trackHeight,
-    );
-
-    final inactiveColor = ColorTween(
-      begin: sliderTheme.disabledInactiveTrackColor,
-      end: sliderTheme.inactiveTrackColor,
-    ).evaluate(enableAnimation);
-    final activeColor = ColorTween(
-      begin: sliderTheme.disabledActiveTrackColor,
-      end: sliderTheme.activeTrackColor,
-    ).evaluate(enableAnimation);
-
-    final canvas = context.canvas;
-    if (inactiveColor != null) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(fullRect, radius),
-        Paint()..color = inactiveColor,
-      );
-    }
-    if (activeColor != null) {
-      // Fill capsule extends half a track height past the thumb center, so the
-      // thumb sits centered inside the rounded end of the fill.
-      final fillRect = textDirection == TextDirection.rtl
-          ? Rect.fromLTRB(
-              thumbCenter.dx - trackHeight / 2,
-              fullRect.top,
-              fullRect.right,
-              fullRect.bottom,
-            )
-          : Rect.fromLTRB(
-              fullRect.left,
-              fullRect.top,
-              thumbCenter.dx + trackHeight / 2,
-              fullRect.bottom,
-            );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(fillRect, radius),
-        Paint()..color = activeColor,
-      );
-    }
-  }
-}
-
 /// HyperOS volume-style slider: 28dp capsule track with an inset white thumb.
 class HyperosSlider extends StatelessWidget {
   const HyperosSlider({
@@ -264,56 +172,40 @@ class HyperosSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Normalize so a caller mistake (min > max) degrades instead of throwing
-    // from value.clamp / Slider asserts during build.
     final lo = min <= max ? min : max;
     final hi = min <= max ? max : min;
-    final active = HyperosColors.primary(context);
-    final inactive = HyperosColors.sliderBackground(context);
-    final disabledActive = HyperosColors.disabledPrimarySlider(context);
-    final thumb = HyperosColors.onPrimary(context);
-    final disabledThumb = HyperosColors.disabledOnPrimary(context);
+    final colors = MiuixSliderColors(
+      foregroundColor: HyperosColors.primary(context),
+      disabledForegroundColor: HyperosColors.disabledPrimarySlider(context),
+      backgroundColor: HyperosColors.sliderBackground(context),
+      disabledBackgroundColor: HyperosColors.sliderBackground(context),
+      thumbColor: HyperosColors.onPrimary(context),
+      disabledThumbColor: HyperosColors.disabledOnPrimary(context),
+      keyPointColor: HyperosColors.onPrimary(context).withValues(alpha: 0.3),
+      keyPointForegroundColor: HyperosColors.onPrimary(context),
+    );
 
     return SizedBox(
       height: HyperosMiuixSlider.minHeight,
-      child: SliderTheme(
-        data: SliderThemeData(
-          trackHeight: HyperosMiuixSlider.minHeight,
-          activeTrackColor: enabled ? active : disabledActive,
-          inactiveTrackColor: inactive,
-          thumbColor: enabled ? thumb : disabledThumb,
-          disabledActiveTrackColor: disabledActive,
-          disabledInactiveTrackColor: inactive,
-          disabledThumbColor: disabledThumb,
-          overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-          tickMarkShape: SliderTickMarkShape.noTickMark,
-          thumbShape: const RoundSliderThumbShape(
-            enabledThumbRadius: HyperosMiuixSlider.thumbRadius,
-            disabledThumbRadius: HyperosMiuixSlider.thumbRadius,
-            elevation: 0,
-            pressedElevation: 0,
-          ),
-          trackShape: const _HyperosCapsuleTrackShape(),
-        ),
-        child: Slider(
-          // Keep raw clamped value for display so off-grid stored values
-          // (e.g. legacy 0.72) stay consistent with parent labels until edited.
-          value: value.clamp(lo, hi),
-          min: lo,
-          max: hi,
-          divisions: divisions,
-          onChanged: enabled && onChanged != null
-              ? (rawValue) => onChanged!(
-                  _hyperosNormalizeSliderValue(
-                    rawValue,
-                    min: lo,
-                    max: hi,
-                    divisions: divisions,
-                  ),
-                )
-              : null,
-          padding: EdgeInsets.zero,
-        ),
+      child: MiuixSlider(
+        value: value.clamp(lo, hi),
+        onValueChanged: enabled && onChanged != null
+            ? (rawValue) => onChanged!(
+                _hyperosNormalizeSliderValue(
+                  rawValue,
+                  min: lo,
+                  max: hi,
+                  divisions: divisions,
+                ),
+              )
+            : null,
+        min: lo,
+        max: hi,
+        steps: divisions ?? 0,
+        enabled: enabled,
+        colors: colors,
+        height: HyperosMiuixSlider.minHeight,
+        showKeyPoints: false,
       ),
     );
   }
@@ -436,7 +328,7 @@ Future<double?> showHyperosSliderValueDialog({
   return showHyperosSheet<double>(
     context: context,
     useRootNavigator: true,
-    barrierColor: HyperosColors.windowDimming(context),
+    barrierColor: HyperosBlurredHeader.modalBarrierColor(context),
     builder: (sheetContext) {
       return _HyperosSliderValueSheetBody(
         title: title,

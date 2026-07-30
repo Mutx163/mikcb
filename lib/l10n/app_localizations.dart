@@ -3350,7 +3350,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAppLogsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'查看整个软件的 error / warn / info / debug / verbose 全等级日志'**
+  /// **'查看全等级运行日志'**
   String get aboutAppLogsSubtitle;
 
   /// No description provided for @appLogsShareText.

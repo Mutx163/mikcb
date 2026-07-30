@@ -1793,8 +1793,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutAppLogsTitle => '应用日志';
 
   @override
-  String get aboutAppLogsSubtitle =>
-      '查看整个软件的 error / warn / info / debug / verbose 全等级日志';
+  String get aboutAppLogsSubtitle => '查看全等级运行日志';
 
   @override
   String get appLogsShareText =>
@@ -10371,8 +10370,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutAppLogsTitle => '應用日誌';
 
   @override
-  String get aboutAppLogsSubtitle =>
-      '查看整個軟件的 error / warn / info / debug / verbose 全等級日誌';
+  String get aboutAppLogsSubtitle => '查看全等級運行日誌';
 
   @override
   String get appLogsShareText =>
@@ -18756,8 +18754,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutAppLogsTitle => '應用日誌';
 
   @override
-  String get aboutAppLogsSubtitle =>
-      '查看整個軟體的 error / warn / info / debug / verbose 全等級日誌';
+  String get aboutAppLogsSubtitle => '查看全等級運行日誌';
 
   @override
   String get appLogsShareText =>
