@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:forui/forui.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'about_screen.dart';
@@ -197,8 +197,8 @@ class _ChangelogCardState extends State<_ChangelogCard> {
 
   @override
   Widget build(BuildContext context) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
+    final theme = MiuixTheme.of(context);
+    final colors = theme.colors;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -221,21 +221,22 @@ class _ChangelogCardState extends State<_ChangelogCard> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.12),
+                          color: colors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           widget.entry.version,
-                          style: typo.sm.copyWith(
+                          style: TextStyle(
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: colors.primary,
+                            color: colors.onSurfaceContainer,
                           ),
                         ),
                       ),
                       const Spacer(),
                       Icon(
                         _expanded ? Icons.expand_less : Icons.expand_more,
-                        color: colors.mutedForeground,
+                        color: colors.onSurfaceVariantActions,
                       ),
                     ],
                   ),

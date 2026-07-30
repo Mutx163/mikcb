@@ -283,7 +283,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
         ),
         maxHeight: layout.maxHeight,
       ),
-      child: _HyperosSelectPopupGlass(
+      child: HyperosSelectPopupGlass(
         cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
         child: HyperosSurfaceRadiusScope(
           radius: HyperosMiuixDropdown.popupCornerRadius,
@@ -360,7 +360,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
                 child: Opacity(
                   opacity: alpha,
                   child: ClipPath(
-                    clipper: _SelectPopupRevealClipper(
+                    clipper: SelectPopupRevealClipper(
                       progress: fraction,
                       showBelow: showBelow,
                       cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
@@ -389,8 +389,8 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
 ///
 /// Mirrors `MiuixListPopupContent._PopupRevealClipper`: progressively reveals
 /// the popup from the anchor-facing edge (top when below, bottom when above).
-class _SelectPopupRevealClipper extends CustomClipper<Path> {
-  const _SelectPopupRevealClipper({
+class SelectPopupRevealClipper extends CustomClipper<Path> {
+  const SelectPopupRevealClipper({
     required this.progress,
     required this.showBelow,
     required this.cornerRadius,
@@ -420,7 +420,7 @@ class _SelectPopupRevealClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(_SelectPopupRevealClipper oldClipper) {
+  bool shouldReclip(SelectPopupRevealClipper oldClipper) {
     return oldClipper.progress != progress ||
         oldClipper.showBelow != showBelow ||
         oldClipper.cornerRadius != cornerRadius;
@@ -434,8 +434,9 @@ class _SelectPopupRevealClipper extends CustomClipper<Path> {
 /// - **frosted / gaussian**: [BackdropFilter] blur + tint scrim.
 /// - **translucent**: lighter blur + minimal tint.
 /// - **blur disabled**: solid [HyperosColors.surfaceContainer].
-class _HyperosSelectPopupGlass extends StatelessWidget {
-  const _HyperosSelectPopupGlass({
+class HyperosSelectPopupGlass extends StatelessWidget {
+  const HyperosSelectPopupGlass({
+    super.key,
     required this.cornerRadius,
     required this.child,
   });

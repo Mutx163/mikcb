@@ -1,13 +1,11 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
@@ -178,12 +176,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                 scale: scale,
                 alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
                 child: ClipPath(
-                  clipper: _ListPopupRevealClipper(
+                  clipper: SelectPopupRevealClipper(
                     progress: fraction,
                     showBelow: showBelow,
                     cornerRadius: cornerRadius,
                   ),
-                  child: _ListPopupGlass(
+                  child: HyperosSelectPopupGlass(
                     cornerRadius: cornerRadius,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
@@ -272,115 +270,6 @@ class _ListPopupTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-      ),
-    );
-  }
-}
-
-/// Reveal clipper for list popup (same logic as select popup).
-class _ListPopupRevealClipper extends CustomClipper<Path> {
-  const _ListPopupRevealClipper({
-    required this.progress,
-    required this.showBelow,
-    required this.cornerRadius,
-  });
-
-  final double progress;
-  final bool showBelow;
-  final double cornerRadius;
-
-  @override
-  Path getClip(Size size) {
-    final value = progress.clamp(0.0, 1.0);
-    if (value <= 0 || size.isEmpty) return Path();
-    final visibleHeight = size.height * value;
-    final top = showBelow ? 0.0 : size.height - visibleHeight;
-    final r = cornerRadius
-        .clamp(0.0, visibleHeight / 2)
-        .clamp(0.0, size.width / 2);
-    return Path()..addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, top, size.width, visibleHeight),
-        Radius.circular(r),
-      ),
-    );
-  }
-
-  @override
-  bool shouldReclip(_ListPopupRevealClipper oldClipper) {
-    return oldClipper.progress != progress ||
-        oldClipper.showBelow != showBelow ||
-        oldClipper.cornerRadius != cornerRadius;
-  }
-}
-
-/// Glass background for the list popup (liquid glass / blur / solid).
-class _ListPopupGlass extends StatelessWidget {
-  const _ListPopupGlass({required this.cornerRadius, required this.child});
-
-  final double cornerRadius;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final appearance = FrostedAppearanceScope.of(context);
-    final borderRadius = BorderRadius.circular(cornerRadius);
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-
-    if (!useBlur) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: HyperosColors.surfaceContainer(context),
-          borderRadius: borderRadius,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x24000000),
-              blurRadius: 20,
-              offset: Offset.zero,
-            ),
-          ],
-        ),
-        child: ClipRRect(borderRadius: borderRadius, child: child),
-      );
-    }
-
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.nestedTile,
-        borderRadius: cornerRadius,
-        contentLegibilityFill: false,
-        instantUnderlay: true,
-        child: child,
-      );
-    }
-
-    final sigma = switch (appearance.glassMode) {
-      FrostedGlassMode.gaussian => appearance.sheetBlurSigma,
-      FrostedGlassMode.translucent => (appearance.sheetBlurSigma * 0.4).clamp(
-        4.0,
-        30.0,
-      ),
-      _ => appearance.sheetBlurSigma,
-    };
-    final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: sigma,
-                sigmaY: sigma,
-                tileMode: TileMode.clamp,
-              ),
-              child: ColoredBox(color: tint),
-            ),
-          ),
-          child,
-        ],
       ),
     );
   }
