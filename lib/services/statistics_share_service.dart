@@ -6,11 +6,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:forui/forui.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+
+import '../ui/hyperos/hyperos.dart';
 
 import '../logging/app_debug_log.dart';
 import '../l10n/service_message_localizer.dart';
@@ -147,7 +148,6 @@ class StatisticsShareService {
     final exportWidth = mediaQuery.size.width.clamp(320.0, 420.0);
     final textDirection = Directionality.of(context);
     final exportTheme = _exportLightTheme(context);
-    final exportForuiTheme = _exportLightForuiTheme(context);
     const scaffoldColor = _exportScaffoldColor;
 
     final document = StatisticsExportDocument(
@@ -161,7 +161,6 @@ class StatisticsShareService {
       exportWidth: exportWidth,
       mediaQuery: mediaQuery,
       theme: exportTheme,
-      foruiTheme: exportForuiTheme,
       textDirection: textDirection,
       scaffoldColor: scaffoldColor,
       document: document,
@@ -310,14 +309,6 @@ class StatisticsShareService {
     );
   }
 
-  /// Light Forui palette so Hyperos dark branches never run during export.
-  static FThemeData _exportLightForuiTheme(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.light) {
-      return context.theme;
-    }
-    return FThemes.neutral.light.touch;
-  }
-
   static Future<void> _settleFrames() async {
     for (var frameIndex = 0; frameIndex < _settleFrameCount; frameIndex++) {
       await WidgetsBinding.instance.endOfFrame;
@@ -440,7 +431,6 @@ class _ExportCaptureSession {
     required this.exportWidth,
     required this.mediaQuery,
     required this.theme,
-    required this.foruiTheme,
     required this.textDirection,
     required this.scaffoldColor,
     required this.document,
@@ -449,7 +439,6 @@ class _ExportCaptureSession {
   final double exportWidth;
   final MediaQueryData mediaQuery;
   final ThemeData theme;
-  final FThemeData foruiTheme;
   final TextDirection textDirection;
   final Color scaffoldColor;
   final Widget document;
@@ -538,12 +527,9 @@ class _ExportCaptureSession {
               ),
               child: Theme(
                 data: theme,
-                child: FTheme(
-                  data: foruiTheme,
-                  child: Directionality(
-                    textDirection: textDirection,
-                    child: Material(color: scaffoldColor, child: themedBody),
-                  ),
+                child: Directionality(
+                  textDirection: textDirection,
+                  child: Material(color: scaffoldColor, child: themedBody),
                 ),
               ),
             ),

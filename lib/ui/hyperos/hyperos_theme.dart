@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
@@ -422,15 +423,12 @@ abstract final class HyperosTheme {
     return roundedShape(HyperosTokens.controlRadius, side: side);
   }
 
-  static FCardStyleDelta cardStyle(
+  static CardTheme cardStyle(
     BuildContext context, {
     required Color cardColor,
   }) {
-    return FCardStyleDelta.delta(
-      decoration: DecorationDelta.shapeDelta(
-        color: cardColor,
-        shape: cardShape(),
-      ),
+    return CardTheme(
+      color: cardColor,
     );
   }
 }

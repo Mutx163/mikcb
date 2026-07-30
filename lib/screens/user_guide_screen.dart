@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';

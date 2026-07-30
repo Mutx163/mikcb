@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 /// 统计概览卡片

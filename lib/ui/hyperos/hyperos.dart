@@ -23,6 +23,7 @@ export 'hyperos_overscroll.dart';
 export 'hyperos_overlay_header.dart';
 export 'hyperos_page.dart';
 export 'hyperos_progress.dart';
+export 'hyperos_proxies.dart';
 export 'hyperos_pull_to_refresh.dart';
 export 'hyperos_radius.dart';
 export 'hyperos_select.dart';

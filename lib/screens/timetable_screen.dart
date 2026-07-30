@@ -7,7 +7,6 @@ import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show VelocityTracker, kMinFlingVelocity;
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter/services.dart';
@@ -476,29 +475,6 @@ class _TimetableScreenState extends State<TimetableScreen>
               resizeToAvoidBottomInset: false,
               backgroundColor: scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
-              headerStyle: FHeaderStyleDelta.delta(
-                decoration: DecorationDelta.boxDelta(color: headerBarColor),
-                systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                  systemOverlayBackground,
-                ),
-                titleTextStyle: TextStyleDelta.value(headerTitleStyle),
-                actionStyle: FHeaderActionStyleDelta.delta(
-                  iconStyle: FVariantsDelta.delta([
-                    FVariantOperation.all(
-                      IconThemeDataDelta.delta(color: chromeForeground),
-                    ),
-                  ]),
-                ),
-                padding: EdgeInsetsGeometryDelta.value(
-                  EdgeInsets.fromLTRB(
-                    headerHorizontalInset,
-                    headerTopInset,
-                    headerHorizontalInset,
-                    headerBottomInset,
-                  ),
-                ),
-                constraints: const BoxConstraints(minHeight: 44),
-              ),
               title: _buildProfileSwitcherTrigger(
                 provider,
                 foreground: chromeForeground,

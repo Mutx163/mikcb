@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
@@ -558,17 +560,22 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       headerBackgroundColor: pageBackground,
       child: blurredHeader,
     );
-    return FScaffold(
+    return Scaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      scaffoldStyle: FScaffoldStyleDelta.delta(
-        backgroundColor: pageBackground,
-        systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-          pageBackground,
-        ),
+      backgroundColor: pageBackground,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(0),
+        child: header,
       ),
-      header: header,
-      childPad: widget.childPad,
-      child: _buildBody(pageBackground: pageBackground, child: widget.child),
+      body: _buildBody(
+        pageBackground: pageBackground,
+        child: widget.childPad
+            ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: widget.child,
+              )
+            : widget.child,
+      ),
     );
   }
 
@@ -592,11 +599,10 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // page thrash. Transform.translate is paint-only: no relayout, no clamp.
     final headerInset = _overlayMetrics.overlayContentTopInset(context);
 
-    return FScaffold(
+    return Scaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      scaffoldStyle: FScaffoldStyleDelta.delta(backgroundColor: pageBackground),
-      childPad: widget.childPad,
-      child: _buildHeaderScope(
+      backgroundColor: pageBackground,
+      body: _buildHeaderScope(
         contentTopInset: headerInset,
         routeBlurEnabled: _backdropBlurEnabled,
         headerBackgroundColor: pageBackground,
