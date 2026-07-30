@@ -416,8 +416,24 @@ Future<T?> showHyperosSheet<T>({
     barrierDismissible: isDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: dimColor,
-    transitionDuration: Duration.zero,
+    transitionDuration: const Duration(milliseconds: 350),
     useRootNavigator: useRootNavigator,
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      final offset = Tween<Offset>(
+        begin: const Offset(0, 0.35),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      ));
+      return SlideTransition(
+        position: offset,
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+      );
+    },
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       final keyboardInset = padForKeyboard
           ? MediaQuery.viewInsetsOf(dialogContext).bottom

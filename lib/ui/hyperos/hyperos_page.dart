@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_miuix/miuix.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
 import 'hyperos_icon_button.dart';
@@ -565,14 +564,16 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       backgroundColor: pageBackground,
       body: Stack(
         children: [
-          _buildBody(
-            pageBackground: pageBackground,
-            child: widget.childPad
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: widget.child,
-                  )
-                : widget.child,
+          SafeArea(
+            child: _buildBody(
+              pageBackground: pageBackground,
+              child: widget.childPad
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: widget.child,
+                    )
+                  : widget.child,
+            ),
           ),
           Positioned(
             top: 0,
