@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -396,7 +397,8 @@ void main() {
         ),
       );
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      // HyperosLinearProgress delegates to the Miuix indicator now.
+      expect(find.byType(MiuixLinearProgressIndicator), findsOneWidget);
     });
   });
 

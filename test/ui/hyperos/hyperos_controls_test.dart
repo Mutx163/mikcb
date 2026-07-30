@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -154,21 +155,15 @@ void main() {
       final box = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(box.height, HyperosMiuixSlider.minHeight);
 
-      final sliderTheme = tester.widget<SliderTheme>(
+      final slider = tester.widget<MiuixSlider>(
         find.descendant(
           of: find.byType(HyperosSlider),
-          matching: find.byType(SliderTheme),
+          matching: find.byType(MiuixSlider),
         ),
       );
-      expect(sliderTheme.data.trackHeight, HyperosMiuixSlider.minHeight);
-      expect(
-        sliderTheme.data.thumbShape,
-        isA<RoundSliderThumbShape>().having(
-          (shape) => shape.enabledThumbRadius,
-          'enabledThumbRadius',
-          HyperosMiuixSlider.thumbRadius,
-        ),
-      );
+      expect(slider.height, HyperosMiuixSlider.minHeight);
+      expect(slider.value, 0.5);
+      expect(slider.enabled, isTrue);
     });
 
     testWidgets('hides division tick marks when divisions is set', (
@@ -188,13 +183,16 @@ void main() {
         ),
       );
 
-      final sliderTheme = tester.widget<SliderTheme>(
+      final slider = tester.widget<MiuixSlider>(
         find.descendant(
           of: find.byType(HyperosSlider),
-          matching: find.byType(SliderTheme),
+          matching: find.byType(MiuixSlider),
         ),
       );
-      expect(sliderTheme.data.tickMarkShape, SliderTickMarkShape.noTickMark);
+      // Divisions map to Miuix steps, but the key-point dots stay hidden to
+      // match the HyperOS volume-slider look (the old noTickMark behavior).
+      expect(slider.steps, 10);
+      expect(slider.showKeyPoints, isFalse);
     });
 
     testWidgets(

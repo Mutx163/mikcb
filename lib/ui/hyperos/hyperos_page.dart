@@ -584,33 +584,22 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       headerBackgroundColor: pageBackground,
       child: blurredHeader,
     );
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: widget.systemOverlayStyle ??
-          HyperosColors.systemOverlayForBackground(pageBackground),
-      child: Scaffold(
-        resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-        backgroundColor: pageBackground,
-        // FScaffold semantics: the header participates in layout above the
-        // body (Column + Expanded), so the body clears the header's real
-        // height — including taller variants like the two-line brand title —
-        // without a hardcoded top inset.
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            header,
-            Expanded(
-              child: _buildBody(
-                pageBackground: pageBackground,
-                child: widget.childPad
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: widget.child,
-                      )
-                    : widget.child,
-              ),
-            ),
-          ],
+    return Scaffold(
+      resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(
+          MediaQuery.paddingOf(context).top + 44,
         ),
+        child: header,
+      ),
+      body: _buildBody(
+        pageBackground: pageBackground,
+        child: widget.childPad
+            ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: widget.child,
+              )
+            : widget.child,
       ),
     );
   }
