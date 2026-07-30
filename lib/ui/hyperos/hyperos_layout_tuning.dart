@@ -147,8 +147,8 @@ class HyperosLayoutTuningScope extends InheritedWidget {
   final HyperosLayoutTuning tuning;
 
   static HyperosLayoutTuning of(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<HyperosLayoutTuningScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<HyperosLayoutTuningScope>();
     return scope?.tuning ?? HyperosLayoutTuning.current;
   }
 

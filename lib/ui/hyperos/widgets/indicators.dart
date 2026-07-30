@@ -172,10 +172,6 @@ class HyperosSelectedCheckmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Icon(
-      Icons.check,
-      size: size,
-      color: HyperosColors.primary(context),
-    );
+    return Icon(Icons.check, size: size, color: HyperosColors.primary(context));
   }
 }

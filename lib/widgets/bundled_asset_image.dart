@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../services/bundled_assets.dart';
 
+/// Returns a positive cache dimension or null (0/negative → no constraint).
+int? _sanitizeCacheDimension(int? value) =>
+    (value != null && value > 0) ? value : null;
+
 /// Displays a bundled image from [BundledAssets] or loads it on demand.
 ///
 /// Prefer warming assets in [BundledAssets.warmUp] at startup so the first
@@ -34,8 +38,8 @@ class BundledAssetImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        cacheWidth: cacheWidth,
-        cacheHeight: cacheHeight,
+        cacheWidth: _sanitizeCacheDimension(cacheWidth),
+        cacheHeight: _sanitizeCacheDimension(cacheHeight),
         gaplessPlayback: true,
         filterQuality: FilterQuality.medium,
       );
@@ -111,8 +115,8 @@ class _BundledAssetImageLoaderState extends State<_BundledAssetImageLoader> {
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
-      cacheWidth: widget.cacheWidth,
-      cacheHeight: widget.cacheHeight,
+      cacheWidth: _sanitizeCacheDimension(widget.cacheWidth),
+      cacheHeight: _sanitizeCacheDimension(widget.cacheHeight),
       gaplessPlayback: true,
       filterQuality: FilterQuality.medium,
     );

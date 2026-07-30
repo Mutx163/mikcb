@@ -312,7 +312,10 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
   void initState() {
     super.initState();
     _resetController = AnimationController(vsync: this);
-    _resetCurve = CurvedAnimation(parent: _resetController, curve: Curves.easeOutCubic);
+    _resetCurve = CurvedAnimation(
+      parent: _resetController,
+      curve: Curves.easeOutCubic,
+    );
     _resetAnimation = Tween<double>(begin: 0, end: 0).animate(_resetCurve)
       ..addListener(_onResetTick);
   }
@@ -332,7 +335,9 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
   void _onVerticalDragUpdate(DragUpdateDetails details) {
     final dy = details.primaryDelta ?? 0;
     if (dy > 0 || _dragOffset > 0) {
-      setState(() => _dragOffset = (_dragOffset + dy).clamp(0.0, double.infinity));
+      setState(
+        () => _dragOffset = (_dragOffset + dy).clamp(0.0, double.infinity),
+      );
     }
   }
 
@@ -351,11 +356,15 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
       final startOffset = _dragOffset;
       _resetController.stop();
       _resetAnimation.removeListener(_onResetTick);
-      _resetAnimation = Tween<double>(begin: startOffset, end: 0)
-          .animate(_resetCurve)..addListener(_onResetTick);
+      _resetAnimation = Tween<double>(
+        begin: startOffset,
+        end: 0,
+      ).animate(_resetCurve)..addListener(_onResetTick);
       final durationMs =
-          (250 * (startOffset / (_sheetHeight > 0 ? _sheetHeight : 300)))
-              .clamp(100, 350);
+          (250 * (startOffset / (_sheetHeight > 0 ? _sheetHeight : 300))).clamp(
+            100,
+            350,
+          );
       _resetController
         ..duration = Duration(milliseconds: durationMs.toInt())
         ..forward(from: 1.0);
@@ -378,10 +387,7 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
           onVerticalDragEnd: _onVerticalDragEnd,
           child: Transform.translate(
             offset: Offset(0, _dragOffset),
-            child: Opacity(
-              opacity: 1.0 - progress * 0.4,
-              child: widget.child,
-            ),
+            child: Opacity(opacity: 1.0 - progress * 0.4, child: widget.child),
           ),
         );
       },
@@ -443,8 +449,6 @@ Future<T?> showHyperosSheet<T>({
     },
   );
 }
-
-
 
 /// Home timetable sheets: edge-flush chrome + lighter barrier.
 /// Nested [HyperosSheetFrame]s default to frosted glass.

@@ -9,6 +9,7 @@ import 'package:flutter/gestures.dart' show VelocityTracker, kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations_extensions.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -1158,16 +1159,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         );
       }
       if (!mounted) {
-        _dayViewTransitionSourceWeek = null;
-        _dayViewTransitionSourceDayOfWeek = null;
         return;
       }
       setState(() {
         _dayViewTransitionSourceWeek = null;
         _dayViewTransitionSourceDayOfWeek = null;
       });
-    } catch (error, stack) {
-      debugPrint('weekday bar swipe failed: $error\n$stack');
     } finally {
       _isDaySwipeAnimating = false;
     }
@@ -2394,9 +2391,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   settings,
                   targetWeek,
                   _displayedDayForWeek(targetWeek),
-                ).catchError((error, stack) {
-                  debugPrint('weekday bar swipe failed: $error\n$stack');
-                });
+                );
               },
             ),
           ),

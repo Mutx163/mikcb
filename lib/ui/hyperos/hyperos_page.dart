@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_miuix/miuix.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:flutter/scheduler.dart';
+import 'package:forui/forui.dart';
+
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
 import 'hyperos_icon_button.dart';
@@ -27,6 +30,7 @@ class HyperosRootPage extends StatelessWidget {
     this.childPad = false,
     this.backgroundColor,
     this.headerDecoration,
+    this.headerStyle,
     this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
   });
@@ -41,6 +45,7 @@ class HyperosRootPage extends StatelessWidget {
   final bool childPad;
   final Color? backgroundColor;
   final BoxDecoration? headerDecoration;
+  final FHeaderStyleDelta? headerStyle;
 
   /// Defaults to false so modal sheets/dialogs handle keyboard insets themselves
   /// without lifting the page behind them. Enable on inline form subpages.
@@ -62,8 +67,8 @@ class HyperosRootPage extends StatelessWidget {
       headerExtension: headerExtension,
       collapsibleTitle: collapsibleTitle,
       collapsibleActions: suffixes,
-      header: HyperosOverlayNestedHeader(
-        prefixes: const [],
+      header: FHeader(
+        style: headerStyle ?? HyperosTheme.nestedHeaderStyle(context),
         suffixes: suffixes ?? const [],
         title: title,
       ),
@@ -147,10 +152,7 @@ class HyperosSubpage extends StatelessWidget {
       header: HyperosOverlayNestedHeader(
         prefixes:
             prefixes ??
-            [
-              if (onBack != null)
-                HyperosIconButton(icon: Icons.arrow_back, onPressed: onBack),
-            ],
+            [if (onBack != null) FHeaderAction.back(onPress: onBack!)],
         suffixes: suffixes ?? const [],
         title: title,
       ),
@@ -512,7 +514,21 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   Widget _buildHeaderContent() {
     if (_useCollapsibleTopAppBar) {
-      return HyperosCollapsibleTopAppBar(
+      // Transparent fill: frosted shell (or page background) shows through.
+      // Collapse is driven by [_collapsibleScrollBehavior] from body scroll.
+      // [FHeaderAction] requires [FHeaderData] ancestor for actionStyle.
+      final headerStyleDelta = HyperosTheme.nestedHeaderStyle(context);
+      final resolvedHeaderStyle = headerStyleDelta(
+        context.theme.headerStyles.resolve({
+          context.platformVariant,
+          FHeaderVariant.nested,
+        }),
+      );
+      // Wrap the whole bar so any [FHeaderAction] in suffixes/prefixes works
+      // (same pattern as [HyperosOverlayNestedHeader]).
+      return FHeaderData(
+        actionStyle: resolvedHeaderStyle.actionStyle,
+        child: HyperosCollapsibleTopAppBar(
           key: _collapsibleBarKey,
           title: widget.collapsibleTitle!,
           color: Colors.transparent,
@@ -520,6 +536,10 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           navigationIcon: widget.collapsibleNavigationIcon,
           actions: widget.collapsibleActions,
           bottomContent: widget.headerExtension,
+          // SafeArea is applied inside the bar; outer shell already sits under
+          // the status bar region via the overlay stack.
+          defaultWindowInsetsPadding: false,
+        ),
       );
     }
     if (widget.headerExtension == null) {

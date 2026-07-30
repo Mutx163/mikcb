@@ -151,7 +151,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             builder: (context, _) {
               final base = HyperosBlurredHeader.modalBarrierColor(context);
               return ColoredBox(
-                color: base.withValues(alpha: base.a * _alpha.value.clamp(0.0, 1.0)),
+                color: base.withValues(
+                  alpha: base.a * _alpha.value.clamp(0.0, 1.0),
+                ),
               );
             },
           ),
@@ -225,10 +227,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
 
 /// Individual row in the list popup.
 class _ListPopupTile extends StatelessWidget {
-  const _ListPopupTile({
-    required this.item,
-    this.onTap,
-  });
+  const _ListPopupTile({required this.item, this.onTap});
 
   final HyperosPopupMenuItem<dynamic> item;
   final VoidCallback? onTap;
