@@ -258,12 +258,14 @@ Widget? homePageBackdropImageWidget({
   if (provider == null) {
     return null;
   }
+  // 横向壁纸在 cover 下水平溢出，用用户拖选的对齐值决定显示哪一段。
+  final alignX = settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
   return Image(
     key: ValueKey(path),
     image: provider,
     fit: BoxFit.cover,
     gaplessPlayback: true,
-    alignment: Alignment.center,
+    alignment: Alignment(alignX.toDouble(), 0),
   );
 }
 

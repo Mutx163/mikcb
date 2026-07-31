@@ -1108,6 +1108,9 @@ class TimetableSettings {
   final HomePageBackgroundFill homePageBackgroundFill;
   final String? homePageBackgroundImagePath;
   final String? homePageWallpaperPath;
+  /// 壁纸在页面内的水平对齐（-1 靠左 … 0 居中 … 1 靠右），用于横向壁纸
+  /// 拖动选择显示区域；竖屏壁纸下 cover 不会水平溢出，该值不产生位移。
+  final double homePageWallpaperAlignX;
   final int homePageBackgroundScope;
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
@@ -1274,6 +1277,7 @@ class TimetableSettings {
     this.homePageBackgroundFill = HomePageBackgroundFill.color,
     this.homePageBackgroundImagePath,
     this.homePageWallpaperPath,
+    this.homePageWallpaperAlignX = 0,
     this.homePageBackgroundScope = HomePageBackgroundScope.defaultValue,
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
@@ -1436,6 +1440,7 @@ class TimetableSettings {
       homePageBackgroundFill: HomePageBackgroundFill.color,
       homePageBackgroundImagePath: null,
       homePageWallpaperPath: null,
+      homePageWallpaperAlignX: 0,
       homePageBackgroundScope: HomePageBackgroundScope.defaultValue,
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
@@ -1588,6 +1593,7 @@ class TimetableSettings {
         'homePageBackgroundImagePath': homePageBackgroundImagePath,
       if (homePageWallpaperPath != null)
         'homePageWallpaperPath': homePageWallpaperPath,
+      'homePageWallpaperAlignX': homePageWallpaperAlignX,
       'homePageBackgroundScope': homePageBackgroundScope,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
@@ -2136,6 +2142,7 @@ class TimetableSettings {
     bool clearHomePageBackgroundImagePath = false,
     String? homePageWallpaperPath,
     bool clearHomePageWallpaperPath = false,
+    double? homePageWallpaperAlignX,
     int? homePageBackgroundScope,
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
@@ -2399,6 +2406,8 @@ class TimetableSettings {
       homePageWallpaperPath: clearHomePageWallpaperPath
           ? null
           : homePageWallpaperPath ?? this.homePageWallpaperPath,
+      homePageWallpaperAlignX:
+          homePageWallpaperAlignX ?? this.homePageWallpaperAlignX,
       homePageBackgroundScope:
           homePageBackgroundScope ?? this.homePageBackgroundScope,
       timetableUseUnifiedCardColor:
