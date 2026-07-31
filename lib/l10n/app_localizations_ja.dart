@@ -4814,14 +4814,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get switchTimetableTitle => '時間割切替';
 
   @override
-  String get switchTimetableSubtitleEmpty => '下の時間割をタップして現在のビューを即時切替';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '現在：$name，下の時間割をタップして即時切替';
-  }
-
-  @override
   String get todayTimetableTitle => '今日の時間割';
 
   @override

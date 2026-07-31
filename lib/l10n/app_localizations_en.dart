@@ -5041,15 +5041,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get switchTimetableTitle => 'Switch timetable';
 
   @override
-  String get switchTimetableSubtitleEmpty =>
-      'Tap a timetable below to switch the current view immediately';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return 'Current: $name. Tap a timetable below to switch immediately';
-  }
-
-  @override
   String get todayTimetableTitle => 'Today\'s Timetable';
 
   @override

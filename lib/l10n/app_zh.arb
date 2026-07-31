@@ -1752,6 +1752,9 @@
   "homePagePickImageAction": "选择图片",
   "homePageClearImageAction": "清除图片",
   "homePageImageNotSelected": "未选择",
+  "wallpaperPositionPickerTitle": "调整壁纸显示位置",
+  "wallpaperPositionPickerSubtitle": "拖动壁纸选择显示区域；横向壁纸可左右滑动，长图可上下滑动",
+  "wallpaperPositionPickerResetTooltip": "重置居中",
   "appearanceTextColorsSectionTitle": "文字颜色",
   "appearanceTextColorsSectionSubtitle": "自定义课程卡片、星期栏与时间轴文字颜色",
   "defaultTimetablePreviewName": "默认课表",
@@ -2661,15 +2664,6 @@
   "homeMenuCoffeeTitle": "请喝咖啡",
   "homeMenuFeedbackTitle": "问题反馈",
   "switchTimetableTitle": "切换课表",
-  "switchTimetableSubtitleEmpty": "点击下面的课表，立即切换当前视图",
-  "switchTimetableSubtitleCurrent": "当前：{name}，点击下面的课表立即切换",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "今日课表",
   "dayTimetableTitle": "单日时间轴",
   "backToWeekViewAction": "返回周视图",

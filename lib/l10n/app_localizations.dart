@@ -8689,18 +8689,6 @@ abstract class AppLocalizations {
   /// **'切换课表'**
   String get switchTimetableTitle;
 
-  /// No description provided for @switchTimetableSubtitleEmpty.
-  ///
-  /// In zh, this message translates to:
-  /// **'点击下面的课表，立即切换当前视图'**
-  String get switchTimetableSubtitleEmpty;
-
-  /// No description provided for @switchTimetableSubtitleCurrent.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前：{name}，点击下面的课表立即切换'**
-  String switchTimetableSubtitleCurrent(String name);
-
   /// No description provided for @todayTimetableTitle.
   ///
   /// In zh, this message translates to:

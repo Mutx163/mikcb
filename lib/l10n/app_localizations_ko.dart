@@ -4843,14 +4843,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get switchTimetableTitle => '시간표 전환';
 
   @override
-  String get switchTimetableSubtitleEmpty => '아래 시간표를 탭하여 현재 뷰를 즉시 전환하세요';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '현재: $name. 아래 시간표를 탭하여 즉시 전환하세요';
-  }
-
-  @override
   String get todayTimetableTitle => '오늘 시간표';
 
   @override

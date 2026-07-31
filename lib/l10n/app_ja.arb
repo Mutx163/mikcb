@@ -2478,15 +2478,6 @@
   "homeMenuCoffeeTitle": "コーヒーをおごる",
   "homeMenuFeedbackTitle": "問題報告",
   "switchTimetableTitle": "時間割切替",
-  "switchTimetableSubtitleEmpty": "下の時間割をタップして現在のビューを即時切替",
-  "switchTimetableSubtitleCurrent": "現在：{name}，下の時間割をタップして即時切替",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "今日の時間割",
   "dayTimetableTitle": "日別タイムライン",
   "backToWeekViewAction": "週表示に戻る",

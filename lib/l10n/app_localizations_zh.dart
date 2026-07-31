@@ -4736,14 +4736,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get switchTimetableTitle => '切换课表';
 
   @override
-  String get switchTimetableSubtitleEmpty => '点击下面的课表，立即切换当前视图';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '当前：$name，点击下面的课表立即切换';
-  }
-
-  @override
   String get todayTimetableTitle => '今日课表';
 
   @override
@@ -13470,14 +13462,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get switchTimetableTitle => '切换課表';
 
   @override
-  String get switchTimetableSubtitleEmpty => '點擊下面的課表，立即切换目前視圖';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '目前：$name，點擊下面的課表立即切换';
-  }
-
-  @override
   String get todayTimetableTitle => '今日課表';
 
   @override
@@ -22162,14 +22146,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get switchTimetableTitle => '切换課表';
-
-  @override
-  String get switchTimetableSubtitleEmpty => '點擊下面的課表，立即切换目前視圖';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '目前：$name，點擊下面的課表立即切换';
-  }
 
   @override
   String get todayTimetableTitle => '今日課表';

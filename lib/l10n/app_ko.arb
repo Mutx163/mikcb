@@ -2478,15 +2478,6 @@
   "homeMenuCoffeeTitle": "커피 한 잔",
   "homeMenuFeedbackTitle": "문제 제보",
   "switchTimetableTitle": "시간표 전환",
-  "switchTimetableSubtitleEmpty": "아래 시간표를 탭하여 현재 뷰를 즉시 전환하세요",
-  "switchTimetableSubtitleCurrent": "현재: {name}. 아래 시간표를 탭하여 즉시 전환하세요",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "오늘 시간표",
   "dayTimetableTitle": "일간 타임라인",
   "backToWeekViewAction": "주간 뷰로 돌아가기",

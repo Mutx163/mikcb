@@ -1731,6 +1731,9 @@
   "homePagePickImageAction": "Choose image",
   "homePageClearImageAction": "Clear image",
   "homePageImageNotSelected": "Not selected",
+  "wallpaperPositionPickerTitle": "Adjust wallpaper position",
+  "wallpaperPositionPickerSubtitle": "Drag the wallpaper to choose which part shows on the page; landscape wallpapers slide left and right, tall images slide up and down",
+  "wallpaperPositionPickerResetTooltip": "Reset to center",
   "appearanceTextColorsSectionTitle": "Text colors",
   "appearanceTextColorsSectionSubtitle": "Customize course card, weekday bar, and time axis text colors",
   "defaultTimetablePreviewName": "Default timetable",
@@ -2661,15 +2664,6 @@
   "homeMenuCoffeeTitle": "Buy me a coffee",
   "homeMenuFeedbackTitle": "Feedback",
   "switchTimetableTitle": "Switch timetable",
-  "switchTimetableSubtitleEmpty": "Tap a timetable below to switch the current view immediately",
-  "switchTimetableSubtitleCurrent": "Current: {name}. Tap a timetable below to switch immediately",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "Today's Timetable",
   "dayTimetableTitle": "Day Timeline",
   "backToWeekViewAction": "Back to Week View",

@@ -2475,15 +2475,6 @@
   "homeMenuCoffeeTitle": "請喝咖啡",
   "homeMenuFeedbackTitle": "問題回饋",
   "switchTimetableTitle": "切换課表",
-  "switchTimetableSubtitleEmpty": "點擊下面的課表，立即切换目前視圖",
-  "switchTimetableSubtitleCurrent": "目前：{name}，點擊下面的課表立即切换",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "今日課表",
   "dayTimetableTitle": "單日時間軸",
   "backToWeekViewAction": "返回周視圖",
