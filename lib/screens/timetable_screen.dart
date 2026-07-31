@@ -936,7 +936,13 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   PageController _ensureDayViewPageController(TimetableSettings settings) {
     final existing = _dayViewPageController;
-    if (existing != null && existing.hasClients) {
+    // Never hand out a controller that is pending disposal: the pre-blur
+    // fill (and the PageView) would latch onto it, and once the deferred
+    // disposal runs a stale LayoutBuilder rebuild can hit the disposed
+    // controller and throw.
+    if (existing != null &&
+        existing.hasClients &&
+        !_pendingDayViewControllerDisposals.contains(existing)) {
       return existing;
     }
     final fresh = _createDayViewPageController(settings);
@@ -988,8 +994,38 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    // Two post-frame hops allow the replacement widget tree to build and let
-    // AnimatedBuilder detach its listener before the controller is disposed.
+    // The replacement widget tree builds and detaches over a couple of
+    // frames. Disposal waits until nothing can reach the controller any
+    // more: the field was swapped (no future build will hand it out) and no
+    // live PageView still holds it. The pre-blur fill re-latches its
+    // listener in the same build that swaps the field, so this ordering
+    // guarantees the listener is detached before dispose — otherwise a
+    // stale LayoutBuilder rebuild can hit the disposed controller and throw
+    // (a PageController used after being disposed).
+    void retryDispose() {
+      if (!mounted) {
+        if (_pendingDayViewControllerDisposals.remove(controller)) {
+          controller.dispose();
+        }
+        return;
+      }
+      if (_dayViewPageController == controller || controller.hasClients) {
+        if (controller.hasClients) {
+          // A PageView still holds this controller: force a rebuild so the
+          // next _ensureDayViewPageController swaps in a fresh controller
+          // and the old one detaches, then re-check next frame.
+          setState(() {});
+        }
+        _pendingDayViewControllerDisposals.add(controller);
+        WidgetsBinding.instance.addPostFrameCallback((_) => retryDispose());
+        WidgetsBinding.instance.scheduleFrame();
+        return;
+      }
+      if (_pendingDayViewControllerDisposals.remove(controller)) {
+        controller.dispose();
+      }
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         if (_pendingDayViewControllerDisposals.remove(controller)) {
@@ -997,11 +1033,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         }
         return;
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_pendingDayViewControllerDisposals.remove(controller)) {
-          controller.dispose();
-        }
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => retryDispose());
       WidgetsBinding.instance.scheduleFrame();
     });
     WidgetsBinding.instance.scheduleFrame();
@@ -1168,19 +1200,20 @@ class _TimetableScreenState extends State<TimetableScreen>
         'day=${target.dayOfWeek}',
       );
     }
-    // Midpoint preview: recolour the weekday header the moment the pager
-    // crosses a page midpoint (matching the indicator), via the scoped
-    // notifier — no full-State rebuild while the fling is still running.
-    _dayHeaderPreview.value = (target.week, target.dayOfWeek);
     if (_selectedWeekForDayView == target.week &&
         _selectedDayOfWeek == target.dayOfWeek) {
       return;
     }
-    // onPageChanged fires mid-fling (page midpoint crossing). Committing state
-    // here rebuilt the whole home screen + persisted settings while the pager
-    // was still animating — that was the ~50-frame hitch on every day switch.
-    // Same model as the week pager: haptic now, commit on ScrollEnd
-    // (_settleDayViewPage).
+    // Midpoint preview: recolour the weekday header the moment the pager
+    // crosses a page midpoint (matching the indicator), via the scoped
+    // notifier — no full-State rebuild while the fling is still running.
+    // Committing the selection here instead (setState + persist + week-page
+    // jump) rebuilt the whole home screen on *every* page crossing — a single
+    // real-device swipe crosses 30+ pages and each rebuild re-samples the
+    // wallpaper blur, which starved the main thread into an ANR. The actual
+    // selection commit stays on ScrollEnd (_settleDayViewPage), which now
+    // re-checks until the pager is truly stationary.
+    _dayHeaderPreview.value = (target.week, target.dayOfWeek);
     _maybeSelectionClick(settings);
   }
 
@@ -1204,6 +1237,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     final controller = _dayViewPageController;
     if (controller == null || !controller.hasClients) {
+      return;
+    }
+    // A ScrollEnd fires at the end of *every* activity, including the frame
+    // where a new gesture begins (the previous drag's end is dispatched
+    // before this drag's first move). Under fake-async test frames the snap
+    // spring can still be running at that point (page=0.9988, not 1.0), so a
+    // stale end would commit the old page again and the panel lags the real
+    // content by one day. Rather than dropping this commit opportunity
+    // entirely (which would lose the fix for consecutive quick swipes),
+    // re-check on the next frame until the pager is truly stationary; the
+    // commit then lands on the page the content actually shows.
+    if (controller.position.isScrollingNotifier.value) {
+      _scheduleDayViewSettleRetry(provider, settings);
       return;
     }
     final page = controller.page?.round();
@@ -1235,6 +1281,35 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (target.week != _visibleWeek && !_isSyncingWeekPage) {
       unawaited(_jumpToWeek(provider, target.week, animatePage: false));
     }
+  }
+
+  /// Re-checks the day pager on the next frame after a ScrollEnd arrived while
+  /// the pager was still scrolling (a stale end interleaved with the next
+  /// gesture). Once the pager is truly stationary the selection is committed
+  /// to the page the content actually shows; if a fresh gesture owns the
+  /// pager we wait for its own ScrollEnd instead of polling forever.
+  void _scheduleDayViewSettleRetry(
+    TimetableProvider provider,
+    TimetableSettings settings,
+  ) {
+    if (!mounted || !_isDayView) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isDayView) {
+        return;
+      }
+      final controller = _dayViewPageController;
+      if (controller == null || !controller.hasClients) {
+        return;
+      }
+      if (controller.position.isScrollingNotifier.value) {
+        // Still mid-flight (snap spring running, or a new drag already owns
+        // the pager): the next ScrollEnd will retry again.
+        return;
+      }
+      _settleDayViewPage(provider, settings);
+    });
   }
 
   /// Weekday-bar drag → day-pager bridge. The bar acts as a visible-day-count
