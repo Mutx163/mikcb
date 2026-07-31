@@ -118,6 +118,12 @@ class HyperosLiquidGlassSurface extends StatelessWidget {
 
     /// Overrides the role default layer strategy when non-null.
     this.layerMode,
+
+    /// When true, own-layer glass blurs the backdrop captured at the nearest
+    /// ancestor [BackdropGroup] instead of everything painted below it. Modal
+    /// popups use this so their hand-drawn dim layer (a sibling inside the
+    /// group) stays out of the refraction input.
+    this.useAncestorBackdropGroup = false,
     super.key,
   });
 
@@ -136,6 +142,13 @@ class HyperosLiquidGlassSurface extends StatelessWidget {
 
   /// Layer / fake strategy. Null → [defaultLayerModeFor].
   final HyperosLiquidGlassLayerMode? layerMode;
+
+  /// Sample the ancestor [BackdropGroup]'s backdrop (see constructor).
+  ///
+  /// Only affects [HyperosLiquidGlassLayerMode.ownLayer]: [sharedLayer] defers
+  /// to the caller-managed layer, and the [fake] fallback (Skia) keeps its own
+  /// local capture — the dim is then sampled, matching pre-group behavior.
+  final bool useAncestorBackdropGroup;
 
   /// Whether this device can run the real liquid-glass refraction shader.
   ///
@@ -248,6 +261,19 @@ class HyperosLiquidGlassSurface extends StatelessWidget {
         glassContainsChild: false,
         child: glassChild,
       ),
+      // withOwnLayer never forwards useBackdropGroup (package hardcodes the
+      // default), so the group-sampling path builds the layer explicitly.
+      HyperosLiquidGlassLayerMode.ownLayer when useAncestorBackdropGroup =>
+        LiquidGlassLayer(
+          settings: settings,
+          useBackdropGroup: true,
+          child: LiquidGlass(
+            shape: shape,
+            clipBehavior: clipBehavior,
+            glassContainsChild: false,
+            child: glassChild,
+          ),
+        ),
       HyperosLiquidGlassLayerMode.ownLayer => LiquidGlass.withOwnLayer(
         settings: settings,
         shape: shape,

@@ -21,17 +21,11 @@ class HyperosBadge extends StatelessWidget {
     if (!show) return child;
 
     final hasLabel = label != null && label!.isNotEmpty;
+    // MiuixText 从 MiuixContentColor 取 onError 前景色，并继承 MiuixBadge 注入的
+    // 上游文字样式（11sp/16 行框）；普通 Text 读不到内容色会回退成黑字。
     final badge = MiuixBadge(
       child: hasLabel
-          ? Text(
-              label!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                height: 1.45,
-              ),
-            )
+          ? MiuixText(label!, textAlign: TextAlign.center)
           : null,
     );
 

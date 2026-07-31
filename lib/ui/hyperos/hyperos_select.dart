@@ -332,39 +332,45 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
       ),
     );
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Dim layer as sibling (not below) the glass — BackdropFilter in the
-        // popup samples only the page content, not this dim, so the glass
-        // interior stays bright while the surrounding area darkens.
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => Navigator.of(context).pop(),
-          child: AnimatedBuilder(
-            animation: _alpha,
-            builder: (context, _) {
-              final base = HyperosBlurredHeader.modalBarrierColor(context);
-              return ColoredBox(
-                color: base.withValues(alpha: base.a * _alpha.value.clamp(0.0, 1.0)),
-              );
-            },
+    // BackdropGroup boundary: grouped filters in the popup glass sample the
+    // backdrop captured HERE (the undimmed page). The dim ColoredBox below is
+    // inside the group, so it darkens the screen without ever entering the
+    // glass's blur/refraction input — no geometric hole-punching needed.
+    return BackdropGroup(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: AnimatedBuilder(
+              animation: _alpha,
+              builder: (context, _) {
+                final base = HyperosBlurredHeader.modalBarrierColor(context);
+                return ColoredBox(
+                  color: base.withValues(
+                    alpha: base.a * _alpha.value.clamp(0.0, 1.0),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-        Positioned(
-          top: layout.top,
-          right: screen.width - anchorRight,
-          child: AnimatedBuilder(
-            animation: Listenable.merge([_fraction, _alpha]),
-            builder: (context, _) {
-              final fraction = _fraction.value.clamp(0.0, 1.0);
-              final alpha = _alpha.value.clamp(0.0, 1.0);
-              final scale = 0.15 + 0.85 * fraction;
-              return Transform.scale(
-                scale: scale,
-                alignment: Alignment(1.0, localOriginY * 2 - 1),
-                child: Opacity(
-                  opacity: alpha,
+          Positioned(
+            top: layout.top,
+            right: screen.width - anchorRight,
+            child: AnimatedBuilder(
+              animation: _fraction,
+              builder: (context, _) {
+                final fraction = _fraction.value.clamp(0.0, 1.0);
+                final scale = 0.15 + 0.85 * fraction;
+                // No Opacity here: an Opacity layer (opacity < 1) isolates the
+                // popup into an offscreen layer, so the glass BackdropFilter /
+                // liquid shader samples an empty backdrop and renders fully
+                // transparent until the fade ends (then snaps to blur). Scale +
+                // clip reveal carry the entrance while the glass stays live.
+                return Transform.scale(
+                  scale: scale,
+                  alignment: Alignment(1.0, localOriginY * 2 - 1),
                   child: ClipPath(
                     clipper: SelectPopupRevealClipper(
                       progress: fraction,
@@ -373,12 +379,12 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
                     ),
                     child: popupChild,
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -474,6 +480,9 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         role: HyperosLiquidGlassRole.nestedTile,
         borderRadius: cornerRadius,
         contentLegibilityFill: false,
+        // Sample the backdrop captured at the popup's ancestor BackdropGroup
+        // (undimmed page) so the modal scrim never muddies the refraction.
+        useAncestorBackdropGroup: true,
         // FakeGlass underlay paints immediately so the first frames are not
         // black while the real Impeller shader warms up.
         instantUnderlay: true,
@@ -498,7 +507,9 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         fit: StackFit.passthrough,
         children: [
           Positioned.fill(
-            child: BackdropFilter(
+            // Grouped: samples the ancestor BackdropGroup's capture (undimmed
+            // page), so the sibling modal scrim stays out of the blur input.
+            child: BackdropFilter.grouped(
               filter: ImageFilter.blur(
                 sigmaX: sigma,
                 sigmaY: sigma,
