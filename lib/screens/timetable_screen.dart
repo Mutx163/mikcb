@@ -150,7 +150,13 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
-  final Map<int, PageController> _dayViewPageControllers = {};
+
+  /// The single day-view pager: pages are globally continuous across weeks
+  /// (globalPage = (week-1)*visibleCount + dayIndex), so crossing a week
+  /// boundary is an ordinary page transition on the same Scrollable — the
+  /// gesture is never dropped and content follows the finger through the
+  /// whole semester.
+  PageController? _dayViewPageController;
   final Set<PageController> _pendingDayViewControllerDisposals = {};
   bool _isSyncingWeekPage = false;
   bool _isSyncingDayViewPage = false;
@@ -215,12 +221,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   int? _dayViewTransitionSourceDayOfWeek;
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
-
-  /// True while an adjacent-week boundary crossing is gliding its incoming
-  /// pager one page into the entry day. Guards [_syncDayViewPageWithSelection]
-  /// so the build-time resync can't jumpToPage the controller straight to the
-  /// entry day and swallow the glide.
-  bool _dayViewBoundaryGliding = false;
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
   static const int _sharedFreeVisibleSegmentLimit = 2;
@@ -308,9 +308,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayAgendaProgressTimer?.cancel();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
-    for (final controller in _dayViewPageControllers.values) {
-      controller.dispose();
-    }
+    _dayViewPageController?.dispose();
     for (final controller in _pendingDayViewControllerDisposals) {
       controller.dispose();
     }
@@ -623,11 +621,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           final PageController preblurPageController;
           final bool preblurFollowsPager;
           if (_isDayView) {
-            final dayViewWeek = _selectedWeekForDayView ?? provider.currentWeek;
-            preblurPageController = _ensureDayViewPageController(
-              settings,
-              dayViewWeek,
-            );
+            preblurPageController = _ensureDayViewPageController(settings);
             preblurFollowsPager = false;
           } else {
             preblurPageController = _weekPageController;
@@ -709,13 +703,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewTransitionSourceDayOfWeek = null;
     _isSyncingDayViewPage = false;
     _isDaySwipeAnimating = false;
-    // Keep old controllers alive through the replacement frame. AnimatedBuilder
+    // Keep the old controller alive through the replacement frame. AnimatedBuilder
     // detaches from the old PageController during that rebuild; disposing at
     // the first post-frame callback is still early enough to race didUpdateWidget.
-    final oldControllers = _dayViewPageControllers.values.toList();
-    _dayViewPageControllers.clear();
-    for (final controller in oldControllers) {
-      _disposeDayViewControllerAfterReplacement(controller);
+    final oldController = _dayViewPageController;
+    _dayViewPageController = null;
+    if (oldController != null) {
+      _disposeDayViewControllerAfterReplacement(oldController);
     }
     if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
       _selectedWeekForDayView = _visibleWeek;
@@ -854,12 +848,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final shouldAnimateOpen = !_isDayView;
-    _prepareDayViewPageController(
-      settings,
-      normalizedWeek,
-      dayOfWeek,
-      forceRecreate: shouldAnimateOpen,
-    );
+    if (shouldAnimateOpen) {
+      _recreateDayViewPageController(
+        settings,
+        week: normalizedWeek,
+        dayOfWeek: dayOfWeek,
+      );
+    }
     // Collapse the expand controller *before* the overlay mounts so the first
     // painted frame is the small/transparent state. Otherwise a leftover value
     // of 1 (restore / interrupted close / hot reload) makes open look like a
@@ -917,64 +912,75 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     final visibleDays = _visibleDayNumbers(settings);
     final dayIndex = math.max(0, visibleDays.indexOf(dayOfWeek));
-    final hasPreviousWeek = week > _minWeek;
-    return dayIndex + (hasPreviousWeek ? 1 : 0);
+    // Globally continuous across weeks: no edge pages, crossing a week is a
+    // normal one-page transition on the single day pager.
+    return (week - 1) * visibleDays.length + dayIndex;
   }
 
-  int _dayViewPageCount(TimetableSettings settings, int week) {
-    final visibleDays = _visibleDayNumbers(settings).length;
-    final hasPreviousWeek = week > _minWeek;
-    final hasNextWeek = week < settings.semesterWeekCount;
-    return visibleDays + (hasPreviousWeek ? 1 : 0) + (hasNextWeek ? 1 : 0);
+  int _dayViewPageCount(TimetableSettings settings) {
+    return _visibleDayNumbers(settings).length * settings.semesterWeekCount;
   }
 
   _DayViewPageTarget _dayViewTargetForPage(
     TimetableSettings settings,
-    int week,
     int page,
   ) {
     final visibleDays = _visibleDayNumbers(settings);
-    final hasPreviousWeek = week > _minWeek;
-    final hasNextWeek = week < settings.semesterWeekCount;
-
-    if (hasPreviousWeek && page == 0) {
-      return _DayViewPageTarget(
-        week: week - 1,
-        dayOfWeek: visibleDays.last,
-        isBoundaryTransition: true,
-      );
-    }
-
-    final dayIndex = page - (hasPreviousWeek ? 1 : 0);
-    if (dayIndex >= 0 && dayIndex < visibleDays.length) {
-      return _DayViewPageTarget(week: week, dayOfWeek: visibleDays[dayIndex]);
-    }
-
-    if (hasNextWeek && page == _dayViewPageCount(settings, week) - 1) {
-      return _DayViewPageTarget(
-        week: week + 1,
-        dayOfWeek: visibleDays.first,
-        isBoundaryTransition: true,
-      );
-    }
-
-    return _DayViewPageTarget(week: week, dayOfWeek: visibleDays.first);
+    final count = visibleDays.length;
+    final week = (page ~/ count) + 1;
+    return _DayViewPageTarget(
+      week: week,
+      dayOfWeek: visibleDays[page % count],
+    );
   }
 
-  PageController _ensureDayViewPageController(
-    TimetableSettings settings,
-    int week,
-  ) {
-    return _dayViewPageControllers.putIfAbsent(
-      week,
-      () => PageController(
-        initialPage: _dayViewPageIndexForDay(
-          settings,
-          week,
-          _displayedDayForWeek(week),
-        ),
+  PageController _ensureDayViewPageController(TimetableSettings settings) {
+    final existing = _dayViewPageController;
+    if (existing != null && existing.hasClients) {
+      return existing;
+    }
+    final fresh = _createDayViewPageController(settings);
+    _dayViewPageController = fresh;
+    if (existing != null) {
+      // Stale controller (created but never attached, or detached after the
+      // day view closed): replace it instead of reusing a dead position.
+      _disposeDayViewControllerAfterReplacement(existing);
+    }
+    return fresh;
+  }
+
+  PageController _createDayViewPageController(
+    TimetableSettings settings, {
+    int? week,
+    int? dayOfWeek,
+  }) {
+    return PageController(
+      initialPage: _dayViewPageIndexForDay(
+        settings,
+        week ?? _selectedWeekForDayView ?? _visibleWeek,
+        dayOfWeek ?? _selectedDayOfWeek ?? 1,
       ),
     );
+  }
+
+  /// Recreates the single day pager anchored on the given day (used when the
+  /// day view opens so the first painted frame lands on the requested day).
+  /// The old controller is kept alive for two post-frame hops so the
+  /// replacing tree can detach.
+  void _recreateDayViewPageController(
+    TimetableSettings settings, {
+    int? week,
+    int? dayOfWeek,
+  }) {
+    final old = _dayViewPageController;
+    _dayViewPageController = _createDayViewPageController(
+      settings,
+      week: week,
+      dayOfWeek: dayOfWeek,
+    );
+    if (old != null) {
+      _disposeDayViewControllerAfterReplacement(old);
+    }
   }
 
   void _disposeDayViewControllerAfterReplacement(PageController controller) {
@@ -1001,74 +1007,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.scheduleFrame();
   }
 
-  void _prepareDayViewPageController(
-    TimetableSettings settings,
-    int week,
-    int dayOfWeek, {
-    bool forceRecreate = false,
-  }) {
-    final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
-    final existing = _dayViewPageControllers[week];
-    if (forceRecreate && existing != null) {
-      _disposeDayViewControllerAfterReplacement(existing);
-      _dayViewPageControllers[week] = PageController(initialPage: targetPage);
-      return;
-    }
-    if (existing == null) {
-      _dayViewPageControllers[week] = PageController(initialPage: targetPage);
-      return;
-    }
-
-    if (existing.hasClients) {
-      final currentPage = existing.page?.round() ?? existing.initialPage;
-      if (currentPage != targetPage) {
-        existing.jumpToPage(targetPage);
-      }
-      return;
-    }
-
-    _disposeDayViewControllerAfterReplacement(existing);
-    _dayViewPageControllers[week] = PageController(initialPage: targetPage);
-  }
-
-  void _placeDayViewControllerAtPage(int week, int page) {
-    final existing = _dayViewPageControllers[week];
-    if (existing != null) {
-      _disposeDayViewControllerAfterReplacement(existing);
-    }
-    _dayViewPageControllers[week] = PageController(initialPage: page);
-  }
-
-  /// Continues a boundary crossing as a one-page glide into the entry day.
-  ///
-  /// The incoming week's pager was seeded on the edge page we arrived from
-  /// (same content as the page the finger just left), so animating it to the
-  /// entry day reads as uninterrupted horizontal motion instead of the old
-  /// stop-then-snap.
-  void _startDayViewBoundaryGlide(int week, int entryPage) {
-    _dayViewBoundaryGliding = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final controller = _dayViewPageControllers[week];
-      final atEntry =
-          controller != null &&
-          controller.hasClients &&
-          (controller.page?.round() ?? controller.initialPage) == entryPage;
-      if (mounted && controller != null && controller.hasClients && !atEntry) {
-        try {
-          await controller.animateToPage(
-            entryPage,
-            duration: const Duration(milliseconds: 240),
-            curve: Curves.easeOutCubic,
-          );
-        } catch (_) {
-          // Position can be detached/replaced under a rapid re-crossing; the
-          // build-time resync then lands the entry day, so nothing to do.
-        }
-      }
-      _dayViewBoundaryGliding = false;
-    });
-  }
-
   int _displayedDayForWeek(int week) {
     if (_dayViewTransitionSourceWeek == week &&
         _dayViewTransitionSourceDayOfWeek != null) {
@@ -1077,18 +1015,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _selectedDayOfWeek ?? 1;
   }
 
-  void _syncDayViewPageWithSelection(TimetableSettings settings, int week) {
-    if (_isSyncingDayViewPage) {
+  void _syncDayViewPageWithSelection(TimetableSettings settings) {
+    if (_isSyncingDayViewPage || !_isDayView) {
       return;
     }
-    // A boundary glide owns the pager position for one page; leave it alone.
-    if (_dayViewBoundaryGliding) {
+    if (_dayViewTransitionSourceWeek != null) {
       return;
     }
-    if (_dayViewTransitionSourceWeek == week) {
-      return;
-    }
-    final controller = _dayViewPageControllers[week];
+    final controller = _dayViewPageController;
     if (controller == null || !controller.hasClients) {
       return;
     }
@@ -1098,6 +1032,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (controller.position.isScrollingNotifier.value) {
       return;
     }
+    final week = _selectedWeekForDayView ?? _visibleWeek;
     final targetPage = _dayViewPageIndexForDay(
       settings,
       week,
@@ -1116,7 +1051,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     int dayOfWeek, {
     bool animate = true,
   }) async {
-    final controller = _ensureDayViewPageController(settings, week);
+    final controller = _ensureDayViewPageController(settings);
     _dayHeaderPreview.value = null;
     setState(() {
       _selectedWeekForDayView = week;
@@ -1171,32 +1106,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    final sourceWeek = _selectedWeekForDayView!;
-    // A single-step boundary crossing (the pager reaching an edge page during
-    // a fling/scrub) should read as one continuous glide into the neighbour
-    // week, not a hard stop-and-jump. Seed the incoming week's pager on the
-    // edge page we arrived from, then animate it one page to the entry day.
-    final glideBoundary =
-        !animateWeekPage && (normalizedTargetWeek - sourceWeek).abs() == 1;
-    final entryPage = _dayViewPageIndexForDay(
-      settings,
-      normalizedTargetWeek,
-      targetDayOfWeek,
-    );
-    final glideStartPage =
-        entryPage + (normalizedTargetWeek > sourceWeek ? -1 : 1);
-
     _isDaySwipeAnimating = true;
     try {
-      if (glideBoundary) {
-        _placeDayViewControllerAtPage(normalizedTargetWeek, glideStartPage);
-      } else {
-        _prepareDayViewPageController(
-          settings,
-          normalizedTargetWeek,
-          targetDayOfWeek,
-        );
-      }
       _dayHeaderPreview.value = null;
       setState(() {
         _dayViewTransitionSourceWeek = _selectedWeekForDayView;
@@ -1209,20 +1120,14 @@ class _TimetableScreenState extends State<TimetableScreen>
         mode: TimetableHomeViewMode.day,
         dayOfWeek: targetDayOfWeek,
       );
-      if (normalizedTargetWeek == _visibleWeek) {
-        await _switchDayWithinWeek(
-          settings,
-          normalizedTargetWeek,
-          targetDayOfWeek,
-          animate: false,
-        );
-      } else {
-        await _jumpToWeek(
-          provider,
-          normalizedTargetWeek,
-          animatePage: animateWeekPage,
-        );
-      }
+      // Same single pager scrolls to the target day; the week page follows
+      // for state consistency (it is faded out while the day view is open).
+      await _switchDayWithinWeek(
+        settings,
+        normalizedTargetWeek,
+        targetDayOfWeek,
+        animate: animateWeekPage,
+      );
       if (!mounted) {
         return;
       }
@@ -1230,8 +1135,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         _dayViewTransitionSourceWeek = null;
         _dayViewTransitionSourceDayOfWeek = null;
       });
-      if (glideBoundary) {
-        _startDayViewBoundaryGlide(normalizedTargetWeek, entryPage);
+      if (normalizedTargetWeek != _visibleWeek) {
+        await _jumpToWeek(
+          provider,
+          normalizedTargetWeek,
+          animatePage: animateWeekPage,
+        );
       }
     } finally {
       _isDaySwipeAnimating = false;
@@ -1241,7 +1150,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _handleDayViewPageChanged(
     TimetableProvider provider,
     TimetableSettings settings,
-    int week,
     int page,
   ) async {
     if (_isSyncingDayViewPage || _isDaySwipeAnimating) {
@@ -1253,22 +1161,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
       return;
     }
-    final target = _dayViewTargetForPage(settings, week, page);
+    final target = _dayViewTargetForPage(settings, page);
     if (kDebugMode) {
       debugPrint(
         '[DayPager] pageChanged($page) -> week=${target.week} '
-        'day=${target.dayOfWeek} boundary=${target.isBoundaryTransition}',
+        'day=${target.dayOfWeek}',
       );
-    }
-    if (target.isBoundaryTransition) {
-      await _animateDayViewToWeek(
-        provider,
-        settings,
-        target.week,
-        target.dayOfWeek,
-        animateWeekPage: false,
-      );
-      return;
     }
     // Midpoint preview: recolour the weekday header the moment the pager
     // crosses a page midpoint (matching the indicator), via the scoped
@@ -1288,11 +1186,12 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// Commits the settled day-pager page once the horizontal scroll has fully
   /// stopped, mirroring the week pager's ScrollEnd → finalize model so the
-  /// setState + persist never land mid-animation.
+  /// setState + persist never land mid-animation. A cross-week landing is an
+  /// ordinary page here (the pager is globally continuous), so the week page
+  /// follows the committed week for state consistency.
   void _settleDayViewPage(
     TimetableProvider provider,
     TimetableSettings settings,
-    int week,
   ) {
     if (_isSyncingDayViewPage || _isDaySwipeAnimating) {
       if (kDebugMode) {
@@ -1303,7 +1202,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
       return;
     }
-    final controller = _dayViewPageControllers[week];
+    final controller = _dayViewPageController;
     if (controller == null || !controller.hasClients) {
       return;
     }
@@ -1311,18 +1210,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (page == null) {
       return;
     }
-    final target = _dayViewTargetForPage(settings, week, page);
+    final target = _dayViewTargetForPage(settings, page);
     if (kDebugMode) {
       debugPrint(
         '[DayPager] settle: rawPage=${controller.page?.toStringAsFixed(3)} '
         '-> page=$page week=${target.week} day=${target.dayOfWeek} '
-        'boundary=${target.isBoundaryTransition} '
         'alreadySelected=${_selectedWeekForDayView == target.week && _selectedDayOfWeek == target.dayOfWeek}',
       );
-    }
-    if (target.isBoundaryTransition) {
-      // Cross-week landing is owned by _animateDayViewToWeek (onPageChanged).
-      return;
     }
     _dayHeaderPreview.value = null;
     if (_selectedWeekForDayView == target.week &&
@@ -1338,6 +1232,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       mode: TimetableHomeViewMode.day,
       dayOfWeek: target.dayOfWeek,
     );
+    if (target.week != _visibleWeek && !_isSyncingWeekPage) {
+      unawaited(_jumpToWeek(provider, target.week, animatePage: false));
+    }
   }
 
   /// Weekday-bar drag → day-pager bridge. The bar acts as a visible-day-count
@@ -1346,7 +1243,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// finger at week-per-bar-width speed while the bar itself moves slowly.
   void _startWeekdayBarDrag(
     TimetableSettings settings,
-    int week,
     DragStartDetails details,
   ) {
     _weekdayBarDrag?.cancel();
@@ -1354,7 +1250,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (_isDaySwipeAnimating) {
       return;
     }
-    final controller = _dayViewPageControllers[week];
+    final controller = _dayViewPageController;
     if (controller == null || !controller.hasClients) {
       return;
     }
@@ -1754,15 +1650,13 @@ class _TimetableScreenState extends State<TimetableScreen>
             BackToCurrentWeekButtonStyle.inline;
     final visibleDays = _visibleDayNumbers(settings);
 
-    return Container(
-      height: _weekDayHeaderHeight,
-      padding: EdgeInsets.zero,
-      decoration: hideBottomBorder
-          ? null
-          : BoxDecoration(
-              border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
-            ),
-      child: Row(
+    // Shared full-row builder: week label + back-to-current-week + the seven
+    // day slots + the selection indicator — one complete weekday bar row.
+    // Week view renders one row per page (it scrolls with that page); day
+    // view stacks three consecutive weeks and translates them with the pager
+    // so the WHOLE bar slides like the week view's header.
+    Widget fullWeekRowFor(int rowWeek, {required bool showExtras}) {
+      return Row(
         children: [
           SizedBox(
             width: timeColumnWidth,
@@ -1776,7 +1670,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     // 时间列偏窄，略向右让周次与节次数字视觉中心对齐。
                     padding: const EdgeInsets.fromLTRB(8, 2, 2, 2),
                     child: Text(
-                      l10n.currentWeekCompact(week),
+                      l10n.currentWeekCompact(rowWeek),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 10,
@@ -1786,7 +1680,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                   ),
                 ),
-                if (showsInlineBackToCurrentWeek)
+                if (showExtras && showsInlineBackToCurrentWeek)
                   SizedBox(
                     height: 10,
                     child: OverflowBox(
@@ -1823,151 +1717,215 @@ class _TimetableScreenState extends State<TimetableScreen>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Rebuilds on the midpoint preview so the selected-day text
-                // recolours mid-swipe without a full-State setState.
-                ListenableBuilder(
-                  listenable: _dayHeaderPreview,
-                  builder: (context, _) => Row(
-                    children: visibleDays
-                        .map((dayOfWeek) {
-                          final date = _dateForWeekDay(
-                            settings,
-                            week,
-                            dayOfWeek,
-                          );
-                          final isToday =
-                              date != null && _isSameDate(date, DateTime.now());
-                          final isSelected = _isSelectedDay(week, dayOfWeek);
-                          final configuredWeekdayHex = isDark
-                              ? settings.weekdayBarFontColorDark
-                              : settings.weekdayBarFontColorLight;
-                          final configuredAccentHex = isDark
-                              ? settings.weekdayBarAccentColorDark
-                              : settings.weekdayBarAccentColorLight;
-                          // Default weekday ink flips with wallpaper luminance;
-                          // user-custom hex is kept. Accent (today/selected) is
-                          // never auto-inverted so a custom blue stays blue.
-                          final weekdayColor = homePageOverWallpaperInk(
-                            configuredHex: configuredWeekdayHex,
-                            defaultHex: isDark
-                                ? TimetableSettings
-                                      .defaultWeekdayBarFontColorDark
-                                : TimetableSettings
-                                      .defaultWeekdayBarFontColorLight,
-                            themeFallback: colorScheme.onSurface,
-                            hasBackdrop: hasBackdrop,
-                            wallpaperLuminance: _wallpaperTopLuminance,
-                          );
-                          final accentColor = homePageOverWallpaperAccent(
-                            configuredHex: configuredAccentHex,
-                            themeFallback: colorScheme.primary,
-                          );
-                          final labelColor = (isSelected || isToday)
-                              ? accentColor
-                              : weekdayColor;
-                          final subLabelColor = (isSelected || isToday)
-                              ? accentColor.withValues(
-                                  alpha: isSelected ? 0.9 : 0.78,
-                                )
-                              : homePageOverWallpaperMutedInk(weekdayColor);
-                          final showsTodayMarker = isToday && !isSelected;
+                Row(
+                  children: visibleDays
+                      .map((dayOfWeek) {
+                        final date = _dateForWeekDay(settings, rowWeek, dayOfWeek);
+                        final isToday =
+                            date != null && _isSameDate(date, DateTime.now());
+                        final isSelected = _isSelectedDay(rowWeek, dayOfWeek);
+                        final configuredWeekdayHex = isDark
+                            ? settings.weekdayBarFontColorDark
+                            : settings.weekdayBarFontColorLight;
+                        final configuredAccentHex = isDark
+                            ? settings.weekdayBarAccentColorDark
+                            : settings.weekdayBarAccentColorLight;
+                        // Default weekday ink flips with wallpaper luminance;
+                        // user-custom hex is kept. Accent (today/selected) is
+                        // never auto-inverted so a custom blue stays blue.
+                        final weekdayColor = homePageOverWallpaperInk(
+                          configuredHex: configuredWeekdayHex,
+                          defaultHex: isDark
+                              ? TimetableSettings.defaultWeekdayBarFontColorDark
+                              : TimetableSettings.defaultWeekdayBarFontColorLight,
+                          themeFallback: colorScheme.onSurface,
+                          hasBackdrop: hasBackdrop,
+                          wallpaperLuminance: _wallpaperTopLuminance,
+                        );
+                        final accentColor = homePageOverWallpaperAccent(
+                          configuredHex: configuredAccentHex,
+                          themeFallback: colorScheme.primary,
+                        );
+                        final labelColor = (isSelected || isToday)
+                            ? accentColor
+                            : weekdayColor;
+                        final subLabelColor = (isSelected || isToday)
+                            ? accentColor.withValues(
+                                alpha: isSelected ? 0.9 : 0.78,
+                              )
+                            : homePageOverWallpaperMutedInk(weekdayColor);
+                        final showsTodayMarker = isToday && !isSelected;
 
-                          return Expanded(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                key: ValueKey(
-                                  'weekday-header-$week-$dayOfWeek',
-                                ),
-                                borderRadius: BorderRadius.circular(14),
-                                onTapDown: (details) => _captureDayViewAnchor(
-                                  details.globalPosition,
-                                ),
-                                onTap: () => _toggleDayView(
-                                  week: week,
-                                  dayOfWeek: dayOfWeek,
-                                  settings: settings,
-                                ),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOutCubic,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 1,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: showsTodayMarker
-                                            ? accentColor.withValues(
-                                                alpha: 0.35,
-                                              )
-                                            : Colors.transparent,
-                                        width: showsTodayMarker ? 2 : 0,
-                                      ),
+                        return Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              key: ValueKey('weekday-header-$rowWeek-$dayOfWeek'),
+                              borderRadius: BorderRadius.circular(14),
+                              onTapDown: (details) => _captureDayViewAnchor(
+                                details.globalPosition,
+                              ),
+                              onTap: () => _toggleDayView(
+                                week: rowWeek,
+                                dayOfWeek: dayOfWeek,
+                                settings: settings,
+                              ),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOutCubic,
+                                margin: const EdgeInsets.symmetric(horizontal: 1),
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: showsTodayMarker
+                                          ? accentColor.withValues(alpha: 0.35)
+                                          : Colors.transparent,
+                                      width: showsTodayMarker ? 2 : 0,
                                     ),
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        _weekdayLabel(context, dayOfWeek),
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: isSelected || isToday
-                                              ? FontWeight.w800
-                                              : FontWeight.w600,
-                                          color: labelColor,
-                                        ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _weekdayLabel(context, dayOfWeek),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: isSelected || isToday
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                        color: labelColor,
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        date == null
-                                            ? ''
-                                            : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
-                                        style: TextStyle(
-                                          fontSize: 8.5,
-                                          color: subLabelColor,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      date == null
+                                          ? ''
+                                          : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                                      style: TextStyle(
+                                        fontSize: 8.5,
+                                        color: subLabelColor,
                                       ),
-                                      if (date != null &&
-                                          provider.hasExamOnDate(date))
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 2,
-                                          ),
-                                          child: Container(
-                                            width: 4,
-                                            height: 4,
-                                            decoration: BoxDecoration(
-                                              color: colorScheme.error,
-                                              shape: BoxShape.circle,
-                                            ),
+                                    ),
+                                    if (date != null &&
+                                        provider.hasExamOnDate(date))
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Container(
+                                          width: 4,
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.error,
+                                            shape: BoxShape.circle,
                                           ),
                                         ),
-                                    ],
-                                  ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
-                          );
-                        })
-                        .toList(growable: false),
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
+                ),
+                if (showExtras)
+                  _buildWeekdaySelectionIndicator(
+                    settings: settings,
+                    week: rowWeek,
+                    visibleDays: visibleDays,
                   ),
-                ),
-                _buildWeekdaySelectionIndicator(
-                  settings: settings,
-                  week: week,
-                  visibleDays: visibleDays,
-                ),
               ],
             ),
           ),
         ],
-      ),
+      );
+    }
+
+    // Current pager page as a continuous double (day view only).
+    double dayViewPagerPage() {
+      final controller = _dayViewPageController;
+      if (controller == null) {
+        return 0;
+      }
+      if (!controller.hasClients) {
+        return controller.initialPage.toDouble();
+      }
+      return controller.page ?? controller.initialPage.toDouble();
+    }
+
+    return Container(
+      height: _weekDayHeaderHeight,
+      padding: EdgeInsets.zero,
+      decoration: hideBottomBorder
+          ? null
+          : BoxDecoration(
+              border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
+            ),
+      child: _isDayView && _dayViewPageController != null
+          ? AnimatedBuilder(
+              animation: _dayViewPageController!,
+              builder: (context, _) {
+                // The whole bar (week label + day row + indicator) is one row
+                // per week. Within a week it stays put (the indicator follows
+                // the pager); only during the cross-week transition does the
+                // outgoing week slide out and the next week slide in — glued
+                // to the pager's position, like the week view's per-page
+                // header moving under the finger.
+                final rawPage = dayViewPagerPage();
+                final count = visibleDays.length;
+                final totalWeeks = settings.semesterWeekCount;
+                final weekIndex =
+                    (rawPage / count).floor().clamp(0, totalWeeks - 1);
+                final inWeekPos = rawPage - weekIndex * count;
+                final isCrossing = inWeekPos >= count - 1;
+                final progress = isCrossing
+                    ? (inWeekPos - (count - 1)).clamp(0.0, 1.0)
+                    : 0.0;
+                final weekRow = weekIndex + 1;
+                final nextWeek = weekRow + 1;
+                final extrasOnOutgoing = !isCrossing || progress < 0.5;
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final barWidth = constraints.maxWidth;
+                    return ClipRect(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (isCrossing)
+                            Transform.translate(
+                              offset: Offset(-progress * barWidth, 0),
+                              child: SizedBox(
+                                width: barWidth,
+                                child: fullWeekRowFor(
+                                  weekRow,
+                                  showExtras: extrasOnOutgoing,
+                                ),
+                              ),
+                            ),
+                          if (isCrossing)
+                            Transform.translate(
+                              offset: Offset((1 - progress) * barWidth, 0),
+                              child: SizedBox(
+                                width: barWidth,
+                                child: fullWeekRowFor(
+                                  nextWeek,
+                                  showExtras: !extrasOnOutgoing,
+                                ),
+                              ),
+                            ),
+                          if (!isCrossing)
+                            fullWeekRowFor(weekRow, showExtras: true),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            )
+          : fullWeekRowFor(week, showExtras: true),
     );
   }
 
@@ -1976,11 +1934,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required List<int> visibleDays,
   }) {
-    final controller = _dayViewPageControllers[week];
+    final controller = _dayViewPageController;
     if (!_shouldShowDayViewOverlay ||
-        _visibleDayViewWeek != week ||
         controller == null ||
         visibleDays.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    // In day view the indicator follows the pager live even mid cross-week
+    // (its week argument is the pager's floor week, which briefly differs
+    // from the settled selection); in week view it is per-page and only
+    // shows on the settled page.
+    if (!_isDayView && _visibleDayViewWeek != week) {
       return const SizedBox.shrink();
     }
 
@@ -2008,7 +1972,10 @@ class _TimetableScreenState extends State<TimetableScreen>
               final rawPage = controller.hasClients
                   ? (controller.page ?? controller.initialPage.toDouble())
                   : controller.initialPage.toDouble();
-              final rawDayPosition = rawPage - (week > _minWeek ? 1.0 : 0.0);
+              // Weekday position within the bar's week: the pager is
+              // globally continuous, so subtract the week's page offset.
+              final rawDayPosition =
+                  rawPage - (week - 1) * visibleDays.length;
               final maxDayIndex = (visibleDays.length - 1).toDouble();
               final clampedDayPosition = rawDayPosition
                   .clamp(0.0, maxDayIndex)
@@ -2515,7 +2482,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               key: const ValueKey('day-view-weekday-bar-swipe-area'),
               behavior: HitTestBehavior.translucent,
               onHorizontalDragStart: (details) =>
-                  _startWeekdayBarDrag(settings, visibleDayViewWeek, details),
+                  _startWeekdayBarDrag(settings, details),
               onHorizontalDragUpdate: _updateWeekdayBarDrag,
               onHorizontalDragEnd: _endWeekdayBarDrag,
               onHorizontalDragCancel: _cancelWeekdayBarDrag,
@@ -2747,14 +2714,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       darkFallback: darkFallback,
       region: HomePageBackgroundScope.timetable,
     );
-    final controller = _ensureDayViewPageController(settings, week);
-    _syncDayViewPageWithSelection(settings, week);
-    final pageCount = _dayViewPageCount(settings, week);
+    final controller = _ensureDayViewPageController(settings);
+    _syncDayViewPageWithSelection(settings);
+    final pageCount = _dayViewPageCount(settings);
 
     return homePageBackgroundLayer(
       visual: backgroundVisual,
       child: Container(
-        key: ValueKey('timetable-day-view-panel-$week'),
+        key: const ValueKey('timetable-day-view-panel'),
         child: Column(
           children: [
             const SizedBox(height: 14),
@@ -2883,7 +2850,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                             '[DayPager] end: page=${page.toStringAsFixed(3)}',
                           );
                         }
-                        _settleDayViewPage(provider, settings, week);
+                        _settleDayViewPage(provider, settings);
                       }
                       return false;
                     },
@@ -2902,7 +2869,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                       onPageChanged: (page) => _handleDayViewPageChanged(
                         provider,
                         settings,
-                        week,
                         page,
                       ),
                       itemBuilder: (context, page) {
@@ -2913,7 +2879,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                           builder: (context, _, _) => _buildDayViewPageContent(
                             provider: provider,
                             settings: settings,
-                            week: week,
                             page: page,
                           ),
                         );
@@ -2937,10 +2902,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   Widget _buildDayViewPageContent({
     required TimetableProvider provider,
     required TimetableSettings settings,
-    required int week,
     required int page,
   }) {
-    final target = _dayViewTargetForPage(settings, week, page);
+    final target = _dayViewTargetForPage(settings, page);
     final selectedDate = _dateForWeekDay(
       settings,
       target.week,
@@ -7138,12 +7102,10 @@ class _HomeActionButtonBody extends StatelessWidget {
 class _DayViewPageTarget {
   final int week;
   final int dayOfWeek;
-  final bool isBoundaryTransition;
 
   const _DayViewPageTarget({
     required this.week,
     required this.dayOfWeek,
-    this.isBoundaryTransition = false,
   });
 }
 
