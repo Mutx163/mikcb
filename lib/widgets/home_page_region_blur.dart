@@ -159,8 +159,24 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
       child: IgnorePointer(
         child: ClipRect(
           clipBehavior: Clip.hardEdge,
-          child: HomePageChromeGlassFill(
-            wallpaperTopLuminance: wallpaperTopLuminance,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Paint the glass a few pixels above the visible band so the
+              // liquid-glass specular fringe along its top edge lands outside
+              // the ClipRect and is clipped — otherwise that fringe shows as
+              // a 1px hairline seam where the band meets the status bar (see
+              // homePageChromeGlassTopEdgeOverdraw).
+              Positioned(
+                top: -homePageChromeGlassTopEdgeOverdraw,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: HomePageChromeGlassFill(
+                  wallpaperTopLuminance: wallpaperTopLuminance,
+                ),
+              ),
+            ],
           ),
         ),
       ),
