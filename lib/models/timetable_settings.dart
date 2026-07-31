@@ -1111,6 +1111,9 @@ class TimetableSettings {
   /// 壁纸在页面内的水平对齐（-1 靠左 … 0 居中 … 1 靠右），用于横向壁纸
   /// 拖动选择显示区域；竖屏壁纸下 cover 不会水平溢出，该值不产生位移。
   final double homePageWallpaperAlignX;
+  /// 壁纸在页面内的垂直对齐（-1 靠上 … 0 居中 … 1 靠下），用于长图壁纸
+  /// 拖动选择显示区域；cover 下高度未溢出时该值不产生位移。
+  final double homePageWallpaperAlignY;
   final int homePageBackgroundScope;
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
@@ -1278,6 +1281,7 @@ class TimetableSettings {
     this.homePageBackgroundImagePath,
     this.homePageWallpaperPath,
     this.homePageWallpaperAlignX = 0,
+    this.homePageWallpaperAlignY = 0,
     this.homePageBackgroundScope = HomePageBackgroundScope.defaultValue,
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
@@ -1441,6 +1445,7 @@ class TimetableSettings {
       homePageBackgroundImagePath: null,
       homePageWallpaperPath: null,
       homePageWallpaperAlignX: 0,
+      homePageWallpaperAlignY: 0,
       homePageBackgroundScope: HomePageBackgroundScope.defaultValue,
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
@@ -1594,6 +1599,7 @@ class TimetableSettings {
       if (homePageWallpaperPath != null)
         'homePageWallpaperPath': homePageWallpaperPath,
       'homePageWallpaperAlignX': homePageWallpaperAlignX,
+      'homePageWallpaperAlignY': homePageWallpaperAlignY,
       'homePageBackgroundScope': homePageBackgroundScope,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
@@ -1918,6 +1924,10 @@ class TimetableSettings {
       homePageBackgroundImagePath:
           json['homePageBackgroundImagePath'] as String?,
       homePageWallpaperPath: json['homePageWallpaperPath'] as String?,
+      homePageWallpaperAlignX:
+          (json['homePageWallpaperAlignX'] as num?)?.toDouble() ?? 0,
+      homePageWallpaperAlignY:
+          (json['homePageWallpaperAlignY'] as num?)?.toDouble() ?? 0,
       homePageBackgroundScope:
           (json['homePageBackgroundScope'] as num?)?.toInt() ??
           HomePageBackgroundScope.defaultValue,
@@ -2143,6 +2153,7 @@ class TimetableSettings {
     String? homePageWallpaperPath,
     bool clearHomePageWallpaperPath = false,
     double? homePageWallpaperAlignX,
+    double? homePageWallpaperAlignY,
     int? homePageBackgroundScope,
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
@@ -2408,6 +2419,8 @@ class TimetableSettings {
           : homePageWallpaperPath ?? this.homePageWallpaperPath,
       homePageWallpaperAlignX:
           homePageWallpaperAlignX ?? this.homePageWallpaperAlignX,
+      homePageWallpaperAlignY:
+          homePageWallpaperAlignY ?? this.homePageWallpaperAlignY,
       homePageBackgroundScope:
           homePageBackgroundScope ?? this.homePageBackgroundScope,
       timetableUseUnifiedCardColor:

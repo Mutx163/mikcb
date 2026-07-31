@@ -283,7 +283,11 @@ class _TimetablePageSettingsScreenState
                 l10n: l10n,
                 title: l10n.homePageWallpaperTitle,
                 path: resolveHomePageBackdropImagePath(_draft),
-                onPick: _pickHomePageBackdropImage,
+                onPick:
+                    (resolveHomePageBackdropImagePath(_draft)?.isNotEmpty ??
+                            false)
+                        ? _editHomePageBackdropPosition
+                        : _pickHomePageBackdropImage,
                 onClear: () {
                   evictHomePageImageCache(
                     resolveHomePageBackdropImagePath(_draft),
@@ -423,6 +427,7 @@ class _TimetablePageSettingsScreenState
     final fileName = path == null || path.isEmpty
         ? l10n.homePageImageNotSelected
         : path.split(Platform.pathSeparator).last;
+    final hasWallpaper = path != null && path.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -436,11 +441,13 @@ class _TimetablePageSettingsScreenState
             children: [
               Expanded(
                 child: HyperosButton(
-                  label: l10n.homePagePickImageAction,
+                  label: hasWallpaper
+                      ? l10n.homePageSwitchImageAction
+                      : l10n.homePagePickImageAction,
                   onPressed: () => unawaited(onPick()),
                 ),
               ),
-              if (path != null && path.isNotEmpty) ...[
+              if (hasWallpaper) ...[
                 const SizedBox(width: 12),
                 Expanded(
                   child: HyperosButton(
@@ -457,10 +464,11 @@ class _TimetablePageSettingsScreenState
     );
   }
 
-  Future<void> _pickHomePageBackdropImage() async {
+  Future<void> _pickHomePageBackdropImage({bool cleanupArtifacts = true}) async {
     final targetPath = await pickAndStoreManagedImage(
       directoryName: 'home_page_wallpaper',
       filePrefix: 'wallpaper',
+      cleanupArtifacts: cleanupArtifacts,
     );
     if (!mounted || targetPath == null) {
       return;
@@ -475,6 +483,62 @@ class _TimetablePageSettingsScreenState
         clearHomePageBackgroundImagePath: true,
       ),
     );
+  }
+
+  /// 已存在壁纸时点击入口：直接进入位置编辑页，初始值取自上次保存的对齐。
+  Future<void> _editHomePageBackdropPosition() async {
+    final existingPath = resolveHomePageBackdropImagePath(_draft);
+    if (existingPath == null || existingPath.isEmpty) {
+      await _pickHomePageBackdropImage();
+      return;
+    }
+    final result = await pushWallpaperPositionPickerPage(
+      context,
+      imagePath: existingPath,
+      initialAlignX: _draft.homePageWallpaperAlignX,
+      initialAlignY: _draft.homePageWallpaperAlignY,
+      onPickNewImage: () => pickAndStoreManagedImage(
+        directoryName: 'home_page_wallpaper',
+        filePrefix: 'wallpaper',
+        // 编辑页内换图：保留上一张，等确认后再清理。
+        cleanupArtifacts: false,
+      ),
+    );
+    if (!mounted || result == null) {
+      return;
+    }
+    if (!result.confirmed) {
+      // 用户取消：若在编辑页里换了图，清理那张未被采用的新文件。
+      if (result.path != existingPath) {
+        final newFile = File(result.path);
+        if (await newFile.exists()) {
+          await newFile.delete();
+        }
+      }
+      return;
+    }
+    final pathChanged = result.path != existingPath;
+    evictHomePageImageCache(existingPath);
+    PreblurredWallpaperCache.instance.evict(existingPath);
+    if (pathChanged) {
+      evictHomePageImageCache(result.path);
+      PreblurredWallpaperCache.instance.evict(result.path);
+    }
+    _updateDraft(
+      _draft.copyWith(
+        homePageWallpaperPath: result.path,
+        homePageWallpaperAlignX: result.alignX,
+        homePageWallpaperAlignY: result.alignY,
+        clearHomePageBackgroundImagePath: true,
+      ),
+    );
+    if (pathChanged) {
+      // 旧壁纸文件已不再使用，删除释放空间。
+      final oldFile = File(existingPath);
+      if (await oldFile.exists()) {
+        await oldFile.delete();
+      }
+    }
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {

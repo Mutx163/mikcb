@@ -3077,10 +3077,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePagePickImageAction => '选择图片';
 
   @override
+  String get homePageSwitchImageAction => '切换照片';
+
+  @override
   String get homePageClearImageAction => '清除图片';
 
   @override
   String get homePageImageNotSelected => '未选择';
+
+  @override
+  String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => '重置居中';
+
+  @override
+  String get wallpaperPositionPickerDragHint => '拖动壁纸调整位置';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => '换壁纸';
+
+  @override
+  String get wallpaperPositionPickerDone => '完成';
+
+  @override
+  String get wallpaperPositionPickerExit => '退出';
 
   @override
   String get appearanceTextColorsSectionTitle => '文字颜色';

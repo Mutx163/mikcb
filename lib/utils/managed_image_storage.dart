@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 Future<String?> pickAndStoreManagedImage({
   required String directoryName,
   required String filePrefix,
+  bool cleanupArtifacts = true,
 }) async {
   final XFile? pickedImage;
   try {
@@ -37,11 +38,13 @@ Future<String?> pickAndStoreManagedImage({
   final targetPath =
       '${targetDir.path}${Platform.pathSeparator}${filePrefix}_$stamp.$ext';
   await File(targetPath).writeAsBytes(bytes, flush: true);
-  await _deleteManagedImageArtifacts(
-    directoryName: directoryName,
-    filePrefix: filePrefix,
-    preservePath: targetPath,
-  );
+  if (cleanupArtifacts) {
+    await _deleteManagedImageArtifacts(
+      directoryName: directoryName,
+      filePrefix: filePrefix,
+      preservePath: targetPath,
+    );
+  }
   PaintingBinding.instance.imageCache.evict(FileImage(File(targetPath)));
   return targetPath;
 }

@@ -3228,10 +3228,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePagePickImageAction => 'Choose image';
 
   @override
+  String get homePageSwitchImageAction => 'Switch photo';
+
+  @override
   String get homePageClearImageAction => 'Clear image';
 
   @override
   String get homePageImageNotSelected => 'Not selected';
+
+  @override
+  String get wallpaperPositionPickerTitle => 'Adjust wallpaper position';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => 'Reset to center';
+
+  @override
+  String get wallpaperPositionPickerDragHint =>
+      'Drag the wallpaper to adjust its position';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => 'Change wallpaper';
+
+  @override
+  String get wallpaperPositionPickerDone => 'Done';
+
+  @override
+  String get wallpaperPositionPickerExit => 'Exit';
 
   @override
   String get appearanceTextColorsSectionTitle => 'Text colors';

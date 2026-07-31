@@ -5613,6 +5613,12 @@ abstract class AppLocalizations {
   /// **'选择图片'**
   String get homePagePickImageAction;
 
+  /// No description provided for @homePageSwitchImageAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换照片'**
+  String get homePageSwitchImageAction;
+
   /// No description provided for @homePageClearImageAction.
   ///
   /// In zh, this message translates to:
@@ -5624,6 +5630,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'未选择'**
   String get homePageImageNotSelected;
+
+  /// No description provided for @wallpaperPositionPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'调整壁纸显示位置'**
+  String get wallpaperPositionPickerTitle;
+
+  /// No description provided for @wallpaperPositionPickerResetTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置居中'**
+  String get wallpaperPositionPickerResetTooltip;
+
+  /// No description provided for @wallpaperPositionPickerDragHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动壁纸调整位置'**
+  String get wallpaperPositionPickerDragHint;
+
+  /// No description provided for @wallpaperPositionPickerSwitchWallpaper.
+  ///
+  /// In zh, this message translates to:
+  /// **'换壁纸'**
+  String get wallpaperPositionPickerSwitchWallpaper;
+
+  /// No description provided for @wallpaperPositionPickerDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get wallpaperPositionPickerDone;
+
+  /// No description provided for @wallpaperPositionPickerExit.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出'**
+  String get wallpaperPositionPickerExit;
 
   /// No description provided for @appearanceTextColorsSectionTitle.
   ///
