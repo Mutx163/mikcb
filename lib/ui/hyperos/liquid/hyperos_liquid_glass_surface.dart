@@ -1,4 +1,4 @@
-import 'dart:ui' show ImageFilter;
+import 'dart:ui' show ImageFilter, FragmentProgram;
 
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
@@ -42,6 +42,56 @@ enum HyperosLiquidGlassLayerMode {
   fake,
 }
 
+/// Runtime shader-support state shared by every liquid-glass surface.
+///
+/// [ImageFilter.isShaderFilterSupported] only answers "does this engine
+/// advertise shader filters". Some engines (e.g. Impeller on Vulkan) still
+/// fail to compile the packaged refraction shader, and the package's
+/// [ShaderBuilder] turns that compile failure into a `FlutterError.reportError`
+/// that crashes debug builds. We probe once per process with a direct
+/// `FragmentProgram.fromAsset` and remember the outcome so every surface can
+/// downgrade to [FakeGlass] (a shader-less frosted look) instead of crashing.
+abstract final class LiquidGlassShaderProbe {
+  static bool? _realRefractionReady;
+
+  /// Whether the refraction shader actually compiled on this engine.
+  ///
+  /// False until the first probe finishes, so surfaces default to fake while
+  /// the probe is in flight and no frame can crash on a half-loaded shader.
+  static bool get realRefractionReady => _realRefractionReady ?? false;
+
+  static Future<void> probeIfNeeded() async {
+    if (_realRefractionReady != null) {
+      return;
+    }
+    if (!ImageFilter.isShaderFilterSupported) {
+      _realRefractionReady = false;
+      return;
+    }
+    try {
+      // Compile every shader the package actually loads through its
+      // ShaderBuilder paths. A single failure means real refraction would
+      // crash later, so we downgrade everything to FakeGlass instead.
+      const shaderAssets = [
+        'packages/liquid_glass_renderer/lib/assets/shaders/'
+            'liquid_glass_final_render.frag',
+        'packages/liquid_glass_renderer/lib/assets/shaders/'
+            'liquid_glass_filter.frag',
+        'packages/liquid_glass_renderer/lib/assets/shaders/'
+            'liquid_glass_geometry_blended.frag',
+        'packages/liquid_glass_renderer/lib/assets/shaders/'
+            'liquid_glass_arbitrary.frag',
+      ];
+      for (final assetKey in shaderAssets) {
+        await FragmentProgram.fromAsset(assetKey);
+      }
+      _realRefractionReady = true;
+    } catch (_) {
+      _realRefractionReady = false;
+    }
+  }
+}
+
 /// Shared [LiquidGlassLayer] host for multiple glass shapes.
 ///
 /// Use this when several sibling surfaces share the same settings (e.g. a
@@ -75,8 +125,9 @@ class HyperosLiquidGlassLayer extends StatelessWidget {
     return LiquidGlassLayer(
       settings: resolvedSettings,
       // Opting into fake ourselves on Skia keeps the package from logging a
-      // fallback warning on every rebuild.
-      fake: fake || !HyperosLiquidGlassSurface.supportsRealRefraction,
+      // fallback warning on every rebuild. When the refraction shader cannot
+      // actually compile (probed once), every layer downgrades to fake too.
+      fake: fake || !LiquidGlassShaderProbe.realRefractionReady,
       child: child,
     );
   }
@@ -95,7 +146,7 @@ class HyperosLiquidGlassLayer extends StatelessWidget {
 /// inside the refracted material. Sheets/headers also get a soft fill under
 /// the child so busy backdrops (timetable, photos) do not steal contrast —
 /// similar to Apple using thicker / more frosted glass on large panels.
-class HyperosLiquidGlassSurface extends StatelessWidget {
+class HyperosLiquidGlassSurface extends StatefulWidget {
   const HyperosLiquidGlassSurface({
     required this.child,
     this.role = HyperosLiquidGlassRole.sheet,
@@ -207,7 +258,35 @@ class HyperosLiquidGlassSurface extends StatelessWidget {
   }
 
   @override
+  State<HyperosLiquidGlassSurface> createState() =>
+      _HyperosLiquidGlassSurfaceState();
+}
+
+class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
+  @override
+  void initState() {
+    super.initState();
+    // Default every surface to fake until the probe confirms the shader is
+    // actually usable; then rebuild once to the real refraction look.
+    LiquidGlassShaderProbe.probeIfNeeded().then((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final role = widget.role;
+    final borderRadius = widget.borderRadius;
+    final clipBehavior = widget.clipBehavior;
+    final glassColor = widget.glassColor;
+    final instantUnderlay = widget.instantUnderlay;
+    final layerMode = widget.layerMode;
+    final useAncestorBackdropGroup = widget.useAncestorBackdropGroup;
+    final contentLegibilityFill = widget.contentLegibilityFill;
+    final child = widget.child;
+
     final brightness = Theme.of(context).brightness;
     final tuning = FrostedAppearanceScope.of(context).liquidGlassTuning;
     final resolvedRadius =
@@ -223,7 +302,7 @@ class HyperosLiquidGlassSurface extends StatelessWidget {
     final shape = resolvedRadius <= 0.01
         ? const LiquidRoundedRectangle(borderRadius: 0)
         : LiquidRoundedSuperellipse(borderRadius: resolvedRadius);
-    final settings = settingsForRole(
+    final settings = HyperosLiquidGlassSurface.settingsForRole(
       role: role,
       brightness: brightness,
       tuning: tuning,
@@ -241,9 +320,9 @@ class HyperosLiquidGlassSurface extends StatelessWidget {
           )
         : child;
 
-    var resolvedLayerMode = layerMode ?? defaultLayerModeFor(role);
+    var resolvedLayerMode = layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
     if (resolvedLayerMode == HyperosLiquidGlassLayerMode.ownLayer &&
-        !supportsRealRefraction) {
+        !LiquidGlassShaderProbe.realRefractionReady) {
       // sharedLayer needs no handling: the package resolves shapes inside a
       // faked ancestor layer to FakeGlass.inLayer without warning.
       resolvedLayerMode = HyperosLiquidGlassLayerMode.fake;
