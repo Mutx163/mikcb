@@ -35,6 +35,7 @@ dependencies:
   azlistview: ^2.0.0
   animations: ^2.0.11
   table_parser: ^1.0.1
+  qr: ^3.0.2
   qr_flutter: ^4.1.0
   fl_chart: ^1.2.0
   fast_gbk: ^1.0.0

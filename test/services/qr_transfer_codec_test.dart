@@ -140,6 +140,50 @@ void main() {
     expect(() => decoder.submitFrame(encoderB.nextFrame()), throwsStateError);
   });
 
+  test('frameTextFor 与 nextFrame 序列一致且可重复生成', () {
+    final original = utf8Bytes('预生成帧测试数据，验证 frameTextFor 的确定性。' * 20);
+    final encoder = QrTransferEncoder.prepare(original);
+
+    final sequential = <String>[
+      encoder.nextFrame(),
+      encoder.nextFrame(),
+      encoder.nextFrame(),
+    ];
+    final bySeed = [
+      encoder.frameTextFor(0),
+      encoder.frameTextFor(1),
+      encoder.frameTextFor(2),
+    ];
+
+    // 发送端可用 frameTextFor 预生成任意 seed 的帧，推进计数器不影响历史帧。
+    expect(sequential, bySeed);
+    expect(encoder.frameTextFor(0), bySeed[0]);
+  });
+
+  test('重复帧按 seed 去重，不重复计数也不重复消元', () {
+    // 不可压缩随机数据保证 k > 1，避免第一帧就完成解码。
+    final rng = Random(3);
+    final original = Uint8List.fromList(
+      List.generate(700, (_) => rng.nextInt(256)),
+    );
+    final encoder = QrTransferEncoder.prepare(original);
+    expect(encoder.info.sourceSymbolCount, greaterThan(1));
+
+    final decoder = QrTransferDecoder();
+    final frame0 = encoder.nextFrame();
+    final frame1 = encoder.nextFrame();
+
+    // 摄像头停在同一帧画面时反复识别到相同文本：第二次应被静默跳过。
+    final first = decoder.submitFrame(frame0);
+    final repeated = decoder.submitFrame(frame0);
+    expect(repeated.receivedSymbols, first.receivedSymbols);
+    expect(repeated.decodedSymbols, first.decodedSymbols);
+    expect(decoder.isComplete, isFalse);
+
+    final second = decoder.submitFrame(frame1);
+    expect(second.receivedSymbols, first.receivedSymbols + 1);
+  });
+
   test('大文件跨多符号粒度往返一致', () {
     final builder = StringBuffer();
     for (var i = 0; i < 4000; i++) {

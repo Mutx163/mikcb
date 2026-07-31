@@ -106,9 +106,13 @@ class QrTransferFrame {
 /// 二维码传输发送端：压缩 → LT 编码 → 逐帧产出二维码文本。
 class QrTransferEncoder {
   /// 根据 gzip 后载荷大小选择符号大小，让每帧文本稳定落在二维码
-  /// 的易识别区间（约 300 ~ 1300 字符），同时控制帧数不过多。
+  /// 的易识别区间（约 400 ~ 1500 字符），同时控制帧数不过多。
+  ///
+  /// 符号越大，每帧携带的数据越多、总帧数越少；但帧文本变长会推高
+  /// QR 版本，屏幕上的模块变小、识别变难。256B/512B 是面对面扫码
+  /// 传输的甜点区间（对应约 V12 / V20 版本）。
   static int pickSymbolSize(int payloadLength) {
-    if (payloadLength <= 2048) return 128;
+    if (payloadLength <= 2048) return 256;
     if (payloadLength <= 16384) return 512;
     if (payloadLength <= 65536) return 1024;
     return 2048;
@@ -159,7 +163,16 @@ class QrTransferEncoder {
   /// 发送端按自己的节奏播放即可。
   String nextFrame() {
     _seed++;
-    final symbol = _codec.encode(0, _seed);
+    return frameTextFor(_seed);
+  }
+
+  /// 生成指定 seed 的帧文本（不推进内部计数器）。
+  ///
+  /// LT 编码对同一 seed 是确定性的，因此发送端可以借此**预先**生成
+  /// 未来几帧的文本（再交给 QR 矩阵计算），把耗时移出 setState 的
+  /// 关键路径——帧间隔缩短后仍能保持 UI 流畅。
+  String frameTextFor(int seed) {
+    final symbol = _codec.encode(0, seed);
     return QrTransferFrame(
       info: info,
       seed: symbol.esiOrSeed,
@@ -178,6 +191,7 @@ class QrTransferDecoder {
   LTCodec? _codec;
   int _receivedSymbols = 0;
   int _innovativeSymbols = 0;
+  final Set<int> _submittedSeeds = {};
   QrTransferDecodeResult? _result;
 
   /// 会话信息；收到第一帧后可用。
@@ -208,7 +222,13 @@ class QrTransferDecoder {
     }
 
     final frame = QrTransferFrame.parse(frameText);
+    // 先建立/校验会话：跨会话的帧即使 seed 相同也必须先报不匹配。
     final codec = _ensureCodec(frame.info);
+    // 摄像头停在同一帧画面时可能反复识别出相同符号；重复提交只会
+    // 触发无意义的高斯消元，按 seed 去重跳过（帧率高后收益明显）。
+    if (!_submittedSeeds.add(frame.seed)) {
+      return progress;
+    }
     _receivedSymbols++;
 
     final symbol = Symbol(
