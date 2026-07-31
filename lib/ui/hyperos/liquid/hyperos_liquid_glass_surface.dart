@@ -121,7 +121,7 @@ abstract final class LiquidGlassShaderProbe {
 /// Use this when several sibling surfaces share the same settings (e.g. a
 /// small group of menu tiles). Do **not** wrap a full-screen sparse grid —
 /// the layer allocates a texture for its entire bounds.
-class HyperosLiquidGlassLayer extends StatelessWidget {
+class HyperosLiquidGlassLayer extends StatefulWidget {
   const HyperosLiquidGlassLayer({
     required this.child,
     this.role = HyperosLiquidGlassRole.nestedTile,
@@ -136,13 +136,33 @@ class HyperosLiquidGlassLayer extends StatelessWidget {
   final bool fake;
 
   @override
+  State<HyperosLiquidGlassLayer> createState() =>
+      _HyperosLiquidGlassLayerState();
+}
+
+class _HyperosLiquidGlassLayerState extends State<HyperosLiquidGlassLayer> {
+  @override
+  void initState() {
+    super.initState();
+    // A shared layer is built before its child surfaces can finish probing the
+    // packaged refraction shader. Rebuild the host when the one-shot probe
+    // completes; otherwise the initial `fake: true` decision would stick for
+    // the lifetime of dense course-card/menu hosts even on Impeller devices.
+    LiquidGlassShaderProbe.probeIfNeeded().then((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final tuning = FrostedAppearanceScope.of(context).liquidGlassTuning;
     final resolvedSettings =
-        settings ??
+        widget.settings ??
         HyperosLiquidGlassSurface.settingsForRole(
-          role: role,
+          role: widget.role,
           brightness: brightness,
           tuning: tuning,
         );
@@ -151,8 +171,8 @@ class HyperosLiquidGlassLayer extends StatelessWidget {
       // Opting into fake ourselves on Skia keeps the package from logging a
       // fallback warning on every rebuild. When the refraction shader cannot
       // actually compile (probed once), every layer downgrades to fake too.
-      fake: fake || !LiquidGlassShaderProbe.realRefractionReady,
-      child: child,
+      fake: widget.fake || !LiquidGlassShaderProbe.realRefractionReady,
+      child: widget.child,
     );
   }
 }
