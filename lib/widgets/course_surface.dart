@@ -186,9 +186,7 @@ class CourseSurface extends StatelessWidget {
     // identical while pages slide (no live BackdropFilter) and, because it is a
     // plain bitmap sample, it works even under an isolating ancestor layer.
     final preblur = PreblurredWallpaperScope.maybeOf(context);
-    final glassTintAlpha = _scaledAlpha(
-      (tuning.tintAlpha * 0.70).clamp(0.14, 0.42),
-    );
+    final glassTintAlpha = tuning.tintAlpha.clamp(0.0, 1.0);
     final washAlpha = _scaledAlpha(frostedFillAlpha);
     final highlightAlpha = _scaledAlpha(0.55);
 
@@ -226,11 +224,11 @@ class CourseSurface extends StatelessWidget {
             const Positioned.fill(
               child: RepaintBoundary(child: PreblurredWallpaperAlignedFill()),
             ),
-            // Soft white frost so it still reads as glass over dark photos.
+            // Same glass tint as sheets, headers and popups.
             Positioned.fill(
               child: IgnorePointer(
                 child: ColoredBox(
-                  color: Colors.white.withValues(alpha: glassTintAlpha * 0.55),
+                  color: Colors.white.withValues(alpha: glassTintAlpha),
                 ),
               ),
             ),
@@ -261,7 +259,7 @@ class CourseSurface extends StatelessWidget {
     }
 
     // No pre-blurred wallpaper (settings preview / no wallpaper): use the
-    // package glass. Inside a host the shapes share one faked layer.
+    // package glass. Inside a host the shapes share one liquid-glass layer.
     final usesSharedHost = CourseCardLiquidGlassScope.maybeOf(context) != null;
     final layerMode = usesSharedHost
         ? HyperosLiquidGlassLayerMode.sharedLayer
@@ -278,10 +276,6 @@ class CourseSurface extends StatelessWidget {
                 role: HyperosLiquidGlassRole.courseCard,
                 layerMode: layerMode,
                 borderRadius: borderRadius,
-                // Shared layers carry the tint in their own settings.
-                glassColor: usesSharedHost
-                    ? null
-                    : color.withValues(alpha: glassTintAlpha),
                 contentLegibilityFill: false,
                 child: const SizedBox.expand(),
               ),

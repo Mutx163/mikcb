@@ -1,6 +1,11 @@
+// The Skia fallback intentionally uses the package's internal RawFakeGlass so
+// it can share a BackdropGroup key with the real refraction path.
+// ignore_for_file: implementation_imports, invalid_use_of_internal_member
+
 import 'dart:ui' show ImageFilter, FragmentProgram;
 
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/src/fake_glass.dart' show RawFakeGlass;
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../../models/liquid_glass_tuning.dart';
@@ -40,6 +45,25 @@ enum HyperosLiquidGlassLayerMode {
   ///
   /// Official performance guidance: use for low-impact / multi-instance chrome.
   fake,
+}
+
+/// Paints a no-op grouped backdrop filter before modal dim layers.
+///
+/// The first filter in a [BackdropGroup] caches the backdrop. Placing this
+/// before the dim layer means later liquid glass surfaces in the same group
+/// sample the undimmed page instead of the darkened modal scrim.
+class UndimmedBackdropCapture extends StatelessWidget {
+  const UndimmedBackdropCapture({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: BackdropFilter.grouped(
+        filter: ImageFilter.blur(sigmaX: 0.01, sigmaY: 0.01),
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
 }
 
 /// Runtime shader-support state shared by every liquid-glass surface.
@@ -229,28 +253,8 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     Color? glassColor,
   }) {
     var settings = switch (role) {
-      HyperosLiquidGlassRole.sheet || HyperosLiquidGlassRole.header =>
-        MikcbLiquidGlassTokens.sheetSettingsFor(brightness, tuning: tuning),
-      HyperosLiquidGlassRole.nestedTile =>
-        MikcbLiquidGlassTokens.nestedTileSettingsFor(
-          brightness,
-          tuning: tuning,
-        ),
-      HyperosLiquidGlassRole.courseCard =>
-        MikcbLiquidGlassTokens.courseCardSettingsFor(
-          brightness,
-          tuning: tuning,
-        ),
+      _ => MikcbLiquidGlassTokens.sheetSettingsFor(brightness, tuning: tuning),
     };
-    // Full-width header bars sit flush with the screen top. The package's
-    // default chromatic fringe + top-down light draw a 1px blue hairline on
-    // that edge; kill aberration and soften specular for this role only.
-    if (role == HyperosLiquidGlassRole.header) {
-      settings = settings.copyWith(
-        chromaticAberration: 0,
-        lightIntensity: (settings.lightIntensity * 0.35).clamp(0.0, 0.25),
-      );
-    }
     if (glassColor != null) {
       settings = settings.copyWith(glassColor: glassColor);
     }
@@ -320,7 +324,8 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
           )
         : child;
 
-    var resolvedLayerMode = layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
+    var resolvedLayerMode =
+        layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
     if (resolvedLayerMode == HyperosLiquidGlassLayerMode.ownLayer &&
         !LiquidGlassShaderProbe.realRefractionReady) {
       // sharedLayer needs no handling: the package resolves shapes inside a
@@ -329,7 +334,8 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     }
 
     final Widget liquid = switch (resolvedLayerMode) {
-      HyperosLiquidGlassLayerMode.fake => FakeGlass(
+      HyperosLiquidGlassLayerMode.fake => _buildFakeGlass(
+        context: context,
         shape: shape,
         settings: settings,
         child: glassChild,
@@ -387,6 +393,26 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     );
   }
 
+  static Widget _buildFakeGlass({
+    required BuildContext context,
+    required LiquidShape shape,
+    required LiquidGlassSettings settings,
+    required Widget child,
+  }) {
+    return ClipPath(
+      clipper: ShapeBorderClipper(shape: shape),
+      child: RawFakeGlass(
+        shape: shape,
+        settings: settings,
+        backdropKey: BackdropGroup.of(context)?.backdropKey,
+        child: Opacity(
+          opacity: settings.visibility.clamp(0, 1),
+          child: GlassGlowLayer(child: child),
+        ),
+      ),
+    );
+  }
+
   /// Soft fill under sheet/header content so body text keeps contrast.
   ///
   /// Package README glass tint is only ~20% white — fine for icon chrome over
@@ -399,14 +425,13 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     required Widget child,
   }) {
     final targetFloor = switch (role) {
-      // Large panels with dense labels / lists.
-      HyperosLiquidGlassRole.sheet =>
+      // Every liquid-glass surface uses the same legibility floor so
+      // brightness does not drift between sheets, headers and popups.
+      HyperosLiquidGlassRole.sheet ||
+      HyperosLiquidGlassRole.header ||
+      HyperosLiquidGlassRole.nestedTile =>
         brightness == Brightness.dark ? 0.50 : 0.56,
-      // Titles / icons — slightly lighter so the bar still reads as glass.
-      HyperosLiquidGlassRole.header =>
-        brightness == Brightness.dark ? 0.40 : 0.44,
-      // Small chrome / course cards: caller owns contrast (or pure glass).
-      HyperosLiquidGlassRole.nestedTile ||
+      // Course cards own their hue/contrast through the course wash.
       HyperosLiquidGlassRole.courseCard => null,
     };
     if (targetFloor == null) {

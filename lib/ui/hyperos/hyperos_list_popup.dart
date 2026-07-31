@@ -6,6 +6,7 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
+import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
@@ -139,88 +140,91 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     final isRightAligned = anchorRight > screen.width / 2;
     final originX = isRightAligned ? 1.0 : 0.0;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => Navigator.of(context).pop(),
-          child: AnimatedBuilder(
-            animation: _alpha,
-            builder: (context, _) {
-              final base = HyperosBlurredHeader.modalBarrierColor(context);
-              return ColoredBox(
-                color: base.withValues(
-                  alpha: base.a * _alpha.value.clamp(0.0, 1.0),
-                ),
-              );
-            },
-          ),
-        ),
-        Positioned(
-          top: top,
-          left: isRightAligned
-              ? null
-              : anchorLeft.clamp(margin, screen.width - margin),
-          right: isRightAligned
-              ? (screen.width - anchorRight).clamp(
-                  margin,
-                  screen.width - margin,
-                )
-              : null,
-          child: AnimatedBuilder(
-            animation: _fraction,
-            builder: (context, _) {
-              final fraction = _fraction.value.clamp(0.0, 1.0);
-              final scale = 0.15 + 0.85 * fraction;
-              return Transform.scale(
-                scale: scale,
-                alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
-                child: ClipPath(
-                  clipper: SelectPopupRevealClipper(
-                    progress: fraction,
-                    showBelow: showBelow,
-                    cornerRadius: cornerRadius,
+    return BackdropGroup(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(child: UndimmedBackdropCapture()),
+          // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: AnimatedBuilder(
+              animation: _alpha,
+              builder: (context, _) {
+                final base = HyperosBlurredHeader.modalBarrierColor(context);
+                return ColoredBox(
+                  color: base.withValues(
+                    alpha: base.a * _alpha.value.clamp(0.0, 1.0),
                   ),
-                  child: HyperosSelectPopupGlass(
-                    cornerRadius: cornerRadius,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: 200,
-                        maxWidth: (screen.width - margin * 2).clamp(
-                          200.0,
-                          364.0,
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: top,
+            left: isRightAligned
+                ? null
+                : anchorLeft.clamp(margin, screen.width - margin),
+            right: isRightAligned
+                ? (screen.width - anchorRight).clamp(
+                    margin,
+                    screen.width - margin,
+                  )
+                : null,
+            child: AnimatedBuilder(
+              animation: _fraction,
+              builder: (context, _) {
+                final fraction = _fraction.value.clamp(0.0, 1.0);
+                final scale = 0.15 + 0.85 * fraction;
+                return Transform.scale(
+                  scale: scale,
+                  alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
+                  child: ClipPath(
+                    clipper: SelectPopupRevealClipper(
+                      progress: fraction,
+                      showBelow: showBelow,
+                      cornerRadius: cornerRadius,
+                    ),
+                    child: HyperosSelectPopupGlass(
+                      cornerRadius: cornerRadius,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: 200,
+                          maxWidth: (screen.width - margin * 2).clamp(
+                            200.0,
+                            364.0,
+                          ),
+                          maxHeight: maxHeight,
                         ),
-                        maxHeight: maxHeight,
-                      ),
-                      child: SingleChildScrollView(
-                        child: IntrinsicWidth(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (var i = 0; i < widget.items.length; i++)
-                                _ListPopupTile(
-                                  item: widget.items[i],
-                                  onTap: widget.items[i].enabled
-                                      ? () => Navigator.of(
-                                          context,
-                                        ).pop(widget.items[i].value)
-                                      : null,
-                                ),
-                            ],
+                        child: SingleChildScrollView(
+                          child: IntrinsicWidth(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (var i = 0; i < widget.items.length; i++)
+                                  _ListPopupTile(
+                                    item: widget.items[i],
+                                    onTap: widget.items[i].enabled
+                                        ? () => Navigator.of(
+                                            context,
+                                          ).pop(widget.items[i].value)
+                                        : null,
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

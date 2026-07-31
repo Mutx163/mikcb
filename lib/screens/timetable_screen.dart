@@ -158,6 +158,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// whole semester.
   PageController? _dayViewPageController;
   final Set<PageController> _pendingDayViewControllerDisposals = {};
+
   /// 已实际执行 dispose() 的日视图控制器，用于防止 [_ensureDayViewPageController]
   /// 把已释放的控制器交给 PreblurredWallpaperScope（其 _RenderPreblurredFill
   /// 在 attach 时会对 controller 调 addListener，导致
@@ -464,10 +465,9 @@ class _TimetableScreenState extends State<TimetableScreen>
           }
           if (useCoursePreblur ||
               appearance.glassMode == FrostedGlassMode.liquidGlass) {
-            return ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
-                        .blur *
-                    0.45)
-                .clamp(2.0, 8.0);
+            return (appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
+                .blur
+                .clamp(2.0, 24.0);
           }
           // Gaussian chrome: match the band's BackdropFilter sigma so the
           // summary card's stand-in frost reads like the band above it.
@@ -938,10 +938,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final visibleDays = _visibleDayNumbers(settings);
     final count = visibleDays.length;
     final week = (page ~/ count) + 1;
-    return _DayViewPageTarget(
-      week: week,
-      dayOfWeek: visibleDays[page % count],
-    );
+    return _DayViewPageTarget(week: week, dayOfWeek: visibleDays[page % count]);
   }
 
   PageController _ensureDayViewPageController(TimetableSettings settings) {
@@ -1809,7 +1806,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                 Row(
                   children: visibleDays
                       .map((dayOfWeek) {
-                        final date = _dateForWeekDay(settings, rowWeek, dayOfWeek);
+                        final date = _dateForWeekDay(
+                          settings,
+                          rowWeek,
+                          dayOfWeek,
+                        );
                         final isToday =
                             date != null && _isSameDate(date, DateTime.now());
                         final isSelected = _isSelectedDay(rowWeek, dayOfWeek);
@@ -1826,7 +1827,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                           configuredHex: configuredWeekdayHex,
                           defaultHex: isDark
                               ? TimetableSettings.defaultWeekdayBarFontColorDark
-                              : TimetableSettings.defaultWeekdayBarFontColorLight,
+                              : TimetableSettings
+                                    .defaultWeekdayBarFontColorLight,
                           themeFallback: colorScheme.onSurface,
                           hasBackdrop: hasBackdrop,
                           wallpaperLuminance: _wallpaperTopLuminance,
@@ -1849,11 +1851,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              key: ValueKey('weekday-header-$rowWeek-$dayOfWeek'),
-                              borderRadius: BorderRadius.circular(14),
-                              onTapDown: (details) => _captureDayViewAnchor(
-                                details.globalPosition,
+                              key: ValueKey(
+                                'weekday-header-$rowWeek-$dayOfWeek',
                               ),
+                              borderRadius: BorderRadius.circular(14),
+                              onTapDown: (details) =>
+                                  _captureDayViewAnchor(details.globalPosition),
                               onTap: () => _toggleDayView(
                                 week: rowWeek,
                                 dayOfWeek: dayOfWeek,
@@ -1862,8 +1865,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 180),
                                 curve: Curves.easeOutCubic,
-                                margin: const EdgeInsets.symmetric(horizontal: 1),
-                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 1,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     bottom: BorderSide(
@@ -1966,8 +1973,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                 final rawPage = dayViewPagerPage();
                 final count = visibleDays.length;
                 final totalWeeks = settings.semesterWeekCount;
-                final weekIndex =
-                    (rawPage / count).floor().clamp(0, totalWeeks - 1);
+                final weekIndex = (rawPage / count).floor().clamp(
+                  0,
+                  totalWeeks - 1,
+                );
                 final inWeekPos = rawPage - weekIndex * count;
                 final isCrossing = inWeekPos >= count - 1;
                 final progress = isCrossing
@@ -2063,8 +2072,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   : controller.initialPage.toDouble();
               // Weekday position within the bar's week: the pager is
               // globally continuous, so subtract the week's page offset.
-              final rawDayPosition =
-                  rawPage - (week - 1) * visibleDays.length;
+              final rawDayPosition = rawPage - (week - 1) * visibleDays.length;
               final maxDayIndex = (visibleDays.length - 1).toDouble();
               final clampedDayPosition = rawDayPosition
                   .clamp(0.0, maxDayIndex)
@@ -2955,11 +2963,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                       // Same as the week pager: keep neighbours pre-built so a
                       // swipe never hits an itemBuilder spike mid-gesture.
                       allowImplicitScrolling: true,
-                      onPageChanged: (page) => _handleDayViewPageChanged(
-                        provider,
-                        settings,
-                        page,
-                      ),
+                      onPageChanged: (page) =>
+                          _handleDayViewPageChanged(provider, settings, page),
                       itemBuilder: (context, page) {
                         // 1 Hz progress heartbeat rebuilds only this page's
                         // content (ongoing badges / progress), not the State.
@@ -4030,9 +4035,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     if (item.isExam) {
       if (kDebugMode) {
-        debugPrint(
-          '[DayView] build agenda entry: exam id=${item.exam?.id}',
-        );
+        debugPrint('[DayView] build agenda entry: exam id=${item.exam?.id}');
       }
       return _buildExamAgendaEntry(
         item.exam!,
@@ -7220,10 +7223,7 @@ class _DayViewPageTarget {
   final int week;
   final int dayOfWeek;
 
-  const _DayViewPageTarget({
-    required this.week,
-    required this.dayOfWeek,
-  });
+  const _DayViewPageTarget({required this.week, required this.dayOfWeek});
 }
 
 class _DayCourseDisplayItem {

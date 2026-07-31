@@ -9,10 +9,8 @@ import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 /// card cluster). Cards read this to choose
 /// [HyperosLiquidGlassLayerMode.sharedLayer] instead of per-card layers.
 ///
-/// Presence of this scope is the whole signal: dense course grids always use
-/// the package FakeGlass / shared-backdrop path. Real refraction is reserved
-/// for sparse chrome (sheets / headers) — at course-card density it recreates
-/// N× offscreen work and collapses mid-range FPS (device-measured ~14 FPS).
+/// Presence of this scope is the whole signal: dense course grids share one
+/// liquid-glass layer and one backdrop capture instead of one layer per card.
 class CourseCardLiquidGlassScope extends InheritedWidget {
   const CourseCardLiquidGlassScope({required super.child, super.key});
 
@@ -27,14 +25,12 @@ class CourseCardLiquidGlassScope extends InheritedWidget {
 
 /// Shared liquid-glass host for dense course cards.
 ///
-/// Architecture (device-validated on mid-range Android):
-/// - **One** [LiquidGlassLayer] with `fake: true` for the whole card grid
-///   (shared [BackdropGroup] — O(1) backdrop capture, not O(N)).
-/// - Cards register as [HyperosLiquidGlassLayerMode.sharedLayer] shapes →
-///   [FakeGlass.inLayer] with shared settings.
+/// Architecture:
+/// - **One** [LiquidGlassLayer] for the whole card grid (shared backdrop).
+/// - Cards register as [HyperosLiquidGlassLayerMode.sharedLayer] shapes.
 /// - Course hue stays on per-card wash overlays (independent conflict dim).
-/// - Real Impeller refraction is **not** used for the dense grid: on MediaTek
-///   mid-range devices it measured ~14 FPS with multi-column real layers.
+/// - The shader probe decides whether the dense grid uses real refraction or
+///   fake glass; both paths share one material and one backdrop capture.
 class CourseCardLiquidGlassHost extends StatelessWidget {
   const CourseCardLiquidGlassHost({required this.child, super.key});
 
@@ -49,11 +45,7 @@ class CourseCardLiquidGlassHost extends StatelessWidget {
     return CourseCardLiquidGlassScope(
       child: HyperosLiquidGlassLayer(
         role: HyperosLiquidGlassRole.courseCard,
-        // Shared FakeGlass + BackdropGroup (package recommended dense path).
-        // Real refraction is never used at course-card density: the package
-        // rebuilds its geometry matte with a synchronous toImageSync on every
-        // frame the shapes move (measured ~14 FPS on mid-range MediaTek).
-        fake: true,
+        fake: false,
         child: child,
       ),
     );
@@ -66,8 +58,8 @@ class CourseCardLiquidGlassHost extends StatelessWidget {
 /// drift into different hosting strategies:
 ///
 /// - [CourseCardSurfaceStyle.liquidGlass] → [CourseCardLiquidGlassHost], i.e.
-///   one shared faked [LiquidGlassLayer] (which brings its own [BackdropGroup])
-///   so every card samples a single backdrop capture instead of one each.
+///   one shared [LiquidGlassLayer] so every card samples a single backdrop
+///   capture instead of one each.
 /// - [CourseCardSurfaceStyle.gaussian] → a bare [BackdropGroup], which the
 ///   cards' `BackdropFilter.grouped` then shares.
 /// - Opaque styles need no host at all.

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 
 double _maxMenuTitleHeight({
   required List<String> titles,
@@ -231,8 +232,11 @@ class _HomeMenuActionTile extends StatelessWidget {
     final highlightColor = accentColor ?? colorScheme.primary;
     const iconWellRadius = BorderRadius.all(Radius.circular(14));
 
-    return HyperosFrostedSurface(
-      borderRadius: HyperosTheme.cardBorderRadius,
+    return HyperosLiquidGlassSurface(
+      role: HyperosLiquidGlassRole.nestedTile,
+      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
+      instantUnderlay: true,
+      useAncestorBackdropGroup: true,
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(

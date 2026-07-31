@@ -244,6 +244,7 @@ class HyperosSheetFrame extends StatelessWidget {
         role: HyperosLiquidGlassRole.sheet,
         borderRadius: borderRadius.topLeft.x,
         instantUnderlay: true,
+        useAncestorBackdropGroup: true,
         child: const SizedBox.expand(),
       );
     }
@@ -289,6 +290,7 @@ class HyperosSheetFrame extends StatelessWidget {
           role: HyperosLiquidGlassRole.sheet,
           borderRadius: borderRadius.topLeft.x,
           instantUnderlay: true,
+          useAncestorBackdropGroup: true,
           child: content,
         ),
       );
@@ -554,7 +556,9 @@ Future<T?> showHyperosSheet<T>({
     context: context,
     barrierDismissible: isDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: dimColor,
+    // The dim is painted inside the page below the glass so the modal can
+    // cache an undimmed backdrop before any scrim is composited.
+    barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
     useRootNavigator: useRootNavigator,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
@@ -572,13 +576,33 @@ Future<T?> showHyperosSheet<T>({
           ? _DragDismissableSheet(child: sheetContent)
           : sheetContent;
 
-      return _SheetSlideUp(
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: keyboardInset),
-            child: sheet,
-          ),
+      return BackdropGroup(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Positioned.fill(child: UndimmedBackdropCapture()),
+            if (isDismissible)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(dialogContext).maybePop(),
+                ),
+              ),
+            Positioned.fill(
+              child: IgnorePointer(child: ColoredBox(color: dimColor)),
+            ),
+            Positioned.fill(
+              child: _SheetSlideUp(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: keyboardInset),
+                    child: sheet,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     },
@@ -606,9 +630,6 @@ Future<T?> showHomeHyperosSheet<T>({
     padForKeyboard: padForKeyboard,
     chrome: chrome,
     barrierColor:
-        barrierColor ??
-        Colors.black.withValues(
-          alpha: HyperosBlurredHeader.sheetBarrierAlphaOf(context),
-        ),
+        barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context),
   );
 }

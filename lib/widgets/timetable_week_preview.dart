@@ -1274,9 +1274,8 @@ class _PreviewChromeGlassBand extends StatelessWidget {
     // matches the band's BackdropFilter sigma; liquid glass approximates the
     // shader's softer blur (see homePreblurSigma in timetable_screen.dart).
     final sigma = appearance.glassMode == FrostedGlassMode.liquidGlass
-        ? ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur *
-                  0.45)
-              .clamp(2.0, 8.0)
+        ? (appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur
+              .clamp(2.0, 24.0)
               .toDouble()
         : HyperosBlurredHeader.blurSigmaOf(context);
     final image = useBlur && sigma > 0

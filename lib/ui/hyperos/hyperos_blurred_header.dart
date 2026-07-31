@@ -11,6 +11,7 @@ export 'frosted/frosted_header_background.dart'
 // HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
+import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Scope for pages that overlay a frosted [FHeader] on scrollable content.
 class HyperosBlurredHeaderScope extends InheritedWidget {
@@ -299,6 +300,16 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
     final tint = useBlur
         ? HyperosBlurredHeader.tintColor(context, withBlur: true)
         : atRestColor;
+
+    if (useBlur &&
+        FrostedAppearanceScope.of(context).glassMode ==
+            FrostedGlassMode.liquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.header,
+        instantUnderlay: true,
+        child: child,
+      );
+    }
 
     return HyperosFrostedHeaderShell(
       blurEnabled: useBlur,

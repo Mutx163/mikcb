@@ -257,39 +257,14 @@ class LiquidGlassTuning {
     );
   }
 
-  /// Slightly thinner variant for nested menu tiles over a liquid sheet.
-  ///
-  /// Only the package README primary knobs are reduced; lighting/refraction
-  /// stay at the same values as the parent sheet settings.
+  /// Same material as sheets; nested tiles no longer scale the primary knobs.
   LiquidGlassSettings toNestedTileSettings({required Brightness brightness}) {
-    final sheet = toSheetSettings(brightness: brightness);
-    return sheet.copyWith(
-      thickness: (thickness * 0.70).clamp(minThickness, maxThickness),
-      blur: (blur * 0.80).clamp(minBlur, maxBlur),
-      glassColor: brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: (tintAlpha * 0.70).clamp(0.0, 1.0))
-          : Colors.white.withValues(alpha: (tintAlpha * 0.80).clamp(0.0, 1.0)),
-    );
+    return toSheetSettings(brightness: brightness);
   }
 
-  /// Lightweight settings for dense timetable course-card grids.
-  ///
-  /// Scales the three primary knobs down hard and zeros chromatic aberration so
-  /// multi-instance [FakeGlass] / shared-layer cards stay cheap.
+  /// Same material as sheets; course cards no longer get a separate glass look.
   LiquidGlassSettings toCourseCardSettings({required Brightness brightness}) {
-    final sheet = toSheetSettings(brightness: brightness);
-    final cardTintAlpha = brightness == Brightness.dark
-        ? (tintAlpha * 0.55).clamp(0.10, 0.36)
-        : (tintAlpha * 0.65).clamp(0.12, 0.40);
-    return sheet.copyWith(
-      thickness: (thickness * 0.55).clamp(8.0, 18.0),
-      blur: (blur * 0.45).clamp(2.0, 8.0),
-      glassColor: Colors.white.withValues(alpha: cardTintAlpha),
-      chromaticAberration: 0,
-      lightIntensity: (lightIntensity * 0.70).clamp(0.15, 0.55),
-      ambientStrength: 0,
-      saturation: (saturation * 0.85).clamp(1.0, 1.35),
-    );
+    return toSheetSettings(brightness: brightness);
   }
 
   Map<String, dynamic> toJson() => {

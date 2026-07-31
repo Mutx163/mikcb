@@ -206,7 +206,6 @@ Future<int?> showAppSingleChoiceDialog(
 
   return showHyperosSheet<int>(
     context: context,
-    barrierColor: HyperosColors.windowDimming(context),
     builder: (sheetContext) {
       return StatefulBuilder(
         builder: (context, setState) {
