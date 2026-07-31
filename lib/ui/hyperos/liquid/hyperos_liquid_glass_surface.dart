@@ -69,25 +69,25 @@ abstract final class LiquidGlassShaderProbe {
       return;
     }
     try {
-      // Compile every shader the package actually loads through its
-      // ShaderBuilder paths. A single failure means real refraction would
-      // crash later, so we downgrade everything to FakeGlass instead.
-      const shaderAssets = [
+      // 只探测弹窗/header 主渲染路径实际使用的 final_render shader。
+      // 其余 shader（glassify / geometry_blended / filter）只服务于单独的
+      // glassify / 多形状混合功能，与 HyperosLiquidGlassSurface 无关；
+      // 它们编译失败（例如本机 Vulkan 下的 SkSL 不兼容）不应连累弹窗降级。
+      await FragmentProgram.fromAsset(
         'packages/liquid_glass_renderer/lib/assets/shaders/'
-            'liquid_glass_final_render.frag',
-        'packages/liquid_glass_renderer/lib/assets/shaders/'
-            'liquid_glass_filter.frag',
-        'packages/liquid_glass_renderer/lib/assets/shaders/'
-            'liquid_glass_geometry_blended.frag',
-        'packages/liquid_glass_renderer/lib/assets/shaders/'
-            'liquid_glass_arbitrary.frag',
-      ];
-      for (final assetKey in shaderAssets) {
-        await FragmentProgram.fromAsset(assetKey);
-      }
+        'liquid_glass_final_render.frag',
+      );
       _realRefractionReady = true;
+      debugPrint(
+        '[LiquidGlassProbe] real refraction shader OK '
+        '(final_render.frag compiled)',
+      );
     } catch (_) {
       _realRefractionReady = false;
+      debugPrint(
+        '[LiquidGlassProbe] real refraction UNAVAILABLE, '
+        'falling back to FakeGlass',
+      );
     }
   }
 }
