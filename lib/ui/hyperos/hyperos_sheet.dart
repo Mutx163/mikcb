@@ -290,6 +290,11 @@ const double _kDismissFraction = 0.3;
 /// Wraps the sheet content (not the full-screen Align) so that the
 /// [LayoutBuilder] measures the actual sheet height, enabling the
 /// distance-based dismiss threshold.
+///
+/// Dragging only translates the panel — the sheet never fades out. An
+/// `Opacity` layer here would degrade frosted [BackdropFilter] / liquid glass
+/// shaders (the same reason [_SheetSlideUp] avoids animated Opacity), showing
+/// as transparency flicker while the panel is dragged down.
 class _DragDismissableSheet extends StatefulWidget {
   const _DragDismissableSheet({required this.child});
 
@@ -301,7 +306,13 @@ class _DragDismissableSheet extends StatefulWidget {
 
 class _DragDismissableSheetState extends State<_DragDismissableSheet>
     with SingleTickerProviderStateMixin {
-  double _dragOffset = 0.0;
+  /// Pixel offset the sheet has been dragged down (0 = at rest).
+  ///
+  /// A [ValueNotifier] instead of `setState`: dragging would otherwise rebuild
+  /// the whole frosted / liquid glass subtree on every pointer move. The
+  /// notifier only rebuilds the [Transform.translate] layer while the sheet
+  /// subtree stays mounted untouched (same pattern as [HyperosPage]).
+  final _dragOffset = ValueNotifier<double>(0);
   double _sheetHeight = 0.0;
 
   late AnimationController _resetController;
@@ -325,19 +336,18 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
     _resetAnimation.removeListener(_onResetTick);
     _resetCurve.dispose();
     _resetController.dispose();
+    _dragOffset.dispose();
     super.dispose();
   }
 
   void _onResetTick() {
-    setState(() => _dragOffset = _resetAnimation.value);
+    _dragOffset.value = _resetAnimation.value;
   }
 
   void _onVerticalDragUpdate(DragUpdateDetails details) {
     final dy = details.primaryDelta ?? 0;
-    if (dy > 0 || _dragOffset > 0) {
-      setState(
-        () => _dragOffset = (_dragOffset + dy).clamp(0.0, double.infinity),
-      );
+    if (dy > 0 || _dragOffset.value > 0) {
+      _dragOffset.value = (_dragOffset.value + dy).clamp(0.0, double.infinity);
     }
   }
 
@@ -346,14 +356,15 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
 
     // Dismiss if velocity or distance exceeds threshold.
     if (velocity > _kDismissVelocity ||
-        (_sheetHeight > 0 && _dragOffset > _sheetHeight * _kDismissFraction)) {
+        (_sheetHeight > 0 &&
+            _dragOffset.value > _sheetHeight * _kDismissFraction)) {
       Navigator.of(context).pop();
       return;
     }
 
     // Animate back to origin.
-    if (_dragOffset > 0) {
-      final startOffset = _dragOffset;
+    if (_dragOffset.value > 0) {
+      final startOffset = _dragOffset.value;
       _resetController.stop();
       _resetAnimation.removeListener(_onResetTick);
       _resetAnimation = Tween<double>(
@@ -378,16 +389,21 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
         _sheetHeight = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height * 0.5;
-        final progress = _sheetHeight > 0
-            ? (_dragOffset / _sheetHeight).clamp(0.0, 1.0)
-            : 0.0;
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
           onVerticalDragUpdate: _onVerticalDragUpdate,
           onVerticalDragEnd: _onVerticalDragEnd,
-          child: Transform.translate(
-            offset: Offset(0, _dragOffset),
-            child: Opacity(opacity: 1.0 - progress * 0.4, child: widget.child),
+          child: ValueListenableBuilder<double>(
+            valueListenable: _dragOffset,
+            // Kept outside the builder so the sheet subtree (frosted glass /
+            // liquid glass shaders) never rebuilds while dragging.
+            child: widget.child,
+            builder: (context, dragOffset, child) {
+              return Transform.translate(
+                offset: Offset(0, dragOffset),
+                child: child,
+              );
+            },
           ),
         );
       },
@@ -416,10 +432,7 @@ class _SheetSlideUpState extends State<_SheetSlideUp>
   late final Animation<Offset> _slide = Tween<Offset>(
     begin: const Offset(0, 0.3),
     end: Offset.zero,
-  ).animate(CurvedAnimation(
-    parent: _controller,
-    curve: Curves.easeOutCubic,
-  ));
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
   @override
   void initState() {
@@ -435,10 +448,7 @@ class _SheetSlideUpState extends State<_SheetSlideUp>
 
   @override
   Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slide,
-      child: widget.child,
-    );
+    return SlideTransition(position: _slide, child: widget.child);
   }
 }
 
