@@ -1,30 +1,31 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/painting.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// 从系统相册挑选一张图片并复制到应用文档目录，返回新文件的绝对路径。
+///
+/// 返回 null 表示用户取消选择或读取失败。相册选择走系统 Photo Picker /
+/// 系统相册界面，无需申请存储权限。
 Future<String?> pickAndStoreManagedImage({
   required String directoryName,
   required String filePrefix,
 }) async {
-  final result = await FilePicker.pickFiles(
-    type: FileType.image,
-    withData: true,
-  );
-  if (result == null || result.files.isEmpty) {
+  final XFile? pickedImage;
+  try {
+    pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+  } on Exception {
     return null;
   }
-  final file = result.files.single;
-  final bytes =
-      file.bytes ??
-      (file.path == null ? null : await File(file.path!).readAsBytes());
-  if (bytes == null || bytes.isEmpty) {
+  if (pickedImage == null) {
     return null;
   }
-  final ext = (file.extension?.isNotEmpty ?? false)
-      ? file.extension!.toLowerCase()
-      : 'png';
+  final bytes = await pickedImage.readAsBytes();
+  if (bytes.isEmpty) {
+    return null;
+  }
+  final ext = _extensionOf(pickedImage);
   final dir = await getApplicationDocumentsDirectory();
   final targetDir = Directory(
     '${dir.path}${Platform.pathSeparator}$directoryName',
@@ -43,6 +44,24 @@ Future<String?> pickAndStoreManagedImage({
   );
   PaintingBinding.instance.imageCache.evict(FileImage(File(targetPath)));
   return targetPath;
+}
+
+/// 从所选文件的文件名或路径中提取小写扩展名，取不到时回退为 png。
+String _extensionOf(XFile pickedImage) {
+  for (final fileName in [pickedImage.name, pickedImage.path]) {
+    if (fileName.isEmpty) {
+      continue;
+    }
+    final baseName = fileName.split('/').last.split('\\').last;
+    if (!baseName.contains('.')) {
+      continue;
+    }
+    final candidate = baseName.split('.').last.toLowerCase();
+    if (candidate.isNotEmpty && candidate.length <= 5) {
+      return candidate;
+    }
+  }
+  return 'png';
 }
 
 Future<void> _deleteManagedImageArtifacts({

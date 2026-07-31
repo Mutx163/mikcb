@@ -45,6 +45,7 @@ dependencies:
   flutter_blackbox: ^0.7.0
   fountain_codes: ^1.0.0
   mobile_scanner: ^7.4.0
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:
