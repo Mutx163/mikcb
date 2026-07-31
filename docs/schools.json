@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-30T04:37:08+00:00",
+  "updatedAt": "2026-07-31T05:02:56+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 131,
-    "schools": 126,
+    "total": 132,
+    "schools": 127,
     "generic": 5
   },
   "schools": [
@@ -237,6 +237,13 @@
       "name": "福建船政交通职业学院",
       "initial": "F",
       "resourceFolder": "FJCPC",
+      "category": "school"
+    },
+    {
+      "id": "GDOU",
+      "name": "广东海洋大学",
+      "initial": "G",
+      "resourceFolder": "GDOU",
       "category": "school"
     },
     {
