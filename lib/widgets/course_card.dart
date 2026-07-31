@@ -151,17 +151,13 @@ class CourseCard extends StatelessWidget {
                               course.startSection,
                               course.endSection,
                             ),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: titleColor,
-                            ),
+                            style: TextStyle(fontSize: 12, color: titleColor),
                           ),
                         ),
                       ),
                   ],
                 ),
-              if (showName && detailLines.isNotEmpty)
-                const SizedBox(height: 8),
+              if (showName && detailLines.isNotEmpty) const SizedBox(height: 8),
               ...detailLines,
             ],
           ),
@@ -176,10 +172,7 @@ class CourseCard extends StatelessWidget {
           Positioned(
             top: 8,
             right: 8,
-            child: _buildBadgeRow(
-              context,
-              customBadgeText: topRightBadgeText,
-            ),
+            child: _buildBadgeRow(context, customBadgeText: topRightBadgeText),
           ),
         if (isHoliday && topRightBadgeText == null)
           Positioned(
@@ -224,10 +217,7 @@ class CourseCard extends StatelessWidget {
         solidGradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: 0.9),
-            color.withValues(alpha: 0.7),
-          ],
+          colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.7)],
         ),
         outerShadow: isHighlighted
             ? [

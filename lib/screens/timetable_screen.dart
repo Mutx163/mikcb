@@ -5,7 +5,8 @@ import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart' show VelocityTracker, kMinFlingVelocity;
+import 'package:flutter/gestures.dart'
+    show Drag, VelocityTracker, kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
@@ -196,12 +197,30 @@ class _TimetableScreenState extends State<TimetableScreen>
         takeRescueVelocity: _takeDayPagerRescueVelocity,
         parent: const ClampingScrollPhysics(),
       );
+
+  /// Live handle bridging weekday-bar drags into the day pager, so the bar
+  /// scrubs the pager follow-finger instead of snapping a week on release.
+  /// Nulled via the position's onDragCanceled when the pager disposes the
+  /// drag activity mid-gesture (e.g. the cross-week boundary handoff swaps
+  /// controllers).
+  Drag? _weekdayBarDrag;
+
+  /// Bar→pager amplification captured at drag start: the bar spans a whole
+  /// week, so sweeping its width must carry the pager across every visible
+  /// day (7 pages with weekends shown, 5 without).
+  double _weekdayBarDragScale = 1;
   int? _selectedDayOfWeek;
   int? _selectedWeekForDayView;
   int? _dayViewTransitionSourceWeek;
   int? _dayViewTransitionSourceDayOfWeek;
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
+
+  /// True while an adjacent-week boundary crossing is gliding its incoming
+  /// pager one page into the entry day. Guards [_syncDayViewPageWithSelection]
+  /// so the build-time resync can't jumpToPage the controller straight to the
+  /// entry day and swallow the glide.
+  bool _dayViewBoundaryGliding = false;
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
   static const int _sharedFreeVisibleSegmentLimit = 2;
@@ -437,7 +456,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           }
           if (useCoursePreblur ||
               appearance.glassMode == FrostedGlassMode.liquidGlass) {
-            return ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur * 0.45).clamp(2.0, 8.0);
+            return ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
+                        .blur *
+                    0.45)
+                .clamp(2.0, 8.0);
           }
           // Gaussian chrome: match the band's BackdropFilter sigma so the
           // summary card's stand-in frost reads like the band above it.
@@ -1009,6 +1031,44 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewPageControllers[week] = PageController(initialPage: targetPage);
   }
 
+  void _placeDayViewControllerAtPage(int week, int page) {
+    final existing = _dayViewPageControllers[week];
+    if (existing != null) {
+      _disposeDayViewControllerAfterReplacement(existing);
+    }
+    _dayViewPageControllers[week] = PageController(initialPage: page);
+  }
+
+  /// Continues a boundary crossing as a one-page glide into the entry day.
+  ///
+  /// The incoming week's pager was seeded on the edge page we arrived from
+  /// (same content as the page the finger just left), so animating it to the
+  /// entry day reads as uninterrupted horizontal motion instead of the old
+  /// stop-then-snap.
+  void _startDayViewBoundaryGlide(int week, int entryPage) {
+    _dayViewBoundaryGliding = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final controller = _dayViewPageControllers[week];
+      final atEntry =
+          controller != null &&
+          controller.hasClients &&
+          (controller.page?.round() ?? controller.initialPage) == entryPage;
+      if (mounted && controller != null && controller.hasClients && !atEntry) {
+        try {
+          await controller.animateToPage(
+            entryPage,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+          );
+        } catch (_) {
+          // Position can be detached/replaced under a rapid re-crossing; the
+          // build-time resync then lands the entry day, so nothing to do.
+        }
+      }
+      _dayViewBoundaryGliding = false;
+    });
+  }
+
   int _displayedDayForWeek(int week) {
     if (_dayViewTransitionSourceWeek == week &&
         _dayViewTransitionSourceDayOfWeek != null) {
@@ -1019,6 +1079,10 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   void _syncDayViewPageWithSelection(TimetableSettings settings, int week) {
     if (_isSyncingDayViewPage) {
+      return;
+    }
+    // A boundary glide owns the pager position for one page; leave it alone.
+    if (_dayViewBoundaryGliding) {
       return;
     }
     if (_dayViewTransitionSourceWeek == week) {
@@ -1107,13 +1171,32 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
+    final sourceWeek = _selectedWeekForDayView!;
+    // A single-step boundary crossing (the pager reaching an edge page during
+    // a fling/scrub) should read as one continuous glide into the neighbour
+    // week, not a hard stop-and-jump. Seed the incoming week's pager on the
+    // edge page we arrived from, then animate it one page to the entry day.
+    final glideBoundary =
+        !animateWeekPage && (normalizedTargetWeek - sourceWeek).abs() == 1;
+    final entryPage = _dayViewPageIndexForDay(
+      settings,
+      normalizedTargetWeek,
+      targetDayOfWeek,
+    );
+    final glideStartPage =
+        entryPage + (normalizedTargetWeek > sourceWeek ? -1 : 1);
+
     _isDaySwipeAnimating = true;
     try {
-      _prepareDayViewPageController(
-        settings,
-        normalizedTargetWeek,
-        targetDayOfWeek,
-      );
+      if (glideBoundary) {
+        _placeDayViewControllerAtPage(normalizedTargetWeek, glideStartPage);
+      } else {
+        _prepareDayViewPageController(
+          settings,
+          normalizedTargetWeek,
+          targetDayOfWeek,
+        );
+      }
       _dayHeaderPreview.value = null;
       setState(() {
         _dayViewTransitionSourceWeek = _selectedWeekForDayView;
@@ -1147,6 +1230,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         _dayViewTransitionSourceWeek = null;
         _dayViewTransitionSourceDayOfWeek = null;
       });
+      if (glideBoundary) {
+        _startDayViewBoundaryGlide(normalizedTargetWeek, entryPage);
+      }
     } finally {
       _isDaySwipeAnimating = false;
     }
@@ -1252,6 +1338,72 @@ class _TimetableScreenState extends State<TimetableScreen>
       mode: TimetableHomeViewMode.day,
       dayOfWeek: target.dayOfWeek,
     );
+  }
+
+  /// Weekday-bar drag → day-pager bridge. The bar acts as a visible-day-count
+  /// (7x) scrubber over the day pager: bar deltas are amplified and injected
+  /// straight into the pager's ScrollPosition, so the content follows the
+  /// finger at week-per-bar-width speed while the bar itself moves slowly.
+  void _startWeekdayBarDrag(
+    TimetableSettings settings,
+    int week,
+    DragStartDetails details,
+  ) {
+    _weekdayBarDrag?.cancel();
+    _weekdayBarDrag = null;
+    if (_isDaySwipeAnimating) {
+      return;
+    }
+    final controller = _dayViewPageControllers[week];
+    if (controller == null || !controller.hasClients) {
+      return;
+    }
+    _weekdayBarDragScale = _visibleDayNumbers(settings).length.toDouble();
+    _weekdayBarDrag = controller.position.drag(details, () {
+      _weekdayBarDrag = null;
+    });
+  }
+
+  void _updateWeekdayBarDrag(DragUpdateDetails details) {
+    final drag = _weekdayBarDrag;
+    if (drag == null) {
+      return;
+    }
+    final dx =
+        (details.primaryDelta ?? details.delta.dx) * _weekdayBarDragScale;
+    drag.update(
+      DragUpdateDetails(
+        sourceTimeStamp: details.sourceTimeStamp,
+        delta: Offset(dx, 0),
+        primaryDelta: dx,
+        globalPosition: details.globalPosition,
+        localPosition: details.localPosition,
+      ),
+    );
+  }
+
+  void _endWeekdayBarDrag(DragEndDetails details) {
+    final drag = _weekdayBarDrag;
+    _weekdayBarDrag = null;
+    if (drag == null) {
+      return;
+    }
+    // Release velocity is amplified like the deltas, then the pager's own
+    // snap physics (_dayPagerPhysics) settles it — same pipeline as a direct
+    // content fling, so midpoint preview / ScrollEnd commit stay intact.
+    final vx = details.velocity.pixelsPerSecond.dx * _weekdayBarDragScale;
+    drag.end(
+      DragEndDetails(
+        velocity: Velocity(pixelsPerSecond: Offset(vx, 0)),
+        primaryVelocity: vx,
+      ),
+    );
+  }
+
+  void _cancelWeekdayBarDrag() {
+    final drag = _weekdayBarDrag;
+    _weekdayBarDrag = null;
+    drag?.cancel();
   }
 
   /// One-shot read of the armed rescue velocity for [_dayPagerPhysics].
@@ -1743,7 +1895,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                                     horizontal: 1,
                                   ),
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
+                                    vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
                                     border: Border(
@@ -2348,8 +2500,11 @@ class _TimetableScreenState extends State<TimetableScreen>
               week: visibleDayViewWeek,
             ),
           ),
-        // Swipeable weekday bar: when day view is open, horizontal drags on
-        // the weekday bar area switch the day view to the prev/next week.
+        // Swipeable weekday bar: when day view is open, the bar is a
+        // follow-finger scrubber over the day pager — drags are amplified by
+        // the visible-day count and injected into the pager position, so one
+        // bar-width sweep flies the content across the whole week
+        // (see _startWeekdayBarDrag).
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned(
             top: 0,
@@ -2357,24 +2512,13 @@ class _TimetableScreenState extends State<TimetableScreen>
             right: 0,
             height: _weekDayHeaderHeight,
             child: GestureDetector(
+              key: const ValueKey('day-view-weekday-bar-swipe-area'),
               behavior: HitTestBehavior.translucent,
-              onHorizontalDragEnd: (details) {
-                final velocity = details.primaryVelocity;
-                if (velocity == null || velocity == 0) return;
-                final direction = velocity < 0 ? 1 : -1;
-                final currentWeek = visibleDayViewWeek;
-                final targetWeek = (currentWeek + direction).clamp(
-                  1,
-                  settings.semesterWeekCount,
-                );
-                if (targetWeek == currentWeek) return;
-                _animateDayViewToWeek(
-                  provider,
-                  settings,
-                  targetWeek,
-                  _displayedDayForWeek(targetWeek),
-                );
-              },
+              onHorizontalDragStart: (details) =>
+                  _startWeekdayBarDrag(settings, visibleDayViewWeek, details),
+              onHorizontalDragUpdate: _updateWeekdayBarDrag,
+              onHorizontalDragEnd: _endWeekdayBarDrag,
+              onHorizontalDragCancel: _cancelWeekdayBarDrag,
             ),
           ),
       ],

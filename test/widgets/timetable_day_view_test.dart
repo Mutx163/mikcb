@@ -1737,6 +1737,71 @@ void main() {
     await _pumpFiniteFrames(tester, count: 10);
   });
 
+  testWidgets('weekday bar drag scrubs day view follow-finger at 7x speed', (
+    tester,
+  ) async {
+    final provider = await _createProviderWithTodayCourse(tester);
+    final today = DateTime.now();
+    // Keep two full days of headroom inside the current week so the
+    // amplified drag never reaches a cross-week boundary page.
+    final swipesToNextDay = today.weekday <= 4;
+    final expectedDay = swipesToNextDay
+        ? today.weekday + 2
+        : today.weekday - 2;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    final indicatorFinder = find.byKey(
+      const ValueKey('weekday-selection-indicator-1'),
+    );
+    expect(indicatorFinder, findsOneWidget);
+    final startX = tester.getCenter(indicatorFinder).dx;
+
+    final barFinder = find.byKey(
+      const ValueKey('day-view-weekday-bar-swipe-area'),
+    );
+    final gesture = await tester.startGesture(tester.getCenter(barFinder));
+    final step = swipesToNextDay ? const Offset(-60, 0) : const Offset(60, 0);
+    for (var i = 0; i < 4; i++) {
+      await gesture.moveBy(step);
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    // Follow-finger: the pager (and its header indicator) already moves while
+    // the finger is still down on the bar — the old bar gesture only reacted
+    // on release.
+    final movedX = tester.getCenter(indicatorFinder).dx;
+    if (swipesToNextDay) {
+      expect(movedX, greaterThan(startX));
+    } else {
+      expect(movedX, lessThan(startX));
+    }
+
+    await gesture.up();
+    await _pumpFiniteFrames(tester, count: 12);
+
+    // Amplification: a ~240px bar drag (well under half the bar width) must
+    // carry the pager across two whole day pages (7x scale), not one.
+    expect(
+      find.byKey(ValueKey('timetable-day-view-1-$expectedDay')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('day view content swipe can continue across multiple weekdays', (
     tester,
   ) async {
