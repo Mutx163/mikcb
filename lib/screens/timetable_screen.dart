@@ -2980,6 +2980,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int page,
   }) {
     final target = _dayViewTargetForPage(settings, page);
+    if (kDebugMode) {
+      debugPrint(
+        '[DayView] build page=$page -> week=${target.week} '
+        'day=${target.dayOfWeek}',
+      );
+    }
     final selectedDate = _dateForWeekDay(
       settings,
       target.week,
@@ -3037,6 +3043,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         .where((item) => item.isScheduleItem)
         .map((item) => item.scheduleItem!)
         .toList(growable: false);
+    if (kDebugMode) {
+      debugPrint(
+        '[DayView] page=$page items: courses=${displayItems.length} '
+        'agenda=${agendaItems.length} schedule=${scheduleItems.length}',
+      );
+    }
     final isActivePage =
         target.week == _selectedWeekForDayView &&
         target.dayOfWeek == _selectedDayOfWeek;
@@ -4003,16 +4015,32 @@ class _TimetableScreenState extends State<TimetableScreen>
     required _DayAgendaItem item,
   }) {
     if (item.isExam) {
+      if (kDebugMode) {
+        debugPrint(
+          '[DayView] build agenda entry: exam id=${item.exam?.id}',
+        );
+      }
       return _buildExamAgendaEntry(
         item.exam!,
         provider: context.read<TimetableProvider>(),
       );
     }
     if (item.isScheduleItem) {
+      if (kDebugMode) {
+        debugPrint(
+          '[DayView] build agenda entry: schedule id=${item.scheduleItem?.id}',
+        );
+      }
       return _buildScheduleAgendaEntry(item, settings: settings);
     }
 
     final courseItem = item.courseItem!;
+    if (kDebugMode) {
+      debugPrint(
+        '[DayView] build agenda entry: course id=${courseItem.course.id} '
+        'name=${courseItem.course.name}',
+      );
+    }
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;

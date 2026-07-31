@@ -129,6 +129,14 @@ Future<void> main() async {
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
       FlutterError.onError = (details) {
+        // Debug 构建下 presentError 会把异常重新抛进 zone，中断当前帧导致
+        // UI 卡死但"看起来没报错"。这里强制落盘（force: true），并同步
+        // 打印到终端，方便定位这类「卡死无响应」的框架异常。
+        debugPrint(
+          '[FlutterError.onError] ${details.exceptionAsString()}\n'
+          '${details.stack ?? StackTrace.current}',
+        );
+        // 仍保留默认呈现，让开发者工具/IDE 也能看到异常。
         FlutterError.presentError(details);
         final stackTrace = details.stack ?? StackTrace.current;
         unawaited(
@@ -137,6 +145,7 @@ Future<void> main() async {
             details.exceptionAsString(),
             error: details.exception,
             stackTrace: stackTrace,
+            force: true,
           ),
         );
         unawaited(
