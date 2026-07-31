@@ -250,9 +250,12 @@ class TimetableSettingsScreen extends StatelessWidget {
         return ListenableBuilder(
           listenable: HyperosLayoutTuningController.instance,
           builder: (context, _) {
-            // Settings home: HyperOS collapsible large title + frosted chrome.
-            return _MiuixSettingsHomeShell(
-              title: l10n.settingsTitle,
+            // Settings home: same HyperosSubpage shell as every subpage —
+            // unified collapsible large title + frosted/liquid-glass chrome.
+            // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
+            // opaque background OVER its frost layer, so blur never showed.)
+            return HyperosSubpage(
+              title: Text(l10n.settingsTitle),
               onBack: () => Navigator.pop(context),
               child: HyperosListView(
                 // Inset lives inside the scrollable (like HyperosSubpage) so
@@ -612,174 +615,6 @@ class TimetableSettingsScreen extends StatelessWidget {
         ],
       ),
     };
-  }
-}
-
-/// Settings home chrome: HyperOS collapsible large title + frosted overlay.
-///
-/// Uses the in-house [HyperosCollapsibleTopAppBar] (Miuix algorithm port) so
-/// title ink stays pinned after style lerp — flutter_miuix TopAppBar was
-/// black/white flashing on every collapse frame via TextStyle.lerp.
-class _MiuixSettingsHomeShell extends StatefulWidget {
-  const _MiuixSettingsHomeShell({
-    required this.title,
-    required this.onBack,
-    required this.child,
-  });
-
-  final String title;
-  final VoidCallback onBack;
-  final Widget child;
-
-  @override
-  State<_MiuixSettingsHomeShell> createState() =>
-      _MiuixSettingsHomeShellState();
-}
-
-class _MiuixSettingsHomeShellState extends State<_MiuixSettingsHomeShell> {
-  final _scrollBehavior = HyperosExitUntilCollapsedScrollBehavior(
-    requireOuterScrollable: false,
-  );
-
-  /// False while the list is at rest under the large title (solid page bg).
-  /// True once rows scroll under the bar (frosted / liquid glass).
-  ///
-  /// Held in a [ValueNotifier] so only the backdrop rebuilds — never the
-  /// collapsible title bar (avoids mid-expand flash).
-  final ValueNotifier<bool> _contentUnderHeader = ValueNotifier<bool>(false);
-
-  static const Duration _headerFrostFadeDuration = Duration(milliseconds: 180);
-
-  @override
-  void dispose() {
-    _contentUnderHeader.dispose();
-    super.dispose();
-  }
-
-  bool _onBodyScrollNotification(ScrollNotification notification) {
-    if (notification.metrics.axis != Axis.vertical) {
-      return false;
-    }
-    if (notification.metrics.axisDirection == AxisDirection.left ||
-        notification.metrics.axisDirection == AxisDirection.right) {
-      return false;
-    }
-    if (notification is! ScrollUpdateNotification &&
-        notification is! OverscrollNotification &&
-        notification is! ScrollEndNotification) {
-      return false;
-    }
-    _scrollBehavior.handleScroll(notification);
-
-    // Don't toggle frost during snap animation or its 800ms cooldown — pixels
-    // oscillate around the endpoint and would flip _contentUnderHeader → flash.
-    if (_scrollBehavior.isSnapInProgress || _scrollBehavior.isSnapCooldown) {
-      return false;
-    }
-
-    final pixels = notification.metrics.pixels;
-    // Frost only after the large title is fully collapsed (small title settled).
-    // During the large-title tuck / small-title reveal the bar stays solid page
-    // color — no gaussian/liquid glass while the title is still transitioning.
-    //
-    // Hysteresis: activate 24px past the collapse point, deactivate 24px below.
-    // Without this gap, short flings oscillate around the threshold and rapidly
-    // mount/unmount the BackdropFilter layer — the primary jank source.
-    const hysteresis = 24.0;
-    final expansion = -_scrollBehavior.state.heightOffsetLimit;
-    final bool underHeader;
-    if (!expansion.isFinite || expansion <= 0) {
-      underHeader = false;
-    } else if (_contentUnderHeader.value) {
-      // Already frosted: stay on until well below the collapse point.
-      underHeader = pixels >= expansion - hysteresis;
-    } else {
-      // Not frosted: activate only well past the collapse point.
-      underHeader = pixels >= expansion + hysteresis;
-    }
-    if (_contentUnderHeader.value != underHeader) {
-      _contentUnderHeader.value = underHeader;
-    }
-    return false;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pageBackground = HyperosColors.scaffoldBackground(context);
-    final chromeInk = HyperosColors.primaryText(context);
-    final fixedExpandedTopInset =
-        HyperosBlurredHeader.contentTopInsetCollapsible(context);
-
-    return ColoredBox(
-      color: pageBackground,
-      child: HyperosBlurredHeaderScope(
-        contentTopInset: fixedExpandedTopInset,
-        headerBackgroundColor: pageBackground,
-        child: Stack(
-          fit: StackFit.expand,
-          clipBehavior: Clip.hardEdge,
-          children: [
-            Positioned.fill(
-              child: Material(
-                type: MaterialType.transparency,
-                color: pageBackground,
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: _onBodyScrollNotification,
-                  child: widget.child,
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Stack(
-                fit: StackFit.passthrough,
-                children: [
-                  // Frost only after fully collapsed (small title settled).
-                  Positioned.fill(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _contentUnderHeader,
-                      builder: (context, contentUnderHeader, _) {
-                        return IgnorePointer(
-                          child: AnimatedOpacity(
-                            opacity: contentUnderHeader ? 1.0 : 0.0,
-                            duration: _headerFrostFadeDuration,
-                            curve: Curves.easeOut,
-                            child: HyperosBlurredHeaderScope(
-                              contentTopInset: 0,
-                              contentUnderHeader: true,
-                              headerBackgroundColor: pageBackground,
-                              child: const HyperosBlurredHeaderShell(
-                                child: SizedBox.expand(),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // Dual-title collapsible bar (solid bg; no extra ColoredBox).
-                  HyperosCollapsibleTopAppBar(
-                    title: widget.title,
-                    color: pageBackground,
-                    titleColor: chromeInk,
-                    largeTitleColor: chromeInk,
-                    blurred: false,
-                    scrollBehavior: _scrollBehavior,
-                    navigationIcon: HyperosIconButton(
-                      icon: Icons.arrow_back,
-                      color: chromeInk,
-                      onPressed: widget.onBack,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

@@ -1,3 +1,4 @@
+import 'dart:async' show scheduleMicrotask;
 import 'dart:math' as math;
 import 'dart:ui' as ui show ImageFilter;
 
@@ -49,6 +50,17 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
   /// Rise distance of the small title during its show transition (upstream
   /// animates `translationY` 20 → 0 with a folme spring).
   static const double smallTitleRisePx = 20.0;
+
+  /// Extra scroll the collapse snap applies beyond the collapse point so the
+  /// first content row parks tight under the small-title band. The content
+  /// edge reaches the band at `largeTitleBottomPadding + largeTitleContentGap`
+  /// past the collapse point — which is also the frost threshold — so stop
+  /// 1px shy of it: visually flush, never overlapping, and the header never
+  /// flips to its frosted/blurred state from the snap itself.
+  static const double collapseSnapRestTighten =
+      HyperosMiuixTopAppBar.largeTitleBottomPadding +
+      HyperosMiuixTopAppBar.largeTitleContentGap -
+      1.0;
 }
 
 /// Mutable collapse state shared by [HyperosExitUntilCollapsedScrollBehavior]
@@ -239,17 +251,21 @@ class HyperosExitUntilCollapsedScrollBehavior
     final canParkViaScroll =
         expansion <= 0 || (maxExtent - minExtent) >= expansion - 1.0;
     if (!canParkViaScroll) {
-      debugPrint('[SNAP] handleScroll → SHORT PAGE path '
-          'pixels=${pixels.toStringAsFixed(1)} '
-          'expansion=${expansion.toStringAsFixed(1)} '
-          'scrollRange=${(maxExtent - minExtent).toStringAsFixed(1)} '
-          '${notification.runtimeType}');
+      debugPrint(
+        '[SNAP] handleScroll → SHORT PAGE path '
+        'pixels=${pixels.toStringAsFixed(1)} '
+        'expansion=${expansion.toStringAsFixed(1)} '
+        'scrollRange=${(maxExtent - minExtent).toStringAsFixed(1)} '
+        '${notification.runtimeType}',
+      );
       return _handleShortPageScroll(notification);
     }
 
     if (_snapInProgress && notification is! ScrollEndNotification) {
-      debugPrint('[SNAP] handleScroll snapInProgress skip '
-          '${notification.runtimeType}');
+      debugPrint(
+        '[SNAP] handleScroll snapInProgress skip '
+        '${notification.runtimeType}',
+      );
       // Keep heightOffset in sync while the snap animation runs.
       _syncOffsetToPosition(notification.metrics);
       return false;
@@ -271,8 +287,12 @@ class HyperosExitUntilCollapsedScrollBehavior
         // Spring-back finished; re-sync once and clear the flag.
         _frozenDuringOverscrollSpringBack = false;
         _syncOffsetToPosition(notification.metrics);
+        // Fall through: the ScrollEnd that accompanies spring-back settle
+        // must reach the snap logic below, otherwise the title can park
+        // at a half-collapsed position when overscroll rebound ends.
+      } else {
+        return false;
       }
-      return false;
     }
 
     _syncOffsetToPosition(notification.metrics);
@@ -281,12 +301,14 @@ class HyperosExitUntilCollapsedScrollBehavior
     // a mid-scroll release that falls into the lock path will never snap and
     // the title stays frozen at a half-collapsed position forever.
     if (snapOnRelease && notification is ScrollEndNotification) {
-      debugPrint('[SNAP] handleScroll ScrollEnd '
-          'pixels=${pixels.toStringAsFixed(1)} '
-          'heightOffset=${state.heightOffset.toStringAsFixed(1)} '
-          'limit=${limit.toStringAsFixed(1)} '
-          'smallTitleLocked=$_smallTitleLocked '
-          'frozenOverscroll=$_frozenDuringOverscrollSpringBack');
+      debugPrint(
+        '[SNAP] handleScroll ScrollEnd '
+        'pixels=${pixels.toStringAsFixed(1)} '
+        'heightOffset=${state.heightOffset.toStringAsFixed(1)} '
+        'limit=${limit.toStringAsFixed(1)} '
+        'smallTitleLocked=$_smallTitleLocked '
+        'frozenOverscroll=$_frozenDuringOverscrollSpringBack',
+      );
       _snapToNearestEndpoint(notification);
       _smallTitleLocked = false;
       state.contentOffset = pixels;
@@ -307,9 +329,11 @@ class HyperosExitUntilCollapsedScrollBehavior
         _smallTitleLocked = false;
       } else {
         // During the current gesture (drag or fling), keep the title frozen.
-        debugPrint('[SNAP] handleScroll smallTitleLocked block '
-            '${notification.runtimeType} '
-            'heightOffset=${state.heightOffset.toStringAsFixed(1)}');
+        debugPrint(
+          '[SNAP] handleScroll smallTitleLocked block '
+          '${notification.runtimeType} '
+          'heightOffset=${state.heightOffset.toStringAsFixed(1)}',
+        );
         state.contentOffset = pixels;
         return false;
       }
@@ -341,13 +365,14 @@ class HyperosExitUntilCollapsedScrollBehavior
       // based on the large title text's visual cut position.
       final scrolled = -state.heightOffset;
       final textHeight = state.largeTitleTextHeight;
-      final snapThreshold =
-          textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
-      debugPrint('[SNAP] _handleShortPageScroll ScrollEnd '
-          'scrolled=${scrolled.toStringAsFixed(1)} '
-          'textHeight=${textHeight.toStringAsFixed(1)} '
-          'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
-          '${scrolled >= snapThreshold ? "COLLAPSE" : "EXPAND"}');
+      final snapThreshold = textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
+      debugPrint(
+        '[SNAP] _handleShortPageScroll ScrollEnd '
+        'scrolled=${scrolled.toStringAsFixed(1)} '
+        'textHeight=${textHeight.toStringAsFixed(1)} '
+        'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
+        '${scrolled >= snapThreshold ? "COLLAPSE" : "EXPAND"}',
+      );
       state.heightOffset = scrolled >= snapThreshold ? limit : 0.0;
       state.contentOffset = metrics.pixels;
       return false;
@@ -418,12 +443,13 @@ class HyperosExitUntilCollapsedScrollBehavior
     }
     final scrolled = -state.heightOffset; // pixels the title has been pushed up
     final textHeight = state.largeTitleTextHeight;
-    final snapThreshold =
-        textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
+    final snapThreshold = textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
     // Already parked at an end — nothing to do.
     if (scrolled <= 0.5 || scrolled >= -limit - 0.5) {
-      debugPrint('[SNAP] _snapToNearestEndpoint EARLY: already at end '
-          'scrolled=$scrolled limit=$limit');
+      debugPrint(
+        '[SNAP] _snapToNearestEndpoint EARLY: already at end '
+        'scrolled=$scrolled limit=$limit',
+      );
       return;
     }
 
@@ -431,44 +457,77 @@ class HyperosExitUntilCollapsedScrollBehavior
     final expansion = -limit;
     final minExtent = metrics.minScrollExtent;
     // Text is less than half cut → snap back to expanded (top).
-    // Text is more than half cut → snap to collapsed (fully scrolled down).
-    final targetPixels = scrolled < snapThreshold ? minExtent : minExtent + expansion;
-    debugPrint('[SNAP] _snapToNearestEndpoint '
-        'scrolled=${scrolled.toStringAsFixed(1)} '
-        'textHeight=${textHeight.toStringAsFixed(1)} '
-        'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
-        'expansion=${expansion.toStringAsFixed(1)} '
-        'targetPixels=${targetPixels.toStringAsFixed(1)} '
-        '${scrolled < snapThreshold ? "EXPAND" : "COLLAPSE"}');
+    // Text is more than half cut → snap to collapsed AND tighten: keep
+    // scrolling until the first content row sits flush under the small-title
+    // band (1px shy of the frost threshold — see collapseSnapRestTighten).
+    final collapseTarget =
+        minExtent +
+        expansion +
+        HyperosCollapsibleTopAppBarDefaults.collapseSnapRestTighten;
+    final targetPixels = scrolled < snapThreshold ? minExtent : collapseTarget;
+    debugPrint(
+      '[SNAP] _snapToNearestEndpoint '
+      'scrolled=${scrolled.toStringAsFixed(1)} '
+      'textHeight=${textHeight.toStringAsFixed(1)} '
+      'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
+      'expansion=${expansion.toStringAsFixed(1)} '
+      'targetPixels=${targetPixels.toStringAsFixed(1)} '
+      '${scrolled < snapThreshold ? "EXPAND" : "COLLAPSE"}',
+    );
 
-    final notificationContext = notification.context;
-    final ScrollPosition? position = notificationContext == null
-        ? null
-        : Scrollable.maybeOf(notificationContext)?.position;
+    // notification.metrics is almost always a ScrollPosition for real scroll
+    // notifications — use it directly instead of Scrollable.maybeOf(context),
+    // which fails because the notification's context IS the Scrollable itself,
+    // and maybeOf only searches ancestors (never the widget itself).
+    final ScrollPosition? position;
+    if (notification.metrics is ScrollPosition) {
+      position = notification.metrics as ScrollPosition;
+    } else {
+      final notificationContext = notification.context;
+      position = notificationContext == null
+          ? null
+          : Scrollable.maybeOf(notificationContext)?.position;
+    }
     if (position == null || !position.hasPixels) {
+      debugPrint(
+        '[SNAP] _snapToNearestEndpoint ABORT: no ScrollPosition '
+        'metricsIsPosition=${notification.metrics is ScrollPosition}',
+      );
       return;
     }
     if ((position.pixels - targetPixels).abs() < 0.5) {
+      debugPrint('[SNAP] _snapToNearestEndpoint already at target, no-op');
       return;
     }
 
     _snapInProgress = true;
-    position
-        .animateTo(
-          targetPixels.clamp(
-            position.minScrollExtent,
-            position.maxScrollExtent,
-          ),
-          duration: snapDuration,
-          curve: snapCurve,
-        )
-        .whenComplete(() {
-          _snapInProgress = false;
-          _snapCompletedAt = DateTime.now();
-          if (position.hasPixels) {
-            _syncOffsetToPosition(position);
-          }
-        });
+    final pos = position; // local non-null capture for the closure
+    // Do NOT call animateTo synchronously here: ScrollEndNotification is
+    // dispatched from inside ScrollPosition.beginActivity() *before* the new
+    // idle activity is assigned and the old one disposed. An activity started
+    // reentrantly at this point is immediately disposed by the outer
+    // beginActivity, so the snap animation dies before its first frame (the
+    // "release mid-collapse parks anywhere" bug). Defer to a microtask so the
+    // notification dispatch and activity swap fully unwind first.
+    scheduleMicrotask(() {
+      if (!pos.hasPixels) {
+        _snapInProgress = false;
+        return;
+      }
+      pos
+          .animateTo(
+            targetPixels.clamp(pos.minScrollExtent, pos.maxScrollExtent),
+            duration: snapDuration,
+            curve: snapCurve,
+          )
+          .whenComplete(() {
+            _snapInProgress = false;
+            _snapCompletedAt = DateTime.now();
+            if (pos.hasPixels) {
+              _syncOffsetToPosition(pos);
+            }
+          });
+    });
   }
 }
 
