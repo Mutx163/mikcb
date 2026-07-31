@@ -663,10 +663,18 @@ class _RenderPreblurredFill extends RenderBox {
     if (shouldListen == _listening) {
       return;
     }
-    if (shouldListen) {
-      controller.addListener(markNeedsPaint);
-    } else {
-      controller?.removeListener(markNeedsPaint);
+    try {
+      if (shouldListen) {
+        // 防御：controller 可能已在上一帧被 dispose（例如日视图控制器
+        // 延迟回收与 PreblurredWallpaperScope 挂载竞态）。addListener 对
+        // 已释放的 ChangeNotifier 会在 debug 下抛
+        // "A PageController was used after being disposed"，这里兜底跳过。
+        controller.addListener(markNeedsPaint);
+      } else {
+        controller?.removeListener(markNeedsPaint);
+      }
+    } catch (_) {
+      // 已释放的控制器：放弃监听，让预模糊壁纸按静态采样绘制。
     }
     _listening = shouldListen;
   }

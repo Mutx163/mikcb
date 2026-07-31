@@ -158,6 +158,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// whole semester.
   PageController? _dayViewPageController;
   final Set<PageController> _pendingDayViewControllerDisposals = {};
+  /// 已实际执行 dispose() 的日视图控制器，用于防止 [_ensureDayViewPageController]
+  /// 把已释放的控制器交给 PreblurredWallpaperScope（其 _RenderPreblurredFill
+  /// 在 attach 时会对 controller 调 addListener，导致
+  /// "A PageController was used after being disposed"）。
+  final Set<PageController> _disposedDayViewControllers = {};
   bool _isSyncingWeekPage = false;
   bool _isSyncingDayViewPage = false;
   int? _pendingSyncedWeek;
@@ -308,8 +313,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayAgendaProgressTimer?.cancel();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
-    _dayViewPageController?.dispose();
+    final dayViewController = _dayViewPageController;
+    if (dayViewController != null) {
+      _disposedDayViewControllers.add(dayViewController);
+      dayViewController.dispose();
+    }
     for (final controller in _pendingDayViewControllerDisposals) {
+      _disposedDayViewControllers.add(controller);
       controller.dispose();
     }
     _pendingDayViewControllerDisposals.clear();
@@ -942,7 +952,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     // controller and throw.
     if (existing != null &&
         existing.hasClients &&
-        !_pendingDayViewControllerDisposals.contains(existing)) {
+        !_pendingDayViewControllerDisposals.contains(existing) &&
+        !_disposedDayViewControllers.contains(existing)) {
       return existing;
     }
     final fresh = _createDayViewPageController(settings);
@@ -1005,6 +1016,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     void retryDispose() {
       if (!mounted) {
         if (_pendingDayViewControllerDisposals.remove(controller)) {
+          _disposedDayViewControllers.add(controller);
           controller.dispose();
         }
         return;
@@ -1022,6 +1034,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         return;
       }
       if (_pendingDayViewControllerDisposals.remove(controller)) {
+        _disposedDayViewControllers.add(controller);
         controller.dispose();
       }
     }
@@ -1029,6 +1042,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         if (_pendingDayViewControllerDisposals.remove(controller)) {
+          _disposedDayViewControllers.add(controller);
           controller.dispose();
         }
         return;
