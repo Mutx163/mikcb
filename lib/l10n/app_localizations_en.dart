@@ -1200,6 +1200,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataTransferTitle => 'Backup & Migration';
 
   @override
+  String get qrTransferSectionTitle => 'QR Face-to-Face Transfer';
+
+  @override
+  String get qrTransferSectionSubtitle =>
+      'Bring two phones close and scan to transfer timetables and settings without any network';
+
+  @override
+  String get qrTransferSendCurrent => 'Send Current Timetable';
+
+  @override
+  String get qrTransferSendAll => 'Send All Data';
+
+  @override
+  String get qrTransferScanReceive => 'Scan to Receive';
+
+  @override
+  String qrTransferFrameProgress(int sent, int total) {
+    return '$sent frames sent, about $total needed';
+  }
+
+  @override
+  String get qrTransferSendHint =>
+      'Ask the other party to open \"Scan to Receive\" and keep the camera pointed at this screen until done';
+
+  @override
+  String get qrTransferStop => 'Stop Sending';
+
+  @override
+  String get qrTransferScanTitle => 'Scan to Receive';
+
+  @override
+  String get qrTransferScanHint =>
+      'Point the camera at the other phone\'s screen and hold steady until progress completes';
+
+  @override
+  String qrTransferReceiveProgress(int received, int decoded, int total) {
+    return '$received frames received · $decoded/$total decoded';
+  }
+
+  @override
+  String get qrTransferReceiveComplete => 'Data received, importing…';
+
+  @override
+  String get qrTransferSessionMismatch =>
+      'Detected a different transfer; make sure you are pointing at one stream only';
+
+  @override
   String get fullExportTitle => 'Export';
 
   @override

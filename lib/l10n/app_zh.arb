@@ -587,6 +587,42 @@
   },
   "keepAtLeastOneProfile": "至少保留一个课表",
   "dataTransferTitle": "数据备份与迁移",
+  "qrTransferSectionTitle": "二维码面对面传输",
+  "qrTransferSectionSubtitle": "两台手机靠近，扫码即可直接传输课表与全部设置，无需网络",
+  "qrTransferSendCurrent": "二维码发送当前课表",
+  "qrTransferSendAll": "二维码发送全部数据",
+  "qrTransferScanReceive": "扫码接收课表数据",
+  "qrTransferFrameProgress": "已发送 {sent} 帧，约需 {total} 帧",
+  "@qrTransferFrameProgress": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "qrTransferSendHint": "请对方打开「扫码接收」，将摄像头对准此屏幕，保持到接收完成",
+  "qrTransferStop": "停止发送",
+  "qrTransferScanTitle": "扫码接收",
+  "qrTransferScanHint": "将摄像头对准对方手机屏幕，保持稳定，等待进度完成",
+  "qrTransferReceiveProgress": "已接收 {received} 帧 · 已解出 {decoded}/{total}",
+  "@qrTransferReceiveProgress": {
+    "placeholders": {
+      "received": {
+        "type": "int"
+      },
+      "decoded": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "qrTransferReceiveComplete": "数据接收完成，正在导入…",
+  "qrTransferSessionMismatch": "检测到不同传输内容，请确认只对准一份数据",
   "fullExportTitle": "完整导出",
   "fullExportSubtitle": "支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态",
   "exportCurrentTimetable": "导出当前课表",

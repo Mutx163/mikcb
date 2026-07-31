@@ -43,6 +43,8 @@ dependencies:
   flutter_miuix: ^1.0.9
   liquid_glass_renderer: ^0.2.0-dev.4
   flutter_blackbox: ^0.7.0
+  fountain_codes: ^1.0.0
+  mobile_scanner: ^7.4.0
 
 dev_dependencies:
   flutter_test:

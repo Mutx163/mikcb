@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
+import 'qr_transfer_send_screen.dart';
+import 'qr_transfer_scan_screen.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
 
@@ -68,6 +71,42 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                 variant: HyperosButtonVariant.secondary,
                 loading: _isImporting,
                 onPressed: _isImporting ? null : _confirmAndImport,
+              ),
+            ),
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.qrTransferSectionTitle),
+          HyperosControlCard(
+            child: HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.qrTransferSectionSubtitle,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      HyperosButton(
+                        label: l10n.qrTransferSendCurrent,
+                        onPressed: _isExporting ? null : _qrSendCurrent,
+                      ),
+                      HyperosButton(
+                        label: l10n.qrTransferSendAll,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _isExporting ? null : _qrSendAll,
+                      ),
+                      HyperosButton(
+                        label: l10n.qrTransferScanReceive,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _isImporting ? null : _qrReceive,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -320,6 +359,133 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         });
       }
     }
+  }
+
+  Future<void> _qrSendCurrent() async {
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final content = provider.dataTransferService.buildBackupJson(
+      profileName: provider.activeProfile?.name,
+      courses: provider.courses,
+      exams: provider.exams,
+      settings: provider.settings,
+      currentWeek: provider.currentWeek,
+    );
+    if (!mounted) {
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => QrTransferSendScreen(
+          payloadBytes: Uint8List.fromList(utf8.encode(content)),
+          title: l10n.qrTransferSendCurrent,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _qrSendAll() async {
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final content = provider.dataTransferService.buildFullBackupJson(
+      profiles: provider.profiles,
+      activeProfileId: provider.activeProfileId,
+      timeSchemes: provider.timeSchemes,
+    );
+    if (!mounted) {
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => QrTransferSendScreen(
+          payloadBytes: Uint8List.fromList(utf8.encode(content)),
+          title: l10n.qrTransferSendAll,
+        ),
+      ),
+    );
+  }
+
+  void _qrReceive() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            QrTransferScanScreen(onComplete: _handleQrReceivedBytes),
+      ),
+    );
+  }
+
+  Future<void> _handleQrReceivedBytes(Uint8List bytes) async {
+    if (!mounted) {
+      return;
+    }
+    Navigator.pop(context);
+    final content = utf8.decode(bytes);
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+
+    if (provider.dataTransferService.isFullBackupJson(content)) {
+      final message = await provider.importFullAppDataBackup(content);
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: message != null
+            ? localizeServiceMessage(l10n, message)
+            : l10n.backupRestoredSuccess,
+        kind: message != null ? AppToastKind.error : AppToastKind.success,
+      );
+      return;
+    }
+
+    final importMode = await showHyperosDialog<_BackupImportMode>(
+      context: context,
+      title: l10n.selectImportModeTitle,
+      message: l10n.selectImportModeMessage,
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context),
+        ),
+        HyperosDialogAction(
+          label: l10n.replaceCurrentTimetable,
+          isPrimary: true,
+          onPressed: () =>
+              Navigator.pop(context, _BackupImportMode.replaceCurrent),
+        ),
+        HyperosDialogAction(
+          label: l10n.importAsNewTimetable,
+          onPressed: () =>
+              Navigator.pop(context, _BackupImportMode.importAsNew),
+        ),
+      ],
+    );
+    if (importMode == null || !mounted) {
+      return;
+    }
+
+    final message = switch (importMode) {
+      _BackupImportMode.replaceCurrent => await provider.importAppDataBackup(
+        content,
+      ),
+      _BackupImportMode.importAsNew =>
+        await provider.importAppDataBackupAsNewProfile(content),
+    };
+    if (!mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: message != null
+          ? localizeServiceMessage(l10n, message)
+          : (importMode == _BackupImportMode.importAsNew
+                ? l10n.createdNewTimetableAfterImport
+                : l10n.backupRestoredSuccess),
+      kind: message != null ? AppToastKind.error : AppToastKind.success,
+    );
   }
 
   String _formatDate(DateTime date) {

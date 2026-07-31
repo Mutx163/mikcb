@@ -1143,6 +1143,50 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dataTransferTitle => 'データバックアップと移行';
 
   @override
+  String get qrTransferSectionTitle => 'QRコードで直接転送';
+
+  @override
+  String get qrTransferSectionSubtitle =>
+      '2台のスマホを近づけ、QRコードを読み取るだけで時間割と設定を転送。ネットワーク不要';
+
+  @override
+  String get qrTransferSendCurrent => '現在の時間割を送信';
+
+  @override
+  String get qrTransferSendAll => 'すべてのデータを送信';
+
+  @override
+  String get qrTransferScanReceive => '読み取って受信';
+
+  @override
+  String qrTransferFrameProgress(int sent, int total) {
+    return '送信 $sent フレーム / 目安 $total フレーム';
+  }
+
+  @override
+  String get qrTransferSendHint => '相手に「読み取って受信」を開いてもらい、カメラをこの画面に向けてもらってください';
+
+  @override
+  String get qrTransferStop => '送信を停止';
+
+  @override
+  String get qrTransferScanTitle => '読み取って受信';
+
+  @override
+  String get qrTransferScanHint => '相手の画面にカメラを向け、完了まで安定して構えてください';
+
+  @override
+  String qrTransferReceiveProgress(int received, int decoded, int total) {
+    return '受信 $received フレーム · 解読 $decoded/$total';
+  }
+
+  @override
+  String get qrTransferReceiveComplete => 'データを受信しました。インポート中…';
+
+  @override
+  String get qrTransferSessionMismatch => '別の転送内容を検出しました。1つの画面だけに正対してください';
+
+  @override
   String get fullExportTitle => '完全エクスポート';
 
   @override

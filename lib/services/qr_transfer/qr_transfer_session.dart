@@ -1,0 +1,68 @@
+import 'dart:typed_data';
+
+/// 一次二维码传输会话的固定元信息，随每一帧在头部传输。
+///
+/// 解码端在收到任意一帧后即可根据该信息构造 LT 解码器。
+class QrTransferSessionInfo {
+  /// LT 源码符号数（压缩后载荷切分出的符号个数）。
+  final int sourceSymbolCount;
+
+  /// 单个符号的字节大小。
+  final int symbolSize;
+
+  /// 压缩后载荷的真实字节数（最后一帧符号需要截断到该长度）。
+  final int payloadLength;
+
+  /// 压缩后载荷的 SHA-256 摘要（base64url），解码完成后校验。
+  final String payloadSha256;
+
+  const QrTransferSessionInfo({
+    required this.sourceSymbolCount,
+    required this.symbolSize,
+    required this.payloadLength,
+    required this.payloadSha256,
+  });
+}
+
+/// 一次二维码传输会话（编码端或解码端共享的会话状态）。
+class QrTransferSession {
+  final QrTransferSessionInfo info;
+  final String deviceId;
+  final DateTime createdAt;
+
+  const QrTransferSession({
+    required this.info,
+    required this.deviceId,
+    required this.createdAt,
+  });
+}
+
+/// 解码进度，供接收端 UI 展示。
+class QrTransferDecodeProgress {
+  final int receivedSymbols;
+  final int innovativeSymbols;
+  final int sourceSymbolCount;
+  final int decodedSymbols;
+  final bool isComplete;
+
+  const QrTransferDecodeProgress({
+    required this.receivedSymbols,
+    required this.innovativeSymbols,
+    required this.sourceSymbolCount,
+    required this.decodedSymbols,
+    required this.isComplete,
+  });
+
+  /// 已解出符号占源码符号的比例，0.0 ~ 1.0。
+  double get fraction => sourceSymbolCount == 0
+      ? 1.0
+      : (decodedSymbols / sourceSymbolCount).clamp(0.0, 1.0);
+}
+
+/// 解码完成后的载荷结果。
+class QrTransferDecodeResult {
+  final Uint8List payload;
+  final QrTransferSessionInfo info;
+
+  const QrTransferDecodeResult({required this.payload, required this.info});
+}

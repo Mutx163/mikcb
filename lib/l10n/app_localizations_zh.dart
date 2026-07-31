@@ -1126,6 +1126,49 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataTransferTitle => '数据备份与迁移';
 
   @override
+  String get qrTransferSectionTitle => '二维码面对面传输';
+
+  @override
+  String get qrTransferSectionSubtitle => '两台手机靠近，扫码即可直接传输课表与全部设置，无需网络';
+
+  @override
+  String get qrTransferSendCurrent => '二维码发送当前课表';
+
+  @override
+  String get qrTransferSendAll => '二维码发送全部数据';
+
+  @override
+  String get qrTransferScanReceive => '扫码接收课表数据';
+
+  @override
+  String qrTransferFrameProgress(int sent, int total) {
+    return '已发送 $sent 帧，约需 $total 帧';
+  }
+
+  @override
+  String get qrTransferSendHint => '请对方打开「扫码接收」，将摄像头对准此屏幕，保持到接收完成';
+
+  @override
+  String get qrTransferStop => '停止发送';
+
+  @override
+  String get qrTransferScanTitle => '扫码接收';
+
+  @override
+  String get qrTransferScanHint => '将摄像头对准对方手机屏幕，保持稳定，等待进度完成';
+
+  @override
+  String qrTransferReceiveProgress(int received, int decoded, int total) {
+    return '已接收 $received 帧 · 已解出 $decoded/$total';
+  }
+
+  @override
+  String get qrTransferReceiveComplete => '数据接收完成，正在导入…';
+
+  @override
+  String get qrTransferSessionMismatch => '检测到不同传输内容，请确认只对准一份数据';
+
+  @override
   String get fullExportTitle => '完整导出';
 
   @override
@@ -9952,6 +9995,49 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get dataTransferTitle => '資料備份與遷移';
 
   @override
+  String get qrTransferSectionTitle => 'QR 碼面對面傳輸';
+
+  @override
+  String get qrTransferSectionSubtitle => '兩部手機靠近，掃碼即可直接傳輸課表與全部設定，無需網絡';
+
+  @override
+  String get qrTransferSendCurrent => 'QR 碼發送目前課表';
+
+  @override
+  String get qrTransferSendAll => 'QR 碼發送全部資料';
+
+  @override
+  String get qrTransferScanReceive => '掃碼接收課表資料';
+
+  @override
+  String qrTransferFrameProgress(int sent, int total) {
+    return '已發送 $sent 幀，約需 $total 幀';
+  }
+
+  @override
+  String get qrTransferSendHint => '請對方開啟「掃碼接收」，將相機對準此螢幕，保持到接收完成';
+
+  @override
+  String get qrTransferStop => '停止發送';
+
+  @override
+  String get qrTransferScanTitle => '掃碼接收';
+
+  @override
+  String get qrTransferScanHint => '將相機對準對方手機螢幕，保持穩定，等待進度完成';
+
+  @override
+  String qrTransferReceiveProgress(int received, int decoded, int total) {
+    return '已接收 $received 幀 · 已解出 $decoded/$total';
+  }
+
+  @override
+  String get qrTransferReceiveComplete => '資料接收完成，正在匯入…';
+
+  @override
+  String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
+
+  @override
   String get fullExportTitle => '完整匯出';
 
   @override
@@ -18601,6 +18687,49 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get dataTransferTitle => '資料備份與遷移';
+
+  @override
+  String get qrTransferSectionTitle => 'QR 碼面對面傳輸';
+
+  @override
+  String get qrTransferSectionSubtitle => '兩台手機靠近，掃碼即可直接傳輸課表與全部設定，無需網路';
+
+  @override
+  String get qrTransferSendCurrent => 'QR 碼發送目前課表';
+
+  @override
+  String get qrTransferSendAll => 'QR 碼發送全部資料';
+
+  @override
+  String get qrTransferScanReceive => '掃碼接收課表資料';
+
+  @override
+  String qrTransferFrameProgress(int sent, int total) {
+    return '已發送 $sent 幀，約需 $total 幀';
+  }
+
+  @override
+  String get qrTransferSendHint => '請對方開啟「掃碼接收」，將相機對準此螢幕，保持到接收完成';
+
+  @override
+  String get qrTransferStop => '停止發送';
+
+  @override
+  String get qrTransferScanTitle => '掃碼接收';
+
+  @override
+  String get qrTransferScanHint => '將相機對準對方手機螢幕，保持穩定，等待進度完成';
+
+  @override
+  String qrTransferReceiveProgress(int received, int decoded, int total) {
+    return '已接收 $received 幀 · 已解出 $decoded/$total';
+  }
+
+  @override
+  String get qrTransferReceiveComplete => '資料接收完成，正在匯入…';
+
+  @override
+  String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
 
   @override
   String get fullExportTitle => '完整匯出';

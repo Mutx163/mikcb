@@ -2168,6 +2168,84 @@ abstract class AppLocalizations {
   /// **'数据备份与迁移'**
   String get dataTransferTitle;
 
+  /// No description provided for @qrTransferSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码面对面传输'**
+  String get qrTransferSectionTitle;
+
+  /// No description provided for @qrTransferSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'两台手机靠近，扫码即可直接传输课表与全部设置，无需网络'**
+  String get qrTransferSectionSubtitle;
+
+  /// No description provided for @qrTransferSendCurrent.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码发送当前课表'**
+  String get qrTransferSendCurrent;
+
+  /// No description provided for @qrTransferSendAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码发送全部数据'**
+  String get qrTransferSendAll;
+
+  /// No description provided for @qrTransferScanReceive.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫码接收课表数据'**
+  String get qrTransferScanReceive;
+
+  /// No description provided for @qrTransferFrameProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'已发送 {sent} 帧，约需 {total} 帧'**
+  String qrTransferFrameProgress(int sent, int total);
+
+  /// No description provided for @qrTransferSendHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请对方打开「扫码接收」，将摄像头对准此屏幕，保持到接收完成'**
+  String get qrTransferSendHint;
+
+  /// No description provided for @qrTransferStop.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止发送'**
+  String get qrTransferStop;
+
+  /// No description provided for @qrTransferScanTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫码接收'**
+  String get qrTransferScanTitle;
+
+  /// No description provided for @qrTransferScanHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'将摄像头对准对方手机屏幕，保持稳定，等待进度完成'**
+  String get qrTransferScanHint;
+
+  /// No description provided for @qrTransferReceiveProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'已接收 {received} 帧 · 已解出 {decoded}/{total}'**
+  String qrTransferReceiveProgress(int received, int decoded, int total);
+
+  /// No description provided for @qrTransferReceiveComplete.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据接收完成，正在导入…'**
+  String get qrTransferReceiveComplete;
+
+  /// No description provided for @qrTransferSessionMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'检测到不同传输内容，请确认只对准一份数据'**
+  String get qrTransferSessionMismatch;
+
   /// No description provided for @fullExportTitle.
   ///
   /// In zh, this message translates to:

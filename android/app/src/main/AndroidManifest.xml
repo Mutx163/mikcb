@@ -38,6 +38,8 @@
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- QR face-to-face transfer camera scanning -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <!-- Required for connectedDevice foreground service (LAN edit HTTP server) on API 34+ -->

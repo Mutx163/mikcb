@@ -340,6 +340,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fountain_codes:
+    dependency: "direct main"
+    description:
+      name: fountain_codes
+      sha256: c2984e15c57ed6be94451f9a6e4811df7987ab63a31f95fa6630b73305f861dc
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   hooks:
     dependency: transitive
     description:
@@ -484,6 +492,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      name: mobile_scanner
+      sha256: ce3f059ebd6dbfab7292bba0e893e354b46730636820d3c9ef69005ce2d55bce
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.4.0"
   motor:
     dependency: transitive
     description:
