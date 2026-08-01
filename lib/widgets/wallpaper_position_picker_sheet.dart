@@ -55,8 +55,9 @@ double _coverScale({required Size viewportSize, required Size imageSize}) {
 
 /// 根据拖动偏移量计算新的对齐坐标（范围 -1..1）。
 ///
-/// 拖动方向与 alignment 正方向一致：alignment 从 0 走到 1 对应图片移动
-/// 溢出量的一半。超出范围时钳制到 [-1, 1]。
+/// 壁纸跟随手指移动：手指向右拖动（dragDelta > 0）时壁纸内容右移，
+/// 露出图片左侧，因此对齐值减小；向左拖动时对齐值增大。超出范围时
+/// 钳制到 [-1, 1]。
 double wallpaperAlignAfterDrag({
   required double previousAlign,
   required double dragDelta,
@@ -65,7 +66,7 @@ double wallpaperAlignAfterDrag({
   if (overflowExtent <= 0) {
     return 0;
   }
-  final next = previousAlign + 2 * dragDelta / overflowExtent;
+  final next = previousAlign - 2 * dragDelta / overflowExtent;
   return next.clamp(-1.0, 1.0);
 }
 
@@ -249,41 +250,48 @@ class _WallpaperPositionPickerPageState
               // 壁纸铺满全屏（含状态栏区域），与首页完全一致。
               _buildPreviewArea(context),
               // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      _HyperosHeaderTextButton(
-                        label: l10n.wallpaperPositionPickerExit,
-                        onPressed: _exit,
-                        isCompact: true,
-                        foregroundColor: inkColor,
-                      ),
-                      const Spacer(),
-                      Flexible(
-                        child: Text(
-                          l10n.wallpaperPositionPickerTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: inkColor,
+              // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
+              // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        _HyperosHeaderTextButton(
+                          label: l10n.wallpaperPositionPickerExit,
+                          onPressed: _exit,
+                          isCompact: true,
+                          foregroundColor: inkColor,
+                        ),
+                        const Spacer(),
+                        Flexible(
+                          child: Text(
+                            l10n.wallpaperPositionPickerTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: inkColor,
+                            ),
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      _HyperosHeaderTextButton(
-                        label: l10n.wallpaperPositionPickerDone,
-                        onPressed: _confirm,
-                        isCompact: true,
-                        foregroundColor: inkColor,
-                      ),
-                    ],
+                        const Spacer(),
+                        _HyperosHeaderTextButton(
+                          label: l10n.wallpaperPositionPickerDone,
+                          onPressed: _confirm,
+                          isCompact: true,
+                          foregroundColor: inkColor,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -414,8 +422,10 @@ class _HyperosHeaderTextButton extends StatelessWidget {
         onPressed: onPressed,
         borderRadius: BorderRadius.circular(cornerRadius),
         child: Container(
-          width: isCompact ? 56 : 120,
-          height: minHeight,
+          constraints: BoxConstraints(
+            minWidth: isCompact ? 56 : 120,
+            minHeight: minHeight,
+          ),
           alignment: Alignment.center,
           padding: EdgeInsets.symmetric(
             horizontal: isCompact ? 16 : 24,
@@ -423,6 +433,7 @@ class _HyperosHeaderTextButton extends StatelessWidget {
           ),
           child: Text(
             label,
+            maxLines: 1,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

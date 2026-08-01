@@ -35,22 +35,22 @@ void main() {
   });
 
   group('wallpaperAlignAfterDrag', () {
-    test('正方向拖动增加对齐值', () {
+    test('正方向拖动减少对齐值（壁纸跟随手指右移）', () {
       final next = wallpaperAlignAfterDrag(
         previousAlign: 0,
         dragDelta: 100,
         overflowExtent: 1000,
       );
-      expect(next, closeTo(0.2, 0.001));
+      expect(next, closeTo(-0.2, 0.001));
     });
 
-    test('负方向拖动减少对齐值', () {
+    test('负方向拖动增加对齐值（壁纸跟随手指左移）', () {
       final next = wallpaperAlignAfterDrag(
         previousAlign: 0,
         dragDelta: -50,
         overflowExtent: 1000,
       );
-      expect(next, closeTo(-0.1, 0.001));
+      expect(next, closeTo(0.1, 0.001));
     });
 
     test('不溢出时恒为 0', () {
@@ -63,18 +63,20 @@ void main() {
     });
 
     test('超出范围时钳制到 [-1, 1]', () {
+      // 正方向大拖动 → align 大幅减小 → 钳制到 -1
       final over = wallpaperAlignAfterDrag(
         previousAlign: 0.9,
         dragDelta: 500,
         overflowExtent: 100,
       );
-      expect(over, 1);
+      expect(over, -1);
+      // 负方向大拖动 → align 大幅增加 → 钳制到 1
       final under = wallpaperAlignAfterDrag(
         previousAlign: -0.9,
         dragDelta: -500,
         overflowExtent: 100,
       );
-      expect(under, -1);
+      expect(under, 1);
     });
   });
 }
