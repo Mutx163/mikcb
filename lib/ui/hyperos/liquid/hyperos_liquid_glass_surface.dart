@@ -88,8 +88,19 @@ abstract final class LiquidGlassShaderProbe {
     if (_realRefractionReady != null) {
       return;
     }
-    if (!ImageFilter.isShaderFilterSupported) {
+    final bool shaderFilterSupported = ImageFilter.isShaderFilterSupported;
+    debugPrint(
+      '[LiquidGlassProbe] probe start; '
+      'ImageFilter.isShaderFilterSupported = $shaderFilterSupported',
+    );
+    if (!shaderFilterSupported) {
       _realRefractionReady = false;
+      debugPrint(
+        '[LiquidGlassProbe] real refraction UNAVAILABLE: engine reports '
+        'shader filters unsupported on this platform '
+        '(Skia/Impeller backend cannot run FragmentProgram). '
+        'Falling back to FakeGlass for every liquid-glass surface.',
+      );
       return;
     }
     try {
@@ -97,21 +108,23 @@ abstract final class LiquidGlassShaderProbe {
       // 其余 shader（glassify / geometry_blended / filter）只服务于单独的
       // glassify / 多形状混合功能，与 HyperosLiquidGlassSurface 无关；
       // 它们编译失败（例如本机 Vulkan 下的 SkSL 不兼容）不应连累弹窗降级。
-      await FragmentProgram.fromAsset(
-        'packages/liquid_glass_renderer/lib/assets/shaders/'
-        'liquid_glass_final_render.frag',
-      );
+      const assetPath =
+          'packages/liquid_glass_renderer/lib/assets/shaders/'
+          'liquid_glass_final_render.frag';
+      await FragmentProgram.fromAsset(assetPath);
       _realRefractionReady = true;
       debugPrint(
         '[LiquidGlassProbe] real refraction shader OK '
-        '(final_render.frag compiled)',
+        '(final_render.frag compiled) at $assetPath',
       );
-    } catch (_) {
+    } catch (e, st) {
       _realRefractionReady = false;
       debugPrint(
         '[LiquidGlassProbe] real refraction UNAVAILABLE, '
-        'falling back to FakeGlass',
+        'falling back to FakeGlass. final_render.frag failed to load/compile.',
       );
+      debugPrint('[LiquidGlassProbe] error (${e.runtimeType}): $e');
+      debugPrint('[LiquidGlassProbe] stackTrace:\n$st');
     }
   }
 }
