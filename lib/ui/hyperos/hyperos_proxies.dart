@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 /// Temporary compatibility widget until all FHeaderAction usages are
 /// migrated to HyperosIconButton.
@@ -22,11 +23,7 @@ class FHeaderAction extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       button: true,
-      child: IconButton(
-        icon: icon,
-        onPressed: onPress,
-        tooltip: semanticsLabel,
-      ),
+      child: MiuixIconButton(onPressed: onPress, child: icon),
     );
   }
 }
@@ -88,8 +85,10 @@ class ForuiCompatTypeface {
 
   final TextTheme _tt;
 
-  TextStyle get xs => _tt.bodySmall?.copyWith(fontSize: 12) ?? const TextStyle(fontSize: 12);
-  TextStyle get xs2 => _tt.bodySmall?.copyWith(fontSize: 11) ?? const TextStyle(fontSize: 11);
+  TextStyle get xs =>
+      _tt.bodySmall?.copyWith(fontSize: 12) ?? const TextStyle(fontSize: 12);
+  TextStyle get xs2 =>
+      _tt.bodySmall?.copyWith(fontSize: 11) ?? const TextStyle(fontSize: 11);
   TextStyle get sm =>
       _tt.bodySmall?.copyWith(fontSize: 14) ?? const TextStyle(fontSize: 14);
   TextStyle get md => _tt.bodyMedium ?? const TextStyle();
