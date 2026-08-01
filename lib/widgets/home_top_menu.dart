@@ -82,6 +82,10 @@ class _HomeTopMenuSheet extends StatelessWidget {
       color: colors.foreground,
     );
 
+    final useLiquidGlass =
+        FrostedAppearanceScope.of(context).glassMode ==
+        FrostedGlassMode.liquidGlass;
+
     return HyperosSheetFrame(
       frosted: true,
       child: LayoutBuilder(
@@ -145,61 +149,67 @@ class _HomeTopMenuSheet extends StatelessWidget {
             );
           }
 
+          final menuColumn = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              menuRow([
+                tile(
+                  icon: Icons.system_update_alt_rounded,
+                  title: l10n.homeMenuUpdateTitle,
+                  action: HomeTopMenuAction.update,
+                  badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
+                  accentColor: hasAvailableUpdate ? colorScheme.primary : null,
+                ),
+                tile(
+                  icon: Icons.dashboard_customize_rounded,
+                  title: l10n.homeMenuOverviewTitle,
+                  action: HomeTopMenuAction.overview,
+                ),
+                tile(
+                  icon: Icons.bar_chart_rounded,
+                  title: l10n.homeMenuStatisticsTitle,
+                  action: HomeTopMenuAction.statistics,
+                ),
+                tile(
+                  icon: Icons.add_circle_outline_rounded,
+                  title: l10n.homeMenuAddCourseTitle,
+                  action: HomeTopMenuAction.addCourse,
+                ),
+              ]),
+              const SizedBox(height: tileSpacing),
+              menuRow([
+                tile(
+                  icon: Icons.school_outlined,
+                  title: l10n.examListTitle,
+                  action: HomeTopMenuAction.exams,
+                ),
+                tile(
+                  icon: Icons.file_upload_outlined,
+                  title: l10n.homeMenuImportTitle,
+                  action: HomeTopMenuAction.importCourses,
+                ),
+                tile(
+                  icon: Icons.tune_rounded,
+                  title: l10n.homeMenuSettingsTitle,
+                  action: HomeTopMenuAction.settings,
+                ),
+                tile(
+                  icon: Icons.favorite_border_rounded,
+                  title: l10n.homeMenuCoffeeTitle,
+                  action: HomeTopMenuAction.support,
+                ),
+              ]),
+            ],
+          );
+
           return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                menuRow([
-                  tile(
-                    icon: Icons.system_update_alt_rounded,
-                    title: l10n.homeMenuUpdateTitle,
-                    action: HomeTopMenuAction.update,
-                    badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
-                    accentColor: hasAvailableUpdate
-                        ? colorScheme.primary
-                        : null,
-                  ),
-                  tile(
-                    icon: Icons.dashboard_customize_rounded,
-                    title: l10n.homeMenuOverviewTitle,
-                    action: HomeTopMenuAction.overview,
-                  ),
-                  tile(
-                    icon: Icons.bar_chart_rounded,
-                    title: l10n.homeMenuStatisticsTitle,
-                    action: HomeTopMenuAction.statistics,
-                  ),
-                  tile(
-                    icon: Icons.add_circle_outline_rounded,
-                    title: l10n.homeMenuAddCourseTitle,
-                    action: HomeTopMenuAction.addCourse,
-                  ),
-                ]),
-                const SizedBox(height: tileSpacing),
-                menuRow([
-                  tile(
-                    icon: Icons.school_outlined,
-                    title: l10n.examListTitle,
-                    action: HomeTopMenuAction.exams,
-                  ),
-                  tile(
-                    icon: Icons.file_upload_outlined,
-                    title: l10n.homeMenuImportTitle,
-                    action: HomeTopMenuAction.importCourses,
-                  ),
-                  tile(
-                    icon: Icons.tune_rounded,
-                    title: l10n.homeMenuSettingsTitle,
-                    action: HomeTopMenuAction.settings,
-                  ),
-                  tile(
-                    icon: Icons.favorite_border_rounded,
-                    title: l10n.homeMenuCoffeeTitle,
-                    action: HomeTopMenuAction.support,
-                  ),
-                ]),
-              ],
-            ),
+            child: useLiquidGlass
+                ? HyperosLiquidGlassLayer(
+                    role: HyperosLiquidGlassRole.nestedTile,
+                    useBackdropGroup: true,
+                    child: menuColumn,
+                  )
+                : menuColumn,
           );
         },
       ),
@@ -232,59 +242,76 @@ class _HomeMenuActionTile extends StatelessWidget {
     final highlightColor = accentColor ?? colorScheme.primary;
     const iconWellRadius = BorderRadius.all(Radius.circular(14));
 
-    return HyperosLiquidGlassSurface(
-      role: HyperosLiquidGlassRole.nestedTile,
-      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
-      instantUnderlay: true,
-      useAncestorBackdropGroup: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: HyperosTheme.cardBorderRadius,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HyperosBadge(
-                  label: badgeText,
-                  show: (badgeText ?? '').isNotEmpty,
-                  child: HyperosFrostedSurface(
-                    borderRadius: iconWellRadius,
-                    blurEnabled: false,
-                    tint: HyperosBlurredHeader.accentSurfaceTintColor(
-                      highlightColor,
-                    ),
-                    child: SizedBox(
-                      width: 46,
-                      height: 46,
-                      child: Center(
-                        child: Icon(icon, color: highlightColor, size: 24),
-                      ),
+    final useLiquidGlass =
+        FrostedAppearanceScope.of(context).glassMode ==
+        FrostedGlassMode.liquidGlass;
+
+    final tile = Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: HyperosTheme.cardBorderRadius,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HyperosBadge(
+                label: badgeText,
+                show: (badgeText ?? '').isNotEmpty,
+                child: HyperosFrostedSurface(
+                  borderRadius: iconWellRadius,
+                  blurEnabled: false,
+                  tint: HyperosBlurredHeader.accentSurfaceTintColor(
+                    highlightColor,
+                  ),
+                  child: SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: Center(
+                      child: Icon(icon, color: highlightColor, size: 24),
                     ),
                   ),
                 ),
-                const SizedBox(height: 7),
-                SizedBox(
-                  height: titleAreaHeight,
-                  width: double.infinity,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: titleStyle,
-                    ),
+              ),
+              const SizedBox(height: 7),
+              SizedBox(
+                height: titleAreaHeight,
+                width: double.infinity,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: titleStyle,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (!useLiquidGlass) {
+      // Non-liquid-glass modes: match the sheet frame's frosted surface so
+      // the popup stays consistent instead of glassy tiles on a gray frame.
+      return HyperosFrostedSurface(
+        borderRadius: HyperosTheme.cardBorderRadius,
+        child: tile,
+      );
+    }
+
+    return HyperosLiquidGlassSurface(
+      role: HyperosLiquidGlassRole.nestedTile,
+      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
+      // Tiles share one ancestor HyperosLiquidGlassLayer (built in
+      // _HomeTopMenuSheet); a per-tile instant FakeGlass underlay would paint
+      // its own backdrop filter and reintroduce seam lines, so it stays off.
+      layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
+      child: tile,
     );
   }
 }

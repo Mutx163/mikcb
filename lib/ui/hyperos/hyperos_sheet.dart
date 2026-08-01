@@ -226,6 +226,22 @@ class HyperosSheetFrame extends StatelessWidget {
     required BorderRadius borderRadius,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
+
+    // Liquid glass mode: real-time refraction shader panel. Checked before
+    // the gaussian blur gate because liquid glass carries its own blur —
+    // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
+    // would make the frame a solid gray slab on desktop/web while the nested
+    // tiles keep rendering liquid glass.
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.sheet,
+        borderRadius: borderRadius.topLeft.x,
+        instantUnderlay: true,
+        useAncestorBackdropGroup: true,
+        child: const SizedBox.expand(),
+      );
+    }
+
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
     // Blur off → solid opaque panel (no translucent scrim over the page).
@@ -234,17 +250,6 @@ class HyperosSheetFrame extends StatelessWidget {
         color: HyperosColors.surfaceContainer(context),
         borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
-        child: const SizedBox.expand(),
-      );
-    }
-
-    // Liquid glass mode: real-time refraction shader panel.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.sheet,
-        borderRadius: borderRadius.topLeft.x,
-        instantUnderlay: true,
-        useAncestorBackdropGroup: true,
         child: const SizedBox.expand(),
       );
     }
@@ -269,6 +274,24 @@ class HyperosSheetFrame extends StatelessWidget {
     required Widget content,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
+
+    // Liquid glass mode: real-time refraction shader panel. Checked before
+    // the gaussian blur gate because liquid glass carries its own blur —
+    // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
+    // would make the frame a solid gray slab on desktop/web while nested
+    // tiles keep rendering liquid glass.
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+      return HyperosFrostedPanelScope(
+        child: HyperosLiquidGlassSurface(
+          role: HyperosLiquidGlassRole.sheet,
+          borderRadius: borderRadius.topLeft.x,
+          instantUnderlay: true,
+          useAncestorBackdropGroup: true,
+          child: content,
+        ),
+      );
+    }
+
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
     // Blur off → solid opaque panel (no translucent scrim over the page).
@@ -278,19 +301,6 @@ class HyperosSheetFrame extends StatelessWidget {
           color: HyperosColors.surfaceContainer(context),
           borderRadius: borderRadius,
           clipBehavior: Clip.antiAlias,
-          child: content,
-        ),
-      );
-    }
-
-    // Liquid glass mode: real-time refraction shader panel.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
-      return HyperosFrostedPanelScope(
-        child: HyperosLiquidGlassSurface(
-          role: HyperosLiquidGlassRole.sheet,
-          borderRadius: borderRadius.topLeft.x,
-          instantUnderlay: true,
-          useAncestorBackdropGroup: true,
           child: content,
         ),
       );

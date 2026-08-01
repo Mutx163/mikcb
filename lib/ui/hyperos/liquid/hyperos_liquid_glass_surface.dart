@@ -127,6 +127,7 @@ class HyperosLiquidGlassLayer extends StatefulWidget {
     this.role = HyperosLiquidGlassRole.nestedTile,
     this.settings,
     this.fake = false,
+    this.useBackdropGroup = false,
     super.key,
   });
 
@@ -134,6 +135,11 @@ class HyperosLiquidGlassLayer extends StatefulWidget {
   final HyperosLiquidGlassRole role;
   final LiquidGlassSettings? settings;
   final bool fake;
+
+  /// Blur the backdrop captured at the nearest ancestor [BackdropGroup]
+  /// (undimmed page) instead of everything painted below this layer, which
+  /// inside a modal would include the dim scrim.
+  final bool useBackdropGroup;
 
   @override
   State<HyperosLiquidGlassLayer> createState() =>
@@ -168,6 +174,7 @@ class _HyperosLiquidGlassLayerState extends State<HyperosLiquidGlassLayer> {
         );
     return LiquidGlassLayer(
       settings: resolvedSettings,
+      useBackdropGroup: widget.useBackdropGroup,
       // Opting into fake ourselves on Skia keeps the package from logging a
       // fallback warning on every rebuild. When the refraction shader cannot
       // actually compile (probed once), every layer downgrades to fake too.
