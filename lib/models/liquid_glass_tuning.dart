@@ -131,10 +131,16 @@ class LiquidGlassTuning {
   static const double defaultVisibility = 1.0;
 
   // --- Slider ranges ---
+  // Upper bounds kept within liquid_glass_renderer 0.2.0-dev.4's safe range.
+  // Past these the package's refraction displacement (thickness * 10) exceeds
+  // the geometry texture's encoding precision and shows vertical banding along
+  // SDF isolines, and the backdrop blur's TileMode.mirror pulls a bright halo
+  // in from the screen edges — both visible only at the extremes, so the
+  // sliders stop short of them. dense preset sits exactly at the cap.
   static const double minThickness = 0;
-  static const double maxThickness = 40;
+  static const double maxThickness = 28;
   static const double minBlur = 0;
-  static const double maxBlur = 24;
+  static const double maxBlur = 14;
   static const double minTintAlpha = 0;
   static const double maxTintAlpha = 0.55;
   static const double minLightIntensity = 0;
