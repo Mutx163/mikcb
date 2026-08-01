@@ -115,6 +115,7 @@ void main() {
     expect(frame.info.sourceSymbolCount, encoder.info.sourceSymbolCount);
     expect(frame.info.symbolSize, encoder.info.symbolSize);
     expect(frame.info.payloadLength, encoder.info.payloadLength);
+    expect(frame.info.rawLength, encoder.info.rawLength);
     expect(frame.info.payloadSha256, encoder.info.payloadSha256);
   });
 
@@ -132,7 +133,7 @@ void main() {
     // 坏帧在任何会话建立前就必须被拒绝。
     expect(() => decoder.submitFrame('not a qr frame'), throwsFormatException);
     expect(
-      () => decoder.submitFrame('QRV1|bad|frame|0|x|0|1|'),
+      () => decoder.submitFrame('QRV2|bad|frame|0|0|x|0|1|'),
       throwsFormatException,
     );
 
@@ -160,7 +161,7 @@ void main() {
     expect(encoder.frameTextFor(0), bySeed[0]);
   });
 
-  test('重复帧按 seed 去重，不重复计数也不重复消元', () {
+  test('重复帧按 seed 去重，计入 duplicateSymbols 与 detectedSymbols', () {
     // 不可压缩随机数据保证 k > 1，避免第一帧就完成解码。
     final rng = Random(3);
     final original = Uint8List.fromList(
@@ -178,10 +179,23 @@ void main() {
     final repeated = decoder.submitFrame(frame0);
     expect(repeated.receivedSymbols, first.receivedSymbols);
     expect(repeated.decodedSymbols, first.decodedSymbols);
+    expect(repeated.detectedSymbols, first.detectedSymbols + 1);
+    expect(repeated.duplicateSymbols, first.duplicateSymbols + 1);
     expect(decoder.isComplete, isFalse);
 
     final second = decoder.submitFrame(frame1);
     expect(second.receivedSymbols, first.receivedSymbols + 1);
+  });
+
+  test('会话信息携带原始大小 rawLength', () {
+    final original = utf8Bytes('原始大小随帧传输，接收端无需解压即可展示文件信息。' * 30);
+    final encoder = QrTransferEncoder.prepare(original);
+    final decoder = QrTransferDecoder();
+
+    decoder.submitFrame(encoder.nextFrame());
+
+    expect(decoder.sessionInfo?.rawLength, original.length);
+    expect(decoder.progress.sourceSymbolCount, encoder.info.sourceSymbolCount);
   });
 
   test('大文件跨多符号粒度往返一致', () {

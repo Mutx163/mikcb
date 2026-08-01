@@ -10,19 +10,20 @@ import 'qr_transfer_session.dart';
 /// 二维码帧的文本协议：
 ///
 /// ```text
-/// QRV1|<k>|<t>|<payloadLen>|<payloadSha256B64>|<seed>|<degree>|<symbolB64>
+/// QRV2|<k>|<t>|<payloadLen>|<rawLen>|<payloadSha256B64>|<seed>|<degree>|<symbolB64>
 /// ```
 ///
 /// - `k` / `t`：LT 码的源码符号数与符号字节大小，解码端据此构造解码器；
 /// - `payloadLen`：gzip 后载荷的真实字节数，解码后据此截断；
+/// - `rawLen`：原始（未压缩）数据的字节数，供接收端展示文件信息；
 /// - `payloadSha256B64`：载荷 SHA-256，解码完成后校验；
 /// - `seed`：本帧的 LT 编码种子，解码端据此确定性地重建邻居；
 /// - `degree`：本帧的度数，必须随帧传输（解码端不做采样）；
 /// - `symbolB64`：本帧符号的 base64url 文本。
 class QrTransferFrame {
-  static const String magic = 'QRV1';
+  static const String magic = 'QRV2';
   static const String fieldSeparator = '|';
-  static const int expectedFieldCount = 8;
+  static const int expectedFieldCount = 9;
 
   final QrTransferSessionInfo info;
   final int seed;
@@ -43,6 +44,7 @@ class QrTransferFrame {
       info.sourceSymbolCount,
       info.symbolSize,
       info.payloadLength,
+      info.rawLength,
       info.payloadSha256,
       seed,
       degree,
@@ -60,12 +62,14 @@ class QrTransferFrame {
     final sourceSymbolCount = _parseIntField(fields[1]);
     final symbolSize = _parseIntField(fields[2]);
     final payloadLength = _parseIntField(fields[3]);
-    final seed = _parseIntField(fields[5]);
-    final degree = _parseIntField(fields[6]);
+    final rawLength = _parseIntField(fields[4]);
+    final seed = _parseIntField(fields[6]);
+    final degree = _parseIntField(fields[7]);
 
     if (sourceSymbolCount <= 0 ||
         symbolSize <= 0 ||
         payloadLength < 0 ||
+        rawLength < 0 ||
         seed < 0 ||
         degree <= 0) {
       throw const FormatException('invalid_qr_transfer_frame');
@@ -73,7 +77,7 @@ class QrTransferFrame {
 
     final Uint8List symbolBytes;
     try {
-      symbolBytes = base64Url.decode(fields[7]);
+      symbolBytes = base64Url.decode(fields[8]);
     } on FormatException {
       throw const FormatException('invalid_qr_transfer_frame');
     }
@@ -86,7 +90,8 @@ class QrTransferFrame {
         sourceSymbolCount: sourceSymbolCount,
         symbolSize: symbolSize,
         payloadLength: payloadLength,
-        payloadSha256: fields[4],
+        rawLength: rawLength,
+        payloadSha256: fields[5],
       ),
       seed: seed,
       degree: degree,
@@ -145,6 +150,7 @@ class QrTransferEncoder {
       sourceSymbolCount: sourceSymbolCount,
       symbolSize: symbolSize,
       payloadLength: compressedPayload.length,
+      rawLength: rawBytes.length,
       payloadSha256: base64Url.encode(sha256.convert(compressedPayload).bytes),
     );
     final codec = LTCodec(
@@ -189,6 +195,8 @@ class QrTransferEncoder {
 class QrTransferDecoder {
   QrTransferSessionInfo? _info;
   LTCodec? _codec;
+  int _detectedSymbols = 0;
+  int _duplicateSymbols = 0;
   int _receivedSymbols = 0;
   int _innovativeSymbols = 0;
   final Set<int> _submittedSeeds = {};
@@ -207,6 +215,8 @@ class QrTransferDecoder {
     final codec = _codec;
     final status = codec?.status();
     return QrTransferDecodeProgress(
+      detectedSymbols: _detectedSymbols,
+      duplicateSymbols: _duplicateSymbols,
       receivedSymbols: _receivedSymbols,
       innovativeSymbols: _innovativeSymbols,
       sourceSymbolCount: _info?.sourceSymbolCount ?? 0,
@@ -224,9 +234,12 @@ class QrTransferDecoder {
     final frame = QrTransferFrame.parse(frameText);
     // 先建立/校验会话：跨会话的帧即使 seed 相同也必须先报不匹配。
     final codec = _ensureCodec(frame.info);
+    // 属于当前会话的识别结果都计入 detected（含重复帧），供接收端统计采样帧率。
+    _detectedSymbols++;
     // 摄像头停在同一帧画面时可能反复识别出相同符号；重复提交只会
     // 触发无意义的高斯消元，按 seed 去重跳过（帧率高后收益明显）。
     if (!_submittedSeeds.add(frame.seed)) {
+      _duplicateSymbols++;
       return progress;
     }
     _receivedSymbols++;

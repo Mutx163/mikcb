@@ -17,7 +17,10 @@ import '../services/qr_transfer/qr_transfer_codec.dart';
 ///
 /// 性能要点：LT 编码 + base64 + QR 矩阵计算全部**提前**完成（见
 /// [QrTransferEncoder.frameTextFor] 与 [_qrCache]），帧切换时 UI 线程
-/// 只做一次赋值，因此可以把帧间隔压到 700ms 而不卡顿。
+/// 只做一次赋值，因此可以把帧间隔压到 250ms 而不卡顿。
+///
+/// 帧率取值：摄像头通常 100~300ms 即可稳定识别一帧，250ms（4 FPS）在
+/// 识别余量与吞吐之间取平衡；LT 码本身抗丢帧，偶尔漏扫一帧不影响解码。
 class QrTransferSendScreen extends StatefulWidget {
   /// 待传输的原始字节（备份 JSON 的 UTF-8 编码）。
   final Uint8List payloadBytes;
@@ -36,16 +39,16 @@ class QrTransferSendScreen extends StatefulWidget {
 }
 
 class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
-  /// 帧间隔。摄像头通常 100~300ms 即可识别一帧，700ms 留足余量；
-  /// LT 码本身抗丢帧，偶尔漏扫一帧也不影响解码。
-  static const Duration _frameInterval = Duration(milliseconds: 700);
+  /// 帧间隔。摄像头通常 100~300ms 即可识别一帧，250ms（4 FPS）在
+  /// 识别余量与吞吐之间取平衡；LT 码本身抗丢帧，偶尔漏扫一帧也不影响解码。
+  static const Duration _frameInterval = Duration(milliseconds: 250);
 
-  /// 提前预计算的帧数：当前帧之前先把未来两帧的 QR 矩阵算好，
-  /// 把耗时移出 setState 关键路径。
-  static const int _precomputeLookahead = 2;
+  /// 提前预计算的帧数：当前帧之前先把未来四帧的 QR 矩阵算好，
+  /// 把耗时移出 setState 关键路径，并为 250ms 帧间隔留足缓冲。
+  static const int _precomputeLookahead = 4;
 
   /// 缓存最近若干帧的矩阵，避免旧帧无限堆积内存。
-  static const int _cacheRetention = 16;
+  static const int _cacheRetention = 32;
 
   late final QrTransferEncoder _encoder;
   Timer? _frameTimer;
