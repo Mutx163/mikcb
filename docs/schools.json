@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-31T05:02:56+00:00",
+  "updatedAt": "2026-08-01T04:55:18+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 132,
-    "schools": 127,
+    "total": 133,
+    "schools": 128,
     "generic": 5
   },
   "schools": [
@@ -461,6 +461,13 @@
       "name": "衡阳师范学院",
       "initial": "H",
       "resourceFolder": "HYNU",
+      "category": "school"
+    },
+    {
+      "id": "GUC",
+      "name": "吉利学院",
+      "initial": "J",
+      "resourceFolder": "GUC",
       "category": "school"
     },
     {
