@@ -4,6 +4,7 @@ import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
+import 'frosted/liquid_glass_degradation.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
 
@@ -232,7 +233,8 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while the nested
     // tiles keep rendering liquid glass.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.sheet,
         borderRadius: borderRadius.topLeft.x,
@@ -280,7 +282,8 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while nested
     // tiles keep rendering liquid glass.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosFrostedPanelScope(
         child: HyperosLiquidGlassSurface(
           role: HyperosLiquidGlassRole.sheet,

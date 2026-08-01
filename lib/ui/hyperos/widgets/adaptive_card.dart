@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart'
     show MiuixCardDefaults, MiuixSquircleBorder;
 
+import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_blurred_header.dart';
 import '../hyperos_sheet.dart';
 import '../hyperos_theme.dart';
@@ -93,7 +94,8 @@ class HyperosAdaptiveCard extends StatelessWidget {
       return HyperosColors.card(context);
     }
     final appearance = FrostedAppearanceScope.of(context);
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosBlurredHeader.nestedLiquidTileTintColor(context);
     }
     return HyperosBlurredHeader.nestedSurfaceTintColor(
