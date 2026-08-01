@@ -1192,6 +1192,38 @@ class AppLocalizationsKo extends AppLocalizations {
       '다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요';
 
   @override
+  String get qrTransferSampleFps => '샘플 FPS';
+
+  @override
+  String get qrTransferDecodeFps => '디코딩 FPS';
+
+  @override
+  String get qrTransferReceiveSpeed => '수신 속도';
+
+  @override
+  String get qrTransferElapsed => '경과 시간';
+
+  @override
+  String get qrTransferNewFrames => '새 프레임';
+
+  @override
+  String get qrTransferDuplicateFrames => '중복 프레임';
+
+  @override
+  String get qrTransferBlockSize => '블록 크기';
+
+  @override
+  String get qrTransferBlockCount => '블록 수';
+
+  @override
+  String get qrTransferFileData => '파일 데이터';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '원본 $rawSize · 압축 $compressedSize';
+  }
+
+  @override
   String get fullExportTitle => '전체 내보내기';
 
   @override

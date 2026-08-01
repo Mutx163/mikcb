@@ -2246,6 +2246,66 @@ abstract class AppLocalizations {
   /// **'检测到不同传输内容，请确认只对准一份数据'**
   String get qrTransferSessionMismatch;
 
+  /// No description provided for @qrTransferSampleFps.
+  ///
+  /// In zh, this message translates to:
+  /// **'采样帧率'**
+  String get qrTransferSampleFps;
+
+  /// No description provided for @qrTransferDecodeFps.
+  ///
+  /// In zh, this message translates to:
+  /// **'解码帧率'**
+  String get qrTransferDecodeFps;
+
+  /// No description provided for @qrTransferReceiveSpeed.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收速度'**
+  String get qrTransferReceiveSpeed;
+
+  /// No description provided for @qrTransferElapsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已用时间'**
+  String get qrTransferElapsed;
+
+  /// No description provided for @qrTransferNewFrames.
+  ///
+  /// In zh, this message translates to:
+  /// **'新增帧'**
+  String get qrTransferNewFrames;
+
+  /// No description provided for @qrTransferDuplicateFrames.
+  ///
+  /// In zh, this message translates to:
+  /// **'重复帧'**
+  String get qrTransferDuplicateFrames;
+
+  /// No description provided for @qrTransferBlockSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'单块大小'**
+  String get qrTransferBlockSize;
+
+  /// No description provided for @qrTransferBlockCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据块数'**
+  String get qrTransferBlockCount;
+
+  /// No description provided for @qrTransferFileData.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件数据'**
+  String get qrTransferFileData;
+
+  /// No description provided for @qrTransferFileDataDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'原始 {rawSize} · 压缩 {compressedSize}'**
+  String qrTransferFileDataDetail(String rawSize, String compressedSize);
+
   /// No description provided for @fullExportTitle.
   ///
   /// In zh, this message translates to:

@@ -623,6 +623,26 @@
   },
   "qrTransferReceiveComplete": "Data received, importing…",
   "qrTransferSessionMismatch": "Detected a different transfer; make sure you are pointing at one stream only",
+  "qrTransferSampleFps": "Sample FPS",
+  "qrTransferDecodeFps": "Decode FPS",
+  "qrTransferReceiveSpeed": "Receive Speed",
+  "qrTransferElapsed": "Elapsed",
+  "qrTransferNewFrames": "New Frames",
+  "qrTransferDuplicateFrames": "Duplicate Frames",
+  "qrTransferBlockSize": "Block Size",
+  "qrTransferBlockCount": "Block Count",
+  "qrTransferFileData": "File Data",
+  "qrTransferFileDataDetail": "Original {rawSize} · Compressed {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "Export",
   "fullExportSubtitle": "Export the current timetable, or export all timetables, time schemes, and the current selection",
   "exportCurrentTimetable": "Export Current Timetable",

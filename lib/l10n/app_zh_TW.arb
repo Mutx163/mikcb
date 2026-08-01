@@ -489,6 +489,26 @@
   },
   "qrTransferReceiveComplete": "資料接收完成，正在匯入…",
   "qrTransferSessionMismatch": "偵測到不同傳輸內容，請確認只對準一份資料",
+  "qrTransferSampleFps": "取樣幀率",
+  "qrTransferDecodeFps": "解碼幀率",
+  "qrTransferReceiveSpeed": "接收速度",
+  "qrTransferElapsed": "已用時間",
+  "qrTransferNewFrames": "新增幀",
+  "qrTransferDuplicateFrames": "重複幀",
+  "qrTransferBlockSize": "單塊大小",
+  "qrTransferBlockCount": "資料塊數",
+  "qrTransferFileData": "檔案資料",
+  "qrTransferFileDataDetail": "原始 {rawSize} · 壓縮 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "完整匯出",
   "fullExportSubtitle": "支持匯出目前課表，或一次匯出全部課表、時間範本和目前選中狀態",
   "exportCurrentTimetable": "匯出目前課表",

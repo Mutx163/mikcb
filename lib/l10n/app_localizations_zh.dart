@@ -1169,6 +1169,38 @@ class AppLocalizationsZh extends AppLocalizations {
   String get qrTransferSessionMismatch => '检测到不同传输内容，请确认只对准一份数据';
 
   @override
+  String get qrTransferSampleFps => '采样帧率';
+
+  @override
+  String get qrTransferDecodeFps => '解码帧率';
+
+  @override
+  String get qrTransferReceiveSpeed => '接收速度';
+
+  @override
+  String get qrTransferElapsed => '已用时间';
+
+  @override
+  String get qrTransferNewFrames => '新增帧';
+
+  @override
+  String get qrTransferDuplicateFrames => '重复帧';
+
+  @override
+  String get qrTransferBlockSize => '单块大小';
+
+  @override
+  String get qrTransferBlockCount => '数据块数';
+
+  @override
+  String get qrTransferFileData => '文件数据';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '原始 $rawSize · 压缩 $compressedSize';
+  }
+
+  @override
   String get fullExportTitle => '完整导出';
 
   @override
@@ -10051,6 +10083,38 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
 
   @override
+  String get qrTransferSampleFps => '取樣幀率';
+
+  @override
+  String get qrTransferDecodeFps => '解碼幀率';
+
+  @override
+  String get qrTransferReceiveSpeed => '接收速度';
+
+  @override
+  String get qrTransferElapsed => '已用時間';
+
+  @override
+  String get qrTransferNewFrames => '新增幀';
+
+  @override
+  String get qrTransferDuplicateFrames => '重複幀';
+
+  @override
+  String get qrTransferBlockSize => '單塊大小';
+
+  @override
+  String get qrTransferBlockCount => '資料塊數';
+
+  @override
+  String get qrTransferFileData => '檔案資料';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '原始 $rawSize · 壓縮 $compressedSize';
+  }
+
+  @override
   String get fullExportTitle => '完整匯出';
 
   @override
@@ -18735,6 +18799,38 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
+
+  @override
+  String get qrTransferSampleFps => '取樣幀率';
+
+  @override
+  String get qrTransferDecodeFps => '解碼幀率';
+
+  @override
+  String get qrTransferReceiveSpeed => '接收速度';
+
+  @override
+  String get qrTransferElapsed => '已用時間';
+
+  @override
+  String get qrTransferNewFrames => '新增幀';
+
+  @override
+  String get qrTransferDuplicateFrames => '重複幀';
+
+  @override
+  String get qrTransferBlockSize => '單塊大小';
+
+  @override
+  String get qrTransferBlockCount => '資料塊數';
+
+  @override
+  String get qrTransferFileData => '檔案資料';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '原始 $rawSize · 壓縮 $compressedSize';
+  }
 
   @override
   String get fullExportTitle => '完整匯出';

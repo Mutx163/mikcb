@@ -1187,6 +1187,38 @@ class AppLocalizationsJa extends AppLocalizations {
   String get qrTransferSessionMismatch => '別の転送内容を検出しました。1つの画面だけに正対してください';
 
   @override
+  String get qrTransferSampleFps => 'サンプルFPS';
+
+  @override
+  String get qrTransferDecodeFps => 'デコードFPS';
+
+  @override
+  String get qrTransferReceiveSpeed => '受信速度';
+
+  @override
+  String get qrTransferElapsed => '経過時間';
+
+  @override
+  String get qrTransferNewFrames => '新規フレーム';
+
+  @override
+  String get qrTransferDuplicateFrames => '重複フレーム';
+
+  @override
+  String get qrTransferBlockSize => 'ブロックサイズ';
+
+  @override
+  String get qrTransferBlockCount => 'ブロック数';
+
+  @override
+  String get qrTransferFileData => 'ファイルデータ';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '元 $rawSize · 圧縮 $compressedSize';
+  }
+
+  @override
   String get fullExportTitle => '完全エクスポート';
 
   @override

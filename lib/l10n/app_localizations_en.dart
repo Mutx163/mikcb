@@ -1247,6 +1247,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Detected a different transfer; make sure you are pointing at one stream only';
 
   @override
+  String get qrTransferSampleFps => 'Sample FPS';
+
+  @override
+  String get qrTransferDecodeFps => 'Decode FPS';
+
+  @override
+  String get qrTransferReceiveSpeed => 'Receive Speed';
+
+  @override
+  String get qrTransferElapsed => 'Elapsed';
+
+  @override
+  String get qrTransferNewFrames => 'New Frames';
+
+  @override
+  String get qrTransferDuplicateFrames => 'Duplicate Frames';
+
+  @override
+  String get qrTransferBlockSize => 'Block Size';
+
+  @override
+  String get qrTransferBlockCount => 'Block Count';
+
+  @override
+  String get qrTransferFileData => 'File Data';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return 'Original $rawSize · Compressed $compressedSize';
+  }
+
+  @override
   String get fullExportTitle => 'Export';
 
   @override

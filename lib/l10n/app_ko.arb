@@ -490,6 +490,26 @@
   },
   "qrTransferReceiveComplete": "데이터 수신 완료, 가져오는 중…",
   "qrTransferSessionMismatch": "다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요",
+  "qrTransferSampleFps": "샘플 FPS",
+  "qrTransferDecodeFps": "디코딩 FPS",
+  "qrTransferReceiveSpeed": "수신 속도",
+  "qrTransferElapsed": "경과 시간",
+  "qrTransferNewFrames": "새 프레임",
+  "qrTransferDuplicateFrames": "중복 프레임",
+  "qrTransferBlockSize": "블록 크기",
+  "qrTransferBlockCount": "블록 수",
+  "qrTransferFileData": "파일 데이터",
+  "qrTransferFileDataDetail": "원본 {rawSize} · 압축 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "전체 내보내기",
   "fullExportSubtitle": "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다",
   "exportCurrentTimetable": "현재 시간표 내보내기",

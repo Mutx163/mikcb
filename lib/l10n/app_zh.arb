@@ -623,6 +623,26 @@
   },
   "qrTransferReceiveComplete": "数据接收完成，正在导入…",
   "qrTransferSessionMismatch": "检测到不同传输内容，请确认只对准一份数据",
+  "qrTransferSampleFps": "采样帧率",
+  "qrTransferDecodeFps": "解码帧率",
+  "qrTransferReceiveSpeed": "接收速度",
+  "qrTransferElapsed": "已用时间",
+  "qrTransferNewFrames": "新增帧",
+  "qrTransferDuplicateFrames": "重复帧",
+  "qrTransferBlockSize": "单块大小",
+  "qrTransferBlockCount": "数据块数",
+  "qrTransferFileData": "文件数据",
+  "qrTransferFileDataDetail": "原始 {rawSize} · 压缩 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "完整导出",
   "fullExportSubtitle": "支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态",
   "exportCurrentTimetable": "导出当前课表",
