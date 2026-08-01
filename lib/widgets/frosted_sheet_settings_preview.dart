@@ -37,6 +37,37 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
 
   static const _previewHeight = 280.0;
 
+  /// Preview-only render protection against the liquid-glass package's
+  /// extreme-parameter artifacts.
+  ///
+  /// Past the dense preset's thickness/blur (28/14) the package shaders break
+  /// down: the refraction displacement (thickness*10) exceeds the geometry
+  /// texture's 8-bit encoding range and quantises into vertical stripes, and
+  /// the edge-lighting pass paints fringe gradients on the band's visible
+  /// edges. The real home page never sees this — it renders the *saved*
+  /// tuning, which only becomes extreme if the user saves one — but this
+  /// preview mirrors the live slider draft, so pulling a knob to the max
+  /// used to paint stripes and fringes all over the preview band.
+  ///
+  /// Clamp the preview display only: slider ranges, the saved tuning and the
+  /// real home page are untouched. Values at or below the dense preset pass
+  /// through unchanged, so the preview stays 1:1 for every stock preset.
+  static LiquidGlassTuning? previewSafeTuning(LiquidGlassTuning? tuning) {
+    if (tuning == null) {
+      return null;
+    }
+    return tuning.copyWith(
+      thickness: tuning.thickness.clamp(
+        LiquidGlassTuning.minThickness,
+        LiquidGlassTuning.presetDense.thickness,
+      ),
+      blur: tuning.blur.clamp(
+        LiquidGlassTuning.minBlur,
+        LiquidGlassTuning.presetDense.blur,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -46,7 +77,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       sheetBarrierAlpha: barrierAlpha,
       blurEnabled: blurEnabled,
       glassMode: glassMode,
-      liquidGlassTuning: liquidGlassTuning,
+      liquidGlassTuning: previewSafeTuning(liquidGlassTuning),
     );
 
     return FrostedAppearanceScope(
