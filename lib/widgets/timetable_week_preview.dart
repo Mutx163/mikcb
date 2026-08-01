@@ -1,15 +1,14 @@
 import 'dart:async' show unawaited;
 import 'dart:math' as math;
-import 'dart:ui' as ui show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
-import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'home_page_region_blur.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
@@ -128,13 +127,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   ///
   /// [HomePageContinuousChromeFrostedOverlay] cannot be reused directly — it
   /// derives its geometry from the real status-bar inset and the home-page
-  /// header constants, neither of which holds inside a preview box. The
-  /// material is a pre-blurred stand-in rather than [HomePageChromeGlassFill]:
-  /// see [_PreviewChromeGlassBand].
-  List<Widget>? _buildChromeGlassBand({
-    required double appHeaderHeight,
-    required double surfaceHeight,
-  }) {
+  /// header constants, neither of which holds inside a preview box. So the band
+  /// is positioned here and painted with the same material the home page uses
+  /// ([HomePageChromeGlassFill]): a real liquid-glass surface that captures the
+  /// wallpaper behind it and responds to every glass tuning knob (light
+  /// intensity, thickness, visibility, …), with the specular fringe the old
+  /// pre-blurred stand-in could not render.
+  List<Widget>? _buildChromeGlassBand({required double appHeaderHeight}) {
     final hasHeaderBand =
         settings.homePageHeaderBlurEnabled && appHeaderHeight > 0;
     final hasWeekdayBand = settings.homePageWeekdayBarBlurEnabled;
@@ -158,6 +157,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       return null;
     }
 
+    // Overdraw the glass above the band's top so the liquid-glass specular
+    // fringe on that edge lands outside the ClipRect and is clipped — same
+    // trick as HomePageContinuousChromeFrostedOverlay — otherwise the band's
+    // interior top edge reads as a 1px hairline seam.
     return [
       Positioned(
         top: top,
@@ -165,11 +168,29 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         right: 0,
         height: height,
         child: IgnorePointer(
-          child: _PreviewChromeGlassBand(
-            settings: settings,
-            bandTop: top,
-            surfaceHeight: surfaceHeight,
-            wallpaperTopLuminance: wallpaperTopLuminance,
+          child: ClipRect(
+            clipBehavior: Clip.hardEdge,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned(
+                  top: -homePageChromeGlassTopEdgeOverdraw,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: HomePageChromeGlassFill(
+                    wallpaperTopLuminance: wallpaperTopLuminance,
+                    // The band is a small interior rectangle inside this
+                    // preview, unlike the home page's screen-edge band: its
+                    // own-bounds backdrop capture would clamp refraction
+                    // displacement against the band edges and streak them
+                    // into a "picture frame". Sample the grouped full-size
+                    // wallpaper capture instead (see the BackdropGroup below).
+                    useAncestorBackdropGroup: true,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -280,95 +301,102 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
 
             final surface = SizedBox(
               height: totalHeight,
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  if (hasBackdrop)
-                    homePageBackdropLayer(settings: settings, isDark: isDark),
-                  if (hasBackdrop)
-                    ...?_buildChromeGlassBand(
-                      appHeaderHeight: appHeaderHeight,
-                      surfaceHeight: totalHeight,
-                    ),
-                  Column(
-                    children: [
-                      if (includeAppHeader)
-                        _buildAppHeader(
-                          context: context,
-                          isDark: isDark,
-                          darkFallback: darkFallback,
-                          hasBackdrop: hasBackdrop,
-                        ),
-                      weekdayHeader,
-                      // Home reserves the same gap under the weekday glass.
-                      if (chromeGridClearance > 0)
-                        SizedBox(height: chromeGridClearance),
-                      SizedBox(
-                        height: bodyHeight,
-                        // Same glass hosting as the home grid: one shared
-                        // backdrop capture for the whole preview instead of one
-                        // per card. Matters doubly here because the settings
-                        // header's CFH pass rasterises this subtree offscreen.
-                        child: CourseGridGlassHost(
-                          settings: settings,
-                          child: IgnorePointer(child: grid),
-                        ),
+              child: BackdropGroup(
+                child: Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    if (hasBackdrop)
+                      homePageBackdropLayer(settings: settings, isDark: isDark),
+                    // First filter inside the group: caches the full-size
+                    // wallpaper backdrop so the chrome band's glass below can
+                    // sample beyond its own narrow bounds without clamping
+                    // against the band edges into "picture frame" streaks.
+                    if (hasBackdrop)
+                      const Positioned.fill(child: UndimmedBackdropCapture()),
+                    if (hasBackdrop)
+                      ...?_buildChromeGlassBand(
+                        appHeaderHeight: appHeaderHeight,
                       ),
-                    ],
-                  ),
-                  if (showsFloatingButton &&
-                      _canReturnToCurrentWeek(settings, week))
-                    Positioned(
-                      right: 20,
-                      bottom: 12,
-                      child: IgnorePointer(
-                        child: Material(
-                          color: colorScheme.surfaceContainerHigh.withValues(
-                            alpha: settings
-                                .timetableFloatingBackToCurrentWeekButtonOpacity,
+                    Column(
+                      children: [
+                        if (includeAppHeader)
+                          _buildAppHeader(
+                            context: context,
+                            isDark: isDark,
+                            darkFallback: darkFallback,
+                            hasBackdrop: hasBackdrop,
                           ),
-                          elevation: 2,
-                          shadowColor: Colors.black.withValues(
-                            alpha: isDark ? 0.12 : 0.06,
+                        weekdayHeader,
+                        // Home reserves the same gap under the weekday glass.
+                        if (chromeGridClearance > 0)
+                          SizedBox(height: chromeGridClearance),
+                        SizedBox(
+                          height: bodyHeight,
+                          // Same glass hosting as the home grid: one shared
+                          // backdrop capture for the whole preview instead of one
+                          // per card. Matters doubly here because the settings
+                          // header's CFH pass rasterises this subtree offscreen.
+                          child: CourseGridGlassHost(
+                            settings: settings,
+                            child: IgnorePointer(child: grid),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                            side: BorderSide(
-                              color: context.theme.colors.border,
-                              width: 1,
+                        ),
+                      ],
+                    ),
+                    if (showsFloatingButton &&
+                        _canReturnToCurrentWeek(settings, week))
+                      Positioned(
+                        right: 20,
+                        bottom: 12,
+                        child: IgnorePointer(
+                          child: Material(
+                            color: colorScheme.surfaceContainerHigh.withValues(
+                              alpha: settings
+                                  .timetableFloatingBackToCurrentWeekButtonOpacity,
                             ),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
+                            elevation: 2,
+                            shadowColor: Colors.black.withValues(
+                              alpha: isDark ? 0.12 : 0.06,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.my_location_rounded,
-                                  size: 15,
-                                  color: colorScheme.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.backToCurrentWeekAction,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.onSurface,
-                                    height: 1,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(
+                                color: context.theme.colors.border,
+                                width: 1,
+                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.my_location_rounded,
+                                    size: 15,
+                                    color: colorScheme.primary,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    l10n.backToCurrentWeekAction,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.onSurface,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             );
 
@@ -1232,88 +1260,4 @@ class _DayCourseDisplayItem {
   final bool isCurrentWeekCourse;
   final bool isConflicting;
   final double opacity;
-}
-
-/// Pre-blurred stand-in for the home chrome glass band inside the preview.
-///
-/// The real band material ([HomePageChromeGlassFill]) is a live
-/// [BackdropFilter] / liquid-glass surface. Inside the preview it becomes a
-/// small *interior* rectangle: the filter can only sample the backdrop within
-/// its own bounds, so edge clamping streaks all four edges into a beveled
-/// "picture frame" (the home page never shows this because its band edges sit
-/// on the physical screen edges, with the top edge overdrawn out of the clip).
-/// Following the day-view summary card's approach, blur the preview's own
-/// wallpaper as one whole image (full sample range, no bounds clamp), crop the
-/// band strip, and paint the band's equivalent wash on top.
-class _PreviewChromeGlassBand extends StatelessWidget {
-  const _PreviewChromeGlassBand({
-    required this.settings,
-    required this.bandTop,
-    required this.surfaceHeight,
-    required this.wallpaperTopLuminance,
-  });
-
-  final TimetableSettings settings;
-
-  /// Band offset from the top of the preview surface.
-  final double bandTop;
-
-  /// Full preview surface height, so the blurred copy overlays the backdrop
-  /// layer underneath with identical [BoxFit.cover] geometry.
-  final double surfaceHeight;
-
-  /// Wallpaper sample driving the liquid scrim polarity, same as home.
-  final double? wallpaperTopLuminance;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final appearance = FrostedAppearanceScope.of(context);
-    // Same sigma the home pre-blur bitmap uses for this band: gaussian chrome
-    // matches the band's BackdropFilter sigma; liquid glass approximates the
-    // shader's softer blur (see homePreblurSigma in timetable_screen.dart).
-    final sigma = appearance.glassMode == FrostedGlassMode.liquidGlass
-        ? (appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur
-              .clamp(2.0, 24.0)
-              .toDouble()
-        : HyperosBlurredHeader.blurSigmaOf(context);
-    final image = useBlur && sigma > 0
-        ? homePageBackdropImageWidget(settings: settings, isDark: isDark)
-        : null;
-
-    return ClipRect(
-      clipBehavior: Clip.hardEdge,
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          if (image != null)
-            Positioned(
-              top: -bandTop,
-              left: 0,
-              right: 0,
-              height: surfaceHeight,
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(
-                  sigmaX: sigma,
-                  sigmaY: sigma,
-                  tileMode: TileMode.clamp,
-                ),
-                child: image,
-              ),
-            ),
-          // Blur off: wash only, over the sharp wallpaper — same as the real
-          // material's tint-only fallback.
-          Positioned.fill(
-            child: ColoredBox(
-              color: HomePageChromeGlassFill.standInWashColor(
-                context,
-                wallpaperTopLuminance: wallpaperTopLuminance,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -195,10 +195,23 @@ class HomePageChromeGlassFill extends StatelessWidget {
   const HomePageChromeGlassFill({
     this.wallpaperTopLuminance,
     this.borderRadius = 0,
+    this.useAncestorBackdropGroup = false,
     super.key,
   });
 
   final double? wallpaperTopLuminance;
+
+  /// Sample the nearest [BackdropGroup]'s full-size backdrop instead of the
+  /// band's own clipped bounds.
+  ///
+  /// The home page's band sits on the physical screen edges, so its own-bounds
+  /// backdrop capture never clamps visibly. Inside a settings preview the band
+  /// is a small interior rectangle: refraction displacement past its bounds
+  /// then clamps against the band's own edges and streaks all four into a
+  /// "picture frame". Setting this to true makes the band sample a full-size
+  /// grouped capture (wallpaper layer + [UndimmedBackdropCapture] inside the
+  /// group) so the displacement range stays inside the captured backdrop.
+  final bool useAncestorBackdropGroup;
 
   /// Corner radius of the glass shape itself. The chrome band is square (0);
   /// the day-view summary card reuses this material with its card radius —
@@ -302,6 +315,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
         role: HyperosLiquidGlassRole.header,
         borderRadius: borderRadius,
         instantUnderlay: false,
+        useAncestorBackdropGroup: useAncestorBackdropGroup,
         // This band paints its own wallpaper-aware scrim below.
         contentLegibilityFill: false,
         child: Stack(
