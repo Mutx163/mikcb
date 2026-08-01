@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 
@@ -18,6 +19,8 @@ import '../services/qr_transfer/qr_transfer_session.dart';
 /// 界面为 HyperOS 风格：顶部 Miuix 顶栏、取景框带扫描线动画、
 /// 底部毛玻璃进度面板；重复识别到同一帧符号由
 /// [QrTransferDecoder.submitFrame] 按 seed 去重，不会做无谓消元。
+/// 面板会实时展示采样/解码帧率、接收速度、已用时间、新增/重复帧数、
+/// 单块大小与文件数据等信息，便于诊断传输瓶颈。
 class QrTransferScanScreen extends StatefulWidget {
   final ValueChanged<Uint8List> onComplete;
 
@@ -37,6 +40,13 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
   /// 取景框扫描线动画。
   late final AnimationController _scanLineController;
 
+  /// 会话开始时间：收到第一帧属于本传输的有效二维码时记录，
+  /// 用于计算已用时间与各项帧率/速度指标。
+  DateTime? _sessionStart;
+
+  /// 每秒刷新一次面板上的时间与帧率显示（即使没有新帧到达）。
+  Timer? _statsTimer;
+
   QrTransferDecodeProgress _progress = const QrTransferDecodeProgress(
     receivedSymbols: 0,
     innovativeSymbols: 0,
@@ -44,7 +54,6 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
     decodedSymbols: 0,
     isComplete: false,
   );
-  String? _lastHandledFrame;
   String? _errorMessageKey;
   bool _finished = false;
 
@@ -55,10 +64,19 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat();
+    _statsTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) {
+        if (mounted && !_finished && _sessionStart != null) {
+          setState(() {});
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _statsTimer?.cancel();
     _scannerController.dispose();
     _scanLineController.dispose();
     super.dispose();
@@ -70,15 +88,15 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
     }
     for (final barcode in capture.barcodes) {
       final text = barcode.rawValue;
-      if (text == null || text == _lastHandledFrame) {
+      if (text == null) {
         continue;
       }
-      _lastHandledFrame = text;
       try {
         final progress = _decoder.submitFrame(text);
         if (!mounted) {
           return;
         }
+        _sessionStart ??= DateTime.now();
         setState(() {
           _progress = progress;
           _errorMessageKey = null;
@@ -134,8 +152,19 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
             child: Column(
               children: [
                 _buildTopBar(l10n),
-                Expanded(child: _buildViewfinder()),
-                _buildProgressPanel(l10n),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: _buildViewfinder(),
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      child: _buildProgressPanel(l10n),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -236,6 +265,8 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
                     ),
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
+                  const SizedBox(height: 12),
+                  _buildStatsGrid(l10n),
                 ] else ...[
                   Text(
                     l10n.qrTransferScanHint,
@@ -259,6 +290,127 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
         ),
       ),
     );
+  }
+
+  /// 会话开始至今的时长；未建立会话时为 0。
+  Duration get _elapsed {
+    final start = _sessionStart;
+    if (start == null) {
+      return Duration.zero;
+    }
+    return DateTime.now().difference(start);
+  }
+
+  /// 传输信息网格：采样/解码帧率、接收速度、已用时间、
+  /// 新增/重复帧、单块大小、数据块数，以及文件数据。
+  Widget _buildStatsGrid(AppLocalizations l10n) {
+    final p = _progress;
+    final info = _decoder.sessionInfo;
+    final elapsedMs = _elapsed.inMilliseconds;
+    final seconds = elapsedMs / 1000.0;
+    final sampleFps = seconds > 0 ? p.detectedSymbols / seconds : 0.0;
+    final decodeFps = seconds > 0 ? p.receivedSymbols / seconds : 0.0;
+    final speedBps = seconds > 0
+        ? p.innovativeSymbols * (info?.symbolSize ?? 0) / seconds
+        : 0.0;
+
+    final blocks = [
+      _StatTile(
+        label: l10n.qrTransferSampleFps,
+        value: '${sampleFps.toStringAsFixed(1)} fps',
+      ),
+      _StatTile(
+        label: l10n.qrTransferDecodeFps,
+        value: '${decodeFps.toStringAsFixed(1)} fps',
+      ),
+      _StatTile(
+        label: l10n.qrTransferReceiveSpeed,
+        value: _formatSpeed(speedBps),
+      ),
+      _StatTile(
+        label: l10n.qrTransferElapsed,
+        value: _formatElapsed(_elapsed),
+      ),
+      _StatTile(
+        label: l10n.qrTransferNewFrames,
+        value: '${p.innovativeSymbols}',
+        valueColor: Colors.greenAccent,
+      ),
+      _StatTile(
+        label: l10n.qrTransferDuplicateFrames,
+        value: '${p.duplicateSymbols}',
+        valueColor: Colors.orangeAccent,
+      ),
+      _StatTile(
+        label: l10n.qrTransferBlockSize,
+        value: _formatBytes(info?.symbolSize ?? 0),
+      ),
+      _StatTile(
+        label: l10n.qrTransferBlockCount,
+        value: '${p.sourceSymbolCount}',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < blocks.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: blocks[i]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: i + 1 < blocks.length ? blocks[i + 1] : const SizedBox(),
+              ),
+            ],
+          ),
+        ],
+        if (info != null) ...[
+          const SizedBox(height: 8),
+          _StatTile(
+            label: l10n.qrTransferFileData,
+            value: l10n.qrTransferFileDataDetail(
+              _formatBytes(info.rawLength),
+              _formatBytes(info.payloadLength),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// 将字节/秒格式化为易读的速度文本。
+  String _formatSpeed(double bytesPerSecond) {
+    if (bytesPerSecond < 1024) {
+      return '${bytesPerSecond.toStringAsFixed(0)} B/s';
+    }
+    if (bytesPerSecond < 1024 * 1024) {
+      return '${(bytesPerSecond / 1024).toStringAsFixed(1)} KB/s';
+    }
+    return '${(bytesPerSecond / (1024 * 1024)).toStringAsFixed(2)} MB/s';
+  }
+
+  /// 将字节数格式化为易读的容量文本。
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  /// 将时长格式化为 mm:ss 或 hh:mm:ss。
+  String _formatElapsed(Duration duration) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    if (duration.inHours > 0) {
+      return '${two(duration.inHours)}:'
+          '${two(duration.inMinutes % 60)}:'
+          '${two(duration.inSeconds % 60)}';
+    }
+    return '${two(duration.inMinutes)}:${two(duration.inSeconds % 60)}';
   }
 
   Widget _buildFinishedOverlay(AppLocalizations l10n) {
@@ -293,6 +445,53 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 接收面板中的一个指标卡片：标签（小字）+ 数值（大字）。
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white60, fontSize: 11),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: valueColor ?? Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
