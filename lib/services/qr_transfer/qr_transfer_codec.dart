@@ -75,6 +75,19 @@ class QrTransferFrame {
       throw const FormatException('invalid_qr_transfer_frame');
     }
 
+    // 上界校验：解析的是任意二维码（不信任输入）。构造恶意帧会让
+    // fountain_codes 的 `_selectNeighbors`（用 Set 去重）在 `degree > k`
+    // 时死循环、`List.filled(k)` 在超大 k 时 OOM、或 `payloadLength` 越界
+    // 抛未捕获 RangeError。发送端实际 k ≤ 32、symbolSize ≤ 2048，留足余量。
+    const maxSourceSymbolCount = 1 << 20; // 1M 符号：List.filled 仍可控
+    const maxSymbolSize = 8192;
+    if (sourceSymbolCount > maxSourceSymbolCount ||
+        symbolSize > maxSymbolSize ||
+        degree > sourceSymbolCount ||
+        payloadLength > sourceSymbolCount * symbolSize) {
+      throw const FormatException('invalid_qr_transfer_frame');
+    }
+
     final Uint8List symbolBytes;
     try {
       symbolBytes = base64Url.decode(fields[8]);
@@ -307,6 +320,20 @@ class QrTransferDecoder {
     if (!matches) {
       throw StateError('qr_transfer_session_mismatch');
     }
+  }
+
+  /// 重置解码器：丢弃当前会话与已收符号，回到未建立会话状态。
+  ///
+  /// 用于校验失败或会话不匹配后让接收端重新开始，无需重建解码器。
+  void reset() {
+    _info = null;
+    _codec = null;
+    _detectedSymbols = 0;
+    _duplicateSymbols = 0;
+    _receivedSymbols = 0;
+    _innovativeSymbols = 0;
+    _submittedSeeds.clear();
+    _result = null;
   }
 }
 
