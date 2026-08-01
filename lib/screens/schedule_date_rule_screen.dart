@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -518,36 +519,33 @@ class _DateRuleSwitchField extends StatelessWidget {
     final outline = HyperosColors.outline(context);
     final onSurface = HyperosColors.onSurface(context);
 
-    return Material(
-      color: fill,
-      borderRadius: radius,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => onChanged(!value),
+    return Container(
+      decoration: BoxDecoration(
+        color: fill,
         borderRadius: radius,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(color: outline, width: 1),
-          ),
-          child: Padding(
-            padding: HyperosMiuixTextField.insideMargin,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(fontSize: fontSize, color: onSurface),
-                  ),
+        border: Border.all(color: outline, width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: MiuixPressable(
+        onPressed: () => onChanged(!value),
+        borderRadius: radius,
+        child: Padding(
+          padding: HyperosMiuixTextField.insideMargin,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: fontSize, color: onSurface),
                 ),
-                // The row owns the toggle action. Prevent the nested switch's
-                // GestureDetector from competing for the same tap, which can
-                // make one user tap appear to toggle twice on some devices.
-                AbsorbPointer(
-                  child: HyperosSwitch(value: value, onChanged: onChanged),
-                ),
-              ],
-            ),
+              ),
+              // The row owns the toggle action. Prevent the nested switch's
+              // GestureDetector from competing for the same tap, which can
+              // make one user tap appear to toggle twice on some devices.
+              AbsorbPointer(
+                child: HyperosSwitch(value: value, onChanged: onChanged),
+              ),
+            ],
           ),
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -988,22 +989,24 @@ class _LevelFilterChip extends StatelessWidget {
         ? HyperosColors.primary(context)
         : HyperosColors.secondaryText(context);
 
-    return Material(
-      color: background,
+    return MiuixPressable(
+      onPressed: onPress,
       borderRadius: BorderRadius.circular(
         HyperosMiuixTabRow.contourCornerRadius,
       ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPress,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Text(
-            label,
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: textColor,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(
+            HyperosMiuixTabRow.contourCornerRadius,
+          ),
+        ),
+        child: Text(
+          label,
+          style: HyperosTypography.listDetail(context).copyWith(
+            color: textColor,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),

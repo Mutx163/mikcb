@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
@@ -327,57 +328,54 @@ class _QuickFixtureSectionCell extends StatelessWidget {
     final captionColor = isCurrent ? onPrimary.withValues(alpha: 0.86) : muted;
     final radius = BorderRadius.circular(HyperosTokens.cardRadius * 0.55);
 
-    return Material(
-      color: background,
+    return MiuixPressable(
+      onPressed: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '第$sectionNumber节',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
-                  color: titleColor,
-                  height: 1.15,
-                ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(color: background, borderRadius: radius),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '第$sectionNumber节',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+                color: titleColor,
+                height: 1.15,
               ),
-              const SizedBox(height: 2),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              startTime,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: captionColor,
+                height: 1.1,
+              ),
+            ),
+            if (installed || isCurrent) ...[
+              const SizedBox(height: 3),
               Text(
-                startTime,
+                isCurrent ? '现在' : '已装',
                 maxLines: 1,
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
                   color: captionColor,
-                  height: 1.1,
+                  height: 1.0,
                 ),
               ),
-              if (installed || isCurrent) ...[
-                const SizedBox(height: 3),
-                Text(
-                  isCurrent ? '现在' : '已装',
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: captionColor,
-                    height: 1.0,
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

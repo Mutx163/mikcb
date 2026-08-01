@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import '../l10n/app_localizations.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -34,7 +35,10 @@ double wallpaperOverflowDragExtent({
   required Size imageSize,
   required bool horizontal,
 }) {
-  final coverScale = _coverScale(viewportSize: viewportSize, imageSize: imageSize);
+  final coverScale = _coverScale(
+    viewportSize: viewportSize,
+    imageSize: imageSize,
+  );
   final scaledImageWidth = imageSize.width * coverScale;
   final scaledImageHeight = imageSize.height * coverScale;
   final overflow = horizontal
@@ -314,8 +318,12 @@ class _WallpaperPositionPickerPageState
     final imageSize = _imageSize;
     if (imageSize == null) {
       return Center(
-        child: CircularProgressIndicator(
-          color: HyperosColors.primary(context),
+        child: MiuixCircularProgressIndicator(
+          colors: MiuixProgressIndicatorColors(
+            foregroundColor: HyperosColors.primary(context),
+            disabledForegroundColor: HyperosColors.primary(context),
+            backgroundColor: Colors.transparent,
+          ),
         ),
       );
     }
@@ -394,27 +402,35 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       HyperosMiuixButton.cornerRadius,
       minHeight,
     );
+    final fgColor = foregroundColor ?? HyperosColors.primary(context);
     final borderColor = foregroundColor ?? HyperosColors.outline(context);
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor:
-            foregroundColor ?? HyperosColors.primary(context),
-        side: BorderSide(color: borderColor),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(cornerRadius),
-        ),
-        minimumSize: Size(
-          isCompact ? 56 : 120,
-          minHeight,
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 16 : 24,
-          vertical: 4,
-        ),
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+    final enabled = onPressed != null;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(cornerRadius),
+        border: Border.all(color: borderColor),
       ),
-      child: Text(label),
+      child: MiuixPressable(
+        onPressed: onPressed,
+        borderRadius: BorderRadius.circular(cornerRadius),
+        child: Container(
+          width: isCompact ? 56 : 120,
+          height: minHeight,
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 16 : 24,
+            vertical: 4,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: enabled ? fgColor : fgColor.withValues(alpha: 0.45),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

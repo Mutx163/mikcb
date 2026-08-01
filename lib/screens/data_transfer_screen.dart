@@ -374,13 +374,11 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     if (!mounted) {
       return;
     }
-    await Navigator.push(
+    await HyperosNavigation.pushWidget<void>(
       context,
-      MaterialPageRoute<void>(
-        builder: (_) => QrTransferSendScreen(
-          payloadBytes: Uint8List.fromList(utf8.encode(content)),
-          title: l10n.qrTransferSendCurrent,
-        ),
+      QrTransferSendScreen(
+        payloadBytes: Uint8List.fromList(utf8.encode(content)),
+        title: l10n.qrTransferSendCurrent,
       ),
     );
   }
@@ -396,24 +394,19 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     if (!mounted) {
       return;
     }
-    await Navigator.push(
+    await HyperosNavigation.pushWidget<void>(
       context,
-      MaterialPageRoute<void>(
-        builder: (_) => QrTransferSendScreen(
-          payloadBytes: Uint8List.fromList(utf8.encode(content)),
-          title: l10n.qrTransferSendAll,
-        ),
+      QrTransferSendScreen(
+        payloadBytes: Uint8List.fromList(utf8.encode(content)),
+        title: l10n.qrTransferSendAll,
       ),
     );
   }
 
   void _qrReceive() {
-    Navigator.push(
+    HyperosNavigation.pushWidget<void>(
       context,
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            QrTransferScanScreen(onComplete: _handleQrReceivedBytes),
-      ),
+      QrTransferScanScreen(onComplete: _handleQrReceivedBytes),
     );
   }
 
