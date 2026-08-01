@@ -135,20 +135,27 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
             style: HyperosTypography.sectionDescription(context),
           ),
           const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
-              const SizedBox(width: tileSpacing),
-              tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
-              const SizedBox(width: tileSpacing),
-              tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
-              const SizedBox(width: tileSpacing),
-              tile(
-                Icons.add_circle_outline_rounded,
-                l10n.homeMenuAddCourseTitle,
-              ),
-            ],
+          // One shared liquid-glass layer for all four tiles: several siblings
+          // with identical settings share a single layer + backdrop capture, so
+          // refraction at tile edges samples a continuous backdrop instead of
+          // four independent own-layer captures (which caused seam lines).
+          HyperosLiquidGlassLayer(
+            role: HyperosLiquidGlassRole.nestedTile,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
+                const SizedBox(width: tileSpacing),
+                tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
+                const SizedBox(width: tileSpacing),
+                tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
+                const SizedBox(width: tileSpacing),
+                tile(
+                  Icons.add_circle_outline_rounded,
+                  l10n.homeMenuAddCourseTitle,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           HyperosButton(
@@ -200,17 +207,20 @@ class _MiniHomeFrostedMenuSheet extends StatelessWidget {
     return HyperosSheetFrame(
       frosted: true,
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          miniTile(Icons.bar_chart_rounded, '统计'),
-          const SizedBox(width: 6),
-          miniTile(Icons.tune_rounded, '设置'),
-          const SizedBox(width: 6),
-          miniTile(Icons.file_upload_outlined, '导入'),
-          const SizedBox(width: 6),
-          miniTile(Icons.add_circle_outline_rounded, '加课'),
-        ],
+      child: HyperosLiquidGlassLayer(
+        role: HyperosLiquidGlassRole.nestedTile,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            miniTile(Icons.bar_chart_rounded, '统计'),
+            const SizedBox(width: 6),
+            miniTile(Icons.tune_rounded, '设置'),
+            const SizedBox(width: 6),
+            miniTile(Icons.file_upload_outlined, '导入'),
+            const SizedBox(width: 6),
+            miniTile(Icons.add_circle_outline_rounded, '加课'),
+          ],
+        ),
       ),
     );
   }
@@ -242,7 +252,11 @@ class _DemoMenuTile extends StatelessWidget {
     return HyperosLiquidGlassSurface(
       role: HyperosLiquidGlassRole.nestedTile,
       borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
-      instantUnderlay: true,
+      // Tiles live in a shared HyperosLiquidGlassLayer (see the two callers);
+      // sharedLayer registers this shape in the ancestor layer. A per-tile
+      // instant FakeGlass underlay would paint its own backdrop filter per
+      // tile, re-introducing seams, so it stays off here.
+      layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
       child: Material(
         type: MaterialType.transparency,
         child: Padding(
