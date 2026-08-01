@@ -121,7 +121,7 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                     value: _draft.liquidGlassTuning!.thickness,
                     min: LiquidGlassTuning.minThickness,
                     max: LiquidGlassTuning.maxThickness,
-                    divisions: LiquidGlassTuning.maxThickness.round(),
+                    divisions: 40,
                     valueLabel: _draft.liquidGlassTuning!.thickness
                         .toStringAsFixed(0),
                     onChanged: (value) {
@@ -141,7 +141,7 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                     value: _draft.liquidGlassTuning!.blur,
                     min: LiquidGlassTuning.minBlur,
                     max: LiquidGlassTuning.maxBlur,
-                    divisions: LiquidGlassTuning.maxBlur.round(),
+                    divisions: 24,
                     valueLabel: _draft.liquidGlassTuning!.blur.toStringAsFixed(
                       0,
                     ),
