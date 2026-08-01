@@ -3913,10 +3913,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         child: _buildDayViewEmptyColumn(week: week, settings: settings),
       );
     }
-    // Same hosting strategy as the week grid (see _wrapCourseGridLiquidGlassHost):
-    // with pre-blurred wallpaper, cards sample the cached bitmap and do not need
-    // a FakeGlass host; without it, CourseGridGlassHost shares one layer so
-    // liquid cards do not each capture the backdrop on their own.
+    // Same hosting strategy as the week grid (see
+    // _wrapCourseGridLiquidGlassHost): CourseGridGlassHost shares one
+    // liquid-glass layer so cards do not each capture the backdrop. With a
+    // wallpaper this is now live refraction (see CourseSurface._buildLiquidGlass
+    // for the trade-offs).
     final agendaList = ListView.separated(
       key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
@@ -3930,16 +3931,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         return _buildDayAgendaEntry(week: week, settings: settings, item: item);
       },
     );
-    return Builder(
-      builder: (context) {
-        if (settings.courseCardSurfaceStyle ==
-                CourseCardSurfaceStyle.liquidGlass &&
-            PreblurredWallpaperScope.maybeOf(context) != null) {
-          return agendaList;
-        }
-        return CourseGridGlassHost(settings: settings, child: agendaList);
-      },
-    );
+    return CourseGridGlassHost(settings: settings, child: agendaList);
   }
 
   Widget _buildDayViewEmptyColumn({
@@ -6159,30 +6151,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     _visibleWeekListenable.value = _pendingSettledWeek!;
   }
 
-  /// One shared FakeGlass layer for all course cards on this week page.
+  /// One shared liquid-glass layer for all course cards on this week page.
+  //
+  // With a wallpaper the cards now sample the live wallpaper through this
+  // shared layer (real refraction) instead of the cached pre-blurred bitmap.
+  // Trade-offs documented in CourseSurface._buildLiquidGlass.
   Widget _wrapCourseGridLiquidGlassHost({
     required TimetableSettings settings,
     required Widget child,
   }) {
-    if (settings.courseCardSurfaceStyle != CourseCardSurfaceStyle.liquidGlass) {
-      return CourseGridGlassHost(settings: settings, child: child);
-    }
-    // PreblurredWallpaperScope is created *below* this State's own context, so
-    // the lookup has to run from a descendant or it always misses and the host
-    // gets built even when the cards are sampling the pre-blurred bitmap.
-    //
-    // This short-circuit is home-page-only: the settings previews have no
-    // pre-blurred bitmap (it is aligned to the screen, not to a preview box).
-    return Builder(
-      builder: (context) {
-        // When pre-blurred wallpaper is active, cards sample that bitmap and do
-        // not need a FakeGlass host (avoids double frost + scroll cost).
-        if (PreblurredWallpaperScope.maybeOf(context) != null) {
-          return child;
-        }
-        return CourseGridGlassHost(settings: settings, child: child);
-      },
-    );
+    return CourseGridGlassHost(settings: settings, child: child);
   }
 
   void _syncWeekPageWithProvider(int week, TimetableSettings settings) {

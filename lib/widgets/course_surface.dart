@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
-import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
@@ -180,15 +179,7 @@ class CourseSurface extends StatelessWidget {
 
   Widget _buildLiquidGlass(BuildContext context, BorderRadius radius) {
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final appearance = FrostedAppearanceScope.of(context);
-    final tuning = appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults;
-    // Prefer the pre-blurred wallpaper fill when available: frost stays
-    // identical while pages slide (no live BackdropFilter) and, because it is a
-    // plain bitmap sample, it works even under an isolating ancestor layer.
-    final preblur = PreblurredWallpaperScope.maybeOf(context);
-    final glassTintAlpha = tuning.tintAlpha.clamp(0.0, 1.0);
     final washAlpha = _scaledAlpha(frostedFillAlpha);
-    final highlightAlpha = _scaledAlpha(0.55);
 
     // Platform blur off → translucent tint only.
     if (!blurEnabled) {
@@ -211,55 +202,15 @@ class CourseSurface extends StatelessWidget {
       );
     }
 
-    if (preblur != null) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            // Own layer: with a screen-fixed wallpaper the pager listener
-            // marks this fill dirty on every swipe frame; without a boundary
-            // that repaint re-records the whole card (texts, badges, wash
-            // overlays) instead of just one drawImageRect per card.
-            const Positioned.fill(
-              child: RepaintBoundary(child: PreblurredWallpaperAlignedFill()),
-            ),
-            // Same glass tint as sheets, headers and popups.
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(
-                  color: Colors.white.withValues(alpha: glassTintAlpha),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(color: color.withValues(alpha: washAlpha)),
-              ),
-            ),
-            // Edge highlight (cheap stand-in for liquid specular).
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: highlightAlpha),
-                      width: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (border != null) _borderOverlay(radius, border!),
-            child,
-          ],
-        ),
-      );
-    }
-
-    // No pre-blurred wallpaper (settings preview / no wallpaper): use the
-    // package glass. Inside a host the shapes share one liquid-glass layer.
+    // Real liquid glass over the live backdrop: when a wallpaper is set the
+    // shared layer samples it (real refraction); otherwise it samples whatever
+    // is behind the settings preview. Cards register as shapes in the host's
+    // shared HyperosLiquidGlassLayer. Two accepted trade-offs vs the old
+    // cached pre-blurred bitmap: (1) live refraction re-renders shape geometry
+    // every swipe frame (heavier — measured ~14 FPS on mid-range MediaTek);
+    // (2) under an Opacity saveLayer (the day-view open/close ramp) the
+    // backdrop cannot be sampled, so cards briefly collapse to their bare
+    // course-coloured tint until the ramp ends.
     final usesSharedHost = CourseCardLiquidGlassScope.maybeOf(context) != null;
     final layerMode = usesSharedHost
         ? HyperosLiquidGlassLayerMode.sharedLayer
