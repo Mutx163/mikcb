@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "内置 Inter 默认；也可选用系统已安装的字体",
   "fontSectionFootnote": "厂商字体未内置，需系统已预装才生效，小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装",
   "fontModeLabel": "字体选择",
-  "fontModeSystem": "应用默认（Inter）",
+  "fontModeSystem": "应用默认",
   "fontModeSansSerif": "系统无衬线",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "鸿蒙黑体",

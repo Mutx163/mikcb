@@ -58,7 +58,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fontModeLabel => '字体选择';
 
   @override
-  String get fontModeSystem => '应用默认（Inter）';
+  String get fontModeSystem => '应用默认';
 
   @override
   String get fontModeSansSerif => '系统无衬线';
@@ -9193,7 +9193,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get fontModeLabel => '字體選擇';
 
   @override
-  String get fontModeSystem => '應用預設（Inter）';
+  String get fontModeSystem => '應用預設';
 
   @override
   String get fontModeSansSerif => '系統無襯線';
@@ -17911,7 +17911,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get fontModeLabel => '字體選擇';
 
   @override
-  String get fontModeSystem => '應用預設（Inter）';
+  String get fontModeSystem => '應用預設';
 
   @override
   String get fontModeSansSerif => '系統無襯線';

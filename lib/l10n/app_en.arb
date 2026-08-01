@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "Inter is built in; other options use fonts already on your phone",
   "fontSectionFootnote": "Brand fonts aren't bundled; they work only if already on your system. On Xiaomi, usually only MiSans is obvious. No change means auto fallback—you usually don't need to install fonts",
   "fontModeLabel": "Font",
-  "fontModeSystem": "App Default (Inter)",
+  "fontModeSystem": "App Default",
   "fontModeSansSerif": "System Sans",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "HarmonyOS Sans",

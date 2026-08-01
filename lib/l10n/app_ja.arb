@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "Inter を標準とし、端末に入っているフォントも選べます",
   "fontSectionFootnote": "メーカーフォントは同梱されず、端末に入っている場合のみ有効です，Xiaomi では MiSans だけ目立ちやすいです，変化がなければ自動代替で、通常は自分でインストール不要です",
   "fontModeLabel": "フォント選択",
-  "fontModeSystem": "アプリ標準（Inter）",
+  "fontModeSystem": "アプリ標準",
   "fontModeSansSerif": "システムサンセリフ",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "HarmonyOS Sans",

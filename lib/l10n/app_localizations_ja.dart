@@ -58,7 +58,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fontModeLabel => 'フォント選択';
 
   @override
-  String get fontModeSystem => 'アプリ標準（Inter）';
+  String get fontModeSystem => 'アプリ標準';
 
   @override
   String get fontModeSansSerif => 'システムサンセリフ';

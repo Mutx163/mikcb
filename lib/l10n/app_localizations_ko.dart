@@ -58,7 +58,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get fontModeLabel => '글꼴 선택';
 
   @override
-  String get fontModeSystem => '앱 기본(Inter)';
+  String get fontModeSystem => '앱 기본';
 
   @override
   String get fontModeSansSerif => '시스템 산세리프';

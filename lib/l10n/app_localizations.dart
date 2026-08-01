@@ -203,7 +203,7 @@ abstract class AppLocalizations {
   /// No description provided for @fontModeSystem.
   ///
   /// In zh, this message translates to:
-  /// **'应用默认（Inter）'**
+  /// **'应用默认'**
   String get fontModeSystem;
 
   /// No description provided for @fontModeSansSerif.

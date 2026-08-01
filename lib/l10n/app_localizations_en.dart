@@ -59,7 +59,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fontModeLabel => 'Font';
 
   @override
-  String get fontModeSystem => 'App Default (Inter)';
+  String get fontModeSystem => 'App Default';
 
   @override
   String get fontModeSansSerif => 'System Sans';
