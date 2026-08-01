@@ -20,10 +20,15 @@ class FHeaderAction extends StatelessWidget {
     // Pass the caller's widget through untouched: rebuilding `Icon(iconData)`
     // dropped the Icon's explicit color/size (e.g. the couple-mode pink heart
     // and the wallpaper chrome foreground on the home header).
-    return Semantics(
-      label: semanticsLabel,
-      button: true,
-      child: MiuixIconButton(onPressed: onPress, child: icon),
+    // MiuixIconButton has no tooltip parameter; wrap in Tooltip so desktop/web
+    // hover still shows the label, matching the former IconButton.tooltip.
+    return Tooltip(
+      message: semanticsLabel,
+      child: Semantics(
+        label: semanticsLabel,
+        button: true,
+        child: MiuixIconButton(onPressed: onPress, child: icon),
+      ),
     );
   }
 }

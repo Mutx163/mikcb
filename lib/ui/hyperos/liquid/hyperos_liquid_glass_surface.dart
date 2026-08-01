@@ -282,6 +282,16 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     var settings = switch (role) {
       _ => MikcbLiquidGlassTokens.sheetSettingsFor(brightness, tuning: tuning),
     };
+    // Full-width header bars sit flush with the screen top. The package's
+    // default chromatic fringe (chromaticAberration=0.01) + top-down light
+    // draw a 1px blue hairline on that edge; kill aberration and soften
+    // specular for this role only. Other surfaces keep the unified material.
+    if (role == HyperosLiquidGlassRole.header) {
+      settings = settings.copyWith(
+        chromaticAberration: 0,
+        lightIntensity: (settings.lightIntensity * 0.35).clamp(0.0, 0.25),
+      );
+    }
     if (glassColor != null) {
       settings = settings.copyWith(glassColor: glassColor);
     }
