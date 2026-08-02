@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_radius.dart';
@@ -11,43 +10,44 @@ abstract final class HyperosColors {
   static Brightness _brightness(BuildContext context) =>
       Theme.of(context).brightness;
 
-  static MiuixColors _colors(BuildContext context) =>
-      MiuixTheme.of(context).colors;
-
   static Color scaffoldBackground(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).background
+        ? HyperosMiuixDarkColors.background
         : HyperosTokens.background;
   }
 
   static Color card(BuildContext context) {
+    // Miuix's dark `surfaceContainer` intentionally matches the page
+    // background (`#242424`). Settings groups are elevated cards, so using
+    // that token here makes every HyperOS list group visually disappear in
+    // dark mode. Use the highest container level for the card surface instead.
     return _brightness(context) == Brightness.dark
-        ? _colors(context).surfaceContainer
+        ? HyperosMiuixDarkColors.surfaceContainerHighest
         : HyperosTokens.card;
   }
 
   static Color primaryText(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).onBackground
+        ? HyperosMiuixDarkColors.onBackground
         : HyperosTokens.primaryText;
   }
 
   static Color secondaryText(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).onSurfaceVariantSummary
+        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
         : HyperosTokens.secondaryText;
   }
 
   /// Miuix `onSurfaceVariantActions` — chevrons and tertiary actions.
   static Color actionIcon(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).onSurfaceVariantActions
+        ? HyperosMiuixDarkColors.onSurfaceVariantActions
         : HyperosTokens.actionIcon;
   }
 
   static Color rowHighlight(BuildContext context) {
     return _brightness(context) == Brightness.dark
-        ? _colors(context).secondary
+        ? HyperosMiuixDarkColors.secondary
         : HyperosTokens.pressed;
   }
 
