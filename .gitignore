@@ -90,6 +90,8 @@ reviews/
 progress.md
 .review_changed_files.txt
 .codebuddy/
+.zcode/
+tool/_review_*.diff
 
 # 测试覆盖率
 coverage/
