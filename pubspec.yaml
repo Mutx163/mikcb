@@ -18,7 +18,7 @@ dependencies:
   provider: ^6.1.1
   shared_preferences: ^2.2.2
   intl: ^0.20.2
-  uuid: ^4.2.1
+  uuid: ^4.6.0
   cupertino_icons: ^1.0.8
   file_picker: ^11.0.2
   http: ^1.2.2
