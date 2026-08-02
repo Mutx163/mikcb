@@ -127,6 +127,7 @@ class _WallpaperPositionPickerPageState
   Size? _imageSize;
   bool _switching = false;
   double? _topLuminance;
+  String? _luminanceSampleKey;
 
   @override
   void initState() {
@@ -135,7 +136,7 @@ class _WallpaperPositionPickerPageState
     _alignX = widget.initialAlignX;
     _alignY = widget.initialAlignY;
     _resolveImageSize();
-    _sampleTopLuminance();
+    _scheduleTopLuminanceSample();
   }
 
   /// 只读图片头部拿原始宽高，不解码像素，进入页面无需等待整图解码。
@@ -159,9 +160,37 @@ class _WallpaperPositionPickerPageState
   }
 
   /// 采样壁纸顶部亮度，决定状态栏图标与标题的对比色（与首页逻辑一致）。
+  ///
+  /// The picker renders the same [BoxFit.cover] crop as the home page, so the
+  /// sample must use the current viewport and alignment instead of averaging
+  /// the source image's unrendered top edge.
+  void _scheduleTopLuminanceSample() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _sampleTopLuminance();
+      }
+    });
+  }
+
   Future<void> _sampleTopLuminance() async {
-    final luminance = await sampleHomePageWallpaperTopLuminance(_imagePath);
-    if (!mounted || luminance == null) {
+    if (!mounted) {
+      return;
+    }
+    final viewportSize = MediaQuery.sizeOf(context);
+    final key =
+        '$_imagePath|${viewportSize.width}x${viewportSize.height}|'
+        '$_alignX|$_alignY';
+    if (_luminanceSampleKey == key) {
+      return;
+    }
+    _luminanceSampleKey = key;
+    final luminance = await sampleHomePageWallpaperTopLuminance(
+      _imagePath,
+      viewportSize: viewportSize,
+      alignX: _alignX,
+      alignY: _alignY,
+    );
+    if (!mounted || _luminanceSampleKey != key || luminance == null) {
       return;
     }
     setState(() {
@@ -190,7 +219,7 @@ class _WallpaperPositionPickerPageState
         _imageSize = null;
       });
       await _resolveImageSize();
-      await _sampleTopLuminance();
+      _scheduleTopLuminanceSample();
     } finally {
       if (mounted) {
         setState(() {
@@ -368,6 +397,8 @@ class _WallpaperPositionPickerPageState
               );
             });
           },
+          onPanEnd: (_) => _scheduleTopLuminanceSample(),
+          onPanCancel: _scheduleTopLuminanceSample,
           child: Image(
             // 限宽解码（首页同款尺寸），避免整图解码导致的进入卡顿。
             image: ResizeImage(

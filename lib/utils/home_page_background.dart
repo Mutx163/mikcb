@@ -167,13 +167,12 @@ String? resolveHomePageBackdropImagePath(TimetableSettings settings) {
   return null;
 }
 
-bool hasHomePageBackdropImage(
-  TimetableSettings settings, {
-  required bool isDark,
-}) {
-  if (isDark) {
-    return false;
-  }
+/// Whether the wallpaper file exists and is usable on the home page.
+///
+/// Theme-agnostic: the wallpaper is shown in both light and dark mode (chrome
+/// ink / glass scrim adapt via sampled luminance instead). Dark mode only
+/// changes the *fallback* surface colour when no wallpaper is set.
+bool hasHomePageBackdropImage(TimetableSettings settings) {
   return homePageImageProvider(resolveHomePageBackdropImagePath(settings)) !=
       null;
 }
@@ -183,7 +182,7 @@ bool hasHomePageBackdropImage(
 class HomePageVisualReadiness {
   const HomePageVisualReadiness({this.hasBackdrop = false});
 
-  /// Nothing to prepare (dark theme, no wallpaper, or missing file).
+  /// Nothing to prepare (no wallpaper, or missing file).
   static const HomePageVisualReadiness empty = HomePageVisualReadiness();
 
   /// Whether a usable wallpaper backdrop image was resolved.
@@ -194,28 +193,21 @@ class HomePageVisualReadiness {
 
 /// Pre-resolves whether the home page needs wallpaper backdrop work.
 ///
-/// Returns [HomePageVisualReadiness.empty] for the dark theme (solid chrome),
-/// when no wallpaper path is configured, or when the file is missing; those
-/// paths never paint a wallpaper backdrop so no preparation is required.
+/// Returns [HomePageVisualReadiness.empty] when no wallpaper path is
+/// configured or the file is missing; those paths never paint a wallpaper
+/// backdrop so no preparation is required. Runs in both themes — dark mode
+/// shows the wallpaper just like light mode.
 Future<HomePageVisualReadiness> prepareHomePageVisualReadiness(
-  TimetableSettings settings, {
-  required bool isDark,
-}) async {
-  if (isDark) {
-    return HomePageVisualReadiness.empty;
-  }
-  if (!hasHomePageBackdropImage(settings, isDark: isDark)) {
+  TimetableSettings settings,
+) async {
+  if (!hasHomePageBackdropImage(settings)) {
     return HomePageVisualReadiness.empty;
   }
   return const HomePageVisualReadiness(hasBackdrop: true);
 }
 
-bool homePageRegionShowsBackdrop(
-  TimetableSettings settings,
-  int region, {
-  required bool isDark,
-}) {
-  if (!hasHomePageBackdropImage(settings, isDark: isDark)) {
+bool homePageRegionShowsBackdrop(TimetableSettings settings, int region) {
+  if (!hasHomePageBackdropImage(settings)) {
     return false;
   }
   return HomePageBackgroundScope.includes(
@@ -236,15 +228,14 @@ HomePageBackgroundVisual resolveHomePageRegionBackground({
     darkFallback: darkFallback,
   );
 
-  if (isDark ||
-      !HomePageBackgroundScope.includes(
-        settings.homePageBackgroundScope,
-        region,
-      )) {
+  if (!HomePageBackgroundScope.includes(
+    settings.homePageBackgroundScope,
+    region,
+  )) {
     return HomePageBackgroundVisual(color: baseColor);
   }
 
-  if (hasHomePageBackdropImage(settings, isDark: isDark)) {
+  if (hasHomePageBackdropImage(settings)) {
     return const HomePageBackgroundVisual(color: Colors.transparent);
   }
 
@@ -265,11 +256,8 @@ Widget homePageBackgroundLayer({
 }
 
 /// One continuous [BoxFit.cover] layer for wallpaper / background image.
-Widget homePageBackdropLayer({
-  required TimetableSettings settings,
-  required bool isDark,
-}) {
-  final image = homePageBackdropImageWidget(settings: settings, isDark: isDark);
+Widget homePageBackdropLayer({required TimetableSettings settings}) {
+  final image = homePageBackdropImageWidget(settings: settings);
   if (image == null) {
     return const SizedBox.shrink();
   }
@@ -277,13 +265,7 @@ Widget homePageBackdropLayer({
 }
 
 /// Full-bleed backdrop image for embedding inside a week page.
-Widget? homePageBackdropImageWidget({
-  required TimetableSettings settings,
-  required bool isDark,
-}) {
-  if (isDark) {
-    return null;
-  }
+Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   final path = resolveHomePageBackdropImagePath(settings);
   final provider = homePageBackdropImageProvider(path);
   if (provider == null) {
@@ -317,21 +299,16 @@ class HomePageSlidingBackdropLayer extends StatelessWidget {
     required this.controller,
     required this.pageCount,
     required this.settings,
-    required this.isDark,
     super.key,
   });
 
   final PageController controller;
   final int pageCount;
   final TimetableSettings settings;
-  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final image = homePageBackdropImageWidget(
-      settings: settings,
-      isDark: isDark,
-    );
+    final image = homePageBackdropImageWidget(settings: settings);
     if (image == null || pageCount <= 0) {
       return const SizedBox.shrink();
     }
@@ -522,12 +499,65 @@ Color homePageOverWallpaperMutedInk(
 
 /// Average luminance of the top band of a wallpaper file (for chrome contrast).
 ///
+/// [viewportSize] and alignment must match the widget that displays the image
+/// when the caller uses [BoxFit.cover]. Without them, the whole source image is
+/// sampled, which is kept as a useful fallback for non-rendering callers.
+///
 /// Returns null when the file is missing or decoding fails.
-Future<double?> sampleHomePageWallpaperTopLuminance(String? path) async {
-  return (await sampleHomePageWallpaperLuminanceBands(path))?.top;
+Future<double?> sampleHomePageWallpaperTopLuminance(
+  String? path, {
+  Size? viewportSize,
+  double alignX = 0,
+  double alignY = 0,
+}) async {
+  return (await sampleHomePageWallpaperLuminanceBands(
+    path,
+    viewportSize: viewportSize,
+    alignX: alignX,
+    alignY: alignY,
+  ))?.top;
 }
 
-/// Top-band + weekday-band + card-region luminance of a wallpaper file, from one decode.
+/// Normalized source rectangle visible when [imageSize] is rendered into
+/// [viewportSize] with [BoxFit.cover] and the given alignment.
+///
+/// The returned coordinates are fractions of the source image. This is the
+/// same crop used by [homePageBackdropImageWidget], so luminance samples do
+/// not accidentally inspect an off-screen part of a wide/tall wallpaper.
+({double left, double top, double width, double height})
+homePageWallpaperVisibleSourceRect({
+  required Size viewportSize,
+  required Size imageSize,
+  double alignX = 0,
+  double alignY = 0,
+}) {
+  if (!viewportSize.width.isFinite ||
+      !viewportSize.height.isFinite ||
+      viewportSize.width <= 0 ||
+      viewportSize.height <= 0 ||
+      !imageSize.width.isFinite ||
+      !imageSize.height.isFinite ||
+      imageSize.width <= 0 ||
+      imageSize.height <= 0) {
+    return (left: 0, top: 0, width: 1, height: 1);
+  }
+
+  final viewportAspect = viewportSize.width / viewportSize.height;
+  final imageAspect = imageSize.width / imageSize.height;
+  final visibleWidth = imageAspect > viewportAspect
+      ? viewportAspect / imageAspect
+      : 1.0;
+  final visibleHeight = imageAspect < viewportAspect
+      ? imageAspect / viewportAspect
+      : 1.0;
+  final normalizedAlignX = alignX.clamp(-1.0, 1.0).toDouble();
+  final normalizedAlignY = alignY.clamp(-1.0, 1.0).toDouble();
+  final left = (1.0 - visibleWidth) * (normalizedAlignX + 1.0) / 2.0;
+  final top = (1.0 - visibleHeight) * (normalizedAlignY + 1.0) / 2.0;
+  return (left: left, top: top, width: visibleWidth, height: visibleHeight);
+}
+
+/// Top-band + weekday-band + card-region WCAG luminance of a wallpaper file, from one decode.
 ///
 /// `top` covers the status bar / title region (header chrome ink), `weekday`
 /// the band behind the weekday / date chrome bar, `body` the vertical band
@@ -536,7 +566,12 @@ Future<double?> sampleHomePageWallpaperTopLuminance(String? path) async {
 /// judge its ink from the band actually behind it, not one shared sample —
 /// the top band alone mis-ink the weekday bar on sky/ground photos.
 Future<({double top, double weekday, double body})?>
-    sampleHomePageWallpaperLuminanceBands(String? path) async {
+sampleHomePageWallpaperLuminanceBands(
+  String? path, {
+  Size? viewportSize,
+  double alignX = 0,
+  double alignY = 0,
+}) async {
   if (path == null || path.isEmpty) {
     return null;
   }
@@ -551,13 +586,19 @@ Future<({double top, double weekday, double body})?>
     }
     final codec = await ui.instantiateImageCodec(
       bytes,
-      targetWidth: 64,
-      targetHeight: 64,
+      // Keep a small but aspect-ratio-preserving decode. The visible crop is
+      // applied below from the actual decoded dimensions and display viewport.
+      targetWidth: 128,
     );
     final frame = await codec.getNextFrame();
     final image = frame.image;
     codec.dispose();
-    return _averageBandLuminances(image);
+    return _averageBandLuminances(
+      image,
+      viewportSize: viewportSize,
+      alignX: alignX,
+      alignY: alignY,
+    );
   } catch (error, stackTrace) {
     debugPrint(
       'sampleHomePageWallpaperLuminanceBands failed: $error\n$stackTrace',
@@ -566,9 +607,23 @@ Future<({double top, double weekday, double body})?>
   }
 }
 
+// Keep wallpaper samples in the same WCAG relative-luminance space as
+// Color.computeLuminance(). This is intentionally the Flutter engine's
+// threshold (0.03928), so text contrast decisions do not mix encoded sRGB
+// values with linear luminance values.
+double _linearizeSrgbComponent(double component) {
+  if (component <= 0.03928) {
+    return component / 12.92;
+  }
+  return math.pow((component + 0.055) / 1.055, 2.4) as double;
+}
+
 Future<({double top, double weekday, double body})?> _averageBandLuminances(
-  ui.Image image,
-) async {
+  ui.Image image, {
+  Size? viewportSize,
+  double alignX = 0,
+  double alignY = 0,
+}) async {
   final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
   if (byteData == null) {
     image.dispose();
@@ -581,19 +636,33 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
     return null;
   }
   final buffer = byteData.buffer.asUint8List();
+  final sourceRect = viewportSize == null
+      ? (left: 0.0, top: 0.0, width: 1.0, height: 1.0)
+      : homePageWallpaperVisibleSourceRect(
+          viewportSize: viewportSize,
+          imageSize: Size(width.toDouble(), height.toDouble()),
+          alignX: alignX,
+          alignY: alignY,
+        );
 
   double? band(double fromFraction, double toFraction) {
-    final fromRow = (height * fromFraction).round().clamp(0, height - 1);
-    final toRow = (height * toFraction).round().clamp(fromRow + 1, height);
+    final sourceTop = sourceRect.top + sourceRect.height * fromFraction;
+    final sourceBottom = sourceRect.top + sourceRect.height * toFraction;
+    final fromRow = (height * sourceTop).floor().clamp(0, height - 1);
+    final toRow = (height * sourceBottom).ceil().clamp(fromRow + 1, height);
+    final sourceLeft = sourceRect.left;
+    final sourceRight = sourceRect.left + sourceRect.width;
+    final fromColumn = (width * sourceLeft).floor().clamp(0, width - 1);
+    final toColumn = (width * sourceRight).ceil().clamp(fromColumn + 1, width);
     var total = 0.0;
     var count = 0;
     for (var row = fromRow; row < toRow; row++) {
       final rowOffset = row * width * 4;
-      for (var column = 0; column < width; column++) {
+      for (var column = fromColumn; column < toColumn; column++) {
         final offset = rowOffset + column * 4;
-        final red = buffer[offset] / 255.0;
-        final green = buffer[offset + 1] / 255.0;
-        final blue = buffer[offset + 2] / 255.0;
+        final red = _linearizeSrgbComponent(buffer[offset] / 255.0);
+        final green = _linearizeSrgbComponent(buffer[offset + 1] / 255.0);
+        final blue = _linearizeSrgbComponent(buffer[offset + 2] / 255.0);
         total += 0.2126 * red + 0.7152 * green + 0.0722 * blue;
         count++;
       }
@@ -601,6 +670,7 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
     return count == 0 ? null : total / count;
   }
 
+  // Values are relative luminance, matching Color.computeLuminance().
   // Top: the status bar + title strip of a cover-fitted wallpaper (header
   // ink). Weekday: the band the weekday/date chrome bar sits over — its ink
   // must not follow the header's band, they can differ on the same photo.

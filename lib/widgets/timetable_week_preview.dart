@@ -41,45 +41,52 @@ class TimetableWeekPreview extends StatefulWidget {
   State<TimetableWeekPreview> createState() => _TimetableWeekPreviewState();
 }
 
-/// Samples the wallpaper band luminances once per path, shared by the glass
-/// band's scrim polarity **and** the chrome ink auto-inversion — the same
+/// Samples the wallpaper band luminances once per rendered crop, shared by the
+/// glass band's scrim polarity **and** the chrome ink auto-inversion — the same
 /// pairs the home page derives from its own boot-time sample.
 class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
   double? _topLuminance;
   double? _weekdayLuminance;
   double? _bodyLuminance;
-  String? _sampledPath;
+  String? _sampledKey;
 
   @override
   void initState() {
     super.initState();
-    _sampleLuminance();
-  }
-
-  @override
-  void didUpdateWidget(covariant TimetableWeekPreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _sampleLuminance();
   }
 
   /// Home drives chrome ink and scrim polarity from wallpaper luminance
   /// samples; without them the preview falls back to theme brightness and can
   /// paint the opposite ink or wash — visibly unlike the home page.
-  void _sampleLuminance() {
+  void _sampleLuminance({Size? viewportSize}) {
     final path = resolveHomePageBackdropImagePath(widget.settings);
-    if (path == _sampledPath) {
-      return;
-    }
-    _sampledPath = path;
     if (path == null || path.isEmpty) {
+      _sampledKey = null;
       _topLuminance = null;
       _weekdayLuminance = null;
       _bodyLuminance = null;
       return;
     }
+    final viewport = _validSamplingViewport(viewportSize);
+    final viewportKey = viewport == null
+        ? 'full-image'
+        : '${viewport.width}x${viewport.height}';
+    final key =
+        '$path|$viewportKey|'
+        '${widget.settings.homePageWallpaperAlignX}|'
+        '${widget.settings.homePageWallpaperAlignY}';
+    if (key == _sampledKey) {
+      return;
+    }
+    _sampledKey = key;
     unawaited(
-      sampleHomePageWallpaperLuminanceBands(path).then((value) {
-        if (!mounted || _sampledPath != path) {
+      sampleHomePageWallpaperLuminanceBands(
+        path,
+        viewportSize: viewport,
+        alignX: widget.settings.homePageWallpaperAlignX,
+        alignY: widget.settings.homePageWallpaperAlignY,
+      ).then((value) {
+        if (!mounted || _sampledKey != key) {
           return;
         }
         setState(() {
@@ -91,19 +98,46 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
     );
   }
 
+  Size? _validSamplingViewport(Size? viewportSize) {
+    if (viewportSize != null &&
+        viewportSize.width.isFinite &&
+        viewportSize.height.isFinite &&
+        viewportSize.width > 0 &&
+        viewportSize.height > 0) {
+      return viewportSize;
+    }
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isNotEmpty) {
+      final view = views.first;
+      final size = view.physicalSize / view.devicePixelRatio;
+      if (size.width.isFinite &&
+          size.height.isFinite &&
+          size.width > 0 &&
+          size.height > 0) {
+        return size;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return _TimetableWeekPreviewBody(
-      provider: widget.provider,
-      settings: widget.settings,
-      week: widget.week,
-      maxVisibleSections: widget.maxVisibleSections,
-      includeAppHeader: widget.includeAppHeader,
-      applyHomePageBackdrop: widget.applyHomePageBackdrop,
-      heightBudget: widget.heightBudget,
-      wallpaperTopLuminance: _topLuminance,
-      wallpaperWeekdayLuminance: _weekdayLuminance,
-      wallpaperBodyLuminance: _bodyLuminance,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _sampleLuminance(viewportSize: constraints.biggest);
+        return _TimetableWeekPreviewBody(
+          provider: widget.provider,
+          settings: widget.settings,
+          week: widget.week,
+          maxVisibleSections: widget.maxVisibleSections,
+          includeAppHeader: widget.includeAppHeader,
+          applyHomePageBackdrop: widget.applyHomePageBackdrop,
+          heightBudget: widget.heightBudget,
+          wallpaperTopLuminance: _topLuminance,
+          wallpaperWeekdayLuminance: _weekdayLuminance,
+          wallpaperBodyLuminance: _bodyLuminance,
+        );
+      },
     );
   }
 }
@@ -229,8 +263,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final darkFallback = colorScheme.surface;
     final hasBackdrop =
-        applyHomePageBackdrop &&
-        hasHomePageBackdropImage(settings, isDark: isDark);
+        applyHomePageBackdrop && hasHomePageBackdropImage(settings);
     final backgroundColor = isDark
         ? colorScheme.surface
         : parseHexColorOrFallback(
@@ -311,7 +344,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                     (homePageRegionShowsBackdrop(
                           settings,
                           HomePageBackgroundScope.weekdayBar,
-                          isDark: isDark,
                         ) ||
                         settings.homePageWeekdayBarBlurEnabled),
               ),
@@ -323,8 +355,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.hardEdge,
                   children: [
-                    if (hasBackdrop)
-                      homePageBackdropLayer(settings: settings, isDark: isDark),
+                    if (hasBackdrop) homePageBackdropLayer(settings: settings),
                     // First filter inside the group: caches the full-size
                     // wallpaper backdrop so the chrome band's glass below can
                     // sample beyond its own narrow bounds without clamping
@@ -437,7 +468,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final headerShowsBackdrop = homePageRegionShowsBackdrop(
       settings,
       HomePageBackgroundScope.header,
-      isDark: isDark,
     );
     final headerUsesFrostedChrome =
         hasBackdrop &&
@@ -579,7 +609,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         (homePageRegionShowsBackdrop(
               settings,
               HomePageBackgroundScope.weekdayBar,
-              isDark: isDark,
             ) ||
             settings.homePageWeekdayBarBlurEnabled);
     // Judge ink from the band actually behind the weekday bar, not the
@@ -590,8 +619,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         ? wallpaperTopLuminance
         : wallpaperWeekdayLuminance ?? wallpaperTopLuminance;
     // Same rules as the home weekday chrome: default black/white ink flips
-    // with the wallpaper luminance, user-custom hex is kept, accent is never
-    // auto-inverted.
+    // with the wallpaper luminance; unreadable custom ink and accents also
+    // fall back to the automatic black/white foreground.
     final weekLabelColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.weekdayBarFontColorDark
@@ -921,7 +950,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         homePageRegionShowsBackdrop(
           settings,
           HomePageBackgroundScope.timetable,
-          isDark: isDark,
         );
     final timeAxisColor = homePageOverWallpaperInk(
       configuredHex: isDark

@@ -188,7 +188,8 @@ class CourseSurface extends StatelessWidget {
     final preblur = PreblurredWallpaperScope.maybeOf(context);
     final glassTintAlpha = tuning.tintAlpha.clamp(0.0, 1.0);
     final washAlpha = _scaledAlpha(frostedFillAlpha);
-    final highlightAlpha = _scaledAlpha(0.55);
+    final liquidHost = CourseCardLiquidGlassScope.maybeOf(context);
+    final motionFallback = liquidHost?.motionFallback ?? false;
 
     // Platform blur off → translucent tint only.
     if (!blurEnabled) {
@@ -211,46 +212,47 @@ class CourseSurface extends StatelessWidget {
       );
     }
 
-    if (preblur != null) {
+    // During pager/expand motion the real renderer would rebuild its full
+    // screen-space geometry matte for every transformed card. Keep the cached
+    // wallpaper sample only for that short motion window; once settled, the
+    // normal path below is the actual liquid_glass_renderer shader.
+    if (motionFallback) {
+      final motionSurface = preblur == null
+          ? ColoredBox(
+              color: color.withValues(
+                alpha: _scaledAlpha(translucentFillAlpha),
+              ),
+            )
+          : Stack(
+              fit: StackFit.passthrough,
+              children: [
+                const Positioned.fill(
+                  child: RepaintBoundary(
+                    child: PreblurredWallpaperAlignedFill(),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ColoredBox(
+                      color: Colors.white.withValues(alpha: glassTintAlpha),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ColoredBox(
+                      color: color.withValues(alpha: washAlpha),
+                    ),
+                  ),
+                ),
+              ],
+            );
       return ClipRRect(
         borderRadius: radius,
         child: Stack(
           fit: StackFit.passthrough,
           children: [
-            // Own layer: with a screen-fixed wallpaper the pager listener
-            // marks this fill dirty on every swipe frame; without a boundary
-            // that repaint re-records the whole card (texts, badges, wash
-            // overlays) instead of just one drawImageRect per card.
-            const Positioned.fill(
-              child: RepaintBoundary(child: PreblurredWallpaperAlignedFill()),
-            ),
-            // Same glass tint as sheets, headers and popups.
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(
-                  color: Colors.white.withValues(alpha: glassTintAlpha),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(color: color.withValues(alpha: washAlpha)),
-              ),
-            ),
-            // Edge highlight (cheap stand-in for liquid specular).
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: highlightAlpha),
-                      width: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            Positioned.fill(child: motionSurface),
             if (border != null) _borderOverlay(radius, border!),
             child,
           ],
@@ -258,8 +260,10 @@ class CourseSurface extends StatelessWidget {
       );
     }
 
-    // No pre-blurred wallpaper (settings preview / no wallpaper): use the
-    // package glass. Inside a host the shapes share one liquid-glass layer.
+    // Settled cards use the package liquid-glass shader. Inside a host the
+    // shapes share one layer and one backdrop capture, including over a live
+    // wallpaper. The shader supplies its own material edge lighting; there is
+    // deliberately no manually painted white outline here.
     final usesSharedHost = CourseCardLiquidGlassScope.maybeOf(context) != null;
     final layerMode = usesSharedHost
         ? HyperosLiquidGlassLayerMode.sharedLayer

@@ -92,23 +92,9 @@ void main() {
   });
 
   group('prepareHomePageVisualReadiness', () {
-    test('dark theme skips wallpaper work', () async {
-      final settings = TimetableSettings.defaults().copyWith(
-        homePageWallpaperPath: r'C:\does\not\exist\wallpaper.jpg',
-        homePageHeaderBlurEnabled: true,
-        frostedBlurEnabled: true,
-      );
-      final readiness = await prepareHomePageVisualReadiness(
-        settings,
-        isDark: true,
-      );
-      expect(readiness, HomePageVisualReadiness.empty);
-    });
-
-    test('missing path returns empty', () async {
+    test('missing path returns empty regardless of theme', () async {
       final readiness = await prepareHomePageVisualReadiness(
         TimetableSettings.defaults(),
-        isDark: false,
       );
       expect(readiness, HomePageVisualReadiness.empty);
     });
@@ -120,12 +106,49 @@ void main() {
         frostedBlurEnabled: true,
         frostedGlassMode: FrostedGlassMode.liquidGlass,
       );
-      final readiness = await prepareHomePageVisualReadiness(
-        settings,
-        isDark: false,
-      );
+      final readiness = await prepareHomePageVisualReadiness(settings);
       // hasHomePageBackdropImage uses existsSync; missing file → empty.
       expect(readiness, HomePageVisualReadiness.empty);
+    });
+  });
+
+  group('homePageWallpaperVisibleSourceRect', () {
+    test('wide image crops horizontally and follows alignment', () {
+      final centered = homePageWallpaperVisibleSourceRect(
+        viewportSize: const Size(400, 800),
+        imageSize: const Size(1600, 800),
+      );
+      expect(centered.left, closeTo(0.375, 0.0001));
+      expect(centered.top, 0);
+      expect(centered.width, closeTo(0.25, 0.0001));
+      expect(centered.height, 1);
+
+      final right = homePageWallpaperVisibleSourceRect(
+        viewportSize: const Size(400, 800),
+        imageSize: const Size(1600, 800),
+        alignX: 1,
+      );
+      expect(right.left, closeTo(0.75, 0.0001));
+      expect(right.width, closeTo(0.25, 0.0001));
+    });
+
+    test('tall image crops vertically and clamps alignment', () {
+      final top = homePageWallpaperVisibleSourceRect(
+        viewportSize: const Size(800, 400),
+        imageSize: const Size(800, 1600),
+        alignY: -2,
+      );
+      expect(top.left, 0);
+      expect(top.top, 0);
+      expect(top.width, 1);
+      expect(top.height, closeTo(0.25, 0.0001));
+
+      final bottom = homePageWallpaperVisibleSourceRect(
+        viewportSize: const Size(800, 400),
+        imageSize: const Size(800, 1600),
+        alignY: 2,
+      );
+      expect(bottom.top, closeTo(0.75, 0.0001));
     });
   });
 
@@ -184,46 +207,43 @@ void main() {
       );
     });
 
-    test(
-      'user custom color falls back to auto black/white when unreadable '
-      'over the wallpaper',
-      () {
-        // Dark band (0.05): #2563EB keeps only ~2:1 → auto-flips to white so
-        // the chrome never renders invisible ink over the photo.
-        expect(
-          homePageOverWallpaperInk(
-            configuredHex: '#2563EB',
-            defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
-            themeFallback: const Color(0xFF111111),
-            hasBackdrop: true,
-            wallpaperLuminance: 0.05,
-          ),
-          homePageChromeForegroundOnDark,
-        );
-        // A light custom ink on a light band is equally unreadable → black.
-        expect(
-          homePageOverWallpaperInk(
-            configuredHex: '#F2F2F2',
-            defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
-            themeFallback: const Color(0xFF111111),
-            hasBackdrop: true,
-            wallpaperLuminance: 0.9,
-          ),
-          homePageChromeForegroundOnLight,
-        );
-        // Without a luminance sample (sampling pending) the colour is kept.
-        expect(
-          homePageOverWallpaperInk(
-            configuredHex: '#2563EB',
-            defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
-            themeFallback: const Color(0xFF111111),
-            hasBackdrop: true,
-            wallpaperLuminance: null,
-          ),
-          const Color(0xFF2563EB),
-        );
-      },
-    );
+    test('user custom color falls back to auto black/white when unreadable '
+        'over the wallpaper', () {
+      // Dark band (0.05): #2563EB keeps only ~2:1 → auto-flips to white so
+      // the chrome never renders invisible ink over the photo.
+      expect(
+        homePageOverWallpaperInk(
+          configuredHex: '#2563EB',
+          defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+          themeFallback: const Color(0xFF111111),
+          hasBackdrop: true,
+          wallpaperLuminance: 0.05,
+        ),
+        homePageChromeForegroundOnDark,
+      );
+      // A light custom ink on a light band is equally unreadable → black.
+      expect(
+        homePageOverWallpaperInk(
+          configuredHex: '#F2F2F2',
+          defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+          themeFallback: const Color(0xFF111111),
+          hasBackdrop: true,
+          wallpaperLuminance: 0.9,
+        ),
+        homePageChromeForegroundOnLight,
+      );
+      // Without a luminance sample (sampling pending) the colour is kept.
+      expect(
+        homePageOverWallpaperInk(
+          configuredHex: '#2563EB',
+          defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+          themeFallback: const Color(0xFF111111),
+          hasBackdrop: true,
+          wallpaperLuminance: null,
+        ),
+        const Color(0xFF2563EB),
+      );
+    });
 
     test('without wallpaper uses configured or theme fallback', () {
       expect(

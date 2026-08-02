@@ -17,6 +17,7 @@ import '../helpers_test_app.dart';
 
 /// Scope bits: timetable(1) | weekdayBar(2) | header(4) | statusBar(8).
 const _scopeAll = 1 | 2 | 4 | 8;
+
 /// 课表 + 状态栏 only — 顶栏/信息栏 display toggles turned off.
 const _scopeNoChromeBars = 1 | 8;
 
@@ -46,8 +47,10 @@ void _seedInitializedPrefs() {
 /// below (weekday-bar region) reads dark.
 Future<File> _writeWallpaper(
   Directory dir, {
-  int width = 100,
-  int height = 100,
+  // Match Flutter's default 800×600 widget-test viewport so BoxFit.cover does
+  // not crop away the synthetic top strip used by the chrome assertions.
+  int width = 400,
+  int height = 300,
   double topLightFraction = 0.12,
 }) async {
   final recorder = ui.PictureRecorder();
@@ -134,35 +137,32 @@ void main() {
     StorageService().resetForTesting();
   });
 
-  testWidgets(
-    'dark wallpaper + all regions + no blur: chrome ink flips white '
-    'everywhere (unchanged behaviour)',
-    (tester) async {
-      _seedInitializedPrefs();
-      final dir = Directory.systemTemp.createTempSync('mikcb_ink_');
-      addTearDown(() {
-        PaintingBinding.instance.imageCache.clear();
-        try {
-          dir.deleteSync(recursive: true);
-        } on FileSystemException {
-          // ignored
-        }
-      });
-      final wallpaper = await tester.runAsync(
-        () => _writeWallpaper(dir, topLightFraction: 0.0),
-      );
-      final provider = await createInitializedTestProvider(tester);
-      await _pumpHome(tester, provider, wallpaper!.path, _scopeAll);
+  testWidgets('dark wallpaper + all regions + no blur: chrome ink flips white '
+      'everywhere (unchanged behaviour)', (tester) async {
+    _seedInitializedPrefs();
+    final dir = Directory.systemTemp.createTempSync('mikcb_ink_');
+    addTearDown(() {
+      PaintingBinding.instance.imageCache.clear();
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // ignored
+      }
+    });
+    final wallpaper = await tester.runAsync(
+      () => _writeWallpaper(dir, topLightFraction: 0.0),
+    );
+    final provider = await createInitializedTestProvider(tester);
+    await _pumpHome(tester, provider, wallpaper!.path, _scopeAll);
 
-      expect(_textColor(tester, '轻屿课表'), homePageChromeForegroundOnDark);
-      expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
-      expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
-      expect(
-        _textColor(tester, '07/27'),
-        homePageChromeForegroundOnDark.withValues(alpha: 0.72),
-      );
-    },
-  );
+    expect(_textColor(tester, '轻屿课表'), homePageChromeForegroundOnDark);
+    expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
+    expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
+    expect(
+      _textColor(tester, '07/27'),
+      homePageChromeForegroundOnDark.withValues(alpha: 0.72),
+    );
+  });
 
   testWidgets(
     'light strip only at the very top: weekday bar flips white by its own '
@@ -199,38 +199,75 @@ void main() {
     },
   );
 
-  testWidgets(
-    'header/weekday scope off: chrome ink follows the opaque page '
-    'background, not the wallpaper',
-    (tester) async {
-      _seedInitializedPrefs();
-      final dir = Directory.systemTemp.createTempSync('mikcb_ink_');
-      addTearDown(() {
-        PaintingBinding.instance.imageCache.clear();
-        try {
-          dir.deleteSync(recursive: true);
-        } on FileSystemException {
-          // ignored
-        }
-      });
-      // Dark wallpaper + 顶栏/信息栏 scope toggles off: those bands paint the
-      // opaque light page background, so the logo must fall back to the theme
-      // foreground (dark) instead of flipping white over the wallpaper.
-      final wallpaper = await tester.runAsync(
-        () => _writeWallpaper(dir, topLightFraction: 0.0),
-      );
-      final provider = await createInitializedTestProvider(tester);
-      await _pumpHome(tester, provider, wallpaper!.path, _scopeNoChromeBars);
+  testWidgets('weekday blur uses the top band for ink and contrast warnings', (
+    tester,
+  ) async {
+    _seedInitializedPrefs();
+    final dir = Directory.systemTemp.createTempSync('mikcb_ink_');
+    addTearDown(() {
+      PaintingBinding.instance.imageCache.clear();
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // ignored
+      }
+    });
+    // Keep the top/header strip white and the weekday band below it black.
+    // With weekday blur enabled, the glass scrim follows the top sample, so
+    // custom white weekday ink must flip to dark ink and explain the change.
+    // The old warning path sampled the weekday band instead and missed it.
+    final wallpaper = await tester.runAsync(
+      () => _writeWallpaper(dir, topLightFraction: 0.09),
+    );
+    final provider = await createInitializedTestProvider(tester);
+    await _pumpHome(
+      tester,
+      provider,
+      wallpaper!.path,
+      _scopeAll,
+      weekdayBlur: true,
+      weekdayHex: '#FFFFFF',
+    );
 
-      final logo = _textColor(tester, '轻屿课表');
-      expect(logo, isNotNull);
-      expect(logo!.computeLuminance(), lessThan(0.3));
-      // Default weekday ink on the opaque background: the configured default
-      // black, not the wallpaper-flipped white.
-      expect(_textColor(tester, '周一'), const Color(0xFF000000));
-      expect(_textColor(tester, '1周'), const Color(0xFF000000));
-    },
-  );
+    expect(find.text('文字对比度不足'), findsOneWidget);
+    expect(find.textContaining('浅色壁纸'), findsOneWidget);
+    expect(_textColor(tester, '周一'), homePageChromeForegroundOnLight);
+    expect(_textColor(tester, '1周'), homePageChromeForegroundOnLight);
+    expect(
+      _textColor(tester, '07/27'),
+      homePageChromeForegroundOnLight.withValues(alpha: 0.70),
+    );
+  });
+
+  testWidgets('header/weekday scope off: chrome ink follows the opaque page '
+      'background, not the wallpaper', (tester) async {
+    _seedInitializedPrefs();
+    final dir = Directory.systemTemp.createTempSync('mikcb_ink_');
+    addTearDown(() {
+      PaintingBinding.instance.imageCache.clear();
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // ignored
+      }
+    });
+    // Dark wallpaper + 顶栏/信息栏 scope toggles off: those bands paint the
+    // opaque light page background, so the logo must fall back to the theme
+    // foreground (dark) instead of flipping white over the wallpaper.
+    final wallpaper = await tester.runAsync(
+      () => _writeWallpaper(dir, topLightFraction: 0.0),
+    );
+    final provider = await createInitializedTestProvider(tester);
+    await _pumpHome(tester, provider, wallpaper!.path, _scopeNoChromeBars);
+
+    final logo = _textColor(tester, '轻屿课表');
+    expect(logo, isNotNull);
+    expect(logo!.computeLuminance(), lessThan(0.3));
+    // Default weekday ink on the opaque background: the configured default
+    // black, not the wallpaper-flipped white.
+    expect(_textColor(tester, '周一'), const Color(0xFF000000));
+    expect(_textColor(tester, '1周'), const Color(0xFF000000));
+  });
 
   testWidgets(
     'custom dark weekday ink over a dark wallpaper: auto-flips to white and '

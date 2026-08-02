@@ -227,6 +227,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   int? _dayViewTransitionSourceDayOfWeek;
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
+
+  /// True while a pager or the day-view shell is moving. The course-card host
+  /// uses this to leave the expensive real-refraction layer during motion and
+  /// restore it after the frame settles.
+  late final ValueNotifier<bool> _courseCardGlassMotion;
+
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
   static const int _sharedFreeVisibleSegmentLimit = 2;
@@ -257,8 +263,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// band can be dark while mid-screen is bright (or vice versa), so card ink
   /// must not reuse the chrome sample.
   double? _wallpaperBodyLuminance;
-  String? _wallpaperLuminanceSamplePath;
-  String? _wallpaperLuminanceRequestedPath;
+  String? _wallpaperLuminanceSampleKey;
+  String? _wallpaperLuminanceRequestedKey;
   bool _wallpaperLuminanceFileExists = false;
 
   /// Last "custom weekday ink is unreadable" combination already warned about
@@ -290,6 +296,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewExpandController = AnimationController(
       vsync: this,
       duration: _dayExpandDuration,
+    )..addStatusListener(_handleCourseCardGlassAnimationStatus);
+    _courseCardGlassMotion = ValueNotifier<bool>(
+      _isDayView || _dayViewExpandController.isAnimating,
     );
     _dayAgendaProgressTimer = widget.enableProgressTimer
         ? Timer.periodic(const Duration(seconds: 1), (_) {
@@ -315,7 +324,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.removeObserver(this);
     _homePullQuickImportCancel?.call();
     _weekPageController.dispose();
-    _dayViewExpandController.dispose();
+    _dayViewExpandController
+      ..removeStatusListener(_handleCourseCardGlassAnimationStatus)
+      ..dispose();
+    _courseCardGlassMotion.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
     _dayAgendaProgressTick.dispose();
@@ -364,16 +376,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final darkFallback = colorScheme.surface;
         final settings = provider.settings;
-        final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+        final viewportSize = MediaQuery.sizeOf(context);
+        final hasBackdrop = hasHomePageBackdropImage(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
           settings,
           HomePageBackgroundScope.statusBar,
-          isDark: isDark,
         );
         final timetableShowsBackdrop = homePageRegionShowsBackdrop(
           settings,
           HomePageBackgroundScope.timetable,
-          isDark: isDark,
         );
         final pageBackgroundColor = resolveHomePageBackgroundColor(
           settings: settings,
@@ -395,7 +406,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         final headerShowsBackdrop = homePageRegionShowsBackdrop(
           settings,
           HomePageBackgroundScope.header,
-          isDark: isDark,
         );
         final headerUsesFrostedChrome =
             hasBackdrop &&
@@ -417,7 +427,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           wallpaperTopLuminance: _wallpaperTopLuminance,
         );
 
-        _scheduleWallpaperLuminanceSampleIfNeeded(settings);
+        _scheduleWallpaperLuminanceSampleIfNeeded(
+          settings,
+          viewportSize: viewportSize,
+        );
         // After the sample lands: a hand-picked weekday ink can be invisible
         // over this wallpaper — never silently override it, explain instead.
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -481,155 +494,159 @@ class _TimetableScreenState extends State<TimetableScreen>
           // summary card's stand-in frost reads like the band above it.
           return HyperosBlurredHeader.blurSigmaOf(context);
         })();
-        Widget homeStack = Stack(
-          fit: StackFit.expand,
-          children: [
-            if (hasBackdrop)
-              followsWeekPager
-                  ? HomePageSlidingBackdropLayer(
-                      controller: _weekPageController,
-                      pageCount: settings.semesterWeekCount,
-                      settings: settings,
-                      isDark: isDark,
-                    )
-                  : homePageBackdropLayer(settings: settings, isDark: isDark),
-            if (hasBackdrop && !statusBarShowsBackdrop)
-              HomePageStatusBarBackdropMask(color: pageBackgroundColor),
-            // Single continuous glass for title + weekday (no time-column blur).
-            // Stays fixed above the sliding wallpaper so chrome text stays sharp
-            // while the photo moves as one continuous sheet.
-            if (continuousChromeBlur)
-              HomePageContinuousChromeFrostedOverlay(
-                headerBlurEnabled: settings.homePageHeaderBlurEnabled,
-                weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
-                includeStatusBar: statusBarShowsBackdrop,
-                weekdayBarHeight: _weekDayHeaderHeight,
-                wallpaperTopLuminance: _wallpaperTopLuminance,
-              ),
-            HyperosRootPage(
-              overlayHeader: false,
-              resizeToAvoidBottomInset: false,
-              backgroundColor: scaffoldBackgroundColor,
-              headerDecoration: BoxDecoration(color: headerBarColor),
-              headerPadding: EdgeInsets.fromLTRB(
-                8,
-                0,
-                8,
-                headerUsesFrostedChrome ? 0.0 : 2.0,
-              ),
-              systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                systemOverlayBackground,
-              ),
-              title: _buildProfileSwitcherTrigger(
-                provider,
-                foreground: chromeForeground,
-                mutedForeground: chromeMutedForeground,
-              ),
-              suffixes: [
-                if (provider.hasPartnerBinding)
-                  FHeaderAction(
-                    icon: Icon(
-                      _isCoupleOverlayActive(provider)
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_outline_rounded,
-                      color: _isCoupleOverlayActive(provider)
-                          ? const Color(0xFFE91E63)
-                          : chromeForeground,
+        Widget homeStack = CourseCardGlassMotionScope(
+          motion: _courseCardGlassMotion,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (hasBackdrop)
+                followsWeekPager
+                    ? HomePageSlidingBackdropLayer(
+                        controller: _weekPageController,
+                        pageCount: settings.semesterWeekCount,
+                        settings: settings,
+                      )
+                    : homePageBackdropLayer(settings: settings),
+              if (hasBackdrop && !statusBarShowsBackdrop)
+                HomePageStatusBarBackdropMask(color: pageBackgroundColor),
+              // Single continuous glass for title + weekday (no time-column blur).
+              // Stays fixed above the sliding wallpaper so chrome text stays sharp
+              // while the photo moves as one continuous sheet.
+              if (continuousChromeBlur)
+                HomePageContinuousChromeFrostedOverlay(
+                  headerBlurEnabled: settings.homePageHeaderBlurEnabled,
+                  weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
+                  includeStatusBar: statusBarShowsBackdrop,
+                  weekdayBarHeight: _weekDayHeaderHeight,
+                  wallpaperTopLuminance: _wallpaperTopLuminance,
+                ),
+              HyperosRootPage(
+                overlayHeader: false,
+                resizeToAvoidBottomInset: false,
+                backgroundColor: scaffoldBackgroundColor,
+                headerDecoration: BoxDecoration(color: headerBarColor),
+                headerPadding: EdgeInsets.fromLTRB(
+                  8,
+                  0,
+                  8,
+                  headerUsesFrostedChrome ? 0.0 : 2.0,
+                ),
+                systemOverlayStyle: HyperosColors.systemOverlayForBackground(
+                  systemOverlayBackground,
+                ),
+                title: _buildProfileSwitcherTrigger(
+                  provider,
+                  foreground: chromeForeground,
+                  mutedForeground: chromeMutedForeground,
+                ),
+                suffixes: [
+                  if (provider.hasPartnerBinding)
+                    FHeaderAction(
+                      icon: Icon(
+                        _isCoupleOverlayActive(provider)
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_outline_rounded,
+                        color: _isCoupleOverlayActive(provider)
+                            ? const Color(0xFFE91E63)
+                            : chromeForeground,
+                      ),
+                      semanticsLabel: _isCoupleOverlayActive(provider)
+                          ? l10n.coupleTimetableModeDisableTooltip
+                          : l10n.coupleTimetableModeEnableTooltip,
+                      onPress: () {
+                        setState(() {
+                          _coupleOverlayEnabled = !_coupleOverlayEnabled;
+                          _sharedFreeSegmentsExpanded = false;
+                        });
+                        _persistCoupleOverlayEnabled(
+                          provider,
+                          enabled: _coupleOverlayEnabled,
+                        );
+                      },
                     ),
-                    semanticsLabel: _isCoupleOverlayActive(provider)
-                        ? l10n.coupleTimetableModeDisableTooltip
-                        : l10n.coupleTimetableModeEnableTooltip,
-                    onPress: () {
-                      setState(() {
-                        _coupleOverlayEnabled = !_coupleOverlayEnabled;
-                        _sharedFreeSegmentsExpanded = false;
-                      });
-                      _persistCoupleOverlayEnabled(
-                        provider,
-                        enabled: _coupleOverlayEnabled,
-                      );
-                    },
-                  ),
-                FHeaderAction(
-                  icon: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(Icons.more_vert_rounded, color: chromeForeground),
-                      if (_hasAvailableUpdate)
-                        Positioned(
-                          right: -1,
-                          top: -1,
-                          child: Container(
-                            width: 9,
-                            height: 9,
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: headerBarColor.a == 0
-                                    ? colorScheme.surface
-                                    : headerBarColor,
-                                width: 1.5,
+                  FHeaderAction(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(Icons.more_vert_rounded, color: chromeForeground),
+                        if (_hasAvailableUpdate)
+                          Positioned(
+                            right: -1,
+                            top: -1,
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: headerBarColor.a == 0
+                                      ? colorScheme.surface
+                                      : headerBarColor,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
+                    semanticsLabel: l10n.moreTooltip,
+                    onPress: _showTopActionsSheet,
                   ),
-                  semanticsLabel: l10n.moreTooltip,
-                  onPress: _showTopActionsSheet,
+                ],
+                childPad: false,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: provider.isLoading
+                      ? ColoredBox(
+                          color: AppBootBranding.backgroundColor(
+                            isDark: isDark,
+                          ),
+                          child: AppBootBranding(
+                            appLabel: widget.packageInfo != null
+                                ? AppBootBranding.resolveAppLabel(
+                                    widget.packageInfo!,
+                                    l10n,
+                                  )
+                                : l10n.appTitle,
+                            isDark: isDark,
+                          ),
+                        )
+                      : MediaQuery.removeViewInsets(
+                          context: context,
+                          removeBottom: true,
+                          child: Stack(
+                            children: [
+                              _buildHomePullQuickImportSurface(
+                                provider: provider,
+                                settings: settings,
+                                hasBackdrop: hasBackdrop,
+                              ),
+                              if (_isHomePullQuickImportRunning ||
+                                  _homePullDragDistance > 0)
+                                _buildHomePullQuickImportIndicator(l10n),
+                              ValueListenableBuilder<int>(
+                                valueListenable: _visibleWeekListenable,
+                                builder: (context, visibleWeek, child) {
+                                  if (!_shouldShowFloatingBackToCurrentWeekButton(
+                                    provider,
+                                    provider.settings,
+                                    visibleWeek,
+                                  )) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return _buildFloatingBackToCurrentWeekButton(
+                                    provider,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
-              ],
-              childPad: false,
-              child: Material(
-                type: MaterialType.transparency,
-                child: provider.isLoading
-                    ? ColoredBox(
-                        color: AppBootBranding.backgroundColor(isDark: isDark),
-                        child: AppBootBranding(
-                          appLabel: widget.packageInfo != null
-                              ? AppBootBranding.resolveAppLabel(
-                                  widget.packageInfo!,
-                                  l10n,
-                                )
-                              : l10n.appTitle,
-                          isDark: isDark,
-                        ),
-                      )
-                    : MediaQuery.removeViewInsets(
-                        context: context,
-                        removeBottom: true,
-                        child: Stack(
-                          children: [
-                            _buildHomePullQuickImportSurface(
-                              provider: provider,
-                              settings: settings,
-                              hasBackdrop: hasBackdrop,
-                            ),
-                            if (_isHomePullQuickImportRunning ||
-                                _homePullDragDistance > 0)
-                              _buildHomePullQuickImportIndicator(l10n),
-                            ValueListenableBuilder<int>(
-                              valueListenable: _visibleWeekListenable,
-                              builder: (context, visibleWeek, child) {
-                                if (!_shouldShowFloatingBackToCurrentWeekButton(
-                                  provider,
-                                  provider.settings,
-                                  visibleWeek,
-                                )) {
-                                  return const SizedBox.shrink();
-                                }
-                                return _buildFloatingBackToCurrentWeekButton(
-                                  provider,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
         if (useHomePreblur) {
           // Same pre-blur model as the week grid: sample one cached frost
@@ -878,6 +895,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // of 1 (restore / interrupted close / hot reload) makes open look like a
     // hard cut, while close still has a visible reverse animation.
     if (shouldAnimateOpen) {
+      _setCourseCardGlassMotion(true);
       _dayViewExpandController.value = 0;
     }
     _dayHeaderPreview.value = null;
@@ -904,6 +922,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     _maybeSelectionClick(settings);
+    _setCourseCardGlassMotion(true);
     if (_dayViewExpandController.value > 0) {
       await _dayViewExpandController.reverse();
       if (!mounted) {
@@ -911,6 +930,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
     }
     _dayHeaderPreview.value = null;
+    _setCourseCardGlassMotion(false);
     setState(() {
       _selectedWeekForDayView = null;
       _selectedDayOfWeek = null;
@@ -1158,6 +1178,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     _isDaySwipeAnimating = true;
+    _setCourseCardGlassMotion(true);
     try {
       _dayHeaderPreview.value = null;
       setState(() {
@@ -1195,7 +1216,39 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
     } finally {
       _isDaySwipeAnimating = false;
+      _setCourseCardGlassMotion(false);
     }
+  }
+
+  bool _handleCourseCardScrollNotification(ScrollNotification notification) {
+    if (notification.depth != 0) {
+      return false;
+    }
+    if (notification is ScrollStartNotification) {
+      _setCourseCardGlassMotion(true);
+    } else if (notification is ScrollEndNotification) {
+      _refreshCourseCardGlassMotion();
+    }
+    return false;
+  }
+
+  void _refreshCourseCardGlassMotion() {
+    _setCourseCardGlassMotion(
+      _isDaySwipeAnimating || _dayViewExpandController.isAnimating,
+    );
+  }
+
+  void _setCourseCardGlassMotion(bool moving) {
+    if (_courseCardGlassMotion.value == moving) {
+      return;
+    }
+    _courseCardGlassMotion.value = moving;
+  }
+
+  void _handleCourseCardGlassAnimationStatus(AnimationStatus status) {
+    _setCourseCardGlassMotion(
+      status == AnimationStatus.forward || status == AnimationStatus.reverse,
+    );
   }
 
   Future<void> _handleDayViewPageChanged(
@@ -1411,22 +1464,22 @@ class _TimetableScreenState extends State<TimetableScreen>
     return vx;
   }
 
-  /// Schedules wallpaper top-band luminance sampling without sync I/O in build.
+  /// Schedules wallpaper luminance sampling without sync I/O in build.
   ///
-  /// File existence is checked asynchronously; results are cached per path so
-  /// rebuilds only re-sample when the backdrop path changes.
-  ///
-  /// Runs in **both** themes: a light wallpaper under a dark theme needs dark
-  /// ink just as much as a dark wallpaper under a light theme does. Gating this
-  /// on `isDark` left white-on-white chrome text on light wallpapers.
-  void _scheduleWallpaperLuminanceSampleIfNeeded(TimetableSettings settings) {
+  /// File existence is checked asynchronously; results are cached per path,
+  /// viewport and wallpaper alignment so a cover crop change cannot keep using
+  /// a sample from an off-screen part of the image.
+  void _scheduleWallpaperLuminanceSampleIfNeeded(
+    TimetableSettings settings, {
+    required Size viewportSize,
+  }) {
     final path = resolveHomePageBackdropImagePath(settings);
     if (path == null || path.isEmpty) {
       if (_wallpaperTopLuminance != null ||
           _wallpaperWeekdayLuminance != null ||
           _wallpaperBodyLuminance != null ||
-          _wallpaperLuminanceSamplePath != null ||
-          _wallpaperLuminanceRequestedPath != null) {
+          _wallpaperLuminanceSampleKey != null ||
+          _wallpaperLuminanceRequestedKey != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -1435,58 +1488,104 @@ class _TimetableScreenState extends State<TimetableScreen>
             _wallpaperTopLuminance = null;
             _wallpaperWeekdayLuminance = null;
             _wallpaperBodyLuminance = null;
-            _wallpaperLuminanceSamplePath = null;
-            _wallpaperLuminanceRequestedPath = null;
+            _wallpaperLuminanceSampleKey = null;
+            _wallpaperLuminanceRequestedKey = null;
             _wallpaperLuminanceFileExists = false;
           });
         });
       }
       return;
     }
-    // Same path already requested: either missing file or sample finished/in-flight.
-    if (_wallpaperLuminanceRequestedPath == path &&
-        (_wallpaperLuminanceSamplePath == path ||
+    final key = _wallpaperLuminanceKey(
+      path: path,
+      viewportSize: viewportSize,
+      alignX: settings.homePageWallpaperAlignX,
+      alignY: settings.homePageWallpaperAlignY,
+    );
+    if (_wallpaperLuminanceRequestedKey == key &&
+        (_wallpaperLuminanceSampleKey == key ||
             !_wallpaperLuminanceFileExists)) {
       return;
     }
-    unawaited(_ensureWallpaperLuminanceForPath(path));
+    unawaited(
+      _ensureWallpaperLuminanceForPath(
+        path,
+        viewportSize: viewportSize,
+        alignX: settings.homePageWallpaperAlignX,
+        alignY: settings.homePageWallpaperAlignY,
+        key: key,
+      ),
+    );
   }
 
-  Future<void> _ensureWallpaperLuminanceForPath(String path) async {
-    if (_wallpaperLuminanceRequestedPath == path &&
-        _wallpaperLuminanceSamplePath == path &&
+  String _wallpaperLuminanceKey({
+    required String path,
+    required Size viewportSize,
+    required double alignX,
+    required double alignY,
+  }) {
+    return '$path|${viewportSize.width}x${viewportSize.height}|'
+        '${alignX.clamp(-1.0, 1.0)}|${alignY.clamp(-1.0, 1.0)}';
+  }
+
+  Future<void> _ensureWallpaperLuminanceForPath(
+    String path, {
+    required Size viewportSize,
+    required double alignX,
+    required double alignY,
+    required String key,
+  }) async {
+    if (_wallpaperLuminanceRequestedKey == key &&
+        _wallpaperLuminanceSampleKey == key &&
         _wallpaperTopLuminance != null) {
       return;
     }
-    _wallpaperLuminanceRequestedPath = path;
+    _wallpaperLuminanceRequestedKey = key;
     final fileExists = await File(path).exists();
-    if (!mounted || _wallpaperLuminanceRequestedPath != path) {
+    if (!mounted || _wallpaperLuminanceRequestedKey != key) {
       return;
     }
     if (!fileExists) {
       if (_wallpaperTopLuminance != null ||
           _wallpaperWeekdayLuminance != null ||
           _wallpaperBodyLuminance != null ||
-          _wallpaperLuminanceSamplePath != null ||
+          _wallpaperLuminanceSampleKey != null ||
           _wallpaperLuminanceFileExists) {
         setState(() {
           _wallpaperTopLuminance = null;
           _wallpaperWeekdayLuminance = null;
           _wallpaperBodyLuminance = null;
-          _wallpaperLuminanceSamplePath = null;
+          _wallpaperLuminanceSampleKey = null;
           _wallpaperLuminanceFileExists = false;
         });
       }
       return;
     }
     _wallpaperLuminanceFileExists = true;
-    _wallpaperLuminanceSamplePath = path;
-    await _loadWallpaperTopLuminance(path);
+    _wallpaperLuminanceSampleKey = key;
+    await _loadWallpaperLuminance(
+      path,
+      viewportSize: viewportSize,
+      alignX: alignX,
+      alignY: alignY,
+      key: key,
+    );
   }
 
-  Future<void> _loadWallpaperTopLuminance(String path) async {
-    final bands = await sampleHomePageWallpaperLuminanceBands(path);
-    if (!mounted || _wallpaperLuminanceSamplePath != path) {
+  Future<void> _loadWallpaperLuminance(
+    String path, {
+    required Size viewportSize,
+    required double alignX,
+    required double alignY,
+    required String key,
+  }) async {
+    final bands = await sampleHomePageWallpaperLuminanceBands(
+      path,
+      viewportSize: viewportSize,
+      alignX: alignX,
+      alignY: alignY,
+    );
+    if (!mounted || _wallpaperLuminanceSampleKey != key) {
       return;
     }
     if (_wallpaperTopLuminance == bands?.top &&
@@ -1501,6 +1600,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     });
   }
 
+  /// Luminance used by both weekday rendering and the contrast explainer.
+  /// When the weekday glass band is enabled, its scrim follows the header/top
+  /// sample, so the warning must judge the same effective backdrop as the UI.
+  double? _weekdayInkLuminance(TimetableSettings settings) {
+    return settings.homePageWeekdayBarBlurEnabled
+        ? _wallpaperTopLuminance
+        : _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
+  }
+
   /// One-shot heads-up when a hand-picked weekday-bar ink has too little
   /// contrast against the current wallpaper. The ink is temporarily auto-flipped
   /// for readability ([homePageOverWallpaperInk]); this explains why the custom
@@ -1511,12 +1619,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     // Judge custom ink against the band actually behind the weekday bar, not
     // the status/title strip above it.
-    final luminance = _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
+    final luminance = _weekdayInkLuminance(settings);
     if (luminance == null || _weekdayInkWarningShowing) {
       return;
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!hasHomePageBackdropImage(settings, isDark: isDark)) {
+    if (!hasHomePageBackdropImage(settings)) {
       return;
     }
     final configuredHex = isDark
@@ -1729,7 +1837,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final subtleBorder = context.theme.colors.border;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final hasBackdrop = hasHomePageBackdropImage(settings);
     // Only flip by wallpaper luminance when this band actually shows the
     // wallpaper / frosted glass; with the scope toggled off it paints the
     // opaque page background and must use the theme / configured ink.
@@ -1738,7 +1846,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         (homePageRegionShowsBackdrop(
               settings,
               HomePageBackgroundScope.weekdayBar,
-              isDark: isDark,
             ) ||
             settings.homePageWeekdayBarBlurEnabled);
     // Judge ink from the band actually behind the weekday bar, not the
@@ -1749,7 +1856,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? _wallpaperTopLuminance
         : _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
     // Week label sits in the weekday chrome band: auto-invert default black/white
-    // over a dark wallpaper (same rule as the title logo), keep user custom ink.
+    // over a dark wallpaper; unreadable custom ink follows the same fallback.
     final weekLabelColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.weekdayBarFontColorDark
@@ -2564,9 +2671,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       children: [
         NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            if (notification is ScrollEndNotification &&
-                notification.metrics.axis == Axis.horizontal) {
-              _finalizeWeekPageSettled(provider);
+            if (notification.metrics.axis == Axis.horizontal) {
+              if (notification is ScrollStartNotification) {
+                _setCourseCardGlassMotion(true);
+              } else if (notification is ScrollEndNotification) {
+                _refreshCourseCardGlassMotion();
+                _finalizeWeekPageSettled(provider);
+              }
             }
             return false;
           },
@@ -2640,7 +2751,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     int week,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final hasBackdrop = hasHomePageBackdropImage(settings);
     // Day view keeps the same weekday chrome as the week view: the panel below
     // now shows the wallpaper, so an opaque non-blurred bar would read as a
     // seam across the top of the glass.
@@ -2668,7 +2779,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     final weekdayShowsBackdrop = homePageRegionShowsBackdrop(
       settings,
       HomePageBackgroundScope.weekdayBar,
-      isDark: isDark,
     );
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
     final pageChromeFallback = Theme.of(context).colorScheme.surface;
@@ -2725,16 +2835,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required Widget grid,
   }) {
-    final weekGrid = settings.timetableAutoFitSectionHeight
-        ? grid
-        : SingleChildScrollView(
-            key: PageStorageKey<String>('week-scroll-$week'),
-            // Explicit clamp: do not inherit HyperOS rubber-band here.
-            physics: const ClampingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
+    final weekGrid = NotificationListener<ScrollNotification>(
+      onNotification: _handleCourseCardScrollNotification,
+      child: settings.timetableAutoFitSectionHeight
+          ? grid
+          : SingleChildScrollView(
+              key: PageStorageKey<String>('week-scroll-$week'),
+              // Explicit clamp: do not inherit HyperOS rubber-band here.
+              physics: const ClampingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              child: grid,
             ),
-            child: grid,
-          );
+    );
     // Drive opacity from the expand controller so open and close share the
     // same curve. A boolean AnimatedOpacity snaps the grid away on open while
     // the panel still grows, which reads as "open has no transition".
@@ -2970,6 +3083,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         return false;
                       }
                       if (notification is ScrollStartNotification) {
+                        _setCourseCardGlassMotion(true);
                         if (kDebugMode) {
                           final metrics = notification.metrics;
                           final page = metrics.viewportDimension == 0
@@ -2981,6 +3095,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                           );
                         }
                       } else if (notification is ScrollEndNotification) {
+                        _refreshCourseCardGlassMotion();
                         if (kDebugMode) {
                           final metrics = notification.metrics;
                           final page = metrics.viewportDimension == 0
@@ -3333,7 +3448,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         : Icons.arrow_back_rounded;
 
     final isDark = theme.brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final hasBackdrop = hasHomePageBackdropImage(settings);
     // Same ink path as weekday chrome (auto-contrast + keep custom hex), but
     // judged from the card-region wallpaper band — the top band can be dark
     // (white chrome ink) while mid-screen is bright: white-on-white here.
@@ -3865,7 +3980,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final hasBackdrop = hasHomePageBackdropImage(settings);
     final colorScheme = Theme.of(context).colorScheme;
     // Same wallpaper auto-contrast as weekday / time-axis chrome: default ink
     // flips black↔white over dark photos; user-custom hex is kept as-is. The
@@ -3974,15 +4089,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         return _buildDayAgendaEntry(week: week, settings: settings, item: item);
       },
     );
-    return Builder(
-      builder: (context) {
-        if (settings.courseCardSurfaceStyle ==
-                CourseCardSurfaceStyle.liquidGlass &&
-            PreblurredWallpaperScope.maybeOf(context) != null) {
-          return agendaList;
-        }
-        return CourseGridGlassHost(settings: settings, child: agendaList);
-      },
+    final motionAwareAgendaList = NotificationListener<ScrollNotification>(
+      onNotification: _handleCourseCardScrollNotification,
+      child: agendaList,
+    );
+    // Same policy as the week grid: wallpaper preblur is only the short motion
+    // fallback; settled day cards must register with the real shared layer.
+    return CourseGridGlassHost(
+      settings: settings,
+      child: motionAwareAgendaList,
     );
   }
 
@@ -5361,10 +5476,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (settings == null) {
       return Colors.white;
     }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final style = settings.courseCardSurfaceStyle;
     final glassOverWallpaper =
-        hasHomePageBackdropImage(settings, isDark: isDark) &&
+        hasHomePageBackdropImage(settings) &&
         (style == CourseCardSurfaceStyle.gaussian ||
             style == CourseCardSurfaceStyle.liquidGlass);
     if (!glassOverWallpaper) {
@@ -6208,25 +6322,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required Widget child,
   }) {
-    if (settings.courseCardSurfaceStyle != CourseCardSurfaceStyle.liquidGlass) {
-      return CourseGridGlassHost(settings: settings, child: child);
-    }
-    // PreblurredWallpaperScope is created *below* this State's own context, so
-    // the lookup has to run from a descendant or it always misses and the host
-    // gets built even when the cards are sampling the pre-blurred bitmap.
-    //
-    // This short-circuit is home-page-only: the settings previews have no
-    // pre-blurred bitmap (it is aligned to the screen, not to a preview box).
-    return Builder(
-      builder: (context) {
-        // When pre-blurred wallpaper is active, cards sample that bitmap and do
-        // not need a FakeGlass host (avoids double frost + scroll cost).
-        if (PreblurredWallpaperScope.maybeOf(context) != null) {
-          return child;
-        }
-        return CourseGridGlassHost(settings: settings, child: child);
-      },
-    );
+    // Keep the shared real-liquid host mounted whenever the page is settled.
+    // CourseCardGlassMotionScope temporarily removes it during pager motion;
+    // the presence of the preblur bitmap must not permanently downgrade cards
+    // to FakeGlass.
+    return CourseGridGlassHost(settings: settings, child: child);
   }
 
   void _syncWeekPageWithProvider(int week, TimetableSettings settings) {
@@ -6849,7 +6949,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final hasBackdrop = hasHomePageBackdropImage(settings);
     // Same wallpaper auto-contrast as weekday ink; user-custom time-axis hex
     // is never replaced. The time column spans the body band (not the
     // status/title strip), so judge from the card-region sample.

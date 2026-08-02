@@ -34,6 +34,42 @@ Future<File> _writeStripedWallpaper(
   return file;
 }
 
+Future<File> _writeHorizontalSplitWallpaper(Directory dir) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  canvas.drawRect(
+    const Rect.fromLTWH(0, 0, 200, 100),
+    Paint()..color = Colors.black,
+  );
+  canvas.drawRect(
+    const Rect.fromLTWH(100, 0, 100, 100),
+    Paint()..color = Colors.white,
+  );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(200, 100);
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  final file = File('${dir.path}/horizontal-split-wallpaper.png');
+  await file.writeAsBytes(bytes!.buffer.asUint8List());
+  return file;
+}
+
+Future<File> _writeSolidWallpaper(Directory dir, Color color) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  canvas.drawRect(
+    const Rect.fromLTWH(0, 0, 1000000, 1000000),
+    Paint()..color = color,
+  );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(100, 100);
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  final file = File('${dir.path}/solid-wallpaper.png');
+  await file.writeAsBytes(bytes!.buffer.asUint8List());
+  return file;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -54,9 +90,7 @@ void main() {
   test('missing path / missing file return null', () async {
     expect(await sampleHomePageWallpaperLuminanceBands(null), isNull);
     expect(
-      await sampleHomePageWallpaperLuminanceBands(
-        '${dir.path}/nope.png',
-      ),
+      await sampleHomePageWallpaperLuminanceBands('${dir.path}/nope.png'),
       isNull,
     );
   });
@@ -77,6 +111,39 @@ void main() {
     expect(bands!.top, 1.0);
     expect(bands.weekday, 1.0);
     expect(bands.body, 1.0);
+  });
+
+  test(
+    'mid-tone wallpaper matches Color.computeLuminance color space',
+    () async {
+      final file = await _writeSolidWallpaper(dir, const Color(0xFF808080));
+      final bands = await sampleHomePageWallpaperLuminanceBands(file.path);
+      expect(bands, isNotNull);
+      final expected = const Color(0xFF808080).computeLuminance();
+      expect(bands!.top, closeTo(expected, 0.01));
+      expect(bands.weekday, closeTo(expected, 0.01));
+      expect(bands.body, closeTo(expected, 0.01));
+    },
+  );
+
+  test('cover sampling follows horizontal crop alignment', () async {
+    final file = await _writeHorizontalSplitWallpaper(dir);
+    final left = await sampleHomePageWallpaperLuminanceBands(
+      file.path,
+      viewportSize: const Size(100, 100),
+      alignX: -1,
+    );
+    final right = await sampleHomePageWallpaperLuminanceBands(
+      file.path,
+      viewportSize: const Size(100, 100),
+      alignX: 1,
+    );
+    expect(left, isNotNull);
+    expect(right, isNotNull);
+    expect(left!.top, lessThan(0.01));
+    expect(right!.top, greaterThan(0.99));
+    expect(left.body, lessThan(0.01));
+    expect(right.body, greaterThan(0.99));
   });
 
   test('light strip only at the very top: weekday band reads dark', () async {
@@ -137,5 +204,4 @@ void main() {
 
     expect(background.computeLuminance(), greaterThan(0.5));
   });
-
 }

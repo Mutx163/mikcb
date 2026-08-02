@@ -949,7 +949,7 @@ class _SettingsDeveloperListGroupState
                   ),
                   ListenableBuilder(
                     listenable: DebugTuningPreferences.instance,
-                    builder: (context, _) => MiuixSwitchPreference(
+                    builder: (context, _) => _MiuixSettingsSwitchPreference(
                       startAction: _settingsIconBadge(
                         MiuixIcons.extended.byName('show')!,
                         HyperosIconColors.purple,
@@ -965,6 +965,40 @@ class _SettingsDeveloperListGroupState
           ],
         );
       },
+    );
+  }
+}
+
+/// 开发者区开关行，与导航行共享标题字重和按压反馈。
+class _MiuixSettingsSwitchPreference extends StatelessWidget {
+  const _MiuixSettingsSwitchPreference({
+    required this.startAction,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final Widget startAction;
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return HyperosPressableRow(
+      onTap: () => onChanged(!value),
+      holdHighlightThroughTransition: true,
+      child: MiuixBasicComponent(
+        title: title,
+        titleFontWeight: FontWeight.w400,
+        startAction: startAction,
+        endActions: [
+          MiuixSwitch(value: value, onChanged: onChanged),
+        ],
+        role: MiuixBasicComponentRole.switchControl,
+        // The outer row owns tap semantics and press feedback.
+        onClick: null,
+      ),
     );
   }
 }
