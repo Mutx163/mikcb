@@ -636,7 +636,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
   }
 
-  /// Mount [TimetableScreen] under the boot overlay, paint one frame, then fade.
+  /// Mount [TimetableScreen] under the boot overlay, paint one frame, then remove the overlay.
   Future<void> _revealMainContent() async {
     if (!mounted) {
       return;
@@ -984,18 +984,19 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       fit: StackFit.expand,
       children: [
         if (_mainContentReady) TimetableScreen(packageInfo: widget.packageInfo),
-        AnimatedOpacity(
-          opacity: _isBootstrapping ? 1 : 0,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-          child: IgnorePointer(
-            ignoring: !_isBootstrapping,
+        // Do not alpha-fade this full-screen layer.  In dark mode the opaque
+        // branding background would be composited over the already-rendered
+        // home page during the fade, making wallpaper and liquid-glass cards
+        // look black before the layer disappears.  The main page is mounted
+        // and painted for one frame in [_revealMainContent] before this layer
+        // is removed, so the handoff is an atomic swap instead.
+        if (_isBootstrapping)
+          IgnorePointer(
             child: ColoredBox(
               color: AppBootBranding.backgroundColor(isDark: isDark),
               child: AppBootBranding(appLabel: appLabel, isDark: isDark),
             ),
           ),
-        ),
       ],
     );
   }
