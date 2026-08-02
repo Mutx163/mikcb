@@ -248,57 +248,52 @@ class TimetableSettingsScreen extends StatelessWidget {
           );
         }
 
-        return ListenableBuilder(
-          listenable: HyperosLayoutTuningController.instance,
-          builder: (context, _) {
-            // Settings home: same HyperosSubpage shell as every subpage —
-            // unified collapsible large title + frosted/liquid-glass chrome.
-            // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
-            // opaque background OVER its frost layer, so blur never showed.)
-            return HyperosSubpage(
-              title: Text(l10n.settingsTitle),
-              onBack: () => Navigator.pop(context),
-              child: HyperosListView(
-                // Inset lives inside the scrollable (like HyperosSubpage) so
-                // rows can pass under the frosted/liquid-glass top bar.
-                includeHeaderInset: true,
-                blockVerticalScrollBubbling: false,
-                pageStorageKey: const PageStorageKey<String>(
-                  'timetable-settings-main',
-                ),
-                // Lazy builder: only visible sections are mounted, reducing
-                // per-frame composite cost vs the old SingleChildScrollView.
-                itemCount: 8,
-                itemBuilder: (context, index) => _buildSettingsHomeSection(
-                  context,
-                  index,
-                  provider: provider,
-                  settings: settings,
-                  l10n: l10n,
-                  openSemesterSettings: openSemesterSettings,
-                  openProfiles: openProfiles,
-                  openHolidaySettings: openHolidaySettings,
-                  openCourseCardSettings: openCourseCardSettings,
-                  openTimetablePageSettings: openTimetablePageSettings,
-                  openLiveSettings: openLiveSettings,
-                  openHomeWidgetSettings: openHomeWidgetSettings,
-                  openAppearance: openAppearance,
-                  openGeneralSettings: openGeneralSettings,
-                  openDataTransfer: openDataTransfer,
-                  openCloudSync: openCloudSync,
-                  openLanEdit: openLanEdit,
-                  openCoupleTimetable: openCoupleTimetable,
-                  openAbout: openAbout,
-                  openUserGuide: openUserGuide,
-                  openDiagnostics: openDiagnostics,
-                  openMemoryStats: openMemoryStats,
-                  openLiveTestingFixture: openLiveTestingFixture,
-                  openHyperosShowcase: openHyperosShowcase,
-                  openMiuixShowcase: openMiuixShowcase,
-                ),
-              ),
-            );
-          },
+        // Settings home: same HyperosSubpage shell as every subpage —
+        // unified collapsible large title + frosted/liquid-glass chrome.
+        // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
+        // opaque background OVER its frost layer, so blur never showed.)
+        return HyperosSubpage(
+          title: Text(l10n.settingsTitle),
+          onBack: () => Navigator.pop(context),
+          child: HyperosListView(
+            // Inset lives inside the scrollable (like HyperosSubpage) so
+            // rows can pass under the frosted/liquid-glass top bar.
+            includeHeaderInset: true,
+            blockVerticalScrollBubbling: false,
+            pageStorageKey: const PageStorageKey<String>(
+              'timetable-settings-main',
+            ),
+            // Lazy builder: only visible sections are mounted, reducing
+            // per-frame composite cost vs the old SingleChildScrollView.
+            itemCount: 8,
+            itemBuilder: (context, index) => _buildSettingsHomeSection(
+              context,
+              index,
+              provider: provider,
+              settings: settings,
+              l10n: l10n,
+              openSemesterSettings: openSemesterSettings,
+              openProfiles: openProfiles,
+              openHolidaySettings: openHolidaySettings,
+              openCourseCardSettings: openCourseCardSettings,
+              openTimetablePageSettings: openTimetablePageSettings,
+              openLiveSettings: openLiveSettings,
+              openHomeWidgetSettings: openHomeWidgetSettings,
+              openAppearance: openAppearance,
+              openGeneralSettings: openGeneralSettings,
+              openDataTransfer: openDataTransfer,
+              openCloudSync: openCloudSync,
+              openLanEdit: openLanEdit,
+              openCoupleTimetable: openCoupleTimetable,
+              openAbout: openAbout,
+              openUserGuide: openUserGuide,
+              openDiagnostics: openDiagnostics,
+              openMemoryStats: openMemoryStats,
+              openLiveTestingFixture: openLiveTestingFixture,
+              openHyperosShowcase: openHyperosShowcase,
+              openMiuixShowcase: openMiuixShowcase,
+            ),
+          ),
         );
       },
     );

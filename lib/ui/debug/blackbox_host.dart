@@ -2,12 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blackbox/flutter_blackbox.dart';
 
-import 'debug_tuning_preferences.dart';
+import 'blackbox_overlay_preferences.dart';
 
 /// Hosts the BlackBox diagnostics overlay in non-release builds.
 ///
 /// Visibility is controlled by the developer setting labelled "Debug UI
-/// Overlay". The HyperOS layout sliders remain independent of that setting.
+/// Overlay". HyperOS layout values use fixed design tokens.
 class BlackBoxOverlayHost extends StatelessWidget {
   const BlackBoxOverlayHost({super.key, required this.child});
 

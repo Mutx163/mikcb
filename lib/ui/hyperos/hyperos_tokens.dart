@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'hyperos_layout_tuning.dart';
 import 'hyperos_miuix_spec.dart';
 
 /// Design tokens for mikcb HyperOS / MIUI-style surfaces.
@@ -38,9 +37,7 @@ abstract final class HyperosTokens {
   /// Light error alias. Prefer [HyperosColors.error].
   static const error = HyperosMiuixSpec.error;
 
-  static HyperosLayoutTuning get _t => HyperosLayoutTuning.current;
-
-  static double get cardRadius => _t.cardRadius;
+  static const cardRadius = HyperosMiuixSpec.settingsGroupRadius;
 
   /// Corner radius for compact controls (buttons, text fields, nested pickers).
   ///
@@ -63,19 +60,19 @@ abstract final class HyperosTokens {
   static const listRowTwoLineMinHeight =
       HyperosMiuixSpec.settingsRowTwoLineMinHeight;
 
-  static double get iconBadgeSize => _t.iconBadgeSize;
-  static double get iconGlyphSize => _t.iconGlyphSize;
-  static double get iconBadgeRadius => _t.iconBadgeRadius;
+  static const iconBadgeSize = 26.0;
+  static const iconGlyphSize = 14.0;
+  static const iconBadgeRadius = iconBadgeSize * 7 / 26;
 
-  static double get chevronWidth => _t.chevronWidth;
-  static double get chevronHeight => _t.chevronHeight;
-  static double get chevronStrokeWidth => _t.chevronStrokeWidth;
+  static const chevronWidth = HyperosMiuixSpec.settingsChevronWidth;
+  static const chevronHeight = HyperosMiuixSpec.settingsChevronHeight;
+  static const chevronStrokeWidth = HyperosMiuixSpec.settingsChevronStrokeWidth;
 
-  static double get listTitleSize => _t.listTitleSize;
+  static const listTitleSize = HyperosMiuixSpec.preferenceTitleSize;
 
   /// Canonical title size for list rows, card headers, page/sheet/dialog titles.
   static double get titleSize => listTitleSize;
-  static double get titleChevronGap => _t.titleChevronGap;
+  static const titleChevronGap = 4.0;
 
   static const listDetailSize = HyperosMiuixSpec.body2Size;
 
@@ -99,13 +96,7 @@ abstract final class HyperosTokens {
 
   /// Row padding inside a shared [HyperosListGroup] card.
   static EdgeInsets rowPadding({bool isFirst = true, bool isLast = true}) {
-    final base = HyperosMiuixSpec.settingsRowPadding;
-    return EdgeInsets.only(
-      left: base.left,
-      right: base.right,
-      top: isFirst ? _t.paddingTopFirst : base.top,
-      bottom: isLast ? _t.paddingBottomLast : base.bottom,
-    );
+    return HyperosMiuixSpec.settingsRowPadding;
   }
 
   /// Row padding for trailing chevron / up-down arrow rows.
@@ -124,9 +115,7 @@ abstract final class HyperosTokens {
       HyperosMiuixSpec.settingsRowPadding;
 
   static double get listTileDividerIndent =>
-      HyperosMiuixSpec.settingsRowPadding.left +
-      _t.iconBadgeSize +
-      rowContentGap;
+      HyperosMiuixSpec.settingsRowPadding.left + iconBadgeSize + rowContentGap;
 
   static double get actionTileDividerIndent =>
       HyperosMiuixSpec.settingsRowPadding.left + 22 + rowContentGap;

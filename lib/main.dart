@@ -42,7 +42,6 @@ import 'services/frosted_blur_service.dart';
 import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
-import 'ui/hyperos/hyperos_layout_debug_tuning.dart';
 import 'ui/hyperos/hyperos_motion.dart';
 import 'ui/hyperos_motion_bridge.dart';
 import 'utils/home_page_background.dart';
@@ -221,7 +220,6 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
     ]);
     configureHyperosMotionFromAndroid();
     if (!kReleaseMode) {
-      registerHyperosLayoutDebugTuning();
       await loadBlackBoxOverlayPreferencesIfNeeded();
     }
     final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
@@ -304,18 +302,14 @@ class MyApp extends StatelessWidget {
                       .settings
                       .frostedAppearance;
                   return BlackBoxOverlayHost(
-                    child: HyperosLayoutTuningHost(
-                      child: HyperosMotionHost(
-                        child: FrostedAppearanceScope(
-                          appearance: frostedAppearance,
-                          child: ScaffoldMessenger(
-                            child: Scaffold(
-                              backgroundColor: Colors.transparent,
-                              resizeToAvoidBottomInset: false,
-                              body: DebugTuningOverlayHost(
-                                child: MiuixFontWeightScope(child: child!),
-                              ),
-                            ),
+                    child: HyperosMotionHost(
+                      child: FrostedAppearanceScope(
+                        appearance: frostedAppearance,
+                        child: ScaffoldMessenger(
+                          child: Scaffold(
+                            backgroundColor: Colors.transparent,
+                            resizeToAvoidBottomInset: false,
+                            body: MiuixFontWeightScope(child: child!),
                           ),
                         ),
                       ),
