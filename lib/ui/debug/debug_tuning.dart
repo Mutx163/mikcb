@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
-import 'debug_tuning_preferences.dart';
-
 /// One numeric field exposed as a slider in [DebugTuningPanel].
 class DebugTuningFieldSpec {
   const DebugTuningFieldSpec({
@@ -60,7 +58,8 @@ class DebugTuningRegistry {
   }
 }
 
-/// Wraps the app body and shows a floating debug panel in non-release builds.
+/// Wraps the app body and shows the floating HyperOS tuning panel in
+/// non-release builds.
 class DebugTuningOverlayHost extends StatelessWidget {
   const DebugTuningOverlayHost({super.key, required this.child, this.enabled});
 
@@ -76,28 +75,19 @@ class DebugTuningOverlayHost extends StatelessWidget {
     if (!_enabled || DebugTuningRegistry.instance.suites.isEmpty) {
       return child;
     }
-
-    return ListenableBuilder(
-      listenable: DebugTuningPreferences.instance,
-      builder: (context, _) {
-        if (!DebugTuningPreferences.instance.visible) {
-          return child;
-        }
-        // Host the panel in a local [Overlay]. This widget tree sits in
-        // MaterialApp.builder *outside* the route Navigator, but [Slider] and
-        // [Tooltip] need an [Overlay] ancestor for [OverlayPortal].
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            child,
-            Overlay(
-              initialEntries: [
-                OverlayEntry(builder: (context) => const DebugTuningPanel()),
-              ],
-            ),
+    // Host the panel in a local [Overlay]. This widget tree sits in
+    // MaterialApp.builder *outside* the route Navigator, but [Slider] and
+    // [Tooltip] need an [Overlay] ancestor for [OverlayPortal].
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        Overlay(
+          initialEntries: [
+            OverlayEntry(builder: (context) => const DebugTuningPanel()),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 }

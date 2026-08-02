@@ -948,15 +948,15 @@ class _SettingsDeveloperListGroupState
                     onClick: widget.onOpenMiuixShowcase,
                   ),
                   ListenableBuilder(
-                    listenable: DebugTuningPreferences.instance,
+                    listenable: BlackBoxOverlayPreferences.instance,
                     builder: (context, _) => _MiuixSettingsSwitchPreference(
                       startAction: _settingsIconBadge(
                         MiuixIcons.extended.byName('show')!,
                         HyperosIconColors.purple,
                       ),
                       title: l10n.debugUiOverlayToggleTitle,
-                      value: DebugTuningPreferences.instance.visible,
-                      onChanged: DebugTuningPreferences.instance.setVisible,
+                      value: BlackBoxOverlayPreferences.instance.visible,
+                      onChanged: BlackBoxOverlayPreferences.instance.setVisible,
                     ),
                   ),
                 ],
@@ -992,9 +992,7 @@ class _MiuixSettingsSwitchPreference extends StatelessWidget {
         title: title,
         titleFontWeight: FontWeight.w400,
         startAction: startAction,
-        endActions: [
-          MiuixSwitch(value: value, onChanged: onChanged),
-        ],
+        endActions: [MiuixSwitch(value: value, onChanged: onChanged)],
         role: MiuixBasicComponentRole.switchControl,
         // The outer row owns tap semantics and press feedback.
         onClick: null,

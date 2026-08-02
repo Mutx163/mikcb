@@ -222,7 +222,7 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
     configureHyperosMotionFromAndroid();
     if (!kReleaseMode) {
       registerHyperosLayoutDebugTuning();
-      await loadDebugTuningPreferencesIfNeeded();
+      await loadBlackBoxOverlayPreferencesIfNeeded();
     }
     final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
     await SystemChrome.setApplicationSwitcherDescription(

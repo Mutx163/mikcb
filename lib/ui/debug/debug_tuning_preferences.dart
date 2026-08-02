@@ -1,13 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists whether the debug tuning overlay is visible (non-release builds).
-class DebugTuningPreferences extends ChangeNotifier {
-  DebugTuningPreferences._();
+/// Persists whether the Black Box debug UI is visible.
+class BlackBoxOverlayPreferences extends ChangeNotifier {
+  BlackBoxOverlayPreferences._();
 
-  static final DebugTuningPreferences instance = DebugTuningPreferences._();
+  static final BlackBoxOverlayPreferences instance =
+      BlackBoxOverlayPreferences._();
 
-  static const _visibleKey = 'debug_tuning_panel_visible';
+  static const _visibleKey = 'blackbox_overlay_visible';
+  // Keep the preference from older builds so an existing choice is not lost.
+  static const _legacyVisibleKey = 'debug_tuning_panel_visible';
 
   bool _visible = true;
   bool _loaded = false;
@@ -18,7 +21,12 @@ class DebugTuningPreferences extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _visible = prefs.getBool(_visibleKey) ?? true;
+    final savedVisible = prefs.getBool(_visibleKey);
+    final legacyVisible = prefs.getBool(_legacyVisibleKey);
+    _visible = savedVisible ?? legacyVisible ?? true;
+    if (savedVisible == null && legacyVisible != null) {
+      await prefs.setBool(_visibleKey, legacyVisible);
+    }
     _loaded = true;
     notifyListeners();
   }
@@ -33,7 +41,7 @@ class DebugTuningPreferences extends ChangeNotifier {
 }
 
 /// No-op in release builds.
-Future<void> loadDebugTuningPreferencesIfNeeded() async {
+Future<void> loadBlackBoxOverlayPreferencesIfNeeded() async {
   if (kReleaseMode) return;
-  await DebugTuningPreferences.instance.load();
+  await BlackBoxOverlayPreferences.instance.load();
 }
