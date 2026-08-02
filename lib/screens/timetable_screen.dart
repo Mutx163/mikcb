@@ -247,6 +247,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   VoidCallback? _homePullQuickImportCancel;
   double? _wallpaperTopLuminance;
 
+  /// Luminance of the wallpaper band the weekday/date chrome bar sits over.
+  /// The status/title strip can be bright while the band below (where the
+  /// weekday bar lives) is dark, so the weekday ink must not reuse the top
+  /// sample.
+  double? _wallpaperWeekdayLuminance;
+
   /// Luminance of the wallpaper band the day-view cards sit over. The top
   /// band can be dark while mid-screen is bright (or vice versa), so card ink
   /// must not reuse the chrome sample.
@@ -421,7 +427,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           }
         });
         final chromeForeground = _resolveHomeChromeForeground(
-          hasBackdrop: hasBackdrop,
+          // Only flip by wallpaper luminance when the header band actually
+          // shows the wallpaper / frosted glass; with the scope toggled off it
+          // paints the opaque page background and must use the theme ink.
+          headerShowsWallpaper: headerUsesFrostedChrome,
           themeForeground: foruiTheme.colors.foreground,
         );
         final chromeMutedForeground = hasBackdrop
@@ -1415,6 +1424,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final path = resolveHomePageBackdropImagePath(settings);
     if (path == null || path.isEmpty) {
       if (_wallpaperTopLuminance != null ||
+          _wallpaperWeekdayLuminance != null ||
+          _wallpaperBodyLuminance != null ||
           _wallpaperLuminanceSamplePath != null ||
           _wallpaperLuminanceRequestedPath != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1423,6 +1434,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           }
           setState(() {
             _wallpaperTopLuminance = null;
+            _wallpaperWeekdayLuminance = null;
             _wallpaperBodyLuminance = null;
             _wallpaperLuminanceSamplePath = null;
             _wallpaperLuminanceRequestedPath = null;
@@ -1454,10 +1466,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     if (!fileExists) {
       if (_wallpaperTopLuminance != null ||
+          _wallpaperWeekdayLuminance != null ||
+          _wallpaperBodyLuminance != null ||
           _wallpaperLuminanceSamplePath != null ||
           _wallpaperLuminanceFileExists) {
         setState(() {
           _wallpaperTopLuminance = null;
+          _wallpaperWeekdayLuminance = null;
           _wallpaperBodyLuminance = null;
           _wallpaperLuminanceSamplePath = null;
           _wallpaperLuminanceFileExists = false;
@@ -1476,11 +1491,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     if (_wallpaperTopLuminance == bands?.top &&
+        _wallpaperWeekdayLuminance == bands?.weekday &&
         _wallpaperBodyLuminance == bands?.body) {
       return;
     }
     setState(() {
       _wallpaperTopLuminance = bands?.top;
+      _wallpaperWeekdayLuminance = bands?.weekday;
       _wallpaperBodyLuminance = bands?.body;
     });
   }
@@ -1493,7 +1510,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider,
     TimetableSettings settings,
   ) {
-    final luminance = _wallpaperTopLuminance;
+    // Judge custom ink against the band actually behind the weekday bar, not
+    // the status/title strip above it.
+    final luminance = _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
     if (luminance == null || _weekdayInkWarningShowing) {
       return;
     }
@@ -1605,10 +1624,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Color _resolveHomeChromeForeground({
-    required bool hasBackdrop,
+    required bool headerShowsWallpaper,
     required Color themeForeground,
   }) {
-    if (!hasBackdrop) {
+    if (!headerShowsWallpaper) {
       return themeForeground;
     }
     return homePageChromeForegroundForLuminance(
@@ -1715,6 +1734,24 @@ class _TimetableScreenState extends State<TimetableScreen>
     final subtleBorder = context.theme.colors.border;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    // Only flip by wallpaper luminance when this band actually shows the
+    // wallpaper / frosted glass; with the scope toggled off it paints the
+    // opaque page background and must use the theme / configured ink.
+    final weekdayChromeOverWallpaper =
+        hasBackdrop &&
+        (homePageRegionShowsBackdrop(
+              settings,
+              HomePageBackgroundScope.weekdayBar,
+              isDark: isDark,
+            ) ||
+            settings.homePageWeekdayBarBlurEnabled);
+    // Judge ink from the band actually behind the weekday bar, not the
+    // status/title strip above it — the two can differ on the same photo.
+    // With the weekday glass band on, follow the band's scrim polarity (the
+    // scrim derives from the top sample) so ink and wash never fight.
+    final weekdayLuminance = settings.homePageWeekdayBarBlurEnabled
+        ? _wallpaperTopLuminance
+        : _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
     // Week label sits in the weekday chrome band: auto-invert default black/white
     // over a dark wallpaper (same rule as the title logo), keep user custom ink.
     final weekLabelColor = homePageOverWallpaperInk(
@@ -1725,8 +1762,8 @@ class _TimetableScreenState extends State<TimetableScreen>
           ? TimetableSettings.defaultWeekdayBarFontColorDark
           : TimetableSettings.defaultWeekdayBarFontColorLight,
       themeFallback: colorScheme.onSurface,
-      hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperTopLuminance,
+      hasBackdrop: weekdayChromeOverWallpaper,
+      wallpaperLuminance: weekdayLuminance,
     );
     final weekLabelMutedColor = homePageOverWallpaperMutedInk(weekLabelColor);
     final canReturnToCurrentWeek = _canReturnToCurrentWeek(settings, week);
@@ -1820,9 +1857,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                         final configuredAccentHex = isDark
                             ? settings.weekdayBarAccentColorDark
                             : settings.weekdayBarAccentColorLight;
-                        // Default weekday ink flips with wallpaper luminance;
-                        // user-custom hex is kept. Accent (today/selected) is
-                        // never auto-inverted so a custom blue stays blue.
+                        // Default weekday ink flips with the band behind this
+                        // bar; user-custom hex is kept. Accent (today/selected)
+                        // is never auto-inverted so a custom blue stays blue.
                         final weekdayColor = homePageOverWallpaperInk(
                           configuredHex: configuredWeekdayHex,
                           defaultHex: isDark
@@ -1830,8 +1867,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                               : TimetableSettings
                                     .defaultWeekdayBarFontColorLight,
                           themeFallback: colorScheme.onSurface,
-                          hasBackdrop: hasBackdrop,
-                          wallpaperLuminance: _wallpaperTopLuminance,
+                          hasBackdrop: weekdayChromeOverWallpaper,
+                          wallpaperLuminance: weekdayLuminance,
                         );
                         final accentColor = homePageOverWallpaperAccent(
                           configuredHex: configuredAccentHex,
@@ -3825,7 +3862,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
     final colorScheme = Theme.of(context).colorScheme;
     // Same wallpaper auto-contrast as weekday / time-axis chrome: default ink
-    // flips black↔white over dark photos; user-custom hex is kept as-is.
+    // flips black↔white over dark photos; user-custom hex is kept as-is. The
+    // empty state sits mid-screen, so judge from the card-region band.
     final titleColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.weekdayBarFontColorDark
@@ -3835,7 +3873,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           : TimetableSettings.defaultWeekdayBarFontColorLight,
       themeFallback: colorScheme.onSurface,
       hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperTopLuminance,
+      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
     );
     final subtitleColor = homePageOverWallpaperMutedInk(titleColor);
     return Center(
@@ -6807,7 +6845,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
     // Same wallpaper auto-contrast as weekday ink; user-custom time-axis hex
-    // is never replaced.
+    // is never replaced. The time column spans the body band (not the
+    // status/title strip), so judge from the card-region sample.
     final timeAxisColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.timeAxisFontColorDark
@@ -6817,7 +6856,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           : TimetableSettings.defaultTimeAxisFontColorLight,
       themeFallback: isDark ? Colors.white : Colors.grey.shade800,
       hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperTopLuminance,
+      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
     );
     final timeAxisMutedColor = homePageOverWallpaperMutedInk(timeAxisColor);
     final compactTextStyle = TextStyle(

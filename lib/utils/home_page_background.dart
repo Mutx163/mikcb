@@ -444,15 +444,16 @@ Future<double?> sampleHomePageWallpaperTopLuminance(String? path) async {
   return (await sampleHomePageWallpaperLuminanceBands(path))?.top;
 }
 
-/// Top-band + card-region luminance of a wallpaper file, from one decode.
+/// Top-band + weekday-band + card-region luminance of a wallpaper file, from one decode.
 ///
-/// `top` covers the status bar / title region (chrome ink); `body` covers the
-/// vertical band where day-view cards live — a wallpaper can be dark at the
-/// top and bright behind the cards (or vice versa), so chrome ink and card
-/// ink must not share one sample.
-Future<({double top, double body})?> sampleHomePageWallpaperLuminanceBands(
-  String? path,
-) async {
+/// `top` covers the status bar / title region (header chrome ink), `weekday`
+/// the band behind the weekday / date chrome bar, `body` the vertical band
+/// where day-view cards live. A wallpaper can be bright at the very top and
+/// dark behind the weekday bar (or vice versa), so each chrome region must
+/// judge its ink from the band actually behind it, not one shared sample —
+/// the top band alone mis-ink the weekday bar on sky/ground photos.
+Future<({double top, double weekday, double body})?>
+    sampleHomePageWallpaperLuminanceBands(String? path) async {
   if (path == null || path.isEmpty) {
     return null;
   }
@@ -482,7 +483,7 @@ Future<({double top, double body})?> sampleHomePageWallpaperLuminanceBands(
   }
 }
 
-Future<({double top, double body})?> _averageBandLuminances(
+Future<({double top, double weekday, double body})?> _averageBandLuminances(
   ui.Image image,
 ) async {
   final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -517,14 +518,17 @@ Future<({double top, double body})?> _averageBandLuminances(
     return count == 0 ? null : total / count;
   }
 
-  // Top: roughly the status bar + title region of a cover-fitted wallpaper.
+  // Top: the status bar + title strip of a cover-fitted wallpaper (header
+  // ink). Weekday: the band the weekday/date chrome bar sits over — its ink
+  // must not follow the header's band, they can differ on the same photo.
   // Body: the band the day-view summary/agenda cards sit over.
-  final top = band(0.0, 0.22);
+  final top = band(0.0, 0.09);
+  final weekday = band(0.07, 0.20);
   final body = band(0.22, 0.72);
-  if (top == null || body == null) {
+  if (top == null || weekday == null || body == null) {
     return null;
   }
-  return (top: top, body: body);
+  return (top: top, weekday: weekday, body: body);
 }
 
 /// Approximate stacked header band: optional status bar + title row.

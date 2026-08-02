@@ -41,11 +41,13 @@ class TimetableWeekPreview extends StatefulWidget {
   State<TimetableWeekPreview> createState() => _TimetableWeekPreviewState();
 }
 
-/// Samples the wallpaper top-band luminance once per path, shared by the
-/// glass band's scrim polarity **and** the chrome ink auto-inversion — the
-/// same pair the home page derives from its own boot-time sample.
+/// Samples the wallpaper band luminances once per path, shared by the glass
+/// band's scrim polarity **and** the chrome ink auto-inversion — the same
+/// pairs the home page derives from its own boot-time sample.
 class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
   double? _topLuminance;
+  double? _weekdayLuminance;
+  double? _bodyLuminance;
   String? _sampledPath;
 
   @override
@@ -60,8 +62,8 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
     _sampleLuminance();
   }
 
-  /// Home drives chrome ink and scrim polarity from a wallpaper luminance
-  /// sample; without one the preview falls back to theme brightness and can
+  /// Home drives chrome ink and scrim polarity from wallpaper luminance
+  /// samples; without them the preview falls back to theme brightness and can
   /// paint the opposite ink or wash — visibly unlike the home page.
   void _sampleLuminance() {
     final path = resolveHomePageBackdropImagePath(widget.settings);
@@ -71,14 +73,20 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
     _sampledPath = path;
     if (path == null || path.isEmpty) {
       _topLuminance = null;
+      _weekdayLuminance = null;
+      _bodyLuminance = null;
       return;
     }
     unawaited(
-      sampleHomePageWallpaperTopLuminance(path).then((value) {
+      sampleHomePageWallpaperLuminanceBands(path).then((value) {
         if (!mounted || _sampledPath != path) {
           return;
         }
-        setState(() => _topLuminance = value);
+        setState(() {
+          _topLuminance = value?.top;
+          _weekdayLuminance = value?.weekday;
+          _bodyLuminance = value?.body;
+        });
       }),
     );
   }
@@ -94,6 +102,8 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
       applyHomePageBackdrop: widget.applyHomePageBackdrop,
       heightBudget: widget.heightBudget,
       wallpaperTopLuminance: _topLuminance,
+      wallpaperWeekdayLuminance: _weekdayLuminance,
+      wallpaperBodyLuminance: _bodyLuminance,
     );
   }
 }
@@ -108,6 +118,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.applyHomePageBackdrop,
     required this.heightBudget,
     required this.wallpaperTopLuminance,
+    required this.wallpaperWeekdayLuminance,
+    required this.wallpaperBodyLuminance,
   });
 
   final TimetableProvider provider;
@@ -121,6 +133,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   /// Top-band wallpaper luminance from [_TimetableWeekPreviewState]'s sample
   /// (null while sampling / no wallpaper).
   final double? wallpaperTopLuminance;
+
+  /// Weekday-band luminance (the band behind the weekday/date chrome bar).
+  final double? wallpaperWeekdayLuminance;
+
+  /// Body-band luminance (the band behind the time column / course cards).
+  final double? wallpaperBodyLuminance;
 
   /// Chrome glass band for the preview, mirroring the home page's continuous
   /// band but using the preview's own scaled-down header heights.
@@ -564,6 +582,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               isDark: isDark,
             ) ||
             settings.homePageWeekdayBarBlurEnabled);
+    // Judge ink from the band actually behind the weekday bar, not the
+    // status/title strip above it. With the weekday glass band on, follow the
+    // band's scrim polarity (derived from the top sample) so ink and wash
+    // never fight.
+    final weekdayLuminance = settings.homePageWeekdayBarBlurEnabled
+        ? wallpaperTopLuminance
+        : wallpaperWeekdayLuminance ?? wallpaperTopLuminance;
     // Same rules as the home weekday chrome: default black/white ink flips
     // with the wallpaper luminance, user-custom hex is kept, accent is never
     // auto-inverted.
@@ -576,7 +601,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
           : TimetableSettings.defaultWeekdayBarFontColorLight,
       themeFallback: colorScheme.onSurface,
       hasBackdrop: weekdayChromeOverWallpaper,
-      wallpaperLuminance: wallpaperTopLuminance,
+      wallpaperLuminance: weekdayLuminance,
     );
     final weekLabelMutedColor = homePageOverWallpaperMutedInk(weekLabelColor);
 
@@ -629,7 +654,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                       : TimetableSettings.defaultWeekdayBarFontColorLight,
                   themeFallback: colorScheme.onSurface,
                   hasBackdrop: weekdayChromeOverWallpaper,
-                  wallpaperLuminance: wallpaperTopLuminance,
+                  wallpaperLuminance: weekdayLuminance,
                 );
                 final accentColor = homePageOverWallpaperAccent(
                   configuredHex: isDark
@@ -887,7 +912,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Same auto-contrast as the home time axis: judged from whether the
     // timetable region actually shows the wallpaper, never replacing a
-    // user-custom hex.
+    // user-custom hex. The time column spans the body band, not the
+    // status/title strip, so judge from the card-region sample.
     final timeAxisOverWallpaper =
         hasBackdrop &&
         homePageRegionShowsBackdrop(
@@ -904,7 +930,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
           : TimetableSettings.defaultTimeAxisFontColorLight,
       themeFallback: isDark ? Colors.white : Colors.grey.shade800,
       hasBackdrop: timeAxisOverWallpaper,
-      wallpaperLuminance: wallpaperTopLuminance,
+      wallpaperLuminance: wallpaperBodyLuminance ?? wallpaperTopLuminance,
     );
     final timeAxisMutedColor = homePageOverWallpaperMutedInk(timeAxisColor);
     final compactTextStyle = TextStyle(
