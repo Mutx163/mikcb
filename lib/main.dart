@@ -52,7 +52,10 @@ ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   };
 }
 
-ThemeData _appThemeData(Brightness brightness, {required AppFontSpec fontSpec}) {
+ThemeData _appThemeData(
+  Brightness brightness, {
+  required AppFontSpec fontSpec,
+}) {
   final theme = ThemeData(
     brightness: brightness,
     useMaterial3: true,
@@ -122,6 +125,10 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 }
 
 Future<void> main() async {
+  // Keep Android's native SplashLayerDrawable visible until the Flutter brand
+  // layer can render with the real launcher bitmap on its very first frame.
+  WidgetsFlutterBinding.ensureInitialized();
+  await BundledAssets.warmUpLauncherIcon();
   runZonedGuarded(
     () {
       WidgetsFlutterBinding.ensureInitialized();
@@ -247,11 +254,7 @@ class MyApp extends StatelessWidget {
       child:
           Selector<
             TimetableProvider,
-            ({
-              AppFontMode fontMode,
-              AppThemeMode themeMode,
-              String localeTag,
-            })
+            ({AppFontMode fontMode, AppThemeMode themeMode, String localeTag})
           >(
             selector: (_, p) => (
               fontMode: p.settings.appFontMode,
@@ -298,14 +301,14 @@ class MyApp extends StatelessWidget {
                       child: FrostedAppearanceScope(
                         appearance: frostedAppearance,
                         child: ScaffoldMessenger(
-                              child: Scaffold(
-                                backgroundColor: Colors.transparent,
-                                resizeToAvoidBottomInset: false,
-                                body: DebugTuningOverlayHost(
-                                  child: MiuixFontWeightScope(child: child!),
-                                ),
-                              ),
+                          child: Scaffold(
+                            backgroundColor: Colors.transparent,
+                            resizeToAvoidBottomInset: false,
+                            body: DebugTuningOverlayHost(
+                              child: MiuixFontWeightScope(child: child!),
                             ),
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -436,14 +439,6 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     await context.read<TimetableProvider>().handleAppResumed();
   }
 
-  /// Ensures local provider init finishes before the first auto pull apply.
-  Future<void> _initializeThenMaybePullRemote(
-    TimetableProvider provider,
-  ) async {
-    await provider.initialize();
-    await _cloudSyncCoordinator.maybePullRemote();
-  }
-
   Future<void> _handleStartupFlows() async {
     if (_startupHandled) {
       return;
@@ -470,10 +465,13 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       }
       final provider = context.read<TimetableProvider>();
 
-      // 老用户快速路径：不等待课表 JSON 解析/Provider 初始化，先进入主界面。
+      // 老用户快速路径：等待本地课表快照完成后再进入主界面。
       if (hasAcceptedPrivacy && hasSeenGuide) {
         _cloudSyncCoordinator.bindProvider(provider);
-        unawaited(_initializeThenMaybePullRemote(provider));
+        // Do not fade the brand layer until the local timetable snapshot is
+        // ready; otherwise the first visible frame can be an empty/default
+        // timetable while storage is still being read.
+        await provider.initialize();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
         unawaited(_checkPendingExternalImport());
@@ -486,6 +484,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         );
         unawaited(_maybeShowDeferredMigrationGuide());
         await _revealMainContent();
+        // Remote sync is intentionally post-reveal: local data drives the
+        // first correct frame, while network work can update it afterward.
+        unawaited(_cloudSyncCoordinator.maybePullRemote());
         return;
       }
 
@@ -982,8 +983,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_mainContentReady)
-          TimetableScreen(packageInfo: widget.packageInfo),
+        if (_mainContentReady) TimetableScreen(packageInfo: widget.packageInfo),
         AnimatedOpacity(
           opacity: _isBootstrapping ? 1 : 0,
           duration: const Duration(milliseconds: 280),
@@ -1103,9 +1103,15 @@ class _PackageInfoLoaderState extends State<_PackageInfoLoader> {
   Widget build(BuildContext context) {
     final packageInfo = _packageInfo;
     if (packageInfo == null) {
-      return const MaterialApp(
+      final isDark =
+          PlatformDispatcher.instance.platformBrightness == Brightness.dark;
+      final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: ColoredBox(color: Color(0xFFF7F7F7)),
+        home: ColoredBox(
+          color: AppBootBranding.backgroundColor(isDark: isDark),
+          child: AppBootBranding(appLabel: l10n.appTitle, isDark: isDark),
+        ),
       );
     }
     return MyApp(packageInfo: packageInfo);

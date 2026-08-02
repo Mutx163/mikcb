@@ -4,7 +4,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
-import '../ui/hyperos/hyperos_tokens.dart';
 
 /// Shared boot branding: rounded launcher icon + flavor-aware app name.
 ///
@@ -31,7 +30,9 @@ class AppBootBranding extends StatefulWidget {
 
   /// Splash / scaffold fill used while branding is on screen.
   static Color backgroundColor({required bool isDark}) {
-    return isDark ? HyperosTokens.primaryText : HyperosTokens.card;
+    // Keep the first Flutter frame identical to Android's native splash colors
+    // (res/values/colors.xml and res/values-night/colors.xml).
+    return isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF);
   }
 
   /// Flavor-aware label: 正式 / 调试版 / 性能版.
@@ -66,7 +67,9 @@ class _AppBootBrandingState extends State<AppBootBranding> {
     // Fast path: already in the global warm-up cache.
     final cached = BundledAssets.bytesFor(BundledAssets.launcherIcon);
     if (cached != null) {
-      if (mounted) setState(() => _bytes = cached);
+      // The icon was prewarmed before runApp; assign synchronously so the
+      // first Flutter branding frame already contains the real bitmap.
+      _bytes = cached;
       return;
     }
     // Slow path: warm-up hasn't completed yet; load independently so the icon

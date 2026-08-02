@@ -28,12 +28,19 @@ class BundledAssets {
     _bytesByPath[assetPath] = bytes;
   }
 
+  /// Loads the launcher icon before Flutter's first frame so the native
+  /// Android splash hands off to the real bitmap instead of a placeholder.
+  static Future<void> warmUpLauncherIcon() => _loadIntoCache(launcherIcon);
+
   /// Preloads common bitmaps. Failures are logged but never crash startup.
   static Future<void> warmUp() async {
     await Future.wait(_warmUpPaths.map(_loadIntoCache));
   }
 
   static Future<void> _loadIntoCache(String assetPath) async {
+    if (_bytesByPath.containsKey(assetPath)) {
+      return;
+    }
     try {
       final data = await rootBundle.load(assetPath);
       final bytes = data.buffer.asUint8List();
