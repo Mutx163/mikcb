@@ -2246,6 +2246,36 @@ abstract class AppLocalizations {
   /// **'检测到不同传输内容，请确认只对准一份数据'**
   String get qrTransferSessionMismatch;
 
+  /// No description provided for @qrTransferChecksumFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'传输校验失败，请重新开始'**
+  String get qrTransferChecksumFailed;
+
+  /// No description provided for @qrTransferRawLengthMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收数据长度校验失败，请重新开始'**
+  String get qrTransferRawLengthMismatch;
+
+  /// No description provided for @qrTransferDecompressionFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据解压失败，请重新开始'**
+  String get qrTransferDecompressionFailed;
+
+  /// No description provided for @qrTransferDecodeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码数据解码失败，请重新开始'**
+  String get qrTransferDecodeFailed;
+
+  /// No description provided for @qrTransferRestart.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新开始'**
+  String get qrTransferRestart;
+
   /// No description provided for @qrTransferSampleFps.
   ///
   /// In zh, this message translates to:

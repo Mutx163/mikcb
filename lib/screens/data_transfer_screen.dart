@@ -24,6 +24,7 @@ class DataTransferScreen extends StatefulWidget {
 class _DataTransferScreenState extends State<DataTransferScreen> {
   bool _isExporting = false;
   bool _isImporting = false;
+  bool _qrImportInFlight = false;
 
   @override
   Widget build(BuildContext context) {
@@ -404,6 +405,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
   }
 
   void _qrReceive() {
+    if (_isImporting || _qrImportInFlight) {
+      return;
+    }
     HyperosNavigation.pushWidget<void>(
       context,
       QrTransferScanScreen(onComplete: _handleQrReceivedBytes),
@@ -411,16 +415,78 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
   }
 
   Future<void> _handleQrReceivedBytes(Uint8List bytes) async {
-    if (!mounted) {
+    if (!mounted || _qrImportInFlight) {
       return;
     }
-    Navigator.pop(context);
-    final content = utf8.decode(bytes);
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<TimetableProvider>();
+    _qrImportInFlight = true;
+    setState(() {
+      _isImporting = true;
+    });
 
-    if (provider.dataTransferService.isFullBackupJson(content)) {
-      final message = await provider.importFullAppDataBackup(content);
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      late final String content;
+      try {
+        final decoded = StringBuffer();
+        final sink = utf8.decoder.startChunkedConversion(
+          StringConversionSink.withCallback(decoded.write),
+        );
+        sink.add(bytes);
+        sink.close();
+        content = decoded.toString();
+      } on FormatException {
+        throw const FormatException('qr_transfer_invalid_utf8');
+      }
+      final provider = context.read<TimetableProvider>();
+
+      if (provider.dataTransferService.isFullBackupJson(content)) {
+        final message = await provider.importFullAppDataBackup(content);
+        if (!mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: message != null
+              ? localizeServiceMessage(l10n, message)
+              : l10n.backupRestoredSuccess,
+          kind: message != null ? AppToastKind.error : AppToastKind.success,
+        );
+        return;
+      }
+
+      final importMode = await showHyperosDialog<_BackupImportMode>(
+        context: context,
+        title: l10n.selectImportModeTitle,
+        message: l10n.selectImportModeMessage,
+        actions: [
+          HyperosDialogAction(
+            label: l10n.cancelAction,
+            onPressed: () => Navigator.pop(context),
+          ),
+          HyperosDialogAction(
+            label: l10n.replaceCurrentTimetable,
+            isPrimary: true,
+            onPressed: () =>
+                Navigator.pop(context, _BackupImportMode.replaceCurrent),
+          ),
+          HyperosDialogAction(
+            label: l10n.importAsNewTimetable,
+            onPressed: () =>
+                Navigator.pop(context, _BackupImportMode.importAsNew),
+          ),
+        ],
+      );
+      if (importMode == null || !mounted) {
+        return;
+      }
+
+      final message = switch (importMode) {
+        _BackupImportMode.replaceCurrent => await provider.importAppDataBackup(
+          content,
+        ),
+        _BackupImportMode.importAsNew =>
+          await provider.importAppDataBackupAsNewProfile(content),
+      };
       if (!mounted) {
         return;
       }
@@ -428,57 +494,39 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         context,
         message: message != null
             ? localizeServiceMessage(l10n, message)
-            : l10n.backupRestoredSuccess,
+            : (importMode == _BackupImportMode.importAsNew
+                  ? l10n.createdNewTimetableAfterImport
+                  : l10n.backupRestoredSuccess),
         kind: message != null ? AppToastKind.error : AppToastKind.success,
       );
-      return;
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: error.message == 'qr_transfer_invalid_utf8'
+            ? l10n.importFailedInvalidFile
+            : localizeServiceMessage(l10n, error.message),
+        kind: AppToastKind.error,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.importFailedInvalidFile,
+        kind: AppToastKind.error,
+      );
+    } finally {
+      _qrImportInFlight = false;
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+      }
     }
-
-    final importMode = await showHyperosDialog<_BackupImportMode>(
-      context: context,
-      title: l10n.selectImportModeTitle,
-      message: l10n.selectImportModeMessage,
-      actions: [
-        HyperosDialogAction(
-          label: l10n.cancelAction,
-          onPressed: () => Navigator.pop(context),
-        ),
-        HyperosDialogAction(
-          label: l10n.replaceCurrentTimetable,
-          isPrimary: true,
-          onPressed: () =>
-              Navigator.pop(context, _BackupImportMode.replaceCurrent),
-        ),
-        HyperosDialogAction(
-          label: l10n.importAsNewTimetable,
-          onPressed: () =>
-              Navigator.pop(context, _BackupImportMode.importAsNew),
-        ),
-      ],
-    );
-    if (importMode == null || !mounted) {
-      return;
-    }
-
-    final message = switch (importMode) {
-      _BackupImportMode.replaceCurrent => await provider.importAppDataBackup(
-        content,
-      ),
-      _BackupImportMode.importAsNew =>
-        await provider.importAppDataBackupAsNewProfile(content),
-    };
-    if (!mounted) {
-      return;
-    }
-    showAppToast(
-      context,
-      message: message != null
-          ? localizeServiceMessage(l10n, message)
-          : (importMode == _BackupImportMode.importAsNew
-                ? l10n.createdNewTimetableAfterImport
-                : l10n.backupRestoredSuccess),
-      kind: message != null ? AppToastKind.error : AppToastKind.success,
-    );
   }
 
   String _formatDate(DateTime date) {

@@ -1247,6 +1247,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Detected a different transfer; make sure you are pointing at one stream only';
 
   @override
+  String get qrTransferChecksumFailed =>
+      'Transfer verification failed. Please restart.';
+
+  @override
+  String get qrTransferRawLengthMismatch =>
+      'Received data length verification failed. Please restart.';
+
+  @override
+  String get qrTransferDecompressionFailed =>
+      'Could not decompress the received data. Please restart.';
+
+  @override
+  String get qrTransferDecodeFailed =>
+      'Could not decode the QR transfer. Please restart.';
+
+  @override
+  String get qrTransferRestart => 'Restart';
+
+  @override
   String get qrTransferSampleFps => 'Sample FPS';
 
   @override

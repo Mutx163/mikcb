@@ -25,6 +25,16 @@ class QrTransferFrame {
   static const String fieldSeparator = '|';
   static const int expectedFieldCount = 9;
 
+  /// QRV2 is consumed from camera input, so its metadata is untrusted. Keep
+  /// the limits conservative enough that a malformed frame cannot make the
+  /// fountain decoder allocate an attacker-controlled amount of memory.
+  static const int maxFrameTextLength = 8192;
+  static const int maxSourceSymbolCount = 8192;
+  static const int maxSymbolSize = 4096;
+  static const int maxPayloadLength = 16 * 1024 * 1024;
+  static const int maxRawLength = 64 * 1024 * 1024;
+  static const int maxSeed = 0x7fffffff;
+
   final QrTransferSessionInfo info;
   final int seed;
   final int degree;
@@ -54,7 +64,12 @@ class QrTransferFrame {
 
   /// 解析二维码识别出的文本；格式不合法时抛出 [FormatException]。
   factory QrTransferFrame.parse(String text) {
-    final fields = text.split(fieldSeparator);
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty || normalizedText.length > maxFrameTextLength) {
+      throw const FormatException('invalid_qr_transfer_frame');
+    }
+
+    final fields = normalizedText.split(fieldSeparator);
     if (fields.length != expectedFieldCount || fields.first != magic) {
       throw const FormatException('invalid_qr_transfer_frame');
     }
@@ -68,30 +83,42 @@ class QrTransferFrame {
 
     if (sourceSymbolCount <= 0 ||
         symbolSize <= 0 ||
-        payloadLength < 0 ||
-        rawLength < 0 ||
+        payloadLength <= 0 ||
+        rawLength <= 0 ||
         seed < 0 ||
+        seed > maxSeed ||
         degree <= 0) {
       throw const FormatException('invalid_qr_transfer_frame');
     }
 
-    // 上界校验：解析的是任意二维码（不信任输入）。构造恶意帧会让
-    // fountain_codes 的 `_selectNeighbors`（用 Set 去重）在 `degree > k`
-    // 时死循环、`List.filled(k)` 在超大 k 时 OOM、或 `payloadLength` 越界
-    // 抛未捕获 RangeError。发送端实际 k ≤ 32、symbolSize ≤ 2048，留足余量。
-    const maxSourceSymbolCount = 1 << 20; // 1M 符号：List.filled 仍可控
-    const maxSymbolSize = 8192;
+    // 上界校验：构造恶意帧会让 fountain_codes 的 `_selectNeighbors`
+    // 在 degree > k 时死循环，或让解码器用超大 k 创建 List 造成 OOM。
+    final maxPayloadBySymbols =
+        sourceSymbolCount > maxPayloadLength ~/ symbolSize
+        ? maxPayloadLength
+        : sourceSymbolCount * symbolSize;
     if (sourceSymbolCount > maxSourceSymbolCount ||
         symbolSize > maxSymbolSize ||
         degree > sourceSymbolCount ||
-        payloadLength > sourceSymbolCount * symbolSize) {
+        payloadLength > maxPayloadLength ||
+        rawLength > maxRawLength ||
+        payloadLength > maxPayloadBySymbols) {
+      throw const FormatException('invalid_qr_transfer_frame');
+    }
+
+    try {
+      final hashBytes = base64Url.decode(fields[5]);
+      if (hashBytes.length != sha256.convert(const <int>[]).bytes.length) {
+        throw const FormatException('invalid_qr_transfer_frame');
+      }
+    } on Object {
       throw const FormatException('invalid_qr_transfer_frame');
     }
 
     final Uint8List symbolBytes;
     try {
       symbolBytes = base64Url.decode(fields[8]);
-    } on FormatException {
+    } on Object {
       throw const FormatException('invalid_qr_transfer_frame');
     }
     if (symbolBytes.length != symbolSize) {
@@ -214,6 +241,7 @@ class QrTransferDecoder {
   int _innovativeSymbols = 0;
   final Set<int> _submittedSeeds = {};
   QrTransferDecodeResult? _result;
+  String? _terminalError;
 
   /// 会话信息；收到第一帧后可用。
   QrTransferSessionInfo? get sessionInfo => _info;
@@ -240,6 +268,10 @@ class QrTransferDecoder {
 
   /// 提交一帧；返回最新进度。帧无法解析或与当前会话不匹配时抛异常。
   QrTransferDecodeProgress submitFrame(String frameText) {
+    final terminalError = _terminalError;
+    if (terminalError != null) {
+      throw StateError(terminalError);
+    }
     if (_result != null) {
       return progress;
     }
@@ -263,7 +295,13 @@ class QrTransferDecoder {
       bytes: frame.symbolBytes,
       meta: {'degree': frame.degree},
     );
-    final submitResult = codec.submit(symbol);
+    late final DecodeResult submitResult;
+    try {
+      submitResult = codec.submit(symbol);
+    } on Object {
+      _terminalError = 'qr_transfer_decode_failed';
+      throw StateError(_terminalError!);
+    }
     if (submitResult.isInnovative) {
       _innovativeSymbols++;
     }
@@ -281,16 +319,47 @@ class QrTransferDecoder {
     if (codec == null || info == null) {
       return;
     }
-    final decoded = codec.getDecodedData();
-    if (decoded == null) {
-      throw StateError('decoder completed but produced no data');
+    try {
+      final decoded = codec.getDecodedData();
+      if (decoded == null) {
+        throw StateError('decoder completed but produced no data');
+      }
+      final payload = Uint8List.sublistView(decoded, 0, info.payloadLength);
+      final actualSha256 = base64Url.encode(sha256.convert(payload).bytes);
+      if (actualSha256 != info.payloadSha256) {
+        throw StateError('qr_transfer_checksum_failed');
+      }
+      _result = QrTransferDecodeResult(payload: payload, info: info);
+    } on StateError catch (error) {
+      _terminalError = error.message.toString();
+      rethrow;
+    } on Object {
+      _terminalError = 'qr_transfer_checksum_failed';
+      throw StateError(_terminalError!);
     }
-    final payload = Uint8List.sublistView(decoded, 0, info.payloadLength);
-    final actualSha256 = base64Url.encode(sha256.convert(payload).bytes);
-    if (actualSha256 != info.payloadSha256) {
-      throw StateError('qr_transfer_checksum_failed');
+  }
+
+  /// Returns the original bytes after gzip decompression and raw-length
+  /// verification. Decompression stays outside [submitFrame] so the decoder
+  /// can expose compressed-payload progress before the final conversion.
+  Uint8List decodeRawPayload() {
+    final result = _result;
+    final info = _info;
+    if (result == null || info == null) {
+      throw StateError('qr_transfer_not_complete');
     }
-    _result = QrTransferDecodeResult(payload: payload, info: info);
+
+    try {
+      final raw = qrTransferDecompress(result.payload);
+      if (raw.length != info.rawLength) {
+        throw StateError('qr_transfer_raw_length_mismatch');
+      }
+      return raw;
+    } on StateError {
+      rethrow;
+    } on Object {
+      throw StateError('qr_transfer_decompression_failed');
+    }
   }
 
   LTCodec _ensureCodec(QrTransferSessionInfo info) {
@@ -316,6 +385,7 @@ class QrTransferDecoder {
         current.sourceSymbolCount == info.sourceSymbolCount &&
         current.symbolSize == info.symbolSize &&
         current.payloadLength == info.payloadLength &&
+        current.rawLength == info.rawLength &&
         current.payloadSha256 == info.payloadSha256;
     if (!matches) {
       throw StateError('qr_transfer_session_mismatch');
@@ -334,6 +404,7 @@ class QrTransferDecoder {
     _innovativeSymbols = 0;
     _submittedSeeds.clear();
     _result = null;
+    _terminalError = null;
   }
 }
 

@@ -1187,6 +1187,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get qrTransferSessionMismatch => '別の転送内容を検出しました。1つの画面だけに正対してください';
 
   @override
+  String get qrTransferChecksumFailed => '転送の検証に失敗しました。最初からやり直してください';
+
+  @override
+  String get qrTransferRawLengthMismatch => '受信データの長さを検証できませんでした。最初からやり直してください';
+
+  @override
+  String get qrTransferDecompressionFailed => '受信データを展開できませんでした。最初からやり直してください';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR転送をデコードできませんでした。最初からやり直してください';
+
+  @override
+  String get qrTransferRestart => '最初からやり直す';
+
+  @override
   String get qrTransferSampleFps => 'サンプルFPS';
 
   @override

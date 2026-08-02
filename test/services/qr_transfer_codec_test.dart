@@ -45,6 +45,12 @@ int _simulateTransfer(
   return submitted;
 }
 
+String _replaceFrameField(String frameText, int index, String value) {
+  final fields = frameText.split(QrTransferFrame.fieldSeparator);
+  fields[index] = value;
+  return fields.join(QrTransferFrame.fieldSeparator);
+}
+
 void main() {
   Uint8List utf8Bytes(String text) => Uint8List.fromList(utf8.encode(text));
 
@@ -56,6 +62,7 @@ void main() {
     _simulateTransfer(encoder, decoder, dropRate: 0.2);
 
     expect(decoder.isComplete, isTrue);
+    expect(decoder.decodeRawPayload(), original);
     final restored = qrTransferDecompress(decoder.decodedPayload!);
     expect(restored, original);
   });
@@ -196,6 +203,117 @@ void main() {
 
     expect(decoder.sessionInfo?.rawLength, original.length);
     expect(decoder.progress.sourceSymbolCount, encoder.info.sourceSymbolCount);
+  });
+
+  test('恶意帧元数据与哈希字段被安全拒绝', () {
+    final encoder = QrTransferEncoder.prepare(utf8Bytes('边界校验'));
+    final frame = encoder.nextFrame();
+
+    expect(
+      () => QrTransferFrame.parse(
+        _replaceFrameField(
+          frame,
+          1,
+          '${QrTransferFrame.maxSourceSymbolCount + 1}',
+        ),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => QrTransferFrame.parse(
+        _replaceFrameField(frame, 2, '${QrTransferFrame.maxSymbolSize + 1}'),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => QrTransferFrame.parse(_replaceFrameField(frame, 3, '0')),
+      throwsFormatException,
+    );
+    expect(
+      () => QrTransferFrame.parse(_replaceFrameField(frame, 4, '0')),
+      throwsFormatException,
+    );
+    expect(
+      () => QrTransferFrame.parse(_replaceFrameField(frame, 5, 'bad-hash')),
+      throwsFormatException,
+    );
+    expect(
+      () => QrTransferFrame.parse(
+        _replaceFrameField(
+          frame,
+          7,
+          '${QrTransferFrame.maxSourceSymbolCount + 1}',
+        ),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => QrTransferFrame.parse(
+        '${frame}x' * QrTransferFrame.maxFrameTextLength,
+      ),
+      throwsFormatException,
+    );
+  });
+
+  test('校验失败后不会误报完成，reset 后可重新接收', () {
+    final original = Uint8List.fromList(
+      List<int>.generate(2400, (index) => (index * 17) & 0xff),
+    );
+    final encoder = QrTransferEncoder.prepare(original);
+    final decoder = QrTransferDecoder();
+    final invalidHash = base64Url.encode(List<int>.filled(32, 0));
+    StateError? checksumError;
+
+    for (var i = 0; i < encoder.info.sourceSymbolCount * 5; i++) {
+      try {
+        decoder.submitFrame(
+          _replaceFrameField(encoder.nextFrame(), 5, invalidHash),
+        );
+      } on StateError catch (error) {
+        checksumError = error;
+        break;
+      }
+    }
+
+    expect(checksumError?.message, 'qr_transfer_checksum_failed');
+    expect(decoder.isComplete, isFalse);
+
+    final replacement = QrTransferEncoder.prepare(utf8Bytes('reset 后的新传输'));
+    decoder.reset();
+    _simulateTransfer(replacement, decoder);
+    expect(decoder.isComplete, isTrue);
+    expect(decoder.decodeRawPayload(), utf8Bytes('reset 后的新传输'));
+  });
+
+  test('完成后校验原始长度，长度篡改不会进入导入', () {
+    final original = utf8Bytes('原始长度校验');
+    final encoder = QrTransferEncoder.prepare(original);
+    final decoder = QrTransferDecoder();
+    StateError? lengthError;
+
+    for (var i = 0; i < encoder.info.sourceSymbolCount * 5; i++) {
+      try {
+        decoder.submitFrame(
+          _replaceFrameField(encoder.nextFrame(), 4, '${original.length + 1}'),
+        );
+      } on StateError catch (error) {
+        lengthError = error;
+        break;
+      }
+    }
+
+    expect(decoder.isComplete, isTrue);
+    expect(lengthError, isNull);
+    expect(
+      () => decoder.decodeRawPayload(),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'qr_transfer_raw_length_mismatch',
+        ),
+      ),
+    );
   });
 
   test('大文件跨多符号粒度往返一致', () {

@@ -1192,6 +1192,22 @@ class AppLocalizationsKo extends AppLocalizations {
       '다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요';
 
   @override
+  String get qrTransferChecksumFailed => '전송 검증에 실패했습니다. 다시 시작해 주세요';
+
+  @override
+  String get qrTransferRawLengthMismatch => '수신 데이터 길이 검증에 실패했습니다. 다시 시작해 주세요';
+
+  @override
+  String get qrTransferDecompressionFailed =>
+      '수신 데이터를 압축 해제할 수 없습니다. 다시 시작해 주세요';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR 전송을 디코딩할 수 없습니다. 다시 시작해 주세요';
+
+  @override
+  String get qrTransferRestart => '다시 시작';
+
+  @override
   String get qrTransferSampleFps => '샘플 FPS';
 
   @override

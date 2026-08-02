@@ -1169,6 +1169,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get qrTransferSessionMismatch => '检测到不同传输内容，请确认只对准一份数据';
 
   @override
+  String get qrTransferChecksumFailed => '传输校验失败，请重新开始';
+
+  @override
+  String get qrTransferRawLengthMismatch => '接收数据长度校验失败，请重新开始';
+
+  @override
+  String get qrTransferDecompressionFailed => '数据解压失败，请重新开始';
+
+  @override
+  String get qrTransferDecodeFailed => '二维码数据解码失败，请重新开始';
+
+  @override
+  String get qrTransferRestart => '重新开始';
+
+  @override
   String get qrTransferSampleFps => '采样帧率';
 
   @override
@@ -10085,6 +10100,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
 
   @override
+  String get qrTransferChecksumFailed => '傳輸校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferRawLengthMismatch => '接收資料長度校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferDecompressionFailed => '資料解壓失敗，請重新開始';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR 碼資料解碼失敗，請重新開始';
+
+  @override
+  String get qrTransferRestart => '重新開始';
+
+  @override
   String get qrTransferSampleFps => '取樣幀率';
 
   @override
@@ -18803,6 +18833,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
+
+  @override
+  String get qrTransferChecksumFailed => '傳輸校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferRawLengthMismatch => '接收資料長度校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferDecompressionFailed => '資料解壓失敗，請重新開始';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR 碼資料解碼失敗，請重新開始';
+
+  @override
+  String get qrTransferRestart => '重新開始';
 
   @override
   String get qrTransferSampleFps => '取樣幀率';

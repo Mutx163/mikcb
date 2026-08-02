@@ -22,7 +22,7 @@ import '../services/qr_transfer/qr_transfer_session.dart';
 /// 面板会实时展示采样/解码帧率、接收速度、已用时间、新增/重复帧数、
 /// 单块大小与文件数据等信息，便于诊断传输瓶颈。
 class QrTransferScanScreen extends StatefulWidget {
-  final ValueChanged<Uint8List> onComplete;
+  final Future<void> Function(Uint8List) onComplete;
 
   const QrTransferScanScreen({super.key, required this.onComplete});
 
@@ -64,14 +64,11 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat();
-    _statsTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) {
-        if (mounted && !_finished && _sessionStart != null) {
-          setState(() {});
-        }
-      },
-    );
+    _statsTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && !_finished && _sessionStart != null) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -83,7 +80,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
   }
 
   void _handleDetect(BarcodeCapture capture) {
-    if (_finished) {
+    if (!mounted || _finished) {
       return;
     }
     for (final barcode in capture.barcodes) {
@@ -102,33 +99,116 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
           _errorMessageKey = null;
         });
         if (progress.isComplete) {
-          _finish();
+          unawaited(_finish());
           return;
         }
       } on FormatException {
         // 非本协议二维码，静默忽略。
         continue;
-      } on StateError {
-        if (!mounted) {
-          return;
+      } on StateError catch (error) {
+        final messageKey = _errorKeyFor(error.message.toString());
+        if (messageKey == 'qr_transfer_session_mismatch') {
+          if (!mounted || _errorMessageKey == messageKey) {
+            continue;
+          }
+          setState(() {
+            _errorMessageKey = messageKey;
+          });
+        } else {
+          unawaited(_stopWithError(messageKey));
         }
-        setState(() {
-          _errorMessageKey = 'qr_transfer_session_mismatch';
-        });
       }
     }
   }
 
-  Future<void> _finish() async {
+  String _errorKeyFor(String error) {
+    return switch (error) {
+      'qr_transfer_session_mismatch' => 'qr_transfer_session_mismatch',
+      'qr_transfer_checksum_failed' => 'qr_transfer_checksum_failed',
+      'qr_transfer_raw_length_mismatch' => 'qr_transfer_raw_length_mismatch',
+      'qr_transfer_decompression_failed' => 'qr_transfer_decompression_failed',
+      _ => 'qr_transfer_decode_failed',
+    };
+  }
+
+  Future<void> _stopWithError(String messageKey) async {
+    if (_finished) {
+      return;
+    }
     _finished = true;
-    await _scannerController.stop();
+    try {
+      await _scannerController.stop();
+    } catch (_) {
+      // The page is already entering an error state; camera teardown is best
+      // effort and must not prevent the user from restarting the transfer.
+    }
     if (!mounted) {
       return;
     }
-    setState(() {});
-    final payload = _decoder.decodedPayload;
-    if (payload != null) {
-      widget.onComplete(qrTransferDecompress(payload));
+    setState(() {
+      _errorMessageKey = messageKey;
+    });
+  }
+
+  Future<void> _finish() async {
+    if (_finished) {
+      return;
+    }
+    _finished = true;
+    try {
+      await _scannerController.stop();
+    } catch (_) {
+      // Stopping the camera is best effort after a successful decode.
+    }
+    if (!mounted) {
+      return;
+    }
+
+    try {
+      final payload = _decoder.decodeRawPayload();
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+      await widget.onComplete(payload);
+    } on StateError catch (error) {
+      setState(() {
+        _errorMessageKey = _errorKeyFor(error.message.toString());
+      });
+    } on Object {
+      setState(() {
+        _errorMessageKey = 'qr_transfer_decompression_failed';
+      });
+    }
+  }
+
+  Future<void> _resetTransfer() async {
+    if (!mounted) {
+      return;
+    }
+    _decoder.reset();
+    setState(() {
+      _finished = false;
+      _errorMessageKey = null;
+      _sessionStart = null;
+      _progress = const QrTransferDecodeProgress(
+        receivedSymbols: 0,
+        innovativeSymbols: 0,
+        sourceSymbolCount: 0,
+        decodedSymbols: 0,
+        isComplete: false,
+      );
+    });
+    try {
+      await _scannerController.start();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _finished = true;
+        _errorMessageKey = 'qr_transfer_decode_failed';
+      });
     }
   }
 
@@ -168,7 +248,8 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
               ],
             ),
           ),
-          if (_finished) _buildFinishedOverlay(l10n),
+          if (_finished && _errorMessageKey == null)
+            _buildFinishedOverlay(l10n),
         ],
       ),
     );
@@ -233,6 +314,16 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
     );
   }
 
+  String _errorText(AppLocalizations l10n) {
+    return switch (_errorMessageKey) {
+      'qr_transfer_session_mismatch' => l10n.qrTransferSessionMismatch,
+      'qr_transfer_checksum_failed' => l10n.qrTransferChecksumFailed,
+      'qr_transfer_raw_length_mismatch' => l10n.qrTransferRawLengthMismatch,
+      'qr_transfer_decompression_failed' => l10n.qrTransferDecompressionFailed,
+      _ => l10n.qrTransferDecodeFailed,
+    };
+  }
+
   Widget _buildProgressPanel(AppLocalizations l10n) {
     final fraction = _progress.fraction;
     final hasSession = _progress.sourceSymbolCount > 0;
@@ -280,8 +371,14 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
                 if (_errorMessageKey != null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    l10n.qrTransferSessionMismatch,
+                    _errorText(l10n),
                     style: const TextStyle(color: Colors.orangeAccent),
+                  ),
+                  const SizedBox(height: 10),
+                  HyperosButton(
+                    label: l10n.qrTransferRestart,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: _resetTransfer,
                   ),
                 ],
               ],
@@ -327,10 +424,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
         label: l10n.qrTransferReceiveSpeed,
         value: _formatSpeed(speedBps),
       ),
-      _StatTile(
-        label: l10n.qrTransferElapsed,
-        value: _formatElapsed(_elapsed),
-      ),
+      _StatTile(label: l10n.qrTransferElapsed, value: _formatElapsed(_elapsed)),
       _StatTile(
         label: l10n.qrTransferNewFrames,
         value: '${p.innovativeSymbols}',
@@ -452,11 +546,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
 
 /// 接收面板中的一个指标卡片：标签（小字）+ 数值（大字）。
 class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _StatTile({required this.label, required this.value, this.valueColor});
 
   final String label;
   final String value;
