@@ -123,6 +123,37 @@ Color resolveHomePageBackgroundColor({
   );
 }
 
+/// Representative status-bar background used to derive system icon polarity.
+///
+/// The status bar can be transparent over the wallpaper, so the page's opaque
+/// background is not enough to choose black or white system icons. Use the
+/// sampled top band when available; before sampling completes, follow the
+/// active app theme so a light-theme transition never keeps white icons.
+Color resolveHomePageStatusBarBackground({
+  required Color pageBackground,
+  required bool statusBarShowsBackdrop,
+  required bool hasBackdrop,
+  required bool isDark,
+  required bool usesFrostedChrome,
+  required double? wallpaperTopLuminance,
+}) {
+  if (!statusBarShowsBackdrop || !hasBackdrop) {
+    return pageBackground;
+  }
+
+  final luminance = wallpaperTopLuminance;
+  if (luminance != null) {
+    return luminance > 0.5
+        ? Colors.white
+        : (usesFrostedChrome ? const Color(0xFF1A1A1A) : Colors.black);
+  }
+
+  if (!isDark) {
+    return Colors.white;
+  }
+  return usesFrostedChrome ? const Color(0xFF1A1A1A) : Colors.black;
+}
+
 /// Full-screen home backdrop path (wallpaper field; legacy background image fallback).
 String? resolveHomePageBackdropImagePath(TimetableSettings settings) {
   final wallpaper = settings.homePageWallpaperPath;

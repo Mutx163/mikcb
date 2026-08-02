@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 
@@ -104,4 +105,37 @@ void main() {
     expect(bands.weekday, greaterThan(0.45));
     expect(bands.weekday, lessThan(0.75));
   });
+
+  test('light wallpaper uses dark status-bar icons in a light theme', () {
+    final background = resolveHomePageStatusBarBackground(
+      pageBackground: const Color(0xFFF8FAFC),
+      statusBarShowsBackdrop: true,
+      hasBackdrop: true,
+      isDark: false,
+      usesFrostedChrome: true,
+      wallpaperTopLuminance: 1.0,
+    );
+
+    final style = SystemUiOverlayStyle(
+      statusBarColor: background,
+      statusBarIconBrightness: background.computeLuminance() > 0.5
+          ? Brightness.dark
+          : Brightness.light,
+    );
+    expect(style.statusBarIconBrightness, Brightness.dark);
+  });
+
+  test('unsampled light-theme wallpaper does not default to white icons', () {
+    final background = resolveHomePageStatusBarBackground(
+      pageBackground: const Color(0xFFF8FAFC),
+      statusBarShowsBackdrop: true,
+      hasBackdrop: true,
+      isDark: false,
+      usesFrostedChrome: true,
+      wallpaperTopLuminance: null,
+    );
+
+    expect(background.computeLuminance(), greaterThan(0.5));
+  });
+
 }

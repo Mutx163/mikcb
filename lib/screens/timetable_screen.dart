@@ -406,17 +406,16 @@ class _TimetableScreenState extends State<TimetableScreen>
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
-        // Status-bar icon polarity: with wallpaper showing through the status
-        // bar the backdrop reads dark (dim mask / frosted chrome), otherwise
-        // follow the opaque page background. The page's own background is
-        // transparent over wallpaper, so the shell cannot derive this itself.
-        final systemOverlayBackground = statusBarShowsBackdrop
-            ? (hasBackdrop
-                  ? (headerUsesFrostedChrome
-                        ? const Color(0xFF1A1A1A)
-                        : Colors.black)
-                  : pageBackgroundColor)
-            : pageBackgroundColor;
+        // The page's own background is transparent over wallpaper, so derive
+        // status-bar icon polarity from the sampled top band when available.
+        final systemOverlayBackground = resolveHomePageStatusBarBackground(
+          pageBackground: pageBackgroundColor,
+          statusBarShowsBackdrop: statusBarShowsBackdrop,
+          hasBackdrop: hasBackdrop,
+          isDark: isDark,
+          usesFrostedChrome: headerUsesFrostedChrome,
+          wallpaperTopLuminance: _wallpaperTopLuminance,
+        );
 
         _scheduleWallpaperLuminanceSampleIfNeeded(settings);
         // After the sample lands: a hand-picked weekday ink can be invisible
