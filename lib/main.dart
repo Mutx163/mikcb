@@ -43,6 +43,7 @@ import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_layout_debug_tuning.dart';
 import 'ui/hyperos/hyperos_motion.dart';
 import 'ui/hyperos_motion_bridge.dart';
+import 'utils/home_page_background.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -641,6 +642,19 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     if (!mounted) {
       return;
     }
+
+    // The provider intentionally starts wallpaper decoding in the background
+    // so normal settings changes stay responsive. Startup is different: if the
+    // home backdrop is not decoded yet, the first timetable frame is an opaque
+    // dark surface and the wallpaper/glass appears one frame later. Keep the
+    // branding layer up until the image provider has delivered its first frame.
+    await precacheHomePageBackdropImage(
+      context.read<TimetableProvider>().settings,
+    );
+    if (!mounted) {
+      return;
+    }
+
     if (!_mainContentReady) {
       setState(() => _mainContentReady = true);
       await WidgetsBinding.instance.endOfFrame;
