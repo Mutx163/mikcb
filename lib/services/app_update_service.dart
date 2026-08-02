@@ -10,6 +10,7 @@ import '../logging/app_debug_log.dart';
 import '../l10n/service_message_localizer.dart';
 import '../models/timetable_settings.dart';
 import '../utils/async_utils.dart';
+import 'app_http_client.dart';
 
 /// A single log entry from the update process.
 class UpdateLogEntry {
@@ -181,7 +182,7 @@ class AppUpdateService {
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
     Duration releaseApiRequestTimeout = _releaseRequestTimeout,
-  }) : _client = client ?? http.Client(),
+  }) : _client = client ?? createAppHttpClient(),
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
        _openInstaller = openInstaller ?? OpenFilex.open,

@@ -11,7 +11,9 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter_blackbox/flutter_blackbox.dart';
 
+import 'blackbox_adapters.dart';
 import 'logging/app_log_messages.dart';
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
@@ -185,6 +187,9 @@ Future<void> main() async {
         return false;
       };
 
+      if (!kReleaseMode) {
+        setupBlackBox();
+      }
       runApp(const _PackageInfoLoader());
     },
     (error, stackTrace) {
@@ -291,22 +296,25 @@ class MyApp extends StatelessWidget {
                   _AppRouteLogObserver(),
                   FairMemoryService.instance.routeObserver,
                   hyperosRouteObserver,
+                  if (!kReleaseMode) BlackBox.journeyObserver,
                 ],
                 builder: (context, child) {
                   final frostedAppearance = context
                       .watch<TimetableProvider>()
                       .settings
                       .frostedAppearance;
-                  return HyperosLayoutTuningHost(
-                    child: HyperosMotionHost(
-                      child: FrostedAppearanceScope(
-                        appearance: frostedAppearance,
-                        child: ScaffoldMessenger(
-                          child: Scaffold(
-                            backgroundColor: Colors.transparent,
-                            resizeToAvoidBottomInset: false,
-                            body: DebugTuningOverlayHost(
-                              child: MiuixFontWeightScope(child: child!),
+                  return BlackBoxOverlayHost(
+                    child: HyperosLayoutTuningHost(
+                      child: HyperosMotionHost(
+                        child: FrostedAppearanceScope(
+                          appearance: frostedAppearance,
+                          child: ScaffoldMessenger(
+                            child: Scaffold(
+                              backgroundColor: Colors.transparent,
+                              resizeToAvoidBottomInset: false,
+                              body: DebugTuningOverlayHost(
+                                child: MiuixFontWeightScope(child: child!),
+                              ),
                             ),
                           ),
                         ),
