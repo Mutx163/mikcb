@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 /// 读取 Android 系统字体粗细增量（`Configuration.fontWeightAdjustment`）。
@@ -35,8 +35,8 @@ abstract final class SystemFontWeightService {
 /// 回退到 [MediaQueryData.boldText]，据此为子树提供一个"已按角色分级平移字重"的
 /// [MiuixTheme]，并屏蔽 Flutter 框架对 [Text] 的统一加粗，避免盖掉分级结果。
 ///
-/// 只影响字重：配色与亮度沿用当前 [MiuixTheme.of]（本项目即 Miuix 默认浅色回退），
-/// 不改变设置页现有观感。
+/// 字重由系统配置决定；配色与亮度在没有显式 Miuix 主题时跟随外层
+/// Material 主题，避免深色模式回退到 flutter_miuix 的浅色默认值。
 class MiuixFontWeightScope extends StatefulWidget {
   const MiuixFontWeightScope({required this.child, super.key});
 
@@ -84,11 +84,16 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
         _adjustment ??
         (MediaQuery.boldTextOf(context) ? kMiuixBoldTextFontWeightDelta : 0);
 
-    // 沿用当前配色/亮度（本项目为 Miuix 浅色回退），仅调整字重。
-    final existing = MiuixTheme.of(context);
+    // App root normally has no explicit MiuixTheme. In that case, the
+    // package fallback is light-only, so use the Material brightness instead.
+    // Explicit nested Miuix themes (for example the Miuix showcase) keep
+    // their own palette.
+    final existing = MiuixTheme.maybeOf(context);
+    final baseTheme =
+        existing ?? MiuixThemeData.of(Theme.of(context).brightness);
     final data = MiuixThemeData(
-      colors: existing.colors,
-      brightness: existing.brightness,
+      colors: baseTheme.colors,
+      brightness: baseTheme.brightness,
       textStyles: applyFontWeightDelta(defaultTextStyles(), delta),
       fontWeightAdjustment: delta,
     );
