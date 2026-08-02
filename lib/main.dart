@@ -22,6 +22,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'widgets/app_boot_branding.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
@@ -309,7 +310,7 @@ class MyApp extends StatelessWidget {
                     ),
                   );
                 },
-                home: const AppEntryScreen(),
+                home: AppEntryScreen(packageInfo: packageInfo),
               );
             },
           ),
@@ -347,7 +348,9 @@ Route<dynamic> _buildUnknownPlatformRoute(RouteSettings settings) {
 }
 
 class AppEntryScreen extends StatefulWidget {
-  const AppEntryScreen({super.key});
+  const AppEntryScreen({super.key, required this.packageInfo});
+
+  final PackageInfo packageInfo;
 
   @override
   State<AppEntryScreen> createState() => _AppEntryScreenState();
@@ -973,11 +976,14 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final overlayColor = HyperosColors.scaffoldBackground(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+    final appLabel = AppBootBranding.resolveAppLabel(widget.packageInfo, l10n);
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_mainContentReady) const TimetableScreen(),
+        if (_mainContentReady)
+          TimetableScreen(packageInfo: widget.packageInfo),
         AnimatedOpacity(
           opacity: _isBootstrapping ? 1 : 0,
           duration: const Duration(milliseconds: 280),
@@ -985,8 +991,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
           child: IgnorePointer(
             ignoring: !_isBootstrapping,
             child: ColoredBox(
-              color: overlayColor,
-              child: const Center(child: CircularProgressIndicator()),
+              color: AppBootBranding.backgroundColor(isDark: isDark),
+              child: AppBootBranding(appLabel: appLabel, isDark: isDark),
             ),
           ),
         ),
