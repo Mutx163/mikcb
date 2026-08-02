@@ -1503,9 +1503,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   /// One-shot heads-up when a hand-picked weekday-bar ink has too little
-  /// contrast against the current wallpaper. Custom colours are respected by
-  /// design (never auto-flipped), so without this the user only sees the ink
-  /// vanish and has no idea why. Offers restoring the default (auto B/W).
+  /// contrast against the current wallpaper. The ink is temporarily auto-flipped
+  /// for readability ([homePageOverWallpaperInk]); this explains why the custom
+  /// colour is not showing and offers restoring the default (auto B/W).
   void _maybeWarnWeekdayInkContrast(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -1527,7 +1527,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? TimetableSettings.defaultWeekdayBarFontColorDark
         : TimetableSettings.defaultWeekdayBarFontColorLight;
     // Default ink already auto-flips with the wallpaper; only a custom pick
-    // can go invisible.
+    // can go invisible (and trigger the temporary auto flip).
     if (homePageInkUsesBuiltInDefault(configuredHex, defaultHex)) {
       return;
     }
@@ -1535,12 +1535,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (ink == null) {
       return;
     }
-    final inkLuminance = ink.computeLuminance();
-    final hi = math.max(inkLuminance, luminance);
-    final lo = math.min(inkLuminance, luminance);
-    // ~WCAG ratio against the sampled top band; photos are busy, so anything
+    // ~WCAG ratio against the sampled band; photos are busy, so anything
     // above 3:1 is left alone — this only catches "nearly invisible".
-    if ((hi + 0.05) / (lo + 0.05) >= 3.0) {
+    if (homePageInkHasSufficientContrast(ink, luminance)) {
       return;
     }
     final signature =
@@ -1596,7 +1593,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
         actions: [
           HyperosDialogAction(
-            label: l10n.keepCurrentColorAction,
+            label: l10n.gotItAction,
             onPressed: () => Navigator.pop(context),
           ),
           HyperosDialogAction(
@@ -1858,8 +1855,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                             ? settings.weekdayBarAccentColorDark
                             : settings.weekdayBarAccentColorLight;
                         // Default weekday ink flips with the band behind this
-                        // bar; user-custom hex is kept. Accent (today/selected)
-                        // is never auto-inverted so a custom blue stays blue.
+                        // bar; user-custom hex is kept (auto-flipped only when
+                        // it would be unreadable). Accent (today/selected) gets
+                        // the same readability fallback so the blue "today"
+                        // column never vanishes into the photo.
                         final weekdayColor = homePageOverWallpaperInk(
                           configuredHex: configuredWeekdayHex,
                           defaultHex: isDark
@@ -1873,6 +1872,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                         final accentColor = homePageOverWallpaperAccent(
                           configuredHex: configuredAccentHex,
                           themeFallback: colorScheme.primary,
+                          hasBackdrop: weekdayChromeOverWallpaper,
+                          wallpaperLuminance: weekdayLuminance,
                         );
                         final labelColor = (isSelected || isToday)
                             ? accentColor
@@ -1969,6 +1970,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                     settings: settings,
                     week: rowWeek,
                     visibleDays: visibleDays,
+                    wallpaperOverChrome: weekdayChromeOverWallpaper,
+                    wallpaperLuminance: weekdayLuminance,
                   ),
               ],
             ),
@@ -2068,6 +2071,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required int week,
     required List<int> visibleDays,
+    required bool wallpaperOverChrome,
+    required double? wallpaperLuminance,
   }) {
     final controller = _dayViewPageController;
     if (!_shouldShowDayViewOverlay ||
@@ -2090,6 +2095,8 @@ class _TimetableScreenState extends State<TimetableScreen>
           ? settings.weekdayBarAccentColorDark
           : settings.weekdayBarAccentColorLight,
       themeFallback: colorScheme.primary,
+      hasBackdrop: wallpaperOverChrome,
+      wallpaperLuminance: wallpaperLuminance,
     );
 
     return IgnorePointer(

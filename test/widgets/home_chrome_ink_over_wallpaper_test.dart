@@ -97,6 +97,7 @@ Future<void> _pumpHome(
   int scope, {
   bool headerBlur = false,
   bool weekdayBlur = false,
+  String? weekdayHex,
 }) async {
   await tester.runAsync(() async {
     await provider.updateTimetableSettings(
@@ -105,6 +106,7 @@ Future<void> _pumpHome(
         homePageBackgroundScope: scope,
         homePageHeaderBlurEnabled: headerBlur,
         homePageWeekdayBarBlurEnabled: weekdayBlur,
+        weekdayBarFontColorLight: weekdayHex,
         semesterStartDate: DateTime(2026, 7, 27),
       ),
     );
@@ -227,6 +229,59 @@ void main() {
       // black, not the wallpaper-flipped white.
       expect(_textColor(tester, '周一'), const Color(0xFF000000));
       expect(_textColor(tester, '1周'), const Color(0xFF000000));
+    },
+  );
+
+  testWidgets(
+    'custom dark weekday ink over a dark wallpaper: auto-flips to white and '
+    'explains itself once',
+    (tester) async {
+      _seedInitializedPrefs();
+      final dir = Directory.systemTemp.createTempSync('mikcb_ink_');
+      addTearDown(() {
+        PaintingBinding.instance.imageCache.clear();
+        try {
+          dir.deleteSync(recursive: true);
+        } on FileSystemException {
+          // ignored
+        }
+      });
+      // A hand-picked dark grey (#3C3C3C ≈ 1.9:1 against the black band)
+      // would render invisible over the dark wallpaper; the readability
+      // fallback must flip it to auto white instead of showing the ugly
+      // dark-on-dark the user complained about.
+      final wallpaper = await tester.runAsync(
+        () => _writeWallpaper(dir, topLightFraction: 0.0),
+      );
+      final provider = await createInitializedTestProvider(tester);
+      await _pumpHome(
+        tester,
+        provider,
+        wallpaper!.path,
+        _scopeAll,
+        weekdayHex: '#3C3C3C',
+      );
+
+      // The one-shot explainer dialog is up: it tells the user the colour is
+      // temporarily auto-flipped and offers resetting the default.
+      expect(find.text('文字对比度不足'), findsOneWidget);
+      expect(find.text('知道了'), findsOneWidget);
+      expect(find.text('恢复默认'), findsOneWidget);
+
+      // The weekday chrome renders the auto white ink, not the custom grey.
+      expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
+      expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
+      expect(
+        _textColor(tester, '07/27'),
+        homePageChromeForegroundOnDark.withValues(alpha: 0.72),
+      );
+
+      await tester.tap(find.text('知道了'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('文字对比度不足'), findsNothing);
+      // Still white after dismissing — the fallback is not tied to the dialog.
+      expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
     },
   );
 }

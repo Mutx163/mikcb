@@ -661,6 +661,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                       ? settings.weekdayBarAccentColorDark
                       : settings.weekdayBarAccentColorLight,
                   themeFallback: colorScheme.primary,
+                  hasBackdrop: weekdayChromeOverWallpaper,
+                  wallpaperLuminance: weekdayLuminance,
                 );
                 final labelColor = isToday ? accentColor : weekdayColor;
                 final subLabelColor = isToday

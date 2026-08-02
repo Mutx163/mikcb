@@ -16432,26 +16432,26 @@ abstract class AppLocalizations {
   /// No description provided for @weekdayInkContrastTitle.
   ///
   /// In zh, this message translates to:
-  /// **'文字对比度增强'**
+  /// **'文字对比度不足'**
   String get weekdayInkContrastTitle;
 
   /// No description provided for @weekdayInkContrastBodyDark.
   ///
   /// In zh, this message translates to:
-  /// **'深色模式下增强课程文字对比度'**
+  /// **'你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
   String get weekdayInkContrastBodyDark;
 
   /// No description provided for @weekdayInkContrastBodyLight.
   ///
   /// In zh, this message translates to:
-  /// **'浅色模式下增强课程文字对比度'**
+  /// **'你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
   String get weekdayInkContrastBodyLight;
 
-  /// No description provided for @keepCurrentColorAction.
+  /// No description provided for @gotItAction.
   ///
   /// In zh, this message translates to:
-  /// **'保留当前颜色'**
-  String get keepCurrentColorAction;
+  /// **'知道了'**
+  String get gotItAction;
 
   /// No description provided for @settingsTimetableSectionTitle.
   ///

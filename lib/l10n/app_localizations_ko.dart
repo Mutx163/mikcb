@@ -9358,16 +9358,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get selectEndTimeTitle => '종료 시간 선택';
 
   @override
-  String get weekdayInkContrastTitle => '텍스트 대비 향상';
+  String get weekdayInkContrastTitle => '텍스트 대비 부족';
 
   @override
-  String get weekdayInkContrastBodyDark => '다크 모드에서 강의 텍스트 대비를 향상시킵니다';
+  String get weekdayInkContrastBodyDark =>
+      '요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 충분하지 않아 일시적으로 자동 흰색을 사용합니다. 가독성을 보장하기 위한 조치이며, \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다.';
 
   @override
-  String get weekdayInkContrastBodyLight => '라이트 모드에서 강의 텍스트 대비를 향상시킵니다';
+  String get weekdayInkContrastBodyLight =>
+      '요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 충분하지 않아 일시적으로 자동 검은색을 사용합니다. 가독성을 보장하기 위한 조치이며, \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다.';
 
   @override
-  String get keepCurrentColorAction => '현재 색상 유지';
+  String get gotItAction => '알겠습니다';
 
   @override
   String get settingsTimetableSectionTitle => '시간표';

@@ -9598,18 +9598,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectEndTimeTitle => 'Select End Time';
 
   @override
-  String get weekdayInkContrastTitle => 'Text Contrast Enhancement';
+  String get weekdayInkContrastTitle => 'Low Text Contrast';
 
   @override
   String get weekdayInkContrastBodyDark =>
-      'Enhance course text contrast in dark mode';
+      'Your weekday bar text color has too little contrast against the dark wallpaper, so it is temporarily using automatic white to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      'Enhance course text contrast in light mode';
+      'Your weekday bar text color has too little contrast against the light wallpaper, so it is temporarily using automatic black to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".';
 
   @override
-  String get keepCurrentColorAction => 'Keep Current Color';
+  String get gotItAction => 'Got it';
 
   @override
   String get settingsTimetableSectionTitle => 'Timetable';

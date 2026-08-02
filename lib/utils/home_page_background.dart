@@ -385,7 +385,9 @@ bool homePageInkUsesBuiltInDefault(String? configuredHex, String defaultHex) {
 /// Ink for weekday / time-axis chrome over the home wallpaper.
 ///
 /// - No wallpaper → [themeFallback] (or the configured hex when set).
-/// - User customized away from [defaultHex] → always the configured color.
+/// - User customized away from [defaultHex] → the configured colour, unless it
+///   would be unreadable over the wallpaper band: then the automatic black/
+///   white flip takes over ([homePageInkHasSufficientContrast]).
 /// - Still on the built-in default + dark/light wallpaper → same black/white
 ///   flip as the title logo ([homePageChromeForegroundForLuminance]).
 Color homePageOverWallpaperInk({
@@ -403,6 +405,20 @@ Color homePageOverWallpaperInk({
     return configured ?? themeFallback;
   }
   if (!usesDefault && configured != null) {
+    // A user-picked colour stays as long as it keeps ~3:1 contrast against
+    // the wallpaper band behind this chrome; below that the ink would render
+    // invisible over the photo, so fall back to the auto black/white flip.
+    // The custom colour returns as soon as the wallpaper (or this region's
+    // view of it) is gone.
+    final luminance = wallpaperLuminance;
+    if (luminance != null &&
+        !homePageInkHasSufficientContrast(configured, luminance)) {
+      return homePageChromeForegroundForLuminance(
+        luminance,
+        darkThreshold: darkThreshold,
+        fallback: configured,
+      );
+    }
     return configured;
   }
   return homePageChromeForegroundForLuminance(
@@ -412,15 +428,51 @@ Color homePageOverWallpaperInk({
   );
 }
 
-/// Accent (today / selected day) over wallpaper: **never** auto-inverted.
+/// Whether [ink] keeps at least ~3:1 contrast against a wallpaper band of
+/// [wallpaperLuminance].
 ///
-/// Custom blues etc. stay as the user set them; only the unset path falls back
-/// to [themeFallback] (usually [ColorScheme.primary]).
+/// Photos are busy, so anything above 3:1 is left alone; below it the ink is
+/// treated as invisible over the wallpaper and auto-contrast takes over.
+/// Mirrors the threshold used by the home page's low-contrast explainer.
+bool homePageInkHasSufficientContrast(
+  Color ink,
+  double wallpaperLuminance, {
+  double minContrastRatio = 3.0,
+}) {
+  final inkLuminance = ink.computeLuminance();
+  final hi = math.max(inkLuminance, wallpaperLuminance);
+  final lo = math.min(inkLuminance, wallpaperLuminance);
+  return (hi + 0.05) / (lo + 0.05) >= minContrastRatio;
+}
+
+/// Accent (today / selected day) over wallpaper.
+///
+/// Custom blues etc. stay as the user set them — unless they would be
+/// unreadable over the wallpaper band (contrast below ~3:1), in which case
+/// the automatic black/white flip takes over so the "today" column never
+/// vanishes into the photo. The unset path falls back to [themeFallback]
+/// (usually [ColorScheme.primary]).
 Color homePageOverWallpaperAccent({
   required String? configuredHex,
   required Color themeFallback,
+  bool hasBackdrop = false,
+  double? wallpaperLuminance,
+  double darkThreshold = 0.45,
 }) {
-  return tryParseHexColor(configuredHex) ?? themeFallback;
+  final configured = tryParseHexColor(configuredHex) ?? themeFallback;
+  if (!hasBackdrop) {
+    return configured;
+  }
+  final luminance = wallpaperLuminance;
+  if (luminance != null &&
+      !homePageInkHasSufficientContrast(configured, luminance)) {
+    return homePageChromeForegroundForLuminance(
+      luminance,
+      darkThreshold: darkThreshold,
+      fallback: configured,
+    );
+  }
+  return configured;
 }
 
 /// Secondary/muted label derived from an already-resolved primary ink.

@@ -9322,16 +9322,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selectEndTimeTitle => '終了時間を選択';
 
   @override
-  String get weekdayInkContrastTitle => 'テキストコントラスト強化';
+  String get weekdayInkContrastTitle => '文字のコントラスト不足';
 
   @override
-  String get weekdayInkContrastBodyDark => 'ダークモードでコーステキストのコントラストを強化';
+  String get weekdayInkContrastBodyDark =>
+      '曜日バーの文字色は濃い壁紙とのコントラストが不足しているため、一時的に自動の白に切り替えています。可読性を保つための措置で、「時間割ページ → 文字色」で色を変更またはリセットできます。';
 
   @override
-  String get weekdayInkContrastBodyLight => 'ライトモードでコーステキストのコントラストを強化';
+  String get weekdayInkContrastBodyLight =>
+      '曜日バーの文字色は明るい壁紙とのコントラストが不足しているため、一時的に自動の黒に切り替えています。可読性を保つための措置で、「時間割ページ → 文字色」で色を変更またはリセットできます。';
 
   @override
-  String get keepCurrentColorAction => '現在の色を保持';
+  String get gotItAction => 'わかりました';
 
   @override
   String get settingsTimetableSectionTitle => '時間割';

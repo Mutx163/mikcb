@@ -9067,16 +9067,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectEndTimeTitle => '选择结束时间';
 
   @override
-  String get weekdayInkContrastTitle => '文字对比度增强';
+  String get weekdayInkContrastTitle => '文字对比度不足';
 
   @override
-  String get weekdayInkContrastBodyDark => '深色模式下增强课程文字对比度';
+  String get weekdayInkContrastBodyDark =>
+      '你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
 
   @override
-  String get weekdayInkContrastBodyLight => '浅色模式下增强课程文字对比度';
+  String get weekdayInkContrastBodyLight =>
+      '你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
 
   @override
-  String get keepCurrentColorAction => '保留当前颜色';
+  String get gotItAction => '知道了';
 
   @override
   String get settingsTimetableSectionTitle => '课表';
@@ -17785,16 +17787,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get selectEndTimeTitle => '選擇結束時間';
 
   @override
-  String get weekdayInkContrastTitle => '文字對比度增強';
+  String get weekdayInkContrastTitle => '文字對比度不足';
 
   @override
-  String get weekdayInkContrastBodyDark => '深色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyDark =>
+      '你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get weekdayInkContrastBodyLight => '淺色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyLight =>
+      '你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get keepCurrentColorAction => '保留目前顏色';
+  String get gotItAction => '知道了';
 
   @override
   String get settingsTimetableSectionTitle => '時間表';
@@ -26503,16 +26507,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get selectEndTimeTitle => '選擇結束時間';
 
   @override
-  String get weekdayInkContrastTitle => '文字對比度增強';
+  String get weekdayInkContrastTitle => '文字對比度不足';
 
   @override
-  String get weekdayInkContrastBodyDark => '深色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyDark =>
+      '你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get weekdayInkContrastBodyLight => '淺色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyLight =>
+      '你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get keepCurrentColorAction => '保留目前顏色';
+  String get gotItAction => '知道了';
 
   @override
   String get settingsTimetableSectionTitle => '課表';
