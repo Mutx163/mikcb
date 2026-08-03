@@ -30,9 +30,8 @@ abstract final class SystemFontWeightService {
 
 /// 让子树内的 flutter_miuix 组件字重跟随系统字体粗细。
 ///
-/// flutter_miuix 的文字默认不随系统字重变化（不像 Compose 由 Android Typeface
-/// 自动套用 fontWeightAdjustment）。此 scope 读取原生增量（Android 12+），失败时
-/// 回退到 [MediaQueryData.boldText]，据此为子树提供一个"已按角色分级平移字重"的
+/// 此 scope 读取原生增量（Android 12+），失败时回退到
+/// [MediaQueryData.boldText]，据此为子树提供一个"已按角色分级平移字重"的
 /// [MiuixTheme]，并屏蔽 Flutter 框架对 [Text] 的统一加粗，避免盖掉分级结果。
 ///
 /// 字重由系统配置决定；配色与亮度在没有显式 Miuix 主题时跟随外层

@@ -44,6 +44,64 @@ void main() {
     },
   );
 
+  testWidgets('short-page title and body share one spring progress', (
+    tester,
+  ) async {
+    late BuildContext notificationContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            notificationContext = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    final behavior = HyperosExitUntilCollapsedScrollBehavior();
+    behavior.state.heightOffsetLimit = -expansion;
+    behavior.state.largeTitleTextHeight = textHeight;
+
+    FixedScrollMetrics metrics(double pixels) {
+      return FixedScrollMetrics(
+        minScrollExtent: 0,
+        maxScrollExtent: 0,
+        pixels: pixels,
+        viewportDimension: 600,
+        axisDirection: AxisDirection.down,
+        devicePixelRatio: 1,
+      );
+    }
+
+    behavior.handleScroll(
+      ScrollUpdateNotification(
+        metrics: metrics(40),
+        context: notificationContext,
+        dragDetails: DragUpdateDetails(
+          globalPosition: Offset.zero,
+          delta: Offset(0, -40),
+          primaryDelta: -40,
+        ),
+      ),
+    );
+    behavior.handleScroll(
+      ScrollUpdateNotification(
+        metrics: metrics(30),
+        context: notificationContext,
+      ),
+    );
+
+    expect(behavior.shortPageSpringReleasePixels, 40);
+    expect(behavior.shortPageSpringTargetPixels, 0);
+    expect(behavior.shortPageSpringProgressForPixels(30), closeTo(0.25, 0.001));
+    expect(behavior.state.heightOffset, closeTo(-41.5, 0.001));
+
+    // The body transform consumes this same progress value rather than a
+    // second release anchor captured by the page shell.
+    expect(behavior.shortPageSpringProgressForPixels(20), closeTo(0.5, 0.001));
+  });
+
   testWidgets('short-page title follows the overscroll spring', (tester) async {
     late BuildContext notificationContext;
     await tester.pumpWidget(
@@ -154,6 +212,135 @@ void main() {
     expect(controller.position.pixels, 0);
   });
 
+  testWidgets('short-page in-range release animates instead of jumping', (
+    tester,
+  ) async {
+    final behavior = HyperosExitUntilCollapsedScrollBehavior();
+    behavior.state.heightOffsetLimit = -expansion;
+    behavior.state.largeTitleTextHeight = textHeight;
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 160,
+            child: HyperosCollapsibleScrollListener(
+              behavior: behavior,
+              child: ListView(
+                controller: controller,
+                physics: const ClampingScrollPhysics(),
+                children: const [SizedBox(height: 95), SizedBox(height: 95)],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(controller.position.maxScrollExtent, closeTo(30, 0.001));
+    controller.jumpTo(25);
+    await tester.pump();
+    expect(behavior.state.heightOffset, closeTo(-25, 0.001));
+
+    final scrollable = find.byType(ListView);
+    behavior.handleScroll(
+      ScrollEndNotification(
+        metrics: controller.position,
+        context: tester.element(scrollable),
+      ),
+    );
+    await tester.pump();
+
+    // The target is the collapsed title, but the first animation frame must
+    // still preserve the release state instead of assigning -expansion.
+    expect(behavior.state.heightOffset, greaterThan(-expansion));
+    expect(behavior.shortPageSpringReleasePixels, 25);
+    expect(behavior.shortPageSpringTargetPixels, 0);
+
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(behavior.state.heightOffset, lessThan(-25));
+    expect(behavior.state.heightOffset, greaterThan(-expansion));
+
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(controller.position.pixels, 0);
+    expect(behavior.state.heightOffset, -expansion);
+  });
+
+  testWidgets('a reverse short-page drag takes over the spring session', (
+    tester,
+  ) async {
+    late BuildContext notificationContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            notificationContext = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    final behavior = HyperosExitUntilCollapsedScrollBehavior();
+    behavior.state.heightOffsetLimit = -expansion;
+    behavior.state.largeTitleTextHeight = textHeight;
+
+    FixedScrollMetrics metrics(double pixels) {
+      return FixedScrollMetrics(
+        minScrollExtent: 0,
+        maxScrollExtent: 0,
+        pixels: pixels,
+        viewportDimension: 600,
+        axisDirection: AxisDirection.down,
+        devicePixelRatio: 1,
+      );
+    }
+
+    behavior.handleScroll(
+      ScrollUpdateNotification(
+        metrics: metrics(40),
+        context: notificationContext,
+        dragDetails: DragUpdateDetails(
+          globalPosition: Offset.zero,
+          delta: Offset(0, -40),
+          primaryDelta: -40,
+        ),
+      ),
+    );
+    behavior.handleScroll(
+      ScrollUpdateNotification(
+        metrics: metrics(30),
+        context: notificationContext,
+      ),
+    );
+    expect(behavior.shortPageSpringReleasePixels, 40);
+
+    behavior.handleScroll(
+      ScrollStartNotification(
+        metrics: metrics(30),
+        context: notificationContext,
+        dragDetails: DragStartDetails(globalPosition: Offset.zero),
+      ),
+    );
+    expect(behavior.shortPageSpringReleasePixels, isNull);
+
+    behavior.handleScroll(
+      ScrollUpdateNotification(
+        metrics: metrics(10),
+        context: notificationContext,
+        dragDetails: DragUpdateDetails(
+          globalPosition: Offset.zero,
+          delta: Offset(0, -20),
+          primaryDelta: -20,
+        ),
+      ),
+    );
+    expect(behavior.state.heightOffset, -10);
+    expect(behavior.shortPageSpringProgressForPixels(10), isNull);
+  });
+
   Future<
     ({
       HyperosExitUntilCollapsedScrollBehavior behavior,
@@ -223,5 +410,32 @@ void main() {
       expansion + HyperosCollapsibleTopAppBarDefaults.collapseSnapRestTighten,
     );
     expect(harness.behavior.state.heightOffset, -expansion);
+  });
+
+  testWidgets('half-cut threshold keeps its upper/lower-half contract', (
+    tester,
+  ) async {
+    const cuts = <({double cut, double expectedOffset})>[
+      (cut: textHeight * 0.49, expectedOffset: 0),
+      (cut: textHeight * 0.50, expectedOffset: -expansion),
+      (cut: textHeight * 0.51, expectedOffset: -expansion),
+    ];
+
+    for (final cutCase in cuts) {
+      final harness = await pumpHarness(tester);
+      harness.controller.jumpTo(cutCase.cut);
+      await tester.pump();
+
+      final scrollable = find.byType(ListView);
+      harness.behavior.handleScroll(
+        ScrollEndNotification(
+          metrics: harness.controller.position,
+          context: tester.element(scrollable),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      expect(harness.behavior.state.heightOffset, cutCase.expectedOffset);
+    }
   });
 }
