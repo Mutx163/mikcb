@@ -419,9 +419,6 @@ enum CourseCardSurfaceStyle {
   /// Semi-transparent milky card.
   translucent,
 
-  /// Liquid-glass refraction shader (high-end devices only).
-  liquidGlass,
-
   /// Gaussian blur backdrop over the page background.
   gaussian,
 }
@@ -430,6 +427,12 @@ extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   String get value => name;
 
   static CourseCardSurfaceStyle fromValue(String? value) {
+    // Older settings may still contain the removed liquid-glass card style.
+    // Migrate it to the safe opaque default instead of exposing or rendering
+    // that unsupported course-card material again.
+    if (value == 'liquidGlass') {
+      return CourseCardSurfaceStyle.solid;
+    }
     return CourseCardSurfaceStyle.values.firstWhere(
       (item) => item.value == value,
       orElse: () => CourseCardSurfaceStyle.solid,
@@ -1108,9 +1111,11 @@ class TimetableSettings {
   final HomePageBackgroundFill homePageBackgroundFill;
   final String? homePageBackgroundImagePath;
   final String? homePageWallpaperPath;
+
   /// 壁纸在页面内的水平对齐（-1 靠左 … 0 居中 … 1 靠右），用于横向壁纸
   /// 拖动选择显示区域；竖屏壁纸下 cover 不会水平溢出，该值不产生位移。
   final double homePageWallpaperAlignX;
+
   /// 壁纸在页面内的垂直对齐（-1 靠上 … 0 居中 … 1 靠下），用于长图壁纸
   /// 拖动选择显示区域；cover 下高度未溢出时该值不产生位移。
   final double homePageWallpaperAlignY;

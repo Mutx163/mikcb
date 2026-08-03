@@ -16231,12 +16231,6 @@ abstract class AppLocalizations {
   /// **'半透明'**
   String get courseCardSurfaceStyleTranslucent;
 
-  /// No description provided for @courseCardSurfaceStyleLiquidGlass.
-  ///
-  /// In zh, this message translates to:
-  /// **'液态玻璃'**
-  String get courseCardSurfaceStyleLiquidGlass;
-
   /// No description provided for @courseCardSurfaceStyleGaussian.
   ///
   /// In zh, this message translates to:

@@ -427,6 +427,25 @@ void main() {
     expect(restored.timetableCourseCardGap, 2.0);
   });
 
+  test('removed course-card liquid glass setting migrates to solid', () {
+    final restored = TimetableSettings.fromJson({
+      ...TimetableSettings.defaults().toJson(),
+      'courseCardSurfaceStyle': 'liquidGlass',
+    });
+
+    expect(restored.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
+  });
+
+  test('gaussian course-card style survives json round trip', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
+    );
+
+    final restored = TimetableSettings.fromJson(settings.toJson());
+
+    expect(restored.courseCardSurfaceStyle, CourseCardSurfaceStyle.gaussian);
+  });
+
   test('mirror preset resolves built-in and custom prefixes', () {
     expect(
       resolveAppUpdateMirrorUrlPrefix(

@@ -9260,9 +9260,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => '반투명';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '리퀴드 글래스';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '가우시안 블러';
 
   @override

@@ -5567,7 +5567,6 @@
   "courseCardSurfaceStyleSubtitle": "Choose the visual style for course cards",
   "courseCardSurfaceStyleSolid": "Solid",
   "courseCardSurfaceStyleTranslucent": "Translucent",
-  "courseCardSurfaceStyleLiquidGlass": "Liquid Glass",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
   "courseCardSectionColor": "Color",
   "liveSelfCheckTitle": "Self-Check",

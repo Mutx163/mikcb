@@ -8968,9 +8968,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '液态玻璃';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
@@ -17703,9 +17700,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
@@ -26436,9 +26430,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseCardSurfaceStyleTranslucent => '半透明';
-
-  @override
-  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
 
   @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';

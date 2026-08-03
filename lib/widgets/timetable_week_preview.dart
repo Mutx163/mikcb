@@ -14,7 +14,7 @@ import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/home_page_background.dart';
 import 'course_card.dart';
-import 'course_card_liquid_glass_host.dart';
+import 'course_grid_surface_host.dart';
 
 /// Renders the home week timetable surface for settings previews.
 class TimetableWeekPreview extends StatefulWidget {
@@ -381,11 +381,11 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                           SizedBox(height: chromeGridClearance),
                         SizedBox(
                           height: bodyHeight,
-                          // Same glass hosting as the home grid: one shared
+                          // Same surface hosting as the home grid: one shared
                           // backdrop capture for the whole preview instead of one
                           // per card. Matters doubly here because the settings
                           // header's CFH pass rasterises this subtree offscreen.
-                          child: CourseGridGlassHost(
+                          child: CourseGridSurfaceHost(
                             settings: settings,
                             child: IgnorePointer(child: grid),
                           ),
@@ -925,7 +925,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // No per-column glass host here: this method builds one weekday column, so
     // hosting at this level meant seven separate layers — and therefore seven
     // backdrop captures — for one preview. The whole grid is hosted once by
-    // CourseGridGlassHost instead, matching the home page.
+    // CourseGridSurfaceHost instead, matching the home page.
     return Container(
       height: visibleSectionCount * sectionHeight,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),

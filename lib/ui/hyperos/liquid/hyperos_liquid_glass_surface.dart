@@ -22,13 +22,6 @@ enum HyperosLiquidGlassRole {
 
   /// Full-width top app bar (no corner radius).
   header,
-
-  /// Dense timetable course cards (many instances on one page).
-  ///
-  /// Prefer a per-day [HyperosLiquidGlassLayer] + [sharedLayer] shapes (see
-  /// [CourseCardLiquidGlassHost]). Standalone default is [FakeGlass] so a lone
-  /// card never spawns an expensive own-layer path.
-  courseCard,
 }
 
 /// How a [HyperosLiquidGlassSurface] obtains its liquid-glass layer.
@@ -190,8 +183,6 @@ class _HyperosLiquidGlassLayerState extends State<HyperosLiquidGlassLayer> {
 /// - Sparse single panels (sheet / header) → [HyperosLiquidGlassLayerMode.ownLayer]
 /// - Several siblings with identical settings → wrap in [HyperosLiquidGlassLayer]
 ///   and use [HyperosLiquidGlassLayerMode.sharedLayer]
-/// - Dense course cards → day-column shared layer ([sharedLayer]); fallback [fake]
-///
 /// Content legibility follows the package default
 /// (`glassContainsChild: false`): labels sit *on top of* the glass, never
 /// inside the refracted material. Sheets/headers also get a soft fill under
@@ -264,8 +255,6 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     HyperosLiquidGlassRole role,
   ) {
     return switch (role) {
-      // Standalone fallback only. Timetable wraps cards in a shared host.
-      HyperosLiquidGlassRole.courseCard => HyperosLiquidGlassLayerMode.fake,
       HyperosLiquidGlassRole.sheet ||
       HyperosLiquidGlassRole.header ||
       HyperosLiquidGlassRole.nestedTile => HyperosLiquidGlassLayerMode.ownLayer,
@@ -335,8 +324,7 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
         switch (role) {
           HyperosLiquidGlassRole.sheet =>
             MikcbLiquidGlassTokens.sheetBorderRadius(),
-          HyperosLiquidGlassRole.nestedTile ||
-          HyperosLiquidGlassRole.courseCard =>
+          HyperosLiquidGlassRole.nestedTile =>
             MikcbLiquidGlassTokens.nestedTileBorderRadius(),
           HyperosLiquidGlassRole.header => 0,
         };
@@ -468,12 +456,7 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       HyperosLiquidGlassRole.header ||
       HyperosLiquidGlassRole.nestedTile =>
         brightness == Brightness.dark ? 0.50 : 0.56,
-      // Course cards own their hue/contrast through the course wash.
-      HyperosLiquidGlassRole.courseCard => null,
     };
-    if (targetFloor == null) {
-      return child;
-    }
 
     // glassColor already contributes some milky wash; only add the shortfall.
     final fillAlpha = (targetFloor - glassTintAlpha).clamp(0.10, 0.50);

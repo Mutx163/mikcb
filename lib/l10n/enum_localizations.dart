@@ -279,6 +279,5 @@ String courseCardSurfaceStyleLabel(
 ) => switch (style) {
   CourseCardSurfaceStyle.solid => l10n.courseCardSurfaceStyleSolid,
   CourseCardSurfaceStyle.translucent => l10n.courseCardSurfaceStyleTranslucent,
-  CourseCardSurfaceStyle.liquidGlass => l10n.courseCardSurfaceStyleLiquidGlass,
   CourseCardSurfaceStyle.gaussian => l10n.courseCardSurfaceStyleGaussian,
 };

@@ -9223,9 +9223,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => 'リキッドガラス';
-
-  @override
   String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
 
   @override

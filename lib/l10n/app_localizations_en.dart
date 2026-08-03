@@ -9501,9 +9501,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => 'Translucent';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => 'Liquid Glass';
-
-  @override
   String get courseCardSurfaceStyleGaussian => 'Gaussian Blur';
 
   @override
