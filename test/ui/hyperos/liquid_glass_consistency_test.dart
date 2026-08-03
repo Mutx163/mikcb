@@ -33,6 +33,21 @@ void main() {
   });
 
   group('modal liquid glass sampling', () {
+    test('all modal roles resolve identical liquid settings', () {
+      for (final brightness in Brightness.values) {
+        final header = HyperosLiquidGlassSurface.settingsForRole(
+          role: HyperosLiquidGlassRole.header,
+          brightness: brightness,
+        );
+        final modal = HyperosLiquidGlassSurface.settingsForRole(
+          role: HyperosLiquidGlassRole.modal,
+          brightness: brightness,
+        );
+
+        expect(modal, header);
+      }
+    });
+
     testWidgets('showHyperosSheet builds an undimmed capture group', (
       tester,
     ) async {
