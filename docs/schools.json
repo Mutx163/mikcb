@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-02T04:56:43+00:00",
+  "updatedAt": "2026-08-03T05:06:23+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 133,
-    "schools": 128,
+    "total": 134,
+    "schools": 129,
     "generic": 5
   },
   "schools": [
@@ -573,6 +573,13 @@
       "name": "南京工业大学",
       "initial": "N",
       "resourceFolder": "NJTECH",
+      "category": "school"
+    },
+    {
+      "id": "NIIT",
+      "name": "南京工业职业技术大学",
+      "initial": "N",
+      "resourceFolder": "NIIT",
       "category": "school"
     },
     {
