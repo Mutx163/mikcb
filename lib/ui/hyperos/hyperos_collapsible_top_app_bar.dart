@@ -1060,9 +1060,6 @@ class _HyperosCollapsibleTopAppBarState
     final hasSubtitle = widget.subtitle.isNotEmpty;
     const collapsedHeight = HyperosCollapsibleTopAppBarDefaults.collapsedHeight;
 
-    final largeTitleHeight = _largeTitleSize?.height ?? 0;
-    final expansion = largeTitleHeight.clamp(0.0, double.infinity);
-
     final largeTitleStyle = _largeTitleStyle(largeTitleColor);
     final smallTitleStyle = _smallTitleStyle(titleColor);
 
@@ -1085,6 +1082,15 @@ class _HyperosCollapsibleTopAppBarState
       _smallTitleTextWidth = smallPainter.width;
       smallPainter.dispose();
     }
+
+    // The render-box measurement is published after the first frame. Using
+    // zero until then makes the bar paint at collapsed height first, then
+    // grow into its expanded height while the route is already sliding in.
+    // The text painter above has already calculated the same single-line glyph
+    // height synchronously, so use it as the first-frame geometry and let the
+    // render-box measurement refine it later without a visible jump.
+    final largeTitleHeight = _largeTitleSize?.height ?? _largeTitleTextHeight;
+    final expansion = largeTitleHeight.clamp(0.0, double.infinity);
 
     final verticalCenter = collapsedHeight / 2;
     final smallSubtitleHeight = hasSubtitle

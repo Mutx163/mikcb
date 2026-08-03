@@ -9,6 +9,41 @@ import 'package:university_timetable/ui/hyperos/hyperos_overscroll.dart';
 ///   tightened so the first content row sits flush under the small-title band
 ///   (1px shy of the frost threshold — header must not turn frosted).
 void main() {
+  testWidgets('collapsible app bar starts expanded on its first frame', (
+    tester,
+  ) async {
+    final scrollBehavior = HyperosExitUntilCollapsedScrollBehavior();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HyperosCollapsibleTopAppBar(
+            title: 'Time schemes',
+            scrollBehavior: scrollBehavior,
+            navigationIcon: const Icon(Icons.arrow_back),
+          ),
+        ),
+      ),
+    );
+
+    final firstFrameHeight = tester
+        .getSize(find.byType(HyperosCollapsibleTopAppBar))
+        .height;
+    expect(
+      firstFrameHeight,
+      greaterThan(
+        HyperosCollapsibleTopAppBarDefaults.collapsedHeight +
+            HyperosCollapsibleTopAppBarDefaults.largeTitleFontSize,
+      ),
+    );
+
+    await tester.pump();
+    final measuredFrameHeight = tester
+        .getSize(find.byType(HyperosCollapsibleTopAppBar))
+        .height;
+    expect(measuredFrameHeight, closeTo(firstFrameHeight, 0.1));
+  });
+
   const double expansion = 46.0; // measured large-title block height
   const double textHeight = 38.4; // large title glyph height (32sp * 1.2)
 
