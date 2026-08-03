@@ -1124,6 +1124,7 @@ class TimetableSettings {
   final String timetableUnifiedCardColor;
   final String appUpdateDownloadSource;
   final String appUpdateDownloadChannel;
+  final bool appUpdateUseSystemDownloader;
   final String appUpdateMirrorPreset;
   final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
@@ -1292,6 +1293,7 @@ class TimetableSettings {
     this.timetableUnifiedCardColor = '#2563EB',
     this.appUpdateDownloadSource = 'mirror',
     this.appUpdateDownloadChannel = 'pgyer',
+    this.appUpdateUseSystemDownloader = false,
     this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
@@ -1610,6 +1612,7 @@ class TimetableSettings {
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
       'appUpdateDownloadSource': appUpdateDownloadSource,
       'appUpdateDownloadChannel': appUpdateDownloadChannel,
+      'appUpdateUseSystemDownloader': appUpdateUseSystemDownloader,
       'appUpdateMirrorPreset': appUpdateMirrorPreset,
       'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
@@ -1944,6 +1947,8 @@ class TimetableSettings {
           json['appUpdateDownloadSource'] as String? ?? 'mirror',
       appUpdateDownloadChannel:
           json['appUpdateDownloadChannel'] as String? ?? 'pgyer',
+      appUpdateUseSystemDownloader:
+          json['appUpdateUseSystemDownloader'] as bool? ?? false,
       appUpdateMirrorPreset: (rawAppUpdateMirrorPreset == null
           ? AppUpdateMirrorPresetX.fromUrlPrefix(
               rawAppUpdateMirrorUrlPrefix,
@@ -2164,6 +2169,7 @@ class TimetableSettings {
     String? timetableUnifiedCardColor,
     String? appUpdateDownloadSource,
     String? appUpdateDownloadChannel,
+    bool? appUpdateUseSystemDownloader,
     String? appUpdateMirrorPreset,
     bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
@@ -2436,6 +2442,8 @@ class TimetableSettings {
           appUpdateDownloadSource ?? this.appUpdateDownloadSource,
       appUpdateDownloadChannel:
           appUpdateDownloadChannel ?? this.appUpdateDownloadChannel,
+      appUpdateUseSystemDownloader:
+          appUpdateUseSystemDownloader ?? this.appUpdateUseSystemDownloader,
       appUpdateMirrorPreset:
           appUpdateMirrorPreset ?? this.appUpdateMirrorPreset,
       appUpdateIncludePrerelease:

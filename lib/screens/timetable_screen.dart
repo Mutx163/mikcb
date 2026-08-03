@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/course.dart';
 import '../models/exam.dart';
@@ -24,6 +25,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
+import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
@@ -36,6 +38,7 @@ import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_top_menu.dart';
+import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/week_selector_picker_sheet.dart';
@@ -175,7 +178,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   late final ValueNotifier<int> _visibleWeekListenable;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
+  final SupportCreatorService _supportCreatorService = SupportCreatorService();
+  final HomeUpdatePromptController _updatePromptController =
+      HomeUpdatePromptController();
   bool _hasAvailableUpdate = false;
+  bool _isUpdatePromptVisible = false;
+  bool _hasPresentedUpdatePrompt = false;
+  AppUpdateDownloadController? _homeDownloadController;
+  StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
   TimetableProvider? _lastSyncedProvider;
@@ -319,6 +329,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
+    _homeDownloadController?.cancel();
+    _systemDownloadSubscription?.cancel();
+    _updatePromptController.dispose();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
     final dayViewController = _dayViewPageController;
@@ -7082,11 +7095,215 @@ class _TimetableScreenState extends State<TimetableScreen>
       setState(() {
         _hasAvailableUpdate = result.hasUpdate;
       });
+      _scheduleHomeUpdatePrompt(result);
     } catch (_) {
       // Ignore update check failures on home screen; About page provides details.
     } finally {
       _isCheckingForUpdate = false;
     }
+  }
+
+  void _scheduleHomeUpdatePrompt(AppUpdateCheckResult result) {
+    if (!result.hasUpdate ||
+        result.latestRelease == null ||
+        _hasPresentedUpdatePrompt ||
+        _isUpdatePromptVisible) {
+      return;
+    }
+    final release = result.latestRelease!;
+    final provider = context.read<TimetableProvider>();
+    final settings = provider.settings;
+    final channel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    final source = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
+    final effectiveDownloadUrl = _updateService.getEffectiveDownloadUrl(
+      release: release,
+      channel: channel,
+      source: source,
+      mirrorUrlPrefix: mirrorPrefix,
+    );
+    final hasDirectDownload =
+        effectiveDownloadUrl != null && effectiveDownloadUrl.trim().isNotEmpty;
+    final promptDownloadUrl = effectiveDownloadUrl ?? release.releaseUrl;
+    if (promptDownloadUrl.trim().isEmpty) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _hasPresentedUpdatePrompt || _isUpdatePromptVisible) {
+        return;
+      }
+      if (ModalRoute.of(context)?.isCurrent != true) {
+        return;
+      }
+      _hasPresentedUpdatePrompt = true;
+      _isUpdatePromptVisible = true;
+      unawaited(
+        _showHomeUpdatePromptAndTrackState(
+          release: release,
+          currentVersion: result.currentVersion,
+          channel: channel,
+          downloadUrl: promptDownloadUrl,
+          hasDirectDownload: hasDirectDownload,
+        ),
+      );
+    });
+  }
+
+  Future<void> _showHomeUpdatePromptAndTrackState({
+    required AppReleaseInfo release,
+    required String currentVersion,
+    required AppUpdateDownloadChannel channel,
+    required String downloadUrl,
+    required bool hasDirectDownload,
+  }) async {
+    try {
+      await showHomeUpdatePrompt(
+        context,
+        release: release,
+        currentVersion: currentVersion,
+        downloadChannel: channel,
+        hasDirectDownload: hasDirectDownload,
+        controller: _updatePromptController,
+        onDownload: () async {
+          if (!hasDirectDownload) {
+            await _openUpdateReleasePage(release.releaseUrl);
+            return false;
+          }
+          return _startHomeUpdateDownload(
+            release: release,
+            channel: channel,
+            downloadUrl: downloadUrl,
+          );
+        },
+        onViewRelease: () => _openUpdateReleasePage(release.releaseUrl),
+        onCancelDownload: _cancelHomeUpdateDownload,
+      );
+    } finally {
+      _isUpdatePromptVisible = false;
+    }
+  }
+
+  Future<bool> _startHomeUpdateDownload({
+    required AppReleaseInfo release,
+    required AppUpdateDownloadChannel channel,
+    required String downloadUrl,
+  }) async {
+    if (channel == AppUpdateDownloadChannel.pgyer) {
+      await _openUpdateReleasePage(downloadUrl);
+      return false;
+    }
+
+    final settings = context.read<TimetableProvider>().settings;
+    if (settings.appUpdateDownloadChannel ==
+        AppUpdateDownloadChannel.pgyer.value) {
+      await _openUpdateReleasePage(downloadUrl);
+      return false;
+    }
+
+    if (_useSystemUpdateDownloader(settings)) {
+      final version = release.version.trim().replaceAll(' ', '_');
+      final downloadId = await _supportCreatorService.enqueueSystemDownload(
+        url: downloadUrl,
+        fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
+        title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
+        description: AppLocalizations.of(
+          context,
+        )!.aboutUpdatePackageDescription,
+      );
+      if (downloadId == null) {
+        return false;
+      }
+      final initialProgress = await _supportCreatorService
+          .querySystemDownloadProgress(downloadId);
+      if (initialProgress != null) {
+        _updatePromptController.beginSystemDownload(
+          downloadId: downloadId,
+          progress: initialProgress,
+        );
+      }
+      _watchSystemUpdateDownload(downloadId);
+      return true;
+    }
+
+    final controller = AppUpdateDownloadController();
+    _homeDownloadController = controller;
+    _updatePromptController.beginInAppDownload();
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
+    final error = await _updateService.downloadAndInstallUpdate(
+      downloadUrl,
+      (downloadedBytes, totalBytes) {
+        _updatePromptController.updateInAppProgress(
+          downloadedBytes,
+          totalBytes,
+        );
+      },
+      controller,
+      mirrorUrlPrefix: mirrorPrefix,
+    );
+    if (!mounted) {
+      return true;
+    }
+    _homeDownloadController = null;
+    final wasCancelled = error == AppUpdateService.downloadCancelledMessage;
+    _updatePromptController.finishInAppDownload(
+      success: error == null,
+      cancelled: wasCancelled,
+    );
+    if (wasCancelled) {
+      return true;
+    }
+    return true;
+  }
+
+  bool _useSystemUpdateDownloader(TimetableSettings settings) {
+    return settings.appUpdateUseSystemDownloader;
+  }
+
+  void _watchSystemUpdateDownload(int downloadId) {
+    unawaited(() async {
+      try {
+        await for (final progress
+            in _supportCreatorService.watchSystemDownloadProgress(downloadId)) {
+          if (!mounted) {
+            return;
+          }
+          _updatePromptController.updateSystemDownload(progress);
+        }
+      } catch (_) {
+        // The system queue can briefly disappear while the provider starts;
+        // keep the prompt visible and let the next observation recover.
+      }
+    }());
+  }
+
+  void _cancelHomeUpdateDownload() {
+    _homeDownloadController?.cancel();
+    _updatePromptController.markCancelling();
+  }
+
+  Future<void> _openUpdateReleasePage(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 

@@ -647,6 +647,19 @@ class MainActivity : FlutterActivity() {
                             result.error("DOWNLOAD_ENQUEUE_FAILED", e.message, null)
                         }
                     }
+                    "getSystemDownloadProgress" -> {
+                        val arguments = call.arguments as? Map<*, *>
+                        val downloadId = (arguments?.get("downloadId") as? Number)?.toLong()
+                        if (downloadId == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing download id", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            result.success(querySystemDownloadProgress(downloadId))
+                        } catch (e: Exception) {
+                            result.error("DOWNLOAD_QUERY_FAILED", e.message, null)
+                        }
+                    }
                     "saveImageToGallery" -> {
                         val arguments = call.arguments as? Map<*, *>
                         val bytes = arguments?.get("bytes") as? ByteArray
@@ -1037,6 +1050,50 @@ class MainActivity : FlutterActivity() {
         val downloadId = downloadManager.enqueue(request)
         rememberManagedUpdateDownload(downloadId)
         return downloadId
+    }
+
+    private fun querySystemDownloadProgress(downloadId: Long): Map<String, Any?> {
+        val downloadManager =
+            getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+                ?: throw IllegalStateException("DownloadManager unavailable")
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        downloadManager.query(query).use { cursor ->
+            if (!cursor.moveToFirst()) {
+                return mapOf(
+                    "status" to "unknown",
+                    "downloadedBytes" to 0L,
+                    "totalBytes" to -1L,
+                    "reason" to null,
+                )
+            }
+
+            val status = when (
+                cursor.getInt(
+                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS),
+                )
+            ) {
+                DownloadManager.STATUS_PENDING -> "pending"
+                DownloadManager.STATUS_RUNNING -> "running"
+                DownloadManager.STATUS_PAUSED -> "paused"
+                DownloadManager.STATUS_SUCCESSFUL -> "successful"
+                DownloadManager.STATUS_FAILED -> "failed"
+                else -> "unknown"
+            }
+            val downloadedBytes = cursor.getLong(
+                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR),
+            )
+            val totalBytes = cursor.getLong(
+                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES),
+            )
+            val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+            val reason = if (reasonIndex >= 0) cursor.getInt(reasonIndex) else null
+            return mapOf(
+                "status" to status,
+                "downloadedBytes" to downloadedBytes,
+                "totalBytes" to totalBytes,
+                "reason" to reason,
+            )
+        }
     }
 
     private fun sanitizeDownloadFileName(fileName: String): String {
