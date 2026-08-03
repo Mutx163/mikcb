@@ -106,11 +106,13 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('测试与诊断'),
+      find.byKey(const ValueKey<String>('settings-live-self-check')),
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('测试与诊断'));
+    await tester.tap(
+      find.byKey(const ValueKey<String>('settings-live-self-check')),
+    );
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
@@ -200,10 +202,9 @@ void main() {
         .pixels;
     expect(pixelsBefore, greaterThan(100));
 
-    final liveTile = find.widgetWithText(HyperosListTile, '超级岛与通知');
-    final onTap = tester.widget<HyperosListTile>(liveTile).onTap;
-    expect(onTap, isNotNull);
-    onTap!.call();
+    final liveTile = find.byKey(const ValueKey<String>('settings-live-entry'));
+    expect(liveTile, findsOneWidget);
+    await tester.tap(liveTile);
     await tester.pumpAndSettle();
     expect(find.text('提醒时段'), findsWidgets);
 

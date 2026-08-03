@@ -836,6 +836,7 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
               : l10n.liveIslandLabelEntryDisabled)
         : null;
     return _MiuixSettingsPreference(
+      key: const ValueKey<String>('settings-live-entry'),
       startAction: _settingsIconBadge(
         MiuixIcons.extended.byName('alarm')!,
         HyperosIconColors.orange,
@@ -1020,6 +1021,7 @@ Widget _settingsIconBadge(MiuixVectorIcon icon, Color accent) {
 /// 内层 [MiuixArrowPreference] 只负责显示。
 class _MiuixSettingsPreference extends StatelessWidget {
   const _MiuixSettingsPreference({
+    super.key,
     required this.startAction,
     required this.title,
     this.endActions,

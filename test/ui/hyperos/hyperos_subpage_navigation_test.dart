@@ -498,14 +498,7 @@ void main() {
     await pumpBlurSettleFrames(tester);
     await tester.pump();
 
-    Finder headerScope() {
-      return find.ancestor(
-        of: find.text('Settings'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is HyperosBlurredHeaderScope,
-        ),
-      );
-    }
+    Finder headerScope() => find.byType(HyperosBlurredHeaderScope);
 
     expect(
       tester
