@@ -1259,6 +1259,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not decompress the received data. Please restart.';
 
   @override
+  String get qrTransferPlaintextWarning =>
+      'QR transfer is plaintext. Nearby cameras may read it. Review the source before importing; nothing is overwritten without your confirmation.';
+
+  @override
+  String get qrTransferResourceLimit =>
+      'Received data exceeded the QR transfer resource limit. Restart and use a smaller backup.';
+
+  @override
+  String get qrTransferSessionExpired =>
+      'QR transfer timed out. Restart and keep the camera pointed at one screen.';
+
+  @override
+  String get qrTransferFullBackupWarning =>
+      'This full backup will replace the data on this device after confirmation.';
+
+  @override
+  String get qrTransferImportFullBackup => 'Import Full Backup';
+
+  @override
   String get qrTransferDecodeFailed =>
       'Could not decode the QR transfer. Please restart.';
 

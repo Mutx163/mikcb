@@ -9,6 +9,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../services/qr_transfer/qr_transfer_codec.dart';
+import '../services/qr_transfer/qr_transfer_session.dart';
 
 /// 发送端全屏二维码流页面。
 ///
@@ -54,6 +55,7 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   Timer? _frameTimer;
   int _currentSeed = 0;
   final Map<int, QrCode> _qrCache = {};
+  String? _errorMessageKey;
 
   @override
   void initState() {
@@ -75,6 +77,13 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
       return;
     }
     final nextSeed = _currentSeed + 1;
+    if (nextSeed >= QrTransferLimits.maxUniqueSeedCount) {
+      _frameTimer?.cancel();
+      setState(() {
+        _errorMessageKey = 'qr_transfer_frame_budget_exceeded';
+      });
+      return;
+    }
     // 兜底：极端情况下计时器回调先于预计算跑到，这里补算。
     _qrCache.putIfAbsent(nextSeed, () => _buildQrCode(nextSeed));
     setState(() {
@@ -94,7 +103,10 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
 
   /// 预计算 [maxSeed] 以内的帧矩阵（未缓存过才计算）。
   void _precomputeUpTo(int maxSeed) {
-    for (var seed = _currentSeed + 1; seed <= maxSeed; seed++) {
+    final cappedMaxSeed = maxSeed < QrTransferLimits.maxUniqueSeedCount
+        ? maxSeed
+        : QrTransferLimits.maxUniqueSeedCount - 1;
+    for (var seed = _currentSeed + 1; seed <= cappedMaxSeed; seed++) {
       _qrCache.putIfAbsent(seed, () => _buildQrCode(seed));
     }
   }
@@ -234,6 +246,13 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
                     height: 1.4,
                   ),
                 ),
+                if (_errorMessageKey != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.qrTransferResourceLimit,
+                    style: const TextStyle(color: Colors.orangeAccent),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 HyperosButton(
                   label: l10n.qrTransferStop,

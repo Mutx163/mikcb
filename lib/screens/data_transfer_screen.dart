@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
+import '../services/qr_transfer/qr_transfer_codec.dart';
+import '../services/qr_transfer/qr_transfer_session.dart';
 import 'qr_transfer_send_screen.dart';
 import 'qr_transfer_scan_screen.dart';
 import '../utils/app_toast.dart';
@@ -85,6 +87,13 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   Text(
                     l10n.qrTransferSectionSubtitle,
                     style: HyperosTypography.listDetail(context),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.qrTransferPlaintextWarning,
+                    style: HyperosTypography.listDetail(
+                      context,
+                    ).copyWith(color: Colors.orangeAccent),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -372,15 +381,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       settings: provider.settings,
       currentWeek: provider.currentWeek,
     );
-    if (!mounted) {
-      return;
-    }
-    await HyperosNavigation.pushWidget<void>(
-      context,
-      QrTransferSendScreen(
-        payloadBytes: Uint8List.fromList(utf8.encode(content)),
-        title: l10n.qrTransferSendCurrent,
-      ),
+    await _openQrSender(
+      Uint8List.fromList(utf8.encode(content)),
+      l10n.qrTransferSendCurrent,
     );
   }
 
@@ -392,15 +395,31 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       activeProfileId: provider.activeProfileId,
       timeSchemes: provider.timeSchemes,
     );
+    await _openQrSender(
+      Uint8List.fromList(utf8.encode(content)),
+      l10n.qrTransferSendAll,
+    );
+  }
+
+  Future<void> _openQrSender(Uint8List payloadBytes, String title) async {
+    try {
+      QrTransferEncoder.preflight(payloadBytes);
+    } on QrTransferLimitException {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.qrTransferResourceLimit,
+          kind: AppToastKind.error,
+        );
+      }
+      return;
+    }
     if (!mounted) {
       return;
     }
     await HyperosNavigation.pushWidget<void>(
       context,
-      QrTransferSendScreen(
-        payloadBytes: Uint8List.fromList(utf8.encode(content)),
-        title: l10n.qrTransferSendAll,
-      ),
+      QrTransferSendScreen(payloadBytes: payloadBytes, title: title),
     );
   }
 
@@ -438,55 +457,24 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         throw const FormatException('qr_transfer_invalid_utf8');
       }
       final provider = context.read<TimetableProvider>();
-
-      if (provider.dataTransferService.isFullBackupJson(content)) {
-        final message = await provider.importFullAppDataBackup(content);
-        if (!mounted) {
-          return;
-        }
-        showAppToast(
-          context,
-          message: message != null
-              ? localizeServiceMessage(l10n, message)
-              : l10n.backupRestoredSuccess,
-          kind: message != null ? AppToastKind.error : AppToastKind.success,
-        );
-        return;
-      }
-
-      final importMode = await showHyperosDialog<_BackupImportMode>(
-        context: context,
-        title: l10n.selectImportModeTitle,
-        message: l10n.selectImportModeMessage,
-        actions: [
-          HyperosDialogAction(
-            label: l10n.cancelAction,
-            onPressed: () => Navigator.pop(context),
-          ),
-          HyperosDialogAction(
-            label: l10n.replaceCurrentTimetable,
-            isPrimary: true,
-            onPressed: () =>
-                Navigator.pop(context, _BackupImportMode.replaceCurrent),
-          ),
-          HyperosDialogAction(
-            label: l10n.importAsNewTimetable,
-            onPressed: () =>
-                Navigator.pop(context, _BackupImportMode.importAsNew),
-          ),
-        ],
+      final isFullBackup = provider.dataTransferService.isFullBackupJson(
+        content,
       );
+      final importMode = isFullBackup
+          ? await _confirmQrFullBackupImport(l10n)
+          : await _selectQrImportMode(l10n);
       if (importMode == null || !mounted) {
         return;
       }
 
-      final message = switch (importMode) {
-        _BackupImportMode.replaceCurrent => await provider.importAppDataBackup(
-          content,
-        ),
-        _BackupImportMode.importAsNew =>
-          await provider.importAppDataBackupAsNewProfile(content),
-      };
+      final message = isFullBackup
+          ? await provider.importFullAppDataBackup(content)
+          : switch (importMode) {
+              _BackupImportMode.replaceCurrent =>
+                await provider.importAppDataBackup(content),
+              _BackupImportMode.importAsNew =>
+                await provider.importAppDataBackupAsNewProfile(content),
+            };
       if (!mounted) {
         return;
       }
@@ -527,6 +515,55 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         });
       }
     }
+  }
+
+  Future<_BackupImportMode?> _selectQrImportMode(AppLocalizations l10n) async {
+    return showHyperosDialog<_BackupImportMode>(
+      context: context,
+      title: l10n.selectImportModeTitle,
+      message:
+          '${l10n.qrTransferPlaintextWarning}\n\n${l10n.selectImportModeMessage}',
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context),
+        ),
+        HyperosDialogAction(
+          label: l10n.replaceCurrentTimetable,
+          isPrimary: true,
+          onPressed: () =>
+              Navigator.pop(context, _BackupImportMode.replaceCurrent),
+        ),
+        HyperosDialogAction(
+          label: l10n.importAsNewTimetable,
+          onPressed: () =>
+              Navigator.pop(context, _BackupImportMode.importAsNew),
+        ),
+      ],
+    );
+  }
+
+  Future<_BackupImportMode?> _confirmQrFullBackupImport(
+    AppLocalizations l10n,
+  ) async {
+    final confirmed = await showHyperosDialog<bool>(
+      context: context,
+      title: l10n.selectImportModeTitle,
+      message:
+          '${l10n.qrTransferPlaintextWarning}\n\n${l10n.qrTransferFullBackupWarning}',
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        HyperosDialogAction(
+          label: l10n.qrTransferImportFullBackup,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context, true),
+        ),
+      ],
+    );
+    return confirmed == true ? _BackupImportMode.replaceCurrent : null;
   }
 
   String _formatDate(DateTime date) {
