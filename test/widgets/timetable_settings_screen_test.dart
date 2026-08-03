@@ -17,6 +17,10 @@ Future<void> _pumpScreen(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 500));
 }
 
+Finder _scrollableUnder(Finder host) {
+  return find.descendant(of: host, matching: find.byType(Scrollable)).first;
+}
+
 void _seedInitializedPrefs() {
   final now = DateTime(2026, 4, 12);
   final settings = TimetableSettings.defaults();
@@ -97,26 +101,29 @@ void main() {
     );
     await _pumpScreen(tester);
 
+    final homeList = find.byType(HyperosListView).first;
     await tester.scrollUntilVisible(
       find.text('超级岛与通知'),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _scrollableUnder(homeList),
     );
     await tester.tap(find.text('超级岛与通知'));
     await tester.pumpAndSettle();
 
+    final liveList = find.byType(HyperosListView).last;
     await tester.scrollUntilVisible(
-      find.text('测试与诊断'),
+      find.text('自检'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: _scrollableUnder(liveList),
     );
-    await tester.tap(find.text('测试与诊断'));
+    await tester.tap(find.text('自检'));
     await tester.pumpAndSettle();
 
+    final diagnosticsList = find.byType(HyperosListView).last;
     await tester.scrollUntilVisible(
       find.textContaining('自动刷新'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: _scrollableUnder(diagnosticsList),
     );
     expect(find.textContaining('每 1 秒自动拉取一次诊断状态'), findsOneWidget);
     expect(find.textContaining('上次刷新：'), findsOneWidget);
@@ -138,10 +145,11 @@ void main() {
     );
     await _pumpScreen(tester);
 
+    final homeList = find.byType(HyperosListView).first;
     await tester.scrollUntilVisible(
       find.text('超级岛与通知'),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _scrollableUnder(homeList),
     );
     await tester.tap(find.text('超级岛与通知'));
     await tester.pumpAndSettle();
@@ -157,7 +165,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('时间阈值'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: _scrollableUnder(find.byType(HyperosListView).last),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('20 分钟').first);
@@ -183,10 +191,8 @@ void main() {
     );
     await _pumpScreen(tester);
 
-    final homeScrollable = find.descendant(
-      of: find.byType(HyperosListView).first,
-      matching: find.byType(Scrollable),
-    );
+    final homeList = find.byType(HyperosListView).first;
+    final homeScrollable = _scrollableUnder(homeList);
     await tester.scrollUntilVisible(
       find.text('超级岛与通知'),
       200,
@@ -200,8 +206,8 @@ void main() {
         .pixels;
     expect(pixelsBefore, greaterThan(100));
 
-    final liveTile = find.widgetWithText(HyperosListTile, '超级岛与通知');
-    final onTap = tester.widget<HyperosListTile>(liveTile).onTap;
+    final liveTile = find.widgetWithText(HyperosPressableRow, '超级岛与通知');
+    final onTap = tester.widget<HyperosPressableRow>(liveTile).onTap;
     expect(onTap, isNotNull);
     onTap!.call();
     await tester.pumpAndSettle();
