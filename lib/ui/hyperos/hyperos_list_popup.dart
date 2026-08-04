@@ -39,6 +39,7 @@ Future<T?> showHyperosListPopup<T>({
   required RelativeRect? position,
   required List<HyperosPopupMenuItem<T>> items,
 }) {
+  final appearance = FrostedAppearanceScope.of(context);
   if (position == null || items.isEmpty) {
     return Future.value();
   }
@@ -50,7 +51,10 @@ Future<T?> showHyperosListPopup<T>({
     barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return _HyperosListPopupBody<T>(position: position, items: items);
+      return FrostedAppearanceScope(
+        appearance: appearance,
+        child: _HyperosListPopupBody<T>(position: position, items: items),
+      );
     },
   );
 }

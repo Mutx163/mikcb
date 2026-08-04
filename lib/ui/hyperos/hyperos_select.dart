@@ -107,6 +107,7 @@ Future<T?> showHyperosSelectPopup<T>({
   required T? currentValue,
   TextStyle? Function(T value)? itemTitleStyleBuilder,
 }) {
+  final appearance = FrostedAppearanceScope.of(context);
   final entries = items.entries.toList(growable: false);
   if (entries.isEmpty || anchorRect == null) {
     return Future.value();
@@ -122,11 +123,14 @@ Future<T?> showHyperosSelectPopup<T>({
     // Opacity layer that degrades the LiquidGlass shader (black flash).
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return _HyperosSelectPopupBody<T>(
-        anchorRect: anchorRect,
-        entries: entries,
-        currentValue: currentValue,
-        itemTitleStyleBuilder: itemTitleStyleBuilder,
+      return FrostedAppearanceScope(
+        appearance: appearance,
+        child: _HyperosSelectPopupBody<T>(
+          anchorRect: anchorRect,
+          entries: entries,
+          currentValue: currentValue,
+          itemTitleStyleBuilder: itemTitleStyleBuilder,
+        ),
       );
     },
   );

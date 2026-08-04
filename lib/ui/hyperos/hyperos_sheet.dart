@@ -579,6 +579,7 @@ Future<T?> showHyperosSheet<T>({
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) {
+  final appearance = FrostedAppearanceScope.of(context);
   final dimColor =
       barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context);
 
@@ -595,9 +596,12 @@ Future<T?> showHyperosSheet<T>({
       final keyboardInset = padForKeyboard
           ? MediaQuery.viewInsetsOf(dialogContext).bottom
           : 0.0;
-      final sheetContent = HyperosSheetChromeScope(
-        chrome: chrome,
-        child: builder(dialogContext),
+      final sheetContent = FrostedAppearanceScope(
+        appearance: appearance,
+        child: HyperosSheetChromeScope(
+          chrome: chrome,
+          child: builder(dialogContext),
+        ),
       );
 
       // Wrap drag-to-dismiss around the sheet content (not the full-screen

@@ -91,42 +91,121 @@ void main() {
     });
   });
 
-  group('grouped backdrop sampling for the chrome band', () {
-    testWidgets(
-      'own-layer glass requests the grouped backdrop',
-      (tester) async {
+  group('demo sheet follows the selected glass mode', () {
+    for (final mode in FrostedGlassMode.values) {
+      testWidgets('$mode does not render liquid tiles unless selected', (
+        tester,
+      ) async {
+        final appearance = FrostedAppearance(
+          sheetBlurSigma: 15,
+          sheetTintAlpha: 0.7,
+          sheetBarrierAlpha: 0.2,
+          glassMode: mode,
+        );
+
         await tester.pumpWidget(
           TestApp(
             home: FrostedAppearanceScope(
-              appearance: _liquidAppearance,
-              child: BackdropGroup(
-                child: Stack(
-                  children: [
-                    const Positioned.fill(child: UndimmedBackdropCapture()),
-                    const HyperosLiquidGlassSurface(
-                      role: HyperosLiquidGlassRole.header,
-                      useAncestorBackdropGroup: true,
-                      child: SizedBox(width: 100, height: 50),
-                    ),
-                  ],
-                ),
-              ),
+              appearance: appearance,
+              child: const FrostedSheetSettingsDemoSheet(),
             ),
           ),
         );
         await tester.pump();
 
-        // The surface must request ancestor-group sampling — on real shader
-        // engines this builds LiquidGlassLayer(useBackdropGroup: true) so the
-        // band samples the group's full-size capture instead of its own
-        // narrow bounds (the Skia/fake fallback keeps the group key on its
-        // own). On this test engine the flag is what we can assert.
-        final surface = tester.widget<HyperosLiquidGlassSurface>(
-          find.byType(HyperosLiquidGlassSurface),
+        final liquid = mode == FrostedGlassMode.liquidGlass;
+        expect(
+          find.byType(HyperosLiquidGlassLayer),
+          liquid ? findsOneWidget : findsNothing,
         );
-        expect(surface.useAncestorBackdropGroup, isTrue);
+        expect(
+          find.byType(HyperosLiquidGlassSurface),
+          liquid ? findsNWidgets(5) : findsNothing,
+        );
+      });
+    }
+
+    testWidgets(
+      'demo route keeps the draft mode across the navigator boundary',
+      (tester) async {
+        const savedAppearance = _liquidAppearance;
+        const draftAppearance = FrostedAppearance(
+          sheetBlurSigma: 15,
+          sheetTintAlpha: 0.7,
+          sheetBarrierAlpha: 0.2,
+          glassMode: FrostedGlassMode.gaussian,
+        );
+
+        await tester.pumpWidget(
+          TestApp(
+            home: FrostedAppearanceScope(
+              appearance: savedAppearance,
+              child: Navigator(
+                onGenerateRoute: (_) => MaterialPageRoute(
+                  builder: (context) => FrostedAppearanceScope(
+                    appearance: draftAppearance,
+                    child: Builder(
+                      builder: (context) => ElevatedButton(
+                        onPressed: () => showFrostedSheetSettingsDemo(context),
+                        child: const Text('Open demo'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open demo'));
+        await tester.pumpAndSettle();
+
+        // Without the appearance snapshot, the dialog route would resolve the
+        // ancestor's saved liquid mode and build a liquid outer panel + tiles.
+        expect(find.byType(HyperosLiquidGlassLayer), findsNothing);
+        expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+        expect(find.text('课程统计'), findsOneWidget);
+        expect(find.text('课表设置'), findsOneWidget);
+        expect(find.text('导入课程'), findsOneWidget);
       },
     );
+  });
+
+  group('grouped backdrop sampling for the chrome band', () {
+    testWidgets('own-layer glass requests the grouped backdrop', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: FrostedAppearanceScope(
+            appearance: _liquidAppearance,
+            child: BackdropGroup(
+              child: Stack(
+                children: [
+                  const Positioned.fill(child: UndimmedBackdropCapture()),
+                  const HyperosLiquidGlassSurface(
+                    role: HyperosLiquidGlassRole.header,
+                    useAncestorBackdropGroup: true,
+                    child: SizedBox(width: 100, height: 50),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The surface must request ancestor-group sampling — on real shader
+      // engines this builds LiquidGlassLayer(useBackdropGroup: true) so the
+      // band samples the group's full-size capture instead of its own
+      // narrow bounds (the Skia/fake fallback keeps the group key on its
+      // own). On this test engine the flag is what we can assert.
+      final surface = tester.widget<HyperosLiquidGlassSurface>(
+        find.byType(HyperosLiquidGlassSurface),
+      );
+      expect(surface.useAncestorBackdropGroup, isTrue);
+    });
 
     testWidgets(
       'preview band renders inside a BackdropGroup over the wallpaper '
