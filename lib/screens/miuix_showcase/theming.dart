@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'common.dart';
 
@@ -31,7 +32,7 @@ class ThemingShowcase extends StatelessWidget {
                   insideMargin: margin,
                   onClick: () => Navigator.of(
                     context,
-                  ).push(MaterialPageRoute(builder: (_) => e.$3)),
+                  ).push(HyperosPageRoute(builder: (_) => e.$3)),
                 ),
               ],
             ],

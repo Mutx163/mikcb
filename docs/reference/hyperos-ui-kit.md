@@ -213,7 +213,7 @@ Toast 入口：`lib/utils/app_toast.dart` → [app-toast.md](./app-toast.md)。
 | 界面 | 文件 | 状态 |
 |------|------|------|
 | 学期周数选择 | `semester_week_count_picker_sheet.dart` | ✅ `HyperosSheet` + `HyperosChoiceGroup` |
-| 时间方案 bottom sheet | `time_scheme_bottom_sheet.dart` | ✅ |
+| 时间方案 bottom sheet | `time_scheme_picker_sheet.dart` | ✅ |
 
 ### 3.5 表单 / 业务页
 
@@ -286,7 +286,7 @@ P0–P2 核心组件与 **全 app 对话框迁移** 已完成（§2.6）。仍�
 ### 阶段 F — 弹层与次要页 ✅
 
 - [x] `time_scheme_management_screen.dart`
-- [x] `time_scheme_bottom_sheet.dart`
+- [x] `time_scheme_picker_sheet.dart`
 - [x] `timetable_profiles_screen.dart`
 - [x] `course_overview_screen.dart`
 
