@@ -6,7 +6,13 @@ import 'package:university_timetable/widgets/miuix_fling_number_picker.dart';
 /// 回归：滚轮猛甩必须带惯性滚过多格（flutter_miuix 1.0.9 上游缺陷是
 /// 松手直接弹簧吸附到相邻一格，见 ChuxinNeko/flutter_miuix#2）。
 void main() {
-  Widget app(ValueChanged<int> onChanged, {required int value}) {
+  Widget app(
+    ValueChanged<int> onChanged, {
+    required int value,
+    int min = 1,
+    int max = 30,
+    MiuixFlingNumberPickerController? controller,
+  }) {
     return MiuixTheme(
       data: MiuixThemeData.light(),
       child: MaterialApp(
@@ -16,9 +22,10 @@ void main() {
               height: 225,
               width: 200,
               child: MiuixFlingNumberPicker(
+                controller: controller,
                 value: value,
-                min: 1,
-                max: 30,
+                min: min,
+                max: max,
                 onValueChanged: onChanged,
               ),
             ),
@@ -47,6 +54,36 @@ void main() {
       reason: '初速度 3000px/s 的甩动必须带惯性滚过多格，实际落在 $value',
     );
     expect(value, lessThanOrEqualTo(30), reason: '非循环模式不得越界');
+  });
+
+  testWidgets('快速甩动后立即确认提交最终落点', (tester) async {
+    var value = 8;
+    final controller = MiuixFlingNumberPickerController();
+    await tester.pumpWidget(
+      app(
+        (v) => value = v,
+        value: value,
+        min: 1,
+        max: 13,
+        controller: controller,
+      ),
+    );
+
+    await tester.fling(
+      find.byType(MiuixFlingNumberPicker),
+      const Offset(0, -90),
+      3000,
+    );
+    // Let the drag-end callback install its projected landing point, but do
+    // not wait for the decay/spring animation to finish.
+    await tester.pump();
+
+    final confirmedValue = controller.settle();
+    expect(confirmedValue, 13);
+    expect(value, 13, reason: '确认不应依赖惯性动画完成后的回调');
+
+    await tester.pumpAndSettle();
+    expect(value, 13);
   });
 
   testWidgets('轻推一格正常吸附', (tester) async {
