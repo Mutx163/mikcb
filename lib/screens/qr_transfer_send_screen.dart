@@ -42,7 +42,7 @@ class QrTransferSendScreen extends StatefulWidget {
 class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   /// 帧间隔。摄像头通常 100~300ms 即可识别一帧，250ms（4 FPS）在
   /// 识别余量与吞吐之间取平衡；LT 码本身抗丢帧，偶尔漏扫一帧也不影响解码。
-  static const Duration _frameInterval = Duration(milliseconds: 250);
+  static const Duration _frameInterval = QrTransferLimits.frameInterval;
 
   /// 提前预计算的帧数：当前帧之前先把未来四帧的 QR 矩阵算好，
   /// 把耗时移出 setState 关键路径，并为 250ms 帧间隔留足缓冲。

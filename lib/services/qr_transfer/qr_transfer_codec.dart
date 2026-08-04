@@ -37,6 +37,7 @@ class QrTransferFrame {
       QrTransferLimits.maxCompressedPayloadBytes;
   static const int maxRawLength = QrTransferLimits.maxRawPayloadBytes;
   static const int maxSeed = QrTransferLimits.maxSeed;
+  static const int maxDegree = QrTransferLimits.maxDegree;
 
   final QrTransferSessionInfo info;
   final int seed;
@@ -103,6 +104,7 @@ class QrTransferFrame {
     if (sourceSymbolCount > maxSourceSymbolCount ||
         symbolSize > maxSymbolSize ||
         degree > sourceSymbolCount ||
+        degree > maxDegree ||
         payloadLength > maxPayloadLength ||
         rawLength > maxRawLength ||
         payloadLength > maxPayloadBySymbols) {
@@ -248,6 +250,13 @@ class QrTransferEncoder {
         limit: QrTransferLimits.maxFrameCount,
       );
     }
+    if (estimatedFrameCount > QrTransferLimits.maxSessionFrameCount) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_session_duration_exceeded',
+        actual: estimatedFrameCount,
+        limit: QrTransferLimits.maxSessionFrameCount,
+      );
+    }
 
     return _PreparedTransfer(
       compressedPayload: compressedPayload,
@@ -275,6 +284,9 @@ class QrTransferEncoder {
     );
     final codec = LTCodec(
       config: FountainConfig(k: sourceSymbolCount, t: symbolSize),
+      maxDegree: QrTransferLimits.maxDegreeForSourceSymbolCount(
+        sourceSymbolCount,
+      ),
     )..setSourceData(compressedPayload);
 
     return QrTransferEncoder._(
@@ -325,6 +337,7 @@ class QrTransferDecoder {
   int _duplicateSymbols = 0;
   int _receivedSymbols = 0;
   int _innovativeSymbols = 0;
+  int _adjacencyEdges = 0;
   final Set<int> _submittedSeeds = {};
   QrTransferDecodeResult? _result;
   String? _terminalError;
@@ -378,6 +391,13 @@ class QrTransferDecoder {
         _submittedSeeds.length >= QrTransferLimits.maxUniqueSeedCount) {
       _fail('qr_transfer_unique_seed_limit');
     }
+    final maxAdjacencyEdges =
+        QrTransferLimits.maxAdjacencyEdgesForSourceSymbolCount(
+          frame.info.sourceSymbolCount,
+        );
+    if (!isDuplicate && frame.degree > maxAdjacencyEdges - _adjacencyEdges) {
+      _fail('qr_transfer_adjacency_edge_budget_exceeded');
+    }
     // 属于当前会话的识别结果都计入 detected（含重复帧），供接收端统计采样帧率。
     _detectedSymbols++;
     // 摄像头停在同一帧画面时可能反复识别出相同符号；重复提交只会
@@ -386,6 +406,7 @@ class QrTransferDecoder {
       _duplicateSymbols++;
       return progress;
     }
+    _adjacencyEdges += frame.degree;
     _receivedSymbols++;
 
     final symbol = Symbol(
@@ -492,6 +513,9 @@ class QrTransferDecoder {
     _sessionStartedAt = _now();
     final codec = LTCodec(
       config: FountainConfig(k: info.sourceSymbolCount, t: info.symbolSize),
+      maxDegree: QrTransferLimits.maxDegreeForSourceSymbolCount(
+        info.sourceSymbolCount,
+      ),
     );
     _codec = codec;
     return codec;
@@ -538,6 +562,7 @@ class QrTransferDecoder {
     _duplicateSymbols = 0;
     _receivedSymbols = 0;
     _innovativeSymbols = 0;
+    _adjacencyEdges = 0;
     _submittedSeeds.clear();
     _result = null;
     _terminalError = null;

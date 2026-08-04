@@ -15,6 +15,33 @@ class QrTransferLimits {
   static const int maxUniqueSeedCount = 16384;
   static const int maxSeed = 0x7fffffff;
   static const Duration maxSessionDuration = Duration(minutes: 15);
+
+  /// The sender displays one frame for this long before advancing.
+  static const Duration frameInterval = Duration(milliseconds: 250);
+
+  /// Keep the decoder's neighbor graph bounded even when frames do not decode.
+  ///
+  /// The fountain_codes package uses a degree of at most 100 for its normal
+  /// LT distribution. A 32-edge-per-source-symbol cap leaves ample room for
+  /// normal LT overhead while bounding attacker-controlled graph growth.
+  static const int maxDegree = 100;
+  static const int maxAdjacencyEdgesPerSourceSymbol = 32;
+  static const int maxAdjacencyEdges =
+      maxSourceSymbolCount * maxAdjacencyEdgesPerSourceSymbol;
+
+  static int maxDegreeForSourceSymbolCount(int sourceSymbolCount) =>
+      sourceSymbolCount < maxDegree ? sourceSymbolCount : maxDegree;
+
+  static int maxAdjacencyEdgesForSourceSymbolCount(int sourceSymbolCount) {
+    final scaled = sourceSymbolCount * maxAdjacencyEdgesPerSourceSymbol;
+    return scaled < maxAdjacencyEdges ? scaled : maxAdjacencyEdges;
+  }
+
+  /// This is intentionally conservative: the first frame is shown
+  /// immediately, but reserving one interval per frame guarantees that the
+  /// complete stream fits inside the receiver's wall-clock session limit.
+  static int get maxSessionFrameCount =>
+      maxSessionDuration.inMilliseconds ~/ frameInterval.inMilliseconds;
   static const int decompressionChunkBytes = 32 * 1024;
 
   const QrTransferLimits._();

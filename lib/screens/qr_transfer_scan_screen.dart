@@ -363,6 +363,8 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       'qr_transfer_session_expired' => l10n.qrTransferSessionExpired,
       'qr_transfer_frame_budget_exceeded' => l10n.qrTransferResourceLimit,
       'qr_transfer_unique_seed_limit' => l10n.qrTransferResourceLimit,
+      'qr_transfer_adjacency_edge_budget_exceeded' =>
+        l10n.qrTransferResourceLimit,
       _ => l10n.qrTransferDecodeFailed,
     };
   }

@@ -241,14 +241,22 @@ void main() {
     );
     expect(
       () => QrTransferFrame.parse(
-        _replaceFrameField(
-          frame,
-          7,
-          '${QrTransferFrame.maxSourceSymbolCount + 1}',
-        ),
+        _replaceFrameField(frame, 7, '${QrTransferLimits.maxDegree + 1}'),
       ),
       throwsFormatException,
     );
+    final highDegreeFrame = [
+      QrTransferFrame.magic,
+      '${QrTransferLimits.maxDegree + 1}',
+      '1',
+      '${QrTransferLimits.maxDegree + 1}',
+      '${QrTransferLimits.maxDegree + 1}',
+      base64Url.encode(List<int>.filled(32, 0)),
+      '0',
+      '${QrTransferLimits.maxDegree + 1}',
+      base64Url.encode([0]),
+    ].join(QrTransferFrame.fieldSeparator);
+    expect(() => QrTransferFrame.parse(highDegreeFrame), throwsFormatException);
     expect(
       () => QrTransferFrame.parse(
         '${frame}x' * QrTransferFrame.maxFrameTextLength,
@@ -328,6 +336,32 @@ void main() {
           (error) => error.code,
           'code',
           'qr_transfer_raw_payload_too_large',
+        ),
+      ),
+    );
+  });
+
+  test('发送端预检按250ms播放间隔限制15分钟会话', () {
+    expect(QrTransferLimits.frameInterval, const Duration(milliseconds: 250));
+    expect(QrTransferLimits.maxSessionFrameCount, 3600);
+
+    // Random bytes remain close to their input size after gzip, so this is
+    // above the 3,000-symbol / 3,600-frame session boundary.
+    final rng = Random(1234);
+    final raw = Uint8List(
+      ((QrTransferLimits.maxSessionFrameCount * 10) ~/ 12 + 1) * 2048,
+    );
+    for (var i = 0; i < raw.length; i++) {
+      raw[i] = rng.nextInt(256);
+    }
+
+    expect(
+      () => QrTransferEncoder.preflight(raw),
+      throwsA(
+        isA<QrTransferLimitException>().having(
+          (error) => error.code,
+          'code',
+          'qr_transfer_session_duration_exceeded',
         ),
       ),
     );
@@ -449,6 +483,49 @@ void main() {
       ),
     );
   });
+
+  test('接收端限制单帧 degree 与累计邻接边，避免图结构无限增长', () {
+    final decoder = QrTransferDecoder();
+    final hash = base64Url.encode(List<int>.filled(32, 0));
+    final degree = QrTransferLimits.maxDegree;
+    const sourceSymbolCount = 100;
+
+    String frameFor(int seed) {
+      return [
+        QrTransferFrame.magic,
+        '$sourceSymbolCount',
+        '1',
+        '$sourceSymbolCount',
+        '$sourceSymbolCount',
+        hash,
+        '$seed',
+        '$degree',
+        base64Url.encode([seed & 0xff]),
+      ].join(QrTransferFrame.fieldSeparator);
+    }
+
+    final acceptedFrameCount =
+        QrTransferLimits.maxAdjacencyEdgesForSourceSymbolCount(
+          sourceSymbolCount,
+        ) ~/
+        degree;
+    for (var seed = 0; seed < acceptedFrameCount; seed++) {
+      decoder.submitFrame(frameFor(seed));
+    }
+
+    expect(
+      () => decoder.submitFrame(frameFor(acceptedFrameCount)),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'qr_transfer_adjacency_edge_budget_exceeded',
+        ),
+      ),
+    );
+    expect(decoder.progress.receivedSymbols, acceptedFrameCount);
+  });
+
   test('发送端拒绝超过唯一 seed/frame 预算的帧', () {
     final encoder = QrTransferEncoder.prepare(utf8Bytes('frame budget'));
 
