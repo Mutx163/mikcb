@@ -936,7 +936,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       decoration: BoxDecoration(
         color: colors.muted.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: HyperosColors.outline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1094,7 +1094,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: fieldRadius,
-            border: Border.all(color: theme.colors.border),
+            border: Border.all(color: HyperosColors.outline(context)),
           ),
           alignment: Alignment.centerLeft,
           child: Row(
@@ -1153,7 +1153,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: fieldRadius,
-            border: Border.all(color: theme.colors.border),
+            border: Border.all(color: HyperosColors.outline(context)),
           ),
           alignment: Alignment.centerLeft,
           child: Row(
@@ -1197,7 +1197,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: fieldRadius,
-            border: Border.all(color: theme.colors.border),
+            border: Border.all(color: HyperosColors.outline(context)),
           ),
           alignment: Alignment.centerLeft,
           child: Row(
