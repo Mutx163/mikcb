@@ -42,6 +42,15 @@
       "notes": ""
     },
     {
+      "id": "ics-export",
+      "file": "lib/screens/ics_export_screen.dart",
+      "label": "ICS 日历导出",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "从数据传输页进入的日历文件导出子页"
+    },
+    {
       "id": "lan-edit",
       "file": "lib/screens/lan_edit_screen.dart",
       "label": "局域网编辑",

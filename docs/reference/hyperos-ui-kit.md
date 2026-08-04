@@ -223,6 +223,7 @@ Toast 入口：`lib/utils/app_toast.dart` → [app-toast.md](./app-toast.md)。
 |------|------|------|
 | 云同步 | `cloud_sync_screen.dart` | ✅ |
 | 数据传输 | `data_transfer_screen.dart` | ✅ |
+| ICS 日历导出 | `ics_export_screen.dart` | ✅（从数据传输页进入） |
 | 局域网编辑 | `lan_edit_screen.dart` | ✅ |
 | 关于 | `about_screen.dart` | ✅ |
 | 反馈 | `feedback_screen.dart` | ✅ |
