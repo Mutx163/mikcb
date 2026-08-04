@@ -13,6 +13,7 @@ import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
+import '../../widgets/miuix_date_picker_sheet.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
 
@@ -987,22 +988,12 @@ class HyperosDateTile extends StatelessWidget {
     if (!enabled || onChanged == null) return;
 
     final initial = value ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showMiuixDatePickerSheet(
+      context,
       initialDate: initial,
       firstDate: firstDate ?? DateTime(1970),
       lastDate: lastDate ?? DateTime(2100),
-      builder: (ctx, child) {
-        return Theme(
-          data: Theme.of(ctx).copyWith(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: HyperosColors.primary(ctx),
-              brightness: Theme.of(ctx).brightness,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
+      title: label,
     );
     if (picked != null) {
       onChanged!(picked);

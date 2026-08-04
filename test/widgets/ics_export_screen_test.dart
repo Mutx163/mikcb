@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -42,6 +43,26 @@ void main() {
     expect(find.text('日程'), findsOneWidget);
     expect(find.byKey(const Key('ics-export-share')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses the HyperOS Miuix date picker for the export range', (
+    tester,
+  ) async {
+    final provider = _testProvider();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: IcsExportScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('开始日期'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MiuixDatePicker), findsOneWidget);
+    expect(find.byType(DatePickerDialog), findsNothing);
   });
 
   testWidgets('empty event selection is reported without sharing', (
