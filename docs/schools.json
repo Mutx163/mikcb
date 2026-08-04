@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-03T05:06:23+00:00",
+  "updatedAt": "2026-08-04T04:45:38+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
@@ -16,17 +16,17 @@
       "category": "generic"
     },
     {
-      "id": "GLOBAL_TOOLS",
-      "name": "通用工具与服务",
-      "initial": "G",
-      "resourceFolder": "GLOBAL_TOOLS",
-      "category": "generic"
-    },
-    {
       "id": "qingguo_jiaowu",
       "name": "青果教务-通用教务",
       "initial": "Q",
       "resourceFolder": "qingguo_jiaowu",
+      "category": "generic"
+    },
+    {
+      "id": "GLOBAL_TOOLS",
+      "name": "通用工具与服务",
+      "initial": "T",
+      "resourceFolder": "GLOBAL_TOOLS",
       "category": "generic"
     },
     {
