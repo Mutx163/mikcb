@@ -15,6 +15,7 @@ import '../widgets/course_field_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
 import 'cloud_backup_list_screen.dart';
 import 'cloud_backup_ui_helpers.dart';
+import 'transfer_preview_dialog.dart';
 
 Widget _buttonLoadingPrefix() {
   return const SizedBox(
@@ -271,45 +272,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     final l10n = AppLocalizations.of(context)!;
     switch (action) {
       case CloudBackupDetailAction.restore:
-        final confirmed = await showAppConfirmDialog(
-          context,
-          title: l10n.cloudBackupRestoreTitle,
-          message: l10n.cloudBackupRestoreBody(
-            formatBackupDateTime(entry.exportedAt),
-          ),
-          confirmLabel: l10n.cloudBackupRestoreAction,
-        );
-        if (confirmed != true || !mounted) {
-          return;
-        }
-        final uploadAsCurrent = await showAppConfirmDialog(
-          context,
-          title: l10n.cloudBackupUploadAsCurrentTitle,
-          message: l10n.cloudBackupUploadAsCurrentBody,
-          confirmLabel: l10n.cloudBackupUploadAsCurrentYes,
-          cancelLabel: l10n.cloudBackupUploadAsCurrentNo,
-        );
-        final result = await _coordinator.restoreBackup(
-          entry.id,
-          uploadAsCurrent: uploadAsCurrent == true,
-        );
-        if (!mounted) {
-          return;
-        }
-        showAppToast(
-          context,
-          message: result.kind == WebdavSyncResultKind.backupRestored
-              ? l10n.cloudBackupRestoreSuccess
-              : l10n.cloudBackupRestoreFailed(
-                  CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
-                ),
-          kind: result.kind == WebdavSyncResultKind.backupRestored
-              ? AppToastKind.success
-              : AppToastKind.error,
-        );
-        if (result.kind == WebdavSyncResultKind.backupRestored) {
-          await _loadBackups();
-        }
+        await _restoreBackupThroughTransferHub(entry, l10n);
       case CloudBackupDetailAction.delete:
         final confirmed = await showAppConfirmDialog(
           context,
@@ -341,6 +304,93 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         if (result.kind == WebdavSyncResultKind.backupDeleted) {
           await _loadBackups();
         }
+    }
+  }
+
+  Future<void> _restoreBackupThroughTransferHub(
+    CloudBackupEntry entry,
+    AppLocalizations l10n,
+  ) async {
+    try {
+      final preview = await _coordinator.previewBackupRestore(entry.id);
+      if (!mounted || preview == null) {
+        return;
+      }
+      final mode = await showTransferPreviewDialog(
+        context: context,
+        title: l10n.cloudBackupRestoreTitle,
+        preview: preview.overwriteDiff,
+        alternatePreview: preview.mergeDiff,
+        incoming: preview.overwritePackage,
+      );
+      if (mode == null || !mounted) {
+        return;
+      }
+      final uploadAsCurrent = await showAppConfirmDialog(
+        context,
+        title: l10n.cloudBackupUploadAsCurrentTitle,
+        message: l10n.cloudBackupUploadAsCurrentBody,
+        confirmLabel: l10n.cloudBackupUploadAsCurrentYes,
+        cancelLabel: l10n.cloudBackupUploadAsCurrentNo,
+      );
+      if (!mounted) {
+        return;
+      }
+      final result = await _coordinator.applyPreviewedBackupRestore(
+        preview: preview,
+        mode: mode,
+        uploadAsCurrent: uploadAsCurrent == true,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (result.applied) {
+        showAppToastWithAction(
+          context,
+          message: l10n.cloudBackupRestoreSuccess,
+          actionLabel: l10n.themeUndo,
+          kind: AppToastKind.success,
+          onAction: () => unawaited(_undoCloudRestore()),
+        );
+        await _loadBackups();
+      } else {
+        showAppToast(
+          context,
+          message: l10n.cloudBackupRestoreFailed(
+            CloudBackupUiHelpers.localizeSyncError(l10n, result.error),
+          ),
+          kind: AppToastKind.error,
+        );
+      }
+    } on Object catch (error) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.cloudBackupRestoreFailed(
+          CloudBackupUiHelpers.localizeSyncError(l10n, '$error'),
+        ),
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
+  Future<void> _undoCloudRestore() async {
+    final success = await _coordinator.undoLastRestore();
+    if (!mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    showAppToast(
+      context,
+      message: success
+          ? l10n.cloudBackupRestoreSuccess
+          : l10n.cloudBackupRestoreFailed('Undo failed'),
+      kind: success ? AppToastKind.success : AppToastKind.error,
+    );
+    if (success) {
+      await _loadBackups();
     }
   }
 

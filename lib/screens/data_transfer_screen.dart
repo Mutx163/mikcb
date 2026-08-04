@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
@@ -10,13 +11,13 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
-import '../services/transfer_diff_service.dart';
 import '../services/transfer_package.dart';
 import '../services/transfer_undo_service.dart';
 import '../services/unified_transfer_service.dart';
 import 'ics_export_screen.dart';
 import 'qr_transfer_send_screen.dart';
 import 'qr_transfer_scan_screen.dart';
+import 'transfer_preview_dialog.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
 
@@ -232,18 +233,12 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       _isExporting = true;
     });
     try {
-      await provider.dataTransferService.exportAndShare(
-        profileName: provider.activeProfile?.name,
-        courses: provider.courses,
-        tasks: provider.tasks,
-        scheduleItems: provider.scheduleItems,
-        exams: provider.exams,
-        timeSchemes: provider.timeSchemes,
-        scheduleDateRules: provider.scheduleDateRules,
-        locationTimeGroups: provider.locationTimeGroups,
-        settings: provider.settings,
-        currentWeek: provider.currentWeek,
+      final package = _transferService.buildCurrentPackage(
+        provider: provider,
         channel: TransferChannel.file,
+      );
+      await _shareTransferPackage(
+        package,
         shareText: l10n.dataTransferProfileShareText,
         shareSubject: provider.activeProfile?.name == null
             ? l10n.dataTransferProfileShareSubject
@@ -260,6 +255,33 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     }
   }
 
+  Future<void> _shareTransferPackage(
+    TransferPackage package, {
+    required String shareText,
+    required String shareSubject,
+  }) async {
+    final now = DateTime.now();
+    final prefix = package.isFullBackup ? 'mikcb-full-backup' : 'mikcb-backup';
+    final filename =
+        '$prefix-${now.year}${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}-'
+        '${now.hour.toString().padLeft(2, '0')}'
+        '${now.minute.toString().padLeft(2, '0')}.${DataTransferService.fileExtension}';
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile.fromData(
+            package.encodeBytes(),
+            mimeType: 'application/json',
+            name: filename,
+          ),
+        ],
+        text: shareText,
+        subject: shareSubject,
+      ),
+    );
+  }
+
   void _openIcsExport() {
     HyperosNavigation.pushWidget<void>(context, const IcsExportScreen());
   }
@@ -271,13 +293,12 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       _isExporting = true;
     });
     try {
-      await provider.dataTransferService.exportFullBackupAndShare(
-        profiles: provider.profiles,
-        activeProfileId: provider.activeProfileId,
-        timeSchemes: provider.timeSchemes,
-        scheduleDateRules: provider.scheduleDateRules,
-        locationTimeGroups: provider.locationTimeGroups,
+      final package = _transferService.buildFullPackage(
+        provider: provider,
         channel: TransferChannel.file,
+      );
+      await _shareTransferPackage(
+        package,
         shareText: l10n.dataTransferFullBackupShareText,
         shareSubject: l10n.dataTransferFullBackupShareSubject,
       );
@@ -479,13 +500,21 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
-    final choice = await _showTransferPreview(l10n, mergePreview, incoming);
+    final overwritePreview = _transferService.preview(
+      current: current,
+      incoming: incoming,
+      mode: TransferApplyMode.overwrite,
+    );
+    final choice = await showTransferPreviewDialog(
+      context: context,
+      preview: overwritePreview,
+      alternatePreview: mergePreview,
+      incoming: incoming,
+    );
     if (choice == null || !mounted) {
       return;
     }
-    final mode = choice == _TransferApplyChoice.merge
-        ? TransferApplyMode.merge
-        : TransferApplyMode.overwrite;
+    final mode = choice;
     final result = await _transferService.applyToProvider(
       provider: provider,
       incoming: incoming,
@@ -520,46 +549,6 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       actionLabel: l10n.themeUndo,
       kind: AppToastKind.success,
       onAction: () => unawaited(_undoTransfer(token)),
-    );
-  }
-
-  Future<_TransferApplyChoice?> _showTransferPreview(
-    AppLocalizations l10n,
-    TransferDiff preview,
-    TransferPackage incoming,
-  ) {
-    final summary = preview.summaries
-        .where((item) => item.changes.isNotEmpty)
-        .map(
-          (item) =>
-              '${item.kind.value}: +${item.addedCount} / ~${item.updatedCount} / -${item.removedCount}',
-        )
-        .join('\n');
-    final message = [
-      l10n.selectImportModeMessage,
-      'scope=${incoming.scope.value}',
-      summary.isEmpty ? 'no changes' : summary,
-    ].join('\n\n');
-    return showHyperosDialog<_TransferApplyChoice>(
-      context: context,
-      title: l10n.selectImportModeTitle,
-      message: message,
-      actions: [
-        HyperosDialogAction(
-          label: l10n.cancelAction,
-          onPressed: () => Navigator.pop(context),
-        ),
-        HyperosDialogAction(
-          label: 'Merge changes',
-          onPressed: () => Navigator.pop(context, _TransferApplyChoice.merge),
-        ),
-        HyperosDialogAction(
-          label: l10n.replaceCurrentTimetable,
-          isPrimary: true,
-          onPressed: () =>
-              Navigator.pop(context, _TransferApplyChoice.overwrite),
-        ),
-      ],
     );
   }
 
@@ -668,5 +657,3 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
-
-enum _TransferApplyChoice { merge, overwrite }

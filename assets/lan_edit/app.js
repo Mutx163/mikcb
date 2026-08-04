@@ -127,11 +127,17 @@ const mergeFileInput = document.getElementById('merge-file-input');
 const mergeSelectedFilename = document.getElementById('merge-selected-filename');
 const btnImportMerge = document.getElementById('btn-import-merge');
 const mergeImportResult = document.getElementById('merge-import-result');
+const transferPreviewCard = document.getElementById('transfer-preview-card');
+const transferPreviewResult = document.getElementById('transfer-preview-result');
+const btnTransferPreviewMerge = document.getElementById('btn-transfer-preview-merge');
+const btnTransferPreviewOverwrite = document.getElementById('btn-transfer-preview-overwrite');
+const btnTransferPreviewCancel = document.getElementById('btn-transfer-preview-cancel');
 const btnBatchDeleteCourses = document.getElementById('btn-batch-delete-courses');
 
 let slotCounter = 0;
 let selectedSpreadsheetFile = null;
 let selectedMergeFileContent = null;
+let pendingTransferContent = null;
 const selectedCourseIds = new Set();
 
 function updateLibraryBatchDeleteUi() {
@@ -802,35 +808,88 @@ btnExportBackup?.addEventListener('click', async () => {
   }
 });
 
-btnImportBackup?.addEventListener('click', async () => {
-  const content = state.selectedBackupFileContent;
+async function previewTransferContent(content) {
   if (!content) return;
-  
-  if (!window.confirm('⚠️ 警告：导入备份将覆盖手机里的现有全部数据。确定继续吗？')) {
-    return;
-  }
-
   try {
-    setLoading(true, '正在覆盖手机端数据…');
-    await api('/api/v1/profile/active', {
-      method: 'PUT',
+    setLoading(true, '正在计算迁移差异…');
+    const preview = await api('/api/v1/import/preview', {
+      method: 'POST',
       body: content,
     });
-    showToast('备份导入成功！手机端数据已同步', 'success');
-    addActivityLog('备份导入', '覆盖性导入了备份文件');
-    
-    state.selectedBackupFileContent = null;
-    selectedFilename.textContent = '未选择文件';
-    hide(selectedFilename);
-    btnImportBackup.disabled = true;
-    
-    await loadEditorData();
-    setViewTab('overview');
+    const mergeDiff = preview.mergeDiff || preview.diff || {};
+    const overwriteDiff = preview.overwriteDiff || preview.diff || {};
+    const formatDiff = (label, diff) => {
+      const summaries = Array.isArray(diff.summaries) ? diff.summaries : [];
+      return [
+        label,
+        ...summaries.map((item) =>
+          `${item.kind || '-'}: +${item.added || 0} / ~${item.updated || 0} / -${item.removed || 0}`,
+        ),
+      ];
+    };
+    const lines = [
+      `传输 ${preview.transferId || '-'} · ${preview.channel || 'lan'} · ${preview.scope || '-'}`,
+      ...formatDiff('合并预览', mergeDiff),
+      ...formatDiff('覆盖预览', overwriteDiff),
+    ];
+    pendingTransferContent = content;
+    transferPreviewResult.textContent = lines.join('\n');
+    show(transferPreviewCard);
+    btnTransferPreviewMerge.disabled = false;
+    btnTransferPreviewOverwrite.disabled = false;
+    showToast('差异预览已生成，请选择合并或覆盖', 'info');
   } catch (error) {
-    showToast('备份导入失败: ' + error.message, 'error');
+    showToast('预览失败: ' + error.message, 'error');
   } finally {
     setLoading(false);
   }
+}
+
+async function applyPreviewedTransfer(mode) {
+  if (!pendingTransferContent) return;
+  try {
+    setLoading(true, mode === 'overwrite' ? '正在创建本地备份并覆盖…' : '正在合并导入…');
+    const result = await api('/api/v1/import/apply', {
+      method: 'POST',
+      body: JSON.stringify({ content: pendingTransferContent, mode }),
+    });
+    if (!result.applied) {
+      throw new Error(result.error || 'transfer_import_failed');
+    }
+    showToast(mode === 'overwrite' ? '覆盖导入成功，可在手机端撤销' : '合并导入成功', 'success');
+    addActivityLog('迁移导入', `${mode === 'overwrite' ? '覆盖' : '合并'} · ${result.transferId || '-'}`);
+    pendingTransferContent = null;
+    hide(transferPreviewCard);
+    state.selectedBackupFileContent = null;
+    selectedMergeFileContent = null;
+    hide(selectedFilename);
+    hide(mergeSelectedFilename);
+    btnImportBackup.disabled = true;
+    btnImportMerge.disabled = true;
+    await loadEditorData();
+    setViewTab('overview');
+  } catch (error) {
+    showToast('迁移导入失败: ' + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+btnTransferPreviewMerge?.addEventListener('click', () =>
+  applyPreviewedTransfer('merge'),
+);
+btnTransferPreviewOverwrite?.addEventListener('click', () => {
+  if (window.confirm('覆盖前会在手机端创建一次性本地备份，确定继续吗？')) {
+    applyPreviewedTransfer('overwrite');
+  }
+});
+btnTransferPreviewCancel?.addEventListener('click', () => {
+  pendingTransferContent = null;
+  hide(transferPreviewCard);
+});
+
+btnImportBackup?.addEventListener('click', () => {
+  previewTransferContent(state.selectedBackupFileContent);
 });
 
 // 拖拽上传逻辑
@@ -873,7 +932,7 @@ function handleSelectedFile(file) {
       selectedFilename.textContent = `已选文件: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
       show(selectedFilename);
       btnImportBackup.disabled = false;
-      showToast('文件解析成功，可以点击执行导入', 'info');
+      showToast('文件解析成功，可以打开迁移预览', 'info');
     } catch (e) {
       showToast('文件解析失败，请检查是否为合法 JSON 备份文件', 'error');
     }
@@ -1593,31 +1652,9 @@ if (mergeDropZone) {
   });
 }
 
-btnImportMerge?.addEventListener('click', async () => {
-  if (!selectedMergeFileContent) return;
-  try {
-    setLoading(true, '正在合并导入…');
-    const result = await api('/api/v1/import/merge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: selectedMergeFileContent,
-    });
-    const merged = result.mergedCount ?? 0;
-    if (mergeImportResult) {
-      mergeImportResult.textContent = `合并完成，处理 ${merged} 门课程（与现有课表智能合并）`;
-      show(mergeImportResult);
-    }
-    showToast(`合并导入完成`, 'success');
-    addActivityLog('合并导入', `合并备份课程 ${merged} 门`);
-    selectedMergeFileContent = null;
-    if (btnImportMerge) btnImportMerge.disabled = true;
-    await loadEditorData();
-  } catch (error) {
-    showToast('合并导入失败: ' + error.message, 'error');
-  } finally {
-    setLoading(false);
-  }
-});
+btnImportMerge?.addEventListener('click', () =>
+  previewTransferContent(selectedMergeFileContent),
+);
 
 btnBatchDeleteCourses?.addEventListener('click', async () => {
   const ids = [...selectedCourseIds];

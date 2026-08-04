@@ -11,7 +11,7 @@ import 'unified_transfer_service.dart';
 import 'week_expression_parser.dart';
 
 /// Bridges [TimetableProvider] to [LanEditHost] for LAN HTTP handlers.
-class LanEditProviderHost implements LanEditHost {
+class LanEditProviderHost implements LanEditHost, LanTransferHost {
   final TimetableProvider _provider;
   final UnifiedTransferService _transferService = UnifiedTransferService();
 
@@ -134,6 +134,57 @@ class LanEditProviderHost implements LanEditHost {
     return _transferService
         .buildCurrentPackage(provider: _provider, channel: TransferChannel.lan)
         .encode();
+  }
+
+  @override
+  LanTransferPreview? previewTransferJson(String content) {
+    final incoming = _transferService.parseCompatible(
+      content,
+      channel: TransferChannel.lan,
+    );
+    if (incoming.isFullBackup ||
+        (incoming.scope == TransferScope.allData &&
+            incoming.profiles.isNotEmpty)) {
+      throw const FormatException('use_profile_backup_not_full');
+    }
+    final current = _transferService.buildCurrentPackage(
+      provider: _provider,
+      channel: TransferChannel.lan,
+    );
+    return LanTransferPreview(
+      incoming: incoming,
+      mergeDiff: _transferService.preview(
+        current: current,
+        incoming: incoming,
+        mode: TransferApplyMode.merge,
+      ),
+      overwriteDiff: _transferService.preview(
+        current: current,
+        incoming: incoming,
+        mode: TransferApplyMode.overwrite,
+      ),
+    );
+  }
+
+  @override
+  Future<TransferApplyResult> applyTransferJson(
+    String content, {
+    required TransferApplyMode mode,
+  }) async {
+    final incoming = _transferService.parseCompatible(
+      content,
+      channel: TransferChannel.lan,
+    );
+    if (incoming.isFullBackup ||
+        (incoming.scope == TransferScope.allData &&
+            incoming.profiles.isNotEmpty)) {
+      throw const FormatException('use_profile_backup_not_full');
+    }
+    return _transferService.applyToProvider(
+      provider: _provider,
+      incoming: incoming,
+      mode: mode,
+    );
   }
 
   @override

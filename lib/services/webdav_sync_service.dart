@@ -12,6 +12,8 @@ import 'webdav_client_service.dart';
 import 'webdav_error_message.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_credentials_store.dart';
+import 'transfer_diff_service.dart';
+import 'transfer_package.dart';
 
 enum WebdavSyncResultKind {
   idle,
@@ -50,6 +52,42 @@ class WebdavBackupListResult {
   const WebdavBackupListResult({required this.entries, this.errorMessage});
 
   bool get hasError => errorMessage != null;
+}
+
+class WebdavTransferPreview {
+  final String entryId;
+  final AppSyncSnapshot snapshot;
+  final TransferPackage incoming;
+  final TransferDiff diff;
+  final TransferPackage mergePackage;
+  final TransferPackage overwritePackage;
+  final TransferDiff mergeDiff;
+  final TransferDiff overwriteDiff;
+
+  const WebdavTransferPreview({
+    required this.entryId,
+    required this.snapshot,
+    required this.incoming,
+    required this.diff,
+    required this.mergePackage,
+    required this.overwritePackage,
+    required this.mergeDiff,
+    required this.overwriteDiff,
+  });
+}
+
+class WebdavTransferApplyResult {
+  final bool applied;
+  final String? error;
+  final WebdavTransferPreview preview;
+
+  const WebdavTransferApplyResult({
+    required this.applied,
+    required this.preview,
+    this.error,
+  });
+
+  bool get hasError => !applied;
 }
 
 typedef WebdavSyncConflictHandler =
@@ -332,6 +370,113 @@ class WebdavSyncService {
         errorMessage: sanitizeWebdavErrorMessage(error),
       );
     }
+  }
+
+  Future<WebdavTransferPreview> previewBackupRestore({
+    required TimetableProvider provider,
+    required String entryId,
+    TransferApplyMode mode = TransferApplyMode.overwrite,
+  }) async {
+    final config = await _configStore.load();
+    final params = await buildConnectionParams(config);
+    if (params == null) {
+      throw StateError('missing_credentials');
+    }
+    final client = _clientService.createClient(params);
+    final index = await _loadRemoteBackupIndex(client: client, config: config);
+    final entry = index.entries.firstWhere(
+      (item) => item.id == entryId,
+      orElse: () => throw StateError('backup_not_found'),
+    );
+    final bytes = await _clientService.getBytes(
+      client: client,
+      remotePath: config.historyBackupRemotePath(entry.fileName),
+    );
+    if (bytes == null || bytes.isEmpty) {
+      throw StateError('missing_backup_snapshot');
+    }
+    final snapshot = _snapshotService.parseSnapshotJson(utf8.decode(bytes));
+    final mergePackage = _snapshotService.buildMergeTransferPackageFromSnapshot(
+      snapshot: snapshot,
+      channel: TransferChannel.cloud,
+    );
+    final overwritePackage = _snapshotService.buildTransferPackageFromSnapshot(
+      snapshot: snapshot,
+      channel: TransferChannel.cloud,
+    );
+    final mergeDiff = _snapshotService.previewSnapshot(
+      provider: provider,
+      snapshot: snapshot,
+      mode: TransferApplyMode.merge,
+    );
+    final overwriteDiff = _snapshotService.previewSnapshot(
+      provider: provider,
+      snapshot: snapshot,
+      mode: TransferApplyMode.overwrite,
+    );
+    final incoming = mode == TransferApplyMode.merge
+        ? mergePackage
+        : overwritePackage;
+    final diff = mode == TransferApplyMode.merge ? mergeDiff : overwriteDiff;
+    return WebdavTransferPreview(
+      entryId: entryId,
+      snapshot: snapshot,
+      incoming: incoming,
+      diff: diff,
+      mergePackage: mergePackage,
+      overwritePackage: overwritePackage,
+      mergeDiff: mergeDiff,
+      overwriteDiff: overwriteDiff,
+    );
+  }
+
+  Future<WebdavTransferApplyResult> applyPreviewedBackupRestore({
+    required TimetableProvider provider,
+    required WebdavTransferPreview preview,
+    required TransferApplyMode mode,
+    bool uploadAsCurrent = true,
+  }) async {
+    final package = mode == TransferApplyMode.merge
+        ? preview.mergePackage
+        : preview.overwritePackage;
+    final error = await _snapshotService.applySnapshotWithMode(
+      provider: provider,
+      snapshot: preview.snapshot,
+      mode: mode,
+      transferPackage: package,
+    );
+    if (error != null) {
+      return WebdavTransferApplyResult(
+        applied: false,
+        error: error,
+        preview: preview,
+      );
+    }
+    if (uploadAsCurrent) {
+      final config = await _configStore.load();
+      final uploadResult = await uploadSnapshot(
+        provider: provider,
+        configOverride: config.copyWith(
+          lastAppliedRemoteHash: preview.snapshot.contentSha256,
+          lastUploadedLocalHash: preview.snapshot.contentSha256,
+        ),
+        backupSource: CloudBackupSource.auto,
+        writeHistory: false,
+      );
+      if (uploadResult.kind == WebdavSyncResultKind.failed) {
+        // The local restore succeeded, but publishing the selected cloud
+        // version failed. Do not leave the device in a half-applied state.
+        final undone = await _snapshotService.undoLastApply(provider: provider);
+        return WebdavTransferApplyResult(
+          applied: false,
+          error: undone
+              ? (uploadResult.message ?? 'cloud_upload_failed')
+              : 'cloud_upload_failed_and_undo_failed',
+          preview: preview,
+        );
+      }
+    }
+    return WebdavTransferApplyResult(applied: true, preview: preview);
   }
 
   Future<WebdavSyncResult> restoreFromBackup({

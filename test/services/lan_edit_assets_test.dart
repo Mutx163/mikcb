@@ -26,6 +26,9 @@ void main() {
     expect(index, contains('id="close-modal-x"'));
     expect(script, contains('/api/v1/auth/verify'));
     expect(script, contains('/api/v1/profiles/switch'));
+    expect(script, contains('/api/v1/import/preview'));
+    expect(script, contains('/api/v1/import/apply'));
+    expect(index, contains('id="transfer-preview-card"'));
     expect(script, contains("params.get('pin')"));
     expect(script, contains('verifyPinAndEnter'));
     expect(script, contains('stripPinFromUrl'));

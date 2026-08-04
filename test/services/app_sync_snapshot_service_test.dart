@@ -7,6 +7,7 @@ import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_sync_snapshot_service.dart';
+import 'package:university_timetable/services/transfer_package.dart';
 import 'package:university_timetable/services/warehouse_import_preferences_service.dart';
 
 void main() {
@@ -591,6 +592,43 @@ void main() {
       ),
     );
     expect(choice, SyncConflictChoice.keepRemote);
+  });
+
+  test('cloud snapshot builds merge and overwrite transfer packages', () {
+    final service = AppSyncSnapshotService();
+    final snapshot = emptyAuthoredSnapshot(
+      profiles: [
+        factoryDefaultProfile(
+          name: '远端课表',
+          courses: [
+            Course(
+              id: 'remote-course',
+              name: '远程课程',
+              teacher: '',
+              location: '',
+              dayOfWeek: 1,
+              startSection: 1,
+              endSection: 2,
+              startTime: '08:00',
+              endTime: '09:40',
+            ),
+          ],
+        ),
+      ],
+    );
+    final merge = service.buildMergeTransferPackageFromSnapshot(
+      snapshot: snapshot,
+    );
+    final overwrite = service.buildTransferPackageFromSnapshot(
+      snapshot: snapshot,
+    );
+
+    expect(merge.channel, TransferChannel.cloud);
+    expect(merge.scope, TransferScope.currentTimetable);
+    expect(merge.courses.single.id, 'remote-course');
+    expect(overwrite.isFullBackup, isTrue);
+    expect(overwrite.scope, TransferScope.allData);
+    expect(overwrite.profiles.single.name, '远端课表');
   });
 
   test(
