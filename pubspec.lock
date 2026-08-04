@@ -286,10 +286,12 @@ packages:
   flutter_miuix:
     dependency: "direct main"
     description:
-      path: ".vendor/flutter_miuix"
-      relative: true
-    source: path
-    version: "1.0.9"
+      path: "."
+      ref: ef5c1312d7aab00670a2539ff67bc3b88086f795
+      resolved-ref: ef5c1312d7aab00670a2539ff67bc3b88086f795
+      url: "https://github.com/Mutx163/flutter_miuix.git"
+    source: git
+    version: "1.0.10"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -1146,5 +1148,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.12.0 <4.0.0"
+  dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.44.0"
