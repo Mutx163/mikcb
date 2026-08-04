@@ -413,6 +413,12 @@ class WebdavSyncService {
     }
   }
 
+  /// Reverts the most recent cloud snapshot apply in this process session.
+  /// The remote backup is never deleted or overwritten by this operation.
+  Future<bool> undoLastRestore({required TimetableProvider provider}) {
+    return _snapshotService.undoLastApply(provider: provider);
+  }
+
   Future<WebdavSyncResult> deleteBackup({required String entryId}) async {
     final config = await _configStore.load();
     final params = await buildConnectionParams(config);

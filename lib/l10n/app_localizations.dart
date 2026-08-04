@@ -16597,6 +16597,336 @@ abstract class AppLocalizations {
   /// **'调试 UI 叠层'**
   String get debugUiOverlayToggleTitle;
 
+  /// No description provided for @scheduleRepeatSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'重复设置'**
+  String get scheduleRepeatSectionTitle;
+
+  /// No description provided for @scheduleRepeatNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'不重复'**
+  String get scheduleRepeatNone;
+
+  /// No description provided for @scheduleRepeatDaily.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天'**
+  String get scheduleRepeatDaily;
+
+  /// No description provided for @scheduleRepeatWeekly.
+  ///
+  /// In zh, this message translates to:
+  /// **'每周'**
+  String get scheduleRepeatWeekly;
+
+  /// No description provided for @scheduleRepeatEndDateLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'重复结束日期'**
+  String get scheduleRepeatEndDateLabel;
+
+  /// No description provided for @scheduleRepeatEndDateHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'重复日程需要设置结束日期'**
+  String get scheduleRepeatEndDateHint;
+
+  /// No description provided for @scheduleRepeatWeeklyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'按开始日期对应的星期重复'**
+  String get scheduleRepeatWeeklyHint;
+
+  /// No description provided for @scheduleReminderSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'日程提醒'**
+  String get scheduleReminderSectionTitle;
+
+  /// No description provided for @scheduleReminderOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'不提醒'**
+  String get scheduleReminderOff;
+
+  /// No description provided for @scheduleReminderMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'提前 {minutes} 分钟'**
+  String scheduleReminderMinutes(int minutes);
+
+  /// No description provided for @scheduleReminderPermissionMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知权限未开启，日程仍会保存，但提醒可能无法送达'**
+  String get scheduleReminderPermissionMissing;
+
+  /// No description provided for @scheduleReminderPermissionAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'检查通知权限'**
+  String get scheduleReminderPermissionAction;
+
+  /// No description provided for @scheduleEnabledTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用日程'**
+  String get scheduleEnabledTitle;
+
+  /// No description provided for @scheduleDisabledSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停，不会显示提醒'**
+  String get scheduleDisabledSubtitle;
+
+  /// No description provided for @scheduleEditScopeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑范围'**
+  String get scheduleEditScopeTitle;
+
+  /// No description provided for @scheduleEditScopeThis.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅本次'**
+  String get scheduleEditScopeThis;
+
+  /// No description provided for @scheduleEditScopeAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部重复日程'**
+  String get scheduleEditScopeAll;
+
+  /// No description provided for @scheduleDeleteScopeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除范围'**
+  String get scheduleDeleteScopeTitle;
+
+  /// No description provided for @scheduleDeleteScopeThis.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅删除本次'**
+  String get scheduleDeleteScopeThis;
+
+  /// No description provided for @scheduleDeleteScopeAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除全部重复日程'**
+  String get scheduleDeleteScopeAll;
+
+  /// No description provided for @scheduleOccurrenceEditHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'你正在编辑这条重复日程的一次实例'**
+  String get scheduleOccurrenceEditHint;
+
+  /// No description provided for @scheduleRepeatEndRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择重复结束日期'**
+  String get scheduleRepeatEndRequired;
+
+  /// No description provided for @homeMenuTasksTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务清单'**
+  String get homeMenuTasksTitle;
+
+  /// No description provided for @taskListTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务清单'**
+  String get taskListTitle;
+
+  /// No description provided for @addTask.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加任务'**
+  String get addTask;
+
+  /// No description provided for @editTask.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑任务'**
+  String get editTask;
+
+  /// No description provided for @saveTask.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存任务'**
+  String get saveTask;
+
+  /// No description provided for @taskTitleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务标题'**
+  String get taskTitleLabel;
+
+  /// No description provided for @taskTitleHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：完成第三章习题'**
+  String get taskTitleHint;
+
+  /// No description provided for @taskTitleRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入任务标题'**
+  String get taskTitleRequired;
+
+  /// No description provided for @taskNoteLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'备注'**
+  String get taskNoteLabel;
+
+  /// No description provided for @taskNoteHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'补充说明（可选）'**
+  String get taskNoteHint;
+
+  /// No description provided for @taskDueDateLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'截止日期'**
+  String get taskDueDateLabel;
+
+  /// No description provided for @taskNoDueDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'无截止日期'**
+  String get taskNoDueDate;
+
+  /// No description provided for @taskCourseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源课程'**
+  String get taskCourseLabel;
+
+  /// No description provided for @taskCourseFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程筛选'**
+  String get taskCourseFilter;
+
+  /// No description provided for @taskAllCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部课程'**
+  String get taskAllCourses;
+
+  /// No description provided for @taskNoCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'无关联课程'**
+  String get taskNoCourse;
+
+  /// No description provided for @taskAllFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部'**
+  String get taskAllFilter;
+
+  /// No description provided for @taskTodayFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日'**
+  String get taskTodayFilter;
+
+  /// No description provided for @taskWeekFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周'**
+  String get taskWeekFilter;
+
+  /// No description provided for @taskOverdueSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'已逾期'**
+  String get taskOverdueSection;
+
+  /// No description provided for @taskCompletedSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'已完成'**
+  String get taskCompletedSection;
+
+  /// No description provided for @taskNoTasks.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有任务'**
+  String get taskNoTasks;
+
+  /// No description provided for @taskNoTasksForToday.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日没有待办任务'**
+  String get taskNoTasksForToday;
+
+  /// No description provided for @taskNoTasksForWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周没有待办任务'**
+  String get taskNoTasksForWeek;
+
+  /// No description provided for @taskNoTasksForCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个课程暂无任务'**
+  String get taskNoTasksForCourse;
+
+  /// No description provided for @taskDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除任务'**
+  String get taskDelete;
+
+  /// No description provided for @taskDeleteConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除这个任务吗？'**
+  String get taskDeleteConfirm;
+
+  /// No description provided for @taskHomeworkDefaultTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程作业'**
+  String get taskHomeworkDefaultTitle;
+
+  /// No description provided for @taskAddFromCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加任务'**
+  String get taskAddFromCourse;
+
+  /// No description provided for @taskViewCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看课程'**
+  String get taskViewCourse;
+
+  /// No description provided for @taskSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务已保存'**
+  String get taskSaved;
+
+  /// No description provided for @taskUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务已更新'**
+  String get taskUpdated;
+
+  /// No description provided for @taskDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务已删除'**
+  String get taskDeleted;
+
   /// No description provided for @icsExportSectionTitle.
   ///
   /// In zh, this message translates to:

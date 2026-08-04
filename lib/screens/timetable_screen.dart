@@ -46,12 +46,14 @@ import '../widgets/app_boot_branding.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
+import 'add_task_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
 import 'course_statistics_screen.dart';
 import 'exam_list_screen.dart';
 import 'support_creator_screen.dart';
+import 'task_list_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -3246,7 +3248,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return normalizedToday.add(Duration(days: dayDelta));
   }
 
-  List<ScheduleItem> _getScheduleItemsForWeekDay({
+  List<ScheduleItemInstance> _getScheduleItemsForWeekDay({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
@@ -3258,13 +3260,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       week: week,
       dayOfWeek: dayOfWeek,
     );
-    return provider.getScheduleItemsForDate(targetDate);
+    return provider.getScheduleItemInstancesForDate(targetDate);
   }
 
   _DayAgendaItem _buildScheduleAgendaItemForDate({
-    required ScheduleItem item,
+    required ScheduleItemInstance instance,
     required DateTime targetDate,
   }) {
+    final item = instance.effectiveItem;
     final normalizedTargetDate = DateTime(
       targetDate.year,
       targetDate.month,
@@ -3276,6 +3279,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final continuesToNextDay = item.endDate.isAfter(normalizedTargetDate);
     return _DayAgendaItem.schedule(
       item,
+      instance: instance,
       startTime: continuesFromPreviousDay ? '00:00' : item.startTime,
       endTime: continuesToNextDay ? '23:59' : item.endTime,
       continuesFromPreviousDay: continuesFromPreviousDay,
@@ -3304,8 +3308,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         week: week,
         dayOfWeek: dayOfWeek,
       ).map(
-        (item) =>
-            _buildScheduleAgendaItemForDate(item: item, targetDate: targetDate),
+        (instance) => _buildScheduleAgendaItemForDate(
+          instance: instance,
+          targetDate: targetDate,
+        ),
       ),
       ...provider.exams
           .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
@@ -4913,6 +4919,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
   }) {
     final item = agendaItem.scheduleItem!;
+    final sourceItem = agendaItem.scheduleInstance?.item ?? item;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final baseColor = _colorFromHex(item.color, colorScheme.primary);
@@ -4926,7 +4933,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final ink = _dayAgendaAutoInk(cardColor, settings: settings);
 
     return OpenContainer<void>(
-      key: ValueKey('day-view-schedule-card-${item.id}'),
+      key: ValueKey('day-view-schedule-card-${agendaItem.id}'),
       tappable: false,
       transitionType: ContainerTransitionType.fadeThrough,
       transitionDuration: const Duration(milliseconds: 360),
@@ -4942,7 +4949,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
       openBuilder: (context, _) => ClipRRect(
         borderRadius: BorderRadius.circular(28),
-        child: AddScheduleItemScreen(scheduleItem: item),
+        child: AddScheduleItemScreen(
+          scheduleItem: sourceItem,
+          occurrenceDate: agendaItem.scheduleInstance?.occurrenceDate,
+        ),
       ),
       closedBuilder: (context, openContainer) {
         if (progressInfo != null) {
@@ -6498,6 +6508,24 @@ class _TimetableScreenState extends State<TimetableScreen>
       onReschedule: (target) => _showRescheduleSheet(target, sourceWeek: week),
       onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
+      onAddTask: (target) => _openTaskFromCourse(target, week),
+    );
+  }
+
+  Future<void> _openTaskFromCourse(Course course, int week) async {
+    final provider = context.read<TimetableProvider>();
+    final existing = provider
+        .getTasksForCourse(course.id)
+        .where((task) => task.sourceWeek == null || task.sourceWeek == week)
+        .firstOrNull;
+    await Navigator.of(context).push<bool>(
+      HyperosPageRoute<bool>(
+        builder: (_) => AddTaskScreen(
+          task: existing,
+          initialCourse: course,
+          initialWeek: week,
+        ),
+      ),
     );
   }
 
@@ -7010,6 +7038,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         await _openTopMenuPage(const ExamListScreen());
       case HomeTopMenuAction.importCourses:
         await _openTopMenuPage(const CourseImportScreen());
+      case HomeTopMenuAction.tasks:
+        await _openTopMenuPage(const TaskListScreen());
       case HomeTopMenuAction.settings:
         await _openTopMenuPage(const TimetableSettingsScreen());
       case HomeTopMenuAction.support:
@@ -7534,6 +7564,7 @@ class _DayCourseDisplayItem {
 class _DayAgendaItem {
   final _DayCourseDisplayItem? courseItem;
   final ScheduleItem? scheduleItem;
+  final ScheduleItemInstance? scheduleInstance;
   final Exam? exam;
   final String startTime;
   final String endTime;
@@ -7543,6 +7574,7 @@ class _DayAgendaItem {
   const _DayAgendaItem._({
     this.courseItem,
     this.scheduleItem,
+    this.scheduleInstance,
     this.exam,
     required this.startTime,
     required this.endTime,
@@ -7560,6 +7592,7 @@ class _DayAgendaItem {
 
   factory _DayAgendaItem.schedule(
     ScheduleItem item, {
+    ScheduleItemInstance? instance,
     required String startTime,
     required String endTime,
     bool continuesFromPreviousDay = false,
@@ -7567,6 +7600,7 @@ class _DayAgendaItem {
   }) {
     return _DayAgendaItem._(
       scheduleItem: item,
+      scheduleInstance: instance,
       startTime: startTime,
       endTime: endTime,
       continuesFromPreviousDay: continuesFromPreviousDay,
@@ -7585,7 +7619,10 @@ class _DayAgendaItem {
   bool get isScheduleItem => scheduleItem != null;
   bool get isExam => exam != null;
   String get id =>
-      exam?.id ?? (isScheduleItem ? scheduleItem!.id : courseItem!.course.id);
+      exam?.id ??
+      (isScheduleItem
+          ? scheduleInstance?.occurrenceId ?? scheduleItem!.id
+          : courseItem!.course.id);
 }
 
 class _DayAgendaProgressInfo {

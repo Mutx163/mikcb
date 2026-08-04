@@ -202,10 +202,14 @@ Future<String?> _timetableImportAppDataBackup(
       List<Course>.from(backup.courses),
       settings: resolvedSettings,
     );
+    final courseIds = host._courses.map((course) => course.id).toSet();
+    host._tasks = backup.tasks
+        .where(
+          (task) => task.courseId == null || courseIds.contains(task.courseId),
+        )
+        .toList();
     host._exams = List<Exam>.from(backup.exams);
-    // Single-profile backups do not carry schedule items; overwrite must not
-    // leave stale agenda entries from the previous active profile.
-    host._scheduleItems = [];
+    host._scheduleItems = List<ScheduleItem>.from(backup.scheduleItems);
     host._settings = resolvedSettings;
     host._currentWeek = clampCurrentWeekToSettings(
       backup.currentWeek,
@@ -247,14 +251,23 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
       backup.settings,
       fallbackName: '$nextName 时间',
     );
+    final profileCourses = host._syncCoursesWithEffectiveTimeSchemes(
+      List<Course>.from(backup.courses),
+      settings: resolvedSettings,
+    );
     final now = DateTime.now();
     final nextProfile = TimetableProfile(
       id: const Uuid().v4(),
       name: nextName,
-      courses: host._syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(backup.courses),
-        settings: resolvedSettings,
-      ),
+      courses: profileCourses,
+      tasks: backup.tasks
+          .where(
+            (task) =>
+                task.courseId == null ||
+                profileCourses.any((course) => course.id == task.courseId),
+          )
+          .toList(),
+      scheduleItems: List<ScheduleItem>.from(backup.scheduleItems),
       exams: List<Exam>.from(backup.exams),
       settings: resolvedSettings,
       currentWeek: clampCurrentWeekToSettings(

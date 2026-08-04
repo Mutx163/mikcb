@@ -160,6 +160,16 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     });
   }
 
+  Future<bool> undoLastRestore() async {
+    final provider = _provider;
+    if (provider == null) {
+      return false;
+    }
+    return _syncGate.runExclusive(
+      () => _syncService.undoLastRestore(provider: provider),
+    );
+  }
+
   Future<WebdavSyncResult> deleteBackup(String entryId) async {
     return _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));

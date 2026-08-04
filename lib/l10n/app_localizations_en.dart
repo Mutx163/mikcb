@@ -9690,6 +9690,179 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugUiOverlayToggleTitle => 'Debug UI Overlay';
 
   @override
+  String get scheduleRepeatSectionTitle => 'Repeat';
+
+  @override
+  String get scheduleRepeatNone => 'Does not repeat';
+
+  @override
+  String get scheduleRepeatDaily => 'Every day';
+
+  @override
+  String get scheduleRepeatWeekly => 'Every week';
+
+  @override
+  String get scheduleRepeatEndDateLabel => 'Repeat until';
+
+  @override
+  String get scheduleRepeatEndDateHint =>
+      'Recurring schedules need an end date';
+
+  @override
+  String get scheduleRepeatWeeklyHint =>
+      'Repeats on the weekday of the start date';
+
+  @override
+  String get scheduleReminderSectionTitle => 'Schedule reminder';
+
+  @override
+  String get scheduleReminderOff => 'No reminder';
+
+  @override
+  String scheduleReminderMinutes(int minutes) {
+    return '$minutes minutes before';
+  }
+
+  @override
+  String get scheduleReminderPermissionMissing =>
+      'Notifications are off. The schedule will save, but its reminder may not be delivered';
+
+  @override
+  String get scheduleReminderPermissionAction =>
+      'Check notification permission';
+
+  @override
+  String get scheduleEnabledTitle => 'Enable schedule';
+
+  @override
+  String get scheduleDisabledSubtitle => 'Paused; reminders are disabled';
+
+  @override
+  String get scheduleEditScopeTitle => 'Edit scope';
+
+  @override
+  String get scheduleEditScopeThis => 'This occurrence only';
+
+  @override
+  String get scheduleEditScopeAll => 'All repeated occurrences';
+
+  @override
+  String get scheduleDeleteScopeTitle => 'Delete scope';
+
+  @override
+  String get scheduleDeleteScopeThis => 'Delete this occurrence only';
+
+  @override
+  String get scheduleDeleteScopeAll => 'Delete all repeated occurrences';
+
+  @override
+  String get scheduleOccurrenceEditHint =>
+      'You are editing one occurrence of this recurring schedule';
+
+  @override
+  String get scheduleRepeatEndRequired =>
+      'Choose an end date for the recurring schedule';
+
+  @override
+  String get homeMenuTasksTitle => 'Tasks';
+
+  @override
+  String get taskListTitle => 'Tasks';
+
+  @override
+  String get addTask => 'Add Task';
+
+  @override
+  String get editTask => 'Edit Task';
+
+  @override
+  String get saveTask => 'Save Task';
+
+  @override
+  String get taskTitleLabel => 'Task title';
+
+  @override
+  String get taskTitleHint => 'e.g. Finish chapter 3 exercises';
+
+  @override
+  String get taskTitleRequired => 'Enter a task title';
+
+  @override
+  String get taskNoteLabel => 'Note';
+
+  @override
+  String get taskNoteHint => 'Optional details';
+
+  @override
+  String get taskDueDateLabel => 'Due date';
+
+  @override
+  String get taskNoDueDate => 'No due date';
+
+  @override
+  String get taskCourseLabel => 'Course';
+
+  @override
+  String get taskCourseFilter => 'Course filter';
+
+  @override
+  String get taskAllCourses => 'All courses';
+
+  @override
+  String get taskNoCourse => 'No linked course';
+
+  @override
+  String get taskAllFilter => 'All';
+
+  @override
+  String get taskTodayFilter => 'Today';
+
+  @override
+  String get taskWeekFilter => 'This week';
+
+  @override
+  String get taskOverdueSection => 'Overdue';
+
+  @override
+  String get taskCompletedSection => 'Completed';
+
+  @override
+  String get taskNoTasks => 'No tasks yet';
+
+  @override
+  String get taskNoTasksForToday => 'No tasks due today';
+
+  @override
+  String get taskNoTasksForWeek => 'No tasks due this week';
+
+  @override
+  String get taskNoTasksForCourse => 'No tasks for this course';
+
+  @override
+  String get taskDelete => 'Delete task';
+
+  @override
+  String get taskDeleteConfirm => 'Delete this task?';
+
+  @override
+  String get taskHomeworkDefaultTitle => 'Homework';
+
+  @override
+  String get taskAddFromCourse => 'Add task';
+
+  @override
+  String get taskViewCourse => 'View course';
+
+  @override
+  String get taskSaved => 'Task saved';
+
+  @override
+  String get taskUpdated => 'Task updated';
+
+  @override
+  String get taskDeleted => 'Task deleted';
+
+  @override
   String get icsExportSectionTitle => 'Calendar export';
 
   @override

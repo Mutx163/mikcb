@@ -32,6 +32,7 @@ enum HomeTopMenuAction {
   addCourse,
   exams,
   importCourses,
+  tasks,
   settings,
   support,
 }
@@ -64,7 +65,7 @@ class _HomeTopMenuSheet extends StatelessWidget {
     // Phone visual cap: tiles stay at most this wide so icon wells don't stretch.
     const maxTileWidth = 112.0;
     const minTileWidth = 64.0;
-    const columnsPerRow = 4;
+    const columnsPerRow = 3;
 
     final menuTitles = [
       l10n.homeMenuUpdateTitle,
@@ -73,6 +74,7 @@ class _HomeTopMenuSheet extends StatelessWidget {
       l10n.homeMenuAddCourseTitle,
       l10n.examListTitle,
       l10n.homeMenuImportTitle,
+      l10n.homeMenuTasksTitle,
       l10n.homeMenuSettingsTitle,
       l10n.homeMenuCoffeeTitle,
     ];
@@ -85,8 +87,8 @@ class _HomeTopMenuSheet extends StatelessWidget {
     return HyperosSheetFrame(
       frosted: true,
       // HyperosSheetFrame supplies the shared modal material used by every
-      // dialog, picker, and action sheet. Only the eight moving action tiles
-      // use stable tint surfaces.
+      // dialog, picker, and action sheet. The moving action tiles use stable
+      // tint surfaces.
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Width is already after floating outer inset + frame padding.
@@ -169,14 +171,14 @@ class _HomeTopMenuSheet extends StatelessWidget {
                   title: l10n.homeMenuStatisticsTitle,
                   action: HomeTopMenuAction.statistics,
                 ),
+              ]),
+              const SizedBox(height: tileSpacing),
+              menuRow([
                 tile(
                   icon: Icons.add_circle_outline_rounded,
                   title: l10n.homeMenuAddCourseTitle,
                   action: HomeTopMenuAction.addCourse,
                 ),
-              ]),
-              const SizedBox(height: tileSpacing),
-              menuRow([
                 tile(
                   icon: Icons.school_outlined,
                   title: l10n.examListTitle,
@@ -186,6 +188,14 @@ class _HomeTopMenuSheet extends StatelessWidget {
                   icon: Icons.file_upload_outlined,
                   title: l10n.homeMenuImportTitle,
                   action: HomeTopMenuAction.importCourses,
+                ),
+              ]),
+              const SizedBox(height: tileSpacing),
+              menuRow([
+                tile(
+                  icon: Icons.task_alt_outlined,
+                  title: l10n.homeMenuTasksTitle,
+                  action: HomeTopMenuAction.tasks,
                 ),
                 tile(
                   icon: Icons.tune_rounded,
@@ -203,7 +213,7 @@ class _HomeTopMenuSheet extends StatelessWidget {
 
           // The sheet owns the only live glass backdrop. The action tiles are
           // deliberately ordinary rounded tint surfaces so fast scrolling
-          // moves stable pixels instead of eight shader/filter shapes.
+          // moves stable pixels instead of shader/filter shapes.
           return SingleChildScrollView(child: menuColumn);
         },
       ),

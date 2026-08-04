@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -6,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
+import '../services/miui_live_activities_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
@@ -15,8 +18,14 @@ import '../ui/hyperos/hyperos.dart';
 class AddScheduleItemScreen extends StatefulWidget {
   final ScheduleItem? scheduleItem;
   final DateTime? initialDate;
+  final DateTime? occurrenceDate;
 
-  const AddScheduleItemScreen({super.key, this.scheduleItem, this.initialDate});
+  const AddScheduleItemScreen({
+    super.key,
+    this.scheduleItem,
+    this.initialDate,
+    this.occurrenceDate,
+  });
 
   @override
   State<AddScheduleItemScreen> createState() => _AddScheduleItemScreenState();
@@ -49,8 +58,18 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   String _selectedColor = _colors.first;
+  ScheduleRecurrence _recurrence = ScheduleRecurrence.none;
+  int? _reminderMinutesBefore;
+  bool _enabled = true;
+  bool _notificationPermission = true;
+  bool _didResolveSeriesRoot = false;
 
   bool get _isEditing => widget.scheduleItem != null;
+  bool get _isOccurrenceEditing {
+    final item = widget.scheduleItem;
+    return widget.occurrenceDate != null &&
+        (item?.isRecurring == true || item?.seriesId != null);
+  }
 
   @override
   void initState() {
@@ -77,6 +96,12 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           _parseTime(scheduleItem.endTime) ??
           const TimeOfDay(hour: 9, minute: 0);
       _selectedColor = scheduleItem.color;
+      _recurrence = scheduleItem.recurrence;
+      _reminderMinutesBefore = scheduleItem.reminderMinutesBefore;
+      _enabled = scheduleItem.enabled;
+      if (_reminderMinutesBefore != null) {
+        unawaited(_refreshNotificationPermission());
+      }
     } else {
       final initialDate = widget.initialDate ?? DateTime.now();
       final now = DateTime.now();
@@ -94,6 +119,26 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       _startTime = TimeOfDay(hour: now.hour, minute: now.minute);
       _endTime = TimeOfDay(hour: defaultEnd.hour, minute: defaultEnd.minute);
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didResolveSeriesRoot || widget.scheduleItem?.seriesId == null) {
+      return;
+    }
+    _didResolveSeriesRoot = true;
+    final root = context.read<TimetableProvider>().getScheduleItemSeriesRoot(
+      widget.scheduleItem!.id,
+    );
+    if (root == null) {
+      return;
+    }
+    // An override carries the occurrence's content but the root owns the
+    // series range and recurrence rule shown when the user chooses "all".
+    _selectedStartDate = root.startDate;
+    _selectedEndDate = root.endDate;
+    _recurrence = root.recurrence;
   }
 
   @override
@@ -186,6 +231,10 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: _sectionSpacing),
+            _buildRepeatSection(l10n),
+            const SizedBox(height: _sectionSpacing),
+            _buildReminderSection(l10n),
           ],
         ),
       ),
@@ -283,6 +332,36 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   Widget _buildScheduleRangeHint() {
     final l10n = AppLocalizations.of(context)!;
     final theme = context.theme;
+    if (_recurrence != ScheduleRecurrence.none) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colors.muted,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colors.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.repeat_rounded, size: 18, color: theme.colors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _recurrence == ScheduleRecurrence.weekly
+                    ? l10n.scheduleRepeatWeeklyHint
+                    : l10n.scheduleRepeatEndDateHint,
+                style: theme.typography.body.xs.copyWith(
+                  color: theme.colors.mutedForeground,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final isCrossDay = _selectedEndDate.isAfter(_selectedStartDate);
     final text = isCrossDay
         ? l10n.scheduleCrossDayHint
@@ -317,6 +396,132 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildRepeatSection(AppLocalizations l10n) {
+    final options = <(ScheduleRecurrence, String)>[
+      (ScheduleRecurrence.none, l10n.scheduleRepeatNone),
+      (ScheduleRecurrence.daily, l10n.scheduleRepeatDaily),
+      (ScheduleRecurrence.weekly, l10n.scheduleRepeatWeekly),
+    ];
+    return HyperosControlCard(
+      title: l10n.scheduleRepeatSectionTitle,
+      child: HyperosControlCardInset(
+        child: Column(
+          children: [
+            for (var index = 0; index < options.length; index++)
+              HyperosChoiceTile(
+                prefix: const Icon(Icons.repeat_rounded, size: 20),
+                title: options[index].$2,
+                selected: _recurrence == options[index].$1,
+                variant: HyperosChoiceVariant.dialog,
+                showDivider: index < options.length - 1,
+                onTap: () {
+                  setState(() {
+                    _recurrence = options[index].$1;
+                    if (_recurrence != ScheduleRecurrence.none &&
+                        _selectedEndDate.isBefore(_selectedStartDate)) {
+                      _selectedEndDate = _selectedStartDate;
+                    }
+                  });
+                },
+              ),
+            if (_recurrence != ScheduleRecurrence.none) ...[
+              const SizedBox(height: _fieldSpacing),
+              HyperosChoiceTile(
+                prefix: const Icon(Icons.event_outlined, size: 20),
+                title: DateFormat.yMMMMd(
+                  l10n.localeName,
+                ).format(_selectedEndDate),
+                subtitle: Text(l10n.scheduleRepeatEndDateLabel),
+                trailing: const HyperosChevron(),
+                onTap: () => _pickDate(isStart: false),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderSection(AppLocalizations l10n) {
+    const reminderOptions = <int?>[null, 5, 10, 15, 30, 60];
+    return HyperosControlCard(
+      title: l10n.scheduleReminderSectionTitle,
+      child: HyperosControlCardInset(
+        child: Column(
+          children: [
+            for (var index = 0; index < reminderOptions.length; index++)
+              HyperosChoiceTile(
+                prefix: const Icon(Icons.notifications_none_rounded, size: 20),
+                title: reminderOptions[index] == null
+                    ? l10n.scheduleReminderOff
+                    : l10n.scheduleReminderMinutes(reminderOptions[index]!),
+                selected: _reminderMinutesBefore == reminderOptions[index],
+                variant: HyperosChoiceVariant.dialog,
+                showDivider: index < reminderOptions.length - 1,
+                onTap: () {
+                  setState(() {
+                    _reminderMinutesBefore = reminderOptions[index];
+                  });
+                  if (reminderOptions[index] != null) {
+                    unawaited(_refreshNotificationPermission());
+                  }
+                },
+              ),
+            if (_reminderMinutesBefore != null && !_notificationPermission) ...[
+              const SizedBox(height: _fieldSpacing),
+              HyperosActionTile(
+                icon: Icons.notifications_off_outlined,
+                title: l10n.scheduleReminderPermissionAction,
+                onTap: _requestNotificationPermission,
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.scheduleReminderPermissionMissing,
+                  style: context.theme.typography.body.xs.copyWith(
+                    color: context.theme.colors.mutedForeground,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: _fieldSpacing),
+            HyperosSwitchTile(
+              icon: Icons.pause_circle_outline_rounded,
+              title: l10n.scheduleEnabledTitle,
+              subtitle: _enabled ? null : l10n.scheduleDisabledSubtitle,
+              value: _enabled,
+              onChanged: (value) => setState(() => _enabled = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _refreshNotificationPermission() async {
+    final granted = await MiuiLiveActivitiesService()
+        .checkNotificationPermission();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _notificationPermission = granted);
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final service = MiuiLiveActivitiesService();
+    var granted = await service.requestNotificationPermission();
+    if (!granted) {
+      await service.openNotificationSettings();
+    }
+    granted = await service.checkNotificationPermission();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _notificationPermission = granted);
   }
 
   Widget _buildColorSection(AppLocalizations l10n) {
@@ -457,10 +662,25 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       return;
     }
 
-    final now = DateTime.now();
     final existing = widget.scheduleItem;
+    final provider = context.read<TimetableProvider>();
+    bool? applyToAll;
+    if (_isOccurrenceEditing) {
+      applyToAll = await _chooseOccurrenceScope(deleting: false);
+      if (applyToAll == null) {
+        return;
+      }
+    }
+
+    final seriesRoot = existing == null
+        ? null
+        : provider.getScheduleItemSeriesRoot(existing.id);
+    final updateSeries =
+        existing == null || !_isOccurrenceEditing || applyToAll!;
+    final baseItem = updateSeries ? (seriesRoot ?? existing) : existing;
+    final now = DateTime.now();
     final item = ScheduleItem(
-      id: existing?.id ?? const Uuid().v4(),
+      id: baseItem?.id ?? const Uuid().v4(),
       title: _titleController.text.trim(),
       location: _locationController.text.trim().isEmpty
           ? null
@@ -473,13 +693,26 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       startTime: _formatTime(_startTime),
       endTime: _formatTime(_endTime),
       color: _selectedColor,
-      createdAt: existing?.createdAt ?? now,
+      createdAt: baseItem?.createdAt ?? now,
       updatedAt: now,
+      recurrence: updateSeries ? _recurrence : ScheduleRecurrence.none,
+      exceptionDates: updateSeries && _recurrence != ScheduleRecurrence.none
+          ? (seriesRoot?.exceptionDates ?? const <DateTime>[])
+          : const <DateTime>[],
+      seriesId: updateSeries ? null : existing.seriesId,
+      occurrenceDate: updateSeries ? null : existing.occurrenceDate,
+      reminderMinutesBefore: _reminderMinutesBefore,
+      enabled: _enabled,
     );
 
-    final provider = context.read<TimetableProvider>();
     if (existing == null) {
       await provider.addScheduleItem(item);
+    } else if (_isOccurrenceEditing && applyToAll != true) {
+      await provider.updateScheduleItemOccurrence(
+        existing.id,
+        widget.occurrenceDate!,
+        item,
+      );
     } else {
       await provider.updateScheduleItem(item);
     }
@@ -502,6 +735,33 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         left.day == right.day;
   }
 
+  Future<bool?> _chooseOccurrenceScope({required bool deleting}) {
+    final l10n = AppLocalizations.of(context)!;
+    final navigator = Navigator.of(context);
+    return showHyperosDialog<bool>(
+      context: context,
+      title: deleting
+          ? l10n.scheduleDeleteScopeTitle
+          : l10n.scheduleEditScopeTitle,
+      message: deleting ? null : l10n.scheduleOccurrenceEditHint,
+      actions: [
+        HyperosDialogAction(
+          label: deleting
+              ? l10n.scheduleDeleteScopeThis
+              : l10n.scheduleEditScopeThis,
+          onPressed: () => navigator.pop(false),
+        ),
+        HyperosDialogAction(
+          label: deleting
+              ? l10n.scheduleDeleteScopeAll
+              : l10n.scheduleEditScopeAll,
+          isPrimary: true,
+          onPressed: () => navigator.pop(true),
+        ),
+      ],
+    );
+  }
+
   Future<void> _confirmDelete() async {
     final scheduleItem = widget.scheduleItem;
     if (scheduleItem == null) {
@@ -510,6 +770,31 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
+    if (_isOccurrenceEditing) {
+      final applyToAll = await _chooseOccurrenceScope(deleting: true);
+      if (applyToAll == null) {
+        return;
+      }
+      if (applyToAll) {
+        await provider.deleteScheduleItemSeries(scheduleItem.id);
+      } else {
+        await provider.deleteScheduleItemOccurrence(
+          scheduleItem.id,
+          widget.occurrenceDate!,
+        );
+      }
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(true);
+      showAppToast(
+        context,
+        message: l10n.scheduleDeletedHint,
+        kind: AppToastKind.success,
+      );
+      return;
+    }
+
     final confirmed = await showHyperosConfirmDialog(
       context: context,
       title: l10n.deleteScheduleTitle,

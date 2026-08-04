@@ -9408,6 +9408,174 @@ class AppLocalizationsJa extends AppLocalizations {
   String get debugUiOverlayToggleTitle => 'デバッグ UI オーバーレイ';
 
   @override
+  String get scheduleRepeatSectionTitle => '繰り返し';
+
+  @override
+  String get scheduleRepeatNone => '繰り返さない';
+
+  @override
+  String get scheduleRepeatDaily => '毎日';
+
+  @override
+  String get scheduleRepeatWeekly => '毎週';
+
+  @override
+  String get scheduleRepeatEndDateLabel => '繰り返し終了日';
+
+  @override
+  String get scheduleRepeatEndDateHint => '繰り返し予定には終了日が必要です';
+
+  @override
+  String get scheduleRepeatWeeklyHint => '開始日の曜日に繰り返します';
+
+  @override
+  String get scheduleReminderSectionTitle => '予定のリマインダー';
+
+  @override
+  String get scheduleReminderOff => '通知しない';
+
+  @override
+  String scheduleReminderMinutes(int minutes) {
+    return '$minutes 分前';
+  }
+
+  @override
+  String get scheduleReminderPermissionMissing =>
+      '通知が無効です。予定は保存されますが、通知が届かない場合があります';
+
+  @override
+  String get scheduleReminderPermissionAction => '通知権限を確認';
+
+  @override
+  String get scheduleEnabledTitle => '予定を有効にする';
+
+  @override
+  String get scheduleDisabledSubtitle => '一時停止中。リマインダーは無効です';
+
+  @override
+  String get scheduleEditScopeTitle => '編集範囲';
+
+  @override
+  String get scheduleEditScopeThis => '今回のみ';
+
+  @override
+  String get scheduleEditScopeAll => 'すべての繰り返し';
+
+  @override
+  String get scheduleDeleteScopeTitle => '削除範囲';
+
+  @override
+  String get scheduleDeleteScopeThis => '今回のみ削除';
+
+  @override
+  String get scheduleDeleteScopeAll => 'すべて削除';
+
+  @override
+  String get scheduleOccurrenceEditHint => '繰り返し予定の1回分を編集しています';
+
+  @override
+  String get scheduleRepeatEndRequired => '繰り返し終了日を選択してください';
+
+  @override
+  String get homeMenuTasksTitle => 'タスク';
+
+  @override
+  String get taskListTitle => 'タスク';
+
+  @override
+  String get addTask => 'タスクを追加';
+
+  @override
+  String get editTask => 'タスクを編集';
+
+  @override
+  String get saveTask => 'タスクを保存';
+
+  @override
+  String get taskTitleLabel => 'タスク名';
+
+  @override
+  String get taskTitleHint => '例：第3章の練習問題を終える';
+
+  @override
+  String get taskTitleRequired => 'タスク名を入力してください';
+
+  @override
+  String get taskNoteLabel => 'メモ';
+
+  @override
+  String get taskNoteHint => '補足（任意）';
+
+  @override
+  String get taskDueDateLabel => '期限';
+
+  @override
+  String get taskNoDueDate => '期限なし';
+
+  @override
+  String get taskCourseLabel => 'コース';
+
+  @override
+  String get taskCourseFilter => 'コースで絞り込む';
+
+  @override
+  String get taskAllCourses => 'すべてのコース';
+
+  @override
+  String get taskNoCourse => 'コース未指定';
+
+  @override
+  String get taskAllFilter => 'すべて';
+
+  @override
+  String get taskTodayFilter => '今日';
+
+  @override
+  String get taskWeekFilter => '今週';
+
+  @override
+  String get taskOverdueSection => '期限切れ';
+
+  @override
+  String get taskCompletedSection => '完了済み';
+
+  @override
+  String get taskNoTasks => 'タスクはまだありません';
+
+  @override
+  String get taskNoTasksForToday => '今日のタスクはありません';
+
+  @override
+  String get taskNoTasksForWeek => '今週のタスクはありません';
+
+  @override
+  String get taskNoTasksForCourse => 'このコースのタスクはありません';
+
+  @override
+  String get taskDelete => 'タスクを削除';
+
+  @override
+  String get taskDeleteConfirm => 'このタスクを削除しますか？';
+
+  @override
+  String get taskHomeworkDefaultTitle => '課題';
+
+  @override
+  String get taskAddFromCourse => 'タスクを追加';
+
+  @override
+  String get taskViewCourse => 'コースを表示';
+
+  @override
+  String get taskSaved => 'タスクを保存しました';
+
+  @override
+  String get taskUpdated => 'タスクを更新しました';
+
+  @override
+  String get taskDeleted => 'タスクを削除しました';
+
+  @override
   String get icsExportSectionTitle => 'カレンダーをエクスポート';
 
   @override

@@ -202,6 +202,7 @@ class CoupleWebdavService {
     final content = _dataTransferService.buildBackupJson(
       profileName: provider.activeProfile?.name,
       courses: provider.courses,
+      scheduleItems: provider.scheduleItems,
       settings: provider.settings,
       currentWeek: provider.currentWeek,
     );
