@@ -9151,6 +9151,80 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get debugUiOverlayToggleTitle => '调试 UI 叠层';
+
+  @override
+  String get icsExportSectionTitle => '导出日历';
+
+  @override
+  String get icsExportSectionSubtitle => '选择课程、考试和日程，生成 ICS 日历并分享';
+
+  @override
+  String get icsExportTitle => '导出日历';
+
+  @override
+  String get icsExportProfileLabel => '课表';
+
+  @override
+  String get icsExportProfileSelectTitle => '选择课表';
+
+  @override
+  String get icsExportDateRangeTitle => '日期范围';
+
+  @override
+  String get icsExportStartDate => '开始日期';
+
+  @override
+  String get icsExportEndDate => '结束日期';
+
+  @override
+  String get icsExportTypesTitle => '日历内容';
+
+  @override
+  String get icsExportCourses => '课程';
+
+  @override
+  String get icsExportExams => '考试';
+
+  @override
+  String get icsExportSchedules => '日程';
+
+  @override
+  String get icsExportButton => '导出并分享';
+
+  @override
+  String get icsExportSharing => '准备日历…';
+
+  @override
+  String get icsExportNoProfiles => '暂无可导出的课表';
+
+  @override
+  String get icsExportDateRangeInvalid => '请选择不早于开始日期的结束日期';
+
+  @override
+  String get icsExportNoSelection => '至少选择一种日历内容';
+
+  @override
+  String get icsExportSemesterStartRequired => '导出课程前，请先设置学期开始日期';
+
+  @override
+  String get icsExportNoEvents => '所选日期范围内没有日历事件';
+
+  @override
+  String get icsExportCancelled => '已取消分享日历';
+
+  @override
+  String get icsExportFailed => '日历导出失败，请稍后重试';
+
+  @override
+  String icsExportShared(int count) {
+    return '已导出并分享 $count 个日历事件';
+  }
+
+  @override
+  String get icsExportShareText => '这是来自轻屿课表的日历文件';
+
+  @override
+  String get icsExportShareSubject => '轻屿课表日历';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -17883,6 +17957,80 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get debugUiOverlayToggleTitle => '除錯 UI 疊層';
+
+  @override
+  String get icsExportSectionTitle => '匯出日曆';
+
+  @override
+  String get icsExportSectionSubtitle => '選擇課程、考試和日程，生成 ICS 日曆並分享';
+
+  @override
+  String get icsExportTitle => '匯出日曆';
+
+  @override
+  String get icsExportProfileLabel => '課表';
+
+  @override
+  String get icsExportProfileSelectTitle => '選擇課表';
+
+  @override
+  String get icsExportDateRangeTitle => '日期範圍';
+
+  @override
+  String get icsExportStartDate => '開始日期';
+
+  @override
+  String get icsExportEndDate => '結束日期';
+
+  @override
+  String get icsExportTypesTitle => '日曆內容';
+
+  @override
+  String get icsExportCourses => '課程';
+
+  @override
+  String get icsExportExams => '考試';
+
+  @override
+  String get icsExportSchedules => '日程';
+
+  @override
+  String get icsExportButton => '匯出並分享';
+
+  @override
+  String get icsExportSharing => '準備日曆…';
+
+  @override
+  String get icsExportNoProfiles => '暫無可匯出的課表';
+
+  @override
+  String get icsExportDateRangeInvalid => '請選擇不早於開始日期的結束日期';
+
+  @override
+  String get icsExportNoSelection => '至少選擇一種日曆內容';
+
+  @override
+  String get icsExportSemesterStartRequired => '匯出課程前，請先設定學期開始日期';
+
+  @override
+  String get icsExportNoEvents => '所選日期範圍內沒有日曆事件';
+
+  @override
+  String get icsExportCancelled => '已取消分享日曆';
+
+  @override
+  String get icsExportFailed => '日曆匯出失敗，請稍後再試';
+
+  @override
+  String icsExportShared(int count) {
+    return '已匯出並分享 $count 個日曆事件';
+  }
+
+  @override
+  String get icsExportShareText => '這是來自輕屿課表的日曆檔案';
+
+  @override
+  String get icsExportShareSubject => '輕屿課表日曆';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -26615,4 +26763,78 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get debugUiOverlayToggleTitle => '除錯 UI 疊層';
+
+  @override
+  String get icsExportSectionTitle => '匯出日曆';
+
+  @override
+  String get icsExportSectionSubtitle => '選擇課程、考試和日程，產生 ICS 日曆並分享';
+
+  @override
+  String get icsExportTitle => '匯出日曆';
+
+  @override
+  String get icsExportProfileLabel => '課表';
+
+  @override
+  String get icsExportProfileSelectTitle => '選擇課表';
+
+  @override
+  String get icsExportDateRangeTitle => '日期範圍';
+
+  @override
+  String get icsExportStartDate => '開始日期';
+
+  @override
+  String get icsExportEndDate => '結束日期';
+
+  @override
+  String get icsExportTypesTitle => '日曆內容';
+
+  @override
+  String get icsExportCourses => '課程';
+
+  @override
+  String get icsExportExams => '考試';
+
+  @override
+  String get icsExportSchedules => '日程';
+
+  @override
+  String get icsExportButton => '匯出並分享';
+
+  @override
+  String get icsExportSharing => '準備日曆…';
+
+  @override
+  String get icsExportNoProfiles => '暫無可匯出的課表';
+
+  @override
+  String get icsExportDateRangeInvalid => '請選擇不早於開始日期的結束日期';
+
+  @override
+  String get icsExportNoSelection => '至少選擇一種日曆內容';
+
+  @override
+  String get icsExportSemesterStartRequired => '匯出課程前，請先設定學期開始日期';
+
+  @override
+  String get icsExportNoEvents => '所選日期範圍內沒有日曆事件';
+
+  @override
+  String get icsExportCancelled => '已取消分享日曆';
+
+  @override
+  String get icsExportFailed => '日曆匯出失敗，請稍後再試';
+
+  @override
+  String icsExportShared(int count) {
+    return '已匯出並分享 $count 個日曆事件';
+  }
+
+  @override
+  String get icsExportShareText => '這是來自輕屿課表的日曆檔案';
+
+  @override
+  String get icsExportShareSubject => '輕屿課表日曆';
 }

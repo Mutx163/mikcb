@@ -5627,5 +5627,34 @@
   "hyperosShowcaseEntrySubtitle": "HyperOS component preview",
   "miuixShowcaseEntryTitle": "Miuix Component Showcase",
   "miuixShowcaseEntrySubtitle": "Miuix component preview",
-  "debugUiOverlayToggleTitle": "Debug UI Overlay"
+  "debugUiOverlayToggleTitle": "Debug UI Overlay",
+  "icsExportSectionTitle": "Calendar export",
+  "icsExportSectionSubtitle": "Choose courses, exams, and schedules to share as an ICS calendar",
+  "icsExportTitle": "Export calendar",
+  "icsExportProfileLabel": "Timetable profile",
+  "icsExportProfileSelectTitle": "Choose timetable profile",
+  "icsExportDateRangeTitle": "Date range",
+  "icsExportStartDate": "Start date",
+  "icsExportEndDate": "End date",
+  "icsExportTypesTitle": "Calendar content",
+  "icsExportCourses": "Courses",
+  "icsExportExams": "Exams",
+  "icsExportSchedules": "Schedules",
+  "icsExportButton": "Export and share",
+  "icsExportSharing": "Preparing calendar…",
+  "icsExportNoProfiles": "No timetable profile is available for export",
+  "icsExportDateRangeInvalid": "Choose an end date on or after the start date",
+  "icsExportNoSelection": "Select at least one calendar content type",
+  "icsExportSemesterStartRequired": "Set a semester start date before exporting courses",
+  "icsExportNoEvents": "No calendar events were found in the selected date range",
+  "icsExportCancelled": "Calendar sharing was cancelled",
+  "icsExportFailed": "Calendar export failed. Try again later",
+  "icsExportShared": "Exported and shared {count} calendar events",
+  "@icsExportShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "icsExportShareText": "Calendar file from Qingyu Timetable",
+  "icsExportShareSubject": "Qingyu Timetable calendar"
 }

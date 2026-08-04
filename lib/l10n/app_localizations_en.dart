@@ -9688,4 +9688,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debugUiOverlayToggleTitle => 'Debug UI Overlay';
+
+  @override
+  String get icsExportSectionTitle => 'Calendar export';
+
+  @override
+  String get icsExportSectionSubtitle =>
+      'Choose courses, exams, and schedules to share as an ICS calendar';
+
+  @override
+  String get icsExportTitle => 'Export calendar';
+
+  @override
+  String get icsExportProfileLabel => 'Timetable profile';
+
+  @override
+  String get icsExportProfileSelectTitle => 'Choose timetable profile';
+
+  @override
+  String get icsExportDateRangeTitle => 'Date range';
+
+  @override
+  String get icsExportStartDate => 'Start date';
+
+  @override
+  String get icsExportEndDate => 'End date';
+
+  @override
+  String get icsExportTypesTitle => 'Calendar content';
+
+  @override
+  String get icsExportCourses => 'Courses';
+
+  @override
+  String get icsExportExams => 'Exams';
+
+  @override
+  String get icsExportSchedules => 'Schedules';
+
+  @override
+  String get icsExportButton => 'Export and share';
+
+  @override
+  String get icsExportSharing => 'Preparing calendar…';
+
+  @override
+  String get icsExportNoProfiles =>
+      'No timetable profile is available for export';
+
+  @override
+  String get icsExportDateRangeInvalid =>
+      'Choose an end date on or after the start date';
+
+  @override
+  String get icsExportNoSelection =>
+      'Select at least one calendar content type';
+
+  @override
+  String get icsExportSemesterStartRequired =>
+      'Set a semester start date before exporting courses';
+
+  @override
+  String get icsExportNoEvents =>
+      'No calendar events were found in the selected date range';
+
+  @override
+  String get icsExportCancelled => 'Calendar sharing was cancelled';
+
+  @override
+  String get icsExportFailed => 'Calendar export failed. Try again later';
+
+  @override
+  String icsExportShared(int count) {
+    return 'Exported and shared $count calendar events';
+  }
+
+  @override
+  String get icsExportShareText => 'Calendar file from Qingyu Timetable';
+
+  @override
+  String get icsExportShareSubject => 'Qingyu Timetable calendar';
 }

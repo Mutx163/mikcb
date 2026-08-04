@@ -16596,6 +16596,150 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'调试 UI 叠层'**
   String get debugUiOverlayToggleTitle;
+
+  /// No description provided for @icsExportSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出日历'**
+  String get icsExportSectionTitle;
+
+  /// No description provided for @icsExportSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择课程、考试和日程，生成 ICS 日历并分享'**
+  String get icsExportSectionSubtitle;
+
+  /// No description provided for @icsExportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出日历'**
+  String get icsExportTitle;
+
+  /// No description provided for @icsExportProfileLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表'**
+  String get icsExportProfileLabel;
+
+  /// No description provided for @icsExportProfileSelectTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择课表'**
+  String get icsExportProfileSelectTitle;
+
+  /// No description provided for @icsExportDateRangeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期范围'**
+  String get icsExportDateRangeTitle;
+
+  /// No description provided for @icsExportStartDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始日期'**
+  String get icsExportStartDate;
+
+  /// No description provided for @icsExportEndDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束日期'**
+  String get icsExportEndDate;
+
+  /// No description provided for @icsExportTypesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'日历内容'**
+  String get icsExportTypesTitle;
+
+  /// No description provided for @icsExportCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程'**
+  String get icsExportCourses;
+
+  /// No description provided for @icsExportExams.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试'**
+  String get icsExportExams;
+
+  /// No description provided for @icsExportSchedules.
+  ///
+  /// In zh, this message translates to:
+  /// **'日程'**
+  String get icsExportSchedules;
+
+  /// No description provided for @icsExportButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出并分享'**
+  String get icsExportButton;
+
+  /// No description provided for @icsExportSharing.
+  ///
+  /// In zh, this message translates to:
+  /// **'准备日历…'**
+  String get icsExportSharing;
+
+  /// No description provided for @icsExportNoProfiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无可导出的课表'**
+  String get icsExportNoProfiles;
+
+  /// No description provided for @icsExportDateRangeInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择不早于开始日期的结束日期'**
+  String get icsExportDateRangeInvalid;
+
+  /// No description provided for @icsExportNoSelection.
+  ///
+  /// In zh, this message translates to:
+  /// **'至少选择一种日历内容'**
+  String get icsExportNoSelection;
+
+  /// No description provided for @icsExportSemesterStartRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出课程前，请先设置学期开始日期'**
+  String get icsExportSemesterStartRequired;
+
+  /// No description provided for @icsExportNoEvents.
+  ///
+  /// In zh, this message translates to:
+  /// **'所选日期范围内没有日历事件'**
+  String get icsExportNoEvents;
+
+  /// No description provided for @icsExportCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消分享日历'**
+  String get icsExportCancelled;
+
+  /// No description provided for @icsExportFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'日历导出失败，请稍后重试'**
+  String get icsExportFailed;
+
+  /// No description provided for @icsExportShared.
+  ///
+  /// In zh, this message translates to:
+  /// **'已导出并分享 {count} 个日历事件'**
+  String icsExportShared(int count);
+
+  /// No description provided for @icsExportShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是来自轻屿课表的日历文件'**
+  String get icsExportShareText;
+
+  /// No description provided for @icsExportShareSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表日历'**
+  String get icsExportShareSubject;
 }
 
 class _AppLocalizationsDelegate

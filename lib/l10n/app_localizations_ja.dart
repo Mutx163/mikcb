@@ -9406,4 +9406,78 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get debugUiOverlayToggleTitle => 'デバッグ UI オーバーレイ';
+
+  @override
+  String get icsExportSectionTitle => 'カレンダーをエクスポート';
+
+  @override
+  String get icsExportSectionSubtitle => '授業、試験、予定を選択して ICS カレンダーとして共有します';
+
+  @override
+  String get icsExportTitle => 'カレンダーをエクスポート';
+
+  @override
+  String get icsExportProfileLabel => '時間割プロフィール';
+
+  @override
+  String get icsExportProfileSelectTitle => '時間割プロフィールを選択';
+
+  @override
+  String get icsExportDateRangeTitle => '日付範囲';
+
+  @override
+  String get icsExportStartDate => '開始日';
+
+  @override
+  String get icsExportEndDate => '終了日';
+
+  @override
+  String get icsExportTypesTitle => 'カレンダー内容';
+
+  @override
+  String get icsExportCourses => '授業';
+
+  @override
+  String get icsExportExams => '試験';
+
+  @override
+  String get icsExportSchedules => '予定';
+
+  @override
+  String get icsExportButton => 'エクスポートして共有';
+
+  @override
+  String get icsExportSharing => 'カレンダーを準備中…';
+
+  @override
+  String get icsExportNoProfiles => 'エクスポートできる時間割プロフィールがありません';
+
+  @override
+  String get icsExportDateRangeInvalid => '終了日は開始日以降にしてください';
+
+  @override
+  String get icsExportNoSelection => '少なくとも1種類の内容を選択してください';
+
+  @override
+  String get icsExportSemesterStartRequired => '授業をエクスポートする前に学期開始日を設定してください';
+
+  @override
+  String get icsExportNoEvents => '選択した日付範囲にカレンダーイベントがありません';
+
+  @override
+  String get icsExportCancelled => 'カレンダーの共有をキャンセルしました';
+
+  @override
+  String get icsExportFailed => 'カレンダーのエクスポートに失敗しました。後でもう一度お試しください';
+
+  @override
+  String icsExportShared(int count) {
+    return '$count件のカレンダーイベントをエクスポートして共有しました';
+  }
+
+  @override
+  String get icsExportShareText => '軽屿課表からのカレンダーファイル';
+
+  @override
+  String get icsExportShareSubject => '軽屿課表カレンダー';
 }

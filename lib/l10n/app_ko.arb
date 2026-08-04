@@ -5403,5 +5403,34 @@
   "hyperosShowcaseEntrySubtitle": "HyperOS 컴포넌트 미리보기",
   "miuixShowcaseEntryTitle": "Miuix 컴포넌트 쇼케이스",
   "miuixShowcaseEntrySubtitle": "Miuix 컴포넌트 미리보기",
-  "debugUiOverlayToggleTitle": "디버그 UI 오버레이"
+  "debugUiOverlayToggleTitle": "디버그 UI 오버레이",
+  "icsExportSectionTitle": "캘린더 내보내기",
+  "icsExportSectionSubtitle": "수업, 시험, 일정을 선택해 ICS 캘린더로 공유합니다",
+  "icsExportTitle": "캘린더 내보내기",
+  "icsExportProfileLabel": "시간표 프로필",
+  "icsExportProfileSelectTitle": "시간표 프로필 선택",
+  "icsExportDateRangeTitle": "날짜 범위",
+  "icsExportStartDate": "시작 날짜",
+  "icsExportEndDate": "종료 날짜",
+  "icsExportTypesTitle": "캘린더 내용",
+  "icsExportCourses": "수업",
+  "icsExportExams": "시험",
+  "icsExportSchedules": "일정",
+  "icsExportButton": "내보내고 공유",
+  "icsExportSharing": "캘린더 준비 중…",
+  "icsExportNoProfiles": "내보낼 시간표 프로필이 없습니다",
+  "icsExportDateRangeInvalid": "종료 날짜를 시작 날짜 이후로 선택하세요",
+  "icsExportNoSelection": "하나 이상의 캘린더 내용 유형을 선택하세요",
+  "icsExportSemesterStartRequired": "수업을 내보내기 전에 학기 시작 날짜를 설정하세요",
+  "icsExportNoEvents": "선택한 날짜 범위에 캘린더 이벤트가 없습니다",
+  "icsExportCancelled": "캘린더 공유가 취소되었습니다",
+  "icsExportFailed": "캘린더를 내보내지 못했습니다. 잠시 후 다시 시도하세요",
+  "icsExportShared": "캘린더 이벤트 {count}개를 내보내고 공유했습니다",
+  "@icsExportShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "icsExportShareText": "轻屿课表에서 내보낸 캘린더 파일",
+  "icsExportShareSubject": "轻屿课表 캘린더"
 }

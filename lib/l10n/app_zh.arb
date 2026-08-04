@@ -5627,5 +5627,34 @@
   "hyperosShowcaseEntrySubtitle": "HyperOS 组件预览",
   "miuixShowcaseEntryTitle": "Miuix 组件展示",
   "miuixShowcaseEntrySubtitle": "Miuix 组件预览",
-  "debugUiOverlayToggleTitle": "调试 UI 叠层"
+  "debugUiOverlayToggleTitle": "调试 UI 叠层",
+  "icsExportSectionTitle": "导出日历",
+  "icsExportSectionSubtitle": "选择课程、考试和日程，生成 ICS 日历并分享",
+  "icsExportTitle": "导出日历",
+  "icsExportProfileLabel": "课表",
+  "icsExportProfileSelectTitle": "选择课表",
+  "icsExportDateRangeTitle": "日期范围",
+  "icsExportStartDate": "开始日期",
+  "icsExportEndDate": "结束日期",
+  "icsExportTypesTitle": "日历内容",
+  "icsExportCourses": "课程",
+  "icsExportExams": "考试",
+  "icsExportSchedules": "日程",
+  "icsExportButton": "导出并分享",
+  "icsExportSharing": "准备日历…",
+  "icsExportNoProfiles": "暂无可导出的课表",
+  "icsExportDateRangeInvalid": "请选择不早于开始日期的结束日期",
+  "icsExportNoSelection": "至少选择一种日历内容",
+  "icsExportSemesterStartRequired": "导出课程前，请先设置学期开始日期",
+  "icsExportNoEvents": "所选日期范围内没有日历事件",
+  "icsExportCancelled": "已取消分享日历",
+  "icsExportFailed": "日历导出失败，请稍后重试",
+  "icsExportShared": "已导出并分享 {count} 个日历事件",
+  "@icsExportShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "icsExportShareText": "这是来自轻屿课表的日历文件",
+  "icsExportShareSubject": "轻屿课表日历"
 }

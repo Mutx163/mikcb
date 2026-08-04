@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
+import 'ics_export_screen.dart';
 import 'qr_transfer_send_screen.dart';
 import 'qr_transfer_scan_screen.dart';
 import '../utils/app_toast.dart';
@@ -60,6 +61,17 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                 ],
               ),
             ),
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.icsExportSectionTitle),
+          HyperosListGroup(
+            children: [
+              HyperosNavTile(
+                title: l10n.icsExportSectionTitle,
+                subtitle: l10n.icsExportSectionSubtitle,
+                onTap: _openIcsExport,
+              ),
+            ],
           ),
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.fullImportTitle),
@@ -234,6 +246,10 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         });
       }
     }
+  }
+
+  void _openIcsExport() {
+    HyperosNavigation.pushWidget<void>(context, const IcsExportScreen());
   }
 
   Future<void> _exportFullData() async {

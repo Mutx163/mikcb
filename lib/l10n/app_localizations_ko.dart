@@ -9443,4 +9443,78 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get debugUiOverlayToggleTitle => '디버그 UI 오버레이';
+
+  @override
+  String get icsExportSectionTitle => '캘린더 내보내기';
+
+  @override
+  String get icsExportSectionSubtitle => '수업, 시험, 일정을 선택해 ICS 캘린더로 공유합니다';
+
+  @override
+  String get icsExportTitle => '캘린더 내보내기';
+
+  @override
+  String get icsExportProfileLabel => '시간표 프로필';
+
+  @override
+  String get icsExportProfileSelectTitle => '시간표 프로필 선택';
+
+  @override
+  String get icsExportDateRangeTitle => '날짜 범위';
+
+  @override
+  String get icsExportStartDate => '시작 날짜';
+
+  @override
+  String get icsExportEndDate => '종료 날짜';
+
+  @override
+  String get icsExportTypesTitle => '캘린더 내용';
+
+  @override
+  String get icsExportCourses => '수업';
+
+  @override
+  String get icsExportExams => '시험';
+
+  @override
+  String get icsExportSchedules => '일정';
+
+  @override
+  String get icsExportButton => '내보내고 공유';
+
+  @override
+  String get icsExportSharing => '캘린더 준비 중…';
+
+  @override
+  String get icsExportNoProfiles => '내보낼 시간표 프로필이 없습니다';
+
+  @override
+  String get icsExportDateRangeInvalid => '종료 날짜를 시작 날짜 이후로 선택하세요';
+
+  @override
+  String get icsExportNoSelection => '하나 이상의 캘린더 내용 유형을 선택하세요';
+
+  @override
+  String get icsExportSemesterStartRequired => '수업을 내보내기 전에 학기 시작 날짜를 설정하세요';
+
+  @override
+  String get icsExportNoEvents => '선택한 날짜 범위에 캘린더 이벤트가 없습니다';
+
+  @override
+  String get icsExportCancelled => '캘린더 공유가 취소되었습니다';
+
+  @override
+  String get icsExportFailed => '캘린더를 내보내지 못했습니다. 잠시 후 다시 시도하세요';
+
+  @override
+  String icsExportShared(int count) {
+    return '캘린더 이벤트 $count개를 내보내고 공유했습니다';
+  }
+
+  @override
+  String get icsExportShareText => '轻屿课表에서 내보낸 캘린더 파일';
+
+  @override
+  String get icsExportShareSubject => '轻屿课表 캘린더';
 }

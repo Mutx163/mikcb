@@ -5403,5 +5403,34 @@
   "hyperosShowcaseEntrySubtitle": "HyperOS コンポーネントプレビュー",
   "miuixShowcaseEntryTitle": "Miuix コンポーネントショーケース",
   "miuixShowcaseEntrySubtitle": "Miuix コンポーネントプレビュー",
-  "debugUiOverlayToggleTitle": "デバッグ UI オーバーレイ"
+  "debugUiOverlayToggleTitle": "デバッグ UI オーバーレイ",
+  "icsExportSectionTitle": "カレンダーをエクスポート",
+  "icsExportSectionSubtitle": "授業、試験、予定を選択して ICS カレンダーとして共有します",
+  "icsExportTitle": "カレンダーをエクスポート",
+  "icsExportProfileLabel": "時間割プロフィール",
+  "icsExportProfileSelectTitle": "時間割プロフィールを選択",
+  "icsExportDateRangeTitle": "日付範囲",
+  "icsExportStartDate": "開始日",
+  "icsExportEndDate": "終了日",
+  "icsExportTypesTitle": "カレンダー内容",
+  "icsExportCourses": "授業",
+  "icsExportExams": "試験",
+  "icsExportSchedules": "予定",
+  "icsExportButton": "エクスポートして共有",
+  "icsExportSharing": "カレンダーを準備中…",
+  "icsExportNoProfiles": "エクスポートできる時間割プロフィールがありません",
+  "icsExportDateRangeInvalid": "終了日は開始日以降にしてください",
+  "icsExportNoSelection": "少なくとも1種類の内容を選択してください",
+  "icsExportSemesterStartRequired": "授業をエクスポートする前に学期開始日を設定してください",
+  "icsExportNoEvents": "選択した日付範囲にカレンダーイベントがありません",
+  "icsExportCancelled": "カレンダーの共有をキャンセルしました",
+  "icsExportFailed": "カレンダーのエクスポートに失敗しました。後でもう一度お試しください",
+  "icsExportShared": "{count}件のカレンダーイベントをエクスポートして共有しました",
+  "@icsExportShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "icsExportShareText": "軽屿課表からのカレンダーファイル",
+  "icsExportShareSubject": "軽屿課表カレンダー"
 }
