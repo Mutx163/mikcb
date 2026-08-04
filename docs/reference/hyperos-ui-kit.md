@@ -23,6 +23,7 @@
 - 统一入口：`lib/ui/hyperos/hyperos.dart`。
 - 当前约 47 个 Dart 文件、约 207 个类/枚举；它不是第三方包，而是本项目基于 `flutter_miuix`、Flutter/Material 基础设施和业务约束形成的应用级 facade。
 - 负责页面壳层、设置列表与分组、项目 tokens、页面转场、Sheet/Dialog/Toast、玻璃/模糊降级、兼容适配和业务组合。
+- 当前生产根仍是 `MaterialApp` + 项目自己的 `HyperosMotionHost` / `FrostedAppearanceScope` / HyperOS facade；`MiuixSystemTheme` 目前主要用于 `miuix_showcase_screen.dart` 的官方组件展示与独立示例，不要在每个业务页重复包一层主题。
 - 常用入口：`HyperosRootPage`、`HyperosSubpage`、`HyperosSheet`、`HyperosListView`、`HyperosListGroup`、`HyperosListTile`、`HyperosChoiceTile`、`HyperosSwitchTile`、`HyperosSliderTile`、`HyperosButton`、`HyperosControlCard`、`HyperosSelectTile`、`HyperosTextField`、`HyperosNavigation`、`showAppConfirmDialog`、`showAppToast`。
 
 ### 0.3 新页面必须遵守的选型规则
