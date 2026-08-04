@@ -106,16 +106,20 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       final initialDate = widget.initialDate ?? DateTime.now();
       final now = DateTime.now();
       final defaultEnd = now.add(const Duration(hours: 1));
-      _selectedStartDate = DateTime(
+      final normalizedInitialDate = DateTime(
         initialDate.year,
         initialDate.month,
         initialDate.day,
       );
-      _selectedEndDate = DateTime(
-        defaultEnd.year,
-        defaultEnd.month,
-        defaultEnd.day,
+      _selectedStartDate = DateTime(
+        normalizedInitialDate.year,
+        normalizedInitialDate.month,
+        normalizedInitialDate.day,
       );
+      // Keep an add action opened for a future day valid by default. Using
+      // `now + 1h` for the end date made that day appear to have an inverted
+      // range until the user fixed it manually.
+      _selectedEndDate = normalizedInitialDate;
       _startTime = TimeOfDay(hour: now.hour, minute: now.minute);
       _endTime = TimeOfDay(hour: defaultEnd.hour, minute: defaultEnd.minute);
     }

@@ -182,6 +182,24 @@ void main() {
         isNot(ExamReminderService.stableRequestCode('exam-1', 1440)),
       );
     });
+
+    test('active fire keys include the reminder lead time', () {
+      final fires = ExamReminderService.buildFires(
+        exams: [
+          buildExam(
+            dateTime: DateTime(2026, 8, 1),
+            preset: ExamReminderPreset.hour1AndMin30,
+          ),
+        ],
+        resolveCourse: (_) => null,
+        now: DateTime(2026, 7, 1),
+      );
+
+      expect(ExamReminderService.buildActiveFireKeys(fires), {
+        'exam-1#60',
+        'exam-1#30',
+      });
+    });
   });
 
   group('Exam.examStartDateTime', () {

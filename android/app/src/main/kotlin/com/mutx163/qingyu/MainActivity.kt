@@ -603,11 +603,20 @@ class MainActivity : FlutterActivity() {
                             ?.mapNotNull { it as? String }
                             ?.toSet()
                             ?: emptySet()
+                        val activeFireKeys = if (payload?.containsKey("activeFireKeys") == true) {
+                            (payload["activeFireKeys"] as? List<*>)
+                                ?.mapNotNull { it as? String }
+                                ?.toSet()
+                                ?: emptySet()
+                        } else {
+                            null
+                        }
                         if (fires != null) {
                             ExamReminderScheduler.reconcile(
                                 applicationContext,
                                 fires,
                                 activeExamIds,
+                                activeFireKeys,
                             )
                             result.success(true)
                         } else {

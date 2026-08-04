@@ -65,6 +65,18 @@ class ExamReminderService {
     return requestCodeNamespace | (hash & 0x00ffffff);
   }
 
+  /// Identifies one logical reminder fire, including its lead time.
+  ///
+  /// Keeping the offset in the key matters when a user changes a reminder
+  /// from (for example) 30 minutes to 60 minutes: the old overdue fire must
+  /// not be retried as if it were still part of the active schedule.
+  static String fireKey(ExamReminderFire fire) =>
+      '${fire.examId}#${fire.offsetMinutes}';
+
+  static Set<String> buildActiveFireKeys(Iterable<ExamReminderFire> fires) {
+    return fires.map(fireKey).toSet();
+  }
+
   static const Duration _scheduleReminderHorizon = Duration(days: 366);
   static const Duration _scheduleReminderRetryWindow = Duration(days: 1);
 
@@ -305,21 +317,30 @@ class ExamReminderService {
     activeExamIds.addAll(
       buildScheduleActiveIds(scheduleItems: scheduleItems, now: referenceNow),
     );
-    return syncFires(fires, activeExamIds: activeExamIds);
+    return syncFires(
+      fires,
+      activeExamIds: activeExamIds,
+      activeFireKeys: buildActiveFireKeys(fires),
+    );
   }
 
   Future<bool> syncFires(
     List<ExamReminderFire> fires, {
     Set<String> activeExamIds = const {},
+    Set<String>? activeFireKeys,
   }) async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return true;
     }
     try {
-      await _channel.invokeMethod<void>('reconcile', {
+      final payload = <String, dynamic>{
         'fires': fires.map((fire) => fire.toNativeMap()).toList(),
         'activeExamIds': activeExamIds.toList(growable: false),
-      });
+      };
+      if (activeFireKeys != null) {
+        payload['activeFireKeys'] = activeFireKeys.toList(growable: false);
+      }
+      await _channel.invokeMethod<void>('reconcile', payload);
       return true;
     } on MissingPluginException {
       if (kDebugMode) {
