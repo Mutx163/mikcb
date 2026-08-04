@@ -20,6 +20,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 
 import '../helpers_test_app.dart';
@@ -303,6 +304,45 @@ void main() {
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnLight);
       expect(_textColor(tester, '1周'), homePageChromeForegroundOnLight);
       await tester.binding.setSurfaceSize(null);
+    },
+  );
+
+  testWidgets(
+    'no wallpaper: weekday divider uses a subtle half-pixel HyperOS line',
+    (tester) async {
+      _seedInitializedPrefs();
+      final provider = await createInitializedTestProvider(tester);
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: provider,
+          child: const TestApp(
+            home: TimetableScreen(
+              enableUpdateCheck: false,
+              enableProgressTimer: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(hasHomePageBackdropImage(provider.settings), isFalse);
+      final header = find.byWidgetPredicate((widget) {
+        if (widget is! Container || widget.decoration is! BoxDecoration) {
+          return false;
+        }
+        final decoration = widget.decoration! as BoxDecoration;
+        return decoration.border?.bottom.width == 0.5;
+      });
+      expect(header, findsOneWidget);
+      final container = tester.widget<Container>(header);
+      final decoration = container.decoration! as BoxDecoration;
+      final bottom = decoration.border!.bottom;
+      expect(bottom.width, 0.5);
+      expect(bottom.color, HyperosMiuixLightColors.dividerLine);
     },
   );
 

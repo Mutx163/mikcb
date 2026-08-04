@@ -1797,9 +1797,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final subtleBorder = context.theme.colors.border;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdropImage(settings);
+    // Opaque/no-wallpaper chrome still needs a separator, but a full 1dp
+    // ThemeData outline lands as a dark multi-physical-pixel band on dense
+    // Android screens. Keep the wallpaper path's existing border untouched
+    // and use the lighter HyperOS divider token only for the fallback.
+    final subtleBorder = hasBackdrop
+        ? context.theme.colors.border
+        : HyperosColors.dividerLine(context);
+    final dividerWidth = hasBackdrop ? 1.0 : 0.5;
     // Only flip by wallpaper luminance when this band actually shows the
     // wallpaper / frosted glass; with the scope toggled off it paints the
     // opaque page background and must use the theme / configured ink.
@@ -2066,7 +2073,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       decoration: hideBottomBorder
           ? null
           : BoxDecoration(
-              border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
+              border: Border(
+                bottom: BorderSide(color: subtleBorder, width: dividerWidth),
+              ),
             ),
       child: _isDayView && _dayViewPageController != null
           ? AnimatedBuilder(
