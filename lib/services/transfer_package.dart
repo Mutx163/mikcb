@@ -88,6 +88,84 @@ class TransferPackage {
   static const String packageType = 'transfer';
   static const int schemaVersion = 1;
 
+  static const Map<String, String> _requiredListKinds = {
+    'courses': 'course',
+    'tasks': 'task',
+    'scheduleItems': 'schedule_item',
+    'exams': 'exam',
+    'timeSchemes': 'time_scheme',
+    'scheduleDateRules': 'time_rule',
+    'locationTimeGroups': 'location_group',
+    'profiles': 'profile',
+  };
+
+  static const Map<String, List<String>> _requiredEntityFields = {
+    'course': [
+      'id',
+      'name',
+      'teacher',
+      'location',
+      'dayOfWeek',
+      'startSection',
+      'endSection',
+      'startTime',
+      'endTime',
+    ],
+    'task': ['id', 'title', 'createdAt', 'updatedAt'],
+    'schedule_item': [
+      'id',
+      'title',
+      'startDate',
+      'endDate',
+      'startTime',
+      'endTime',
+      'createdAt',
+      'updatedAt',
+      'recurrence',
+      'exceptionDates',
+      'enabled',
+    ],
+    'exam': [
+      'id',
+      'courseId',
+      'name',
+      'dateTime',
+      'startTime',
+      'endTime',
+      'createdAt',
+      'updatedAt',
+    ],
+    'time_scheme': ['id', 'name', 'sections', 'createdAt', 'updatedAt'],
+    'time_rule': [
+      'id',
+      'name',
+      'timeSchemeId',
+      'enabled',
+      'startDate',
+      'endDate',
+    ],
+    'location_group': [
+      'id',
+      'name',
+      'timeSchemeId',
+      'enabled',
+      'priority',
+      'keywords',
+    ],
+    'profile': [
+      'id',
+      'name',
+      'courses',
+      'tasks',
+      'scheduleItems',
+      'exams',
+      'settings',
+      'currentWeek',
+      'createdAt',
+      'lastUsedAt',
+    ],
+  };
+
   final String packageId;
   final TransferScope scope;
   final TransferChannel channel;
@@ -107,7 +185,7 @@ class TransferPackage {
   final DateTime exportedAt;
 
   TransferPackage({
-    required this.packageId,
+    required String packageId,
     required this.scope,
     this.channel = TransferChannel.file,
     this.profileName,
@@ -124,18 +202,37 @@ class TransferPackage {
     this.activeProfileId,
     this.isFullBackup = false,
     DateTime? exportedAt,
-  }) : exportedAt = exportedAt ?? DateTime.now() {
-    _requireUniqueIds('course', courses.map((item) => item.id));
-    _requireUniqueIds('task', tasks.map((item) => item.id));
-    _requireUniqueIds('schedule_item', scheduleItems.map((item) => item.id));
-    _requireUniqueIds('exam', exams.map((item) => item.id));
+  }) : packageId = packageId.trim(),
+       exportedAt = exportedAt ?? DateTime.now() {
+    _requireUniqueIdsAcross(
+      'course',
+      courses.map((item) => item.id),
+      profiles.map((profile) => profile.courses.map((item) => item.id)),
+    );
+    _requireUniqueIdsAcross(
+      'task',
+      tasks.map((item) => item.id),
+      profiles.map((profile) => profile.tasks.map((item) => item.id)),
+    );
+    _requireUniqueIdsAcross(
+      'schedule_item',
+      scheduleItems.map((item) => item.id),
+      profiles.map(
+        (profile) => profile.scheduleItems.map((item) => item.id),
+      ),
+    );
+    _requireUniqueIdsAcross(
+      'exam',
+      exams.map((item) => item.id),
+      profiles.map((profile) => profile.exams.map((item) => item.id)),
+    );
+    _requireUniqueIds('profile', profiles.map((item) => item.id));
     _requireUniqueIds('time_scheme', timeSchemes.map((item) => item.id));
     _requireUniqueIds('time_rule', scheduleDateRules.map((item) => item.id));
     _requireUniqueIds(
       'location_group',
       locationTimeGroups.map((item) => item.id),
     );
-    _requireUniqueIds('profile', profiles.map((item) => item.id));
     if (packageId.trim().isEmpty) {
       throw const FormatException('transfer_package_id_required');
     }
@@ -188,74 +285,170 @@ class TransferPackage {
   }
 
   static TransferPackage decodeBytes(Uint8List bytes) {
+    late final String content;
     try {
-      return decode(utf8.decode(bytes));
-    } on FormatException {
-      rethrow;
+      content = utf8.decode(bytes);
     } on Object {
       throw const FormatException('transfer_package_utf8_invalid');
     }
+    return decode(content);
   }
 
   static TransferPackage fromJson(Map<String, dynamic> json) {
     if (json['app'] != appId || json['packageType'] != packageType) {
       throw const FormatException('transfer_package_type_invalid');
     }
-    final version = (json['schemaVersion'] as num?)?.toInt();
+    final version = json['schemaVersion'];
     if (version != schemaVersion) {
       throw const FormatException('transfer_package_schema_unsupported');
     }
 
-    final packageId = json['packageId']?.toString().trim() ?? '';
-    if (packageId.isEmpty) {
-      throw const FormatException('transfer_package_id_required');
+    for (final entry in _requiredListKinds.entries) {
+      if (!json.containsKey(entry.key) || json[entry.key] == null) {
+        throw FormatException('transfer_${entry.value}_list_required');
+      }
     }
+
+    final packageId = _requiredString(json, 'packageId', 'package_id');
+    final scope = TransferScope.fromValue(
+      _requiredString(json, 'scope', 'scope'),
+    );
+    final channel = _parseChannel(json['channel']);
+    final exportedAt = _parseExportedAt(json['exportedAt']);
+    final profileName = _optionalString(json, 'profileName');
+    final activeProfileId = _optionalString(json, 'activeProfileId');
+    final currentWeek = _optionalInt(json, 'currentWeek');
+    final backupType = json['backupType'];
+    if (backupType != null && backupType != 'full') {
+      throw const FormatException('transfer_backup_type_invalid');
+    }
+
     final settingsRaw = json['settings'];
-    final settings = settingsRaw is Map
-        ? TimetableSettings.fromJson(Map<String, dynamic>.from(settingsRaw))
-        : null;
+    TimetableSettings? settings;
+    if (settingsRaw != null) {
+      if (settingsRaw is! Map) {
+        throw const FormatException('transfer_settings_invalid');
+      }
+      try {
+        settings = TimetableSettings.fromJson(
+          Map<String, dynamic>.from(settingsRaw),
+        );
+      } on Object {
+        throw const FormatException('transfer_settings_invalid');
+      }
+    }
+
+    final courses = _parseList<Course>(
+      json['courses'],
+      Course.fromJson,
+      'course',
+    );
+    final tasks = _parseList<CourseTask>(
+      json['tasks'],
+      CourseTask.fromJson,
+      'task',
+    );
+    final scheduleItems = _parseList<ScheduleItem>(
+      json['scheduleItems'],
+      ScheduleItem.fromJson,
+      'schedule_item',
+    );
+    final exams = _parseList<Exam>(json['exams'], Exam.fromJson, 'exam');
+    final timeSchemes = _parseList<TimeScheme>(
+      json['timeSchemes'],
+      TimeScheme.fromJson,
+      'time_scheme',
+    );
+    final scheduleDateRules = _parseList<ScheduleDateRule>(
+      json['scheduleDateRules'],
+      ScheduleDateRule.fromJson,
+      'time_rule',
+    );
+    final locationTimeGroups = _parseList<LocationTimeGroup>(
+      json['locationTimeGroups'],
+      LocationTimeGroup.fromJson,
+      'location_group',
+    );
+    final profiles = _parseList<TimetableProfile>(
+      json['profiles'],
+      TimetableProfile.fromJson,
+      'profile',
+    );
+    final profileScoped = profiles.isNotEmpty;
+    if (settings == null &&
+        scope != TransferScope.timeTemplate &&
+        !profileScoped) {
+      throw const FormatException('transfer_settings_required');
+    }
+    if (currentWeek == null &&
+        scope != TransferScope.timeTemplate &&
+        !profileScoped) {
+      throw const FormatException('transfer_current_week_required');
+    }
 
     return TransferPackage(
       packageId: packageId,
-      scope: TransferScope.fromValue(json['scope']),
-      channel: TransferChannelX.fromValue(json['channel']),
-      profileName: _nullableString(json['profileName']),
-      currentWeek: (json['currentWeek'] as num?)?.toInt(),
-      activeProfileId: _nullableString(json['activeProfileId']),
+      scope: scope,
+      channel: channel,
+      profileName: profileName,
+      currentWeek: currentWeek,
+      activeProfileId: activeProfileId,
       settings: settings,
-      courses: _parseList<Course>(json['courses'], Course.fromJson, 'course'),
-      tasks: _parseList<CourseTask>(json['tasks'], CourseTask.fromJson, 'task'),
-      scheduleItems: _parseList<ScheduleItem>(
-        json['scheduleItems'],
-        ScheduleItem.fromJson,
-        'schedule_item',
-      ),
-      exams: _parseList<Exam>(json['exams'], Exam.fromJson, 'exam'),
-      timeSchemes: _parseList<TimeScheme>(
-        json['timeSchemes'],
-        TimeScheme.fromJson,
-        'time_scheme',
-      ),
-      scheduleDateRules: _parseList<ScheduleDateRule>(
-        json['scheduleDateRules'],
-        ScheduleDateRule.fromJson,
-        'time_rule',
-      ),
-      locationTimeGroups: _parseList<LocationTimeGroup>(
-        json['locationTimeGroups'],
-        LocationTimeGroup.fromJson,
-        'location_group',
-      ),
-      profiles: _parseList<TimetableProfile>(
-        json['profiles'],
-        TimetableProfile.fromJson,
-        'profile',
-      ),
-      isFullBackup: json['backupType'] == 'full',
-      exportedAt:
-          DateTime.tryParse(json['exportedAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
+      courses: courses,
+      tasks: tasks,
+      scheduleItems: scheduleItems,
+      exams: exams,
+      timeSchemes: timeSchemes,
+      scheduleDateRules: scheduleDateRules,
+      locationTimeGroups: locationTimeGroups,
+      profiles: profiles,
+      isFullBackup: backupType == 'full',
+      exportedAt: exportedAt,
     );
+  }
+
+  /// Performs non-throwing package validation for import previews and tests.
+  static TransferPackageValidation validateJson(String content) {
+    try {
+      final package = decode(content);
+      return package.validate();
+    } on FormatException catch (error) {
+      return TransferPackageValidation(errors: [error.message]);
+    } on Object {
+      return const TransferPackageValidation(
+        errors: ['transfer_package_invalid'],
+      );
+    }
+  }
+
+  /// Returns structural diagnostics that do not require a local comparison.
+  TransferPackageValidation validate() {
+    final hasPayload = profiles.isNotEmpty ||
+        courses.isNotEmpty ||
+        tasks.isNotEmpty ||
+        scheduleItems.isNotEmpty ||
+        exams.isNotEmpty ||
+        timeSchemes.isNotEmpty ||
+        scheduleDateRules.isNotEmpty ||
+        locationTimeGroups.isNotEmpty ||
+        settings != null;
+    final errors = <String>[];
+    final warnings = <String>[];
+    if (!hasPayload) {
+      errors.add('transfer_package_empty');
+    }
+    if (isFullBackup && scope == TransferScope.allData && profiles.isEmpty) {
+      errors.add('transfer_full_profiles_required');
+    }
+    if (scope == TransferScope.timeTemplate && timeSchemes.isEmpty) {
+      errors.add('transfer_time_template_empty');
+    }
+    if (activeProfileId != null &&
+        profiles.isNotEmpty &&
+        !profiles.any((profile) => profile.id == activeProfileId)) {
+      warnings.add('active_profile_missing:$activeProfileId');
+    }
+    return TransferPackageValidation(errors: errors, warnings: warnings);
   }
 
   TransferPackage copyWith({
@@ -303,9 +496,63 @@ class TransferPackage {
     return 'transfer-$timestamp';
   }
 
-  static String? _nullableString(Object? value) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? null : text;
+  static String _requiredString(
+    Map<String, dynamic> json,
+    String key,
+    String codeKey,
+  ) {
+    final value = json[key];
+    if (value is! String || value.trim().isEmpty) {
+      throw FormatException('transfer_${codeKey}_required');
+    }
+    return value.trim();
+  }
+
+  static String? _optionalString(Map<String, dynamic> json, String key) {
+    if (!json.containsKey(key) || json[key] == null) {
+      return null;
+    }
+    final value = json[key];
+    if (value is! String) {
+      throw FormatException('transfer_${key}_invalid');
+    }
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static int? _optionalInt(Map<String, dynamic> json, String key) {
+    if (!json.containsKey(key) || json[key] == null) {
+      return null;
+    }
+    final value = json[key];
+    if (value is! num || value.toInt() != value) {
+      throw FormatException('transfer_${key}_invalid');
+    }
+    return value.toInt();
+  }
+
+  static DateTime _parseExportedAt(Object? raw) {
+    if (raw is! String || raw.trim().isEmpty) {
+      throw const FormatException('transfer_exported_at_required');
+    }
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) {
+      throw const FormatException('transfer_exported_at_invalid');
+    }
+    return parsed;
+  }
+
+  static TransferChannel _parseChannel(Object? raw) {
+    if (raw is! String) {
+      throw const FormatException('transfer_channel_required');
+    }
+    final value = raw.trim().toLowerCase();
+    for (final channel in TransferChannel.values) {
+      if (channel.value == value) {
+        return channel;
+      }
+    }
+    throw const FormatException('transfer_channel_invalid');
   }
 
   static List<T> _parseList<T>(
@@ -320,12 +567,15 @@ class TransferPackage {
       throw FormatException('transfer_${kind}_list_invalid');
     }
     final parsed = <T>[];
-    for (final item in raw) {
+    for (var index = 0; index < raw.length; index++) {
+      final item = raw[index];
       if (item is! Map) {
         throw FormatException('transfer_${kind}_invalid');
       }
       try {
-        parsed.add(parse(Map<String, dynamic>.from(item)));
+        final map = Map<String, dynamic>.from(item);
+        _validateEntityMap(kind, map);
+        parsed.add(parse(map));
       } on FormatException {
         rethrow;
       } on Object {
@@ -354,9 +604,87 @@ class TransferPackage {
     final seen = <String>{};
     for (final rawId in ids) {
       final id = rawId.trim();
-      if (id.isEmpty || !seen.add(id)) {
-        throw FormatException('transfer_${kind}_id_invalid');
+      if (id.isEmpty) {
+        throw FormatException('transfer_${kind}_id_required');
+      }
+      if (!seen.add(id)) {
+        throw FormatException('transfer_${kind}_id_duplicate');
       }
     }
   }
+
+  static void _requireUniqueIdsAcross(
+    String kind,
+    Iterable<String> topLevelIds,
+    Iterable<Iterable<String>> nestedIds,
+  ) {
+    final seen = <String>{};
+
+    void addAll(Iterable<String> ids) {
+      for (final rawId in ids) {
+        final id = rawId.trim();
+        if (id.isEmpty) {
+          throw FormatException('transfer_${kind}_id_required');
+        }
+        if (!seen.add(id)) {
+          throw FormatException('transfer_${kind}_id_duplicate');
+        }
+      }
+    }
+
+    addAll(topLevelIds);
+    for (final ids in nestedIds) {
+      addAll(ids);
+    }
+  }
+
+  static void _validateEntityMap(String kind, Map<String, dynamic> json) {
+    final fields = _requiredEntityFields[kind];
+    if (fields == null) {
+      return;
+    }
+    for (final field in fields) {
+      if (!json.containsKey(field) || json[field] == null) {
+        throw FormatException('transfer_${kind}_${field}_required');
+      }
+    }
+    if (kind == 'profile') {
+      _validateProfileNestedMaps(json);
+    }
+  }
+
+  static void _validateProfileNestedMaps(Map<String, dynamic> json) {
+    const nestedKinds = {
+      'courses': 'course',
+      'tasks': 'task',
+      'scheduleItems': 'schedule_item',
+      'exams': 'exam',
+    };
+    for (final entry in nestedKinds.entries) {
+      final rawItems = json[entry.key];
+      if (rawItems is! List) {
+        throw FormatException('transfer_profile_${entry.key}_list_invalid');
+      }
+      for (final item in rawItems) {
+        if (item is! Map) {
+          throw FormatException('transfer_${entry.value}_invalid');
+        }
+        _validateEntityMap(entry.value, Map<String, dynamic>.from(item));
+      }
+    }
+  }
+}
+
+/// Structural validation result for a decoded package.
+class TransferPackageValidation {
+  final List<String> errors;
+  final List<String> warnings;
+
+  const TransferPackageValidation({
+    this.errors = const [],
+    this.warnings = const [],
+  });
+
+  bool get isValid => errors.isEmpty;
+  bool get hasWarnings => warnings.isNotEmpty;
 }

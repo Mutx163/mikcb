@@ -6,9 +6,11 @@ import 'package:university_timetable/models/exam.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/time_scheme.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/transfer_diff_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
+import 'package:university_timetable/services/unified_transfer_service.dart';
 
 Course _course({String id = 'course-1', String name = '线性代数'}) {
   return Course(
@@ -111,6 +113,88 @@ void main() {
     );
   });
 
+  test('diagnoses missing envelope list fields', () {
+    final package = TransferPackage(
+      packageId: 'missing-field',
+      scope: TransferScope.currentTimetable,
+      settings: TimetableSettings.defaults(),
+    );
+    final raw = package.toJson()..remove('courses');
+
+    expect(
+      () => TransferPackage.fromJson(raw),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          'transfer_course_list_required',
+        ),
+      ),
+    );
+  });
+
+  test('reports an empty package without applying it', () {
+    final package = TransferPackage(
+      packageId: 'empty',
+      scope: TransferScope.timeTemplate,
+    );
+
+    final validation = package.validate();
+    final jsonValidation = TransferPackage.validateJson(package.encode());
+
+    expect(validation.isValid, isFalse);
+    expect(validation.errors, contains('transfer_package_empty'));
+    expect(jsonValidation.errors, contains('transfer_package_empty'));
+  });
+
+  test('rejects duplicate IDs across profile payloads', () {
+    final profile = TimetableProfile(
+      id: 'profile-1',
+      name: '大二下',
+      courses: [_course(), _course()],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+      createdAt: DateTime(2026, 1, 1),
+      lastUsedAt: DateTime(2026, 1, 1),
+    );
+
+    expect(
+      () => TransferPackage(
+        packageId: 'duplicate',
+        scope: TransferScope.allData,
+        profiles: [profile],
+        isFullBackup: true,
+      ),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          'transfer_course_id_duplicate',
+        ),
+      ),
+    );
+  });
+
+  test('current transfer envelopes fail closed during compatibility parsing', () {
+    final raw = TransferPackage(
+      packageId: 'old-schema',
+      scope: TransferScope.currentTimetable,
+      settings: TimetableSettings.defaults(),
+    ).toJson()
+      ..['schemaVersion'] = TransferPackage.schemaVersion - 1;
+
+    expect(
+      () => UnifiedTransferService().parseCompatible(jsonEncode(raw)),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          'transfer_package_schema_unsupported',
+        ),
+      ),
+    );
+  });
+
   test(
     'reports added, updated and removed entities for merge and overwrite',
     () {
@@ -180,6 +264,19 @@ void main() {
       expect(merge.forKind(TransferEntityKind.timeRules).updatedCount, 1);
       expect(merge.forKind(TransferEntityKind.locations).addedCount, 1);
       expect(overwrite.forKind(TransferEntityKind.locations).removedCount, 1);
+      expect(
+        merge.primarySummaries.map((item) => item.kind),
+        [
+          TransferEntityKind.courses,
+          TransferEntityKind.exams,
+          TransferEntityKind.timeRules,
+          TransferEntityKind.locations,
+        ],
+      );
+      expect(
+        merge.forKind(TransferEntityKind.courses).changes.first.description,
+        contains('course-1'),
+      );
     },
   );
 

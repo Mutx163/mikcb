@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'app_log_service.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
@@ -135,6 +137,11 @@ class UnifiedTransferService {
       final parsed = parse(content);
       return channel == null ? parsed : parsed.copyWith(channel: channel);
     } on FormatException {
+      // A current envelope must fail closed. Falling through to the legacy
+      // readers here could turn a malformed or older schema into an import.
+      if (_isTransferEnvelope(content)) {
+        rethrow;
+      }
       if (_dataTransferService.isFullBackupJson(content)) {
         final full = _dataTransferService.parseFullBackupJson(content);
         return _dataTransferService.buildTransferPackage(
@@ -168,6 +175,17 @@ class UnifiedTransferService {
         locationTimeGroups: backup.locationTimeGroups,
         exportedAt: backup.exportedAt,
       );
+    }
+  }
+
+  static bool _isTransferEnvelope(String content) {
+    try {
+      final decoded = jsonDecode(content);
+      return decoded is Map &&
+          decoded['app'] == TransferPackage.appId &&
+          decoded['packageType'] == TransferPackage.packageType;
+    } on Object {
+      return false;
     }
   }
 

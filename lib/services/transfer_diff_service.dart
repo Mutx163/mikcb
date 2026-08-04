@@ -34,11 +34,18 @@ class TransferEntityChange {
     this.after,
   });
 
+  /// Stable, transport-independent text that can be shown in a preview list.
+  /// Localization can replace the operation word without re-parsing payloads.
+  String get description => '${type.value}: $readableLabel ($id)';
+
+  String get readableLabel => label.trim().isEmpty ? id : label.trim();
+
   Map<String, dynamic> toJson() => {
     'kind': kind.value,
     'type': type.value,
     'id': id,
     'label': label,
+    'description': description,
     if (before != null) 'before': before,
     if (after != null) 'after': after,
   };
@@ -77,12 +84,24 @@ class TransferDiff {
 
   const TransferDiff({required this.mode, required this.summaries});
 
+  static const List<TransferEntityKind> primaryKinds = [
+    TransferEntityKind.courses,
+    TransferEntityKind.exams,
+    TransferEntityKind.timeRules,
+    TransferEntityKind.locations,
+  ];
+
   TransferEntityDiff forKind(TransferEntityKind kind) {
     return summaries.firstWhere(
       (item) => item.kind == kind,
       orElse: () => TransferEntityDiff(kind: kind, changes: const []),
     );
   }
+
+  /// The four user-facing categories required by every transfer preview.
+  List<TransferEntityDiff> get primarySummaries => [
+    for (final kind in primaryKinds) forKind(kind),
+  ];
 
   bool get hasChanges => summaries.any((item) => item.changes.isNotEmpty);
   int get addedCount => summaries.fold(0, (sum, item) => sum + item.addedCount);
@@ -158,30 +177,68 @@ class TransferDiffService {
   }
 
   TransferValidation validate(TransferPackage package) {
-    final errors = <String>[];
-    final warnings = <String>[];
+    final packageValidation = package.validate();
+    final errors = <String>[...packageValidation.errors];
+    final warnings = <String>[...packageValidation.warnings];
     if (package.scope == TransferScope.allData &&
         package.profiles.isEmpty &&
-        package.courses.isEmpty) {
-      errors.add('transfer_all_data_empty');
+        package.courses.isEmpty &&
+        package.exams.isEmpty &&
+        package.tasks.isEmpty &&
+        package.scheduleItems.isEmpty &&
+        package.timeSchemes.isEmpty &&
+        package.scheduleDateRules.isEmpty &&
+        package.locationTimeGroups.isEmpty &&
+        package.settings == null) {
+      if (!errors.contains('transfer_package_empty')) {
+        errors.add('transfer_all_data_empty');
+      }
     }
     final courseIds = {
       ...package.courses.map((item) => item.id),
       ...package.profiles.expand((item) => item.courses).map((item) => item.id),
     };
-    for (final exam in package.exams) {
+    final timeSchemeIds = package.timeSchemes.map((item) => item.id).toSet();
+    final exams = [
+      ...package.exams,
+      ...package.profiles.expand((profile) => profile.exams),
+    ];
+    for (final exam in exams) {
       if (exam.courseId.isNotEmpty && !courseIds.contains(exam.courseId)) {
         warnings.add('exam_course_missing:${exam.id}');
       }
     }
-    for (final task in package.tasks) {
+    final tasks = [
+      ...package.tasks,
+      ...package.profiles.expand((profile) => profile.tasks),
+    ];
+    for (final task in tasks) {
       if (task.courseId != null && !courseIds.contains(task.courseId)) {
         warnings.add('task_course_missing:${task.id}');
       }
     }
     for (final rule in package.scheduleDateRules) {
-      if (rule.timeSchemeId.isEmpty) {
+      if (rule.timeSchemeId.isEmpty ||
+          !timeSchemeIds.contains(rule.timeSchemeId)) {
         warnings.add('time_rule_scheme_missing:${rule.id}');
+      }
+    }
+    for (final group in package.locationTimeGroups) {
+      if (group.timeSchemeId.isEmpty ||
+          !timeSchemeIds.contains(group.timeSchemeId)) {
+        warnings.add('location_scheme_missing:${group.id}');
+      }
+    }
+    final courses = [
+      ...package.courses,
+      ...package.profiles.expand((profile) => profile.courses),
+    ];
+    for (final course in courses) {
+      final schemeId = course.timeSchemeIdOverride;
+      if (schemeId != null &&
+          schemeId.isNotEmpty &&
+          !timeSchemeIds.contains(schemeId)) {
+        warnings.add('course_scheme_missing:${course.id}');
       }
     }
     return TransferValidation(errors: errors, warnings: warnings);
@@ -322,6 +379,8 @@ class TransferValidation {
   const TransferValidation({this.errors = const [], this.warnings = const []});
 
   bool get isValid => errors.isEmpty;
+  bool get hasWarnings => warnings.isNotEmpty;
+  String? get firstError => errors.isEmpty ? null : errors.first;
 }
 
 class _TransferEntity {
