@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'miuix_showcase/buttons.dart';
 import 'miuix_showcase/common.dart';
@@ -55,7 +56,7 @@ class _MiuixShowcaseScreenState extends State<MiuixShowcaseScreen> {
         child: Navigator(
           key: _nestedNavigatorKey,
           onGenerateInitialRoutes: (navigator, initialRoute) {
-            return [MaterialPageRoute<void>(builder: (_) => const _HomePage())];
+            return [HyperosPageRoute<void>(builder: (_) => const _HomePage())];
           },
         ),
       ),
@@ -1095,7 +1096,7 @@ class _SearchResultItem extends StatelessWidget {
         final navigator = Navigator.of(context);
         onCommitQuery?.call();
         onDismiss?.call();
-        navigator.push(MaterialPageRoute(builder: (_) => entry.page));
+        navigator.push(HyperosPageRoute(builder: (_) => entry.page));
       },
     );
   }
@@ -1141,7 +1142,7 @@ class _EntryTile extends StatelessWidget {
       ),
       onClick: () => Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (_) => entry.page)),
+      ).push(HyperosPageRoute(builder: (_) => entry.page)),
     );
   }
 }
