@@ -124,7 +124,7 @@
     },
     {
       "id": "time-scheme-bottom-sheet",
-      "file": "lib/screens/time_scheme_bottom_sheet.dart",
+      "file": "lib/widgets/time_scheme_picker_sheet.dart",
       "label": "时间方案 Sheet",
       "category": "sheet",
       "expectedShell": "HyperosSheet",

@@ -3258,13 +3258,14 @@ class TimetableProvider with ChangeNotifier {
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
-  List<Course> getTodayCourses() {
+  List<Course> getTodayCourses({DateTime? now}) {
     // After the term ends, UI currentDateWeek is clamped to semesterWeekCount.
     // "Today's courses" must use the real calendar week so finished courses do
     // not keep appearing every weekday that matches the last teaching week.
+    final reference = now ?? DateTime.now();
     final targetWeek = _settings.semesterStartDate == null
         ? _currentDateWeek
-        : _calculateCalendarWeekForDate(DateTime.now());
+        : _calculateCalendarWeekForDate(reference);
     return getCoursesForDay(_currentDayOfWeek, week: targetWeek);
   }
 

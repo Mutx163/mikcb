@@ -136,18 +136,26 @@ void main() {
         ),
       );
 
-      await provider.syncTemporalContext(now: DateTime(2026, 4, 13, 8, 30));
+      final monday = DateTime(2026, 4, 13, 8, 30);
+      await provider.syncTemporalContext(now: monday);
       expect(provider.currentWeek, 1);
       expect(provider.currentDateWeek, 1);
       expect(provider.currentDayOfWeek, 1);
-      expect(provider.getTodayCourses().map((course) => course.name), ['周一课程']);
+      expect(
+        provider.getTodayCourses(now: monday).map((course) => course.name),
+        ['周一课程'],
+      );
 
       await provider.setCurrentWeek(6);
-      await provider.syncTemporalContext(now: DateTime(2026, 4, 21, 8, 30));
+      final tuesday = DateTime(2026, 4, 21, 8, 30);
+      await provider.syncTemporalContext(now: tuesday);
       expect(provider.currentWeek, 6);
       expect(provider.currentDateWeek, 2);
       expect(provider.currentDayOfWeek, 2);
-      expect(provider.getTodayCourses().map((course) => course.name), ['周二课程']);
+      expect(
+        provider.getTodayCourses(now: tuesday).map((course) => course.name),
+        ['周二课程'],
+      );
     },
   );
 }
