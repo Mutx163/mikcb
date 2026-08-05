@@ -20,8 +20,6 @@ class SupportCreatorScreen extends StatefulWidget {
 }
 
 class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
-  static const _sectionPadding = EdgeInsets.fromLTRB(14, 14, 14, 12);
-  static const _donorSectionPadding = EdgeInsets.fromLTRB(14, 14, 14, 12);
   static const _paymentColumnGap = 10.0;
 
   final SupportCreatorService _service = SupportCreatorService();
@@ -121,13 +119,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: colors.muted.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border.withValues(alpha: 0.55)),
-      ),
+    return HyperosControlCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -274,159 +266,154 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         : l10n.supportAlipayHint;
     final accent = isWechat ? const Color(0xFF10B981) : const Color(0xFF0EA5E9);
 
-    return HyperosCard(
-      child: Padding(
-        padding: _sectionPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildPaymentMethodPicker(
-              context,
-              isWechat: isWechat,
-              colors: colors,
-              typo: typo,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => _showQrPreview(
-                            context,
-                            assetPath: assetPath,
-                            fileName: fileName,
-                            isWechat: isWechat,
-                          ),
-                          child: Ink(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: colors.muted.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: colors.border.withValues(alpha: 0.55),
-                              ),
-                            ),
-                            child: AspectRatio(
-                              aspectRatio: 1,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: colors.border.withValues(
-                                          alpha: 0.45,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: BundledAssetImage(
-                                        assetPath: assetPath,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    child: Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: accent,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: accent.withValues(
-                                              alpha: 0.35,
-                                            ),
-                                            blurRadius: 6,
-                                          ),
-                                        ],
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Icon(
-                                        isWechat
-                                            ? Icons.chat_bubble_rounded
-                                            : Icons
-                                                  .account_balance_wallet_rounded,
-                                        size: 11,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.open_in_full_rounded,
-                            size: 14,
-                            color: colors.mutedForeground,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              l10n.supportTapQrHint,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: _mutedStyle(typo, colors),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: _paymentColumnGap),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      HyperosButton(
-                        label: l10n.supportSaveShort,
-                        variant: HyperosButtonVariant.secondary,
-                        expand: true,
-                        onPressed: () => _saveQrToGallery(
+    return HyperosControlCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildPaymentMethodPicker(
+            context,
+            isWechat: isWechat,
+            colors: colors,
+            typo: typo,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _showQrPreview(
+                          context,
                           assetPath: assetPath,
                           fileName: fileName,
+                          isWechat: isWechat,
+                        ),
+                        child: Ink(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colors.muted.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colors.border.withValues(alpha: 0.55),
+                            ),
+                          ),
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: colors.border.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: BundledAssetImage(
+                                      assetPath: assetPath,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  child: Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: accent,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: accent.withValues(alpha: 0.35),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      isWechat
+                                          ? Icons.chat_bubble_rounded
+                                          : Icons
+                                                .account_balance_wallet_rounded,
+                                      size: 11,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      HyperosButton(
-                        label: l10n.supportConfirmedShort,
-                        variant: HyperosButtonVariant.secondary,
-                        expand: true,
-                        onPressed: () {
-                          showAppToast(
-                            context,
-                            message: l10n.supportCompleteThanks,
-                            kind: AppToastKind.success,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Text(helperText, style: _mutedStyle(typo, colors)),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.open_in_full_rounded,
+                          size: 14,
+                          color: colors.mutedForeground,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            l10n.supportTapQrHint,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _mutedStyle(typo, colors),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(width: _paymentColumnGap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    HyperosButton(
+                      label: l10n.supportSaveShort,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () => _saveQrToGallery(
+                        assetPath: assetPath,
+                        fileName: fileName,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    HyperosButton(
+                      label: l10n.supportConfirmedShort,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () {
+                        showAppToast(
+                          context,
+                          message: l10n.supportCompleteThanks,
+                          kind: AppToastKind.success,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(helperText, style: _mutedStyle(typo, colors)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -488,7 +475,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     required FTypography typo,
     required Widget child,
   }) {
-    return HyperosCard(padding: _donorSectionPadding, child: child);
+    return HyperosControlCard(child: child);
   }
 
   Widget _buildDonorCard(
@@ -539,12 +526,12 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     Widget buildDonorList() {
       if (donors.isEmpty) {
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Text(l10n.donorListEmpty, style: _mutedStyle(typo, colors)),
         );
       }
 
-      return HyperosChoiceGroup(
+      return HyperosControlCardRows(
         children: [
           for (final donor in donors)
             HyperosChoiceTile(
@@ -592,11 +579,18 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       );
     }
 
-    return HyperosCard(
-      padding: _donorSectionPadding,
+    return HyperosControlCard(
+      edgeToEdge: true,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [buildHeader(), const SizedBox(height: 12), buildDonorList()],
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: buildHeader(),
+          ),
+          const SizedBox(height: 12),
+          buildDonorList(),
+        ],
       ),
     );
   }
