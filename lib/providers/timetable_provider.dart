@@ -3627,6 +3627,11 @@ class TimetableProvider with ChangeNotifier {
         : ((trimmedNote != null && trimmedNote.isNotEmpty)
               ? trimmedNote
               : null);
+    final normalizedWeeks = Course.normalizeWeeks(
+      startWeek: course.startWeek,
+      endWeek: course.endWeek,
+      maxWeek: _settings.semesterWeekCount,
+    );
     return course.copyWith(
       name: course.name.trim(),
       shortName: course.shortName?.trim().isEmpty == true
@@ -3638,6 +3643,8 @@ class TimetableProvider with ChangeNotifier {
       note: (trimmedNote != null && trimmedNote.isNotEmpty)
           ? trimmedNote
           : null,
+      startWeek: normalizedWeeks.startWeek,
+      endWeek: normalizedWeeks.endWeek,
     );
   }
 

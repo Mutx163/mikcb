@@ -200,6 +200,36 @@ void main() {
     },
   );
 
+  test('adding a course clamps weeks to the semester week count', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      TimetableSettings.defaults().copyWith(semesterWeekCount: 12),
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'course-week-range',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+
+    expect(provider.courses.single.startWeek, 1);
+    expect(provider.courses.single.endWeek, 12);
+  });
+
   test(
     'importing backup clamps current week to imported semester week count',
     () async {

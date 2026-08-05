@@ -1,5 +1,14 @@
 const t = (key, ...args) => window.LanEditI18n?.t(key, ...args) ?? key;
 
+const DEFAULT_COURSE_COLOR = '#2196F3';
+const SAFE_COURSE_COLOR_PATTERN = /^#?([0-9a-f]{6})$/i;
+
+function normalizeCourseColor(rawColor) {
+  const trimmedColor = String(rawColor ?? '').trim();
+  const match = SAFE_COURSE_COLOR_PATTERN.exec(trimmedColor);
+  return match ? `#${match[1].toUpperCase()}` : DEFAULT_COURSE_COLOR;
+}
+
 const THEME_STORAGE_KEY = 'lanEditTheme';
 
 function resolvePreferredTheme() {
@@ -348,7 +357,7 @@ function getCourseGroups(coursesList) {
       groupsMap[key] = {
         name: course.name,
         shortName: course.shortName || '',
-        color: course.color || '#2196F3',
+        color: normalizeCourseColor(course.color),
         courseNature: course.courseNature || 'required',
         note: course.note || course.description || '',
         courses: [],
@@ -444,7 +453,7 @@ function renderDashboard() {
         : `<span class="badge badge-destructive">${t('requiredBadge')}</span>`;
 
       item.innerHTML = `
-        <div class="item-color-indicator" style="background-color: ${course.color || '#4f46e5'}"></div>
+        <div class="item-color-indicator"></div>
         <div class="item-info">
           <h4>${escapeHtml(course.name)}</h4>
           <p><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher || t('noTeacher'))} · <i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location || t('noRoom'))}</p>
@@ -454,6 +463,8 @@ function renderDashboard() {
           <div style="margin-top: 4px;">${typeBadge}</div>
         </div>
       `;
+      item.querySelector('.item-color-indicator').style.backgroundColor =
+        normalizeCourseColor(course.color);
       item.addEventListener('click', () => {
         state.activeTab = 'timetable';
         syncTabsUI();
@@ -485,7 +496,7 @@ function renderDashboard() {
 function buildCourseBlock(course) {
   const block = document.createElement('div');
   block.className = 'course-block';
-  const bg = course.color || '#2563eb';
+  const bg = normalizeCourseColor(course.color);
   block.style.background = bg;
   block.style.color = contrastTextColor(bg);
   block.dataset.courseId = course.id;
@@ -671,11 +682,11 @@ function renderCoursesTable() {
       ? '<span class="badge badge-success course-nature-badge">选修</span>'
       : '<span class="badge badge-primary course-nature-badge">必修</span>';
 
-    const accentColor = group.color || '#3482ff';
+    const accentColor = normalizeCourseColor(group.color);
     const slotCount = group.courses.length;
     card.className = 'card course-group-card';
     card.innerHTML = `
-      <div class="course-card-accent" style="background-color: ${accentColor}"></div>
+      <div class="course-card-accent"></div>
       <div class="course-card-body">
         <div class="course-card-top">
           <label class="course-card-check" title="批量删除">
@@ -701,6 +712,7 @@ function renderCoursesTable() {
         </div>
       </div>
     `;
+    card.querySelector('.course-card-accent').style.backgroundColor = accentColor;
 
     // 绑定事件
     card.querySelector('.action-edit-btn').addEventListener('click', () => openEditor(group));
@@ -1169,8 +1181,9 @@ function setViewWeek(week) {
 
 // 颜色选择器
 function fillColorSwatches(selectedColor) {
-  const colors = state.meta.presetColors || ['#2196F3'];
-  const color = selectedColor || colors[0];
+  const colors = (state.meta.presetColors || [DEFAULT_COURSE_COLOR])
+    .map((preset) => normalizeCourseColor(preset));
+  const color = normalizeCourseColor(selectedColor || colors[0]);
   colorSwatches.innerHTML = '';
   colorInput.value = color;
 
@@ -1178,7 +1191,7 @@ function fillColorSwatches(selectedColor) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'color-swatch';
-    btn.style.background = preset;
+    btn.style.backgroundColor = preset;
     btn.title = preset;
     btn.dataset.color = preset;
     if (preset.toLowerCase() === String(color).toLowerCase()) {
@@ -1386,7 +1399,13 @@ async function loadEditorData(options = {}) {
       api('/api/v1/session'),
     ]);
     state.meta = meta;
-    state.courses = coursePayload.courses || [];
+    const receivedCourses = Array.isArray(coursePayload.courses)
+      ? coursePayload.courses
+      : [];
+    state.courses = receivedCourses.map((course) => ({
+      ...course,
+      color: normalizeCourseColor(course?.color),
+    }));
     state.session = session;
 
     // First open: show the phone's current week (not hard-coded week 1).
@@ -1789,7 +1808,7 @@ duplicateCourseBtn?.addEventListener('click', async () => {
   const name = courseForm.name.value.trim() + ' (副本)';
   const shortName = courseForm.shortName.value.trim() || null;
   const courseNature = courseForm.courseNature.value;
-  const color = colorInput.value;
+  const color = normalizeCourseColor(colorInput.value);
   const note = courseForm.note.value.trim() || null;
 
   if (!name) {
@@ -1873,7 +1892,7 @@ courseForm?.addEventListener('submit', async (event) => {
   const name = courseForm.name.value.trim();
   const shortName = courseForm.shortName.value.trim() || null;
   const courseNature = courseForm.courseNature.value;
-  const color = colorInput.value;
+  const color = normalizeCourseColor(colorInput.value);
   const note = courseForm.note.value.trim() || null;
 
   if (!name) {

@@ -8,19 +8,6 @@
   <link rel="apple-touch-icon" href="/assets/logo.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <link rel="stylesheet" href="/assets/lan-timetable.css" />
-  <script>
-    (function () {
-      try {
-        var stored = localStorage.getItem('lanEditTheme');
-        var theme = stored === 'dark' || stored === 'light'
-          ? stored
-          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', theme);
-      } catch (_) {
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
-    })();
-  </script>
 </head>
 <body>
   <div id="toast-container" aria-live="polite"></div>

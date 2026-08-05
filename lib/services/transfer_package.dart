@@ -39,6 +39,17 @@ enum TransferScope {
   }
 }
 
+extension TransferScopeSemantics on TransferScope {
+  /// Scoped overwrite keeps local entities outside the package boundary.
+  bool get overwriteUsesMergeSemantics => switch (this) {
+    TransferScope.selectedCourses ||
+    TransferScope.selectedCourse ||
+    TransferScope.weekTimetable ||
+    TransferScope.timeTemplate => true,
+    TransferScope.currentTimetable || TransferScope.allData => false,
+  };
+}
+
 /// Identifies the path that produced or consumed a package. It is metadata,
 /// not an authorization boundary; all paths still require the same preview.
 enum TransferChannel { file, qr, lan, cloud }
@@ -217,9 +228,7 @@ class TransferPackage {
     _requireUniqueIdsAcross(
       'schedule_item',
       scheduleItems.map((item) => item.id),
-      profiles.map(
-        (profile) => profile.scheduleItems.map((item) => item.id),
-      ),
+      profiles.map((profile) => profile.scheduleItems.map((item) => item.id)),
     );
     _requireUniqueIdsAcross(
       'exam',
@@ -423,7 +432,8 @@ class TransferPackage {
 
   /// Returns structural diagnostics that do not require a local comparison.
   TransferPackageValidation validate() {
-    final hasPayload = profiles.isNotEmpty ||
+    final hasPayload =
+        profiles.isNotEmpty ||
         courses.isNotEmpty ||
         tasks.isNotEmpty ||
         scheduleItems.isNotEmpty ||

@@ -15,6 +15,18 @@ typedef LanEditServerStoppedCallback = void Function();
 
 /// Embedded HTTP server for LAN timetable editing.
 class LanEditServerService {
+  static const String _lanEditContentSecurityPolicy =
+      "default-src 'self'; "
+      "script-src 'self'; "
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+      "font-src 'self' https://cdn.jsdelivr.net; "
+      "img-src 'self' data:; "
+      "connect-src 'self'; "
+      "object-src 'none'; "
+      "base-uri 'none'; "
+      "frame-ancestors 'none'; "
+      "form-action 'self'";
+
   /// Process-wide instance used by the LAN edit UI so a session can outlive
   /// the settings sub-page when the user enables “keep open after leaving”.
   ///
@@ -170,6 +182,11 @@ class LanEditServerService {
       request.response.statusCode = 200;
       request.response.headers.contentType = _contentTypeFor(assetPath);
       request.response.headers.set('Cache-Control', 'no-store');
+      request.response.headers.set(
+        'Content-Security-Policy',
+        _lanEditContentSecurityPolicy,
+      );
+      request.response.headers.set('X-Content-Type-Options', 'nosniff');
       request.response.add(data.buffer.asUint8List());
       await request.response.close();
     } catch (_) {

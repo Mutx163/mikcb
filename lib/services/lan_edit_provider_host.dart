@@ -17,6 +17,48 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
 
   LanEditProviderHost(this._provider);
 
+  static const String defaultLanCourseColor = '#2196F3';
+  static final RegExp _lanCourseColorPattern = RegExp(r'^#?([0-9a-fA-F]{6})$');
+
+  /// Restricts LAN-provided course colors to the hex format used by the app.
+  ///
+  /// LAN data is eventually rendered by the browser, so accepting arbitrary
+  /// CSS values here would turn a presentation field into an HTML sink. A
+  /// safe default also repairs legacy values when a course is edited.
+  static String normalizeLanCourseColor(Object? rawColor) {
+    if (rawColor is! String) {
+      return defaultLanCourseColor;
+    }
+    final trimmedColor = rawColor.trim();
+    final match = _lanCourseColorPattern.firstMatch(trimmedColor);
+    if (match == null) {
+      return defaultLanCourseColor;
+    }
+    return '#${match.group(1)!.toUpperCase()}';
+  }
+
+  /// Removes unsafe colors from both top-level and profile-scoped transfers.
+  static TransferPackage normalizeTransferCourseColors(
+    TransferPackage package,
+  ) {
+    Course normalizeCourse(Course course) {
+      return course.copyWith(color: normalizeLanCourseColor(course.color));
+    }
+
+    return package.copyWith(
+      courses: package.courses.map(normalizeCourse).toList(growable: false),
+      profiles: package.profiles
+          .map(
+            (profile) => profile.copyWith(
+              courses: profile.courses
+                  .map(normalizeCourse)
+                  .toList(growable: false),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
   @override
   Future<void> ensureInitialized() => _provider.initialize();
 
@@ -138,9 +180,8 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
 
   @override
   LanTransferPreview? previewTransferJson(String content) {
-    final incoming = _transferService.parseCompatible(
-      content,
-      channel: TransferChannel.lan,
+    final incoming = normalizeTransferCourseColors(
+      _transferService.parseCompatible(content, channel: TransferChannel.lan),
     );
     if (incoming.isFullBackup ||
         (incoming.scope == TransferScope.allData &&
@@ -171,9 +212,8 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     String content, {
     required TransferApplyMode mode,
   }) async {
-    final incoming = _transferService.parseCompatible(
-      content,
-      channel: TransferChannel.lan,
+    final incoming = normalizeTransferCourseColors(
+      _transferService.parseCompatible(content, channel: TransferChannel.lan),
     );
     if (incoming.isFullBackup ||
         (incoming.scope == TransferScope.allData &&
@@ -189,9 +229,8 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
 
   @override
   Future<void> importProfileBackupJson(String content) async {
-    final incoming = _transferService.parseCompatible(
-      content,
-      channel: TransferChannel.lan,
+    final incoming = normalizeTransferCourseColors(
+      _transferService.parseCompatible(content, channel: TransferChannel.lan),
     );
     if (incoming.isFullBackup ||
         (incoming.scope == TransferScope.allData &&
@@ -210,9 +249,8 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
 
   @override
   Future<int> importMergeBackupJson(String content) async {
-    final incoming = _transferService.parseCompatible(
-      content,
-      channel: TransferChannel.lan,
+    final incoming = normalizeTransferCourseColors(
+      _transferService.parseCompatible(content, channel: TransferChannel.lan),
     );
     if (incoming.isFullBackup ||
         (incoming.scope == TransferScope.allData &&
@@ -340,7 +378,7 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
       endSection: normalizedSections.endSection,
       startTime: startTime,
       endTime: endTime,
-      color: json['color'] as String? ?? '#2196F3',
+      color: normalizeLanCourseColor(json['color']),
       startWeek: normalizedWeeks.startWeek,
       endWeek: normalizedWeeks.endWeek,
       isOddWeek: json['isOddWeek'] as bool? ?? false,

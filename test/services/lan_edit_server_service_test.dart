@@ -234,11 +234,15 @@ Future<_HttpClientResponse> _request({
     (previous, chunk) => previous..addAll(chunk),
   );
   final contentType = response.headers.contentType?.mimeType;
+  final contentSecurityPolicy = response.headers.value(
+    'content-security-policy',
+  );
   client.close(force: true);
   return _HttpClientResponse(
     response.statusCode,
     bodyBytes,
     contentType: contentType,
+    contentSecurityPolicy: contentSecurityPolicy,
   );
 }
 
@@ -246,8 +250,14 @@ class _HttpClientResponse {
   final int statusCode;
   final List<int> bodyBytes;
   final String? contentType;
+  final String? contentSecurityPolicy;
 
-  _HttpClientResponse(this.statusCode, this.bodyBytes, {this.contentType});
+  _HttpClientResponse(
+    this.statusCode,
+    this.bodyBytes, {
+    this.contentType,
+    this.contentSecurityPolicy,
+  });
 
   String get body => utf8.decode(bodyBytes);
 }
@@ -335,9 +345,11 @@ void main() {
           'endSection': 2,
           'startWeek': 1,
           'endWeek': 16,
+          'color': 'red" onmouseover="alert(1)',
         }),
       );
       expect(create.statusCode, 201);
+      expect(host.courses.single.color, '#2196F3');
       final courseId =
           (jsonDecode(create.body) as Map<String, dynamic>)['id'] as String;
 
@@ -637,6 +649,21 @@ void main() {
       expect(logo.statusCode, 200);
       expect(logo.contentType, 'image/png');
       expect(logo.bodyBytes, favicon.bodyBytes);
+
+      final index = await _request(
+        port: server.port!,
+        method: 'GET',
+        path: '/',
+      );
+      expect(index.statusCode, 200);
+      expect(
+        index.contentSecurityPolicy,
+        allOf(
+          contains("default-src 'self'"),
+          contains("script-src 'self'"),
+          contains("object-src 'none'"),
+        ),
+      );
     } finally {
       await server.stop();
     }

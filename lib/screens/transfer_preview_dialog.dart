@@ -15,7 +15,7 @@ Future<TransferApplyMode?> showTransferPreviewDialog({
   String? title,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  String formatSummary(TransferDiff value) => value.primarySummaries
+  String formatSummary(TransferDiff value) => value.allSummaries
       .map(
         (item) =>
             '${item.kind.value}: +${item.addedCount} / ~${item.updatedCount} / -${item.removedCount}',

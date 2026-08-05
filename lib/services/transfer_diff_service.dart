@@ -84,6 +84,17 @@ class TransferDiff {
 
   const TransferDiff({required this.mode, required this.summaries});
 
+  static const List<TransferEntityKind> allKinds = [
+    TransferEntityKind.courses,
+    TransferEntityKind.exams,
+    TransferEntityKind.timeRules,
+    TransferEntityKind.locations,
+    TransferEntityKind.tasks,
+    TransferEntityKind.scheduleItems,
+    TransferEntityKind.timeSchemes,
+    TransferEntityKind.settings,
+  ];
+
   static const List<TransferEntityKind> primaryKinds = [
     TransferEntityKind.courses,
     TransferEntityKind.exams,
@@ -98,9 +109,18 @@ class TransferDiff {
     );
   }
 
-  /// The four user-facing categories required by every transfer preview.
+  /// The original four categories retained for older preview consumers.
   List<TransferEntityDiff> get primarySummaries => [
     for (final kind in primaryKinds) forKind(kind),
+  ];
+
+  /// All entity categories that can be changed by a transfer.
+  ///
+  /// Keep this separate from [primarySummaries] for compatibility with older
+  /// callers that only rendered the four original timetable categories. New
+  /// previews must use this getter so secondary data cannot be hidden.
+  List<TransferEntityDiff> get allSummaries => [
+    for (final kind in allKinds) forKind(kind),
   ];
 
   bool get hasChanges => summaries.any((item) => item.changes.isNotEmpty);
@@ -117,7 +137,7 @@ class TransferDiff {
     'updated': updatedCount,
     'removed': removedCount,
     'total': totalCount,
-    'summaries': summaries.map((item) => item.toJson()).toList(),
+    'summaries': allSummaries.map((item) => item.toJson()).toList(),
   };
 }
 
@@ -130,21 +150,19 @@ class TransferDiffService {
     TransferApplyMode mode = TransferApplyMode.merge,
   }) {
     final summaries = <TransferEntityDiff>[];
-    for (final kind in const [
-      TransferEntityKind.courses,
-      TransferEntityKind.exams,
-      TransferEntityKind.timeRules,
-      TransferEntityKind.locations,
-      TransferEntityKind.tasks,
-      TransferEntityKind.scheduleItems,
-      TransferEntityKind.timeSchemes,
-    ]) {
+    final reportRemovals =
+        mode == TransferApplyMode.overwrite &&
+        !incoming.scope.overwriteUsesMergeSemantics;
+    for (final kind in TransferDiff.allKinds) {
+      if (kind == TransferEntityKind.settings) {
+        continue;
+      }
       summaries.add(
         _compareList(
           kind: kind,
           current: _entitiesForKind(current, kind),
           incoming: _entitiesForKind(incoming, kind),
-          mode: mode,
+          reportRemovals: reportRemovals,
         ),
       );
     }
@@ -176,7 +194,10 @@ class TransferDiffService {
     return TransferDiff(mode: mode, summaries: summaries);
   }
 
-  TransferValidation validate(TransferPackage package) {
+  TransferValidation validate(
+    TransferPackage package, {
+    TransferPackage? current,
+  }) {
     final packageValidation = package.validate();
     final errors = <String>[...packageValidation.errors];
     final warnings = <String>[...packageValidation.warnings];
@@ -194,18 +215,38 @@ class TransferDiffService {
         errors.add('transfer_all_data_empty');
       }
     }
-    final courseIds = {
+    final incomingCourseIds = {
       ...package.courses.map((item) => item.id),
       ...package.profiles.expand((item) => item.courses).map((item) => item.id),
     };
-    final timeSchemeIds = package.timeSchemes.map((item) => item.id).toSet();
+    final incomingTimeSchemeIds = package.timeSchemes
+        .map((item) => item.id)
+        .toSet();
+    final availableCourseIds = {
+      ...incomingCourseIds,
+      if (current != null) ..._courseIds(current),
+    };
+    final availableTimeSchemeIds = {
+      ...incomingTimeSchemeIds,
+      if (current != null) ..._timeSchemeIds(current),
+    };
+    void addMissingReference(String message, bool isResolved) {
+      if (isResolved) {
+        return;
+      }
+      (current == null ? warnings : errors).add(message);
+    }
+
     final exams = [
       ...package.exams,
       ...package.profiles.expand((profile) => profile.exams),
     ];
     for (final exam in exams) {
-      if (exam.courseId.isNotEmpty && !courseIds.contains(exam.courseId)) {
-        warnings.add('exam_course_missing:${exam.id}');
+      if (exam.courseId.isNotEmpty) {
+        addMissingReference(
+          'exam_course_missing:${exam.id}',
+          availableCourseIds.contains(exam.courseId),
+        );
       }
     }
     final tasks = [
@@ -213,21 +254,26 @@ class TransferDiffService {
       ...package.profiles.expand((profile) => profile.tasks),
     ];
     for (final task in tasks) {
-      if (task.courseId != null && !courseIds.contains(task.courseId)) {
-        warnings.add('task_course_missing:${task.id}');
+      if (task.courseId != null) {
+        addMissingReference(
+          'task_course_missing:${task.id}',
+          availableCourseIds.contains(task.courseId),
+        );
       }
     }
     for (final rule in package.scheduleDateRules) {
-      if (rule.timeSchemeId.isEmpty ||
-          !timeSchemeIds.contains(rule.timeSchemeId)) {
-        warnings.add('time_rule_scheme_missing:${rule.id}');
-      }
+      addMissingReference(
+        'time_rule_scheme_missing:${rule.id}',
+        rule.timeSchemeId.isNotEmpty &&
+            availableTimeSchemeIds.contains(rule.timeSchemeId),
+      );
     }
     for (final group in package.locationTimeGroups) {
-      if (group.timeSchemeId.isEmpty ||
-          !timeSchemeIds.contains(group.timeSchemeId)) {
-        warnings.add('location_scheme_missing:${group.id}');
-      }
+      addMissingReference(
+        'location_scheme_missing:${group.id}',
+        group.timeSchemeId.isNotEmpty &&
+            availableTimeSchemeIds.contains(group.timeSchemeId),
+      );
     }
     final courses = [
       ...package.courses,
@@ -235,20 +281,32 @@ class TransferDiffService {
     ];
     for (final course in courses) {
       final schemeId = course.timeSchemeIdOverride;
-      if (schemeId != null &&
-          schemeId.isNotEmpty &&
-          !timeSchemeIds.contains(schemeId)) {
-        warnings.add('course_scheme_missing:${course.id}');
+      if (schemeId != null && schemeId.isNotEmpty) {
+        addMissingReference(
+          'course_scheme_missing:${course.id}',
+          availableTimeSchemeIds.contains(schemeId),
+        );
       }
     }
     return TransferValidation(errors: errors, warnings: warnings);
+  }
+
+  static Set<String> _courseIds(TransferPackage package) {
+    return {
+      ...package.courses.map((item) => item.id),
+      ...package.profiles.expand((item) => item.courses).map((item) => item.id),
+    };
+  }
+
+  static Set<String> _timeSchemeIds(TransferPackage package) {
+    return package.timeSchemes.map((item) => item.id).toSet();
   }
 
   TransferEntityDiff _compareList({
     required TransferEntityKind kind,
     required List<_TransferEntity> current,
     required List<_TransferEntity> incoming,
-    required TransferApplyMode mode,
+    required bool reportRemovals,
   }) {
     final currentById = {for (final item in current) item.id: item};
     final incomingById = {for (final item in incoming) item.id: item};
@@ -279,7 +337,7 @@ class TransferDiffService {
         );
       }
     }
-    if (mode == TransferApplyMode.overwrite) {
+    if (reportRemovals) {
       for (final item in current) {
         if (!incomingById.containsKey(item.id)) {
           changes.add(

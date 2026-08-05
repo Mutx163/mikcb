@@ -64,6 +64,14 @@ class TransferUndoService {
     return token;
   }
 
+  /// Returns a token to the pending slot after a failed undo attempt.
+  ///
+  /// Do not replace a token created while the undo operation was in flight:
+  /// that newer token belongs to the latest transfer and must remain usable.
+  void restore(TransferUndoToken token) {
+    _pending ??= token;
+  }
+
   void clear() {
     _pending = null;
   }

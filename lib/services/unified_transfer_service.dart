@@ -216,7 +216,7 @@ class UnifiedTransferService {
       incoming: incoming,
       mode: mode,
     );
-    final validation = _diffService.validate(incoming);
+    final validation = _diffService.validate(incoming, current: currentPackage);
     if (!validation.isValid) {
       return TransferApplyResult(
         applied: false,
@@ -317,6 +317,7 @@ class UnifiedTransferService {
       );
       return true;
     } catch (error, stackTrace) {
+      undoService.restore(token);
       await AppLogService.instance.error(
         'transfer_import_undo_failed',
         'transfer import undo failed',
@@ -332,20 +333,18 @@ class UnifiedTransferService {
     TimetableProvider provider,
     TransferPackage incoming,
   ) async {
-    if (incoming.scope == TransferScope.timeTemplate) {
-      await _mergeTimeSchemes(
-        provider,
-        incoming.timeSchemes,
-        incomingScope: incoming.scope,
-      );
-      return;
-    }
-    if (incoming.scope == TransferScope.selectedCourse ||
-        incoming.scope == TransferScope.selectedCourses ||
-        incoming.scope == TransferScope.weekTimetable) {
-      // Scoped overwrite updates only the selected/ranged entities. The
-      // remaining local timetable is outside the transfer boundary.
-      await _merge(provider, incoming);
+    if (incoming.scope.overwriteUsesMergeSemantics) {
+      // Scoped overwrite updates only entities inside the package boundary.
+      // The remaining local timetable is outside that boundary.
+      if (incoming.scope == TransferScope.timeTemplate) {
+        await _mergeTimeSchemes(
+          provider,
+          incoming.timeSchemes,
+          incomingScope: incoming.scope,
+        );
+      } else {
+        await _merge(provider, incoming);
+      }
       return;
     }
     if (incoming.isFullBackup ||
@@ -404,7 +403,7 @@ class UnifiedTransferService {
     final courseIds = provider.courses.map((item) => item.id).toSet();
     for (final task in incoming.tasks) {
       if (task.courseId != null && !courseIds.contains(task.courseId)) {
-        continue;
+        throw StateError('task_course_missing:${task.id}');
       }
       if (provider.getTaskById(task.id) == null) {
         await provider.addTask(task);
@@ -421,7 +420,7 @@ class UnifiedTransferService {
     }
     for (final exam in incoming.exams) {
       if (provider.getCourseById(exam.courseId) == null) {
-        continue;
+        throw StateError('exam_course_missing:${exam.id}');
       }
       if (provider.exams.any((item) => item.id == exam.id)) {
         await provider.updateExam(exam);
