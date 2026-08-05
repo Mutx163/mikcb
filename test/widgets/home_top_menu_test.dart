@@ -10,7 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'home action menu keeps eight rounded tint tiles without per-tile blur',
+    'home action menu keeps nine rounded tint tiles without per-tile blur',
     (tester) async {
       await tester.pumpWidget(
         TestApp(
@@ -33,7 +33,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SingleChildScrollView), findsOneWidget);
-      expect(find.byType(HyperosFrostedSurface), findsNWidgets(8));
+      expect(find.byType(HyperosFrostedSurface), findsNWidgets(9));
       // The modal capture owns the only backdrop filter. No tile adds a
       // second live filter while its rounded surface moves in the scroll view.
       expect(find.byType(BackdropFilter), findsOneWidget);
@@ -43,7 +43,7 @@ void main() {
               widget is ClipRRect &&
               widget.borderRadius == HyperosTheme.cardBorderRadius,
         ),
-        findsNWidgets(8),
+        findsNWidgets(9),
       );
 
       for (final title in const [
@@ -53,6 +53,7 @@ void main() {
         '添加课程',
         '考试安排',
         '导入课程',
+        '任务清单',
         '课表设置',
         '请喝咖啡',
       ]) {
