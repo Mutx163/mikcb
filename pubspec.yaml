@@ -23,7 +23,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   file_picker: ^11.0.3
   http: ^1.2.2
-  package_info_plus: ^8.0.2
+  package_info_plus: ^9.0.1
   share_plus: ^12.0.2
   crypto: ^3.0.6
   webdav_plus: ^1.2.2
