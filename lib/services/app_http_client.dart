@@ -27,6 +27,12 @@ bool isSharedAppHttpClient(http.Client client) {
   return shared != null && identical(client, shared);
 }
 
+/// Clears the shared client reference for test isolation.
+@visibleForTesting
+void resetAppHttpClientForTesting() {
+  _sharedObservedHttpClient = null;
+}
+
 /// Default HTTP client for mikcb network services.
 ///
 /// - Debug / profile (after BlackBox setup): shared observing client.

@@ -18,8 +18,6 @@ export 'hyperos_page_collaborators.dart'
         hyperosIsIncomingRouteSettled,
         hyperosIsRouteTransitioning;
 
-
-
 /// Root settings page without a back button (HyperOS settings home pattern).
 class HyperosRootPage extends StatelessWidget {
   const HyperosRootPage({
@@ -89,8 +87,7 @@ class HyperosRootPage extends StatelessWidget {
           : HyperosRootHeader(
               title: title,
               suffixes: suffixes ?? const [],
-              padding:
-                  headerPadding ?? const EdgeInsets.fromLTRB(8, 0, 8, 2),
+              padding: headerPadding ?? const EdgeInsets.fromLTRB(8, 0, 8, 2),
             ),
       child: child,
     );
@@ -272,6 +269,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // Post-frame callbacks already run at the end of the current frame.
     final phase = SchedulerBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.transientCallbacks ||
         phase == SchedulerPhase.postFrameCallbacks) {
       setState(() {});
       return;
@@ -392,10 +390,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         notification.metrics.axis,
       );
       _routeBlurGate.tryEnableBlurOnUserScroll();
-      debugPrint('[SNAP] _handleBodyScrollForBlur '
-          '${notification.runtimeType} '
-          'pixels=${notification.metrics.pixels.toStringAsFixed(1)} '
-          'useCollapsible=$_useCollapsibleTopAppBar');
       if (_useCollapsibleTopAppBar) {
         _collapsibleScrollBehavior.handleScroll(notification);
         // Keep the inset delta fresh before the frost check below reads it.
@@ -510,6 +504,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // ("Build scheduled during frame").
     final phase = SchedulerBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.transientCallbacks ||
         phase == SchedulerPhase.postFrameCallbacks) {
       _collapseInsetDelta.value = delta;
     } else {
@@ -560,13 +555,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   Widget _buildHeaderContent() {
     if (_useCollapsibleTopAppBar) {
       return HyperosCollapsibleTopAppBar(
-          key: _collapsibleBarKey,
-          title: widget.collapsibleTitle!,
-          color: Colors.transparent,
-          scrollBehavior: _collapsibleScrollBehavior,
-          navigationIcon: widget.collapsibleNavigationIcon,
-          actions: widget.collapsibleActions,
-          bottomContent: widget.headerExtension,
+        key: _collapsibleBarKey,
+        title: widget.collapsibleTitle!,
+        color: Colors.transparent,
+        scrollBehavior: _collapsibleScrollBehavior,
+        navigationIcon: widget.collapsibleNavigationIcon,
+        actions: widget.collapsibleActions,
+        bottomContent: widget.headerExtension,
       );
     }
     if (widget.headerExtension == null) {
@@ -605,39 +600,35 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       child: blurredHeader,
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: widget.systemOverlayStyle ??
+      value:
+          widget.systemOverlayStyle ??
           HyperosColors.systemOverlayForBackground(pageBackground),
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
         backgroundColor: pageBackground,
         body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(
-              top: MediaQuery.paddingOf(context).top + 44,
+          fit: StackFit.expand,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + 44,
+              ),
+              child: _buildBody(
+                pageBackground: pageBackground,
+                child: widget.childPad
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: widget.child,
+                      )
+                    : widget.child,
+              ),
             ),
-            child: _buildBody(
-              pageBackground: pageBackground,
-              child: widget.childPad
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: widget.child,
-                    )
-                  : widget.child,
-            ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: header,
-          ),
-        ],
+            Positioned(top: 0, left: 0, right: 0, child: header),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -660,58 +651,59 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     final headerInset = _overlayMetrics.overlayContentTopInset(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: widget.systemOverlayStyle ??
+      value:
+          widget.systemOverlayStyle ??
           HyperosColors.systemOverlayForBackground(pageBackground),
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
         backgroundColor: pageBackground,
         body: _buildHeaderScope(
-        contentTopInset: headerInset,
-        routeBlurEnabled: _backdropBlurEnabled,
-        headerBackgroundColor: pageBackground,
-        child: Stack(
-          fit: StackFit.expand,
-          clipBehavior: Clip.hardEdge,
-          children: [
-            Positioned.fill(
-              child: ValueListenableBuilder<double>(
-                valueListenable: _collapseInsetDelta,
-                child: _buildBody(
-                  pageBackground: pageBackground,
-                  child: widget.child,
+          contentTopInset: headerInset,
+          routeBlurEnabled: _backdropBlurEnabled,
+          headerBackgroundColor: pageBackground,
+          child: Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned.fill(
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _collapseInsetDelta,
+                  child: _buildBody(
+                    pageBackground: pageBackground,
+                    child: widget.child,
+                  ),
+                  builder: (context, delta, body) {
+                    return Transform.translate(
+                      offset: Offset(0, delta),
+                      child: body,
+                    );
+                  },
                 ),
-                builder: (context, delta, body) {
-                  return Transform.translate(
-                    offset: Offset(0, delta),
-                    child: body,
-                  );
-                },
               ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final width = constraints.maxWidth;
-                  if (!width.isFinite || width <= 0) {
-                    return const SizedBox.shrink();
-                  }
-                  return SizedBox(
-                    key: _overlayMetrics.overlayHeaderKey,
-                    width: width,
-                    child: blurredHeader,
-                  );
-                },
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    if (!width.isFinite || width <= 0) {
+                      return const SizedBox.shrink();
+                    }
+                    return SizedBox(
+                      key: _overlayMetrics.overlayHeaderKey,
+                      width: width,
+                      child: blurredHeader,
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 /// Scrollable HyperOS settings list with standard page padding.

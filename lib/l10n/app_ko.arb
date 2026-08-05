@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "Inter 기본 제공, 휴대폰에 이미 있는 글꼴도 선택할 수 있습니다",
   "fontSectionFootnote": "제조사 글꼴은 포함되지 않으며, 시스템에 있을 때만 적용됩니다. Xiaomi에서는 보통 MiSans만 뚜렷합니다. 변화가 없으면 자동 대체되며, 직접 설치할 필요는 보통 없습니다",
   "fontModeLabel": "글꼴 선택",
-  "fontModeSystem": "앱 기본(Inter)",
+  "fontModeSystem": "앱 기본",
   "fontModeSansSerif": "시스템 산세리프",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "HarmonyOS Sans",
@@ -490,6 +490,36 @@
   },
   "qrTransferReceiveComplete": "데이터 수신 완료, 가져오는 중…",
   "qrTransferSessionMismatch": "다른 전송 내용이 감지되었습니다. 하나의 화면에만 정면으로 대세요",
+  "qrTransferChecksumFailed": "전송 검증에 실패했습니다. 다시 시작해 주세요",
+  "qrTransferRawLengthMismatch": "수신 데이터 길이 검증에 실패했습니다. 다시 시작해 주세요",
+  "qrTransferDecompressionFailed": "수신 데이터를 압축 해제할 수 없습니다. 다시 시작해 주세요",
+  "qrTransferPlaintextWarning": "QR 전송은 평문입니다. 가까운 카메라가 내용을 읽을 수 있습니다. 가져오기 전에 출처를 확인하며, 확인 없이 덮어쓰지 않습니다.",
+  "qrTransferResourceLimit": "수신 데이터가 QR 전송 리소스 한도를 초과했습니다. 다시 시작하고 더 작은 백업을 사용하세요.",
+  "qrTransferSessionExpired": "QR 전송 시간이 초과되었습니다. 다시 시작하고 한 화면만 향하게 하세요.",
+  "qrTransferFullBackupWarning": "확인하면 이 전체 백업이 이 기기의 데이터를 대체합니다.",
+  "qrTransferImportFullBackup": "전체 백업 가져오기",
+  "qrTransferDecodeFailed": "QR 전송을 디코딩할 수 없습니다. 다시 시작해 주세요",
+  "qrTransferRestart": "다시 시작",
+  "qrTransferSampleFps": "샘플 FPS",
+  "qrTransferDecodeFps": "디코딩 FPS",
+  "qrTransferReceiveSpeed": "수신 속도",
+  "qrTransferElapsed": "경과 시간",
+  "qrTransferNewFrames": "새 프레임",
+  "qrTransferDuplicateFrames": "중복 프레임",
+  "qrTransferBlockSize": "블록 크기",
+  "qrTransferBlockCount": "블록 수",
+  "qrTransferFileData": "파일 데이터",
+  "qrTransferFileDataDetail": "원본 {rawSize} · 압축 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "전체 내보내기",
   "fullExportSubtitle": "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다",
   "exportCurrentTimetable": "현재 시간표 내보내기",
@@ -2478,15 +2508,6 @@
   "homeMenuCoffeeTitle": "커피 한 잔",
   "homeMenuFeedbackTitle": "문제 제보",
   "switchTimetableTitle": "시간표 전환",
-  "switchTimetableSubtitleEmpty": "아래 시간표를 탭하여 현재 뷰를 즉시 전환하세요",
-  "switchTimetableSubtitleCurrent": "현재: {name}. 아래 시간표를 탭하여 즉시 전환하세요",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "오늘 시간표",
   "dayTimetableTitle": "일간 타임라인",
   "backToWeekViewAction": "주간 뷰로 돌아가기",
@@ -5329,7 +5350,6 @@
   "courseCardSurfaceStyleSubtitle": "강의 카드의 시각적 스타일을 선택하세요",
   "courseCardSurfaceStyleSolid": "솔리드",
   "courseCardSurfaceStyleTranslucent": "반투명",
-  "courseCardSurfaceStyleLiquidGlass": "리퀴드 글래스",
   "courseCardSurfaceStyleGaussian": "가우시안 블러",
   "courseCardSectionColor": "색상",
   "liveSelfCheckTitle": "자체 점검",
@@ -5365,10 +5385,10 @@
   "aboutCommunitySectionTitle": "커뮤니티",
   "selectStartTimeTitle": "시작 시간 선택",
   "selectEndTimeTitle": "종료 시간 선택",
-  "weekdayInkContrastTitle": "텍스트 대비 향상",
-  "weekdayInkContrastBodyDark": "다크 모드에서 강의 텍스트 대비를 향상시킵니다",
-  "weekdayInkContrastBodyLight": "라이트 모드에서 강의 텍스트 대비를 향상시킵니다",
-  "keepCurrentColorAction": "현재 색상 유지",
+  "weekdayInkContrastTitle": "텍스트 대비 부족",
+  "weekdayInkContrastBodyDark": "요일 표시줄 텍스트 색상이 어두운 배경화면과 대비가 충분하지 않아 일시적으로 자동 흰색을 사용합니다. 가독성을 보장하기 위한 조치이며, \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다.",
+  "weekdayInkContrastBodyLight": "요일 표시줄 텍스트 색상이 밝은 배경화면과 대비가 충분하지 않아 일시적으로 자동 검은색을 사용합니다. 가독성을 보장하기 위한 조치이며, \"시간표 페이지 → 텍스트 색상\"에서 색상을 변경하거나 기본값으로 재설정할 수 있습니다.",
+  "gotItAction": "알겠습니다",
   "settingsTimetableSectionTitle": "시간표",
   "liveIslandLabelEntryEnabled": "활성화됨",
   "liveIslandLabelEntryDisabled": "비활성화됨",

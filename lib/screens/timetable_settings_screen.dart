@@ -24,6 +24,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
+import '../widgets/wallpaper_position_picker_sheet.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';
 import '../ui/debug/debug.dart';
@@ -247,57 +248,52 @@ class TimetableSettingsScreen extends StatelessWidget {
           );
         }
 
-        return ListenableBuilder(
-          listenable: HyperosLayoutTuningController.instance,
-          builder: (context, _) {
-            // Settings home: same HyperosSubpage shell as every subpage —
-            // unified collapsible large title + frosted/liquid-glass chrome.
-            // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
-            // opaque background OVER its frost layer, so blur never showed.)
-            return HyperosSubpage(
-              title: Text(l10n.settingsTitle),
-              onBack: () => Navigator.pop(context),
-              child: HyperosListView(
-                // Inset lives inside the scrollable (like HyperosSubpage) so
-                // rows can pass under the frosted/liquid-glass top bar.
-                includeHeaderInset: true,
-                blockVerticalScrollBubbling: false,
-                pageStorageKey: const PageStorageKey<String>(
-                  'timetable-settings-main',
-                ),
-                // Lazy builder: only visible sections are mounted, reducing
-                // per-frame composite cost vs the old SingleChildScrollView.
-                itemCount: 8,
-                itemBuilder: (context, index) => _buildSettingsHomeSection(
-                  context,
-                  index,
-                  provider: provider,
-                  settings: settings,
-                  l10n: l10n,
-                  openSemesterSettings: openSemesterSettings,
-                  openProfiles: openProfiles,
-                  openHolidaySettings: openHolidaySettings,
-                  openCourseCardSettings: openCourseCardSettings,
-                  openTimetablePageSettings: openTimetablePageSettings,
-                  openLiveSettings: openLiveSettings,
-                  openHomeWidgetSettings: openHomeWidgetSettings,
-                  openAppearance: openAppearance,
-                  openGeneralSettings: openGeneralSettings,
-                  openDataTransfer: openDataTransfer,
-                  openCloudSync: openCloudSync,
-                  openLanEdit: openLanEdit,
-                  openCoupleTimetable: openCoupleTimetable,
-                  openAbout: openAbout,
-                  openUserGuide: openUserGuide,
-                  openDiagnostics: openDiagnostics,
-                  openMemoryStats: openMemoryStats,
-                  openLiveTestingFixture: openLiveTestingFixture,
-                  openHyperosShowcase: openHyperosShowcase,
-                  openMiuixShowcase: openMiuixShowcase,
-                ),
-              ),
-            );
-          },
+        // Settings home: same HyperosSubpage shell as every subpage —
+        // unified collapsible large title + frosted/liquid-glass chrome.
+        // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
+        // opaque background OVER its frost layer, so blur never showed.)
+        return HyperosSubpage(
+          title: Text(l10n.settingsTitle),
+          onBack: () => Navigator.pop(context),
+          child: HyperosListView(
+            // Inset lives inside the scrollable (like HyperosSubpage) so
+            // rows can pass under the frosted/liquid-glass top bar.
+            includeHeaderInset: true,
+            blockVerticalScrollBubbling: false,
+            pageStorageKey: const PageStorageKey<String>(
+              'timetable-settings-main',
+            ),
+            // Lazy builder: only visible sections are mounted, reducing
+            // per-frame composite cost vs the old SingleChildScrollView.
+            itemCount: 8,
+            itemBuilder: (context, index) => _buildSettingsHomeSection(
+              context,
+              index,
+              provider: provider,
+              settings: settings,
+              l10n: l10n,
+              openSemesterSettings: openSemesterSettings,
+              openProfiles: openProfiles,
+              openHolidaySettings: openHolidaySettings,
+              openCourseCardSettings: openCourseCardSettings,
+              openTimetablePageSettings: openTimetablePageSettings,
+              openLiveSettings: openLiveSettings,
+              openHomeWidgetSettings: openHomeWidgetSettings,
+              openAppearance: openAppearance,
+              openGeneralSettings: openGeneralSettings,
+              openDataTransfer: openDataTransfer,
+              openCloudSync: openCloudSync,
+              openLanEdit: openLanEdit,
+              openCoupleTimetable: openCoupleTimetable,
+              openAbout: openAbout,
+              openUserGuide: openUserGuide,
+              openDiagnostics: openDiagnostics,
+              openMemoryStats: openMemoryStats,
+              openLiveTestingFixture: openLiveTestingFixture,
+              openHyperosShowcase: openHyperosShowcase,
+              openMiuixShowcase: openMiuixShowcase,
+            ),
+          ),
         );
       },
     );
@@ -840,6 +836,7 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
               : l10n.liveIslandLabelEntryDisabled)
         : null;
     return _MiuixSettingsPreference(
+      key: const ValueKey<String>('settings-live-entry'),
       startAction: _settingsIconBadge(
         MiuixIcons.extended.byName('alarm')!,
         HyperosIconColors.orange,
@@ -947,15 +944,15 @@ class _SettingsDeveloperListGroupState
                     onClick: widget.onOpenMiuixShowcase,
                   ),
                   ListenableBuilder(
-                    listenable: DebugTuningPreferences.instance,
-                    builder: (context, _) => MiuixSwitchPreference(
+                    listenable: BlackBoxOverlayPreferences.instance,
+                    builder: (context, _) => _MiuixSettingsSwitchPreference(
                       startAction: _settingsIconBadge(
                         MiuixIcons.extended.byName('show')!,
                         HyperosIconColors.purple,
                       ),
                       title: l10n.debugUiOverlayToggleTitle,
-                      value: DebugTuningPreferences.instance.visible,
-                      onChanged: DebugTuningPreferences.instance.setVisible,
+                      value: BlackBoxOverlayPreferences.instance.visible,
+                      onChanged: BlackBoxOverlayPreferences.instance.setVisible,
                     ),
                   ),
                 ],
@@ -964,6 +961,38 @@ class _SettingsDeveloperListGroupState
           ],
         );
       },
+    );
+  }
+}
+
+/// 开发者区开关行，与导航行共享标题字重和按压反馈。
+class _MiuixSettingsSwitchPreference extends StatelessWidget {
+  const _MiuixSettingsSwitchPreference({
+    required this.startAction,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final Widget startAction;
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return HyperosPressableRow(
+      onTap: () => onChanged(!value),
+      holdHighlightThroughTransition: true,
+      child: MiuixBasicComponent(
+        title: title,
+        titleFontWeight: FontWeight.w400,
+        startAction: startAction,
+        endActions: [MiuixSwitch(value: value, onChanged: onChanged)],
+        role: MiuixBasicComponentRole.switchControl,
+        // The outer row owns tap semantics and press feedback.
+        onClick: null,
+      ),
     );
   }
 }
@@ -992,6 +1021,7 @@ Widget _settingsIconBadge(MiuixVectorIcon icon, Color accent) {
 /// 内层 [MiuixArrowPreference] 只负责显示。
 class _MiuixSettingsPreference extends StatelessWidget {
   const _MiuixSettingsPreference({
+    super.key,
     required this.startAction,
     required this.title,
     this.endActions,

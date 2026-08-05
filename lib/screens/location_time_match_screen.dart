@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -728,9 +729,10 @@ class _LocationTimeGroupEditorScreenState
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            GestureDetector(
-                              onTap: () =>
+                            MiuixPressable(
+                              onPressed: () =>
                                   _editKeywordDialog(context, l10n, index),
+                              borderRadius: BorderRadius.circular(6),
                               child: HyperosTag(
                                 label:
                                     '${_keywords[index].patternController.text} · ${_modeLabel(l10n, _keywords[index].mode)}',
@@ -740,16 +742,15 @@ class _LocationTimeGroupEditorScreenState
                             const SizedBox(width: 4),
                             Tooltip(
                               message: l10n.deleteAction,
-                              child: InkWell(
-                                onTap: () => _removeKeywordAt(index),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: Icon(
-                                    Icons.close_rounded,
-                                    size: 16,
-                                    color: HyperosColors.secondaryText(context),
-                                  ),
+                              child: MiuixIconButton(
+                                onPressed: () => _removeKeywordAt(index),
+                                minWidth: 24,
+                                minHeight: 24,
+                                cornerRadius: 12,
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 16,
+                                  color: HyperosColors.secondaryText(context),
                                 ),
                               ),
                             ),

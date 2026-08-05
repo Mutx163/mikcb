@@ -8,13 +8,19 @@ import 'package:path_provider/path_provider.dart';
 ///
 /// 返回 null 表示用户取消选择或读取失败。相册选择走系统 Photo Picker /
 /// 系统相册界面，无需申请存储权限。
+typedef ManagedImagePicker = Future<XFile?> Function();
+
 Future<String?> pickAndStoreManagedImage({
   required String directoryName,
   required String filePrefix,
+  bool cleanupArtifacts = true,
+  ManagedImagePicker? imagePicker,
 }) async {
   final XFile? pickedImage;
   try {
-    pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+    pickedImage =
+        await (imagePicker ??
+            () => ImagePicker().pickImage(source: ImageSource.gallery))();
   } on Exception {
     return null;
   }
@@ -37,11 +43,13 @@ Future<String?> pickAndStoreManagedImage({
   final targetPath =
       '${targetDir.path}${Platform.pathSeparator}${filePrefix}_$stamp.$ext';
   await File(targetPath).writeAsBytes(bytes, flush: true);
-  await _deleteManagedImageArtifacts(
-    directoryName: directoryName,
-    filePrefix: filePrefix,
-    preservePath: targetPath,
-  );
+  if (cleanupArtifacts) {
+    await _deleteManagedImageArtifacts(
+      directoryName: directoryName,
+      filePrefix: filePrefix,
+      preservePath: targetPath,
+    );
+  }
   PaintingBinding.instance.imageCache.evict(FileImage(File(targetPath)));
   return targetPath;
 }

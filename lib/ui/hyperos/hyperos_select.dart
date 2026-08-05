@@ -340,6 +340,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
       child: Stack(
         fit: StackFit.expand,
         children: [
+          const Positioned.fill(child: UndimmedBackdropCapture()),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.of(context).pop(),
@@ -479,7 +480,6 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.nestedTile,
         borderRadius: cornerRadius,
-        contentLegibilityFill: false,
         // Sample the backdrop captured at the popup's ancestor BackdropGroup
         // (undimmed page) so the modal scrim never muddies the refraction.
         useAncestorBackdropGroup: true,

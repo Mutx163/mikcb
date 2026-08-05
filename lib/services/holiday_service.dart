@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logging/app_debug_log.dart';
+import '../services/app_http_client.dart';
 import '../models/holiday_entry.dart';
 import 'user_data_sync_hooks.dart';
 
@@ -45,8 +46,10 @@ class HolidayService {
   SharedPreferences? _prefs;
 
   HolidayService({http.Client? client})
-    : _client = client ?? http.Client(),
-      _ownsClient = client == null;
+    : this._internal(client ?? createAppHttpClient(), client == null);
+
+  HolidayService._internal(this._client, bool ownsCandidate)
+    : _ownsClient = ownsCandidate && !isSharedAppHttpClient(_client);
 
   /// 释放 HTTP 客户端资源
   void dispose() {

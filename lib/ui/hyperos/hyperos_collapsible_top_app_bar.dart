@@ -48,8 +48,28 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
   static const double smallTitleRevealFraction = 1.0 / 3.0;
 
   /// Rise distance of the small title during its show transition (upstream
-  /// animates `translationY` 20 → 0 with a folme spring).
+  /// moves `translationY` from 20 to 0 with a folme spring).
   static const double smallTitleRisePx = 20.0;
+
+  /// Resolves the small-title opacity from the same collapse progress that
+  /// moves the large title.
+  ///
+  /// Keeping this as a function of collapse progress is important for short
+  /// pages: their title follows the list's rubber-band spring after release.
+  /// A separate fixed-duration animation would introduce a second, faster
+  /// clock and make the title visibly change speed at the midpoint.
+  @visibleForTesting
+  static double smallTitleOpacityForCollapse(double collapseFraction) {
+    final normalizedFraction = collapseFraction.clamp(0.0, 1.0);
+    if (normalizedFraction <= smallTitleRevealFraction) {
+      return 0.0;
+    }
+    final revealProgress =
+        ((normalizedFraction - smallTitleRevealFraction) /
+                (1.0 - smallTitleRevealFraction))
+            .clamp(0.0, 1.0);
+    return revealProgress;
+  }
 
   /// Extra scroll the collapse snap applies beyond the collapse point so the
   /// first content row parks tight under the small-title band. The content
@@ -61,6 +81,33 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
       HyperosMiuixTopAppBar.largeTitleBottomPadding +
       HyperosMiuixTopAppBar.largeTitleContentGap -
       1.0;
+}
+
+/// A curve approximation of the critical spring used by the custom
+/// overscroll physics. It is used for in-range endpoint snaps; out-of-range
+/// pages follow the actual scroll spring directly.
+class _HyperosCriticalSpringCurve extends Curve {
+  const _HyperosCriticalSpringCurve();
+
+  static const double _springPeriodSeconds =
+      HyperosMiuixAnim.standardSpringPeriod;
+  static final double _springOmega = (2 * math.pi) / _springPeriodSeconds;
+  static final double _settledProgress = _criticalProgress(
+    _springPeriodSeconds,
+  );
+
+  static double _criticalProgress(double seconds) {
+    final normalizedTime = _springOmega * seconds;
+    return 1.0 - (1.0 + normalizedTime) * math.exp(-normalizedTime);
+  }
+
+  @override
+  double transformInternal(double time) {
+    final rawProgress = _criticalProgress(
+      time.clamp(0.0, 1.0) * _springPeriodSeconds,
+    );
+    return (rawProgress / _settledProgress).clamp(0.0, 1.0);
+  }
 }
 
 /// Mutable collapse state shared by [HyperosExitUntilCollapsedScrollBehavior]
@@ -125,6 +172,19 @@ class HyperosCollapsibleTopAppBarState extends ChangeNotifier {
     if (_notifyScheduled) {
       return;
     }
+
+    // Scroll physics ticks run during transient callbacks, before Flutter
+    // starts the build/layout phase for that frame. Notify immediately there
+    // so the title is painted on the same spring frame as the scroll offset.
+    // During layout or paint, defer as before to avoid marking an
+    // AnimatedBuilder dirty in the middle of the pipeline.
+    final schedulerPhase = SchedulerBinding.instance.schedulerPhase;
+    if (schedulerPhase == SchedulerPhase.idle ||
+        schedulerPhase == SchedulerPhase.transientCallbacks) {
+      notifyListeners();
+      return;
+    }
+
     _notifyScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _notifyScheduled = false;
@@ -181,8 +241,11 @@ class HyperosExitUntilCollapsedScrollBehavior
     this.canScroll,
     this.requireOuterScrollable = true,
     this.snapOnRelease = true,
-    this.snapDuration = const Duration(milliseconds: 280),
-    this.snapCurve = Curves.easeOutCubic,
+    // Match the 400ms critical spring used by HyperosOverscrollPhysics. A
+    // shorter endpoint snap makes the title visibly accelerate after the
+    // slower rubber-band has already started returning.
+    this.snapDuration = const Duration(milliseconds: 400),
+    this.snapCurve = const _HyperosCriticalSpringCurve(),
   }) : state = state ?? HyperosCollapsibleTopAppBarState();
 
   @override
@@ -204,6 +267,17 @@ class HyperosExitUntilCollapsedScrollBehavior
 
   bool _snapInProgress = false;
   DateTime? _snapCompletedAt;
+
+  /// Tracks a short-page title snap against the list's own rubber-band.
+  ///
+  /// A short page cannot keep the large title collapsed through its normal
+  /// scroll range, so the list briefly moves out of range and then springs
+  /// back. The title must follow that same spring progress instead of jumping
+  /// directly to the half-cut decision's endpoint on [ScrollEndNotification].
+  double? _shortPageSpringReleasePixels;
+  double? _shortPageSpringTargetPixels;
+  double _shortPageReleaseTitleOffset = 0;
+  double _shortPageTargetTitleOffset = 0;
 
   /// True while a snap-to-endpoint animation is running. Listeners should avoid
   /// toggling visual state (e.g. frost) during the snap to prevent flicker.
@@ -251,21 +325,10 @@ class HyperosExitUntilCollapsedScrollBehavior
     final canParkViaScroll =
         expansion <= 0 || (maxExtent - minExtent) >= expansion - 1.0;
     if (!canParkViaScroll) {
-      debugPrint(
-        '[SNAP] handleScroll → SHORT PAGE path '
-        'pixels=${pixels.toStringAsFixed(1)} '
-        'expansion=${expansion.toStringAsFixed(1)} '
-        'scrollRange=${(maxExtent - minExtent).toStringAsFixed(1)} '
-        '${notification.runtimeType}',
-      );
       return _handleShortPageScroll(notification);
     }
 
     if (_snapInProgress && notification is! ScrollEndNotification) {
-      debugPrint(
-        '[SNAP] handleScroll snapInProgress skip '
-        '${notification.runtimeType}',
-      );
       // Keep heightOffset in sync while the snap animation runs.
       _syncOffsetToPosition(notification.metrics);
       return false;
@@ -301,14 +364,6 @@ class HyperosExitUntilCollapsedScrollBehavior
     // a mid-scroll release that falls into the lock path will never snap and
     // the title stays frozen at a half-collapsed position forever.
     if (snapOnRelease && notification is ScrollEndNotification) {
-      debugPrint(
-        '[SNAP] handleScroll ScrollEnd '
-        'pixels=${pixels.toStringAsFixed(1)} '
-        'heightOffset=${state.heightOffset.toStringAsFixed(1)} '
-        'limit=${limit.toStringAsFixed(1)} '
-        'smallTitleLocked=$_smallTitleLocked '
-        'frozenOverscroll=$_frozenDuringOverscrollSpringBack',
-      );
       _snapToNearestEndpoint(notification);
       _smallTitleLocked = false;
       state.contentOffset = pixels;
@@ -325,15 +380,9 @@ class HyperosExitUntilCollapsedScrollBehavior
     if (_smallTitleLocked) {
       if (notification is ScrollStartNotification) {
         // New gesture: clear lock so the user can freely interact.
-        debugPrint('[SNAP] handleScroll unlock on ScrollStart');
         _smallTitleLocked = false;
       } else {
         // During the current gesture (drag or fling), keep the title frozen.
-        debugPrint(
-          '[SNAP] handleScroll smallTitleLocked block '
-          '${notification.runtimeType} '
-          'heightOffset=${state.heightOffset.toStringAsFixed(1)}',
-        );
         state.contentOffset = pixels;
         return false;
       }
@@ -345,12 +394,10 @@ class HyperosExitUntilCollapsedScrollBehavior
   /// Collapse handling for pages too short to hold the title collapsed via
   /// scroll position (see [handleScroll]).
   ///
-  /// The title tracks rubber-band overscroll while the finger is down, but may
-  /// only *re-expand* during an active drag. During spring-back / fling it
-  /// stays frozen, so lifting the finger never lets the large title fall back
-  /// down (the user only wants the large title back when they deliberately
-  /// drag the page down). On settle the frozen title snaps to the nearer
-  /// endpoint so it never rests half-collapsed.
+  /// The title tracks rubber-band overscroll while the finger is down. During
+  /// the spring-back it follows the same physical scroll progress to the
+  /// endpoint chosen from the visual half-cut threshold, so the title never
+  /// switches to a separate, faster animation clock.
   bool _handleShortPageScroll(ScrollNotification notification) {
     final metrics = notification.metrics;
     final limit = state.heightOffsetLimit;
@@ -359,28 +406,95 @@ class HyperosExitUntilCollapsedScrollBehavior
       return false;
     }
 
+    final isActiveUserDrag =
+        notification is ScrollUpdateNotification &&
+        notification.dragDetails != null;
+    final isUserDragStart =
+        notification is ScrollStartNotification &&
+        notification.dragDetails != null;
+    final isBallisticUpdate =
+        notification is ScrollUpdateNotification &&
+        notification.dragDetails == null;
+
+    // A new finger gesture takes ownership from an in-progress rubber-band
+    // synchronization. Ballistic ScrollStartNotification has no drag details,
+    // so it does not accidentally cancel the title's spring-following state.
+    if (isUserDragStart) {
+      _clearShortPageSpringBack();
+    }
+
+    // The framework only sends the final ScrollEndNotification after a
+    // ballistic overscroll spring has finished. Capture the release state on
+    // the first ballistic update instead of waiting for that final event;
+    // otherwise the title remains frozen during the spring and jumps to its
+    // endpoint on the last frame.
+    if (isBallisticUpdate &&
+        _shortPageSpringReleasePixels == null &&
+        (metrics.pixels < metrics.minScrollExtent - 0.5 ||
+            metrics.pixels > metrics.maxScrollExtent + 0.5)) {
+      final releaseTitleOffset = state.heightOffset;
+      final textHeight = state.largeTitleTextHeight;
+      final snapThreshold = textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
+      final targetTitleOffset = -releaseTitleOffset >= snapThreshold
+          ? limit
+          : 0.0;
+      final targetPixels = metrics.pixels > metrics.maxScrollExtent
+          ? metrics.maxScrollExtent
+          : metrics.minScrollExtent;
+      if ((targetTitleOffset - releaseTitleOffset).abs() > 0.5 &&
+          (metrics.pixels - targetPixels).abs() > 0.5) {
+        _shortPageSpringReleasePixels = metrics.pixels;
+        _shortPageSpringTargetPixels = targetPixels;
+        _shortPageReleaseTitleOffset = releaseTitleOffset;
+        _shortPageTargetTitleOffset = targetTitleOffset;
+      }
+    }
+
+    // During the list's ballistic return, advance the title using the actual
+    // scroll position. This makes the large-title endpoint land in the same
+    // frame as the rubber-band instead of completing in a separate, faster
+    // jump.
+    if (!isActiveUserDrag &&
+        _shortPageSpringReleasePixels != null &&
+        _shortPageSpringTargetPixels != null) {
+      _syncShortPageTitleToSpring(metrics);
+      return false;
+    }
+
     if (notification is ScrollEndNotification) {
-      // Title stayed frozen through spring-back, so the current offset still
-      // reflects where the user released — snap it to the nearer endpoint
-      // based on the large title text's visual cut position.
+      // If no ballistic frame was emitted (for example, a synthetic
+      // notification in a test), use the current offset to choose the nearer
+      // endpoint based on the large title text's visual cut position.
       final scrolled = -state.heightOffset;
       final textHeight = state.largeTitleTextHeight;
       final snapThreshold = textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
-      debugPrint(
-        '[SNAP] _handleShortPageScroll ScrollEnd '
-        'scrolled=${scrolled.toStringAsFixed(1)} '
-        'textHeight=${textHeight.toStringAsFixed(1)} '
-        'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
-        '${scrolled >= snapThreshold ? "COLLAPSE" : "EXPAND"}',
-      );
-      state.heightOffset = scrolled >= snapThreshold ? limit : 0.0;
+      final targetTitleOffset = scrolled >= snapThreshold ? limit : 0.0;
+      final isOutOfRange =
+          metrics.pixels < metrics.minScrollExtent - 0.5 ||
+          metrics.pixels > metrics.maxScrollExtent + 0.5;
+
+      if (isOutOfRange &&
+          (targetTitleOffset - state.heightOffset).abs() > 0.5) {
+        final targetPixels = metrics.pixels > metrics.maxScrollExtent
+            ? metrics.maxScrollExtent
+            : metrics.minScrollExtent;
+        final springDistance = metrics.pixels - targetPixels;
+        if (springDistance.abs() > 0.5) {
+          _shortPageSpringReleasePixels = metrics.pixels;
+          _shortPageSpringTargetPixels = targetPixels;
+          _shortPageReleaseTitleOffset = state.heightOffset;
+          _shortPageTargetTitleOffset = targetTitleOffset;
+          state.contentOffset = metrics.pixels;
+          return false;
+        }
+      }
+
+      state.heightOffset = targetTitleOffset;
+      _clearShortPageSpringBack();
       state.contentOffset = metrics.pixels;
       return false;
     }
 
-    final isActiveUserDrag =
-        notification is ScrollUpdateNotification &&
-        notification.dragDetails != null;
     final scrolled = metrics.pixels - metrics.minScrollExtent;
     final desired = scrolled <= 0 ? 0.0 : -scrolled;
     final wouldExpand = desired > state.heightOffset + 0.01;
@@ -394,6 +508,48 @@ class HyperosExitUntilCollapsedScrollBehavior
     state.heightOffset = desired;
     state.contentOffset = metrics.pixels;
     return false;
+  }
+
+  void _clearShortPageSpringBack() {
+    _shortPageSpringReleasePixels = null;
+    _shortPageSpringTargetPixels = null;
+    _shortPageReleaseTitleOffset = 0;
+    _shortPageTargetTitleOffset = 0;
+  }
+
+  void _syncShortPageTitleToSpring(ScrollMetrics metrics) {
+    final releasePixels = _shortPageSpringReleasePixels;
+    final targetPixels = _shortPageSpringTargetPixels;
+    if (releasePixels == null || targetPixels == null) {
+      return;
+    }
+
+    final totalDistance = releasePixels - targetPixels;
+    if (totalDistance.abs() <= 0.01) {
+      state.heightOffset = _shortPageTargetTitleOffset;
+      state.contentOffset = metrics.pixels;
+      _clearShortPageSpringBack();
+      return;
+    }
+
+    // `remainingFraction` follows the physical spring from release (1) to
+    // the in-range edge (0). Both top and bottom overscroll use the same
+    // signed ratio, so no direction-specific timing curve is needed.
+    final remainingFraction = ((metrics.pixels - targetPixels) / totalDistance)
+        .clamp(0.0, 1.0);
+    final springProgress = 1.0 - remainingFraction;
+    final titleOffset =
+        _shortPageReleaseTitleOffset +
+        (_shortPageTargetTitleOffset - _shortPageReleaseTitleOffset) *
+            springProgress;
+    state.heightOffset = titleOffset;
+    state.contentOffset = metrics.pixels;
+
+    if (remainingFraction <= 0.001 ||
+        (metrics.pixels - targetPixels).abs() <= 0.5) {
+      state.heightOffset = _shortPageTargetTitleOffset;
+      _clearShortPageSpringBack();
+    }
   }
 
   /// When true, the user released their finger while the list was in
@@ -438,7 +594,6 @@ class HyperosExitUntilCollapsedScrollBehavior
   void _snapToNearestEndpoint(ScrollEndNotification notification) {
     final limit = state.heightOffsetLimit;
     if (!limit.isFinite || limit >= 0) {
-      debugPrint('[SNAP] _snapToNearestEndpoint EARLY: limit not finite');
       return;
     }
     final scrolled = -state.heightOffset; // pixels the title has been pushed up
@@ -446,10 +601,6 @@ class HyperosExitUntilCollapsedScrollBehavior
     final snapThreshold = textHeight > 0 ? textHeight * 0.5 : -limit * 0.5;
     // Already parked at an end — nothing to do.
     if (scrolled <= 0.5 || scrolled >= -limit - 0.5) {
-      debugPrint(
-        '[SNAP] _snapToNearestEndpoint EARLY: already at end '
-        'scrolled=$scrolled limit=$limit',
-      );
       return;
     }
 
@@ -465,15 +616,6 @@ class HyperosExitUntilCollapsedScrollBehavior
         expansion +
         HyperosCollapsibleTopAppBarDefaults.collapseSnapRestTighten;
     final targetPixels = scrolled < snapThreshold ? minExtent : collapseTarget;
-    debugPrint(
-      '[SNAP] _snapToNearestEndpoint '
-      'scrolled=${scrolled.toStringAsFixed(1)} '
-      'textHeight=${textHeight.toStringAsFixed(1)} '
-      'snapThreshold=${snapThreshold.toStringAsFixed(1)} '
-      'expansion=${expansion.toStringAsFixed(1)} '
-      'targetPixels=${targetPixels.toStringAsFixed(1)} '
-      '${scrolled < snapThreshold ? "EXPAND" : "COLLAPSE"}',
-    );
 
     // notification.metrics is almost always a ScrollPosition for real scroll
     // notifications — use it directly instead of Scrollable.maybeOf(context),
@@ -489,14 +631,9 @@ class HyperosExitUntilCollapsedScrollBehavior
           : Scrollable.maybeOf(notificationContext)?.position;
     }
     if (position == null || !position.hasPixels) {
-      debugPrint(
-        '[SNAP] _snapToNearestEndpoint ABORT: no ScrollPosition '
-        'metricsIsPosition=${notification.metrics is ScrollPosition}',
-      );
       return;
     }
     if ((position.pixels - targetPixels).abs() < 0.5) {
-      debugPrint('[SNAP] _snapToNearestEndpoint already at target, no-op');
       return;
     }
 
@@ -529,6 +666,19 @@ class HyperosExitUntilCollapsedScrollBehavior
           });
     });
   }
+}
+
+/// No-op listenable used when a collapsible bar has no scroll behavior.
+class _HyperosNoopListenable implements Listenable {
+  const _HyperosNoopListenable._();
+
+  static const instance = _HyperosNoopListenable._();
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
 }
 
 /// Bridges scroll notifications to [HyperosExitUntilCollapsedScrollBehavior].
@@ -586,8 +736,9 @@ String? hyperosExtractPageTitleText(Widget title) {
 ///   color. It greys/fades from the first collapse pixel
 ///   (`alpha = 1 - fraction * 3`, upstream formula) and is gone before the
 ///   small title shows.
-/// - Small title toggles at 1/3 collapse and springs in (opacity + 20px
-///   rise); springs out faster on re-expand — mirrors upstream folme specs.
+/// - Small title starts revealing at 1/3 collapse; its opacity and 20px rise
+///   are derived from the same collapse progress as the large title, so it
+///   never introduces a second animation clock during a spring-back.
 /// - Release mid-range: list snaps to expanded or collapsed (see scroll behavior)
 ///
 /// Without [scrollBehavior] the bar stays fully expanded (static large title).
@@ -654,8 +805,7 @@ class HyperosCollapsibleTopAppBar extends StatefulWidget {
 }
 
 class _HyperosCollapsibleTopAppBarState
-    extends State<HyperosCollapsibleTopAppBar>
-    with SingleTickerProviderStateMixin {
+    extends State<HyperosCollapsibleTopAppBar> {
   final GlobalKey _largeTitleKey = GlobalKey();
   final GlobalKey _navigationIconKey = GlobalKey();
   final GlobalKey _actionsKey = GlobalKey();
@@ -673,31 +823,6 @@ class _HyperosCollapsibleTopAppBarState
   double _largeTitleTextHeight = 0;
   double _smallTitleTextHeight = 0;
   double _smallTitleTextWidth = 0;
-
-  /// Small-title show/hide transition. Upstream Miuix uses folme springs
-  /// (show: damping 1.0 / response 0.3s; hide: response 0.15s) driving
-  /// opacity 0→1 plus a translationY rise of
-  /// [HyperosCollapsibleTopAppBarDefaults.smallTitleRisePx] → 0.
-  late final AnimationController _smallTitleController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 300),
-    reverseDuration: const Duration(milliseconds: 150),
-  );
-  late final Animation<double> _smallTitleAnim = CurvedAnimation(
-    parent: _smallTitleController,
-    curve: Curves.easeOutCubic,
-  );
-
-  /// Null until the first builder pass — used to seed the controller at the
-  /// current visibility without animating (upstream initialises its
-  /// Animatables the same way: `Animatable(if (smallTitleVisible) 1f else 0f)`).
-  bool? _smallTitleShown;
-
-  @override
-  void dispose() {
-    _smallTitleController.dispose();
-    super.dispose();
-  }
 
   @override
   void didUpdateWidget(covariant HyperosCollapsibleTopAppBar oldWidget) {
@@ -855,34 +980,11 @@ class _HyperosCollapsibleTopAppBarState
     final contentWidth = mediaQuery.size.width - horizontalPadding * 2;
 
     Widget animatedBody = AnimatedBuilder(
-      animation: Listenable.merge([
-        if (behavior != null) behavior.state,
-        _smallTitleController,
-      ]),
+      animation: behavior?.state ?? _HyperosNoopListenable.instance,
       builder: (context, _) {
         final collapseFraction = behavior?.state.collapsedFraction ?? 0.0;
         final heightOffset = behavior?.state.heightOffset ?? 0.0;
         final effectiveOffset = heightOffset.isFinite ? heightOffset : 0.0;
-
-        // Small title toggles on a fraction threshold (upstream boolean
-        // derivedStateOf) and transitions with its own spring-like curve.
-        final smallVisible =
-            collapseFraction >=
-            HyperosCollapsibleTopAppBarDefaults.smallTitleRevealFraction;
-        if (_smallTitleShown == null) {
-          // First build: snap to the current state without animating. A
-          // freshly inflated State over an already-collapsed bar must not
-          // replay the fade-in (that reads as a title blink).
-          _smallTitleShown = smallVisible;
-          _smallTitleController.value = smallVisible ? 1.0 : 0.0;
-        } else if (smallVisible != _smallTitleShown) {
-          _smallTitleShown = smallVisible;
-          if (smallVisible) {
-            _smallTitleController.forward();
-          } else {
-            _smallTitleController.reverse();
-          }
-        }
 
         final currentExpansion = largeTitleHeight.clamp(0.0, double.infinity);
         final barCollapseFraction = currentExpansion > 0
@@ -927,10 +1029,13 @@ class _HyperosCollapsibleTopAppBarState
                     HyperosCollapsibleTopAppBarDefaults.largeTitleFadeRate)
                 .clamp(0.0, 1.0);
         final largeOpacity = 1.0 - largeFadeT;
-        final smallOpacity = _smallTitleAnim.value;
+        final smallOpacity =
+            HyperosCollapsibleTopAppBarDefaults.smallTitleOpacityForCollapse(
+              collapseFraction,
+            );
         final smallTitleRise =
             HyperosCollapsibleTopAppBarDefaults.smallTitleRisePx *
-            (1.0 - _smallTitleAnim.value);
+            (1.0 - smallOpacity);
         // Greying starts immediately with the first collapse movement.
         final largeInk = Color.lerp(
           largeTitleColor,

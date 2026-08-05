@@ -59,7 +59,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fontModeLabel => 'Font';
 
   @override
-  String get fontModeSystem => 'App Default (Inter)';
+  String get fontModeSystem => 'App Default';
 
   @override
   String get fontModeSansSerif => 'System Sans';
@@ -1245,6 +1245,76 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get qrTransferSessionMismatch =>
       'Detected a different transfer; make sure you are pointing at one stream only';
+
+  @override
+  String get qrTransferChecksumFailed =>
+      'Transfer verification failed. Please restart.';
+
+  @override
+  String get qrTransferRawLengthMismatch =>
+      'Received data length verification failed. Please restart.';
+
+  @override
+  String get qrTransferDecompressionFailed =>
+      'Could not decompress the received data. Please restart.';
+
+  @override
+  String get qrTransferPlaintextWarning =>
+      'QR transfer is plaintext. Nearby cameras may read it. Review the source before importing; nothing is overwritten without your confirmation.';
+
+  @override
+  String get qrTransferResourceLimit =>
+      'Received data exceeded the QR transfer resource limit. Restart and use a smaller backup.';
+
+  @override
+  String get qrTransferSessionExpired =>
+      'QR transfer timed out. Restart and keep the camera pointed at one screen.';
+
+  @override
+  String get qrTransferFullBackupWarning =>
+      'This full backup will replace the data on this device after confirmation.';
+
+  @override
+  String get qrTransferImportFullBackup => 'Import Full Backup';
+
+  @override
+  String get qrTransferDecodeFailed =>
+      'Could not decode the QR transfer. Please restart.';
+
+  @override
+  String get qrTransferRestart => 'Restart';
+
+  @override
+  String get qrTransferSampleFps => 'Sample FPS';
+
+  @override
+  String get qrTransferDecodeFps => 'Decode FPS';
+
+  @override
+  String get qrTransferReceiveSpeed => 'Receive Speed';
+
+  @override
+  String get qrTransferElapsed => 'Elapsed';
+
+  @override
+  String get qrTransferNewFrames => 'New Frames';
+
+  @override
+  String get qrTransferDuplicateFrames => 'Duplicate Frames';
+
+  @override
+  String get qrTransferBlockSize => 'Block Size';
+
+  @override
+  String get qrTransferBlockCount => 'Block Count';
+
+  @override
+  String get qrTransferFileData => 'File Data';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return 'Original $rawSize · Compressed $compressedSize';
+  }
 
   @override
   String get fullExportTitle => 'Export';
@@ -3228,10 +3298,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePagePickImageAction => 'Choose image';
 
   @override
+  String get homePageSwitchImageAction => 'Switch photo';
+
+  @override
   String get homePageClearImageAction => 'Clear image';
 
   @override
   String get homePageImageNotSelected => 'Not selected';
+
+  @override
+  String get wallpaperPositionPickerTitle => 'Adjust wallpaper position';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => 'Reset to center';
+
+  @override
+  String get wallpaperPositionPickerDragHint =>
+      'Drag the wallpaper to adjust its position';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => 'Change wallpaper';
+
+  @override
+  String get wallpaperPositionPickerDone => 'Done';
+
+  @override
+  String get wallpaperPositionPickerExit => 'Exit';
 
   @override
   String get appearanceTextColorsSectionTitle => 'Text colors';
@@ -5039,15 +5131,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get switchTimetableTitle => 'Switch timetable';
-
-  @override
-  String get switchTimetableSubtitleEmpty =>
-      'Tap a timetable below to switch the current view immediately';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return 'Current: $name. Tap a timetable below to switch immediately';
-  }
 
   @override
   String get todayTimetableTitle => 'Today\'s Timetable';
@@ -9437,9 +9520,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => 'Translucent';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => 'Liquid Glass';
-
-  @override
   String get courseCardSurfaceStyleGaussian => 'Gaussian Blur';
 
   @override
@@ -9553,18 +9633,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectEndTimeTitle => 'Select End Time';
 
   @override
-  String get weekdayInkContrastTitle => 'Text Contrast Enhancement';
+  String get weekdayInkContrastTitle => 'Low Text Contrast';
 
   @override
   String get weekdayInkContrastBodyDark =>
-      'Enhance course text contrast in dark mode';
+      'Your weekday bar text color has too little contrast against the dark wallpaper, so it is temporarily using automatic white to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      'Enhance course text contrast in light mode';
+      'Your weekday bar text color has too little contrast against the light wallpaper, so it is temporarily using automatic black to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".';
 
   @override
-  String get keepCurrentColorAction => 'Keep Current Color';
+  String get gotItAction => 'Got it';
 
   @override
   String get settingsTimetableSectionTitle => 'Timetable';

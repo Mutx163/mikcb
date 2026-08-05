@@ -4,8 +4,16 @@ import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
+import 'frosted/liquid_glass_degradation.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
+
+/// Extra height painted below an edge-flush glass sheet's bottom edge so the
+/// liquid-glass specular fringe along the straight bottom side lands outside
+/// the panel's clip and is cut — otherwise that fringe shows as a 1px
+/// hairline seam where the panel meets the screen bottom (same failure as the
+/// top edge, see `homePageChromeGlassTopEdgeOverdraw`).
+const hyperosEdgeSheetBottomOverdraw = 4.0;
 
 /// Marks descendants as sitting on a frosted (blur + milky tint) panel.
 ///
@@ -167,10 +175,33 @@ class HyperosSheetFrame extends StatelessWidget {
         borderRadius: borderRadius,
         child: SizedBox(
           width: double.infinity,
-          child: _buildFrostedSurface(
-            context: context,
-            borderRadius: borderRadius,
-            content: content,
+          child: HyperosFrostedPanelScope(
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                // Paint the glass a few pixels below the visible panel so the
+                // liquid-glass specular fringe on its straight bottom edge
+                // lands outside the ClipRRect and is clipped — otherwise it
+                // shows as a 1px hairline seam where the edge sheet meets the
+                // screen bottom (see hyperosEdgeSheetBottomOverdraw).
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: -hyperosEdgeSheetBottomOverdraw,
+                  child: _buildFrostedBackground(
+                    context: context,
+                    borderRadius: borderRadius,
+                  ),
+                ),
+                // The real content is the non-positioned sizing child: a
+                // Stack containing only Positioned children sizes itself to
+                // constraints.biggest, which used to blow the edge sheet up
+                // to full screen with the content pinned to the top and blank
+                // glass below.
+                content,
+              ],
+            ),
           ),
         ),
       );
@@ -186,12 +217,84 @@ class HyperosSheetFrame extends StatelessWidget {
     );
   }
 
+  /// Glass / tint / solid background layer for a frosted panel.
+  ///
+  /// Painted separately from the content so callers can overdraw the glass
+  /// past the panel's clip edge (see [_buildEdgePanel]) while the layout
+  /// stays driven by the real content.
+  Widget _buildFrostedBackground({
+    required BuildContext context,
+    required BorderRadius borderRadius,
+  }) {
+    final appearance = FrostedAppearanceScope.of(context);
+
+    // Liquid glass mode: real-time refraction shader panel. Checked before
+    // the gaussian blur gate because liquid glass carries its own blur —
+    // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
+    // would make the frame a solid gray slab on desktop/web while the nested
+    // tiles keep rendering liquid glass.
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.sheet,
+        borderRadius: borderRadius.topLeft.x,
+        instantUnderlay: true,
+        useAncestorBackdropGroup: true,
+        child: const SizedBox.expand(),
+      );
+    }
+
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+
+    // Blur off → solid opaque panel (no translucent scrim over the page).
+    if (!useBlur) {
+      return Material(
+        color: HyperosColors.surfaceContainer(context),
+        borderRadius: borderRadius,
+        clipBehavior: Clip.antiAlias,
+        child: const SizedBox.expand(),
+      );
+    }
+
+    // Frosted / gaussian / translucent: BackdropFilter + tint.
+    final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: FrostedHeaderBackground(
+        blurEnabled: true,
+        blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+        tint: tint,
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+
   Widget _buildFrostedSurface({
     required BuildContext context,
     required BorderRadius borderRadius,
     required Widget content,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
+
+    // Liquid glass mode: real-time refraction shader panel. Checked before
+    // the gaussian blur gate because liquid glass carries its own blur —
+    // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
+    // would make the frame a solid gray slab on desktop/web while nested
+    // tiles keep rendering liquid glass.
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
+      return HyperosFrostedPanelScope(
+        child: HyperosLiquidGlassSurface(
+          role: HyperosLiquidGlassRole.sheet,
+          borderRadius: borderRadius.topLeft.x,
+          instantUnderlay: true,
+          useAncestorBackdropGroup: true,
+          child: content,
+        ),
+      );
+    }
+
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
     // Blur off → solid opaque panel (no translucent scrim over the page).
@@ -201,18 +304,6 @@ class HyperosSheetFrame extends StatelessWidget {
           color: HyperosColors.surfaceContainer(context),
           borderRadius: borderRadius,
           clipBehavior: Clip.antiAlias,
-          child: content,
-        ),
-      );
-    }
-
-    // Liquid glass mode: real-time refraction shader panel.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
-      return HyperosFrostedPanelScope(
-        child: HyperosLiquidGlassSurface(
-          role: HyperosLiquidGlassRole.sheet,
-          borderRadius: borderRadius.topLeft.x,
-          instantUnderlay: true,
           child: content,
         ),
       );
@@ -478,7 +569,9 @@ Future<T?> showHyperosSheet<T>({
     context: context,
     barrierDismissible: isDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: dimColor,
+    // The dim is painted inside the page below the glass so the modal can
+    // cache an undimmed backdrop before any scrim is composited.
+    barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
     useRootNavigator: useRootNavigator,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
@@ -496,13 +589,33 @@ Future<T?> showHyperosSheet<T>({
           ? _DragDismissableSheet(child: sheetContent)
           : sheetContent;
 
-      return _SheetSlideUp(
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: keyboardInset),
-            child: sheet,
-          ),
+      return BackdropGroup(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Positioned.fill(child: UndimmedBackdropCapture()),
+            if (isDismissible)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(dialogContext).maybePop(),
+                ),
+              ),
+            Positioned.fill(
+              child: IgnorePointer(child: ColoredBox(color: dimColor)),
+            ),
+            Positioned.fill(
+              child: _SheetSlideUp(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: keyboardInset),
+                    child: sheet,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     },
@@ -530,9 +643,6 @@ Future<T?> showHomeHyperosSheet<T>({
     padForKeyboard: padForKeyboard,
     chrome: chrome,
     barrierColor:
-        barrierColor ??
-        Colors.black.withValues(
-          alpha: HyperosBlurredHeader.sheetBarrierAlphaOf(context),
-        ),
+        barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context),
   );
 }

@@ -28,7 +28,7 @@ class CourseCard extends StatelessWidget {
   final String? detailColorHex;
 
   /// Surface material style behind the card content (solid / translucent /
-  /// gaussian / liquid glass).
+  /// gaussian).
   final CourseCardSurfaceStyle surfaceStyle;
 
   /// Dim factor for conflict / holiday / suspended states (0–1); scales the
@@ -205,8 +205,8 @@ class CourseCard extends StatelessWidget {
     // inner Container gradient. The old Card wrapper added its own default
     // background color (surfaceContainerLow), creating a "card within a card"
     // look around the inner gradient's rounded corners. CourseSurface paints
-    // the surface in one pass and supports all four surface styles including
-    // HyperOS liquid glass / gaussian blur.
+    // the surface in one pass and supports the solid, translucent, and
+    // gaussian styles.
     final card = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: CourseSurface(

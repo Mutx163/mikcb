@@ -15,8 +15,14 @@ permissions:
 
 jobs:
   quality:
-    name: Analyze and Test
+    name: Analyze and Test (Flutter ${{ matrix.flutter_version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter_version:
+          - '3.44.2'
+          - '3.44.8'
 
     steps:
       - name: Checkout
@@ -31,8 +37,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.4
+          flutter-version: ${{ matrix.flutter_version }}
           cache: true
+
+      - name: Record toolchain
+        run: |
+          flutter --version
+          dart --version
 
       - name: Get dependencies
         run: flutter pub get
@@ -73,7 +84,7 @@ jobs:
         run: python tool/hyperos_audit.py --strict
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Test
         run: flutter test

@@ -203,7 +203,7 @@ abstract class AppLocalizations {
   /// No description provided for @fontModeSystem.
   ///
   /// In zh, this message translates to:
-  /// **'应用默认（Inter）'**
+  /// **'应用默认'**
   String get fontModeSystem;
 
   /// No description provided for @fontModeSansSerif.
@@ -2245,6 +2245,126 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'检测到不同传输内容，请确认只对准一份数据'**
   String get qrTransferSessionMismatch;
+
+  /// No description provided for @qrTransferChecksumFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'传输校验失败，请重新开始'**
+  String get qrTransferChecksumFailed;
+
+  /// No description provided for @qrTransferRawLengthMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收数据长度校验失败，请重新开始'**
+  String get qrTransferRawLengthMismatch;
+
+  /// No description provided for @qrTransferDecompressionFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据解压失败，请重新开始'**
+  String get qrTransferDecompressionFailed;
+
+  /// No description provided for @qrTransferPlaintextWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码传输是明文，附近摄像头可能读取内容。请确认来源，未经确认不会覆盖数据。'**
+  String get qrTransferPlaintextWarning;
+
+  /// No description provided for @qrTransferResourceLimit.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。'**
+  String get qrTransferResourceLimit;
+
+  /// No description provided for @qrTransferSessionExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码传输已超时，请重新开始并只对准一台设备。'**
+  String get qrTransferSessionExpired;
+
+  /// No description provided for @qrTransferFullBackupWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认后，该完整备份会替换本设备上的数据。'**
+  String get qrTransferFullBackupWarning;
+
+  /// No description provided for @qrTransferImportFullBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入完整备份'**
+  String get qrTransferImportFullBackup;
+
+  /// No description provided for @qrTransferDecodeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码数据解码失败，请重新开始'**
+  String get qrTransferDecodeFailed;
+
+  /// No description provided for @qrTransferRestart.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新开始'**
+  String get qrTransferRestart;
+
+  /// No description provided for @qrTransferSampleFps.
+  ///
+  /// In zh, this message translates to:
+  /// **'采样帧率'**
+  String get qrTransferSampleFps;
+
+  /// No description provided for @qrTransferDecodeFps.
+  ///
+  /// In zh, this message translates to:
+  /// **'解码帧率'**
+  String get qrTransferDecodeFps;
+
+  /// No description provided for @qrTransferReceiveSpeed.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收速度'**
+  String get qrTransferReceiveSpeed;
+
+  /// No description provided for @qrTransferElapsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已用时间'**
+  String get qrTransferElapsed;
+
+  /// No description provided for @qrTransferNewFrames.
+  ///
+  /// In zh, this message translates to:
+  /// **'新增帧'**
+  String get qrTransferNewFrames;
+
+  /// No description provided for @qrTransferDuplicateFrames.
+  ///
+  /// In zh, this message translates to:
+  /// **'重复帧'**
+  String get qrTransferDuplicateFrames;
+
+  /// No description provided for @qrTransferBlockSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'单块大小'**
+  String get qrTransferBlockSize;
+
+  /// No description provided for @qrTransferBlockCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据块数'**
+  String get qrTransferBlockCount;
+
+  /// No description provided for @qrTransferFileData.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件数据'**
+  String get qrTransferFileData;
+
+  /// No description provided for @qrTransferFileDataDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'原始 {rawSize} · 压缩 {compressedSize}'**
+  String qrTransferFileDataDetail(String rawSize, String compressedSize);
 
   /// No description provided for @fullExportTitle.
   ///
@@ -5613,6 +5733,12 @@ abstract class AppLocalizations {
   /// **'选择图片'**
   String get homePagePickImageAction;
 
+  /// No description provided for @homePageSwitchImageAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换照片'**
+  String get homePageSwitchImageAction;
+
   /// No description provided for @homePageClearImageAction.
   ///
   /// In zh, this message translates to:
@@ -5624,6 +5750,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'未选择'**
   String get homePageImageNotSelected;
+
+  /// No description provided for @wallpaperPositionPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'调整壁纸显示位置'**
+  String get wallpaperPositionPickerTitle;
+
+  /// No description provided for @wallpaperPositionPickerResetTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置居中'**
+  String get wallpaperPositionPickerResetTooltip;
+
+  /// No description provided for @wallpaperPositionPickerDragHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动壁纸调整位置'**
+  String get wallpaperPositionPickerDragHint;
+
+  /// No description provided for @wallpaperPositionPickerSwitchWallpaper.
+  ///
+  /// In zh, this message translates to:
+  /// **'换壁纸'**
+  String get wallpaperPositionPickerSwitchWallpaper;
+
+  /// No description provided for @wallpaperPositionPickerDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get wallpaperPositionPickerDone;
+
+  /// No description provided for @wallpaperPositionPickerExit.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出'**
+  String get wallpaperPositionPickerExit;
 
   /// No description provided for @appearanceTextColorsSectionTitle.
   ///
@@ -8688,18 +8850,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'切换课表'**
   String get switchTimetableTitle;
-
-  /// No description provided for @switchTimetableSubtitleEmpty.
-  ///
-  /// In zh, this message translates to:
-  /// **'点击下面的课表，立即切换当前视图'**
-  String get switchTimetableSubtitleEmpty;
-
-  /// No description provided for @switchTimetableSubtitleCurrent.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前：{name}，点击下面的课表立即切换'**
-  String switchTimetableSubtitleCurrent(String name);
 
   /// No description provided for @todayTimetableTitle.
   ///
@@ -16111,12 +16261,6 @@ abstract class AppLocalizations {
   /// **'半透明'**
   String get courseCardSurfaceStyleTranslucent;
 
-  /// No description provided for @courseCardSurfaceStyleLiquidGlass.
-  ///
-  /// In zh, this message translates to:
-  /// **'液态玻璃'**
-  String get courseCardSurfaceStyleLiquidGlass;
-
   /// No description provided for @courseCardSurfaceStyleGaussian.
   ///
   /// In zh, this message translates to:
@@ -16342,26 +16486,26 @@ abstract class AppLocalizations {
   /// No description provided for @weekdayInkContrastTitle.
   ///
   /// In zh, this message translates to:
-  /// **'文字对比度增强'**
+  /// **'文字对比度不足'**
   String get weekdayInkContrastTitle;
 
   /// No description provided for @weekdayInkContrastBodyDark.
   ///
   /// In zh, this message translates to:
-  /// **'深色模式下增强课程文字对比度'**
+  /// **'你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
   String get weekdayInkContrastBodyDark;
 
   /// No description provided for @weekdayInkContrastBodyLight.
   ///
   /// In zh, this message translates to:
-  /// **'浅色模式下增强课程文字对比度'**
+  /// **'你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
   String get weekdayInkContrastBodyLight;
 
-  /// No description provided for @keepCurrentColorAction.
+  /// No description provided for @gotItAction.
   ///
   /// In zh, this message translates to:
-  /// **'保留当前颜色'**
-  String get keepCurrentColorAction;
+  /// **'知道了'**
+  String get gotItAction;
 
   /// No description provided for @settingsTimetableSectionTitle.
   ///

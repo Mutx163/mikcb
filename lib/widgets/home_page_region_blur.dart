@@ -62,7 +62,7 @@ HomePageBackgroundVisual homePageRegionChromeVisual({
   required int region,
   required bool chromeBlurEnabled,
 }) {
-  if (chromeBlurEnabled && hasHomePageBackdropImage(settings, isDark: isDark)) {
+  if (chromeBlurEnabled && hasHomePageBackdropImage(settings)) {
     return const HomePageBackgroundVisual(color: Colors.transparent);
   }
   return resolveHomePageRegionBackground(
@@ -159,8 +159,24 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
       child: IgnorePointer(
         child: ClipRect(
           clipBehavior: Clip.hardEdge,
-          child: HomePageChromeGlassFill(
-            wallpaperTopLuminance: wallpaperTopLuminance,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Paint the glass a few pixels above the visible band so the
+              // liquid-glass specular fringe along its top edge lands outside
+              // the ClipRect and is clipped — otherwise that fringe shows as
+              // a 1px hairline seam where the band meets the status bar (see
+              // homePageChromeGlassTopEdgeOverdraw).
+              Positioned(
+                top: -homePageChromeGlassTopEdgeOverdraw,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: HomePageChromeGlassFill(
+                  wallpaperTopLuminance: wallpaperTopLuminance,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -179,10 +195,23 @@ class HomePageChromeGlassFill extends StatelessWidget {
   const HomePageChromeGlassFill({
     this.wallpaperTopLuminance,
     this.borderRadius = 0,
+    this.useAncestorBackdropGroup = false,
     super.key,
   });
 
   final double? wallpaperTopLuminance;
+
+  /// Sample the nearest [BackdropGroup]'s full-size backdrop instead of the
+  /// band's own clipped bounds.
+  ///
+  /// The home page's band sits on the physical screen edges, so its own-bounds
+  /// backdrop capture never clamps visibly. Inside a settings preview the band
+  /// is a small interior rectangle: refraction displacement past its bounds
+  /// then clamps against the band's own edges and streaks all four into a
+  /// "picture frame". Setting this to true makes the band sample a full-size
+  /// grouped capture (wallpaper layer + [UndimmedBackdropCapture] inside the
+  /// group) so the displacement range stays inside the captured backdrop.
+  final bool useAncestorBackdropGroup;
 
   /// Corner radius of the glass shape itself. The chrome band is square (0);
   /// the day-view summary card reuses this material with its card radius —
@@ -286,6 +315,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
         role: HyperosLiquidGlassRole.header,
         borderRadius: borderRadius,
         instantUnderlay: false,
+        useAncestorBackdropGroup: useAncestorBackdropGroup,
         // This band paints its own wallpaper-aware scrim below.
         contentLegibilityFill: false,
         child: Stack(

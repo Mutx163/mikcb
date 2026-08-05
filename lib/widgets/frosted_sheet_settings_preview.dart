@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'timetable_week_preview.dart';
 
 /// Live + interactive frosted sheet preview for appearance settings.
@@ -36,6 +37,37 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
 
   static const _previewHeight = 280.0;
 
+  /// Preview-only render protection against the liquid-glass package's
+  /// extreme-parameter artifacts.
+  ///
+  /// Past the dense preset's thickness/blur (28/14) the package shaders break
+  /// down: the refraction displacement (thickness*10) exceeds the geometry
+  /// texture's 8-bit encoding range and quantises into vertical stripes, and
+  /// the edge-lighting pass paints fringe gradients on the band's visible
+  /// edges. The real home page never sees this — it renders the *saved*
+  /// tuning, which only becomes extreme if the user saves one — but this
+  /// preview mirrors the live slider draft, so pulling a knob to the max
+  /// used to paint stripes and fringes all over the preview band.
+  ///
+  /// Clamp the preview display only: slider ranges, the saved tuning and the
+  /// real home page are untouched. Values at or below the dense preset pass
+  /// through unchanged, so the preview stays 1:1 for every stock preset.
+  static LiquidGlassTuning? previewSafeTuning(LiquidGlassTuning? tuning) {
+    if (tuning == null) {
+      return null;
+    }
+    return tuning.copyWith(
+      thickness: tuning.thickness.clamp(
+        LiquidGlassTuning.minThickness,
+        LiquidGlassTuning.presetDense.thickness,
+      ),
+      blur: tuning.blur.clamp(
+        LiquidGlassTuning.minBlur,
+        LiquidGlassTuning.presetDense.blur,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -45,7 +77,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       sheetBarrierAlpha: barrierAlpha,
       blurEnabled: blurEnabled,
       glassMode: glassMode,
-      liquidGlassTuning: liquidGlassTuning,
+      liquidGlassTuning: previewSafeTuning(liquidGlassTuning),
     );
 
     return FrostedAppearanceScope(
@@ -57,24 +89,23 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
             shape: HyperosTheme.cardShape(),
             child: SizedBox(
               height: _previewHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  TimetableWeekPreview(
-                    provider: provider,
-                    settings: settings,
-                    week: week,
-                    maxVisibleSections: 2,
-                    includeAppHeader: true,
-                    applyHomePageBackdrop: true,
-                    heightBudget: _previewHeight,
-                  ),
-                  const Align(
-                    alignment: Alignment.bottomCenter,
-                    child: _MiniHomeFrostedMenuSheet(),
-                  ),
-                ],
+              // The live liquid-glass menu is not rendered inline here. A grouped
+              // backdrop inside the scrollable settings ListView captures the whole
+              // scrolling viewport (BackdropFilter.grouped's capture is the cull
+              // rect — the viewport — and cannot be narrowed by widget-level
+              // RepaintBoundary/ClipRect), so it flickers and misaligns on scroll.
+              // The home top menu avoids this by being a modal over a static page.
+              // So this box previews only the timetable backdrop; the live glass
+              // menu is previewed by the "open demo" button below — a modal that
+              // uses the same code path as the home top menu.
+              child: TimetableWeekPreview(
+                provider: provider,
+                settings: settings,
+                week: week,
+                maxVisibleSections: 2,
+                includeAppHeader: true,
+                applyHomePageBackdrop: true,
+                heightBudget: _previewHeight,
               ),
             ),
           ),
@@ -134,20 +165,29 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
             style: HyperosTypography.sectionDescription(context),
           ),
           const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
-              const SizedBox(width: tileSpacing),
-              tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
-              const SizedBox(width: tileSpacing),
-              tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
-              const SizedBox(width: tileSpacing),
-              tile(
-                Icons.add_circle_outline_rounded,
-                l10n.homeMenuAddCourseTitle,
-              ),
-            ],
+          // One shared liquid-glass layer for all four tiles: several siblings
+          // with identical settings share a single layer + backdrop capture, so
+          // refraction at tile edges samples a continuous backdrop instead of
+          // four independent own-layer captures (which caused seam lines).
+          HyperosLiquidGlassLayer(
+            role: HyperosLiquidGlassRole.nestedTile,
+            // Sample the modal group's undimmed backdrop (matches home menu).
+            useBackdropGroup: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
+                const SizedBox(width: tileSpacing),
+                tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
+                const SizedBox(width: tileSpacing),
+                tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
+                const SizedBox(width: tileSpacing),
+                tile(
+                  Icons.add_circle_outline_rounded,
+                  l10n.homeMenuAddCourseTitle,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           HyperosButton(
@@ -169,77 +209,35 @@ Future<void> showFrostedSheetSettingsDemo(BuildContext context) {
   );
 }
 
-class _MiniHomeFrostedMenuSheet extends StatelessWidget {
-  const _MiniHomeFrostedMenuSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final colors = context.theme.colors;
-    final typo = context.theme.typography;
-    final titleStyle = typo.body.xs2.copyWith(
-      fontWeight: FontWeight.w400,
-      height: 1.1,
-      fontSize: 9,
-      color: colors.foreground,
-    );
-
-    Widget miniTile(IconData icon, String title) {
-      return Expanded(
-        child: _DemoMenuTile(
-          icon: icon,
-          title: title,
-          titleStyle: titleStyle,
-          accentColor: colorScheme.primary,
-          compact: true,
-        ),
-      );
-    }
-
-    return HyperosSheetFrame(
-      frosted: true,
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          miniTile(Icons.bar_chart_rounded, '统计'),
-          const SizedBox(width: 6),
-          miniTile(Icons.tune_rounded, '设置'),
-          const SizedBox(width: 6),
-          miniTile(Icons.file_upload_outlined, '导入'),
-          const SizedBox(width: 6),
-          miniTile(Icons.add_circle_outline_rounded, '加课'),
-        ],
-      ),
-    );
-  }
-}
-
 class _DemoMenuTile extends StatelessWidget {
   const _DemoMenuTile({
     required this.icon,
     required this.title,
     required this.titleStyle,
     required this.accentColor,
-    this.compact = false,
   });
 
   final IconData icon;
   final String title;
   final TextStyle titleStyle;
   final Color accentColor;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     const iconWellRadius = BorderRadius.all(Radius.circular(10));
-    final iconSize = compact ? 18.0 : 24.0;
-    final wellSize = compact ? 32.0 : 46.0;
-    final verticalPadding = compact ? 6.0 : 13.0;
-    final horizontalPadding = compact ? 4.0 : 7.0;
+    const iconSize = 24.0;
+    const wellSize = 46.0;
+    const verticalPadding = 13.0;
+    const horizontalPadding = 7.0;
 
-    return HyperosFrostedSurface(
-      borderRadius: HyperosTheme.cardBorderRadius,
+    return HyperosLiquidGlassSurface(
+      role: HyperosLiquidGlassRole.nestedTile,
+      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
+      // Tiles live in a shared HyperosLiquidGlassLayer (see the demo sheet);
+      // sharedLayer registers this shape in the ancestor layer. A per-tile
+      // instant FakeGlass underlay would paint its own backdrop filter per
+      // tile, re-introducing seams, so it stays off here.
+      layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
       child: Material(
         type: MaterialType.transparency,
         child: Padding(
@@ -262,7 +260,7 @@ class _DemoMenuTile extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: compact ? 4 : 7),
+              SizedBox(height: 7),
               Text(
                 title,
                 maxLines: 2,

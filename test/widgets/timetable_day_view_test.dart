@@ -38,6 +38,24 @@ Future<void> _pumpFiniteFrames(
   }
 }
 
+/// Pumps until the day pager has no more scheduled work: the snap spring
+/// finished, ScrollEnd committed the selection, and the resulting rebuild has
+/// been painted. A fixed frame budget (like [_pumpFiniteFrames]) can cut the
+/// commit short when the spring converges on the very last pumped frame, so
+/// selection assertions must wait for actual quiescence instead.
+Future<void> _pumpUntilDayPagerSettled(
+  WidgetTester tester, {
+  int maxFrames = 80,
+  Duration step = const Duration(milliseconds: 80),
+}) async {
+  for (var i = 0; i < maxFrames; i++) {
+    await tester.pump(step);
+    if (!tester.binding.hasScheduledFrame) {
+      break;
+    }
+  }
+}
+
 void _seedInitializedPrefs() {
   final now = DateTime(2026, 4, 12);
   final profile = TimetableProfile(
@@ -1607,7 +1625,7 @@ void main() {
       swipesToNextDay ? const Offset(-420, 0) : const Offset(420, 0),
       warnIfMissed: false,
     );
-    await _pumpFiniteFrames(tester, count: 10);
+    await _pumpUntilDayPagerSettled(tester);
 
     expect(
       find.byKey(ValueKey('timetable-day-view-1-$expectedDay')),
@@ -1663,7 +1681,7 @@ void main() {
       swipeArea.topCenter + const Offset(0, 48),
       swipesToNextDay ? const Offset(-420, 0) : const Offset(420, 0),
     );
-    await _pumpFiniteFrames(tester, count: 10);
+    await _pumpUntilDayPagerSettled(tester);
 
     expect(
       find.byKey(ValueKey('timetable-day-view-1-$expectedDay')),
@@ -1792,7 +1810,7 @@ void main() {
     }
 
     await gesture.up();
-    await _pumpFiniteFrames(tester, count: 12);
+    await _pumpUntilDayPagerSettled(tester);
 
     // Amplification: a ~240px bar drag (well under half the bar width) must
     // carry the pager across two whole day pages (7x scale), not one.
@@ -1883,7 +1901,7 @@ void main() {
       find.byKey(const ValueKey('day-view-swipe-area')),
       const Offset(-420, 0),
     );
-    await _pumpFiniteFrames(tester, count: 10);
+    await _pumpUntilDayPagerSettled(tester);
 
     expect(
       find.byKey(const ValueKey('timetable-day-view-1-4')),
@@ -1934,7 +1952,7 @@ void main() {
       find.byKey(const ValueKey('day-view-swipe-area')),
       const Offset(-420, 0),
     );
-    await _pumpFiniteFrames(tester, count: 12);
+    await _pumpUntilDayPagerSettled(tester);
 
     expect(
       find.byKey(const ValueKey('timetable-day-view-2-1')),
@@ -2240,7 +2258,7 @@ void main() {
         find.byKey(const ValueKey('day-view-swipe-area')),
         const Offset(-420, 0),
       );
-      await _pumpFiniteFrames(tester, count: 12);
+      await _pumpUntilDayPagerSettled(tester);
 
       expect(
         find.byKey(const ValueKey('timetable-day-view-2-1')),
@@ -2252,7 +2270,7 @@ void main() {
         find.byKey(const ValueKey('day-view-swipe-area')),
         const Offset(-420, 0),
       );
-      await _pumpFiniteFrames(tester, count: 12);
+      await _pumpUntilDayPagerSettled(tester);
 
       expect(
         find.byKey(const ValueKey('timetable-day-view-2-2')),

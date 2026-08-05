@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "內建 Inter 預設；也可選用系統已安裝的字體",
   "fontSectionFootnote": "廠商字體未內建，需系統已預裝才生效，小米通常只有 MiSans 明顯；沒變化時會自動回退，一般不必自行安裝",
   "fontModeLabel": "字體選擇",
-  "fontModeSystem": "應用預設（Inter）",
+  "fontModeSystem": "應用預設",
   "fontModeSansSerif": "系統無襯線",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "鴻蒙黑體",
@@ -489,6 +489,36 @@
   },
   "qrTransferReceiveComplete": "資料接收完成，正在匯入…",
   "qrTransferSessionMismatch": "偵測到不同傳輸內容，請確認只對準一份資料",
+  "qrTransferChecksumFailed": "傳輸校驗失敗，請重新開始",
+  "qrTransferRawLengthMismatch": "接收資料長度校驗失敗，請重新開始",
+  "qrTransferDecompressionFailed": "資料解壓失敗，請重新開始",
+  "qrTransferPlaintextWarning": "QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。",
+  "qrTransferResourceLimit": "接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。",
+  "qrTransferSessionExpired": "QR 碼傳輸已逾時，請重新開始並只對準一台裝置。",
+  "qrTransferFullBackupWarning": "確認後，此完整備份會取代本裝置上的資料。",
+  "qrTransferImportFullBackup": "匯入完整備份",
+  "qrTransferDecodeFailed": "QR 碼資料解碼失敗，請重新開始",
+  "qrTransferRestart": "重新開始",
+  "qrTransferSampleFps": "取樣幀率",
+  "qrTransferDecodeFps": "解碼幀率",
+  "qrTransferReceiveSpeed": "接收速度",
+  "qrTransferElapsed": "已用時間",
+  "qrTransferNewFrames": "新增幀",
+  "qrTransferDuplicateFrames": "重複幀",
+  "qrTransferBlockSize": "單塊大小",
+  "qrTransferBlockCount": "資料塊數",
+  "qrTransferFileData": "檔案資料",
+  "qrTransferFileDataDetail": "原始 {rawSize} · 壓縮 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "完整匯出",
   "fullExportSubtitle": "支持匯出目前課表，或一次匯出全部課表、時間範本和目前選中狀態",
   "exportCurrentTimetable": "匯出目前課表",
@@ -2475,15 +2505,6 @@
   "homeMenuCoffeeTitle": "請喝咖啡",
   "homeMenuFeedbackTitle": "問題回饋",
   "switchTimetableTitle": "切换課表",
-  "switchTimetableSubtitleEmpty": "點擊下面的課表，立即切换目前視圖",
-  "switchTimetableSubtitleCurrent": "目前：{name}，點擊下面的課表立即切换",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "今日課表",
   "dayTimetableTitle": "單日時間軸",
   "backToWeekViewAction": "返回周視圖",
@@ -5326,7 +5347,6 @@
   "courseCardSurfaceStyleSubtitle": "選擇課程卡片的視覺風格",
   "courseCardSurfaceStyleSolid": "實心",
   "courseCardSurfaceStyleTranslucent": "半透明",
-  "courseCardSurfaceStyleLiquidGlass": "液態玻璃",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
   "courseCardSectionColor": "顏色",
   "liveSelfCheckTitle": "自我檢查",
@@ -5362,10 +5382,10 @@
   "aboutCommunitySectionTitle": "社群",
   "selectStartTimeTitle": "選擇開始時間",
   "selectEndTimeTitle": "選擇結束時間",
-  "weekdayInkContrastTitle": "文字對比度增強",
-  "weekdayInkContrastBodyDark": "深色模式下增強課程文字對比度",
-  "weekdayInkContrastBodyLight": "淺色模式下增強課程文字對比度",
-  "keepCurrentColorAction": "保留目前顏色",
+  "weekdayInkContrastTitle": "文字對比度不足",
+  "weekdayInkContrastBodyDark": "你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。",
+  "weekdayInkContrastBodyLight": "你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。",
+  "gotItAction": "知道了",
   "settingsTimetableSectionTitle": "課表",
   "liveIslandLabelEntryEnabled": "已啟用",
   "liveIslandLabelEntryDisabled": "已關閉",

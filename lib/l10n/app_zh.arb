@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "内置 Inter 默认；也可选用系统已安装的字体",
   "fontSectionFootnote": "厂商字体未内置，需系统已预装才生效，小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装",
   "fontModeLabel": "字体选择",
-  "fontModeSystem": "应用默认（Inter）",
+  "fontModeSystem": "应用默认",
   "fontModeSansSerif": "系统无衬线",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "鸿蒙黑体",
@@ -623,6 +623,36 @@
   },
   "qrTransferReceiveComplete": "数据接收完成，正在导入…",
   "qrTransferSessionMismatch": "检测到不同传输内容，请确认只对准一份数据",
+  "qrTransferChecksumFailed": "传输校验失败，请重新开始",
+  "qrTransferRawLengthMismatch": "接收数据长度校验失败，请重新开始",
+  "qrTransferDecompressionFailed": "数据解压失败，请重新开始",
+  "qrTransferPlaintextWarning": "二维码传输是明文，附近摄像头可能读取内容。请确认来源，未经确认不会覆盖数据。",
+  "qrTransferResourceLimit": "接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。",
+  "qrTransferSessionExpired": "二维码传输已超时，请重新开始并只对准一台设备。",
+  "qrTransferFullBackupWarning": "确认后，该完整备份会替换本设备上的数据。",
+  "qrTransferImportFullBackup": "导入完整备份",
+  "qrTransferDecodeFailed": "二维码数据解码失败，请重新开始",
+  "qrTransferRestart": "重新开始",
+  "qrTransferSampleFps": "采样帧率",
+  "qrTransferDecodeFps": "解码帧率",
+  "qrTransferReceiveSpeed": "接收速度",
+  "qrTransferElapsed": "已用时间",
+  "qrTransferNewFrames": "新增帧",
+  "qrTransferDuplicateFrames": "重复帧",
+  "qrTransferBlockSize": "单块大小",
+  "qrTransferBlockCount": "数据块数",
+  "qrTransferFileData": "文件数据",
+  "qrTransferFileDataDetail": "原始 {rawSize} · 压缩 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "完整导出",
   "fullExportSubtitle": "支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态",
   "exportCurrentTimetable": "导出当前课表",
@@ -1750,8 +1780,15 @@
   "homePageTimeColumnBlurSubtitle": "模糊左侧节次/时间列，透出下方背景图",
   "homePageRegionBlurSectionSubtitle": "需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置",
   "homePagePickImageAction": "选择图片",
+  "homePageSwitchImageAction": "切换照片",
   "homePageClearImageAction": "清除图片",
   "homePageImageNotSelected": "未选择",
+  "wallpaperPositionPickerTitle": "调整壁纸显示位置",
+  "wallpaperPositionPickerResetTooltip": "重置居中",
+  "wallpaperPositionPickerDragHint": "拖动壁纸调整位置",
+  "wallpaperPositionPickerSwitchWallpaper": "换壁纸",
+  "wallpaperPositionPickerDone": "完成",
+  "wallpaperPositionPickerExit": "退出",
   "appearanceTextColorsSectionTitle": "文字颜色",
   "appearanceTextColorsSectionSubtitle": "自定义课程卡片、星期栏与时间轴文字颜色",
   "defaultTimetablePreviewName": "默认课表",
@@ -2661,15 +2698,6 @@
   "homeMenuCoffeeTitle": "请喝咖啡",
   "homeMenuFeedbackTitle": "问题反馈",
   "switchTimetableTitle": "切换课表",
-  "switchTimetableSubtitleEmpty": "点击下面的课表，立即切换当前视图",
-  "switchTimetableSubtitleCurrent": "当前：{name}，点击下面的课表立即切换",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "今日课表",
   "dayTimetableTitle": "单日时间轴",
   "backToWeekViewAction": "返回周视图",
@@ -5544,7 +5572,6 @@
   "courseCardSurfaceStyleSubtitle": "选择课程卡片的视觉风格",
   "courseCardSurfaceStyleSolid": "实心",
   "courseCardSurfaceStyleTranslucent": "半透明",
-  "courseCardSurfaceStyleLiquidGlass": "液态玻璃",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
   "courseCardSectionColor": "颜色",
   "liveSelfCheckTitle": "自检",
@@ -5582,10 +5609,10 @@
   "aboutCommunitySectionTitle": "社区",
   "selectStartTimeTitle": "选择开始时间",
   "selectEndTimeTitle": "选择结束时间",
-  "weekdayInkContrastTitle": "文字对比度增强",
-  "weekdayInkContrastBodyDark": "深色模式下增强课程文字对比度",
-  "weekdayInkContrastBodyLight": "浅色模式下增强课程文字对比度",
-  "keepCurrentColorAction": "保留当前颜色",
+  "weekdayInkContrastTitle": "文字对比度不足",
+  "weekdayInkContrastBodyDark": "你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。",
+  "weekdayInkContrastBodyLight": "你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。",
+  "gotItAction": "知道了",
   "settingsTimetableSectionTitle": "课表",
   "liveIslandLabelEntryEnabled": "已启用",
   "liveIslandLabelEntryDisabled": "已关闭",

@@ -7,7 +7,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:university_timetable/widgets/course_card_liquid_glass_host.dart';
+import 'package:university_timetable/widgets/course_grid_surface_host.dart';
 import 'package:university_timetable/widgets/timetable_week_preview.dart';
 
 import '../helpers_test_app.dart';
@@ -87,20 +87,6 @@ void main() {
   });
 
   group('glass hosting matches the home grid', () {
-    testWidgets('liquidGlass grid gets the shared FakeGlass host', (
-      tester,
-    ) async {
-      await pumpPreview(
-        tester,
-        settings: TimetableSettings.defaults().copyWith(
-          courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
-        ),
-      );
-
-      expect(find.byType(CourseGridGlassHost), findsOneWidget);
-      expect(find.byType(CourseCardLiquidGlassHost), findsOneWidget);
-    });
-
     testWidgets('gaussian grid gets a shared BackdropGroup', (tester) async {
       await pumpPreview(
         tester,
@@ -109,9 +95,8 @@ void main() {
         ),
       );
 
-      expect(find.byType(CourseGridGlassHost), findsOneWidget);
+      expect(find.byType(CourseGridSurfaceHost), findsOneWidget);
       expect(find.byType(BackdropGroup), findsAtLeastNWidgets(1));
-      expect(find.byType(CourseCardLiquidGlassHost), findsNothing);
     });
 
     for (final style in [
@@ -126,8 +111,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(CourseGridGlassHost), findsOneWidget);
-        expect(find.byType(CourseCardLiquidGlassHost), findsNothing);
+        expect(find.byType(CourseGridSurfaceHost), findsOneWidget);
       });
     }
   });

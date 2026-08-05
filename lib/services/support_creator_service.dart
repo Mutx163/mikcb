@@ -6,6 +6,7 @@ import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
 import 'app_update_service.dart';
 import '../utils/async_utils.dart';
+import 'app_http_client.dart';
 
 class SupportDonorEntry {
   final String name;
@@ -70,7 +71,7 @@ class SupportCreatorService {
   final http.Client _client;
 
   SupportCreatorService({http.Client? client})
-    : _client = client ?? http.Client();
+    : _client = client ?? createAppHttpClient();
 
   Future<SupportDonorData> fetchDonors({String? mirrorUrlPrefix}) async {
     final normalizedMirrorPrefix = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);

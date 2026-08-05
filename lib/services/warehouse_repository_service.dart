@@ -7,6 +7,7 @@ import '../logging/app_debug_log.dart';
 import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
 import '../utils/async_utils.dart';
+import 'app_http_client.dart';
 
 class WarehouseFetchOptions {
   final AppUpdateDownloadSource downloadSource;
@@ -36,7 +37,7 @@ class WarehouseRepositoryService {
   final http.Client _client;
 
   WarehouseRepositoryService({http.Client? client})
-    : _client = client ?? http.Client();
+    : _client = client ?? createAppHttpClient();
 
   static void _log(String message) {
     appDebugLog('WarehouseService', '${formatLogTimestamp()} $message');

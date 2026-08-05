@@ -8,64 +8,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('HyperosSwitchTile', () {
-    tearDown(() {
-      HyperosLayoutTuningController.instance.reset();
-    });
-
-    testWidgets(
-      'ControlCardRows applies first/last padding via hyperosRowPadding',
-      (tester) async {
-        HyperosLayoutTuningController.instance.apply(
-          HyperosLayoutTuning.defaults.copyWith(
-            paddingTopFirst: 21,
-            paddingBottomLast: 27,
-          ),
-        );
-
-        final captured = <EdgeInsets>[];
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: HyperosControlCard(
-                edgeToEdge: true,
-                child: HyperosControlCardRows(
-                  children: [
-                    for (var index = 0; index < 3; index++)
-                      Builder(
-                        builder: (context) {
-                          captured.add(hyperosRowPadding(context));
-                          // Probe only — inflated first/last insets overflow a
-                          // fixed-height SwitchTile shell in widget tests.
-                          return const SizedBox(height: 1);
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-
-        expect(captured, hasLength(3));
-        expect(
-          captured[0],
-          HyperosTokens.rowPadding(isFirst: true, isLast: false),
-        );
-        expect(
-          captured[1],
-          HyperosTokens.rowPadding(isFirst: false, isLast: false),
-        );
-        expect(
-          captured[2],
-          HyperosTokens.rowPadding(isFirst: false, isLast: true),
-        );
-        expect(captured[0].top, 21);
-        expect(captured[2].bottom, 27);
-        expect(captured[1].top, isNot(21));
-      },
-    );
-
     testWidgets('uses HyperosSwitch and toggles on row tap', (tester) async {
       var value = false;
 

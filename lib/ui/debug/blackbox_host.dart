@@ -2,11 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blackbox/flutter_blackbox.dart';
 
-import 'debug_tuning_preferences.dart';
+import 'blackbox_overlay_preferences.dart';
 
-/// Hosts [BlackBoxOverlay] in non-release builds when the settings toggle is on.
+/// Hosts the BlackBox diagnostics overlay in non-release builds.
 ///
-/// Release builds return [child] unchanged (no overlay, no extra tree cost).
+/// Visibility is controlled by the developer setting labelled "Debug UI
+/// Overlay". HyperOS layout values use fixed design tokens.
 class BlackBoxOverlayHost extends StatelessWidget {
   const BlackBoxOverlayHost({super.key, required this.child});
 
@@ -17,11 +18,10 @@ class BlackBoxOverlayHost extends StatelessWidget {
     if (kReleaseMode) {
       return child;
     }
-
     return ListenableBuilder(
-      listenable: DebugTuningPreferences.instance,
+      listenable: BlackBoxOverlayPreferences.instance,
       builder: (context, _) {
-        if (!DebugTuningPreferences.instance.visible) {
+        if (!BlackBoxOverlayPreferences.instance.visible) {
           return child;
         }
         return BlackBoxOverlay(child: child);

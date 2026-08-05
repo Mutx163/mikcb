@@ -113,6 +113,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         // 「测试」二字对普通用户暗示不稳定，改称「自检」并说明用途。
         // 页内敏感项（假日覆盖、快速造课、友盟崩溃按钮等）仍由 !kReleaseMode 门控。
         HyperosListTile(
+          key: const ValueKey<String>('settings-live-self-check'),
           icon: Icons.science_outlined,
           title: l10n.liveSelfCheckTitle,
           details: l10n.liveSelfCheckSubtitle,

@@ -4,6 +4,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
+import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -81,70 +82,116 @@ class _TimeSchemeManagementScreenState
             ),
           ],
           child: HyperosListView(
-            children: [
-              HyperosListGroup(
-                children: [
-                  HyperosListTile(
-                    icon: Icons.place_outlined,
-                    iconAccent: HyperosIconColors.orange,
-                    title: l10n.locationTimeMatchEntryTitle,
-                    details: provider.locationTimeGroups.isEmpty
-                        ? null
-                        : '${provider.locationTimeGroups.length}',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        HyperosPageRoute(
-                          builder: (_) => const LocationTimeMatchScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  HyperosListTile(
-                    icon: Icons.event_available_outlined,
-                    iconAccent: HyperosIconColors.teal,
-                    title: l10n.scheduleDateRuleSectionTitle,
-                    details: dateRules.isEmpty
-                        ? null
-                        : activeDateRule == null
-                        ? '${dateRules.length}'
-                        : l10n.scheduleDateRuleActiveToday,
-                    onTap: () => Navigator.push(
-                      context,
-                      HyperosPageRoute(
-                        builder: (_) => const ScheduleDateRuleScreen(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const HyperosSectionGap(),
-              HyperosSectionLabel(text: l10n.timeSchemeEntryTitle),
-              if (schemes.isEmpty)
-                HyperosListGroup(
-                  children: [
-                    HyperosNavTile(
-                      title: l10n.locationTimeMatchNeedTimeScheme,
-                      enabled: false,
-                      showChevron: false,
-                    ),
-                  ],
-                )
-              else ...[
-                for (var index = 0; index < schemes.length; index++) ...[
-                  if (index > 0) const HyperosSectionGap(),
-                  _buildSchemeCard(
-                    context,
-                    scheme: schemes[index],
-                    usage: _buildUsageSummary(provider, schemes[index].id),
-                    isActive: schemes[index].id == activeSchemeId,
-                  ),
-                ],
-              ],
-            ],
+            // Keep the first frame light.  Building every scheme card here
+            // also calculates every card's usage summary before the route
+            // transition has had a chance to paint its first frame.  When
+            // that synchronous work is large, the route animation skips
+            // frames and looks as if it suddenly accelerates.
+            itemCount: _timeSchemeListItemCount(schemes.length),
+            itemBuilder: (context, index) => _buildTimeSchemeListItem(
+              context,
+              index,
+              l10n: l10n,
+              provider: provider,
+              schemes: schemes,
+              activeSchemeId: activeSchemeId,
+              dateRules: dateRules,
+              activeDateRule: activeDateRule,
+            ),
           ),
         );
       },
+    );
+  }
+
+  /// Returns the number of lazy list rows used by the management page.
+  ///
+  /// The page contains a fixed three-row prefix and then either one empty
+  /// state row or alternating scheme cards and section gaps.
+  int _timeSchemeListItemCount(int schemeCount) {
+    if (schemeCount == 0) {
+      return 4;
+    }
+    return 3 + schemeCount + schemeCount - 1;
+  }
+
+  Widget _buildTimeSchemeListItem(
+    BuildContext context,
+    int index, {
+    required AppLocalizations l10n,
+    required TimetableProvider provider,
+    required List<TimeScheme> schemes,
+    required String? activeSchemeId,
+    required List<ScheduleDateRule> dateRules,
+    required ScheduleDateRule? activeDateRule,
+  }) {
+    if (index == 0) {
+      return HyperosListGroup(
+        children: [
+          HyperosListTile(
+            icon: Icons.place_outlined,
+            iconAccent: HyperosIconColors.orange,
+            title: l10n.locationTimeMatchEntryTitle,
+            details: provider.locationTimeGroups.isEmpty
+                ? null
+                : '${provider.locationTimeGroups.length}',
+            onTap: () {
+              Navigator.push(
+                context,
+                HyperosPageRoute(
+                  builder: (_) => const LocationTimeMatchScreen(),
+                ),
+              );
+            },
+          ),
+          HyperosListTile(
+            icon: Icons.event_available_outlined,
+            iconAccent: HyperosIconColors.teal,
+            title: l10n.scheduleDateRuleSectionTitle,
+            details: dateRules.isEmpty
+                ? null
+                : activeDateRule == null
+                ? '${dateRules.length}'
+                : l10n.scheduleDateRuleActiveToday,
+            onTap: () => Navigator.push(
+              context,
+              HyperosPageRoute(builder: (_) => const ScheduleDateRuleScreen()),
+            ),
+          ),
+        ],
+      );
+    }
+    if (index == 1) {
+      return const HyperosSectionGap();
+    }
+    if (index == 2) {
+      return HyperosSectionLabel(text: l10n.timeSchemeEntryTitle);
+    }
+
+    if (schemes.isEmpty) {
+      return HyperosListGroup(
+        children: [
+          HyperosNavTile(
+            title: l10n.locationTimeMatchNeedTimeScheme,
+            enabled: false,
+            showChevron: false,
+          ),
+        ],
+      );
+    }
+
+    final schemeListIndex = index - 3;
+    if (schemeListIndex.isOdd) {
+      return const HyperosSectionGap();
+    }
+
+    final schemeIndex = schemeListIndex ~/ 2;
+    final scheme = schemes[schemeIndex];
+    return _buildSchemeCard(
+      context,
+      scheme: scheme,
+      usage: _buildUsageSummary(provider, scheme.id),
+      isActive: scheme.id == activeSchemeId,
     );
   }
 

@@ -142,7 +142,6 @@ HyperosTypography 是静态方法类,每个方法返回动态构建的 `TextStyl
 | `HyperosEmptyState` | `hyperos_empty_state.dart` | 空状态占位 |
 | `HyperosColorChip` | `hyperos_color_chip.dart` | 颜色选择圆片 |
 | `HyperosNavigation` | `hyperos_navigation.dart` | 页面跳转导航 |
-| `HyperosLayoutTuning` | `hyperos_layout_tuning.dart` | 布局微调工具 |
 | `HyperosMotion` | `hyperos_motion.dart` | 动画曲线/持续时间 |
 | `HyperosOverscroll` | `hyperos_overscroll.dart` | 自定义 overscroll 物理效果 |
 | `HyperosOverlayHeader` | `hyperos_overlay_header.dart` | 覆盖层标题助手 |

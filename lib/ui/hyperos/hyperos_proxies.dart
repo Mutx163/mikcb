@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 /// Temporary compatibility widget until all FHeaderAction usages are
 /// migrated to HyperosIconButton.
@@ -19,13 +20,14 @@ class FHeaderAction extends StatelessWidget {
     // Pass the caller's widget through untouched: rebuilding `Icon(iconData)`
     // dropped the Icon's explicit color/size (e.g. the couple-mode pink heart
     // and the wallpaper chrome foreground on the home header).
-    return Semantics(
-      label: semanticsLabel,
-      button: true,
-      child: IconButton(
-        icon: icon,
-        onPressed: onPress,
-        tooltip: semanticsLabel,
+    // MiuixIconButton has no tooltip parameter; wrap in Tooltip so desktop/web
+    // hover still shows the label, matching the former IconButton.tooltip.
+    return Tooltip(
+      message: semanticsLabel,
+      child: Semantics(
+        label: semanticsLabel,
+        button: true,
+        child: MiuixIconButton(onPressed: onPress, child: icon),
       ),
     );
   }
@@ -88,8 +90,10 @@ class ForuiCompatTypeface {
 
   final TextTheme _tt;
 
-  TextStyle get xs => _tt.bodySmall?.copyWith(fontSize: 12) ?? const TextStyle(fontSize: 12);
-  TextStyle get xs2 => _tt.bodySmall?.copyWith(fontSize: 11) ?? const TextStyle(fontSize: 11);
+  TextStyle get xs =>
+      _tt.bodySmall?.copyWith(fontSize: 12) ?? const TextStyle(fontSize: 12);
+  TextStyle get xs2 =>
+      _tt.bodySmall?.copyWith(fontSize: 11) ?? const TextStyle(fontSize: 11);
   TextStyle get sm =>
       _tt.bodySmall?.copyWith(fontSize: 14) ?? const TextStyle(fontSize: 14);
   TextStyle get md => _tt.bodyMedium ?? const TextStyle();

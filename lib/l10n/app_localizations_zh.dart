@@ -58,7 +58,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fontModeLabel => '字体选择';
 
   @override
-  String get fontModeSystem => '应用默认（Inter）';
+  String get fontModeSystem => '应用默认';
 
   @override
   String get fontModeSansSerif => '系统无衬线';
@@ -1167,6 +1167,69 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get qrTransferSessionMismatch => '检测到不同传输内容，请确认只对准一份数据';
+
+  @override
+  String get qrTransferChecksumFailed => '传输校验失败，请重新开始';
+
+  @override
+  String get qrTransferRawLengthMismatch => '接收数据长度校验失败，请重新开始';
+
+  @override
+  String get qrTransferDecompressionFailed => '数据解压失败，请重新开始';
+
+  @override
+  String get qrTransferPlaintextWarning =>
+      '二维码传输是明文，附近摄像头可能读取内容。请确认来源，未经确认不会覆盖数据。';
+
+  @override
+  String get qrTransferResourceLimit => '接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。';
+
+  @override
+  String get qrTransferSessionExpired => '二维码传输已超时，请重新开始并只对准一台设备。';
+
+  @override
+  String get qrTransferFullBackupWarning => '确认后，该完整备份会替换本设备上的数据。';
+
+  @override
+  String get qrTransferImportFullBackup => '导入完整备份';
+
+  @override
+  String get qrTransferDecodeFailed => '二维码数据解码失败，请重新开始';
+
+  @override
+  String get qrTransferRestart => '重新开始';
+
+  @override
+  String get qrTransferSampleFps => '采样帧率';
+
+  @override
+  String get qrTransferDecodeFps => '解码帧率';
+
+  @override
+  String get qrTransferReceiveSpeed => '接收速度';
+
+  @override
+  String get qrTransferElapsed => '已用时间';
+
+  @override
+  String get qrTransferNewFrames => '新增帧';
+
+  @override
+  String get qrTransferDuplicateFrames => '重复帧';
+
+  @override
+  String get qrTransferBlockSize => '单块大小';
+
+  @override
+  String get qrTransferBlockCount => '数据块数';
+
+  @override
+  String get qrTransferFileData => '文件数据';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '原始 $rawSize · 压缩 $compressedSize';
+  }
 
   @override
   String get fullExportTitle => '完整导出';
@@ -3033,10 +3096,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePagePickImageAction => '选择图片';
 
   @override
+  String get homePageSwitchImageAction => '切换照片';
+
+  @override
   String get homePageClearImageAction => '清除图片';
 
   @override
   String get homePageImageNotSelected => '未选择';
+
+  @override
+  String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => '重置居中';
+
+  @override
+  String get wallpaperPositionPickerDragHint => '拖动壁纸调整位置';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => '换壁纸';
+
+  @override
+  String get wallpaperPositionPickerDone => '完成';
+
+  @override
+  String get wallpaperPositionPickerExit => '退出';
 
   @override
   String get appearanceTextColorsSectionTitle => '文字颜色';
@@ -4734,14 +4818,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get switchTimetableTitle => '切换课表';
-
-  @override
-  String get switchTimetableSubtitleEmpty => '点击下面的课表，立即切换当前视图';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '当前：$name，点击下面的课表立即切换';
-  }
 
   @override
   String get todayTimetableTitle => '今日课表';
@@ -8908,9 +8984,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '液态玻璃';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
@@ -9022,16 +9095,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectEndTimeTitle => '选择结束时间';
 
   @override
-  String get weekdayInkContrastTitle => '文字对比度增强';
+  String get weekdayInkContrastTitle => '文字对比度不足';
 
   @override
-  String get weekdayInkContrastBodyDark => '深色模式下增强课程文字对比度';
+  String get weekdayInkContrastBodyDark =>
+      '你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
 
   @override
-  String get weekdayInkContrastBodyLight => '浅色模式下增强课程文字对比度';
+  String get weekdayInkContrastBodyLight =>
+      '你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
 
   @override
-  String get keepCurrentColorAction => '保留当前颜色';
+  String get gotItAction => '知道了';
 
   @override
   String get settingsTimetableSectionTitle => '课表';
@@ -9148,7 +9223,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get fontModeLabel => '字體選擇';
 
   @override
-  String get fontModeSystem => '應用預設（Inter）';
+  String get fontModeSystem => '應用預設';
 
   @override
   String get fontModeSansSerif => '系統無襯線';
@@ -10036,6 +10111,69 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
+
+  @override
+  String get qrTransferChecksumFailed => '傳輸校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferRawLengthMismatch => '接收資料長度校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferDecompressionFailed => '資料解壓失敗，請重新開始';
+
+  @override
+  String get qrTransferPlaintextWarning =>
+      'QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。';
+
+  @override
+  String get qrTransferResourceLimit => '接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。';
+
+  @override
+  String get qrTransferSessionExpired => 'QR 碼傳輸已逾時，請重新開始並只對準一台裝置。';
+
+  @override
+  String get qrTransferFullBackupWarning => '確認後，此完整備份會取代本裝置上的資料。';
+
+  @override
+  String get qrTransferImportFullBackup => '匯入完整備份';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR 碼資料解碼失敗，請重新開始';
+
+  @override
+  String get qrTransferRestart => '重新開始';
+
+  @override
+  String get qrTransferSampleFps => '取樣幀率';
+
+  @override
+  String get qrTransferDecodeFps => '解碼幀率';
+
+  @override
+  String get qrTransferReceiveSpeed => '接收速度';
+
+  @override
+  String get qrTransferElapsed => '已用時間';
+
+  @override
+  String get qrTransferNewFrames => '新增幀';
+
+  @override
+  String get qrTransferDuplicateFrames => '重複幀';
+
+  @override
+  String get qrTransferBlockSize => '單塊大小';
+
+  @override
+  String get qrTransferBlockCount => '資料塊數';
+
+  @override
+  String get qrTransferFileData => '檔案資料';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '原始 $rawSize · 壓縮 $compressedSize';
+  }
 
   @override
   String get fullExportTitle => '完整匯出';
@@ -13468,14 +13606,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get switchTimetableTitle => '切换課表';
-
-  @override
-  String get switchTimetableSubtitleEmpty => '點擊下面的課表，立即切换目前視圖';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '目前：$name，點擊下面的課表立即切换';
-  }
 
   @override
   String get todayTimetableTitle => '今日課表';
@@ -17602,9 +17732,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
@@ -17716,16 +17843,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get selectEndTimeTitle => '選擇結束時間';
 
   @override
-  String get weekdayInkContrastTitle => '文字對比度增強';
+  String get weekdayInkContrastTitle => '文字對比度不足';
 
   @override
-  String get weekdayInkContrastBodyDark => '深色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyDark =>
+      '你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get weekdayInkContrastBodyLight => '淺色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyLight =>
+      '你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get keepCurrentColorAction => '保留目前顏色';
+  String get gotItAction => '知道了';
 
   @override
   String get settingsTimetableSectionTitle => '時間表';
@@ -17842,7 +17971,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get fontModeLabel => '字體選擇';
 
   @override
-  String get fontModeSystem => '應用預設（Inter）';
+  String get fontModeSystem => '應用預設';
 
   @override
   String get fontModeSansSerif => '系統無襯線';
@@ -18730,6 +18859,69 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get qrTransferSessionMismatch => '偵測到不同傳輸內容，請確認只對準一份資料';
+
+  @override
+  String get qrTransferChecksumFailed => '傳輸校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferRawLengthMismatch => '接收資料長度校驗失敗，請重新開始';
+
+  @override
+  String get qrTransferDecompressionFailed => '資料解壓失敗，請重新開始';
+
+  @override
+  String get qrTransferPlaintextWarning =>
+      'QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。';
+
+  @override
+  String get qrTransferResourceLimit => '接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。';
+
+  @override
+  String get qrTransferSessionExpired => 'QR 碼傳輸已逾時，請重新開始並只對準一台裝置。';
+
+  @override
+  String get qrTransferFullBackupWarning => '確認後，此完整備份會取代本裝置上的資料。';
+
+  @override
+  String get qrTransferImportFullBackup => '匯入完整備份';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR 碼資料解碼失敗，請重新開始';
+
+  @override
+  String get qrTransferRestart => '重新開始';
+
+  @override
+  String get qrTransferSampleFps => '取樣幀率';
+
+  @override
+  String get qrTransferDecodeFps => '解碼幀率';
+
+  @override
+  String get qrTransferReceiveSpeed => '接收速度';
+
+  @override
+  String get qrTransferElapsed => '已用時間';
+
+  @override
+  String get qrTransferNewFrames => '新增幀';
+
+  @override
+  String get qrTransferDuplicateFrames => '重複幀';
+
+  @override
+  String get qrTransferBlockSize => '單塊大小';
+
+  @override
+  String get qrTransferBlockCount => '資料塊數';
+
+  @override
+  String get qrTransferFileData => '檔案資料';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '原始 $rawSize · 壓縮 $compressedSize';
+  }
 
   @override
   String get fullExportTitle => '完整匯出';
@@ -22162,14 +22354,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get switchTimetableTitle => '切换課表';
-
-  @override
-  String get switchTimetableSubtitleEmpty => '點擊下面的課表，立即切换目前視圖';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '目前：$name，點擊下面的課表立即切换';
-  }
 
   @override
   String get todayTimetableTitle => '今日課表';
@@ -26296,9 +26480,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
@@ -26410,16 +26591,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get selectEndTimeTitle => '選擇結束時間';
 
   @override
-  String get weekdayInkContrastTitle => '文字對比度增強';
+  String get weekdayInkContrastTitle => '文字對比度不足';
 
   @override
-  String get weekdayInkContrastBodyDark => '深色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyDark =>
+      '你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get weekdayInkContrastBodyLight => '淺色模式下增強課程文字對比度';
+  String get weekdayInkContrastBodyLight =>
+      '你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
-  String get keepCurrentColorAction => '保留目前顏色';
+  String get gotItAction => '知道了';
 
   @override
   String get settingsTimetableSectionTitle => '課表';

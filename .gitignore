@@ -90,6 +90,8 @@ reviews/
 progress.md
 .review_changed_files.txt
 .codebuddy/
+.zcode/
+tool/_review_*.diff
 
 # 测试覆盖率
 coverage/
@@ -100,8 +102,15 @@ coverage/
 # 临时分析输出（dart analyze 结果转储）
 analyze_*.txt
 
+# 一次性工作记录与审查脚本
+docs/reference/changelog-2026-07-29-worktree.md
+tool/audit_output.json
+tool/fix_audit_all.py
+tool/fix_colors.py
+
 # 工具本地配置
 .qoder/
+.workbuddy/
 .reasonix/
 
 # Python 缓存

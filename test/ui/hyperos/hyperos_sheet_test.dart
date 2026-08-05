@@ -121,4 +121,128 @@ void main() {
       expect(tester.getTopLeft(content).dy, closeTo(topBeforeDrag, 0.1));
     });
   });
+
+  group('showHomeHyperosSheet edge chrome sizing', () {
+    Future<void> openFrostedEdgeSheet(WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) {
+              return Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showHomeHyperosSheet<void>(
+                      context: context,
+                      builder: (sheetContext) {
+                        return const HyperosSheetFrame(
+                          child: SizedBox(
+                            width: 300,
+                            height: 200,
+                            child: Center(child: Text('Edge sheet content')),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('frosted edge sheet hugs content instead of full screen', (
+      tester,
+    ) async {
+      await openFrostedEdgeSheet(tester);
+
+      final content = find.text('Edge sheet content');
+      expect(content, findsOneWidget);
+
+      // Bottom-aligned edge sheet: the 200dp content (+ padding) hugs the
+      // bottom of the 600dp test screen. The old all-Positioned Stack sized
+      // itself to constraints.biggest and pinned the content to the top of a
+      // full-screen panel (content top ~16dp instead of ~384dp).
+      expect(tester.getTopLeft(content).dy, greaterThan(300));
+    });
+  });
+
+  group('HyperosAdaptiveCard on frosted panels', () {
+    testWidgets('choice group card turns translucent inside a frosted sheet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) {
+              return Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showHomeHyperosSheet<void>(
+                      context: context,
+                      builder: (sheetContext) {
+                        return const HyperosSheetFrame(
+                          child: HyperosChoiceGroup(
+                            children: [
+                              HyperosChoiceTile(title: 'Profile A'),
+                              HyperosChoiceTile(title: 'Profile B'),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // The list card must let the liquid glass / frosted panel show through:
+      // an opaque white card here defeats the whole point of the glass sheet.
+      final cardMaterial = tester.widget<Material>(
+        find.descendant(
+          of: find.byType(HyperosAdaptiveCard),
+          matching: find.byType(Material),
+        ),
+      );
+      expect(cardMaterial.color, isNotNull);
+      expect(cardMaterial.color!.a, lessThan(1.0));
+    });
+
+    testWidgets('choice group card stays opaque on a plain settings page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const TestApp(
+          home: Scaffold(
+            body: HyperosChoiceGroup(
+              children: [
+                HyperosChoiceTile(title: 'Profile A'),
+                HyperosChoiceTile(title: 'Profile B'),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cardMaterial = tester.widget<Material>(
+        find.descendant(
+          of: find.byType(HyperosAdaptiveCard),
+          matching: find.byType(Material),
+        ),
+      );
+      expect(cardMaterial.color, isNotNull);
+      expect(cardMaterial.color!.a, 1.0);
+    });
+  });
 }

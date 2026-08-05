@@ -119,41 +119,44 @@ class PreblurredWallpaperCache {
       if (source == null) {
         return null;
       }
+      try {
+        // The blur runs in the decoded bitmap's pixel space, which is smaller
+        // than the screen and then upscaled back to full size. Convert the
+        // desired on-screen sigma into that space so the perceived frost
+        // strength remains stable across screen densities.
+        final physicalWidth = _screenPhysicalWidth();
+        final downscale = physicalWidth <= 0
+            ? 1.0
+            : source.width / physicalWidth;
+        final imageSigma =
+            (request.logicalSigma * request.devicePixelRatio * downscale).clamp(
+              0.5,
+              40.0,
+            );
 
-      // The blur runs in the *decoded* bitmap's pixel space, which is smaller
-      // than the screen and then upscaled back to full size. Convert the
-      // desired on-screen sigma into that space, otherwise the perceived frost
-      // strength drifts with screen density and never matches the value the
-      // user picked in settings.
-      final physicalWidth = _screenPhysicalWidth();
-      final downscale = physicalWidth <= 0 ? 1.0 : source.width / physicalWidth;
-      final imageSigma =
-          (request.logicalSigma * request.devicePixelRatio * downscale).clamp(
-            0.5,
-            40.0,
-          );
+        final blurred = await _blur(source, imageSigma);
+        if (blurred == null) {
+          return null;
+        }
 
-      final blurred = await _blur(source, imageSigma);
-      source.dispose();
-      if (blurred == null) {
-        return null;
+        if (generation != _generation) {
+          // Evicted while we were building.
+          blurred.dispose();
+          return null;
+        }
+        if (_key == request && _image != null) {
+          // An identical request won the race.
+          blurred.dispose();
+          return _image!.clone();
+        }
+
+        _image?.dispose();
+        _image = blurred;
+        _key = request;
+        return blurred.clone();
+      } finally {
+        source.dispose();
       }
-
-      if (generation != _generation) {
-        // Evicted while we were building.
-        blurred.dispose();
-        return null;
-      }
-      if (_key == request && _image != null) {
-        // An identical request won the race.
-        blurred.dispose();
-        return _image!.clone();
-      }
-
-      _image?.dispose();
-      _image = blurred;
-      _key = request;
-      return blurred.clone();
     } catch (error, stackTrace) {
       debugPrint('PreblurredWallpaperCache failed: $error\n$stackTrace');
       return null;
@@ -165,22 +168,37 @@ class PreblurredWallpaperCache {
     final stream = provider.resolve(ImageConfiguration.empty);
     final completer = Completer<ui.Image>();
     late ImageStreamListener listener;
+    var listenerAttached = false;
+
+    void removeListener() {
+      if (!listenerAttached) {
+        return;
+      }
+      stream.removeListener(listener);
+      listenerAttached = false;
+    }
+
     listener = ImageStreamListener(
       (ImageInfo info, bool synchronousCall) {
         if (!completer.isCompleted) {
           completer.complete(info.image.clone());
         }
-        stream.removeListener(listener);
+        removeListener();
       },
       onError: (Object error, StackTrace? stackTrace) {
         if (!completer.isCompleted) {
           completer.completeError(error, stackTrace);
         }
-        stream.removeListener(listener);
+        removeListener();
       },
     );
-    stream.addListener(listener);
-    return completer.future.timeout(const Duration(seconds: 10));
+    listenerAttached = true;
+    try {
+      stream.addListener(listener);
+      return await completer.future.timeout(const Duration(seconds: 10));
+    } finally {
+      removeListener();
+    }
   }
 
   Future<ui.Image?> _blur(ui.Image source, double sigma) async {
@@ -663,10 +681,18 @@ class _RenderPreblurredFill extends RenderBox {
     if (shouldListen == _listening) {
       return;
     }
-    if (shouldListen) {
-      controller.addListener(markNeedsPaint);
-    } else {
-      controller?.removeListener(markNeedsPaint);
+    try {
+      if (shouldListen) {
+        // 防御：controller 可能已在上一帧被 dispose（例如日视图控制器
+        // 延迟回收与 PreblurredWallpaperScope 挂载竞态）。addListener 对
+        // 已释放的 ChangeNotifier 会在 debug 下抛
+        // "A PageController was used after being disposed"，这里兜底跳过。
+        controller.addListener(markNeedsPaint);
+      } else {
+        controller?.removeListener(markNeedsPaint);
+      }
+    } catch (_) {
+      // 已释放的控制器：放弃监听，让预模糊壁纸按静态采样绘制。
     }
     _listening = shouldListen;
   }

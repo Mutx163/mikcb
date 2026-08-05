@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "Inter を標準とし、端末に入っているフォントも選べます",
   "fontSectionFootnote": "メーカーフォントは同梱されず、端末に入っている場合のみ有効です，Xiaomi では MiSans だけ目立ちやすいです，変化がなければ自動代替で、通常は自分でインストール不要です",
   "fontModeLabel": "フォント選択",
-  "fontModeSystem": "アプリ標準（Inter）",
+  "fontModeSystem": "アプリ標準",
   "fontModeSansSerif": "システムサンセリフ",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "HarmonyOS Sans",
@@ -490,6 +490,36 @@
   },
   "qrTransferReceiveComplete": "データを受信しました。インポート中…",
   "qrTransferSessionMismatch": "別の転送内容を検出しました。1つの画面だけに正対してください",
+  "qrTransferChecksumFailed": "転送の検証に失敗しました。最初からやり直してください",
+  "qrTransferRawLengthMismatch": "受信データの長さを検証できませんでした。最初からやり直してください",
+  "qrTransferDecompressionFailed": "受信データを展開できませんでした。最初からやり直してください",
+  "qrTransferPlaintextWarning": "QR転送は平文です。近くのカメラで読み取られる可能性があります。送信元を確認してから読み込んでください。確認なしに上書きはしません。",
+  "qrTransferResourceLimit": "受信データがQR転送のリソース上限を超えました。最初からやり直し、小さいバックアップを使ってください。",
+  "qrTransferSessionExpired": "QR転送がタイムアウトしました。最初からやり直し、1台の画面だけにカメラを向けてください。",
+  "qrTransferFullBackupWarning": "確認すると、この完全バックアップで端末のデータを置き換えます。",
+  "qrTransferImportFullBackup": "完全バックアップを読み込む",
+  "qrTransferDecodeFailed": "QR転送をデコードできませんでした。最初からやり直してください",
+  "qrTransferRestart": "最初からやり直す",
+  "qrTransferSampleFps": "サンプルFPS",
+  "qrTransferDecodeFps": "デコードFPS",
+  "qrTransferReceiveSpeed": "受信速度",
+  "qrTransferElapsed": "経過時間",
+  "qrTransferNewFrames": "新規フレーム",
+  "qrTransferDuplicateFrames": "重複フレーム",
+  "qrTransferBlockSize": "ブロックサイズ",
+  "qrTransferBlockCount": "ブロック数",
+  "qrTransferFileData": "ファイルデータ",
+  "qrTransferFileDataDetail": "元 {rawSize} · 圧縮 {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "完全エクスポート",
   "fullExportSubtitle": "現在の時間割、または全時間割・テンプレート・選択状態を一括エクスポート",
   "exportCurrentTimetable": "現在の時間割をエクスポート",
@@ -2478,15 +2508,6 @@
   "homeMenuCoffeeTitle": "コーヒーをおごる",
   "homeMenuFeedbackTitle": "問題報告",
   "switchTimetableTitle": "時間割切替",
-  "switchTimetableSubtitleEmpty": "下の時間割をタップして現在のビューを即時切替",
-  "switchTimetableSubtitleCurrent": "現在：{name}，下の時間割をタップして即時切替",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "今日の時間割",
   "dayTimetableTitle": "日別タイムライン",
   "backToWeekViewAction": "週表示に戻る",
@@ -5327,7 +5348,6 @@
   "courseCardSurfaceStyleSubtitle": "コースカードのビジュアルスタイルを選択",
   "courseCardSurfaceStyleSolid": "ソリッド",
   "courseCardSurfaceStyleTranslucent": "半透明",
-  "courseCardSurfaceStyleLiquidGlass": "リキッドガラス",
   "courseCardSurfaceStyleGaussian": "ガウスぼかし",
   "courseCardSectionColor": "色",
   "liveSelfCheckTitle": "セルフチェック",
@@ -5365,10 +5385,10 @@
   "aboutCommunitySectionTitle": "コミュニティ",
   "selectStartTimeTitle": "開始時間を選択",
   "selectEndTimeTitle": "終了時間を選択",
-  "weekdayInkContrastTitle": "テキストコントラスト強化",
-  "weekdayInkContrastBodyDark": "ダークモードでコーステキストのコントラストを強化",
-  "weekdayInkContrastBodyLight": "ライトモードでコーステキストのコントラストを強化",
-  "keepCurrentColorAction": "現在の色を保持",
+  "weekdayInkContrastTitle": "文字のコントラスト不足",
+  "weekdayInkContrastBodyDark": "曜日バーの文字色は濃い壁紙とのコントラストが不足しているため、一時的に自動の白に切り替えています。可読性を保つための措置で、「時間割ページ → 文字色」で色を変更またはリセットできます。",
+  "weekdayInkContrastBodyLight": "曜日バーの文字色は明るい壁紙とのコントラストが不足しているため、一時的に自動の黒に切り替えています。可読性を保つための措置で、「時間割ページ → 文字色」で色を変更またはリセットできます。",
+  "gotItAction": "わかりました",
   "settingsTimetableSectionTitle": "時間割",
   "liveIslandLabelEntryEnabled": "有効",
   "liveIslandLabelEntryDisabled": "無効",

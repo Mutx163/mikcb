@@ -11,7 +11,9 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter_blackbox/flutter_blackbox.dart';
 
+import 'blackbox_adapters.dart';
 import 'logging/app_log_messages.dart';
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
@@ -22,6 +24,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'widgets/app_boot_branding.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
@@ -39,9 +42,9 @@ import 'services/frosted_blur_service.dart';
 import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
-import 'ui/hyperos/hyperos_layout_debug_tuning.dart';
 import 'ui/hyperos/hyperos_motion.dart';
 import 'ui/hyperos_motion_bridge.dart';
+import 'utils/home_page_background.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -51,7 +54,10 @@ ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   };
 }
 
-ThemeData _appThemeData(Brightness brightness, {required AppFontSpec fontSpec}) {
+ThemeData _appThemeData(
+  Brightness brightness, {
+  required AppFontSpec fontSpec,
+}) {
   final theme = ThemeData(
     brightness: brightness,
     useMaterial3: true,
@@ -121,6 +127,10 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 }
 
 Future<void> main() async {
+  // Keep Android's native SplashLayerDrawable visible until the Flutter brand
+  // layer can render with the real launcher bitmap on its very first frame.
+  WidgetsFlutterBinding.ensureInitialized();
+  await BundledAssets.warmUpLauncherIcon();
   runZonedGuarded(
     () {
       WidgetsFlutterBinding.ensureInitialized();
@@ -129,6 +139,14 @@ Future<void> main() async {
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
       FlutterError.onError = (details) {
+        // Debug 构建下 presentError 会把异常重新抛进 zone，中断当前帧导致
+        // UI 卡死但"看起来没报错"。这里强制落盘（force: true），并同步
+        // 打印到终端，方便定位这类「卡死无响应」的框架异常。
+        debugPrint(
+          '[FlutterError.onError] ${details.exceptionAsString()}\n'
+          '${details.stack ?? StackTrace.current}',
+        );
+        // 仍保留默认呈现，让开发者工具/IDE 也能看到异常。
         FlutterError.presentError(details);
         final stackTrace = details.stack ?? StackTrace.current;
         unawaited(
@@ -137,6 +155,7 @@ Future<void> main() async {
             details.exceptionAsString(),
             error: details.exception,
             stackTrace: stackTrace,
+            force: true,
           ),
         );
         unawaited(
@@ -167,6 +186,9 @@ Future<void> main() async {
         return false;
       };
 
+      if (!kReleaseMode) {
+        setupBlackBox();
+      }
       runApp(const _PackageInfoLoader());
     },
     (error, stackTrace) {
@@ -198,8 +220,7 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
     ]);
     configureHyperosMotionFromAndroid();
     if (!kReleaseMode) {
-      registerHyperosLayoutDebugTuning();
-      await loadDebugTuningPreferencesIfNeeded();
+      await loadBlackBoxOverlayPreferencesIfNeeded();
     }
     final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
     await SystemChrome.setApplicationSwitcherDescription(
@@ -237,11 +258,7 @@ class MyApp extends StatelessWidget {
       child:
           Selector<
             TimetableProvider,
-            ({
-              AppFontMode fontMode,
-              AppThemeMode themeMode,
-              String localeTag,
-            })
+            ({AppFontMode fontMode, AppThemeMode themeMode, String localeTag})
           >(
             selector: (_, p) => (
               fontMode: p.settings.appFontMode,
@@ -277,30 +294,29 @@ class MyApp extends StatelessWidget {
                   _AppRouteLogObserver(),
                   FairMemoryService.instance.routeObserver,
                   hyperosRouteObserver,
+                  if (!kReleaseMode) BlackBox.journeyObserver,
                 ],
                 builder: (context, child) {
                   final frostedAppearance = context
                       .watch<TimetableProvider>()
                       .settings
                       .frostedAppearance;
-                  return HyperosLayoutTuningHost(
+                  return BlackBoxOverlayHost(
                     child: HyperosMotionHost(
                       child: FrostedAppearanceScope(
                         appearance: frostedAppearance,
                         child: ScaffoldMessenger(
-                              child: Scaffold(
-                                backgroundColor: Colors.transparent,
-                                resizeToAvoidBottomInset: false,
-                                body: DebugTuningOverlayHost(
-                                  child: MiuixFontWeightScope(child: child!),
-                                ),
-                              ),
-                            ),
+                          child: Scaffold(
+                            backgroundColor: Colors.transparent,
+                            resizeToAvoidBottomInset: false,
+                            body: MiuixFontWeightScope(child: child!),
+                          ),
+                        ),
                       ),
                     ),
                   );
                 },
-                home: const AppEntryScreen(),
+                home: AppEntryScreen(packageInfo: packageInfo),
               );
             },
           ),
@@ -338,7 +354,9 @@ Route<dynamic> _buildUnknownPlatformRoute(RouteSettings settings) {
 }
 
 class AppEntryScreen extends StatefulWidget {
-  const AppEntryScreen({super.key});
+  const AppEntryScreen({super.key, required this.packageInfo});
+
+  final PackageInfo packageInfo;
 
   @override
   State<AppEntryScreen> createState() => _AppEntryScreenState();
@@ -424,14 +442,6 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     await context.read<TimetableProvider>().handleAppResumed();
   }
 
-  /// Ensures local provider init finishes before the first auto pull apply.
-  Future<void> _initializeThenMaybePullRemote(
-    TimetableProvider provider,
-  ) async {
-    await provider.initialize();
-    await _cloudSyncCoordinator.maybePullRemote();
-  }
-
   Future<void> _handleStartupFlows() async {
     if (_startupHandled) {
       return;
@@ -458,10 +468,13 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       }
       final provider = context.read<TimetableProvider>();
 
-      // 老用户快速路径：不等待课表 JSON 解析/Provider 初始化，先进入主界面。
+      // 老用户快速路径：等待本地课表快照完成后再进入主界面。
       if (hasAcceptedPrivacy && hasSeenGuide) {
         _cloudSyncCoordinator.bindProvider(provider);
-        unawaited(_initializeThenMaybePullRemote(provider));
+        // Do not fade the brand layer until the local timetable snapshot is
+        // ready; otherwise the first visible frame can be an empty/default
+        // timetable while storage is still being read.
+        await provider.initialize();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
         unawaited(_checkPendingExternalImport());
@@ -474,6 +487,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         );
         unawaited(_maybeShowDeferredMigrationGuide());
         await _revealMainContent();
+        // Remote sync is intentionally post-reveal: local data drives the
+        // first correct frame, while network work can update it afterward.
+        unawaited(_cloudSyncCoordinator.maybePullRemote());
         return;
       }
 
@@ -623,11 +639,24 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
   }
 
-  /// Mount [TimetableScreen] under the boot overlay, paint one frame, then fade.
+  /// Mount [TimetableScreen] under the boot overlay, paint one frame, then remove the overlay.
   Future<void> _revealMainContent() async {
     if (!mounted) {
       return;
     }
+
+    // The provider intentionally starts wallpaper decoding in the background
+    // so normal settings changes stay responsive. Startup is different: if the
+    // home backdrop is not decoded yet, the first timetable frame is an opaque
+    // dark surface and the wallpaper/glass appears one frame later. Keep the
+    // branding layer up until the image provider has delivered its first frame.
+    await precacheHomePageBackdropImage(
+      context.read<TimetableProvider>().settings,
+    );
+    if (!mounted) {
+      return;
+    }
+
     if (!_mainContentReady) {
       setState(() => _mainContentReady = true);
       await WidgetsBinding.instance.endOfFrame;
@@ -964,23 +993,26 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final overlayColor = HyperosColors.scaffoldBackground(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+    final appLabel = AppBootBranding.resolveAppLabel(widget.packageInfo, l10n);
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_mainContentReady) const TimetableScreen(),
-        AnimatedOpacity(
-          opacity: _isBootstrapping ? 1 : 0,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-          child: IgnorePointer(
-            ignoring: !_isBootstrapping,
+        if (_mainContentReady) TimetableScreen(packageInfo: widget.packageInfo),
+        // Do not alpha-fade this full-screen layer.  In dark mode the opaque
+        // branding background would be composited over the already-rendered
+        // home page during the fade, making wallpaper and liquid-glass cards
+        // look black before the layer disappears.  The main page is mounted
+        // and painted for one frame in [_revealMainContent] before this layer
+        // is removed, so the handoff is an atomic swap instead.
+        if (_isBootstrapping)
+          IgnorePointer(
             child: ColoredBox(
-              color: overlayColor,
-              child: const Center(child: CircularProgressIndicator()),
+              color: AppBootBranding.backgroundColor(isDark: isDark),
+              child: AppBootBranding(appLabel: appLabel, isDark: isDark),
             ),
           ),
-        ),
       ],
     );
   }
@@ -1088,9 +1120,15 @@ class _PackageInfoLoaderState extends State<_PackageInfoLoader> {
   Widget build(BuildContext context) {
     final packageInfo = _packageInfo;
     if (packageInfo == null) {
-      return const MaterialApp(
+      final isDark =
+          PlatformDispatcher.instance.platformBrightness == Brightness.dark;
+      final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: ColoredBox(color: Color(0xFFF7F7F7)),
+        home: ColoredBox(
+          color: AppBootBranding.backgroundColor(isDark: isDark),
+          child: AppBootBranding(appLabel: l10n.appTitle, isDark: isDark),
+        ),
       );
     }
     return MyApp(packageInfo: packageInfo);

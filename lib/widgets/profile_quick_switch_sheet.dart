@@ -38,19 +38,10 @@ class _ProfileQuickSwitchSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final activeIndex = profiles.indexWhere(
-      (profile) => profile.id == activeProfileId,
-    );
-    final activeProfile = activeIndex >= 0 ? profiles[activeIndex] : null;
-
-    final subtitle = activeProfile == null
-        ? l10n.switchTimetableSubtitleEmpty
-        : l10n.switchTimetableSubtitleCurrent(activeProfile.name);
 
     return HyperosSheet(
       frosted: true,
       title: l10n.switchTimetableTitle,
-      description: subtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

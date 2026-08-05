@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -10,19 +12,32 @@ import 'qr_transfer_session.dart';
 /// 二维码帧的文本协议：
 ///
 /// ```text
-/// QRV1|<k>|<t>|<payloadLen>|<payloadSha256B64>|<seed>|<degree>|<symbolB64>
+/// QRV2|<k>|<t>|<payloadLen>|<rawLen>|<payloadSha256B64>|<seed>|<degree>|<symbolB64>
 /// ```
 ///
 /// - `k` / `t`：LT 码的源码符号数与符号字节大小，解码端据此构造解码器；
 /// - `payloadLen`：gzip 后载荷的真实字节数，解码后据此截断；
+/// - `rawLen`：原始（未压缩）数据的字节数，供接收端展示文件信息；
 /// - `payloadSha256B64`：载荷 SHA-256，解码完成后校验；
 /// - `seed`：本帧的 LT 编码种子，解码端据此确定性地重建邻居；
 /// - `degree`：本帧的度数，必须随帧传输（解码端不做采样）；
 /// - `symbolB64`：本帧符号的 base64url 文本。
 class QrTransferFrame {
-  static const String magic = 'QRV1';
+  static const String magic = 'QRV2';
   static const String fieldSeparator = '|';
-  static const int expectedFieldCount = 8;
+  static const int expectedFieldCount = 9;
+
+  /// QRV2 is consumed from camera input, so its metadata is untrusted. Keep
+  /// the limits conservative enough that a malformed frame cannot make the
+  /// fountain decoder allocate an attacker-controlled amount of memory.
+  static const int maxFrameTextLength = QrTransferLimits.maxFrameTextLength;
+  static const int maxSourceSymbolCount = QrTransferLimits.maxSourceSymbolCount;
+  static const int maxSymbolSize = QrTransferLimits.maxSymbolSize;
+  static const int maxPayloadLength =
+      QrTransferLimits.maxCompressedPayloadBytes;
+  static const int maxRawLength = QrTransferLimits.maxRawPayloadBytes;
+  static const int maxSeed = QrTransferLimits.maxSeed;
+  static const int maxDegree = QrTransferLimits.maxDegree;
 
   final QrTransferSessionInfo info;
   final int seed;
@@ -43,6 +58,7 @@ class QrTransferFrame {
       info.sourceSymbolCount,
       info.symbolSize,
       info.payloadLength,
+      info.rawLength,
       info.payloadSha256,
       seed,
       degree,
@@ -52,7 +68,12 @@ class QrTransferFrame {
 
   /// 解析二维码识别出的文本；格式不合法时抛出 [FormatException]。
   factory QrTransferFrame.parse(String text) {
-    final fields = text.split(fieldSeparator);
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty || normalizedText.length > maxFrameTextLength) {
+      throw const FormatException('invalid_qr_transfer_frame');
+    }
+
+    final fields = normalizedText.split(fieldSeparator);
     if (fields.length != expectedFieldCount || fields.first != magic) {
       throw const FormatException('invalid_qr_transfer_frame');
     }
@@ -60,21 +81,49 @@ class QrTransferFrame {
     final sourceSymbolCount = _parseIntField(fields[1]);
     final symbolSize = _parseIntField(fields[2]);
     final payloadLength = _parseIntField(fields[3]);
-    final seed = _parseIntField(fields[5]);
-    final degree = _parseIntField(fields[6]);
+    final rawLength = _parseIntField(fields[4]);
+    final seed = _parseIntField(fields[6]);
+    final degree = _parseIntField(fields[7]);
 
     if (sourceSymbolCount <= 0 ||
         symbolSize <= 0 ||
-        payloadLength < 0 ||
+        payloadLength <= 0 ||
+        rawLength <= 0 ||
         seed < 0 ||
+        seed > maxSeed ||
         degree <= 0) {
+      throw const FormatException('invalid_qr_transfer_frame');
+    }
+
+    // 上界校验：构造恶意帧会让 fountain_codes 的 `_selectNeighbors`
+    // 在 degree > k 时死循环，或让解码器用超大 k 创建 List 造成 OOM。
+    final maxPayloadBySymbols =
+        sourceSymbolCount > maxPayloadLength ~/ symbolSize
+        ? maxPayloadLength
+        : sourceSymbolCount * symbolSize;
+    if (sourceSymbolCount > maxSourceSymbolCount ||
+        symbolSize > maxSymbolSize ||
+        degree > sourceSymbolCount ||
+        degree > maxDegree ||
+        payloadLength > maxPayloadLength ||
+        rawLength > maxRawLength ||
+        payloadLength > maxPayloadBySymbols) {
+      throw const FormatException('invalid_qr_transfer_frame');
+    }
+
+    try {
+      final hashBytes = base64Url.decode(fields[5]);
+      if (hashBytes.length != sha256.convert(const <int>[]).bytes.length) {
+        throw const FormatException('invalid_qr_transfer_frame');
+      }
+    } on Object {
       throw const FormatException('invalid_qr_transfer_frame');
     }
 
     final Uint8List symbolBytes;
     try {
-      symbolBytes = base64Url.decode(fields[7]);
-    } on FormatException {
+      symbolBytes = base64Url.decode(fields[8]);
+    } on Object {
       throw const FormatException('invalid_qr_transfer_frame');
     }
     if (symbolBytes.length != symbolSize) {
@@ -86,7 +135,8 @@ class QrTransferFrame {
         sourceSymbolCount: sourceSymbolCount,
         symbolSize: symbolSize,
         payloadLength: payloadLength,
-        payloadSha256: fields[4],
+        rawLength: rawLength,
+        payloadSha256: fields[5],
       ),
       seed: seed,
       degree: degree,
@@ -103,63 +153,159 @@ class QrTransferFrame {
   }
 }
 
+class QrTransferCapacity {
+  final int rawLength;
+  final int compressedLength;
+  final int sourceSymbolCount;
+  final int estimatedFrameCount;
+
+  const QrTransferCapacity({
+    required this.rawLength,
+    required this.compressedLength,
+    required this.sourceSymbolCount,
+    required this.estimatedFrameCount,
+  });
+}
+
+class _PreparedTransfer {
+  final Uint8List compressedPayload;
+  final QrTransferCapacity capacity;
+
+  const _PreparedTransfer({
+    required this.compressedPayload,
+    required this.capacity,
+  });
+}
+
 /// 二维码传输发送端：压缩 → LT 编码 → 逐帧产出二维码文本。
 class QrTransferEncoder {
   /// 根据 gzip 后载荷大小选择符号大小，让每帧文本稳定落在二维码
-  /// 的易识别区间（约 300 ~ 1300 字符），同时控制帧数不过多。
+  /// 的易识别区间（约 400 ~ 1500 字符），同时控制帧数不过多。
+  ///
+  /// 符号越大，每帧携带的数据越多、总帧数越少；但帧文本变长会推高
+  /// QR 版本，屏幕上的模块变小、识别变难。256B/512B 是面对面扫码
+  /// 传输的甜点区间（对应约 V12 / V20 版本）。
   static int pickSymbolSize(int payloadLength) {
-    if (payloadLength <= 2048) return 128;
+    if (payloadLength <= 2048) return 256;
     if (payloadLength <= 16384) return 512;
     if (payloadLength <= 65536) return 1024;
     return 2048;
   }
 
-  final Uint8List rawBytes;
-  final Uint8List compressedPayload;
   final QrTransferSessionInfo info;
   final LTCodec _codec;
   int _seed = -1;
 
-  QrTransferEncoder._({
-    required this.rawBytes,
-    required this.compressedPayload,
-    required this.info,
-    required LTCodec codec,
-  }) : _codec = codec;
+  QrTransferEncoder._({required this.info, required LTCodec codec})
+    : _codec = codec;
 
-  /// 用原始（未压缩）字节构建编码器；空数据不允许传输。
-  factory QrTransferEncoder.prepare(Uint8List rawBytes) {
+  /// Validate the complete transfer before a QR screen is opened.
+  static QrTransferCapacity preflight(Uint8List rawBytes) {
+    return _preparePayload(rawBytes).capacity;
+  }
+
+  static _PreparedTransfer _preparePayload(Uint8List rawBytes) {
     if (rawBytes.isEmpty) {
       throw ArgumentError.value(rawBytes, 'rawBytes', 'must not be empty');
     }
+    if (rawBytes.length > QrTransferLimits.maxRawPayloadBytes) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_raw_payload_too_large',
+        actual: rawBytes.length,
+        limit: QrTransferLimits.maxRawPayloadBytes,
+      );
+    }
 
     final compressedPayload = Uint8List.fromList(gzip.encode(rawBytes));
+    if (compressedPayload.length > QrTransferLimits.maxCompressedPayloadBytes) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_compressed_payload_too_large',
+        actual: compressedPayload.length,
+        limit: QrTransferLimits.maxCompressedPayloadBytes,
+      );
+    }
+
     final symbolSize = pickSymbolSize(compressedPayload.length);
     final sourceSymbolCount =
         (compressedPayload.length + symbolSize - 1) ~/ symbolSize;
+    if (sourceSymbolCount > QrTransferLimits.maxSourceSymbolCount) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_source_symbol_limit',
+        actual: sourceSymbolCount,
+        limit: QrTransferLimits.maxSourceSymbolCount,
+      );
+    }
+
+    final estimatedFrameCount = (sourceSymbolCount * 12 + 9) ~/ 10;
+    if (estimatedFrameCount > QrTransferLimits.maxFrameCount) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_frame_budget_exceeded',
+        actual: estimatedFrameCount,
+        limit: QrTransferLimits.maxFrameCount,
+      );
+    }
+    if (estimatedFrameCount > QrTransferLimits.maxSessionFrameCount) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_session_duration_exceeded',
+        actual: estimatedFrameCount,
+        limit: QrTransferLimits.maxSessionFrameCount,
+      );
+    }
+
+    return _PreparedTransfer(
+      compressedPayload: compressedPayload,
+      capacity: QrTransferCapacity(
+        rawLength: rawBytes.length,
+        compressedLength: compressedPayload.length,
+        sourceSymbolCount: sourceSymbolCount,
+        estimatedFrameCount: estimatedFrameCount,
+      ),
+    );
+  }
+
+  /// 用原始（未压缩）字节构建编码器；空数据不允许传输。
+  factory QrTransferEncoder.prepare(Uint8List rawBytes) {
+    final prepared = _preparePayload(rawBytes);
+    final compressedPayload = prepared.compressedPayload;
+    final symbolSize = pickSymbolSize(compressedPayload.length);
+    final sourceSymbolCount = prepared.capacity.sourceSymbolCount;
     final info = QrTransferSessionInfo(
       sourceSymbolCount: sourceSymbolCount,
       symbolSize: symbolSize,
       payloadLength: compressedPayload.length,
+      rawLength: rawBytes.length,
       payloadSha256: base64Url.encode(sha256.convert(compressedPayload).bytes),
     );
     final codec = LTCodec(
       config: FountainConfig(k: sourceSymbolCount, t: symbolSize),
+      maxDegree: QrTransferLimits.maxDegreeForSourceSymbolCount(
+        sourceSymbolCount,
+      ),
     )..setSourceData(compressedPayload);
 
-    return QrTransferEncoder._(
-      rawBytes: rawBytes,
-      compressedPayload: compressedPayload,
-      info: info,
-      codec: codec,
-    );
+    return QrTransferEncoder._(info: info, codec: codec);
   }
 
-  /// 产出下一帧文本。seed 持续递增，符号流在理论上可无限延续，
-  /// 发送端按自己的节奏播放即可。
+  /// 产出下一帧文本，并执行发送端的唯一 seed/frame 预算。
   String nextFrame() {
-    _seed++;
-    final symbol = _codec.encode(0, _seed);
+    final nextSeed = _seed + 1;
+    if (nextSeed >= QrTransferLimits.maxUniqueSeedCount) {
+      throw StateError('qr_transfer_frame_budget_exceeded');
+    }
+    _seed = nextSeed;
+    return frameTextFor(_seed);
+  }
+
+  /// 生成指定 seed 的帧文本（不推进内部计数器）。
+  ///
+  /// LT 编码对同一 seed 是确定性的，因此发送端可以借此**预先**生成
+  /// 未来几帧的文本（再交给 QR 矩阵计算），把耗时移出 setState 的
+  /// 关键路径——帧间隔缩短后仍能保持 UI 流畅。
+  String frameTextFor(int seed) {
+    if (seed < 0 || seed >= QrTransferLimits.maxUniqueSeedCount) {
+      throw StateError('qr_transfer_frame_budget_exceeded');
+    }
+    final symbol = _codec.encode(0, seed);
     return QrTransferFrame(
       info: info,
       seed: symbol.esiOrSeed,
@@ -176,9 +322,18 @@ class QrTransferEncoder {
 class QrTransferDecoder {
   QrTransferSessionInfo? _info;
   LTCodec? _codec;
+  int _detectedSymbols = 0;
+  int _duplicateSymbols = 0;
   int _receivedSymbols = 0;
   int _innovativeSymbols = 0;
+  int _adjacencyEdges = 0;
+  final Set<int> _submittedSeeds = {};
   QrTransferDecodeResult? _result;
+  String? _terminalError;
+  final DateTime Function() _now;
+  DateTime? _sessionStartedAt;
+
+  QrTransferDecoder({DateTime Function()? now}) : _now = now ?? DateTime.now;
 
   /// 会话信息；收到第一帧后可用。
   QrTransferSessionInfo? get sessionInfo => _info;
@@ -193,6 +348,8 @@ class QrTransferDecoder {
     final codec = _codec;
     final status = codec?.status();
     return QrTransferDecodeProgress(
+      detectedSymbols: _detectedSymbols,
+      duplicateSymbols: _duplicateSymbols,
       receivedSymbols: _receivedSymbols,
       innovativeSymbols: _innovativeSymbols,
       sourceSymbolCount: _info?.sourceSymbolCount ?? 0,
@@ -203,12 +360,42 @@ class QrTransferDecoder {
 
   /// 提交一帧；返回最新进度。帧无法解析或与当前会话不匹配时抛异常。
   QrTransferDecodeProgress submitFrame(String frameText) {
+    final terminalError = _terminalError;
+    if (terminalError != null) {
+      throw StateError(terminalError);
+    }
     if (_result != null) {
       return progress;
     }
 
     final frame = QrTransferFrame.parse(frameText);
+    // 先建立/校验会话：跨会话的帧即使 seed 相同也必须先报不匹配。
     final codec = _ensureCodec(frame.info);
+    _checkSessionAge();
+    if (_detectedSymbols >= QrTransferLimits.maxFrameCount) {
+      _fail('qr_transfer_frame_budget_exceeded');
+    }
+    final isDuplicate = _submittedSeeds.contains(frame.seed);
+    if (!isDuplicate &&
+        _submittedSeeds.length >= QrTransferLimits.maxUniqueSeedCount) {
+      _fail('qr_transfer_unique_seed_limit');
+    }
+    final maxAdjacencyEdges =
+        QrTransferLimits.maxAdjacencyEdgesForSourceSymbolCount(
+          frame.info.sourceSymbolCount,
+        );
+    if (!isDuplicate && frame.degree > maxAdjacencyEdges - _adjacencyEdges) {
+      _fail('qr_transfer_adjacency_edge_budget_exceeded');
+    }
+    // 属于当前会话的识别结果都计入 detected（含重复帧），供接收端统计采样帧率。
+    _detectedSymbols++;
+    // 摄像头停在同一帧画面时可能反复识别出相同符号；重复提交只会
+    // 触发无意义的高斯消元，按 seed 去重跳过（帧率高后收益明显）。
+    if (!_submittedSeeds.add(frame.seed)) {
+      _duplicateSymbols++;
+      return progress;
+    }
+    _adjacencyEdges += frame.degree;
     _receivedSymbols++;
 
     final symbol = Symbol(
@@ -217,7 +404,13 @@ class QrTransferDecoder {
       bytes: frame.symbolBytes,
       meta: {'degree': frame.degree},
     );
-    final submitResult = codec.submit(symbol);
+    late final DecodeResult submitResult;
+    try {
+      submitResult = codec.submit(symbol);
+    } on Object {
+      _terminalError = 'qr_transfer_decode_failed';
+      throw StateError(_terminalError!);
+    }
     if (submitResult.isInnovative) {
       _innovativeSymbols++;
     }
@@ -235,16 +428,68 @@ class QrTransferDecoder {
     if (codec == null || info == null) {
       return;
     }
-    final decoded = codec.getDecodedData();
-    if (decoded == null) {
-      throw StateError('decoder completed but produced no data');
+    try {
+      final decoded = codec.getDecodedData();
+      if (decoded == null) {
+        throw StateError('decoder completed but produced no data');
+      }
+      final payload = Uint8List.sublistView(decoded, 0, info.payloadLength);
+      final actualSha256 = base64Url.encode(sha256.convert(payload).bytes);
+      if (actualSha256 != info.payloadSha256) {
+        throw StateError('qr_transfer_checksum_failed');
+      }
+      _result = QrTransferDecodeResult(payload: payload, info: info);
+    } on StateError catch (error) {
+      _terminalError = error.message.toString();
+      rethrow;
+    } on Object {
+      _terminalError = 'qr_transfer_checksum_failed';
+      throw StateError(_terminalError!);
     }
-    final payload = Uint8List.sublistView(decoded, 0, info.payloadLength);
-    final actualSha256 = base64Url.encode(sha256.convert(payload).bytes);
-    if (actualSha256 != info.payloadSha256) {
-      throw StateError('qr_transfer_checksum_failed');
+  }
+
+  /// Returns the original bytes after gzip decompression and raw-length
+  /// verification. Decompression stays outside [submitFrame] so the decoder
+  /// can expose compressed-payload progress before the final conversion.
+  Uint8List decodeRawPayload() {
+    final result = _result;
+    final info = _info;
+    if (result == null || info == null) {
+      throw StateError('qr_transfer_not_complete');
     }
-    _result = QrTransferDecodeResult(payload: payload, info: info);
+
+    try {
+      final raw = qrTransferDecompress(
+        result.payload,
+        maxOutputBytes: info.rawLength,
+      );
+      if (raw.length != info.rawLength) {
+        throw StateError('qr_transfer_raw_length_mismatch');
+      }
+      return raw;
+    } on StateError {
+      rethrow;
+    } on QrTransferLimitException catch (error) {
+      throw StateError(error.code);
+    } on QrTransferDecompressionException catch (error) {
+      throw StateError(error.code);
+    } on Object {
+      throw StateError('qr_transfer_decompression_failed');
+    }
+  }
+
+  /// Start bounded decompression in a worker isolate. The caller owns the job
+  /// and can cancel it when the scan page is reset or disposed.
+  Future<QrTransferDecompressionJob> startRawPayloadDecompression() {
+    final result = _result;
+    final info = _info;
+    if (result == null || info == null) {
+      throw StateError('qr_transfer_not_complete');
+    }
+    return QrTransferDecompressionJob.start(
+      result.payload,
+      maxOutputBytes: info.rawLength,
+    );
   }
 
   LTCodec _ensureCodec(QrTransferSessionInfo info) {
@@ -254,11 +499,30 @@ class QrTransferDecoder {
       return existing;
     }
     _info = info;
+    _sessionStartedAt = _now();
     final codec = LTCodec(
       config: FountainConfig(k: info.sourceSymbolCount, t: info.symbolSize),
+      maxDegree: QrTransferLimits.maxDegreeForSourceSymbolCount(
+        info.sourceSymbolCount,
+      ),
     );
     _codec = codec;
     return codec;
+  }
+
+  void _checkSessionAge() {
+    final startedAt = _sessionStartedAt;
+    if (startedAt == null) {
+      return;
+    }
+    if (_now().difference(startedAt) > QrTransferLimits.maxSessionDuration) {
+      _fail('qr_transfer_session_expired');
+    }
+  }
+
+  Never _fail(String code) {
+    _terminalError = code;
+    throw StateError(code);
   }
 
   void _validateSession(QrTransferSessionInfo info) {
@@ -270,14 +534,221 @@ class QrTransferDecoder {
         current.sourceSymbolCount == info.sourceSymbolCount &&
         current.symbolSize == info.symbolSize &&
         current.payloadLength == info.payloadLength &&
+        current.rawLength == info.rawLength &&
         current.payloadSha256 == info.payloadSha256;
     if (!matches) {
       throw StateError('qr_transfer_session_mismatch');
     }
   }
+
+  /// 重置解码器：丢弃当前会话与已收符号，回到未建立会话状态。
+  ///
+  /// 用于校验失败或会话不匹配后让接收端重新开始，无需重建解码器。
+  void reset() {
+    _info = null;
+    _codec = null;
+    _detectedSymbols = 0;
+    _duplicateSymbols = 0;
+    _receivedSymbols = 0;
+    _innovativeSymbols = 0;
+    _adjacencyEdges = 0;
+    _submittedSeeds.clear();
+    _result = null;
+    _terminalError = null;
+    _sessionStartedAt = null;
+  }
 }
 
 /// 从已解出的 gzip 载荷还原原始字节。
-Uint8List qrTransferDecompress(Uint8List compressedPayload) {
-  return Uint8List.fromList(gzip.decode(compressedPayload));
+///
+/// The decoder is fed in chunks and the output sink rejects data as soon as
+/// it would exceed the negotiated raw-size budget. This prevents gzip bombs
+/// from accumulating an unbounded output buffer.
+Uint8List qrTransferDecompress(
+  Uint8List compressedPayload, {
+  int maxOutputBytes = QrTransferLimits.maxRawPayloadBytes,
+}) {
+  if (compressedPayload.length > QrTransferLimits.maxCompressedPayloadBytes) {
+    throw QrTransferLimitException(
+      code: 'qr_transfer_compressed_payload_too_large',
+      actual: compressedPayload.length,
+      limit: QrTransferLimits.maxCompressedPayloadBytes,
+    );
+  }
+  if (maxOutputBytes <= 0 ||
+      maxOutputBytes > QrTransferLimits.maxRawPayloadBytes) {
+    throw QrTransferLimitException(
+      code: 'qr_transfer_raw_payload_too_large',
+      actual: maxOutputBytes,
+      limit: QrTransferLimits.maxRawPayloadBytes,
+    );
+  }
+
+  final output = _BoundedByteSink(maxOutputBytes);
+  try {
+    final input = gzip.decoder.startChunkedConversion(output);
+    for (
+      var offset = 0;
+      offset < compressedPayload.length;
+      offset += QrTransferLimits.decompressionChunkBytes
+    ) {
+      final end = (offset + QrTransferLimits.decompressionChunkBytes).clamp(
+        0,
+        compressedPayload.length,
+      );
+      input.add(Uint8List.sublistView(compressedPayload, offset, end));
+    }
+    input.close();
+    return output.takeBytes();
+  } on QrTransferLimitException {
+    rethrow;
+  } on QrTransferDecompressionException {
+    rethrow;
+  } on Object {
+    throw const QrTransferDecompressionException();
+  }
+}
+
+class _BoundedByteSink implements Sink<List<int>> {
+  final int _limit;
+  final BytesBuilder _builder = BytesBuilder(copy: false);
+  int _length = 0;
+  bool _closed = false;
+
+  _BoundedByteSink(this._limit);
+
+  @override
+  void add(List<int> chunk) {
+    if (_closed) {
+      throw StateError('qr_transfer_decompression_sink_closed');
+    }
+    final nextLength = _length + chunk.length;
+    if (nextLength > _limit) {
+      throw QrTransferLimitException(
+        code: 'qr_transfer_decompression_output_too_large',
+        actual: nextLength,
+        limit: _limit,
+      );
+    }
+    _length = nextLength;
+    _builder.add(chunk);
+  }
+
+  @override
+  void close() {
+    _closed = true;
+  }
+
+  Uint8List takeBytes() => _builder.takeBytes();
+}
+
+void _qrTransferDecompressionIsolate(List<Object?> args) {
+  final sendPort = args[0] as SendPort;
+  final compressedPayload = args[1] as Uint8List;
+  final maxOutputBytes = args[2] as int;
+  try {
+    final result = qrTransferDecompress(
+      compressedPayload,
+      maxOutputBytes: maxOutputBytes,
+    );
+    sendPort.send(<Object?>['ok', result]);
+  } on QrTransferLimitException catch (error) {
+    sendPort.send(<Object?>['error', error.code]);
+  } on QrTransferDecompressionException catch (error) {
+    sendPort.send(<Object?>['error', error.code]);
+  } on Object {
+    sendPort.send(<Object?>['error', 'qr_transfer_decompression_failed']);
+  }
+}
+
+class QrTransferDecompressionJob {
+  final Isolate _isolate;
+  final ReceivePort _receivePort;
+  final Completer<Uint8List> _completer;
+  late final StreamSubscription<dynamic> _subscription;
+  bool _done = false;
+
+  QrTransferDecompressionJob._(
+    this._isolate,
+    this._receivePort,
+    this._completer,
+  );
+
+  Future<Uint8List> get future => _completer.future;
+
+  static Future<QrTransferDecompressionJob> start(
+    Uint8List compressedPayload, {
+    required int maxOutputBytes,
+  }) async {
+    final receivePort = ReceivePort();
+    try {
+      final isolate = await Isolate.spawn<List<Object?>>(
+        _qrTransferDecompressionIsolate,
+        <Object?>[receivePort.sendPort, compressedPayload, maxOutputBytes],
+      );
+      final job = QrTransferDecompressionJob._(
+        isolate,
+        receivePort,
+        Completer<Uint8List>(),
+      );
+      job._subscription = receivePort.listen(job._handleMessage);
+      return job;
+    } on Object {
+      receivePort.close();
+      rethrow;
+    }
+  }
+
+  void _handleMessage(dynamic message) {
+    if (_done) {
+      return;
+    }
+    if (message is! List || message.length < 2) {
+      _completeError(StateError('qr_transfer_decompression_failed'));
+      return;
+    }
+    final kind = message[0];
+    if (kind == 'ok' && message[1] is Uint8List) {
+      _complete(message[1] as Uint8List);
+      return;
+    }
+    if (kind == 'error' && message[1] is String) {
+      _completeError(StateError(message[1] as String));
+      return;
+    }
+    _completeError(StateError('qr_transfer_decompression_failed'));
+  }
+
+  void cancel() {
+    if (_done) {
+      return;
+    }
+    _done = true;
+    _cleanup();
+    _completer.completeError(const QrTransferDecompressionCancelled());
+  }
+
+  void _complete(Uint8List result) {
+    if (_done) {
+      return;
+    }
+    _done = true;
+    _cleanup();
+    _completer.complete(result);
+  }
+
+  void _completeError(Object error) {
+    if (_done) {
+      return;
+    }
+    _done = true;
+    _cleanup();
+    _completer.completeError(error);
+  }
+
+  void _cleanup() {
+    _isolate.kill(priority: Isolate.immediate);
+    unawaited(_subscription.cancel());
+    _receivePort.close();
+  }
 }

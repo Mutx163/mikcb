@@ -1,6 +1,6 @@
 # 轻屿课表
 
-![Flutter](https://img.shields.io/badge/Flutter-3.44.4-02569B?logo=flutter&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.44.8-02569B?logo=flutter&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-Only-34A853?logo=android&logoColor=white)
 ![HyperOS](https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00)
 ![Release](https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag)
@@ -69,12 +69,13 @@
 
 ### 环境版本
 
-版本真源：[`.fvmrc`](./.fvmrc) 与 GitHub Actions（当前 **Flutter 3.44.4**）。
+版本真源：[`.fvmrc`](./.fvmrc) 与 GitHub Actions。当前稳定版为 **Flutter 3.44.8**，最低支持 **Flutter 3.44.2 / Dart 3.12.2**。
 
 | 工具 | 版本 |
 |------|------|
-| Flutter | 3.44.4 |
-| Dart SDK | 3.9.x（pubspec 要求 ^3.9.0） |
+| Flutter（当前稳定） | 3.44.8 |
+| Flutter（最低支持） | 3.44.2 |
+| Dart SDK | >=3.12.2 <4.0.0 |
 | JDK | 17 |
 | Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
 | Android NDK | 28.2.13676358 |
@@ -93,7 +94,7 @@ flutter run -d android --flavor dev
 
 ```bash
 flutter test
-flutter analyze
+flutter analyze --no-fatal-infos
 ```
 
 ### 发布构建

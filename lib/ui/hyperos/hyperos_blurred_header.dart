@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
+import 'frosted/liquid_glass_degradation.dart';
 export 'frosted/frosted_appearance.dart';
 export 'frosted/frosted_header_background.dart'
     show FrostedHeaderBackground, HyperosFrostedSurface;
 // HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
+import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Scope for pages that overlay a frosted [FHeader] on scrollable content.
 class HyperosBlurredHeaderScope extends InheritedWidget {
@@ -163,14 +165,26 @@ abstract final class HyperosBlurredHeader {
   ///   grey wash that flattens the refractive glass.
   static Color modalBarrierColor(BuildContext context) {
     final appearance = _appearanceOf(context);
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
+    // Keep the liquid-glass light scrim only while the real refractive glass
+    // is in use; once the system degrades glass to a solid (accessibility /
+    // reduce-motion / high-contrast), the heavier gaussian scrim gives the
+    // now-opaque modal the hierarchy it needs.
+    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
       return Colors.black.withValues(alpha: liquidGlassModalBarrierAlpha);
     }
     return Colors.black.withValues(alpha: sheetBarrierAlphaOf(context));
   }
 
   /// Whether live [BackdropFilter] blur is allowed (platform + user setting).
+  ///
+  /// Disabled by [LiquidGlassDegradation] (accessibility / reduce-motion /
+  /// high-contrast) so every frosted / gaussian / translucent surface falls
+  /// back to its solid material in one place.
   static bool backdropBlurEnabled(BuildContext context) {
+    if (LiquidGlassDegradation.shouldDegrade(context)) {
+      return false;
+    }
     return liveBlurSupported && _appearanceOf(context).blurEnabled;
   }
 
@@ -299,6 +313,16 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
     final tint = useBlur
         ? HyperosBlurredHeader.tintColor(context, withBlur: true)
         : atRestColor;
+
+    if (useBlur &&
+        FrostedAppearanceScope.of(context).glassMode ==
+            FrostedGlassMode.liquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.header,
+        instantUnderlay: true,
+        child: child,
+      );
+    }
 
     return HyperosFrostedHeaderShell(
       blurEnabled: useBlur,

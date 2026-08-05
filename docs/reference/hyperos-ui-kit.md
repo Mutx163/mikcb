@@ -22,7 +22,6 @@ lib/ui/hyperos/
   hyperos_switch.dart    # Miuix 规格开关 49×28
   hyperos_page.dart      # HyperosSubpage / HyperosListView / HyperosSheet
   hyperos_navigation.dart # HyperosPageRoute / HyperosNavigation 子页转场
-  hyperos_layout_tuning.dart # 调试面板可调布局（默认 = Miuix）
 ```
 
 兼容层：`lib/widgets/settings_section_widgets.dart` **已删除**（2026-07）；请直接使用 `lib/ui/hyperos/hyperos.dart`。
@@ -33,7 +32,7 @@ lib/ui/hyperos/
 
 ### 2.1 Tokens（`HyperosTokens` / `HyperosIconColors`）
 
-> **运行时以 `HyperosTokens` + `HyperosMiuixSpec` settings 覆盖为准。**  
+> **运行时以固定的 `HyperosTokens` + `HyperosMiuixSpec` settings 值为准。**
 > 下表为 HyperOS 系统设置实测覆盖后的默认值；原始 Miuix 通用值见 Spec。  
 > **颜色请用 `HyperosColors.*(context)`**，不要直接画 `HyperosTokens` 颜色常量（后者为浅色 light-only）。
 
@@ -414,4 +413,3 @@ Miuix `miuix-ui` 基础件：`Switch`、`Slider`、`TabRow`、`Checkbox` 等已�
 - **不能**在 Flutter 里直接依赖 Miuix。
 - **可以**把它当作 HyperOS 的「开源设计规范 + 参考实现」，尤其 **颜色、Switch/Slider 尺寸、Preference 组件清单**。
 - mikcb 当前 tokens 与 Miuix **核心 accent / 卡片 / 按下色已基本同系**；下一步实现 Switch/Slider 时以 Miuix 数值为准，成功率最高。
-

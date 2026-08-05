@@ -1,21 +1,20 @@
 import 'dart:async' show unawaited;
 import 'dart:math' as math;
-import 'dart:ui' as ui show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
-import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'home_page_region_blur.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/home_page_background.dart';
 import 'course_card.dart';
-import 'course_card_liquid_glass_host.dart';
+import 'course_grid_surface_host.dart';
 
 /// Renders the home week timetable surface for settings previews.
 class TimetableWeekPreview extends StatefulWidget {
@@ -42,59 +41,103 @@ class TimetableWeekPreview extends StatefulWidget {
   State<TimetableWeekPreview> createState() => _TimetableWeekPreviewState();
 }
 
-/// Samples the wallpaper top-band luminance once per path, shared by the
-/// glass band's scrim polarity **and** the chrome ink auto-inversion — the
-/// same pair the home page derives from its own boot-time sample.
+/// Samples the wallpaper band luminances once per rendered crop, shared by the
+/// glass band's scrim polarity **and** the chrome ink auto-inversion — the same
+/// pairs the home page derives from its own boot-time sample.
 class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
   double? _topLuminance;
-  String? _sampledPath;
+  double? _weekdayLuminance;
+  double? _bodyLuminance;
+  String? _sampledKey;
 
   @override
   void initState() {
     super.initState();
-    _sampleLuminance();
   }
 
-  @override
-  void didUpdateWidget(covariant TimetableWeekPreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _sampleLuminance();
-  }
-
-  /// Home drives chrome ink and scrim polarity from a wallpaper luminance
-  /// sample; without one the preview falls back to theme brightness and can
+  /// Home drives chrome ink and scrim polarity from wallpaper luminance
+  /// samples; without them the preview falls back to theme brightness and can
   /// paint the opposite ink or wash — visibly unlike the home page.
-  void _sampleLuminance() {
+  void _sampleLuminance({Size? viewportSize}) {
     final path = resolveHomePageBackdropImagePath(widget.settings);
-    if (path == _sampledPath) {
-      return;
-    }
-    _sampledPath = path;
     if (path == null || path.isEmpty) {
+      _sampledKey = null;
       _topLuminance = null;
+      _weekdayLuminance = null;
+      _bodyLuminance = null;
       return;
     }
+    final viewport = _validSamplingViewport(viewportSize);
+    final viewportKey = viewport == null
+        ? 'full-image'
+        : '${viewport.width}x${viewport.height}';
+    final key =
+        '$path|$viewportKey|'
+        '${widget.settings.homePageWallpaperAlignX}|'
+        '${widget.settings.homePageWallpaperAlignY}';
+    if (key == _sampledKey) {
+      return;
+    }
+    _sampledKey = key;
     unawaited(
-      sampleHomePageWallpaperTopLuminance(path).then((value) {
-        if (!mounted || _sampledPath != path) {
+      sampleHomePageWallpaperLuminanceBands(
+        path,
+        viewportSize: viewport,
+        alignX: widget.settings.homePageWallpaperAlignX,
+        alignY: widget.settings.homePageWallpaperAlignY,
+      ).then((value) {
+        if (!mounted || _sampledKey != key) {
           return;
         }
-        setState(() => _topLuminance = value);
+        setState(() {
+          _topLuminance = value?.top;
+          _weekdayLuminance = value?.weekday;
+          _bodyLuminance = value?.body;
+        });
       }),
     );
   }
 
+  Size? _validSamplingViewport(Size? viewportSize) {
+    if (viewportSize != null &&
+        viewportSize.width.isFinite &&
+        viewportSize.height.isFinite &&
+        viewportSize.width > 0 &&
+        viewportSize.height > 0) {
+      return viewportSize;
+    }
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isNotEmpty) {
+      final view = views.first;
+      final size = view.physicalSize / view.devicePixelRatio;
+      if (size.width.isFinite &&
+          size.height.isFinite &&
+          size.width > 0 &&
+          size.height > 0) {
+        return size;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return _TimetableWeekPreviewBody(
-      provider: widget.provider,
-      settings: widget.settings,
-      week: widget.week,
-      maxVisibleSections: widget.maxVisibleSections,
-      includeAppHeader: widget.includeAppHeader,
-      applyHomePageBackdrop: widget.applyHomePageBackdrop,
-      heightBudget: widget.heightBudget,
-      wallpaperTopLuminance: _topLuminance,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _sampleLuminance(viewportSize: constraints.biggest);
+        return _TimetableWeekPreviewBody(
+          provider: widget.provider,
+          settings: widget.settings,
+          week: widget.week,
+          maxVisibleSections: widget.maxVisibleSections,
+          includeAppHeader: widget.includeAppHeader,
+          applyHomePageBackdrop: widget.applyHomePageBackdrop,
+          heightBudget: widget.heightBudget,
+          wallpaperTopLuminance: _topLuminance,
+          wallpaperWeekdayLuminance: _weekdayLuminance,
+          wallpaperBodyLuminance: _bodyLuminance,
+        );
+      },
     );
   }
 }
@@ -109,6 +152,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.applyHomePageBackdrop,
     required this.heightBudget,
     required this.wallpaperTopLuminance,
+    required this.wallpaperWeekdayLuminance,
+    required this.wallpaperBodyLuminance,
   });
 
   final TimetableProvider provider;
@@ -123,18 +168,24 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   /// (null while sampling / no wallpaper).
   final double? wallpaperTopLuminance;
 
+  /// Weekday-band luminance (the band behind the weekday/date chrome bar).
+  final double? wallpaperWeekdayLuminance;
+
+  /// Body-band luminance (the band behind the time column / course cards).
+  final double? wallpaperBodyLuminance;
+
   /// Chrome glass band for the preview, mirroring the home page's continuous
   /// band but using the preview's own scaled-down header heights.
   ///
   /// [HomePageContinuousChromeFrostedOverlay] cannot be reused directly — it
   /// derives its geometry from the real status-bar inset and the home-page
-  /// header constants, neither of which holds inside a preview box. The
-  /// material is a pre-blurred stand-in rather than [HomePageChromeGlassFill]:
-  /// see [_PreviewChromeGlassBand].
-  List<Widget>? _buildChromeGlassBand({
-    required double appHeaderHeight,
-    required double surfaceHeight,
-  }) {
+  /// header constants, neither of which holds inside a preview box. So the band
+  /// is positioned here and painted with the same material the home page uses
+  /// ([HomePageChromeGlassFill]): a real liquid-glass surface that captures the
+  /// wallpaper behind it and responds to every glass tuning knob (light
+  /// intensity, thickness, visibility, …), with the specular fringe the old
+  /// pre-blurred stand-in could not render.
+  List<Widget>? _buildChromeGlassBand({required double appHeaderHeight}) {
     final hasHeaderBand =
         settings.homePageHeaderBlurEnabled && appHeaderHeight > 0;
     final hasWeekdayBand = settings.homePageWeekdayBarBlurEnabled;
@@ -158,6 +209,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       return null;
     }
 
+    // Overdraw the glass above the band's top so the liquid-glass specular
+    // fringe on that edge lands outside the ClipRect and is clipped — same
+    // trick as HomePageContinuousChromeFrostedOverlay — otherwise the band's
+    // interior top edge reads as a 1px hairline seam.
     return [
       Positioned(
         top: top,
@@ -165,11 +220,29 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         right: 0,
         height: height,
         child: IgnorePointer(
-          child: _PreviewChromeGlassBand(
-            settings: settings,
-            bandTop: top,
-            surfaceHeight: surfaceHeight,
-            wallpaperTopLuminance: wallpaperTopLuminance,
+          child: ClipRect(
+            clipBehavior: Clip.hardEdge,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned(
+                  top: -homePageChromeGlassTopEdgeOverdraw,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: HomePageChromeGlassFill(
+                    wallpaperTopLuminance: wallpaperTopLuminance,
+                    // The band is a small interior rectangle inside this
+                    // preview, unlike the home page's screen-edge band: its
+                    // own-bounds backdrop capture would clamp refraction
+                    // displacement against the band edges and streak them
+                    // into a "picture frame". Sample the grouped full-size
+                    // wallpaper capture instead (see the BackdropGroup below).
+                    useAncestorBackdropGroup: true,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -190,8 +263,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final darkFallback = colorScheme.surface;
     final hasBackdrop =
-        applyHomePageBackdrop &&
-        hasHomePageBackdropImage(settings, isDark: isDark);
+        applyHomePageBackdrop && hasHomePageBackdropImage(settings);
     final backgroundColor = isDark
         ? colorScheme.surface
         : parseHexColorOrFallback(
@@ -272,7 +344,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                     (homePageRegionShowsBackdrop(
                           settings,
                           HomePageBackgroundScope.weekdayBar,
-                          isDark: isDark,
                         ) ||
                         settings.homePageWeekdayBarBlurEnabled),
               ),
@@ -280,95 +351,101 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
 
             final surface = SizedBox(
               height: totalHeight,
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  if (hasBackdrop)
-                    homePageBackdropLayer(settings: settings, isDark: isDark),
-                  if (hasBackdrop)
-                    ...?_buildChromeGlassBand(
-                      appHeaderHeight: appHeaderHeight,
-                      surfaceHeight: totalHeight,
-                    ),
-                  Column(
-                    children: [
-                      if (includeAppHeader)
-                        _buildAppHeader(
-                          context: context,
-                          isDark: isDark,
-                          darkFallback: darkFallback,
-                          hasBackdrop: hasBackdrop,
-                        ),
-                      weekdayHeader,
-                      // Home reserves the same gap under the weekday glass.
-                      if (chromeGridClearance > 0)
-                        SizedBox(height: chromeGridClearance),
-                      SizedBox(
-                        height: bodyHeight,
-                        // Same glass hosting as the home grid: one shared
-                        // backdrop capture for the whole preview instead of one
-                        // per card. Matters doubly here because the settings
-                        // header's CFH pass rasterises this subtree offscreen.
-                        child: CourseGridGlassHost(
-                          settings: settings,
-                          child: IgnorePointer(child: grid),
-                        ),
+              child: BackdropGroup(
+                child: Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    if (hasBackdrop) homePageBackdropLayer(settings: settings),
+                    // First filter inside the group: caches the full-size
+                    // wallpaper backdrop so the chrome band's glass below can
+                    // sample beyond its own narrow bounds without clamping
+                    // against the band edges into "picture frame" streaks.
+                    if (hasBackdrop)
+                      const Positioned.fill(child: UndimmedBackdropCapture()),
+                    if (hasBackdrop)
+                      ...?_buildChromeGlassBand(
+                        appHeaderHeight: appHeaderHeight,
                       ),
-                    ],
-                  ),
-                  if (showsFloatingButton &&
-                      _canReturnToCurrentWeek(settings, week))
-                    Positioned(
-                      right: 20,
-                      bottom: 12,
-                      child: IgnorePointer(
-                        child: Material(
-                          color: colorScheme.surfaceContainerHigh.withValues(
-                            alpha: settings
-                                .timetableFloatingBackToCurrentWeekButtonOpacity,
+                    Column(
+                      children: [
+                        if (includeAppHeader)
+                          _buildAppHeader(
+                            context: context,
+                            isDark: isDark,
+                            darkFallback: darkFallback,
+                            hasBackdrop: hasBackdrop,
                           ),
-                          elevation: 2,
-                          shadowColor: Colors.black.withValues(
-                            alpha: isDark ? 0.12 : 0.06,
+                        weekdayHeader,
+                        // Home reserves the same gap under the weekday glass.
+                        if (chromeGridClearance > 0)
+                          SizedBox(height: chromeGridClearance),
+                        SizedBox(
+                          height: bodyHeight,
+                          // Same surface hosting as the home grid: one shared
+                          // backdrop capture for the whole preview instead of one
+                          // per card. Matters doubly here because the settings
+                          // header's CFH pass rasterises this subtree offscreen.
+                          child: CourseGridSurfaceHost(
+                            settings: settings,
+                            child: IgnorePointer(child: grid),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                            side: BorderSide(
-                              color: context.theme.colors.border,
-                              width: 1,
+                        ),
+                      ],
+                    ),
+                    if (showsFloatingButton &&
+                        _canReturnToCurrentWeek(settings, week))
+                      Positioned(
+                        right: 20,
+                        bottom: 12,
+                        child: IgnorePointer(
+                          child: Material(
+                            color: colorScheme.surfaceContainerHigh.withValues(
+                              alpha: settings
+                                  .timetableFloatingBackToCurrentWeekButtonOpacity,
                             ),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
+                            elevation: 2,
+                            shadowColor: Colors.black.withValues(
+                              alpha: isDark ? 0.12 : 0.06,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.my_location_rounded,
-                                  size: 15,
-                                  color: colorScheme.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.backToCurrentWeekAction,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.onSurface,
-                                    height: 1,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(
+                                color: context.theme.colors.border,
+                                width: 1,
+                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.my_location_rounded,
+                                    size: 15,
+                                    color: colorScheme.primary,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    l10n.backToCurrentWeekAction,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.onSurface,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             );
 
@@ -391,7 +468,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final headerShowsBackdrop = homePageRegionShowsBackdrop(
       settings,
       HomePageBackgroundScope.header,
-      isDark: isDark,
     );
     final headerUsesFrostedChrome =
         hasBackdrop &&
@@ -533,12 +609,18 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         (homePageRegionShowsBackdrop(
               settings,
               HomePageBackgroundScope.weekdayBar,
-              isDark: isDark,
             ) ||
             settings.homePageWeekdayBarBlurEnabled);
+    // Judge ink from the band actually behind the weekday bar, not the
+    // status/title strip above it. With the weekday glass band on, follow the
+    // band's scrim polarity (derived from the top sample) so ink and wash
+    // never fight.
+    final weekdayLuminance = settings.homePageWeekdayBarBlurEnabled
+        ? wallpaperTopLuminance
+        : wallpaperWeekdayLuminance ?? wallpaperTopLuminance;
     // Same rules as the home weekday chrome: default black/white ink flips
-    // with the wallpaper luminance, user-custom hex is kept, accent is never
-    // auto-inverted.
+    // with the wallpaper luminance; unreadable custom ink and accents also
+    // fall back to the automatic black/white foreground.
     final weekLabelColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.weekdayBarFontColorDark
@@ -548,7 +630,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
           : TimetableSettings.defaultWeekdayBarFontColorLight,
       themeFallback: colorScheme.onSurface,
       hasBackdrop: weekdayChromeOverWallpaper,
-      wallpaperLuminance: wallpaperTopLuminance,
+      wallpaperLuminance: weekdayLuminance,
     );
     final weekLabelMutedColor = homePageOverWallpaperMutedInk(weekLabelColor);
 
@@ -601,13 +683,15 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                       : TimetableSettings.defaultWeekdayBarFontColorLight,
                   themeFallback: colorScheme.onSurface,
                   hasBackdrop: weekdayChromeOverWallpaper,
-                  wallpaperLuminance: wallpaperTopLuminance,
+                  wallpaperLuminance: weekdayLuminance,
                 );
                 final accentColor = homePageOverWallpaperAccent(
                   configuredHex: isDark
                       ? settings.weekdayBarAccentColorDark
                       : settings.weekdayBarAccentColorLight,
                   themeFallback: colorScheme.primary,
+                  hasBackdrop: weekdayChromeOverWallpaper,
+                  wallpaperLuminance: weekdayLuminance,
                 );
                 final labelColor = isToday ? accentColor : weekdayColor;
                 final subLabelColor = isToday
@@ -841,7 +925,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // No per-column glass host here: this method builds one weekday column, so
     // hosting at this level meant seven separate layers — and therefore seven
     // backdrop captures — for one preview. The whole grid is hosted once by
-    // CourseGridGlassHost instead, matching the home page.
+    // CourseGridSurfaceHost instead, matching the home page.
     return Container(
       height: visibleSectionCount * sectionHeight,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
@@ -859,13 +943,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Same auto-contrast as the home time axis: judged from whether the
     // timetable region actually shows the wallpaper, never replacing a
-    // user-custom hex.
+    // user-custom hex. The time column spans the body band, not the
+    // status/title strip, so judge from the card-region sample.
     final timeAxisOverWallpaper =
         hasBackdrop &&
         homePageRegionShowsBackdrop(
           settings,
           HomePageBackgroundScope.timetable,
-          isDark: isDark,
         );
     final timeAxisColor = homePageOverWallpaperInk(
       configuredHex: isDark
@@ -876,7 +960,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
           : TimetableSettings.defaultTimeAxisFontColorLight,
       themeFallback: isDark ? Colors.white : Colors.grey.shade800,
       hasBackdrop: timeAxisOverWallpaper,
-      wallpaperLuminance: wallpaperTopLuminance,
+      wallpaperLuminance: wallpaperBodyLuminance ?? wallpaperTopLuminance,
     );
     final timeAxisMutedColor = homePageOverWallpaperMutedInk(timeAxisColor);
     final compactTextStyle = TextStyle(
@@ -1232,89 +1316,4 @@ class _DayCourseDisplayItem {
   final bool isCurrentWeekCourse;
   final bool isConflicting;
   final double opacity;
-}
-
-/// Pre-blurred stand-in for the home chrome glass band inside the preview.
-///
-/// The real band material ([HomePageChromeGlassFill]) is a live
-/// [BackdropFilter] / liquid-glass surface. Inside the preview it becomes a
-/// small *interior* rectangle: the filter can only sample the backdrop within
-/// its own bounds, so edge clamping streaks all four edges into a beveled
-/// "picture frame" (the home page never shows this because its band edges sit
-/// on the physical screen edges, with the top edge overdrawn out of the clip).
-/// Following the day-view summary card's approach, blur the preview's own
-/// wallpaper as one whole image (full sample range, no bounds clamp), crop the
-/// band strip, and paint the band's equivalent wash on top.
-class _PreviewChromeGlassBand extends StatelessWidget {
-  const _PreviewChromeGlassBand({
-    required this.settings,
-    required this.bandTop,
-    required this.surfaceHeight,
-    required this.wallpaperTopLuminance,
-  });
-
-  final TimetableSettings settings;
-
-  /// Band offset from the top of the preview surface.
-  final double bandTop;
-
-  /// Full preview surface height, so the blurred copy overlays the backdrop
-  /// layer underneath with identical [BoxFit.cover] geometry.
-  final double surfaceHeight;
-
-  /// Wallpaper sample driving the liquid scrim polarity, same as home.
-  final double? wallpaperTopLuminance;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final appearance = FrostedAppearanceScope.of(context);
-    // Same sigma the home pre-blur bitmap uses for this band: gaussian chrome
-    // matches the band's BackdropFilter sigma; liquid glass approximates the
-    // shader's softer blur (see homePreblurSigma in timetable_screen.dart).
-    final sigma = appearance.glassMode == FrostedGlassMode.liquidGlass
-        ? ((appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults).blur *
-                  0.45)
-              .clamp(2.0, 8.0)
-              .toDouble()
-        : HyperosBlurredHeader.blurSigmaOf(context);
-    final image = useBlur && sigma > 0
-        ? homePageBackdropImageWidget(settings: settings, isDark: isDark)
-        : null;
-
-    return ClipRect(
-      clipBehavior: Clip.hardEdge,
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          if (image != null)
-            Positioned(
-              top: -bandTop,
-              left: 0,
-              right: 0,
-              height: surfaceHeight,
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(
-                  sigmaX: sigma,
-                  sigmaY: sigma,
-                  tileMode: TileMode.clamp,
-                ),
-                child: image,
-              ),
-            ),
-          // Blur off: wash only, over the sharp wallpaper — same as the real
-          // material's tint-only fallback.
-          Positioned.fill(
-            child: ColoredBox(
-              color: HomePageChromeGlassFill.standInWashColor(
-                context,
-                wallpaperTopLuminance: wallpaperTopLuminance,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

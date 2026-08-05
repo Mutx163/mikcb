@@ -253,10 +253,8 @@ class _CoupleTimetableSettingsScreenState
   }
 
   Future<void> _connectCoupleWebdav() async {
-    final result = await showModalBottomSheet<CoupleWebdavConnectResult>(
+    final result = await showHyperosSheet<CoupleWebdavConnectResult>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => CoupleWebdavConnectSheet(
         service: _coupleWebdavService,
         config: _coupleWebdavConfig,

@@ -16,7 +16,7 @@
   "fontSectionSubtitle": "Inter is built in; other options use fonts already on your phone",
   "fontSectionFootnote": "Brand fonts aren't bundled; they work only if already on your system. On Xiaomi, usually only MiSans is obvious. No change means auto fallback—you usually don't need to install fonts",
   "fontModeLabel": "Font",
-  "fontModeSystem": "App Default (Inter)",
+  "fontModeSystem": "App Default",
   "fontModeSansSerif": "System Sans",
   "fontModeMiSans": "MiSans",
   "fontModeHarmonyOS": "HarmonyOS Sans",
@@ -623,6 +623,36 @@
   },
   "qrTransferReceiveComplete": "Data received, importing…",
   "qrTransferSessionMismatch": "Detected a different transfer; make sure you are pointing at one stream only",
+  "qrTransferChecksumFailed": "Transfer verification failed. Please restart.",
+  "qrTransferRawLengthMismatch": "Received data length verification failed. Please restart.",
+  "qrTransferDecompressionFailed": "Could not decompress the received data. Please restart.",
+  "qrTransferPlaintextWarning": "QR transfer is plaintext. Nearby cameras may read it. Review the source before importing; nothing is overwritten without your confirmation.",
+  "qrTransferResourceLimit": "Received data exceeded the QR transfer resource limit. Restart and use a smaller backup.",
+  "qrTransferSessionExpired": "QR transfer timed out. Restart and keep the camera pointed at one screen.",
+  "qrTransferFullBackupWarning": "This full backup will replace the data on this device after confirmation.",
+  "qrTransferImportFullBackup": "Import Full Backup",
+  "qrTransferDecodeFailed": "Could not decode the QR transfer. Please restart.",
+  "qrTransferRestart": "Restart",
+  "qrTransferSampleFps": "Sample FPS",
+  "qrTransferDecodeFps": "Decode FPS",
+  "qrTransferReceiveSpeed": "Receive Speed",
+  "qrTransferElapsed": "Elapsed",
+  "qrTransferNewFrames": "New Frames",
+  "qrTransferDuplicateFrames": "Duplicate Frames",
+  "qrTransferBlockSize": "Block Size",
+  "qrTransferBlockCount": "Block Count",
+  "qrTransferFileData": "File Data",
+  "qrTransferFileDataDetail": "Original {rawSize} · Compressed {compressedSize}",
+  "@qrTransferFileDataDetail": {
+    "placeholders": {
+      "rawSize": {
+        "type": "String"
+      },
+      "compressedSize": {
+        "type": "String"
+      }
+    }
+  },
   "fullExportTitle": "Export",
   "fullExportSubtitle": "Export the current timetable, or export all timetables, time schemes, and the current selection",
   "exportCurrentTimetable": "Export Current Timetable",
@@ -1729,8 +1759,15 @@
   "homePageTimeColumnBlurSubtitle": "Frost the left section/time column over the background image",
   "homePageRegionBlurSectionSubtitle": "Works with a background image. Blur strength follows sheet frosted-glass settings",
   "homePagePickImageAction": "Choose image",
+  "homePageSwitchImageAction": "Switch photo",
   "homePageClearImageAction": "Clear image",
   "homePageImageNotSelected": "Not selected",
+  "wallpaperPositionPickerTitle": "Adjust wallpaper position",
+  "wallpaperPositionPickerResetTooltip": "Reset to center",
+  "wallpaperPositionPickerDragHint": "Drag the wallpaper to adjust its position",
+  "wallpaperPositionPickerSwitchWallpaper": "Change wallpaper",
+  "wallpaperPositionPickerDone": "Done",
+  "wallpaperPositionPickerExit": "Exit",
   "appearanceTextColorsSectionTitle": "Text colors",
   "appearanceTextColorsSectionSubtitle": "Customize course card, weekday bar, and time axis text colors",
   "defaultTimetablePreviewName": "Default timetable",
@@ -2661,15 +2698,6 @@
   "homeMenuCoffeeTitle": "Buy me a coffee",
   "homeMenuFeedbackTitle": "Feedback",
   "switchTimetableTitle": "Switch timetable",
-  "switchTimetableSubtitleEmpty": "Tap a timetable below to switch the current view immediately",
-  "switchTimetableSubtitleCurrent": "Current: {name}. Tap a timetable below to switch immediately",
-  "@switchTimetableSubtitleCurrent": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "todayTimetableTitle": "Today's Timetable",
   "dayTimetableTitle": "Day Timeline",
   "backToWeekViewAction": "Back to Week View",
@@ -5544,7 +5572,6 @@
   "courseCardSurfaceStyleSubtitle": "Choose the visual style for course cards",
   "courseCardSurfaceStyleSolid": "Solid",
   "courseCardSurfaceStyleTranslucent": "Translucent",
-  "courseCardSurfaceStyleLiquidGlass": "Liquid Glass",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
   "courseCardSectionColor": "Color",
   "liveSelfCheckTitle": "Self-Check",
@@ -5582,10 +5609,10 @@
   "aboutCommunitySectionTitle": "Community",
   "selectStartTimeTitle": "Select Start Time",
   "selectEndTimeTitle": "Select End Time",
-  "weekdayInkContrastTitle": "Text Contrast Enhancement",
-  "weekdayInkContrastBodyDark": "Enhance course text contrast in dark mode",
-  "weekdayInkContrastBodyLight": "Enhance course text contrast in light mode",
-  "keepCurrentColorAction": "Keep Current Color",
+  "weekdayInkContrastTitle": "Low Text Contrast",
+  "weekdayInkContrastBodyDark": "Your weekday bar text color has too little contrast against the dark wallpaper, so it is temporarily using automatic white to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".",
+  "weekdayInkContrastBodyLight": "Your weekday bar text color has too little contrast against the light wallpaper, so it is temporarily using automatic black to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".",
+  "gotItAction": "Got it",
   "settingsTimetableSectionTitle": "Timetable",
   "liveIslandLabelEntryEnabled": "Enabled",
   "liveIslandLabelEntryDisabled": "Disabled",

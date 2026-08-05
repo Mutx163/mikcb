@@ -58,7 +58,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fontModeLabel => 'フォント選択';
 
   @override
-  String get fontModeSystem => 'アプリ標準（Inter）';
+  String get fontModeSystem => 'アプリ標準';
 
   @override
   String get fontModeSansSerif => 'システムサンセリフ';
@@ -1185,6 +1185,71 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get qrTransferSessionMismatch => '別の転送内容を検出しました。1つの画面だけに正対してください';
+
+  @override
+  String get qrTransferChecksumFailed => '転送の検証に失敗しました。最初からやり直してください';
+
+  @override
+  String get qrTransferRawLengthMismatch => '受信データの長さを検証できませんでした。最初からやり直してください';
+
+  @override
+  String get qrTransferDecompressionFailed => '受信データを展開できませんでした。最初からやり直してください';
+
+  @override
+  String get qrTransferPlaintextWarning =>
+      'QR転送は平文です。近くのカメラで読み取られる可能性があります。送信元を確認してから読み込んでください。確認なしに上書きはしません。';
+
+  @override
+  String get qrTransferResourceLimit =>
+      '受信データがQR転送のリソース上限を超えました。最初からやり直し、小さいバックアップを使ってください。';
+
+  @override
+  String get qrTransferSessionExpired =>
+      'QR転送がタイムアウトしました。最初からやり直し、1台の画面だけにカメラを向けてください。';
+
+  @override
+  String get qrTransferFullBackupWarning => '確認すると、この完全バックアップで端末のデータを置き換えます。';
+
+  @override
+  String get qrTransferImportFullBackup => '完全バックアップを読み込む';
+
+  @override
+  String get qrTransferDecodeFailed => 'QR転送をデコードできませんでした。最初からやり直してください';
+
+  @override
+  String get qrTransferRestart => '最初からやり直す';
+
+  @override
+  String get qrTransferSampleFps => 'サンプルFPS';
+
+  @override
+  String get qrTransferDecodeFps => 'デコードFPS';
+
+  @override
+  String get qrTransferReceiveSpeed => '受信速度';
+
+  @override
+  String get qrTransferElapsed => '経過時間';
+
+  @override
+  String get qrTransferNewFrames => '新規フレーム';
+
+  @override
+  String get qrTransferDuplicateFrames => '重複フレーム';
+
+  @override
+  String get qrTransferBlockSize => 'ブロックサイズ';
+
+  @override
+  String get qrTransferBlockCount => 'ブロック数';
+
+  @override
+  String get qrTransferFileData => 'ファイルデータ';
+
+  @override
+  String qrTransferFileDataDetail(String rawSize, String compressedSize) {
+    return '元 $rawSize · 圧縮 $compressedSize';
+  }
 
   @override
   String get fullExportTitle => '完全エクスポート';
@@ -3077,10 +3142,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePagePickImageAction => '选择图片';
 
   @override
+  String get homePageSwitchImageAction => '切换照片';
+
+  @override
   String get homePageClearImageAction => '清除图片';
 
   @override
   String get homePageImageNotSelected => '未选择';
+
+  @override
+  String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => '重置居中';
+
+  @override
+  String get wallpaperPositionPickerDragHint => '拖动壁纸调整位置';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => '换壁纸';
+
+  @override
+  String get wallpaperPositionPickerDone => '完成';
+
+  @override
+  String get wallpaperPositionPickerExit => '退出';
 
   @override
   String get appearanceTextColorsSectionTitle => '文字颜色';
@@ -4812,14 +4898,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get switchTimetableTitle => '時間割切替';
-
-  @override
-  String get switchTimetableSubtitleEmpty => '下の時間割をタップして現在のビューを即時切替';
-
-  @override
-  String switchTimetableSubtitleCurrent(String name) {
-    return '現在：$name，下の時間割をタップして即時切替';
-  }
 
   @override
   String get todayTimetableTitle => '今日の時間割';
@@ -9163,9 +9241,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleTranslucent => '半透明';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => 'リキッドガラス';
-
-  @override
   String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
 
   @override
@@ -9277,16 +9352,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selectEndTimeTitle => '終了時間を選択';
 
   @override
-  String get weekdayInkContrastTitle => 'テキストコントラスト強化';
+  String get weekdayInkContrastTitle => '文字のコントラスト不足';
 
   @override
-  String get weekdayInkContrastBodyDark => 'ダークモードでコーステキストのコントラストを強化';
+  String get weekdayInkContrastBodyDark =>
+      '曜日バーの文字色は濃い壁紙とのコントラストが不足しているため、一時的に自動の白に切り替えています。可読性を保つための措置で、「時間割ページ → 文字色」で色を変更またはリセットできます。';
 
   @override
-  String get weekdayInkContrastBodyLight => 'ライトモードでコーステキストのコントラストを強化';
+  String get weekdayInkContrastBodyLight =>
+      '曜日バーの文字色は明るい壁紙とのコントラストが不足しているため、一時的に自動の黒に切り替えています。可読性を保つための措置で、「時間割ページ → 文字色」で色を変更またはリセットできます。';
 
   @override
-  String get keepCurrentColorAction => '現在の色を保持';
+  String get gotItAction => 'わかりました';
 
   @override
   String get settingsTimetableSectionTitle => '時間割';

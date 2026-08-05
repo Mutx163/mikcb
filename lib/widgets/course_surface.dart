@@ -2,21 +2,19 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
-import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
-import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
-import 'course_card_liquid_glass_host.dart';
 import 'preblurred_wallpaper_glass.dart';
 
-/// Paints one of the four [CourseCardSurfaceStyle] looks behind [child].
+/// Paints one of the three supported [CourseCardSurfaceStyle] looks behind
+/// [child].
 ///
 /// Single source of truth for course surface material, shared by the week grid
 /// ([CourseCard]) and the day view agenda cards, so the two cannot drift.
 ///
-/// **Never wrap this widget in [Opacity].** [BackdropFilter] and FakeGlass
-/// cannot sample behind an opacity layer, so frost collapses to fully
-/// transparent. Dim via [opacityScale], which scales fill and tint alphas.
+/// **Never wrap this widget in [Opacity].** [BackdropFilter] cannot sample
+/// behind an opacity layer, so frost collapses to fully transparent. Dim via
+/// [opacityScale], which scales fill alphas.
 class CourseSurface extends StatelessWidget {
   const CourseSurface({
     required this.style,
@@ -33,7 +31,7 @@ class CourseSurface extends StatelessWidget {
 
   final CourseCardSurfaceStyle style;
 
-  /// Course hue. Drives the solid gradient, translucent fill and glass wash.
+  /// Course hue. Drives the solid gradient and translucent/gaussian fill.
   final Color color;
 
   final double borderRadius;
@@ -59,9 +57,9 @@ class CourseSurface extends StatelessWidget {
 
   /// Shadow painted beneath the surface for **all** styles.
   ///
-  /// Use this when a card should keep floating off the page even as glass; the
-  /// blurred styles ignore [boxShadow] so that opaque-only behaviour stays
-  /// unchanged for existing callers.
+  /// Use this when a card should keep floating off the page; the gaussian
+  /// style ignores [boxShadow] so that opaque-only behaviour stays unchanged
+  /// for existing callers.
   final List<BoxShadow>? outerShadow;
 
   /// Denser than a plain scrim so labels stay legible over busy wallpapers.
@@ -85,14 +83,13 @@ class CourseSurface extends StatelessWidget {
       CourseCardSurfaceStyle.solid => _buildSolid(radius),
       CourseCardSurfaceStyle.translucent => _buildTranslucent(radius),
       CourseCardSurfaceStyle.gaussian => _buildGaussian(context, radius),
-      CourseCardSurfaceStyle.liquidGlass => _buildLiquidGlass(context, radius),
     };
 
     final outer = outerShadow;
     if (outer == null || outer.isEmpty) {
       return surface;
     }
-    // Shadow-only decoration (no fill), so it reads through glass styles too.
+    // Shadow-only decoration (no fill), so it also works with gaussian cards.
     return DecoratedBox(
       decoration: BoxDecoration(borderRadius: radius, boxShadow: outer),
       child: surface,
@@ -136,9 +133,9 @@ class CourseSurface extends StatelessWidget {
   Widget _buildGaussian(BuildContext context, BorderRadius radius) {
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
     final tint = color.withValues(alpha: _scaledAlpha(frostedFillAlpha));
-    // Prefer the pre-blurred wallpaper fill when available, same as liquid
-    // glass: frost stays identical while pages slide (no live BackdropFilter)
-    // and it keeps painting inside an ancestor Opacity saveLayer — the
+    // Prefer the pre-blurred wallpaper fill when available: frost stays
+    // identical while pages slide (no live BackdropFilter) and it keeps
+    // painting inside an ancestor Opacity saveLayer — the
     // day-view open/close ramp fades the whole panel, where a real
     // BackdropFilter samples an empty buffer and the card collapses to its
     // bare tint until the ramp ends. The bitmap is built with the same sheet
@@ -153,7 +150,7 @@ class CourseSurface extends StatelessWidget {
         fit: StackFit.passthrough,
         children: [
           if (preblur != null)
-            // Own layer for the pager-driven repaints (see _buildLiquidGlass).
+            // Own layer for pager-driven repaints.
             const Positioned.fill(
               child: RepaintBoundary(child: PreblurredWallpaperAlignedFill()),
             )
@@ -171,127 +168,6 @@ class CourseSurface extends StatelessWidget {
               ),
             ),
           Positioned.fill(child: ColoredBox(color: tint)),
-          if (border != null) _borderOverlay(radius, border!),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLiquidGlass(BuildContext context, BorderRadius radius) {
-    final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final appearance = FrostedAppearanceScope.of(context);
-    final tuning = appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults;
-    // Prefer the pre-blurred wallpaper fill when available: frost stays
-    // identical while pages slide (no live BackdropFilter) and, because it is a
-    // plain bitmap sample, it works even under an isolating ancestor layer.
-    final preblur = PreblurredWallpaperScope.maybeOf(context);
-    final glassTintAlpha = _scaledAlpha(
-      (tuning.tintAlpha * 0.70).clamp(0.14, 0.42),
-    );
-    final washAlpha = _scaledAlpha(frostedFillAlpha);
-    final highlightAlpha = _scaledAlpha(0.55);
-
-    // Platform blur off → translucent tint only.
-    if (!blurEnabled) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            Positioned.fill(
-              child: ColoredBox(
-                color: color.withValues(
-                  alpha: _scaledAlpha(translucentFillAlpha),
-                ),
-              ),
-            ),
-            if (border != null) _borderOverlay(radius, border!),
-            child,
-          ],
-        ),
-      );
-    }
-
-    if (preblur != null) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            // Own layer: with a screen-fixed wallpaper the pager listener
-            // marks this fill dirty on every swipe frame; without a boundary
-            // that repaint re-records the whole card (texts, badges, wash
-            // overlays) instead of just one drawImageRect per card.
-            const Positioned.fill(
-              child: RepaintBoundary(child: PreblurredWallpaperAlignedFill()),
-            ),
-            // Soft white frost so it still reads as glass over dark photos.
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(
-                  color: Colors.white.withValues(alpha: glassTintAlpha * 0.55),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(color: color.withValues(alpha: washAlpha)),
-              ),
-            ),
-            // Edge highlight (cheap stand-in for liquid specular).
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: highlightAlpha),
-                      width: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (border != null) _borderOverlay(radius, border!),
-            child,
-          ],
-        ),
-      );
-    }
-
-    // No pre-blurred wallpaper (settings preview / no wallpaper): use the
-    // package glass. Inside a host the shapes share one faked layer.
-    final usesSharedHost = CourseCardLiquidGlassScope.maybeOf(context) != null;
-    final layerMode = usesSharedHost
-        ? HyperosLiquidGlassLayerMode.sharedLayer
-        : HyperosLiquidGlassLayerMode.fake;
-
-    return ClipRRect(
-      borderRadius: radius,
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: HyperosLiquidGlassSurface(
-                role: HyperosLiquidGlassRole.courseCard,
-                layerMode: layerMode,
-                borderRadius: borderRadius,
-                // Shared layers carry the tint in their own settings.
-                glassColor: usesSharedHost
-                    ? null
-                    : color.withValues(alpha: glassTintAlpha),
-                contentLegibilityFill: false,
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: ColoredBox(color: color.withValues(alpha: washAlpha)),
-            ),
-          ),
           if (border != null) _borderOverlay(radius, border!),
           child,
         ],
