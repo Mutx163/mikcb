@@ -192,18 +192,12 @@ class QrTransferEncoder {
     return 2048;
   }
 
-  final Uint8List rawBytes;
-  final Uint8List compressedPayload;
   final QrTransferSessionInfo info;
   final LTCodec _codec;
   int _seed = -1;
 
-  QrTransferEncoder._({
-    required this.rawBytes,
-    required this.compressedPayload,
-    required this.info,
-    required LTCodec codec,
-  }) : _codec = codec;
+  QrTransferEncoder._({required this.info, required LTCodec codec})
+    : _codec = codec;
 
   /// Validate the complete transfer before a QR screen is opened.
   static QrTransferCapacity preflight(Uint8List rawBytes) {
@@ -289,12 +283,7 @@ class QrTransferEncoder {
       ),
     )..setSourceData(compressedPayload);
 
-    return QrTransferEncoder._(
-      rawBytes: rawBytes,
-      compressedPayload: compressedPayload,
-      info: info,
-      codec: codec,
-    );
+    return QrTransferEncoder._(info: info, codec: codec);
   }
 
   /// 产出下一帧文本，并执行发送端的唯一 seed/frame 预算。

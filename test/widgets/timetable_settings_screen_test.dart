@@ -112,11 +112,13 @@ void main() {
 
     final liveList = find.byType(HyperosListView).last;
     await tester.scrollUntilVisible(
-      find.text('自检'),
+      find.byKey(const ValueKey<String>('settings-live-self-check')),
       200,
       scrollable: _scrollableUnder(liveList),
     );
-    await tester.tap(find.text('自检'));
+    await tester.tap(
+      find.byKey(const ValueKey<String>('settings-live-self-check')),
+    );
     await tester.pumpAndSettle();
 
     final diagnosticsList = find.byType(HyperosListView).last;
@@ -206,10 +208,9 @@ void main() {
         .pixels;
     expect(pixelsBefore, greaterThan(100));
 
-    final liveTile = find.widgetWithText(HyperosPressableRow, '超级岛与通知');
-    final onTap = tester.widget<HyperosPressableRow>(liveTile).onTap;
-    expect(onTap, isNotNull);
-    onTap!.call();
+    final liveTile = find.byKey(const ValueKey<String>('settings-live-entry'));
+    expect(liveTile, findsOneWidget);
+    await tester.tap(liveTile);
     await tester.pumpAndSettle();
     expect(find.text('提醒时段'), findsWidgets);
 

@@ -123,19 +123,6 @@ class QrTransferSessionInfo {
   });
 }
 
-/// 一次二维码传输会话（编码端或解码端共享的会话状态）。
-class QrTransferSession {
-  final QrTransferSessionInfo info;
-  final String deviceId;
-  final DateTime createdAt;
-
-  const QrTransferSession({
-    required this.info,
-    required this.deviceId,
-    required this.createdAt,
-  });
-}
-
 /// 解码进度，供接收端 UI 展示。
 class QrTransferDecodeProgress {
   /// 摄像头识别到且属于当前会话的有效帧数（含重复帧）。
