@@ -4,11 +4,12 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../services/qr_transfer/qr_transfer_codec.dart';
+import '../services/qr_transfer/qr_transfer_frame_worker.dart';
+import '../services/qr_transfer/qr_transfer_session.dart';
 
 /// 发送端全屏二维码流页面。
 ///
@@ -41,7 +42,7 @@ class QrTransferSendScreen extends StatefulWidget {
 class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   /// 帧间隔。摄像头通常 100~300ms 即可识别一帧，250ms（4 FPS）在
   /// 识别余量与吞吐之间取平衡；LT 码本身抗丢帧，偶尔漏扫一帧也不影响解码。
-  static const Duration _frameInterval = Duration(milliseconds: 250);
+  static const Duration _frameInterval = QrTransferLimits.frameInterval;
 
   /// 提前预计算的帧数：当前帧之前先把未来四帧的 QR 矩阵算好，
   /// 把耗时移出 setState 关键路径，并为 250ms 帧间隔留足缓冲。
@@ -50,24 +51,76 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   /// 缓存最近若干帧的矩阵，避免旧帧无限堆积内存。
   static const int _cacheRetention = 32;
 
-  late final QrTransferEncoder _encoder;
+  QrTransferFrameWorker? _worker;
+  QrTransferSessionInfo? _sessionInfo;
+  QrTransferEncoder? _fallbackEncoder;
   Timer? _frameTimer;
   int _currentSeed = 0;
-  final Map<int, QrCode> _qrCache = {};
+  int _nextSeedToRequest = 0;
+  bool _frameRequestInFlight = false;
+  Object? _preparationError;
+  final Map<int, QrTransferMatrix> _qrCache = {};
+  String? _errorMessageKey;
 
   @override
   void initState() {
     super.initState();
-    _encoder = QrTransferEncoder.prepare(widget.payloadBytes);
-    _qrCache[_currentSeed] = _buildQrCode(_currentSeed);
-    _precomputeUpTo(_currentSeed + _precomputeLookahead);
-    _frameTimer = Timer.periodic(_frameInterval, (_) => _advanceFrame());
+    unawaited(_initializeQrStream());
   }
 
   @override
   void dispose() {
     _frameTimer?.cancel();
+    unawaited(_worker?.dispose());
     super.dispose();
+  }
+
+  Future<void> _initializeQrStream() async {
+    try {
+      final worker = await QrTransferFrameWorker.start(widget.payloadBytes);
+      if (!mounted) {
+        await worker.dispose();
+        return;
+      }
+      _worker = worker;
+      _sessionInfo = worker.info;
+      await _requestFramesThrough(_precomputeLookahead);
+      if (!mounted) {
+        return;
+      }
+      _frameTimer = Timer.periodic(_frameInterval, (_) => _advanceFrame());
+      setState(() {});
+    } on Object catch (error, stackTrace) {
+      debugPrint('QR background worker failed: $error\n$stackTrace');
+      final worker = _worker;
+      _worker = null;
+      unawaited(worker?.dispose());
+      await _initializeQrStreamOnMain();
+    }
+  }
+
+  Future<void> _initializeQrStreamOnMain() async {
+    if (!mounted) {
+      return;
+    }
+    try {
+      _fallbackEncoder = QrTransferEncoder.prepare(widget.payloadBytes);
+      _sessionInfo = _fallbackEncoder!.info;
+      await _requestFramesThrough(_precomputeLookahead);
+      if (!mounted) {
+        return;
+      }
+      _frameTimer = Timer.periodic(_frameInterval, (_) => _advanceFrame());
+      setState(() {});
+    } on Object catch (error, stackTrace) {
+      debugPrint('QR preparation failed: $error\n$stackTrace');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _preparationError = error;
+      });
+    }
   }
 
   void _advanceFrame() {
@@ -75,28 +128,95 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
       return;
     }
     final nextSeed = _currentSeed + 1;
-    // 兜底：极端情况下计时器回调先于预计算跑到，这里补算。
-    _qrCache.putIfAbsent(nextSeed, () => _buildQrCode(nextSeed));
+    if (nextSeed >= QrTransferLimits.maxUniqueSeedCount) {
+      _frameTimer?.cancel();
+      setState(() {
+        _errorMessageKey = 'qr_transfer_frame_budget_exceeded';
+      });
+      return;
+    }
+    if (!_qrCache.containsKey(nextSeed)) {
+      unawaited(_requestFramesThrough(nextSeed + _precomputeLookahead));
+      return;
+    }
     setState(() {
       _currentSeed = nextSeed;
     });
-    _precomputeUpTo(nextSeed + _precomputeLookahead);
     _trimCache();
+    unawaited(_requestFramesThrough(nextSeed + _precomputeLookahead));
   }
 
-  /// 生成指定 seed 的 QR 矩阵（LT 编码 → 帧文本 → 矩阵）。
-  QrCode _buildQrCode(int seed) {
-    return QrCode.fromData(
-      data: _encoder.frameTextFor(seed),
-      errorCorrectLevel: QrErrorCorrectLevel.L,
-    );
-  }
-
-  /// 预计算 [maxSeed] 以内的帧矩阵（未缓存过才计算）。
-  void _precomputeUpTo(int maxSeed) {
-    for (var seed = _currentSeed + 1; seed <= maxSeed; seed++) {
-      _qrCache.putIfAbsent(seed, () => _buildQrCode(seed));
+  Future<void> _requestFramesThrough(int maxSeed) async {
+    final cappedMaxSeed = maxSeed < QrTransferLimits.maxUniqueSeedCount
+        ? maxSeed
+        : QrTransferLimits.maxUniqueSeedCount - 1;
+    if (!mounted ||
+        _frameRequestInFlight ||
+        _preparationError != null ||
+        cappedMaxSeed < _nextSeedToRequest) {
+      return;
     }
+    final worker = _worker;
+    final fallbackEncoder = _fallbackEncoder;
+    if (worker == null && fallbackEncoder == null) {
+      return;
+    }
+
+    final startSeed = _nextSeedToRequest;
+    final requestedCount = cappedMaxSeed - startSeed + 1;
+    final batchCount = requestedCount > 16 ? 16 : requestedCount;
+    _frameRequestInFlight = true;
+    try {
+      final frames = worker != null
+          ? await worker.generate(startSeed: startSeed, count: batchCount)
+          : _generateFallbackFrames(
+              fallbackEncoder!,
+              startSeed: startSeed,
+              count: batchCount,
+            );
+      if (!mounted) {
+        return;
+      }
+      for (final frame in frames) {
+        _qrCache[frame.seed] = frame;
+      }
+      _nextSeedToRequest = startSeed + frames.length;
+      if (mounted) {
+        setState(() {});
+      }
+    } on Object catch (error, stackTrace) {
+      debugPrint('QR frame batch failed: $error\n$stackTrace');
+      _frameTimer?.cancel();
+      _frameTimer = null;
+      if (mounted) {
+        setState(() {
+          _preparationError = error;
+        });
+      }
+    } finally {
+      _frameRequestInFlight = false;
+      if (mounted &&
+          _preparationError == null &&
+          _nextSeedToRequest <= cappedMaxSeed &&
+          identical(worker, _worker)) {
+        unawaited(_requestFramesThrough(cappedMaxSeed));
+      }
+    }
+  }
+
+  List<QrTransferMatrix> _generateFallbackFrames(
+    QrTransferEncoder encoder, {
+    required int startSeed,
+    required int count,
+  }) {
+    return List<QrTransferMatrix>.generate(
+      count,
+      (offset) => qrTransferMatrixForText(
+        encoder.frameTextFor(startSeed + offset),
+        seed: startSeed + offset,
+      ),
+      growable: false,
+    );
   }
 
   /// 只保留当前帧附近的矩阵，符号流理论上无限，缓存必须收敛。
@@ -112,7 +232,10 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     // LT 码通常需要略多于源码符号数的编码符号即可解出，按 1.2 倍估算。
-    final estimatedTotalFrames = (_encoder.info.sourceSymbolCount * 1.2).ceil();
+    final sourceSymbolCount = _sessionInfo?.sourceSymbolCount ?? 0;
+    final estimatedTotalFrames = sourceSymbolCount == 0
+        ? 0
+        : (sourceSymbolCount * 1.2).ceil();
     final emittedFrames = _currentSeed + 1;
 
     return Scaffold(
@@ -151,6 +274,7 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   }
 
   Widget _buildQrCard() {
+    final matrix = _qrCache[_currentSeed];
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -170,11 +294,28 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
             ),
             padding: const EdgeInsets.all(14),
             child: RepaintBoundary(
-              child: QrImageView.withQr(
-                qr: _qrCache[_currentSeed]!,
-                gapless: true,
-                errorCorrectionLevel: QrErrorCorrectLevel.L,
-              ),
+              child: _preparationError != null
+                  ? const Center(
+                      child: Icon(
+                        Icons.error_outline_rounded,
+                        color: Colors.black54,
+                        size: 48,
+                      ),
+                    )
+                  : matrix == null
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.black54),
+                    )
+                  : Semantics(
+                      label: 'QR code',
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: CustomPaint(
+                          painter: _QrTransferMatrixPainter(matrix),
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),
@@ -187,7 +328,9 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
     int emittedFrames,
     int estimatedTotalFrames,
   ) {
-    final progress = (emittedFrames / estimatedTotalFrames).clamp(0.0, 1.0);
+    final progress = estimatedTotalFrames <= 0
+        ? 0.0
+        : (emittedFrames / estimatedTotalFrames).clamp(0.0, 1.0);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: ClipRRect(
@@ -234,6 +377,13 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
                     height: 1.4,
                   ),
                 ),
+                if (_errorMessageKey != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.qrTransferResourceLimit,
+                    style: const TextStyle(color: Colors.orangeAccent),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 HyperosButton(
                   label: l10n.qrTransferStop,
@@ -247,6 +397,43 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
         ),
       ),
     );
+  }
+}
+
+class _QrTransferMatrixPainter extends CustomPainter {
+  const _QrTransferMatrixPainter(this.matrix);
+
+  final QrTransferMatrix matrix;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final edge = size.shortestSide;
+    if (edge <= 0 || matrix.moduleCount <= 0) {
+      return;
+    }
+    final moduleSize = edge / matrix.moduleCount;
+    final paint = Paint()..color = Colors.black;
+    for (var row = 0; row < matrix.moduleCount; row++) {
+      for (var column = 0; column < matrix.moduleCount; column++) {
+        if (!matrix.isDark(row, column)) {
+          continue;
+        }
+        canvas.drawRect(
+          Rect.fromLTWH(
+            column * moduleSize,
+            row * moduleSize,
+            moduleSize,
+            moduleSize,
+          ),
+          paint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _QrTransferMatrixPainter oldDelegate) {
+    return oldDelegate.matrix != matrix;
   }
 }
 

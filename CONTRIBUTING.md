@@ -20,10 +20,10 @@
 
 ## 开发环境
 
-**版本以 CI 与 [.fvmrc](./.fvmrc) 为准**（当前 Flutter **3.44.4**）。
+**版本以 CI 与 [.fvmrc](./.fvmrc) 为准**（当前稳定 Flutter **3.44.8**；最低支持 Flutter **3.44.2** / Dart **3.12.2**）。
 
 ```bash
-# 可选：fvm use 3.44.4
+# 可选：fvm use 3.44.8
 flutter pub get
 flutter run -d android --flavor dev
 ```
@@ -32,7 +32,7 @@ flutter run -d android --flavor dev
 
 ```bash
 dart format .      # 含文件末尾换行；勿用脚本手改 .dart 格式
-flutter analyze    # 严格模式，warning 也会失败
+flutter analyze --no-fatal-infos  # error/warning 失败，info 仅记录
 flutter test
 ```
 

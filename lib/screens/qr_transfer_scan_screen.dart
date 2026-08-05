@@ -56,6 +56,8 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
   );
   String? _errorMessageKey;
   bool _finished = false;
+  QrTransferDecompressionJob? _decompressionJob;
+  int _transferGeneration = 0;
 
   @override
   void initState() {
@@ -73,6 +75,9 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
 
   @override
   void dispose() {
+    _transferGeneration++;
+    _decompressionJob?.cancel();
+    _decompressionJob = null;
     _statsTimer?.cancel();
     _scannerController.dispose();
     _scanLineController.dispose();
@@ -127,6 +132,12 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       'qr_transfer_checksum_failed' => 'qr_transfer_checksum_failed',
       'qr_transfer_raw_length_mismatch' => 'qr_transfer_raw_length_mismatch',
       'qr_transfer_decompression_failed' => 'qr_transfer_decompression_failed',
+      'qr_transfer_decompression_output_too_large' =>
+        'qr_transfer_decompression_output_too_large',
+      'qr_transfer_session_expired' => 'qr_transfer_session_expired',
+      'qr_transfer_frame_budget_exceeded' =>
+        'qr_transfer_frame_budget_exceeded',
+      'qr_transfer_unique_seed_limit' => 'qr_transfer_unique_seed_limit',
       _ => 'qr_transfer_decode_failed',
     };
   }
@@ -164,21 +175,45 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       return;
     }
 
+    final generation = ++_transferGeneration;
+    QrTransferDecompressionJob? job;
     try {
-      final payload = _decoder.decodeRawPayload();
-      if (!mounted) {
+      job = await _decoder.startRawPayloadDecompression();
+      if (!mounted || generation != _transferGeneration) {
+        job.cancel();
         return;
+      }
+      _decompressionJob = job;
+      final payload = await job.future;
+      if (!mounted || generation != _transferGeneration) {
+        return;
+      }
+      final info = _decoder.sessionInfo;
+      if (info == null || payload.length != info.rawLength) {
+        throw StateError('qr_transfer_raw_length_mismatch');
       }
       Navigator.of(context).pop();
       await widget.onComplete(payload);
+    } on QrTransferDecompressionCancelled {
+      return;
     } on StateError catch (error) {
+      if (!mounted || generation != _transferGeneration) {
+        return;
+      }
       setState(() {
         _errorMessageKey = _errorKeyFor(error.message.toString());
       });
     } on Object {
+      if (!mounted || generation != _transferGeneration) {
+        return;
+      }
       setState(() {
         _errorMessageKey = 'qr_transfer_decompression_failed';
       });
+    } finally {
+      if (identical(_decompressionJob, job)) {
+        _decompressionJob = null;
+      }
     }
   }
 
@@ -186,6 +221,9 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
     if (!mounted) {
       return;
     }
+    _transferGeneration++;
+    _decompressionJob?.cancel();
+    _decompressionJob = null;
     _decoder.reset();
     setState(() {
       _finished = false;
@@ -320,6 +358,13 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       'qr_transfer_checksum_failed' => l10n.qrTransferChecksumFailed,
       'qr_transfer_raw_length_mismatch' => l10n.qrTransferRawLengthMismatch,
       'qr_transfer_decompression_failed' => l10n.qrTransferDecompressionFailed,
+      'qr_transfer_decompression_output_too_large' =>
+        l10n.qrTransferResourceLimit,
+      'qr_transfer_session_expired' => l10n.qrTransferSessionExpired,
+      'qr_transfer_frame_budget_exceeded' => l10n.qrTransferResourceLimit,
+      'qr_transfer_unique_seed_limit' => l10n.qrTransferResourceLimit,
+      'qr_transfer_adjacency_edge_budget_exceeded' =>
+        l10n.qrTransferResourceLimit,
       _ => l10n.qrTransferDecodeFailed,
     };
   }

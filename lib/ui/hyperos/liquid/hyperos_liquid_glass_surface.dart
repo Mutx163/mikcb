@@ -75,6 +75,7 @@ class UndimmedBackdropCapture extends StatelessWidget {
 /// `FragmentProgram.fromAsset` and remember the outcome so every surface can
 /// downgrade to [FakeGlass] (a shader-less frosted look) instead of crashing.
 abstract final class LiquidGlassShaderProbe {
+  static Future<void>? _probeFuture;
   static bool? _realRefractionReady;
 
   /// Whether the refraction shader actually compiled on this engine.
@@ -83,7 +84,17 @@ abstract final class LiquidGlassShaderProbe {
   /// the probe is in flight and no frame can crash on a half-loaded shader.
   static bool get realRefractionReady => _realRefractionReady ?? false;
 
-  static Future<void> probeIfNeeded() async {
+  static Future<void> probeIfNeeded() {
+    final existing = _probeFuture;
+    if (existing != null) {
+      return existing;
+    }
+    final future = _probe();
+    _probeFuture = future;
+    return future;
+  }
+
+  static Future<void> _probe() async {
     if (_realRefractionReady != null) {
       return;
     }
@@ -105,12 +116,14 @@ abstract final class LiquidGlassShaderProbe {
         '[LiquidGlassProbe] real refraction shader OK '
         '(final_render.frag compiled)',
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
       _realRefractionReady = false;
       debugPrint(
         '[LiquidGlassProbe] real refraction UNAVAILABLE, '
         'falling back to FakeGlass',
       );
+      debugPrint('[LiquidGlassProbe] shader probe error: $error');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 }
