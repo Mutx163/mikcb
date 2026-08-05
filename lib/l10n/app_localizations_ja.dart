@@ -1196,6 +1196,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get qrTransferDecompressionFailed => '受信データを展開できませんでした。最初からやり直してください';
 
   @override
+  String get qrTransferPlaintextWarning =>
+      'QR転送は平文です。近くのカメラで読み取られる可能性があります。送信元を確認してから読み込んでください。確認なしに上書きはしません。';
+
+  @override
+  String get qrTransferResourceLimit =>
+      '受信データがQR転送のリソース上限を超えました。最初からやり直し、小さいバックアップを使ってください。';
+
+  @override
+  String get qrTransferSessionExpired =>
+      'QR転送がタイムアウトしました。最初からやり直し、1台の画面だけにカメラを向けてください。';
+
+  @override
+  String get qrTransferFullBackupWarning => '確認すると、この完全バックアップで端末のデータを置き換えます。';
+
+  @override
+  String get qrTransferImportFullBackup => '完全バックアップを読み込む';
+
+  @override
   String get qrTransferDecodeFailed => 'QR転送をデコードできませんでした。最初からやり直してください';
 
   @override

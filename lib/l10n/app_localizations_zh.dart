@@ -1178,6 +1178,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get qrTransferDecompressionFailed => '数据解压失败，请重新开始';
 
   @override
+  String get qrTransferPlaintextWarning =>
+      '二维码传输是明文，附近摄像头可能读取内容。请确认来源，未经确认不会覆盖数据。';
+
+  @override
+  String get qrTransferResourceLimit => '接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。';
+
+  @override
+  String get qrTransferSessionExpired => '二维码传输已超时，请重新开始并只对准一台设备。';
+
+  @override
+  String get qrTransferFullBackupWarning => '确认后，该完整备份会替换本设备上的数据。';
+
+  @override
+  String get qrTransferImportFullBackup => '导入完整备份';
+
+  @override
   String get qrTransferDecodeFailed => '二维码数据解码失败，请重新开始';
 
   @override
@@ -10347,6 +10363,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get qrTransferDecompressionFailed => '資料解壓失敗，請重新開始';
 
   @override
+  String get qrTransferPlaintextWarning =>
+      'QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。';
+
+  @override
+  String get qrTransferResourceLimit => '接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。';
+
+  @override
+  String get qrTransferSessionExpired => 'QR 碼傳輸已逾時，請重新開始並只對準一台裝置。';
+
+  @override
+  String get qrTransferFullBackupWarning => '確認後，此完整備份會取代本裝置上的資料。';
+
+  @override
+  String get qrTransferImportFullBackup => '匯入完整備份';
+
+  @override
   String get qrTransferDecodeFailed => 'QR 碼資料解碼失敗，請重新開始';
 
   @override
@@ -19318,6 +19350,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get qrTransferDecompressionFailed => '資料解壓失敗，請重新開始';
+
+  @override
+  String get qrTransferPlaintextWarning =>
+      'QR 碼傳輸是明文，附近相機可能讀取內容。請先確認來源，未經確認不會覆蓋資料。';
+
+  @override
+  String get qrTransferResourceLimit => '接收資料超過 QR 碼傳輸資源上限，請重新開始並使用較小的備份。';
+
+  @override
+  String get qrTransferSessionExpired => 'QR 碼傳輸已逾時，請重新開始並只對準一台裝置。';
+
+  @override
+  String get qrTransferFullBackupWarning => '確認後，此完整備份會取代本裝置上的資料。';
+
+  @override
+  String get qrTransferImportFullBackup => '匯入完整備份';
 
   @override
   String get qrTransferDecodeFailed => 'QR 碼資料解碼失敗，請重新開始';

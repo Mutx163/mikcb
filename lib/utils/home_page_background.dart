@@ -3,7 +3,12 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui'
     as ui
-    show Image, ImageByteFormat, PlatformDispatcher, instantiateImageCodec;
+    show
+        Image,
+        ImageByteFormat,
+        ImmutableBuffer,
+        PlatformDispatcher,
+        instantiateImageCodecFromBuffer;
 
 import 'package:flutter/material.dart';
 
@@ -557,6 +562,24 @@ homePageWallpaperVisibleSourceRect({
   return (left: left, top: top, width: visibleWidth, height: visibleHeight);
 }
 
+Future<ui.Image?> _decodeHomePageWallpaperSample(String path) async {
+  // Transfer ownership to the engine decoder instead of materializing the
+  // complete file as a Dart Uint8List. The returned sample is bounded to a
+  // small width and is independent of ImageCache/listener timing.
+  final buffer = await ui.ImmutableBuffer.fromFilePath(path);
+  final codec = await ui.instantiateImageCodecFromBuffer(
+    buffer,
+    targetWidth: 128,
+    allowUpscaling: false,
+  );
+  try {
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  } finally {
+    codec.dispose();
+  }
+}
+
 /// Top-band + weekday-band + card-region WCAG luminance of a wallpaper file, from one decode.
 ///
 /// `top` covers the status bar / title region (header chrome ink), `weekday`
@@ -580,19 +603,10 @@ sampleHomePageWallpaperLuminanceBands(
     return null;
   }
   try {
-    final bytes = await file.readAsBytes();
-    if (bytes.isEmpty) {
+    final image = await _decodeHomePageWallpaperSample(path);
+    if (image == null) {
       return null;
     }
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      // Keep a small but aspect-ratio-preserving decode. The visible crop is
-      // applied below from the actual decoded dimensions and display viewport.
-      targetWidth: 128,
-    );
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
-    codec.dispose();
     return _averageBandLuminances(
       image,
       viewportSize: viewportSize,

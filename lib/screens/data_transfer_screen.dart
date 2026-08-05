@@ -15,6 +15,8 @@ import '../services/transfer_package.dart';
 import '../services/transfer_undo_service.dart';
 import '../services/unified_transfer_service.dart';
 import 'ics_export_screen.dart';
+import '../services/qr_transfer/qr_transfer_codec.dart';
+import '../services/qr_transfer/qr_transfer_session.dart';
 import 'qr_transfer_send_screen.dart';
 import 'qr_transfer_scan_screen.dart';
 import 'transfer_preview_dialog.dart';
@@ -104,6 +106,13 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   Text(
                     l10n.qrTransferSectionSubtitle,
                     style: HyperosTypography.listDetail(context),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.qrTransferPlaintextWarning,
+                    style: HyperosTypography.listDetail(
+                      context,
+                    ).copyWith(color: Colors.orangeAccent),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -387,15 +396,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       selectedCourseIds: selectedCourseIds,
     );
     final content = package.encode();
-    if (!mounted) {
-      return;
-    }
-    await HyperosNavigation.pushWidget<void>(
-      context,
-      QrTransferSendScreen(
-        payloadBytes: Uint8List.fromList(utf8.encode(content)),
-        title: l10n.qrTransferSendCurrent,
-      ),
+    await _openQrSender(
+      Uint8List.fromList(utf8.encode(content)),
+      l10n.qrTransferSendCurrent,
     );
   }
 
@@ -405,15 +408,31 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     final content = _transferService
         .buildFullPackage(provider: provider, channel: TransferChannel.qr)
         .encode();
+    await _openQrSender(
+      Uint8List.fromList(utf8.encode(content)),
+      l10n.qrTransferSendAll,
+    );
+  }
+
+  Future<void> _openQrSender(Uint8List payloadBytes, String title) async {
+    try {
+      QrTransferEncoder.preflight(payloadBytes);
+    } on QrTransferLimitException {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.qrTransferResourceLimit,
+          kind: AppToastKind.error,
+        );
+      }
+      return;
+    }
     if (!mounted) {
       return;
     }
     await HyperosNavigation.pushWidget<void>(
       context,
-      QrTransferSendScreen(
-        payloadBytes: Uint8List.fromList(utf8.encode(content)),
-        title: l10n.qrTransferSendAll,
-      ),
+      QrTransferSendScreen(payloadBytes: payloadBytes, title: title),
     );
   }
 

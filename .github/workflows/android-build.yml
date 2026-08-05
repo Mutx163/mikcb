@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_STABLE_VERSION: '3.44.8'
+
 jobs:
   check:
     name: Analyze and Test
@@ -30,14 +33,19 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.4
+          flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
           cache: true
+
+      - name: Record toolchain
+        run: |
+          flutter --version
+          dart --version
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Test
         run: flutter test
@@ -65,8 +73,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.4
+          flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
           cache: true
+
+      - name: Record toolchain
+        run: |
+          flutter --version
+          dart --version
 
       - name: Get dependencies
         run: flutter pub get

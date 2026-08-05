@@ -182,6 +182,10 @@ class TimetableProvider with ChangeNotifier {
   TimetableSettings _settings = TimetableSettings.defaults();
   int _currentWeek = 1;
   int _currentDateWeek = 1;
+
+  // Calendar week used for today's courses; unlike currentDateWeek it is not
+  // clamped to the configured semester length.
+  int _currentCalendarWeek = 1;
   List<TimeScheme> _timeSchemes = [];
   List<LocationTimeGroup> _locationTimeGroups = [];
   List<ScheduleDateRule> _scheduleDateRules = [];
@@ -765,7 +769,11 @@ class TimetableProvider with ChangeNotifier {
     _tasks = _sortTasks(List<CourseTask>.from(profile.tasks));
     _exams = List<Exam>.from(profile.exams);
     _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
-    _currentDateWeek = _resolveCurrentDateWeek();
+    _currentCalendarWeek = _resolveCurrentCalendarWeek();
+    _currentDateWeek = clampCurrentWeekToSettings(
+      _currentCalendarWeek,
+      _settings,
+    );
     unawaited(_syncNativeRuntimePreferences());
   }
 
@@ -1860,7 +1868,11 @@ class TimetableProvider with ChangeNotifier {
   Future<void> loadCurrentWeek() async {
     try {
       _currentWeek = activeProfile?.currentWeek ?? 1;
-      _currentDateWeek = _resolveCurrentDateWeek();
+      _currentCalendarWeek = _resolveCurrentCalendarWeek();
+      _currentDateWeek = clampCurrentWeekToSettings(
+        _currentCalendarWeek,
+        _settings,
+      );
       notifyListeners();
     } catch (e) {
       unawaited(
@@ -1878,6 +1890,7 @@ class TimetableProvider with ChangeNotifier {
     _currentWeek = clampCurrentWeekToSettings(week, _settings);
     if (_settings.semesterStartDate == null) {
       _currentDateWeek = _currentWeek;
+      _currentCalendarWeek = _currentWeek;
     }
     _currentLiveCourseId = null; // 触发超级岛重刷
     final persistFuture = _persistActiveProfileState();
@@ -3393,7 +3406,11 @@ class TimetableProvider with ChangeNotifier {
     final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);
     _settings = _normalizeSettingsWithTimeScheme(settings);
     hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
-    _currentDateWeek = _resolveCurrentDateWeek();
+    _currentCalendarWeek = _resolveCurrentCalendarWeek();
+    _currentDateWeek = clampCurrentWeekToSettings(
+      _currentCalendarWeek,
+      _settings,
+    );
     await _persistActiveProfileState();
     unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
@@ -3479,6 +3496,7 @@ class TimetableProvider with ChangeNotifier {
     final targetWeek = week < 1 ? 1 : week;
     // Stay within the user-configured semester length. Do not auto-expand
     // semesterWeekCount when the calendar has moved past the last teaching week.
+    _currentCalendarWeek = week;
     _currentDateWeek = targetWeek > _settings.semesterWeekCount
         ? _settings.semesterWeekCount
         : targetWeek;
@@ -3493,22 +3511,28 @@ class TimetableProvider with ChangeNotifier {
     await initialize();
     final reference = now ?? DateTime.now();
     final targetDayOfWeek = reference.weekday;
+    final targetCalendarWeek = _calculateCalendarWeekForDate(
+      reference,
+      fallbackWeek: _currentWeek,
+    );
     final targetWeek = _calculateWeekForDate(
       reference,
       fallbackWeek: _currentWeek,
     );
     final didChangeWeek =
         _settings.semesterStartDate != null && targetWeek != _currentDateWeek;
+    final didChangeCalendarWeek = targetCalendarWeek != _currentCalendarWeek;
     final didChangeDay = targetDayOfWeek != _currentDayOfWeek;
 
     // Seasonal bulk-apply must run even when week/day labels did not change
     // (e.g. cold start after midnight, or rule starts mid-session).
     final didApplySeasonal = await applyDueScheduleDateRules(now: reference);
 
-    if (!didChangeWeek && !didChangeDay) {
+    if (!didChangeWeek && !didChangeCalendarWeek && !didChangeDay) {
       return didApplySeasonal;
     }
 
+    _currentCalendarWeek = targetCalendarWeek;
     if (didChangeWeek) {
       _currentDateWeek = clampCurrentWeekToSettings(targetWeek, _settings);
     }
@@ -3828,11 +3852,18 @@ class TimetableProvider with ChangeNotifier {
     return week;
   }
 
-  int _resolveCurrentDateWeek() {
+  int _resolveCurrentCalendarWeek() {
     if (_settings.semesterStartDate == null) {
       return _currentWeek;
     }
-    return _calculateWeekForDate(DateTime.now(), fallbackWeek: _currentWeek);
+    return _calculateCalendarWeekForDate(
+      DateTime.now(),
+      fallbackWeek: _currentWeek,
+    );
+  }
+
+  int _resolveCurrentDateWeek() {
+    return clampCurrentWeekToSettings(_resolveCurrentCalendarWeek(), _settings);
   }
 
   DateTime _startOfWeek(DateTime date) {
@@ -3864,13 +3895,14 @@ class TimetableProvider with ChangeNotifier {
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
-  List<Course> getTodayCourses() {
+  List<Course> getTodayCourses({DateTime? now}) {
     // After the term ends, UI currentDateWeek is clamped to semesterWeekCount.
     // "Today's courses" must use the real calendar week so finished courses do
     // not keep appearing every weekday that matches the last teaching week.
+    final reference = now ?? DateTime.now();
     final targetWeek = _settings.semesterStartDate == null
         ? _currentDateWeek
-        : _calculateCalendarWeekForDate(DateTime.now());
+        : _calculateCalendarWeekForDate(reference);
     return getCoursesForDay(_currentDayOfWeek, week: targetWeek);
   }
 
