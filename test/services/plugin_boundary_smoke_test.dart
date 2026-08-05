@@ -186,9 +186,12 @@ void main() {
         break;
       }
     }
-    for (var i = 0; i < 5 && imported == null; i++) {
-      await tester.pump(const Duration(milliseconds: 80));
-    }
+    await tester.runAsync(() async {
+      for (var i = 0; i < 50 && imported == null; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    });
+    await tester.pump();
 
     expect(imported, orderedEquals(original));
     expect(fakePlatform.stopCalls, greaterThanOrEqualTo(1));
