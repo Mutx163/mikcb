@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
-import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/hyperos_controls.dart';
+import '../ui/hyperos/hyperos_sheet.dart';
+import '../ui/hyperos/hyperos_theme.dart';
+import '../ui/hyperos/hyperos_tokens.dart';
 import 'miuix_fling_number_picker.dart';
 
 /// 弹出 HyperOS 底部 sheet，内嵌 [MiuixDatePicker] 月历。

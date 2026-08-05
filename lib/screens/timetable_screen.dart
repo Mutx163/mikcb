@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/course.dart';
 import '../models/exam.dart';
@@ -24,6 +25,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
+import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
@@ -36,6 +38,7 @@ import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_top_menu.dart';
+import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/week_selector_picker_sheet.dart';
@@ -43,12 +46,14 @@ import '../widgets/app_boot_branding.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
+import 'add_task_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
 import 'course_statistics_screen.dart';
 import 'exam_list_screen.dart';
 import 'support_creator_screen.dart';
+import 'task_list_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -175,7 +180,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   late final ValueNotifier<int> _visibleWeekListenable;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
+  final SupportCreatorService _supportCreatorService = SupportCreatorService();
+  final HomeUpdatePromptController _updatePromptController =
+      HomeUpdatePromptController();
   bool _hasAvailableUpdate = false;
+  bool _isUpdatePromptVisible = false;
+  bool _hasPresentedUpdatePrompt = false;
+  AppUpdateDownloadController? _homeDownloadController;
+  StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
   TimetableProvider? _lastSyncedProvider;
@@ -319,6 +331,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
+    _homeDownloadController?.cancel();
+    _systemDownloadSubscription?.cancel();
+    _updatePromptController.dispose();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
     final dayViewController = _dayViewPageController;
@@ -1793,9 +1808,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final subtleBorder = context.theme.colors.border;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdropImage(settings);
+    // Opaque/no-wallpaper chrome still needs a separator, but a full 1dp
+    // ThemeData outline lands as a dark multi-physical-pixel band on dense
+    // Android screens. Keep the wallpaper path's existing border untouched
+    // and use the lighter HyperOS divider token only for the fallback.
+    final subtleBorder = hasBackdrop
+        ? context.theme.colors.border
+        : HyperosColors.dividerLine(context);
+    final dividerWidth = hasBackdrop ? 1.0 : 0.5;
     // Only flip by wallpaper luminance when this band actually shows the
     // wallpaper / frosted glass; with the scope toggled off it paints the
     // opaque page background and must use the theme / configured ink.
@@ -2062,7 +2084,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       decoration: hideBottomBorder
           ? null
           : BoxDecoration(
-              border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
+              border: Border(
+                bottom: BorderSide(color: subtleBorder, width: dividerWidth),
+              ),
             ),
       child: _isDayView && _dayViewPageController != null
           ? AnimatedBuilder(
@@ -3244,7 +3268,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return normalizedToday.add(Duration(days: dayDelta));
   }
 
-  List<ScheduleItem> _getScheduleItemsForWeekDay({
+  List<ScheduleItemInstance> _getScheduleItemsForWeekDay({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
@@ -3256,13 +3280,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       week: week,
       dayOfWeek: dayOfWeek,
     );
-    return provider.getScheduleItemsForDate(targetDate);
+    return provider.getScheduleItemInstancesForDate(targetDate);
   }
 
   _DayAgendaItem _buildScheduleAgendaItemForDate({
-    required ScheduleItem item,
+    required ScheduleItemInstance instance,
     required DateTime targetDate,
   }) {
+    final item = instance.effectiveItem;
     final normalizedTargetDate = DateTime(
       targetDate.year,
       targetDate.month,
@@ -3274,6 +3299,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final continuesToNextDay = item.endDate.isAfter(normalizedTargetDate);
     return _DayAgendaItem.schedule(
       item,
+      instance: instance,
       startTime: continuesFromPreviousDay ? '00:00' : item.startTime,
       endTime: continuesToNextDay ? '23:59' : item.endTime,
       continuesFromPreviousDay: continuesFromPreviousDay,
@@ -3302,8 +3328,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         week: week,
         dayOfWeek: dayOfWeek,
       ).map(
-        (item) =>
-            _buildScheduleAgendaItemForDate(item: item, targetDate: targetDate),
+        (instance) => _buildScheduleAgendaItemForDate(
+          instance: instance,
+          targetDate: targetDate,
+        ),
       ),
       ...provider.exams
           .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
@@ -4911,6 +4939,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
   }) {
     final item = agendaItem.scheduleItem!;
+    final sourceItem = agendaItem.scheduleInstance?.item ?? item;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final baseColor = _colorFromHex(item.color, colorScheme.primary);
@@ -4924,7 +4953,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final ink = _dayAgendaAutoInk(cardColor, settings: settings);
 
     return OpenContainer<void>(
-      key: ValueKey('day-view-schedule-card-${item.id}'),
+      key: ValueKey('day-view-schedule-card-${agendaItem.id}'),
       tappable: false,
       transitionType: ContainerTransitionType.fadeThrough,
       transitionDuration: const Duration(milliseconds: 360),
@@ -4940,7 +4969,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
       openBuilder: (context, _) => ClipRRect(
         borderRadius: BorderRadius.circular(28),
-        child: AddScheduleItemScreen(scheduleItem: item),
+        child: AddScheduleItemScreen(
+          scheduleItem: sourceItem,
+          occurrenceDate: agendaItem.scheduleInstance?.occurrenceDate,
+        ),
       ),
       closedBuilder: (context, openContainer) {
         if (progressInfo != null) {
@@ -6496,6 +6528,24 @@ class _TimetableScreenState extends State<TimetableScreen>
       onReschedule: (target) => _showRescheduleSheet(target, sourceWeek: week),
       onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
+      onAddTask: (target) => _openTaskFromCourse(target, week),
+    );
+  }
+
+  Future<void> _openTaskFromCourse(Course course, int week) async {
+    final provider = context.read<TimetableProvider>();
+    final existing = provider
+        .getTasksForCourse(course.id)
+        .where((task) => task.sourceWeek == null || task.sourceWeek == week)
+        .firstOrNull;
+    await Navigator.of(context).push<bool>(
+      HyperosPageRoute<bool>(
+        builder: (_) => AddTaskScreen(
+          task: existing,
+          initialCourse: course,
+          initialWeek: week,
+        ),
+      ),
     );
   }
 
@@ -7008,6 +7058,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         await _openTopMenuPage(const ExamListScreen());
       case HomeTopMenuAction.importCourses:
         await _openTopMenuPage(const CourseImportScreen());
+      case HomeTopMenuAction.tasks:
+        await _openTopMenuPage(const TaskListScreen());
       case HomeTopMenuAction.settings:
         await _openTopMenuPage(const TimetableSettingsScreen());
       case HomeTopMenuAction.support:
@@ -7093,11 +7145,215 @@ class _TimetableScreenState extends State<TimetableScreen>
       setState(() {
         _hasAvailableUpdate = result.hasUpdate;
       });
+      _scheduleHomeUpdatePrompt(result);
     } catch (_) {
       // Ignore update check failures on home screen; About page provides details.
     } finally {
       _isCheckingForUpdate = false;
     }
+  }
+
+  void _scheduleHomeUpdatePrompt(AppUpdateCheckResult result) {
+    if (!result.hasUpdate ||
+        result.latestRelease == null ||
+        _hasPresentedUpdatePrompt ||
+        _isUpdatePromptVisible) {
+      return;
+    }
+    final release = result.latestRelease!;
+    final provider = context.read<TimetableProvider>();
+    final settings = provider.settings;
+    final channel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    final source = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
+    final effectiveDownloadUrl = _updateService.getEffectiveDownloadUrl(
+      release: release,
+      channel: channel,
+      source: source,
+      mirrorUrlPrefix: mirrorPrefix,
+    );
+    final hasDirectDownload =
+        effectiveDownloadUrl != null && effectiveDownloadUrl.trim().isNotEmpty;
+    final promptDownloadUrl = effectiveDownloadUrl ?? release.releaseUrl;
+    if (promptDownloadUrl.trim().isEmpty) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _hasPresentedUpdatePrompt || _isUpdatePromptVisible) {
+        return;
+      }
+      if (ModalRoute.of(context)?.isCurrent != true) {
+        return;
+      }
+      _hasPresentedUpdatePrompt = true;
+      _isUpdatePromptVisible = true;
+      unawaited(
+        _showHomeUpdatePromptAndTrackState(
+          release: release,
+          currentVersion: result.currentVersion,
+          channel: channel,
+          downloadUrl: promptDownloadUrl,
+          hasDirectDownload: hasDirectDownload,
+        ),
+      );
+    });
+  }
+
+  Future<void> _showHomeUpdatePromptAndTrackState({
+    required AppReleaseInfo release,
+    required String currentVersion,
+    required AppUpdateDownloadChannel channel,
+    required String downloadUrl,
+    required bool hasDirectDownload,
+  }) async {
+    try {
+      await showHomeUpdatePrompt(
+        context,
+        release: release,
+        currentVersion: currentVersion,
+        downloadChannel: channel,
+        hasDirectDownload: hasDirectDownload,
+        controller: _updatePromptController,
+        onDownload: () async {
+          if (!hasDirectDownload) {
+            await _openUpdateReleasePage(release.releaseUrl);
+            return false;
+          }
+          return _startHomeUpdateDownload(
+            release: release,
+            channel: channel,
+            downloadUrl: downloadUrl,
+          );
+        },
+        onViewRelease: () => _openUpdateReleasePage(release.releaseUrl),
+        onCancelDownload: _cancelHomeUpdateDownload,
+      );
+    } finally {
+      _isUpdatePromptVisible = false;
+    }
+  }
+
+  Future<bool> _startHomeUpdateDownload({
+    required AppReleaseInfo release,
+    required AppUpdateDownloadChannel channel,
+    required String downloadUrl,
+  }) async {
+    if (channel == AppUpdateDownloadChannel.pgyer) {
+      await _openUpdateReleasePage(downloadUrl);
+      return false;
+    }
+
+    final settings = context.read<TimetableProvider>().settings;
+    if (settings.appUpdateDownloadChannel ==
+        AppUpdateDownloadChannel.pgyer.value) {
+      await _openUpdateReleasePage(downloadUrl);
+      return false;
+    }
+
+    if (_useSystemUpdateDownloader(settings)) {
+      final version = release.version.trim().replaceAll(' ', '_');
+      final downloadId = await _supportCreatorService.enqueueSystemDownload(
+        url: downloadUrl,
+        fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
+        title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
+        description: AppLocalizations.of(
+          context,
+        )!.aboutUpdatePackageDescription,
+      );
+      if (downloadId == null) {
+        return false;
+      }
+      final initialProgress = await _supportCreatorService
+          .querySystemDownloadProgress(downloadId);
+      if (initialProgress != null) {
+        _updatePromptController.beginSystemDownload(
+          downloadId: downloadId,
+          progress: initialProgress,
+        );
+      }
+      _watchSystemUpdateDownload(downloadId);
+      return true;
+    }
+
+    final controller = AppUpdateDownloadController();
+    _homeDownloadController = controller;
+    _updatePromptController.beginInAppDownload();
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
+    final error = await _updateService.downloadAndInstallUpdate(
+      downloadUrl,
+      (downloadedBytes, totalBytes) {
+        _updatePromptController.updateInAppProgress(
+          downloadedBytes,
+          totalBytes,
+        );
+      },
+      controller,
+      mirrorUrlPrefix: mirrorPrefix,
+    );
+    if (!mounted) {
+      return true;
+    }
+    _homeDownloadController = null;
+    final wasCancelled = error == AppUpdateService.downloadCancelledMessage;
+    _updatePromptController.finishInAppDownload(
+      success: error == null,
+      cancelled: wasCancelled,
+    );
+    if (wasCancelled) {
+      return true;
+    }
+    return true;
+  }
+
+  bool _useSystemUpdateDownloader(TimetableSettings settings) {
+    return settings.appUpdateUseSystemDownloader;
+  }
+
+  void _watchSystemUpdateDownload(int downloadId) {
+    unawaited(() async {
+      try {
+        await for (final progress
+            in _supportCreatorService.watchSystemDownloadProgress(downloadId)) {
+          if (!mounted) {
+            return;
+          }
+          _updatePromptController.updateSystemDownload(progress);
+        }
+      } catch (_) {
+        // The system queue can briefly disappear while the provider starts;
+        // keep the prompt visible and let the next observation recover.
+      }
+    }());
+  }
+
+  void _cancelHomeUpdateDownload() {
+    _homeDownloadController?.cancel();
+    _updatePromptController.markCancelling();
+  }
+
+  Future<void> _openUpdateReleasePage(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -7328,6 +7584,7 @@ class _DayCourseDisplayItem {
 class _DayAgendaItem {
   final _DayCourseDisplayItem? courseItem;
   final ScheduleItem? scheduleItem;
+  final ScheduleItemInstance? scheduleInstance;
   final Exam? exam;
   final String startTime;
   final String endTime;
@@ -7337,6 +7594,7 @@ class _DayAgendaItem {
   const _DayAgendaItem._({
     this.courseItem,
     this.scheduleItem,
+    this.scheduleInstance,
     this.exam,
     required this.startTime,
     required this.endTime,
@@ -7354,6 +7612,7 @@ class _DayAgendaItem {
 
   factory _DayAgendaItem.schedule(
     ScheduleItem item, {
+    ScheduleItemInstance? instance,
     required String startTime,
     required String endTime,
     bool continuesFromPreviousDay = false,
@@ -7361,6 +7620,7 @@ class _DayAgendaItem {
   }) {
     return _DayAgendaItem._(
       scheduleItem: item,
+      scheduleInstance: instance,
       startTime: startTime,
       endTime: endTime,
       continuesFromPreviousDay: continuesFromPreviousDay,
@@ -7379,7 +7639,10 @@ class _DayAgendaItem {
   bool get isScheduleItem => scheduleItem != null;
   bool get isExam => exam != null;
   String get id =>
-      exam?.id ?? (isScheduleItem ? scheduleItem!.id : courseItem!.course.id);
+      exam?.id ??
+      (isScheduleItem
+          ? scheduleInstance?.occurrenceId ?? scheduleItem!.id
+          : courseItem!.course.id);
 }
 
 class _DayAgendaProgressInfo {

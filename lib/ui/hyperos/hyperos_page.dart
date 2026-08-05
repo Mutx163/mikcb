@@ -246,13 +246,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   /// applied it one frame late, which read as visible stutter.
   final ValueNotifier<double> _collapseInsetDelta = ValueNotifier<double>(0);
 
-  /// Pixels at the moment the finger released into the overscroll spring.
-  /// Used to release the parked-title inset proportionally across the whole
-  /// spring travel instead of pinning content dead once pixels drop below
-  /// the expansion (which stopped ~700px/s motion instantly — visible jolt).
-  double? _springReleasePixels;
-  double _lastDragPixels = 0;
-
   /// setState guarded against build/layout/paint phases. Post-frame callbacks
   /// run at the end of the current frame; see the note below about not
   /// calling [SchedulerBinding.scheduleFrame] here.
@@ -395,7 +388,15 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         // Keep the inset delta fresh before the frost check below reads it.
         _syncCollapseInsetDelta(notification);
       }
-      _headerFrost.syncHeaderFrostForScroll(notification.metrics.pixels);
+      if (!_collapsibleScrollBehavior.isSnapInProgress &&
+          !_collapsibleScrollBehavior.isSnapCooldown) {
+        _headerFrost.syncHeaderFrostForScroll(notification.metrics.pixels);
+      } else if (notification is ScrollEndNotification) {
+        // The snap completion callback may run before this final notification
+        // reaches the page shell. Resync once the scroll activity is settled,
+        // while keeping the frost state stable during the snap itself.
+        _headerFrost.scheduleResyncHeaderFrostAfterLayout();
+      }
     }
     return false;
   }
@@ -457,35 +458,21 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     if (expansion > 0 && state.heightOffset.isFinite) {
       if (notification is ScrollStartNotification) {
         _insetFollowsGesture = _collapseInsetDelta.value > -expansion + 1.0;
-        _springReleasePixels = null;
       }
-      final isDragFrame =
-          notification is ScrollUpdateNotification &&
-          notification.dragDetails != null;
       final isBallisticFrame =
           notification is ScrollUpdateNotification &&
           notification.dragDetails == null;
-      if (isDragFrame) {
-        _lastDragPixels = pixels;
-        _springReleasePixels = null;
-      } else if (isBallisticFrame) {
-        // First spring frame: remember the release depth.
-        _springReleasePixels ??= _lastDragPixels > pixels
-            ? _lastDragPixels
-            : pixels;
-      }
-      final releasePixels = _springReleasePixels;
+      final shortPageSpringProgress = _collapsibleScrollBehavior
+          .shortPageSpringProgressForPixels(metrics.pixels);
       if (_insetFollowsGesture &&
           isBallisticFrame &&
           state.heightOffset <= -expansion + 0.01 &&
-          releasePixels != null &&
-          releasePixels > expansion) {
+          shortPageSpringProgress != null) {
         // Fully collapsed spring-back from deep overscroll: release the
         // parked inset proportionally over the whole spring travel so the
         // content decelerates with the spring and lands exactly as it
         // settles — instead of freezing dead the instant pixels < expansion.
-        final progress = (pixels / releasePixels).clamp(0.0, 1.0);
-        delta = -expansion * (1.0 - progress);
+        delta = -expansion * shortPageSpringProgress;
       } else {
         final scrolled = _insetFollowsGesture
             ? pixels.clamp(0.0, expansion)

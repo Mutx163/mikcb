@@ -18,12 +18,36 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 
+/// Controls a [MiuixFlingNumberPicker] from a parent action.
+class MiuixFlingNumberPickerController {
+  _MiuixFlingNumberPickerState? _state;
+
+  /// Commits the current selection and returns the applied value.
+  ///
+  /// When a fling is still animating, the projected final landing value is
+  /// committed synchronously. This is useful for a sheet's confirm action:
+  /// the result must not depend on whether the animation has had time to
+  /// finish.
+  int? settle() => _state?._settleImmediately();
+
+  void _attach(_MiuixFlingNumberPickerState state) {
+    _state = state;
+  }
+
+  void _detach(_MiuixFlingNumberPickerState state) {
+    if (identical(_state, state)) {
+      _state = null;
+    }
+  }
+}
+
 /// API 与 [MiuixNumberPicker] 完全一致，可原位替换。
 class MiuixFlingNumberPicker extends StatefulWidget {
   const MiuixFlingNumberPicker({
     super.key,
     required this.value,
     required this.onValueChanged,
+    this.controller,
     this.enabled = true,
     this.min = 0,
     this.max = 10,
@@ -33,13 +57,15 @@ class MiuixFlingNumberPicker extends StatefulWidget {
     this.colors,
     this.textStyle,
     this.itemHeight = MiuixNumberPickerDefaults.itemHeight,
-  })  : assert(
-            visibleItemCount % 2 == 1 && visibleItemCount >= 3,
-            'visibleItemCount must be odd and at least 3'),
-        assert(min <= max, 'range must not be empty');
+  }) : assert(
+         visibleItemCount % 2 == 1 && visibleItemCount >= 3,
+         'visibleItemCount must be odd and at least 3',
+       ),
+       assert(min <= max, 'range must not be empty');
 
   final int value;
   final ValueChanged<int>? onValueChanged;
+  final MiuixFlingNumberPickerController? controller;
   final bool enabled;
   final int min;
   final int max;
@@ -62,6 +88,11 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
   bool _isUserScrolling = false;
   int _lastHapticIndex = 0;
 
+  /// The final offset projected from the current fling. It is kept while the
+  /// decay/spring animation is running so a confirm action can commit it
+  /// synchronously instead of observing the stale external widget.value.
+  double? _pendingSettledOffset;
+
   /// 松手动画的代数（drag start 会 stop 动画；靠代数辨别衰减段是否被新手势
   /// 打断，避免旧回调续跑吸附段）。
   int _flingGeneration = 0;
@@ -72,11 +103,16 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
     _offset = AnimationController.unbounded(vsync: this, value: 0.0);
     _offset.addListener(_onOffsetChanged);
     _lastHapticIndex = _currentIndex;
+    widget.controller?._attach(this);
   }
 
   @override
   void didUpdateWidget(MiuixFlingNumberPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
     if (oldWidget.value != widget.value ||
         oldWidget.min != widget.min ||
         oldWidget.max != widget.max) {
@@ -90,13 +126,13 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _offset.removeListener(_onOffsetChanged);
     _offset.dispose();
     super.dispose();
   }
 
-  bool get _effectiveEnabled =>
-      widget.enabled && widget.onValueChanged != null;
+  bool get _effectiveEnabled => widget.enabled && widget.onValueChanged != null;
 
   int get _itemCount => widget.max - widget.min + 1;
   int get _currentIndex =>
@@ -111,6 +147,40 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
       return ((rawIndex % _itemCount) + _itemCount) % _itemCount;
     }
     return rawIndex.clamp(0, _itemCount - 1);
+  }
+
+  Simulation _buildDecaySimulation(double velocityItems) {
+    Simulation decay = FrictionSimulation(
+      math.exp(-8.4),
+      _offset.value,
+      velocityItems,
+    );
+    if (!widget.wrapAround) {
+      decay = ClampedSimulation(
+        decay,
+        xMin: -_currentIndex.toDouble(),
+        xMax: (_itemCount - 1 - _currentIndex).toDouble(),
+      );
+    }
+    return decay;
+  }
+
+  double _computeSettledOffset(double velocityItems) {
+    var projectedOffset = _offset.value;
+    if (velocityItems.abs() > 0.5) {
+      // Simulation.x(infinity) is its asymptotic landing point. The same
+      // point is used by the later decay animation before spring snapping.
+      projectedOffset = _buildDecaySimulation(velocityItems).x(double.infinity);
+    }
+
+    var target = projectedOffset.roundToDouble();
+    if (!widget.wrapAround) {
+      target = target.clamp(
+        -_currentIndex.toDouble(),
+        (_itemCount - 1 - _currentIndex).toDouble(),
+      );
+    }
+    return target;
   }
 
   void _onOffsetChanged() {
@@ -136,12 +206,12 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
   }
 
   /// 提交松手动画的最终落点：把偏移换算回 value 并归零。
-  void _commitSettledValue() {
+  int _commitSettledValue() {
     final offsetInt = _offset.value.round();
     int newIndex;
     if (widget.wrapAround) {
-      newIndex = ((_currentIndex + offsetInt) % _itemCount + _itemCount) %
-          _itemCount;
+      newIndex =
+          ((_currentIndex + offsetInt) % _itemCount + _itemCount) % _itemCount;
     } else {
       newIndex = (_currentIndex + offsetInt).clamp(0, _itemCount - 1);
     }
@@ -151,6 +221,23 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
     if (newValue != widget.value) {
       widget.onValueChanged?.call(newValue);
     }
+    return newValue;
+  }
+
+  int? _settleImmediately() {
+    if (!_effectiveEnabled) {
+      return widget.value.clamp(widget.min, widget.max);
+    }
+
+    final target = _pendingSettledOffset ?? _computeSettledOffset(0);
+    // Invalidate the async decay/spring callback before snapping to the
+    // projected target. The confirm action must win over the animation.
+    _flingGeneration++;
+    _offset.stop();
+    _offset.value = target;
+    _pendingSettledOffset = null;
+    _isDragging = false;
+    return _commitSettledValue();
   }
 
   Future<void> _onDragEnd(DragEndDetails details) async {
@@ -161,23 +248,13 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
     // 单位换算成"格"：与原版一致（velocityInItems = -velocity / itemHeightPx）。
     final velocityItems =
         -details.velocity.pixelsPerSecond.dy / widget.itemHeight;
+    _pendingSettledOffset = _computeSettledOffset(velocityItems);
 
     // ① 惯性衰减段：exponentialDecay(frictionMultiplier = 2f) 等价的
     //    FrictionSimulation（v(t) = v0·e^(-4.2·2·t) → drag = e^(-8.4)/s）。
     //    非循环模式下位移钳在可选区间内，触边即停（对应原版 updateBounds）。
     if (velocityItems.abs() > 0.5) {
-      Simulation decay = FrictionSimulation(
-        math.exp(-8.4),
-        _offset.value,
-        velocityItems,
-      );
-      if (!widget.wrapAround) {
-        decay = ClampedSimulation(
-          decay,
-          xMin: -_currentIndex.toDouble(),
-          xMax: (_itemCount - 1 - _currentIndex).toDouble(),
-        );
-      }
+      final decay = _buildDecaySimulation(velocityItems);
       await _offset.animateWith(decay);
       // 新手势/新一轮 fling 已接管，本轮不再吸附。
       if (!mounted || generation != _flingGeneration) return;
@@ -185,13 +262,7 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
 
     // ② 吸附段：spring(dampingRatio = 1, stiffness = 400) 到最近一格
     //    （临界阻尼 damping = 2·√(stiffness·mass) = 40）。
-    var target = _offset.value.roundToDouble();
-    if (!widget.wrapAround) {
-      target = target.clamp(
-        -_currentIndex.toDouble(),
-        (_itemCount - 1 - _currentIndex).toDouble(),
-      );
-    }
+    final target = _pendingSettledOffset ?? _computeSettledOffset(0);
     await _offset.animateWith(
       SpringSimulation(
         const SpringDescription(mass: 1, stiffness: 400, damping: 40),
@@ -202,6 +273,7 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
     );
     if (!mounted || generation != _flingGeneration) return;
     _commitSettledValue();
+    _pendingSettledOffset = null;
   }
 
   @override
@@ -221,6 +293,7 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
           ? (_) {
               _flingGeneration++;
               _offset.stop();
+              _pendingSettledOffset = null;
               _isDragging = true;
               _isUserScrolling = true;
             }
@@ -281,15 +354,18 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
     }
 
     final distanceFromCenter = i.toDouble() - centerItemOffset;
-    final normalizedDistance =
-        (distanceFromCenter.abs() / (_halfVisible + 0.5)).clamp(0.0, 1.0);
+    final normalizedDistance = (distanceFromCenter.abs() / (_halfVisible + 0.5))
+        .clamp(0.0, 1.0);
 
     final alpha = (1.0 - normalizedDistance) * (1.0 - normalizedDistance * 0.5);
     final scale = 1.0 - 0.2 * normalizedDistance;
     final yOffset = distanceFromCenter * widget.itemHeight;
 
-    final textColor =
-        Color.lerp(selectedColor, unselectedColor, normalizedDistance)!;
+    final textColor = Color.lerp(
+      selectedColor,
+      unselectedColor,
+      normalizedDistance,
+    )!;
 
     return Transform.translate(
       offset: Offset(0, yOffset),

@@ -32,7 +32,117 @@ void main() {
     });
   });
 
+  group('modal appearance scope is preserved across popup routes', () {
+    const gaussianAppearance = FrostedAppearance(
+      sheetBlurSigma: 15,
+      sheetTintAlpha: 0.7,
+      sheetBarrierAlpha: 0.2,
+      glassMode: FrostedGlassMode.gaussian,
+    );
+
+    testWidgets('sheet keeps the caller appearance mode', (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: FrostedAppearanceScope(
+            appearance: gaussianAppearance,
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showHyperosSheet<void>(
+                  context: context,
+                  builder: (_) => const HyperosSheetFrame(
+                    child: SizedBox(width: 180, height: 120),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(HyperosSheetFrame), findsOneWidget);
+    });
+
+    testWidgets('anchored list popup keeps the caller appearance mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: FrostedAppearanceScope(
+            appearance: gaussianAppearance,
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showHyperosListPopup<String>(
+                  context: context,
+                  position: const RelativeRect.fromLTRB(24, 24, 200, 500),
+                  items: const [
+                    HyperosPopupMenuItem(label: 'Option A', value: 'a'),
+                  ],
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.text('Option A'), findsOneWidget);
+    });
+
+    testWidgets('anchored select popup keeps the caller appearance mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: FrostedAppearanceScope(
+            appearance: gaussianAppearance,
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showHyperosSelectPopup<String>(
+                  context: context,
+                  anchorRect: const Rect.fromLTWH(24, 24, 160, 48),
+                  items: const {'Option A': 'a'},
+                  currentValue: 'a',
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.text('Option A'), findsOneWidget);
+    });
+  });
+
   group('modal liquid glass sampling', () {
+    test('all modal roles resolve identical liquid settings', () {
+      for (final brightness in Brightness.values) {
+        final header = HyperosLiquidGlassSurface.settingsForRole(
+          role: HyperosLiquidGlassRole.header,
+          brightness: brightness,
+        );
+        final modal = HyperosLiquidGlassSurface.settingsForRole(
+          role: HyperosLiquidGlassRole.modal,
+          brightness: brightness,
+        );
+
+        expect(modal, header);
+      }
+    });
+
     testWidgets('showHyperosSheet builds an undimmed capture group', (
       tester,
     ) async {

@@ -3,8 +3,39 @@
 对标小米 HyperOS / MIUI **系统设置**视觉与交互的 Flutter 组件库。  
 代码入口：`lib/ui/hyperos/hyperos.dart`
 
-> 与 Forui 的关系：页面骨架仍用 `FScaffold` / `FHeader`，HyperOS 库负责灰底、白卡片列表、字号色值、按下态等「系统设置」层样式。  
-> 旧 Forui 设置约定见 [mikcb-settings-screen-layout.md](./forui/mikcb-settings-screen-layout.md)；新设置页以本文档为准。
+> 与 Forui 的关系：Forui 只保留为历史/兼容残留；新业务页的默认壳层、列表和交互应使用本项目 HyperOS facade，旧 Forui 约定不再作为新页面规范。
+> 历史 Forui 设置约定见 [mikcb-settings-screen-layout.md](./forui/mikcb-settings-screen-layout.md)；新设置页以本文档为准。
+
+## 0. 双层组件体系与新页面硬规则（2026-08）
+
+轻屿课表当前不是“所有页面直接堆一套 `Miuix*` Widget”，而是**官方风格基础库 + 项目自研 HyperOS facade** 两层协作：
+
+### 0.1 外部基础库：项目固定的 `flutter_miuix`
+
+- 依赖位置：`pubspec.yaml` → `flutter_miuix` Git 依赖。
+- 当前固定版本：`1.0.10`，commit `8d72a94a72ca4580b43ef2b5872ded3021815ccd`（见 `pubspec.lock`）。
+- 唯一公开导入入口：`package:flutter_miuix/miuix.dart`；禁止导入包内 `src/` 私有路径。
+- 它是 Miuix / HyperOS 风格的 Flutter port/fork，不是小米官方发布的 Flutter SDK；上游设计参考是 Compose Miuix。
+- 能力范围：`MiuixTheme` / `MiuixColors` / `MiuixTextStyles`、图标与 foundation、Squircle/弹簧/Blur、Button/Card/Switch/Slider/TextField、Preference、Scaffold/TopAppBar、Navigation、Overlay/Dialog/BottomSheet、Picker、Snackbar、Tooltip 等基础件。
+
+### 0.2 项目自研层：`lib/ui/hyperos/`
+
+- 统一入口：`lib/ui/hyperos/hyperos.dart`。
+- 当前约 47 个 Dart 文件、约 207 个类/枚举；它不是第三方包，而是本项目基于 `flutter_miuix`、Flutter/Material 基础设施和业务约束形成的应用级 facade。
+- 负责页面壳层、设置列表与分组、项目 tokens、页面转场、Sheet/Dialog/Toast、玻璃/模糊降级、兼容适配和业务组合。
+- 当前生产根仍是 `MaterialApp` + 项目自己的 `HyperosMotionHost` / `FrostedAppearanceScope` / HyperOS facade；`MiuixSystemTheme` 目前主要用于 `miuix_showcase_screen.dart` 的官方组件展示与独立示例，不要在每个业务页重复包一层主题。
+- 常用入口：`HyperosRootPage`、`HyperosSubpage`、`HyperosSheet`、`HyperosListView`、`HyperosListGroup`、`HyperosListTile`、`HyperosChoiceTile`、`HyperosSwitchTile`、`HyperosSliderTile`、`HyperosButton`、`HyperosControlCard`、`HyperosSelectTile`、`HyperosTextField`、`HyperosNavigation`、`showAppConfirmDialog`、`showAppToast`。
+
+### 0.3 新页面必须遵守的选型规则
+
+1. **先用项目 facade，再用官方基础件。** 新页面优先使用 `lib/ui/hyperos/hyperos.dart` 的页面壳、列表、设置行、控制件、导航和弹层；只有 facade 没覆盖的基础能力才直接使用 `flutter_miuix` 的 `Miuix*` API。
+2. **页面壳层固定。** 根页面用 `HyperosRootPage`，二级页面用 `HyperosSubpage`，底部面板用 `HyperosSheet` / `showHyperosSheet`；不要为业务页重新手写一套 `Scaffold`、顶栏、返回转场或 sheet chrome。
+3. **语义组件固定映射。** `ArrowPreference` → `HyperosListTile`；`SwitchPreference` → `HyperosSwitchTile`；Checkbox/Radio Preference → `HyperosChoiceTile`；`SliderPreference` → `HyperosSliderTile`；`OverlayBottomSheet` → `HyperosSheet`；`OverlayDialog` → `HyperosDialog` / `lib/widgets/app_dialogs.dart`；Dropdown Preference → `HyperosSelectTile` / `showHyperosSelectPopup`。
+4. **主题与视觉令牌不能绕过。** 颜色优先 `HyperosColors.*(context)` 或 `MiuixTheme.of(context).colors`，文字优先 `HyperosTypography` 或 `MiuixTheme.of(context).textStyles`；不要在业务页散落硬编码颜色、字号、圆角、padding 和按下态。
+5. **禁止新增旧/平行体系。** 新业务页不得使用 Flutter 原生 `ListTile`、`MaterialPageRoute`、`SnackBar`、`FDialog`、已删除的 `SettingsSectionCard`，也不得新建第三套通用组件库。`MaterialApp` / 根 `ThemeData` / 基础 `Scaffold` 只保留在应用根、平台基础设施和 facade 内。
+6. **Forui 只作为历史兼容边界。** 不为新页面引入新的 Forui 业务组件；已有 `context.theme`、`FTheme`、`FHeaderAction` 等仅在迁移边界明确且不改变行为时保留，新代码默认使用 HyperOS facade 与 Miuix 语义主题。
+7. **交付必须可审计。** 新页面或页面重做要更新 `hyperos-page-compliance.json`，运行 `python tool/hyperos_audit.py --strict`；涉及颜色、字号、圆角、间距、深色或玻璃效果时再运行 `--perfect` 并完成必要的真机人工核对。
+8. **例外必须留痕。** 如果确实需要绕过 facade 或使用 Material/Forui 兼容件，必须在 PR/Issue 中写明原因、影响范围和后续收敛计划。
 
 ---
 
@@ -341,75 +372,60 @@ return HyperosSubpage(
 
 ---
 
-## 8. Miuix 参考来源（Compose，不可直接依赖）
+## 8. Miuix 来源与 `flutter_miuix` 关系
 
-第三方开源库 **[Miuix](https://github.com/compose-miuix-ui/miuix)**（`compose-miuix-ui/miuix`，Apache-2.0，~900⭐）是 **Compose Multiplatform** 的 HyperOS 风格 UI 库，**不是 Flutter 包**，mikcb 不能直接 `pub add`。
+### 8.1 Compose Miuix：设计参考，不直接作为 Flutter 依赖
 
-| 项目 | Miuix | mikcb `lib/ui/hyperos` |
-|------|-------|------------------------|
-| 技术栈 | Kotlin + Compose Multiplatform | Flutter + Forui 骨架 |
-| 能否直接引用 | ❌ | — |
-| 能否抄设计数据 | ✅ 色值、尺寸、组件清单 | 手工移植为 Dart token / Widget |
+上游 **[Miuix](https://github.com/compose-miuix-ui/miuix)** 是 Compose Multiplatform 的 HyperOS 风格 UI 库，Apache-2.0。它提供颜色、字号、圆角、Preference 组件清单和动效语义等参考数据，但不是 Dart/Flutter 包，不能在本项目中直接 `pub add` 或导入 Kotlin API。
 
-### 8.1 可移植的「硬数据」
+### 8.2 项目固定的 Flutter port
 
-来源：[Colors.kt](https://github.com/compose-miuix-ui/miuix/blob/main/miuix-ui/src/commonMain/kotlin/top/yukonga/miuix/kmp/theme/Colors.kt)
+本项目实际安装和使用的是项目固定的 `flutter_miuix` Git 依赖：
 
-**浅色 `lightColorScheme()` 与 mikcb 已对齐的部分：**
+| 项目 | 当前值 |
+|------|--------|
+| 包名 | `flutter_miuix` |
+| 版本 | `1.0.10` |
+| Git 来源 | `https://github.com/Mutx163/flutter_miuix.git` |
+| 固定 commit | `8d72a94a72ca4580b43ef2b5872ded3021815ccd` |
+| 公开入口 | `package:flutter_miuix/miuix.dart` |
+| 组件规模 | 45+ 个公开组件/基础能力 |
 
-| 语义 | Miuix | mikcb `HyperosTokens` | 备注 |
-|------|-------|----------------------|------|
-| primary / accent | `#3482FF` | `#3482FF` | ✅ 一致 |
-| 页面 surface | `#F7F7F7` | background `#F2F2F2` | 略深，可斟酌 |
-| 卡片 surfaceVariant | `#FFFFFF` | card `#FFFFFF` | ✅ |
-| 按下高亮 | `#E8E8E8` | pressed `#E0E0E0` | 接近 |
-| 分割线 dividerLine | `#E0E0E0` | divider `#E8E8E8` | 接近 |
-| 主文字 onSurface | `#000000` | primaryText `#333333` | Miuix 更黑；我们贴近截图取 `#333` |
-| 摘要 summary | `#99000000` (~60%) | secondaryText `#999999` | 可改用 alpha 黑 |
-| 箭头 actions | `#66000000` (~40%) | chevron 用 secondaryText | Miuix 更淡 |
+公开 barrel 当前覆盖：
 
-**Miuix 额外语义色（后续可补进 `HyperosTokens`）：**
+- 主题与动态取色：`MiuixTheme`、`MiuixColors`、`MiuixTextStyles`、Monet。
+- Foundation：`MiuixPressable`、`MiuixSquircleBorder`、弹簧、Popup、Vector Icon、滚动触觉。
+- Blur：`MiuixBackdrop`、`MiuixTextureBlur`、`MiuixHighlight`。
+- 基础件：Button、Card、Badge、Checkbox、Radio、Switch、Slider、TextField、Divider、Progress、TabRow。
+- Preference：Arrow/Switch/Checkbox/Radio/Slider/Dropdown/Spinner Preference。
+- 页面与交互：Scaffold、TopAppBar、NavigationBar/Rail、Dialog、BottomSheet、Dropdown、ListPopup、Date/Number Picker、Snackbar、Tooltip、PullToRefresh。
 
-- `error` `#E94634`、`tertiaryContainer` `#EAF2FF`（浅蓝底）
-- Switch 关轨 `secondary` `#E6E6E6`、Slider 轨道 `#0F000000`
-- `windowDimming` 30% 黑（Dialog / Sheet 遮罩）
+### 8.3 项目自研层与官方基础件的边界
 
-**尺寸（来源 ArrowPreference / Switch）：**
+| 需求 | 直接使用 `flutter_miuix` | 优先使用 mikcb 自研 facade |
+|------|---------------------------|-----------------------------|
+| 主题、语义颜色、文字样式 | `MiuixTheme` / `MiuixColors` / `MiuixTextStyles` | `HyperosColors` / `HyperosTypography`（页面语义包装） |
+| 基础按钮、开关、滑条、输入 | `MiuixButton` / `MiuixSwitch` / `MiuixSlider` / `MiuixTextField` | `HyperosButton` / `HyperosSwitchTile` / `HyperosSliderTile` / `HyperosTextField` |
+| Preference 行 | `Miuix*Preference` | `HyperosListTile` / `HyperosChoiceTile` / `HyperosSelectTile` |
+| 卡片和设置分组 | `MiuixCard` / `MiuixSurface` | `HyperosListGroup` / `HyperosCard` / `HyperosControlCard` |
+| 页面与顶栏 | `MiuixScaffold` / `MiuixTopAppBar` | `HyperosRootPage` / `HyperosSubpage` / `HyperosNavigation` |
+| 弹层与反馈 | `MiuixOverlayDialog` / `MiuixOverlayBottomSheet` / `MiuixSnackbar` | `HyperosDialog` / `HyperosSheet` / `showAppToast` / `showHyperosSnackBar` |
+| 玻璃与降级 | `MiuixTextureBlur` 等基础能力 | `HyperosBlurredHeader` / `HyperosLiquidGlassSurface` 等项目策略封装 |
 
-| 元素 | Miuix | mikcb 现状 |
-|------|-------|------------|
-| 右箭头 | **10×16 dp** 矢量 | 6×12 自绘 chevron ✅ 已更细 |
-| Switch | **49×28 dp**，thumb **20 dp** | 未实现，仍用 `FSwitch` |
-| 箭头色 | `onSurfaceVariantActions` 40% 黑 | secondaryText |
+**原则：** 官方库定义基础行为和 Miuix 语义；自研层定义轻屿课表的页面结构、视觉 token、兼容策略和业务组合。页面代码不应绕过已经存在的自研入口重新实现同一规则。
 
-默认 Monet 种子色示例也是 `#3482FF`，与 HyperOS 文档一致。
+### 8.4 官方库组合时的关键接线
 
-### 8.2 组件对照表（移植目标）
+- `MiuixScaffold.content` 是接收 `EdgeInsets` 的 builder，必须把 padding 应用到内容根部。
+- 可折叠顶栏要让 `MiuixTopAppBar.scrollBehavior` 与内容树中的 `MiuixScrollBehaviorListener` 共享同一个 behavior。
+- `MiuixOverlayDialog` / `MiuixOverlayBottomSheet` 使用声明式 `show` + `onDismissRequest`，不要自行寻找命令式替代 API。
+- `MiuixNavigationBar` / `MiuixFloatingNavigationBar` 的子项数量必须满足库的约束（2–5）。
+- 图标优先 `MiuixIcons.basic` 或经过确认的 `MiuixIcons.extended.byName`；`MiuixIcon` 的 `icon` / `vector` / `child` 三种来源只能传一种。
+- 颜色优先语义角色，不要把 `Color(0x...)` 直接散落在页面中；自研页面优先走 `HyperosColors`。
+- 新页面是否合规以 `docs/reference/hyperos-page-compliance.json` 和 `python tool/hyperos_audit.py` 为准，不以单次截图或对话印象为准。
 
-Miuix `miuix-preference` → mikcb HyperOS 映射：
+### 8.5 结论
 
-| Miuix (v0.9+) | 用途 | mikcb 对应 | 状态 |
-|---------------|------|------------|------|
-| `ArrowPreference` | 带摘要的导航行 | `HyperosListTile` | ✅ |
-| `SwitchPreference` | 开关行 | `HyperosSwitchTile` | ✅ |
-| `CheckboxPreference` | 多选 | `HyperosChoiceTile` | ✅ |
-| `RadioButtonPreference` | 单选 | `HyperosChoiceTile` | ✅ |
-| `SliderPreference` | 滑条行 | `HyperosSliderTile` | ✅ |
-| `OverlayBottomSheet` | 底部弹层 | `HyperosSheet` | ✅ |
-| `OverlayDialog` | 对话框 | `HyperosDialog` | 🟡 |
-| `OverlayDropdownPreference` | 下拉选择 | — | ❌ |
-
-Miuix `miuix-ui` 基础件：`Switch`、`Slider`、`TabRow`、`Checkbox` 等已实现 **HyperOS3 动效**（弹簧、触觉反馈），Flutter 侧需用 `AnimationController` / `HapticFeedback` 复刻，无法复制粘贴。
-
-### 8.3 推荐用法
-
-1. **只借 spec，不引依赖** — 从 Miuix 源码提取色值、dp、组件 API 命名，写入 `hyperos_tokens.dart` 与本文档。
-2. **阶段 B 优先对照** — 实现 `HyperosSwitch` 时参照 Miuix `Switch.kt`：49×28、thumb 20、primary `#3482FF`、关轨 `#E6E6E6`。
-3. **图标** — Miuix 有独立 `miuix-icons` 模块；Flutter 可继续 Material Icons，或导出 SVG 到 `assets/`（非必须）。
-4. **Squircle / Blur** — Miuix 有 `miuix-squircle`、`miuix-blur`；Flutter 可选 `figma_squircle` 或跳过（设置列表非刚需）。
-
-### 8.4 结论
-
-- **不能**在 Flutter 里直接依赖 Miuix。
-- **可以**把它当作 HyperOS 的「开源设计规范 + 参考实现」，尤其 **颜色、Switch/Slider 尺寸、Preference 组件清单**。
-- mikcb 当前 tokens 与 Miuix **核心 accent / 卡片 / 按下色已基本同系**；下一步实现 Switch/Slider 时以 Miuix 数值为准，成功率最高。
+- 项目已经具备两套协同组件体系，但不是两套平行的“随便选一个”组件库。
+- `flutter_miuix` 是固定版本的 Flutter 基础 port；`lib/ui/hyperos/` 是轻屿课表的应用级设计系统与兼容 facade。
+- 新页面默认走自研 facade；自研 facade 不覆盖时才直接调用官方 `Miuix*` 基础件；禁止新增第三套通用组件体系。

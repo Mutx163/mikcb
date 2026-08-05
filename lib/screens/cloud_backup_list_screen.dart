@@ -10,6 +10,7 @@ import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../ui/hyperos/hyperos.dart';
 import 'cloud_backup_ui_helpers.dart';
+import 'transfer_preview_dialog.dart';
 
 class CloudBackupListScreen extends StatefulWidget {
   const CloudBackupListScreen({super.key});
@@ -55,6 +56,24 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
     });
   }
 
+  Future<void> _undoCloudRestore() async {
+    final success = await _coordinator.undoLastRestore();
+    if (!mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    showAppToast(
+      context,
+      message: success
+          ? l10n.cloudBackupRestoreSuccess
+          : l10n.cloudBackupRestoreFailed('Undo failed'),
+      kind: success ? AppToastKind.success : AppToastKind.error,
+    );
+    if (success) {
+      await _loadBackups();
+    }
+  }
+
   Future<void> _createManualBackup() async {
     setState(() {
       _creatingBackup = true;
@@ -97,7 +116,9 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
         context,
         entry.deviceLabel,
       ),
-      formattedTime: CloudBackupUiHelpers.formatBackupDateTime(entry.exportedAt),
+      formattedTime: CloudBackupUiHelpers.formatBackupDateTime(
+        entry.exportedAt,
+      ),
     );
     if (!mounted || action == null) {
       return;
@@ -113,52 +134,68 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
 
   Future<void> _restoreBackup(CloudBackupEntry entry) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showAppConfirmDialog(
-      context,
-      title: l10n.cloudBackupRestoreTitle,
-      message: l10n.cloudBackupRestoreBody(
-        CloudBackupUiHelpers.formatBackupDateTime(entry.exportedAt),
-      ),
-      confirmLabel: l10n.cloudBackupRestoreAction,
-    );
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    final uploadAsCurrent = await showAppConfirmDialog(
-      context,
-      title: l10n.cloudBackupUploadAsCurrentTitle,
-      message: l10n.cloudBackupUploadAsCurrentBody,
-      confirmLabel: l10n.cloudBackupUploadAsCurrentYes,
-      cancelLabel: l10n.cloudBackupUploadAsCurrentNo,
-    );
-
-    final result = await _coordinator.restoreBackup(
-      entry.id,
-      uploadAsCurrent: uploadAsCurrent == true,
-    );
-    if (!mounted) {
-      return;
-    }
-
-    final message = switch (result.kind) {
-      WebdavSyncResultKind.backupRestored => l10n.cloudBackupRestoreSuccess,
-      WebdavSyncResultKind.failed => l10n.cloudBackupRestoreFailed(
-        CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
-      ),
-      _ => l10n.cloudBackupRestoreFailed(
-        CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
-      ),
-    };
-    showAppToast(
-      context,
-      message: message,
-      kind: result.kind == WebdavSyncResultKind.failed
-          ? AppToastKind.error
-          : AppToastKind.success,
-    );
-    if (result.kind == WebdavSyncResultKind.backupRestored) {
-      await _loadBackups();
+    try {
+      final preview = await _coordinator.previewBackupRestore(entry.id);
+      if (!mounted || preview == null) {
+        return;
+      }
+      final mode = await showTransferPreviewDialog(
+        context: context,
+        title: l10n.cloudBackupRestoreTitle,
+        preview: preview.overwriteDiff,
+        alternatePreview: preview.mergeDiff,
+        incoming: preview.overwritePackage,
+      );
+      if (mode == null || !mounted) {
+        return;
+      }
+      final uploadAsCurrent = await showAppConfirmDialog(
+        context,
+        title: l10n.cloudBackupUploadAsCurrentTitle,
+        message: l10n.cloudBackupUploadAsCurrentBody,
+        confirmLabel: l10n.cloudBackupUploadAsCurrentYes,
+        cancelLabel: l10n.cloudBackupUploadAsCurrentNo,
+      );
+      if (!mounted) {
+        return;
+      }
+      final result = await _coordinator.applyPreviewedBackupRestore(
+        preview: preview,
+        mode: mode,
+        uploadAsCurrent: uploadAsCurrent == true,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (result.applied) {
+        showAppToastWithAction(
+          context,
+          message: l10n.cloudBackupRestoreSuccess,
+          actionLabel: l10n.themeUndo,
+          kind: AppToastKind.success,
+          onAction: () => unawaited(_undoCloudRestore()),
+        );
+        await _loadBackups();
+      } else {
+        showAppToast(
+          context,
+          message: l10n.cloudBackupRestoreFailed(
+            CloudBackupUiHelpers.localizeSyncError(l10n, result.error),
+          ),
+          kind: AppToastKind.error,
+        );
+      }
+    } on Object catch (error) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.cloudBackupRestoreFailed(
+          CloudBackupUiHelpers.localizeSyncError(l10n, '$error'),
+        ),
+        kind: AppToastKind.error,
+      );
     }
   }
 
@@ -243,7 +280,9 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
                           context,
                           entry,
                         ),
-                        details: entry.isCurrent ? l10n.cloudBackupCurrentBadge : null,
+                        details: entry.isCurrent
+                            ? l10n.cloudBackupCurrentBadge
+                            : null,
                         onTap: () => _openBackupDetail(entry),
                       ),
                   ],

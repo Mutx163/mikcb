@@ -544,6 +544,8 @@ class _CoupleTimetableSettingsScreenState
       await provider.dataTransferService.exportAndShare(
         profileName: provider.activeProfile?.name,
         courses: provider.courses,
+        tasks: provider.tasks,
+        scheduleItems: provider.scheduleItems,
         settings: provider.settings,
         currentWeek: provider.currentWeek,
         shareText: l10n.coupleTimetableShareText,

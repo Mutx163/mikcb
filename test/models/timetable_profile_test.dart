@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/course_task.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 
@@ -21,6 +22,17 @@ void main() {
           endTime: '09:40',
         ),
       ],
+      tasks: [
+        CourseTask(
+          id: 'task-1',
+          title: '完成作业',
+          courseId: 'course-1',
+          sourceWeek: 6,
+          dueDate: DateTime(2026, 4, 6),
+          createdAt: DateTime(2026, 3, 22, 9),
+          updatedAt: DateTime(2026, 3, 22, 9),
+        ),
+      ],
       settings: TimetableSettings.defaults().copyWith(semesterWeekCount: 24),
       currentWeek: 6,
       createdAt: DateTime(2026, 3, 22, 9),
@@ -32,6 +44,8 @@ void main() {
     expect(restored.id, 'profile-1');
     expect(restored.name, '大一上');
     expect(restored.courses.single.name, '高数');
+    expect(restored.tasks.single.title, '完成作业');
+    expect(restored.tasks.single.sourceWeek, 6);
     expect(restored.settings.semesterWeekCount, 24);
     expect(restored.currentWeek, 6);
     expect(restored.createdAt, DateTime(2026, 3, 22, 9));

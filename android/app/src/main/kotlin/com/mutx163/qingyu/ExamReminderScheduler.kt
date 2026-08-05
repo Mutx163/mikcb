@@ -66,6 +66,7 @@ object ExamReminderScheduler {
         context: Context,
         firesPayload: List<*>,
         activeExamIds: Set<String> = emptySet(),
+        activeFireKeys: Set<String>? = null,
     ) {
         ensureChannel(context)
         val appContext = context.applicationContext
@@ -80,8 +81,13 @@ object ExamReminderScheduler {
             val originalFireAt = originalFireAtMillis(fire)
             val isRecentFailure = originalFireAt <= nowMillis &&
                 originalFireAt > nowMillis - OVERDUE_DELIVERY_WINDOW_MILLIS
+            val isActive = if (activeFireKeys != null) {
+                fireKey(fire) in activeFireKeys
+            } else {
+                fire.examId in activeExamIds
+            }
             if (
-                fire.examId !in activeExamIds ||
+                !isActive ||
                 fire.requestCode in futureRequestCodes ||
                 !isRecentFailure
             ) {
@@ -142,6 +148,10 @@ object ExamReminderScheduler {
         } else {
             fire.fireAtMillis
         }
+    }
+
+    private fun fireKey(fire: Fire): String {
+        return "${fire.examId}#${fire.offsetMinutes}"
     }
 
     fun handleFire(context: Context, intent: Intent) {

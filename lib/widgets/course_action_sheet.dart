@@ -42,6 +42,7 @@ Future<void> showCourseActionSheet(
   required CourseActionHandler onReschedule,
   required CourseActionHandler onDelete,
   required CourseActionHandler onSuspend,
+  required CourseActionHandler onAddTask,
 }) {
   return showHomeHyperosSheet<void>(
     context: context,
@@ -52,6 +53,7 @@ Future<void> showCourseActionSheet(
       onReschedule: onReschedule,
       onDelete: onDelete,
       onSuspend: onSuspend,
+      onAddTask: onAddTask,
     ),
   );
 }
@@ -65,6 +67,7 @@ class CourseActionSheetBody extends StatefulWidget {
     required this.onReschedule,
     required this.onDelete,
     required this.onSuspend,
+    required this.onAddTask,
   });
 
   final List<CourseActionPreviewItem> previewItems;
@@ -73,6 +76,7 @@ class CourseActionSheetBody extends StatefulWidget {
   final CourseActionHandler onReschedule;
   final CourseActionHandler onDelete;
   final CourseActionHandler onSuspend;
+  final CourseActionHandler onAddTask;
 
   @override
   State<CourseActionSheetBody> createState() => _CourseActionSheetBodyState();
@@ -140,6 +144,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
                     onReschedule: widget.onReschedule,
                     onDelete: widget.onDelete,
                     onSuspend: widget.onSuspend,
+                    onAddTask: widget.onAddTask,
                   ),
                   if (otherIndexes.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -469,6 +474,7 @@ class _CourseActionSheetContent extends StatelessWidget {
     required this.onReschedule,
     required this.onDelete,
     required this.onSuspend,
+    required this.onAddTask,
   });
 
   final CourseActionPreviewItem previewItem;
@@ -477,12 +483,23 @@ class _CourseActionSheetContent extends StatelessWidget {
   final CourseActionHandler onReschedule;
   final CourseActionHandler onDelete;
   final CourseActionHandler onSuspend;
+  final CourseActionHandler onAddTask;
 
   Course get course => previewItem.course;
 
   void _closeSheetThen(BuildContext context, VoidCallback action) {
     Navigator.of(context).pop();
     action();
+  }
+
+  void _closeSheetThenAfterDismiss(BuildContext context, VoidCallback action) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    Future<void>.delayed(const Duration(milliseconds: 280), () {
+      if (navigator.context.mounted) {
+        action();
+      }
+    });
   }
 
   @override
@@ -561,6 +578,20 @@ class _CourseActionSheetContent extends StatelessWidget {
       sessionNoteText: sessionNoteText,
       hasHomework: hasHomework,
     );
+    final linkedTask = provider
+        .getTasksForCourse(course.id)
+        .where((task) => task.sourceWeek == null || task.sourceWeek == week)
+        .firstOrNull;
+    final linkedTaskTitle = linkedTask == null
+        ? l10n.taskAddFromCourse
+        : (linkedTask.title.trim().isEmpty
+              ? l10n.taskHomeworkDefaultTitle
+              : linkedTask.title.trim());
+    final linkedTaskSubtitle = linkedTask == null
+        ? l10n.taskListTitle
+        : linkedTask.isCompleted
+        ? l10n.taskCompletedSection
+        : l10n.taskListTitle;
 
     return Column(
       key: ValueKey('course-action-content-${course.id}'),
@@ -692,6 +723,17 @@ class _CourseActionSheetContent extends StatelessWidget {
             });
           },
         ),
+        if (!previewItem.isReadOnly) ...[
+          const SizedBox(height: 8),
+          _CourseDetailTile(
+            icon: Icons.assignment_outlined,
+            title: linkedTaskTitle,
+            subtitle: linkedTaskSubtitle,
+            trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+            onTap: () =>
+                _closeSheetThenAfterDismiss(context, () => onAddTask(course)),
+          ),
+        ],
         const SizedBox(height: 12),
         _CourseDetailTile(
           icon: Icons.info_outline_rounded,

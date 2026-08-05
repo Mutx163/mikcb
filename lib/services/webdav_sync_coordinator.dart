@@ -7,6 +7,7 @@ import 'app_sync_snapshot_service.dart';
 import 'sync_operation_gate.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_service.dart';
+import 'transfer_package.dart';
 
 class WebdavSyncCoordinator extends ChangeNotifier {
   WebdavSyncCoordinator({WebdavSyncService? syncService})
@@ -132,6 +133,46 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     });
   }
 
+  Future<WebdavTransferPreview?> previewBackupRestore(
+    String entryId, {
+    TransferApplyMode mode = TransferApplyMode.overwrite,
+  }) async {
+    final provider = _provider;
+    if (provider == null) {
+      return null;
+    }
+    return _syncGate.runExclusive(
+      () => _syncService.previewBackupRestore(
+        provider: provider,
+        entryId: entryId,
+        mode: mode,
+      ),
+    );
+  }
+
+  Future<WebdavTransferApplyResult> applyPreviewedBackupRestore({
+    required WebdavTransferPreview preview,
+    required TransferApplyMode mode,
+    bool uploadAsCurrent = true,
+  }) async {
+    final provider = _provider;
+    if (provider == null) {
+      return WebdavTransferApplyResult(
+        applied: false,
+        error: 'provider_not_ready',
+        preview: preview,
+      );
+    }
+    return _syncGate.runExclusive(
+      () => _syncService.applyPreviewedBackupRestore(
+        provider: provider,
+        preview: preview,
+        mode: mode,
+        uploadAsCurrent: uploadAsCurrent,
+      ),
+    );
+  }
+
   Future<WebdavSyncResult> restoreBackup(
     String entryId, {
     bool uploadAsCurrent = true,
@@ -158,6 +199,16 @@ class WebdavSyncCoordinator extends ChangeNotifier {
         _setStatus(_status.copyWith(isSyncing: false));
       }
     });
+  }
+
+  Future<bool> undoLastRestore() async {
+    final provider = _provider;
+    if (provider == null) {
+      return false;
+    }
+    return _syncGate.runExclusive(
+      () => _syncService.undoLastRestore(provider: provider),
+    );
   }
 
   Future<WebdavSyncResult> deleteBackup(String entryId) async {

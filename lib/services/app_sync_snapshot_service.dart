@@ -10,9 +10,13 @@ import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/warehouse_macro_models.dart';
 import '../providers/timetable_provider.dart';
+import 'app_log_service.dart';
 import 'data_transfer_service.dart';
 import 'holiday_service.dart';
 import 'storage_service.dart';
+import 'transfer_diff_service.dart';
+import 'transfer_package.dart';
+import 'unified_transfer_service.dart';
 import 'warehouse_import_preferences_service.dart';
 import 'warehouse_macro_service.dart';
 
@@ -160,6 +164,11 @@ class AppSyncSnapshotService {
   final WarehouseMacroService _warehouseMacroService;
   final HolidayService _holidayService;
   final DataTransferService _dataTransferService;
+  final TransferDiffService _transferDiffService = const TransferDiffService();
+  late final UnifiedTransferService _unifiedTransferService =
+      UnifiedTransferService(dataTransferService: _dataTransferService);
+  AppSyncSnapshot? _lastRollbackSnapshot;
+  String? _lastRollbackId;
 
   Future<AppSyncSnapshot> collectSnapshot({
     required TimetableProvider provider,
@@ -386,62 +395,428 @@ class AppSyncSnapshotService {
     return const JsonEncoder.withIndent('  ').convert(meta.toJson());
   }
 
+  /// Builds the same entity-level preview used by file, QR and LAN imports.
+  /// Cloud snapshots retain their existing envelope because they also carry
+  /// warehouse, holiday and partner-binding data outside the timetable core.
+  /// Converts a cloud snapshot to the same transport-neutral package used by
+  /// file, QR and LAN previews. Extra cloud fields stay on [AppSyncSnapshot]
+  /// and are applied by this service after the timetable core is validated.
+  TransferPackage buildTransferPackageFromSnapshot({
+    required AppSyncSnapshot snapshot,
+    TransferChannel channel = TransferChannel.cloud,
+  }) {
+    return _buildTransferPackage(
+      profiles: snapshot.profiles,
+      activeProfileId: snapshot.activeProfileId,
+      timeSchemes: snapshot.timeSchemes,
+      scheduleDateRules: snapshot.scheduleDateRules,
+      locationTimeGroups: snapshot.locationTimeGroups,
+    ).copyWith(channel: channel);
+  }
+
+  /// Builds the active profile as a scoped package for an explicit merge.
+  /// Cloud snapshots may contain several profiles, while a merge must not
+  /// replace unrelated local profiles.
+  TransferPackage buildMergeTransferPackageFromSnapshot({
+    required AppSyncSnapshot snapshot,
+    TransferChannel channel = TransferChannel.cloud,
+  }) {
+    if (snapshot.profiles.isEmpty) {
+      throw const FormatException('sync_snapshot_no_profiles');
+    }
+    final profile = snapshot.profiles.firstWhere(
+      (item) => item.id == snapshot.activeProfileId,
+      orElse: () => snapshot.profiles.first,
+    );
+    return _dataTransferService.buildTransferPackage(
+      scope: TransferScope.currentTimetable,
+      channel: channel,
+      profileName: profile.name,
+      courses: profile.courses,
+      tasks: profile.tasks,
+      scheduleItems: profile.scheduleItems,
+      exams: profile.exams,
+      settings: profile.settings,
+      currentWeek: profile.currentWeek,
+      timeSchemes: snapshot.timeSchemes,
+      scheduleDateRules: snapshot.scheduleDateRules,
+      locationTimeGroups: snapshot.locationTimeGroups,
+    );
+  }
+
+  TransferDiff previewSnapshot({
+    required TimetableProvider provider,
+    required AppSyncSnapshot snapshot,
+    TransferApplyMode mode = TransferApplyMode.overwrite,
+  }) {
+    final current = _buildTransferPackage(
+      profiles: provider.profiles,
+      activeProfileId: provider.activeProfileId,
+      timeSchemes: provider.timeSchemes,
+      scheduleDateRules: provider.scheduleDateRules,
+      locationTimeGroups: provider.locationTimeGroups,
+    );
+    final incoming = mode == TransferApplyMode.merge
+        ? buildMergeTransferPackageFromSnapshot(snapshot: snapshot)
+        : buildTransferPackageFromSnapshot(snapshot: snapshot);
+    return _transferDiffService.compare(
+      current: current,
+      incoming: incoming,
+      mode: mode,
+    );
+  }
+
   Future<String?> applySnapshot({
     required TimetableProvider provider,
     required AppSyncSnapshot snapshot,
+    TransferPackage? transferPackage,
   }) {
     return provider.runMutationExclusive(() async {
       if (snapshot.profiles.isEmpty) {
         return 'sync_snapshot_no_profiles';
       }
 
-      // Seed location groups (and schemes) before profile import so
-      // _syncCoursesWithEffectiveTimeSchemes resolves remote place-routing
-      // instead of rewriting clocks with the device's previous groups (B1).
-      // resync:false avoids applying rules against the still-local profile list.
-      await provider.replaceLocationTimeGroups(
-        snapshot.locationTimeGroups,
-        resync: false,
-      );
-      await provider.replaceScheduleDateRules(
-        snapshot.scheduleDateRules,
-        resync: false,
-      );
-
-      final fullBackupJson = _dataTransferService.buildFullBackupJson(
-        profiles: snapshot.profiles,
-        activeProfileId: snapshot.activeProfileId,
-        timeSchemes: snapshot.timeSchemes,
-      );
-      final timetableError = await provider.importFullAppDataBackup(
-        fullBackupJson,
-      );
-      if (timetableError != null) {
-        return timetableError;
-      }
-
-      await _storageService.saveTeacherRecords(snapshot.teacherRecords);
-      await _storageService.saveLocationRecords(snapshot.locationRecords);
-      await _storageService.saveLocationTimeGroups(snapshot.locationTimeGroups);
-      await _storageService.saveScheduleDateRules(snapshot.scheduleDateRules);
-      await _storageService.saveScheduleDateRuleLastAppliedSignature(
-        snapshot.scheduleDateRuleLastAppliedSignature,
-      );
-      await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
-      await _warehouseMacroService.importAllMacros(snapshot.macros);
-      await _holidayService.saveCustomHolidays(snapshot.customHolidays);
-
-      if (snapshot.includesPartnerTimetableBinding) {
-        await _storageService.savePartnerTimetableBinding(
-          snapshot.partnerTimetableBinding,
+      AppSyncSnapshot? rollbackSnapshot;
+      String? applyError;
+      final incomingPackage =
+          transferPackage ??
+          buildTransferPackageFromSnapshot(snapshot: snapshot);
+      final preview = previewSnapshot(provider: provider, snapshot: snapshot);
+      final undoId = TransferPackage.newPackageId();
+      try {
+        rollbackSnapshot = await _captureRollbackSnapshot(provider);
+        await AppLogService.instance.info(
+          'cloud_transfer_restore_started',
+          'cloud transfer restore started',
+          extras: {
+            'contentSha256': snapshot.contentSha256,
+            'transferId': incomingPackage.packageId,
+            'channel': incomingPackage.channel.value,
+            'scope': incomingPackage.scope.value,
+            'mode': TransferApplyMode.overwrite.name,
+            'undoId': undoId,
+            'added': preview.addedCount,
+            'updated': preview.updatedCount,
+            'removed': preview.removedCount,
+          },
         );
-      }
 
-      // Force full in-memory reload: initialize() is process-idempotent and
-      // would skip partner/teachers/locations after the first start (C4).
-      await provider.reloadFromStorageAfterExternalApply();
-      return null;
+        // Keep cloud-only fields (warehouse, holidays and partner binding)
+        // in the snapshot applier; the package is the shared schema/diff
+        // boundary and has already been previewed above.
+        applyError = await _applySnapshotData(
+          provider: provider,
+          snapshot: snapshot,
+        );
+        if (applyError != null) {
+          throw StateError(applyError);
+        }
+
+        _lastRollbackSnapshot = rollbackSnapshot;
+        _lastRollbackId = undoId;
+        await AppLogService.instance.info(
+          'cloud_transfer_restore_completed',
+          'cloud transfer restore completed',
+          extras: {
+            'contentSha256': snapshot.contentSha256,
+            'transferId': incomingPackage.packageId,
+            'channel': incomingPackage.channel.value,
+            'scope': incomingPackage.scope.value,
+            'mode': TransferApplyMode.overwrite.name,
+            'undoId': undoId,
+            'added': preview.addedCount,
+            'updated': preview.updatedCount,
+            'removed': preview.removedCount,
+          },
+        );
+        return null;
+      } catch (error, stackTrace) {
+        if (rollbackSnapshot != null) {
+          try {
+            await _applySnapshotData(
+              provider: provider,
+              snapshot: rollbackSnapshot,
+            );
+          } catch (rollbackError, rollbackStackTrace) {
+            await AppLogService.instance.error(
+              'cloud_transfer_rollback_failed',
+              'cloud transfer rollback failed',
+              error: rollbackError,
+              stackTrace: rollbackStackTrace,
+              extras: {'contentSha256': snapshot.contentSha256},
+            );
+          }
+        }
+        await AppLogService.instance.error(
+          'cloud_transfer_restore_failed',
+          'cloud transfer restore failed',
+          error: error,
+          stackTrace: stackTrace,
+          extras: {
+            'contentSha256': snapshot.contentSha256,
+            'transferId': incomingPackage.packageId,
+            'channel': incomingPackage.channel.value,
+            'scope': incomingPackage.scope.value,
+            'mode': TransferApplyMode.overwrite.name,
+            'undoId': undoId,
+            'added': preview.addedCount,
+            'updated': preview.updatedCount,
+            'removed': preview.removedCount,
+          },
+        );
+        return applyError ?? 'sync_snapshot_apply_failed';
+      }
     });
+  }
+
+  /// Applies a cloud snapshot through the shared transfer service when the
+  /// caller explicitly selected merge. The rollback snapshot still includes
+  /// cloud-only data so undo remains lossless.
+  Future<String?> applySnapshotWithMode({
+    required TimetableProvider provider,
+    required AppSyncSnapshot snapshot,
+    required TransferApplyMode mode,
+    TransferPackage? transferPackage,
+  }) async {
+    if (mode == TransferApplyMode.overwrite) {
+      return applySnapshot(
+        provider: provider,
+        snapshot: snapshot,
+        transferPackage: transferPackage,
+      );
+    }
+
+    return provider.runMutationExclusive(() async {
+      final package =
+          transferPackage ??
+          buildMergeTransferPackageFromSnapshot(snapshot: snapshot);
+      final current = _unifiedTransferService.buildCurrentPackage(
+        provider: provider,
+        channel: TransferChannel.cloud,
+      );
+      final preview = _transferDiffService.compare(
+        current: current,
+        incoming: package,
+        mode: mode,
+      );
+      final rollback = await _captureRollbackSnapshot(provider);
+      final undoId = TransferPackage.newPackageId();
+      await AppLogService.instance.info(
+        'cloud_transfer_restore_started',
+        'cloud transfer restore started',
+        extras: {
+          'transferId': package.packageId,
+          'channel': package.channel.value,
+          'scope': package.scope.value,
+          'mode': mode.name,
+          'undoId': undoId,
+          'added': preview.addedCount,
+          'updated': preview.updatedCount,
+          'removed': preview.removedCount,
+        },
+      );
+      try {
+        final result = await _unifiedTransferService.applyToProvider(
+          provider: provider,
+          incoming: package,
+          mode: mode,
+          current: current,
+        );
+        if (!result.applied) {
+          return result.error ?? 'sync_snapshot_apply_failed';
+        }
+        _lastRollbackSnapshot = rollback;
+        _lastRollbackId = undoId;
+        await AppLogService.instance.info(
+          'cloud_transfer_restore_completed',
+          'cloud transfer restore completed',
+          extras: {
+            'transferId': package.packageId,
+            'channel': package.channel.value,
+            'scope': package.scope.value,
+            'mode': mode.name,
+            'undoId': undoId,
+            'added': preview.addedCount,
+            'updated': preview.updatedCount,
+            'removed': preview.removedCount,
+          },
+        );
+        return null;
+      } catch (error, stackTrace) {
+        try {
+          await _applySnapshotData(provider: provider, snapshot: rollback);
+        } catch (rollbackError, rollbackStackTrace) {
+          await AppLogService.instance.error(
+            'cloud_transfer_rollback_failed',
+            'cloud transfer rollback failed',
+            error: rollbackError,
+            stackTrace: rollbackStackTrace,
+            extras: {'transferId': package.packageId, 'undoId': undoId},
+          );
+        }
+        await AppLogService.instance.error(
+          'cloud_transfer_restore_failed',
+          'cloud transfer restore failed',
+          error: error,
+          stackTrace: stackTrace,
+          extras: {
+            'transferId': package.packageId,
+            'channel': package.channel.value,
+            'scope': package.scope.value,
+            'mode': mode.name,
+            'undoId': undoId,
+            'added': preview.addedCount,
+            'updated': preview.updatedCount,
+            'removed': preview.removedCount,
+          },
+        );
+        return 'sync_snapshot_apply_failed';
+      }
+    });
+  }
+
+  /// Reverts the most recent cloud apply during this process session.
+  Future<bool> undoLastApply({required TimetableProvider provider}) async {
+    final rollbackSnapshot = _lastRollbackSnapshot;
+    if (rollbackSnapshot == null) {
+      return false;
+    }
+    try {
+      await provider.runMutationExclusive(() async {
+        final error = await _applySnapshotData(
+          provider: provider,
+          snapshot: rollbackSnapshot,
+        );
+        if (error != null) {
+          throw StateError(error);
+        }
+      });
+      final undoId = _lastRollbackId;
+      _lastRollbackSnapshot = null;
+      _lastRollbackId = null;
+      await AppLogService.instance.info(
+        'cloud_transfer_restore_undone',
+        'cloud transfer restore undone',
+        extras: {'undoId': ?undoId},
+      );
+      return true;
+    } catch (error, stackTrace) {
+      await AppLogService.instance.error(
+        'cloud_transfer_undo_failed',
+        'cloud transfer undo failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  Future<String?> _applySnapshotData({
+    required TimetableProvider provider,
+    required AppSyncSnapshot snapshot,
+  }) async {
+    // Seed location groups (and schemes) before profile import so
+    // _syncCoursesWithEffectiveTimeSchemes resolves remote place-routing
+    // instead of rewriting clocks with the device's previous groups (B1).
+    // resync:false avoids applying rules against the still-local profile list.
+    await provider.replaceLocationTimeGroups(
+      snapshot.locationTimeGroups,
+      resync: false,
+    );
+    await provider.replaceScheduleDateRules(
+      snapshot.scheduleDateRules,
+      resync: false,
+    );
+
+    final fullBackupJson = _dataTransferService.buildFullBackupJson(
+      profiles: snapshot.profiles,
+      activeProfileId: snapshot.activeProfileId,
+      timeSchemes: snapshot.timeSchemes,
+      scheduleDateRules: snapshot.scheduleDateRules,
+      locationTimeGroups: snapshot.locationTimeGroups,
+      channel: TransferChannel.cloud,
+    );
+    final timetableError = await provider.importFullAppDataBackup(
+      fullBackupJson,
+    );
+    if (timetableError != null) {
+      return timetableError;
+    }
+
+    await _storageService.saveTeacherRecords(snapshot.teacherRecords);
+    await _storageService.saveLocationRecords(snapshot.locationRecords);
+    await _storageService.saveLocationTimeGroups(snapshot.locationTimeGroups);
+    await _storageService.saveScheduleDateRules(snapshot.scheduleDateRules);
+    await _storageService.saveScheduleDateRuleLastAppliedSignature(
+      snapshot.scheduleDateRuleLastAppliedSignature,
+    );
+    await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
+    await _warehouseMacroService.importAllMacros(snapshot.macros);
+    await _holidayService.saveCustomHolidays(snapshot.customHolidays);
+
+    if (snapshot.includesPartnerTimetableBinding) {
+      await _storageService.savePartnerTimetableBinding(
+        snapshot.partnerTimetableBinding,
+      );
+    }
+
+    // Force full in-memory reload: initialize() is process-idempotent and
+    // would skip partner/teachers/locations after the first start (C4).
+    await provider.reloadFromStorageAfterExternalApply();
+    return null;
+  }
+
+  Future<AppSyncSnapshot> _captureRollbackSnapshot(
+    TimetableProvider provider,
+  ) async {
+    final externalData = await collectSnapshot(
+      provider: provider,
+      deviceId: 'local-rollback',
+    );
+    final now = DateTime.now();
+    return AppSyncSnapshot(
+      profiles: List<TimetableProfile>.from(provider.profiles),
+      activeProfileId: provider.activeProfileId,
+      timeSchemes: List<TimeScheme>.from(provider.timeSchemes),
+      locationTimeGroups: List<LocationTimeGroup>.from(
+        provider.locationTimeGroups,
+      ),
+      scheduleDateRules: List<ScheduleDateRule>.from(
+        provider.scheduleDateRules,
+      ),
+      teacherRecords: List<String>.from(externalData.teacherRecords),
+      locationRecords: List<String>.from(externalData.locationRecords),
+      warehouse: externalData.warehouse,
+      macros: List<WarehouseMacroRecord>.from(externalData.macros),
+      customHolidays: List<HolidayEntry>.from(externalData.customHolidays),
+      exportedAt: now,
+      deviceId: 'local-rollback',
+      contentSha256: '',
+      partnerTimetableBinding: externalData.partnerTimetableBinding,
+      includesPartnerTimetableBinding:
+          externalData.includesPartnerTimetableBinding,
+      scheduleDateRuleLastAppliedSignature:
+          provider.scheduleDateRuleLastAppliedSignature,
+    );
+  }
+
+  TransferPackage _buildTransferPackage({
+    required List<TimetableProfile> profiles,
+    required String? activeProfileId,
+    required List<TimeScheme> timeSchemes,
+    required List<ScheduleDateRule> scheduleDateRules,
+    required List<LocationTimeGroup> locationTimeGroups,
+  }) {
+    return _dataTransferService.buildTransferPackage(
+      scope: TransferScope.allData,
+      channel: TransferChannel.cloud,
+      profiles: profiles,
+      activeProfileId: activeProfileId,
+      timeSchemes: timeSchemes,
+      scheduleDateRules: scheduleDateRules,
+      locationTimeGroups: locationTimeGroups,
+      isFullBackup: true,
+    );
   }
 
   Future<String?> applySnapshotJson({

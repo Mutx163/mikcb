@@ -6,11 +6,14 @@ import '../providers/timetable_provider.dart';
 import '../utils/course_color_palette.dart';
 import 'lan_edit_host.dart';
 import 'spreadsheet_import_service.dart';
+import 'transfer_package.dart';
+import 'unified_transfer_service.dart';
 import 'week_expression_parser.dart';
 
 /// Bridges [TimetableProvider] to [LanEditHost] for LAN HTTP handlers.
-class LanEditProviderHost implements LanEditHost {
+class LanEditProviderHost implements LanEditHost, LanTransferHost {
   final TimetableProvider _provider;
+  final UnifiedTransferService _transferService = UnifiedTransferService();
 
   LanEditProviderHost(this._provider);
 
@@ -128,40 +131,104 @@ class LanEditProviderHost implements LanEditHost {
 
   @override
   String buildProfileBackupJson() {
-    return _provider.dataTransferService.buildBackupJson(
-      profileName: _provider.activeProfile?.name,
-      courses: _provider.courses,
-      exams: _provider.exams,
-      settings: _provider.settings,
-      currentWeek: _provider.currentWeek,
+    return _transferService
+        .buildCurrentPackage(provider: _provider, channel: TransferChannel.lan)
+        .encode();
+  }
+
+  @override
+  LanTransferPreview? previewTransferJson(String content) {
+    final incoming = _transferService.parseCompatible(
+      content,
+      channel: TransferChannel.lan,
+    );
+    if (incoming.isFullBackup ||
+        (incoming.scope == TransferScope.allData &&
+            incoming.profiles.isNotEmpty)) {
+      throw const FormatException('use_profile_backup_not_full');
+    }
+    final current = _transferService.buildCurrentPackage(
+      provider: _provider,
+      channel: TransferChannel.lan,
+    );
+    return LanTransferPreview(
+      incoming: incoming,
+      mergeDiff: _transferService.preview(
+        current: current,
+        incoming: incoming,
+        mode: TransferApplyMode.merge,
+      ),
+      overwriteDiff: _transferService.preview(
+        current: current,
+        incoming: incoming,
+        mode: TransferApplyMode.overwrite,
+      ),
+    );
+  }
+
+  @override
+  Future<TransferApplyResult> applyTransferJson(
+    String content, {
+    required TransferApplyMode mode,
+  }) async {
+    final incoming = _transferService.parseCompatible(
+      content,
+      channel: TransferChannel.lan,
+    );
+    if (incoming.isFullBackup ||
+        (incoming.scope == TransferScope.allData &&
+            incoming.profiles.isNotEmpty)) {
+      throw const FormatException('use_profile_backup_not_full');
+    }
+    return _transferService.applyToProvider(
+      provider: _provider,
+      incoming: incoming,
+      mode: mode,
     );
   }
 
   @override
   Future<void> importProfileBackupJson(String content) async {
-    if (_provider.dataTransferService.isFullBackupJson(content)) {
+    final incoming = _transferService.parseCompatible(
+      content,
+      channel: TransferChannel.lan,
+    );
+    if (incoming.isFullBackup ||
+        (incoming.scope == TransferScope.allData &&
+            incoming.profiles.isNotEmpty)) {
       throw const FormatException('use_profile_backup_not_full');
     }
-    final error = await _provider.importAppDataBackup(content);
-    if (error != null) {
-      throw FormatException(error);
+    final result = await _transferService.applyToProvider(
+      provider: _provider,
+      incoming: incoming,
+      mode: TransferApplyMode.overwrite,
+    );
+    if (!result.applied) {
+      throw FormatException(result.error ?? 'transfer_import_failed');
     }
   }
 
   @override
   Future<int> importMergeBackupJson(String content) async {
-    if (_provider.dataTransferService.isFullBackupJson(content)) {
+    final incoming = _transferService.parseCompatible(
+      content,
+      channel: TransferChannel.lan,
+    );
+    if (incoming.isFullBackup ||
+        (incoming.scope == TransferScope.allData &&
+            incoming.profiles.isNotEmpty)) {
       throw const FormatException('use_profile_backup_not_full');
     }
-    final backup = _provider.dataTransferService.parseBackupJson(content);
-    if (backup.courses.isEmpty) {
-      return 0;
-    }
-    return _provider.importParsedCourses(
-      backup.courses,
-      replaceExisting: false,
-      source: 'lan_merge',
+    final result = await _transferService.applyToProvider(
+      provider: _provider,
+      incoming: incoming,
+      mode: TransferApplyMode.merge,
     );
+    if (!result.applied) {
+      throw FormatException(result.error ?? 'transfer_import_failed');
+    }
+    final courseDiff = result.preview.forKind(TransferEntityKind.courses);
+    return courseDiff.addedCount + courseDiff.updatedCount;
   }
 
   @override

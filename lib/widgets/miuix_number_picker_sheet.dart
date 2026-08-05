@@ -53,6 +53,7 @@ class _MiuixNumberPickerSheetBody extends StatefulWidget {
 class _MiuixNumberPickerSheetBodyState
     extends State<_MiuixNumberPickerSheetBody> {
   late int _selectedValue;
+  final _pickerController = MiuixFlingNumberPickerController();
 
   /// 滚轮可见行数（奇数，至少 3）；5 行更接近系统数字选择器手感。
   static const int _visibleItemCount = 5;
@@ -80,6 +81,7 @@ class _MiuixNumberPickerSheetBodyState
           SizedBox(
             height: _pickerHeight,
             child: MiuixFlingNumberPicker(
+              controller: _pickerController,
               value: _selectedValue,
               min: widget.minValue,
               max: widget.maxValue,
@@ -112,7 +114,13 @@ class _MiuixNumberPickerSheetBodyState
                   variant: HyperosButtonVariant.primary,
                   expand: true,
                   fitLabel: true,
-                  onPressed: () => Navigator.of(context).pop(_selectedValue),
+                  onPressed: () {
+                    // The fling may still be decaying; commit its projected
+                    // landing value before closing instead of using the
+                    // stale value last delivered by onValueChanged.
+                    final settledValue = _pickerController.settle();
+                    Navigator.of(context).pop(settledValue ?? _selectedValue);
+                  },
                 ),
               ),
             ],

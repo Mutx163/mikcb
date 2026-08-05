@@ -9461,4 +9461,246 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get debugUiOverlayToggleTitle => '디버그 UI 오버레이';
+
+  @override
+  String get scheduleRepeatSectionTitle => '반복';
+
+  @override
+  String get scheduleRepeatNone => '반복하지 않음';
+
+  @override
+  String get scheduleRepeatDaily => '매일';
+
+  @override
+  String get scheduleRepeatWeekly => '매주';
+
+  @override
+  String get scheduleRepeatEndDateLabel => '반복 종료일';
+
+  @override
+  String get scheduleRepeatEndDateHint => '반복 일정에는 종료일이 필요합니다';
+
+  @override
+  String get scheduleRepeatWeeklyHint => '시작 날짜의 요일에 반복합니다';
+
+  @override
+  String get scheduleReminderSectionTitle => '일정 알림';
+
+  @override
+  String get scheduleReminderOff => '알림 없음';
+
+  @override
+  String scheduleReminderMinutes(int minutes) {
+    return '$minutes분 전';
+  }
+
+  @override
+  String get scheduleReminderPermissionMissing =>
+      '알림 권한이 꺼져 있습니다. 일정은 저장되지만 알림이 전달되지 않을 수 있습니다';
+
+  @override
+  String get scheduleReminderPermissionAction => '알림 권한 확인';
+
+  @override
+  String get scheduleEnabledTitle => '일정 사용';
+
+  @override
+  String get scheduleDisabledSubtitle => '일시 중지됨. 알림이 비활성화됩니다';
+
+  @override
+  String get scheduleEditScopeTitle => '편집 범위';
+
+  @override
+  String get scheduleEditScopeThis => '이번 항목만';
+
+  @override
+  String get scheduleEditScopeAll => '모든 반복 항목';
+
+  @override
+  String get scheduleDeleteScopeTitle => '삭제 범위';
+
+  @override
+  String get scheduleDeleteScopeThis => '이번 항목만 삭제';
+
+  @override
+  String get scheduleDeleteScopeAll => '모든 반복 항목 삭제';
+
+  @override
+  String get scheduleOccurrenceEditHint => '반복 일정의 한 항목을 편집하고 있습니다';
+
+  @override
+  String get scheduleRepeatEndRequired => '반복 종료일을 선택하세요';
+
+  @override
+  String get homeMenuTasksTitle => '할 일';
+
+  @override
+  String get taskListTitle => '할 일';
+
+  @override
+  String get addTask => '할 일 추가';
+
+  @override
+  String get editTask => '할 일 편집';
+
+  @override
+  String get saveTask => '할 일 저장';
+
+  @override
+  String get taskTitleLabel => '할 일 제목';
+
+  @override
+  String get taskTitleHint => '예: 3장 연습문제 끝내기';
+
+  @override
+  String get taskTitleRequired => '할 일 제목을 입력해 주세요';
+
+  @override
+  String get taskNoteLabel => '메모';
+
+  @override
+  String get taskNoteHint => '추가 내용(선택 사항)';
+
+  @override
+  String get taskDueDateLabel => '마감일';
+
+  @override
+  String get taskNoDueDate => '마감일 없음';
+
+  @override
+  String get taskCourseLabel => '수업';
+
+  @override
+  String get taskCourseFilter => '수업 필터';
+
+  @override
+  String get taskAllCourses => '모든 수업';
+
+  @override
+  String get taskNoCourse => '연결된 수업 없음';
+
+  @override
+  String get taskAllFilter => '전체';
+
+  @override
+  String get taskTodayFilter => '오늘';
+
+  @override
+  String get taskWeekFilter => '이번 주';
+
+  @override
+  String get taskOverdueSection => '기한 초과';
+
+  @override
+  String get taskCompletedSection => '완료됨';
+
+  @override
+  String get taskNoTasks => '아직 할 일이 없습니다';
+
+  @override
+  String get taskNoTasksForToday => '오늘 마감인 할 일이 없습니다';
+
+  @override
+  String get taskNoTasksForWeek => '이번 주 마감인 할 일이 없습니다';
+
+  @override
+  String get taskNoTasksForCourse => '이 수업의 할 일이 없습니다';
+
+  @override
+  String get taskDelete => '할 일 삭제';
+
+  @override
+  String get taskDeleteConfirm => '이 할 일을 삭제할까요?';
+
+  @override
+  String get taskHomeworkDefaultTitle => '과제';
+
+  @override
+  String get taskAddFromCourse => '할 일 추가';
+
+  @override
+  String get taskViewCourse => '수업 보기';
+
+  @override
+  String get taskSaved => '할 일이 저장되었습니다';
+
+  @override
+  String get taskUpdated => '할 일이 업데이트되었습니다';
+
+  @override
+  String get taskDeleted => '할 일이 삭제되었습니다';
+
+  @override
+  String get icsExportSectionTitle => '캘린더 내보내기';
+
+  @override
+  String get icsExportSectionSubtitle => '수업, 시험, 일정을 선택해 ICS 캘린더로 공유합니다';
+
+  @override
+  String get icsExportTitle => '캘린더 내보내기';
+
+  @override
+  String get icsExportProfileLabel => '시간표 프로필';
+
+  @override
+  String get icsExportProfileSelectTitle => '시간표 프로필 선택';
+
+  @override
+  String get icsExportDateRangeTitle => '날짜 범위';
+
+  @override
+  String get icsExportStartDate => '시작 날짜';
+
+  @override
+  String get icsExportEndDate => '종료 날짜';
+
+  @override
+  String get icsExportTypesTitle => '캘린더 내용';
+
+  @override
+  String get icsExportCourses => '수업';
+
+  @override
+  String get icsExportExams => '시험';
+
+  @override
+  String get icsExportSchedules => '일정';
+
+  @override
+  String get icsExportButton => '내보내고 공유';
+
+  @override
+  String get icsExportSharing => '캘린더 준비 중…';
+
+  @override
+  String get icsExportNoProfiles => '내보낼 시간표 프로필이 없습니다';
+
+  @override
+  String get icsExportDateRangeInvalid => '종료 날짜를 시작 날짜 이후로 선택하세요';
+
+  @override
+  String get icsExportNoSelection => '하나 이상의 캘린더 내용 유형을 선택하세요';
+
+  @override
+  String get icsExportSemesterStartRequired => '수업을 내보내기 전에 학기 시작 날짜를 설정하세요';
+
+  @override
+  String get icsExportNoEvents => '선택한 날짜 범위에 캘린더 이벤트가 없습니다';
+
+  @override
+  String get icsExportCancelled => '캘린더 공유가 취소되었습니다';
+
+  @override
+  String get icsExportFailed => '캘린더를 내보내지 못했습니다. 잠시 후 다시 시도하세요';
+
+  @override
+  String icsExportShared(int count) {
+    return '캘린더 이벤트 $count개를 내보내고 공유했습니다';
+  }
+
+  @override
+  String get icsExportShareText => '轻屿课表에서 내보낸 캘린더 파일';
+
+  @override
+  String get icsExportShareSubject => '轻屿课表 캘린더';
 }

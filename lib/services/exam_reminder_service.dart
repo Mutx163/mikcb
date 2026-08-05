@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../logging/app_debug_log.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
+import '../models/schedule_item.dart';
 
 /// One scheduled fire point for an exam reminder (local wall clock).
 class ExamReminderFire {
@@ -62,6 +63,149 @@ class ExamReminderService {
       hash = (hash * 0x01000193) & 0x7fffffff;
     }
     return requestCodeNamespace | (hash & 0x00ffffff);
+  }
+
+  /// Identifies one logical reminder fire, including its lead time.
+  ///
+  /// Keeping the offset in the key matters when a user changes a reminder
+  /// from (for example) 30 minutes to 60 minutes: the old overdue fire must
+  /// not be retried as if it were still part of the active schedule.
+  static String fireKey(ExamReminderFire fire) =>
+      '${fire.examId}#${fire.offsetMinutes}';
+
+  static Set<String> buildActiveFireKeys(Iterable<ExamReminderFire> fires) {
+    return fires.map(fireKey).toSet();
+  }
+
+  static const Duration _scheduleReminderHorizon = Duration(days: 366);
+  static const Duration _scheduleReminderRetryWindow = Duration(days: 1);
+
+  /// Builds one-shot fires for enabled schedule occurrences.
+  ///
+  /// The native scheduler already reconciles and persists one-shot fires, so
+  /// recurring rules are expanded here into a bounded future window. The
+  /// occurrence id is namespaced to keep it disjoint from exam ids while
+  /// retaining deterministic cancellation across edits and restarts.
+  static List<ExamReminderFire> buildScheduleFires({
+    required List<ScheduleItem> scheduleItems,
+    DateTime? now,
+  }) {
+    final referenceNow = now ?? DateTime.now();
+    final fromDate = ScheduleItem.dateOnly(
+      referenceNow.subtract(_scheduleReminderRetryWindow),
+    );
+    final toDate = ScheduleItem.dateOnly(
+      referenceNow.add(_scheduleReminderHorizon),
+    );
+    final instancesById = <String, ScheduleItemInstance>{};
+
+    for (final item in scheduleItems) {
+      for (final instance in item.expandInstances(
+        fromDate: fromDate,
+        toDate: toDate,
+      )) {
+        final existing = instancesById[instance.occurrenceId];
+        if (existing == null || instance.item.seriesId != null) {
+          instancesById[instance.occurrenceId] = instance;
+        }
+      }
+    }
+
+    final fires = <ExamReminderFire>[];
+    for (final instance in instancesById.values) {
+      final item = instance.effectiveItem;
+      final offsetMinutes = item.reminderMinutesBefore;
+      if (offsetMinutes == null || offsetMinutes <= 0) {
+        continue;
+      }
+      final start = _buildScheduleDateTime(instance.date, item.startTime);
+      if (start == null) {
+        continue;
+      }
+      final fireAt = start.subtract(Duration(minutes: offsetMinutes));
+      if (!fireAt.isAfter(referenceNow.subtract(const Duration(seconds: 30)))) {
+        continue;
+      }
+      final scheduleId = _scheduleFireId(instance.occurrenceId);
+      fires.add(
+        ExamReminderFire(
+          examId: scheduleId,
+          offsetMinutes: offsetMinutes,
+          fireAtMillis: fireAt.millisecondsSinceEpoch,
+          examStartMillis: start.millisecondsSinceEpoch,
+          title: item.title.trim(),
+          body: _buildScheduleBody(item),
+          requestCode: stableRequestCode(scheduleId, offsetMinutes),
+        ),
+      );
+    }
+
+    fires.sort(
+      (left, right) => left.fireAtMillis.compareTo(right.fireAtMillis),
+    );
+    return fires;
+  }
+
+  static Set<String> buildScheduleActiveIds({
+    required List<ScheduleItem> scheduleItems,
+    DateTime? now,
+  }) {
+    final referenceNow = now ?? DateTime.now();
+    final fromDate = ScheduleItem.dateOnly(
+      referenceNow.subtract(_scheduleReminderRetryWindow),
+    );
+    final toDate = ScheduleItem.dateOnly(
+      referenceNow.add(_scheduleReminderHorizon),
+    );
+    final instancesById = <String, ScheduleItemInstance>{};
+    for (final item in scheduleItems) {
+      for (final instance in item.expandInstances(
+        fromDate: fromDate,
+        toDate: toDate,
+      )) {
+        final existing = instancesById[instance.occurrenceId];
+        if (existing == null || instance.item.seriesId != null) {
+          instancesById[instance.occurrenceId] = instance;
+        }
+      }
+    }
+    return instancesById.values
+        .where((instance) {
+          final item = instance.effectiveItem;
+          return item.enabled &&
+              item.reminderMinutesBefore != null &&
+              item.reminderMinutesBefore! > 0;
+        })
+        .map((instance) => _scheduleFireId(instance.occurrenceId))
+        .toSet();
+  }
+
+  static String _scheduleFireId(String occurrenceId) =>
+      'schedule:$occurrenceId';
+
+  static DateTime? _buildScheduleDateTime(DateTime date, String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null || hour < 0 || hour > 23) {
+      return null;
+    }
+    if (minute < 0 || minute > 59) {
+      return null;
+    }
+    return DateTime(date.year, date.month, date.day, hour, minute);
+  }
+
+  static String _buildScheduleBody(ScheduleItem item) {
+    final parts = <String>['${item.startTime.trim()}-${item.endTime.trim()}'];
+    final location = item.location?.trim();
+    if (location != null && location.isNotEmpty) {
+      parts.add(location);
+    }
+    return parts.join(' · ');
   }
 
   /// Expands [exams] into future fire points. Pure function for unit tests.
@@ -154,27 +298,49 @@ class ExamReminderService {
   Future<bool> reconcile({
     required List<Exam> exams,
     required Course? Function(Exam exam) resolveCourse,
+    List<ScheduleItem> scheduleItems = const [],
+    DateTime? now,
   }) async {
-    final fires = buildFires(exams: exams, resolveCourse: resolveCourse);
+    final referenceNow = now ?? DateTime.now();
+    final fires = <ExamReminderFire>[
+      ...buildFires(
+        exams: exams,
+        resolveCourse: resolveCourse,
+        now: referenceNow,
+      ),
+      ...buildScheduleFires(scheduleItems: scheduleItems, now: referenceNow),
+    ];
     final activeExamIds = exams
         .where((exam) => !exam.isExpired)
         .map((exam) => exam.id)
         .toSet();
-    return syncFires(fires, activeExamIds: activeExamIds);
+    activeExamIds.addAll(
+      buildScheduleActiveIds(scheduleItems: scheduleItems, now: referenceNow),
+    );
+    return syncFires(
+      fires,
+      activeExamIds: activeExamIds,
+      activeFireKeys: buildActiveFireKeys(fires),
+    );
   }
 
   Future<bool> syncFires(
     List<ExamReminderFire> fires, {
     Set<String> activeExamIds = const {},
+    Set<String>? activeFireKeys,
   }) async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return true;
     }
     try {
-      await _channel.invokeMethod<void>('reconcile', {
+      final payload = <String, dynamic>{
         'fires': fires.map((fire) => fire.toNativeMap()).toList(),
         'activeExamIds': activeExamIds.toList(growable: false),
-      });
+      };
+      if (activeFireKeys != null) {
+        payload['activeFireKeys'] = activeFireKeys.toList(growable: false);
+      }
+      await _channel.invokeMethod<void>('reconcile', payload);
       return true;
     } on MissingPluginException {
       if (kDebugMode) {

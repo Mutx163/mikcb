@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'timetable_week_preview.dart';
 
@@ -128,6 +129,15 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final useLiquidGlass =
+        FrostedAppearanceScope.of(context).glassMode ==
+            FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+
+    return _buildSheet(context, useLiquidGlass: useLiquidGlass);
+  }
+
+  Widget _buildSheet(BuildContext context, {required bool useLiquidGlass}) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final colors = context.theme.colors;
@@ -165,29 +175,43 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
             style: HyperosTypography.sectionDescription(context),
           ),
           const SizedBox(height: 14),
-          // One shared liquid-glass layer for all four tiles: several siblings
-          // with identical settings share a single layer + backdrop capture, so
-          // refraction at tile edges samples a continuous backdrop instead of
-          // four independent own-layer captures (which caused seam lines).
-          HyperosLiquidGlassLayer(
-            role: HyperosLiquidGlassRole.nestedTile,
-            // Sample the modal group's undimmed backdrop (matches home menu).
-            useBackdropGroup: true,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
-                const SizedBox(width: tileSpacing),
-                tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
-                const SizedBox(width: tileSpacing),
-                tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
-                const SizedBox(width: tileSpacing),
-                tile(
-                  Icons.add_circle_outline_rounded,
-                  l10n.homeMenuAddCourseTitle,
-                ),
-              ],
-            ),
+          // Liquid-glass mode uses one shared layer for all four tiles:
+          // identical siblings share one backdrop capture, so refraction at tile
+          // edges samples a continuous backdrop instead of four independent
+          // own-layer captures (which caused seam lines).
+          Builder(
+            builder: (context) {
+              final tiles = Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
+                  const SizedBox(width: tileSpacing),
+                  tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
+                  const SizedBox(width: tileSpacing),
+                  tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
+                  const SizedBox(width: tileSpacing),
+                  tile(
+                    Icons.add_circle_outline_rounded,
+                    l10n.homeMenuAddCourseTitle,
+                  ),
+                ],
+              );
+
+              if (!useLiquidGlass) {
+                return tiles;
+              }
+
+              // Only liquid-glass mode needs a shared refraction layer. The
+              // other modes use the same translucent nested surface rule as
+              // settings cards; keeping them out of this layer prevents a
+              // Gaussian/classic preview from rendering as liquid glass.
+              return HyperosLiquidGlassLayer(
+                role: HyperosLiquidGlassRole.nestedTile,
+                // Sample the modal group's undimmed backdrop (matches home menu).
+                useBackdropGroup: true,
+                child: tiles,
+              );
+            },
           ),
           const SizedBox(height: 12),
           HyperosButton(
@@ -230,48 +254,69 @@ class _DemoMenuTile extends StatelessWidget {
     const verticalPadding = 13.0;
     const horizontalPadding = 7.0;
 
-    return HyperosLiquidGlassSurface(
-      role: HyperosLiquidGlassRole.nestedTile,
-      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
-      // Tiles live in a shared HyperosLiquidGlassLayer (see the demo sheet);
-      // sharedLayer registers this shape in the ancestor layer. A per-tile
-      // instant FakeGlass underlay would paint its own backdrop filter per
-      // tile, re-introducing seams, so it stays off here.
-      layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: verticalPadding,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              HyperosFrostedSurface(
-                borderRadius: iconWellRadius,
-                blurEnabled: false,
-                tint: HyperosBlurredHeader.accentSurfaceTintColor(accentColor),
-                child: SizedBox(
-                  width: wellSize,
-                  height: wellSize,
-                  child: Center(
-                    child: Icon(icon, color: accentColor, size: iconSize),
-                  ),
+    final content = Material(
+      type: MaterialType.transparency,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HyperosFrostedSurface(
+              borderRadius: iconWellRadius,
+              blurEnabled: false,
+              tint: HyperosBlurredHeader.accentSurfaceTintColor(accentColor),
+              child: SizedBox(
+                width: wellSize,
+                height: wellSize,
+                child: Center(
+                  child: Icon(icon, color: accentColor, size: iconSize),
                 ),
               ),
-              SizedBox(height: 7),
-              Text(
-                title,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: titleStyle,
-              ),
-            ],
-          ),
+            ),
+            SizedBox(height: 7),
+            Text(
+              title,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: titleStyle,
+            ),
+          ],
         ),
       ),
+    );
+
+    final useLiquidGlass =
+        FrostedAppearanceScope.of(context).glassMode ==
+            FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+    if (useLiquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.nestedTile,
+        borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
+        // Tiles live in a shared HyperosLiquidGlassLayer (see the demo sheet);
+        // sharedLayer registers this shape in the ancestor layer. A per-tile
+        // instant FakeGlass underlay would paint its own backdrop filter per
+        // tile, re-introducing seams, so it stays off here.
+        layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
+        child: content,
+      );
+    }
+
+    // Classic frosted / Gaussian / translucent modes keep nested cards as a
+    // translucent tint over the already-frosted modal. They must not create a
+    // liquid surface just because the demo card is shared with the liquid path.
+    return HyperosFrostedSurface(
+      borderRadius: HyperosTheme.cardBorderRadius,
+      blurEnabled: false,
+      tint: HyperosBlurredHeader.nestedSurfaceTintColor(
+        context,
+        withBlur: HyperosBlurredHeader.backdropBlurEnabled(context),
+      ),
+      child: content,
     );
   }
 }

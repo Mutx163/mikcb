@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import '../l10n/service_message_localizer.dart';
 import '../models/course.dart';
+import '../models/course_task.dart';
 import '../models/exam.dart';
 import '../models/holiday_entry.dart';
 import '../models/location_time_group.dart';
@@ -175,6 +176,7 @@ class TimetableProvider with ChangeNotifier {
   final bool _enableLiveActivitySync;
 
   List<Course> _courses = [];
+  List<CourseTask> _tasks = [];
   List<ScheduleItem> _scheduleItems = [];
   List<Exam> _exams = [];
   TimetableSettings _settings = TimetableSettings.defaults();
@@ -210,6 +212,7 @@ class TimetableProvider with ChangeNotifier {
   PartnerTimetableBinding? _partnerBinding;
 
   List<Course> get courses => List.unmodifiable(_courses);
+  List<CourseTask> get tasks => List.unmodifiable(_tasks);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   List<Exam> get exams => List.unmodifiable(_exams);
   TimetableSettings get settings => _settings;
@@ -536,6 +539,7 @@ class TimetableProvider with ChangeNotifier {
         _currentLiveCourseId = null;
         await _liveUpdateActivityBody(this);
       });
+      await _syncExamReminders();
       notifyListeners();
     });
   }
@@ -568,6 +572,7 @@ class TimetableProvider with ChangeNotifier {
     }
     _profiles[index] = activeProfile.copyWith(
       courses: List<Course>.from(_courses),
+      tasks: List<CourseTask>.from(_tasks),
       scheduleItems: List<ScheduleItem>.from(_scheduleItems),
       exams: List<Exam>.from(_exams),
       settings: _settings,
@@ -620,6 +625,10 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     _applyProfileState(activeProfile);
+
+    // Existing per-session homework marks become actionable once, while the
+    // original course note remains the source of truth for the badge.
+    await _syncHomeworkTasksWithCourses(persist: true);
 
     // 壁纸预加载不阻塞首帧；无壁纸时此调用会立即返回。
     unawaited(precacheHomePageBackdropImage(_settings));
@@ -757,6 +766,7 @@ class TimetableProvider with ChangeNotifier {
     _scheduleItems = _sortScheduleItems(
       List<ScheduleItem>.from(profile.scheduleItems),
     );
+    _tasks = _sortTasks(List<CourseTask>.from(profile.tasks));
     _exams = List<Exam>.from(profile.exams);
     _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
     _currentCalendarWeek = _resolveCurrentCalendarWeek();
@@ -1949,6 +1959,7 @@ class TimetableProvider with ChangeNotifier {
       _activeProfileId = profile.id;
       _applyProfileState(profile);
       await _persistActiveProfileState(touchLastUsedAt: true);
+      unawaited(_syncExamReminders());
       _currentLiveCourseId = null;
       notifyListeners();
       await _updateLiveActivity();
@@ -1976,6 +1987,7 @@ class TimetableProvider with ChangeNotifier {
       _activeProfileId = profile.id;
       _applyProfileState(profile);
       await _persistActiveProfileState(touchLastUsedAt: true);
+      unawaited(_syncExamReminders());
       _currentLiveCourseId = null;
       notifyListeners();
       await _updateLiveActivity();
@@ -2090,6 +2102,9 @@ class TimetableProvider with ChangeNotifier {
       }
       notifyUserDataChangedForSync();
       notifyListeners();
+      if (isActive) {
+        unawaited(_syncExamReminders());
+      }
       await _updateLiveActivity();
       return true;
     });
@@ -2120,6 +2135,7 @@ class TimetableProvider with ChangeNotifier {
           : _applySharedCourseFields(normalizedCourse, existingSharedCourse);
 
       _courses.add(preparedCourse);
+      await _syncHomeworkTasksWithCourses();
       await _persistActiveProfileState();
       await recordTeacher(preparedCourse.teacher);
       await recordLocation(preparedCourse.location);
@@ -2175,6 +2191,7 @@ class TimetableProvider with ChangeNotifier {
           }
         }
 
+        await _syncHomeworkTasksWithCourses();
         await _persistActiveProfileState();
         _currentLiveCourseId = null;
         notifyListeners();
@@ -2198,6 +2215,7 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(() async {
       _courses.removeWhere((c) => c.id == courseId);
       _exams.removeWhere((e) => e.courseId == courseId);
+      _tasks.removeWhere((task) => task.courseId == courseId);
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
@@ -2220,6 +2238,7 @@ class TimetableProvider with ChangeNotifier {
           .toSet();
       _courses.removeWhere((c) => deletedCourseIds.contains(c.id));
       _exams.removeWhere((e) => deletedCourseIds.contains(e.courseId));
+      _tasks.removeWhere((task) => deletedCourseIds.contains(task.courseId));
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
@@ -2230,6 +2249,230 @@ class TimetableProvider with ChangeNotifier {
       );
       _updateLiveActivity();
     });
+  }
+
+  // ---- 课程任务 CRUD ----
+
+  CourseTask? getTaskById(String id) {
+    for (final task in _tasks) {
+      if (task.id == id) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  Course? getCourseForTask(CourseTask task) {
+    final courseId = task.courseId;
+    return courseId == null ? null : getCourseById(courseId);
+  }
+
+  List<CourseTask> getTasksForCourse(String courseId, {int? sourceWeek}) {
+    return _tasks
+        .where(
+          (task) =>
+              task.courseId == courseId &&
+              (sourceWeek == null || task.sourceWeek == sourceWeek),
+        )
+        .toList()
+      ..sort(CourseTask.compareByDueDate);
+  }
+
+  DateTime? dateForCourseOccurrence(Course course, int week) {
+    final semesterStart = _settings.semesterStartDate;
+    if (semesterStart == null || week < 1) {
+      return null;
+    }
+    final startOfSemesterWeek = _startOfWeek(semesterStart);
+    return startOfSemesterWeek.add(
+      Duration(days: (week - 1) * 7 + course.dayOfWeek - 1),
+    );
+  }
+
+  Future<void> addTask(CourseTask task) {
+    return _runMutation(() async {
+      final normalized = _normalizeTask(task);
+      _validateTask(normalized);
+      _tasks = _sortTasks([..._tasks, normalized]);
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'task_created',
+        parameters: {
+          'has_course': normalized.courseId == null ? 0 : 1,
+          'has_due_date': normalized.dueDate == null ? 0 : 1,
+        },
+      );
+    });
+  }
+
+  Future<void> updateTask(CourseTask task) {
+    return _runMutation(() async {
+      final index = _tasks.indexWhere((item) => item.id == task.id);
+      if (index == -1) {
+        return;
+      }
+      final normalized = _normalizeTask(
+        task,
+      ).copyWith(createdAt: _tasks[index].createdAt, updatedAt: DateTime.now());
+      _validateTask(normalized);
+      _tasks[index] = normalized;
+      _tasks = _sortTasks(_tasks);
+      await _persistActiveProfileState();
+      notifyListeners();
+    });
+  }
+
+  Future<void> toggleTaskCompleted(String taskId) {
+    return _runMutation(() async {
+      final index = _tasks.indexWhere((task) => task.id == taskId);
+      if (index == -1) {
+        return;
+      }
+      final current = _tasks[index];
+      _tasks[index] = current.copyWith(
+        isCompleted: !current.isCompleted,
+        updatedAt: DateTime.now(),
+      );
+      _tasks = _sortTasks(_tasks);
+      await _persistActiveProfileState();
+      notifyListeners();
+    });
+  }
+
+  Future<void> deleteTask(String taskId) {
+    return _runMutation(() async {
+      final index = _tasks.indexWhere((task) => task.id == taskId);
+      if (index == -1) {
+        return;
+      }
+      final task = _tasks[index];
+      if (task.source == CourseTaskSource.homeworkMark &&
+          task.courseId != null &&
+          task.sourceWeek != null) {
+        _clearHomeworkMark(task.courseId!, task.sourceWeek!);
+      }
+      _tasks.removeAt(index);
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'task_deleted',
+        parameters: {'remaining_task_count': _tasks.length},
+      );
+    });
+  }
+
+  CourseTask _normalizeTask(CourseTask task) {
+    final title = task.title.trim();
+    final note = task.note?.trim();
+    final courseId = task.courseId?.trim();
+    final sourceWeek = task.sourceWeek != null && task.sourceWeek! > 0
+        ? task.sourceWeek
+        : null;
+    return task.copyWith(
+      title: title,
+      courseId: courseId == null || courseId.isEmpty ? null : courseId,
+      sourceWeek: sourceWeek,
+      dueDate: task.dueDate == null ? null : CourseTask.dateOnly(task.dueDate!),
+      note: note == null || note.isEmpty ? null : note,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  void _validateTask(CourseTask task) {
+    if (task.title.isEmpty) {
+      throw ArgumentError('task_title_required');
+    }
+    if (task.courseId != null && getCourseById(task.courseId!) == null) {
+      throw ArgumentError('task_course_not_found');
+    }
+  }
+
+  List<CourseTask> _sortTasks(List<CourseTask> source) {
+    source.sort(CourseTask.compareByDueDate);
+    return source;
+  }
+
+  Future<bool> _syncHomeworkTasksWithCourses({bool persist = false}) async {
+    final before = jsonEncode(_tasks.map((task) => task.toJson()).toList());
+    final existingHomework = _tasks
+        .where((task) => task.source == CourseTaskSource.homeworkMark)
+        .toList();
+    final next = _tasks
+        .where((task) => task.source != CourseTaskSource.homeworkMark)
+        .toList();
+    final now = DateTime.now();
+
+    for (final course in _courses) {
+      final notes = course.normalizedSessionNotesMap;
+      if (notes == null) {
+        continue;
+      }
+      for (final entry in notes.entries) {
+        final note = entry.value;
+        if (!note.hasHomework) {
+          continue;
+        }
+        CourseTask? existing;
+        for (final candidate in existingHomework) {
+          if (candidate.courseId == course.id &&
+              candidate.sourceWeek == entry.key) {
+            existing = candidate;
+            break;
+          }
+        }
+        final noteTitle = note.trimmedText;
+        final title = noteTitle.isEmpty && existing?.title.isNotEmpty == true
+            ? existing!.title
+            : noteTitle;
+        next.add(
+          (existing ??
+                  CourseTask(
+                    id: const Uuid().v4(),
+                    title: title,
+                    courseId: course.id,
+                    sourceWeek: entry.key,
+                    source: CourseTaskSource.homeworkMark,
+                    createdAt: now,
+                    updatedAt: now,
+                  ))
+              .copyWith(
+                title: title,
+                courseId: course.id,
+                sourceWeek: entry.key,
+                dueDate: dateForCourseOccurrence(course, entry.key),
+                source: CourseTaskSource.homeworkMark,
+                updatedAt: now,
+              ),
+        );
+      }
+    }
+
+    _tasks = _sortTasks(next);
+    final after = jsonEncode(_tasks.map((task) => task.toJson()).toList());
+    final changed = before != after;
+    if (changed && persist) {
+      await _persistActiveProfileState();
+    }
+    return changed;
+  }
+
+  void _clearHomeworkMark(String courseId, int week) {
+    final index = _courses.indexWhere((course) => course.id == courseId);
+    if (index == -1) {
+      return;
+    }
+    final course = _courses[index];
+    final note = course.sessionNoteForWeek(week);
+    if (note == null) {
+      return;
+    }
+    _courses[index] = course.copyWith(
+      sessionNotes: course.withSessionNote(
+        week,
+        note.copyWith(hasHomework: false),
+      ),
+    );
   }
 
   /// Replace all schedule entries for a course group.  [updatedCourses] is
@@ -2253,6 +2496,12 @@ class TimetableProvider with ChangeNotifier {
         await recordTeacher(normalized.teacher);
         await recordLocation(normalized.location);
       }
+      _tasks.removeWhere(
+        (task) =>
+            task.courseId != null &&
+            !_courses.any((course) => course.id == task.courseId),
+      );
+      await _syncHomeworkTasksWithCourses();
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
@@ -2297,6 +2546,7 @@ class TimetableProvider with ChangeNotifier {
       }
       // 所有验证通过，批量添加
       _courses.addAll(normalizedCourses);
+      await _syncHomeworkTasksWithCourses();
       for (final teacher in teachers) {
         await recordTeacher(teacher);
       }
@@ -2376,11 +2626,52 @@ class TimetableProvider with ChangeNotifier {
     await _updateLiveActivity();
   }
 
+  /// Returns concrete schedule occurrences for one local calendar date.
+  ///
+  /// The source item remains attached to each instance so callers can choose
+  /// between editing the whole series and editing only this occurrence.
+  List<ScheduleItemInstance> getScheduleItemInstancesForDate(DateTime date) {
+    final normalizedDate = ScheduleItem.dateOnly(date);
+    final instancesById = <String, ScheduleItemInstance>{};
+    for (final item in _scheduleItems) {
+      for (final instance in item.expandInstances(
+        fromDate: normalizedDate,
+        toDate: normalizedDate,
+      )) {
+        // A one-time override has the same stable occurrence id as the base
+        // occurrence and therefore replaces it if legacy data is inconsistent.
+        instancesById[instance.occurrenceId] = instance;
+      }
+    }
+    return _sortScheduleItemInstances(instancesById.values.toList());
+  }
+
+  List<ScheduleItemInstance> getScheduleItemOccurrencesForDate(DateTime date) {
+    return getScheduleItemInstancesForDate(date);
+  }
+
+  /// Expands all persisted items in an inclusive local calendar date range.
+  List<ScheduleItemInstance> getScheduleItemInstancesForRange(
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
+    final instancesById = <String, ScheduleItemInstance>{};
+    for (final item in _scheduleItems) {
+      for (final instance in item.expandInstances(
+        fromDate: fromDate,
+        toDate: toDate,
+      )) {
+        instancesById[instance.occurrenceId] = instance;
+      }
+    }
+    return _sortScheduleItemInstances(instancesById.values.toList());
+  }
+
+  /// Backward-compatible source-item query used by existing screens.
   List<ScheduleItem> getScheduleItemsForDate(DateTime date) {
-    final normalizedDate = DateTime(date.year, date.month, date.day);
-    return _scheduleItems
-        .where((item) => item.coversDate(normalizedDate))
-        .toList(growable: false);
+    return getScheduleItemInstancesForDate(
+      date,
+    ).map((instance) => instance.item).toList(growable: false);
   }
 
   Future<void> addScheduleItem(ScheduleItem item) async {
@@ -2398,6 +2689,7 @@ class TimetableProvider with ChangeNotifier {
         'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
       },
     );
+    unawaited(_syncExamReminders());
   }
 
   Future<void> updateScheduleItem(ScheduleItem item) async {
@@ -2410,7 +2702,19 @@ class TimetableProvider with ChangeNotifier {
 
     final normalizedItem = _normalizeScheduleItem(item);
     final nextItems = List<ScheduleItem>.from(_scheduleItems);
-    nextItems[index] = normalizedItem;
+    final existing = nextItems[index];
+    if (existing.seriesId == null) {
+      // Updating a root item means "all occurrences". Single-occurrence
+      // overrides are intentionally discarded by this series operation.
+      nextItems.removeWhere((candidate) => candidate.seriesId == existing.id);
+    }
+    final nextIndex = nextItems.indexWhere(
+      (candidate) => candidate.id == existing.id,
+    );
+    if (nextIndex == -1) {
+      return;
+    }
+    nextItems[nextIndex] = normalizedItem;
     _scheduleItems = _sortScheduleItems(nextItems);
     await _persistActiveProfileState();
     notifyListeners();
@@ -2421,12 +2725,18 @@ class TimetableProvider with ChangeNotifier {
         'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
       },
     );
+    unawaited(_syncExamReminders());
   }
 
   Future<void> deleteScheduleItem(String itemId) async {
+    final target = _findScheduleItem(itemId);
+    if (target == null) {
+      return;
+    }
+    final seriesId = target.seriesId ?? target.id;
     final previousCount = _scheduleItems.length;
     _scheduleItems = _scheduleItems
-        .where((item) => item.id != itemId)
+        .where((item) => item.id != seriesId && item.seriesId != seriesId)
         .toList(growable: false);
     if (_scheduleItems.length == previousCount) {
       return;
@@ -2438,6 +2748,190 @@ class TimetableProvider with ChangeNotifier {
       name: 'schedule_item_deleted',
       parameters: {'remaining_schedule_item_count': _scheduleItems.length},
     );
+    unawaited(_syncExamReminders());
+  }
+
+  /// Deletes one occurrence while leaving the rest of its series intact.
+  Future<void> deleteScheduleItemOccurrence(
+    String itemId,
+    DateTime occurrenceDate,
+  ) async {
+    final target = _findScheduleItem(itemId);
+    final root = _findSeriesRoot(target);
+    if (root == null) {
+      return;
+    }
+
+    final requestedDate =
+        target?.seriesId != null && target?.occurrenceDate != null
+        ? target!.occurrenceDate!
+        : ScheduleItem.dateOnly(occurrenceDate);
+    final hasOverride = _scheduleItems.any(
+      (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
+    );
+    if (!root.occursOn(requestedDate) && !hasOverride) {
+      return;
+    }
+
+    // A date-only one-off has no remaining occurrences after this operation,
+    // so removing its persisted row matches whole-item deletion semantics.
+    if (root.seriesId == null &&
+        root.recurrence == ScheduleRecurrence.none &&
+        _isSameDate(root.startDate, root.endDate) &&
+        _isSameDate(root.startDate, requestedDate)) {
+      await deleteScheduleItem(root.id);
+      return;
+    }
+
+    final updatedRoot = root.copyWith(
+      exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
+      updatedAt: DateTime.now(),
+    );
+    final nextItems = <ScheduleItem>[];
+    for (final item in _scheduleItems) {
+      if (item.id == root.id) {
+        nextItems.add(updatedRoot);
+      } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
+        continue;
+      } else {
+        nextItems.add(item);
+      }
+    }
+    _scheduleItems = _sortScheduleItems(nextItems);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'schedule_item_occurrence_deleted',
+      parameters: {
+        'schedule_item_id': root.id,
+        'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
+      },
+    );
+    unawaited(_syncExamReminders());
+  }
+
+  /// Edits one occurrence by replacing it with a persisted one-time override.
+  /// The base series stores the original date as an exception, so the base
+  /// occurrence cannot reappear alongside the override.
+  Future<void> updateScheduleItemOccurrence(
+    String itemId,
+    DateTime occurrenceDate,
+    ScheduleItem updatedItem,
+  ) async {
+    final target = _findScheduleItem(itemId);
+    final root = _findSeriesRoot(target);
+    if (root == null) {
+      return;
+    }
+
+    final requestedDate =
+        target?.seriesId != null && target?.occurrenceDate != null
+        ? target!.occurrenceDate!
+        : ScheduleItem.dateOnly(occurrenceDate);
+    final existingOverride = _scheduleItems.any(
+      (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
+    );
+    if (!root.occursOn(requestedDate) && !existingOverride) {
+      return;
+    }
+
+    // Editing the only occurrence of a one-off can update the original row,
+    // retaining its established id and avoiding an unnecessary override.
+    if (root.seriesId == null &&
+        root.recurrence == ScheduleRecurrence.none &&
+        _isSameDate(root.startDate, root.endDate) &&
+        _isSameDate(root.startDate, requestedDate)) {
+      await updateScheduleItem(updatedItem.copyWith(id: root.id));
+      return;
+    }
+
+    final effectiveDate = _resolveOccurrenceEditDate(
+      root: root,
+      occurrenceDate: requestedDate,
+      updatedItem: updatedItem,
+    );
+    final overrideId = ScheduleItem.buildOccurrenceId(root.id, requestedDate);
+    final override = _normalizeScheduleItem(
+      updatedItem.copyWith(
+        id: overrideId,
+        startDate: effectiveDate,
+        endDate: effectiveDate,
+        recurrence: ScheduleRecurrence.none,
+        exceptionDates: const <DateTime>[],
+        seriesId: root.id,
+        occurrenceDate: requestedDate,
+      ),
+    );
+    final updatedRoot = root.copyWith(
+      exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
+      updatedAt: DateTime.now(),
+    );
+    final nextItems = <ScheduleItem>[];
+    for (final item in _scheduleItems) {
+      if (item.id == root.id) {
+        nextItems.add(updatedRoot);
+      } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
+        continue;
+      } else {
+        nextItems.add(item);
+      }
+    }
+    nextItems.add(override);
+    _scheduleItems = _sortScheduleItems(nextItems);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'schedule_item_occurrence_updated',
+      parameters: {
+        'schedule_item_id': root.id,
+        'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
+      },
+    );
+    unawaited(_syncExamReminders());
+  }
+
+  /// Convenience API for callers holding the stable occurrence id.
+  Future<void> deleteScheduleItemInstance(String occurrenceId) async {
+    final instance = _findScheduleItemInstanceById(occurrenceId);
+    if (instance == null) {
+      return;
+    }
+    await deleteScheduleItemOccurrence(
+      instance.sourceItemId,
+      instance.occurrenceDate,
+    );
+  }
+
+  /// Convenience API for callers holding the stable occurrence id.
+  Future<void> updateScheduleItemInstance(
+    String occurrenceId,
+    ScheduleItem updatedItem,
+  ) async {
+    final instance = _findScheduleItemInstanceById(occurrenceId);
+    if (instance == null) {
+      return;
+    }
+    await updateScheduleItemOccurrence(
+      instance.sourceItemId,
+      instance.occurrenceDate,
+      updatedItem,
+    );
+  }
+
+  Future<void> updateScheduleItemSeries(ScheduleItem item) {
+    return updateScheduleItem(item);
+  }
+
+  Future<void> deleteScheduleItemSeries(String itemId) {
+    return deleteScheduleItem(itemId);
+  }
+
+  ScheduleItem? getScheduleItemById(String itemId) {
+    return _findScheduleItem(itemId);
+  }
+
+  ScheduleItem? getScheduleItemSeriesRoot(String itemId) {
+    return _findSeriesRoot(_findScheduleItem(itemId));
   }
 
   // ---- 考试 CRUD ----
@@ -2573,6 +3067,7 @@ class TimetableProvider with ChangeNotifier {
       await _examReminderService.reconcile(
         exams: _exams,
         resolveCourse: getCourseForExam,
+        scheduleItems: _scheduleItems,
       );
     } catch (error) {
       appDebugLog('ExamReminder', 'sync failed: $error');
@@ -2725,6 +3220,7 @@ class TimetableProvider with ChangeNotifier {
       );
     }
 
+    await _syncHomeworkTasksWithCourses();
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
@@ -2836,6 +3332,7 @@ class TimetableProvider with ChangeNotifier {
       _courses.add(movedOccurrence);
     }
 
+    await _syncHomeworkTasksWithCourses();
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
@@ -2859,6 +3356,7 @@ class TimetableProvider with ChangeNotifier {
     }
 
     _courses = [];
+    _tasks.removeWhere((task) => task.courseId != null);
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
@@ -3165,6 +3663,114 @@ class TimetableProvider with ChangeNotifier {
           ? normalizedStartDate
           : normalizedEndDate,
     );
+  }
+
+  ScheduleItem? _findScheduleItem(String itemId) {
+    for (final item in _scheduleItems) {
+      if (item.id == itemId) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  ScheduleItem? _findSeriesRoot(ScheduleItem? target) {
+    if (target == null) {
+      return null;
+    }
+    final rootId = target.seriesId ?? target.id;
+    return _findScheduleItem(rootId);
+  }
+
+  ScheduleItemInstance? _findScheduleItemInstanceById(String occurrenceId) {
+    for (final item in _scheduleItems) {
+      if (item.id != occurrenceId) {
+        continue;
+      }
+      if (item.seriesId != null) {
+        final date = item.occurrenceDate ?? item.startDate;
+        return ScheduleItemInstance(
+          item: item,
+          date: item.startDate,
+          occurrenceDate: date,
+        );
+      }
+      if (!item.isRecurring) {
+        return ScheduleItemInstance(item: item, date: item.startDate);
+      }
+    }
+
+    final separatorIndex = occurrenceId.lastIndexOf('@');
+    if (separatorIndex <= 0 || separatorIndex == occurrenceId.length - 1) {
+      return null;
+    }
+    final sourceId = occurrenceId.substring(0, separatorIndex);
+    final date = DateTime.tryParse(occurrenceId.substring(separatorIndex + 1));
+    final source = date == null ? null : _findScheduleItem(sourceId);
+    if (source == null || date == null) {
+      return null;
+    }
+    return ScheduleItemInstance(item: source, date: date);
+  }
+
+  bool _isOverrideForOccurrence(
+    ScheduleItem item,
+    String seriesId,
+    DateTime occurrenceDate,
+  ) {
+    if (item.seriesId != seriesId) {
+      return false;
+    }
+    final candidateDate = item.occurrenceDate ?? item.startDate;
+    return _isSameDate(candidateDate, occurrenceDate);
+  }
+
+  DateTime _resolveOccurrenceEditDate({
+    required ScheduleItem root,
+    required DateTime occurrenceDate,
+    required ScheduleItem updatedItem,
+  }) {
+    final requestedDate = ScheduleItem.dateOnly(updatedItem.startDate);
+    // A copy of the series item usually carries the series start date. Treat
+    // that unchanged value as "keep this occurrence's date"; any other date
+    // is an explicit one-time reschedule.
+    if (_isSameDate(requestedDate, root.startDate)) {
+      return ScheduleItem.dateOnly(occurrenceDate);
+    }
+    return requestedDate;
+  }
+
+  bool _isSameDate(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
+  }
+
+  List<ScheduleItemInstance> _sortScheduleItemInstances(
+    List<ScheduleItemInstance> source,
+  ) {
+    source.sort((left, right) {
+      final dateCompare = left.date.compareTo(right.date);
+      if (dateCompare != 0) {
+        return dateCompare;
+      }
+      final sourceDateCompare = left.item.startDate.compareTo(
+        right.item.startDate,
+      );
+      if (sourceDateCompare != 0) {
+        return sourceDateCompare;
+      }
+      final startCompare = left.item.startTime.compareTo(right.item.startTime);
+      if (startCompare != 0) {
+        return startCompare;
+      }
+      final endCompare = left.item.endTime.compareTo(right.item.endTime);
+      if (endCompare != 0) {
+        return endCompare;
+      }
+      return left.occurrenceId.compareTo(right.occurrenceId);
+    });
+    return List.unmodifiable(source);
   }
 
   List<ScheduleItem> _sortScheduleItems(List<ScheduleItem> source) {
@@ -3545,6 +4151,7 @@ class TimetableProvider with ChangeNotifier {
           _activeProfileId = fallback.id;
           _applyProfileState(fallback);
           await _storageService.setActiveProfileId(fallback.id);
+          unawaited(_syncExamReminders());
         }
       }
       notifyUserDataChangedForSync();

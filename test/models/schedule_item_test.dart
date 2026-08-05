@@ -11,6 +11,12 @@ void main() {
     DateTime? endDate,
     String startTime = '08:00',
     String endTime = '09:00',
+    Object recurrence = ScheduleRecurrence.none,
+    Iterable<DateTime>? exceptionDates,
+    String? seriesId,
+    DateTime? occurrenceDate,
+    int? reminderMinutesBefore,
+    bool enabled = true,
   }) {
     return ScheduleItem(
       id: 'item-1',
@@ -25,6 +31,12 @@ void main() {
       color: '#5B9CF6',
       createdAt: createdAt,
       updatedAt: updatedAt,
+      recurrence: recurrence,
+      exceptionDates: exceptionDates,
+      seriesId: seriesId,
+      occurrenceDate: occurrenceDate,
+      reminderMinutesBefore: reminderMinutesBefore,
+      enabled: enabled,
     );
   }
 
@@ -129,6 +141,62 @@ void main() {
       expect(restored.title, original.title);
       expect(restored.startDate, original.startDate);
     });
+
+    test('round-trips recurrence and local exception dates', () {
+      final original = buildItem(
+        startDate: DateTime.utc(2026, 4, 16, 23),
+        endDate: DateTime(2026, 4, 20, 9),
+        recurrence: ScheduleRecurrence.daily,
+        exceptionDates: [
+          DateTime(2026, 4, 18, 18),
+          DateTime.utc(2026, 4, 18, 2),
+        ],
+      );
+
+      final json = original.toJson();
+      final restored = ScheduleItem.fromJson(json);
+
+      expect(json['date'], isNotNull);
+      expect(json['startDate'], isNotNull);
+      expect(json['endDate'], isNotNull);
+      expect(json['recurrence'], 'daily');
+      expect(restored.recurrence, ScheduleRecurrence.daily);
+      expect(restored.exceptionDates, [DateTime(2026, 4, 18)]);
+    });
+
+    test('legacy payload without recurrence remains a one-time item', () {
+      final restored = ScheduleItem.fromJson({
+        'id': 'legacy-one-off',
+        'title': '旧日程',
+        'date': '2026-03-10T00:00:00.000',
+        'startTime': '14:00',
+        'endTime': '15:30',
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      });
+
+      expect(restored.recurrence, ScheduleRecurrence.none);
+      expect(
+        restored.expandDates(
+          fromDate: DateTime(2026, 3, 10),
+          toDate: DateTime(2026, 3, 20),
+        ),
+        [DateTime(2026, 3, 10)],
+      );
+    });
+
+    test('round-trips reminder and enabled pause state', () {
+      final original = buildItem(
+        startDate: DateTime(2026, 8, 1),
+        reminderMinutesBefore: 15,
+        enabled: false,
+      );
+
+      final restored = ScheduleItem.fromJson(original.toJson());
+
+      expect(restored.reminderMinutesBefore, 15);
+      expect(restored.enabled, isFalse);
+    });
   });
 
   group('ScheduleItem copyWith and coversDate', () {
@@ -159,6 +227,92 @@ void main() {
       expect(item.coversDate(DateTime(2026, 4, 17, 12)), isTrue);
       expect(item.coversDate(DateTime(2026, 4, 18, 23)), isTrue);
       expect(item.coversDate(DateTime(2026, 4, 19)), isFalse);
+    });
+
+    test(
+      'daily recurrence expands every local date through the end boundary',
+      () {
+        final item = buildItem(
+          startDate: DateTime(2026, 4, 16, 23),
+          endDate: DateTime(2026, 4, 19, 1),
+          recurrence: ScheduleRecurrence.daily,
+        );
+
+        final instances = item.expandInstances(
+          fromDate: DateTime(2026, 4, 15, 22),
+          toDate: DateTime(2026, 4, 20),
+        );
+
+        expect(instances.map((instance) => instance.date), [
+          DateTime(2026, 4, 16),
+          DateTime(2026, 4, 17),
+          DateTime(2026, 4, 18),
+          DateTime(2026, 4, 19),
+        ]);
+        expect(instances.last.occurrenceId, 'item-1@2026-04-19');
+      },
+    );
+
+    test('weekly recurrence uses the start date weekday', () {
+      final item = buildItem(
+        startDate: DateTime(2026, 4, 16),
+        endDate: DateTime(2026, 5, 1),
+        recurrence: ScheduleRecurrence.weekly,
+      );
+
+      expect(
+        item.occurrenceDates(
+          fromDate: DateTime(2026, 4, 15),
+          toDate: DateTime(2026, 5, 1),
+        ),
+        [DateTime(2026, 4, 16), DateTime(2026, 4, 23), DateTime(2026, 4, 30)],
+      );
+      expect(item.occursOn(DateTime(2026, 4, 17)), isFalse);
+    });
+
+    test('exceptions are normalized, deduplicated, and excluded', () {
+      final item = buildItem(
+        startDate: DateTime(2026, 4, 16),
+        endDate: DateTime(2026, 4, 20),
+        recurrence: ScheduleRecurrence.daily,
+        exceptionDates: [
+          DateTime(2026, 4, 18, 20),
+          DateTime.utc(2026, 4, 18, 1),
+          DateTime(2026, 4, 19),
+        ],
+      );
+
+      expect(item.exceptionDates, [
+        DateTime(2026, 4, 18),
+        DateTime(2026, 4, 19),
+      ]);
+      expect(
+        item.occurrenceDates(
+          fromDate: DateTime(2026, 4, 16),
+          toDate: DateTime(2026, 4, 20),
+        ),
+        [DateTime(2026, 4, 16), DateTime(2026, 4, 17), DateTime(2026, 4, 20)],
+      );
+      expect(item.copyWith(exceptionDates: []).exceptionDates, isEmpty);
+    });
+
+    test('override occurrence id remains tied to the original series date', () {
+      final item = buildItem(
+        startDate: DateTime(2026, 4, 20),
+        seriesId: 'series-1',
+        occurrenceDate: DateTime(2026, 4, 16),
+      );
+
+      final instance = item
+          .expandInstances(
+            fromDate: DateTime(2026, 4, 20),
+            toDate: DateTime(2026, 4, 20),
+          )
+          .single;
+
+      expect(instance.date, DateTime(2026, 4, 20));
+      expect(instance.occurrenceDate, DateTime(2026, 4, 16));
+      expect(instance.occurrenceId, 'series-1@2026-04-16');
     });
   });
 }

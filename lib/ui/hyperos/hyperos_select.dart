@@ -13,6 +13,8 @@ import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
+import '../../widgets/miuix_date_picker_sheet.dart';
+import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Row padding for [HyperosSelectTile] (and similar chevron rows).
@@ -106,6 +108,7 @@ Future<T?> showHyperosSelectPopup<T>({
   required T? currentValue,
   TextStyle? Function(T value)? itemTitleStyleBuilder,
 }) {
+  final appearance = FrostedAppearanceScope.of(context);
   final entries = items.entries.toList(growable: false);
   if (entries.isEmpty || anchorRect == null) {
     return Future.value();
@@ -121,11 +124,14 @@ Future<T?> showHyperosSelectPopup<T>({
     // Opacity layer that degrades the LiquidGlass shader (black flash).
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return _HyperosSelectPopupBody<T>(
-        anchorRect: anchorRect,
-        entries: entries,
-        currentValue: currentValue,
-        itemTitleStyleBuilder: itemTitleStyleBuilder,
+      return FrostedAppearanceScope(
+        appearance: appearance,
+        child: _HyperosSelectPopupBody<T>(
+          anchorRect: anchorRect,
+          entries: entries,
+          currentValue: currentValue,
+          itemTitleStyleBuilder: itemTitleStyleBuilder,
+        ),
       );
     },
   );
@@ -443,7 +449,7 @@ class SelectPopupRevealClipper extends CustomClipper<Path> {
 /// Glass background for the select popup.
 ///
 /// Renders the appropriate surface based on [FrostedGlassMode]:
-/// - **liquidGlass**: [HyperosLiquidGlassSurface] with nestedTile role.
+/// - **liquidGlass**: [HyperosLiquidGlassSurface] with the shared modal role.
 /// - **frosted / gaussian**: [BackdropFilter] blur + tint scrim.
 /// - **translucent**: lighter blur + minimal tint.
 /// - **blur disabled**: solid [HyperosColors.surfaceContainer].
@@ -463,6 +469,25 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     final borderRadius = BorderRadius.circular(cornerRadius);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
+    // Liquid glass owns its own blur/refraction and must not be gated by the
+    // platform BackdropFilter capability. Otherwise anchored popups become
+    // solid surfaces on desktop while sheets and headers keep their glass.
+    final useLiquidGlass =
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+
+    if (useLiquidGlass) {
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.modal,
+        borderRadius: cornerRadius,
+        contentLegibilityFill: false,
+        // Sample the same undimmed modal capture as every other popup.
+        useAncestorBackdropGroup: true,
+        instantUnderlay: true,
+        child: child,
+      );
+    }
+
     // Blur disabled → solid opaque surface.
     if (!useBlur) {
       return DecoratedBox(
@@ -475,30 +500,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       );
     }
 
-    // Liquid glass mode.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.nestedTile,
-        borderRadius: cornerRadius,
-        // Sample the backdrop captured at the popup's ancestor BackdropGroup
-        // (undimmed page) so the modal scrim never muddies the refraction.
-        useAncestorBackdropGroup: true,
-        // FakeGlass underlay paints immediately so the first frames are not
-        // black while the real Impeller shader warms up.
-        instantUnderlay: true,
-        child: child,
-      );
-    }
-
-    // Frosted / gaussian / translucent: BackdropFilter + tint.
-    final sigma = switch (appearance.glassMode) {
-      FrostedGlassMode.gaussian => appearance.sheetBlurSigma,
-      FrostedGlassMode.translucent => (appearance.sheetBlurSigma * 0.4).clamp(
-        4.0,
-        30.0,
-      ),
-      _ => appearance.sheetBlurSigma,
-    };
+    // Frosted / gaussian / translucent: use the same sigma and tint as every
+    // HyperosSheetFrame. The selected glass mode changes the shared modal
+    // material, not the visual identity of one popup versus another.
+    final sigma = HyperosBlurredHeader.blurSigmaOf(context);
     final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
 
     return ClipRRect(
@@ -983,22 +988,12 @@ class HyperosDateTile extends StatelessWidget {
     if (!enabled || onChanged == null) return;
 
     final initial = value ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showMiuixDatePickerSheet(
+      context,
       initialDate: initial,
       firstDate: firstDate ?? DateTime(1970),
       lastDate: lastDate ?? DateTime(2100),
-      builder: (ctx, child) {
-        return Theme(
-          data: Theme.of(ctx).copyWith(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: HyperosColors.primary(ctx),
-              brightness: Theme.of(ctx).brightness,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
+      title: label,
     );
     if (picked != null) {
       onChanged!(picked);

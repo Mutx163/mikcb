@@ -73,9 +73,9 @@ class HyperosSheetChromeScope extends InheritedWidget {
 
 /// HyperOS bottom sheet panel shell.
 ///
-/// Defaults to frosted glass using [HyperosBlurredHeader.blurSigmaOf] (same
-/// strength as 外观与配色). Defaults to [HyperosSheetChrome.floating] unless an
-/// ancestor [HyperosSheetChromeScope] or [chrome] overrides it.
+/// Defaults to the shared modal glass material using the same tuning as the
+/// top chrome. Defaults to [HyperosSheetChrome.floating] unless an ancestor
+/// [HyperosSheetChromeScope] or [chrome] overrides it.
 class HyperosSheetFrame extends StatelessWidget {
   const HyperosSheetFrame({
     super.key,
@@ -84,6 +84,8 @@ class HyperosSheetFrame extends StatelessWidget {
     this.maxHeight,
     this.frosted = true,
     this.chrome,
+    this.liquidGlassRole = HyperosLiquidGlassRole.modal,
+    this.liquidGlassContentLegibilityFill = false,
   });
 
   final Widget child;
@@ -96,6 +98,19 @@ class HyperosSheetFrame extends StatelessWidget {
 
   /// When null, uses [HyperosSheetChromeScope] or [HyperosSheetChrome.floating].
   final HyperosSheetChrome? chrome;
+
+  /// Material role used when [frosted] resolves to liquid glass.
+  ///
+  /// All modal shells default to [HyperosLiquidGlassRole.modal] so dialogs,
+  /// action sheets, and pickers share one clear material. Override this only
+  /// for a deliberately different embedded surface.
+  final HyperosLiquidGlassRole liquidGlassRole;
+
+  /// Whether liquid-glass content receives the extra opaque legibility fill.
+  ///
+  /// Modal chrome defaults to no extra fill so the same clear glass is used by
+  /// sheets, dialogs, and anchored popups instead of producing white variants.
+  final bool liquidGlassContentLegibilityFill;
 
   @override
   Widget build(BuildContext context) {
@@ -236,10 +251,11 @@ class HyperosSheetFrame extends StatelessWidget {
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.sheet,
+        role: liquidGlassRole,
         borderRadius: borderRadius.topLeft.x,
         instantUnderlay: true,
         useAncestorBackdropGroup: true,
+        contentLegibilityFill: liquidGlassContentLegibilityFill,
         child: const SizedBox.expand(),
       );
     }
@@ -286,10 +302,11 @@ class HyperosSheetFrame extends StatelessWidget {
         !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosFrostedPanelScope(
         child: HyperosLiquidGlassSurface(
-          role: HyperosLiquidGlassRole.sheet,
+          role: liquidGlassRole,
           borderRadius: borderRadius.topLeft.x,
           instantUnderlay: true,
           useAncestorBackdropGroup: true,
+          contentLegibilityFill: liquidGlassContentLegibilityFill,
           child: content,
         ),
       );
@@ -562,6 +579,7 @@ Future<T?> showHyperosSheet<T>({
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) {
+  final appearance = FrostedAppearanceScope.of(context);
   final dimColor =
       barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context);
 
@@ -578,9 +596,12 @@ Future<T?> showHyperosSheet<T>({
       final keyboardInset = padForKeyboard
           ? MediaQuery.viewInsetsOf(dialogContext).bottom
           : 0.0;
-      final sheetContent = HyperosSheetChromeScope(
-        chrome: chrome,
-        child: builder(dialogContext),
+      final sheetContent = FrostedAppearanceScope(
+        appearance: appearance,
+        child: HyperosSheetChromeScope(
+          chrome: chrome,
+          child: builder(dialogContext),
+        ),
       );
 
       // Wrap drag-to-dismiss around the sheet content (not the full-screen

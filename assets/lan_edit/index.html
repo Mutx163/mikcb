@@ -338,7 +338,7 @@
                     <div class="mt-2">拖放或点击选择 JSON</div>
                   </div>
                   <button id="btn-import-merge" type="button" class="btn btn-primary w-full" disabled>
-                    <i class="ti ti-git-merge"></i>合并到手机
+                    <i class="ti ti-eye"></i>打开迁移预览
                   </button>
                   <pre id="merge-import-result" class="import-result-log hidden"></pre>
                 </div>
@@ -360,7 +360,7 @@
                     <div class="mt-2">拖放或点击选择 JSON</div>
                   </div>
                   <button id="btn-import-backup" type="button" class="btn btn-destructive w-full" disabled>
-                    <i class="ti ti-alert-triangle"></i>确认覆盖
+                    <i class="ti ti-eye"></i>打开迁移预览
                   </button>
                 </div>
               </div>
@@ -384,6 +384,19 @@
                     <i class="ti ti-table-import"></i>导入表格
                   </button>
                   <pre id="spreadsheet-import-result" class="import-result-log hidden"></pre>
+                </div>
+              </div>
+            </div>
+            <div id="transfer-preview-card" class="card hidden">
+              <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-eye"></i>迁移差异预览</h3>
+              </div>
+              <div class="card-body stack">
+                <pre id="transfer-preview-result" class="import-result-log"></pre>
+                <div class="flex gap-2 flex-wrap">
+                  <button id="btn-transfer-preview-merge" type="button" class="btn btn-primary" disabled>确认合并</button>
+                  <button id="btn-transfer-preview-overwrite" type="button" class="btn btn-destructive" disabled>确认覆盖</button>
+                  <button id="btn-transfer-preview-cancel" type="button" class="btn btn-outline">取消</button>
                 </div>
               </div>
             </div>

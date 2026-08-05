@@ -1,6 +1,9 @@
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import 'spreadsheet_import_service.dart';
+import 'transfer_diff_service.dart';
+import 'transfer_package.dart';
+import 'unified_transfer_service.dart';
 
 /// Data and mutation surface used by the LAN edit HTTP API.
 abstract class LanEditHost {
@@ -60,4 +63,40 @@ abstract class LanEditHost {
   Future<void> setCurrentWeek(int week);
 
   Map<String, dynamic> buildMetaJson();
+}
+
+/// Optional migration capability implemented by the real provider host.
+/// Keeping it separate preserves lightweight LAN test hosts and legacy
+/// adapters that only implement course editing.
+abstract interface class LanTransferHost {
+  LanTransferPreview? previewTransferJson(String content);
+
+  Future<TransferApplyResult> applyTransferJson(
+    String content, {
+    required TransferApplyMode mode,
+  });
+}
+
+class LanTransferPreview {
+  final TransferPackage incoming;
+  final TransferDiff mergeDiff;
+  final TransferDiff overwriteDiff;
+
+  const LanTransferPreview({
+    required this.incoming,
+    required this.mergeDiff,
+    required this.overwriteDiff,
+  });
+
+  /// Backwards-compatible shorthand for callers that only render one summary.
+  TransferDiff get diff => overwriteDiff;
+
+  Map<String, dynamic> toJson() => {
+    'transferId': incoming.packageId,
+    'channel': incoming.channel.value,
+    'scope': incoming.scope.value,
+    'mergeDiff': mergeDiff.toJson(),
+    'overwriteDiff': overwriteDiff.toJson(),
+    'diff': overwriteDiff.toJson(),
+  };
 }

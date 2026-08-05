@@ -17,6 +17,12 @@ enum HyperosLiquidGlassRole {
   /// Bottom sheet / dialog panel shell.
   sheet,
 
+  /// Modal / popup surface using the same clear material as the top chrome.
+  ///
+  /// Modal panels need the same tint and specular treatment everywhere so a
+  /// select popup does not look denser than a dialog or an action sheet.
+  modal,
+
   /// Nested menu tile / card on top of a sheet or home menu.
   nestedTile,
 
@@ -216,10 +222,10 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     // can opt in explicitly.
     this.instantUnderlay = false,
 
-    /// When true (default), sheet/header roles paint a soft fill under [child]
-    /// so multi-line labels stay readable over busy backdrops. Set false when
-    /// the caller already manages contrast (e.g. colored course cards with
-    /// white text over a hue-tinted glass underlay).
+    /// When true (default), sheet/modal/header roles paint a soft fill under
+    /// [child] so multi-line labels stay readable over busy backdrops. Set
+    /// false when the caller already manages contrast (e.g. colored course
+    /// cards with white text over a hue-tinted glass underlay).
     this.contentLegibilityFill = true,
 
     /// Overrides the role default layer strategy when non-null.
@@ -269,6 +275,7 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
   ) {
     return switch (role) {
       HyperosLiquidGlassRole.sheet ||
+      HyperosLiquidGlassRole.modal ||
       HyperosLiquidGlassRole.header ||
       HyperosLiquidGlassRole.nestedTile => HyperosLiquidGlassLayerMode.ownLayer,
     };
@@ -284,11 +291,12 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     var settings = switch (role) {
       _ => MikcbLiquidGlassTokens.sheetSettingsFor(brightness, tuning: tuning),
     };
-    // Full-width header bars sit flush with the screen top. The package's
-    // default chromatic fringe (chromaticAberration=0.01) + top-down light
-    // draw a 1px blue hairline on that edge; kill aberration and soften
-    // specular for this role only. Other surfaces keep the unified material.
-    if (role == HyperosLiquidGlassRole.header) {
+    // Header and modal chrome share the same clear material. The package's
+    // default chromatic fringe (chromaticAberration=0.01) and top-down light
+    // make modal corners look different from the app chrome, so use the same
+    // softened specular treatment for both roles.
+    if (role == HyperosLiquidGlassRole.header ||
+        role == HyperosLiquidGlassRole.modal) {
       settings = settings.copyWith(
         chromaticAberration: 0,
         lightIntensity: (settings.lightIntensity * 0.35).clamp(0.0, 0.25),
@@ -337,6 +345,8 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
         switch (role) {
           HyperosLiquidGlassRole.sheet =>
             MikcbLiquidGlassTokens.sheetBorderRadius(),
+          HyperosLiquidGlassRole.modal =>
+            MikcbLiquidGlassTokens.sheetBorderRadius(),
           HyperosLiquidGlassRole.nestedTile =>
             MikcbLiquidGlassTokens.nestedTileBorderRadius(),
           HyperosLiquidGlassRole.header => 0,
@@ -352,7 +362,8 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     );
 
     // Official default: child on top of glass (not tinted/refracted with it).
-    // Sheets and headers carry dense UI chrome; nested tiles stay pure glass.
+    // Sheets and modal/header chrome carry dense UI; nested tiles stay pure
+    // glass.
     final glassChild = contentLegibilityFill
         ? _wrapChildForLegibility(
             role: role,
@@ -463,9 +474,11 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     required Widget child,
   }) {
     final targetFloor = switch (role) {
-      // Every liquid-glass surface uses the same legibility floor so
-      // brightness does not drift between sheets, headers and popups.
+      // Legacy direct surfaces use the same legibility floor so brightness
+      // does not drift between sheets, headers and popups. Modal shells pass
+      // contentLegibilityFill=false when they need the clear chrome material.
       HyperosLiquidGlassRole.sheet ||
+      HyperosLiquidGlassRole.modal ||
       HyperosLiquidGlassRole.header ||
       HyperosLiquidGlassRole.nestedTile =>
         brightness == Brightness.dark ? 0.50 : 0.56,

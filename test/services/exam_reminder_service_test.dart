@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/exam.dart';
+import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/services/exam_reminder_service.dart';
 
 void main() {
@@ -42,6 +43,31 @@ void main() {
       customReminderMinutes: customMinutes,
       createdAt: DateTime(2026, 4, 1),
       updatedAt: DateTime(2026, 4, 1),
+    );
+  }
+
+  ScheduleItem buildSchedule({
+    String id = 'schedule-1',
+    DateTime? startDate,
+    DateTime? endDate,
+    ScheduleRecurrence recurrence = ScheduleRecurrence.daily,
+    int? reminderMinutesBefore = 30,
+    bool enabled = true,
+    Iterable<DateTime> exceptionDates = const <DateTime>[],
+  }) {
+    return ScheduleItem(
+      id: id,
+      title: '每日自习',
+      startDate: startDate ?? DateTime(2026, 7, 10),
+      endDate: endDate ?? DateTime(2026, 7, 12),
+      startTime: '09:00',
+      endTime: '10:00',
+      recurrence: recurrence,
+      exceptionDates: exceptionDates,
+      reminderMinutesBefore: reminderMinutesBefore,
+      enabled: enabled,
+      createdAt: DateTime(2026, 7, 1),
+      updatedAt: DateTime(2026, 7, 1),
     );
   }
 
@@ -156,6 +182,24 @@ void main() {
         isNot(ExamReminderService.stableRequestCode('exam-1', 1440)),
       );
     });
+
+    test('active fire keys include the reminder lead time', () {
+      final fires = ExamReminderService.buildFires(
+        exams: [
+          buildExam(
+            dateTime: DateTime(2026, 8, 1),
+            preset: ExamReminderPreset.hour1AndMin30,
+          ),
+        ],
+        resolveCourse: (_) => null,
+        now: DateTime(2026, 7, 1),
+      );
+
+      expect(ExamReminderService.buildActiveFireKeys(fires), {
+        'exam-1#60',
+        'exam-1#30',
+      });
+    });
   });
 
   group('Exam.examStartDateTime', () {
@@ -165,6 +209,69 @@ void main() {
         startTime: '21:37',
       );
       expect(exam.examStartDateTime, DateTime(2026, 7, 19, 21, 37));
+    });
+  });
+
+  group('ExamReminderService schedule reminders', () {
+    test('expands future recurring schedule occurrences', () {
+      final fires = ExamReminderService.buildScheduleFires(
+        scheduleItems: [buildSchedule()],
+        now: DateTime(2026, 7, 10, 8),
+      );
+
+      expect(fires, hasLength(3));
+      expect(fires.map((fire) => fire.examId).toList(), [
+        'schedule:schedule-1@2026-07-10',
+        'schedule:schedule-1@2026-07-11',
+        'schedule:schedule-1@2026-07-12',
+      ]);
+      expect(fires.first.offsetMinutes, 30);
+      expect(fires.first.body, '09:00-10:00');
+    });
+
+    test('disabled schedule and disabled override do not retain alarms', () {
+      final root = buildSchedule(
+        endDate: DateTime(2026, 7, 12),
+        exceptionDates: [DateTime(2026, 7, 11)],
+      );
+      final disabledOverride = buildSchedule(
+        id: 'schedule-1@2026-07-11',
+        startDate: DateTime(2026, 7, 11),
+        endDate: DateTime(2026, 7, 11),
+        recurrence: ScheduleRecurrence.none,
+        reminderMinutesBefore: null,
+        enabled: false,
+      ).copyWith(seriesId: root.id, occurrenceDate: DateTime(2026, 7, 11));
+
+      final fires = ExamReminderService.buildScheduleFires(
+        scheduleItems: [root, disabledOverride],
+        now: DateTime(2026, 7, 10, 8),
+      );
+
+      expect(fires.map((fire) => fire.examId), [
+        'schedule:schedule-1@2026-07-10',
+        'schedule:schedule-1@2026-07-12',
+      ]);
+      expect(
+        ExamReminderService.buildScheduleActiveIds(
+          scheduleItems: [root, disabledOverride],
+          now: DateTime(2026, 7, 10, 8),
+        ),
+        {'schedule:schedule-1@2026-07-10', 'schedule:schedule-1@2026-07-12'},
+      );
+    });
+
+    test('skips schedule fire already in the past', () {
+      final fires = ExamReminderService.buildScheduleFires(
+        scheduleItems: [buildSchedule()],
+        now: DateTime(2026, 7, 10, 8, 45),
+      );
+
+      expect(fires, hasLength(2));
+      expect(
+        fires.first.examStartMillis,
+        DateTime(2026, 7, 11, 9).millisecondsSinceEpoch,
+      );
     });
   });
 }

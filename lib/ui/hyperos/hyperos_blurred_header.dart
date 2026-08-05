@@ -161,8 +161,8 @@ abstract final class HyperosBlurredHeader {
   /// - **Gaussian**: black scrim from [FrostedAppearance.sheetBarrierAlpha]
   ///   (外观与配色), matching the home top-right menu.
   /// - **Liquid glass**: fixed light dim ([liquidGlassModalBarrierAlpha]).
-  ///   Just enough hierarchy that the popup reads as a modal, without a heavy
-  ///   grey wash that flattens the refractive glass.
+  ///   Just enough hierarchy that every popup reads as the same modal, without
+  ///   a heavy grey wash that flattens the refractive glass.
   static Color modalBarrierColor(BuildContext context) {
     final appearance = _appearanceOf(context);
     // Keep the liquid-glass light scrim only while the real refractive glass

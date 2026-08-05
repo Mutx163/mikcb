@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'package:flutter/material.dart';
@@ -93,6 +94,85 @@ AppUpdateMirrorPreset? resolveMirrorFallbackPreset({
     }
   }
   return null;
+}
+
+final RegExp _releaseNotesVersionHeadingPattern = RegExp(
+  r'^#\s+v[\d.\-a-zA-Z]+$',
+  caseSensitive: false,
+);
+final RegExp _releaseNotesHeadingPattern = RegExp(r'^#{1,6}\s+');
+final RegExp _releaseNotesTopLevelBulletPattern = RegExp(
+  r'^(?:[-+*]|\d+[.)])\s+',
+);
+
+/// Splits a release announcement into lazily-renderable Markdown blocks.
+///
+/// [MarkdownBody] parses its complete input and creates the complete widget
+/// tree in one build. That is appropriate for a short paragraph, but a long
+/// release announcement can contain hundreds of list rows. Keeping headings
+/// and top-level list items as separate blocks lets [ListView.builder] mount
+/// only the blocks near the viewport.
+@visibleForTesting
+List<String> splitReleaseNotesIntoBlocks(String data) {
+  final normalizedData = data.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+  if (normalizedData.trim().isEmpty) {
+    return const [];
+  }
+
+  final lines = normalizedData.split('\n');
+  var firstContentLine = 0;
+  while (firstContentLine < lines.length &&
+      lines[firstContentLine].trim().isEmpty) {
+    firstContentLine++;
+  }
+  if (firstContentLine < lines.length &&
+      _releaseNotesVersionHeadingPattern.hasMatch(
+        lines[firstContentLine].trim(),
+      )) {
+    firstContentLine++;
+  }
+
+  final blocks = <String>[];
+  final currentLines = <String>[];
+  var insideCodeFence = false;
+
+  void flushCurrentBlock() {
+    final block = currentLines.join('\n').trim();
+    if (block.isNotEmpty) {
+      blocks.add(block);
+    }
+    currentLines.clear();
+  }
+
+  for (var index = firstContentLine; index < lines.length; index++) {
+    final line = lines[index];
+    final trimmedLine = line.trim();
+    final isCodeFenceMarker =
+        trimmedLine.startsWith('```') || trimmedLine.startsWith('~~~');
+    final startsHeading =
+        !insideCodeFence && _releaseNotesHeadingPattern.hasMatch(line);
+    final startsTopLevelBullet =
+        !insideCodeFence && _releaseNotesTopLevelBulletPattern.hasMatch(line);
+
+    if (startsHeading || startsTopLevelBullet) {
+      // A heading or a new top-level item starts an independently paintable
+      // block. Nested / indented list items remain with their parent item.
+      flushCurrentBlock();
+      currentLines.add(line);
+    } else if (trimmedLine.isEmpty && !insideCodeFence) {
+      // Blank lines delimit paragraphs and list items. Do not retain them in
+      // the block because MarkdownBody adds the relevant block spacing itself.
+      flushCurrentBlock();
+    } else {
+      currentLines.add(line);
+    }
+
+    if (isCodeFenceMarker) {
+      insideCodeFence = !insideCodeFence;
+    }
+  }
+  flushCurrentBlock();
+  return blocks;
 }
 
 class AboutScreen extends StatefulWidget {
@@ -516,10 +596,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
   bool _isCancellingDownload = false;
-  bool _useSystemDownloader = false;
+  late bool _useSystemDownloader;
   int _downloadedBytes = 0;
   int? _downloadTotalBytes;
   AppUpdateDownloadController? _downloadController;
+
   /// Always empty on this screen.
   ///
   /// Mirror speed-testing lives in [_AdvancedOptionsScreen], which keeps its
@@ -530,6 +611,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   @override
   void initState() {
     super.initState();
+    _useSystemDownloader = context
+        .read<TimetableProvider>()
+        .settings
+        .appUpdateUseSystemDownloader;
     _refreshUpdate();
   }
 
@@ -619,14 +704,38 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           );
         }
 
+        final releaseBody = result.latestRelease?.body ?? '';
+        final noteBlocks = splitReleaseNotesIntoBlocks(releaseBody);
+        final hasNotes = noteBlocks.isNotEmpty;
+        final itemCount = hasNotes ? noteBlocks.length + 3 : 1;
+
+        // A long MarkdownBody is one large, eagerly-built render tree inside
+        // SingleChildScrollView. Every scroll frame then has to traverse and
+        // paint that tree again. Keep each Markdown block as an independent
+        // lazy list item so off-screen announcement content is not built or
+        // repainted until it approaches the viewport.
         return HyperosListView(
-          children: [
-            _buildStatusCard(theme, result),
-            if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
-              const HyperosSectionGap(),
-              _buildNotesCard(theme, result),
-            ],
-          ],
+          itemCount: itemCount,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _buildStatusCard(theme, result);
+            }
+            if (!hasNotes) {
+              return const SizedBox.shrink();
+            }
+            if (index == 1) {
+              return const HyperosSectionGap();
+            }
+            if (index == 2) {
+              return _buildNotesHeader(theme, result, isLast: false);
+            }
+
+            final blockIndex = index - 3;
+            return _buildNotesBlock(
+              noteBlocks[blockIndex],
+              isLast: blockIndex == noteBlocks.length - 1,
+            );
+          },
         );
       },
     );
@@ -847,7 +956,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
   }
 
-  Widget _buildNotesCard(ThemeData theme, AppUpdateCheckResult result) {
+  Widget _buildNotesHeader(
+    ThemeData theme,
+    AppUpdateCheckResult result, {
+    required bool isLast,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final release = result.latestRelease;
@@ -855,47 +968,64 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final headerTextStyle = HyperosTypography.listDetail(
       context,
     ).copyWith(color: Theme.of(context).colorScheme.onSurface);
-    return Material(
-      color: HyperosColors.card(context),
-      shape: HyperosTheme.cardShape(),
-      clipBehavior: Clip.antiAlias,
+    return _buildNotesSurface(
+      isFirst: true,
+      isLast: isLast,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.update_rounded,
-                  size: 18,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.aboutReleaseNotesTitle,
-                    style: headerTextStyle,
-                  ),
-                ),
-                if (updatedAt != null)
-                  Text(
-                    l10n.aboutUpdatedAt(_formatDateTime(updatedAt)),
-                    style: headerTextStyle,
-                  ),
-              ],
+            Icon(Icons.update_rounded, size: 18, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(l10n.aboutReleaseNotesTitle, style: headerTextStyle),
             ),
-            const SizedBox(height: 12),
-            ReleaseNotesMarkdown(
-              data: release!.body.trim(),
-              onTapLink: _openUrl,
-              plainTypography: true,
-              usePrimaryTextColor: true,
-            ),
+            if (updatedAt != null)
+              Text(
+                l10n.aboutUpdatedAt(_formatDateTime(updatedAt)),
+                style: headerTextStyle,
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildNotesBlock(String data, {required bool isLast}) {
+    return _buildNotesSurface(
+      isFirst: false,
+      isLast: isLast,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, isLast ? 16 : 6),
+        child: ReleaseNotesMarkdown(
+          data: data,
+          onTapLink: _openUrl,
+          plainTypography: true,
+          usePrimaryTextColor: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesSurface({
+    required bool isFirst,
+    required bool isLast,
+    required Widget child,
+  }) {
+    final radius = HyperosTheme.cardBorderRadius.topLeft.x;
+    final borderRadius = BorderRadius.only(
+      topLeft: Radius.circular(isFirst ? radius : 0),
+      topRight: Radius.circular(isFirst ? radius : 0),
+      bottomLeft: Radius.circular(isLast ? radius : 0),
+      bottomRight: Radius.circular(isLast ? radius : 0),
+    );
+
+    return Material(
+      color: HyperosColors.card(context),
+      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+      clipBehavior: isFirst || isLast ? Clip.antiAlias : Clip.none,
+      child: child,
     );
   }
 
@@ -922,11 +1052,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           useSystemDownloader: _useSystemDownloader,
           onUseSystemDownloaderChanged: (value) {
             setState(() => _useSystemDownloader = value);
+            _persistSystemDownloaderPreference(value);
           },
           onOpenLiveDiagnosticsViewer: () =>
               openLogViewer(context, AppLogSource.merged),
         ),
       ),
+    );
+  }
+
+  Future<void> _persistSystemDownloaderPreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(appUpdateUseSystemDownloader: value),
     );
   }
 
@@ -2344,4 +2482,3 @@ class _ContributorRow extends StatelessWidget {
     );
   }
 }
-

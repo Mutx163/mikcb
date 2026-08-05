@@ -1,4 +1,5 @@
 import 'course.dart';
+import 'course_task.dart';
 import 'exam.dart';
 import 'schedule_item.dart';
 import 'timetable_settings.dart';
@@ -37,6 +38,7 @@ class TimetableProfile {
   final String id;
   final String name;
   final List<Course> courses;
+  final List<CourseTask> tasks;
   final List<ScheduleItem> scheduleItems;
   final List<Exam> exams;
   final TimetableSettings settings;
@@ -49,6 +51,7 @@ class TimetableProfile {
     required this.id,
     required this.name,
     required this.courses,
+    this.tasks = const [],
     this.scheduleItems = const [],
     this.exams = const [],
     required this.settings,
@@ -66,6 +69,7 @@ class TimetableProfile {
       'id': id,
       'name': name,
       'courses': courses.map((course) => course.toJson()).toList(),
+      'tasks': tasks.map((task) => task.toJson()).toList(),
       'scheduleItems': scheduleItems.map((item) => item.toJson()).toList(),
       'exams': exams.map((exam) => exam.toJson()).toList(),
       'settings': settings.toJson(),
@@ -90,6 +94,12 @@ class TimetableProfile {
             (item) => Course.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList(),
+      tasks: (json['tasks'] as List<dynamic>? ?? const [])
+          .map(
+            (item) =>
+                CourseTask.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList(),
       scheduleItems: (json['scheduleItems'] as List<dynamic>? ?? const [])
           .map(
             (item) =>
@@ -110,7 +120,9 @@ class TimetableProfile {
       lastUsedAt:
           DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??
           DateTime.now(),
-      profileKind: TimetableProfileKind.fromValue(json['profileKind'] as String?),
+      profileKind: TimetableProfileKind.fromValue(
+        json['profileKind'] as String?,
+      ),
     );
   }
 
@@ -142,6 +154,11 @@ class TimetableProfile {
         json['courses'],
         (map) => Course.fromJson(map),
         onDropped: () => stats?.droppedCourses += 1,
+      ),
+      tasks: _parseListLenient<CourseTask>(
+        json['tasks'],
+        (map) => CourseTask.fromJson(map),
+        onDropped: () => stats?.droppedTasks += 1,
       ),
       scheduleItems: _parseListLenient<ScheduleItem>(
         json['scheduleItems'],
@@ -222,6 +239,7 @@ class TimetableProfile {
     String? id,
     String? name,
     List<Course>? courses,
+    List<CourseTask>? tasks,
     List<ScheduleItem>? scheduleItems,
     List<Exam>? exams,
     TimetableSettings? settings,
@@ -234,6 +252,7 @@ class TimetableProfile {
       id: id ?? this.id,
       name: name ?? this.name,
       courses: courses ?? this.courses,
+      tasks: tasks ?? this.tasks,
       scheduleItems: scheduleItems ?? this.scheduleItems,
       exams: exams ?? this.exams,
       settings: settings ?? this.settings,
@@ -249,6 +268,7 @@ class TimetableProfile {
 class TimetableProfileParseStats {
   int droppedProfiles = 0;
   int droppedCourses = 0;
+  int droppedTasks = 0;
   int droppedScheduleItems = 0;
   int droppedExams = 0;
   int droppedSettings = 0;
@@ -256,6 +276,7 @@ class TimetableProfileParseStats {
   bool get didDrop =>
       droppedProfiles > 0 ||
       droppedCourses > 0 ||
+      droppedTasks > 0 ||
       droppedScheduleItems > 0 ||
       droppedExams > 0 ||
       droppedSettings > 0;
@@ -263,6 +284,7 @@ class TimetableProfileParseStats {
   int get totalDropped =>
       droppedProfiles +
       droppedCourses +
+      droppedTasks +
       droppedScheduleItems +
       droppedExams +
       droppedSettings;

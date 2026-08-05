@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
-import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 
 double _maxMenuTitleHeight({
   required List<String> titles,
@@ -33,6 +32,7 @@ enum HomeTopMenuAction {
   addCourse,
   exams,
   importCourses,
+  tasks,
   settings,
   support,
 }
@@ -65,7 +65,7 @@ class _HomeTopMenuSheet extends StatelessWidget {
     // Phone visual cap: tiles stay at most this wide so icon wells don't stretch.
     const maxTileWidth = 112.0;
     const minTileWidth = 64.0;
-    const columnsPerRow = 4;
+    const columnsPerRow = 3;
 
     final menuTitles = [
       l10n.homeMenuUpdateTitle,
@@ -74,6 +74,7 @@ class _HomeTopMenuSheet extends StatelessWidget {
       l10n.homeMenuAddCourseTitle,
       l10n.examListTitle,
       l10n.homeMenuImportTitle,
+      l10n.homeMenuTasksTitle,
       l10n.homeMenuSettingsTitle,
       l10n.homeMenuCoffeeTitle,
     ];
@@ -83,13 +84,11 @@ class _HomeTopMenuSheet extends StatelessWidget {
       color: colors.foreground,
     );
 
-    final useLiquidGlass =
-        FrostedAppearanceScope.of(context).glassMode ==
-        FrostedGlassMode.liquidGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-
     return HyperosSheetFrame(
       frosted: true,
+      // HyperosSheetFrame supplies the shared modal material used by every
+      // dialog, picker, and action sheet. The moving action tiles use stable
+      // tint surfaces.
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Width is already after floating outer inset + frame padding.
@@ -172,14 +171,14 @@ class _HomeTopMenuSheet extends StatelessWidget {
                   title: l10n.homeMenuStatisticsTitle,
                   action: HomeTopMenuAction.statistics,
                 ),
+              ]),
+              const SizedBox(height: tileSpacing),
+              menuRow([
                 tile(
                   icon: Icons.add_circle_outline_rounded,
                   title: l10n.homeMenuAddCourseTitle,
                   action: HomeTopMenuAction.addCourse,
                 ),
-              ]),
-              const SizedBox(height: tileSpacing),
-              menuRow([
                 tile(
                   icon: Icons.school_outlined,
                   title: l10n.examListTitle,
@@ -189,6 +188,14 @@ class _HomeTopMenuSheet extends StatelessWidget {
                   icon: Icons.file_upload_outlined,
                   title: l10n.homeMenuImportTitle,
                   action: HomeTopMenuAction.importCourses,
+                ),
+              ]),
+              const SizedBox(height: tileSpacing),
+              menuRow([
+                tile(
+                  icon: Icons.task_alt_outlined,
+                  title: l10n.homeMenuTasksTitle,
+                  action: HomeTopMenuAction.tasks,
                 ),
                 tile(
                   icon: Icons.tune_rounded,
@@ -204,15 +211,10 @@ class _HomeTopMenuSheet extends StatelessWidget {
             ],
           );
 
-          return SingleChildScrollView(
-            child: useLiquidGlass
-                ? HyperosLiquidGlassLayer(
-                    role: HyperosLiquidGlassRole.nestedTile,
-                    useBackdropGroup: true,
-                    child: menuColumn,
-                  )
-                : menuColumn,
-          );
+          // The sheet owns the only live glass backdrop. The action tiles are
+          // deliberately ordinary rounded tint surfaces so fast scrolling
+          // moves stable pixels instead of shader/filter shapes.
+          return SingleChildScrollView(child: menuColumn);
         },
       ),
     );
@@ -243,11 +245,13 @@ class _HomeMenuActionTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final highlightColor = accentColor ?? colorScheme.primary;
     const iconWellRadius = BorderRadius.all(Radius.circular(14));
-
-    final useLiquidGlass =
+    final useLiquidGlassTint =
         FrostedAppearanceScope.of(context).glassMode ==
-        FrostedGlassMode.liquidGlass &&
+            FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context);
+    final tileTint = useLiquidGlassTint
+        ? HyperosBlurredHeader.nestedLiquidTileTintColor(context)
+        : HyperosBlurredHeader.nestedSurfaceTintColor(context, withBlur: false);
 
     final tile = Material(
       type: MaterialType.transparency,
@@ -298,23 +302,13 @@ class _HomeMenuActionTile extends StatelessWidget {
       ),
     );
 
-    if (!useLiquidGlass) {
-      // Non-liquid-glass modes: match the sheet frame's frosted surface so
-      // the popup stays consistent instead of glassy tiles on a gray frame.
-      return HyperosFrostedSurface(
-        borderRadius: HyperosTheme.cardBorderRadius,
-        child: tile,
-      );
-    }
-
-    return HyperosLiquidGlassSurface(
-      role: HyperosLiquidGlassRole.nestedTile,
-      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
-      // Tiles share one ancestor HyperosLiquidGlassLayer (built in
-      // _HomeTopMenuSheet); a per-tile instant FakeGlass underlay would paint
-      // its own backdrop filter and reintroduce seam lines, so it stays off.
-      layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
-      child: tile,
+    // Keep the sheet as the only live backdrop blur. The nine tiles move
+    // inside a scroll view; a separate BackdropFilter or refraction shape per
+    // tile can leave stale rounded-corner textures during a fast direction
+    // change. The tint and rounded geometry preserve the existing hierarchy.
+    return ClipRRect(
+      borderRadius: HyperosTheme.cardBorderRadius,
+      child: ColoredBox(color: tileTint, child: tile),
     );
   }
 }

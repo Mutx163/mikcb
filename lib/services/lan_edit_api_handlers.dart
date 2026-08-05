@@ -12,6 +12,7 @@ import 'lan_edit_network_utils.dart';
 import 'lan_edit_provider_host.dart';
 import 'lan_edit_session.dart';
 import 'spreadsheet_import_service.dart';
+import 'transfer_package.dart';
 import 'week_expression_parser.dart';
 
 class LanEditApiHandlers {
@@ -81,6 +82,16 @@ class LanEditApiHandlers {
 
       if (path == '/api/v1/import/spreadsheet' && request.method == 'POST') {
         await _handleSpreadsheetImport(request);
+        return;
+      }
+
+      if (path == '/api/v1/import/preview' && request.method == 'POST') {
+        await _handleTransferPreview(request);
+        return;
+      }
+
+      if (path == '/api/v1/import/apply' && request.method == 'POST') {
+        await _handleTransferApply(request);
         return;
       }
 
@@ -423,6 +434,13 @@ class LanEditApiHandlers {
   }
 
   Future<void> _handleImportProfile(HttpRequest request) async {
+    // The real provider host implements the migration capability. Keep the
+    // legacy endpoint only for lightweight test/legacy hosts; the live LAN UI
+    // always uses preview + apply below.
+    if (host is LanTransferHost) {
+      await _handleLegacyImportRejected(request);
+      return;
+    }
     await host.ensureInitialized();
     if (!await _ensureWriteProfileTarget(request)) {
       return;
@@ -433,6 +451,10 @@ class LanEditApiHandlers {
   }
 
   Future<void> _handleMergeImport(HttpRequest request) async {
+    if (host is LanTransferHost) {
+      await _handleLegacyImportRejected(request);
+      return;
+    }
     try {
       await host.ensureInitialized();
       if (!await _ensureWriteProfileTarget(request)) {
@@ -458,6 +480,111 @@ class LanEditApiHandlers {
     } on FormatException catch (error) {
       await _writeError(request, 400, 'invalid_request', error.message);
     }
+  }
+
+  Future<void> _handleTransferPreview(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      if (!await _ensureWriteProfileTarget(request)) {
+        return;
+      }
+      final content = await _readBody(request);
+      if (content.trim().isEmpty) {
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'backup_content_required',
+        );
+        return;
+      }
+      final transferHost = host is LanTransferHost
+          ? host as LanTransferHost
+          : null;
+      final preview = transferHost?.previewTransferJson(content);
+      if (preview == null) {
+        await _writeError(
+          request,
+          501,
+          'transfer_preview_not_supported',
+          'transfer_preview_not_supported',
+        );
+        return;
+      }
+      await _writeJson(request, 200, preview.toJson());
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    } on UnsupportedError catch (error) {
+      await _writeError(
+        request,
+        501,
+        'transfer_preview_not_supported',
+        error.message ?? 'transfer_preview_not_supported',
+      );
+    }
+  }
+
+  Future<void> _handleTransferApply(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      if (!await _ensureWriteProfileTarget(request, body: body)) {
+        return;
+      }
+      final content = body['content']?.toString() ?? '';
+      final mode = switch (body['mode']?.toString()) {
+        'merge' => TransferApplyMode.merge,
+        'overwrite' => TransferApplyMode.overwrite,
+        _ => null,
+      };
+      if (content.trim().isEmpty || mode == null) {
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'transfer_content_and_mode_required',
+        );
+        return;
+      }
+      final transferHost = host is LanTransferHost
+          ? host as LanTransferHost
+          : null;
+      if (transferHost == null) {
+        await _writeError(
+          request,
+          501,
+          'transfer_apply_not_supported',
+          'transfer_apply_not_supported',
+        );
+        return;
+      }
+      final result = await transferHost.applyTransferJson(content, mode: mode);
+      await _writeJson(request, 200, {
+        'applied': result.applied,
+        'mode': mode.name,
+        'transferId': result.undoToken?.id,
+        'diff': result.preview.toJson(),
+        if (result.error != null) 'error': result.error,
+      });
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    } on UnsupportedError catch (error) {
+      await _writeError(
+        request,
+        501,
+        'transfer_apply_not_supported',
+        error.message ?? 'transfer_apply_not_supported',
+      );
+    }
+  }
+
+  Future<void> _handleLegacyImportRejected(HttpRequest request) async {
+    await _writeError(
+      request,
+      409,
+      'transfer_preview_required',
+      'Use /api/v1/import/preview then /api/v1/import/apply with an explicit mode',
+    );
   }
 
   Future<void> _handleBatchDeleteCourses(HttpRequest request) async {

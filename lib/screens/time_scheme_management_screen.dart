@@ -34,6 +34,14 @@ class _TimeSchemeManagementScreenState
     extends State<TimeSchemeManagementScreen> {
   bool _didOpenInitialAction = false;
 
+  /// Usage counts are independent of the visual card and should not be
+  /// recomputed every time Provider notifies during a route transition or a
+  /// scroll-driven header update. Entries are filled only when their card is
+  /// first built, so the route's first frame does not scan every profile.
+  TimetableProvider? _usageSnapshotProvider;
+  int _usageSnapshotSignature = 0;
+  Map<String, _TimeSchemeUsageSummary> _usageSummaries = const {};
+
   /// Stable menu anchors per scheme card (must not be recreated each build).
   final Map<String, GlobalKey> _schemeMenuAnchorKeys = {};
 
@@ -70,6 +78,7 @@ class _TimeSchemeManagementScreenState
         final activeSchemeId = provider.activeTimeScheme?.id;
         final dateRules = provider.scheduleDateRules;
         final activeDateRule = provider.matchScheduleDateRule(DateTime.now());
+        _syncUsageSnapshot(provider, schemes);
 
         return HyperosSubpage(
           onBack: () => Navigator.pop(context),
@@ -102,6 +111,43 @@ class _TimeSchemeManagementScreenState
         );
       },
     );
+  }
+
+  void _syncUsageSnapshot(
+    TimetableProvider provider,
+    List<TimeScheme> schemes,
+  ) {
+    final profiles = provider.profiles;
+    final locationTimeGroups = provider.locationTimeGroups;
+    final signature = Object.hash(
+      Object.hashAll(profiles.map((profile) => identityHashCode(profile))),
+      Object.hashAll(
+        locationTimeGroups.map(
+          (locationTimeGroup) => identityHashCode(locationTimeGroup),
+        ),
+      ),
+      Object.hashAll(schemes.map((scheme) => identityHashCode(scheme))),
+    );
+    if (identical(_usageSnapshotProvider, provider) &&
+        _usageSnapshotSignature == signature) {
+      return;
+    }
+    _usageSnapshotProvider = provider;
+    _usageSnapshotSignature = signature;
+    _usageSummaries = const {};
+  }
+
+  _TimeSchemeUsageSummary _usageSummaryForScheme(
+    TimetableProvider provider,
+    String schemeId,
+  ) {
+    final cachedSummary = _usageSummaries[schemeId];
+    if (cachedSummary != null) {
+      return cachedSummary;
+    }
+    final summary = _buildUsageSummary(provider, schemeId);
+    _usageSummaries = {..._usageSummaries, schemeId: summary};
+    return summary;
   }
 
   /// Returns the number of lazy list rows used by the management page.
@@ -190,7 +236,7 @@ class _TimeSchemeManagementScreenState
     return _buildSchemeCard(
       context,
       scheme: scheme,
-      usage: _buildUsageSummary(provider, scheme.id),
+      usage: _usageSummaryForScheme(provider, scheme.id),
       isActive: scheme.id == activeSchemeId,
     );
   }

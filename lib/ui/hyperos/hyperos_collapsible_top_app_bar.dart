@@ -246,6 +246,7 @@ class HyperosExitUntilCollapsedScrollBehavior
     // slower rubber-band has already started returning.
     this.snapDuration = const Duration(milliseconds: 400),
     this.snapCurve = const _HyperosCriticalSpringCurve(),
+    this.onSnapCompleted,
   }) : state = state ?? HyperosCollapsibleTopAppBarState();
 
   @override
@@ -265,6 +266,10 @@ class HyperosExitUntilCollapsedScrollBehavior
   final Duration snapDuration;
   final Curve snapCurve;
 
+  /// Called after an endpoint snap settles so visual collaborators such as
+  /// the frosted header can resync from the final scroll position.
+  final VoidCallback? onSnapCompleted;
+
   bool _snapInProgress = false;
   DateTime? _snapCompletedAt;
 
@@ -278,6 +283,7 @@ class HyperosExitUntilCollapsedScrollBehavior
   double? _shortPageSpringTargetPixels;
   double _shortPageReleaseTitleOffset = 0;
   double _shortPageTargetTitleOffset = 0;
+  double? _shortPageLastUserDragPixels;
 
   /// True while a snap-to-endpoint animation is running. Listeners should avoid
   /// toggling visual state (e.g. frost) during the snap to prevent flicker.
@@ -290,6 +296,43 @@ class HyperosExitUntilCollapsedScrollBehavior
       _snapCompletedAt != null &&
       DateTime.now().difference(_snapCompletedAt!) <
           const Duration(milliseconds: 800);
+
+  /// Pixel position captured when the current short-page spring began.
+  ///
+  /// The page shell uses this same anchor when it computes the paint-only body
+  /// translation. Keeping the value here prevents the title and the body from
+  /// normalizing the same physical spring against different release frames.
+  double? get shortPageSpringReleasePixels => _shortPageSpringReleasePixels;
+
+  /// In-range pixel position reached when the current short-page spring ends.
+  double? get shortPageSpringTargetPixels => _shortPageSpringTargetPixels;
+
+  /// Title offset at the end of the current short-page transition.
+  double? get shortPageSpringTargetTitleOffset => _shortPageTargetTitleOffset;
+
+  /// Returns progress through the current short-page transition for [pixels].
+  ///
+  /// The page shell uses this exact calculation for its paint-only body
+  /// translation, so the title and body share one release anchor and one
+  /// physical scroll sample instead of maintaining separate spring clocks.
+  /// [pixels] uses the same absolute scroll coordinate as
+  /// [ScrollMetrics.pixels].
+  double? shortPageSpringProgressForPixels(double pixels) {
+    final releasePixels = _shortPageSpringReleasePixels;
+    final targetPixels = _shortPageSpringTargetPixels;
+    if (releasePixels == null || targetPixels == null) {
+      return null;
+    }
+    final totalDistance = releasePixels - targetPixels;
+    if (totalDistance.abs() <= 0.01) {
+      return 1.0;
+    }
+    final remainingFraction = ((pixels - targetPixels) / totalDistance).clamp(
+      0.0,
+      1.0,
+    );
+    return 1.0 - remainingFraction;
+  }
 
   @override
   bool get isPinned => false;
@@ -421,6 +464,15 @@ class HyperosExitUntilCollapsedScrollBehavior
     // so it does not accidentally cancel the title's spring-following state.
     if (isUserDragStart) {
       _clearShortPageSpringBack();
+      _shortPageLastUserDragPixels = null;
+    }
+
+    if (isActiveUserDrag) {
+      // The first ballistic notification may already have advanced one or
+      // more frames beyond the finger's release position. Capture the last
+      // user-controlled sample so the title and body start their transition
+      // from the same physical point.
+      _shortPageLastUserDragPixels = metrics.pixels;
     }
 
     // The framework only sends the final ScrollEndNotification after a
@@ -441,13 +493,12 @@ class HyperosExitUntilCollapsedScrollBehavior
       final targetPixels = metrics.pixels > metrics.maxScrollExtent
           ? metrics.maxScrollExtent
           : metrics.minScrollExtent;
-      if ((targetTitleOffset - releaseTitleOffset).abs() > 0.5 &&
-          (metrics.pixels - targetPixels).abs() > 0.5) {
-        _shortPageSpringReleasePixels = metrics.pixels;
-        _shortPageSpringTargetPixels = targetPixels;
-        _shortPageReleaseTitleOffset = releaseTitleOffset;
-        _shortPageTargetTitleOffset = targetTitleOffset;
-      }
+      _beginShortPageSpringBack(
+        releasePixels: _shortPageLastUserDragPixels ?? metrics.pixels,
+        targetPixels: targetPixels,
+        releaseTitleOffset: releaseTitleOffset,
+        targetTitleOffset: targetTitleOffset,
+      );
     }
 
     // During the list's ballistic return, advance the title using the actual
@@ -480,13 +531,35 @@ class HyperosExitUntilCollapsedScrollBehavior
             : metrics.minScrollExtent;
         final springDistance = metrics.pixels - targetPixels;
         if (springDistance.abs() > 0.5) {
-          _shortPageSpringReleasePixels = metrics.pixels;
-          _shortPageSpringTargetPixels = targetPixels;
-          _shortPageReleaseTitleOffset = state.heightOffset;
-          _shortPageTargetTitleOffset = targetTitleOffset;
+          _beginShortPageSpringBack(
+            releasePixels: metrics.pixels,
+            targetPixels: targetPixels,
+            releaseTitleOffset: state.heightOffset,
+            targetTitleOffset: targetTitleOffset,
+          );
           state.contentOffset = metrics.pixels;
           return false;
         }
+      }
+
+      final position = _positionFromNotification(notification);
+      if (position != null &&
+          position.hasPixels &&
+          (position.pixels - metrics.minScrollExtent).abs() > 0.5 &&
+          (targetTitleOffset - state.heightOffset).abs() > 0.5) {
+        // A short page can finish a gesture inside its normal scroll range,
+        // without producing an overscroll spring. Drive that return through
+        // the same scroll-position-based transition instead of changing the
+        // title to its endpoint in one notification.
+        _beginShortPageSpringBack(
+          releasePixels: position.pixels,
+          targetPixels: metrics.minScrollExtent,
+          releaseTitleOffset: state.heightOffset,
+          targetTitleOffset: targetTitleOffset,
+        );
+        _animateShortPageToEndpoint(position, metrics.minScrollExtent);
+        state.contentOffset = metrics.pixels;
+        return false;
       }
 
       state.heightOffset = targetTitleOffset;
@@ -510,11 +583,54 @@ class HyperosExitUntilCollapsedScrollBehavior
     return false;
   }
 
+  void _beginShortPageSpringBack({
+    required double releasePixels,
+    required double targetPixels,
+    required double releaseTitleOffset,
+    required double targetTitleOffset,
+  }) {
+    if (_shortPageSpringReleasePixels != null ||
+        _shortPageSpringTargetPixels != null ||
+        (releasePixels - targetPixels).abs() <= 0.5) {
+      return;
+    }
+    _shortPageSpringReleasePixels = releasePixels;
+    _shortPageSpringTargetPixels = targetPixels;
+    _shortPageReleaseTitleOffset = releaseTitleOffset;
+    _shortPageTargetTitleOffset = targetTitleOffset;
+  }
+
   void _clearShortPageSpringBack() {
     _shortPageSpringReleasePixels = null;
     _shortPageSpringTargetPixels = null;
     _shortPageReleaseTitleOffset = 0;
     _shortPageTargetTitleOffset = 0;
+    _shortPageLastUserDragPixels = null;
+  }
+
+  void _animateShortPageToEndpoint(
+    ScrollPosition position,
+    double targetPixels,
+  ) {
+    final clampedTarget = targetPixels.clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    scheduleMicrotask(() {
+      if (!position.hasPixels) {
+        _clearShortPageSpringBack();
+        return;
+      }
+      position
+          .animateTo(clampedTarget, duration: snapDuration, curve: snapCurve)
+          .whenComplete(() {
+            if (position.hasPixels &&
+                _shortPageSpringReleasePixels != null &&
+                _shortPageSpringTargetPixels != null) {
+              _syncShortPageTitleToSpring(position);
+            }
+          });
+    });
   }
 
   void _syncShortPageTitleToSpring(ScrollMetrics metrics) {
@@ -535,9 +651,7 @@ class HyperosExitUntilCollapsedScrollBehavior
     // `remainingFraction` follows the physical spring from release (1) to
     // the in-range edge (0). Both top and bottom overscroll use the same
     // signed ratio, so no direction-specific timing curve is needed.
-    final remainingFraction = ((metrics.pixels - targetPixels) / totalDistance)
-        .clamp(0.0, 1.0);
-    final springProgress = 1.0 - remainingFraction;
+    final springProgress = shortPageSpringProgressForPixels(metrics.pixels)!;
     final titleOffset =
         _shortPageReleaseTitleOffset +
         (_shortPageTargetTitleOffset - _shortPageReleaseTitleOffset) *
@@ -545,11 +659,22 @@ class HyperosExitUntilCollapsedScrollBehavior
     state.heightOffset = titleOffset;
     state.contentOffset = metrics.pixels;
 
+    final remainingFraction = 1.0 - springProgress;
     if (remainingFraction <= 0.001 ||
         (metrics.pixels - targetPixels).abs() <= 0.5) {
       state.heightOffset = _shortPageTargetTitleOffset;
       _clearShortPageSpringBack();
     }
+  }
+
+  ScrollPosition? _positionFromNotification(ScrollNotification notification) {
+    if (notification.metrics is ScrollPosition) {
+      return notification.metrics as ScrollPosition;
+    }
+    final notificationContext = notification.context;
+    return notificationContext == null
+        ? null
+        : Scrollable.maybeOf(notificationContext)?.position;
   }
 
   /// When true, the user released their finger while the list was in
@@ -649,6 +774,7 @@ class HyperosExitUntilCollapsedScrollBehavior
     scheduleMicrotask(() {
       if (!pos.hasPixels) {
         _snapInProgress = false;
+        onSnapCompleted?.call();
         return;
       }
       pos
@@ -663,6 +789,7 @@ class HyperosExitUntilCollapsedScrollBehavior
             if (pos.hasPixels) {
               _syncOffsetToPosition(pos);
             }
+            onSnapCompleted?.call();
           });
     });
   }
@@ -845,6 +972,7 @@ class _HyperosCollapsibleTopAppBarState
       if (!mounted) {
         return;
       }
+      var didMeasure = false;
       void measure(GlobalKey key, Size? current, ValueSetter<Size> setter) {
         final context = key.currentContext;
         if (context == null) {
@@ -853,6 +981,7 @@ class _HyperosCollapsibleTopAppBarState
         final box = context.findRenderObject() as RenderBox?;
         if (box != null && box.hasSize && box.size != current) {
           setter(box.size);
+          didMeasure = true;
         }
       }
 
@@ -873,7 +1002,7 @@ class _HyperosCollapsibleTopAppBarState
         _bottomContentSize,
         (size) => _bottomContentSize = size,
       );
-      if (mounted) {
+      if (mounted && didMeasure) {
         _measured = true;
         setState(() {});
       }
@@ -931,9 +1060,6 @@ class _HyperosCollapsibleTopAppBarState
     final hasSubtitle = widget.subtitle.isNotEmpty;
     const collapsedHeight = HyperosCollapsibleTopAppBarDefaults.collapsedHeight;
 
-    final largeTitleHeight = _largeTitleSize?.height ?? 0;
-    final expansion = largeTitleHeight.clamp(0.0, double.infinity);
-
     final largeTitleStyle = _largeTitleStyle(largeTitleColor);
     final smallTitleStyle = _smallTitleStyle(titleColor);
 
@@ -956,6 +1082,15 @@ class _HyperosCollapsibleTopAppBarState
       _smallTitleTextWidth = smallPainter.width;
       smallPainter.dispose();
     }
+
+    // The render-box measurement is published after the first frame. Using
+    // zero until then makes the bar paint at collapsed height first, then
+    // grow into its expanded height while the route is already sliding in.
+    // The text painter above has already calculated the same single-line glyph
+    // height synchronously, so use it as the first-frame geometry and let the
+    // render-box measurement refine it later without a visible jump.
+    final largeTitleHeight = _largeTitleSize?.height ?? _largeTitleTextHeight;
+    final expansion = largeTitleHeight.clamp(0.0, double.infinity);
 
     final verticalCenter = collapsedHeight / 2;
     final smallSubtitleHeight = hasSubtitle
