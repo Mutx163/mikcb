@@ -498,7 +498,12 @@ void main() {
     await pumpBlurSettleFrames(tester);
     await tester.pump();
 
-    Finder headerScope() => find.byType(HyperosBlurredHeaderScope);
+    Finder headerScope() {
+      // Collapsible headers render the large and small title together, so
+      // text ancestry returns the same scope twice. The page owns one scope;
+      // target it directly instead of depending on title multiplicity.
+      return find.byType(HyperosBlurredHeaderScope);
+    }
 
     expect(
       tester

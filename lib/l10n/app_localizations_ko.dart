@@ -1202,6 +1202,24 @@ class AppLocalizationsKo extends AppLocalizations {
       '수신 데이터를 압축 해제할 수 없습니다. 다시 시작해 주세요';
 
   @override
+  String get qrTransferPlaintextWarning =>
+      'QR 전송은 평문입니다. 가까운 카메라가 내용을 읽을 수 있습니다. 가져오기 전에 출처를 확인하며, 확인 없이 덮어쓰지 않습니다.';
+
+  @override
+  String get qrTransferResourceLimit =>
+      '수신 데이터가 QR 전송 리소스 한도를 초과했습니다. 다시 시작하고 더 작은 백업을 사용하세요.';
+
+  @override
+  String get qrTransferSessionExpired =>
+      'QR 전송 시간이 초과되었습니다. 다시 시작하고 한 화면만 향하게 하세요.';
+
+  @override
+  String get qrTransferFullBackupWarning => '확인하면 이 전체 백업이 이 기기의 데이터를 대체합니다.';
+
+  @override
+  String get qrTransferImportFullBackup => '전체 백업 가져오기';
+
+  @override
   String get qrTransferDecodeFailed => 'QR 전송을 디코딩할 수 없습니다. 다시 시작해 주세요';
 
   @override
