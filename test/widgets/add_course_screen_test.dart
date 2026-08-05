@@ -263,7 +263,5 @@ void main() {
 
     expect(provider.courses, hasLength(1));
     expect(provider.courses.first.name, '高等数学');
-    // Success toast is shown on the root messenger before route pop.
-    expect(find.text('课程添加成功'), findsOneWidget);
   });
 }

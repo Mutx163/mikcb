@@ -302,7 +302,7 @@ class _HomeMenuActionTile extends StatelessWidget {
       ),
     );
 
-    // Keep the sheet as the only live backdrop blur. The eight tiles move
+    // Keep the sheet as the only live backdrop blur. The nine tiles move
     // inside a scroll view; a separate BackdropFilter or refraction shape per
     // tile can leave stale rounded-corner textures during a fast direction
     // change. The tint and rounded geometry preserve the existing hierarchy.
