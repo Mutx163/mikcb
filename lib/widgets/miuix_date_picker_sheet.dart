@@ -82,12 +82,12 @@ class _MiuixDatePickerSheetBodyState extends State<_MiuixDatePickerSheetBody> {
   late int _wheelYear;
   late int _wheelMonth;
   late int _wheelDay;
+  final _yearPickerController = MiuixFlingNumberPickerController();
+  final _monthPickerController = MiuixFlingNumberPickerController();
+  final _dayPickerController = MiuixFlingNumberPickerController();
 
   /// 与 [MiuixDatePicker] 重建同步：滚轮改日期后用新 key 强制月历跳到目标月。
   int _calendarRevision = 0;
-
-  static const int _wheelMinYear = 2020;
-  static const int _wheelMaxYear = 2035;
 
   @override
   void initState() {
@@ -112,10 +112,16 @@ class _MiuixDatePickerSheetBodyState extends State<_MiuixDatePickerSheetBody> {
   }
 
   void _confirmYearMonthDialog() {
-    final maxDay = _daysInMonth(_wheelYear, _wheelMonth);
-    final day = _wheelDay.clamp(1, maxDay);
+    // Confirm can be tapped while one or more wheels are still decaying.
+    // Settle each controller first so the date is based on the projected
+    // landing values rather than the last callback delivered by the wheels.
+    final settledYear = _yearPickerController.settle() ?? _wheelYear;
+    final settledMonth = _monthPickerController.settle() ?? _wheelMonth;
+    final settledDay = _dayPickerController.settle() ?? _wheelDay;
+    final maxDay = _daysInMonth(settledYear, settledMonth);
+    final day = settledDay.clamp(1, maxDay);
     final nextDate = _clampDateOnly(
-      DateTime(_wheelYear, _wheelMonth, day),
+      DateTime(settledYear, settledMonth, day),
       widget.firstDate,
       widget.lastDate,
     );
@@ -204,8 +210,11 @@ class _MiuixDatePickerSheetBodyState extends State<_MiuixDatePickerSheetBody> {
             year: _wheelYear,
             month: _wheelMonth,
             day: _wheelDay,
-            minYear: _wheelMinYear,
-            maxYear: _wheelMaxYear,
+            minYear: widget.firstDate.year,
+            maxYear: widget.lastDate.year,
+            yearController: _yearPickerController,
+            monthController: _monthPickerController,
+            dayController: _dayPickerController,
             onYearChanged: (year) {
               setState(() {
                 _wheelYear = year;
@@ -247,6 +256,9 @@ class _YearMonthWheelDialog extends StatelessWidget {
     required this.day,
     required this.minYear,
     required this.maxYear,
+    required this.yearController,
+    required this.monthController,
+    required this.dayController,
     required this.onYearChanged,
     required this.onMonthChanged,
     required this.onDayChanged,
@@ -263,6 +275,9 @@ class _YearMonthWheelDialog extends StatelessWidget {
   final int day;
   final int minYear;
   final int maxYear;
+  final MiuixFlingNumberPickerController yearController;
+  final MiuixFlingNumberPickerController monthController;
+  final MiuixFlingNumberPickerController dayController;
   final ValueChanged<int> onYearChanged;
   final ValueChanged<int> onMonthChanged;
   final ValueChanged<int> onDayChanged;
@@ -315,6 +330,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: MiuixFlingNumberPicker(
+                                  controller: yearController,
                                   value: year,
                                   min: minYear,
                                   max: maxYear,
@@ -325,6 +341,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                               ),
                               Expanded(
                                 child: MiuixFlingNumberPicker(
+                                  controller: monthController,
                                   value: month,
                                   min: 1,
                                   max: 12,
@@ -336,6 +353,7 @@ class _YearMonthWheelDialog extends StatelessWidget {
                               ),
                               Expanded(
                                 child: MiuixFlingNumberPicker(
+                                  controller: dayController,
                                   value: day.clamp(1, _maxDay),
                                   min: 1,
                                   max: _maxDay,
