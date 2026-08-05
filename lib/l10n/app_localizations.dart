@@ -2264,6 +2264,36 @@ abstract class AppLocalizations {
   /// **'数据解压失败，请重新开始'**
   String get qrTransferDecompressionFailed;
 
+  /// No description provided for @qrTransferPlaintextWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码传输是明文，附近摄像头可能读取内容。请确认来源，未经确认不会覆盖数据。'**
+  String get qrTransferPlaintextWarning;
+
+  /// No description provided for @qrTransferResourceLimit.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收数据超过二维码传输资源上限，请重新开始并使用更小的备份。'**
+  String get qrTransferResourceLimit;
+
+  /// No description provided for @qrTransferSessionExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码传输已超时，请重新开始并只对准一台设备。'**
+  String get qrTransferSessionExpired;
+
+  /// No description provided for @qrTransferFullBackupWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认后，该完整备份会替换本设备上的数据。'**
+  String get qrTransferFullBackupWarning;
+
+  /// No description provided for @qrTransferImportFullBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入完整备份'**
+  String get qrTransferImportFullBackup;
+
   /// No description provided for @qrTransferDecodeFailed.
   ///
   /// In zh, this message translates to:

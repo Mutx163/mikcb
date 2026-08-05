@@ -1,5 +1,100 @@
 import 'dart:typed_data';
 
+/// Resource budgets shared by the QR sender, frame parser, and decoder.
+///
+/// QR data comes from a camera and is therefore untrusted until the user
+/// explicitly confirms the import. Keep these values in one place so the
+/// sender cannot produce a stream that the receiver must reject.
+class QrTransferLimits {
+  static const int maxFrameTextLength = 8192;
+  static const int maxSourceSymbolCount = 8192;
+  static const int maxSymbolSize = 4096;
+  static const int maxCompressedPayloadBytes = 16 * 1024 * 1024;
+  static const int maxRawPayloadBytes = 64 * 1024 * 1024;
+  static const int maxFrameCount = 32768;
+  static const int maxUniqueSeedCount = 16384;
+  static const int maxSeed = 0x7fffffff;
+  static const Duration maxSessionDuration = Duration(minutes: 15);
+
+  /// The sender displays one frame for this long before advancing.
+  static const Duration frameInterval = Duration(milliseconds: 250);
+
+  /// Keep the decoder's neighbor graph bounded even when frames do not decode.
+  ///
+  /// The fountain_codes package uses a degree of at most 100 for its normal
+  /// LT distribution. A 32-edge-per-source-symbol cap leaves ample room for
+  /// normal LT overhead while bounding attacker-controlled graph growth.
+  static const int maxDegree = 100;
+  static const int maxAdjacencyEdgesPerSourceSymbol = 32;
+  static const int maxAdjacencyEdges =
+      maxSourceSymbolCount * maxAdjacencyEdgesPerSourceSymbol;
+
+  static int maxDegreeForSourceSymbolCount(int sourceSymbolCount) =>
+      sourceSymbolCount < maxDegree ? sourceSymbolCount : maxDegree;
+
+  static int maxAdjacencyEdgesForSourceSymbolCount(int sourceSymbolCount) {
+    final scaled = sourceSymbolCount * maxAdjacencyEdgesPerSourceSymbol;
+    return scaled < maxAdjacencyEdges ? scaled : maxAdjacencyEdges;
+  }
+
+  /// This is intentionally conservative: the first frame is shown
+  /// immediately, but reserving one interval per frame guarantees that the
+  /// complete stream fits inside the receiver's wall-clock session limit.
+  static int get maxSessionFrameCount =>
+      maxSessionDuration.inMilliseconds ~/ frameInterval.inMilliseconds;
+  static const int decompressionChunkBytes = 32 * 1024;
+
+  const QrTransferLimits._();
+}
+
+/// The current QR protocol intentionally remains a trusted-proximity,
+/// plaintext transport. SHA-256 protects accidental corruption only; it does
+/// not provide confidentiality, sender authentication, or replay protection.
+/// Product UI must warn users and require an explicit import choice.
+enum QrTransferTrustModel { trustedProximityPlaintext }
+
+class QrTransferProtocolPolicy {
+  static const trustModel = QrTransferTrustModel.trustedProximityPlaintext;
+  static const bool requiresExplicitImportConfirmation = true;
+  static const bool isEncrypted = false;
+  static const bool authenticatesSender = false;
+
+  const QrTransferProtocolPolicy._();
+}
+
+class QrTransferLimitException implements Exception {
+  final String code;
+  final int actual;
+  final int limit;
+
+  const QrTransferLimitException({
+    required this.code,
+    required this.actual,
+    required this.limit,
+  });
+
+  @override
+  String toString() => '$code (actual: $actual, limit: $limit)';
+}
+
+class QrTransferDecompressionException implements Exception {
+  final String code;
+
+  const QrTransferDecompressionException([
+    this.code = 'qr_transfer_decompression_failed',
+  ]);
+
+  @override
+  String toString() => code;
+}
+
+class QrTransferDecompressionCancelled implements Exception {
+  const QrTransferDecompressionCancelled();
+
+  @override
+  String toString() => 'qr_transfer_decompression_cancelled';
+}
+
 /// 一次二维码传输会话的固定元信息，随每一帧在头部传输。
 ///
 /// 解码端在收到任意一帧后即可根据该信息构造 LT 解码器。

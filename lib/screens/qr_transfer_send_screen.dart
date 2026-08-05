@@ -9,6 +9,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../services/qr_transfer/qr_transfer_codec.dart';
+import '../services/qr_transfer/qr_transfer_session.dart';
 
 /// 发送端全屏二维码流页面。
 ///
@@ -41,7 +42,7 @@ class QrTransferSendScreen extends StatefulWidget {
 class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   /// 帧间隔。摄像头通常 100~300ms 即可识别一帧，250ms（4 FPS）在
   /// 识别余量与吞吐之间取平衡；LT 码本身抗丢帧，偶尔漏扫一帧也不影响解码。
-  static const Duration _frameInterval = Duration(milliseconds: 250);
+  static const Duration _frameInterval = QrTransferLimits.frameInterval;
 
   /// 提前预计算的帧数：当前帧之前先把未来四帧的 QR 矩阵算好，
   /// 把耗时移出 setState 关键路径，并为 250ms 帧间隔留足缓冲。
@@ -54,6 +55,7 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
   Timer? _frameTimer;
   int _currentSeed = 0;
   final Map<int, QrCode> _qrCache = {};
+  String? _errorMessageKey;
 
   @override
   void initState() {
@@ -75,6 +77,13 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
       return;
     }
     final nextSeed = _currentSeed + 1;
+    if (nextSeed >= QrTransferLimits.maxUniqueSeedCount) {
+      _frameTimer?.cancel();
+      setState(() {
+        _errorMessageKey = 'qr_transfer_frame_budget_exceeded';
+      });
+      return;
+    }
     // 兜底：极端情况下计时器回调先于预计算跑到，这里补算。
     _qrCache.putIfAbsent(nextSeed, () => _buildQrCode(nextSeed));
     setState(() {
@@ -94,7 +103,10 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
 
   /// 预计算 [maxSeed] 以内的帧矩阵（未缓存过才计算）。
   void _precomputeUpTo(int maxSeed) {
-    for (var seed = _currentSeed + 1; seed <= maxSeed; seed++) {
+    final cappedMaxSeed = maxSeed < QrTransferLimits.maxUniqueSeedCount
+        ? maxSeed
+        : QrTransferLimits.maxUniqueSeedCount - 1;
+    for (var seed = _currentSeed + 1; seed <= cappedMaxSeed; seed++) {
       _qrCache.putIfAbsent(seed, () => _buildQrCode(seed));
     }
   }
@@ -234,6 +246,13 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
                     height: 1.4,
                   ),
                 ),
+                if (_errorMessageKey != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.qrTransferResourceLimit,
+                    style: const TextStyle(color: Colors.orangeAccent),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 HyperosButton(
                   label: l10n.qrTransferStop,
