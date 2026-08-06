@@ -54,6 +54,31 @@ class WebdavBackupListResult {
   bool get hasError => errorMessage != null;
 }
 
+enum WebdavBackupIndexRecoveryAction {
+  useIndex,
+  empty,
+  rebuildFromListing,
+  failed,
+}
+
+WebdavBackupIndexRecoveryAction decideWebdavBackupIndexRecovery({
+  required WebdavGetBytesResult indexResult,
+  required WebdavHistoryListResult listingResult,
+}) {
+  if (indexResult.isFailed && listingResult.isFailed) {
+    return WebdavBackupIndexRecoveryAction.failed;
+  }
+  if (!indexResult.isFailed && !indexResult.isNotFound) {
+    return WebdavBackupIndexRecoveryAction.useIndex;
+  }
+  if (listingResult.isFailed) {
+    return WebdavBackupIndexRecoveryAction.failed;
+  }
+  return listingResult.fileNames.isEmpty
+      ? WebdavBackupIndexRecoveryAction.empty
+      : WebdavBackupIndexRecoveryAction.rebuildFromListing;
+}
+
 class WebdavTransferPreview {
   final String entryId;
   final AppSyncSnapshot snapshot;
@@ -205,8 +230,6 @@ class WebdavSyncService {
     }
 
     WebdavClient? client;
-    var wroteSnapshot = false;
-    var wroteMeta = false;
     try {
       final deviceId = await _credentialsStore.getOrCreateDeviceId();
       final deviceLabel = await resolveDeviceLabel();
@@ -219,31 +242,38 @@ class WebdavSyncService {
       );
       final snapshotBytes = Uint8List.fromList(utf8.encode(snapshotJson));
       final packageInfo = await PackageInfo.fromPlatform();
-      final meta = _snapshotService.buildMetaFromSnapshot(
-        snapshot,
-        appVersion: packageInfo.version,
-      );
-
       client = _clientService.createClient(params);
       await _clientService.ensureRemoteFolder(
         client: client,
         remoteFolder: config.normalizedRemoteFolder,
       );
 
-      if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote) {
-        final remoteMetaResult = await _clientService.getRemoteMetaResult(
-          client: client,
-          remotePath: config.metaRemotePath,
+      // The metadata points to an immutable body version. This keeps a
+      // concurrent writer from pairing its body with our metadata even when
+      // the server has neither locks nor ETag support.
+      final snapshotPath = _versionedSnapshotRemotePath(config, snapshot);
+      final meta = _snapshotService.buildMetaFromSnapshot(
+        snapshot,
+        appVersion: packageInfo.version,
+        snapshotPath: snapshotPath,
+      );
+      final metaBytes = Uint8List.fromList(
+        utf8.encode(_snapshotService.buildMetaJson(meta)),
+      );
+      final initialRemoteMeta = await _clientService.getRemoteMetaResult(
+        client: client,
+        remotePath: config.metaRemotePath,
+      );
+      if (initialRemoteMeta.isFailed) {
+        return WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: initialRemoteMeta.errorMessage ?? 'remote_meta_unavailable',
         );
-        if (remoteMetaResult.isFailed) {
-          return WebdavSyncResult(
-            kind: WebdavSyncResultKind.failed,
-            message: remoteMetaResult.errorMessage ?? 'remote_meta_unavailable',
-          );
-        }
-        final remoteMeta = remoteMetaResult.meta;
+      }
+
+      if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote) {
         final decision = decideWebdavAutoUpload(
-          remoteContentSha256: remoteMeta?.contentSha256,
+          remoteContentSha256: initialRemoteMeta.meta?.contentSha256,
           lastAppliedRemoteHash: config.lastAppliedRemoteHash,
           lastUploadedLocalHash: config.lastUploadedLocalHash,
           localContentSha256: snapshot.contentSha256,
@@ -261,24 +291,15 @@ class WebdavSyncService {
         }
       }
 
-      // Write snapshot before meta so a meta-only success cannot advertise a
-      // hash whose body never landed. Meta is the publish pointer; if meta
-      // fails after snapshot, the next upload retries with the same content.
-      final metaBytes = Uint8List.fromList(
-        utf8.encode(_snapshotService.buildMetaJson(meta)),
-      );
-      await _clientService.putBytes(
+      await _publishSnapshotVersion(
         client: client,
-        remotePath: config.snapshotRemotePath,
-        bytes: snapshotBytes,
+        config: config,
+        snapshot: snapshot,
+        snapshotBytes: snapshotBytes,
+        metaBytes: metaBytes,
+        initialRemoteMeta: initialRemoteMeta,
+        conflictPolicy: conflictPolicy,
       );
-      wroteSnapshot = true;
-      await _clientService.putBytes(
-        client: client,
-        remotePath: config.metaRemotePath,
-        bytes: metaBytes,
-      );
-      wroteMeta = true;
 
       if (writeHistory) {
         final skipHistory =
@@ -317,17 +338,197 @@ class WebdavSyncService {
 
       return const WebdavSyncResult(kind: WebdavSyncResultKind.uploaded);
     } catch (error) {
-      // Intentionally do not delete remote snapshot/meta on partial failure:
-      // deleting would destroy a previously good current snapshot (C6).
-      // Keep wrote* flags so future logging can report partial progress.
-      if (wroteSnapshot || wroteMeta) {
-        // no-op cleanup
-      }
+      // An immutable body is intentionally retained when history or metadata
+      // publication fails; the next sync can safely retry or garbage-collect it.
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
         message: sanitizeWebdavErrorMessage(error),
       );
     }
+  }
+
+  Future<void> _publishSnapshotVersion({
+    required WebdavClient client,
+    required WebdavSyncConfig config,
+    required AppSyncSnapshot snapshot,
+    required Uint8List snapshotBytes,
+    required Uint8List metaBytes,
+    required WebdavRemoteMetaResult initialRemoteMeta,
+    required WebdavUploadConflictPolicy conflictPolicy,
+  }) async {
+    final lockResult = await _clientService.acquireWriteLock(
+      client: client,
+      remotePath: config.normalizedRemoteFolder,
+    );
+    if (lockResult.isFailed) {
+      throw StateError(lockResult.errorMessage ?? 'remote_lock_unavailable');
+    }
+
+    final lockToken = lockResult.lockToken;
+    try {
+      final lockedRemoteMeta = await _clientService.getRemoteMetaResult(
+        client: client,
+        remotePath: config.metaRemotePath,
+      );
+      if (lockedRemoteMeta.isFailed) {
+        throw StateError(
+          lockedRemoteMeta.errorMessage ?? 'remote_meta_unavailable',
+        );
+      }
+      if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote &&
+          _remoteMetaChanged(initialRemoteMeta, lockedRemoteMeta)) {
+        throw StateError('remote_changed_during_publish');
+      }
+
+      final snapshotPath = _versionedSnapshotRemotePath(config, snapshot);
+      await _clientService.putBytes(
+        client: client,
+        remotePath: snapshotPath,
+        bytes: snapshotBytes,
+        lockToken: lockToken,
+      );
+      await _verifyRemoteBytes(
+        client: client,
+        remotePath: snapshotPath,
+        expectedBytes: snapshotBytes,
+      );
+
+      // If neither a server lock nor ETag is available, the versioned body and
+      // post-publication readback prevent body/meta pairing; an HTTP server
+      // cannot reject a last-writer race between this compare and PUT.
+      final headers = <String, String>{};
+      if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote) {
+        final etag = lockedRemoteMeta.etag;
+        if (etag != null && etag.isNotEmpty) {
+          headers['If-Match'] = etag;
+        } else if (lockedRemoteMeta.isNotFound) {
+          // Prevent two first-sync writers from both creating the pointer when
+          // the server has no ETag support.
+          headers['If-None-Match'] = '*';
+        }
+      }
+      await _clientService.putBytes(
+        client: client,
+        remotePath: config.metaRemotePath,
+        bytes: metaBytes,
+        headers: headers,
+        lockToken: lockToken,
+      );
+
+      final publishedMeta = await _clientService.getRemoteMetaResult(
+        client: client,
+        remotePath: config.metaRemotePath,
+      );
+      if (publishedMeta.isFailed || publishedMeta.meta == null) {
+        throw StateError('remote_meta_publish_verification_failed');
+      }
+      final published = publishedMeta.meta!;
+      if (published.contentSha256 != snapshot.contentSha256 ||
+          published.snapshotPath != snapshotPath) {
+        throw StateError('remote_snapshot_meta_mismatch');
+      }
+    } finally {
+      if (lockToken != null && lockToken.isNotEmpty) {
+        try {
+          await _clientService.releaseWriteLock(
+            client: client,
+            remotePath: config.normalizedRemoteFolder,
+            lockToken: lockToken,
+          );
+        } catch (_) {
+          // Locks have a server-side timeout; do not mask the publication
+          // result when an otherwise successful unlock request is lost.
+        }
+      }
+    }
+  }
+
+  Future<void> _verifyRemoteBytes({
+    required WebdavClient client,
+    required String remotePath,
+    required Uint8List expectedBytes,
+  }) async {
+    final result = await _clientService.getBytesResult(
+      client: client,
+      remotePath: remotePath,
+    );
+    if (result.isFailed) {
+      throw StateError(
+        result.errorMessage ?? 'remote_snapshot_write_verification_failed',
+      );
+    }
+    if (result.bytes == null || !_bytesEqual(result.bytes!, expectedBytes)) {
+      throw StateError('remote_snapshot_write_verification_failed');
+    }
+  }
+
+  String _versionedSnapshotRemotePath(
+    WebdavSyncConfig config,
+    AppSyncSnapshot snapshot,
+  ) {
+    final safeDeviceId = snapshot.deviceId.replaceAll(
+      RegExp(r'[^A-Za-z0-9_.-]'),
+      '_',
+    );
+    final devicePart = safeDeviceId.isEmpty ? 'device' : safeDeviceId;
+    return '${config.normalizedRemoteFolder}snapshot-${snapshot.contentSha256}-'
+        '${snapshot.exportedAt.toUtc().microsecondsSinceEpoch}-$devicePart.mikcb';
+  }
+
+  String? _resolveRemoteSnapshotPath(WebdavSyncConfig config, String? rawPath) {
+    final candidateRaw = rawPath?.trim();
+    if (candidateRaw == null || candidateRaw.isEmpty) {
+      return config.snapshotRemotePath;
+    }
+    final folder = config.normalizedRemoteFolder;
+    final candidate = candidateRaw.startsWith('/')
+        ? candidateRaw
+        : '$folder$candidateRaw';
+    if (!candidate.startsWith(folder) ||
+        candidate.contains('..') ||
+        candidate.contains('\\')) {
+      return null;
+    }
+    final relative = candidate.substring(folder.length);
+    if (relative.isEmpty || relative.contains('/')) {
+      return null;
+    }
+    return candidate;
+  }
+
+  bool _remoteMetaChanged(
+    WebdavRemoteMetaResult before,
+    WebdavRemoteMetaResult after,
+  ) {
+    if (before.isNotFound || after.isNotFound) {
+      return before.isNotFound != after.isNotFound;
+    }
+    final beforeMeta = before.meta;
+    final afterMeta = after.meta;
+    if (beforeMeta == null || afterMeta == null) {
+      return beforeMeta != afterMeta;
+    }
+    final beforeEtag = before.etag;
+    final afterEtag = after.etag;
+    if (beforeEtag != null && afterEtag != null && beforeEtag != afterEtag) {
+      return true;
+    }
+    return beforeMeta.contentSha256 != afterMeta.contentSha256 ||
+        beforeMeta.deviceId != afterMeta.deviceId ||
+        beforeMeta.exportedAt != afterMeta.exportedAt ||
+        beforeMeta.snapshotPath != afterMeta.snapshotPath;
+  }
+
+  static bool _bytesEqual(Uint8List left, Uint8List right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<WebdavSyncResult> createManualBackup({
@@ -698,9 +899,19 @@ class WebdavSyncService {
         }
       }
 
+      final snapshotPath = _resolveRemoteSnapshotPath(
+        config,
+        remoteMeta.snapshotPath,
+      );
+      if (snapshotPath == null) {
+        return const WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: 'sync_snapshot_path_invalid',
+        );
+      }
       final bytes = await _clientService.getBytes(
         client: client,
-        remotePath: config.snapshotRemotePath,
+        remotePath: snapshotPath,
       );
       if (bytes == null || bytes.isEmpty) {
         return const WebdavSyncResult(
@@ -876,39 +1087,82 @@ class WebdavSyncService {
     required WebdavClient client,
     required WebdavSyncConfig config,
   }) async {
-    final indexBytes = await _clientService.getBytes(
+    final indexResult = await _clientService.getBytesResult(
       client: client,
       remotePath: config.historyIndexRemotePath,
     );
-    if (indexBytes != null && indexBytes.isNotEmpty) {
-      return _backupIndexService.decodeIndex(utf8.decode(indexBytes));
+    var readableIndexResult = indexResult;
+    if (!indexResult.isFailed && !indexResult.isNotFound) {
+      final bytes = indexResult.bytes!;
+      try {
+        final decoded = jsonDecode(utf8.decode(bytes));
+        if (decoded is Map && decoded['entries'] is List) {
+          return _backupIndexService.decodeIndex(utf8.decode(bytes));
+        }
+        readableIndexResult = const WebdavGetBytesResult.failed(
+          'remote_backup_index_invalid',
+        );
+      } catch (_) {
+        readableIndexResult = const WebdavGetBytesResult.failed(
+          'remote_backup_index_invalid',
+        );
+      }
     }
 
-    final fileNames = await _clientService.listHistoryBackupFiles(
+    final listingResult = await _clientService.listHistoryBackupFilesResult(
       client: client,
       historyRemoteFolder: config.historyRemoteFolder,
     );
-    if (fileNames.isEmpty) {
-      return const CloudBackupIndex();
+    final recovery = decideWebdavBackupIndexRecovery(
+      indexResult: readableIndexResult,
+      listingResult: listingResult,
+    );
+    switch (recovery) {
+      case WebdavBackupIndexRecoveryAction.useIndex:
+        // A successful index is returned above. Keep this branch defensive if
+        // the result model grows another successful state later.
+        throw StateError('remote_backup_index_unavailable');
+      case WebdavBackupIndexRecoveryAction.empty:
+        return const CloudBackupIndex();
+      case WebdavBackupIndexRecoveryAction.failed:
+        throw StateError(
+          listingResult.errorMessage ??
+              readableIndexResult.errorMessage ??
+              'remote_backup_index_unavailable',
+        );
+      case WebdavBackupIndexRecoveryAction.rebuildFromListing:
+        break;
     }
 
-    final remoteMeta = await _clientService.getRemoteMeta(
+    final remoteMetaResult = await _clientService.getRemoteMetaResult(
       client: client,
       remotePath: config.metaRemotePath,
     );
-    final currentHash = remoteMeta?.contentSha256 ?? '';
+    if (remoteMetaResult.isFailed) {
+      throw StateError(
+        remoteMetaResult.errorMessage ?? 'remote_meta_unavailable',
+      );
+    }
+    final currentHash = remoteMetaResult.meta?.contentSha256 ?? '';
     final entries = <CloudBackupEntry>[];
 
-    for (final fileName in fileNames) {
-      final bytes = await _clientService.getBytes(
+    for (final fileName in listingResult.fileNames) {
+      final backupResult = await _clientService.getBytesResult(
         client: client,
         remotePath: config.historyBackupRemotePath(fileName),
       );
-      if (bytes == null || bytes.isEmpty) {
+      if (backupResult.isFailed) {
+        throw StateError(
+          backupResult.errorMessage ?? 'remote_backup_unavailable',
+        );
+      }
+      if (backupResult.isNotFound) {
+        // A concurrent prune may remove a listed file; it is safe to omit the
+        // missing entry while retaining all entries that were readable.
         continue;
       }
       try {
-        final content = utf8.decode(bytes);
+        final content = utf8.decode(backupResult.bytes!);
         final parsed = _snapshotService.parseSnapshotJson(content);
         final id = fileName.endsWith('.mikcb')
             ? fileName.substring(0, fileName.length - '.mikcb'.length)
@@ -931,7 +1185,9 @@ class WebdavSyncService {
             isCurrent: parsed.contentSha256 == currentHash,
           ),
         );
-      } catch (_) {}
+      } catch (error) {
+        throw StateError('remote_backup_invalid: $error');
+      }
     }
 
     entries.sort((a, b) => b.exportedAt.compareTo(a.exportedAt));

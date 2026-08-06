@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/course_task.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/partner_timetable_binding.dart';
 import 'package:university_timetable/models/schedule_date_rule.dart';
@@ -34,7 +35,7 @@ void main() {
     return TimeScheme(
       id: 'scheme-1',
       name: '默认作息',
-      sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
+      sections: TimetableSettings.defaults().sections,
       createdAt: exportedAt,
       updatedAt: exportedAt,
     );
@@ -225,30 +226,45 @@ void main() {
       );
     });
 
-    test(
-      'false when only default scheme is customized but profile still empty',
-      () {
-        // Documented gap: deep edits to the single default scheme alone do not
-        // trip hasUserAuthoredData (threshold is length > 1, not content).
-        expect(
-          emptyAuthoredSnapshot(
-            timeSchemes: [
-              TimeScheme(
-                id: 'scheme-1',
-                name: '深度自定义',
-                sections: const [
-                  SectionTime(startTime: '07:30', endTime: '08:10'),
-                  SectionTime(startTime: '08:20', endTime: '09:00'),
-                ],
-                createdAt: exportedAt,
-                updatedAt: exportedAt,
-              ),
-            ],
-          ).hasUserAuthoredData,
-          isFalse,
-        );
-      },
-    );
+    test('true when profile has tasks even without courses', () {
+      expect(
+        emptyAuthoredSnapshot(
+          profiles: [
+            factoryDefaultProfile().copyWith(
+              tasks: [
+                CourseTask(
+                  id: 'task-1',
+                  title: '提交作业',
+                  createdAt: exportedAt,
+                  updatedAt: exportedAt,
+                ),
+              ],
+            ),
+          ],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
+
+    test('true when only default scheme is deeply customized', () {
+      expect(
+        emptyAuthoredSnapshot(
+          timeSchemes: [
+            TimeScheme(
+              id: 'scheme-1',
+              name: '深度自定义',
+              sections: const [
+                SectionTime(startTime: '07:30', endTime: '08:10'),
+                SectionTime(startTime: '08:20', endTime: '09:00'),
+              ],
+              createdAt: exportedAt,
+              updatedAt: exportedAt,
+            ),
+          ],
+        ).hasUserAuthoredData,
+        isTrue,
+      );
+    });
   });
 
   test(
@@ -727,4 +743,18 @@ void main() {
       ]);
     },
   );
+
+  test('snapshot metadata round trip preserves versioned body path', () {
+    final service = AppSyncSnapshotService();
+    final meta = AppSyncSnapshotMeta(
+      exportedAt: exportedAt,
+      contentSha256: 'hash-a',
+      deviceId: 'device-a',
+      appVersion: '2.0.5',
+      snapshotPath: '/Apps/qingyu-sync/snapshot-hash-a.mikcb',
+    );
+    final parsed = service.parseMetaJson(service.buildMetaJson(meta));
+    expect(parsed.snapshotPath, meta.snapshotPath);
+    expect(parsed.contentSha256, meta.contentSha256);
+  });
 }

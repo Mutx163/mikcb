@@ -8,6 +8,7 @@ import '../models/partner_timetable_binding.dart';
 import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
+import '../models/timetable_settings.dart';
 import '../models/warehouse_macro_models.dart';
 import '../providers/timetable_provider.dart';
 import 'app_log_service.dart';
@@ -93,6 +94,7 @@ class AppSyncSnapshot {
     }
     for (final profile in profiles) {
       if (profile.courses.isNotEmpty ||
+          profile.tasks.isNotEmpty ||
           profile.exams.isNotEmpty ||
           profile.scheduleItems.isNotEmpty) {
         return true;
@@ -105,7 +107,27 @@ class AppSyncSnapshot {
         return true;
       }
     }
+    if (timeSchemes.length == 1 &&
+        !_matchesFactoryDefaultTimeScheme(timeSchemes.single)) {
+      return true;
+    }
     return false;
+  }
+
+  static bool _matchesFactoryDefaultTimeScheme(TimeScheme scheme) {
+    final defaults = TimetableSettings.defaults().sections;
+    if (scheme.sections.length != defaults.length) {
+      return false;
+    }
+    for (var index = 0; index < defaults.length; index++) {
+      final actual = scheme.sections[index];
+      final expected = defaults[index];
+      if (actual.startTime != expected.startTime ||
+          actual.endTime != expected.endTime) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 
@@ -114,12 +136,14 @@ class AppSyncSnapshotMeta {
   final String contentSha256;
   final String deviceId;
   final String? appVersion;
+  final String? snapshotPath;
 
   const AppSyncSnapshotMeta({
     required this.exportedAt,
     required this.contentSha256,
     required this.deviceId,
     this.appVersion,
+    this.snapshotPath,
   });
 
   Map<String, dynamic> toJson() => {
@@ -127,6 +151,8 @@ class AppSyncSnapshotMeta {
     'contentSha256': contentSha256,
     'deviceId': deviceId,
     if (appVersion != null) 'appVersion': appVersion,
+    if (snapshotPath != null && snapshotPath!.trim().isNotEmpty)
+      'snapshotPath': snapshotPath,
   };
 
   factory AppSyncSnapshotMeta.fromJson(Map<String, dynamic> json) {
@@ -137,6 +163,7 @@ class AppSyncSnapshotMeta {
       contentSha256: json['contentSha256'] as String? ?? '',
       deviceId: json['deviceId'] as String? ?? '',
       appVersion: json['appVersion'] as String?,
+      snapshotPath: json['snapshotPath'] as String?,
     );
   }
 }
@@ -264,12 +291,14 @@ class AppSyncSnapshotService {
   AppSyncSnapshotMeta buildMetaFromSnapshot(
     AppSyncSnapshot snapshot, {
     String? appVersion,
+    String? snapshotPath,
   }) {
     return AppSyncSnapshotMeta(
       exportedAt: snapshot.exportedAt,
       contentSha256: snapshot.contentSha256,
       deviceId: snapshot.deviceId,
       appVersion: appVersion,
+      snapshotPath: snapshotPath,
     );
   }
 

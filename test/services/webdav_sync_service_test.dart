@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/app_sync_snapshot_service.dart';
+import 'package:university_timetable/services/webdav_client_service.dart';
 import 'package:university_timetable/services/webdav_sync_config.dart';
+import 'package:university_timetable/services/webdav_sync_service.dart';
 
 void main() {
   test('webdav config normalizes remote folder path', () {
@@ -217,5 +219,44 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  test('backup index recovery aborts when index and listing both fail', () {
+    final action = decideWebdavBackupIndexRecovery(
+      indexResult: const WebdavGetBytesResult.failed('index_timeout'),
+      listingResult: const WebdavHistoryListResult.failed('listing_timeout'),
+    );
+    expect(action, WebdavBackupIndexRecoveryAction.failed);
+  });
+
+  test(
+    'backup index recovery treats missing index and empty listing as empty',
+    () {
+      final action = decideWebdavBackupIndexRecovery(
+        indexResult: const WebdavGetBytesResult.notFound(),
+        listingResult: const WebdavHistoryListResult.ok([]),
+      );
+      expect(action, WebdavBackupIndexRecoveryAction.empty);
+    },
+  );
+
+  test('backup index recovery rebuilds from a successful listing', () {
+    final action = decideWebdavBackupIndexRecovery(
+      indexResult: const WebdavGetBytesResult.failed('index_timeout'),
+      listingResult: const WebdavHistoryListResult.ok(['one.mikcb']),
+    );
+    expect(action, WebdavBackupIndexRecoveryAction.rebuildFromListing);
+  });
+
+  test('history listing failure classification preserves not-found', () {
+    final missing = WebdavClientService.classifyHistoryListFailure(
+      StateError('404 Not Found'),
+    );
+    final failed = WebdavClientService.classifyHistoryListFailure(
+      StateError('connection reset'),
+    );
+    expect(missing.isNotFound, isTrue);
+    expect(missing.isFailed, isFalse);
+    expect(failed.isFailed, isTrue);
   });
 }
