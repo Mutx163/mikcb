@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-05T04:44:58+00:00",
+  "updatedAt": "2026-08-06T04:45:29+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 134,
-    "schools": 129,
+    "total": 136,
+    "schools": 131,
     "generic": 5
   },
   "schools": [
@@ -359,6 +359,13 @@
       "category": "school"
     },
     {
+      "id": "HHTC",
+      "name": "怀化学院",
+      "initial": "H",
+      "resourceFolder": "HHTC",
+      "category": "school"
+    },
+    {
       "id": "HBGUHX",
       "name": "河北地质大学华信学院",
       "initial": "H",
@@ -664,6 +671,13 @@
       "name": "宿州学院",
       "initial": "S",
       "resourceFolder": "AHSZU",
+      "category": "school"
+    },
+    {
+      "id": "SDJTU",
+      "name": "山东交通学院",
+      "initial": "S",
+      "resourceFolder": "SDJTU",
       "category": "school"
     },
     {
