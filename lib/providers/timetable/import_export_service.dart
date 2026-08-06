@@ -315,6 +315,12 @@ Future<String?> _timetableImportFullAppDataBackup(
       }
 
       host._timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
+      host._locationTimeGroups = List<LocationTimeGroup>.from(
+        backup.locationTimeGroups,
+      );
+      host._scheduleDateRules = List<ScheduleDateRule>.from(
+        backup.scheduleDateRules,
+      );
       host._profiles = backup.profiles
           .map(
             (profile) => profile.copyWith(
@@ -341,6 +347,10 @@ Future<String?> _timetableImportFullAppDataBackup(
           : host._profiles.first.id;
 
       await host._storageService.saveTimeSchemes(host._timeSchemes);
+      await host._storageService.saveLocationTimeGroups(
+        host._locationTimeGroups,
+      );
+      await host._storageService.saveScheduleDateRules(host._scheduleDateRules);
       await host._storageService.saveProfiles(host._profiles);
       if (host._activeProfileId != null) {
         await host._storageService.setActiveProfileId(host._activeProfileId!);

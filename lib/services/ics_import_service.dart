@@ -332,7 +332,7 @@ class IcsImportService {
 
   DateTime? _parseLocalDateTime(String? value) {
     if (value == null) return null;
-    final match = RegExp(r'(\d{8})T(\d{4,6})').firstMatch(value);
+    final match = RegExp(r'^(\d{8})T(\d{4,6})(Z)?$').firstMatch(value.trim());
     if (match == null) return null;
 
     final date = match.group(1)!;
@@ -352,7 +352,10 @@ class IcsImportService {
       return null;
     }
 
-    return DateTime(year, month, day, hour, minute, second);
+    final isUtc = match.group(3) != null;
+    return isUtc
+        ? DateTime.utc(year, month, day, hour, minute, second).toLocal()
+        : DateTime(year, month, day, hour, minute, second);
   }
 
   int? _parseEndWeek(

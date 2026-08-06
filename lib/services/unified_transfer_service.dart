@@ -4,7 +4,11 @@ import 'app_log_service.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
 import '../models/exam.dart';
+import '../models/location_time_group.dart';
+import '../models/schedule_date_rule.dart';
+import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
+import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import 'data_transfer_service.dart';
 import 'transfer_diff_service.dart';
@@ -85,6 +89,11 @@ class UnifiedTransferService {
         : provider.exams
               .where((item) => courseIds.contains(item.courseId))
               .toList();
+    final scopedMetadata = _selectScopedMetadata(
+      provider: provider,
+      scope: scope,
+      courses: courses,
+    );
 
     return _dataTransferService.buildTransferPackage(
       scope: scope,
@@ -92,22 +101,171 @@ class UnifiedTransferService {
       profileName: provider.activeProfile?.name,
       courses: courses,
       tasks: tasks,
-      scheduleItems: scope == TransferScope.timeTemplate
-          ? const []
-          : provider.scheduleItems,
+      scheduleItems: scopedMetadata.scheduleItems,
       exams: exams,
       settings: scope == TransferScope.timeTemplate ? null : provider.settings,
       currentWeek: scope == TransferScope.timeTemplate
           ? null
           : provider.currentWeek,
-      timeSchemes: provider.timeSchemes,
-      scheduleDateRules: scope == TransferScope.timeTemplate
-          ? const []
-          : provider.scheduleDateRules,
-      locationTimeGroups: scope == TransferScope.timeTemplate
-          ? const []
-          : provider.locationTimeGroups,
+      timeSchemes: scopedMetadata.timeSchemes,
+      scheduleDateRules: scopedMetadata.scheduleDateRules,
+      locationTimeGroups: scopedMetadata.locationTimeGroups,
     );
+  }
+
+  ({
+    List<ScheduleItem> scheduleItems,
+    List<ScheduleDateRule> scheduleDateRules,
+    List<LocationTimeGroup> locationTimeGroups,
+    List<TimeScheme> timeSchemes,
+  })
+  _selectScopedMetadata({
+    required TimetableProvider provider,
+    required TransferScope scope,
+    required List<Course> courses,
+  }) {
+    if (scope == TransferScope.timeTemplate) {
+      return (
+        scheduleItems: const [],
+        scheduleDateRules: const [],
+        locationTimeGroups: const [],
+        timeSchemes: provider.timeSchemes.toList(),
+      );
+    }
+
+    final isScoped =
+        scope == TransferScope.selectedCourse ||
+        scope == TransferScope.selectedCourses ||
+        scope == TransferScope.weekTimetable;
+    if (!isScoped) {
+      return (
+        scheduleItems: provider.scheduleItems.toList(),
+        scheduleDateRules: provider.scheduleDateRules.toList(),
+        locationTimeGroups: provider.locationTimeGroups.toList(),
+        timeSchemes: provider.timeSchemes.toList(),
+      );
+    }
+
+    final window = _buildScopeWindow(
+      provider: provider,
+      scope: scope,
+      courses: courses,
+    );
+    final scheduleItems = window.isEmpty
+        ? const <ScheduleItem>[]
+        : provider.scheduleItems
+              .where((item) => _scheduleItemIntersects(item, window))
+              .toList();
+    final scheduleDateRules = window.isEmpty
+        ? const <ScheduleDateRule>[]
+        : provider.scheduleDateRules.where((rule) {
+            final start = ScheduleDateRuleLogic.parseIsoDate(rule.startDate);
+            final end = ScheduleDateRuleLogic.parseIsoDate(rule.endDate);
+            return start != null &&
+                end != null &&
+                window.overlapsDateRange(start: start, end: end);
+          }).toList();
+
+    final locationGroupIds = <String>{};
+    for (final course in courses) {
+      final match = LocationTimeMatchLogic.match(
+        course.location,
+        provider.locationTimeGroups,
+      );
+      if (match != null) {
+        locationGroupIds.add(match.groupId);
+      }
+    }
+    final locationTimeGroups = provider.locationTimeGroups
+        .where((group) => locationGroupIds.contains(group.id))
+        .toList();
+
+    // A scoped package only needs schemes referenced by its courses or by the
+    // scoped rule/location records. This also carries explicit course
+    // overrides, whose IDs are not necessarily the target device's IDs.
+    final timeSchemeIds = <String>{};
+    for (final course in courses) {
+      final overrideId = course.timeSchemeIdOverride?.trim();
+      if (overrideId != null && overrideId.isNotEmpty) {
+        timeSchemeIds.add(overrideId);
+        continue;
+      }
+      final locationMatch = LocationTimeMatchLogic.match(
+        course.location,
+        provider.locationTimeGroups,
+      );
+      final locationGroup = locationMatch == null
+          ? null
+          : provider.locationTimeGroups.firstWhere(
+              (group) => group.id == locationMatch.groupId,
+              orElse: () =>
+                  const LocationTimeGroup(id: '', name: '', timeSchemeId: ''),
+            );
+      final locationSchemeId = locationGroup?.timeSchemeId.trim() ?? '';
+      final defaultSchemeId =
+          provider.settings.activeTimeSchemeId?.trim() ?? '';
+      timeSchemeIds.add(
+        locationSchemeId.isNotEmpty ? locationSchemeId : defaultSchemeId,
+      );
+    }
+    timeSchemeIds.addAll(
+      locationTimeGroups
+          .map((group) => group.timeSchemeId.trim())
+          .where((id) => id.isNotEmpty),
+    );
+    timeSchemeIds.addAll(
+      scheduleDateRules
+          .map((rule) => rule.timeSchemeId.trim())
+          .where((id) => id.isNotEmpty),
+    );
+    final timeSchemes = provider.timeSchemes
+        .where((scheme) => timeSchemeIds.contains(scheme.id))
+        .toList();
+
+    return (
+      scheduleItems: scheduleItems,
+      scheduleDateRules: scheduleDateRules,
+      locationTimeGroups: locationTimeGroups,
+      timeSchemes: timeSchemes,
+    );
+  }
+
+  _TransferScopeWindow _buildScopeWindow({
+    required TimetableProvider provider,
+    required TransferScope scope,
+    required List<Course> courses,
+  }) {
+    final fallbackWeekStart = _startOfWeek(DateTime.now());
+    final isSelectedScope =
+        scope == TransferScope.selectedCourse ||
+        scope == TransferScope.selectedCourses;
+    if (isSelectedScope && courses.isEmpty) {
+      return _TransferScopeWindow.empty(fallbackWeekStart: fallbackWeekStart);
+    }
+
+    final weeks = scope == TransferScope.weekTimetable
+        ? <int>{provider.currentWeek}
+        : courses.expand((course) => course.activeWeeks).toSet();
+    if (weeks.isEmpty) {
+      return _TransferScopeWindow.empty(fallbackWeekStart: fallbackWeekStart);
+    }
+
+    final semesterStart = provider.settings.semesterStartDate;
+    return _TransferScopeWindow(
+      weeks: weeks,
+      semesterStartWeek: semesterStart == null
+          ? null
+          : _startOfWeek(semesterStart),
+      fallbackWeekStart: fallbackWeekStart,
+    );
+  }
+
+  bool _scheduleItemIntersects(ScheduleItem item, _TransferScopeWindow window) {
+    final instances = item.expandInstances(
+      fromDate: window.startDate,
+      toDate: window.endDate,
+    );
+    return instances.any((instance) => window.containsDate(instance.date));
   }
 
   TransferPackage buildFullPackage({
@@ -337,11 +495,7 @@ class UnifiedTransferService {
       // Scoped overwrite updates only entities inside the package boundary.
       // The remaining local timetable is outside that boundary.
       if (incoming.scope == TransferScope.timeTemplate) {
-        await _mergeTimeSchemes(
-          provider,
-          incoming.timeSchemes,
-          incomingScope: incoming.scope,
-        );
+        await _mergeTimeSchemes(provider, incoming.timeSchemes);
       } else {
         await _merge(provider, incoming);
       }
@@ -367,35 +521,79 @@ class UnifiedTransferService {
       return;
     }
 
+    // The legacy profile backup importer receives the source scheme IDs in
+    // its payload, so create/resolve schemes first and rewrite every reference
+    // that it will apply. Full backups intentionally replace the scheme table
+    // as a whole and take the branch above.
+    final timeSchemeIdMap = await _mergeTimeSchemes(
+      provider,
+      incoming.timeSchemes,
+    );
+    final courses = _remapCourseTimeSchemeReferences(
+      incoming.courses,
+      timeSchemeIdMap,
+    );
+    final settings = incoming.settings == null
+        ? provider.settings
+        : _remapSettingsTimeSchemeReference(
+            incoming.settings!,
+            timeSchemeIdMap,
+          );
+    final scheduleDateRules = _remapScheduleDateRules(
+      incoming.scheduleDateRules,
+      timeSchemeIdMap,
+    );
+    final locationTimeGroups = _remapLocationTimeGroups(
+      incoming.locationTimeGroups,
+      timeSchemeIdMap,
+    );
     final json = _dataTransferService.buildBackupJson(
       packageId: incoming.packageId,
       scope: incoming.scope,
       channel: incoming.channel,
       profileName: incoming.profileName,
-      courses: incoming.courses,
+      courses: courses,
       tasks: incoming.tasks,
       scheduleItems: incoming.scheduleItems,
       exams: incoming.exams,
-      settings: incoming.settings ?? provider.settings,
+      settings: settings,
       currentWeek: incoming.currentWeek ?? provider.currentWeek,
       timeSchemes: incoming.timeSchemes,
-      scheduleDateRules: incoming.scheduleDateRules,
-      locationTimeGroups: incoming.locationTimeGroups,
+      scheduleDateRules: scheduleDateRules,
+      locationTimeGroups: locationTimeGroups,
     );
     final error = await provider.importAppDataBackup(json);
     if (error != null) {
       throw StateError(error);
     }
-    await _replaceRulesAndLocations(provider, incoming);
+    await _replaceRulesAndLocations(
+      provider,
+      incoming.copyWith(
+        scheduleDateRules: scheduleDateRules,
+        locationTimeGroups: locationTimeGroups,
+      ),
+    );
   }
 
   Future<void> _merge(
     TimetableProvider provider,
     TransferPackage incoming,
   ) async {
-    if (incoming.courses.isNotEmpty) {
+    // Time-scheme IDs are generated locally and therefore cannot be used as
+    // cross-device identities. Resolve them before importing any payload that
+    // can reference a scheme.
+    final timeSchemeIdMap = await _mergeTimeSchemes(
+      provider,
+      incoming.timeSchemes,
+    );
+    final courses = _remapCourseTimeSchemeReferences(
+      incoming.courses,
+      timeSchemeIdMap,
+    );
+
+    if (courses.isNotEmpty) {
       await provider.importParsedCourses(
-        incoming.courses,
+        courses,
         replaceExisting: false,
         source: 'transfer_${incoming.channel.value}',
       );
@@ -432,69 +630,160 @@ class UnifiedTransferService {
         (incoming.scope == TransferScope.currentTimetable ||
             incoming.scope == TransferScope.allData ||
             incoming.scope == TransferScope.timeTemplate)) {
-      await provider.updateSettings(incoming.settings!);
+      await provider.updateSettings(
+        _remapSettingsTimeSchemeReference(incoming.settings!, timeSchemeIdMap),
+      );
     }
     if (incoming.currentWeek != null &&
         incoming.scope != TransferScope.selectedCourse &&
         incoming.scope != TransferScope.selectedCourses) {
       await provider.setCurrentWeek(incoming.currentWeek!);
     }
-    await _mergeTimeSchemes(
+    await _mergeRulesAndLocations(
       provider,
-      incoming.timeSchemes,
-      incomingScope: incoming.scope,
+      incoming,
+      timeSchemeIdMap: timeSchemeIdMap,
     );
-    await _mergeRulesAndLocations(provider, incoming);
   }
 
-  Future<void> _mergeTimeSchemes(
+  Future<Map<String, String>> _mergeTimeSchemes(
     TimetableProvider provider,
-    List<TimeScheme> incoming, {
-    required TransferScope incomingScope,
-  }) async {
-    for (final scheme in incoming) {
-      final existing = provider.timeSchemes.where(
-        (item) => item.id == scheme.id,
-      );
-      if (existing.isEmpty) {
-        // A standalone time-template share has no course/rule references that
-        // need the source UUID. Provider-generated identity is intentional;
-        // references are only accepted when the source scheme already exists.
-        if (incomingScope != TransferScope.timeTemplate) {
-          throw StateError('transfer_time_scheme_not_found');
-        }
-        await provider.createTimeScheme(
-          name: scheme.name,
-          sections: scheme.sections,
+    List<TimeScheme> incoming,
+  ) async {
+    final localSchemesById = {
+      for (final scheme in provider.timeSchemes) scheme.id: scheme,
+    };
+    final localSchemeIdsBySignature = {
+      for (final scheme in provider.timeSchemes)
+        _timeSchemeSectionsSignature(scheme): scheme.id,
+    };
+    final resolvedSchemeIds = <String, String>{};
+
+    for (final incomingScheme in incoming) {
+      final incomingSignature = _timeSchemeSectionsSignature(incomingScheme);
+      final existingSchemeId = localSchemeIdsBySignature[incomingSignature];
+      final existingScheme =
+          localSchemesById[incomingScheme.id] ??
+          (existingSchemeId == null
+              ? null
+              : localSchemesById[existingSchemeId]);
+
+      if (existingScheme == null) {
+        final createdScheme = await provider.createTimeScheme(
+          name: incomingScheme.name,
+          sections: incomingScheme.sections,
         );
+        localSchemesById[createdScheme.id] = createdScheme;
+        localSchemeIdsBySignature[incomingSignature] = createdScheme.id;
+        resolvedSchemeIds[incomingScheme.id] = createdScheme.id;
         continue;
       }
+
       final error = await provider.updateTimeScheme(
-        schemeId: scheme.id,
-        name: scheme.name,
-        sections: scheme.sections,
+        schemeId: existingScheme.id,
+        name: incomingScheme.name,
+        sections: incomingScheme.sections,
       );
       if (error != null) {
         throw StateError(error);
       }
+      resolvedSchemeIds[incomingScheme.id] = existingScheme.id;
+      localSchemeIdsBySignature[incomingSignature] = existingScheme.id;
     }
+
+    return resolvedSchemeIds;
+  }
+
+  String _timeSchemeSectionsSignature(TimeScheme scheme) {
+    return jsonEncode(
+      scheme.sections.map((section) => section.toJson()).toList(),
+    );
+  }
+
+  List<Course> _remapCourseTimeSchemeReferences(
+    List<Course> courses,
+    Map<String, String> timeSchemeIdMap,
+  ) {
+    return courses.map((course) {
+      final sourceSchemeId = course.timeSchemeIdOverride;
+      if (sourceSchemeId == null) {
+        return course;
+      }
+      final targetSchemeId = timeSchemeIdMap[sourceSchemeId];
+      if (targetSchemeId == null || targetSchemeId == sourceSchemeId) {
+        return course;
+      }
+      return course.copyWith(timeSchemeIdOverride: targetSchemeId);
+    }).toList();
+  }
+
+  TimetableSettings _remapSettingsTimeSchemeReference(
+    TimetableSettings settings,
+    Map<String, String> timeSchemeIdMap,
+  ) {
+    final sourceSchemeId = settings.activeTimeSchemeId;
+    if (sourceSchemeId == null) {
+      return settings;
+    }
+    final targetSchemeId = timeSchemeIdMap[sourceSchemeId];
+    if (targetSchemeId == null || targetSchemeId == sourceSchemeId) {
+      return settings;
+    }
+    return settings.copyWith(activeTimeSchemeId: targetSchemeId);
+  }
+
+  List<ScheduleDateRule> _remapScheduleDateRules(
+    List<ScheduleDateRule> rules,
+    Map<String, String> timeSchemeIdMap,
+  ) {
+    return rules
+        .map(
+          (rule) => rule.copyWith(
+            timeSchemeId:
+                timeSchemeIdMap[rule.timeSchemeId] ?? rule.timeSchemeId,
+          ),
+        )
+        .toList();
+  }
+
+  List<LocationTimeGroup> _remapLocationTimeGroups(
+    List<LocationTimeGroup> groups,
+    Map<String, String> timeSchemeIdMap,
+  ) {
+    return groups
+        .map(
+          (group) => group.copyWith(
+            timeSchemeId:
+                timeSchemeIdMap[group.timeSchemeId] ?? group.timeSchemeId,
+          ),
+        )
+        .toList();
   }
 
   Future<void> _mergeRulesAndLocations(
     TimetableProvider provider,
-    TransferPackage incoming,
-  ) async {
+    TransferPackage incoming, {
+    Map<String, String> timeSchemeIdMap = const {},
+  }) async {
     if (incoming.locationTimeGroups.isNotEmpty) {
+      final locationTimeGroups = _remapLocationTimeGroups(
+        incoming.locationTimeGroups,
+        timeSchemeIdMap,
+      );
       final byId = {
         for (final item in provider.locationTimeGroups) item.id: item,
-        for (final item in incoming.locationTimeGroups) item.id: item,
+        for (final item in locationTimeGroups) item.id: item,
       };
       await provider.replaceLocationTimeGroups(byId.values.toList());
     }
     if (incoming.scheduleDateRules.isNotEmpty) {
+      final scheduleDateRules = _remapScheduleDateRules(
+        incoming.scheduleDateRules,
+        timeSchemeIdMap,
+      );
       final byId = {
         for (final item in provider.scheduleDateRules) item.id: item,
-        for (final item in incoming.scheduleDateRules) item.id: item,
+        for (final item in scheduleDateRules) item.id: item,
       };
       await provider.replaceScheduleDateRules(byId.values.toList());
     }
@@ -538,4 +827,100 @@ class UnifiedTransferService {
       resync: false,
     );
   }
+}
+
+class _TransferScopeWindow {
+  final Set<int> weeks;
+  final DateTime? semesterStartWeek;
+  final DateTime fallbackWeekStart;
+
+  const _TransferScopeWindow({
+    required this.weeks,
+    required this.semesterStartWeek,
+    required this.fallbackWeekStart,
+  });
+
+  const _TransferScopeWindow.empty({required this.fallbackWeekStart})
+    : weeks = const {},
+      semesterStartWeek = null;
+
+  bool get isEmpty => weeks.isEmpty;
+
+  DateTime get startDate {
+    if (semesterStartWeek == null || weeks.isEmpty) {
+      return fallbackWeekStart;
+    }
+    final firstWeek = weeks.reduce(
+      (left, right) => left < right ? left : right,
+    );
+    return semesterStartWeek!.add(Duration(days: (firstWeek - 1) * 7));
+  }
+
+  DateTime get endDate {
+    if (semesterStartWeek == null || weeks.isEmpty) {
+      return fallbackWeekStart.add(const Duration(days: 6));
+    }
+    final lastWeek = weeks.reduce((left, right) => left > right ? left : right);
+    return semesterStartWeek!.add(Duration(days: lastWeek * 7 - 1));
+  }
+
+  bool containsDate(DateTime value) {
+    if (isEmpty) {
+      return false;
+    }
+    final date = DateTime(value.year, value.month, value.day);
+    if (semesterStartWeek == null) {
+      final lastDate = fallbackWeekStart.add(const Duration(days: 6));
+      return !date.isBefore(fallbackWeekStart) && !date.isAfter(lastDate);
+    }
+
+    final alignedDate = _startOfWeek(date);
+    final diffDays =
+        DateTime.utc(alignedDate.year, alignedDate.month, alignedDate.day)
+            .difference(
+              DateTime.utc(
+                semesterStartWeek!.year,
+                semesterStartWeek!.month,
+                semesterStartWeek!.day,
+              ),
+            )
+            .inDays;
+    if (diffDays < 0) {
+      return false;
+    }
+    return weeks.contains(diffDays ~/ 7 + 1);
+  }
+
+  bool overlapsDateRange({required DateTime start, required DateTime end}) {
+    if (isEmpty) {
+      return false;
+    }
+    final rangeStart = DateTime(start.year, start.month, start.day);
+    final rangeEnd = DateTime(end.year, end.month, end.day);
+    if (rangeEnd.isBefore(rangeStart)) {
+      return false;
+    }
+    if (semesterStartWeek == null) {
+      final windowEnd = fallbackWeekStart.add(const Duration(days: 6));
+      return !rangeEnd.isBefore(fallbackWeekStart) &&
+          !rangeStart.isAfter(windowEnd);
+    }
+
+    for (final week in weeks) {
+      final weekStart = semesterStartWeek!.add(Duration(days: (week - 1) * 7));
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      if (!rangeEnd.isBefore(weekStart) && !rangeStart.isAfter(weekEnd)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+DateTime _startOfWeek(DateTime value) {
+  return DateTime(
+    value.year,
+    value.month,
+    value.day,
+  ).subtract(Duration(days: value.weekday - 1));
 }

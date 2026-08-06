@@ -1,6 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/ics_import_service.dart';
 
+String _formatTime(DateTime value) {
+  return '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+}
+
+DateTime _startOfWeek(DateTime value) {
+  return DateTime(
+    value.year,
+    value.month,
+    value.day,
+  ).subtract(Duration(days: value.weekday - 1));
+}
+
 void main() {
   test(
     'imports saturday single-week wakeup event without spilling into next week',
@@ -165,6 +177,31 @@ END:VCALENDAR
       expect(result.courses, isEmpty);
     },
   );
+
+  test('converts UTC ICS timestamps to local wall-clock time', () {
+    const content = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:UTC课程
+DTSTART:20260301T233000Z
+DTEND:20260302T013000Z
+LOCATION:A101 张老师
+DESCRIPTION:第1 - 2节\\nA101\\n张老师
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final result = IcsImportService().parseWakeUpSchedule(content);
+    final course = result.courses.single;
+    final expectedStart = DateTime.utc(2026, 3, 1, 23, 30).toLocal();
+    final expectedEnd = DateTime.utc(2026, 3, 2, 1, 30).toLocal();
+
+    expect(course.dayOfWeek, expectedStart.weekday);
+    expect(course.startTime, _formatTime(expectedStart));
+    expect(course.endTime, _formatTime(expectedEnd));
+    expect(result.semesterStart, _startOfWeek(expectedStart));
+  });
 
   test('marks biweekly INTERVAL=2 course as odd or even weeks', () {
     const content = '''
