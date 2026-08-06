@@ -838,7 +838,8 @@ class AppUpdateService {
       // 避免每次都发起 expanded_assets 子请求，国内用户常因该子请求超时/403 导致选错版本
       final version = _normalizeVersion(rawTag);
       final constructedUrl = _constructApkDownloadUrl(rawTag, version);
-      final downloadUrl = constructedUrl ??
+      final downloadUrl =
+          constructedUrl ??
           await _fetchApkDownloadUrlFromExpandedAssets(
             _extractExpandedAssetsUrl(block, rawTag),
             mirrorUrlPrefix: mirrorUrlPrefix,
