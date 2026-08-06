@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Allow cleartext (HTTP) for all builds.
-
-  Many campus academic portals, custom WebDAV NAS boxes, and LAN edit still use
-  HTTP. Blocking cleartext would break school course import on release packages.
--->
+<!-- Release/profile builds reject cleartext HTTP. Debug overrides this file for campus/LAN development. -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>
