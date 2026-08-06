@@ -12,6 +12,8 @@ import android.os.Build
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * Schedules one-shot exam reminder notifications via AlarmManager.
@@ -33,6 +35,11 @@ object ExamReminderScheduler {
     private const val EXTRA_BODY = "body"
     private const val OVERDUE_DELIVERY_WINDOW_MILLIS = 24L * 60L * 60L * 1000L
 
+    private data class LocalExamStart(
+        val date: String,
+        val timeMinutes: Int,
+    )
+
     data class Fire(
         val examId: String,
         val offsetMinutes: Int,
@@ -41,6 +48,8 @@ object ExamReminderScheduler {
         val title: String,
         val body: String,
         val requestCode: Int,
+        val localDate: String? = null,
+        val localTimeMinutes: Int? = null,
     )
 
     fun ensureChannel(context: Context) {
@@ -117,6 +126,17 @@ object ExamReminderScheduler {
     }
 
     fun handleBootReschedule(context: Context) {
+        reschedulePersistedFires(context, preserveLocalWallClock = false)
+    }
+
+    fun handleTimezoneChanged(context: Context) {
+        reschedulePersistedFires(context, preserveLocalWallClock = true)
+    }
+
+    private fun reschedulePersistedFires(
+        context: Context,
+        preserveLocalWallClock: Boolean,
+    ) {
         ensureChannel(context)
         val appContext = context.applicationContext
         val fires = loadFires(appContext)
@@ -126,20 +146,40 @@ object ExamReminderScheduler {
         cancelFires(appContext, fires)
         val nowMillis = System.currentTimeMillis()
         val rearmed = fires.mapNotNull { fire ->
-            val fireAt = originalFireAtMillis(fire)
+            val wallClockExamStartMillis = if (preserveLocalWallClock) {
+                localExamStartMillis(fire)
+            } else {
+                null
+            }
+            val originalExamStartMillis = wallClockExamStartMillis ?: fire.examStartMillis
+            val offsetMillis = fire.offsetMinutes.coerceAtLeast(0).toLong() * 60_000L
+            val fireAt = if (wallClockExamStartMillis != null) {
+                wallClockExamStartMillis - offsetMillis
+            } else {
+                originalFireAtMillis(fire)
+            }
             if (fireAt <= nowMillis - OVERDUE_DELIVERY_WINDOW_MILLIS) {
                 null
             } else if (fireAt <= nowMillis) {
-                fire.copy(fireAtMillis = nowMillis + 1_000L)
+                fire.copy(
+                    fireAtMillis = nowMillis + 1_000L,
+                    examStartMillis = originalExamStartMillis,
+                )
             } else {
-                fire.copy(fireAtMillis = fireAt)
+                fire.copy(
+                    fireAtMillis = fireAt,
+                    examStartMillis = originalExamStartMillis,
+                )
             }
         }
         for (fire in rearmed) {
             scheduleAlarm(appContext, fire)
         }
         persistFires(appContext, rearmed)
-        Log.d(TAG, "boot reschedule count=${rearmed.size}")
+        Log.d(
+            TAG,
+            "${if (preserveLocalWallClock) "timezone" else "boot"} reschedule count=${rearmed.size}",
+        )
     }
 
     private fun originalFireAtMillis(fire: Fire): Long {
@@ -148,6 +188,51 @@ object ExamReminderScheduler {
         } else {
             fire.fireAtMillis
         }
+    }
+
+    private fun localExamStartMillis(fire: Fire): Long? {
+        val date = fire.localDate ?: return null
+        val timeMinutes = fire.localTimeMinutes ?: return null
+        val parts = date.split('-')
+        if (parts.size != 3) {
+            return null
+        }
+        val year = parts[0].toIntOrNull() ?: return null
+        val month = parts[1].toIntOrNull() ?: return null
+        val day = parts[2].toIntOrNull() ?: return null
+        if (year <= 0 || month !in 1..12 || day !in 1..31 || timeMinutes !in 0..1439) {
+            return null
+        }
+        return try {
+            Calendar.getInstance().apply {
+                isLenient = false
+                clear()
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, month - 1)
+                set(Calendar.DAY_OF_MONTH, day)
+                set(Calendar.HOUR_OF_DAY, timeMinutes / 60)
+                set(Calendar.MINUTE, timeMinutes % 60)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+    }
+
+    private fun localExamStartFromMillis(examStartMillis: Long): LocalExamStart {
+        val calendar = Calendar.getInstance().apply { timeInMillis = examStartMillis }
+        return LocalExamStart(
+            date = String.format(
+                Locale.US,
+                "%04d-%02d-%02d",
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH) + 1,
+                calendar.get(Calendar.DAY_OF_MONTH),
+            ),
+            timeMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 +
+                calendar.get(Calendar.MINUTE),
+        )
     }
 
     private fun fireKey(fire: Fire): String {
@@ -336,6 +421,22 @@ object ExamReminderScheduler {
             val title = map["title"] as? String ?: ""
             val body = map["body"] as? String ?: ""
             val requestCode = (map["requestCode"] as? Number)?.toInt() ?: return@mapNotNull null
+            val sourceExamStartMillis = if (examStartMillis > 0L) {
+                examStartMillis
+            } else if (offsetMinutes > 0) {
+                fireAtMillis + offsetMinutes.toLong() * 60_000L
+            } else {
+                fireAtMillis
+            }
+            val suppliedLocalDate = map["localDate"] as? String
+            val suppliedLocalTimeMinutes = (map["localTimeMinutes"] as? Number)?.toInt()
+            val localExamStart = if (
+                suppliedLocalDate != null && suppliedLocalTimeMinutes != null
+            ) {
+                LocalExamStart(suppliedLocalDate, suppliedLocalTimeMinutes)
+            } else {
+                localExamStartFromMillis(sourceExamStartMillis)
+            }
             Fire(
                 examId = examId,
                 offsetMinutes = offsetMinutes,
@@ -344,6 +445,8 @@ object ExamReminderScheduler {
                 title = title,
                 body = body,
                 requestCode = requestCode,
+                localDate = localExamStart.date,
+                localTimeMinutes = localExamStart.timeMinutes,
             )
         }
     }
@@ -367,6 +470,12 @@ object ExamReminderScheduler {
                             title = item.optString("title"),
                             body = item.optString("body"),
                             requestCode = item.optInt("requestCode"),
+                            localDate = item.optString("localDate").takeIf { it.isNotBlank() },
+                            localTimeMinutes = if (item.has("localTimeMinutes")) {
+                                item.optInt("localTimeMinutes")
+                            } else {
+                                null
+                            },
                         ),
                     )
                 }
@@ -386,6 +495,10 @@ object ExamReminderScheduler {
                     put("offsetMinutes", fire.offsetMinutes)
                     put("fireAtMillis", fire.fireAtMillis)
                     put("examStartMillis", fire.examStartMillis)
+                    if (fire.localDate != null && fire.localTimeMinutes != null) {
+                        put("localDate", fire.localDate)
+                        put("localTimeMinutes", fire.localTimeMinutes)
+                    }
                     put("title", fire.title)
                     put("body", fire.body)
                     put("requestCode", fire.requestCode)
@@ -410,8 +523,9 @@ class ExamReminderReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED,
             -> ExamReminderScheduler.handleBootReschedule(context)
+            Intent.ACTION_TIMEZONE_CHANGED ->
+                ExamReminderScheduler.handleTimezoneChanged(context)
             ExamReminderScheduler.ACTION_FIRE ->
                 ExamReminderScheduler.handleFire(context, intent)
         }

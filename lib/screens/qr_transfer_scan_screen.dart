@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -10,6 +10,24 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../services/qr_transfer/qr_transfer_codec.dart';
 import '../services/qr_transfer/qr_transfer_session.dart';
+
+@visibleForTesting
+String qrTransferErrorKeyFor(String error) {
+  return switch (error) {
+    'qr_transfer_session_mismatch' => 'qr_transfer_session_mismatch',
+    'qr_transfer_checksum_failed' => 'qr_transfer_checksum_failed',
+    'qr_transfer_raw_length_mismatch' => 'qr_transfer_raw_length_mismatch',
+    'qr_transfer_decompression_failed' => 'qr_transfer_decompression_failed',
+    'qr_transfer_decompression_output_too_large' =>
+      'qr_transfer_decompression_output_too_large',
+    'qr_transfer_session_expired' => 'qr_transfer_session_expired',
+    'qr_transfer_frame_budget_exceeded' => 'qr_transfer_frame_budget_exceeded',
+    'qr_transfer_unique_seed_limit' => 'qr_transfer_unique_seed_limit',
+    'qr_transfer_adjacency_edge_budget_exceeded' =>
+      'qr_transfer_adjacency_edge_budget_exceeded',
+    _ => 'qr_transfer_decode_failed',
+  };
+}
 
 /// 接收端扫码页面。
 ///
@@ -126,21 +144,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
     }
   }
 
-  String _errorKeyFor(String error) {
-    return switch (error) {
-      'qr_transfer_session_mismatch' => 'qr_transfer_session_mismatch',
-      'qr_transfer_checksum_failed' => 'qr_transfer_checksum_failed',
-      'qr_transfer_raw_length_mismatch' => 'qr_transfer_raw_length_mismatch',
-      'qr_transfer_decompression_failed' => 'qr_transfer_decompression_failed',
-      'qr_transfer_decompression_output_too_large' =>
-        'qr_transfer_decompression_output_too_large',
-      'qr_transfer_session_expired' => 'qr_transfer_session_expired',
-      'qr_transfer_frame_budget_exceeded' =>
-        'qr_transfer_frame_budget_exceeded',
-      'qr_transfer_unique_seed_limit' => 'qr_transfer_unique_seed_limit',
-      _ => 'qr_transfer_decode_failed',
-    };
-  }
+  String _errorKeyFor(String error) => qrTransferErrorKeyFor(error);
 
   Future<void> _stopWithError(String messageKey) async {
     if (_finished) {

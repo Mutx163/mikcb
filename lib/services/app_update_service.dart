@@ -67,11 +67,26 @@ class AppUpdateCheckResult {
 
 class AppUpdateDownloadController {
   bool _isCancelled = false;
+  void Function()? _cancelHandler;
 
   bool get isCancelled => _isCancelled;
 
   void cancel() {
+    if (_isCancelled) {
+      return;
+    }
     _isCancelled = true;
+    final handler = _cancelHandler;
+    _cancelHandler = null;
+    handler?.call();
+  }
+
+  void _setCancelHandler(void Function()? handler) {
+    _cancelHandler = handler;
+    if (_isCancelled && handler != null) {
+      _cancelHandler = null;
+      handler();
+    }
   }
 }
 
@@ -306,6 +321,7 @@ class AppUpdateService {
       await _deleteFileIfExists(file);
 
       client = HttpClient();
+      controller?._setCancelHandler(() => client?.close(force: true));
       final request = await client.getUrl(Uri.parse(url));
       final response = await request.close();
 
@@ -361,6 +377,7 @@ class AppUpdateService {
         'detail': '$e',
       });
     } finally {
+      controller?._setCancelHandler(null);
       try {
         await sink?.close();
       } catch (_) {}

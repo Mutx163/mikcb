@@ -497,6 +497,62 @@ void main() {
     await server.close(force: true);
     await tempDir.delete(recursive: true);
   });
+  test(
+    'download cancellation closes a stalled HTTP response immediately',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'mikcb_update_test_',
+      );
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final responseStarted = Completer<void>();
+
+      unawaited(() async {
+        await for (final request in server) {
+          request.response.statusCode = 200;
+          request.response.headers.contentType = ContentType.binary;
+          request.response.headers.contentLength = 1;
+          request.response.add([1]);
+          await request.response.flush();
+          if (!responseStarted.isCompleted) {
+            responseStarted.complete();
+          }
+          try {
+            await request.response.done;
+          } catch (_) {
+            // Closing the client forcefully is expected to abort this response.
+          }
+        }
+      }());
+
+      final controller = AppUpdateDownloadController();
+      final service = AppUpdateService(
+        temporaryDirectoryProvider: () async => tempDir,
+        openInstaller: (path) async {
+          fail('cancelled download should not try to open installer');
+        },
+      );
+
+      try {
+        final downloadFuture = service.downloadAndInstallUpdate(
+          'http://${server.address.host}:${server.port}/app.apk',
+          (_, _) {},
+          controller,
+        );
+        await responseStarted.future.timeout(const Duration(seconds: 2));
+        controller.cancel();
+        final result = await downloadFuture.timeout(const Duration(seconds: 2));
+
+        expect(result, AppUpdateService.downloadCancelledMessage);
+        expect(
+          await File('${tempDir.path}/mikcb_update.apk').exists(),
+          isFalse,
+        );
+      } finally {
+        await server.close(force: true);
+        await tempDir.delete(recursive: true);
+      }
+    },
+  );
 
   test(
     'download clears stale managed installer apk files before writing',
