@@ -2632,18 +2632,16 @@ class TimetableProvider with ChangeNotifier {
   /// between editing the whole series and editing only this occurrence.
   List<ScheduleItemInstance> getScheduleItemInstancesForDate(DateTime date) {
     final normalizedDate = ScheduleItem.dateOnly(date);
-    final instancesById = <String, ScheduleItemInstance>{};
+    final instancesByDisplayDate = <String, ScheduleItemInstance>{};
     for (final item in _scheduleItems) {
       for (final instance in item.expandInstances(
         fromDate: normalizedDate,
         toDate: normalizedDate,
       )) {
-        // A one-time override has the same stable occurrence id as the base
-        // occurrence and therefore replaces it if legacy data is inconsistent.
-        instancesById[instance.occurrenceId] = instance;
+        _putScheduleInstanceByDisplayDate(instancesByDisplayDate, instance);
       }
     }
-    return _sortScheduleItemInstances(instancesById.values.toList());
+    return _sortScheduleItemInstances(instancesByDisplayDate.values.toList());
   }
 
   List<ScheduleItemInstance> getScheduleItemOccurrencesForDate(DateTime date) {
@@ -2655,16 +2653,16 @@ class TimetableProvider with ChangeNotifier {
     DateTime fromDate,
     DateTime toDate,
   ) {
-    final instancesById = <String, ScheduleItemInstance>{};
+    final instancesByDisplayDate = <String, ScheduleItemInstance>{};
     for (final item in _scheduleItems) {
       for (final instance in item.expandInstances(
         fromDate: fromDate,
         toDate: toDate,
       )) {
-        instancesById[instance.occurrenceId] = instance;
+        _putScheduleInstanceByDisplayDate(instancesByDisplayDate, instance);
       }
     }
-    return _sortScheduleItemInstances(instancesById.values.toList());
+    return _sortScheduleItemInstances(instancesByDisplayDate.values.toList());
   }
 
   /// Backward-compatible source-item query used by existing screens.
@@ -2674,248 +2672,278 @@ class TimetableProvider with ChangeNotifier {
     ).map((instance) => instance.item).toList(growable: false);
   }
 
-  Future<void> addScheduleItem(ScheduleItem item) async {
-    final normalizedItem = _normalizeScheduleItem(item);
-    _scheduleItems = _sortScheduleItems(<ScheduleItem>[
-      ..._scheduleItems,
-      normalizedItem,
-    ]);
-    await _persistActiveProfileState();
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'schedule_item_created',
-      parameters: {
-        'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
-        'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
-      },
-    );
-    unawaited(_syncExamReminders());
+  Future<void> addScheduleItem(ScheduleItem item) {
+    return _runMutation(() async {
+      await initialize();
+      final normalizedItem = _normalizeScheduleItem(item);
+      _scheduleItems = _sortScheduleItems(<ScheduleItem>[
+        ..._scheduleItems,
+        normalizedItem,
+      ]);
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'schedule_item_created',
+        parameters: {
+          'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
+          'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
+        },
+      );
+      unawaited(_syncExamReminders());
+    });
   }
 
-  Future<void> updateScheduleItem(ScheduleItem item) async {
-    final index = _scheduleItems.indexWhere(
-      (existing) => existing.id == item.id,
-    );
-    if (index == -1) {
-      return;
-    }
+  Future<void> updateScheduleItem(ScheduleItem item) {
+    return _runMutation(() async {
+      await initialize();
+      final index = _scheduleItems.indexWhere(
+        (existing) => existing.id == item.id,
+      );
+      if (index == -1) {
+        return;
+      }
 
-    final normalizedItem = _normalizeScheduleItem(item);
-    final nextItems = List<ScheduleItem>.from(_scheduleItems);
-    final existing = nextItems[index];
-    if (existing.seriesId == null) {
-      // Updating a root item means "all occurrences". Single-occurrence
-      // overrides are intentionally discarded by this series operation.
-      nextItems.removeWhere((candidate) => candidate.seriesId == existing.id);
-    }
-    final nextIndex = nextItems.indexWhere(
-      (candidate) => candidate.id == existing.id,
-    );
-    if (nextIndex == -1) {
-      return;
-    }
-    nextItems[nextIndex] = normalizedItem;
-    _scheduleItems = _sortScheduleItems(nextItems);
-    await _persistActiveProfileState();
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'schedule_item_updated',
-      parameters: {
-        'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
-        'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
-      },
-    );
-    unawaited(_syncExamReminders());
+      final normalizedItem = _normalizeScheduleItem(item);
+      final nextItems = List<ScheduleItem>.from(_scheduleItems);
+      final existing = nextItems[index];
+      if (existing.seriesId == null) {
+        // Updating a root item means "all occurrences". Single-occurrence
+        // overrides are intentionally discarded by this series operation.
+        nextItems.removeWhere((candidate) => candidate.seriesId == existing.id);
+      }
+      final nextIndex = nextItems.indexWhere(
+        (candidate) => candidate.id == existing.id,
+      );
+      if (nextIndex == -1) {
+        return;
+      }
+      nextItems[nextIndex] = normalizedItem;
+      _scheduleItems = _sortScheduleItems(nextItems);
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'schedule_item_updated',
+        parameters: {
+          'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
+          'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
+        },
+      );
+      unawaited(_syncExamReminders());
+    });
   }
 
-  Future<void> deleteScheduleItem(String itemId) async {
-    final target = _findScheduleItem(itemId);
-    if (target == null) {
-      return;
-    }
-    final seriesId = target.seriesId ?? target.id;
-    final previousCount = _scheduleItems.length;
-    _scheduleItems = _scheduleItems
-        .where((item) => item.id != seriesId && item.seriesId != seriesId)
-        .toList(growable: false);
-    if (_scheduleItems.length == previousCount) {
-      return;
-    }
+  Future<void> deleteScheduleItem(String itemId) {
+    return _runMutation(() async {
+      await initialize();
+      final target = _findScheduleItem(itemId);
+      if (target == null) {
+        return;
+      }
+      final seriesId = target.seriesId ?? target.id;
+      final previousCount = _scheduleItems.length;
+      _scheduleItems = _scheduleItems
+          .where((item) => item.id != seriesId && item.seriesId != seriesId)
+          .toList(growable: false);
+      if (_scheduleItems.length == previousCount) {
+        return;
+      }
 
-    await _persistActiveProfileState();
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'schedule_item_deleted',
-      parameters: {'remaining_schedule_item_count': _scheduleItems.length},
-    );
-    unawaited(_syncExamReminders());
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'schedule_item_deleted',
+        parameters: {'remaining_schedule_item_count': _scheduleItems.length},
+      );
+      unawaited(_syncExamReminders());
+    });
   }
 
   /// Deletes one occurrence while leaving the rest of its series intact.
   Future<void> deleteScheduleItemOccurrence(
     String itemId,
     DateTime occurrenceDate,
-  ) async {
-    final target = _findScheduleItem(itemId);
-    final root = _findSeriesRoot(target);
-    if (root == null) {
-      return;
-    }
-
-    final requestedDate =
-        target?.seriesId != null && target?.occurrenceDate != null
-        ? target!.occurrenceDate!
-        : ScheduleItem.dateOnly(occurrenceDate);
-    final hasOverride = _scheduleItems.any(
-      (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
-    );
-    if (!root.occursOn(requestedDate) && !hasOverride) {
-      return;
-    }
-
-    // A date-only one-off has no remaining occurrences after this operation,
-    // so removing its persisted row matches whole-item deletion semantics.
-    if (root.seriesId == null &&
-        root.recurrence == ScheduleRecurrence.none &&
-        _isSameDate(root.startDate, root.endDate) &&
-        _isSameDate(root.startDate, requestedDate)) {
-      await deleteScheduleItem(root.id);
-      return;
-    }
-
-    final updatedRoot = root.copyWith(
-      exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
-      updatedAt: DateTime.now(),
-    );
-    final nextItems = <ScheduleItem>[];
-    for (final item in _scheduleItems) {
-      if (item.id == root.id) {
-        nextItems.add(updatedRoot);
-      } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
-        continue;
-      } else {
-        nextItems.add(item);
+  ) {
+    return _runMutation(() async {
+      await initialize();
+      final target = _findScheduleItem(itemId);
+      final root = _findSeriesRoot(target);
+      if (root == null) {
+        return;
       }
-    }
-    _scheduleItems = _sortScheduleItems(nextItems);
-    await _persistActiveProfileState();
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'schedule_item_occurrence_deleted',
-      parameters: {
-        'schedule_item_id': root.id,
-        'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
-      },
-    );
-    unawaited(_syncExamReminders());
+
+      final requestedDate =
+          target?.seriesId != null && target?.occurrenceDate != null
+          ? target!.occurrenceDate!
+          : ScheduleItem.dateOnly(occurrenceDate);
+      final hasOverride = _scheduleItems.any(
+        (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
+      );
+      if (!root.occursOn(requestedDate) && !hasOverride) {
+        return;
+      }
+
+      // A date-only one-off has no remaining occurrences after this operation,
+      // so removing its persisted row matches whole-item deletion semantics.
+      if (root.seriesId == null &&
+          root.recurrence == ScheduleRecurrence.none &&
+          _isSameDate(root.startDate, root.endDate) &&
+          _isSameDate(root.startDate, requestedDate)) {
+        await deleteScheduleItem(root.id);
+        return;
+      }
+
+      final updatedRoot = root.copyWith(
+        exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
+        updatedAt: DateTime.now(),
+      );
+      final nextItems = <ScheduleItem>[];
+      for (final item in _scheduleItems) {
+        if (item.id == root.id) {
+          nextItems.add(updatedRoot);
+        } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
+          continue;
+        } else {
+          nextItems.add(item);
+        }
+      }
+      _scheduleItems = _sortScheduleItems(nextItems);
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'schedule_item_occurrence_deleted',
+        parameters: {
+          'schedule_item_id': root.id,
+          'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
+        },
+      );
+      unawaited(_syncExamReminders());
+    });
   }
 
   /// Edits one occurrence by replacing it with a persisted one-time override.
   /// The base series stores the original date as an exception, so the base
   /// occurrence cannot reappear alongside the override.
+  ///
+  /// Existing editors use [root.startDate] as an unchanged-date sentinel. Set
+  /// [dateWasExplicitlyEdited] when the user intentionally moves an occurrence
+  /// to that same date, so the move remains distinguishable from that legacy
+  /// sentinel.
   Future<void> updateScheduleItemOccurrence(
     String itemId,
     DateTime occurrenceDate,
-    ScheduleItem updatedItem,
-  ) async {
-    final target = _findScheduleItem(itemId);
-    final root = _findSeriesRoot(target);
-    if (root == null) {
-      return;
-    }
-
-    final requestedDate =
-        target?.seriesId != null && target?.occurrenceDate != null
-        ? target!.occurrenceDate!
-        : ScheduleItem.dateOnly(occurrenceDate);
-    final existingOverride = _scheduleItems.any(
-      (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
-    );
-    if (!root.occursOn(requestedDate) && !existingOverride) {
-      return;
-    }
-
-    // Editing the only occurrence of a one-off can update the original row,
-    // retaining its established id and avoiding an unnecessary override.
-    if (root.seriesId == null &&
-        root.recurrence == ScheduleRecurrence.none &&
-        _isSameDate(root.startDate, root.endDate) &&
-        _isSameDate(root.startDate, requestedDate)) {
-      await updateScheduleItem(updatedItem.copyWith(id: root.id));
-      return;
-    }
-
-    final effectiveDate = _resolveOccurrenceEditDate(
-      root: root,
-      occurrenceDate: requestedDate,
-      updatedItem: updatedItem,
-    );
-    final overrideId = ScheduleItem.buildOccurrenceId(root.id, requestedDate);
-    final override = _normalizeScheduleItem(
-      updatedItem.copyWith(
-        id: overrideId,
-        startDate: effectiveDate,
-        endDate: effectiveDate,
-        recurrence: ScheduleRecurrence.none,
-        exceptionDates: const <DateTime>[],
-        seriesId: root.id,
-        occurrenceDate: requestedDate,
-      ),
-    );
-    final updatedRoot = root.copyWith(
-      exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
-      updatedAt: DateTime.now(),
-    );
-    final nextItems = <ScheduleItem>[];
-    for (final item in _scheduleItems) {
-      if (item.id == root.id) {
-        nextItems.add(updatedRoot);
-      } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
-        continue;
-      } else {
-        nextItems.add(item);
+    ScheduleItem updatedItem, {
+    bool dateWasExplicitlyEdited = false,
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      final target = _findScheduleItem(itemId);
+      final root = _findSeriesRoot(target);
+      if (root == null) {
+        return;
       }
-    }
-    nextItems.add(override);
-    _scheduleItems = _sortScheduleItems(nextItems);
-    await _persistActiveProfileState();
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'schedule_item_occurrence_updated',
-      parameters: {
-        'schedule_item_id': root.id,
-        'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
-      },
-    );
-    unawaited(_syncExamReminders());
+
+      final requestedDate =
+          target?.seriesId != null && target?.occurrenceDate != null
+          ? target!.occurrenceDate!
+          : ScheduleItem.dateOnly(occurrenceDate);
+      final existingOverride = _scheduleItems.any(
+        (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
+      );
+      if (!root.occursOn(requestedDate) && !existingOverride) {
+        return;
+      }
+
+      // Editing the only occurrence of a one-off can update the original row,
+      // retaining its established id and avoiding an unnecessary override.
+      if (root.seriesId == null &&
+          root.recurrence == ScheduleRecurrence.none &&
+          _isSameDate(root.startDate, root.endDate) &&
+          _isSameDate(root.startDate, requestedDate)) {
+        await updateScheduleItem(updatedItem.copyWith(id: root.id));
+        return;
+      }
+
+      final effectiveDate = _resolveOccurrenceEditDate(
+        root: root,
+        occurrenceDate: requestedDate,
+        updatedItem: updatedItem,
+        dateWasExplicitlyEdited: dateWasExplicitlyEdited,
+      );
+      final overrideId = ScheduleItem.buildOccurrenceId(root.id, requestedDate);
+      final override = _normalizeScheduleItem(
+        updatedItem.copyWith(
+          id: overrideId,
+          startDate: effectiveDate,
+          endDate: effectiveDate,
+          recurrence: ScheduleRecurrence.none,
+          exceptionDates: const <DateTime>[],
+          seriesId: root.id,
+          occurrenceDate: requestedDate,
+        ),
+      );
+      final updatedRoot = root.copyWith(
+        exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
+        updatedAt: DateTime.now(),
+      );
+      final nextItems = <ScheduleItem>[];
+      for (final item in _scheduleItems) {
+        if (item.id == root.id) {
+          nextItems.add(updatedRoot);
+        } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
+          continue;
+        } else {
+          nextItems.add(item);
+        }
+      }
+      nextItems.add(override);
+      _scheduleItems = _sortScheduleItems(nextItems);
+      await _persistActiveProfileState();
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'schedule_item_occurrence_updated',
+        parameters: {
+          'schedule_item_id': root.id,
+          'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
+        },
+      );
+      unawaited(_syncExamReminders());
+    });
   }
 
   /// Convenience API for callers holding the stable occurrence id.
-  Future<void> deleteScheduleItemInstance(String occurrenceId) async {
-    final instance = _findScheduleItemInstanceById(occurrenceId);
-    if (instance == null) {
-      return;
-    }
-    await deleteScheduleItemOccurrence(
-      instance.sourceItemId,
-      instance.occurrenceDate,
-    );
+  Future<void> deleteScheduleItemInstance(String occurrenceId) {
+    return _runMutation(() async {
+      await initialize();
+      final instance = _findScheduleItemInstanceById(occurrenceId);
+      if (instance == null) {
+        return;
+      }
+      await deleteScheduleItemOccurrence(
+        instance.sourceItemId,
+        instance.occurrenceDate,
+      );
+    });
   }
 
   /// Convenience API for callers holding the stable occurrence id.
   Future<void> updateScheduleItemInstance(
     String occurrenceId,
-    ScheduleItem updatedItem,
-  ) async {
-    final instance = _findScheduleItemInstanceById(occurrenceId);
-    if (instance == null) {
-      return;
-    }
-    await updateScheduleItemOccurrence(
-      instance.sourceItemId,
-      instance.occurrenceDate,
-      updatedItem,
-    );
+    ScheduleItem updatedItem, {
+    bool dateWasExplicitlyEdited = false,
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      final instance = _findScheduleItemInstanceById(occurrenceId);
+      if (instance == null) {
+        return;
+      }
+      await updateScheduleItemOccurrence(
+        instance.sourceItemId,
+        instance.occurrenceDate,
+        updatedItem,
+        dateWasExplicitlyEdited: dateWasExplicitlyEdited,
+      );
+    });
   }
 
   Future<void> updateScheduleItemSeries(ScheduleItem item) {
@@ -3736,12 +3764,14 @@ class TimetableProvider with ChangeNotifier {
     required ScheduleItem root,
     required DateTime occurrenceDate,
     required ScheduleItem updatedItem,
+    required bool dateWasExplicitlyEdited,
   }) {
     final requestedDate = ScheduleItem.dateOnly(updatedItem.startDate);
     // A copy of the series item usually carries the series start date. Treat
-    // that unchanged value as "keep this occurrence's date"; any other date
-    // is an explicit one-time reschedule.
-    if (_isSameDate(requestedDate, root.startDate)) {
+    // that unchanged value as "keep this occurrence's date" unless the caller
+    // explicitly reports that the date field was edited.
+    if (!dateWasExplicitlyEdited &&
+        _isSameDate(requestedDate, root.startDate)) {
       return ScheduleItem.dateOnly(occurrenceDate);
     }
     return requestedDate;
@@ -3751,6 +3781,22 @@ class TimetableProvider with ChangeNotifier {
     return left.year == right.year &&
         left.month == right.month &&
         left.day == right.day;
+  }
+
+  void _putScheduleInstanceByDisplayDate(
+    Map<String, ScheduleItemInstance> instancesByDisplayDate,
+    ScheduleItemInstance instance,
+  ) {
+    final key =
+        '${instance.sourceItemId}@${ScheduleItem.formatCalendarDate(instance.date)}';
+    final existing = instancesByDisplayDate[key];
+    // The stable occurrence id keeps pointing at the original series date for
+    // persistence, but a moved override wins when both items display on the
+    // same actual date.
+    if (existing == null ||
+        (instance.isSeriesOverride && !existing.isSeriesOverride)) {
+      instancesByDisplayDate[key] = instance;
+    }
   }
 
   List<ScheduleItemInstance> _sortScheduleItemInstances(

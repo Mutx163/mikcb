@@ -1,8 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
+
+class _BlockingStorageService extends StorageService {
+  _BlockingStorageService(this.started, this.release) : super.forTesting();
+
+  final Completer<void> started;
+  final Future<void> release;
+
+  @override
+  Future<void> init() async {
+    if (!started.isCompleted) {
+      started.complete();
+    }
+    await release;
+    await super.init();
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +38,33 @@ void main() {
     await provider.initialize();
     return provider;
   }
+
+  test('schedule mutation waits for provider initialization', () async {
+    final started = Completer<void>();
+    final release = Completer<void>();
+    final storage = _BlockingStorageService(started, release.future);
+    final provider = TimetableProvider(
+      storageService: storage,
+      enableLiveActivitySync: false,
+    );
+    final item = ScheduleItem(
+      id: 'schedule-before-init',
+      title: '初始化前写入',
+      date: DateTime(2026, 4, 16),
+      startTime: '10:00',
+      endTime: '11:00',
+      createdAt: DateTime(2026, 4, 16),
+      updatedAt: DateTime(2026, 4, 16),
+    );
+
+    final mutation = provider.addScheduleItem(item);
+    await started.future;
+    expect(provider.scheduleItems, isEmpty);
+
+    release.complete();
+    await mutation;
+    expect(provider.scheduleItems.single.id, item.id);
+  });
 
   test('schedule items can be created, updated, and deleted', () async {
     final provider = await createProvider();
@@ -267,6 +312,91 @@ void main() {
 
       await reloaded.deleteScheduleItemSeries(item.id);
       expect(reloaded.scheduleItems, isEmpty);
+    },
+  );
+
+  test(
+    'moved occurrence deduplicates a natural occurrence by displayed date',
+    () async {
+      final provider = await createProvider();
+      final item = ScheduleItem(
+        id: 'schedule-moved',
+        title: '固定活动',
+        startDate: DateTime(2026, 4, 16),
+        endDate: DateTime(2026, 4, 18),
+        startTime: '09:00',
+        endTime: '10:00',
+        recurrence: ScheduleRecurrence.daily,
+        createdAt: DateTime(2026, 4, 1),
+        updatedAt: DateTime(2026, 4, 1),
+      );
+      await provider.addScheduleItem(item);
+
+      await provider.updateScheduleItemOccurrence(
+        item.id,
+        DateTime(2026, 4, 17),
+        item.copyWith(
+          title: '移动到已有日期',
+          startDate: DateTime(2026, 4, 18),
+          endDate: DateTime(2026, 4, 18),
+          startTime: '14:00',
+          endTime: '15:00',
+          updatedAt: DateTime(2026, 4, 17, 8),
+        ),
+      );
+
+      final moved = provider.getScheduleItemInstancesForDate(
+        DateTime(2026, 4, 18),
+      );
+      expect(moved, hasLength(1));
+      expect(moved.single.item.title, '移动到已有日期');
+      expect(moved.single.occurrenceId, 'schedule-moved@2026-04-17');
+      expect(
+        provider.getScheduleItemInstancesForDate(DateTime(2026, 4, 17)),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'explicit move to root start date is not treated as unchanged',
+    () async {
+      final provider = await createProvider();
+      final item = ScheduleItem(
+        id: 'schedule-root-date',
+        title: '固定活动',
+        startDate: DateTime(2026, 4, 16),
+        endDate: DateTime(2026, 4, 18),
+        startTime: '09:00',
+        endTime: '10:00',
+        recurrence: ScheduleRecurrence.daily,
+        createdAt: DateTime(2026, 4, 1),
+        updatedAt: DateTime(2026, 4, 1),
+      );
+      await provider.addScheduleItem(item);
+
+      await provider.updateScheduleItemOccurrence(
+        item.id,
+        DateTime(2026, 4, 17),
+        item.copyWith(
+          title: '移动回系列首日',
+          startDate: DateTime(2026, 4, 16),
+          endDate: DateTime(2026, 4, 16),
+          updatedAt: DateTime(2026, 4, 17, 8),
+        ),
+        dateWasExplicitlyEdited: true,
+      );
+
+      final moved = provider.getScheduleItemInstancesForDate(
+        DateTime(2026, 4, 16),
+      );
+      expect(moved, hasLength(1));
+      expect(moved.single.item.title, '移动回系列首日');
+      expect(moved.single.occurrenceId, 'schedule-root-date@2026-04-17');
+      expect(
+        provider.getScheduleItemInstancesForDate(DateTime(2026, 4, 17)),
+        isEmpty,
+      );
     },
   );
 

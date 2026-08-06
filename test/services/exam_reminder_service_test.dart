@@ -261,6 +261,70 @@ void main() {
       );
     });
 
+    test('disabled recurring root suppresses all series reminder fires', () {
+      final root = buildSchedule(
+        enabled: false,
+        endDate: DateTime(2026, 7, 12),
+      );
+      final enabledOverride = buildSchedule(
+        id: 'schedule-1@2026-07-11',
+        startDate: DateTime(2026, 7, 11),
+        endDate: DateTime(2026, 7, 11),
+        recurrence: ScheduleRecurrence.none,
+        reminderMinutesBefore: 15,
+      ).copyWith(seriesId: root.id, occurrenceDate: DateTime(2026, 7, 11));
+
+      expect(
+        ExamReminderService.buildScheduleFires(
+          scheduleItems: [root, enabledOverride],
+          now: DateTime(2026, 7, 10, 8),
+        ),
+        isEmpty,
+      );
+      expect(
+        ExamReminderService.buildScheduleActiveIds(
+          scheduleItems: [root, enabledOverride],
+          now: DateTime(2026, 7, 10, 8),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('moved override replaces natural occurrence by displayed date', () {
+      final root = buildSchedule(
+        endDate: DateTime(2026, 7, 12),
+        exceptionDates: [DateTime(2026, 7, 11)],
+      );
+      final movedOverride =
+          buildSchedule(
+            id: 'schedule-1@2026-07-11',
+            startDate: DateTime(2026, 7, 12),
+            endDate: DateTime(2026, 7, 12),
+            recurrence: ScheduleRecurrence.none,
+            reminderMinutesBefore: 45,
+          ).copyWith(
+            title: '移动后的自习',
+            seriesId: root.id,
+            occurrenceDate: DateTime(2026, 7, 11),
+          );
+
+      final fires = ExamReminderService.buildScheduleFires(
+        scheduleItems: [root, movedOverride],
+        now: DateTime(2026, 7, 10, 8),
+      );
+
+      expect(fires, hasLength(2));
+      expect(fires.map((fire) => fire.examId).toList(), [
+        'schedule:schedule-1@2026-07-10',
+        'schedule:schedule-1@2026-07-11',
+      ]);
+      expect(fires.last.title, '移动后的自习');
+      expect(
+        fires.last.examStartMillis,
+        DateTime(2026, 7, 12, 9).millisecondsSinceEpoch,
+      );
+    });
+
     test('skips schedule fire already in the past', () {
       final fires = ExamReminderService.buildScheduleFires(
         scheduleItems: [buildSchedule()],

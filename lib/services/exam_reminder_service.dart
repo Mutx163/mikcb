@@ -80,6 +80,49 @@ class ExamReminderService {
   static const Duration _scheduleReminderHorizon = Duration(days: 366);
   static const Duration _scheduleReminderRetryWindow = Duration(days: 1);
 
+  /// Expands schedule instances and resolves moved overrides by their actual
+  /// displayed date. The persisted occurrence id remains the identity used by
+  /// native cancellation, while this key prevents a moved override from being
+  /// shown/scheduled alongside the natural occurrence at its destination.
+  static Map<String, ScheduleItemInstance> _buildScheduleInstances({
+    required List<ScheduleItem> scheduleItems,
+    required DateTime fromDate,
+    required DateTime toDate,
+  }) {
+    final rootEnabledById = <String, bool>{
+      for (final item in scheduleItems)
+        if (item.seriesId == null) item.id: item.enabled,
+    };
+    final instancesByDisplayDate = <String, ScheduleItemInstance>{};
+
+    for (final item in scheduleItems) {
+      // Disabling a recurring root disables the whole series, including any
+      // persisted overrides. Disabled overrides remain eligible below as
+      // tombstones when their root is enabled.
+      if (item.seriesId == null && !item.enabled) {
+        continue;
+      }
+      if (item.seriesId != null && rootEnabledById[item.seriesId] == false) {
+        continue;
+      }
+
+      for (final instance in item.expandInstances(
+        fromDate: fromDate,
+        toDate: toDate,
+      )) {
+        final key =
+            '${instance.sourceItemId}@${ScheduleItem.formatCalendarDate(instance.date)}';
+        final existing = instancesByDisplayDate[key];
+        if (existing == null ||
+            (instance.item.seriesId != null &&
+                existing.item.seriesId == null)) {
+          instancesByDisplayDate[key] = instance;
+        }
+      }
+    }
+    return instancesByDisplayDate;
+  }
+
   /// Builds one-shot fires for enabled schedule occurrences.
   ///
   /// The native scheduler already reconciles and persists one-shot fires, so
@@ -97,23 +140,18 @@ class ExamReminderService {
     final toDate = ScheduleItem.dateOnly(
       referenceNow.add(_scheduleReminderHorizon),
     );
-    final instancesById = <String, ScheduleItemInstance>{};
-
-    for (final item in scheduleItems) {
-      for (final instance in item.expandInstances(
-        fromDate: fromDate,
-        toDate: toDate,
-      )) {
-        final existing = instancesById[instance.occurrenceId];
-        if (existing == null || instance.item.seriesId != null) {
-          instancesById[instance.occurrenceId] = instance;
-        }
-      }
-    }
+    final instancesByDisplayDate = _buildScheduleInstances(
+      scheduleItems: scheduleItems,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
 
     final fires = <ExamReminderFire>[];
-    for (final instance in instancesById.values) {
+    for (final instance in instancesByDisplayDate.values) {
       final item = instance.effectiveItem;
+      if (!item.enabled) {
+        continue;
+      }
       final offsetMinutes = item.reminderMinutesBefore;
       if (offsetMinutes == null || offsetMinutes <= 0) {
         continue;
@@ -157,19 +195,12 @@ class ExamReminderService {
     final toDate = ScheduleItem.dateOnly(
       referenceNow.add(_scheduleReminderHorizon),
     );
-    final instancesById = <String, ScheduleItemInstance>{};
-    for (final item in scheduleItems) {
-      for (final instance in item.expandInstances(
-        fromDate: fromDate,
-        toDate: toDate,
-      )) {
-        final existing = instancesById[instance.occurrenceId];
-        if (existing == null || instance.item.seriesId != null) {
-          instancesById[instance.occurrenceId] = instance;
-        }
-      }
-    }
-    return instancesById.values
+    final instancesByDisplayDate = _buildScheduleInstances(
+      scheduleItems: scheduleItems,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+    return instancesByDisplayDate.values
         .where((instance) {
           final item = instance.effectiveItem;
           return item.enabled &&
