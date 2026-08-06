@@ -63,6 +63,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   bool _enabled = true;
   bool _notificationPermission = true;
   bool _didResolveSeriesRoot = false;
+  bool _dateWasExplicitlyEdited = false;
 
   bool get _isEditing => widget.scheduleItem != null;
   bool get _isOccurrenceEditing {
@@ -611,6 +612,9 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       final normalized = DateTime(picked.year, picked.month, picked.day);
       if (isStart) {
         _selectedStartDate = normalized;
+        if (_isOccurrenceEditing) {
+          _dateWasExplicitlyEdited = true;
+        }
         if (_selectedEndDate.isBefore(_selectedStartDate)) {
           _selectedEndDate = _selectedStartDate;
         }
@@ -716,6 +720,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         existing.id,
         widget.occurrenceDate!,
         item,
+        dateWasExplicitlyEdited: _dateWasExplicitlyEdited,
       );
     } else {
       await provider.updateScheduleItem(item);

@@ -230,6 +230,26 @@ void main() {
   });
 
   test(
+    'backup index recovery aborts when failed index has no successful listing',
+    () {
+      expect(
+        decideWebdavBackupIndexRecovery(
+          indexResult: const WebdavGetBytesResult.failed('index_timeout'),
+          listingResult: const WebdavHistoryListResult.ok([]),
+        ),
+        WebdavBackupIndexRecoveryAction.failed,
+      );
+      expect(
+        decideWebdavBackupIndexRecovery(
+          indexResult: const WebdavGetBytesResult.failed('index_timeout'),
+          listingResult: const WebdavHistoryListResult.notFound(),
+        ),
+        WebdavBackupIndexRecoveryAction.failed,
+      );
+    },
+  );
+
+  test(
     'backup index recovery treats missing index and empty listing as empty',
     () {
       final action = decideWebdavBackupIndexRecovery(

@@ -65,10 +65,15 @@ WebdavBackupIndexRecoveryAction decideWebdavBackupIndexRecovery({
   required WebdavGetBytesResult indexResult,
   required WebdavHistoryListResult listingResult,
 }) {
-  if (indexResult.isFailed && listingResult.isFailed) {
-    return WebdavBackupIndexRecoveryAction.failed;
+  if (indexResult.isFailed) {
+    if (listingResult.isFailed ||
+        listingResult.isNotFound ||
+        listingResult.fileNames.isEmpty) {
+      return WebdavBackupIndexRecoveryAction.failed;
+    }
+    return WebdavBackupIndexRecoveryAction.rebuildFromListing;
   }
-  if (!indexResult.isFailed && !indexResult.isNotFound) {
+  if (!indexResult.isNotFound) {
     return WebdavBackupIndexRecoveryAction.useIndex;
   }
   if (listingResult.isFailed) {
@@ -374,6 +379,11 @@ class WebdavSyncService {
         throw StateError(
           lockedRemoteMeta.errorMessage ?? 'remote_meta_unavailable',
         );
+      }
+      if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote &&
+          lockResult.isUnsupported &&
+          (lockedRemoteMeta.etag == null || lockedRemoteMeta.etag!.isEmpty)) {
+        throw StateError('remote_concurrency_unsupported');
       }
       if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote &&
           _remoteMetaChanged(initialRemoteMeta, lockedRemoteMeta)) {
