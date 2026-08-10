@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-09T03:18:06+00:00",
+  "updatedAt": "2026-08-10T03:28:19+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 136,
-    "schools": 131,
+    "total": 137,
+    "schools": 132,
     "generic": 5
   },
   "schools": [
@@ -776,6 +776,13 @@
       "name": "文华学院",
       "initial": "W",
       "resourceFolder": "WENHUA",
+      "category": "school"
+    },
+    {
+      "id": "CWXU",
+      "name": "无锡学院",
+      "initial": "W",
+      "resourceFolder": "CWXU",
       "category": "school"
     },
     {
