@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-10T03:28:19+00:00",
+  "updatedAt": "2026-08-11T03:20:53+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 137,
-    "schools": 132,
+    "total": 138,
+    "schools": 133,
     "generic": 5
   },
   "schools": [
@@ -468,6 +468,13 @@
       "name": "衡阳师范学院",
       "initial": "H",
       "resourceFolder": "HYNU",
+      "category": "school"
+    },
+    {
+      "id": "HLJU",
+      "name": "黑龙江大学",
+      "initial": "H",
+      "resourceFolder": "HLJU",
       "category": "school"
     },
     {
