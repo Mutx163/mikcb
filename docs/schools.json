@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-12T03:39:20+00:00",
+  "updatedAt": "2026-08-13T03:42:38+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 138,
-    "schools": 133,
+    "total": 139,
+    "schools": 134,
     "generic": 5
   },
   "schools": [
@@ -972,6 +972,13 @@
       "name": "浙江工业大学",
       "initial": "Z",
       "resourceFolder": "ZJUT",
+      "category": "school"
+    },
+    {
+      "id": "ZUA",
+      "name": "郑州航空工业管理学院",
+      "initial": "Z",
+      "resourceFolder": "ZUA",
       "category": "school"
     }
   ]
