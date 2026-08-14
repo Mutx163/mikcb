@@ -5,8 +5,13 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/course.dart';
 import '../../models/statistics_models.dart';
+import '../../services/statistics_service.dart';
+import '../../widgets/week_selector_picker_sheet.dart';
+import 'nature_ratio.dart';
+import 'time_utilization_card.dart';
+import 'weekly_comparison_card.dart';
 
-/// 周统计视图：周选择器 + 概览 + 每日分布 + 课程列表
+/// 周统计视图：周选择器 + 概览 + 小结 + 每日分布 + 必修/选修 + 时间利用 + 课程列表
 class WeekStatsView extends StatelessWidget {
   final WeeklyStats stats;
   final int currentWeek; // 当前教学周（用于标记"本周"）
@@ -16,12 +21,16 @@ class WeekStatsView extends StatelessWidget {
   /// 可选顶部内容（如学期/周切换行），作为列表首元素随列表滚动
   final Widget? header;
 
+  /// 全部课程（用于计算本周小结 / 时间利用）
+  final List<Course> allCourses;
+
   const WeekStatsView({
     super.key,
     required this.stats,
     required this.currentWeek,
     required this.maxWeek,
     required this.onWeekChanged,
+    required this.allCourses,
     this.header,
   });
 
@@ -29,6 +38,16 @@ class WeekStatsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final week = stats.weekNumber;
+
+    final comparison = StatisticsService.calculateWeeklyComparison(
+      allCourses: allCourses,
+      currentWeek: week,
+      semesterWeekCount: maxWeek,
+    );
+    final timeUtil = StatisticsService.calculateTimeUtilization(
+      allCourses: allCourses,
+      currentWeek: week,
+    );
 
     return HyperosListView(
       children: [
@@ -39,16 +58,33 @@ class WeekStatsView extends StatelessWidget {
         _WeekSelector(
           week: week,
           maxWeek: maxWeek,
-          isCurrentWeek: week == currentWeek,
+          currentSemesterWeek: currentWeek,
           onWeekChanged: onWeekChanged,
         ),
         const HyperosSectionGap(),
         _WeekOverviewCard(stats: stats),
         const HyperosSectionGap(),
+        WeeklyComparisonCard(
+          comparison: comparison,
+          currentWeek: week,
+        ),
+        const HyperosSectionGap(),
         HyperosSettingsBlock(
           title: l10n.statisticsDailyDistribution,
           child: _WeekDailyChart(stats: stats),
         ),
+        const HyperosSectionGap(),
+        HyperosSettingsBlock(
+          title: l10n.statisticsNatureRatio,
+          child: NatureRatio(stats: stats.natureStats),
+        ),
+        if (!timeUtil.isEmpty) ...[
+          const HyperosSectionGap(),
+          HyperosSettingsBlock(
+            title: l10n.statisticsTimeUtilTitle,
+            child: TimeUtilizationCard(stats: timeUtil),
+          ),
+        ],
         if (stats.courseStats.isNotEmpty) ...[
           const HyperosSectionGap(),
           HyperosSettingsBlock(
@@ -61,40 +97,46 @@ class WeekStatsView extends StatelessWidget {
   }
 }
 
-/// 周选择器（左右箭头 + 第 N 周）
+/// 周选择器（整行点击，弹出与首页一致的周次选择弹窗）
 class _WeekSelector extends StatelessWidget {
   final int week;
   final int maxWeek;
-  final bool isCurrentWeek;
+
+  /// 当前教学周（用于高亮与"回到当前周"），可为 null
+  final int? currentSemesterWeek;
   final ValueChanged<int> onWeekChanged;
 
   const _WeekSelector({
     required this.week,
     required this.maxWeek,
-    required this.isCurrentWeek,
+    required this.currentSemesterWeek,
     required this.onWeekChanged,
   });
+
+  bool get _isCurrentWeek => currentSemesterWeek != null && week == currentSemesterWeek;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isCurrentWeek = _isCurrentWeek;
+
     return HyperosControlCard(
       child: HyperosControlCardInset(
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.chevron_left_rounded,
-                color: week > 1
-                    ? HyperosColors.actionIcon(context)
-                    : HyperosColors.secondaryText(context).withValues(alpha: 0.3),
-              ),
-              onPressed: week > 1 ? () => onWeekChanged(week - 1) : null,
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Text(
+        child: HyperosPressableRow(
+          onTap: () => _showPicker(context),
+          backgroundColor: Colors.transparent,
+          highlightColor: HyperosColors.rowHighlight(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                HyperosIconBadge(
+                  icon: Icons.calendar_view_week_rounded,
+                  accent: HyperosIconColors.blue,
+                ),
+                const SizedBox(width: HyperosTokens.rowContentGap),
+                Expanded(
+                  child: Text(
                     l10n.statisticsWeekSelector(week),
                     style: HyperosTypography.listTitle(context).copyWith(
                       fontSize: 18,
@@ -102,32 +144,44 @@ class _WeekSelector extends StatelessWidget {
                       color: HyperosColors.primaryText(context),
                     ),
                   ),
-                  if (isCurrentWeek) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      l10n.statisticsWeekCurrentHint,
-                      style: HyperosTypography.listDetail(context).copyWith(
-                        fontSize: HyperosMiuixTypography.footnote2,
-                        color: HyperosColors.primary(context),
-                      ),
+                ),
+                if (isCurrentWeek) ...[
+                  HyperosTag(
+                    label: l10n.statisticsWeekCurrentHint,
+                    backgroundColor: HyperosColors.primary(
+                      context,
+                    ).withValues(alpha: 0.12),
+                    textStyle: HyperosTypography.listDetail(context).copyWith(
+                      fontSize: HyperosMiuixTypography.footnote2,
+                      fontWeight: FontWeight.w600,
+                      color: HyperosColors.primary(context),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 6),
                 ],
-              ),
+                Icon(
+                  Icons.expand_more_rounded,
+                  size: 22,
+                  color: HyperosColors.actionIcon(context),
+                ),
+              ],
             ),
-            IconButton(
-              icon: Icon(
-                Icons.chevron_right_rounded,
-                color: week < maxWeek
-                    ? HyperosColors.actionIcon(context)
-                    : HyperosColors.secondaryText(context).withValues(alpha: 0.3),
-              ),
-              onPressed: week < maxWeek ? () => onWeekChanged(week + 1) : null,
-            ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _showPicker(BuildContext context) async {
+    final selected = await showWeekSelectorPickerSheet(
+      context,
+      availableWeeks: List.generate(maxWeek, (index) => index + 1),
+      visibleWeek: week,
+      currentSemesterWeek: currentSemesterWeek,
+    );
+    if (selected != null && selected != week) {
+      onWeekChanged(selected);
+    }
   }
 }
 
