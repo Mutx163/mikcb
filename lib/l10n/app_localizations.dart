@@ -11660,6 +11660,90 @@ abstract class AppLocalizations {
   /// **'最长课间空档 ≤ 2 节'**
   String get statisticsAchievementGapMasterDescription;
 
+  /// No description provided for @statisticsAchievementEarlyBirdDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：课表中有 08:00 或更早开始的课程。'**
+  String get statisticsAchievementEarlyBirdDetail;
+
+  /// No description provided for @statisticsAchievementPerfectAttendanceDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：至少一门课程在开课周期内每周都有课（无停课、无单双周跳课）。'**
+  String get statisticsAchievementPerfectAttendanceDetail;
+
+  /// No description provided for @statisticsAchievementWeekendWarriorDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：周末（周六或周日）有课。'**
+  String get statisticsAchievementWeekendWarriorDetail;
+
+  /// No description provided for @statisticsAchievementClassKingDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：某一天排课达到 6 节及以上。'**
+  String get statisticsAchievementClassKingDetail;
+
+  /// No description provided for @statisticsAchievementScholarDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：学期累计课时达到 100 节。'**
+  String get statisticsAchievementScholarDetail;
+
+  /// No description provided for @statisticsAchievementBalancedDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：每天课时差距不超过 2 节，课表安排均衡。'**
+  String get statisticsAchievementBalancedDetail;
+
+  /// No description provided for @statisticsAchievementNightOwlDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：有 18:00 以后才结束的课。'**
+  String get statisticsAchievementNightOwlDetail;
+
+  /// No description provided for @statisticsAchievementExplorerDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：使用过 5 个及以上不同的教室。'**
+  String get statisticsAchievementExplorerDetail;
+
+  /// No description provided for @statisticsAchievementFullDayKingDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：某一天排课达到 8 节及以上，全天满课。'**
+  String get statisticsAchievementFullDayKingDetail;
+
+  /// No description provided for @statisticsAchievementBuildingHopperDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：同一天内去过 3 栋及以上不同的教学楼。'**
+  String get statisticsAchievementBuildingHopperDetail;
+
+  /// No description provided for @statisticsAchievementMorningPersonDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：早间（12:00 前开始）课时占总课时的一半以上。'**
+  String get statisticsAchievementMorningPersonDetail;
+
+  /// No description provided for @statisticsAchievementGapMasterDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'解锁条件：每天课间最长空档不超过 2 节，时间安排紧凑。'**
+  String get statisticsAchievementGapMasterDetail;
+
+  /// No description provided for @statisticsAchievementDetailConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'知道了'**
+  String get statisticsAchievementDetailConfirm;
+
+  /// No description provided for @statisticsAchievementLocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'未达成'**
+  String get statisticsAchievementLocked;
+
   /// No description provided for @statisticsTabSemester.
   ///
   /// In zh, this message translates to:

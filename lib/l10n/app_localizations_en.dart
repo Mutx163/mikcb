@@ -6762,6 +6762,60 @@ class AppLocalizationsEn extends AppLocalizations {
       'Longest break ≤ 2 sections';
 
   @override
+  String get statisticsAchievementEarlyBirdDetail =>
+      'Unlock: have a class that starts at 08:00 or earlier.';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDetail =>
+      'Unlock: at least one course runs every week during its term (no suspension, no odd/even-week gaps).';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDetail =>
+      'Unlock: have classes on the weekend (Saturday or Sunday).';
+
+  @override
+  String get statisticsAchievementClassKingDetail =>
+      'Unlock: have 6 or more sections scheduled in a single day.';
+
+  @override
+  String get statisticsAchievementScholarDetail =>
+      'Unlock: reach 100 total sections in the semester.';
+
+  @override
+  String get statisticsAchievementBalancedDetail =>
+      'Unlock: daily section counts differ by no more than 2 — a balanced schedule.';
+
+  @override
+  String get statisticsAchievementNightOwlDetail =>
+      'Unlock: have a class that ends after 18:00.';
+
+  @override
+  String get statisticsAchievementExplorerDetail =>
+      'Unlock: use 5 or more different rooms.';
+
+  @override
+  String get statisticsAchievementFullDayKingDetail =>
+      'Unlock: have 8 or more sections in a single day — a full day of classes.';
+
+  @override
+  String get statisticsAchievementBuildingHopperDetail =>
+      'Unlock: visit 3 or more different buildings in a single day.';
+
+  @override
+  String get statisticsAchievementMorningPersonDetail =>
+      'Unlock: more than half of your sections start before 12:00.';
+
+  @override
+  String get statisticsAchievementGapMasterDetail =>
+      'Unlock: the longest daily break between classes is 2 sections or fewer.';
+
+  @override
+  String get statisticsAchievementDetailConfirm => 'Got it';
+
+  @override
+  String get statisticsAchievementLocked => 'Locked';
+
+  @override
   String get statisticsTabSemester => 'Semester';
 
   @override

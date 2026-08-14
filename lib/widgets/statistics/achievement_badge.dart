@@ -4,7 +4,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
 
-/// 成就徽章组件（含解锁动效与进度展示）
+/// 成就徽章组件（含解锁动效与进度展示；点击弹出详情弹窗）
 class AchievementBadge extends StatefulWidget {
   final Achievement achievement;
 
@@ -66,7 +66,6 @@ class _AchievementBadgeState extends State<AchievementBadge>
     final l10n = AppLocalizations.of(context)!;
     final achievement = widget.achievement;
     final name = _achievementName(l10n, achievement.id);
-    final description = _achievementDescription(l10n, achievement.id);
     final accent = _achievementAccent(achievement.id);
     final unlocked = achievement.isUnlocked;
 
@@ -79,9 +78,12 @@ class _AchievementBadgeState extends State<AchievementBadge>
                 ))
         : null;
 
-    return Tooltip(
-      message: description,
-      waitDuration: const Duration(milliseconds: 400),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => showAchievementDetailSheet(
+        context: context,
+        achievement: achievement,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -187,6 +189,146 @@ class _AchievementBadgeState extends State<AchievementBadge>
   }
 }
 
+/// 成就详情弹窗（通用组件：任意 [Achievement] 渲染同一套详情布局）
+Future<void> showAchievementDetailSheet({
+  required BuildContext context,
+  required Achievement achievement,
+}) {
+  final l10n = AppLocalizations.of(context)!;
+  final name = _achievementName(l10n, achievement.id);
+  final accent = _achievementAccent(achievement.id);
+  final description = _achievementDescription(l10n, achievement.id);
+  final detail = _achievementDetail(l10n, achievement.id);
+  final unlocked = achievement.isUnlocked;
+
+  final progress = achievement.hasProgress
+      ? (achievement.progressCurrent! / achievement.progressTarget!)
+          .clamp(0.0, 1.0)
+      : 0.0;
+
+  return showHyperosSheet<void>(
+    context: context,
+    builder: (sheetContext) {
+      return HyperosSheet(
+        title: name,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 勋章大图
+              Center(
+                child: Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    color: unlocked
+                        ? accent
+                        : HyperosColors.secondaryText(
+                            context,
+                          ).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(24),
+                    border: unlocked
+                        ? null
+                        : Border.all(
+                            color: HyperosColors.dividerLine(context),
+                            width: 0.5,
+                          ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    achievement.icon,
+                    size: 40,
+                    color: unlocked
+                        ? Colors.white
+                        : HyperosColors.secondaryText(context).withValues(
+                            alpha: 0.7,
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              // 状态 + 进度
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  HyperosTag(
+                    label: unlocked
+                        ? l10n.statisticsAchievementDone
+                        : l10n.statisticsAchievementLocked,
+                    backgroundColor: unlocked
+                        ? accent.withValues(alpha: 0.14)
+                        : HyperosColors.secondaryText(
+                            context,
+                          ).withValues(alpha: 0.1),
+                    textStyle: HyperosTypography.listDetail(context).copyWith(
+                      fontSize: HyperosMiuixTypography.footnote2,
+                      fontWeight: FontWeight.w700,
+                      color: unlocked
+                          ? accent
+                          : HyperosColors.secondaryText(context),
+                    ),
+                  ),
+                  if (achievement.hasProgress) ...[
+                    const SizedBox(width: 10),
+                    Text(
+                      unlocked
+                          ? l10n.statisticsAchievementProgress(
+                              achievement.progressCurrent!,
+                              achievement.progressTarget!,
+                            )
+                          : l10n.statisticsAchievementProgress(
+                              achievement.progressCurrent!,
+                              achievement.progressTarget!,
+                            ),
+                      style: HyperosTypography.listDetail(context).copyWith(
+                        fontSize: HyperosMiuixTypography.footnote2,
+                        fontWeight: FontWeight.w600,
+                        color: HyperosColors.secondaryText(context),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (achievement.hasProgress) ...[
+                const SizedBox(height: 12),
+                HyperosLinearProgress(
+                  value: unlocked ? 1.0 : progress,
+                ),
+              ],
+              const SizedBox(height: 16),
+              // 一句话描述
+              Text(
+                description,
+                style: HyperosTypography.listTitle(context).copyWith(
+                  fontSize: HyperosMiuixTypography.footnote2 + 2,
+                  fontWeight: FontWeight.w600,
+                  color: HyperosColors.primaryText(context),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // 详细说明
+              Text(
+                detail,
+                style: HyperosTypography.listDetail(context).copyWith(
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              HyperosButton(
+                label: l10n.statisticsAchievementDetailConfirm,
+                expand: true,
+                onPressed: () => Navigator.pop(sheetContext),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 Color _achievementAccent(String id) {
   return switch (id) {
     'early_bird' => HyperosIconColors.orange,
@@ -237,6 +379,24 @@ String _achievementDescription(AppLocalizations l10n, String id) {
     'building_hopper' => l10n.statisticsAchievementBuildingHopperDescription,
     'morning_person' => l10n.statisticsAchievementMorningPersonDescription,
     'gap_master' => l10n.statisticsAchievementGapMasterDescription,
+    _ => id,
+  };
+}
+
+String _achievementDetail(AppLocalizations l10n, String id) {
+  return switch (id) {
+    'early_bird' => l10n.statisticsAchievementEarlyBirdDetail,
+    'perfect_attendance' => l10n.statisticsAchievementPerfectAttendanceDetail,
+    'weekend_warrior' => l10n.statisticsAchievementWeekendWarriorDetail,
+    'class_king' => l10n.statisticsAchievementClassKingDetail,
+    'scholar' => l10n.statisticsAchievementScholarDetail,
+    'balanced' => l10n.statisticsAchievementBalancedDetail,
+    'night_owl' => l10n.statisticsAchievementNightOwlDetail,
+    'explorer' => l10n.statisticsAchievementExplorerDetail,
+    'full_day_king' => l10n.statisticsAchievementFullDayKingDetail,
+    'building_hopper' => l10n.statisticsAchievementBuildingHopperDetail,
+    'morning_person' => l10n.statisticsAchievementMorningPersonDetail,
+    'gap_master' => l10n.statisticsAchievementGapMasterDetail,
     _ => id,
   };
 }

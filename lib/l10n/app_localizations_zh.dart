@@ -6400,6 +6400,55 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsAchievementGapMasterDescription => '最长课间空档 ≤ 2 节';
 
   @override
+  String get statisticsAchievementEarlyBirdDetail =>
+      '解锁条件：课表中有 08:00 或更早开始的课程。';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDetail =>
+      '解锁条件：至少一门课程在开课周期内每周都有课（无停课、无单双周跳课）。';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDetail => '解锁条件：周末（周六或周日）有课。';
+
+  @override
+  String get statisticsAchievementClassKingDetail => '解锁条件：某一天排课达到 6 节及以上。';
+
+  @override
+  String get statisticsAchievementScholarDetail => '解锁条件：学期累计课时达到 100 节。';
+
+  @override
+  String get statisticsAchievementBalancedDetail =>
+      '解锁条件：每天课时差距不超过 2 节，课表安排均衡。';
+
+  @override
+  String get statisticsAchievementNightOwlDetail => '解锁条件：有 18:00 以后才结束的课。';
+
+  @override
+  String get statisticsAchievementExplorerDetail => '解锁条件：使用过 5 个及以上不同的教室。';
+
+  @override
+  String get statisticsAchievementFullDayKingDetail =>
+      '解锁条件：某一天排课达到 8 节及以上，全天满课。';
+
+  @override
+  String get statisticsAchievementBuildingHopperDetail =>
+      '解锁条件：同一天内去过 3 栋及以上不同的教学楼。';
+
+  @override
+  String get statisticsAchievementMorningPersonDetail =>
+      '解锁条件：早间（12:00 前开始）课时占总课时的一半以上。';
+
+  @override
+  String get statisticsAchievementGapMasterDetail =>
+      '解锁条件：每天课间最长空档不超过 2 节，时间安排紧凑。';
+
+  @override
+  String get statisticsAchievementDetailConfirm => '知道了';
+
+  @override
+  String get statisticsAchievementLocked => '未达成';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override
@@ -16015,6 +16064,55 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementGapMasterDescription => '最長課間空檔 ≤ 2 節';
+
+  @override
+  String get statisticsAchievementEarlyBirdDetail =>
+      '解鎖條件：課表中有 08:00 或更早開始的課程。';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDetail =>
+      '解鎖條件：至少一門課程在開課週期內每週都有課（無停課、無單雙週跳課）。';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDetail => '解鎖條件：週末（週六或週日）有課。';
+
+  @override
+  String get statisticsAchievementClassKingDetail => '解鎖條件：某一天排課達到 6 節及以上。';
+
+  @override
+  String get statisticsAchievementScholarDetail => '解鎖條件：學期累計課時達到 100 節。';
+
+  @override
+  String get statisticsAchievementBalancedDetail =>
+      '解鎖條件：每天課時差距不超過 2 節，課表安排均衡。';
+
+  @override
+  String get statisticsAchievementNightOwlDetail => '解鎖條件：有 18:00 以後才結束的課。';
+
+  @override
+  String get statisticsAchievementExplorerDetail => '解鎖條件：使用過 5 個及以上不同的教室。';
+
+  @override
+  String get statisticsAchievementFullDayKingDetail =>
+      '解鎖條件：某一天排課達到 8 節及以上，全天滿課。';
+
+  @override
+  String get statisticsAchievementBuildingHopperDetail =>
+      '解鎖條件：同一天內去過 3 棟及以上不同的教學樓。';
+
+  @override
+  String get statisticsAchievementMorningPersonDetail =>
+      '解鎖條件：早間（12:00 前開始）課時佔總課時的一半以上。';
+
+  @override
+  String get statisticsAchievementGapMasterDetail =>
+      '解鎖條件：每天課間最長空檔不超過 2 節，時間安排緊湊。';
+
+  @override
+  String get statisticsAchievementDetailConfirm => '知道了';
+
+  @override
+  String get statisticsAchievementLocked => '未達成';
 
   @override
   String get statisticsTabSemester => '學期';
@@ -25676,6 +25774,55 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementGapMasterDescription => '最長課間空檔 ≤ 2 節';
+
+  @override
+  String get statisticsAchievementEarlyBirdDetail =>
+      '解鎖條件：課表中有 08:00 或更早開始的課程。';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDetail =>
+      '解鎖條件：至少一門課程在開課週期內每週都有課（無停課、無單雙週跳課）。';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDetail => '解鎖條件：週末（週六或週日）有課。';
+
+  @override
+  String get statisticsAchievementClassKingDetail => '解鎖條件：某一天排課達到 6 節及以上。';
+
+  @override
+  String get statisticsAchievementScholarDetail => '解鎖條件：學期累計課時達到 100 節。';
+
+  @override
+  String get statisticsAchievementBalancedDetail =>
+      '解鎖條件：每天課時差距不超過 2 節，課表安排均衡。';
+
+  @override
+  String get statisticsAchievementNightOwlDetail => '解鎖條件：有 18:00 以後才結束的課。';
+
+  @override
+  String get statisticsAchievementExplorerDetail => '解鎖條件：使用過 5 個及以上不同的教室。';
+
+  @override
+  String get statisticsAchievementFullDayKingDetail =>
+      '解鎖條件：某一天排課達到 8 節及以上，全天滿課。';
+
+  @override
+  String get statisticsAchievementBuildingHopperDetail =>
+      '解鎖條件：同一天內去過 3 棟及以上不同的教學樓。';
+
+  @override
+  String get statisticsAchievementMorningPersonDetail =>
+      '解鎖條件：早間（12:00 前開始）課時佔總課時的一半以上。';
+
+  @override
+  String get statisticsAchievementGapMasterDetail =>
+      '解鎖條件：每天課間最長空檔不超過 2 節，時間安排緊湊。';
+
+  @override
+  String get statisticsAchievementDetailConfirm => '知道了';
+
+  @override
+  String get statisticsAchievementLocked => '未達成';
 
   @override
   String get statisticsTabSemester => '學期';

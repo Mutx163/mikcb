@@ -6498,6 +6498,55 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsAchievementGapMasterDescription => '最長の空きが2コマ以内';
 
   @override
+  String get statisticsAchievementEarlyBirdDetail =>
+      '解除条件：08:00 以前に始まる授業があること。';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDetail =>
+      '解除条件：少なくとも1科目が開講期間中毎週あること（休講・隔週なし）。';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDetail =>
+      '解除条件：週末（土曜か日曜）に授業があること。';
+
+  @override
+  String get statisticsAchievementClassKingDetail => '解除条件：1日に6コマ以上の授業があること。';
+
+  @override
+  String get statisticsAchievementScholarDetail => '解除条件：学期の累計授業が100コマに達すること。';
+
+  @override
+  String get statisticsAchievementBalancedDetail =>
+      '解除条件：曜日ごとの授業数の差が2コマ以内であること。';
+
+  @override
+  String get statisticsAchievementNightOwlDetail => '解除条件：18:00 以降に終わる授業があること。';
+
+  @override
+  String get statisticsAchievementExplorerDetail => '解除条件：5つ以上の異なる教室を使ったこと。';
+
+  @override
+  String get statisticsAchievementFullDayKingDetail => '解除条件：1日に8コマ以上の授業があること。';
+
+  @override
+  String get statisticsAchievementBuildingHopperDetail =>
+      '解除条件：同じ日に3棟以上の異なる校舎に行ったこと。';
+
+  @override
+  String get statisticsAchievementMorningPersonDetail =>
+      '解除条件：午前（12:00前に開始）の授業が全体の半分以上であること。';
+
+  @override
+  String get statisticsAchievementGapMasterDetail =>
+      '解除条件：1日の最長の授業間空きが2コマ以内であること。';
+
+  @override
+  String get statisticsAchievementDetailConfirm => 'わかった';
+
+  @override
+  String get statisticsAchievementLocked => '未達成';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override

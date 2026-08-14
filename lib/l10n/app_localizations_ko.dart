@@ -6536,6 +6536,60 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsAchievementGapMasterDescription => '최장 공백 2교시 이하';
 
   @override
+  String get statisticsAchievementEarlyBirdDetail =>
+      '해제 조건: 08:00 이전에 시작하는 수업이 있어야 해요.';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDetail =>
+      '해제 조건: 최소 한 과목이 개강 기간 동안 매주 있어야 해요 (휴강·격주 없음).';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDetail =>
+      '해제 조건: 주말(토요일 또는 일요일)에 수업이 있어야 해요.';
+
+  @override
+  String get statisticsAchievementClassKingDetail =>
+      '해제 조건: 하루에 6교시 이상 수업이 있어야 해요.';
+
+  @override
+  String get statisticsAchievementScholarDetail =>
+      '해제 조건: 학기 누적 수업이 100교시에 도달해야 해요.';
+
+  @override
+  String get statisticsAchievementBalancedDetail =>
+      '해제 조건: 요일별 수업 수 차이가 2교시 이하여야 해요.';
+
+  @override
+  String get statisticsAchievementNightOwlDetail =>
+      '해제 조건: 18:00 이후에 끝나는 수업이 있어야 해요.';
+
+  @override
+  String get statisticsAchievementExplorerDetail =>
+      '해제 조건: 5개 이상의 서로 다른 강의실을 사용해야 해요.';
+
+  @override
+  String get statisticsAchievementFullDayKingDetail =>
+      '해제 조건: 하루에 8교시 이상 수업이 있어야 해요.';
+
+  @override
+  String get statisticsAchievementBuildingHopperDetail =>
+      '해제 조건: 같은 날 3개 이상의 다른 건물에 가야 해요.';
+
+  @override
+  String get statisticsAchievementMorningPersonDetail =>
+      '해제 조건: 오전(12:00 전 시작) 수업이 전체의 절반 이상이어야 해요.';
+
+  @override
+  String get statisticsAchievementGapMasterDetail =>
+      '해제 조건: 하루 최장 쉬는 시간이 2교시 이하여야 해요.';
+
+  @override
+  String get statisticsAchievementDetailConfirm => '알겠어요';
+
+  @override
+  String get statisticsAchievementLocked => '미달성';
+
+  @override
   String get statisticsTabSemester => '학기';
 
   @override
