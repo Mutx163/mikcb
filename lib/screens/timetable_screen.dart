@@ -7036,10 +7036,29 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showTopActionsSheet() async {
+    // The anchored menu floats over the wallpaper; give its rows the same
+    // wallpaper-aware ink as the home chrome (white over dark wallpaper,
+    // dark over light) instead of the theme's onSurface color.
+    final provider = context.read<TimetableProvider>();
+    final settings = provider.settings;
+    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final headerShowsBackdrop = homePageRegionShowsBackdrop(
+      settings,
+      HomePageBackgroundScope.header,
+    );
+    final headerUsesFrostedChrome =
+        hasBackdrop &&
+        (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
+    final menuForeground = _resolveHomeChromeForeground(
+      headerShowsWallpaper: headerUsesFrostedChrome,
+      themeForeground: context.theme.colors.foreground,
+    );
+
     final selected = await showHomeTopMenuSheet(
       context,
       hasAvailableUpdate: _hasAvailableUpdate,
       anchorKey: _topMenuButtonKey,
+      foregroundColor: menuForeground,
     );
 
     if (!mounted || selected == null) {

@@ -61,6 +61,7 @@ Future<T?> showHyperosListPopup<T>({
   required BuildContext context,
   required RelativeRect? position,
   required List<HyperosPopupMenuItem<T>> items,
+  Color? foregroundColor,
 }) {
   final appearance = FrostedAppearanceScope.of(context);
   if (position == null || items.isEmpty) {
@@ -76,17 +77,29 @@ Future<T?> showHyperosListPopup<T>({
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return FrostedAppearanceScope(
         appearance: appearance,
-        child: _HyperosListPopupBody<T>(position: position, items: items),
+        child: _HyperosListPopupBody<T>(
+          position: position,
+          items: items,
+          foregroundColor: foregroundColor,
+        ),
       );
     },
   );
 }
 
 class _HyperosListPopupBody<T> extends StatefulWidget {
-  const _HyperosListPopupBody({required this.position, required this.items});
+  const _HyperosListPopupBody({
+    required this.position,
+    required this.items,
+    this.foregroundColor,
+  });
 
   final RelativeRect position;
   final List<HyperosPopupMenuItem<T>> items;
+
+  /// Overrides the row label/icon color (e.g. wallpaper-aware chrome ink on
+  /// the home screen); falls back to [HyperosColors.onSurface].
+  final Color? foregroundColor;
 
   @override
   State<_HyperosListPopupBody<T>> createState() =>
@@ -283,6 +296,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                                   for (var i = 0; i < widget.items.length; i++)
                                     _ListPopupTile(
                                       item: widget.items[i],
+                                      foregroundColor: widget.foregroundColor,
                                       onTap: widget.items[i].enabled
                                           ? () =>
                                                 _dismiss(widget.items[i].value)
@@ -308,9 +322,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
 
 /// Individual row in the list popup.
 class _ListPopupTile extends StatelessWidget {
-  const _ListPopupTile({required this.item, this.onTap});
+  const _ListPopupTile({
+    required this.item,
+    this.foregroundColor,
+    this.onTap,
+  });
 
   final HyperosPopupMenuItem<dynamic> item;
+  final Color? foregroundColor;
   final VoidCallback? onTap;
 
   @override
@@ -318,7 +337,7 @@ class _ListPopupTile extends StatelessWidget {
     final color = item.destructive
         ? HyperosColors.error(context)
         : (item.enabled
-              ? HyperosColors.onSurface(context)
+              ? (foregroundColor ?? HyperosColors.onSurface(context))
               : HyperosColors.disabledOnSurface(context));
 
     // Popup surfaces are translucent glass (or a solid container fallback);

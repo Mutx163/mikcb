@@ -25,6 +25,7 @@ Future<HomeTopMenuAction?> showHomeTopMenuSheet(
   BuildContext context, {
   required bool hasAvailableUpdate,
   required GlobalKey anchorKey,
+  Color? foregroundColor,
 }) {
   final l10n = AppLocalizations.of(context)!;
   final colorScheme = Theme.of(context).colorScheme;
@@ -51,6 +52,7 @@ Future<HomeTopMenuAction?> showHomeTopMenuSheet(
   return showHyperosListPopup<HomeTopMenuAction>(
     context: context,
     position: position,
+    foregroundColor: foregroundColor,
     items: [
       item(
         icon: Icons.system_update_alt_rounded,
