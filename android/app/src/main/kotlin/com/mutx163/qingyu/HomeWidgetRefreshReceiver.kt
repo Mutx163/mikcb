@@ -17,6 +17,7 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
                 // TodayWidgetSupport.readSnapshot already falls back to native
                 // computation when no synced snapshot exists.
                 TodayWidgetSupport.updateAll(context)
+                StatsWidgetSupport.updateAll(context)
                 HomeWidgetStorage.rescheduleRefresh(context)
             }
         }
