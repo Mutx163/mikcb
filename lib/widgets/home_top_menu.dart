@@ -19,6 +19,9 @@ enum HomeTopMenuAction {
 /// popup — the same chrome as every other anchored popup in the app: spring
 /// reveal, glass surface, tap-outside to dismiss.
 ///
+/// Rows are plain text only, matching the MIUI/HyperOS top-right menu
+/// convention (icons are reserved for in-page actions, not overflow menus).
+///
 /// [anchorKey] must be the key of the top-right "more" button; the popup is
 /// positioned just below it via [hyperosPopupPositionBelow].
 Future<HomeTopMenuAction?> showHomeTopMenuSheet(
@@ -28,22 +31,17 @@ Future<HomeTopMenuAction?> showHomeTopMenuSheet(
   Color? foregroundColor,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  final colorScheme = Theme.of(context).colorScheme;
   final position = hyperosPopupPositionBelow(context, anchorKey);
 
   HyperosPopupMenuItem<HomeTopMenuAction> item({
-    required IconData icon,
     required String title,
     required HomeTopMenuAction action,
-    Color? iconColor,
     Widget? trailing,
     bool gapBefore = false,
   }) {
     return HyperosPopupMenuItem<HomeTopMenuAction>(
       label: title,
       value: action,
-      icon: icon,
-      iconColor: iconColor,
       trailing: trailing,
       gapBefore: gapBefore,
     );
@@ -55,50 +53,42 @@ Future<HomeTopMenuAction?> showHomeTopMenuSheet(
     foregroundColor: foregroundColor,
     items: [
       item(
-        icon: Icons.system_update_alt_rounded,
         title: l10n.homeMenuUpdateTitle,
         action: HomeTopMenuAction.update,
-        iconColor: hasAvailableUpdate ? colorScheme.primary : null,
+        // The trailing dot badge marks the pending update; rows stay text
+        // only so the wallpaper-aware ink keeps the menu uniform.
         trailing: hasAvailableUpdate ? const MiuixBadge() : null,
       ),
       item(
-        icon: Icons.dashboard_customize_rounded,
         title: l10n.homeMenuOverviewTitle,
         action: HomeTopMenuAction.overview,
       ),
       item(
-        icon: Icons.bar_chart_rounded,
         title: l10n.homeMenuStatisticsTitle,
         action: HomeTopMenuAction.statistics,
       ),
       item(
-        icon: Icons.add_circle_outline_rounded,
         title: l10n.homeMenuAddCourseTitle,
         action: HomeTopMenuAction.addCourse,
       ),
       item(
-        icon: Icons.school_outlined,
         title: l10n.examListTitle,
         action: HomeTopMenuAction.exams,
       ),
       item(
-        icon: Icons.file_upload_outlined,
         title: l10n.homeMenuImportTitle,
         action: HomeTopMenuAction.importCourses,
       ),
       item(
-        icon: Icons.task_alt_outlined,
         title: l10n.homeMenuTasksTitle,
         action: HomeTopMenuAction.tasks,
         gapBefore: true,
       ),
       item(
-        icon: Icons.tune_rounded,
         title: l10n.homeMenuSettingsTitle,
         action: HomeTopMenuAction.settings,
       ),
       item(
-        icon: Icons.favorite_border_rounded,
         title: l10n.homeMenuCoffeeTitle,
         action: HomeTopMenuAction.support,
       ),
