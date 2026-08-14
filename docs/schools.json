@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-05T04:44:58+00:00",
+  "updatedAt": "2026-08-14T03:40:08+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 134,
-    "schools": 129,
+    "total": 139,
+    "schools": 134,
     "generic": 5
   },
   "schools": [
@@ -359,6 +359,13 @@
       "category": "school"
     },
     {
+      "id": "HHTC",
+      "name": "怀化学院",
+      "initial": "H",
+      "resourceFolder": "HHTC",
+      "category": "school"
+    },
+    {
       "id": "HBGUHX",
       "name": "河北地质大学华信学院",
       "initial": "H",
@@ -461,6 +468,13 @@
       "name": "衡阳师范学院",
       "initial": "H",
       "resourceFolder": "HYNU",
+      "category": "school"
+    },
+    {
+      "id": "HLJU",
+      "name": "黑龙江大学",
+      "initial": "H",
+      "resourceFolder": "HLJU",
       "category": "school"
     },
     {
@@ -667,6 +681,13 @@
       "category": "school"
     },
     {
+      "id": "SDJTU",
+      "name": "山东交通学院",
+      "initial": "S",
+      "resourceFolder": "SDJTU",
+      "category": "school"
+    },
+    {
       "id": "HUAYU",
       "name": "山东华宇工学院",
       "initial": "S",
@@ -762,6 +783,13 @@
       "name": "文华学院",
       "initial": "W",
       "resourceFolder": "WENHUA",
+      "category": "school"
+    },
+    {
+      "id": "CWXU",
+      "name": "无锡学院",
+      "initial": "W",
+      "resourceFolder": "CWXU",
       "category": "school"
     },
     {
@@ -944,6 +972,13 @@
       "name": "浙江工业大学",
       "initial": "Z",
       "resourceFolder": "ZJUT",
+      "category": "school"
+    },
+    {
+      "id": "ZUA",
+      "name": "郑州航空工业管理学院",
+      "initial": "Z",
+      "resourceFolder": "ZUA",
       "category": "school"
     }
   ]
