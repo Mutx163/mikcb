@@ -15,12 +15,28 @@ class HyperosPopupMenuItem<T> {
     required this.value,
     this.destructive = false,
     this.enabled = true,
+    this.icon,
+    this.iconColor,
+    this.trailing,
+    this.gapBefore = false,
   });
 
   final String label;
   final T value;
   final bool destructive;
   final bool enabled;
+
+  /// Optional leading icon, rendered at 20dp (Miuix check-icon size).
+  final IconData? icon;
+
+  /// Optional tint for [icon]; defaults to the label color.
+  final Color? iconColor;
+
+  /// Optional trailing widget (e.g. a dot badge) rendered at the row end.
+  final Widget? trailing;
+
+  /// Adds an 8dp gap above this row to group menu items (Miuix gap grouping).
+  final bool gapBefore;
 }
 
 /// Miuix spring spec (matches select popup / ListPopup defaults).
@@ -248,7 +264,7 @@ class _ListPopupTile extends StatelessWidget {
               ? HyperosColors.onSurface(context)
               : HyperosColors.disabledOnSurface(context));
 
-    return HyperosPressableRow(
+    final row = HyperosPressableRow(
       onTap: onTap,
       backgroundColor: Colors.transparent,
       highlightColor: HyperosColors.rowHighlight(context),
@@ -259,21 +275,39 @@ class _ListPopupTile extends StatelessWidget {
             start: HyperosMiuixDropdown.insideHorizontalPadding,
             end: HyperosMiuixDropdown.insideHorizontalPadding,
           ),
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              item.label,
-              style: TextStyle(
-                fontSize: HyperosMiuixTypography.body1,
-                color: color,
+          child: Row(
+            children: [
+              if (item.icon != null) ...[
+                Icon(
+                  item.icon,
+                  size: HyperosMiuixDropdown.checkIconSize,
+                  color: item.iconColor ?? color,
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: HyperosMiuixTypography.body1,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+              if (item.trailing != null) ...[
+                const SizedBox(width: 12),
+                item.trailing!,
+              ],
+            ],
           ),
         ),
       ),
     );
+    return item.gapBefore
+        ? Padding(padding: const EdgeInsets.only(top: 8), child: row)
+        : row;
   }
 }
 

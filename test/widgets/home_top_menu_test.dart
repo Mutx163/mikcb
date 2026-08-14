@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
@@ -11,16 +11,23 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'home action menu keeps nine Miuix list rows without per-tile blur',
+    'home action menu keeps nine Miuix list rows without per-row blur',
     (tester) async {
+      final anchorKey = GlobalKey();
+
       await tester.pumpWidget(
         TestApp(
           home: Builder(
             builder: (context) {
               return Center(
                 child: ElevatedButton(
+                  key: anchorKey,
                   onPressed: () {
-                    showHomeTopMenuSheet(context, hasAvailableUpdate: true);
+                    showHomeTopMenuSheet(
+                      context,
+                      hasAvailableUpdate: true,
+                      anchorKey: anchorKey,
+                    );
                   },
                   child: const Text('Open'),
                 ),
@@ -33,14 +40,12 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(SingleChildScrollView), findsOneWidget);
       // Nine Miuix menu rows, one per action; the update row carries the
-      // trailing dot badge.
+      // trailing dot badge. The anchored popup owns exactly one glass
+      // surface — no row adds its own blur while the list moves.
       expect(find.byType(HyperosPressableRow), findsNWidgets(9));
       expect(find.byType(MiuixBadge), findsOneWidget);
-      // The modal capture owns the only backdrop filter. No row adds a
-      // second live filter while the list moves in the scroll view.
-      expect(find.byType(BackdropFilter), findsOneWidget);
+      expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
 
       for (final title in const [
         '软件更新',
@@ -58,7 +63,8 @@ void main() {
     },
   );
 
-  testWidgets('home action menu tiles remain tappable', (tester) async {
+  testWidgets('home action menu rows remain tappable', (tester) async {
+    final anchorKey = GlobalKey();
     late Future<HomeTopMenuAction?> menuResult;
 
     await tester.pumpWidget(
@@ -67,10 +73,12 @@ void main() {
           builder: (context) {
             return Center(
               child: ElevatedButton(
+                key: anchorKey,
                 onPressed: () {
                   menuResult = showHomeTopMenuSheet(
                     context,
                     hasAvailableUpdate: false,
+                    anchorKey: anchorKey,
                   );
                 },
                 child: const Text('Open'),
@@ -91,8 +99,9 @@ void main() {
   });
 
   testWidgets(
-    'liquid menu uses clear header glass for its single outer panel',
+    'liquid menu uses clear header glass for its single anchored popup',
     (tester) async {
+      final anchorKey = GlobalKey();
       const liquidAppearance = FrostedAppearance(
         sheetBlurSigma: 15,
         sheetTintAlpha: 0.7,
@@ -112,8 +121,13 @@ void main() {
               onGenerateRoute: (_) => MaterialPageRoute(
                 builder: (context) => Center(
                   child: ElevatedButton(
+                    key: anchorKey,
                     onPressed: () {
-                      showHomeTopMenuSheet(context, hasAvailableUpdate: false);
+                      showHomeTopMenuSheet(
+                        context,
+                        hasAvailableUpdate: false,
+                        anchorKey: anchorKey,
+                      );
                     },
                     child: const Text('Open'),
                   ),

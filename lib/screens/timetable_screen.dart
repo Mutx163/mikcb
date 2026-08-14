@@ -179,6 +179,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   late int _visibleWeek;
   late final ValueNotifier<int> _visibleWeekListenable;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
+
+  /// Anchor for the top-right "more" menu popup (positioned below this key).
+  final GlobalKey _topMenuButtonKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
   final HomeUpdatePromptController _updatePromptController =
@@ -563,34 +566,37 @@ class _TimetableScreenState extends State<TimetableScreen>
                       );
                     },
                   ),
-                FHeaderAction(
-                  icon: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(Icons.more_vert_rounded, color: chromeForeground),
-                      if (_hasAvailableUpdate)
-                        Positioned(
-                          right: -1,
-                          top: -1,
-                          child: Container(
-                            width: 9,
-                            height: 9,
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: headerBarColor.a == 0
-                                    ? colorScheme.surface
-                                    : headerBarColor,
-                                width: 1.5,
+                KeyedSubtree(
+                  key: _topMenuButtonKey,
+                  child: FHeaderAction(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(Icons.more_vert_rounded, color: chromeForeground),
+                        if (_hasAvailableUpdate)
+                          Positioned(
+                            right: -1,
+                            top: -1,
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: headerBarColor.a == 0
+                                      ? colorScheme.surface
+                                      : headerBarColor,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
+                    semanticsLabel: l10n.moreTooltip,
+                    onPress: _showTopActionsSheet,
                   ),
-                  semanticsLabel: l10n.moreTooltip,
-                  onPress: _showTopActionsSheet,
                 ),
               ],
               childPad: false,
@@ -7033,6 +7039,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final selected = await showHomeTopMenuSheet(
       context,
       hasAvailableUpdate: _hasAvailableUpdate,
+      anchorKey: _topMenuButtonKey,
     );
 
     if (!mounted || selected == null) {
