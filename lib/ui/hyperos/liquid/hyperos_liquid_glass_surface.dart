@@ -10,7 +10,20 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../../models/liquid_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
+import '../hyperos_blurred_header.dart' show HyperosBlurredHeader;
 import 'liquid_glass_tokens.dart';
+
+/// Dim painted over modal liquid-glass panels (sheets, dialogs, popups).
+///
+/// Liquid-glass modals sample the *undimmed* page through a BackdropGroup
+/// while the barrier behind them is dimmed at
+/// [HyperosBlurredHeader.liquidGlassModalBarrierAlpha] — the glass then
+/// reads much brighter than the dimmed page behind it. Painting half that
+/// barrier dim over the glass surface itself (brightness sits halfway
+/// between the raw page and the dimmed backdrop) keeps the panel clearly
+/// the brightest layer without the harsh glare.
+const liquidGlassModalSurfaceDimAlpha =
+    HyperosBlurredHeader.liquidGlassModalBarrierAlpha / 2;
 
 /// Role of a liquid-glass surface (drives recommended shape + settings).
 enum HyperosLiquidGlassRole {
@@ -373,6 +386,11 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
           )
         : child;
 
+    // Modal panels float over a dimmed page; halve the barrier dim on the
+    // glass surface so the panel stays the brightest layer without glaring
+    // against the backdrop (see liquidGlassModalSurfaceDimAlpha).
+    final surfacedChild = _wrapChildForModalDim(role: role, child: glassChild);
+
     var resolvedLayerMode =
         layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
     if (resolvedLayerMode == HyperosLiquidGlassLayerMode.ownLayer &&
@@ -387,13 +405,13 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
         context: context,
         shape: shape,
         settings: settings,
-        child: glassChild,
+        child: surfacedChild,
       ),
       HyperosLiquidGlassLayerMode.sharedLayer => LiquidGlass(
         shape: shape,
         clipBehavior: clipBehavior,
         glassContainsChild: false,
-        child: glassChild,
+        child: surfacedChild,
       ),
       // withOwnLayer never forwards useBackdropGroup (package hardcodes the
       // default), so the group-sampling path builds the layer explicitly.
@@ -405,7 +423,7 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
             shape: shape,
             clipBehavior: clipBehavior,
             glassContainsChild: false,
-            child: glassChild,
+            child: surfacedChild,
           ),
         ),
       HyperosLiquidGlassLayerMode.ownLayer => LiquidGlass.withOwnLayer(
@@ -413,7 +431,7 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
         shape: shape,
         clipBehavior: clipBehavior,
         glassContainsChild: false,
-        child: glassChild,
+        child: surfacedChild,
       ),
     };
 
@@ -495,6 +513,38 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       children: [
         Positioned.fill(
           child: IgnorePointer(child: ColoredBox(color: fillColor)),
+        ),
+        child,
+      ],
+    );
+  }
+
+  /// Halves the modal barrier dim over the glass surface of modal panels.
+  ///
+  /// Sheets, dialogs and anchored popups sample the undimmed page while the
+  /// barrier behind them is dimmed, so the glass reads as a bright panel on
+  /// a dark page. Painting half the barrier alpha over the glass itself
+  /// pulls the panel's brightness halfway toward the dimmed backdrop:
+  /// still clearly the brightest layer, but without the harsh glare.
+  static Widget _wrapChildForModalDim({
+    required HyperosLiquidGlassRole role,
+    required Widget child,
+  }) {
+    if (role != HyperosLiquidGlassRole.modal ||
+        liquidGlassModalSurfaceDimAlpha <= 0) {
+      return child;
+    }
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ColoredBox(
+              color: Colors.black.withValues(
+                alpha: liquidGlassModalSurfaceDimAlpha,
+              ),
+            ),
+          ),
         ),
         child,
       ],

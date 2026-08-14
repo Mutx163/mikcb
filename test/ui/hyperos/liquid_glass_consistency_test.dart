@@ -250,4 +250,82 @@ void main() {
       expect(find.text('Option A'), findsOneWidget);
     });
   });
+
+  group('modal liquid glass surface dim', () {
+    test('modal surface dim halves the liquid-glass barrier alpha', () {
+      expect(
+        liquidGlassModalSurfaceDimAlpha,
+        HyperosBlurredHeader.liquidGlassModalBarrierAlpha / 2,
+      );
+    });
+
+    testWidgets('modal role paints a dim wash over the glass', (tester) async {
+      await tester.pumpWidget(
+        const TestApp(
+          home: FrostedAppearanceScope(
+            appearance: FrostedAppearance(
+              sheetBlurSigma: 10,
+              sheetTintAlpha: 0.2,
+              sheetBarrierAlpha: 0.2,
+              glassMode: FrostedGlassMode.liquidGlass,
+            ),
+            child: HyperosLiquidGlassSurface(
+              role: HyperosLiquidGlassRole.modal,
+              child: SizedBox(width: 100, height: 60),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The modal surface must stack a black wash at half the barrier
+      // alpha under the child, so the bright glass reads halfway toward
+      // the dimmed backdrop instead of glaring.
+      final dimBoxes = tester
+          .widgetList<ColoredBox>(find.byType(ColoredBox))
+          .where((box) => box.color.a > 0)
+          .toList();
+      expect(
+        dimBoxes.any(
+          (box) =>
+              box.color ==
+              Colors.black.withValues(alpha: liquidGlassModalSurfaceDimAlpha),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('header role stays undimmed', (tester) async {
+      await tester.pumpWidget(
+        const TestApp(
+          home: FrostedAppearanceScope(
+            appearance: FrostedAppearance(
+              sheetBlurSigma: 10,
+              sheetTintAlpha: 0.2,
+              sheetBarrierAlpha: 0.2,
+              glassMode: FrostedGlassMode.liquidGlass,
+            ),
+            child: HyperosLiquidGlassSurface(
+              role: HyperosLiquidGlassRole.header,
+              child: SizedBox(width: 100, height: 60),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final dimBoxes = tester
+          .widgetList<ColoredBox>(find.byType(ColoredBox))
+          .where((box) => box.color.a > 0)
+          .toList();
+      expect(
+        dimBoxes.any(
+          (box) =>
+              box.color ==
+              Colors.black.withValues(alpha: liquidGlassModalSurfaceDimAlpha),
+        ),
+        isFalse,
+      );
+    });
+  });
 }
