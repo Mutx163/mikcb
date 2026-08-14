@@ -267,10 +267,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleTimetableShareText =>
-      '이것은 내 시간표입니다. 경어 시간표의 커플 시간표로 가져오면 함께 확인할 수 있습니다';
+      '이것은 내 시간표입니다. 경屿 시간표의 커플 시간표로 가져오면 함께 확인할 수 있습니다';
 
   @override
-  String get coupleTimetableShareSubject => '경어 시간표 · 커플 시간표 공유';
+  String get coupleTimetableShareSubject => '경屿 시간표 · 커플 시간표 공유';
 
   @override
   String get coupleTimetableWeekOffsetTitle => '주차 오프셋';
@@ -3147,7 +3147,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      '제목 표시줄(경어 시간표) 영역을 흐리게 합니다. \'상태 표시줄\'을 선택하면 상태 표시줄도 함께 흐리게 합니다';
+      '제목 표시줄(경屿 시간표) 영역을 흐리게 합니다. \'상태 표시줄\'을 선택하면 상태 표시줄도 함께 흐리게 합니다';
 
   @override
   String get homePageWeekdayBarBlurTitle => '정보 바 가우시안 블러';
