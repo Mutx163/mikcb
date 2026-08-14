@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Release/profile builds reject cleartext HTTP. Debug overrides this file for campus/LAN development. -->
+<!--
+  Allow cleartext (HTTP) for all builds.
+
+  Most campus academic portals only support HTTP (no HTTPS); blocking
+  cleartext would break school course import (WebView login) on release
+  packages. LAN edit and self-hosted WebDAV also rely on HTTP.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>
