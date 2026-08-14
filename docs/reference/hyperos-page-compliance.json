@@ -210,7 +210,7 @@
       "category": "feature",
       "expectedShell": "HyperosSubpage",
       "manualStatus": "pass",
-      "notes": "学期/周双视图；新增进度卡/趋势图/本周小结/热力图/时间利用/教室与教学楼/教师排行；成就进度+解锁动效；排行可跳转编辑课程"
+      "notes": "学期/周双视图；进度卡/趋势图/本周小结/热力图/时间利用/教室与教学楼/教师排行；成就进度+解锁动效；排行可跳转编辑课程；周报推送开关；课表对比模块"
     },
     {
       "id": "support-creator",
