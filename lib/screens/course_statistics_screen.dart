@@ -167,49 +167,46 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                 ]
               : const [],
           child: hasData
-              ? Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-                      child: HyperosTabRow(
-                        tabs: [
-                          l10n.statisticsTabSemester,
-                          l10n.statisticsTabWeek,
-                        ],
-                        selectedIndex: _semesterView ? 0 : 1,
-                        onChanged: (index) =>
-                            setState(() => _semesterView = index == 0),
-                      ),
-                    ),
-                    Expanded(
-                      child: _semesterView
-                          ? _buildSemesterContent(
-                              context,
-                              l10n,
-                              provider,
-                              currentWeek,
-                              semesterWeekCount,
-                              courses,
-                              semesterStats,
-                              achievements,
-                              stories,
-                            )
-                          : WeekStatsView(
-                              stats: StatisticsService.calculate(
-                                allCourses: courses,
-                                week: _selectedWeek,
-                              ),
-                              currentWeek: currentWeek,
-                              maxWeek: semesterWeekCount,
-                              onWeekChanged: (week) =>
-                                  setState(() => _selectedWeek = week),
-                            ),
-                    ),
-                  ],
-                )
+              ? (_semesterView
+                    ? _buildSemesterContent(
+                        context,
+                        l10n,
+                        provider,
+                        currentWeek,
+                        semesterWeekCount,
+                        courses,
+                        semesterStats,
+                        achievements,
+                        stories,
+                      )
+                    : WeekStatsView(
+                        header: _buildTabRow(context, l10n),
+                        stats: StatisticsService.calculate(
+                          allCourses: courses,
+                          week: _selectedWeek,
+                        ),
+                        currentWeek: currentWeek,
+                        maxWeek: semesterWeekCount,
+                        onWeekChanged: (week) =>
+                            setState(() => _selectedWeek = week),
+                      ))
               : _buildEmptyState(context, l10n),
         );
       },
+    );
+  }
+
+  Widget _buildTabRow(BuildContext context, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: HyperosTabRow(
+        tabs: [
+          l10n.statisticsTabSemester,
+          l10n.statisticsTabWeek,
+        ],
+        selectedIndex: _semesterView ? 0 : 1,
+        onChanged: (index) => setState(() => _semesterView = index == 0),
+      ),
     );
   }
 
@@ -237,8 +234,9 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     );
 
     return HyperosListView(
-      includeHeaderInset: false,
       children: [
+        _buildTabRow(context, l10n),
+        const HyperosSectionGap(),
         _buildWeeklyReportSection(context, l10n, provider, currentWeek, semesterWeekCount),
         const HyperosSectionGap(),
         OverviewSection(stats: semesterStats),

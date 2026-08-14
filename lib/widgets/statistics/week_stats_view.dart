@@ -13,12 +13,16 @@ class WeekStatsView extends StatelessWidget {
   final int maxWeek;
   final ValueChanged<int> onWeekChanged;
 
+  /// 可选顶部内容（如学期/周切换行），作为列表首元素随列表滚动
+  final Widget? header;
+
   const WeekStatsView({
     super.key,
     required this.stats,
     required this.currentWeek,
     required this.maxWeek,
     required this.onWeekChanged,
+    this.header,
   });
 
   @override
@@ -27,8 +31,11 @@ class WeekStatsView extends StatelessWidget {
     final week = stats.weekNumber;
 
     return HyperosListView(
-      includeHeaderInset: false,
       children: [
+        if (header != null) ...[
+          header!,
+          const HyperosSectionGap(),
+        ],
         _WeekSelector(
           week: week,
           maxWeek: maxWeek,
