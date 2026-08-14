@@ -6449,6 +6449,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsAchievementLocked => '未达成';
 
   @override
+  String get statisticsSettingsTitle => '统计设置';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override
@@ -16113,6 +16116,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementLocked => '未達成';
+
+  @override
+  String get statisticsSettingsTitle => '統計設定';
 
   @override
   String get statisticsTabSemester => '學期';
@@ -25823,6 +25829,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementLocked => '未達成';
+
+  @override
+  String get statisticsSettingsTitle => '統計設定';
 
   @override
   String get statisticsTabSemester => '學期';

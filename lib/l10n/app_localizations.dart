@@ -11744,6 +11744,12 @@ abstract class AppLocalizations {
   /// **'未达成'**
   String get statisticsAchievementLocked;
 
+  /// No description provided for @statisticsSettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'统计设置'**
+  String get statisticsSettingsTitle;
+
   /// No description provided for @statisticsTabSemester.
   ///
   /// In zh, this message translates to:

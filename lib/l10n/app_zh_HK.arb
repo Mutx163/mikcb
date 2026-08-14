@@ -3576,6 +3576,7 @@
   "statisticsAchievementGapMasterDetail": "解鎖條件：每天課間最長空檔不超過 2 節，時間安排緊湊。",
   "statisticsAchievementDetailConfirm": "知道了",
   "statisticsAchievementLocked": "未達成",
+  "statisticsSettingsTitle": "統計設定",
   "statisticsTabSemester": "學期",
   "statisticsTabWeek": "週",
   "statisticsSemesterProgressTitle": "學期進度",

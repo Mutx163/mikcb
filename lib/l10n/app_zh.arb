@@ -3813,6 +3813,7 @@
   "statisticsAchievementGapMasterDetail": "解锁条件：每天课间最长空档不超过 2 节，时间安排紧凑。",
   "statisticsAchievementDetailConfirm": "知道了",
   "statisticsAchievementLocked": "未达成",
+  "statisticsSettingsTitle": "统计设置",
   "statisticsTabSemester": "学期",
   "statisticsTabWeek": "周",
   "statisticsSemesterProgressTitle": "学期进度",

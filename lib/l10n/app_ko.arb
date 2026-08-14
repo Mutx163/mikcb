@@ -3576,6 +3576,7 @@
   "statisticsAchievementGapMasterDetail": "해제 조건: 하루 최장 쉬는 시간이 2교시 이하여야 해요.",
   "statisticsAchievementDetailConfirm": "알겠어요",
   "statisticsAchievementLocked": "미달성",
+  "statisticsSettingsTitle": "통계 설정",
   "statisticsTabSemester": "학기",
   "statisticsTabWeek": "주",
   "statisticsSemesterProgressTitle": "학기 진행도",

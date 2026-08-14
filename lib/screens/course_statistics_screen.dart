@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
@@ -10,7 +9,7 @@ import '../providers/timetable_provider.dart';
 import '../services/statistics_service.dart';
 import '../services/statistics_share_service.dart';
 import '../services/stats_widget_service.dart';
-import '../services/weekly_report_service.dart';
+import 'statistics_settings_screen.dart';
 import '../widgets/statistics/achievement_badge.dart';
 import '../widgets/statistics/data_story_card.dart';
 import '../widgets/statistics/daily_chart.dart';
@@ -22,7 +21,6 @@ import '../widgets/statistics/statistics_export_sheet.dart';
 import '../widgets/statistics/week_stats_view.dart';
 import '../widgets/statistics/weekly_comparison_card.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../utils/app_toast.dart';
 import 'statistics_analysis_screen.dart';
 
 /// 课程统计页面（账单式：学期 / 周 双视图）
@@ -144,6 +142,19 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
           suffixes: hasData
               ? [
                   FHeaderAction(
+                    icon: const Icon(Icons.settings_outlined),
+                    semanticsLabel: l10n.statisticsSettingsTitle,
+                    onPress: () => Navigator.push(
+                      context,
+                      HyperosPageRoute(
+                        settings: const RouteSettings(
+                          name: '/statistics/settings',
+                        ),
+                        builder: (_) => const StatisticsSettingsScreen(),
+                      ),
+                    ),
+                  ),
+                  FHeaderAction(
                     icon: _isExporting
                         ? const SizedBox(
                             width: 20,
@@ -187,6 +198,7 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                         ),
                         currentWeek: currentWeek,
                         maxWeek: semesterWeekCount,
+                        allCourses: courses,
                         onWeekChanged: (week) =>
                             setState(() => _selectedWeek = week),
                       ))
@@ -236,8 +248,6 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     return HyperosListView(
       children: [
         _buildTabRow(context, l10n),
-        const HyperosSectionGap(),
-        _buildWeeklyReportSection(context, l10n, provider, currentWeek, semesterWeekCount),
         const HyperosSectionGap(),
         OverviewSection(stats: semesterStats),
         const HyperosSectionGap(),
@@ -384,68 +394,6 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
         child: ProfileCompareCard(entries: entries),
       ),
     ];
-  }
-
-  Widget _buildWeeklyReportSection(
-    BuildContext context,
-    AppLocalizations l10n,
-    TimetableProvider provider,
-    int currentWeek,
-    int semesterWeekCount,
-  ) {
-    final enabled = provider.settings.weeklyReportEnabled;
-    final nextFire = WeeklyReportService.nextFireAt();
-    final nextFireLabel = DateFormat.MMMd(l10n.localeName).format(nextFire);
-    final nextFireTime =
-        '${nextFire.hour.toString().padLeft(2, '0')}:${nextFire.minute.toString().padLeft(2, '0')}';
-
-    return HyperosSettingsBlock(
-      title: l10n.weeklyReportTitle,
-      child: HyperosSwitchTile(
-        icon: Icons.notifications_active_outlined,
-        iconAccent: enabled ? HyperosIconColors.orange : HyperosIconColors.blue,
-        title: l10n.weeklyReportTitle,
-        subtitle: enabled
-            ? l10n.weeklyReportNextFire(nextFireLabel, nextFireTime)
-            : l10n.weeklyReportDisabledHint,
-        value: enabled,
-        onChanged: (value) => _setWeeklyReportEnabled(
-          context,
-          provider,
-          value,
-          currentWeek,
-          semesterWeekCount,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _setWeeklyReportEnabled(
-    BuildContext context,
-    TimetableProvider provider,
-    bool enabled,
-    int currentWeek,
-    int semesterWeekCount,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    await provider.updateSettings(
-      provider.settings.copyWith(weeklyReportEnabled: enabled),
-    );
-    await WeeklyReportService.schedule(
-      enabled: enabled,
-      l10n: l10n,
-      allCourses: provider.courses,
-      currentWeek: currentWeek,
-      semesterWeekCount: semesterWeekCount,
-    );
-    if (context.mounted) {
-      showAppToast(
-        context,
-        message: enabled
-            ? l10n.weeklyReportEnabledHint
-            : l10n.weeklyReportDisabledHint,
-      );
-    }
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {

@@ -3576,6 +3576,7 @@
   "statisticsAchievementGapMasterDetail": "解除条件：1日の最長の授業間空きが2コマ以内であること。",
   "statisticsAchievementDetailConfirm": "わかった",
   "statisticsAchievementLocked": "未達成",
+  "statisticsSettingsTitle": "統計設定",
   "statisticsTabSemester": "学期",
   "statisticsTabWeek": "週",
   "statisticsSemesterProgressTitle": "学期の進捗",

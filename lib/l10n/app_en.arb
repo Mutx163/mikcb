@@ -3813,6 +3813,7 @@
   "statisticsAchievementGapMasterDetail": "Unlock: the longest daily break between classes is 2 sections or fewer.",
   "statisticsAchievementDetailConfirm": "Got it",
   "statisticsAchievementLocked": "Locked",
+  "statisticsSettingsTitle": "Statistics Settings",
   "statisticsTabSemester": "Semester",
   "statisticsTabWeek": "Week",
   "statisticsSemesterProgressTitle": "Semester Progress",

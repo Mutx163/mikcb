@@ -204,6 +204,15 @@
       "notes": "含 4 个子流程页；静态 audit + 布局 token 已对齐"
     },
     {
+      "id": "statistics-settings",
+      "file": "lib/screens/statistics_settings_screen.dart",
+      "label": "统计设置",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "右上角入口：每周周报推送开关"
+    },
+    {
       "id": "statistics-analysis",
       "file": "lib/screens/statistics_analysis_screen.dart",
       "label": "统计深度分析",

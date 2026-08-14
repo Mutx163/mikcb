@@ -6590,6 +6590,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsAchievementLocked => '미달성';
 
   @override
+  String get statisticsSettingsTitle => '통계 설정';
+
+  @override
   String get statisticsTabSemester => '학기';
 
   @override

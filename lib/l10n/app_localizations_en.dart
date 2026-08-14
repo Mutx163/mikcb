@@ -6816,6 +6816,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsAchievementLocked => 'Locked';
 
   @override
+  String get statisticsSettingsTitle => 'Statistics Settings';
+
+  @override
   String get statisticsTabSemester => 'Semester';
 
   @override
