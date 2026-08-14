@@ -9,7 +9,14 @@ import '../../models/statistics_models.dart';
 class CourseRanking extends StatelessWidget {
   final List<CourseSemesterStat> courseRanking;
 
-  const CourseRanking({super.key, required this.courseRanking});
+  /// 展开详情中「编辑课程」点击回调（传入课程名）
+  final void Function(String courseName)? onCourseTap;
+
+  const CourseRanking({
+    super.key,
+    required this.courseRanking,
+    this.onCourseTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +41,13 @@ class CourseRanking extends StatelessWidget {
     return HyperosListGroup(
       children: [
         for (var index = 0; index < courseRanking.length; index++)
-          _CourseRankingTile(stat: courseRanking[index], rank: index + 1),
+          _CourseRankingTile(
+            stat: courseRanking[index],
+            rank: index + 1,
+            onTap: onCourseTap == null
+                ? null
+                : () => onCourseTap!(courseRanking[index].name),
+          ),
       ],
     );
   }
@@ -43,8 +56,13 @@ class CourseRanking extends StatelessWidget {
 class _CourseRankingTile extends StatefulWidget {
   final CourseSemesterStat stat;
   final int rank;
+  final VoidCallback? onTap;
 
-  const _CourseRankingTile({required this.stat, required this.rank});
+  const _CourseRankingTile({
+    required this.stat,
+    required this.rank,
+    this.onTap,
+  });
 
   @override
   State<_CourseRankingTile> createState() => _CourseRankingTileState();
@@ -191,7 +209,7 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
             dividerIndent,
             10,
             HyperosMiuixSpec.settingsRowPadding.right,
-            scopeBottomPadding(context),
+            widget.stat.slots.isEmpty ? scopeBottomPadding(context) : 0,
           ),
           child: Column(
             children: [
@@ -202,6 +220,43 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
             ],
           ),
         ),
+        if (widget.onTap != null) ...[
+          HyperosInsetDivider(indent: dividerIndent),
+          HyperosPressableRow(
+            onTap: widget.onTap,
+            backgroundColor: HyperosColors.card(context),
+            highlightColor: HyperosColors.rowHighlight(context),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                dividerIndent,
+                10,
+                HyperosMiuixSpec.settingsRowPadding.right,
+                scopeBottomPadding(context),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: HyperosColors.actionIcon(context),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.editCourseTitle,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: HyperosColors.actionIcon(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
