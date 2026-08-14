@@ -453,7 +453,7 @@ class _CoupleTimetableSettingsScreenState
   }
 
   Color _colorFromHex(String hex) =>
-      parseHexColorOrFallback(hex, fallback: Colors.blue);
+      parseHexColorOrFallback(hex, fallback: HyperosIconColors.blue);
 
   Widget _buildWeekOffsetControl(
     BuildContext context,

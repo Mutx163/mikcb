@@ -3,7 +3,7 @@
   "description": "HyperOS 页面合规清单（唯一真相来源）。由 tool/hyperos_audit.py 扫描并可在 --sync-status 时回写 manualStatus。",
   "rulesDoc": "docs/reference/hyperos-page-compliance.md",
   "uiKitDoc": "docs/reference/hyperos-ui-kit.md",
-  "lastPipelineRun": null,
+  "lastPipelineRun": "2026-08-14T07:06:21.949Z",
   "pages": [
     {
       "id": "timetable",
@@ -239,6 +239,35 @@
       "manualStatus": "pass",
       "allowLegacy": true,
       "notes": "验收页；含 Material 演示属预期"
+    },
+    {
+      "id": "couple-timetable-settings",
+      "file": "lib/screens/couple_timetable_settings_screen.dart",
+      "label": "情侣课表设置",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "叠加颜色选择器 fallback 使用 HyperosTokens.blue（自定义色解析兜底）"
+    },
+    {
+      "id": "qr-transfer-scan",
+      "file": "lib/screens/qr_transfer_scan_screen.dart",
+      "label": "二维码传输-接收",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "allowLegacy": true,
+      "notes": "相机全屏黑底页：白字/黑底为固定取景配色，不跟随主题；字体用固定字号保证可读性"
+    },
+    {
+      "id": "qr-transfer-send",
+      "file": "lib/screens/qr_transfer_send_screen.dart",
+      "label": "二维码传输-发送",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "allowLegacy": true,
+      "notes": "暗色二维码展示页：深色渐变底 + 白色二维码卡片为固定配色（二维码对比度要求），不跟随主题"
     }
   ]
 }
