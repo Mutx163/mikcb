@@ -1,29 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
-
-double _maxMenuTitleHeight({
-  required List<String> titles,
-  required TextStyle style,
-  required double maxWidth,
-  required TextDirection textDirection,
-}) {
-  var maxHeight = 0.0;
-  for (final title in titles) {
-    final painter = TextPainter(
-      text: TextSpan(text: title, style: style),
-      maxLines: 2,
-      textAlign: TextAlign.center,
-      textDirection: textDirection,
-      ellipsis: '…',
-    )..layout(maxWidth: maxWidth);
-    maxHeight = math.max(maxHeight, painter.height);
-  }
-  return maxHeight;
-}
 
 enum HomeTopMenuAction {
   update,
@@ -37,7 +15,10 @@ enum HomeTopMenuAction {
   support,
 }
 
-/// Shows the home screen top-right action menu with Forui sheet styling.
+/// Shows the home screen top-right action menu as a Miuix list popup sheet.
+///
+/// The sheet shell (glass chrome, barrier, motion) is shared with every other
+/// HyperOS sheet; only the content here is a list of Miuix menu rows.
 Future<HomeTopMenuAction?> showHomeTopMenuSheet(
   BuildContext context, {
   required bool hasAvailableUpdate,
@@ -58,257 +39,157 @@ class _HomeTopMenuSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final colors = context.theme.colors;
-    final typo = context.theme.typography;
-    const tileSpacing = 10.0;
-    const tileHorizontalPadding = 14.0;
-    // Phone visual cap: tiles stay at most this wide so icon wells don't stretch.
-    const maxTileWidth = 112.0;
-    const minTileWidth = 64.0;
-    const columnsPerRow = 3;
+    // Miuix menu groups are separated by a small vertical gap (no divider
+    // line), matching the ListPopup / DropdownMenu rhythm of the component
+    // library instead of the former 3x3 action grid.
+    const groupGap = 8.0;
 
-    final menuTitles = [
-      l10n.homeMenuUpdateTitle,
-      l10n.homeMenuOverviewTitle,
-      l10n.homeMenuStatisticsTitle,
-      l10n.homeMenuAddCourseTitle,
-      l10n.examListTitle,
-      l10n.homeMenuImportTitle,
-      l10n.homeMenuTasksTitle,
-      l10n.homeMenuSettingsTitle,
-      l10n.homeMenuCoffeeTitle,
-    ];
-    final titleStyle = typo.body.xs2.copyWith(
-      fontWeight: FontWeight.w400,
-      height: 1.15,
-      color: colors.foreground,
+    Widget tile({
+      required IconData icon,
+      required String title,
+      required HomeTopMenuAction action,
+      Color? accentColor,
+      bool showDot = false,
+    }) {
+      return _HomeMenuListTile(
+        icon: icon,
+        title: title,
+        accentColor: accentColor,
+        showDot: showDot,
+        onTap: () => Navigator.of(context).pop(action),
+      );
+    }
+
+    final menuColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        tile(
+          icon: Icons.system_update_alt_rounded,
+          title: l10n.homeMenuUpdateTitle,
+          action: HomeTopMenuAction.update,
+          accentColor: hasAvailableUpdate ? colorScheme.primary : null,
+          showDot: hasAvailableUpdate,
+        ),
+        tile(
+          icon: Icons.dashboard_customize_rounded,
+          title: l10n.homeMenuOverviewTitle,
+          action: HomeTopMenuAction.overview,
+        ),
+        tile(
+          icon: Icons.bar_chart_rounded,
+          title: l10n.homeMenuStatisticsTitle,
+          action: HomeTopMenuAction.statistics,
+        ),
+        tile(
+          icon: Icons.add_circle_outline_rounded,
+          title: l10n.homeMenuAddCourseTitle,
+          action: HomeTopMenuAction.addCourse,
+        ),
+        tile(
+          icon: Icons.school_outlined,
+          title: l10n.examListTitle,
+          action: HomeTopMenuAction.exams,
+        ),
+        tile(
+          icon: Icons.file_upload_outlined,
+          title: l10n.homeMenuImportTitle,
+          action: HomeTopMenuAction.importCourses,
+        ),
+        const SizedBox(height: groupGap),
+        tile(
+          icon: Icons.task_alt_outlined,
+          title: l10n.homeMenuTasksTitle,
+          action: HomeTopMenuAction.tasks,
+        ),
+        tile(
+          icon: Icons.tune_rounded,
+          title: l10n.homeMenuSettingsTitle,
+          action: HomeTopMenuAction.settings,
+        ),
+        tile(
+          icon: Icons.favorite_border_rounded,
+          title: l10n.homeMenuCoffeeTitle,
+          action: HomeTopMenuAction.support,
+        ),
+      ],
     );
 
     return HyperosSheetFrame(
       frosted: true,
       // HyperosSheetFrame supplies the shared modal material used by every
-      // dialog, picker, and action sheet. The moving action tiles use stable
-      // tint surfaces.
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Width is already after floating outer inset + frame padding.
-          final gapCount = columnsPerRow - 1;
-          final availableWidth = constraints.maxWidth;
-          final hasBoundedWidth = availableWidth.isFinite && availableWidth > 0;
-          final rawItemWidth = hasBoundedWidth
-              ? (availableWidth - tileSpacing * gapCount) / columnsPerRow
-              : maxTileWidth;
-          // Keep phone sizing: never grow past [maxTileWidth]. Extra sheet
-          // width on tablets is distributed as equal gaps between tiles.
-          final itemWidth = rawItemWidth.clamp(minTileWidth, maxTileWidth);
-          final shouldSpreadAcrossWidth =
-              hasBoundedWidth && rawItemWidth > maxTileWidth;
-          // Explicit gap so the row's intrinsic width equals the sheet width
-          // (spaceBetween alone fails when the Row shrink-wraps).
-          final itemGap = shouldSpreadAcrossWidth
-              ? (availableWidth - itemWidth * columnsPerRow) / gapCount
-              : tileSpacing;
-          final titleAreaHeight = _maxMenuTitleHeight(
-            titles: menuTitles,
-            style: titleStyle,
-            maxWidth: itemWidth - tileHorizontalPadding,
-            textDirection: Directionality.of(context),
-          );
-
-          Widget tile({
-            required IconData icon,
-            required String title,
-            required HomeTopMenuAction action,
-            Color? accentColor,
-            String? badgeText,
-          }) {
-            return SizedBox(
-              width: itemWidth,
-              child: _HomeMenuActionTile(
-                icon: icon,
-                title: title,
-                titleStyle: titleStyle,
-                titleAreaHeight: titleAreaHeight,
-                accentColor: accentColor,
-                badgeText: badgeText,
-                onTap: () => Navigator.of(context).pop(action),
-              ),
-            );
-          }
-
-          Widget menuRow(List<Widget> tiles) {
-            // Phone: fixed 10px gaps (existing look).
-            // Tablet: same tile width, larger equal gaps so the row fills width.
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var index = 0; index < tiles.length; index++) ...[
-                  if (index > 0) SizedBox(width: itemGap),
-                  tiles[index],
-                ],
-              ],
-            );
-          }
-
-          final menuColumn = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              menuRow([
-                tile(
-                  icon: Icons.system_update_alt_rounded,
-                  title: l10n.homeMenuUpdateTitle,
-                  action: HomeTopMenuAction.update,
-                  badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
-                  accentColor: hasAvailableUpdate ? colorScheme.primary : null,
-                ),
-                tile(
-                  icon: Icons.dashboard_customize_rounded,
-                  title: l10n.homeMenuOverviewTitle,
-                  action: HomeTopMenuAction.overview,
-                ),
-                tile(
-                  icon: Icons.bar_chart_rounded,
-                  title: l10n.homeMenuStatisticsTitle,
-                  action: HomeTopMenuAction.statistics,
-                ),
-              ]),
-              const SizedBox(height: tileSpacing),
-              menuRow([
-                tile(
-                  icon: Icons.add_circle_outline_rounded,
-                  title: l10n.homeMenuAddCourseTitle,
-                  action: HomeTopMenuAction.addCourse,
-                ),
-                tile(
-                  icon: Icons.school_outlined,
-                  title: l10n.examListTitle,
-                  action: HomeTopMenuAction.exams,
-                ),
-                tile(
-                  icon: Icons.file_upload_outlined,
-                  title: l10n.homeMenuImportTitle,
-                  action: HomeTopMenuAction.importCourses,
-                ),
-              ]),
-              const SizedBox(height: tileSpacing),
-              menuRow([
-                tile(
-                  icon: Icons.task_alt_outlined,
-                  title: l10n.homeMenuTasksTitle,
-                  action: HomeTopMenuAction.tasks,
-                ),
-                tile(
-                  icon: Icons.tune_rounded,
-                  title: l10n.homeMenuSettingsTitle,
-                  action: HomeTopMenuAction.settings,
-                ),
-                tile(
-                  icon: Icons.favorite_border_rounded,
-                  title: l10n.homeMenuCoffeeTitle,
-                  action: HomeTopMenuAction.support,
-                ),
-              ]),
-            ],
-          );
-
-          // The sheet owns the only live glass backdrop. The action tiles are
-          // deliberately ordinary rounded tint surfaces so fast scrolling
-          // moves stable pixels instead of shader/filter shapes.
-          return SingleChildScrollView(child: menuColumn);
-        },
-      ),
+      // dialog, picker, and action sheet. The menu rows are ordinary
+      // pressable rows so fast scrolling moves stable pixels instead of
+      // shader/filter shapes.
+      child: SingleChildScrollView(child: menuColumn),
     );
   }
 }
 
-class _HomeMenuActionTile extends StatelessWidget {
-  const _HomeMenuActionTile({
+/// Miuix menu row: 56dp tall, 20dp leading icon, body1 label, optional
+/// trailing dot badge. All metrics come from the Miuix spec constants used
+/// by the anchored list popups (see [HyperosMiuixBasicComponent] /
+/// [HyperosMiuixDropdown]).
+class _HomeMenuListTile extends StatelessWidget {
+  const _HomeMenuListTile({
     required this.icon,
     required this.title,
-    required this.titleStyle,
-    required this.titleAreaHeight,
     required this.onTap,
     this.accentColor,
-    this.badgeText,
+    this.showDot = false,
   });
 
   final IconData icon;
   final String title;
-  final TextStyle titleStyle;
-  final double titleAreaHeight;
   final VoidCallback onTap;
   final Color? accentColor;
-  final String? badgeText;
+  final bool showDot;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final highlightColor = accentColor ?? colorScheme.primary;
-    const iconWellRadius = BorderRadius.all(Radius.circular(14));
-    final useLiquidGlassTint =
-        FrostedAppearanceScope.of(context).glassMode ==
-            FrostedGlassMode.liquidGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-    final tileTint = useLiquidGlassTint
-        ? HyperosBlurredHeader.nestedLiquidTileTintColor(context)
-        : HyperosBlurredHeader.nestedSurfaceTintColor(context, withBlur: false);
+    final highlightColor = accentColor ?? Theme.of(context).colorScheme.primary;
+    final titleColor = HyperosColors.onSurface(context);
 
-    final tile = Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        borderRadius: HyperosTheme.cardBorderRadius,
-        onTap: onTap,
+    return HyperosPressableRow(
+      onTap: onTap,
+      backgroundColor: Colors.transparent,
+      highlightColor: HyperosColors.rowHighlight(context),
+      child: SizedBox(
+        height: HyperosMiuixBasicComponent.minHeight,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsetsDirectional.only(
+            start: HyperosMiuixDropdown.insideHorizontalPadding,
+            end: HyperosMiuixDropdown.insideHorizontalPadding,
+          ),
+          child: Row(
             children: [
-              HyperosBadge(
-                label: badgeText,
-                show: (badgeText ?? '').isNotEmpty,
-                child: HyperosFrostedSurface(
-                  borderRadius: iconWellRadius,
-                  blurEnabled: false,
-                  tint: HyperosBlurredHeader.accentSurfaceTintColor(
-                    highlightColor,
-                  ),
-                  child: SizedBox(
-                    width: 46,
-                    height: 46,
-                    child: Center(
-                      child: Icon(icon, color: highlightColor, size: 24),
-                    ),
+              Icon(
+                icon,
+                size: HyperosMiuixDropdown.checkIconSize,
+                color: highlightColor,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: HyperosMiuixTypography.body1,
+                    color: titleColor,
                   ),
                 ),
               ),
-              const SizedBox(height: 7),
-              SizedBox(
-                height: titleAreaHeight,
-                width: double.infinity,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    title,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: titleStyle,
-                  ),
-                ),
-              ),
+              if (showDot) ...[
+                const SizedBox(width: 12),
+                // MiuixBadge without content renders the 6x6 error dot;
+                // HyperosBadge only supports the overlay form, so use the
+                // official badge directly for the inline trailing dot.
+                const MiuixBadge(),
+              ],
             ],
           ),
         ),
       ),
-    );
-
-    // Keep the sheet as the only live backdrop blur. The nine tiles move
-    // inside a scroll view; a separate BackdropFilter or refraction shape per
-    // tile can leave stale rounded-corner textures during a fast direction
-    // change. The tint and rounded geometry preserve the existing hierarchy.
-    return ClipRRect(
-      borderRadius: HyperosTheme.cardBorderRadius,
-      child: ColoredBox(color: tileTint, child: tile),
     );
   }
 }

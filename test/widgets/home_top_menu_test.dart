@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
@@ -10,7 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'home action menu keeps nine rounded tint tiles without per-tile blur',
+    'home action menu keeps nine Miuix list rows without per-tile blur',
     (tester) async {
       await tester.pumpWidget(
         TestApp(
@@ -33,18 +34,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SingleChildScrollView), findsOneWidget);
-      expect(find.byType(HyperosFrostedSurface), findsNWidgets(9));
-      // The modal capture owns the only backdrop filter. No tile adds a
-      // second live filter while its rounded surface moves in the scroll view.
+      // Nine Miuix menu rows, one per action; the update row carries the
+      // trailing dot badge.
+      expect(find.byType(HyperosPressableRow), findsNWidgets(9));
+      expect(find.byType(MiuixBadge), findsOneWidget);
+      // The modal capture owns the only backdrop filter. No row adds a
+      // second live filter while the list moves in the scroll view.
       expect(find.byType(BackdropFilter), findsOneWidget);
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is ClipRRect &&
-              widget.borderRadius == HyperosTheme.cardBorderRadius,
-        ),
-        findsNWidgets(9),
-      );
 
       for (final title in const [
         '软件更新',
