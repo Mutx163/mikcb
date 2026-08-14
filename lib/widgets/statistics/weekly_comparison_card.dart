@@ -83,6 +83,7 @@ class WeeklyComparisonCard extends StatelessWidget {
                     value: comparison.semesterAverageSections.toStringAsFixed(1),
                     label: l10n.statisticsComparisonAverage,
                     accent: HyperosIconColors.teal,
+                    alignEnd: true,
                   ),
                 ),
               ],
@@ -108,23 +109,28 @@ class _ComparisonCell extends StatelessWidget {
   final String label;
   final Color accent;
   final bool highlight;
+  final bool alignEnd;
 
   const _ComparisonCell({
     required this.value,
     required this.label,
     required this.accent,
     this.highlight = false,
+    this.alignEnd = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           style: HyperosTypography.listTitle(context).copyWith(
             fontSize: 24,
             fontWeight: FontWeight.w800,
@@ -137,6 +143,7 @@ class _ComparisonCell extends StatelessWidget {
           label,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           style: HyperosTypography.listDetail(context).copyWith(
             fontSize: HyperosMiuixTypography.footnote2,
             color: highlight

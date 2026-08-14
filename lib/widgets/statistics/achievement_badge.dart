@@ -101,16 +101,14 @@ class _AchievementBadgeState extends State<AchievementBadge>
                     decoration: BoxDecoration(
                       color: unlocked
                           ? accent
-                          : HyperosColors.secondaryText(
-                              context,
-                            ).withValues(alpha: 0.12),
+                          : accent.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(
                         AchievementBadge._medalRadius,
                       ),
                       border: unlocked
                           ? null
                           : Border.all(
-                              color: HyperosColors.dividerLine(context),
+                              color: accent.withValues(alpha: 0.28),
                               width: 0.5,
                             ),
                     ),
@@ -120,9 +118,7 @@ class _AchievementBadgeState extends State<AchievementBadge>
                       size: 20,
                       color: unlocked
                           ? Colors.white
-                          : HyperosColors.secondaryText(
-                              context,
-                            ).withValues(alpha: 0.78),
+                          : accent.withValues(alpha: 0.55),
                     ),
                   ),
                   if (!unlocked)
@@ -225,14 +221,12 @@ Future<void> showAchievementDetailSheet({
                   decoration: BoxDecoration(
                     color: unlocked
                         ? accent
-                        : HyperosColors.secondaryText(
-                            context,
-                          ).withValues(alpha: 0.14),
+                        : accent.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(24),
                     border: unlocked
                         ? null
                         : Border.all(
-                            color: HyperosColors.dividerLine(context),
+                            color: accent.withValues(alpha: 0.28),
                             width: 0.5,
                           ),
                   ),
@@ -242,9 +236,7 @@ Future<void> showAchievementDetailSheet({
                     size: 40,
                     color: unlocked
                         ? Colors.white
-                        : HyperosColors.secondaryText(context).withValues(
-                            alpha: 0.7,
-                          ),
+                        : accent.withValues(alpha: 0.55),
                   ),
                 ),
               ),
