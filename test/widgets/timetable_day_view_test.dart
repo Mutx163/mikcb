@@ -410,7 +410,9 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpFiniteFrames(tester, count: 4);
     await tester.tap(find.text('添加课程'));
-    await _pumpFiniteFrames(tester, count: 4);
+    // The anchored menu plays its 150ms exit animation before popping; wait
+    // for it plus the add-content sheet slide-in before tapping its entries.
+    await _pumpFiniteFrames(tester, count: 8);
     tester.takeException();
     tester.takeException();
 
@@ -2534,7 +2536,9 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpFiniteFrames(tester, count: 4);
     await tester.tap(find.text('添加课程'));
-    await _pumpFiniteFrames(tester, count: 4);
+    // The anchored menu plays its 150ms exit animation before popping; wait
+    // for it plus the add-content sheet slide-in before tapping its entries.
+    await _pumpFiniteFrames(tester, count: 8);
 
     expect(find.text('添加内容'), findsOneWidget);
 

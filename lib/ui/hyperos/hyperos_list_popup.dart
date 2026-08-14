@@ -46,6 +46,13 @@ final _listPopupSpring = SpringDescription.withDampingRatio(
   ratio: 0.82,
 );
 
+/// Vertical gap before rows with [HyperosPopupMenuItem.gapBefore].
+const _listPopupGroupGap = 8.0;
+
+/// Exit animation length: rows fade + shrink back before the route pops.
+/// Matches MiuixListPopupDefaults.alphaExitAnimationSpec.
+const _listPopupExitDuration = Duration(milliseconds: 150);
+
 /// Shows a Miuix-styled anchored list popup with spring animation + glass.
 ///
 /// No-ops when [position] is null (anchor not mounted, see
@@ -97,6 +104,38 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     value: 0,
   );
 
+  /// Guards re-entrant dismissal (tap outside + back key racing the exit).
+  bool _dismissing = false;
+
+  /// Plays the exit animation (fade + shrink, [MiuixListPopupDefaults]
+  /// alphaExit spec) and only then pops the route with [result].
+  ///
+  /// Every dismissal path (scrim tap, row tap, system back) funnels through
+  /// here so the popup never flashes away.
+  Future<void> _dismiss([T? result]) async {
+    if (_dismissing) return;
+    _dismissing = true;
+    final navigator = Navigator.of(context);
+    _alpha.animateBack(
+      0,
+      duration: _listPopupExitDuration,
+      curve: Curves.fastOutSlowIn,
+    );
+    _fraction.animateWith(
+      SpringSimulation(
+        _listPopupSpring,
+        1,
+        0,
+        0,
+        tolerance: const Tolerance(distance: 0.0001, velocity: 0.0001),
+      ),
+    );
+    await Future<void>.delayed(_listPopupExitDuration);
+    if (mounted) {
+      navigator.pop(result);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -136,9 +175,16 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     final anchorBottom = screen.height - widget.position.bottom;
     final showBelow = anchorTop <= screen.height - anchorBottom;
 
-    // Estimate popup height for layout.
-    final estimatedHeight =
-        widget.items.length * HyperosMiuixBasicComponent.minHeight;
+    // Estimate popup height for layout: rows plus Miuix group gaps, so
+    // [maxHeight] never ends up a few pixels shorter than the real content
+    // (which would make the popup scrollable even though everything fits).
+    final estimatedHeight = widget.items.fold<double>(
+      0,
+      (height, item) =>
+          height +
+          HyperosMiuixBasicComponent.minHeight +
+          (item.gapBefore ? _listPopupGroupGap : 0),
+    );
     final safeTop = MediaQuery.paddingOf(context).top + margin;
     final safeBottom =
         screen.height - MediaQuery.paddingOf(context).bottom - margin;
@@ -153,97 +199,108 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     }
     top = top.clamp(safeTop, safeBottom);
     final available = (safeBottom - top).clamp(0.0, double.infinity);
-    final maxHeight = available < estimatedHeight ? available : estimatedHeight;
+    // When the estimated content fits, leave the popup unconstrained so the
+    // scroll view never offers a stray drag even if real content measures a
+    // few pixels taller than the estimate. Only cap height (and enable
+    // scrolling) when the content would actually overflow the screen.
+    final maxHeight = available < estimatedHeight ? available : double.infinity;
 
     final localOriginY = showBelow ? 0.0 : 1.0;
     // Left-aligned if anchor is on the left half, right-aligned otherwise.
     final isRightAligned = anchorRight > screen.width / 2;
     final originX = isRightAligned ? 1.0 : 0.0;
 
-    return BackdropGroup(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const Positioned.fill(child: UndimmedBackdropCapture()),
-          // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => Navigator.of(context).pop(),
-            child: AnimatedBuilder(
-              animation: _alpha,
-              builder: (context, _) {
-                final base = HyperosBlurredHeader.modalBarrierColor(context);
-                return ColoredBox(
-                  color: base.withValues(
-                    alpha: base.a * _alpha.value.clamp(0.0, 1.0),
-                  ),
-                );
-              },
-            ),
-          ),
-          Positioned(
-            top: top,
-            left: isRightAligned
-                ? null
-                : anchorLeft.clamp(margin, screen.width - margin),
-            right: isRightAligned
-                ? (screen.width - anchorRight).clamp(
-                    margin,
-                    screen.width - margin,
-                  )
-                : null,
-            child: AnimatedBuilder(
-              animation: _fraction,
-              builder: (context, _) {
-                final fraction = _fraction.value.clamp(0.0, 1.0);
-                final scale = 0.15 + 0.85 * fraction;
-                return Transform.scale(
-                  scale: scale,
-                  alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
-                  child: ClipPath(
-                    clipper: SelectPopupRevealClipper(
-                      progress: fraction,
-                      showBelow: showBelow,
-                      cornerRadius: cornerRadius,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _dismiss();
+        }
+      },
+      child: BackdropGroup(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Positioned.fill(child: UndimmedBackdropCapture()),
+            // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _dismiss(),
+              child: AnimatedBuilder(
+                animation: _alpha,
+                builder: (context, _) {
+                  final base = HyperosBlurredHeader.modalBarrierColor(context);
+                  return ColoredBox(
+                    color: base.withValues(
+                      alpha: base.a * _alpha.value.clamp(0.0, 1.0),
                     ),
-                    child: HyperosSelectPopupGlass(
-                      cornerRadius: cornerRadius,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: 200,
-                          maxWidth: (screen.width - margin * 2).clamp(
-                            200.0,
-                            364.0,
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              top: top,
+              left: isRightAligned
+                  ? null
+                  : anchorLeft.clamp(margin, screen.width - margin),
+              right: isRightAligned
+                  ? (screen.width - anchorRight).clamp(
+                      margin,
+                      screen.width - margin,
+                    )
+                  : null,
+              child: AnimatedBuilder(
+                animation: _fraction,
+                builder: (context, _) {
+                  final fraction = _fraction.value.clamp(0.0, 1.0);
+                  final scale = 0.15 + 0.85 * fraction;
+                  return Transform.scale(
+                    scale: scale,
+                    alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
+                    child: ClipPath(
+                      clipper: SelectPopupRevealClipper(
+                        progress: fraction,
+                        showBelow: showBelow,
+                        cornerRadius: cornerRadius,
+                      ),
+                      child: HyperosSelectPopupGlass(
+                        cornerRadius: cornerRadius,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minWidth: 200,
+                            maxWidth: (screen.width - margin * 2).clamp(
+                              200.0,
+                              364.0,
+                            ),
+                            maxHeight: maxHeight,
                           ),
-                          maxHeight: maxHeight,
-                        ),
-                        child: SingleChildScrollView(
-                          child: IntrinsicWidth(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                for (var i = 0; i < widget.items.length; i++)
-                                  _ListPopupTile(
-                                    item: widget.items[i],
-                                    onTap: widget.items[i].enabled
-                                        ? () => Navigator.of(
-                                            context,
-                                          ).pop(widget.items[i].value)
-                                        : null,
-                                  ),
-                              ],
+                          child: SingleChildScrollView(
+                            child: IntrinsicWidth(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (var i = 0; i < widget.items.length; i++)
+                                    _ListPopupTile(
+                                      item: widget.items[i],
+                                      onTap: widget.items[i].enabled
+                                          ? () =>
+                                                _dismiss(widget.items[i].value)
+                                          : null,
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -264,10 +321,19 @@ class _ListPopupTile extends StatelessWidget {
               ? HyperosColors.onSurface(context)
               : HyperosColors.disabledOnSurface(context));
 
+    // Popup surfaces are translucent glass (or a solid container fallback);
+    // the settings-row pressed gray (opaque E0E0E0) would read as a solid
+    // block through the glass, so use the same translucent wash family as
+    // nested tile tints.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final highlightColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.08);
+
     final row = HyperosPressableRow(
       onTap: onTap,
       backgroundColor: Colors.transparent,
-      highlightColor: HyperosColors.rowHighlight(context),
+      highlightColor: highlightColor,
       child: SizedBox(
         height: HyperosMiuixBasicComponent.minHeight,
         child: Padding(
