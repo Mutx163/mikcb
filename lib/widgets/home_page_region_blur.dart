@@ -16,18 +16,24 @@ export '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
 /// weekday glass. Keep this value so glass/cards are not flush.
 const homePageFrostedRegionSeamOverlap = 4.0;
 
-/// Extra glass painted around the chrome glass band, outside the visible
-/// ClipRect, so the liquid-glass shape boundary never crosses the visible
-/// band.
+/// Extra glass painted above the chrome glass band's top edge so the liquid
+/// glass specular fringe is clipped off-screen instead of showing a 1px
+/// hairline seam.
+const homePageChromeGlassTopEdgeOverdraw = 4.0;
+
+/// Extra glass painted beyond the band's left/right edges, outside the
+/// visible ClipRect, so the liquid-glass shape corners never cross the
+/// visible band.
 ///
 /// The package's shaders only refract / edge-light within `thickness` pixels
 /// of the shape boundary; at the band's corners that displacement clamps
 /// against the backdrop capture and the edge-lighting pass paints a diagonal
 /// fringe ("picture frame" / triangle lines) that gets worse as thickness
-/// grows (max slider 40) and blur shrinks. Painting the glass far enough off
-/// the visible band (>= max thickness + margin) puts every visible pixel in
-/// the flat interior of the shape, where displacement and edge lighting are
-/// zero — the band renders as clean uniform glass instead.
+/// grows (max slider 40) and blur shrinks. Painting the glass far enough
+/// beyond the left/right edges (>= max thickness + margin) moves every
+/// corner off-screen while the top/bottom edges stay visible, so thickness
+/// tuning still changes the band's edge refraction instead of flattening
+/// the whole band.
 const homePageChromeGlassEdgeOverdraw = 48.0;
 
 /// Whether any home chrome frosted band should paint over the wallpaper.
@@ -172,17 +178,18 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Paint the glass beyond the visible band on all four sides so
-              // the liquid-glass shape boundary (refraction lens + specular
-              // fringe) stays off-screen and the whole visible band renders as
-              // flat glass — no corner "triangle" lines / picture-frame
-              // streaks at high thickness, no 1px hairline seams (see
-              // homePageChromeGlassEdgeOverdraw).
+              // Push the glass beyond the visible band on the left and right
+              // so the shape's corners (the source of the diagonal
+              // "triangle" fringe / picture-frame streaks at high thickness)
+              // stay off-screen and are clipped. The top keeps its small
+              // hairline-seam overdraw; the bottom edge stays at the band
+              // boundary so thickness tuning keeps its visible edge
+              // refraction (see homePageChromeGlassEdgeOverdraw).
               Positioned(
-                top: -homePageChromeGlassEdgeOverdraw,
+                top: -homePageChromeGlassTopEdgeOverdraw,
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
-                bottom: -homePageChromeGlassEdgeOverdraw,
+                bottom: 0,
                 child: HomePageChromeGlassFill(
                   wallpaperTopLuminance: wallpaperTopLuminance,
                 ),

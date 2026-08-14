@@ -417,12 +417,21 @@ void main() {
     );
 
     test(
-      'edge overdraw hides liquid glass shape boundary off-screen',
+      'side overdraw pushes glass corners off-screen at any thickness',
       () {
-        // Must exceed the maximum user-tunable thickness (40) so every
-        // visible pixel renders in the shape's flat interior: no refraction
-        // clamping streaks or corner specular fringe at any thickness.
+        // Must exceed the maximum user-tunable thickness (40) so the shape
+        // corners (the source of diagonal "triangle" fringe / picture-frame
+        // streaks) stay outside the visible band at any thickness. The
+        // top/bottom edges intentionally stay at the band so thickness
+        // tuning keeps its visible edge refraction.
         expect(homePageChromeGlassEdgeOverdraw, greaterThanOrEqualTo(40.0));
+      },
+    );
+
+    test(
+      'top overdraw hides liquid specular hairline seam',
+      () {
+        expect(homePageChromeGlassTopEdgeOverdraw, greaterThanOrEqualTo(2.0));
       },
     );
   });
