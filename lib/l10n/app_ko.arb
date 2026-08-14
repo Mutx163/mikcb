@@ -78,7 +78,7 @@
   "cloudSyncPasswordStoredHint": "비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다",
   "cloudSyncAdvancedTitle": "고급 설정",
   "cloudSyncBaseUrlLabel": "WEBDAV 주소",
-  "cloudSyncBaseUrlSecurityNote": "출시 버전은 HTTPS 암호화 연결만 지원합니다. 데이터 보안을 위해 HTTP 평문 프로토콜은 비활성화되었습니다",
+  "cloudSyncBaseUrlSecurityNote": "HTTPS 암호화 연결을 권장합니다. HTTP 평문 연결은 신뢰할 수 있는 네트워크에서만 사용하세요",
   "cloudSyncRemoteFolderLabel": "원격 폴더",
   "cloudSyncStatusTitle": "동기화 상태",
   "cloudSyncLastSyncedLabel": "마지막 동기화",
@@ -5419,7 +5419,13 @@
   "scheduleReminderSectionTitle": "일정 알림",
   "scheduleReminderOff": "알림 없음",
   "scheduleReminderMinutes": "{minutes}분 전",
-  "@scheduleReminderMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@scheduleReminderMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "scheduleReminderPermissionMissing": "알림 권한이 꺼져 있습니다. 일정은 저장되지만 알림이 전달되지 않을 수 있습니다",
   "scheduleReminderPermissionAction": "알림 권한 확인",
   "scheduleEnabledTitle": "일정 사용",
@@ -5489,9 +5495,232 @@
   "icsExportShared": "캘린더 이벤트 {count}개를 내보내고 공유했습니다",
   "@icsExportShared": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "icsExportShareText": "轻屿课表에서 내보낸 캘린더 파일",
-  "icsExportShareSubject": "轻屿课表 캘린더"
+  "icsExportShareSubject": "轻屿课表 캘린더",
+  "appLogsRecordingPausedHint": "기록이 꺼져 있습니다. 아래는 과거 로그이며, 끈 후에는 새로 추가되지 않습니다",
+  "@coupleTimetableLastImportedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleTimetableSharedFreeMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@coupleTimetableSharedFreeMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@coupleTimetableWeekOffsetSigned": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleTimetableWeekOffsetPreview": {
+    "placeholders": {
+      "myWeek": {
+        "type": "int"
+      },
+      "partnerWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "@coupleWebdavConnectedAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleWebdavRemotePathHint": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleWebdavLastPulledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@courseNoteSessionHint": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "@courseActionCoupleRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@courseActionMixedRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableEntryTitle": "커플 시간표",
+  "coupleTimetableEntryBound": "연결됨",
+  "coupleTimetableModeEnableTooltip": "커플 시간표 켜기",
+  "coupleTimetableModeDisableTooltip": "커플 시간표 끄기",
+  "coupleTimetableTitle": "커플 시간표",
+  "coupleTimetableIntro": "내 시간표를 내보내서 상대방에게 보내거나, 상대방이 공유한 시간표 파일을 가져올 수 있습니다. 가져오면 겹쳐 보기에서 양쪽 수업을 확인할 수 있습니다",
+  "coupleTimetableBoundTitle": "상대방 시간표 연결됨",
+  "coupleTimetableUnboundTitle": "상대방 시간표가 연결되지 않음",
+  "coupleTimetablePartnerNameLabel": "상대방 이름",
+  "coupleTimetableLastImportedAt": "마지막 가져오기: {time}",
+  "coupleTimetableExportForPartner": "내 시간표를 상대방에게 내보내기",
+  "coupleTimetableImportPartner": "상대방 시간표 가져오기",
+  "coupleTimetableUnlink": "연결 해제",
+  "coupleTimetableOpenOverlay": "겹쳐 보기 열기",
+  "coupleTimetableImportSuccess": "상대방 시간표를 가져왔습니다",
+  "coupleTimetableImportUpdated": "상대방 시간표를 업데이트했습니다",
+  "coupleTimetableUnlinkConfirmTitle": "커플 시간표 연결을 해제할까요?",
+  "coupleTimetableUnlinkConfirmMessage": "해제하면 기기에 저장된 상대방 시간표가 삭제되고 겹쳐 보기도 닫힙니다",
+  "coupleTimetableUnlinkSuccess": "연결이 해제되었습니다",
+  "coupleTimetablePrivacyHint": "상대방은 내보낸 파일에 포함된 시간표 내용만 볼 수 있습니다",
+  "coupleTimetableOverlayTitle": "커플 겹쳐 보기",
+  "coupleTimetableLegendMine": "내 수업",
+  "coupleTimetableLegendPartner": "상대방 수업",
+  "coupleTimetableLegendTogether": "함께 듣는 수업",
+  "coupleTimetableLegendFree": "공통 공강",
+  "coupleTimetableSharedFreeTitle": "오늘 공통 공강 시간",
+  "coupleTimetableSharedFreeTitleOtherDay": "이날 공통 공강 시간",
+  "coupleTimetableNoSharedFree": "오늘 공통 공강 시간이 없습니다",
+  "coupleTimetableNoSharedFreeOtherDay": "이날 공통 공강 시간이 없습니다",
+  "coupleTimetableSharedFreeMeta": "총 {count}개 구간",
+  "coupleTimetableSharedFreeMoreCount": "{count}개 구간 더",
+  "coupleTimetableSharedFreeUnavailable": "지금은 공통 공강 시간을 계산할 수 없습니다",
+  "coupleTimetableSharedFreeStaleHint": "상대방 시간표가 최신이 아닐 수 있습니다",
+  "coupleTimetablePartnerReadOnlyBadge": "상대방 시간표(읽기 전용)",
+  "coupleTimetableNotBoundMessage": "먼저 상대방 시간표를 가져온 후 겹쳐 보기를 확인하세요",
+  "coupleTimetableShareText": "이것은 내 시간표입니다. 경어 시간표의 커플 시간표로 가져오면 함께 확인할 수 있습니다",
+  "coupleTimetableShareSubject": "경어 시간표 · 커플 시간표 공유",
+  "coupleTimetableWeekOffsetTitle": "주차 오프셋",
+  "coupleTimetableWeekOffsetSubtitle": "내 N주차를 볼 때 상대방 시간표의 N+오프셋 주차를 읽습니다. 예: +1은 상대방의 학기 진도가 한 주 빠르다는 뜻입니다",
+  "coupleTimetableWeekOffsetZero": "오프셋 없음",
+  "coupleTimetableWeekOffsetSigned": "{offset}주",
+  "coupleTimetableWeekOffsetPreview": "내 {myWeek}주차를 볼 때 상대방의 {partnerWeek}주차 수업을 표시합니다",
+  "coupleTimetableColorsTitle": "겹쳐 보기 색상",
+  "coupleTimetableColorsSubtitle": "'내 수업', '상대방 수업', '함께 듣는 수업'의 겹쳐 보기 색상을 자유롭게 설정할 수 있습니다",
+  "partnerImportRequiresSingleProfile": "단일 시간표 백업 파일을 가져오세요. 전체 백업은 지원하지 않습니다",
+  "coupleWebdavConnectedAs": "연결됨: {username}",
+  "coupleWebdavRemotePathHint": "원격 파일 경로: {path}",
+  "coupleWebdavLastPulledAt": "마지막 가져오기: {time}",
+  "coupleWebdavConnect": "너트스토어 연결",
+  "coupleWebdavDisconnect": "연결 끊기",
+  "coupleWebdavPullNow": "상대방 시간표 즉시 가져오기",
+  "coupleWebdavUploadForPartner": "내 시간표를 너트스토어에 업로드",
+  "coupleWebdavLoginSheetTitle": "너트스토어 연결(커플 시간표)",
+  "coupleWebdavLoginSheetSubtitle": "앱 전용 비밀번호를 사용하세요. 상대방이 미리 시간표를 약속된 경로에 업로드하거나, 상대방 기기에서 같은 계정으로 로그인해 업로드해야 합니다",
+  "coupleWebdavConfirmConnect": "연결하고 가져오기",
+  "coupleWebdavTestSuccess": "너트스토어 연결 성공",
+  "coupleWebdavTestFailed": "연결에 실패했습니다. 계정, 앱 전용 비밀번호, 네트워크를 확인하세요",
+  "coupleWebdavPullImported": "너트스토어에서 상대방 시간표를 가져왔습니다",
+  "coupleWebdavPullUpdated": "너트스토어에서 상대방 시간표를 업데이트했습니다",
+  "coupleWebdavPullUnchanged": "상대방 시간표에 변화가 없습니다",
+  "coupleWebdavUploadSuccess": "시간표를 업로드했습니다. 상대방이 가져올 수 있습니다",
+  "coupleWebdavPartnerFileMissing": "상대방 시간표 파일을 찾을 수 없습니다. 상대방이 먼저 업로드하도록 하세요",
+  "coupleWebdavPullFailed": "상대방 시간표를 가져오지 못했습니다. 잠시 후 다시 시도하세요",
+  "coupleWebdavNotConnectedError": "먼저 너트스토어에 연결하세요",
+  "appLogsSourceApp": "앱",
+  "appLogsSourceNative": "슈퍼 아일랜드",
+  "timeCorrectionTitle": "벨 시간 보정",
+  "liveMiuiLabelLogoCornerRadiusTitle": "왼쪽 아이콘 모서리 둥글기",
+  "liveMiuiLabelFontSizeTitle": "왼쪽 텍스트 크기",
+  "liveMiuiLabelOffsetXTitle": "왼쪽 텍스트 가로 오프셋",
+  "liveMiuiLabelOffsetYTitle": "왼쪽 텍스트 세로 오프셋",
+  "frostedSheetSectionSubtitle": "홈 팝업 패널의 가우시안 블러 강도와 성에 유리 밝기를 조절합니다. 슬라이더가 오른쪽일수록 흰 성에 유리 층이 뚜렷해집니다",
+  "frostedBlurEnabledSubtitle": "끄면 팝업, 홈 블러 영역, '이번 주로' 버튼이 반투명 배경만 남고 블러 샘플링을 하지 않습니다",
+  "frostedSheetTintLabel": "성에 유리 밝기",
+  "homePageBackgroundFillLabel": "배경 채우기",
+  "homePageBackgroundFillColor": "단색",
+  "homePageBackgroundFillImage": "이미지",
+  "homePageBackgroundImageTitle": "배경 이미지",
+  "homePageBackgroundImageSubtitle": "'이미지' 모드에서 아래에서 선택한 표시 영역에 적용됩니다",
+  "homePageWallpaperTitle": "배경 이미지",
+  "homePageWallpaperSubtitle": "전체 화면에 이미지 하나를 깔아 줍니다. 아래 영역을 선택해 비치는 범위를 정하며, 선택하지 않은 영역은 시간표 배경색이 유지됩니다",
+  "homePageBackdropFollowsWeekPagerTitle": "배경이 주차 스와이프를 따라감",
+  "homePageBackdropFollowsWeekPagerSubtitle": "좌우로 주차를 전환할 때 배경 이미지가 시간표 페이지와 함께 움직입니다",
+  "homePageBackgroundScopeTitle": "배경 표시 영역",
+  "homePageBackgroundScopeSubtitle": "위에서부터 각 영역의 배경 이미지 노출 여부를 제어합니다. 선택하지 않은 영역은 시간표 배경색이 유지됩니다",
+  "homePageBackgroundScopeStatusBar": "상태 표시줄",
+  "homePageBackgroundScopeTimetable": "시간표 영역",
+  "homePageBackgroundScopeWeekdayBar": "정보 바",
+  "homePageBackgroundScopeHeader": "상단 바",
+  "homePageHeaderBlurTitle": "상단 바 가우시안 블러",
+  "homePageHeaderBlurSubtitle": "제목 표시줄(경어 시간표) 영역을 흐리게 합니다. '상태 표시줄'을 선택하면 상태 표시줄도 함께 흐리게 합니다",
+  "homePageWeekdayBarBlurTitle": "정보 바 가우시안 블러",
+  "homePageWeekdayBarBlurSubtitle": "주차와 요일 정보 바를 흐리게 하고 아래 배경 이미지를 비춥니다",
+  "homePageTimeColumnBlurTitle": "시간 열 가우시안 블러",
+  "homePageTimeColumnBlurSubtitle": "왼쪽 교시·시간 열을 흐리게 하고 아래 배경 이미지를 비춥니다",
+  "homePageRegionBlurSectionSubtitle": "배경 이미지와 함께 사용해야 합니다. 블러 강도는 '팝업 성에 유리' 설정을 따릅니다",
+  "homePagePickImageAction": "이미지 선택",
+  "homePageSwitchImageAction": "사진 변경",
+  "homePageClearImageAction": "이미지 지우기",
+  "homePageImageNotSelected": "선택 안 됨",
+  "wallpaperPositionPickerTitle": "배경화면 표시 위치 조정",
+  "wallpaperPositionPickerResetTooltip": "중앙으로 초기화",
+  "wallpaperPositionPickerDragHint": "배경화면을 드래그해 위치 조정",
+  "wallpaperPositionPickerSwitchWallpaper": "배경화면 바꾸기",
+  "wallpaperPositionPickerDone": "완료",
+  "wallpaperPositionPickerExit": "나가기",
+  "appearanceTextColorsSectionTitle": "텍스트 색상",
+  "appearanceTextColorsSectionSubtitle": "수업 카드, 요일 바, 시간 축의 텍스트 색상을 설정합니다",
+  "pageTransitionSpeedTitle": "페이지 전환 속도",
+  "layoutBackToCurrentWeekButtonOpacityTitle": "플로팅 버튼 불투명도",
+  "layoutCourseCardGapTitle": "수업 카드 간격",
+  "layoutSectionHeightTitle": "시간표 행 높이",
+  "layoutCompactFontSizeTitle": "컴팩트 글꼴 크기",
+  "layoutCourseCardFontSizeTitle": "수업 카드 글꼴 크기",
+  "examEndTimeBeforeStart": "종료 시간은 시작 시간보다 빠를 수 없습니다",
+  "courseNoteSheetTitle": "수업 메모",
+  "courseNoteAction": "메모",
+  "courseNoteSaveAction": "저장",
+  "courseNoteTabWholeCourse": "수업 소개",
+  "courseNoteTabThisSession": "이번 수업",
+  "courseNoteWholeCourseLabel": "수업 소개",
+  "courseNoteWholeCourseHint": "같은 이름의 수업에서 공유되며 장기간 유지됩니다(예: 수업 설명, 주의사항 등).",
+  "courseNoteWholeCoursePlaceholder": "예: 이 선생님은 출석을 자주 부른다, 교실은 새 건물…",
+  "courseNoteSessionLabel": "이번 수업 메모",
+  "courseNoteSessionHint": "{week}주차의 이번 수업에만 적용됩니다. 숙제나 준비물 기록에 적합합니다.",
+  "courseNoteSessionPlaceholder": "예: 3장 연습문제 제출, 노트북 지참…",
+  "courseNoteHasHomeworkTitle": "숙제 있음",
+  "courseNoteHasHomeworkSubtitle": "켜면 주간 보기 수업 카드에 숙제 표시가 나타납니다",
+  "courseNoteHomeworkMarked": "이번 수업은 숙제 있음",
+  "courseNoteTileSubtitleEmpty": "숙제, 준비물, 수업 알림 기록",
+  "courseNoteTileSubtitleWhole": "수업 소개 있음",
+  "courseNoteTileSubtitleSession": "이번 수업 메모 있음",
+  "courseNoteTileSubtitleBoth": "수업 소개와 이번 수업 메모가 모두 있습니다",
+  "courseNoteReadOnlyNotice": "상대방 수업은 메모만 볼 수 있으며 편집할 수 없습니다.",
+  "courseNoteDoneEditingAction": "완료",
+  "courseActionCoupleRelatedCount": "커플 시간표 수업 {count}개 더",
+  "courseActionCoupleExpandHint": "펼쳐서 상대방 수업이나 함께 듣는 수업을 확인하세요. 탭하면 미리보기를 전환할 수 있습니다",
+  "courseActionCoupleCollapseHint": "탭하면 커플 시간표 수업 목록이 접힙니다",
+  "courseActionMixedRelatedCount": "관련 수업 {count}개 더",
+  "courseActionPartnerReadOnlyNotice": "상대방 시간표의 수업으로, 볼 수만 있고 편집이나 변경은 할 수 없습니다"
 }

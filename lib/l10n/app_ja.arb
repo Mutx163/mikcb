@@ -78,7 +78,7 @@
   "cloudSyncPasswordStoredHint": "パスワードを保存済み，空欄のままにすると保存済みのパスワードを使用します",
   "cloudSyncAdvancedTitle": "詳細設定",
   "cloudSyncBaseUrlLabel": "WEBDAV URL",
-  "cloudSyncBaseUrlSecurityNote": "リリース版はHTTPS暗号化接続のみ対応しています，データ保護のため、HTTP平文プロトコルは無効化されています",
+  "cloudSyncBaseUrlSecurityNote": "HTTPS 暗号化接続を推奨します。HTTP 平文接続は信頼できるネットワークでのみ使用してください",
   "cloudSyncRemoteFolderLabel": "リモートフォルダ",
   "cloudSyncStatusTitle": "同期状態",
   "cloudSyncLastSyncedLabel": "最終同期",
@@ -5419,7 +5419,13 @@
   "scheduleReminderSectionTitle": "予定のリマインダー",
   "scheduleReminderOff": "通知しない",
   "scheduleReminderMinutes": "{minutes} 分前",
-  "@scheduleReminderMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@scheduleReminderMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "scheduleReminderPermissionMissing": "通知が無効です。予定は保存されますが、通知が届かない場合があります",
   "scheduleReminderPermissionAction": "通知権限を確認",
   "scheduleEnabledTitle": "予定を有効にする",
@@ -5489,9 +5495,232 @@
   "icsExportShared": "{count}件のカレンダーイベントをエクスポートして共有しました",
   "@icsExportShared": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "icsExportShareText": "軽屿課表からのカレンダーファイル",
-  "icsExportShareSubject": "軽屿課表カレンダー"
+  "icsExportShareSubject": "軽屿課表カレンダー",
+  "appLogsRecordingPausedHint": "記録はオフです。以下は過去のログで、オフの間は新しく追加されません",
+  "@coupleTimetableLastImportedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleTimetableSharedFreeMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@coupleTimetableSharedFreeMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@coupleTimetableWeekOffsetSigned": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleTimetableWeekOffsetPreview": {
+    "placeholders": {
+      "myWeek": {
+        "type": "int"
+      },
+      "partnerWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "@coupleWebdavConnectedAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleWebdavRemotePathHint": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@coupleWebdavLastPulledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@courseNoteSessionHint": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "@courseActionCoupleRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@courseActionMixedRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableEntryTitle": "ペア時間割",
+  "coupleTimetableEntryBound": "連携済み",
+  "coupleTimetableModeEnableTooltip": "ペア時間割を有効にする",
+  "coupleTimetableModeDisableTooltip": "ペア時間割を無効にする",
+  "coupleTimetableTitle": "ペア時間割",
+  "coupleTimetableIntro": "自分の時間割を書き出して相手に送るか、相手が共有した時間割ファイルをインポートできます。インポート後は重ね合わせ表示で両方の授業を確認できます",
+  "coupleTimetableBoundTitle": "相手の時間割と連携済み",
+  "coupleTimetableUnboundTitle": "相手の時間割は未連携",
+  "coupleTimetablePartnerNameLabel": "相手の名前",
+  "coupleTimetableLastImportedAt": "前回インポート：{time}",
+  "coupleTimetableExportForPartner": "自分の時間割を相手に書き出す",
+  "coupleTimetableImportPartner": "相手の時間割をインポート",
+  "coupleTimetableUnlink": "連携を解除",
+  "coupleTimetableOpenOverlay": "重ね合わせ表示を開く",
+  "coupleTimetableImportSuccess": "相手の時間割をインポートしました",
+  "coupleTimetableImportUpdated": "相手の時間割を更新しました",
+  "coupleTimetableUnlinkConfirmTitle": "ペア時間割の連携を解除しますか？",
+  "coupleTimetableUnlinkConfirmMessage": "解除すると、端末に保存された相手の時間割が削除され、重ね合わせ表示も閉じます",
+  "coupleTimetableUnlinkSuccess": "連携を解除しました",
+  "coupleTimetablePrivacyHint": "相手は、あなたが書き出したファイルに含まれる時間割の内容だけを見られます",
+  "coupleTimetableOverlayTitle": "ペア重ね合わせ",
+  "coupleTimetableLegendMine": "自分の授業",
+  "coupleTimetableLegendPartner": "相手の授業",
+  "coupleTimetableLegendTogether": "一緒の授業",
+  "coupleTimetableLegendFree": "両方とも空き",
+  "coupleTimetableSharedFreeTitle": "今日の共同空き時間",
+  "coupleTimetableSharedFreeTitleOtherDay": "この日の共同空き時間",
+  "coupleTimetableNoSharedFree": "今日は共同の空き時間がありません",
+  "coupleTimetableNoSharedFreeOtherDay": "この日は共同の空き時間がありません",
+  "coupleTimetableSharedFreeMeta": "全{count}コマ",
+  "coupleTimetableSharedFreeMoreCount": "あと{count}コマ",
+  "coupleTimetableSharedFreeUnavailable": "現在、共同の空き時間を計算できません",
+  "coupleTimetableSharedFreeStaleHint": "相手の時間割は最新でない可能性があります",
+  "coupleTimetablePartnerReadOnlyBadge": "相手の時間割（読み取り専用）",
+  "coupleTimetableNotBoundMessage": "先に相手の時間割をインポートしてから、重ね合わせ表示をご覧ください",
+  "coupleTimetableShareText": "これは私の時間割です。軽屿時間割のペア時間割にインポートすると、一緒に確認できます",
+  "coupleTimetableShareSubject": "軽屿時間割・ペア時間割の共有",
+  "coupleTimetableWeekOffsetTitle": "週オフセット",
+  "coupleTimetableWeekOffsetSubtitle": "あなたの第N週を表示するとき、相手の時間割の第N+オフセット週を読みます。例：+1 は相手の学期進度があなたより1週間進んでいることを示します",
+  "coupleTimetableWeekOffsetZero": "オフセットなし",
+  "coupleTimetableWeekOffsetSigned": "{offset}週",
+  "coupleTimetableWeekOffsetPreview": "あなたの第{myWeek}周を表示するとき、相手の第{partnerWeek}周の授業を表示します",
+  "coupleTimetableColorsTitle": "重ね合わせの色",
+  "coupleTimetableColorsSubtitle": "「自分の授業」「相手の授業」「一緒の授業」の重ね合わせ表示での色を自由にカスタマイズできます",
+  "partnerImportRequiresSingleProfile": "単一の時間割バックアップファイルをインポートしてください。全量バックアップには対応していません",
+  "coupleWebdavConnectedAs": "接続済み：{username}",
+  "coupleWebdavRemotePathHint": "リモートファイルパス：{path}",
+  "coupleWebdavLastPulledAt": "前回取得：{time}",
+  "coupleWebdavConnect": "ナットストアに接続",
+  "coupleWebdavDisconnect": "接続を切断",
+  "coupleWebdavPullNow": "相手の時間割を今すぐ取得",
+  "coupleWebdavUploadForPartner": "自分の時間割をナットストアにアップロード",
+  "coupleWebdavLoginSheetTitle": "ナットストアに接続（ペア時間割）",
+  "coupleWebdavLoginSheetSubtitle": "アプリ専用パスワードを使用してください。相手が事前に時間割を共有パスにアップロードするか、相手の端末で同じアカウントにログインしてアップロードする必要があります",
+  "coupleWebdavConfirmConnect": "接続して取得",
+  "coupleWebdavTestSuccess": "ナットストアへの接続に成功しました",
+  "coupleWebdavTestFailed": "接続に失敗しました。アカウント、アプリ専用パスワード、ネットワークを確認してください",
+  "coupleWebdavPullImported": "ナットストアから相手の時間割をインポートしました",
+  "coupleWebdavPullUpdated": "ナットストアから相手の時間割を更新しました",
+  "coupleWebdavPullUnchanged": "相手の時間割に変更はありません",
+  "coupleWebdavUploadSuccess": "時間割をアップロードしました。相手は取得できます",
+  "coupleWebdavPartnerFileMissing": "相手の時間割ファイルが見つかりません。先に相手にアップロードしてもらってください",
+  "coupleWebdavPullFailed": "相手の時間割の取得に失敗しました。後でもう一度お試しください",
+  "coupleWebdavNotConnectedError": "先にナットストアに接続してください",
+  "appLogsSourceApp": "アプリ",
+  "appLogsSourceNative": "スーパーアイランド",
+  "timeCorrectionTitle": "ベル時間補正",
+  "liveMiuiLabelLogoCornerRadiusTitle": "左アイコンの角丸",
+  "liveMiuiLabelFontSizeTitle": "左テキストのサイズ",
+  "liveMiuiLabelOffsetXTitle": "左テキストの水平オフセット",
+  "liveMiuiLabelOffsetYTitle": "左テキストの垂直オフセット",
+  "frostedSheetSectionSubtitle": "ホームのポップアップパネルのガウスぼかし強度とすりガラスの明るさを調整します。スライダーが右ほど白いすりガラス層が目立ちます",
+  "frostedBlurEnabledSubtitle": "オフにすると、ポップアップ、ホームのぼかし領域、「今週に戻る」ボタンは半透明の背景のみとなり、ぼかしサンプリングをしなくなります",
+  "frostedSheetTintLabel": "すりガラスの明るさ",
+  "homePageBackgroundFillLabel": "背景の塗りつぶし",
+  "homePageBackgroundFillColor": "単色",
+  "homePageBackgroundFillImage": "画像",
+  "homePageBackgroundImageTitle": "背景画像",
+  "homePageBackgroundImageSubtitle": "「画像」モードでは、下で選択した表示領域に適用されます",
+  "homePageWallpaperTitle": "背景画像",
+  "homePageWallpaperSubtitle": "全画面に1枚の画像を敷きます。下の領域のチェックで透ける範囲を決め、チェックしていない領域は時間割の背景色のままです",
+  "homePageBackdropFollowsWeekPagerTitle": "背景を週送りに追従",
+  "homePageBackdropFollowsWeekPagerSubtitle": "左右で週を切り替えるとき、背景画像が時間割ページと一緒に移動します",
+  "homePageBackgroundScopeTitle": "背景の表示領域",
+  "homePageBackgroundScopeSubtitle": "上から順に各領域で背景画像を透けるかどうかを制御します。チェックしていない領域は時間割の背景色のままです",
+  "homePageBackgroundScopeStatusBar": "ステータスバー",
+  "homePageBackgroundScopeTimetable": "時間割エリア",
+  "homePageBackgroundScopeWeekdayBar": "情報バー",
+  "homePageBackgroundScopeHeader": "トップバー",
+  "homePageHeaderBlurTitle": "トップバーのガウスぼかし",
+  "homePageHeaderBlurSubtitle": "タイトルバー（軽屿時間割）領域をぼかします。「ステータスバー」にチェックするとステータスバーも一緒にぼかします",
+  "homePageWeekdayBarBlurTitle": "情報バーのガウスぼかし",
+  "homePageWeekdayBarBlurSubtitle": "週次と曜日の情報バーをぼかし、下の背景画像を透かします",
+  "homePageTimeColumnBlurTitle": "時間列のガウスぼかし",
+  "homePageTimeColumnBlurSubtitle": "左の節次・時間列をぼかし、下の背景画像を透かします",
+  "homePageRegionBlurSectionSubtitle": "背景画像と組み合わせて使用します。ぼかし強度は「ポップアップのすりガラス」設定に連動します",
+  "homePagePickImageAction": "画像を選択",
+  "homePageSwitchImageAction": "写真を切り替え",
+  "homePageClearImageAction": "画像をクリア",
+  "homePageImageNotSelected": "未選択",
+  "wallpaperPositionPickerTitle": "壁紙の表示位置を調整",
+  "wallpaperPositionPickerResetTooltip": "中央にリセット",
+  "wallpaperPositionPickerDragHint": "壁紙をドラッグして位置を調整",
+  "wallpaperPositionPickerSwitchWallpaper": "壁紙を変更",
+  "wallpaperPositionPickerDone": "完了",
+  "wallpaperPositionPickerExit": "終了",
+  "appearanceTextColorsSectionTitle": "テキストの色",
+  "appearanceTextColorsSectionSubtitle": "授業カード、曜日バー、時間軸のテキストの色をカスタマイズします",
+  "pageTransitionSpeedTitle": "ページ遷移の速度",
+  "layoutBackToCurrentWeekButtonOpacityTitle": "フローティングボタンの不透明度",
+  "layoutCourseCardGapTitle": "授業カードの間隔",
+  "layoutSectionHeightTitle": "時間割の行の高さ",
+  "layoutCompactFontSizeTitle": "コンパクト時の文字サイズ",
+  "layoutCourseCardFontSizeTitle": "授業カードの文字サイズ",
+  "examEndTimeBeforeStart": "終了時間は開始時間より前に設定できません",
+  "courseNoteSheetTitle": "授業メモ",
+  "courseNoteAction": "メモ",
+  "courseNoteSaveAction": "保存",
+  "courseNoteTabWholeCourse": "授業の概要",
+  "courseNoteTabThisSession": "今回の授業",
+  "courseNoteWholeCourseLabel": "授業の概要",
+  "courseNoteWholeCourseHint": "同名の授業で共有され、長期間有効です（例：授業の説明、注意点など）。",
+  "courseNoteWholeCoursePlaceholder": "例：この先生はよく出席確認をする、教室は新校舎…",
+  "courseNoteSessionLabel": "今回の授業のメモ",
+  "courseNoteSessionHint": "第{week}週のこの授業だけに有効です。宿題や持ち物の記録に適しています。",
+  "courseNoteSessionPlaceholder": "例：第3章の演習を提出、パソコン持参…",
+  "courseNoteHasHomeworkTitle": "宿題あり",
+  "courseNoteHasHomeworkSubtitle": "オンにすると、週表示の授業カードに宿題マークが表示されます",
+  "courseNoteHomeworkMarked": "この授業は宿題あり",
+  "courseNoteTileSubtitleEmpty": "宿題、持ち物、授業の注意点を記録",
+  "courseNoteTileSubtitleWhole": "授業の概要あり",
+  "courseNoteTileSubtitleSession": "今回の授業のメモあり",
+  "courseNoteTileSubtitleBoth": "授業の概要と今回の授業のメモがあります",
+  "courseNoteReadOnlyNotice": "相手の授業はメモの閲覧のみで、編集はできません。",
+  "courseNoteDoneEditingAction": "完了",
+  "courseActionCoupleRelatedCount": "あと{count}コマのペア時間割授業",
+  "courseActionCoupleExpandHint": "展開して相手の授業や一緒の授業を表示します。タップでプレビューを切り替えできます",
+  "courseActionCoupleCollapseHint": "タップでペア時間割の授業リストを閉じます",
+  "courseActionMixedRelatedCount": "あと{count}コマの関連授業",
+  "courseActionPartnerReadOnlyNotice": "これは相手の時間割の授業で、閲覧のみで編集・振替はできません"
 }

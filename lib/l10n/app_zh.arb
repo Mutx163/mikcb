@@ -208,7 +208,7 @@
   "cloudSyncPasswordStoredHint": "已保存密码；留空表示继续使用已保存的密码",
   "cloudSyncAdvancedTitle": "高级设置",
   "cloudSyncBaseUrlLabel": "WEBDAV 地址",
-  "cloudSyncBaseUrlSecurityNote": "正式版仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用以保护数据安全",
+  "cloudSyncBaseUrlSecurityNote": "建议使用 HTTPS 加密连接；HTTP 明文连接仅建议在可信网络环境下使用",
   "@cloudSyncBaseUrlSecurityNote": {
     "description": "安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用"
   },
@@ -5645,7 +5645,9 @@
   "scheduleReminderMinutes": "提前 {minutes} 分钟",
   "@scheduleReminderMinutes": {
     "placeholders": {
-      "minutes": {"type": "int"}
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "scheduleReminderPermissionMissing": "通知权限未开启，日程仍会保存，但提醒可能无法送达",
@@ -5717,7 +5719,9 @@
   "icsExportShared": "已导出并分享 {count} 个日历事件",
   "@icsExportShared": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "icsExportShareText": "这是来自轻屿课表的日历文件",

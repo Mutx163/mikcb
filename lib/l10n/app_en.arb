@@ -208,7 +208,7 @@
   "cloudSyncPasswordStoredHint": "Password saved; leave blank to keep the stored password",
   "cloudSyncAdvancedTitle": "Advanced",
   "cloudSyncBaseUrlLabel": "WEBDAV URL",
-  "cloudSyncBaseUrlSecurityNote": "Release builds only support HTTPS encrypted connections. HTTP cleartext protocol has been disabled for data security",
+  "cloudSyncBaseUrlSecurityNote": "HTTPS is recommended. HTTP cleartext connections are allowed but only advised on trusted networks",
   "@cloudSyncBaseUrlSecurityNote": {
     "description": "Security note: explains that release builds only support HTTPS encrypted connections, HTTP cleartext protocol has been disabled"
   },
@@ -5645,7 +5645,9 @@
   "scheduleReminderMinutes": "{minutes} minutes before",
   "@scheduleReminderMinutes": {
     "placeholders": {
-      "minutes": {"type": "int"}
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "scheduleReminderPermissionMissing": "Notifications are off. The schedule will save, but its reminder may not be delivered",
@@ -5717,7 +5719,9 @@
   "icsExportShared": "Exported and shared {count} calendar events",
   "@icsExportShared": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "icsExportShareText": "Calendar file from Qingyu Timetable",

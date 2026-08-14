@@ -153,152 +153,155 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dataTransferEntrySubtitle => '시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다';
 
   @override
-  String get coupleTimetableEntryTitle => '情侣课表';
+  String get coupleTimetableEntryTitle => '커플 시간표';
 
   @override
-  String get coupleTimetableEntryBound => '已绑定';
+  String get coupleTimetableEntryBound => '연결됨';
 
   @override
-  String get coupleTimetableModeEnableTooltip => '开启情侣课表';
+  String get coupleTimetableModeEnableTooltip => '커플 시간표 켜기';
 
   @override
-  String get coupleTimetableModeDisableTooltip => '关闭情侣课表';
+  String get coupleTimetableModeDisableTooltip => '커플 시간표 끄기';
 
   @override
-  String get coupleTimetableTitle => '情侣课表';
+  String get coupleTimetableTitle => '커플 시간표';
 
   @override
   String get coupleTimetableIntro =>
-      '导出你的课表发给 TA，或导入 TA 分享的课表文件，导入后可在叠加视图中查看双方课程';
+      '내 시간표를 내보내서 상대방에게 보내거나, 상대방이 공유한 시간표 파일을 가져올 수 있습니다. 가져오면 겹쳐 보기에서 양쪽 수업을 확인할 수 있습니다';
 
   @override
-  String get coupleTimetableBoundTitle => '已绑定对方课表';
+  String get coupleTimetableBoundTitle => '상대방 시간표 연결됨';
 
   @override
-  String get coupleTimetableUnboundTitle => '尚未绑定对方课表';
+  String get coupleTimetableUnboundTitle => '상대방 시간표가 연결되지 않음';
 
   @override
-  String get coupleTimetablePartnerNameLabel => '对方名称';
+  String get coupleTimetablePartnerNameLabel => '상대방 이름';
 
   @override
   String coupleTimetableLastImportedAt(String time) {
-    return '上次导入：$time';
+    return '마지막 가져오기: $time';
   }
 
   @override
-  String get coupleTimetableExportForPartner => '导出我的课表给对方';
+  String get coupleTimetableExportForPartner => '내 시간표를 상대방에게 내보내기';
 
   @override
-  String get coupleTimetableImportPartner => '导入对方课表';
+  String get coupleTimetableImportPartner => '상대방 시간표 가져오기';
 
   @override
-  String get coupleTimetableUnlink => '解除绑定';
+  String get coupleTimetableUnlink => '연결 해제';
 
   @override
-  String get coupleTimetableOpenOverlay => '进入叠加视图';
+  String get coupleTimetableOpenOverlay => '겹쳐 보기 열기';
 
   @override
-  String get coupleTimetableImportSuccess => '已导入对方课表';
+  String get coupleTimetableImportSuccess => '상대방 시간표를 가져왔습니다';
 
   @override
-  String get coupleTimetableImportUpdated => '已更新对方课表';
+  String get coupleTimetableImportUpdated => '상대방 시간표를 업데이트했습니다';
 
   @override
-  String get coupleTimetableUnlinkConfirmTitle => '解除情侣课表绑定？';
+  String get coupleTimetableUnlinkConfirmTitle => '커플 시간표 연결을 해제할까요?';
 
   @override
-  String get coupleTimetableUnlinkConfirmMessage => '解除后将删除本地保存的对方课表，叠加视图也会关闭';
+  String get coupleTimetableUnlinkConfirmMessage =>
+      '해제하면 기기에 저장된 상대방 시간표가 삭제되고 겹쳐 보기도 닫힙니다';
 
   @override
-  String get coupleTimetableUnlinkSuccess => '已解除绑定';
+  String get coupleTimetableUnlinkSuccess => '연결이 해제되었습니다';
 
   @override
-  String get coupleTimetablePrivacyHint => '对方只能看到你导出文件中包含的课表内容';
+  String get coupleTimetablePrivacyHint => '상대방은 내보낸 파일에 포함된 시간표 내용만 볼 수 있습니다';
 
   @override
-  String get coupleTimetableOverlayTitle => '情侣叠加';
+  String get coupleTimetableOverlayTitle => '커플 겹쳐 보기';
 
   @override
-  String get coupleTimetableLegendMine => '我的课';
+  String get coupleTimetableLegendMine => '내 수업';
 
   @override
-  String get coupleTimetableLegendPartner => 'TA的课';
+  String get coupleTimetableLegendPartner => '상대방 수업';
 
   @override
-  String get coupleTimetableLegendTogether => '一起上课';
+  String get coupleTimetableLegendTogether => '함께 듣는 수업';
 
   @override
-  String get coupleTimetableLegendFree => '共同空闲';
+  String get coupleTimetableLegendFree => '공통 공강';
 
   @override
-  String get coupleTimetableSharedFreeTitle => '今日共同空闲';
+  String get coupleTimetableSharedFreeTitle => '오늘 공통 공강 시간';
 
   @override
-  String get coupleTimetableSharedFreeTitleOtherDay => '该日共同空闲';
+  String get coupleTimetableSharedFreeTitleOtherDay => '이날 공통 공강 시간';
 
   @override
-  String get coupleTimetableNoSharedFree => '今天没有共同空闲时段';
+  String get coupleTimetableNoSharedFree => '오늘 공통 공강 시간이 없습니다';
 
   @override
-  String get coupleTimetableNoSharedFreeOtherDay => '该日没有共同空闲时段';
+  String get coupleTimetableNoSharedFreeOtherDay => '이날 공통 공강 시간이 없습니다';
 
   @override
   String coupleTimetableSharedFreeMeta(int count) {
-    return '共 $count 段';
+    return '총 $count개 구간';
   }
 
   @override
   String coupleTimetableSharedFreeMoreCount(int count) {
-    return '还有 $count 段';
+    return '$count개 구간 더';
   }
 
   @override
-  String get coupleTimetableSharedFreeUnavailable => '暂时算不出共同空闲';
+  String get coupleTimetableSharedFreeUnavailable => '지금은 공통 공강 시간을 계산할 수 없습니다';
 
   @override
-  String get coupleTimetableSharedFreeStaleHint => '对方课表可能不是最新';
+  String get coupleTimetableSharedFreeStaleHint => '상대방 시간표가 최신이 아닐 수 있습니다';
 
   @override
-  String get coupleTimetablePartnerReadOnlyBadge => '对方课表（只读）';
+  String get coupleTimetablePartnerReadOnlyBadge => '상대방 시간표(읽기 전용)';
 
   @override
-  String get coupleTimetableNotBoundMessage => '请先导入对方课表后再查看叠加视图';
+  String get coupleTimetableNotBoundMessage => '먼저 상대방 시간표를 가져온 후 겹쳐 보기를 확인하세요';
 
   @override
-  String get coupleTimetableShareText => '这是我的课表，导入到轻屿课表的情侣课表即可一起查看';
+  String get coupleTimetableShareText =>
+      '이것은 내 시간표입니다. 경어 시간표의 커플 시간표로 가져오면 함께 확인할 수 있습니다';
 
   @override
-  String get coupleTimetableShareSubject => '轻屿课表 · 情侣课表分享';
+  String get coupleTimetableShareSubject => '경어 시간표 · 커플 시간표 공유';
 
   @override
-  String get coupleTimetableWeekOffsetTitle => '周次偏移';
+  String get coupleTimetableWeekOffsetTitle => '주차 오프셋';
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      '查看你的第 N 周时，读取对方课表的第 N+偏移 周，例如 +1 表示对方学期进度比你快一周';
+      '내 N주차를 볼 때 상대방 시간표의 N+오프셋 주차를 읽습니다. 예: +1은 상대방의 학기 진도가 한 주 빠르다는 뜻입니다';
 
   @override
-  String get coupleTimetableWeekOffsetZero => '无偏移';
+  String get coupleTimetableWeekOffsetZero => '오프셋 없음';
 
   @override
   String coupleTimetableWeekOffsetSigned(String offset) {
-    return '$offset 周';
+    return '$offset주';
   }
 
   @override
   String coupleTimetableWeekOffsetPreview(int myWeek, int partnerWeek) {
-    return '查看你的第 $myWeek 周时，显示对方第 $partnerWeek 周的课';
+    return '내 $myWeek주차를 볼 때 상대방의 $partnerWeek주차 수업을 표시합니다';
   }
 
   @override
-  String get coupleTimetableColorsTitle => '叠加颜色';
+  String get coupleTimetableColorsTitle => '겹쳐 보기 색상';
 
   @override
   String get coupleTimetableColorsSubtitle =>
-      '自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配';
+      '\'내 수업\', \'상대방 수업\', \'함께 듣는 수업\'의 겹쳐 보기 색상을 자유롭게 설정할 수 있습니다';
 
   @override
-  String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
+  String get partnerImportRequiresSingleProfile =>
+      '단일 시간표 백업 파일을 가져오세요. 전체 백업은 지원하지 않습니다';
 
   @override
   String get coupleWebdavTitle => '견과클라우드 가져오기';
@@ -312,40 +315,40 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String coupleWebdavConnectedAs(String username) {
-    return '已连接：$username';
+    return '연결됨: $username';
   }
 
   @override
   String coupleWebdavRemotePathHint(String path) {
-    return '远程文件路径：$path';
+    return '원격 파일 경로: $path';
   }
 
   @override
   String coupleWebdavLastPulledAt(String time) {
-    return '上次拉取：$time';
+    return '마지막 가져오기: $time';
   }
 
   @override
-  String get coupleWebdavConnect => '连接坚果云';
+  String get coupleWebdavConnect => '너트스토어 연결';
 
   @override
-  String get coupleWebdavDisconnect => '断开连接';
+  String get coupleWebdavDisconnect => '연결 끊기';
 
   @override
-  String get coupleWebdavPullNow => '立即拉取对方课表';
+  String get coupleWebdavPullNow => '상대방 시간표 즉시 가져오기';
 
   @override
-  String get coupleWebdavUploadForPartner => '上传我的课表到坚果云';
+  String get coupleWebdavUploadForPartner => '내 시간표를 너트스토어에 업로드';
 
   @override
-  String get coupleWebdavLoginSheetTitle => '连接坚果云（情侣课表）';
+  String get coupleWebdavLoginSheetTitle => '너트스토어 연결(커플 시간표)';
 
   @override
   String get coupleWebdavLoginSheetSubtitle =>
-      '请使用应用专用密码，对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传';
+      '앱 전용 비밀번호를 사용하세요. 상대방이 미리 시간표를 약속된 경로에 업로드하거나, 상대방 기기에서 같은 계정으로 로그인해 업로드해야 합니다';
 
   @override
-  String get coupleWebdavConfirmConnect => '连接并拉取';
+  String get coupleWebdavConfirmConnect => '연결하고 가져오기';
 
   @override
   String get coupleWebdavMySlotLabel => '이 기기 슬롯';
@@ -361,31 +364,32 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleWebdavSlotTwo => '슬롯 2';
 
   @override
-  String get coupleWebdavTestSuccess => '坚果云连接成功';
+  String get coupleWebdavTestSuccess => '너트스토어 연결 성공';
 
   @override
-  String get coupleWebdavTestFailed => '连接失败，请检查账号、应用专用密码与网络';
+  String get coupleWebdavTestFailed => '연결에 실패했습니다. 계정, 앱 전용 비밀번호, 네트워크를 확인하세요';
 
   @override
-  String get coupleWebdavPullImported => '已从坚果云导入对方课表';
+  String get coupleWebdavPullImported => '너트스토어에서 상대방 시간표를 가져왔습니다';
 
   @override
-  String get coupleWebdavPullUpdated => '已从坚果云更新对方课表';
+  String get coupleWebdavPullUpdated => '너트스토어에서 상대방 시간표를 업데이트했습니다';
 
   @override
-  String get coupleWebdavPullUnchanged => '对方课表无变化';
+  String get coupleWebdavPullUnchanged => '상대방 시간표에 변화가 없습니다';
 
   @override
-  String get coupleWebdavUploadSuccess => '已上传课表，对方可拉取';
+  String get coupleWebdavUploadSuccess => '시간표를 업로드했습니다. 상대방이 가져올 수 있습니다';
 
   @override
-  String get coupleWebdavPartnerFileMissing => '未找到对方课表文件，请让对方先上传';
+  String get coupleWebdavPartnerFileMissing =>
+      '상대방 시간표 파일을 찾을 수 없습니다. 상대방이 먼저 업로드하도록 하세요';
 
   @override
-  String get coupleWebdavPullFailed => '拉取对方课表失败，请稍后重试';
+  String get coupleWebdavPullFailed => '상대방 시간표를 가져오지 못했습니다. 잠시 후 다시 시도하세요';
 
   @override
-  String get coupleWebdavNotConnectedError => '请先连接坚果云';
+  String get coupleWebdavNotConnectedError => '먼저 너트스토어에 연결하세요';
 
   @override
   String get cloudSyncEntryTitle => '클라우드 동기화 (WEBDAV)';
@@ -465,7 +469,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
-      '출시 버전은 HTTPS 암호화 연결만 지원합니다. 데이터 보안을 위해 HTTP 평문 프로토콜은 비활성화되었습니다';
+      'HTTPS 암호화 연결을 권장합니다. HTTP 평문 연결은 신뢰할 수 있는 네트워크에서만 사용하세요';
 
   @override
   String get cloudSyncRemoteFolderLabel => '원격 폴더';
@@ -1971,13 +1975,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appLogsClearFailed => '앱 로그 비우기 실패';
 
   @override
-  String get appLogsSourceApp => '应用';
+  String get appLogsSourceApp => '앱';
 
   @override
-  String get appLogsSourceNative => '超级岛';
+  String get appLogsSourceNative => '슈퍼 아일랜드';
 
   @override
-  String get appLogsRecordingPausedHint => '记录已关闭，下方为历史日志，关闭后不再新增';
+  String get appLogsRecordingPausedHint =>
+      '기록이 꺼져 있습니다. 아래는 과거 로그이며, 끈 후에는 새로 추가되지 않습니다';
 
   @override
   String get timeSchemeTitle => '시간 템플릿';
@@ -2353,7 +2358,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get timeCorrectionTitle => '铃声时间矫正';
+  String get timeCorrectionTitle => '벨 시간 보정';
 
   @override
   String get timeCorrectionHelp =>
@@ -2452,7 +2457,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => '左侧图标圆角';
+  String get liveMiuiLabelLogoCornerRadiusTitle => '왼쪽 아이콘 모서리 둥글기';
 
   @override
   String liveMiuiLabelFontSizeLabel(String value) {
@@ -2460,7 +2465,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelFontSizeTitle => '左侧文字大小';
+  String get liveMiuiLabelFontSizeTitle => '왼쪽 텍스트 크기';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2468,7 +2473,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => '左侧文字水平偏移';
+  String get liveMiuiLabelOffsetXTitle => '왼쪽 텍스트 가로 오프셋';
 
   @override
   String liveMiuiLabelOffsetYLabel(String value) {
@@ -2476,7 +2481,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelOffsetYTitle => '左侧文字垂直偏移';
+  String get liveMiuiLabelOffsetYTitle => '왼쪽 텍스트 세로 오프셋';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '왼쪽 텍스트 굵기';
@@ -3058,14 +3063,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedSheetSectionSubtitle =>
-      '调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显';
+      '홈 팝업 패널의 가우시안 블러 강도와 성에 유리 밝기를 조절합니다. 슬라이더가 오른쪽일수록 흰 성에 유리 층이 뚜렷해집니다';
 
   @override
   String get frostedBlurEnabledTitle => '블러 활성화';
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊';
+      '끄면 팝업, 홈 블러 영역, \'이번 주로\' 버튼이 반투명 배경만 남고 블러 샘플링을 하지 않습니다';
 
   @override
   String get frostedSheetPreviewOpenAction => '미리보기 패널 열기';
@@ -3080,7 +3085,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedSheetBlurLabel => '블러 강도';
 
   @override
-  String get frostedSheetTintLabel => '磨砂亮度';
+  String get frostedSheetTintLabel => '성에 유리 밝기';
 
   @override
   String get timetableBackgroundColorSectionTitle => '시간표 배경색';
@@ -3089,107 +3094,115 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timetableBackgroundColorSectionSubtitle => '시간표 페이지의 큰 배경에만 적용됩니다';
 
   @override
-  String get homePageBackgroundFillLabel => '背景填充';
+  String get homePageBackgroundFillLabel => '배경 채우기';
 
   @override
-  String get homePageBackgroundFillColor => '纯色';
+  String get homePageBackgroundFillColor => '단색';
 
   @override
-  String get homePageBackgroundFillImage => '图片';
+  String get homePageBackgroundFillImage => '이미지';
 
   @override
-  String get homePageBackgroundImageTitle => '背景图';
+  String get homePageBackgroundImageTitle => '배경 이미지';
 
   @override
-  String get homePageBackgroundImageSubtitle => '在「图片」模式下，作用于下方勾选的显示区域';
+  String get homePageBackgroundImageSubtitle =>
+      '\'이미지\' 모드에서 아래에서 선택한 표시 영역에 적용됩니다';
 
   @override
-  String get homePageWallpaperTitle => '背景图片';
+  String get homePageWallpaperTitle => '배경 이미지';
 
   @override
-  String get homePageWallpaperSubtitle => '全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色';
+  String get homePageWallpaperSubtitle =>
+      '전체 화면에 이미지 하나를 깔아 줍니다. 아래 영역을 선택해 비치는 범위를 정하며, 선택하지 않은 영역은 시간표 배경색이 유지됩니다';
 
   @override
-  String get homePageBackdropFollowsWeekPagerTitle => '背景随周次滑动';
+  String get homePageBackdropFollowsWeekPagerTitle => '배경이 주차 스와이프를 따라감';
 
   @override
-  String get homePageBackdropFollowsWeekPagerSubtitle => '左右切换周次时，背景图与课表页面一起移动';
+  String get homePageBackdropFollowsWeekPagerSubtitle =>
+      '좌우로 주차를 전환할 때 배경 이미지가 시간표 페이지와 함께 움직입니다';
 
   @override
-  String get homePageBackgroundScopeTitle => '背景显示区域';
+  String get homePageBackgroundScopeTitle => '배경 표시 영역';
 
   @override
   String get homePageBackgroundScopeSubtitle =>
-      '从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色';
+      '위에서부터 각 영역의 배경 이미지 노출 여부를 제어합니다. 선택하지 않은 영역은 시간표 배경색이 유지됩니다';
 
   @override
-  String get homePageBackgroundScopeStatusBar => '状态栏';
+  String get homePageBackgroundScopeStatusBar => '상태 표시줄';
 
   @override
-  String get homePageBackgroundScopeTimetable => '课表区域';
+  String get homePageBackgroundScopeTimetable => '시간표 영역';
 
   @override
-  String get homePageBackgroundScopeWeekdayBar => '信息栏';
+  String get homePageBackgroundScopeWeekdayBar => '정보 바';
 
   @override
-  String get homePageBackgroundScopeHeader => '顶栏';
+  String get homePageBackgroundScopeHeader => '상단 바';
 
   @override
-  String get homePageHeaderBlurTitle => '顶栏高斯模糊';
+  String get homePageHeaderBlurTitle => '상단 바 가우시안 블러';
 
   @override
-  String get homePageHeaderBlurSubtitle => '模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏';
+  String get homePageHeaderBlurSubtitle =>
+      '제목 표시줄(경어 시간표) 영역을 흐리게 합니다. \'상태 표시줄\'을 선택하면 상태 표시줄도 함께 흐리게 합니다';
 
   @override
-  String get homePageWeekdayBarBlurTitle => '信息栏高斯模糊';
+  String get homePageWeekdayBarBlurTitle => '정보 바 가우시안 블러';
 
   @override
-  String get homePageWeekdayBarBlurSubtitle => '模糊周次与星期信息栏，透出下方背景图';
+  String get homePageWeekdayBarBlurSubtitle =>
+      '주차와 요일 정보 바를 흐리게 하고 아래 배경 이미지를 비춥니다';
 
   @override
-  String get homePageTimeColumnBlurTitle => '时间栏高斯模糊';
+  String get homePageTimeColumnBlurTitle => '시간 열 가우시안 블러';
 
   @override
-  String get homePageTimeColumnBlurSubtitle => '模糊左侧节次/时间列，透出下方背景图';
+  String get homePageTimeColumnBlurSubtitle =>
+      '왼쪽 교시·시간 열을 흐리게 하고 아래 배경 이미지를 비춥니다';
 
   @override
-  String get homePageRegionBlurSectionSubtitle => '需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置';
+  String get homePageRegionBlurSectionSubtitle =>
+      '배경 이미지와 함께 사용해야 합니다. 블러 강도는 \'팝업 성에 유리\' 설정을 따릅니다';
 
   @override
-  String get homePagePickImageAction => '选择图片';
+  String get homePagePickImageAction => '이미지 선택';
 
   @override
-  String get homePageSwitchImageAction => '切换照片';
+  String get homePageSwitchImageAction => '사진 변경';
 
   @override
-  String get homePageClearImageAction => '清除图片';
+  String get homePageClearImageAction => '이미지 지우기';
 
   @override
-  String get homePageImageNotSelected => '未选择';
+  String get homePageImageNotSelected => '선택 안 됨';
 
   @override
-  String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
+  String get wallpaperPositionPickerTitle => '배경화면 표시 위치 조정';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => '重置居中';
+  String get wallpaperPositionPickerResetTooltip => '중앙으로 초기화';
 
   @override
-  String get wallpaperPositionPickerDragHint => '拖动壁纸调整位置';
+  String get wallpaperPositionPickerDragHint => '배경화면을 드래그해 위치 조정';
 
   @override
-  String get wallpaperPositionPickerSwitchWallpaper => '换壁纸';
+  String get wallpaperPositionPickerSwitchWallpaper => '배경화면 바꾸기';
 
   @override
-  String get wallpaperPositionPickerDone => '完成';
+  String get wallpaperPositionPickerDone => '완료';
 
   @override
-  String get wallpaperPositionPickerExit => '退出';
+  String get wallpaperPositionPickerExit => '나가기';
 
   @override
-  String get appearanceTextColorsSectionTitle => '文字颜色';
+  String get appearanceTextColorsSectionTitle => '텍스트 색상';
 
   @override
-  String get appearanceTextColorsSectionSubtitle => '自定义课程卡片、星期栏与时间轴文字颜色';
+  String get appearanceTextColorsSectionSubtitle =>
+      '수업 카드, 요일 바, 시간 축의 텍스트 색상을 설정합니다';
 
   @override
   String get defaultTimetablePreviewName => '기본 시간표';
@@ -3782,7 +3795,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get pageTransitionSpeedTitle => '页面转场速度';
+  String get pageTransitionSpeedTitle => '페이지 전환 속도';
 
   @override
   String get pageTransitionSpeedSubtitle =>
@@ -3818,7 +3831,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get layoutBackToCurrentWeekButtonOpacityTitle => '悬浮按钮不透明度';
+  String get layoutBackToCurrentWeekButtonOpacityTitle => '플로팅 버튼 불투명도';
 
   @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
@@ -3830,7 +3843,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get layoutCourseCardGapTitle => '课程卡片间距';
+  String get layoutCourseCardGapTitle => '수업 카드 간격';
 
   @override
   String layoutSectionHeightLabel(String value) {
@@ -3838,7 +3851,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get layoutSectionHeightTitle => '课表行高';
+  String get layoutSectionHeightTitle => '시간표 행 높이';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -3846,7 +3859,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get layoutCompactFontSizeTitle => '紧凑字号';
+  String get layoutCompactFontSizeTitle => '컴팩트 글꼴 크기';
 
   @override
   String layoutCourseCardFontSizeLabel(String value) {
@@ -3854,7 +3867,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get layoutCourseCardFontSizeTitle => '课程卡片字号';
+  String get layoutCourseCardFontSizeTitle => '수업 카드 글꼴 크기';
 
   @override
   String get layoutCourseCardDisplayTitle => '수업 카드 표시';
@@ -5582,7 +5595,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get examDateRequired => '시험일을 선택하세요';
 
   @override
-  String get examEndTimeBeforeStart => '结束时间不能早于开始时间';
+  String get examEndTimeBeforeStart => '종료 시간은 시작 시간보다 빠를 수 없습니다';
 
   @override
   String get examStartTimeLabel => '시작 시간';
@@ -5795,66 +5808,68 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseActionDeleteSecondary => '삭제';
 
   @override
-  String get courseNoteSheetTitle => '课程备注';
+  String get courseNoteSheetTitle => '수업 메모';
 
   @override
-  String get courseNoteAction => '备注';
+  String get courseNoteAction => '메모';
 
   @override
-  String get courseNoteSaveAction => '保存';
+  String get courseNoteSaveAction => '저장';
 
   @override
-  String get courseNoteTabWholeCourse => '课程简介';
+  String get courseNoteTabWholeCourse => '수업 소개';
 
   @override
-  String get courseNoteTabThisSession => '本节课';
+  String get courseNoteTabThisSession => '이번 수업';
 
   @override
-  String get courseNoteWholeCourseLabel => '课程简介';
+  String get courseNoteWholeCourseLabel => '수업 소개';
 
   @override
-  String get courseNoteWholeCourseHint => '同名课程共享，长期有效（例如课程说明、课堂注意点）。';
+  String get courseNoteWholeCourseHint =>
+      '같은 이름의 수업에서 공유되며 장기간 유지됩니다(예: 수업 설명, 주의사항 등).';
 
   @override
-  String get courseNoteWholeCoursePlaceholder => '例如：这个老师容易点名、教室在新楼…';
+  String get courseNoteWholeCoursePlaceholder =>
+      '예: 이 선생님은 출석을 자주 부른다, 교실은 새 건물…';
 
   @override
-  String get courseNoteSessionLabel => '本节课备注';
+  String get courseNoteSessionLabel => '이번 수업 메모';
 
   @override
   String courseNoteSessionHint(int week) {
-    return '仅对第 $week 周这一次课生效，适合记录作业或携带物品。';
+    return '$week주차의 이번 수업에만 적용됩니다. 숙제나 준비물 기록에 적합합니다.';
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '例如：交第三章习题、带电脑…';
+  String get courseNoteSessionPlaceholder => '예: 3장 연습문제 제출, 노트북 지참…';
 
   @override
-  String get courseNoteHasHomeworkTitle => '有作业';
+  String get courseNoteHasHomeworkTitle => '숙제 있음';
 
   @override
-  String get courseNoteHasHomeworkSubtitle => '开启后，周视图课程卡片会显示作业圆标';
+  String get courseNoteHasHomeworkSubtitle => '켜면 주간 보기 수업 카드에 숙제 표시가 나타납니다';
 
   @override
-  String get courseNoteHomeworkMarked => '本节有作业';
+  String get courseNoteHomeworkMarked => '이번 수업은 숙제 있음';
 
   @override
-  String get courseNoteTileSubtitleEmpty => '记录作业、带电脑或课堂提醒';
+  String get courseNoteTileSubtitleEmpty => '숙제, 준비물, 수업 알림 기록';
 
   @override
-  String get courseNoteTileSubtitleWhole => '已有课程简介';
+  String get courseNoteTileSubtitleWhole => '수업 소개 있음';
 
   @override
-  String get courseNoteTileSubtitleSession => '已有本节课备注';
+  String get courseNoteTileSubtitleSession => '이번 수업 메모 있음';
 
   @override
-  String get courseNoteTileSubtitleBoth => '课程简介与本节课均有备注';
+  String get courseNoteTileSubtitleBoth => '수업 소개와 이번 수업 메모가 모두 있습니다';
 
   @override
-  String get courseNoteReadOnlyNotice => '对方课程仅可查看备注，无法编辑。';
+  String get courseNoteReadOnlyNotice => '상대방 수업은 메모만 볼 수 있으며 편집할 수 없습니다.';
 
   @override
-  String get courseNoteDoneEditingAction => '完成';
+  String get courseNoteDoneEditingAction => '완료';
 
   @override
   String courseActionSheetNotice(int week) {
@@ -5878,22 +5893,24 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String courseActionCoupleRelatedCount(int count) {
-    return '还有 $count 节情侣课表课程';
+    return '커플 시간표 수업 $count개 더';
   }
 
   @override
-  String get courseActionCoupleExpandHint => '展开查看 TA 的课或一起上课，点击可切换预览';
+  String get courseActionCoupleExpandHint =>
+      '펼쳐서 상대방 수업이나 함께 듣는 수업을 확인하세요. 탭하면 미리보기를 전환할 수 있습니다';
 
   @override
-  String get courseActionCoupleCollapseHint => '点击收起情侣课表课程列表';
+  String get courseActionCoupleCollapseHint => '탭하면 커플 시간표 수업 목록이 접힙니다';
 
   @override
   String courseActionMixedRelatedCount(int count) {
-    return '还有 $count 节相关课程';
+    return '관련 수업 $count개 더';
   }
 
   @override
-  String get courseActionPartnerReadOnlyNotice => '这是对方课表中的课程，仅供查看，无法编辑或调课';
+  String get courseActionPartnerReadOnlyNotice =>
+      '상대방 시간표의 수업으로, 볼 수만 있고 편집이나 변경은 할 수 없습니다';
 
   @override
   String get suspendSheetTitle => '수업 중단';

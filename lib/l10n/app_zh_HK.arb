@@ -78,7 +78,7 @@
   "cloudSyncPasswordStoredHint": "已儲存密碼；留空表示繼續使用已儲存的密碼",
   "cloudSyncAdvancedTitle": "進階設定",
   "cloudSyncBaseUrlLabel": "WEBDAV 網址",
-  "cloudSyncBaseUrlSecurityNote": "正式版僅支援 HTTPS 加密連線，HTTP 明文協定已被停用以保護資料安全",
+  "cloudSyncBaseUrlSecurityNote": "建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用",
   "cloudSyncRemoteFolderLabel": "遠端目錄",
   "cloudSyncStatusTitle": "同步狀態",
   "cloudSyncLastSyncedLabel": "上次同步",
@@ -5416,7 +5416,13 @@
   "scheduleReminderSectionTitle": "日程提醒",
   "scheduleReminderOff": "不提醒",
   "scheduleReminderMinutes": "提前 {minutes} 分鐘",
-  "@scheduleReminderMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@scheduleReminderMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "scheduleReminderPermissionMissing": "通知權限未開啟，日程仍會儲存，但提醒可能無法送達",
   "scheduleReminderPermissionAction": "檢查通知權限",
   "scheduleEnabledTitle": "啟用日程",
@@ -5486,9 +5492,235 @@
   "icsExportShared": "已匯出並分享 {count} 個日曆事件",
   "@icsExportShared": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "icsExportShareText": "這是來自輕屿課表的日曆檔案",
-  "icsExportShareSubject": "輕屿課表日曆"
+  "icsExportShareSubject": "輕屿課表日曆",
+  "coupleTimetableEntryTitle": "情侶課表",
+  "coupleTimetableEntryBound": "已綁定",
+  "coupleTimetableModeEnableTooltip": "開啟情侶課表",
+  "coupleTimetableModeDisableTooltip": "關閉情侶課表",
+  "coupleTimetableTitle": "情侶課表",
+  "coupleTimetableIntro": "匯出你的課表發給對方，或匯入對方分享的課表檔案，匯入後可在疊加檢視中查看雙方的課程",
+  "coupleTimetableBoundTitle": "已綁定對方課表",
+  "coupleTimetableUnboundTitle": "尚未綁定對方課表",
+  "coupleTimetablePartnerNameLabel": "對方名稱",
+  "@coupleTimetableLastImportedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleTimetableLastImportedAt": "上次匯入：{time}",
+  "coupleTimetableExportForPartner": "匯出我的課表給對方",
+  "coupleTimetableImportPartner": "匯入對方課表",
+  "coupleTimetableUnlink": "解除綁定",
+  "coupleTimetableOpenOverlay": "進入疊加檢視",
+  "coupleTimetableImportSuccess": "已匯入對方課表",
+  "coupleTimetableImportUpdated": "已更新對方課表",
+  "coupleTimetableUnlinkConfirmTitle": "解除情侶課表綁定？",
+  "coupleTimetableUnlinkConfirmMessage": "解除後將刪除本機儲存的對方課表，疊加檢視也會關閉",
+  "coupleTimetableUnlinkSuccess": "已解除綁定",
+  "coupleTimetablePrivacyHint": "對方只能看到你匯出檔案中所包含的課表內容",
+  "coupleTimetableOverlayTitle": "情侶疊加",
+  "coupleTimetableLegendMine": "我的課",
+  "coupleTimetableLegendPartner": "對方課程",
+  "coupleTimetableLegendTogether": "一起上課",
+  "coupleTimetableLegendFree": "共同空閒",
+  "coupleTimetableSharedFreeTitle": "今日共同空閒",
+  "coupleTimetableSharedFreeTitleOtherDay": "當日共同空閒",
+  "coupleTimetableNoSharedFree": "今天沒有共同空閒時段",
+  "coupleTimetableNoSharedFreeOtherDay": "當日沒有共同空閒時段",
+  "@coupleTimetableSharedFreeMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableSharedFreeMeta": "共 {count} 段",
+  "@coupleTimetableSharedFreeMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableSharedFreeMoreCount": "還有 {count} 段",
+  "coupleTimetableSharedFreeUnavailable": "暫時算不出共同空閒",
+  "coupleTimetableSharedFreeStaleHint": "對方課表可能不是最新",
+  "coupleTimetablePartnerReadOnlyBadge": "對方課表（唯讀）",
+  "coupleTimetableNotBoundMessage": "請先匯入對方課表後再查看疊加檢視",
+  "coupleTimetableShareText": "這是我的課表，匯入到輕嶼課表的情侶課表即可一起查看",
+  "coupleTimetableShareSubject": "輕嶼課表・情侶課表分享",
+  "coupleTimetableWeekOffsetTitle": "週次偏移",
+  "coupleTimetableWeekOffsetSubtitle": "查看你的第 N 週時，讀取對方課表的第 N+偏移 週，例如 +1 表示對方學期進度比你快一週",
+  "coupleTimetableWeekOffsetZero": "無偏移",
+  "@coupleTimetableWeekOffsetSigned": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleTimetableWeekOffsetSigned": "{offset} 週",
+  "@coupleTimetableWeekOffsetPreview": {
+    "placeholders": {
+      "myWeek": {
+        "type": "int"
+      },
+      "partnerWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableWeekOffsetPreview": "查看你的第 {myWeek} 週時，顯示對方第 {partnerWeek} 週的課",
+  "coupleTimetableColorsTitle": "疊加顏色",
+  "coupleTimetableColorsSubtitle": "自訂「我的課」「對方課程」「一起上課」在疊加檢視中的顯示顏色，可按喜好自由搭配",
+  "partnerImportRequiresSingleProfile": "請匯入單一課表備份檔案，不支援全量備份",
+  "coupleWebdavTitle": "堅果雲拉取",
+  "coupleWebdavSubtitle": "登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不影響",
+  "coupleWebdavNotConnected": "尚未連接堅果雲",
+  "@coupleWebdavConnectedAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavConnectedAs": "已連接：{username}",
+  "@coupleWebdavRemotePathHint": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavRemotePathHint": "遠端檔案路徑：{path}",
+  "@coupleWebdavLastPulledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavLastPulledAt": "上次拉取：{time}",
+  "coupleWebdavConnect": "連接堅果雲",
+  "coupleWebdavDisconnect": "中斷連接",
+  "coupleWebdavPullNow": "立即拉取對方課表",
+  "coupleWebdavUploadForPartner": "上傳我的課表到堅果雲",
+  "coupleWebdavLoginSheetTitle": "連接堅果雲（情侶課表）",
+  "coupleWebdavLoginSheetSubtitle": "請使用應用程式專用密碼，對方需先將課表上傳到約定路徑，或由你在對方裝置上登入同一帳號並上傳",
+  "coupleWebdavConfirmConnect": "連接並拉取",
+  "coupleWebdavTestSuccess": "堅果雲連接成功",
+  "coupleWebdavTestFailed": "連接失敗，請檢查帳號、應用程式專用密碼與網路",
+  "coupleWebdavPullImported": "已從堅果雲匯入對方課表",
+  "coupleWebdavPullUpdated": "已從堅果雲更新對方課表",
+  "coupleWebdavPullUnchanged": "對方課表無變化",
+  "coupleWebdavUploadSuccess": "已上傳課表，對方可拉取",
+  "coupleWebdavPartnerFileMissing": "找不到對方課表檔案，請讓對方先上傳",
+  "coupleWebdavPullFailed": "拉取對方課表失敗，請稍後重試",
+  "coupleWebdavNotConnectedError": "請先連接堅果雲",
+  "appLogsSourceApp": "應用程式",
+  "appLogsSourceNative": "超級島",
+  "appLogsRecordingPausedHint": "記錄已關閉，下方為歷史紀錄，關閉後不再新增",
+  "timeCorrectionTitle": "鈴聲時間校正",
+  "liveMiuiLabelLogoCornerRadiusTitle": "左側圖示圓角",
+  "liveMiuiLabelFontSizeTitle": "左側文字大小",
+  "liveMiuiLabelOffsetXTitle": "左側文字水平偏移",
+  "liveMiuiLabelOffsetYTitle": "左側文字垂直偏移",
+  "frostedSheetSectionSubtitle": "調整首頁彈出面板的高斯模糊強度與磨砂亮度，滑桿越靠右，白色磨砂層越明顯",
+  "frostedBlurEnabledSubtitle": "關閉後，彈窗、首頁模糊區域與「回到本週」按鈕僅保留半透明底色，不再取樣模糊",
+  "frostedSheetTintLabel": "磨砂亮度",
+  "homePageBackgroundFillLabel": "背景填充",
+  "homePageBackgroundFillColor": "純色",
+  "homePageBackgroundFillImage": "圖片",
+  "homePageBackgroundImageTitle": "背景圖",
+  "homePageBackgroundImageSubtitle": "在「圖片」模式下，套用於下方勾選的顯示區域",
+  "homePageWallpaperTitle": "背景圖片",
+  "homePageWallpaperSubtitle": "全螢幕鋪底一張圖；勾選下方區域決定透出範圍，未勾選區域仍顯示課表背景色",
+  "homePageBackdropFollowsWeekPagerTitle": "背景隨週次滑動",
+  "homePageBackdropFollowsWeekPagerSubtitle": "左右切換週次時，背景圖與課表頁面一起移動",
+  "homePageBackgroundScopeTitle": "背景顯示區域",
+  "homePageBackgroundScopeSubtitle": "從上到下依序控制各區域是否透出背景圖；未勾選區域仍顯示課表背景色",
+  "homePageBackgroundScopeStatusBar": "狀態列",
+  "homePageBackgroundScopeTimetable": "課表區域",
+  "homePageBackgroundScopeWeekdayBar": "資訊欄",
+  "homePageBackgroundScopeHeader": "頂欄",
+  "homePageHeaderBlurTitle": "頂欄高斯模糊",
+  "homePageHeaderBlurSubtitle": "模糊標題欄（輕嶼課表）區域；勾選「狀態列」時一併模糊狀態列",
+  "homePageWeekdayBarBlurTitle": "資訊欄高斯模糊",
+  "homePageWeekdayBarBlurSubtitle": "模糊週次與星期資訊欄，透出下方背景圖",
+  "homePageTimeColumnBlurTitle": "時間欄高斯模糊",
+  "homePageTimeColumnBlurSubtitle": "模糊左側節次/時間列，透出下方背景圖",
+  "homePageRegionBlurSectionSubtitle": "需搭配背景圖使用；模糊強度跟隨「彈窗磨砂玻璃」設定",
+  "homePagePickImageAction": "選擇圖片",
+  "homePageSwitchImageAction": "切換照片",
+  "homePageClearImageAction": "清除圖片",
+  "homePageImageNotSelected": "未選擇",
+  "wallpaperPositionPickerTitle": "調整桌布顯示位置",
+  "wallpaperPositionPickerResetTooltip": "重設置中",
+  "wallpaperPositionPickerDragHint": "拖曳桌布調整位置",
+  "wallpaperPositionPickerSwitchWallpaper": "更換桌布",
+  "wallpaperPositionPickerDone": "完成",
+  "wallpaperPositionPickerExit": "退出",
+  "appearanceTextColorsSectionTitle": "文字顏色",
+  "appearanceTextColorsSectionSubtitle": "自訂課程卡片、星期欄與時間軸文字顏色",
+  "pageTransitionSpeedTitle": "頁面轉場速度",
+  "layoutBackToCurrentWeekButtonOpacityTitle": "懸浮按鈕不透明度",
+  "layoutCourseCardGapTitle": "課程卡片間距",
+  "layoutSectionHeightTitle": "課表行高",
+  "layoutCompactFontSizeTitle": "緊湊字級",
+  "layoutCourseCardFontSizeTitle": "課程卡片字級",
+  "examEndTimeBeforeStart": "結束時間不能早於開始時間",
+  "courseNoteSheetTitle": "課程備註",
+  "courseNoteAction": "備註",
+  "courseNoteSaveAction": "儲存",
+  "courseNoteTabWholeCourse": "課程簡介",
+  "courseNoteTabThisSession": "本節課",
+  "courseNoteWholeCourseLabel": "課程簡介",
+  "courseNoteWholeCourseHint": "同名課程共享，長期有效（例如課程說明、課堂注意事項）。",
+  "courseNoteWholeCoursePlaceholder": "例如：這個老師容易點名、教室在新大樓…",
+  "courseNoteSessionLabel": "本節課備註",
+  "@courseNoteSessionHint": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "courseNoteSessionHint": "僅對第 {week} 週這一次課生效，適合記錄作業或攜帶物品。",
+  "courseNoteSessionPlaceholder": "例如：交第三章習題、帶電腦…",
+  "courseNoteHasHomeworkTitle": "有作業",
+  "courseNoteHasHomeworkSubtitle": "開啟後，週檢視課程卡片會顯示作業圓標",
+  "courseNoteHomeworkMarked": "本節有作業",
+  "courseNoteTileSubtitleEmpty": "記錄作業、帶電腦或課堂提醒",
+  "courseNoteTileSubtitleWhole": "已有課程簡介",
+  "courseNoteTileSubtitleSession": "已有本節課備註",
+  "courseNoteTileSubtitleBoth": "課程簡介與本節課均有備註",
+  "courseNoteReadOnlyNotice": "對方課程僅可查看備註，無法編輯。",
+  "courseNoteDoneEditingAction": "完成",
+  "@courseActionCoupleRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionCoupleRelatedCount": "還有 {count} 節情侶課表課程",
+  "courseActionCoupleExpandHint": "展開查看對方的課或一起上課，點擊可切換預覽",
+  "courseActionCoupleCollapseHint": "點擊收起情侶課表課程列表",
+  "@courseActionMixedRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionMixedRelatedCount": "還有 {count} 節相關課程",
+  "courseActionPartnerReadOnlyNotice": "這是對方課表中的課程，僅供查看，無法編輯或調課"
 }

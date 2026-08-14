@@ -494,7 +494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
-      'Release builds only support HTTPS encrypted connections. HTTP cleartext protocol has been disabled for data security';
+      'HTTPS is recommended. HTTP cleartext connections are allowed but only advised on trusted networks';
 
   @override
   String get cloudSyncRemoteFolderLabel => 'Remote folder';

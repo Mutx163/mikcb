@@ -461,7 +461,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
-      '正式版仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用以保护数据安全';
+      '建议使用 HTTPS 加密连接；HTTP 明文连接仅建议在可信网络环境下使用';
 
   @override
   String get cloudSyncRemoteFolderLabel => '远程目录';
@@ -9559,6 +9559,201 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
 
   @override
+  String get coupleTimetableEntryTitle => '情侶課表';
+
+  @override
+  String get coupleTimetableEntryBound => '已綁定';
+
+  @override
+  String get coupleTimetableModeEnableTooltip => '開啟情侶課表';
+
+  @override
+  String get coupleTimetableModeDisableTooltip => '關閉情侶課表';
+
+  @override
+  String get coupleTimetableTitle => '情侶課表';
+
+  @override
+  String get coupleTimetableIntro =>
+      '匯出你的課表發給對方，或匯入對方分享的課表檔案，匯入後可在疊加檢視中查看雙方的課程';
+
+  @override
+  String get coupleTimetableBoundTitle => '已綁定對方課表';
+
+  @override
+  String get coupleTimetableUnboundTitle => '尚未綁定對方課表';
+
+  @override
+  String get coupleTimetablePartnerNameLabel => '對方名稱';
+
+  @override
+  String coupleTimetableLastImportedAt(String time) {
+    return '上次匯入：$time';
+  }
+
+  @override
+  String get coupleTimetableExportForPartner => '匯出我的課表給對方';
+
+  @override
+  String get coupleTimetableImportPartner => '匯入對方課表';
+
+  @override
+  String get coupleTimetableUnlink => '解除綁定';
+
+  @override
+  String get coupleTimetableOpenOverlay => '進入疊加檢視';
+
+  @override
+  String get coupleTimetableImportSuccess => '已匯入對方課表';
+
+  @override
+  String get coupleTimetableImportUpdated => '已更新對方課表';
+
+  @override
+  String get coupleTimetableUnlinkConfirmTitle => '解除情侶課表綁定？';
+
+  @override
+  String get coupleTimetableUnlinkConfirmMessage => '解除後將刪除本機儲存的對方課表，疊加檢視也會關閉';
+
+  @override
+  String get coupleTimetableUnlinkSuccess => '已解除綁定';
+
+  @override
+  String get coupleTimetablePrivacyHint => '對方只能看到你匯出檔案中所包含的課表內容';
+
+  @override
+  String get coupleTimetableOverlayTitle => '情侶疊加';
+
+  @override
+  String get coupleTimetableLegendMine => '我的課';
+
+  @override
+  String get coupleTimetableLegendPartner => '對方課程';
+
+  @override
+  String get coupleTimetableLegendTogether => '一起上課';
+
+  @override
+  String get coupleTimetableLegendFree => '共同空閒';
+
+  @override
+  String get coupleTimetableSharedFreeTitle => '今日共同空閒';
+
+  @override
+  String get coupleTimetableSharedFreeTitleOtherDay => '當日共同空閒';
+
+  @override
+  String get coupleTimetableNoSharedFree => '今天沒有共同空閒時段';
+
+  @override
+  String get coupleTimetableNoSharedFreeOtherDay => '當日沒有共同空閒時段';
+
+  @override
+  String coupleTimetableSharedFreeMeta(int count) {
+    return '共 $count 段';
+  }
+
+  @override
+  String coupleTimetableSharedFreeMoreCount(int count) {
+    return '還有 $count 段';
+  }
+
+  @override
+  String get coupleTimetableSharedFreeUnavailable => '暫時算不出共同空閒';
+
+  @override
+  String get coupleTimetableSharedFreeStaleHint => '對方課表可能不是最新';
+
+  @override
+  String get coupleTimetablePartnerReadOnlyBadge => '對方課表（唯讀）';
+
+  @override
+  String get coupleTimetableNotBoundMessage => '請先匯入對方課表後再查看疊加檢視';
+
+  @override
+  String get coupleTimetableShareText => '這是我的課表，匯入到輕嶼課表的情侶課表即可一起查看';
+
+  @override
+  String get coupleTimetableShareSubject => '輕嶼課表・情侶課表分享';
+
+  @override
+  String get coupleTimetableWeekOffsetTitle => '週次偏移';
+
+  @override
+  String get coupleTimetableWeekOffsetSubtitle =>
+      '查看你的第 N 週時，讀取對方課表的第 N+偏移 週，例如 +1 表示對方學期進度比你快一週';
+
+  @override
+  String get coupleTimetableWeekOffsetZero => '無偏移';
+
+  @override
+  String coupleTimetableWeekOffsetSigned(String offset) {
+    return '$offset 週';
+  }
+
+  @override
+  String coupleTimetableWeekOffsetPreview(int myWeek, int partnerWeek) {
+    return '查看你的第 $myWeek 週時，顯示對方第 $partnerWeek 週的課';
+  }
+
+  @override
+  String get coupleTimetableColorsTitle => '疊加顏色';
+
+  @override
+  String get coupleTimetableColorsSubtitle =>
+      '自訂「我的課」「對方課程」「一起上課」在疊加檢視中的顯示顏色，可按喜好自由搭配';
+
+  @override
+  String get partnerImportRequiresSingleProfile => '請匯入單一課表備份檔案，不支援全量備份';
+
+  @override
+  String get coupleWebdavTitle => '堅果雲拉取';
+
+  @override
+  String get coupleWebdavSubtitle =>
+      '登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不影響';
+
+  @override
+  String get coupleWebdavNotConnected => '尚未連接堅果雲';
+
+  @override
+  String coupleWebdavConnectedAs(String username) {
+    return '已連接：$username';
+  }
+
+  @override
+  String coupleWebdavRemotePathHint(String path) {
+    return '遠端檔案路徑：$path';
+  }
+
+  @override
+  String coupleWebdavLastPulledAt(String time) {
+    return '上次拉取：$time';
+  }
+
+  @override
+  String get coupleWebdavConnect => '連接堅果雲';
+
+  @override
+  String get coupleWebdavDisconnect => '中斷連接';
+
+  @override
+  String get coupleWebdavPullNow => '立即拉取對方課表';
+
+  @override
+  String get coupleWebdavUploadForPartner => '上傳我的課表到堅果雲';
+
+  @override
+  String get coupleWebdavLoginSheetTitle => '連接堅果雲（情侶課表）';
+
+  @override
+  String get coupleWebdavLoginSheetSubtitle =>
+      '請使用應用程式專用密碼，對方需先將課表上傳到約定路徑，或由你在對方裝置上登入同一帳號並上傳';
+
+  @override
+  String get coupleWebdavConfirmConnect => '連接並拉取';
+
+  @override
   String get coupleWebdavMySlotLabel => '本機槽位';
 
   @override
@@ -9569,6 +9764,33 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get coupleWebdavSlotTwo => '槽位 2';
+
+  @override
+  String get coupleWebdavTestSuccess => '堅果雲連接成功';
+
+  @override
+  String get coupleWebdavTestFailed => '連接失敗，請檢查帳號、應用程式專用密碼與網路';
+
+  @override
+  String get coupleWebdavPullImported => '已從堅果雲匯入對方課表';
+
+  @override
+  String get coupleWebdavPullUpdated => '已從堅果雲更新對方課表';
+
+  @override
+  String get coupleWebdavPullUnchanged => '對方課表無變化';
+
+  @override
+  String get coupleWebdavUploadSuccess => '已上傳課表，對方可拉取';
+
+  @override
+  String get coupleWebdavPartnerFileMissing => '找不到對方課表檔案，請讓對方先上傳';
+
+  @override
+  String get coupleWebdavPullFailed => '拉取對方課表失敗，請稍後重試';
+
+  @override
+  String get coupleWebdavNotConnectedError => '請先連接堅果雲';
 
   @override
   String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
@@ -9646,7 +9868,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
-      '正式版僅支援 HTTPS 加密連線，HTTP 明文協定已被停用以保護資料安全';
+      '建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用';
 
   @override
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
@@ -11118,6 +11340,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get appLogsClearFailed => '清空應用日誌失敗';
 
   @override
+  String get appLogsSourceApp => '應用程式';
+
+  @override
+  String get appLogsSourceNative => '超級島';
+
+  @override
+  String get appLogsRecordingPausedHint => '記錄已關閉，下方為歷史紀錄，關閉後不再新增';
+
+  @override
   String get timeSchemeTitle => '時間範本';
 
   @override
@@ -11482,6 +11713,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get timeCorrectionTitle => '鈴聲時間校正';
+
+  @override
   String get timeCorrectionHelp => '如果學校鈴声比課表快几秒，就調成提前；如果鈴声慢几秒，就調成延後';
 
   @override
@@ -11571,9 +11805,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get liveMiuiLabelLogoCornerRadiusTitle => '左側圖示圓角';
+
+  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左側文字大小 $value';
   }
+
+  @override
+  String get liveMiuiLabelFontSizeTitle => '左側文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -11581,9 +11821,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get liveMiuiLabelOffsetXTitle => '左側文字水平偏移';
+
+  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左側文字垂直偏移 $value';
   }
+
+  @override
+  String get liveMiuiLabelOffsetYTitle => '左側文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左側文字粗細';
@@ -12155,7 +12401,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedSheetSectionTitle => '磨砂玻璃';
 
   @override
+  String get frostedSheetSectionSubtitle =>
+      '調整首頁彈出面板的高斯模糊強度與磨砂亮度，滑桿越靠右，白色磨砂層越明顯';
+
+  @override
   String get frostedBlurEnabledTitle => '啟用模糊';
+
+  @override
+  String get frostedBlurEnabledSubtitle =>
+      '關閉後，彈窗、首頁模糊區域與「回到本週」按鈕僅保留半透明底色，不再取樣模糊';
 
   @override
   String get frostedSheetPreviewOpenAction => '開啟預覽面板';
@@ -12170,10 +12424,116 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedSheetBlurLabel => '模糊強度';
 
   @override
+  String get frostedSheetTintLabel => '磨砂亮度';
+
+  @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
 
   @override
   String get timetableBackgroundColorSectionSubtitle => '只作用於課表頁面的大背景';
+
+  @override
+  String get homePageBackgroundFillLabel => '背景填充';
+
+  @override
+  String get homePageBackgroundFillColor => '純色';
+
+  @override
+  String get homePageBackgroundFillImage => '圖片';
+
+  @override
+  String get homePageBackgroundImageTitle => '背景圖';
+
+  @override
+  String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
+
+  @override
+  String get homePageWallpaperTitle => '背景圖片';
+
+  @override
+  String get homePageWallpaperSubtitle => '全螢幕鋪底一張圖；勾選下方區域決定透出範圍，未勾選區域仍顯示課表背景色';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerTitle => '背景隨週次滑動';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerSubtitle => '左右切換週次時，背景圖與課表頁面一起移動';
+
+  @override
+  String get homePageBackgroundScopeTitle => '背景顯示區域';
+
+  @override
+  String get homePageBackgroundScopeSubtitle =>
+      '從上到下依序控制各區域是否透出背景圖；未勾選區域仍顯示課表背景色';
+
+  @override
+  String get homePageBackgroundScopeStatusBar => '狀態列';
+
+  @override
+  String get homePageBackgroundScopeTimetable => '課表區域';
+
+  @override
+  String get homePageBackgroundScopeWeekdayBar => '資訊欄';
+
+  @override
+  String get homePageBackgroundScopeHeader => '頂欄';
+
+  @override
+  String get homePageHeaderBlurTitle => '頂欄高斯模糊';
+
+  @override
+  String get homePageHeaderBlurSubtitle => '模糊標題欄（輕嶼課表）區域；勾選「狀態列」時一併模糊狀態列';
+
+  @override
+  String get homePageWeekdayBarBlurTitle => '資訊欄高斯模糊';
+
+  @override
+  String get homePageWeekdayBarBlurSubtitle => '模糊週次與星期資訊欄，透出下方背景圖';
+
+  @override
+  String get homePageTimeColumnBlurTitle => '時間欄高斯模糊';
+
+  @override
+  String get homePageTimeColumnBlurSubtitle => '模糊左側節次/時間列，透出下方背景圖';
+
+  @override
+  String get homePageRegionBlurSectionSubtitle => '需搭配背景圖使用；模糊強度跟隨「彈窗磨砂玻璃」設定';
+
+  @override
+  String get homePagePickImageAction => '選擇圖片';
+
+  @override
+  String get homePageSwitchImageAction => '切換照片';
+
+  @override
+  String get homePageClearImageAction => '清除圖片';
+
+  @override
+  String get homePageImageNotSelected => '未選擇';
+
+  @override
+  String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => '重設置中';
+
+  @override
+  String get wallpaperPositionPickerDragHint => '拖曳桌布調整位置';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => '更換桌布';
+
+  @override
+  String get wallpaperPositionPickerDone => '完成';
+
+  @override
+  String get wallpaperPositionPickerExit => '退出';
+
+  @override
+  String get appearanceTextColorsSectionTitle => '文字顏色';
+
+  @override
+  String get appearanceTextColorsSectionSubtitle => '自訂課程卡片、星期欄與時間軸文字顏色';
 
   @override
   String get defaultTimetablePreviewName => '預設課表';
@@ -12743,6 +13103,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get pageTransitionSpeedTitle => '頁面轉場速度';
+
+  @override
   String get pageTransitionSpeedSubtitle =>
       '調節進入和返回子頁面時的滑動動畫快慢，數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定';
 
@@ -12776,6 +13139,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get layoutBackToCurrentWeekButtonOpacityTitle => '懸浮按鈕不透明度';
+
+  @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle => '只對右下角懸浮樣式生效';
 
   @override
@@ -12784,9 +13150,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get layoutCourseCardGapTitle => '課程卡片間距';
+
+  @override
   String layoutSectionHeightLabel(String value) {
     return '課表行高 $value';
   }
+
+  @override
+  String get layoutSectionHeightTitle => '課表行高';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -12794,9 +13166,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get layoutCompactFontSizeTitle => '緊湊字級';
+
+  @override
   String layoutCourseCardFontSizeLabel(String value) {
     return '課程卡片字級 $value';
   }
+
+  @override
+  String get layoutCourseCardFontSizeTitle => '課程卡片字級';
 
   @override
   String get layoutCourseCardDisplayTitle => '課程卡片顯示';
@@ -14496,6 +14874,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get examDateRequired => '請選擇考試日期';
 
   @override
+  String get examEndTimeBeforeStart => '結束時間不能早於開始時間';
+
+  @override
   String get examStartTimeLabel => '開始時間';
 
   @override
@@ -14704,6 +15085,68 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseActionDeleteSecondary => '刪除';
 
   @override
+  String get courseNoteSheetTitle => '課程備註';
+
+  @override
+  String get courseNoteAction => '備註';
+
+  @override
+  String get courseNoteSaveAction => '儲存';
+
+  @override
+  String get courseNoteTabWholeCourse => '課程簡介';
+
+  @override
+  String get courseNoteTabThisSession => '本節課';
+
+  @override
+  String get courseNoteWholeCourseLabel => '課程簡介';
+
+  @override
+  String get courseNoteWholeCourseHint => '同名課程共享，長期有效（例如課程說明、課堂注意事項）。';
+
+  @override
+  String get courseNoteWholeCoursePlaceholder => '例如：這個老師容易點名、教室在新大樓…';
+
+  @override
+  String get courseNoteSessionLabel => '本節課備註';
+
+  @override
+  String courseNoteSessionHint(int week) {
+    return '僅對第 $week 週這一次課生效，適合記錄作業或攜帶物品。';
+  }
+
+  @override
+  String get courseNoteSessionPlaceholder => '例如：交第三章習題、帶電腦…';
+
+  @override
+  String get courseNoteHasHomeworkTitle => '有作業';
+
+  @override
+  String get courseNoteHasHomeworkSubtitle => '開啟後，週檢視課程卡片會顯示作業圓標';
+
+  @override
+  String get courseNoteHomeworkMarked => '本節有作業';
+
+  @override
+  String get courseNoteTileSubtitleEmpty => '記錄作業、帶電腦或課堂提醒';
+
+  @override
+  String get courseNoteTileSubtitleWhole => '已有課程簡介';
+
+  @override
+  String get courseNoteTileSubtitleSession => '已有本節課備註';
+
+  @override
+  String get courseNoteTileSubtitleBoth => '課程簡介與本節課均有備註';
+
+  @override
+  String get courseNoteReadOnlyNotice => '對方課程僅可查看備註，無法編輯。';
+
+  @override
+  String get courseNoteDoneEditingAction => '完成';
+
+  @override
   String courseActionSheetNotice(int week) {
     return '您正在查看第 $week 周，如該時段突發考試或衝突，可立即在下方執行快速調課或停課';
   }
@@ -14722,6 +15165,25 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get courseActionConflictSwitchAction => '切換';
+
+  @override
+  String courseActionCoupleRelatedCount(int count) {
+    return '還有 $count 節情侶課表課程';
+  }
+
+  @override
+  String get courseActionCoupleExpandHint => '展開查看對方的課或一起上課，點擊可切換預覽';
+
+  @override
+  String get courseActionCoupleCollapseHint => '點擊收起情侶課表課程列表';
+
+  @override
+  String courseActionMixedRelatedCount(int count) {
+    return '還有 $count 節相關課程';
+  }
+
+  @override
+  String get courseActionPartnerReadOnlyNotice => '這是對方課表中的課程，僅供查看，無法編輯或調課';
 
   @override
   String get suspendSheetTitle => '停課';
@@ -18548,6 +19010,201 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
 
   @override
+  String get coupleTimetableEntryTitle => '情侶課表';
+
+  @override
+  String get coupleTimetableEntryBound => '已綁定';
+
+  @override
+  String get coupleTimetableModeEnableTooltip => '開啟情侶課表';
+
+  @override
+  String get coupleTimetableModeDisableTooltip => '關閉情侶課表';
+
+  @override
+  String get coupleTimetableTitle => '情侶課表';
+
+  @override
+  String get coupleTimetableIntro =>
+      '匯出你的課表發給對方，或匯入對方分享的課表檔案，匯入後可在疊加檢視中查看雙方的課程';
+
+  @override
+  String get coupleTimetableBoundTitle => '已綁定對方課表';
+
+  @override
+  String get coupleTimetableUnboundTitle => '尚未綁定對方課表';
+
+  @override
+  String get coupleTimetablePartnerNameLabel => '對方名稱';
+
+  @override
+  String coupleTimetableLastImportedAt(String time) {
+    return '上次匯入：$time';
+  }
+
+  @override
+  String get coupleTimetableExportForPartner => '匯出我的課表給對方';
+
+  @override
+  String get coupleTimetableImportPartner => '匯入對方課表';
+
+  @override
+  String get coupleTimetableUnlink => '解除綁定';
+
+  @override
+  String get coupleTimetableOpenOverlay => '進入疊加檢視';
+
+  @override
+  String get coupleTimetableImportSuccess => '已匯入對方課表';
+
+  @override
+  String get coupleTimetableImportUpdated => '已更新對方課表';
+
+  @override
+  String get coupleTimetableUnlinkConfirmTitle => '解除情侶課表綁定？';
+
+  @override
+  String get coupleTimetableUnlinkConfirmMessage => '解除後將刪除本機儲存的對方課表，疊加檢視也會關閉';
+
+  @override
+  String get coupleTimetableUnlinkSuccess => '已解除綁定';
+
+  @override
+  String get coupleTimetablePrivacyHint => '對方只能看到你匯出檔案中所包含的課表內容';
+
+  @override
+  String get coupleTimetableOverlayTitle => '情侶疊加';
+
+  @override
+  String get coupleTimetableLegendMine => '我的課';
+
+  @override
+  String get coupleTimetableLegendPartner => '對方課程';
+
+  @override
+  String get coupleTimetableLegendTogether => '一起上課';
+
+  @override
+  String get coupleTimetableLegendFree => '共同空閒';
+
+  @override
+  String get coupleTimetableSharedFreeTitle => '今日共同空閒';
+
+  @override
+  String get coupleTimetableSharedFreeTitleOtherDay => '當日共同空閒';
+
+  @override
+  String get coupleTimetableNoSharedFree => '今天沒有共同空閒時段';
+
+  @override
+  String get coupleTimetableNoSharedFreeOtherDay => '當日沒有共同空閒時段';
+
+  @override
+  String coupleTimetableSharedFreeMeta(int count) {
+    return '共 $count 段';
+  }
+
+  @override
+  String coupleTimetableSharedFreeMoreCount(int count) {
+    return '還有 $count 段';
+  }
+
+  @override
+  String get coupleTimetableSharedFreeUnavailable => '暫時算不出共同空閒';
+
+  @override
+  String get coupleTimetableSharedFreeStaleHint => '對方課表可能不是最新';
+
+  @override
+  String get coupleTimetablePartnerReadOnlyBadge => '對方課表（唯讀）';
+
+  @override
+  String get coupleTimetableNotBoundMessage => '請先匯入對方課表後再查看疊加檢視';
+
+  @override
+  String get coupleTimetableShareText => '這是我的課表，匯入到輕嶼課表的情侶課表即可一起查看';
+
+  @override
+  String get coupleTimetableShareSubject => '輕嶼課表・情侶課表分享';
+
+  @override
+  String get coupleTimetableWeekOffsetTitle => '週次偏移';
+
+  @override
+  String get coupleTimetableWeekOffsetSubtitle =>
+      '查看你的第 N 週時，讀取對方課表的第 N+偏移 週，例如 +1 表示對方學期進度比你快一週';
+
+  @override
+  String get coupleTimetableWeekOffsetZero => '無偏移';
+
+  @override
+  String coupleTimetableWeekOffsetSigned(String offset) {
+    return '$offset 週';
+  }
+
+  @override
+  String coupleTimetableWeekOffsetPreview(int myWeek, int partnerWeek) {
+    return '查看你的第 $myWeek 週時，顯示對方第 $partnerWeek 週的課';
+  }
+
+  @override
+  String get coupleTimetableColorsTitle => '疊加顏色';
+
+  @override
+  String get coupleTimetableColorsSubtitle =>
+      '自訂「我的課」「對方課程」「一起上課」在疊加檢視中的顯示顏色，可按喜好自由搭配';
+
+  @override
+  String get partnerImportRequiresSingleProfile => '請匯入單一課表備份檔案，不支援全量備份';
+
+  @override
+  String get coupleWebdavTitle => '堅果雲拉取';
+
+  @override
+  String get coupleWebdavSubtitle =>
+      '登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不影響';
+
+  @override
+  String get coupleWebdavNotConnected => '尚未連接堅果雲';
+
+  @override
+  String coupleWebdavConnectedAs(String username) {
+    return '已連接：$username';
+  }
+
+  @override
+  String coupleWebdavRemotePathHint(String path) {
+    return '遠端檔案路徑：$path';
+  }
+
+  @override
+  String coupleWebdavLastPulledAt(String time) {
+    return '上次拉取：$time';
+  }
+
+  @override
+  String get coupleWebdavConnect => '連接堅果雲';
+
+  @override
+  String get coupleWebdavDisconnect => '中斷連接';
+
+  @override
+  String get coupleWebdavPullNow => '立即拉取對方課表';
+
+  @override
+  String get coupleWebdavUploadForPartner => '上傳我的課表到堅果雲';
+
+  @override
+  String get coupleWebdavLoginSheetTitle => '連接堅果雲（情侶課表）';
+
+  @override
+  String get coupleWebdavLoginSheetSubtitle =>
+      '請使用應用程式專用密碼，對方需先將課表上傳到約定路徑，或由你在對方裝置上登入同一帳號並上傳';
+
+  @override
+  String get coupleWebdavConfirmConnect => '連接並拉取';
+
+  @override
   String get coupleWebdavMySlotLabel => '本機槽位';
 
   @override
@@ -18558,6 +19215,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get coupleWebdavSlotTwo => '槽位 2';
+
+  @override
+  String get coupleWebdavTestSuccess => '堅果雲連接成功';
+
+  @override
+  String get coupleWebdavTestFailed => '連接失敗，請檢查帳號、應用程式專用密碼與網路';
+
+  @override
+  String get coupleWebdavPullImported => '已從堅果雲匯入對方課表';
+
+  @override
+  String get coupleWebdavPullUpdated => '已從堅果雲更新對方課表';
+
+  @override
+  String get coupleWebdavPullUnchanged => '對方課表無變化';
+
+  @override
+  String get coupleWebdavUploadSuccess => '已上傳課表，對方可拉取';
+
+  @override
+  String get coupleWebdavPartnerFileMissing => '找不到對方課表檔案，請讓對方先上傳';
+
+  @override
+  String get coupleWebdavPullFailed => '拉取對方課表失敗，請稍後重試';
+
+  @override
+  String get coupleWebdavNotConnectedError => '請先連接堅果雲';
 
   @override
   String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
@@ -18635,7 +19319,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
-      '正式版僅支援 HTTPS 加密連線，HTTP 明文協定已被停用以保護資料安全';
+      '建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用';
 
   @override
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
@@ -20107,6 +20791,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get appLogsClearFailed => '清空應用日誌失敗';
 
   @override
+  String get appLogsSourceApp => '應用程式';
+
+  @override
+  String get appLogsSourceNative => '超級島';
+
+  @override
+  String get appLogsRecordingPausedHint => '記錄已關閉，下方為歷史紀錄，關閉後不再新增';
+
+  @override
   String get timeSchemeTitle => '時間範本';
 
   @override
@@ -20471,6 +21164,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get timeCorrectionTitle => '鈴聲時間校正';
+
+  @override
   String get timeCorrectionHelp => '如果學校鈴声比課表快几秒，就調成提前；如果鈴声慢几秒，就調成延後';
 
   @override
@@ -20560,9 +21256,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get liveMiuiLabelLogoCornerRadiusTitle => '左側圖示圓角';
+
+  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左側文字大小 $value';
   }
+
+  @override
+  String get liveMiuiLabelFontSizeTitle => '左側文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -20570,9 +21272,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get liveMiuiLabelOffsetXTitle => '左側文字水平偏移';
+
+  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左側文字垂直偏移 $value';
   }
+
+  @override
+  String get liveMiuiLabelOffsetYTitle => '左側文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左側文字粗細';
@@ -21144,7 +21852,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedSheetSectionTitle => '磨砂玻璃';
 
   @override
+  String get frostedSheetSectionSubtitle =>
+      '調整首頁彈出面板的高斯模糊強度與磨砂亮度，滑桿越靠右，白色磨砂層越明顯';
+
+  @override
   String get frostedBlurEnabledTitle => '啟用模糊';
+
+  @override
+  String get frostedBlurEnabledSubtitle =>
+      '關閉後，彈窗、首頁模糊區域與「回到本週」按鈕僅保留半透明底色，不再取樣模糊';
 
   @override
   String get frostedSheetPreviewOpenAction => '開啟預覽面板';
@@ -21159,10 +21875,116 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedSheetBlurLabel => '模糊強度';
 
   @override
+  String get frostedSheetTintLabel => '磨砂亮度';
+
+  @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
 
   @override
   String get timetableBackgroundColorSectionSubtitle => '只作用於課表頁面的大背景';
+
+  @override
+  String get homePageBackgroundFillLabel => '背景填充';
+
+  @override
+  String get homePageBackgroundFillColor => '純色';
+
+  @override
+  String get homePageBackgroundFillImage => '圖片';
+
+  @override
+  String get homePageBackgroundImageTitle => '背景圖';
+
+  @override
+  String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
+
+  @override
+  String get homePageWallpaperTitle => '背景圖片';
+
+  @override
+  String get homePageWallpaperSubtitle => '全螢幕鋪底一張圖；勾選下方區域決定透出範圍，未勾選區域仍顯示課表背景色';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerTitle => '背景隨週次滑動';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerSubtitle => '左右切換週次時，背景圖與課表頁面一起移動';
+
+  @override
+  String get homePageBackgroundScopeTitle => '背景顯示區域';
+
+  @override
+  String get homePageBackgroundScopeSubtitle =>
+      '從上到下依序控制各區域是否透出背景圖；未勾選區域仍顯示課表背景色';
+
+  @override
+  String get homePageBackgroundScopeStatusBar => '狀態列';
+
+  @override
+  String get homePageBackgroundScopeTimetable => '課表區域';
+
+  @override
+  String get homePageBackgroundScopeWeekdayBar => '資訊欄';
+
+  @override
+  String get homePageBackgroundScopeHeader => '頂欄';
+
+  @override
+  String get homePageHeaderBlurTitle => '頂欄高斯模糊';
+
+  @override
+  String get homePageHeaderBlurSubtitle => '模糊標題欄（輕嶼課表）區域；勾選「狀態列」時一併模糊狀態列';
+
+  @override
+  String get homePageWeekdayBarBlurTitle => '資訊欄高斯模糊';
+
+  @override
+  String get homePageWeekdayBarBlurSubtitle => '模糊週次與星期資訊欄，透出下方背景圖';
+
+  @override
+  String get homePageTimeColumnBlurTitle => '時間欄高斯模糊';
+
+  @override
+  String get homePageTimeColumnBlurSubtitle => '模糊左側節次/時間列，透出下方背景圖';
+
+  @override
+  String get homePageRegionBlurSectionSubtitle => '需搭配背景圖使用；模糊強度跟隨「彈窗磨砂玻璃」設定';
+
+  @override
+  String get homePagePickImageAction => '選擇圖片';
+
+  @override
+  String get homePageSwitchImageAction => '切換照片';
+
+  @override
+  String get homePageClearImageAction => '清除圖片';
+
+  @override
+  String get homePageImageNotSelected => '未選擇';
+
+  @override
+  String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
+
+  @override
+  String get wallpaperPositionPickerResetTooltip => '重設置中';
+
+  @override
+  String get wallpaperPositionPickerDragHint => '拖曳桌布調整位置';
+
+  @override
+  String get wallpaperPositionPickerSwitchWallpaper => '更換桌布';
+
+  @override
+  String get wallpaperPositionPickerDone => '完成';
+
+  @override
+  String get wallpaperPositionPickerExit => '退出';
+
+  @override
+  String get appearanceTextColorsSectionTitle => '文字顏色';
+
+  @override
+  String get appearanceTextColorsSectionSubtitle => '自訂課程卡片、星期欄與時間軸文字顏色';
 
   @override
   String get defaultTimetablePreviewName => '預設課表';
@@ -21732,6 +22554,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get pageTransitionSpeedTitle => '頁面轉場速度';
+
+  @override
   String get pageTransitionSpeedSubtitle =>
       '調節進入和返回子頁面時的滑動動畫快慢，數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定';
 
@@ -21765,6 +22590,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get layoutBackToCurrentWeekButtonOpacityTitle => '懸浮按鈕不透明度';
+
+  @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle => '只對右下角懸浮樣式生效';
 
   @override
@@ -21773,9 +22601,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get layoutCourseCardGapTitle => '課程卡片間距';
+
+  @override
   String layoutSectionHeightLabel(String value) {
     return '課表行高 $value';
   }
+
+  @override
+  String get layoutSectionHeightTitle => '課表行高';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -21783,9 +22617,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get layoutCompactFontSizeTitle => '緊湊字級';
+
+  @override
   String layoutCourseCardFontSizeLabel(String value) {
     return '課程卡片字級 $value';
   }
+
+  @override
+  String get layoutCourseCardFontSizeTitle => '課程卡片字級';
 
   @override
   String get layoutCourseCardDisplayTitle => '課程卡片顯示';
@@ -23485,6 +24325,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get examDateRequired => '請選擇考試日期';
 
   @override
+  String get examEndTimeBeforeStart => '結束時間不能早於開始時間';
+
+  @override
   String get examStartTimeLabel => '開始時間';
 
   @override
@@ -23693,6 +24536,68 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseActionDeleteSecondary => '刪除';
 
   @override
+  String get courseNoteSheetTitle => '課程備註';
+
+  @override
+  String get courseNoteAction => '備註';
+
+  @override
+  String get courseNoteSaveAction => '儲存';
+
+  @override
+  String get courseNoteTabWholeCourse => '課程簡介';
+
+  @override
+  String get courseNoteTabThisSession => '本節課';
+
+  @override
+  String get courseNoteWholeCourseLabel => '課程簡介';
+
+  @override
+  String get courseNoteWholeCourseHint => '同名課程共享，長期有效（例如課程說明、課堂注意事項）。';
+
+  @override
+  String get courseNoteWholeCoursePlaceholder => '例如：這個老師容易點名、教室在新大樓…';
+
+  @override
+  String get courseNoteSessionLabel => '本節課備註';
+
+  @override
+  String courseNoteSessionHint(int week) {
+    return '僅對第 $week 週這一次課生效，適合記錄作業或攜帶物品。';
+  }
+
+  @override
+  String get courseNoteSessionPlaceholder => '例如：交第三章習題、帶電腦…';
+
+  @override
+  String get courseNoteHasHomeworkTitle => '有作業';
+
+  @override
+  String get courseNoteHasHomeworkSubtitle => '開啟後，週檢視課程卡片會顯示作業圓標';
+
+  @override
+  String get courseNoteHomeworkMarked => '本節有作業';
+
+  @override
+  String get courseNoteTileSubtitleEmpty => '記錄作業、帶電腦或課堂提醒';
+
+  @override
+  String get courseNoteTileSubtitleWhole => '已有課程簡介';
+
+  @override
+  String get courseNoteTileSubtitleSession => '已有本節課備註';
+
+  @override
+  String get courseNoteTileSubtitleBoth => '課程簡介與本節課均有備註';
+
+  @override
+  String get courseNoteReadOnlyNotice => '對方課程僅可查看備註，無法編輯。';
+
+  @override
+  String get courseNoteDoneEditingAction => '完成';
+
+  @override
   String courseActionSheetNotice(int week) {
     return '您正在查看第 $week 周，如該時段突發考試或衝突，可立即在下方執行快速調課或停課';
   }
@@ -23711,6 +24616,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseActionConflictSwitchAction => '切換';
+
+  @override
+  String courseActionCoupleRelatedCount(int count) {
+    return '還有 $count 節情侶課表課程';
+  }
+
+  @override
+  String get courseActionCoupleExpandHint => '展開查看對方的課或一起上課，點擊可切換預覽';
+
+  @override
+  String get courseActionCoupleCollapseHint => '點擊收起情侶課表課程列表';
+
+  @override
+  String courseActionMixedRelatedCount(int count) {
+    return '還有 $count 節相關課程';
+  }
+
+  @override
+  String get courseActionPartnerReadOnlyNotice => '這是對方課表中的課程，僅供查看，無法編輯或調課';
 
   @override
   String get suspendSheetTitle => '停課';
