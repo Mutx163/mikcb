@@ -53,7 +53,7 @@ class SemesterProgressCard extends StatelessWidget {
                             startLabel,
                             endLabel,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: HyperosTypography.listDetail(context),
                         ),

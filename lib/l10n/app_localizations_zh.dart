@@ -6385,6 +6385,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsCompareWeek => '当前周';
 
   @override
+  String get statisticsMoreTitle => '深度分析';
+
+  @override
+  String get statisticsAchievementMorningPersonName => '早起鸟';
+
+  @override
+  String get statisticsAchievementMorningPersonDescription => '早间课时占比 ≥ 50%';
+
+  @override
+  String get statisticsAchievementGapMasterName => '时间管理大师';
+
+  @override
+  String get statisticsAchievementGapMasterDescription => '最长课间空档 ≤ 2 节';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override
@@ -15985,6 +16000,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsCompareWeek => '當前週';
+
+  @override
+  String get statisticsMoreTitle => '深度分析';
+
+  @override
+  String get statisticsAchievementMorningPersonName => '早起鳥';
+
+  @override
+  String get statisticsAchievementMorningPersonDescription => '早間課時佔比 ≥ 50%';
+
+  @override
+  String get statisticsAchievementGapMasterName => '時間管理大師';
+
+  @override
+  String get statisticsAchievementGapMasterDescription => '最長課間空檔 ≤ 2 節';
 
   @override
   String get statisticsTabSemester => '學期';
@@ -25631,6 +25661,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsCompareWeek => '當前週';
+
+  @override
+  String get statisticsMoreTitle => '深度分析';
+
+  @override
+  String get statisticsAchievementMorningPersonName => '早起鳥';
+
+  @override
+  String get statisticsAchievementMorningPersonDescription => '早間課時佔比 ≥ 50%';
+
+  @override
+  String get statisticsAchievementGapMasterName => '時間管理大師';
+
+  @override
+  String get statisticsAchievementGapMasterDescription => '最長課間空檔 ≤ 2 節';
 
   @override
   String get statisticsTabSemester => '學期';

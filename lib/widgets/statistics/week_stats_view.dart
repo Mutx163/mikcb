@@ -27,6 +27,7 @@ class WeekStatsView extends StatelessWidget {
     final week = stats.weekNumber;
 
     return HyperosListView(
+      includeHeaderInset: false,
       children: [
         _WeekSelector(
           week: week,

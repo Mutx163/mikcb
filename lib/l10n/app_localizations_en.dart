@@ -6745,6 +6745,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsCompareWeek => 'Current week';
 
   @override
+  String get statisticsMoreTitle => 'Deep Dive';
+
+  @override
+  String get statisticsAchievementMorningPersonName => 'Morning Bird';
+
+  @override
+  String get statisticsAchievementMorningPersonDescription =>
+      '50%+ morning sections';
+
+  @override
+  String get statisticsAchievementGapMasterName => 'Time Manager';
+
+  @override
+  String get statisticsAchievementGapMasterDescription =>
+      'Longest break ≤ 2 sections';
+
+  @override
   String get statisticsTabSemester => 'Semester';
 
   @override

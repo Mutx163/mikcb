@@ -1,0 +1,149 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+
+import '../models/course.dart';
+import '../providers/timetable_provider.dart';
+import '../services/statistics_service.dart';
+import '../ui/hyperos/hyperos.dart';
+import '../widgets/statistics/course_ranking.dart';
+import '../widgets/statistics/heatmap_card.dart';
+import '../widgets/statistics/teacher_stats_card.dart';
+import '../widgets/statistics/time_utilization_card.dart';
+import '../widgets/statistics/trend_chart.dart';
+import '../widgets/statistics/venue_stats_card.dart';
+import 'add_course_screen.dart';
+
+/// 深度分析二级页模块
+enum StatisticsAnalysisModule { trend, timeUtil, venue, teacher, ranking }
+
+/// 课程统计深度分析二级页：按 [module] 渲染对应分析模块。
+class StatisticsAnalysisScreen extends StatelessWidget {
+  final StatisticsAnalysisModule module;
+
+  const StatisticsAnalysisScreen({super.key, required this.module});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Consumer<TimetableProvider>(
+      builder: (context, provider, _) {
+        final courses = provider.courses;
+        final currentWeek = provider.currentWeek;
+        final semesterWeekCount = provider.settings.semesterWeekCount;
+        final hasData = courses.isNotEmpty;
+
+        return HyperosSubpage(
+          onBack: () => Navigator.pop(context),
+          title: Text(_moduleTitle(l10n, module)),
+          child: hasData
+              ? HyperosListView(
+                  includeHeaderInset: false,
+                  children: _buildModuleContent(
+                    context,
+                    l10n,
+                    provider,
+                    courses,
+                    currentWeek,
+                    semesterWeekCount,
+                  ),
+                )
+              : Center(
+                  child: HyperosEmptyState(
+                    icon: Icons.analytics_outlined,
+                    title: l10n.statisticsNoData,
+                    subtitle: l10n.statisticsNoDataHint,
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  String _moduleTitle(AppLocalizations l10n, StatisticsAnalysisModule module) {
+    return switch (module) {
+      StatisticsAnalysisModule.trend => l10n.statisticsTrendTitle,
+      StatisticsAnalysisModule.timeUtil => l10n.statisticsTimeUtilTitle,
+      StatisticsAnalysisModule.venue => l10n.statisticsVenueTitle,
+      StatisticsAnalysisModule.teacher => l10n.statisticsTeacherTitle,
+      StatisticsAnalysisModule.ranking => l10n.statisticsRankingTitle,
+    };
+  }
+
+  List<Widget> _buildModuleContent(
+    BuildContext context,
+    AppLocalizations l10n,
+    TimetableProvider provider,
+    List<Course> courses,
+    int currentWeek,
+    int semesterWeekCount,
+  ) {
+    switch (module) {
+      case StatisticsAnalysisModule.trend:
+        final trend = StatisticsService.calculateWeeklyTrend(
+          allCourses: courses,
+          semesterWeekCount: semesterWeekCount,
+        );
+        final heatmap = StatisticsService.calculateHeatmap(
+          allCourses: courses,
+          semesterWeekCount: semesterWeekCount,
+        );
+        return [
+          TrendChart(trend: trend, currentWeek: currentWeek),
+          const HyperosSectionGap(),
+          SemesterHeatmapCard(heatmap: heatmap, currentWeek: currentWeek),
+        ];
+      case StatisticsAnalysisModule.timeUtil:
+        final timeUtil = StatisticsService.calculateTimeUtilization(
+          allCourses: courses,
+          currentWeek: currentWeek,
+        );
+        return [TimeUtilizationCard(stats: timeUtil)];
+      case StatisticsAnalysisModule.venue:
+        final venue = StatisticsService.calculateVenueStats(
+          allCourses: courses,
+          currentWeek: currentWeek,
+        );
+        return [VenueStatsCard(stats: venue)];
+      case StatisticsAnalysisModule.teacher:
+        final teachers = StatisticsService.calculateTeacherStats(
+          allCourses: courses,
+          currentWeek: currentWeek,
+        );
+        return [TeacherStatsCard(stats: teachers)];
+      case StatisticsAnalysisModule.ranking:
+        final semesterStats = StatisticsService.calculateSemester(
+          allCourses: courses,
+          currentWeek: currentWeek,
+          semesterWeekCount: semesterWeekCount,
+        );
+        return [
+          CourseRanking(
+            courseRanking: semesterStats.courseRanking,
+            onCourseTap: (courseName) =>
+                _openCourseEdit(context, courseName),
+          ),
+        ];
+    }
+  }
+
+  void _openCourseEdit(BuildContext context, String courseName) {
+    final provider = context.read<TimetableProvider>();
+    final course = provider.courses
+        .where((c) => c.name == courseName)
+        .firstOrNull;
+    if (course == null) {
+      return;
+    }
+    final group = provider.courseGroupForCourse(course);
+    Navigator.push(
+      context,
+      HyperosPageRoute(
+        settings: const RouteSettings(name: '/course/edit'),
+        builder: (context) =>
+            AddCourseScreen(courseGroup: group, initialCourse: course),
+      ),
+    );
+  }
+}

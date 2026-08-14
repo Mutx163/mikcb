@@ -6483,6 +6483,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsCompareWeek => '現在の週';
 
   @override
+  String get statisticsMoreTitle => '詳細分析';
+
+  @override
+  String get statisticsAchievementMorningPersonName => '早起き鳥';
+
+  @override
+  String get statisticsAchievementMorningPersonDescription => '午前の授業が5割以上';
+
+  @override
+  String get statisticsAchievementGapMasterName => '時間管理の達人';
+
+  @override
+  String get statisticsAchievementGapMasterDescription => '最長の空きが2コマ以内';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override

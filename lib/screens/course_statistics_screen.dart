@@ -12,24 +12,18 @@ import '../services/statistics_share_service.dart';
 import '../services/stats_widget_service.dart';
 import '../services/weekly_report_service.dart';
 import '../widgets/statistics/achievement_badge.dart';
-import '../widgets/statistics/course_ranking.dart';
 import '../widgets/statistics/data_story_card.dart';
 import '../widgets/statistics/daily_chart.dart';
-import '../widgets/statistics/heatmap_card.dart';
 import '../widgets/statistics/nature_ratio.dart';
 import '../widgets/statistics/overview_section.dart';
 import '../widgets/statistics/profile_compare_card.dart';
 import '../widgets/statistics/semester_progress_card.dart';
 import '../widgets/statistics/statistics_export_sheet.dart';
-import '../widgets/statistics/teacher_stats_card.dart';
-import '../widgets/statistics/time_utilization_card.dart';
-import '../widgets/statistics/trend_chart.dart';
-import '../widgets/statistics/venue_stats_card.dart';
 import '../widgets/statistics/week_stats_view.dart';
 import '../widgets/statistics/weekly_comparison_card.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
-import 'add_course_screen.dart';
+import 'statistics_analysis_screen.dart';
 
 /// 课程统计页面（账单式：学期 / 周 双视图）
 class CourseStatisticsScreen extends StatefulWidget {
@@ -77,25 +71,6 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
         setState(() => _isExporting = false);
       }
     }
-  }
-
-  void _openCourseEdit(BuildContext context, String courseName) {
-    final provider = context.read<TimetableProvider>();
-    final course = provider.courses
-        .where((c) => c.name == courseName)
-        .firstOrNull;
-    if (course == null) {
-      return;
-    }
-    final group = provider.courseGroupForCourse(course);
-    Navigator.push(
-      context,
-      HyperosPageRoute(
-        settings: const RouteSettings(name: '/course/edit'),
-        builder: (context) =>
-            AddCourseScreen(courseGroup: group, initialCourse: course),
-      ),
-    );
   }
 
   @override
@@ -249,10 +224,6 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     List<Achievement> achievements,
     List<DataStory> stories,
   ) {
-    final trend = StatisticsService.calculateWeeklyTrend(
-      allCourses: courses,
-      semesterWeekCount: semesterWeekCount,
-    );
     final progress = StatisticsService.calculateSemesterProgress(
       allCourses: courses,
       currentWeek: currentWeek,
@@ -264,24 +235,9 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
       currentWeek: currentWeek,
       semesterWeekCount: semesterWeekCount,
     );
-    final heatmap = StatisticsService.calculateHeatmap(
-      allCourses: courses,
-      semesterWeekCount: semesterWeekCount,
-    );
-    final timeUtil = StatisticsService.calculateTimeUtilization(
-      allCourses: courses,
-      currentWeek: currentWeek,
-    );
-    final venue = StatisticsService.calculateVenueStats(
-      allCourses: courses,
-      currentWeek: currentWeek,
-    );
-    final teachers = StatisticsService.calculateTeacherStats(
-      allCourses: courses,
-      currentWeek: currentWeek,
-    );
 
     return HyperosListView(
+      includeHeaderInset: false,
       children: [
         _buildWeeklyReportSection(context, l10n, provider, currentWeek, semesterWeekCount),
         const HyperosSectionGap(),
@@ -312,48 +268,64 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
         ),
         const HyperosSectionGap(),
         HyperosSettingsBlock(
-          title: l10n.statisticsTrendTitle,
-          child: TrendChart(trend: trend, currentWeek: currentWeek),
-        ),
-        const HyperosSectionGap(),
-        HyperosSettingsBlock(
           title: l10n.statisticsNatureRatio,
           child: NatureRatio(stats: semesterStats.natureStats),
         ),
         const HyperosSectionGap(),
-        HyperosSettingsBlock(
-          title: l10n.statisticsHeatmapTitle,
-          child: SemesterHeatmapCard(
-            heatmap: heatmap,
-            currentWeek: currentWeek,
-          ),
-        ),
-        const HyperosSectionGap(),
-        HyperosSettingsBlock(
-          title: l10n.statisticsTimeUtilTitle,
-          child: TimeUtilizationCard(stats: timeUtil),
-        ),
-        const HyperosSectionGap(),
-        HyperosSettingsBlock(
-          title: l10n.statisticsVenueTitle,
-          child: VenueStatsCard(stats: venue),
-        ),
-        const HyperosSectionGap(),
-        HyperosSettingsBlock(
-          title: l10n.statisticsTeacherTitle,
-          child: TeacherStatsCard(stats: teachers),
-        ),
-        const HyperosSectionGap(),
-        HyperosSettingsBlock(
-          title: l10n.statisticsRankingTitle,
-          child: CourseRanking(
-            courseRanking: semesterStats.courseRanking,
-            onCourseTap: (courseName) =>
-                _openCourseEdit(context, courseName),
-          ),
-        ),
+        _buildAnalysisEntries(context, l10n),
         ..._buildProfileCompareSections(context, l10n, provider, semesterStats),
       ],
+    );
+  }
+
+  /// 深度分析入口组（二级页）
+  Widget _buildAnalysisEntries(BuildContext context, AppLocalizations l10n) {
+    void open(StatisticsAnalysisModule module) {
+      Navigator.push(
+        context,
+        HyperosPageRoute(
+          settings: const RouteSettings(name: '/statistics/analysis'),
+          builder: (_) => StatisticsAnalysisScreen(module: module),
+        ),
+      );
+    }
+
+    return HyperosSettingsBlock(
+      title: l10n.statisticsMoreTitle,
+      child: HyperosListGroup(
+        children: [
+          HyperosListTile(
+            icon: Icons.show_chart_rounded,
+            iconAccent: HyperosIconColors.blue,
+            title: l10n.statisticsTrendTitle,
+            onTap: () => open(StatisticsAnalysisModule.trend),
+          ),
+          HyperosListTile(
+            icon: Icons.schedule_rounded,
+            iconAccent: HyperosIconColors.cyan,
+            title: l10n.statisticsTimeUtilTitle,
+            onTap: () => open(StatisticsAnalysisModule.timeUtil),
+          ),
+          HyperosListTile(
+            icon: Icons.location_city_rounded,
+            iconAccent: HyperosIconColors.purple,
+            title: l10n.statisticsVenueTitle,
+            onTap: () => open(StatisticsAnalysisModule.venue),
+          ),
+          HyperosListTile(
+            icon: Icons.school_outlined,
+            iconAccent: HyperosIconColors.green,
+            title: l10n.statisticsTeacherTitle,
+            onTap: () => open(StatisticsAnalysisModule.teacher),
+          ),
+          HyperosListTile(
+            icon: Icons.leaderboard_rounded,
+            iconAccent: HyperosIconColors.orange,
+            title: l10n.statisticsRankingTitle,
+            onTap: () => open(StatisticsAnalysisModule.ranking),
+          ),
+        ],
+      ),
     );
   }
 

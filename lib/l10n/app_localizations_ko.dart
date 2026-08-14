@@ -6521,6 +6521,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsCompareWeek => '현재 주차';
 
   @override
+  String get statisticsMoreTitle => '심층 분석';
+
+  @override
+  String get statisticsAchievementMorningPersonName => '모닝 버드';
+
+  @override
+  String get statisticsAchievementMorningPersonDescription => '오전 수업 50% 이상';
+
+  @override
+  String get statisticsAchievementGapMasterName => '시간 관리 마스터';
+
+  @override
+  String get statisticsAchievementGapMasterDescription => '최장 공백 2교시 이하';
+
+  @override
   String get statisticsTabSemester => '학기';
 
   @override

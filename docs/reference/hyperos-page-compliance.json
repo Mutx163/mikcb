@@ -204,6 +204,15 @@
       "notes": "含 4 个子流程页；静态 audit + 布局 token 已对齐"
     },
     {
+      "id": "statistics-analysis",
+      "file": "lib/screens/statistics_analysis_screen.dart",
+      "label": "统计深度分析",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "二级页：趋势/热力图/时间利用/教室与教学楼/教师排行/课程排行，按模块渲染"
+    },
+    {
       "id": "course-statistics",
       "file": "lib/screens/course_statistics_screen.dart",
       "label": "课程统计",

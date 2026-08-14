@@ -11630,6 +11630,36 @@ abstract class AppLocalizations {
   /// **'当前周'**
   String get statisticsCompareWeek;
 
+  /// No description provided for @statisticsMoreTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'深度分析'**
+  String get statisticsMoreTitle;
+
+  /// No description provided for @statisticsAchievementMorningPersonName.
+  ///
+  /// In zh, this message translates to:
+  /// **'早起鸟'**
+  String get statisticsAchievementMorningPersonName;
+
+  /// No description provided for @statisticsAchievementMorningPersonDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'早间课时占比 ≥ 50%'**
+  String get statisticsAchievementMorningPersonDescription;
+
+  /// No description provided for @statisticsAchievementGapMasterName.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间管理大师'**
+  String get statisticsAchievementGapMasterName;
+
+  /// No description provided for @statisticsAchievementGapMasterDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'最长课间空档 ≤ 2 节'**
+  String get statisticsAchievementGapMasterDescription;
+
   /// No description provided for @statisticsTabSemester.
   ///
   /// In zh, this message translates to:
