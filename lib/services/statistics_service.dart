@@ -145,6 +145,19 @@ class StatisticsService {
     // 单日跨教学楼最大值
     final dailyMaxBuildings = _calculateDailyMaxBuildings(allCourses);
 
+    // 早间课时占比（周排课口径，12:00 前开始）
+    final totalWeeklySections = allCourses.fold<int>(
+      0,
+      (sum, c) => sum + c.sectionCount,
+    );
+    final morningRatio = _calculateMorningRatio(
+      allCourses,
+      totalWeeklySections,
+    );
+
+    // 单日最长课间空档（节）
+    final maxDailyGap = _calculateMaxDailyGap(allCourses);
+
     return [
       Achievement(
         id: 'early_bird',
@@ -215,6 +228,20 @@ class StatisticsService {
         isUnlocked: dailyMaxBuildings >= 3,
         progressCurrent: dailyMaxBuildings,
         progressTarget: 3,
+      ),
+      Achievement(
+        id: 'morning_person',
+        icon: Icons.wb_twilight_rounded,
+        isUnlocked: morningRatio >= 0.5,
+        progressCurrent: (morningRatio * 100).round(),
+        progressTarget: 50,
+      ),
+      Achievement(
+        id: 'gap_master',
+        icon: Icons.av_timer_rounded,
+        isUnlocked: maxDailyGap <= 2,
+        progressCurrent: maxDailyGap,
+        progressTarget: 2,
       ),
     ];
   }
@@ -621,6 +648,38 @@ class StatisticsService {
       if (buildings.length > max) max = buildings.length;
     }
     return max;
+  }
+
+  /// 早间课时占比（12:00 前开始的课时 / 总课时，周排课口径）
+  static double _calculateMorningRatio(
+    List<Course> allCourses,
+    int totalWeeklySections,
+  ) {
+    if (totalWeeklySections <= 0) return 0;
+    final morning = allCourses
+        .where((c) => c.startTime.compareTo('12:00') < 0)
+        .fold<int>(0, (sum, c) => sum + c.sectionCount);
+    return morning / totalWeeklySections;
+  }
+
+  /// 单日最长课间空档（节）
+  static int _calculateMaxDailyGap(List<Course> allCourses) {
+    final slotsByDay = <int, List<Course>>{};
+    for (final course in allCourses) {
+      slotsByDay.putIfAbsent(course.dayOfWeek, () => []).add(course);
+    }
+    var maxGap = 0;
+    for (final slots in slotsByDay.values) {
+      final sorted = [...slots]
+        ..sort((a, b) => a.startSection.compareTo(b.startSection));
+      for (var i = 1; i < sorted.length; i++) {
+        final gap = sorted[i].startSection -
+            sorted[i - 1].endSection -
+            1;
+        if (gap > maxGap) maxGap = gap;
+      }
+    }
+    return maxGap;
   }
 
   /// 每日课时最大差值（均衡度）

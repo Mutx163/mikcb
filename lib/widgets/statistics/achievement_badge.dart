@@ -120,7 +120,7 @@ class _AchievementBadgeState extends State<AchievementBadge>
                           ? Colors.white
                           : HyperosColors.secondaryText(
                               context,
-                            ).withValues(alpha: 0.55),
+                            ).withValues(alpha: 0.78),
                     ),
                   ),
                   if (!unlocked)
@@ -199,6 +199,8 @@ Color _achievementAccent(String id) {
     'explorer' => HyperosIconColors.cyan,
     'full_day_king' => HyperosIconColors.red,
     'building_hopper' => HyperosIconColors.green,
+    'morning_person' => HyperosIconColors.yellow,
+    'gap_master' => HyperosIconColors.cyan,
     _ => HyperosIconColors.blue,
   };
 }
@@ -215,6 +217,8 @@ String _achievementName(AppLocalizations l10n, String id) {
     'explorer' => l10n.statisticsAchievementExplorerName,
     'full_day_king' => l10n.statisticsAchievementFullDayKingName,
     'building_hopper' => l10n.statisticsAchievementBuildingHopperName,
+    'morning_person' => l10n.statisticsAchievementMorningPersonName,
+    'gap_master' => l10n.statisticsAchievementGapMasterName,
     _ => id,
   };
 }
@@ -231,6 +235,8 @@ String _achievementDescription(AppLocalizations l10n, String id) {
     'explorer' => l10n.statisticsAchievementExplorerDescription,
     'full_day_king' => l10n.statisticsAchievementFullDayKingDescription,
     'building_hopper' => l10n.statisticsAchievementBuildingHopperDescription,
+    'morning_person' => l10n.statisticsAchievementMorningPersonDescription,
+    'gap_master' => l10n.statisticsAchievementGapMasterDescription,
     _ => id,
   };
 }

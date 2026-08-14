@@ -699,6 +699,85 @@ void main() {
         expect(king.progressTarget, 8);
       });
 
+      test('should unlock morning person with 50%+ morning sections', () {
+        // 2 门早课（08:00/10:00）+ 1 门晚课（18:30）→ 早间占比 2/3
+        final courses = [
+          Course(
+            id: '1',
+            name: '早课A',
+            teacher: '张三',
+            location: 'A101',
+            dayOfWeek: 1,
+            startSection: 1,
+            endSection: 2,
+            startTime: '08:00',
+            endTime: '09:40',
+            courseNature: CourseNature.required,
+          ),
+          Course(
+            id: '2',
+            name: '早课B',
+            teacher: '李四',
+            location: 'B201',
+            dayOfWeek: 2,
+            startSection: 3,
+            endSection: 4,
+            startTime: '10:00',
+            endTime: '11:40',
+            courseNature: CourseNature.elective,
+          ),
+          Course(
+            id: '3',
+            name: '晚课',
+            teacher: '王五',
+            location: 'C301',
+            dayOfWeek: 3,
+            startSection: 9,
+            endSection: 10,
+            startTime: '18:30',
+            endTime: '20:10',
+            courseNature: CourseNature.elective,
+          ),
+        ];
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: courses,
+          currentWeek: 16,
+        );
+        final morning = achievements.firstWhere((a) => a.id == 'morning_person');
+        expect(morning.isUnlocked, true);
+        expect(morning.progressCurrent, 67); // 4/6 ≈ 67%
+        expect(morning.progressTarget, 50);
+      });
+
+      test('should unlock gap master with compact schedule', () {
+        // 同一门课一天内 1-2 节 + 3-4 节 → 空档 0
+        final courses = [
+          _course('1', '课A', 1, 1, 2, CourseNature.required),
+          _course('2', '课B', 1, 3, 4, CourseNature.elective),
+        ];
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: courses,
+          currentWeek: 16,
+        );
+        final gapMaster = achievements.firstWhere((a) => a.id == 'gap_master');
+        expect(gapMaster.isUnlocked, true);
+        expect(gapMaster.progressCurrent, 0);
+      });
+
+      test('should NOT unlock gap master with long break', () {
+        final courses = [
+          _course('1', '早课', 1, 1, 2, CourseNature.required),
+          _course('2', '晚课', 1, 9, 10, CourseNature.elective),
+        ];
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: courses,
+          currentWeek: 16,
+        );
+        final gapMaster = achievements.firstWhere((a) => a.id == 'gap_master');
+        expect(gapMaster.isUnlocked, false);
+        expect(gapMaster.progressCurrent, 6);
+      });
+
       test('should unlock building hopper with 3 buildings in a day', () {
         final courses = [
           Course(
