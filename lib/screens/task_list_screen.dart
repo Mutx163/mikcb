@@ -344,7 +344,7 @@ class _TaskRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Checkbox(value: task.isCompleted, onChanged: (_) => onToggle()),
+            HyperosCheckbox(value: task.isCompleted, onChanged: (_) => onToggle()),
             const SizedBox(width: 4),
             Expanded(
               child: Column(
