@@ -11,6 +11,10 @@
     <string name="notification_channel_live_update_desc">현재 수업 진행 상황 표시</string>
     <string name="notification_channel_exam_reminder_name">시험 알림</string>
     <string name="notification_channel_exam_reminder_desc">시험 시작 전 알림</string>
+    <string name="notification_channel_weekly_report_name">주간 리포트</string>
+    <string name="notification_channel_weekly_report_desc">매주 일요일 저녁에 이번 주 수업 요약 알림</string>
+    <string name="notification_weekly_report_default_title">이번 주 수업 요약</string>
+    <string name="notification_weekly_report_default_body">경우 시간표를 열어 이번 주 통계 확인</string>
     <string name="notification_exam_reminder_default_title">시험 알림</string>
     <string name="notification_exam_reminder_default_body">곧 시작할 시험이 있습니다</string>
 

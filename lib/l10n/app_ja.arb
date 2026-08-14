@@ -3525,6 +3525,38 @@
     }
   },
   "statisticsWeekCurrentHint": "今週",
+  "weeklyReportTitle": "今週の授業サマリー",
+  "weeklyReportBody": "第{week}週 · 計{sections}コマ · {courses}科目\n先週比 {delta} コマ\n最も忙しい日: {busiestDay}",
+  "@weeklyReportBody": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" },
+      "courses": { "type": "int" },
+      "delta": { "type": "String" },
+      "busiestDay": { "type": "String" }
+    }
+  },
+  "weeklyReportBodyEmpty": "今週は授業がありません。ゆっくり休んでね",
+  "weeklyReportNextFire": "次回 {date} {time}",
+  "@weeklyReportNextFire": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weeklyReportEnabledHint": "週間レポートを有効にしました",
+  "weeklyReportDisabledHint": "週間レポートを無効にしました",
+  "statisticsCompareTitle": "時間割比較",
+  "statisticsCompareActive": "現在の時間割",
+  "statisticsCompareNone": "他の時間割がありません。時間割管理から作成できます",
+  "statisticsCompareDelta": "現在比 {delta} コマ",
+  "@statisticsCompareDelta": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsCompareDetailTitle": "比較詳細",
+  "statisticsCompareWeek": "現在の週",
   "statisticsTabSemester": "学期",
   "statisticsTabWeek": "週",
   "statisticsSemesterProgressTitle": "学期の進捗",

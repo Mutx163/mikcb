@@ -3525,6 +3525,38 @@
     }
   },
   "statisticsWeekCurrentHint": "이번 주",
+  "weeklyReportTitle": "이번 주 수업 요약",
+  "weeklyReportBody": "{week}주차 · 총 {sections}교시 · {courses}과목\n지난주 대비 {delta}교시\n가장 바쁜 날: {busiestDay}",
+  "@weeklyReportBody": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" },
+      "courses": { "type": "int" },
+      "delta": { "type": "String" },
+      "busiestDay": { "type": "String" }
+    }
+  },
+  "weeklyReportBodyEmpty": "이번 주 수업이 없어요. 푹 쉬세요",
+  "weeklyReportNextFire": "다음 알림 {date} {time}",
+  "@weeklyReportNextFire": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weeklyReportEnabledHint": "주간 리포트가 켜졌습니다",
+  "weeklyReportDisabledHint": "주간 리포트가 꺼졌습니다",
+  "statisticsCompareTitle": "시간표 비교",
+  "statisticsCompareActive": "현재 시간표",
+  "statisticsCompareNone": "다른 시간표가 없습니다. 시간표 관리에서 만들 수 있어요",
+  "statisticsCompareDelta": "현재 대비 {delta}교시",
+  "@statisticsCompareDelta": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsCompareDetailTitle": "비교 상세",
+  "statisticsCompareWeek": "현재 주차",
   "statisticsTabSemester": "학기",
   "statisticsTabWeek": "주",
   "statisticsSemesterProgressTitle": "학기 진행도",

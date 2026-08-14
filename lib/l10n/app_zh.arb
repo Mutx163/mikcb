@@ -3762,6 +3762,38 @@
     }
   },
   "statisticsWeekCurrentHint": "本周",
+  "weeklyReportTitle": "本周课程小结",
+  "weeklyReportBody": "第{week}周 · 共{sections}节 · {courses}门课\n较上周 {delta} 节\n最忙的一天是 {busiestDay}",
+  "@weeklyReportBody": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" },
+      "courses": { "type": "int" },
+      "delta": { "type": "String" },
+      "busiestDay": { "type": "String" }
+    }
+  },
+  "weeklyReportBodyEmpty": "本周暂无课程，好好休息吧",
+  "weeklyReportNextFire": "下次推送 {date} {time}",
+  "@weeklyReportNextFire": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weeklyReportEnabledHint": "已开启每周周报推送",
+  "weeklyReportDisabledHint": "已关闭每周周报推送",
+  "statisticsCompareTitle": "课表对比",
+  "statisticsCompareActive": "当前课表",
+  "statisticsCompareNone": "暂无其他课表，可在课表管理中新建",
+  "statisticsCompareDelta": "较当前 {delta} 节",
+  "@statisticsCompareDelta": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsCompareDetailTitle": "课表对比详情",
+  "statisticsCompareWeek": "当前周",
   "statisticsTabSemester": "学期",
   "statisticsTabWeek": "周",
   "statisticsSemesterProgressTitle": "学期进度",

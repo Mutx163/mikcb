@@ -68,6 +68,7 @@ class MainActivity : FlutterActivity() {
         private const val UMENG_CHANNEL = "com.mutx163.qingyu/umeng_analytics"
         private const val HOME_WIDGET_CHANNEL = "com.mutx163.qingyu/home_widget"
         private const val EXAM_REMINDER_CHANNEL = "com.mutx163.qingyu/exam_reminder"
+    private const val WEEKLY_REPORT_CHANNEL = "com.mutx163.qingyu/weekly_report"
         private const val SUPPORT_CHANNEL = "com.mutx163.qingyu/support"
         private const val MIGRATION_CHANNEL = "com.mutx163.qingyu/migration"
         private const val CHANNEL_ID = "live_update_channel"
@@ -575,6 +576,19 @@ class MainActivity : FlutterActivity() {
                         HomeWidgetStorage.clearSnapshot(applicationContext)
                         result.success(true)
                     }
+                    "syncStatsSnapshot" -> {
+                        val data = call.arguments as? Map<String, Any?>
+                        if (data != null) {
+                            StatsWidgetSupport.syncSnapshot(applicationContext, data)
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Missing stats widget snapshot", null)
+                        }
+                    }
+                    "clearStatsSnapshot" -> {
+                        StatsWidgetSupport.clearSnapshot(applicationContext)
+                        result.success(true)
+                    }
                     "scheduleRefresh" -> {
                         val payload = call.arguments as? Map<String, Any?>
                         val triggerAtMillis = payload
@@ -625,6 +639,32 @@ class MainActivity : FlutterActivity() {
                     }
                     "clear" -> {
                         ExamReminderScheduler.clear(applicationContext)
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WEEKLY_REPORT_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "scheduleNext" -> {
+                        val payload = call.arguments as? Map<*, *>
+                        val enabled = payload?.get("enabled") as? Boolean ?: false
+                        val fireAtMillis = (payload?.get("fireAtMillis") as? Number)?.toLong() ?: 0L
+                        val title = payload?.get("title") as? String ?: ""
+                        val body = payload?.get("body") as? String ?: ""
+                        WeeklyReportScheduler.scheduleNext(
+                            applicationContext,
+                            enabled,
+                            fireAtMillis,
+                            title,
+                            body,
+                        )
+                        result.success(true)
+                    }
+                    "cancel" -> {
+                        WeeklyReportScheduler.cancel(applicationContext)
                         result.success(true)
                     }
                     else -> result.notImplemented()

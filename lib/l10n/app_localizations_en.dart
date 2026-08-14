@@ -6696,6 +6696,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsWeekCurrentHint => 'This week';
 
   @override
+  String get weeklyReportTitle => 'Weekly Course Summary';
+
+  @override
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  ) {
+    return 'Week $week · $sections sections · $courses courses\n$delta vs last week\nBusiest day: $busiestDay';
+  }
+
+  @override
+  String get weeklyReportBodyEmpty => 'No classes this week — enjoy the break';
+
+  @override
+  String weeklyReportNextFire(String date, String time) {
+    return 'Next: $date $time';
+  }
+
+  @override
+  String get weeklyReportEnabledHint => 'Weekly report enabled';
+
+  @override
+  String get weeklyReportDisabledHint => 'Weekly report disabled';
+
+  @override
+  String get statisticsCompareTitle => 'Timetable Comparison';
+
+  @override
+  String get statisticsCompareActive => 'Active';
+
+  @override
+  String get statisticsCompareNone =>
+      'No other timetables yet — create one in timetable management';
+
+  @override
+  String statisticsCompareDelta(String delta) {
+    return '$delta vs active';
+  }
+
+  @override
+  String get statisticsCompareDetailTitle => 'Comparison Details';
+
+  @override
+  String get statisticsCompareWeek => 'Current week';
+
+  @override
   String get statisticsTabSemester => 'Semester';
 
   @override

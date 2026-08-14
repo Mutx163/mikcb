@@ -1005,6 +1005,7 @@ class TimetableSettings {
   final bool timetableAutoFitSectionHeight;
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
+  final bool weeklyReportEnabled;
   final bool enableHolidayMarking;
   final bool timetableShowCurrentWeekCourses;
   final bool timetableShowNonCurrentWeekCourses;
@@ -1177,6 +1178,7 @@ class TimetableSettings {
     this.timetableAutoFitSectionHeight = false,
     this.semesterWeekCount = 20,
     this.semesterStartDate,
+    this.weeklyReportEnabled = false,
     this.enableHolidayMarking = true,
     this.timetableShowCurrentWeekCourses = true,
     this.timetableShowNonCurrentWeekCourses = false,
@@ -1348,6 +1350,7 @@ class TimetableSettings {
       timetableAutoFitSectionHeight: false,
       semesterWeekCount: 20,
       semesterStartDate: null,
+      weeklyReportEnabled: false,
       enableHolidayMarking: true,
       timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses: false,
@@ -1484,6 +1487,7 @@ class TimetableSettings {
       'timetableAutoFitSectionHeight': timetableAutoFitSectionHeight,
       'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
+      'weeklyReportEnabled': weeklyReportEnabled,
       'enableHolidayMarking': enableHolidayMarking,
       'timetableShowCurrentWeekCourses': timetableShowCurrentWeekCourses,
       'timetableShowNonCurrentWeekCourses': timetableShowNonCurrentWeekCourses,
@@ -1683,6 +1687,7 @@ class TimetableSettings {
               (json['semesterStartDate'] as num).toInt(),
             )
           : null,
+      weeklyReportEnabled: json['weeklyReportEnabled'] as bool? ?? false,
       enableHolidayMarking: json['enableHolidayMarking'] as bool? ?? true,
       timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses:
@@ -2054,6 +2059,7 @@ class TimetableSettings {
     bool? timetableAutoFitSectionHeight,
     int? semesterWeekCount,
     DateTime? semesterStartDate,
+    bool? weeklyReportEnabled,
     bool? enableHolidayMarking,
     bool? timetableShowCurrentWeekCourses,
     bool? timetableShowNonCurrentWeekCourses,
@@ -2213,6 +2219,7 @@ class TimetableSettings {
           timetableAutoFitSectionHeight ?? this.timetableAutoFitSectionHeight,
       semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
+      weeklyReportEnabled: weeklyReportEnabled ?? this.weeklyReportEnabled,
       enableHolidayMarking: enableHolidayMarking ?? this.enableHolidayMarking,
       timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses:

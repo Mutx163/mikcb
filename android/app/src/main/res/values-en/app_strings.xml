@@ -11,6 +11,10 @@
     <string name="notification_channel_live_update_desc">Shows current class progress</string>
     <string name="notification_channel_exam_reminder_name">Exam reminders</string>
     <string name="notification_channel_exam_reminder_desc">Notifications before exams start</string>
+    <string name="notification_channel_weekly_report_name">Weekly report</string>
+    <string name="notification_channel_weekly_report_desc">Weekly course summary every Sunday evening</string>
+    <string name="notification_weekly_report_default_title">Weekly course summary</string>
+    <string name="notification_weekly_report_default_body">Open Qingyu Timetable to view this week\'s stats</string>
     <string name="notification_exam_reminder_default_title">Exam reminder</string>
     <string name="notification_exam_reminder_default_body">You have an upcoming exam</string>
 

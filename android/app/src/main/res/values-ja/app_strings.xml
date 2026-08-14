@@ -11,6 +11,10 @@
     <string name="notification_channel_live_update_desc">現在の授業進捗を表示</string>
     <string name="notification_channel_exam_reminder_name">試験リマインダー</string>
     <string name="notification_channel_exam_reminder_desc">試験開始前の通知</string>
+    <string name="notification_channel_weekly_report_name">週間レポート</string>
+    <string name="notification_channel_weekly_report_desc">毎週日曜の夜に今週の授業サマリーを通知</string>
+    <string name="notification_weekly_report_default_title">今週の授業サマリー</string>
+    <string name="notification_weekly_report_default_body">軽嶼課表を開いて今週の統計を確認</string>
     <string name="notification_exam_reminder_default_title">試験リマインダー</string>
     <string name="notification_exam_reminder_default_body">まもなく試験があります</string>
 

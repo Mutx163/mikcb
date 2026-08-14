@@ -3762,6 +3762,38 @@
     }
   },
   "statisticsWeekCurrentHint": "This week",
+  "weeklyReportTitle": "Weekly Course Summary",
+  "weeklyReportBody": "Week {week} · {sections} sections · {courses} courses\n{delta} vs last week\nBusiest day: {busiestDay}",
+  "@weeklyReportBody": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" },
+      "courses": { "type": "int" },
+      "delta": { "type": "String" },
+      "busiestDay": { "type": "String" }
+    }
+  },
+  "weeklyReportBodyEmpty": "No classes this week — enjoy the break",
+  "weeklyReportNextFire": "Next: {date} {time}",
+  "@weeklyReportNextFire": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weeklyReportEnabledHint": "Weekly report enabled",
+  "weeklyReportDisabledHint": "Weekly report disabled",
+  "statisticsCompareTitle": "Timetable Comparison",
+  "statisticsCompareActive": "Active",
+  "statisticsCompareNone": "No other timetables yet — create one in timetable management",
+  "statisticsCompareDelta": "{delta} vs active",
+  "@statisticsCompareDelta": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsCompareDetailTitle": "Comparison Details",
+  "statisticsCompareWeek": "Current week",
   "statisticsTabSemester": "Semester",
   "statisticsTabWeek": "Week",
   "statisticsSemesterProgressTitle": "Semester Progress",

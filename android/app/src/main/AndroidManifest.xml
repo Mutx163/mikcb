@@ -249,6 +249,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Weekly report: explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm. -->
+        <receiver
+            android:name=".WeeklyReportReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".TodayCompactWidgetProvider"
             android:label="@string/widget_today_compact_name"
@@ -295,6 +308,30 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_today_large_info" />
+        </receiver>
+
+        <receiver
+            android:name=".StatsCompactWidgetProvider"
+            android:label="@string/widget_stats_compact_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".StatsMediumWidgetProvider"
+            android:label="@string/widget_stats_medium_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_medium_info" />
         </receiver>
 
         <receiver

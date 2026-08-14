@@ -6435,6 +6435,54 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsWeekCurrentHint => '今週';
 
   @override
+  String get weeklyReportTitle => '今週の授業サマリー';
+
+  @override
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  ) {
+    return '第$week週 · 計$sectionsコマ · $courses科目\n先週比 $delta コマ\n最も忙しい日: $busiestDay';
+  }
+
+  @override
+  String get weeklyReportBodyEmpty => '今週は授業がありません。ゆっくり休んでね';
+
+  @override
+  String weeklyReportNextFire(String date, String time) {
+    return '次回 $date $time';
+  }
+
+  @override
+  String get weeklyReportEnabledHint => '週間レポートを有効にしました';
+
+  @override
+  String get weeklyReportDisabledHint => '週間レポートを無効にしました';
+
+  @override
+  String get statisticsCompareTitle => '時間割比較';
+
+  @override
+  String get statisticsCompareActive => '現在の時間割';
+
+  @override
+  String get statisticsCompareNone => '他の時間割がありません。時間割管理から作成できます';
+
+  @override
+  String statisticsCompareDelta(String delta) {
+    return '現在比 $delta コマ';
+  }
+
+  @override
+  String get statisticsCompareDetailTitle => '比較詳細';
+
+  @override
+  String get statisticsCompareWeek => '現在の週';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override

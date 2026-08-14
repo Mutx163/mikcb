@@ -6473,6 +6473,54 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsWeekCurrentHint => '이번 주';
 
   @override
+  String get weeklyReportTitle => '이번 주 수업 요약';
+
+  @override
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  ) {
+    return '$week주차 · 총 $sections교시 · $courses과목\n지난주 대비 $delta교시\n가장 바쁜 날: $busiestDay';
+  }
+
+  @override
+  String get weeklyReportBodyEmpty => '이번 주 수업이 없어요. 푹 쉬세요';
+
+  @override
+  String weeklyReportNextFire(String date, String time) {
+    return '다음 알림 $date $time';
+  }
+
+  @override
+  String get weeklyReportEnabledHint => '주간 리포트가 켜졌습니다';
+
+  @override
+  String get weeklyReportDisabledHint => '주간 리포트가 꺼졌습니다';
+
+  @override
+  String get statisticsCompareTitle => '시간표 비교';
+
+  @override
+  String get statisticsCompareActive => '현재 시간표';
+
+  @override
+  String get statisticsCompareNone => '다른 시간표가 없습니다. 시간표 관리에서 만들 수 있어요';
+
+  @override
+  String statisticsCompareDelta(String delta) {
+    return '현재 대비 $delta교시';
+  }
+
+  @override
+  String get statisticsCompareDetailTitle => '비교 상세';
+
+  @override
+  String get statisticsCompareWeek => '현재 주차';
+
+  @override
   String get statisticsTabSemester => '학기';
 
   @override

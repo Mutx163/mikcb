@@ -6337,6 +6337,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsWeekCurrentHint => '本周';
 
   @override
+  String get weeklyReportTitle => '本周课程小结';
+
+  @override
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  ) {
+    return '第$week周 · 共$sections节 · $courses门课\n较上周 $delta 节\n最忙的一天是 $busiestDay';
+  }
+
+  @override
+  String get weeklyReportBodyEmpty => '本周暂无课程，好好休息吧';
+
+  @override
+  String weeklyReportNextFire(String date, String time) {
+    return '下次推送 $date $time';
+  }
+
+  @override
+  String get weeklyReportEnabledHint => '已开启每周周报推送';
+
+  @override
+  String get weeklyReportDisabledHint => '已关闭每周周报推送';
+
+  @override
+  String get statisticsCompareTitle => '课表对比';
+
+  @override
+  String get statisticsCompareActive => '当前课表';
+
+  @override
+  String get statisticsCompareNone => '暂无其他课表，可在课表管理中新建';
+
+  @override
+  String statisticsCompareDelta(String delta) {
+    return '较当前 $delta 节';
+  }
+
+  @override
+  String get statisticsCompareDetailTitle => '课表对比详情';
+
+  @override
+  String get statisticsCompareWeek => '当前周';
+
+  @override
   String get statisticsTabSemester => '学期';
 
   @override
@@ -15889,6 +15937,54 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsWeekCurrentHint => '本週';
+
+  @override
+  String get weeklyReportTitle => '本週課程小結';
+
+  @override
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  ) {
+    return '第$week週 · 共$sections節 · $courses門課\n較上週 $delta 節\n最忙的一天是 $busiestDay';
+  }
+
+  @override
+  String get weeklyReportBodyEmpty => '本週暫無課程，好好休息吧';
+
+  @override
+  String weeklyReportNextFire(String date, String time) {
+    return '下次推送 $date $time';
+  }
+
+  @override
+  String get weeklyReportEnabledHint => '已開啟每週週報推送';
+
+  @override
+  String get weeklyReportDisabledHint => '已關閉每週週報推送';
+
+  @override
+  String get statisticsCompareTitle => '課表對比';
+
+  @override
+  String get statisticsCompareActive => '當前課表';
+
+  @override
+  String get statisticsCompareNone => '暫無其他課表，可在課表管理中新建';
+
+  @override
+  String statisticsCompareDelta(String delta) {
+    return '較當前 $delta 節';
+  }
+
+  @override
+  String get statisticsCompareDetailTitle => '課表對比詳情';
+
+  @override
+  String get statisticsCompareWeek => '當前週';
 
   @override
   String get statisticsTabSemester => '學期';
@@ -25487,6 +25583,54 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsWeekCurrentHint => '本週';
+
+  @override
+  String get weeklyReportTitle => '本週課程小結';
+
+  @override
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  ) {
+    return '第$week週 · 共$sections節 · $courses門課\n較上週 $delta 節\n最忙的一天是 $busiestDay';
+  }
+
+  @override
+  String get weeklyReportBodyEmpty => '本週暫無課程，好好休息吧';
+
+  @override
+  String weeklyReportNextFire(String date, String time) {
+    return '下次推送 $date $time';
+  }
+
+  @override
+  String get weeklyReportEnabledHint => '已開啟每週週報推送';
+
+  @override
+  String get weeklyReportDisabledHint => '已關閉每週週報推送';
+
+  @override
+  String get statisticsCompareTitle => '課表對比';
+
+  @override
+  String get statisticsCompareActive => '當前課表';
+
+  @override
+  String get statisticsCompareNone => '暫無其他課表，可在課表管理中新建';
+
+  @override
+  String statisticsCompareDelta(String delta) {
+    return '較當前 $delta 節';
+  }
+
+  @override
+  String get statisticsCompareDetailTitle => '課表對比詳情';
+
+  @override
+  String get statisticsCompareWeek => '當前週';
 
   @override
   String get statisticsTabSemester => '學期';

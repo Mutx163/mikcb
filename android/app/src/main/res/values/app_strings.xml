@@ -12,6 +12,10 @@
     <string name="notification_channel_live_update_desc">显示当前课程进度</string>
     <string name="notification_channel_exam_reminder_name">考试提醒</string>
     <string name="notification_channel_exam_reminder_desc">考试开始前的提醒通知</string>
+    <string name="notification_channel_weekly_report_name">每周周报</string>
+    <string name="notification_channel_weekly_report_desc">每周日晚推送本周课程小结</string>
+    <string name="notification_weekly_report_default_title">本周课程小结</string>
+    <string name="notification_weekly_report_default_body">打开轻屿课表查看本周课程统计</string>
     <string name="notification_exam_reminder_default_title">考试提醒</string>
     <string name="notification_exam_reminder_default_body">你有一场即将开始的考试</string>
 

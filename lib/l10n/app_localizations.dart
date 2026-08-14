@@ -11552,6 +11552,84 @@ abstract class AppLocalizations {
   /// **'本周'**
   String get statisticsWeekCurrentHint;
 
+  /// No description provided for @weeklyReportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周课程小结'**
+  String get weeklyReportTitle;
+
+  /// No description provided for @weeklyReportBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{week}周 · 共{sections}节 · {courses}门课\n较上周 {delta} 节\n最忙的一天是 {busiestDay}'**
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  );
+
+  /// No description provided for @weeklyReportBodyEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周暂无课程，好好休息吧'**
+  String get weeklyReportBodyEmpty;
+
+  /// No description provided for @weeklyReportNextFire.
+  ///
+  /// In zh, this message translates to:
+  /// **'下次推送 {date} {time}'**
+  String weeklyReportNextFire(String date, String time);
+
+  /// No description provided for @weeklyReportEnabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已开启每周周报推送'**
+  String get weeklyReportEnabledHint;
+
+  /// No description provided for @weeklyReportDisabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已关闭每周周报推送'**
+  String get weeklyReportDisabledHint;
+
+  /// No description provided for @statisticsCompareTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表对比'**
+  String get statisticsCompareTitle;
+
+  /// No description provided for @statisticsCompareActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前课表'**
+  String get statisticsCompareActive;
+
+  /// No description provided for @statisticsCompareNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无其他课表，可在课表管理中新建'**
+  String get statisticsCompareNone;
+
+  /// No description provided for @statisticsCompareDelta.
+  ///
+  /// In zh, this message translates to:
+  /// **'较当前 {delta} 节'**
+  String statisticsCompareDelta(String delta);
+
+  /// No description provided for @statisticsCompareDetailTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表对比详情'**
+  String get statisticsCompareDetailTitle;
+
+  /// No description provided for @statisticsCompareWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前周'**
+  String get statisticsCompareWeek;
+
   /// No description provided for @statisticsTabSemester.
   ///
   /// In zh, this message translates to:

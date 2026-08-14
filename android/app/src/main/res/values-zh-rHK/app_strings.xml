@@ -11,6 +11,10 @@
     <string name="notification_channel_live_update_desc">顯示當前課程進度</string>
     <string name="notification_channel_exam_reminder_name">考試提醒</string>
     <string name="notification_channel_exam_reminder_desc">考試開始前的提醒通知</string>
+    <string name="notification_channel_weekly_report_name">每週週報</string>
+    <string name="notification_channel_weekly_report_desc">每週日晚上推送本週課程小結</string>
+    <string name="notification_weekly_report_default_title">本週課程小結</string>
+    <string name="notification_weekly_report_default_body">打開輕嶼課表查看本週課程統計</string>
     <string name="notification_exam_reminder_default_title">考試提醒</string>
     <string name="notification_exam_reminder_default_body">你有一場即將開始的考試</string>
 
