@@ -297,9 +297,17 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                                     _ListPopupTile(
                                       item: widget.items[i],
                                       foregroundColor: widget.foregroundColor,
+                                      // Selecting an item pops the popup
+                                      // immediately so the destination page
+                                      // can start its transition right away;
+                                      // the exit animation would otherwise
+                                      // delay navigation by 150ms. (Scrim
+                                      // taps and the back key still play the
+                                      // fade-out.)
                                       onTap: widget.items[i].enabled
-                                          ? () =>
-                                                _dismiss(widget.items[i].value)
+                                          ? () => Navigator.of(
+                                              context,
+                                            ).pop(widget.items[i].value)
                                           : null,
                                     ),
                                 ],
