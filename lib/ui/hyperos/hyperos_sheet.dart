@@ -12,7 +12,7 @@ import 'liquid/hyperos_liquid_glass_surface.dart';
 /// liquid-glass specular fringe along the straight bottom side lands outside
 /// the panel's clip and is cut — otherwise that fringe shows as a 1px
 /// hairline seam where the panel meets the screen bottom (same failure as the
-/// top edge, see `homePageChromeGlassTopEdgeOverdraw`).
+/// top edge, see `homePageChromeGlassEdgeOverdraw`).
 const hyperosEdgeSheetBottomOverdraw = 4.0;
 
 /// Marks descendants as sitting on a frosted (blur + milky tint) panel.

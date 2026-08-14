@@ -209,10 +209,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       return null;
     }
 
-    // Overdraw the glass above the band's top so the liquid-glass specular
-    // fringe on that edge lands outside the ClipRect and is clipped — same
-    // trick as HomePageContinuousChromeFrostedOverlay — otherwise the band's
-    // interior top edge reads as a 1px hairline seam.
+    // Overdraw the glass beyond the band on all four sides so the
+    // liquid-glass shape boundary (refraction lens + specular fringe) stays
+    // outside the ClipRect — same trick as
+    // HomePageContinuousChromeFrostedOverlay. Without it the interior band
+    // edges read as hairline seams / corner triangle lines at high
+    // thickness.
     return [
       Positioned(
         top: top,
@@ -226,10 +228,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 Positioned(
-                  top: -homePageChromeGlassTopEdgeOverdraw,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
+                  top: -homePageChromeGlassEdgeOverdraw,
+                  left: -homePageChromeGlassEdgeOverdraw,
+                  right: -homePageChromeGlassEdgeOverdraw,
+                  bottom: -homePageChromeGlassEdgeOverdraw,
                   child: HomePageChromeGlassFill(
                     wallpaperTopLuminance: wallpaperTopLuminance,
                     // The band is a small interior rectangle inside this

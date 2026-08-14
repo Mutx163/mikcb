@@ -417,9 +417,12 @@ void main() {
     );
 
     test(
-      'top-edge overdraw is large enough to hide liquid specular fringe',
+      'edge overdraw hides liquid glass shape boundary off-screen',
       () {
-        expect(homePageChromeGlassTopEdgeOverdraw, greaterThanOrEqualTo(2.0));
+        // Must exceed the maximum user-tunable thickness (40) so every
+        // visible pixel renders in the shape's flat interior: no refraction
+        // clamping streaks or corner specular fringe at any thickness.
+        expect(homePageChromeGlassEdgeOverdraw, greaterThanOrEqualTo(40.0));
       },
     );
   });
