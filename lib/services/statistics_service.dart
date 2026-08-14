@@ -123,52 +123,98 @@ class StatisticsService {
     // 收集所有教室
     final allRooms = allCourses.map((c) => c.location).toSet();
 
-    // 收集所有时间
-    final allStartTimes = allCourses.map((c) => c.startTime).toList();
-    final allEndTimes = allCourses.map((c) => c.endTime).toList();
+    // 全勤课程数（周排课口径）
+    final perfectAttendanceCount = allCourses
+        .where((c) => _hasPerfectAttendance(c, currentWeek))
+        .length;
+
+    // 早八 / 晚间 / 周末 课时（周排课口径）
+    final earlyBirdSections = allCourses
+        .where((c) => c.startTime.compareTo('08:00') <= 0)
+        .fold<int>(0, (sum, c) => sum + c.sectionCount);
+    final eveningSections = allCourses
+        .where((c) => c.endTime.compareTo('18:00') > 0)
+        .fold<int>(0, (sum, c) => sum + c.sectionCount);
+    final weekendSections = allCourses
+        .where((c) => c.dayOfWeek >= 6)
+        .fold<int>(0, (sum, c) => sum + c.sectionCount);
+
+    // 每日课时差（均衡度）
+    final balanceGap = _calculateDailyBalanceGap(allCourses);
+
+    // 单日跨教学楼最大值
+    final dailyMaxBuildings = _calculateDailyMaxBuildings(allCourses);
 
     return [
       Achievement(
         id: 'early_bird',
         icon: Icons.wb_sunny_rounded,
-        isUnlocked: allStartTimes.any((t) => t.compareTo('08:00') <= 0),
+        isUnlocked: earlyBirdSections > 0,
+        progressCurrent: earlyBirdSections,
+        progressTarget: 1,
       ),
       Achievement(
         id: 'perfect_attendance',
         icon: Icons.star_rounded,
-        isUnlocked: allCourses.any(
-          (c) => _hasPerfectAttendance(c, currentWeek),
-        ),
+        isUnlocked: perfectAttendanceCount > 0,
+        progressCurrent: perfectAttendanceCount,
+        progressTarget: allCourses.length,
       ),
       Achievement(
         id: 'weekend_warrior',
         icon: Icons.emoji_events_rounded,
-        isUnlocked: allCourses.any((c) => c.dayOfWeek >= 6),
+        isUnlocked: weekendSections > 0,
+        progressCurrent: weekendSections,
+        progressTarget: 1,
       ),
       Achievement(
         id: 'class_king',
         icon: Icons.workspace_premium_rounded,
         isUnlocked: dailyMaxSections >= 6,
+        progressCurrent: dailyMaxSections,
+        progressTarget: 6,
       ),
       Achievement(
         id: 'scholar',
         icon: Icons.auto_stories_rounded,
         isUnlocked: totalSections >= 100,
+        progressCurrent: totalSections,
+        progressTarget: 100,
       ),
       Achievement(
         id: 'balanced',
         icon: Icons.balance_rounded,
-        isUnlocked: _isBalanced(allCourses),
+        isUnlocked: balanceGap <= 2,
+        progressCurrent: balanceGap,
+        progressTarget: 2,
       ),
       Achievement(
         id: 'night_owl',
         icon: Icons.nights_stay_rounded,
-        isUnlocked: allEndTimes.any((t) => t.compareTo('18:00') > 0),
+        isUnlocked: eveningSections > 0,
+        progressCurrent: eveningSections,
+        progressTarget: 1,
       ),
       Achievement(
         id: 'explorer',
         icon: Icons.explore_rounded,
         isUnlocked: allRooms.length >= 5,
+        progressCurrent: allRooms.length,
+        progressTarget: 5,
+      ),
+      Achievement(
+        id: 'full_day_king',
+        icon: Icons.local_fire_department_rounded,
+        isUnlocked: dailyMaxSections >= 8,
+        progressCurrent: dailyMaxSections,
+        progressTarget: 8,
+      ),
+      Achievement(
+        id: 'building_hopper',
+        icon: Icons.domain_rounded,
+        isUnlocked: dailyMaxBuildings >= 3,
+        progressCurrent: dailyMaxBuildings,
+        progressTarget: 3,
       ),
     ];
   }
@@ -276,6 +322,319 @@ class StatisticsService {
     }
 
     return stories;
+  }
+
+  /// 计算每周课时趋势（计划口径，覆盖整个学期）
+  static List<WeeklyTrendPoint> calculateWeeklyTrend({
+    required List<Course> allCourses,
+    required int semesterWeekCount,
+  }) {
+    if (allCourses.isEmpty || semesterWeekCount < 1) {
+      return const [];
+    }
+
+    return List.generate(semesterWeekCount, (index) {
+      final week = index + 1;
+      final active = allCourses
+          .where((c) => c.isActiveInWeek(week))
+          .toList();
+
+      int sections = 0;
+      int requiredSections = 0;
+      int electiveSections = 0;
+      final names = <String>{};
+      final days = <int>{};
+      for (final course in active) {
+        sections += course.sectionCount;
+        days.add(course.dayOfWeek);
+        names.add(course.name);
+        if (course.courseNature == CourseNature.required) {
+          requiredSections += course.sectionCount;
+        } else {
+          electiveSections += course.sectionCount;
+        }
+      }
+
+      return WeeklyTrendPoint(
+        weekNumber: week,
+        sections: sections,
+        courseCount: names.length,
+        requiredSections: requiredSections,
+        electiveSections: electiveSections,
+        activeDayCount: days.length,
+      );
+    });
+  }
+
+  /// 计算学期进度（校历对齐）
+  static SemesterProgress calculateSemesterProgress({
+    required List<Course> allCourses,
+    required int currentWeek,
+    required int semesterWeekCount,
+    DateTime? semesterStartDate,
+  }) {
+    int sectionsDone = 0;
+    int sectionsTotal = 0;
+    for (final course in allCourses) {
+      sectionsDone +=
+          course.sectionCount * _countActiveWeeks(course, currentWeek);
+      sectionsTotal += course.sectionCount * _countScheduledWeeks(course);
+    }
+
+    final remaining = sectionsTotal > sectionsDone
+        ? sectionsTotal - sectionsDone
+        : 0;
+
+    DateTime? currentDate;
+    DateTime? endDate;
+    if (semesterStartDate != null) {
+      currentDate = semesterStartDate
+          .add(Duration(days: currentWeek * 7 - 1));
+      endDate = semesterStartDate
+          .add(Duration(days: semesterWeekCount * 7 - 1));
+    }
+
+    return SemesterProgress(
+      semesterStartDate: semesterStartDate,
+      currentDate: currentDate,
+      semesterEndDate: endDate,
+      weeksElapsed: currentWeek < 1 ? 0 : currentWeek,
+      totalWeeks: semesterWeekCount < 1 ? 0 : semesterWeekCount,
+      sectionsDone: sectionsDone,
+      sectionsTotal: sectionsTotal,
+      remainingSections: remaining,
+    );
+  }
+
+  /// 计算学期热力图（周 × 天课时密度，计划口径；未来周由 UI 裁剪）
+  static SemesterHeatmap calculateHeatmap({
+    required List<Course> allCourses,
+    required int semesterWeekCount,
+  }) {
+    final rows = List.generate(7, (_) => List<int>.filled(semesterWeekCount, 0));
+    var maxSections = 0;
+
+    for (final course in allCourses) {
+      final day = course.dayOfWeek - 1;
+      if (day < 0 || day >= 7) continue;
+      for (var week = 1; week <= semesterWeekCount; week++) {
+        if (course.isActiveInWeek(week)) {
+          final value = rows[day][week - 1] + course.sectionCount;
+          rows[day][week - 1] = value;
+          if (value > maxSections) maxSections = value;
+        }
+      }
+    }
+
+    return SemesterHeatmap(
+      weekCount: semesterWeekCount,
+      maxSections: maxSections,
+      rows: rows,
+    );
+  }
+
+  /// 计算时间利用统计（周排课口径）
+  static TimeUtilizationStats calculateTimeUtilization({
+    required List<Course> allCourses,
+    required int currentWeek,
+  }) {
+    String? earliest;
+    String? latest;
+    int morningSections = 0;
+    int noonSections = 0;
+    int eveningSections = 0;
+    int weekendSections = 0;
+
+    // 单日最大课间空档（节）
+    final gapsByDay = <int, List<int>>{};
+    final slotsByDay = <int, List<Course>>{};
+
+    for (final course in allCourses) {
+      if (_countActiveWeeks(course, currentWeek) == 0) continue;
+      final start = course.startTime;
+      final end = course.endTime;
+      if (earliest == null || start.compareTo(earliest) < 0) {
+        earliest = start;
+      }
+      if (latest == null || end.compareTo(latest) > 0) {
+        latest = end;
+      }
+      if (start.compareTo('12:00') < 0) {
+        morningSections += course.sectionCount;
+      }
+      if (start.compareTo('14:00') < 0 && end.compareTo('12:00') > 0) {
+        noonSections += course.sectionCount;
+      }
+      if (end.compareTo('18:00') > 0) {
+        eveningSections += course.sectionCount;
+      }
+      if (course.dayOfWeek >= 6) {
+        weekendSections += course.sectionCount;
+      }
+      slotsByDay.putIfAbsent(course.dayOfWeek, () => []).add(course);
+    }
+
+    for (final slots in slotsByDay.values) {
+      final sorted = [...slots]
+        ..sort((a, b) => a.startSection.compareTo(b.startSection));
+      for (var i = 1; i < sorted.length; i++) {
+        final gap = sorted[i].startSection -
+            sorted[i - 1].endSection -
+            1;
+        if (gap > 0) {
+          gapsByDay.putIfAbsent(sorted[i].dayOfWeek, () => []).add(gap);
+        }
+      }
+    }
+
+    var maxGap = 0;
+    for (final gaps in gapsByDay.values) {
+      for (final gap in gaps) {
+        if (gap > maxGap) maxGap = gap;
+      }
+    }
+
+    return TimeUtilizationStats(
+      earliestStart: earliest ?? '',
+      latestEnd: latest ?? '',
+      morningSections: morningSections,
+      noonSections: noonSections,
+      eveningSections: eveningSections,
+      weekendSections: weekendSections,
+      maxDailyGapSections: maxGap,
+      activeCourseCount: slotsByDay.values.fold<int>(
+        0,
+        (sum, list) => sum + list.length,
+      ),
+    );
+  }
+
+  /// 计算教室与教学楼统计
+  static VenueStats calculateVenueStats({
+    required List<Course> allCourses,
+    required int currentWeek,
+  }) {
+    final roomCounts = <String, int>{};
+    for (final course in allCourses) {
+      if (course.location.isEmpty) continue;
+      final activeWeeks = _countActiveWeeks(course, currentWeek);
+      if (activeWeeks == 0) continue;
+      roomCounts[course.location] =
+          (roomCounts[course.location] ?? 0) + activeWeeks;
+    }
+
+    final topRooms = roomCounts.entries
+        .map((e) => RoomVisitStat(name: e.key, visits: e.value))
+        .toList()
+      ..sort((a, b) => b.visits.compareTo(a.visits));
+
+    final buildingSections = <String, int>{};
+    for (final entry in roomCounts.entries) {
+      final building = _buildingOf(entry.key);
+      buildingSections[building] =
+          (buildingSections[building] ?? 0) + entry.value;
+    }
+    final buildings = buildingSections.entries
+        .map((e) => BuildingStat(name: e.key, sections: e.value))
+        .toList()
+      ..sort((a, b) => b.sections.compareTo(a.sections));
+
+    return VenueStats(
+      topRooms: topRooms.take(5).toList(growable: false),
+      buildings: buildings,
+    );
+  }
+
+  /// 计算教师课时排行
+  static List<TeacherStat> calculateTeacherStats({
+    required List<Course> allCourses,
+    required int currentWeek,
+  }) {
+    final byTeacher = <String, List<Course>>{};
+    for (final course in allCourses) {
+      final teacher = course.teacher.trim();
+      if (teacher.isEmpty) continue;
+      if (_countActiveWeeks(course, currentWeek) == 0) continue;
+      byTeacher.putIfAbsent(teacher, () => []).add(course);
+    }
+
+    final stats = byTeacher.entries.map((entry) {
+      int sections = 0;
+      final names = <String>{};
+      for (final course in entry.value) {
+        sections +=
+            course.sectionCount * _countActiveWeeks(course, currentWeek);
+        names.add(course.name);
+      }
+      return TeacherStat(
+        name: entry.key,
+        sections: sections,
+        courseCount: names.length,
+      );
+    }).toList()..sort((a, b) => b.sections.compareTo(a.sections));
+
+    return stats.take(10).toList(growable: false);
+  }
+
+  /// 本周 vs 上周 vs 学期平均 对比
+  static WeeklyComparison calculateWeeklyComparison({
+    required List<Course> allCourses,
+    required int currentWeek,
+    required int semesterWeekCount,
+  }) {
+    final weekSections = currentWeek >= 1 && currentWeek <= semesterWeekCount
+        ? calculate(allCourses: allCourses, week: currentWeek).totalSections
+        : 0;
+    final lastWeekSections = currentWeek > 1
+        ? calculate(allCourses: allCourses, week: currentWeek - 1).totalSections
+        : 0;
+
+    final semester = calculateSemester(
+      allCourses: allCourses,
+      currentWeek: currentWeek,
+      semesterWeekCount: semesterWeekCount,
+    );
+    final average = currentWeek > 0 ? semester.totalSections / currentWeek : 0.0;
+
+    return WeeklyComparison(
+      weekSections: weekSections,
+      lastWeekSections: lastWeekSections,
+      semesterAverageSections: average,
+      deltaVsLastWeek: weekSections - lastWeekSections,
+      deltaVsAverage: weekSections - average,
+    );
+  }
+
+  /// 提取教学楼前缀（字母开头），无字母则原样返回
+  static String _buildingOf(String room) {
+    return RegExp(r'^[A-Za-z]+').stringMatch(room) ?? room;
+  }
+
+  /// 单日最大跨教学楼数
+  static int _calculateDailyMaxBuildings(List<Course> allCourses) {
+    final byDay = <int, Set<String>>{};
+    for (final course in allCourses) {
+      byDay.putIfAbsent(course.dayOfWeek, () => {}).add(_buildingOf(course.location));
+    }
+    var max = 0;
+    for (final buildings in byDay.values) {
+      if (buildings.length > max) max = buildings.length;
+    }
+    return max;
+  }
+
+  /// 每日课时最大差值（均衡度）
+  static int _calculateDailyBalanceGap(List<Course> allCourses) {
+    final dailySections = <int, int>{};
+    for (final course in allCourses) {
+      final day = course.dayOfWeek;
+      dailySections[day] = (dailySections[day] ?? 0) + course.sectionCount;
+    }
+    if (dailySections.isEmpty) return 0;
+    final values = dailySections.values.toList();
+    final max = values.reduce((a, b) => a > b ? a : b);
+    final min = values.reduce((a, b) => a < b ? a : b);
+    return max - min;
   }
 
   /// 按课程名称分组
@@ -458,20 +817,6 @@ class StatisticsService {
     }
     if (dailySections.isEmpty) return 0;
     return dailySections.values.reduce((a, b) => a > b ? a : b);
-  }
-
-  /// 判断是否均衡（每天课时差距 ≤ 2）
-  static bool _isBalanced(List<Course> allCourses) {
-    final dailySections = <int, int>{};
-    for (final course in allCourses) {
-      final day = course.dayOfWeek;
-      dailySections[day] = (dailySections[day] ?? 0) + course.sectionCount;
-    }
-    if (dailySections.isEmpty) return true;
-    final values = dailySections.values.toList();
-    final max = values.reduce((a, b) => a > b ? a : b);
-    final min = values.reduce((a, b) => a < b ? a : b);
-    return (max - min) <= 2;
   }
 
   /// 计算最长连续上课天数
