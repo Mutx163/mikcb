@@ -6432,6 +6432,153 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get statisticsWeekCurrentHint => '今週';
+
+  @override
+  String get statisticsTabSemester => '学期';
+
+  @override
+  String get statisticsTabWeek => '週';
+
+  @override
+  String get statisticsSemesterProgressTitle => '学期の進捗';
+
+  @override
+  String statisticsSemesterProgressRange(String start, String end) {
+    return '学期 $start - $end';
+  }
+
+  @override
+  String statisticsSemesterProgressAsOf(String date) {
+    return '$date 現在';
+  }
+
+  @override
+  String statisticsSemesterProgressDetail(int done, int total) {
+    return '受講済み $done コマ / 全 $total コマ';
+  }
+
+  @override
+  String statisticsSemesterProgressRemaining(int count) {
+    return '残り $count コマ';
+  }
+
+  @override
+  String get statisticsTrendTitle => '週別授業数の推移';
+
+  @override
+  String statisticsTrendTooltip(int week, int sections) {
+    return '第 $week 週 · $sections コマ';
+  }
+
+  @override
+  String get statisticsComparisonTitle => '今週のまとめ';
+
+  @override
+  String get statisticsComparisonLastWeek => '先週';
+
+  @override
+  String get statisticsComparisonAverage => '学期平均';
+
+  @override
+  String statisticsComparisonVsLastWeek(String delta) {
+    return '先週比 $delta コマ';
+  }
+
+  @override
+  String statisticsComparisonVsAverage(String delta) {
+    return '平均比 $delta コマ';
+  }
+
+  @override
+  String get statisticsComparisonNew => '新学期最初の週';
+
+  @override
+  String get statisticsHeatmapTitle => '学期ヒートマップ';
+
+  @override
+  String get statisticsHeatmapHint => '色が濃いほど授業が多い';
+
+  @override
+  String get statisticsTimeUtilTitle => '時間の使い方';
+
+  @override
+  String get statisticsTimeEarliest => '最速の授業';
+
+  @override
+  String get statisticsTimeLatest => '最遅の授業';
+
+  @override
+  String get statisticsTimeMorning => '午前の授業';
+
+  @override
+  String get statisticsTimeNoon => '昼の授業';
+
+  @override
+  String get statisticsTimeEvening => '夜の授業';
+
+  @override
+  String get statisticsTimeWeekend => '週末の授業';
+
+  @override
+  String get statisticsTimeGap => '最長の授業間空き';
+
+  @override
+  String statisticsTimeGapValue(int sections) {
+    return '$sections コマ';
+  }
+
+  @override
+  String get statisticsVenueTitle => '教室と校舎';
+
+  @override
+  String get statisticsVenueTopRooms => 'よく行く教室';
+
+  @override
+  String get statisticsVenueBuildings => '校舎別授業数';
+
+  @override
+  String statisticsVenueVisits(int count) {
+    return '$count 回';
+  }
+
+  @override
+  String get statisticsTeacherTitle => '教員別授業ランキング';
+
+  @override
+  String statisticsTeacherCourseCount(int count) {
+    return '$count 科目';
+  }
+
+  @override
+  String get statisticsAchievementFullDayKingName => '満タンの日';
+
+  @override
+  String get statisticsAchievementFullDayKingDescription => '1日8コマ以上';
+
+  @override
+  String get statisticsAchievementBuildingHopperName => '校舎ハンター';
+
+  @override
+  String get statisticsAchievementBuildingHopperDescription => '1日3校舎以上';
+
+  @override
+  String statisticsAchievementProgress(int current, int target) {
+    return '$current/$target';
+  }
+
+  @override
+  String get statisticsAchievementDone => '達成済み';
+
+  @override
+  String get statisticsWeekBusiestDay => '最も忙しい日';
+
+  @override
+  String statisticsWeekDailyHint(int week) {
+    return 'タップで第 $week 週の詳細';
+  }
+
+  @override
   String get weekListSeparator => '、';
 
   @override

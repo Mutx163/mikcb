@@ -6334,6 +6334,153 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get statisticsWeekCurrentHint => '本周';
+
+  @override
+  String get statisticsTabSemester => '学期';
+
+  @override
+  String get statisticsTabWeek => '周';
+
+  @override
+  String get statisticsSemesterProgressTitle => '学期进度';
+
+  @override
+  String statisticsSemesterProgressRange(String start, String end) {
+    return '学期 $start - $end';
+  }
+
+  @override
+  String statisticsSemesterProgressAsOf(String date) {
+    return '截至 $date';
+  }
+
+  @override
+  String statisticsSemesterProgressDetail(int done, int total) {
+    return '已上 $done 节 / 共 $total 节';
+  }
+
+  @override
+  String statisticsSemesterProgressRemaining(int count) {
+    return '剩余 $count 节';
+  }
+
+  @override
+  String get statisticsTrendTitle => '每周课时趋势';
+
+  @override
+  String statisticsTrendTooltip(int week, int sections) {
+    return '第 $week 周 · $sections 节';
+  }
+
+  @override
+  String get statisticsComparisonTitle => '本周小结';
+
+  @override
+  String get statisticsComparisonLastWeek => '上周课时';
+
+  @override
+  String get statisticsComparisonAverage => '学期周均';
+
+  @override
+  String statisticsComparisonVsLastWeek(String delta) {
+    return '较上周 $delta 节';
+  }
+
+  @override
+  String statisticsComparisonVsAverage(String delta) {
+    return '较周均 $delta 节';
+  }
+
+  @override
+  String get statisticsComparisonNew => '新学期第一周';
+
+  @override
+  String get statisticsHeatmapTitle => '学期热力图';
+
+  @override
+  String get statisticsHeatmapHint => '颜色越深，课时越多';
+
+  @override
+  String get statisticsTimeUtilTitle => '时间利用';
+
+  @override
+  String get statisticsTimeEarliest => '最早课';
+
+  @override
+  String get statisticsTimeLatest => '最晚课';
+
+  @override
+  String get statisticsTimeMorning => '早间课时';
+
+  @override
+  String get statisticsTimeNoon => '午间课时';
+
+  @override
+  String get statisticsTimeEvening => '晚间课时';
+
+  @override
+  String get statisticsTimeWeekend => '周末课时';
+
+  @override
+  String get statisticsTimeGap => '最长课间空档';
+
+  @override
+  String statisticsTimeGapValue(int sections) {
+    return '$sections 节';
+  }
+
+  @override
+  String get statisticsVenueTitle => '教室与教学楼';
+
+  @override
+  String get statisticsVenueTopRooms => '常去教室';
+
+  @override
+  String get statisticsVenueBuildings => '教学楼课时';
+
+  @override
+  String statisticsVenueVisits(int count) {
+    return '$count 次';
+  }
+
+  @override
+  String get statisticsTeacherTitle => '教师课时排行';
+
+  @override
+  String statisticsTeacherCourseCount(int count) {
+    return '$count 门课';
+  }
+
+  @override
+  String get statisticsAchievementFullDayKingName => '满课日之王';
+
+  @override
+  String get statisticsAchievementFullDayKingDescription => '单日 ≥ 8 节课';
+
+  @override
+  String get statisticsAchievementBuildingHopperName => '跨楼达人';
+
+  @override
+  String get statisticsAchievementBuildingHopperDescription => '单日跨 ≥ 3 栋教学楼';
+
+  @override
+  String statisticsAchievementProgress(int current, int target) {
+    return '$current/$target';
+  }
+
+  @override
+  String get statisticsAchievementDone => '已达成';
+
+  @override
+  String get statisticsWeekBusiestDay => '最忙的一天';
+
+  @override
+  String statisticsWeekDailyHint(int week) {
+    return '点击查看第 $week 周详情';
+  }
+
+  @override
   String get weekListSeparator => '、';
 
   @override
@@ -15738,6 +15885,153 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String statisticsNatureLegendDetail(int count, int sections) {
     return '$count 門 · $sections 節';
+  }
+
+  @override
+  String get statisticsWeekCurrentHint => '本週';
+
+  @override
+  String get statisticsTabSemester => '學期';
+
+  @override
+  String get statisticsTabWeek => '週';
+
+  @override
+  String get statisticsSemesterProgressTitle => '學期進度';
+
+  @override
+  String statisticsSemesterProgressRange(String start, String end) {
+    return '學期 $start - $end';
+  }
+
+  @override
+  String statisticsSemesterProgressAsOf(String date) {
+    return '截至 $date';
+  }
+
+  @override
+  String statisticsSemesterProgressDetail(int done, int total) {
+    return '已上 $done 節 / 共 $total 節';
+  }
+
+  @override
+  String statisticsSemesterProgressRemaining(int count) {
+    return '剩餘 $count 節';
+  }
+
+  @override
+  String get statisticsTrendTitle => '每週課時趨勢';
+
+  @override
+  String statisticsTrendTooltip(int week, int sections) {
+    return '第 $week 週 · $sections 節';
+  }
+
+  @override
+  String get statisticsComparisonTitle => '本週小結';
+
+  @override
+  String get statisticsComparisonLastWeek => '上週課時';
+
+  @override
+  String get statisticsComparisonAverage => '學期週均';
+
+  @override
+  String statisticsComparisonVsLastWeek(String delta) {
+    return '較上週 $delta 節';
+  }
+
+  @override
+  String statisticsComparisonVsAverage(String delta) {
+    return '較週均 $delta 節';
+  }
+
+  @override
+  String get statisticsComparisonNew => '新學期第一週';
+
+  @override
+  String get statisticsHeatmapTitle => '學期熱力圖';
+
+  @override
+  String get statisticsHeatmapHint => '顏色越深，課時越多';
+
+  @override
+  String get statisticsTimeUtilTitle => '時間利用';
+
+  @override
+  String get statisticsTimeEarliest => '最早課';
+
+  @override
+  String get statisticsTimeLatest => '最晚課';
+
+  @override
+  String get statisticsTimeMorning => '早間課時';
+
+  @override
+  String get statisticsTimeNoon => '午間課時';
+
+  @override
+  String get statisticsTimeEvening => '晚間課時';
+
+  @override
+  String get statisticsTimeWeekend => '週末課時';
+
+  @override
+  String get statisticsTimeGap => '最長課間空檔';
+
+  @override
+  String statisticsTimeGapValue(int sections) {
+    return '$sections 節';
+  }
+
+  @override
+  String get statisticsVenueTitle => '教室與教學樓';
+
+  @override
+  String get statisticsVenueTopRooms => '常去教室';
+
+  @override
+  String get statisticsVenueBuildings => '教學樓課時';
+
+  @override
+  String statisticsVenueVisits(int count) {
+    return '$count 次';
+  }
+
+  @override
+  String get statisticsTeacherTitle => '教師課時排行';
+
+  @override
+  String statisticsTeacherCourseCount(int count) {
+    return '$count 門課';
+  }
+
+  @override
+  String get statisticsAchievementFullDayKingName => '滿課日之王';
+
+  @override
+  String get statisticsAchievementFullDayKingDescription => '單日 ≥ 8 節課';
+
+  @override
+  String get statisticsAchievementBuildingHopperName => '跨樓達人';
+
+  @override
+  String get statisticsAchievementBuildingHopperDescription => '單日跨 ≥ 3 棟教學樓';
+
+  @override
+  String statisticsAchievementProgress(int current, int target) {
+    return '$current/$target';
+  }
+
+  @override
+  String get statisticsAchievementDone => '已達成';
+
+  @override
+  String get statisticsWeekBusiestDay => '最忙的一天';
+
+  @override
+  String statisticsWeekDailyHint(int week) {
+    return '點擊查看第 $week 週詳情';
   }
 
   @override
@@ -25189,6 +25483,153 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String statisticsNatureLegendDetail(int count, int sections) {
     return '$count 門 · $sections 節';
+  }
+
+  @override
+  String get statisticsWeekCurrentHint => '本週';
+
+  @override
+  String get statisticsTabSemester => '學期';
+
+  @override
+  String get statisticsTabWeek => '週';
+
+  @override
+  String get statisticsSemesterProgressTitle => '學期進度';
+
+  @override
+  String statisticsSemesterProgressRange(String start, String end) {
+    return '學期 $start - $end';
+  }
+
+  @override
+  String statisticsSemesterProgressAsOf(String date) {
+    return '截至 $date';
+  }
+
+  @override
+  String statisticsSemesterProgressDetail(int done, int total) {
+    return '已上 $done 節 / 共 $total 節';
+  }
+
+  @override
+  String statisticsSemesterProgressRemaining(int count) {
+    return '剩餘 $count 節';
+  }
+
+  @override
+  String get statisticsTrendTitle => '每週課時趨勢';
+
+  @override
+  String statisticsTrendTooltip(int week, int sections) {
+    return '第 $week 週 · $sections 節';
+  }
+
+  @override
+  String get statisticsComparisonTitle => '本週小結';
+
+  @override
+  String get statisticsComparisonLastWeek => '上週課時';
+
+  @override
+  String get statisticsComparisonAverage => '學期週均';
+
+  @override
+  String statisticsComparisonVsLastWeek(String delta) {
+    return '較上週 $delta 節';
+  }
+
+  @override
+  String statisticsComparisonVsAverage(String delta) {
+    return '較週均 $delta 節';
+  }
+
+  @override
+  String get statisticsComparisonNew => '新學期第一週';
+
+  @override
+  String get statisticsHeatmapTitle => '學期熱力圖';
+
+  @override
+  String get statisticsHeatmapHint => '顏色越深，課時越多';
+
+  @override
+  String get statisticsTimeUtilTitle => '時間利用';
+
+  @override
+  String get statisticsTimeEarliest => '最早課';
+
+  @override
+  String get statisticsTimeLatest => '最晚課';
+
+  @override
+  String get statisticsTimeMorning => '早間課時';
+
+  @override
+  String get statisticsTimeNoon => '午間課時';
+
+  @override
+  String get statisticsTimeEvening => '晚間課時';
+
+  @override
+  String get statisticsTimeWeekend => '週末課時';
+
+  @override
+  String get statisticsTimeGap => '最長課間空檔';
+
+  @override
+  String statisticsTimeGapValue(int sections) {
+    return '$sections 節';
+  }
+
+  @override
+  String get statisticsVenueTitle => '教室與教學樓';
+
+  @override
+  String get statisticsVenueTopRooms => '常去教室';
+
+  @override
+  String get statisticsVenueBuildings => '教學樓課時';
+
+  @override
+  String statisticsVenueVisits(int count) {
+    return '$count 次';
+  }
+
+  @override
+  String get statisticsTeacherTitle => '教師課時排行';
+
+  @override
+  String statisticsTeacherCourseCount(int count) {
+    return '$count 門課';
+  }
+
+  @override
+  String get statisticsAchievementFullDayKingName => '滿課日之王';
+
+  @override
+  String get statisticsAchievementFullDayKingDescription => '單日 ≥ 8 節課';
+
+  @override
+  String get statisticsAchievementBuildingHopperName => '跨樓達人';
+
+  @override
+  String get statisticsAchievementBuildingHopperDescription => '單日跨 ≥ 3 棟教學樓';
+
+  @override
+  String statisticsAchievementProgress(int current, int target) {
+    return '$current/$target';
+  }
+
+  @override
+  String get statisticsAchievementDone => '已達成';
+
+  @override
+  String get statisticsWeekBusiestDay => '最忙的一天';
+
+  @override
+  String statisticsWeekDailyHint(int week) {
+    return '點擊查看第 $week 週詳情';
   }
 
   @override

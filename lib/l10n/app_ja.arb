@@ -3524,6 +3524,111 @@
       }
     }
   },
+  "statisticsWeekCurrentHint": "今週",
+  "statisticsTabSemester": "学期",
+  "statisticsTabWeek": "週",
+  "statisticsSemesterProgressTitle": "学期の進捗",
+  "statisticsSemesterProgressRange": "学期 {start} - {end}",
+  "@statisticsSemesterProgressRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressAsOf": "{date} 現在",
+  "@statisticsSemesterProgressAsOf": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressDetail": "受講済み {done} コマ / 全 {total} コマ",
+  "@statisticsSemesterProgressDetail": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statisticsSemesterProgressRemaining": "残り {count} コマ",
+  "@statisticsSemesterProgressRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTrendTitle": "週別授業数の推移",
+  "statisticsTrendTooltip": "第 {week} 週 · {sections} コマ",
+  "@statisticsTrendTooltip": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsComparisonTitle": "今週のまとめ",
+  "statisticsComparisonLastWeek": "先週",
+  "statisticsComparisonAverage": "学期平均",
+  "statisticsComparisonVsLastWeek": "先週比 {delta} コマ",
+  "@statisticsComparisonVsLastWeek": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonVsAverage": "平均比 {delta} コマ",
+  "@statisticsComparisonVsAverage": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonNew": "新学期最初の週",
+  "statisticsHeatmapTitle": "学期ヒートマップ",
+  "statisticsHeatmapHint": "色が濃いほど授業が多い",
+  "statisticsTimeUtilTitle": "時間の使い方",
+  "statisticsTimeEarliest": "最速の授業",
+  "statisticsTimeLatest": "最遅の授業",
+  "statisticsTimeMorning": "午前の授業",
+  "statisticsTimeNoon": "昼の授業",
+  "statisticsTimeEvening": "夜の授業",
+  "statisticsTimeWeekend": "週末の授業",
+  "statisticsTimeGap": "最長の授業間空き",
+  "statisticsTimeGapValue": "{sections} コマ",
+  "@statisticsTimeGapValue": {
+    "placeholders": {
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsVenueTitle": "教室と校舎",
+  "statisticsVenueTopRooms": "よく行く教室",
+  "statisticsVenueBuildings": "校舎別授業数",
+  "statisticsVenueVisits": "{count} 回",
+  "@statisticsVenueVisits": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTeacherTitle": "教員別授業ランキング",
+  "statisticsTeacherCourseCount": "{count} 科目",
+  "@statisticsTeacherCourseCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsAchievementFullDayKingName": "満タンの日",
+  "statisticsAchievementFullDayKingDescription": "1日8コマ以上",
+  "statisticsAchievementBuildingHopperName": "校舎ハンター",
+  "statisticsAchievementBuildingHopperDescription": "1日3校舎以上",
+  "statisticsAchievementProgress": "{current}/{target}",
+  "@statisticsAchievementProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "statisticsAchievementDone": "達成済み",
+  "statisticsWeekBusiestDay": "最も忙しい日",
+  "statisticsWeekDailyHint": "タップで第 {week} 週の詳細",
+  "@statisticsWeekDailyHint": {
+    "placeholders": {
+      "week": { "type": "int" }
+    }
+  },
   "weekListSeparator": "、",
   "courseWeekListLabel": "第{weeks}週",
   "@courseWeekListLabel": {

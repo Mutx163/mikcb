@@ -6470,6 +6470,153 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get statisticsWeekCurrentHint => '이번 주';
+
+  @override
+  String get statisticsTabSemester => '학기';
+
+  @override
+  String get statisticsTabWeek => '주';
+
+  @override
+  String get statisticsSemesterProgressTitle => '학기 진행도';
+
+  @override
+  String statisticsSemesterProgressRange(String start, String end) {
+    return '학기 $start - $end';
+  }
+
+  @override
+  String statisticsSemesterProgressAsOf(String date) {
+    return '$date 기준';
+  }
+
+  @override
+  String statisticsSemesterProgressDetail(int done, int total) {
+    return '수강 $done교시 / 총 $total교시';
+  }
+
+  @override
+  String statisticsSemesterProgressRemaining(int count) {
+    return '남은 $count교시';
+  }
+
+  @override
+  String get statisticsTrendTitle => '주별 수업 시간 추이';
+
+  @override
+  String statisticsTrendTooltip(int week, int sections) {
+    return '$week주차 · $sections교시';
+  }
+
+  @override
+  String get statisticsComparisonTitle => '이번 주 요약';
+
+  @override
+  String get statisticsComparisonLastWeek => '지난주';
+
+  @override
+  String get statisticsComparisonAverage => '학기 평균';
+
+  @override
+  String statisticsComparisonVsLastWeek(String delta) {
+    return '지난주 대비 $delta교시';
+  }
+
+  @override
+  String statisticsComparisonVsAverage(String delta) {
+    return '평균 대비 $delta교시';
+  }
+
+  @override
+  String get statisticsComparisonNew => '새 학기 첫 주';
+
+  @override
+  String get statisticsHeatmapTitle => '학기 히트맵';
+
+  @override
+  String get statisticsHeatmapHint => '색이 진할수록 수업이 많음';
+
+  @override
+  String get statisticsTimeUtilTitle => '시간 활용';
+
+  @override
+  String get statisticsTimeEarliest => '가장 이른 수업';
+
+  @override
+  String get statisticsTimeLatest => '가장 늦은 수업';
+
+  @override
+  String get statisticsTimeMorning => '오전 수업';
+
+  @override
+  String get statisticsTimeNoon => '점심 수업';
+
+  @override
+  String get statisticsTimeEvening => '저녁 수업';
+
+  @override
+  String get statisticsTimeWeekend => '주말 수업';
+
+  @override
+  String get statisticsTimeGap => '최장 쉬는 시간';
+
+  @override
+  String statisticsTimeGapValue(int sections) {
+    return '$sections교시';
+  }
+
+  @override
+  String get statisticsVenueTitle => '강의실과 건물';
+
+  @override
+  String get statisticsVenueTopRooms => '자주 가는 강의실';
+
+  @override
+  String get statisticsVenueBuildings => '건물별 수업 시간';
+
+  @override
+  String statisticsVenueVisits(int count) {
+    return '$count회';
+  }
+
+  @override
+  String get statisticsTeacherTitle => '교수별 수업 랭킹';
+
+  @override
+  String statisticsTeacherCourseCount(int count) {
+    return '$count과목';
+  }
+
+  @override
+  String get statisticsAchievementFullDayKingName => '풀타임 킹';
+
+  @override
+  String get statisticsAchievementFullDayKingDescription => '하루 8교시 이상';
+
+  @override
+  String get statisticsAchievementBuildingHopperName => '건물 탐험가';
+
+  @override
+  String get statisticsAchievementBuildingHopperDescription => '하루 3개 건물 이상';
+
+  @override
+  String statisticsAchievementProgress(int current, int target) {
+    return '$current/$target';
+  }
+
+  @override
+  String get statisticsAchievementDone => '달성 완료';
+
+  @override
+  String get statisticsWeekBusiestDay => '가장 바쁜 날';
+
+  @override
+  String statisticsWeekDailyHint(int week) {
+    return '탭하여 $week주차 세부 정보 보기';
+  }
+
+  @override
   String get weekListSeparator => ', ';
 
   @override

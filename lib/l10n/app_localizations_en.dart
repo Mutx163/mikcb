@@ -6693,6 +6693,155 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get statisticsWeekCurrentHint => 'This week';
+
+  @override
+  String get statisticsTabSemester => 'Semester';
+
+  @override
+  String get statisticsTabWeek => 'Week';
+
+  @override
+  String get statisticsSemesterProgressTitle => 'Semester Progress';
+
+  @override
+  String statisticsSemesterProgressRange(String start, String end) {
+    return 'Semester $start - $end';
+  }
+
+  @override
+  String statisticsSemesterProgressAsOf(String date) {
+    return 'As of $date';
+  }
+
+  @override
+  String statisticsSemesterProgressDetail(int done, int total) {
+    return '$done of $total sections taken';
+  }
+
+  @override
+  String statisticsSemesterProgressRemaining(int count) {
+    return '$count sections left';
+  }
+
+  @override
+  String get statisticsTrendTitle => 'Weekly Sections Trend';
+
+  @override
+  String statisticsTrendTooltip(int week, int sections) {
+    return 'Week $week · $sections sections';
+  }
+
+  @override
+  String get statisticsComparisonTitle => 'This Week at a Glance';
+
+  @override
+  String get statisticsComparisonLastWeek => 'Last Week';
+
+  @override
+  String get statisticsComparisonAverage => 'Weekly Average';
+
+  @override
+  String statisticsComparisonVsLastWeek(String delta) {
+    return '$delta vs last week';
+  }
+
+  @override
+  String statisticsComparisonVsAverage(String delta) {
+    return '$delta vs weekly avg';
+  }
+
+  @override
+  String get statisticsComparisonNew => 'First week of the semester';
+
+  @override
+  String get statisticsHeatmapTitle => 'Semester Heatmap';
+
+  @override
+  String get statisticsHeatmapHint => 'Darker means more sections';
+
+  @override
+  String get statisticsTimeUtilTitle => 'Time Usage';
+
+  @override
+  String get statisticsTimeEarliest => 'Earliest Class';
+
+  @override
+  String get statisticsTimeLatest => 'Latest Class';
+
+  @override
+  String get statisticsTimeMorning => 'Morning Sections';
+
+  @override
+  String get statisticsTimeNoon => 'Noon Sections';
+
+  @override
+  String get statisticsTimeEvening => 'Evening Sections';
+
+  @override
+  String get statisticsTimeWeekend => 'Weekend Sections';
+
+  @override
+  String get statisticsTimeGap => 'Longest Break';
+
+  @override
+  String statisticsTimeGapValue(int sections) {
+    return '$sections sections';
+  }
+
+  @override
+  String get statisticsVenueTitle => 'Rooms & Buildings';
+
+  @override
+  String get statisticsVenueTopRooms => 'Favorite Rooms';
+
+  @override
+  String get statisticsVenueBuildings => 'Sections by Building';
+
+  @override
+  String statisticsVenueVisits(int count) {
+    return '$count visits';
+  }
+
+  @override
+  String get statisticsTeacherTitle => 'Teacher Ranking';
+
+  @override
+  String statisticsTeacherCourseCount(int count) {
+    return '$count courses';
+  }
+
+  @override
+  String get statisticsAchievementFullDayKingName => 'Full-Day King';
+
+  @override
+  String get statisticsAchievementFullDayKingDescription =>
+      '8+ sections in a single day';
+
+  @override
+  String get statisticsAchievementBuildingHopperName => 'Building Hopper';
+
+  @override
+  String get statisticsAchievementBuildingHopperDescription =>
+      '3+ buildings in a single day';
+
+  @override
+  String statisticsAchievementProgress(int current, int target) {
+    return '$current/$target';
+  }
+
+  @override
+  String get statisticsAchievementDone => 'Unlocked';
+
+  @override
+  String get statisticsWeekBusiestDay => 'Busiest Day';
+
+  @override
+  String statisticsWeekDailyHint(int week) {
+    return 'Tap to view week $week details';
+  }
+
+  @override
   String get weekListSeparator => ', ';
 
   @override

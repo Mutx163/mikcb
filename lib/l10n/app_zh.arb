@@ -3761,6 +3761,111 @@
       }
     }
   },
+  "statisticsWeekCurrentHint": "本周",
+  "statisticsTabSemester": "学期",
+  "statisticsTabWeek": "周",
+  "statisticsSemesterProgressTitle": "学期进度",
+  "statisticsSemesterProgressRange": "学期 {start} - {end}",
+  "@statisticsSemesterProgressRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressAsOf": "截至 {date}",
+  "@statisticsSemesterProgressAsOf": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressDetail": "已上 {done} 节 / 共 {total} 节",
+  "@statisticsSemesterProgressDetail": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statisticsSemesterProgressRemaining": "剩余 {count} 节",
+  "@statisticsSemesterProgressRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTrendTitle": "每周课时趋势",
+  "statisticsTrendTooltip": "第 {week} 周 · {sections} 节",
+  "@statisticsTrendTooltip": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsComparisonTitle": "本周小结",
+  "statisticsComparisonLastWeek": "上周课时",
+  "statisticsComparisonAverage": "学期周均",
+  "statisticsComparisonVsLastWeek": "较上周 {delta} 节",
+  "@statisticsComparisonVsLastWeek": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonVsAverage": "较周均 {delta} 节",
+  "@statisticsComparisonVsAverage": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonNew": "新学期第一周",
+  "statisticsHeatmapTitle": "学期热力图",
+  "statisticsHeatmapHint": "颜色越深，课时越多",
+  "statisticsTimeUtilTitle": "时间利用",
+  "statisticsTimeEarliest": "最早课",
+  "statisticsTimeLatest": "最晚课",
+  "statisticsTimeMorning": "早间课时",
+  "statisticsTimeNoon": "午间课时",
+  "statisticsTimeEvening": "晚间课时",
+  "statisticsTimeWeekend": "周末课时",
+  "statisticsTimeGap": "最长课间空档",
+  "statisticsTimeGapValue": "{sections} 节",
+  "@statisticsTimeGapValue": {
+    "placeholders": {
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsVenueTitle": "教室与教学楼",
+  "statisticsVenueTopRooms": "常去教室",
+  "statisticsVenueBuildings": "教学楼课时",
+  "statisticsVenueVisits": "{count} 次",
+  "@statisticsVenueVisits": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTeacherTitle": "教师课时排行",
+  "statisticsTeacherCourseCount": "{count} 门课",
+  "@statisticsTeacherCourseCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsAchievementFullDayKingName": "满课日之王",
+  "statisticsAchievementFullDayKingDescription": "单日 ≥ 8 节课",
+  "statisticsAchievementBuildingHopperName": "跨楼达人",
+  "statisticsAchievementBuildingHopperDescription": "单日跨 ≥ 3 栋教学楼",
+  "statisticsAchievementProgress": "{current}/{target}",
+  "@statisticsAchievementProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "statisticsAchievementDone": "已达成",
+  "statisticsWeekBusiestDay": "最忙的一天",
+  "statisticsWeekDailyHint": "点击查看第 {week} 周详情",
+  "@statisticsWeekDailyHint": {
+    "placeholders": {
+      "week": { "type": "int" }
+    }
+  },
   "weekListSeparator": "、",
   "courseWeekListLabel": "第{weeks}周",
   "@courseWeekListLabel": {

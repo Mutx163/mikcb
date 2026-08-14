@@ -3524,6 +3524,111 @@
       }
     }
   },
+  "statisticsWeekCurrentHint": "本週",
+  "statisticsTabSemester": "學期",
+  "statisticsTabWeek": "週",
+  "statisticsSemesterProgressTitle": "學期進度",
+  "statisticsSemesterProgressRange": "學期 {start} - {end}",
+  "@statisticsSemesterProgressRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressAsOf": "截至 {date}",
+  "@statisticsSemesterProgressAsOf": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressDetail": "已上 {done} 節 / 共 {total} 節",
+  "@statisticsSemesterProgressDetail": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statisticsSemesterProgressRemaining": "剩餘 {count} 節",
+  "@statisticsSemesterProgressRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTrendTitle": "每週課時趨勢",
+  "statisticsTrendTooltip": "第 {week} 週 · {sections} 節",
+  "@statisticsTrendTooltip": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsComparisonTitle": "本週小結",
+  "statisticsComparisonLastWeek": "上週課時",
+  "statisticsComparisonAverage": "學期週均",
+  "statisticsComparisonVsLastWeek": "較上週 {delta} 節",
+  "@statisticsComparisonVsLastWeek": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonVsAverage": "較週均 {delta} 節",
+  "@statisticsComparisonVsAverage": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonNew": "新學期第一週",
+  "statisticsHeatmapTitle": "學期熱力圖",
+  "statisticsHeatmapHint": "顏色越深，課時越多",
+  "statisticsTimeUtilTitle": "時間利用",
+  "statisticsTimeEarliest": "最早課",
+  "statisticsTimeLatest": "最晚課",
+  "statisticsTimeMorning": "早間課時",
+  "statisticsTimeNoon": "午間課時",
+  "statisticsTimeEvening": "晚間課時",
+  "statisticsTimeWeekend": "週末課時",
+  "statisticsTimeGap": "最長課間空檔",
+  "statisticsTimeGapValue": "{sections} 節",
+  "@statisticsTimeGapValue": {
+    "placeholders": {
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsVenueTitle": "教室與教學樓",
+  "statisticsVenueTopRooms": "常去教室",
+  "statisticsVenueBuildings": "教學樓課時",
+  "statisticsVenueVisits": "{count} 次",
+  "@statisticsVenueVisits": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTeacherTitle": "教師課時排行",
+  "statisticsTeacherCourseCount": "{count} 門課",
+  "@statisticsTeacherCourseCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsAchievementFullDayKingName": "滿課日之王",
+  "statisticsAchievementFullDayKingDescription": "單日 ≥ 8 節課",
+  "statisticsAchievementBuildingHopperName": "跨樓達人",
+  "statisticsAchievementBuildingHopperDescription": "單日跨 ≥ 3 棟教學樓",
+  "statisticsAchievementProgress": "{current}/{target}",
+  "@statisticsAchievementProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "statisticsAchievementDone": "已達成",
+  "statisticsWeekBusiestDay": "最忙的一天",
+  "statisticsWeekDailyHint": "點擊查看第 {week} 週詳情",
+  "@statisticsWeekDailyHint": {
+    "placeholders": {
+      "week": { "type": "int" }
+    }
+  },
   "weekListSeparator": "、",
   "courseWeekListLabel": "第{weeks}周",
   "@courseWeekListLabel": {

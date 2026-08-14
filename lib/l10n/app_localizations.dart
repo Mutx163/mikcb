@@ -11546,6 +11546,252 @@ abstract class AppLocalizations {
   /// **'{count} 门 · {sections} 节'**
   String statisticsNatureLegendDetail(int count, int sections);
 
+  /// No description provided for @statisticsWeekCurrentHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周'**
+  String get statisticsWeekCurrentHint;
+
+  /// No description provided for @statisticsTabSemester.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期'**
+  String get statisticsTabSemester;
+
+  /// No description provided for @statisticsTabWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'周'**
+  String get statisticsTabWeek;
+
+  /// No description provided for @statisticsSemesterProgressTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期进度'**
+  String get statisticsSemesterProgressTitle;
+
+  /// No description provided for @statisticsSemesterProgressRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期 {start} - {end}'**
+  String statisticsSemesterProgressRange(String start, String end);
+
+  /// No description provided for @statisticsSemesterProgressAsOf.
+  ///
+  /// In zh, this message translates to:
+  /// **'截至 {date}'**
+  String statisticsSemesterProgressAsOf(String date);
+
+  /// No description provided for @statisticsSemesterProgressDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'已上 {done} 节 / 共 {total} 节'**
+  String statisticsSemesterProgressDetail(int done, int total);
+
+  /// No description provided for @statisticsSemesterProgressRemaining.
+  ///
+  /// In zh, this message translates to:
+  /// **'剩余 {count} 节'**
+  String statisticsSemesterProgressRemaining(int count);
+
+  /// No description provided for @statisticsTrendTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'每周课时趋势'**
+  String get statisticsTrendTitle;
+
+  /// No description provided for @statisticsTrendTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {week} 周 · {sections} 节'**
+  String statisticsTrendTooltip(int week, int sections);
+
+  /// No description provided for @statisticsComparisonTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周小结'**
+  String get statisticsComparisonTitle;
+
+  /// No description provided for @statisticsComparisonLastWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'上周课时'**
+  String get statisticsComparisonLastWeek;
+
+  /// No description provided for @statisticsComparisonAverage.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期周均'**
+  String get statisticsComparisonAverage;
+
+  /// No description provided for @statisticsComparisonVsLastWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'较上周 {delta} 节'**
+  String statisticsComparisonVsLastWeek(String delta);
+
+  /// No description provided for @statisticsComparisonVsAverage.
+  ///
+  /// In zh, this message translates to:
+  /// **'较周均 {delta} 节'**
+  String statisticsComparisonVsAverage(String delta);
+
+  /// No description provided for @statisticsComparisonNew.
+  ///
+  /// In zh, this message translates to:
+  /// **'新学期第一周'**
+  String get statisticsComparisonNew;
+
+  /// No description provided for @statisticsHeatmapTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'学期热力图'**
+  String get statisticsHeatmapTitle;
+
+  /// No description provided for @statisticsHeatmapHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'颜色越深，课时越多'**
+  String get statisticsHeatmapHint;
+
+  /// No description provided for @statisticsTimeUtilTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间利用'**
+  String get statisticsTimeUtilTitle;
+
+  /// No description provided for @statisticsTimeEarliest.
+  ///
+  /// In zh, this message translates to:
+  /// **'最早课'**
+  String get statisticsTimeEarliest;
+
+  /// No description provided for @statisticsTimeLatest.
+  ///
+  /// In zh, this message translates to:
+  /// **'最晚课'**
+  String get statisticsTimeLatest;
+
+  /// No description provided for @statisticsTimeMorning.
+  ///
+  /// In zh, this message translates to:
+  /// **'早间课时'**
+  String get statisticsTimeMorning;
+
+  /// No description provided for @statisticsTimeNoon.
+  ///
+  /// In zh, this message translates to:
+  /// **'午间课时'**
+  String get statisticsTimeNoon;
+
+  /// No description provided for @statisticsTimeEvening.
+  ///
+  /// In zh, this message translates to:
+  /// **'晚间课时'**
+  String get statisticsTimeEvening;
+
+  /// No description provided for @statisticsTimeWeekend.
+  ///
+  /// In zh, this message translates to:
+  /// **'周末课时'**
+  String get statisticsTimeWeekend;
+
+  /// No description provided for @statisticsTimeGap.
+  ///
+  /// In zh, this message translates to:
+  /// **'最长课间空档'**
+  String get statisticsTimeGap;
+
+  /// No description provided for @statisticsTimeGapValue.
+  ///
+  /// In zh, this message translates to:
+  /// **'{sections} 节'**
+  String statisticsTimeGapValue(int sections);
+
+  /// No description provided for @statisticsVenueTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'教室与教学楼'**
+  String get statisticsVenueTitle;
+
+  /// No description provided for @statisticsVenueTopRooms.
+  ///
+  /// In zh, this message translates to:
+  /// **'常去教室'**
+  String get statisticsVenueTopRooms;
+
+  /// No description provided for @statisticsVenueBuildings.
+  ///
+  /// In zh, this message translates to:
+  /// **'教学楼课时'**
+  String get statisticsVenueBuildings;
+
+  /// No description provided for @statisticsVenueVisits.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 次'**
+  String statisticsVenueVisits(int count);
+
+  /// No description provided for @statisticsTeacherTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'教师课时排行'**
+  String get statisticsTeacherTitle;
+
+  /// No description provided for @statisticsTeacherCourseCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 门课'**
+  String statisticsTeacherCourseCount(int count);
+
+  /// No description provided for @statisticsAchievementFullDayKingName.
+  ///
+  /// In zh, this message translates to:
+  /// **'满课日之王'**
+  String get statisticsAchievementFullDayKingName;
+
+  /// No description provided for @statisticsAchievementFullDayKingDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'单日 ≥ 8 节课'**
+  String get statisticsAchievementFullDayKingDescription;
+
+  /// No description provided for @statisticsAchievementBuildingHopperName.
+  ///
+  /// In zh, this message translates to:
+  /// **'跨楼达人'**
+  String get statisticsAchievementBuildingHopperName;
+
+  /// No description provided for @statisticsAchievementBuildingHopperDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'单日跨 ≥ 3 栋教学楼'**
+  String get statisticsAchievementBuildingHopperDescription;
+
+  /// No description provided for @statisticsAchievementProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'{current}/{target}'**
+  String statisticsAchievementProgress(int current, int target);
+
+  /// No description provided for @statisticsAchievementDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已达成'**
+  String get statisticsAchievementDone;
+
+  /// No description provided for @statisticsWeekBusiestDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'最忙的一天'**
+  String get statisticsWeekBusiestDay;
+
+  /// No description provided for @statisticsWeekDailyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击查看第 {week} 周详情'**
+  String statisticsWeekDailyHint(int week);
+
   /// No description provided for @weekListSeparator.
   ///
   /// In zh, this message translates to:

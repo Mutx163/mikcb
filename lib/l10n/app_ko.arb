@@ -3524,6 +3524,111 @@
       }
     }
   },
+  "statisticsWeekCurrentHint": "이번 주",
+  "statisticsTabSemester": "학기",
+  "statisticsTabWeek": "주",
+  "statisticsSemesterProgressTitle": "학기 진행도",
+  "statisticsSemesterProgressRange": "학기 {start} - {end}",
+  "@statisticsSemesterProgressRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressAsOf": "{date} 기준",
+  "@statisticsSemesterProgressAsOf": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressDetail": "수강 {done}교시 / 총 {total}교시",
+  "@statisticsSemesterProgressDetail": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statisticsSemesterProgressRemaining": "남은 {count}교시",
+  "@statisticsSemesterProgressRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTrendTitle": "주별 수업 시간 추이",
+  "statisticsTrendTooltip": "{week}주차 · {sections}교시",
+  "@statisticsTrendTooltip": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsComparisonTitle": "이번 주 요약",
+  "statisticsComparisonLastWeek": "지난주",
+  "statisticsComparisonAverage": "학기 평균",
+  "statisticsComparisonVsLastWeek": "지난주 대비 {delta}교시",
+  "@statisticsComparisonVsLastWeek": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonVsAverage": "평균 대비 {delta}교시",
+  "@statisticsComparisonVsAverage": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonNew": "새 학기 첫 주",
+  "statisticsHeatmapTitle": "학기 히트맵",
+  "statisticsHeatmapHint": "색이 진할수록 수업이 많음",
+  "statisticsTimeUtilTitle": "시간 활용",
+  "statisticsTimeEarliest": "가장 이른 수업",
+  "statisticsTimeLatest": "가장 늦은 수업",
+  "statisticsTimeMorning": "오전 수업",
+  "statisticsTimeNoon": "점심 수업",
+  "statisticsTimeEvening": "저녁 수업",
+  "statisticsTimeWeekend": "주말 수업",
+  "statisticsTimeGap": "최장 쉬는 시간",
+  "statisticsTimeGapValue": "{sections}교시",
+  "@statisticsTimeGapValue": {
+    "placeholders": {
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsVenueTitle": "강의실과 건물",
+  "statisticsVenueTopRooms": "자주 가는 강의실",
+  "statisticsVenueBuildings": "건물별 수업 시간",
+  "statisticsVenueVisits": "{count}회",
+  "@statisticsVenueVisits": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTeacherTitle": "교수별 수업 랭킹",
+  "statisticsTeacherCourseCount": "{count}과목",
+  "@statisticsTeacherCourseCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsAchievementFullDayKingName": "풀타임 킹",
+  "statisticsAchievementFullDayKingDescription": "하루 8교시 이상",
+  "statisticsAchievementBuildingHopperName": "건물 탐험가",
+  "statisticsAchievementBuildingHopperDescription": "하루 3개 건물 이상",
+  "statisticsAchievementProgress": "{current}/{target}",
+  "@statisticsAchievementProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "statisticsAchievementDone": "달성 완료",
+  "statisticsWeekBusiestDay": "가장 바쁜 날",
+  "statisticsWeekDailyHint": "탭하여 {week}주차 세부 정보 보기",
+  "@statisticsWeekDailyHint": {
+    "placeholders": {
+      "week": { "type": "int" }
+    }
+  },
   "weekListSeparator": ", ",
   "courseWeekListLabel": "제{weeks}주",
   "@courseWeekListLabel": {

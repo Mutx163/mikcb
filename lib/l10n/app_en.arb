@@ -3761,6 +3761,111 @@
       }
     }
   },
+  "statisticsWeekCurrentHint": "This week",
+  "statisticsTabSemester": "Semester",
+  "statisticsTabWeek": "Week",
+  "statisticsSemesterProgressTitle": "Semester Progress",
+  "statisticsSemesterProgressRange": "Semester {start} - {end}",
+  "@statisticsSemesterProgressRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressAsOf": "As of {date}",
+  "@statisticsSemesterProgressAsOf": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "statisticsSemesterProgressDetail": "{done} of {total} sections taken",
+  "@statisticsSemesterProgressDetail": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statisticsSemesterProgressRemaining": "{count} sections left",
+  "@statisticsSemesterProgressRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTrendTitle": "Weekly Sections Trend",
+  "statisticsTrendTooltip": "Week {week} · {sections} sections",
+  "@statisticsTrendTooltip": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsComparisonTitle": "This Week at a Glance",
+  "statisticsComparisonLastWeek": "Last Week",
+  "statisticsComparisonAverage": "Weekly Average",
+  "statisticsComparisonVsLastWeek": "{delta} vs last week",
+  "@statisticsComparisonVsLastWeek": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonVsAverage": "{delta} vs weekly avg",
+  "@statisticsComparisonVsAverage": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "statisticsComparisonNew": "First week of the semester",
+  "statisticsHeatmapTitle": "Semester Heatmap",
+  "statisticsHeatmapHint": "Darker means more sections",
+  "statisticsTimeUtilTitle": "Time Usage",
+  "statisticsTimeEarliest": "Earliest Class",
+  "statisticsTimeLatest": "Latest Class",
+  "statisticsTimeMorning": "Morning Sections",
+  "statisticsTimeNoon": "Noon Sections",
+  "statisticsTimeEvening": "Evening Sections",
+  "statisticsTimeWeekend": "Weekend Sections",
+  "statisticsTimeGap": "Longest Break",
+  "statisticsTimeGapValue": "{sections} sections",
+  "@statisticsTimeGapValue": {
+    "placeholders": {
+      "sections": { "type": "int" }
+    }
+  },
+  "statisticsVenueTitle": "Rooms & Buildings",
+  "statisticsVenueTopRooms": "Favorite Rooms",
+  "statisticsVenueBuildings": "Sections by Building",
+  "statisticsVenueVisits": "{count} visits",
+  "@statisticsVenueVisits": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsTeacherTitle": "Teacher Ranking",
+  "statisticsTeacherCourseCount": "{count} courses",
+  "@statisticsTeacherCourseCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsAchievementFullDayKingName": "Full-Day King",
+  "statisticsAchievementFullDayKingDescription": "8+ sections in a single day",
+  "statisticsAchievementBuildingHopperName": "Building Hopper",
+  "statisticsAchievementBuildingHopperDescription": "3+ buildings in a single day",
+  "statisticsAchievementProgress": "{current}/{target}",
+  "@statisticsAchievementProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "statisticsAchievementDone": "Unlocked",
+  "statisticsWeekBusiestDay": "Busiest Day",
+  "statisticsWeekDailyHint": "Tap to view week {week} details",
+  "@statisticsWeekDailyHint": {
+    "placeholders": {
+      "week": { "type": "int" }
+    }
+  },
   "weekListSeparator": ", ",
   "courseWeekListLabel": "Weeks {weeks}",
   "@courseWeekListLabel": {
