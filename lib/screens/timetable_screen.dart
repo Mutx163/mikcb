@@ -390,6 +390,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         final settings = provider.settings;
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
+        final dockSettingsActive = glassDockForm && _dockSettingsActive;
         final viewportSize = MediaQuery.sizeOf(context);
         final hasBackdrop = hasHomePageBackdropImage(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
@@ -424,9 +425,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         final headerUsesFrostedChrome =
             hasBackdrop &&
             (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-        final headerBarColor = headerUsesFrostedChrome
-            ? Colors.transparent
-            : headerBackground.color;
+        final headerBarColor = dockSettingsActive
+            ? pageBackgroundColor
+            : (headerUsesFrostedChrome
+                  ? Colors.transparent
+                  : headerBackground.color);
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
@@ -510,7 +513,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         Widget homeStack = Stack(
           fit: StackFit.expand,
           children: [
-            if (hasBackdrop)
+            if (hasBackdrop && !dockSettingsActive)
               followsWeekPager
                   ? HomePageSlidingBackdropLayer(
                       controller: _weekPageController,
@@ -518,12 +521,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                       settings: settings,
                     )
                   : homePageBackdropLayer(settings: settings),
-            if (hasBackdrop && !statusBarShowsBackdrop)
+            if (hasBackdrop && !statusBarShowsBackdrop && !dockSettingsActive)
               HomePageStatusBarBackdropMask(color: pageBackgroundColor),
             // Single continuous glass for title + weekday (no time-column blur).
             // Stays fixed above the sliding wallpaper so chrome text stays sharp
             // while the photo moves as one continuous sheet.
-            if (continuousChromeBlur)
+            if (continuousChromeBlur && !dockSettingsActive)
               HomePageContinuousChromeFrostedOverlay(
                 headerBlurEnabled: settings.homePageHeaderBlurEnabled,
                 weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
@@ -687,15 +690,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                               if (glassDockForm)
                                 Offstage(
                                   offstage: !_dockSettingsActive,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: _glassDockContentClearance +
-                                          MediaQuery.viewPaddingOf(context)
-                                              .bottom,
-                                    ),
-                                    child: const TimetableSettingsScreen(
-                                      embedded: true,
-                                    ),
+                                  child: TimetableSettingsScreen(
+                                    embedded: true,
+                                    bottomInset:
+                                        _glassDockContentClearance +
+                                        MediaQuery.viewPaddingOf(context)
+                                            .bottom,
                                   ),
                                 ),
                             ],
@@ -6197,10 +6197,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           right: 0,
           bottom: 0,
           child: SafeArea(
-            minimum: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 340),
+                constraints: const BoxConstraints(maxWidth: 272),
                 child: _buildGlassDockBar(settings: settings, l10n: l10n),
               ),
             ),
@@ -6241,17 +6241,28 @@ class _TimetableScreenState extends State<TimetableScreen>
       style: LiquidGlassBarStyle(
         activeColor: colorScheme.primary,
         inactiveColor: isDark
-            ? Colors.white.withValues(alpha: 0.55)
-            : Colors.black.withValues(alpha: 0.45),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            ? Colors.white.withValues(alpha: 0.62)
+            : Colors.black.withValues(alpha: 0.48),
+        borderRadius: 28,
+        height: 52,
+        iconSize: 22,
+        selectedIconScale: 1.12,
+        animationDuration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+        labelStyle: TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w600,
+          height: 1.1,
+          color: isDark ? Colors.white : Colors.black,
+        ),
         liquidGlassSettings: LiquidGlassSettings(
-          thickness: 20,
-          blur: 16,
+          thickness: 24,
+          blur: 22,
           glassColor: isDark
-              ? const Color(0xE61C1C1E)
-              : const Color(0xCCFFFFFF),
-          lightIntensity: 0.6,
-          refractiveIndex: 1.5,
+              ? const Color(0x992A2A2E)
+              : const Color(0xB8FFFFFF),
+          lightIntensity: 0.5,
+          refractiveIndex: 1.45,
         ),
       ),
     );

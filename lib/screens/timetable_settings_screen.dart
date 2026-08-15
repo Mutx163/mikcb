@@ -80,9 +80,16 @@ class TimetableSettingsScreen extends StatelessWidget {
   /// 是否以内嵌页（玻璃坞 Tab 内容）方式显示：不渲染返回键。
   ///
   /// 普通全屏跳转保持默认 false，行为不变。
-  const TimetableSettingsScreen({super.key, this.embedded = false});
+  const TimetableSettingsScreen({
+    super.key,
+    this.embedded = false,
+    this.bottomInset = 0,
+  });
 
   final bool embedded;
+
+  /// 内嵌模式下列表底部的避让高度（玻璃坞底部导航占位）。
+  final double bottomInset;
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +267,9 @@ class TimetableSettingsScreen extends StatelessWidget {
         return HyperosSubpage(
           title: Text(l10n.settingsTitle),
           onBack: embedded ? null : () => Navigator.pop(context),
-          child: HyperosListView(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: HyperosListView(
             // Inset lives inside the scrollable (like HyperosSubpage) so
             // rows can pass under the frosted/liquid-glass top bar.
             includeHeaderInset: true,
@@ -297,6 +306,7 @@ class TimetableSettingsScreen extends StatelessWidget {
               openLiveTestingFixture: openLiveTestingFixture,
               openHyperosShowcase: openHyperosShowcase,
               openMiuixShowcase: openMiuixShowcase,
+              ),
             ),
           ),
         );
