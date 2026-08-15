@@ -44,7 +44,6 @@ import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
-import 'ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'ui/hyperos_motion_bridge.dart';
 import 'utils/home_page_background.dart';
 
@@ -194,11 +193,8 @@ Future<void> main() async {
       if (!kReleaseMode) {
         setupBlackBox();
       }
-      // Warm the liquid-glass refraction probe during startup (async, does
-      // not block first frame). Without this the first popup/sheet opened
-      // after a cold start can swap from the fake frosted look to the real
-      // shader mid-animation — a one-shot visible style flash.
-      unawaited(LiquidGlassShaderProbe.probeIfNeeded());
+      // liquid_glass_widgets 的 AdaptiveGlass 自行处理引擎自适应
+      // （Impeller 真折射 / Skia 轻量 shader / frosted 回退），无需启动探测。
       runApp(
         LiquidGlassWidgets.wrap(
           child: const _PackageInfoLoader(),
