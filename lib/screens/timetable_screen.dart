@@ -780,8 +780,14 @@ class _TimetableScreenState extends State<TimetableScreen>
               AnimatedBuilder(
                 animation: _dockSettingsSwitchAnimation,
                 builder: (context, child) => Transform.translate(
+                  // 与课表滑出使用同一 easeOutCubic 曲线插值：两页位移
+                  // 互补（课表左移 p×W，设置右移 (1-p)×W），滑动中无缝
+                  // 衔接，不会在页面之间露出黑色空隙。
                   offset: Offset(
-                    dockWidth * (1 - _dockSettingsSwitchAnimation.value),
+                    dockWidth *
+                        (1 - Curves.easeOutCubic.transform(
+                              _dockSettingsSwitchAnimation.value,
+                            )),
                     0,
                   ),
                   child: child,
@@ -2847,8 +2853,14 @@ class _TimetableScreenState extends State<TimetableScreen>
             child: AnimatedBuilder(
               animation: _dockViewSwitchAnimation,
               builder: (context, child) => Transform.translate(
+                // 与周视图滑出使用同一 easeOutCubic 曲线插值：两页位移
+                // 互补（week 左移 p×W，day 右移 (1-p)×W），滑动中无缝
+                // 衔接，不会在页面之间露出空隙。
                 offset: Offset(
-                  screenWidth * (1 - _dockViewSwitchAnimation.value),
+                  screenWidth *
+                      (1 - Curves.easeOutCubic.transform(
+                            _dockViewSwitchAnimation.value,
+                          )),
                   0,
                 ),
                 child: child,
