@@ -127,7 +127,7 @@ class LiquidGlassTuning {
   static const double defaultRefractiveIndex = 1.20;
   static const double defaultSaturation = 1.5;
   static const double defaultChromaticAberration = 0.01;
-  static const double defaultLightAngleDegrees = 90; // 0.5 * pi rad
+  static const double defaultLightAngleDegrees = 135; // 0.75 * pi rad（官方默认，左上光源）
   static const double defaultVisibility = 1.0;
 
   // --- Slider ranges ---
