@@ -9520,6 +9520,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
 
   @override
+  String get courseCardSurfaceStyleGlass => 'ガラス';
+
+  @override
   String get courseCardSectionColor => '色';
 
   @override

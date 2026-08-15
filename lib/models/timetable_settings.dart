@@ -439,17 +439,20 @@ enum CourseCardSurfaceStyle {
 
   /// Gaussian blur backdrop over the page background.
   gaussian,
+
+  /// 玻璃卡片：液态玻璃模式用与弹窗/顶部同款的液态玻璃材质；
+  /// 标准/高斯材质模式退化为高斯模糊卡片（跟随全局高级材质设置）。
+  glass,
 }
 
 extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   String get value => name;
 
   static CourseCardSurfaceStyle fromValue(String? value) {
-    // Older settings may still contain the removed liquid-glass card style.
-    // Migrate it to the safe opaque default instead of exposing or rendering
-    // that unsupported course-card material again.
+    // Older settings may contain the legacy liquid-glass card style.
+    // 恢复为玻璃卡片（跟随全局高级材质设置渲染）。
     if (value == 'liquidGlass') {
-      return CourseCardSurfaceStyle.solid;
+      return CourseCardSurfaceStyle.glass;
     }
     return CourseCardSurfaceStyle.values.firstWhere(
       (item) => item.value == value,

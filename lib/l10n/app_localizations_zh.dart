@@ -9249,6 +9249,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
+  String get courseCardSurfaceStyleGlass => '玻璃';
+
+  @override
   String get courseCardSectionColor => '颜色';
 
   @override
@@ -18984,6 +18987,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
+  String get courseCardSurfaceStyleGlass => '玻璃';
+
+  @override
   String get courseCardSectionColor => '顏色';
 
   @override
@@ -28717,6 +28723,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
+
+  @override
+  String get courseCardSurfaceStyleGlass => '玻璃';
 
   @override
   String get courseCardSectionColor => '顏色';

@@ -5730,6 +5730,8 @@
   "courseCardSurfaceStyleSolid": "实心",
   "courseCardSurfaceStyleTranslucent": "半透明",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
+  "courseCardSurfaceStyleGlass": "玻璃",
+  "courseCardSurfaceStyleGlass": "玻璃",
   "courseCardSectionColor": "颜色",
   "liveSelfCheckTitle": "自检",
   "collapsibleLargeTitle": "折叠大标题",

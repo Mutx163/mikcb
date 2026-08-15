@@ -5506,6 +5506,7 @@
   "courseCardSurfaceStyleSolid": "ソリッド",
   "courseCardSurfaceStyleTranslucent": "半透明",
   "courseCardSurfaceStyleGaussian": "ガウスぼかし",
+  "courseCardSurfaceStyleGlass": "ガラス",
   "courseCardSectionColor": "色",
   "liveSelfCheckTitle": "セルフチェック",
   "collapsibleLargeTitle": "折りたたみ大タイトル",

@@ -280,4 +280,5 @@ String courseCardSurfaceStyleLabel(
   CourseCardSurfaceStyle.solid => l10n.courseCardSurfaceStyleSolid,
   CourseCardSurfaceStyle.translucent => l10n.courseCardSurfaceStyleTranslucent,
   CourseCardSurfaceStyle.gaussian => l10n.courseCardSurfaceStyleGaussian,
+  CourseCardSurfaceStyle.glass => l10n.courseCardSurfaceStyleGlass,
 };

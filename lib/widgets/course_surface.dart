@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'preblurred_wallpaper_glass.dart';
 
 /// Paints one of the three supported [CourseCardSurfaceStyle] looks behind
@@ -83,6 +85,7 @@ class CourseSurface extends StatelessWidget {
       CourseCardSurfaceStyle.solid => _buildSolid(radius),
       CourseCardSurfaceStyle.translucent => _buildTranslucent(radius),
       CourseCardSurfaceStyle.gaussian => _buildGaussian(context, radius),
+      CourseCardSurfaceStyle.glass => _buildGlass(context, radius),
     };
 
     final outer = outerShadow;
@@ -168,6 +171,36 @@ class CourseSurface extends StatelessWidget {
               ),
             ),
           Positioned.fill(child: ColoredBox(color: tint)),
+          if (border != null) _borderOverlay(radius, border!),
+          child,
+        ],
+      ),
+    );
+  }
+
+  /// 玻璃卡片：液态玻璃材质模式下用与弹窗/顶部同款的液态玻璃（官方默认
+  /// 参数）；标准/高斯材质模式退化为高斯模糊卡片，跟随全局高级材质设置，
+  /// 保证整个软件的玻璃观感一致。
+  Widget _buildGlass(BuildContext context, BorderRadius radius) {
+    final appearance = FrostedAppearanceScope.of(context);
+    final useLiquid =
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+
+    if (!useLiquid) {
+      return _buildGaussian(context, radius);
+    }
+
+    // 课程色轻 tint 压在玻璃上，保持课程的颜色识别；文字在玻璃之上。
+    final tint = color.withValues(alpha: _scaledAlpha(0.18));
+    return HyperosLiquidGlassSurface(
+      role: HyperosLiquidGlassRole.nestedTile,
+      borderRadius: radius.topLeft.x,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(child: IgnorePointer(child: ColoredBox(color: tint))),
           if (border != null) _borderOverlay(radius, border!),
           child,
         ],

@@ -5730,6 +5730,7 @@
   "courseCardSurfaceStyleSolid": "Solid",
   "courseCardSurfaceStyleTranslucent": "Translucent",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
+  "courseCardSurfaceStyleGlass": "Glass",
   "courseCardSectionColor": "Color",
   "liveSelfCheckTitle": "Self-Check",
   "collapsibleLargeTitle": "Collapsible Large Title",

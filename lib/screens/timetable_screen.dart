@@ -32,6 +32,7 @@ import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
+import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -5641,7 +5642,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final style = settings.courseCardSurfaceStyle;
     final glassOverWallpaper =
         hasHomePageBackdropImage(settings) &&
-        style == CourseCardSurfaceStyle.gaussian;
+        (style == CourseCardSurfaceStyle.gaussian ||
+            style == CourseCardSurfaceStyle.glass);
     if (!glassOverWallpaper) {
       return Colors.white;
     }
@@ -6342,7 +6344,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     final unselectedColor = isDark
         ? Colors.white.withValues(alpha: 0.62)
         : Colors.black.withValues(alpha: 0.48);
-    // 使用 liquid_glass_widgets 官方默认玻璃参数（用户认可的原始观感）。
+    // 底栏材质跟随「高级材质」设置（与弹窗/顶部/卡片统一）：
+    // - 液态玻璃：liquid_glass_widgets 官方默认参数（用户认可的原始观感），
+    //   交互场景用 standard（官方推荐：轻量 shader，更跟手）。
+    // - 标准/高斯：退化为高斯模糊药丸（blur/tint 与弹窗 frosted 一致），
+    //   避免底栏与弹窗观感分裂。
+    final appearance = FrostedAppearanceScope.of(context);
+    final useLiquidGlass =
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
     return GlassTabBar.bottom(
       tabs: [
         // 用户期望的排序：日课表 / 周课表 / 课表设置。
@@ -6365,8 +6375,18 @@ class _TimetableScreenState extends State<TimetableScreen>
       barBorderRadius: 28,
       // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
       indicatorBorderRadius: 28,
-      // 交互场景用 standard（官方推荐：轻量 shader，5-10x 更快，滚动/拖动更跟手）。
-      quality: GlassQuality.standard,
+      settings: useLiquidGlass
+          ? null
+          : LiquidGlassSettings(
+              blur: appearance.sheetBlurSigma,
+              glassColor: HyperosBlurredHeader.sheetTintColor(
+                context,
+                withBlur: true,
+              ),
+            ),
+      quality: useLiquidGlass
+          ? GlassQuality.standard
+          : GlassQuality.minimal,
       iconSize: 22,
       labelFontSize: 10,
       horizontalPadding: 6,

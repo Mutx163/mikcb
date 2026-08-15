@@ -5505,6 +5505,7 @@
   "courseCardSurfaceStyleSolid": "實心",
   "courseCardSurfaceStyleTranslucent": "半透明",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
+  "courseCardSurfaceStyleGlass": "玻璃",
   "courseCardSectionColor": "顏色",
   "liveSelfCheckTitle": "自我檢查",
   "collapsibleLargeTitle": "折疊大標題",

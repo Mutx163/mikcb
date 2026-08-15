@@ -5508,6 +5508,7 @@
   "courseCardSurfaceStyleSolid": "솔리드",
   "courseCardSurfaceStyleTranslucent": "반투명",
   "courseCardSurfaceStyleGaussian": "가우시안 블러",
+  "courseCardSurfaceStyleGlass": "유리",
   "courseCardSectionColor": "색상",
   "liveSelfCheckTitle": "자체 점검",
   "collapsibleLargeTitle": "접을 수 있는 큰 제목",
