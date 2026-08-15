@@ -264,23 +264,18 @@ class TimetableSettingsScreen extends StatelessWidget {
         // unified collapsible large title + frosted/liquid-glass chrome.
         // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
         // opaque background OVER its frost layer, so blur never showed.)
-        return HyperosSubpage(
-          title: Text(l10n.settingsTitle),
-          onBack: embedded ? null : () => Navigator.pop(context),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: HyperosListView(
-            // Inset lives inside the scrollable (like HyperosSubpage) so
-            // rows can pass under the frosted/liquid-glass top bar.
-            includeHeaderInset: true,
-            blockVerticalScrollBubbling: false,
-            pageStorageKey: const PageStorageKey<String>(
-              'timetable-settings-main',
-            ),
-            // Lazy builder: only visible sections are mounted, reducing
-            // per-frame composite cost vs the old SingleChildScrollView.
-            itemCount: 8,
-            itemBuilder: (context, index) => _buildSettingsHomeSection(
+        final settingsList = HyperosListView(
+          // Inset lives inside the scrollable (like HyperosSubpage) so
+          // rows can pass under the frosted/liquid-glass top bar.
+          includeHeaderInset: !embedded,
+          blockVerticalScrollBubbling: false,
+          pageStorageKey: const PageStorageKey<String>(
+            'timetable-settings-main',
+          ),
+          // Lazy builder: only visible sections are mounted, reducing
+          // per-frame composite cost vs the old SingleChildScrollView.
+          itemCount: 8,
+          itemBuilder: (context, index) => _buildSettingsHomeSection(
               context,
               index,
               provider: provider,
@@ -306,8 +301,20 @@ class TimetableSettingsScreen extends StatelessWidget {
               openLiveTestingFixture: openLiveTestingFixture,
               openHyperosShowcase: openHyperosShowcase,
               openMiuixShowcase: openMiuixShowcase,
-              ),
             ),
+        );
+
+        if (embedded) {
+          // 玻璃坞内嵌形态：外层 HyperosRootPage 已提供顶栏与不透明背景，
+          // 这里只返回列表本身（无返回键、无壳层），背景由外层统一提供。
+          return settingsList;
+        }
+        return HyperosSubpage(
+          title: Text(l10n.settingsTitle),
+          onBack: () => Navigator.pop(context),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: settingsList,
           ),
         );
       },

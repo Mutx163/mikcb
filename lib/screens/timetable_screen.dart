@@ -4,7 +4,6 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
-import 'package:liquid_glass_bar/liquid_glass_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
     show Drag, VelocityTracker, kMinFlingVelocity;
@@ -537,7 +536,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             HyperosRootPage(
               overlayHeader: false,
               resizeToAvoidBottomInset: false,
-              backgroundColor: scaffoldBackgroundColor,
+              backgroundColor: dockSettingsActive
+                  ? pageBackgroundColor
+                  : scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
               headerPadding: EdgeInsets.fromLTRB(
                 8,
@@ -546,7 +547,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 headerUsesFrostedChrome ? 0.0 : 2.0,
               ),
               systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                systemOverlayBackground,
+                dockSettingsActive ? pageBackgroundColor : systemOverlayBackground,
               ),
               title: glassDockForm && _dockSettingsActive
                   ? Text(
@@ -623,39 +624,41 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
               ],
               childPad: false,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: glassDockForm
-                      ? _glassDockContentClearance +
-                            MediaQuery.viewPaddingOf(context).bottom
-                      : 0,
-                ),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: provider.isLoading
-                      ? ColoredBox(
-                          color: AppBootBranding.backgroundColor(
-                            isDark: isDark,
-                          ),
-                          child: AppBootBranding(
-                            appLabel: widget.packageInfo != null
-                                ? AppBootBranding.resolveAppLabel(
-                                    widget.packageInfo!,
-                                    l10n,
-                                  )
-                                : l10n.appTitle,
-                            isDark: isDark,
-                          ),
-                        )
-                      : MediaQuery.removeViewInsets(
-                          context: context,
-                          removeBottom: true,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Offstage(
-                                offstage:
-                                    glassDockForm && _dockSettingsActive,
+              child: dockSettingsActive
+                  ? Padding(
+                      padding: EdgeInsets.only(
+                        bottom: _glassDockContentClearance +
+                            MediaQuery.viewPaddingOf(context).bottom,
+                      ),
+                      child: const TimetableSettingsScreen(embedded: true),
+                    )
+                  : Padding(
+                      padding: EdgeInsets.only(
+                        bottom: glassDockForm
+                            ? _glassDockContentClearance +
+                                  MediaQuery.viewPaddingOf(context).bottom
+                            : 0,
+                      ),
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: provider.isLoading
+                            ? ColoredBox(
+                                color: AppBootBranding.backgroundColor(
+                                  isDark: isDark,
+                                ),
+                                child: AppBootBranding(
+                                  appLabel: widget.packageInfo != null
+                                      ? AppBootBranding.resolveAppLabel(
+                                          widget.packageInfo!,
+                                          l10n,
+                                        )
+                                      : l10n.appTitle,
+                                  isDark: isDark,
+                                ),
+                              )
+                            : MediaQuery.removeViewInsets(
+                                context: context,
+                                removeBottom: true,
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
@@ -687,22 +690,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                                   ],
                                 ),
                               ),
-                              if (glassDockForm)
-                                Offstage(
-                                  offstage: !_dockSettingsActive,
-                                  child: TimetableSettingsScreen(
-                                    embedded: true,
-                                    bottomInset:
-                                        _glassDockContentClearance +
-                                        MediaQuery.viewPaddingOf(context)
-                                            .bottom,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                ),
-              ),
+                      ),
+                    ),
             ),
           ],
         );
@@ -6212,59 +6201,33 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞底部导航：周课表 / 日课表 / 设置。
   ///
-  /// 使用 [LiquidGlassBar]（基于项目已依赖的 liquid_glass_renderer），
-  /// 保持真实的液态玻璃折射渲染，不做 FakeGlass 降级：单击切换 Tab，
-  /// 长按后左右滑动时高光跟随手指实时移动，松手按最近 Tab 落位。
+  /// 使用项目自研的 [HyperosLiquidGlassTabBar]：玻璃材质与项目其他
+  /// 液态玻璃表面完全一致（同一 tokens / superellipse / 层策略，真实折射
+  /// 不降级），胶囊形圆角（上圆接下圆），滑块无描边只有外层玻璃保留
+  /// 光学边缘；单击切换，长按左右拖动时高光跟随手指，松手吸附最近 Tab。
   Widget _buildGlassDockBar({
     required TimetableSettings settings,
     required AppLocalizations l10n,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
-    return LiquidGlassBar(
+    return HyperosLiquidGlassTabBar(
       items: [
-        LiquidGlassBarItem(
-          iconData: Icons.calendar_view_week_rounded,
+        HyperosLiquidGlassTabBarItem(
+          icon: Icons.calendar_view_week_rounded,
           label: l10n.glassDockTabWeek,
         ),
-        LiquidGlassBarItem(
-          iconData: Icons.today_rounded,
+        HyperosLiquidGlassTabBarItem(
+          icon: Icons.today_rounded,
           label: l10n.glassDockTabDay,
         ),
-        LiquidGlassBarItem(
-          iconData: Icons.settings_rounded,
+        HyperosLiquidGlassTabBarItem(
+          icon: Icons.settings_rounded,
           label: l10n.settingsTitle,
         ),
       ],
       currentIndex: _glassDockCurrentIndex,
       onTap: (index) => unawaited(_onDockTabSelected(index, settings)),
-      style: LiquidGlassBarStyle(
-        activeColor: colorScheme.primary,
-        inactiveColor: isDark
-            ? Colors.white.withValues(alpha: 0.62)
-            : Colors.black.withValues(alpha: 0.48),
-        borderRadius: 28,
-        height: 52,
-        iconSize: 22,
-        selectedIconScale: 1.12,
-        animationDuration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-        labelStyle: TextStyle(
-          fontSize: 9.5,
-          fontWeight: FontWeight.w600,
-          height: 1.1,
-          color: isDark ? Colors.white : Colors.black,
-        ),
-        liquidGlassSettings: LiquidGlassSettings(
-          thickness: 24,
-          blur: 22,
-          glassColor: isDark
-              ? const Color(0x992A2A2E)
-              : const Color(0xB8FFFFFF),
-          lightIntensity: 0.5,
-          refractiveIndex: 1.45,
-        ),
-      ),
+      activeColor: colorScheme.primary,
     );
   }
 

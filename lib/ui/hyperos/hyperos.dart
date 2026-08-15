@@ -14,6 +14,7 @@ export 'hyperos_fab.dart';
 export 'hyperos_floating_toolbar.dart';
 export 'hyperos_icon_button.dart';
 export 'hyperos_list_popup.dart';
+export 'liquid/hyperos_liquid_glass_tab_bar.dart';
 export 'hyperos_miuix_spec.dart';
 export 'hyperos_navigation.dart';
 export 'hyperos_navigation_bar.dart';
