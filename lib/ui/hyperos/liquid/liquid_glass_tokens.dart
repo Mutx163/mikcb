@@ -14,17 +14,20 @@ import '../hyperos_tokens.dart';
 /// Kept separate from HyperOS solid surfaces so gaussian blur tuning stays untouched.
 abstract final class MikcbLiquidGlassTokens {
   /// Single liquid-glass material for every surface.
+  ///
+  /// 与 liquid_glass_widgets 官方默认观感对齐（blur 5、极淡白 tint），
+  /// 保证弹窗/顶栏/菜单与玻璃坞切换栏视觉一致。
   static const sheetSettings = LiquidGlassSettings(
     thickness: 20,
-    blur: 10,
-    glassColor: Color(0x33FFFFFF),
+    blur: 5,
+    glassColor: Color(0x1AFFFFFF),
   );
 
   /// Dark-mode material — same thickness/blur, slightly lower white tint.
   static const sheetSettingsDark = LiquidGlassSettings(
     thickness: 20,
-    blur: 10,
-    glassColor: Color(0x28FFFFFF),
+    blur: 5,
+    glassColor: Color(0x14FFFFFF),
   );
 
   /// Squircle radius matching HyperOS card chrome when possible.

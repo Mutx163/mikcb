@@ -196,20 +196,11 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     LiquidGlassTuning? tuning,
     Color? glassColor,
   }) {
+    // 所有角色共用同一套玻璃参数（与玻璃坞切换栏一致），
+    // 不再对 header/modal 做单独的光学调节。
     var settings = switch (role) {
       _ => MikcbLiquidGlassTokens.sheetSettingsFor(brightness, tuning: tuning),
     };
-    // Header and modal chrome share the same clear material. The package's
-    // default chromatic fringe (chromaticAberration=0.01) and top-down light
-    // make modal corners look different from the app chrome, so use the same
-    // softened specular treatment for both roles.
-    if (role == HyperosLiquidGlassRole.header ||
-        role == HyperosLiquidGlassRole.modal) {
-      settings = settings.copyWith(
-        chromaticAberration: 0,
-        lightIntensity: (settings.lightIntensity * 0.35).clamp(0.0, 0.25),
-      );
-    }
     if (glassColor != null) {
       settings = settings.copyWith(glassColor: glassColor);
     }
