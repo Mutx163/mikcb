@@ -391,19 +391,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
         final dockSettingsActive = glassDockForm && _dockSettingsActive;
-        if (dockSettingsActive) {
-          // 玻璃坞设置页：完整全屏设置壳（与正常打开设置页一致的外观），
-          // 底部滑块由 _wrapWithGlassDock 悬浮叠加在页面之上。
-          return _wrapWithGlassDock(
-            TimetableSettingsScreen(
-              embedded: true,
-              bottomInset: 20,
-            ),
-            glassDockForm: true,
-            settings: settings,
-            l10n: l10n,
-          );
-        }
         final viewportSize = MediaQuery.sizeOf(context);
         final hasBackdrop = hasHomePageBackdropImage(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
@@ -438,9 +425,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         final headerUsesFrostedChrome =
             hasBackdrop &&
             (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-        final headerBarColor = headerUsesFrostedChrome
-            ? Colors.transparent
-            : headerBackground.color;
+        final headerBarColor = dockSettingsActive
+            ? pageBackgroundColor
+            : (headerUsesFrostedChrome
+                  ? Colors.transparent
+                  : headerBackground.color);
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
@@ -524,31 +513,44 @@ class _TimetableScreenState extends State<TimetableScreen>
         Widget homeStack = Stack(
           fit: StackFit.expand,
           children: [
-            if (hasBackdrop && !dockSettingsActive)
-              followsWeekPager
-                  ? HomePageSlidingBackdropLayer(
-                      controller: _weekPageController,
-                      pageCount: settings.semesterWeekCount,
-                      settings: settings,
-                    )
-                  : homePageBackdropLayer(settings: settings),
-            if (hasBackdrop && !statusBarShowsBackdrop && !dockSettingsActive)
-              HomePageStatusBarBackdropMask(color: pageBackgroundColor),
+            // 壁纸层保持挂载（Offstage 而非卸载）：切回课表时不重新解码/
+            // 重建模糊位图，避免壁纸变黑闪烁。
+            if (hasBackdrop)
+              Offstage(
+                offstage: dockSettingsActive,
+                child: followsWeekPager
+                    ? HomePageSlidingBackdropLayer(
+                        controller: _weekPageController,
+                        pageCount: settings.semesterWeekCount,
+                        settings: settings,
+                      )
+                    : homePageBackdropLayer(settings: settings),
+              ),
+            if (hasBackdrop && !statusBarShowsBackdrop)
+              Offstage(
+                offstage: dockSettingsActive,
+                child: HomePageStatusBarBackdropMask(color: pageBackgroundColor),
+              ),
             // Single continuous glass for title + weekday (no time-column blur).
             // Stays fixed above the sliding wallpaper so chrome text stays sharp
             // while the photo moves as one continuous sheet.
-            if (continuousChromeBlur && !dockSettingsActive)
-              HomePageContinuousChromeFrostedOverlay(
-                headerBlurEnabled: settings.homePageHeaderBlurEnabled,
-                weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
-                includeStatusBar: statusBarShowsBackdrop,
-                weekdayBarHeight: _weekDayHeaderHeight,
-                wallpaperTopLuminance: _wallpaperTopLuminance,
+            if (continuousChromeBlur)
+              Offstage(
+                offstage: dockSettingsActive,
+                child: HomePageContinuousChromeFrostedOverlay(
+                  headerBlurEnabled: settings.homePageHeaderBlurEnabled,
+                  weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
+                  includeStatusBar: statusBarShowsBackdrop,
+                  weekdayBarHeight: _weekDayHeaderHeight,
+                  wallpaperTopLuminance: _wallpaperTopLuminance,
+                ),
               ),
             HyperosRootPage(
               overlayHeader: false,
               resizeToAvoidBottomInset: false,
-              backgroundColor: scaffoldBackgroundColor,
+              backgroundColor: dockSettingsActive
+                  ? pageBackgroundColor
+                  : scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
               headerPadding: EdgeInsets.fromLTRB(
                 8,
@@ -557,7 +559,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 headerUsesFrostedChrome ? 0.0 : 2.0,
               ),
               systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                systemOverlayBackground,
+                dockSettingsActive ? pageBackgroundColor : systemOverlayBackground,
               ),
               title: glassDockForm && _dockSettingsActive
                   ? Text(
@@ -642,25 +644,32 @@ class _TimetableScreenState extends State<TimetableScreen>
                       : 0,
                 ),
                 child: Material(
-                        type: MaterialType.transparency,
-                        child: provider.isLoading
-                            ? ColoredBox(
-                                color: AppBootBranding.backgroundColor(
-                                  isDark: isDark,
-                                ),
-                                child: AppBootBranding(
-                                  appLabel: widget.packageInfo != null
-                                      ? AppBootBranding.resolveAppLabel(
-                                          widget.packageInfo!,
-                                          l10n,
-                                        )
-                                      : l10n.appTitle,
-                                  isDark: isDark,
-                                ),
-                              )
-                            : MediaQuery.removeViewInsets(
-                                context: context,
-                                removeBottom: true,
+                  type: MaterialType.transparency,
+                  child: provider.isLoading
+                      ? ColoredBox(
+                          color: AppBootBranding.backgroundColor(
+                            isDark: isDark,
+                          ),
+                          child: AppBootBranding(
+                            appLabel: widget.packageInfo != null
+                                ? AppBootBranding.resolveAppLabel(
+                                    widget.packageInfo!,
+                                    l10n,
+                                  )
+                                : l10n.appTitle,
+                            isDark: isDark,
+                          ),
+                        )
+                      : MediaQuery.removeViewInsets(
+                          context: context,
+                          removeBottom: true,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // 课表内容常驻（Offstage 保留状态/壁纸，
+                              // 切回时不重建、不闪烁）。
+                              Offstage(
+                                offstage: dockSettingsActive,
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
@@ -692,8 +701,26 @@ class _TimetableScreenState extends State<TimetableScreen>
                                   ],
                                 ),
                               ),
-                      ),
-                    ),
+                              // 设置页常驻（Offstage 保留滚动位置）。
+                              if (glassDockForm)
+                                Offstage(
+                                  offstage: !dockSettingsActive,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: _glassDockContentClearance +
+                                          MediaQuery.viewPaddingOf(context)
+                                              .bottom,
+                                    ),
+                                    child: const TimetableSettingsScreen(
+                                      embedded: true,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                ),
+              ),
             ),
           ],
         );
@@ -6234,6 +6261,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       onTabSelected: (index) => unawaited(_onDockTabSelected(index, settings)),
       barHeight: 56,
       barBorderRadius: 28,
+      // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
+      indicatorBorderRadius: 28,
+      // 交互场景用 standard（官方推荐：轻量 shader，5-10x 更快，滚动/拖动更跟手）。
+      quality: GlassQuality.standard,
       iconSize: 22,
       labelFontSize: 10,
       horizontalPadding: 6,
