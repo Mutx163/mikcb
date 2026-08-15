@@ -10,6 +10,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
+import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -107,8 +108,15 @@ void main() {
     await pumpApp(tester, provider);
     expect(tester.takeException(), isNull, reason: '周视图初始渲染不应有异常');
     expect(find.byType(GlassTabBar), findsOneWidget);
-    expect(currentIndicatorIndex(), 0,
-        reason: '初始指示器应在周课表 Tab');
+    expect(currentIndicatorIndex(), 1,
+        reason: '初始指示器应在周课表 Tab（排序：日课表/周课表/设置）');
+
+    // Tab 排序：日课表(左) / 周课表(中) / 课表设置(右)
+    final dayTabX = tester.getCenter(find.text('日课表').first).dx;
+    final weekTabX = tester.getCenter(find.text('周课表').first).dx;
+    final settingsTabX = tester.getCenter(find.text('课表设置').first).dx;
+    expect(dayTabX, lessThan(weekTabX), reason: '日课表应位于最左侧');
+    expect(weekTabX, lessThan(settingsTabX), reason: '课表设置应位于最右侧');
 
     // 切日视图（玻璃坞：横向滑动转场 + 直接全宽，无锚点展开渐变）
     await tester.tap(find.text('日课表').first);
@@ -145,13 +153,26 @@ void main() {
       closeTo(0, 1),
       reason: '滑动完成后日视图应就位',
     );
-    expect(currentIndicatorIndex(), 1, reason: '日视图下指示器应在日课表 Tab');
+    expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
 
-    // 切设置
+    // 切设置（课表↔设置也走横向滑动转场：设置页从右侧滑入）
     await tester.tap(find.text('课表设置').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull, reason: '切设置（有壁纸）不应有异常');
+    final settingsEarlyRect = tester.getRect(
+      find.byType(TimetableSettingsScreen),
+    );
+    expect(
+      settingsEarlyRect.left,
+      greaterThan(0),
+      reason: '设置页应从右侧滑入（而非直接闪切）',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(
+      tester.getRect(find.byType(TimetableSettingsScreen)).left,
+      closeTo(0, 1),
+      reason: '设置滑动完成后应就位',
+    );
     expect(find.text('课表管理'), findsOneWidget, reason: '设置列表应渲染');
     expect(currentIndicatorIndex(), 2, reason: '设置下指示器应在设置 Tab');
 
@@ -275,14 +296,14 @@ void main() {
       findsOneWidget,
       reason: '设置切回后日视图面板应显示',
     );
-    expect(currentIndicatorIndex(), 1, reason: '设置→日视图后指示器应在日课表 Tab');
+    expect(currentIndicatorIndex(), 0, reason: '设置→日视图后指示器应在日课表 Tab');
 
     // 切回周课表
     await tester.tap(find.text('周课表').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(tester.takeException(), isNull, reason: '切回周视图不应有异常');
-    expect(currentIndicatorIndex(), 0, reason: '周视图下指示器应回到周课表 Tab');
+    expect(currentIndicatorIndex(), 1, reason: '周视图下指示器应回到周课表 Tab');
 
     // 日期栏路径（点顶部日期单元格）：保持锚点展开动画（面板从小放大），
     // 不做横向滑动转场（面板无右滑位移，且存在缩放中的 Align 槽）。

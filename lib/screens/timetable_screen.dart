@@ -164,23 +164,32 @@ class _TimetableScreenState extends State<TimetableScreen>
   late final AnimationController _dayViewExpandController;
 
   /// 玻璃坞 Tab 切换周↔日时的横向滑动转场（周视图↔日视图左右联动滑动）。
-  /// value=0 为周视图原位；0→1 为日视图从右滑入、周视图向左让位；
+  /// value=0 为周视图原位；0→1 为日视图从右滑入、周视图向左整页让位；
   /// 1→0 反向滑出。日期栏路径保持原展开动画，不使用本控制器。
   late final AnimationController _dockViewSwitchAnimation;
 
-  /// 周视图在玻璃坞滑动转场中的向左让位距离。
-  static const double _dockViewWeekSlideDistance = 56;
-
-  /// 日视图在玻璃坞滑动转场中的右入位移（进入时从该距离滑到 0）。
-  static const double _dockViewDaySlideDistance = 120;
+  /// 玻璃坞 Tab 切换课表↔设置的横向滑动转场（设置页从右滑入/滑出）。
+  late final AnimationController _dockSettingsSwitchAnimation;
 
   /// 滑动转场当前是否由玻璃坞 Tab 驱动。日期栏路径为 false（无滑动）。
   bool _dockSlideActive = false;
+
+  /// 设置切换滑动转场是否由玻璃坞驱动。
+  bool _dockSettingsSlideActive = false;
 
   /// 玻璃坞滑动转场的当前进度（0=周视图原位，1=日视图就位）。
   double get _dockSlideProgress => _dockSlideActive
       ? Curves.easeOutCubic.transform(_dockViewSwitchAnimation.value)
       : 0.0;
+
+  /// 设置切换滑动转场的当前进度（0=课表原位，1=设置页就位）。
+  double get _dockSettingsSlideProgress => _dockSettingsSlideActive
+      ? Curves.easeOutCubic.transform(_dockSettingsSwitchAnimation.value)
+      : 0.0;
+
+  /// 滑动转场期间卡片玻璃 fill 需要每帧重采样（壁纸屏幕固定、卡片移动），
+  /// 否则纹理停留在旧位置：卡片左半是旧壁纸、右半透明（撕裂）。
+  late final Listenable _glassDockCardRepaint;
 
   /// The single day-view pager: pages are globally continuous across weeks
   /// (globalPage = (week-1)*visibleCount + dayIndex), so crossing a week
@@ -342,6 +351,17 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dockViewSwitchDuration,
     );
+    _dockSettingsSwitchAnimation = AnimationController(
+      vsync: this,
+      duration: _dockViewSwitchDuration,
+    );
+    // 玻璃坞滑动转场（周↔日、课表↔设置）期间，卡片玻璃 fill 必须每帧
+    // 重采样壁纸（否则纹理停在旧屏幕位置，卡片呈现半边模糊半边透明）。
+    _glassDockCardRepaint = Listenable.merge([
+      _dayViewExpandController,
+      _dockViewSwitchAnimation,
+      _dockSettingsSwitchAnimation,
+    ]);
     _dayAgendaProgressTimer = widget.enableProgressTimer
         ? Timer.periodic(const Duration(seconds: 1), (_) {
             if (!mounted || !_isDayView) {
@@ -368,6 +388,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
     _dockViewSwitchAnimation.dispose();
+    _dockSettingsSwitchAnimation.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
     _homeDownloadController?.cancel();
@@ -718,10 +739,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ? _ensureDayViewPageController(settings)
                     : _weekPageController,
                 followsPager: _isDayView ? false : followsWeekPager,
-                // The open/close ramp drags cards around without any
-                // scrolling; fills must re-sample per frame or the frost
-                // rides along frozen.
-                repaint: _dayViewExpandController,
+                // 玻璃坞滑动转场（周↔日、课表↔设置）期间卡片在移动而壁纸
+                // 屏幕固定：fill 必须每帧重采样，否则纹理停在旧屏幕位置
+                // （卡片半边模糊半边透明）。合并展开动画与两个滑动转场。
+                repaint: _glassDockCardRepaint,
                 enabled: true,
                 child: homeStack,
               )
@@ -734,17 +755,41 @@ class _TimetableScreenState extends State<TimetableScreen>
             l10n: l10n,
           );
         }
+        // 课表↔设置切换也走横向滑动转场：课表内容整页向左滑出、
+        // 设置页从右侧滑入（出设置时反向）。日期栏/玻璃坞周↔日滑动
+        // 在课表内容内部（_buildWeekPager），与本层滑动互不干扰。
+        final dockWidth = MediaQuery.sizeOf(context).width;
         return _wrapWithGlassDock(
           Stack(
             fit: StackFit.expand,
             children: [
-              Offstage(offstage: dockSettingsActive, child: dockContent),
-              Offstage(
-                offstage: !dockSettingsActive,
-                child: TimetableSettingsScreen(
-                  embedded: true,
-                  bottomInset: _glassDockContentClearance +
-                      MediaQuery.viewPaddingOf(context).bottom,
+              AnimatedBuilder(
+                animation: _dockSettingsSwitchAnimation,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(-dockWidth * _dockSettingsSlideProgress, 0),
+                  child: child,
+                ),
+                child: Offstage(
+                  offstage: dockSettingsActive,
+                  child: dockContent,
+                ),
+              ),
+              AnimatedBuilder(
+                animation: _dockSettingsSwitchAnimation,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(
+                    dockWidth * (1 - _dockSettingsSwitchAnimation.value),
+                    0,
+                  ),
+                  child: child,
+                ),
+                child: Offstage(
+                  offstage: !dockSettingsActive,
+                  child: TimetableSettingsScreen(
+                    embedded: true,
+                    bottomInset: _glassDockContentClearance +
+                        MediaQuery.viewPaddingOf(context).bottom,
+                  ),
                 ),
               ),
             ],
@@ -2737,15 +2782,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     double availableHeight,
   ) {
     final visibleDayViewWeek = _visibleDayViewWeek;
+    // 玻璃坞滑动转场用整页宽度：周↔日同速整页滑动。
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 玻璃坞滑动转场：切日视图时周网格向左让位（日期栏路径无位移）。
+        // 玻璃坞滑动转场：切日视图时周视图整页向左滑出（日期栏路径无位移）。
+        // 用整页宽度保证与日视图滑入同速、信息栏随页面整体移动不截断。
         AnimatedBuilder(
           animation: _dockViewSwitchAnimation,
           builder: (context, child) => Transform.translate(
-            offset: Offset(-_dockViewWeekSlideDistance * _dockSlideProgress, 0),
+            offset: Offset(-screenWidth * _dockSlideProgress, 0),
             child: child,
           ),
           child: NotificationListener<ScrollNotification>(
@@ -2789,14 +2837,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned.fill(
             top: _weekDayHeaderHeight,
-            // 玻璃坞滑动转场：日视图从右侧滑入（日期栏路径动画值停在
-            // 完成位姿，无位移）。
+            // 玻璃坞滑动转场：日视图从右侧整页滑入（日期栏路径动画值
+            // 停在完成位姿，无位移）。
             child: AnimatedBuilder(
               animation: _dockViewSwitchAnimation,
               builder: (context, child) => Transform.translate(
                 offset: Offset(
-                  _dockViewDaySlideDistance *
-                      (1 - _dockViewSwitchAnimation.value),
+                  screenWidth * (1 - _dockViewSwitchAnimation.value),
                   0,
                 ),
                 child: child,
@@ -6265,13 +6312,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 使用 liquid_glass_widgets 官方默认玻璃参数（用户认可的原始观感）。
     return GlassTabBar.bottom(
       tabs: [
-        GlassTab(
-          icon: Icon(Icons.calendar_view_week_rounded),
-          label: l10n.glassDockTabWeek,
-        ),
+        // 用户期望的排序：日课表 / 周课表 / 课表设置。
         GlassTab(
           icon: Icon(Icons.today_rounded),
           label: l10n.glassDockTabDay,
+        ),
+        GlassTab(
+          icon: Icon(Icons.calendar_view_week_rounded),
+          label: l10n.glassDockTabWeek,
         ),
         GlassTab(
           icon: Icon(Icons.settings_rounded),
@@ -6297,34 +6345,27 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 玻璃坞当前激活的 Tab：设置 > 日视图 > 周视图。
+  /// 玻璃坞当前激活的 Tab：日课表(0) / 周课表(1) / 设置(2)。
   int get _glassDockCurrentIndex {
     if (_dockSettingsActive) {
       return 2;
     }
-    return _isDayView ? 1 : 0;
+    return _isDayView ? 0 : 1;
   }
 
-  /// 玻璃坞 Tab 切换：周课表 / 日课表 / 设置。
+  /// 玻璃坞 Tab 切换：日课表(0) / 周课表(1) / 设置(2)。
   ///
-  /// 周、日之间的切换走「横向滑动转场」（[_openDayViewFromDock] /
-  /// [_closeDayViewFromDock]）：内容区像左右翻页一样联动滑动，而不是
-  /// 日期栏路径的锚点缩放渐变。设置切换内嵌设置页。
+  /// 所有切换都走「横向滑动转场」：日↔周为内容区左右翻页联动滑动，
+  /// 课表↔设置为整页左右滑动（设置页从右滑入/滑出）。日期栏路径
+  /// （[_toggleDayView] / [_closeDayView]）保持原锚点展开动画。
   Future<void> _onDockTabSelected(
     int index,
     TimetableSettings settings,
   ) async {
     switch (index) {
-      case 0: // 周课表
+      case 0: // 日课表
         if (_dockSettingsActive) {
-          setState(() => _dockSettingsActive = false);
-        }
-        if (_isDayView) {
-          await _closeDayViewFromDock(settings);
-        }
-      case 1: // 日课表
-        if (_dockSettingsActive) {
-          setState(() => _dockSettingsActive = false);
+          await _closeSettingsFromDock();
         }
         if (!_isDayView) {
           final dayOfWeek = _resolveStoredDayOfWeek(
@@ -6337,11 +6378,37 @@ class _TimetableScreenState extends State<TimetableScreen>
             settings: settings,
           );
         }
+      case 1: // 周课表
+        if (_dockSettingsActive) {
+          await _closeSettingsFromDock();
+        }
+        if (_isDayView) {
+          await _closeDayViewFromDock(settings);
+        }
       case 2: // 设置
         if (!_dockSettingsActive) {
-          setState(() => _dockSettingsActive = true);
+          setState(() {
+            _dockSettingsActive = true;
+            _dockSettingsSlideActive = true;
+          });
+          _dockSettingsSwitchAnimation.forward(from: 0);
         }
     }
+  }
+
+  /// 玻璃坞切回课表：设置页向右滑出、课表内容滑回，结束后关闭设置态。
+  Future<void> _closeSettingsFromDock() async {
+    if (!_dockSettingsActive) {
+      return;
+    }
+    await _dockSettingsSwitchAnimation.reverse();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _dockSettingsActive = false;
+      _dockSettingsSlideActive = false;
+    });
   }
 
   /// 玻璃坞「日课表」Tab：状态直接切到日视图（不播展开动画），
