@@ -155,6 +155,13 @@ void main() {
     );
     expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
 
+    // 日视图自带顶部信息栏：显示星期几（不是空白栏）
+    expect(
+      find.text('周一'),
+      findsWidgets,
+      reason: '日视图顶部信息栏应显示星期',
+    );
+
     // 切设置（课表↔设置也走横向滑动转场：设置页从右侧滑入）
     await tester.tap(find.text('课表设置').first);
     await tester.pump();
@@ -167,11 +174,23 @@ void main() {
       greaterThan(0),
       reason: '设置页应从右侧滑入（而非直接闪切）',
     );
+    // 滑动转场期间课表内容保持可见（两页衔接滑动，不是课表瞬间消失露出黑底）
+    expect(
+      find.byKey(const ValueKey('week-page-1')),
+      findsWidgets,
+      reason: '设置滑动期间课表页应保持可见（衔接滑动）',
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(
       tester.getRect(find.byType(TimetableSettingsScreen)).left,
       closeTo(0, 1),
       reason: '设置滑动完成后应就位',
+    );
+    // 滑动结束后课表页隐藏（非激活页 Offstage）
+    expect(
+      find.byKey(const ValueKey('week-page-1')),
+      findsNothing,
+      reason: '设置就位后课表页应隐藏',
     );
     expect(find.text('课表管理'), findsOneWidget, reason: '设置列表应渲染');
     expect(currentIndicatorIndex(), 2, reason: '设置下指示器应在设置 Tab');

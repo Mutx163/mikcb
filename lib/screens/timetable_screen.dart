@@ -758,7 +758,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 课表↔设置切换也走横向滑动转场：课表内容整页向左滑出、
         // 设置页从右侧滑入（出设置时反向）。日期栏/玻璃坞周↔日滑动
         // 在课表内容内部（_buildWeekPager），与本层滑动互不干扰。
+        // 滑动转场期间两个页面都保持可见（Offstage 只在动画结束后隐藏
+        // 非激活页），否则课表会瞬间消失、露出黑底，看不到衔接。
         final dockWidth = MediaQuery.sizeOf(context).width;
+        final dockSlideInProgress = _dockSettingsSlideActive;
         return _wrapWithGlassDock(
           Stack(
             fit: StackFit.expand,
@@ -770,7 +773,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   child: child,
                 ),
                 child: Offstage(
-                  offstage: dockSettingsActive,
+                  offstage: dockSettingsActive && !dockSlideInProgress,
                   child: dockContent,
                 ),
               ),
@@ -784,7 +787,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   child: child,
                 ),
                 child: Offstage(
-                  offstage: !dockSettingsActive,
+                  offstage: !dockSettingsActive && !dockSlideInProgress,
                   child: TimetableSettingsScreen(
                     embedded: true,
                     bottomInset: _glassDockContentClearance +
@@ -2836,7 +2839,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned.fill(
-            top: _weekDayHeaderHeight,
+            // 日视图是独立页面：从顶部开始，自带星期信息栏（周视图整页
+            // 滑出后信息栏仍显示），面板在信息栏之下。
+            top: 0,
             // 玻璃坞滑动转场：日视图从右侧整页滑入（日期栏路径动画值
             // 停在完成位姿，无位移）。
             child: AnimatedBuilder(
@@ -2848,10 +2853,25 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
                 child: child,
               ),
-              child: _buildAnchoredDayViewOverlay(
-                provider: provider,
-                settings: settings,
-                week: visibleDayViewWeek,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 日视图自己的星期信息栏（scrubber 视觉由外部手势层覆盖）。
+                  _buildWeekDayHeader(
+                    provider,
+                    visibleDayViewWeek,
+                    settings,
+                    _resolveTimeColumnWidth(settings),
+                    hideBottomBorder: true,
+                  ),
+                  Expanded(
+                    child: _buildAnchoredDayViewOverlay(
+                      provider: provider,
+                      settings: settings,
+                      week: visibleDayViewWeek,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -6391,7 +6411,13 @@ class _TimetableScreenState extends State<TimetableScreen>
             _dockSettingsActive = true;
             _dockSettingsSlideActive = true;
           });
-          _dockSettingsSwitchAnimation.forward(from: 0);
+          _dockSettingsSwitchAnimation.forward(from: 0).whenComplete(() {
+            // 滑动就位后隐藏课表页（非激活页 Offstage，省绘制）；
+            // 若期间已切走则交给 _closeSettingsFromDock 管理。
+            if (mounted && _dockSettingsActive) {
+              setState(() => _dockSettingsSlideActive = false);
+            }
+          });
         }
     }
   }
@@ -6400,6 +6426,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _closeSettingsFromDock() async {
     if (!_dockSettingsActive) {
       return;
+    }
+    // 出设置时恢复「滑动中」状态：课表页重新可见并滑回。
+    if (!_dockSettingsSlideActive) {
+      setState(() => _dockSettingsSlideActive = true);
     }
     await _dockSettingsSwitchAnimation.reverse();
     if (!mounted) {
@@ -6491,13 +6521,14 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final glassDockForm =
         provider.settings.homeNavigationForm == HomeNavigationForm.glassDock;
+    // 按钮位于已避让玻璃坞的内容区内（内容区底部已垫 clearance），
+    // 这里只需再留 24px 视觉边距——再加 clearance 会双重避让，
+    // 把按钮抬到页面中部。
     return SafeArea(
       minimum: EdgeInsets.only(
         right: 20,
         bottom: glassDockForm
-            ? 24 +
-                  _glassDockContentClearance +
-                  MediaQuery.viewPaddingOf(context).bottom
+            ? 24 + MediaQuery.viewPaddingOf(context).bottom
             : 24,
       ),
       child: Align(
