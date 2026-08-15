@@ -5882,5 +5882,12 @@
     }
   },
   "icsExportShareText": "Calendar file from Qingyu Timetable",
-  "icsExportShareSubject": "Qingyu Timetable calendar"
+  "icsExportShareSubject": "Qingyu Timetable calendar",
+  "homeNavigationFormLabel": "Home form",
+  "homeNavigationFormClassic": "Classic",
+  "homeNavigationFormClassicSubtitle": "Keep the current pages and navigation style",
+  "homeNavigationFormGlassDock": "Glass Dock",
+  "homeNavigationFormGlassDockSubtitle": "Floating liquid-glass pill bar at the bottom: swipe or tap to switch between week view, day view and settings",
+  "glassDockTabWeek": "Week",
+  "glassDockTabDay": "Day"
 }

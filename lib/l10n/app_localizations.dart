@@ -17544,6 +17544,48 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'轻屿课表日历'**
   String get icsExportShareSubject;
+
+  /// No description provided for @homeNavigationFormLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用形态'**
+  String get homeNavigationFormLabel;
+
+  /// No description provided for @homeNavigationFormClassic.
+  ///
+  /// In zh, this message translates to:
+  /// **'经典形态'**
+  String get homeNavigationFormClassic;
+
+  /// No description provided for @homeNavigationFormClassicSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'保持现有的页面与导航方式'**
+  String get homeNavigationFormClassicSubtitle;
+
+  /// No description provided for @homeNavigationFormGlassDock.
+  ///
+  /// In zh, this message translates to:
+  /// **'玻璃坞'**
+  String get homeNavigationFormGlassDock;
+
+  /// No description provided for @homeNavigationFormGlassDockSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部悬浮液态玻璃药丸导航：滑动或点击即可在周课表、日课表与设置之间切换'**
+  String get homeNavigationFormGlassDockSubtitle;
+
+  /// No description provided for @glassDockTabWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'周课表'**
+  String get glassDockTabWeek;
+
+  /// No description provided for @glassDockTabDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'日课表'**
+  String get glassDockTabDay;
 }
 
 class _AppLocalizationsDelegate

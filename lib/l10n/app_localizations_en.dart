@@ -10232,4 +10232,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get icsExportShareSubject => 'Qingyu Timetable calendar';
+
+  @override
+  String get homeNavigationFormLabel => 'Home form';
+
+  @override
+  String get homeNavigationFormClassic => 'Classic';
+
+  @override
+  String get homeNavigationFormClassicSubtitle =>
+      'Keep the current pages and navigation style';
+
+  @override
+  String get homeNavigationFormGlassDock => 'Glass Dock';
+
+  @override
+  String get homeNavigationFormGlassDockSubtitle =>
+      'Floating liquid-glass pill bar at the bottom: swipe or tap to switch between week view, day view and settings';
+
+  @override
+  String get glassDockTabWeek => 'Week';
+
+  @override
+  String get glassDockTabDay => 'Day';
 }

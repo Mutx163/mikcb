@@ -5882,5 +5882,12 @@
     }
   },
   "icsExportShareText": "这是来自轻屿课表的日历文件",
-  "icsExportShareSubject": "轻屿课表日历"
+  "icsExportShareSubject": "轻屿课表日历",
+  "homeNavigationFormLabel": "应用形态",
+  "homeNavigationFormClassic": "经典形态",
+  "homeNavigationFormClassicSubtitle": "保持现有的页面与导航方式",
+  "homeNavigationFormGlassDock": "玻璃坞",
+  "homeNavigationFormGlassDockSubtitle": "底部悬浮液态玻璃药丸导航：滑动或点击即可在周课表、日课表与设置之间切换",
+  "glassDockTabWeek": "周课表",
+  "glassDockTabDay": "日课表"
 }

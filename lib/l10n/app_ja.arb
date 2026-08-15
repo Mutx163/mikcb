@@ -5879,5 +5879,12 @@
   "courseActionCoupleExpandHint": "展開して相手の授業や一緒の授業を表示します。タップでプレビューを切り替えできます",
   "courseActionCoupleCollapseHint": "タップでペア時間割の授業リストを閉じます",
   "courseActionMixedRelatedCount": "あと{count}コマの関連授業",
-  "courseActionPartnerReadOnlyNotice": "これは相手の時間割の授業で、閲覧のみで編集・振替はできません"
+  "courseActionPartnerReadOnlyNotice": "これは相手の時間割の授業で、閲覧のみで編集・振替はできません",
+  "homeNavigationFormLabel": "ホームフォーム",
+  "homeNavigationFormClassic": "クラシック",
+  "homeNavigationFormClassicSubtitle": "現在のページとナビゲーション方式を維持",
+  "homeNavigationFormGlassDock": "グラスドック",
+  "homeNavigationFormGlassDockSubtitle": "画面下部に浮かぶ液体ガラスのピル型ナビ：スワイプまたはタップで週・日・設定を切り替え",
+  "glassDockTabWeek": "週",
+  "glassDockTabDay": "日"
 }

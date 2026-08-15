@@ -77,7 +77,12 @@ String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
 }
 
 class TimetableSettingsScreen extends StatelessWidget {
-  const TimetableSettingsScreen({super.key});
+  /// 是否以内嵌页（玻璃坞 Tab 内容）方式显示：不渲染返回键。
+  ///
+  /// 普通全屏跳转保持默认 false，行为不变。
+  const TimetableSettingsScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +259,7 @@ class TimetableSettingsScreen extends StatelessWidget {
         // opaque background OVER its frost layer, so blur never showed.)
         return HyperosSubpage(
           title: Text(l10n.settingsTitle),
-          onBack: () => Navigator.pop(context),
+          onBack: embedded ? null : () => Navigator.pop(context),
           child: HyperosListView(
             // Inset lives inside the scrollable (like HyperosSubpage) so
             // rows can pass under the frosted/liquid-glass top bar.

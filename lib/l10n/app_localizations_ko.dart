@@ -9987,4 +9987,26 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get icsExportShareSubject => '轻屿课表 캘린더';
+
+  @override
+  String get homeNavigationFormLabel => '홈 형태';
+
+  @override
+  String get homeNavigationFormClassic => '클래식';
+
+  @override
+  String get homeNavigationFormClassicSubtitle => '현재 페이지와 내비게이션 방식을 유지';
+
+  @override
+  String get homeNavigationFormGlassDock => '글래스 독';
+
+  @override
+  String get homeNavigationFormGlassDockSubtitle =>
+      '하단에 떠 있는 리퀴드 글래스 알약 내비게이션: 스와이프 또는 탭으로 주간·일간·설정 전환';
+
+  @override
+  String get glassDockTabWeek => '주간';
+
+  @override
+  String get glassDockTabDay => '일간';
 }

@@ -5879,5 +5879,12 @@
   "courseActionCoupleExpandHint": "펼쳐서 상대방 수업이나 함께 듣는 수업을 확인하세요. 탭하면 미리보기를 전환할 수 있습니다",
   "courseActionCoupleCollapseHint": "탭하면 커플 시간표 수업 목록이 접힙니다",
   "courseActionMixedRelatedCount": "관련 수업 {count}개 더",
-  "courseActionPartnerReadOnlyNotice": "상대방 시간표의 수업으로, 볼 수만 있고 편집이나 변경은 할 수 없습니다"
+  "courseActionPartnerReadOnlyNotice": "상대방 시간표의 수업으로, 볼 수만 있고 편집이나 변경은 할 수 없습니다",
+  "homeNavigationFormLabel": "홈 형태",
+  "homeNavigationFormClassic": "클래식",
+  "homeNavigationFormClassicSubtitle": "현재 페이지와 내비게이션 방식을 유지",
+  "homeNavigationFormGlassDock": "글래스 독",
+  "homeNavigationFormGlassDockSubtitle": "하단에 떠 있는 리퀴드 글래스 알약 내비게이션: 스와이프 또는 탭으로 주간·일간·설정 전환",
+  "glassDockTabWeek": "주간",
+  "glassDockTabDay": "일간"
 }

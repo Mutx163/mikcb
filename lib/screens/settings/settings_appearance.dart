@@ -156,6 +156,23 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               _updateDraft(_draft.copyWith(appThemeMode: value));
             },
           ),
+          HyperosSelectTile<HomeNavigationForm>(
+            label: l10n.homeNavigationFormLabel,
+            subtitle: switch (_draft.homeNavigationForm) {
+              HomeNavigationForm.classic =>
+                l10n.homeNavigationFormClassicSubtitle,
+              HomeNavigationForm.glassDock =>
+                l10n.homeNavigationFormGlassDockSubtitle,
+            },
+            items: {
+              l10n.homeNavigationFormClassic: HomeNavigationForm.classic,
+              l10n.homeNavigationFormGlassDock: HomeNavigationForm.glassDock,
+            },
+            value: _draft.homeNavigationForm,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(homeNavigationForm: value));
+            },
+          ),
           HyperosSelectTile<AppFontMode>(
             label: l10n.fontModeLabel,
             useSheetForPopup: true,

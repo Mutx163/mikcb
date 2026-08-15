@@ -9670,6 +9670,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get icsExportShareSubject => '轻屿课表日历';
+
+  @override
+  String get homeNavigationFormLabel => '应用形态';
+
+  @override
+  String get homeNavigationFormClassic => '经典形态';
+
+  @override
+  String get homeNavigationFormClassicSubtitle => '保持现有的页面与导航方式';
+
+  @override
+  String get homeNavigationFormGlassDock => '玻璃坞';
+
+  @override
+  String get homeNavigationFormGlassDockSubtitle =>
+      '底部悬浮液态玻璃药丸导航：滑动或点击即可在周课表、日课表与设置之间切换';
+
+  @override
+  String get glassDockTabWeek => '周课表';
+
+  @override
+  String get glassDockTabDay => '日课表';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -19383,6 +19405,28 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get icsExportShareSubject => '輕屿課表日曆';
+
+  @override
+  String get homeNavigationFormLabel => '應用形態';
+
+  @override
+  String get homeNavigationFormClassic => '經典形態';
+
+  @override
+  String get homeNavigationFormClassicSubtitle => '保持現有的頁面與導覽方式';
+
+  @override
+  String get homeNavigationFormGlassDock => '玻璃塢';
+
+  @override
+  String get homeNavigationFormGlassDockSubtitle =>
+      '底部懸浮液態玻璃藥丸導覽：滑動或點擊即可在週課表、日課表與設定之間切換';
+
+  @override
+  String get glassDockTabWeek => '週課表';
+
+  @override
+  String get glassDockTabDay => '日課表';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -29096,4 +29140,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get icsExportShareSubject => '輕屿課表日曆';
+
+  @override
+  String get homeNavigationFormLabel => '應用形態';
+
+  @override
+  String get homeNavigationFormClassic => '經典形態';
+
+  @override
+  String get homeNavigationFormClassicSubtitle => '保持現有的頁面與導覽方式';
+
+  @override
+  String get homeNavigationFormGlassDock => '玻璃塢';
+
+  @override
+  String get homeNavigationFormGlassDockSubtitle =>
+      '底部懸浮液態玻璃藥丸導覽：滑動或點擊即可在週課表、日課表與設定之間切換';
+
+  @override
+  String get glassDockTabWeek => '週課表';
+
+  @override
+  String get glassDockTabDay => '日課表';
 }

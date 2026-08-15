@@ -103,6 +103,10 @@ abstract final class HomePageBackgroundScope {
 
 enum TimetableHomeViewMode { week, day }
 
+/// 首页导航形态：经典形态保持原样；玻璃坞形态在底部提供液态玻璃
+/// 药丸导航，滑动/点击即可切换周课表、日课表与设置。
+enum HomeNavigationForm { classic, glassDock }
+
 enum BackToCurrentWeekButtonStyle { inline, floating }
 
 enum SectionTimeDisplayMode { hidden, startOnly, startAndEnd }
@@ -255,6 +259,20 @@ extension TimetableHomeViewModeX on TimetableHomeViewMode {
     return TimetableHomeViewMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => TimetableHomeViewMode.week,
+    );
+  }
+}
+
+extension HomeNavigationFormX on HomeNavigationForm {
+  String get value => switch (this) {
+    HomeNavigationForm.classic => 'classic',
+    HomeNavigationForm.glassDock => 'glass_dock',
+  };
+
+  static HomeNavigationForm fromValue(String? value) {
+    return HomeNavigationForm.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => HomeNavigationForm.classic,
     );
   }
 }
@@ -1038,6 +1056,7 @@ class TimetableSettings {
   final String appLocaleTag;
   final HomeTitleStyle homeTitleStyle;
   final TimetableHomeViewMode timetableHomeViewMode;
+  final HomeNavigationForm homeNavigationForm;
   final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
   final double timetableFloatingBackToCurrentWeekButtonOpacity;
   final int timetableLastViewedDayOfWeek;
@@ -1211,6 +1230,7 @@ class TimetableSettings {
     this.appLocaleTag = '',
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
+    this.homeNavigationForm = HomeNavigationForm.classic,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
     this.timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
@@ -1381,6 +1401,7 @@ class TimetableSettings {
       appLocaleTag: '',
       homeTitleStyle: HomeTitleStyle.classic,
       timetableHomeViewMode: TimetableHomeViewMode.week,
+      homeNavigationForm: HomeNavigationForm.classic,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyle.floating,
       timetableFloatingBackToCurrentWeekButtonOpacity: 0.96,
@@ -1520,6 +1541,7 @@ class TimetableSettings {
       'appLocaleTag': appLocaleTag,
       'homeTitleStyle': homeTitleStyle.value,
       'timetableHomeViewMode': timetableHomeViewMode.value,
+      'homeNavigationForm': homeNavigationForm.value,
       'timetableBackToCurrentWeekButtonStyle':
           timetableBackToCurrentWeekButtonStyle.value,
       'timetableFloatingBackToCurrentWeekButtonOpacity':
@@ -1752,6 +1774,9 @@ class TimetableSettings {
       ),
       timetableHomeViewMode: TimetableHomeViewModeX.fromValue(
         json['timetableHomeViewMode'] as String?,
+      ),
+      homeNavigationForm: HomeNavigationFormX.fromValue(
+        json['homeNavigationForm'] as String?,
       ),
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyleX.fromValue(
@@ -2092,6 +2117,7 @@ class TimetableSettings {
     String? appLocaleTag,
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
+    HomeNavigationForm? homeNavigationForm,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
     int? timetableLastViewedDayOfWeek,
@@ -2274,6 +2300,8 @@ class TimetableSettings {
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
+      homeNavigationForm:
+          homeNavigationForm ?? this.homeNavigationForm,
       timetableBackToCurrentWeekButtonStyle:
           timetableBackToCurrentWeekButtonStyle ??
           this.timetableBackToCurrentWeekButtonStyle,

@@ -9942,4 +9942,26 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get icsExportShareSubject => '軽屿課表カレンダー';
+
+  @override
+  String get homeNavigationFormLabel => 'ホームフォーム';
+
+  @override
+  String get homeNavigationFormClassic => 'クラシック';
+
+  @override
+  String get homeNavigationFormClassicSubtitle => '現在のページとナビゲーション方式を維持';
+
+  @override
+  String get homeNavigationFormGlassDock => 'グラスドック';
+
+  @override
+  String get homeNavigationFormGlassDockSubtitle =>
+      '画面下部に浮かぶ液体ガラスのピル型ナビ：スワイプまたはタップで週・日・設定を切り替え';
+
+  @override
+  String get glassDockTabWeek => '週';
+
+  @override
+  String get glassDockTabDay => '日';
 }

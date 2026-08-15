@@ -5879,5 +5879,12 @@
     }
   },
   "courseActionMixedRelatedCount": "還有 {count} 節相關課程",
-  "courseActionPartnerReadOnlyNotice": "這是對方課表中的課程，僅供查看，無法編輯或調課"
+  "courseActionPartnerReadOnlyNotice": "這是對方課表中的課程，僅供查看，無法編輯或調課",
+  "homeNavigationFormLabel": "應用形態",
+  "homeNavigationFormClassic": "經典形態",
+  "homeNavigationFormClassicSubtitle": "保持現有的頁面與導覽方式",
+  "homeNavigationFormGlassDock": "玻璃塢",
+  "homeNavigationFormGlassDockSubtitle": "底部懸浮液態玻璃藥丸導覽：滑動或點擊即可在週課表、日課表與設定之間切換",
+  "glassDockTabWeek": "週課表",
+  "glassDockTabDay": "日課表"
 }
