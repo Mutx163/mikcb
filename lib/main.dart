@@ -44,8 +44,6 @@ import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
-import 'ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
-    show liquidGlassAppRootBoundaryKey;
 import 'ui/hyperos_motion_bridge.dart';
 import 'utils/home_page_background.dart';
 
@@ -263,17 +261,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 根 RepaintBoundary：弹窗打开前用它捕获「未压暗页面」作为弹窗玻璃
-    // 的 backdrop（见 LiquidGlassBackdropCaptureHost.captureUndimmedScreen），
-    // 避免弹窗玻璃采样 modal dim 而显得脏黑。
-    return RepaintBoundary(
-      key: liquidGlassAppRootBoundaryKey,
-      child: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(
-            create: (_) => TimetableProvider(autoInitialize: false),
-          ),
-        ],
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => TimetableProvider(autoInitialize: false),
+        ),
+      ],
       child:
           Selector<
             TimetableProvider,
@@ -339,8 +332,7 @@ class MyApp extends StatelessWidget {
               );
             },
           ),
-        ),
-      );
+    );
   }
 }
 

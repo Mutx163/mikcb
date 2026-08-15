@@ -250,21 +250,13 @@ class HyperosSheetFrame extends StatelessWidget {
     // tiles keep rendering liquid glass.
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
-      // 未压暗背景垫层垫在玻璃之下：玻璃采样到亮的页面而不是 modal dim
-      // 压暗后的画面（否则弹窗玻璃显得脏黑）。捕获失败时垫层为空，玻璃
-      // 回退实时采样。
-      return Stack(
-        children: [
-          UndimmedBackdropLayer(radius: borderRadius.topLeft.x),
-          HyperosLiquidGlassSurface(
-            role: liquidGlassRole,
-            borderRadius: borderRadius.topLeft.x,
-            instantUnderlay: true,
-            useAncestorBackdropGroup: true,
-            contentLegibilityFill: liquidGlassContentLegibilityFill,
-            child: const SizedBox.expand(),
-          ),
-        ],
+      return HyperosLiquidGlassSurface(
+        role: liquidGlassRole,
+        borderRadius: borderRadius.topLeft.x,
+        instantUnderlay: true,
+        useAncestorBackdropGroup: true,
+        contentLegibilityFill: liquidGlassContentLegibilityFill,
+        child: const SizedBox.expand(),
       );
     }
 
@@ -308,20 +300,14 @@ class HyperosSheetFrame extends StatelessWidget {
     // tiles keep rendering liquid glass.
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
-      // 未压暗背景垫层垫在玻璃之下（见 _buildFrostedBackground 注释）。
       return HyperosFrostedPanelScope(
-        child: Stack(
-          children: [
-            UndimmedBackdropLayer(radius: borderRadius.topLeft.x),
-            HyperosLiquidGlassSurface(
-              role: liquidGlassRole,
-              borderRadius: borderRadius.topLeft.x,
-              instantUnderlay: true,
-              useAncestorBackdropGroup: true,
-              contentLegibilityFill: liquidGlassContentLegibilityFill,
-              child: content,
-            ),
-          ],
+        child: HyperosLiquidGlassSurface(
+          role: liquidGlassRole,
+          borderRadius: borderRadius.topLeft.x,
+          instantUnderlay: true,
+          useAncestorBackdropGroup: true,
+          contentLegibilityFill: liquidGlassContentLegibilityFill,
+          child: content,
         ),
       );
     }
@@ -597,15 +583,6 @@ Future<T?> showHyperosSheet<T>({
   final dimColor =
       barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context);
 
-  // 打开弹窗前捕获「未压暗页面」：弹窗玻璃（premium shader）直接采样
-  // 这份图像作为背景，而不是实时采样 modal dim 压暗后的画面——否则弹窗
-  // 玻璃看起来比页面玻璃脏黑。捕获失败时 backdrop 为 null，回退实时采样。
-  final backdrop =
-      await LiquidGlassBackdropCaptureHost.captureUndimmedScreen();
-  if (!context.mounted) {
-    return null;
-  }
-
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: isDismissible,
@@ -633,36 +610,33 @@ Future<T?> showHyperosSheet<T>({
           ? _DragDismissableSheet(child: sheetContent)
           : sheetContent;
 
-      return LiquidGlassBackdropCaptureHost(
-        image: backdrop,
-        child: BackdropGroup(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              const Positioned.fill(child: UndimmedBackdropCapture()),
-              if (isDismissible)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => Navigator.of(dialogContext).maybePop(),
-                  ),
+      return BackdropGroup(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Positioned.fill(child: UndimmedBackdropCapture()),
+            if (isDismissible)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(dialogContext).maybePop(),
                 ),
-              Positioned.fill(
-                child: IgnorePointer(child: ColoredBox(color: dimColor)),
               ),
-              Positioned.fill(
-                child: _SheetSlideUp(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: keyboardInset),
-                      child: sheet,
-                    ),
+            Positioned.fill(
+              child: IgnorePointer(child: ColoredBox(color: dimColor)),
+            ),
+            Positioned.fill(
+              child: _SheetSlideUp(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: keyboardInset),
+                    child: sheet,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     },

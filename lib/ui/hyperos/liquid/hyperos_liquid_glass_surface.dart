@@ -4,23 +4,12 @@
 
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../../models/liquid_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
 import 'liquid_glass_tokens.dart';
-
-/// App 根 [RepaintBoundary] 的 key（在 main.dart 注册，包住整个应用）。
-///
-/// 弹窗打开前用它把「未压暗的当前屏幕」抓成静态图像，作为弹窗玻璃的
-/// backdrop——玻璃 shader 直接采样这份图像，而不是实时采样 modal dim
-/// 压暗后的画面（否则弹窗玻璃显得比页面玻璃脏黑）。
-final GlobalKey liquidGlassAppRootBoundaryKey = GlobalKey(
-  debugLabel: 'liquid-glass-app-root-boundary',
-);
 
 /// Role of a liquid-glass surface (drives recommended shape + settings).
 enum HyperosLiquidGlassRole {
@@ -71,129 +60,6 @@ class UndimmedBackdropCapture extends StatelessWidget {
         child: const SizedBox.expand(),
       ),
     );
-  }
-}
-
-/// 弹窗玻璃的「未压暗背景」：打开弹窗前把当前屏幕（Flutter 内容，未被
-/// modal dim 压暗）抓成静态图像，经 [_LiquidGlassBackdropCapture] 提供给
-/// 弹窗内的液态玻璃作为 shader 的 backdrop（captureImage 路径）。
-///
-/// 背景：弹窗玻璃（premium shader）通过 BackdropFilter 实时采样其背后
-/// 内容——那正是 modal dim（半透明黑）叠加后的画面，所以弹窗玻璃看起来
-/// 比页面上的玻璃脏、黑。捕获未压暗页面后，玻璃直接采样这份图像，
-/// 观感与页面玻璃一致；dim 仍然只压暗页面本身。
-///
-/// 图像生命周期：由本宿主持有，随弹窗 route 销毁时 dispose。
-class LiquidGlassBackdropCaptureHost extends StatefulWidget {
-  const LiquidGlassBackdropCaptureHost({
-    super.key,
-    required this.image,
-    required this.child,
-  });
-
-  /// 未压暗屏幕图像；null 表示捕获失败（玻璃回退实时采样）。
-  final ui.Image? image;
-
-  final Widget child;
-
-  /// 捕获当前屏幕（app 根 RepaintBoundary，全局逻辑原点 0,0，物理分辨率
-  /// = 逻辑尺寸 × dpr，与 shader 的 uCaptureOffset / uSize 约定一致）。
-  /// 失败返回 null（弹窗玻璃回退实时 backdrop，观感略暗但可用）。
-  static Future<ui.Image?> captureUndimmedScreen() async {
-    if (kIsWeb || !HyperosLiquidGlassSurface.supportsRealRefraction) {
-      return null;
-    }
-    final boundary = liquidGlassAppRootBoundaryKey.currentContext
-        ?.findRenderObject();
-    if (boundary is! RenderRepaintBoundary) {
-      return null;
-    }
-    try {
-      final dpr = ui.PlatformDispatcher.instance.views.isEmpty
-          ? 1.0
-          : ui.PlatformDispatcher.instance.views.first.devicePixelRatio;
-      return await boundary.toImage(pixelRatio: dpr);
-    } catch (_) {
-      // 捕获失败：弹窗玻璃回退实时 backdrop（观感略暗但可用）。
-      return null;
-    }
-  }
-
-  /// 当前捕获的未压暗背景图像（无捕获时为 null）。
-  static ui.Image? maybeImageOf(BuildContext context) {
-    return _LiquidGlassBackdropCapture.maybeOf(context);
-  }
-
-  @override
-  State<LiquidGlassBackdropCaptureHost> createState() =>
-      _LiquidGlassBackdropCaptureHostState();
-}
-
-class _LiquidGlassBackdropCaptureHostState
-    extends State<LiquidGlassBackdropCaptureHost> {
-  @override
-  void dispose() {
-    widget.image?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _LiquidGlassBackdropCapture(
-      image: widget.image,
-      child: widget.child,
-    );
-  }
-}
-
-class _LiquidGlassBackdropCapture extends InheritedWidget {
-  const _LiquidGlassBackdropCapture({
-    required this.image,
-    required super.child,
-  });
-
-  final ui.Image? image;
-
-  static ui.Image? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_LiquidGlassBackdropCapture>()
-        ?.image;
-  }
-
-  @override
-  bool updateShouldNotify(covariant _LiquidGlassBackdropCapture oldWidget) =>
-      image != oldWidget.image;
-}
-
-/// 弹窗玻璃的「未压暗背景」垫层。
-///
-/// 画在玻璃层之下、modal dim 之上：玻璃的 BackdropFilter / shader 采样
-/// 到这份未压暗页面图像（不透明，盖住下方的 dim），因此弹窗玻璃与页面
-/// 玻璃观感一致；弹窗面板之外的区域仍由 dim 压暗，modal 层次不变。
-///
-/// 仅当捕获成功（[LiquidGlassBackdropCaptureHost] 提供图像）时绘制；
-/// 捕获失败时返回空组件，玻璃回退实时采样（观感略暗但可用）。
-class UndimmedBackdropLayer extends StatelessWidget {
-  const UndimmedBackdropLayer({super.key, this.radius});
-
-  /// 与玻璃形状一致的圆角（略放大 2px，避免玻璃边缘采样到 dim）。
-  final double? radius;
-
-  @override
-  Widget build(BuildContext context) {
-    final image = LiquidGlassBackdropCaptureHost.maybeImageOf(context);
-    if (image == null) {
-      return const SizedBox.shrink();
-    }
-    Widget layer = RawImage(image: image, fit: BoxFit.fill);
-    final r = radius;
-    if (r != null && r > 0) {
-      layer = ClipRRect(
-        borderRadius: BorderRadius.circular(r + 2),
-        child: layer,
-      );
-    }
-    return Positioned.fill(child: IgnorePointer(child: layer));
   }
 }
 

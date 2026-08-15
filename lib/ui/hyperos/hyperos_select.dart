@@ -114,13 +114,6 @@ Future<T?> showHyperosSelectPopup<T>({
     return Future.value();
   }
 
-  // 弹窗玻璃采样「未压暗页面」捕获图，避免 modal dim 让玻璃显脏黑。
-  final backdrop =
-      await LiquidGlassBackdropCaptureHost.captureUndimmedScreen();
-  if (!context.mounted) {
-    return null;
-  }
-
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: false,
@@ -131,16 +124,13 @@ Future<T?> showHyperosSelectPopup<T>({
     // Opacity layer that degrades the LiquidGlass shader (black flash).
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return LiquidGlassBackdropCaptureHost(
-        image: backdrop,
-        child: FrostedAppearanceScope(
-          appearance: appearance,
-          child: _HyperosSelectPopupBody<T>(
-            anchorRect: anchorRect,
-            entries: entries,
-            currentValue: currentValue,
-            itemTitleStyleBuilder: itemTitleStyleBuilder,
-          ),
+      return FrostedAppearanceScope(
+        appearance: appearance,
+        child: _HyperosSelectPopupBody<T>(
+          anchorRect: anchorRect,
+          entries: entries,
+          currentValue: currentValue,
+          itemTitleStyleBuilder: itemTitleStyleBuilder,
         ),
       );
     },
@@ -487,22 +477,14 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         !LiquidGlassDegradation.shouldDegrade(context);
 
     if (useLiquidGlass) {
-      // 未压暗背景垫层垫在玻璃之下：玻璃采样到亮的页面而不是 modal dim
-      // 压暗后的画面（否则弹窗玻璃显得脏黑）。捕获失败时垫层为空，玻璃
-      // 回退实时采样。
-      return Stack(
-        children: [
-          UndimmedBackdropLayer(radius: cornerRadius),
-          HyperosLiquidGlassSurface(
-            role: HyperosLiquidGlassRole.modal,
-            borderRadius: cornerRadius,
-            contentLegibilityFill: false,
-            // Sample the same undimmed modal capture as every other popup.
-            useAncestorBackdropGroup: true,
-            instantUnderlay: true,
-            child: child,
-          ),
-        ],
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.modal,
+        borderRadius: cornerRadius,
+        contentLegibilityFill: false,
+        // Sample the same undimmed modal capture as every other popup.
+        useAncestorBackdropGroup: true,
+        instantUnderlay: true,
+        child: child,
       );
     }
 
