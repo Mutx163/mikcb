@@ -15,12 +15,33 @@ import '../hyperos_tokens.dart';
 abstract final class MikcbLiquidGlassTokens {
   /// Single liquid-glass material for every surface.
   ///
-  /// 完全使用 liquid_glass_widgets 官方默认参数（blur 5、透明玻璃），
-  /// 不再叠加任何自调 tint，保证与玻璃坞切换栏观感一致。
-  static const sheetSettings = LiquidGlassSettings();
+  /// 与 GlassTabBar 内部默认（kBottomBarGlassDefaults，iOS 26 Apple
+  /// News/Safari tab bar 调校）保持一致：深折射、微模糊、24% 白、
+  /// 135° 左上光源。全 app 玻璃统一为同一套观感。
+  static const sheetSettings = LiquidGlassSettings(
+    thickness: 30,
+    blur: 3,
+    chromaticAberration: 0.3,
+    lightIntensity: 0.6,
+    refractiveIndex: 1.59,
+    saturation: 0.7,
+    ambientStrength: 1,
+    lightAngle: 0.75 * 3.14159265358979,
+    glassColor: Color(0x3DFFFFFF),
+  );
 
-  /// Dark-mode material — same as light (official defaults).
-  static const sheetSettingsDark = LiquidGlassSettings();
+  /// Dark-mode material — same tuned look (matches the bar defaults).
+  static const sheetSettingsDark = LiquidGlassSettings(
+    thickness: 30,
+    blur: 3,
+    chromaticAberration: 0.3,
+    lightIntensity: 0.6,
+    refractiveIndex: 1.59,
+    saturation: 0.7,
+    ambientStrength: 1,
+    lightAngle: 0.75 * 3.14159265358979,
+    glassColor: Color(0x3DFFFFFF),
+  );
 
   /// Squircle radius matching HyperOS card chrome when possible.
   static double sheetBorderRadius() => HyperosTokens.cardRadius;

@@ -87,23 +87,23 @@ class LiquidGlassTuning {
 
   /// High transparency — only thickness / blur / tint vary.
   static const presetClear = LiquidGlassTuning(
-    thickness: 12,
+    thickness: 24,
     blur: 2,
-    tintAlpha: 0.05,
+    tintAlpha: 0.08,
   );
 
   /// Light frost — only thickness / blur / tint vary.
   static const presetLight = LiquidGlassTuning(
-    thickness: 16,
-    blur: 4,
-    tintAlpha: 0.10,
+    thickness: 26,
+    blur: 3,
+    tintAlpha: 0.16,
   );
 
   /// Dense milky glass — only thickness / blur / tint vary.
   static const presetDense = LiquidGlassTuning(
-    thickness: 28,
-    blur: 10,
-    tintAlpha: 0.30,
+    thickness: 36,
+    blur: 6,
+    tintAlpha: 0.40,
   );
 
   /// Picks a built-in preset that matches [tuning], or [LiquidGlassPreset.custom].
@@ -119,14 +119,14 @@ class LiquidGlassTuning {
   // --- Defaults ---
   // Primary three: liquid_glass_renderer README medium glass example.
   // Remaining: LiquidGlassSettings constructor defaults (0.2.0-dev.4).
-  static const double defaultThickness = 20;
-  static const double defaultBlur = 5;
-  static const double defaultTintAlpha = 0.0;
-  static const double defaultLightIntensity = 0.5;
-  static const double defaultAmbientStrength = 0;
-  static const double defaultRefractiveIndex = 1.20;
-  static const double defaultSaturation = 1.5;
-  static const double defaultChromaticAberration = 0.01;
+  static const double defaultThickness = 30;
+  static const double defaultBlur = 3;
+  static const double defaultTintAlpha = 0.24; // Color(0x3DFFFFFF).a
+  static const double defaultLightIntensity = 0.6;
+  static const double defaultAmbientStrength = 1;
+  static const double defaultRefractiveIndex = 1.59;
+  static const double defaultSaturation = 0.7;
+  static const double defaultChromaticAberration = 0.3;
   static const double defaultLightAngleDegrees = 135; // 0.75 * pi rad（官方默认，左上光源）
   static const double defaultVisibility = 1.0;
 
