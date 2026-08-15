@@ -278,6 +278,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                       ),
                       child: HyperosSelectPopupGlass(
                         cornerRadius: cornerRadius,
+                        // Any running spring (enter or exit) renders the
+                        // static stand-in; settled frames get the real glass.
+                        stable: _fraction.isAnimating,
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
                             minWidth: 200,
