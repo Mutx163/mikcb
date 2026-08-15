@@ -33,6 +33,7 @@ import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
+import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -6345,8 +6346,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? Colors.white.withValues(alpha: 0.62)
         : Colors.black.withValues(alpha: 0.48);
     // 底栏材质跟随「高级材质」设置（与弹窗/顶部/卡片统一）：
-    // - 液态玻璃：liquid_glass_widgets 官方默认参数（用户认可的原始观感），
-    //   交互场景用 standard（官方推荐：轻量 shader，更跟手）。
+    // - 液态玻璃：与弹窗/顶部完全同一条参数路径（sheetSettingsFor 跟随
+    //   「液态玻璃调校」，默认即官方 kBottomBarGlassDefaults），并用
+    //   premium 完整折射 shader——边缘厚度/折射效果与弹窗一致。
     // - 标准/高斯：退化为高斯模糊药丸（blur/tint 与弹窗 frosted 一致），
     //   避免底栏与弹窗观感分裂。
     final appearance = FrostedAppearanceScope.of(context);
@@ -6376,7 +6378,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
       indicatorBorderRadius: 28,
       settings: useLiquidGlass
-          ? null
+          ? MikcbLiquidGlassTokens.sheetSettingsFor(
+              isDark ? Brightness.dark : Brightness.light,
+              tuning: appearance.liquidGlassTuning,
+            )
           : LiquidGlassSettings(
               blur: appearance.sheetBlurSigma,
               glassColor: HyperosBlurredHeader.sheetTintColor(
@@ -6384,9 +6389,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 withBlur: true,
               ),
             ),
-      quality: useLiquidGlass
-          ? GlassQuality.standard
-          : GlassQuality.minimal,
+      quality: useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal,
       iconSize: 22,
       labelFontSize: 10,
       horizontalPadding: 6,
