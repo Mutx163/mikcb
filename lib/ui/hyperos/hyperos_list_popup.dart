@@ -270,18 +270,13 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                   return Transform.scale(
                     scale: scale,
                     alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
-                    child: ClipPath(
-                      clipper: SelectPopupRevealClipper(
-                        progress: fraction,
-                        showBelow: showBelow,
-                        cornerRadius: cornerRadius,
-                      ),
-                      child: HyperosSelectPopupGlass(
-                        cornerRadius: cornerRadius,
-                        // Any running spring (enter or exit) renders the
-                        // static stand-in; settled frames get the real glass.
-                        stable: _fraction.isAnimating,
-                        child: ConstrainedBox(
+                    // No reveal clip around the glass: clipping the backdrop
+                    // surface every spring frame resamples the group capture
+                    // and reads as whole-page flicker on open/close. The
+                    // Miuix scale + alpha motion stays, without the clip.
+                    child: HyperosSelectPopupGlass(
+                      cornerRadius: cornerRadius,
+                      child: ConstrainedBox(
                           constraints: BoxConstraints(
                             minWidth: 200,
                             maxWidth: (screen.width - margin * 2).clamp(
@@ -317,7 +312,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               ),
                             ),
                           ),
-                        ),
                       ),
                     ),
                   );

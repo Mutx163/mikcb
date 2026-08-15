@@ -458,46 +458,16 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     super.key,
     required this.cornerRadius,
     required this.child,
-    this.stable = false,
   });
 
   final double cornerRadius;
   final Widget child;
-
-  /// When true (enter/exit animation in progress), paint a static
-  /// translucent surface instead of the live glass.
-  ///
-  /// Animating the refraction shader / backdrop blur frame-by-frame under a
-  /// spring scale + reveal clip reads as whole-page flicker on fast
-  /// open/close cycles, and the first-build shader probe can land
-  /// mid-animation on cold start. The glass swaps in once the popup settles
-  /// (or back out while it shrinks away).
-  final bool stable;
 
   @override
   Widget build(BuildContext context) {
     final appearance = FrostedAppearanceScope.of(context);
     final borderRadius = BorderRadius.circular(cornerRadius);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-
-    if (stable) {
-      // Static stand-in that matches the settled glass tint so the swap is
-      // barely visible; no BackdropFilter / liquid shader under motion.
-      final tint = HyperosBlurredHeader.sheetTintColor(
-        context,
-        withBlur: true,
-      );
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: borderRadius,
-          boxShadow: _kPopupShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: borderRadius,
-          child: ColoredBox(color: tint, child: child),
-        ),
-      );
-    }
 
     // Liquid glass owns its own blur/refraction and must not be gated by the
     // platform BackdropFilter capability. Otherwise anchored popups become
