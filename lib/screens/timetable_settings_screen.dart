@@ -304,14 +304,11 @@ class TimetableSettingsScreen extends StatelessWidget {
             ),
         );
 
-        if (embedded) {
-          // 玻璃坞内嵌形态：外层 HyperosRootPage 已提供顶栏与不透明背景，
-          // 这里只返回列表本身（无返回键、无壳层），背景由外层统一提供。
-          return settingsList;
-        }
+        // 玻璃坞内嵌形态：完整 HyperosSubpage 全屏壳（无返回键），
+        // 外观与正常打开设置页一致，滑块由外层悬浮叠加。
         return HyperosSubpage(
           title: Text(l10n.settingsTitle),
-          onBack: () => Navigator.pop(context),
+          onBack: embedded ? null : () => Navigator.pop(context),
           child: Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
             child: settingsList,

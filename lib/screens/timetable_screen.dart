@@ -391,6 +391,19 @@ class _TimetableScreenState extends State<TimetableScreen>
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
         final dockSettingsActive = glassDockForm && _dockSettingsActive;
+        if (dockSettingsActive) {
+          // 玻璃坞设置页：完整全屏设置壳（与正常打开设置页一致的外观），
+          // 底部滑块由 _wrapWithGlassDock 悬浮叠加在页面之上。
+          return _wrapWithGlassDock(
+            TimetableSettingsScreen(
+              embedded: true,
+              bottomInset: 20,
+            ),
+            glassDockForm: true,
+            settings: settings,
+            l10n: l10n,
+          );
+        }
         final viewportSize = MediaQuery.sizeOf(context);
         final hasBackdrop = hasHomePageBackdropImage(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
@@ -425,11 +438,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         final headerUsesFrostedChrome =
             hasBackdrop &&
             (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-        final headerBarColor = dockSettingsActive
-            ? pageBackgroundColor
-            : (headerUsesFrostedChrome
-                  ? Colors.transparent
-                  : headerBackground.color);
+        final headerBarColor = headerUsesFrostedChrome
+            ? Colors.transparent
+            : headerBackground.color;
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
@@ -537,9 +548,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             HyperosRootPage(
               overlayHeader: false,
               resizeToAvoidBottomInset: false,
-              backgroundColor: dockSettingsActive
-                  ? pageBackgroundColor
-                  : scaffoldBackgroundColor,
+              backgroundColor: scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
               headerPadding: EdgeInsets.fromLTRB(
                 8,
@@ -548,7 +557,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 headerUsesFrostedChrome ? 0.0 : 2.0,
               ),
               systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                dockSettingsActive ? pageBackgroundColor : systemOverlayBackground,
+                systemOverlayBackground,
               ),
               title: glassDockForm && _dockSettingsActive
                   ? Text(
@@ -625,22 +634,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
               ],
               childPad: false,
-              child: dockSettingsActive
-                  ? Padding(
-                      padding: EdgeInsets.only(
-                        bottom: _glassDockContentClearance +
-                            MediaQuery.viewPaddingOf(context).bottom,
-                      ),
-                      child: const TimetableSettingsScreen(embedded: true),
-                    )
-                  : Padding(
-                      padding: EdgeInsets.only(
-                        bottom: glassDockForm
-                            ? _glassDockContentClearance +
-                                  MediaQuery.viewPaddingOf(context).bottom
-                            : 0,
-                      ),
-                      child: Material(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: glassDockForm
+                      ? _glassDockContentClearance +
+                            MediaQuery.viewPaddingOf(context).bottom
+                      : 0,
+                ),
+                child: Material(
                         type: MaterialType.transparency,
                         child: provider.isLoading
                             ? ColoredBox(
