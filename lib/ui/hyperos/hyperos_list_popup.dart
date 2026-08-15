@@ -62,10 +62,17 @@ Future<T?> showHyperosListPopup<T>({
   required RelativeRect? position,
   required List<HyperosPopupMenuItem<T>> items,
   Color? foregroundColor,
-}) {
+}) async {
   final appearance = FrostedAppearanceScope.of(context);
   if (position == null || items.isEmpty) {
     return Future.value();
+  }
+
+  // 弹窗玻璃采样「未压暗页面」捕获图，避免 modal dim 让玻璃显脏黑。
+  final backdrop =
+      await LiquidGlassBackdropCaptureHost.captureUndimmedScreen();
+  if (!context.mounted) {
+    return null;
   }
 
   return showGeneralDialog<T>(
@@ -75,12 +82,15 @@ Future<T?> showHyperosListPopup<T>({
     barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return FrostedAppearanceScope(
-        appearance: appearance,
-        child: _HyperosListPopupBody<T>(
-          position: position,
-          items: items,
-          foregroundColor: foregroundColor,
+      return LiquidGlassBackdropCaptureHost(
+        image: backdrop,
+        child: FrostedAppearanceScope(
+          appearance: appearance,
+          child: _HyperosListPopupBody<T>(
+            position: position,
+            items: items,
+            foregroundColor: foregroundColor,
+          ),
         ),
       );
     },

@@ -107,11 +107,18 @@ Future<T?> showHyperosSelectPopup<T>({
   required Map<String, T> items,
   required T? currentValue,
   TextStyle? Function(T value)? itemTitleStyleBuilder,
-}) {
+}) async {
   final appearance = FrostedAppearanceScope.of(context);
   final entries = items.entries.toList(growable: false);
   if (entries.isEmpty || anchorRect == null) {
     return Future.value();
+  }
+
+  // 弹窗玻璃采样「未压暗页面」捕获图，避免 modal dim 让玻璃显脏黑。
+  final backdrop =
+      await LiquidGlassBackdropCaptureHost.captureUndimmedScreen();
+  if (!context.mounted) {
+    return null;
   }
 
   return showGeneralDialog<T>(
@@ -124,13 +131,16 @@ Future<T?> showHyperosSelectPopup<T>({
     // Opacity layer that degrades the LiquidGlass shader (black flash).
     transitionDuration: Duration.zero,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return FrostedAppearanceScope(
-        appearance: appearance,
-        child: _HyperosSelectPopupBody<T>(
-          anchorRect: anchorRect,
-          entries: entries,
-          currentValue: currentValue,
-          itemTitleStyleBuilder: itemTitleStyleBuilder,
+      return LiquidGlassBackdropCaptureHost(
+        image: backdrop,
+        child: FrostedAppearanceScope(
+          appearance: appearance,
+          child: _HyperosSelectPopupBody<T>(
+            anchorRect: anchorRect,
+            entries: entries,
+            currentValue: currentValue,
+            itemTitleStyleBuilder: itemTitleStyleBuilder,
+          ),
         ),
       );
     },
@@ -477,14 +487,22 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         !LiquidGlassDegradation.shouldDegrade(context);
 
     if (useLiquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.modal,
-        borderRadius: cornerRadius,
-        contentLegibilityFill: false,
-        // Sample the same undimmed modal capture as every other popup.
-        useAncestorBackdropGroup: true,
-        instantUnderlay: true,
-        child: child,
+      // 未压暗背景垫层垫在玻璃之下：玻璃采样到亮的页面而不是 modal dim
+      // 压暗后的画面（否则弹窗玻璃显得脏黑）。捕获失败时垫层为空，玻璃
+      // 回退实时采样。
+      return Stack(
+        children: [
+          UndimmedBackdropLayer(radius: cornerRadius),
+          HyperosLiquidGlassSurface(
+            role: HyperosLiquidGlassRole.modal,
+            borderRadius: cornerRadius,
+            contentLegibilityFill: false,
+            // Sample the same undimmed modal capture as every other popup.
+            useAncestorBackdropGroup: true,
+            instantUnderlay: true,
+            child: child,
+          ),
+        ],
       );
     }
 
