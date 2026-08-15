@@ -4,6 +4,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
+import 'package:liquid_glass_bar/liquid_glass_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
     show Drag, VelocityTracker, kMinFlingVelocity;
@@ -153,6 +154,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
 
+  /// 玻璃坞形态下底部药丸导航悬浮时，课表/设置内容需要的底部避让高度。
+  static const double _glassDockContentClearance = 96;
+
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
 
@@ -245,6 +249,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
+
+  /// 玻璃坞形态下「设置」Tab 是否激活（内嵌设置页）。
+  bool _dockSettingsActive = false;
   static const int _sharedFreeVisibleSegmentLimit = 2;
   static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
 
@@ -381,6 +388,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final darkFallback = colorScheme.surface;
         final settings = provider.settings;
+        final glassDockForm =
+            settings.homeNavigationForm == HomeNavigationForm.glassDock;
         final viewportSize = MediaQuery.sizeOf(context);
         final hasBackdrop = hasHomePageBackdropImage(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
@@ -536,12 +545,23 @@ class _TimetableScreenState extends State<TimetableScreen>
               systemOverlayStyle: HyperosColors.systemOverlayForBackground(
                 systemOverlayBackground,
               ),
-              title: _buildProfileSwitcherTrigger(
-                provider,
-                foreground: chromeForeground,
-                mutedForeground: chromeMutedForeground,
-              ),
-              suffixes: [
+              title: glassDockForm && _dockSettingsActive
+                  ? Text(
+                      l10n.settingsTitle,
+                      style: TextStyle(
+                        color: chromeForeground,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    )
+                  : _buildProfileSwitcherTrigger(
+                      provider,
+                      foreground: chromeForeground,
+                      mutedForeground: chromeMutedForeground,
+                    ),
+              suffixes: glassDockForm && _dockSettingsActive
+                  ? const []
+                  : [
                 if (provider.hasPartnerBinding)
                   FHeaderAction(
                     icon: Icon(
@@ -600,52 +620,88 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
               ],
               childPad: false,
-              child: Material(
-                type: MaterialType.transparency,
-                child: provider.isLoading
-                    ? ColoredBox(
-                        color: AppBootBranding.backgroundColor(isDark: isDark),
-                        child: AppBootBranding(
-                          appLabel: widget.packageInfo != null
-                              ? AppBootBranding.resolveAppLabel(
-                                  widget.packageInfo!,
-                                  l10n,
-                                )
-                              : l10n.appTitle,
-                          isDark: isDark,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: glassDockForm
+                      ? _glassDockContentClearance +
+                            MediaQuery.viewPaddingOf(context).bottom
+                      : 0,
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: provider.isLoading
+                      ? ColoredBox(
+                          color: AppBootBranding.backgroundColor(
+                            isDark: isDark,
+                          ),
+                          child: AppBootBranding(
+                            appLabel: widget.packageInfo != null
+                                ? AppBootBranding.resolveAppLabel(
+                                    widget.packageInfo!,
+                                    l10n,
+                                  )
+                                : l10n.appTitle,
+                            isDark: isDark,
+                          ),
+                        )
+                      : MediaQuery.removeViewInsets(
+                          context: context,
+                          removeBottom: true,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Offstage(
+                                offstage:
+                                    glassDockForm && _dockSettingsActive,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    _buildHomePullQuickImportSurface(
+                                      provider: provider,
+                                      settings: settings,
+                                      hasBackdrop: hasBackdrop,
+                                    ),
+                                    if (_isHomePullQuickImportRunning ||
+                                        _homePullDragDistance > 0)
+                                      _buildHomePullQuickImportIndicator(
+                                        l10n,
+                                      ),
+                                    ValueListenableBuilder<int>(
+                                      valueListenable: _visibleWeekListenable,
+                                      builder: (context, visibleWeek, child) {
+                                        if (!_shouldShowFloatingBackToCurrentWeekButton(
+                                          provider,
+                                          provider.settings,
+                                          visibleWeek,
+                                        )) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return _buildFloatingBackToCurrentWeekButton(
+                                          provider,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (glassDockForm)
+                                Offstage(
+                                  offstage: !_dockSettingsActive,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: _glassDockContentClearance +
+                                          MediaQuery.viewPaddingOf(context)
+                                              .bottom,
+                                    ),
+                                    child: const TimetableSettingsScreen(
+                                      embedded: true,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      )
-                    : MediaQuery.removeViewInsets(
-                        context: context,
-                        removeBottom: true,
-                        child: Stack(
-                          children: [
-                            _buildHomePullQuickImportSurface(
-                              provider: provider,
-                              settings: settings,
-                              hasBackdrop: hasBackdrop,
-                            ),
-                            if (_isHomePullQuickImportRunning ||
-                                _homePullDragDistance > 0)
-                              _buildHomePullQuickImportIndicator(l10n),
-                            ValueListenableBuilder<int>(
-                              valueListenable: _visibleWeekListenable,
-                              builder: (context, visibleWeek, child) {
-                                if (!_shouldShowFloatingBackToCurrentWeekButton(
-                                  provider,
-                                  provider.settings,
-                                  visibleWeek,
-                                )) {
-                                  return const SizedBox.shrink();
-                                }
-                                return _buildFloatingBackToCurrentWeekButton(
-                                  provider,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
+                ),
               ),
             ),
           ],
@@ -664,19 +720,29 @@ class _TimetableScreenState extends State<TimetableScreen>
             preblurPageController = _weekPageController;
             preblurFollowsPager = followsWeekPager;
           }
-          return PreblurredWallpaperScope(
-            wallpaperPath: resolveHomePageBackdropImagePath(settings),
-            blurSigma: homePreblurSigma,
-            pageController: preblurPageController,
-            followsPager: preblurFollowsPager,
-            // The open/close ramp drags cards around without any scrolling;
-            // fills must re-sample per frame or the frost rides along frozen.
-            repaint: _dayViewExpandController,
-            enabled: true,
-            child: homeStack,
+          return _wrapWithGlassDock(
+            PreblurredWallpaperScope(
+              wallpaperPath: resolveHomePageBackdropImagePath(settings),
+              blurSigma: homePreblurSigma,
+              pageController: preblurPageController,
+              followsPager: preblurFollowsPager,
+              // The open/close ramp drags cards around without any scrolling;
+              // fills must re-sample per frame or the frost rides along frozen.
+              repaint: _dayViewExpandController,
+              enabled: true,
+              child: homeStack,
+            ),
+            glassDockForm: glassDockForm,
+            settings: settings,
+            l10n: l10n,
           );
         }
-        return homeStack;
+        return _wrapWithGlassDock(
+          homeStack,
+          glassDockForm: glassDockForm,
+          settings: settings,
+          l10n: l10n,
+        );
       },
     );
   }
@@ -6110,6 +6176,133 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _canReturnToCurrentWeek(settings, visibleWeek);
   }
 
+  /// 玻璃坞形态：把底部液态玻璃药丸导航叠加到页面之上。
+  ///
+  /// 经典形态直接返回原内容，行为与之前完全一致。
+  Widget _wrapWithGlassDock(
+    Widget child, {
+    required bool glassDockForm,
+    required TimetableSettings settings,
+    required AppLocalizations l10n,
+  }) {
+    if (!glassDockForm) {
+      return child;
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: SafeArea(
+            minimum: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 340),
+                child: _buildGlassDockBar(settings: settings, l10n: l10n),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 玻璃坞底部导航：周课表 / 日课表 / 设置。
+  ///
+  /// 使用 [LiquidGlassBar]（基于项目已依赖的 liquid_glass_renderer），
+  /// 保持真实的液态玻璃折射渲染，不做 FakeGlass 降级：单击切换 Tab，
+  /// 长按后左右滑动时高光跟随手指实时移动，松手按最近 Tab 落位。
+  Widget _buildGlassDockBar({
+    required TimetableSettings settings,
+    required AppLocalizations l10n,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    return LiquidGlassBar(
+      items: [
+        LiquidGlassBarItem(
+          iconData: Icons.calendar_view_week_rounded,
+          label: l10n.glassDockTabWeek,
+        ),
+        LiquidGlassBarItem(
+          iconData: Icons.today_rounded,
+          label: l10n.glassDockTabDay,
+        ),
+        LiquidGlassBarItem(
+          iconData: Icons.settings_rounded,
+          label: l10n.settingsTitle,
+        ),
+      ],
+      currentIndex: _glassDockCurrentIndex,
+      onTap: (index) => unawaited(_onDockTabSelected(index, settings)),
+      style: LiquidGlassBarStyle(
+        activeColor: colorScheme.primary,
+        inactiveColor: isDark
+            ? Colors.white.withValues(alpha: 0.55)
+            : Colors.black.withValues(alpha: 0.45),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        liquidGlassSettings: LiquidGlassSettings(
+          thickness: 20,
+          blur: 16,
+          glassColor: isDark
+              ? const Color(0xE61C1C1E)
+              : const Color(0xCCFFFFFF),
+          lightIntensity: 0.6,
+          refractiveIndex: 1.5,
+        ),
+      ),
+    );
+  }
+
+  /// 玻璃坞当前激活的 Tab：设置 > 日视图 > 周视图。
+  int get _glassDockCurrentIndex {
+    if (_dockSettingsActive) {
+      return 2;
+    }
+    return _isDayView ? 1 : 0;
+  }
+
+  /// 玻璃坞 Tab 切换：周课表 / 日课表 / 设置。
+  ///
+  /// 周、日直接驱动现有的 [_toggleDayView] / [_closeDayView] 状态机
+  /// （保留原有的展开动画与持久化），设置切换内嵌设置页。
+  Future<void> _onDockTabSelected(
+    int index,
+    TimetableSettings settings,
+  ) async {
+    switch (index) {
+      case 0: // 周课表
+        if (_dockSettingsActive) {
+          setState(() => _dockSettingsActive = false);
+        }
+        if (_isDayView) {
+          await _closeDayView(settings);
+        }
+      case 1: // 日课表
+        if (_dockSettingsActive) {
+          setState(() => _dockSettingsActive = false);
+        }
+        if (!_isDayView) {
+          final dayOfWeek = _resolveStoredDayOfWeek(
+            settings,
+            settings.timetableLastViewedDayOfWeek,
+          );
+          await _toggleDayView(
+            week: _visibleWeek,
+            dayOfWeek: dayOfWeek,
+            settings: settings,
+          );
+        }
+      case 2: // 设置
+        if (!_dockSettingsActive) {
+          setState(() => _dockSettingsActive = true);
+        }
+    }
+  }
+
   Widget _buildFloatingBackToCurrentWeekButton(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -6131,8 +6324,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
     final contentOpacity = buttonOpacity.clamp(0.0, 1.0);
 
+    final glassDockForm =
+        provider.settings.homeNavigationForm == HomeNavigationForm.glassDock;
     return SafeArea(
-      minimum: const EdgeInsets.only(right: 20, bottom: 24),
+      minimum: EdgeInsets.only(
+        right: 20,
+        bottom: glassDockForm
+            ? 24 +
+                  _glassDockContentClearance +
+                  MediaQuery.viewPaddingOf(context).bottom
+            : 24,
+      ),
       child: Align(
         alignment: Alignment.bottomRight,
         child: Tooltip(

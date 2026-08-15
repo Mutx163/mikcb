@@ -534,6 +534,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  liquid_glass_bar:
+    dependency: "direct main"
+    description:
+      name: liquid_glass_bar
+      sha256: "39393c819b3816f9fec9eae2535bd08aed3d1597bae816ed0fb7c0de74569aaa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   liquid_glass_renderer:
     dependency: "direct main"
     description:
