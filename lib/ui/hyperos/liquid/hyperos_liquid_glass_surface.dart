@@ -9,20 +9,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../../models/liquid_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
-import '../hyperos_blurred_header.dart' show HyperosBlurredHeader;
 import 'liquid_glass_tokens.dart';
-
-/// Dim painted over modal liquid-glass panels (sheets, dialogs, popups).
-///
-/// Liquid-glass modals sample the *undimmed* page through a BackdropGroup
-/// while the barrier behind them is dimmed at
-/// [HyperosBlurredHeader.liquidGlassModalBarrierAlpha] — the glass then
-/// reads much brighter than the dimmed page behind it. Painting half that
-/// barrier dim over the glass surface itself (brightness sits halfway
-/// between the raw page and the dimmed backdrop) keeps the panel clearly
-/// the brightest layer without the harsh glare.
-const liquidGlassModalSurfaceDimAlpha =
-    HyperosBlurredHeader.liquidGlassModalBarrierAlpha / 2;
 
 /// Role of a liquid-glass surface (drives recommended shape + settings).
 enum HyperosLiquidGlassRole {
@@ -145,11 +132,9 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     /// first-frame warm-up, so no explicit underlay is required.
     this.instantUnderlay = false,
 
-    /// When true (default), sheet/modal/header roles paint a soft fill under
-    /// [child] so multi-line labels stay readable over busy backdrops. Set
-    /// false when the caller already manages contrast (e.g. colored course
-    /// cards with white text over a hue-tinted glass underlay).
-    this.contentLegibilityFill = true,
+    /// 官方默认观感：不再为可读性叠加填充层。需要时（如课程卡片）
+    /// 调用方可显式开启。
+    this.contentLegibilityFill = false,
 
     /// Overrides the role default layer strategy when non-null.
     this.layerMode,
@@ -254,10 +239,7 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
           )
         : child;
 
-    // Modal panels float over a dimmed page; halve the barrier dim on the
-    // glass surface so the panel stays the brightest layer without glaring
-    // against the backdrop (see liquidGlassModalSurfaceDimAlpha).
-    final surfacedChild = _wrapChildForModalDim(role: role, child: glassChild);
+    final surfacedChild = glassChild;
 
     final resolvedLayerMode =
         widget.layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
@@ -318,35 +300,4 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     );
   }
 
-  /// Halves the modal barrier dim over the glass surface of modal panels.
-  ///
-  /// Sheets, dialogs and anchored popups sample the undimmed page while the
-  /// barrier behind them is dimmed, so the glass reads as a bright panel on
-  /// a dark page. Painting half the barrier alpha over the glass itself
-  /// pulls the panel's brightness halfway toward the dimmed backdrop:
-  /// still clearly the brightest layer, but without the harsh glare.
-  static Widget _wrapChildForModalDim({
-    required HyperosLiquidGlassRole role,
-    required Widget child,
-  }) {
-    if (role != HyperosLiquidGlassRole.modal ||
-        liquidGlassModalSurfaceDimAlpha <= 0) {
-      return child;
-    }
-    return Stack(
-      fit: StackFit.passthrough,
-      children: [
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ColoredBox(
-              color: Colors.black.withValues(
-                alpha: liquidGlassModalSurfaceDimAlpha,
-              ),
-            ),
-          ),
-        ),
-        child,
-      ],
-    );
-  }
 }

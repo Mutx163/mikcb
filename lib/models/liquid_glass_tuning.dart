@@ -121,7 +121,7 @@ class LiquidGlassTuning {
   // Remaining: LiquidGlassSettings constructor defaults (0.2.0-dev.4).
   static const double defaultThickness = 20;
   static const double defaultBlur = 5;
-  static const double defaultTintAlpha = 0.12;
+  static const double defaultTintAlpha = 0.0;
   static const double defaultLightIntensity = 0.5;
   static const double defaultAmbientStrength = 0;
   static const double defaultRefractiveIndex = 1.20;

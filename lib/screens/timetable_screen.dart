@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
@@ -6215,11 +6214,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final unselectedColor = isDark
         ? Colors.white.withValues(alpha: 0.62)
         : Colors.black.withValues(alpha: 0.48);
-    // 与项目弹窗/顶栏共用同一套玻璃参数（用户可调），视觉统一。
-    final dockSettings = MikcbLiquidGlassTokens.sheetSettingsFor(
-      Theme.of(context).brightness,
-      tuning: FrostedAppearanceScope.of(context).liquidGlassTuning,
-    );
+    // 使用 liquid_glass_widgets 官方默认玻璃参数（用户认可的原始观感）。
     return GlassTabBar.bottom(
       tabs: [
         GlassTab(
@@ -6247,7 +6242,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       unselectedIconColor: unselectedColor,
       selectedLabelColor: colorScheme.primary,
       unselectedLabelColor: unselectedColor,
-      settings: dockSettings,
     );
   }
 
