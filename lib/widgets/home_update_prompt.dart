@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
 import 'package:university_timetable/services/support_creator_service.dart';
@@ -114,25 +115,19 @@ Future<void> _showHomeUpdatePromptDialog(
   required Future<void> Function() onViewRelease,
   required VoidCallback onCancelDownload,
 }) async {
-  await showDialog<void>(
+  await showHyperosSheet<void>(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    builder: (dialogContext) {
-      return MiuixScaffold(
-        containerColor: Colors.transparent,
-        contentWindowInsets: EdgeInsets.zero,
-        content: (_) => _HomeUpdatePromptDialog(
-          release: release,
-          currentVersion: currentVersion,
-          downloadChannel: downloadChannel,
-          hasDirectDownload: hasDirectDownload,
-          controller: controller,
-          onDownload: onDownload,
-          onViewRelease: onViewRelease,
-          onCancelDownload: onCancelDownload,
-          onDismiss: () => Navigator.of(dialogContext).pop(),
-        ),
+    builder: (sheetContext) {
+      return _HomeUpdatePromptDialog(
+        release: release,
+        currentVersion: currentVersion,
+        downloadChannel: downloadChannel,
+        hasDirectDownload: hasDirectDownload,
+        controller: controller,
+        onDownload: onDownload,
+        onViewRelease: onViewRelease,
+        onCancelDownload: onCancelDownload,
+        onDismiss: () => Navigator.of(sheetContext).pop(),
       );
     },
   );
@@ -197,20 +192,29 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
         final isCancelled = controller.isInAppCancelled;
         final isInAppBusy = controller.isInAppDownloading;
         final isSystemBusy = _isSystemDownloadBusy(systemProgress);
-        final isDownloadBusy = isInAppBusy || isSystemBusy;
         final progressLabel = hasSystemProgress
             ? _systemProgressLabel(l10n, systemProgress)
             : _inAppProgressLabel(l10n, progress);
 
-        return MiuixOverlayDialog(
-          show: true,
-          title: l10n.aboutUpdateAvailableHeadline,
-          summary: l10n.versionLabel(release.version),
-          onDismissRequest: isDownloadBusy ? null : onDismiss,
-          content: Column(
+        return HyperosSheetFrame(
+          frosted: true,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Text(
+                l10n.aboutUpdateAvailableHeadline,
+                textAlign: TextAlign.center,
+                style: HyperosTypography.sheetTitle(context),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.versionLabel(release.version),
+                textAlign: TextAlign.center,
+                style: HyperosTypography.listDetail(context),
+              ),
+              const SizedBox(height: 12),
               MiuixText(
                 release.title,
                 style: textStyles.title4,

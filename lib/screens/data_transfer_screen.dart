@@ -620,9 +620,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   Future<Set<String>?> _chooseCoursesForQr(TimetableProvider provider) {
     final selected = <String>{};
-    return showModalBottomSheet<Set<String>>(
+    return showHyperosSheet<Set<String>>(
       context: context,
-      isScrollControlled: true,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
