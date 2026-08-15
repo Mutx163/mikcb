@@ -425,16 +425,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         final headerUsesFrostedChrome =
             hasBackdrop &&
             (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-        // 设置页形态下使用设置页同款表面色（scaffoldBackground），
-        // 避免与设置页内容形成「白条/色块」分层。
-        final settingsChromeBackground = dockSettingsActive
-            ? HyperosColors.scaffoldBackground(context)
-            : pageBackgroundColor;
-        final headerBarColor = dockSettingsActive
-            ? settingsChromeBackground
-            : (headerUsesFrostedChrome
-                  ? Colors.transparent
-                  : headerBackground.color);
+        final headerBarColor = headerUsesFrostedChrome
+            ? Colors.transparent
+            : headerBackground.color;
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
@@ -515,11 +508,39 @@ class _TimetableScreenState extends State<TimetableScreen>
           // summary card's stand-in frost reads like the band above it.
           return HyperosBlurredHeader.blurSigmaOf(context);
         })();
+        if (dockSettingsActive) {
+          // 玻璃坞设置页：独立全屏壳（不透明背景，与正常打开设置页一致）。
+          // 壁纸层 Offstage 常驻保持解码缓存，切回课表立即显示不黑闪。
+          return _wrapWithGlassDock(
+            Stack(
+              fit: StackFit.expand,
+              children: [
+                if (hasBackdrop)
+                  Offstage(
+                    offstage: true,
+                    child: followsWeekPager
+                        ? HomePageSlidingBackdropLayer(
+                            controller: _weekPageController,
+                            pageCount: settings.semesterWeekCount,
+                            settings: settings,
+                          )
+                        : homePageBackdropLayer(settings: settings),
+                  ),
+                TimetableSettingsScreen(
+                  embedded: true,
+                  bottomInset: _glassDockContentClearance +
+                      MediaQuery.viewPaddingOf(context).bottom,
+                ),
+              ],
+            ),
+            glassDockForm: true,
+            settings: settings,
+            l10n: l10n,
+          );
+        }
         Widget homeStack = Stack(
           fit: StackFit.expand,
           children: [
-            // 壁纸层常驻绘制（设置页壳为不透明背景，盖住壁纸无视觉影响；
-            // 切回课表时壁纸始终在画，避免重新解码/重建导致的黑闪与灰蒙）。
             if (hasBackdrop)
               followsWeekPager
                   ? HomePageSlidingBackdropLayer(
@@ -529,30 +550,22 @@ class _TimetableScreenState extends State<TimetableScreen>
                     )
                   : homePageBackdropLayer(settings: settings),
             if (hasBackdrop && !statusBarShowsBackdrop)
-              Offstage(
-                offstage: dockSettingsActive,
-                child: HomePageStatusBarBackdropMask(color: pageBackgroundColor),
-              ),
+              HomePageStatusBarBackdropMask(color: pageBackgroundColor),
             // Single continuous glass for title + weekday (no time-column blur).
             // Stays fixed above the sliding wallpaper so chrome text stays sharp
             // while the photo moves as one continuous sheet.
             if (continuousChromeBlur)
-              Offstage(
-                offstage: dockSettingsActive,
-                child: HomePageContinuousChromeFrostedOverlay(
-                  headerBlurEnabled: settings.homePageHeaderBlurEnabled,
-                  weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
-                  includeStatusBar: statusBarShowsBackdrop,
-                  weekdayBarHeight: _weekDayHeaderHeight,
-                  wallpaperTopLuminance: _wallpaperTopLuminance,
-                ),
+              HomePageContinuousChromeFrostedOverlay(
+                headerBlurEnabled: settings.homePageHeaderBlurEnabled,
+                weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
+                includeStatusBar: statusBarShowsBackdrop,
+                weekdayBarHeight: _weekDayHeaderHeight,
+                wallpaperTopLuminance: _wallpaperTopLuminance,
               ),
             HyperosRootPage(
               overlayHeader: false,
               resizeToAvoidBottomInset: false,
-              backgroundColor: dockSettingsActive
-                  ? settingsChromeBackground
-                  : scaffoldBackgroundColor,
+              backgroundColor: scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
               headerPadding: EdgeInsets.fromLTRB(
                 8,
@@ -561,27 +574,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                 headerUsesFrostedChrome ? 0.0 : 2.0,
               ),
               systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                dockSettingsActive
-                    ? settingsChromeBackground
-                    : systemOverlayBackground,
+                systemOverlayBackground,
               ),
-              title: glassDockForm && _dockSettingsActive
-                  ? Text(
-                      l10n.settingsTitle,
-                      style: TextStyle(
-                        color: chromeForeground,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    )
-                  : _buildProfileSwitcherTrigger(
-                      provider,
-                      foreground: chromeForeground,
-                      mutedForeground: chromeMutedForeground,
-                    ),
-              suffixes: glassDockForm && _dockSettingsActive
-                  ? const []
-                  : [
+              title: _buildProfileSwitcherTrigger(
+                provider,
+                foreground: chromeForeground,
+                mutedForeground: chromeMutedForeground,
+              ),
+              suffixes: [
                 if (provider.hasPartnerBinding)
                   FHeaderAction(
                     icon: Icon(
@@ -670,56 +670,29 @@ class _TimetableScreenState extends State<TimetableScreen>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              // 课表内容常驻（Offstage 保留状态/壁纸，
-                              // 切回时不重建、不闪烁）。
-                              Offstage(
-                                offstage: dockSettingsActive,
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    _buildHomePullQuickImportSurface(
-                                      provider: provider,
-                                      settings: settings,
-                                      hasBackdrop: hasBackdrop,
-                                    ),
-                                    if (_isHomePullQuickImportRunning ||
-                                        _homePullDragDistance > 0)
-                                      _buildHomePullQuickImportIndicator(
-                                        l10n,
-                                      ),
-                                    ValueListenableBuilder<int>(
-                                      valueListenable: _visibleWeekListenable,
-                                      builder: (context, visibleWeek, child) {
-                                        if (!_shouldShowFloatingBackToCurrentWeekButton(
-                                          provider,
-                                          provider.settings,
-                                          visibleWeek,
-                                        )) {
-                                          return const SizedBox.shrink();
-                                        }
-                                        return _buildFloatingBackToCurrentWeekButton(
-                                          provider,
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
+                              _buildHomePullQuickImportSurface(
+                                provider: provider,
+                                settings: settings,
+                                hasBackdrop: hasBackdrop,
                               ),
-                              // 设置页常驻（Offstage 保留滚动位置）。
-                              if (glassDockForm)
-                                Offstage(
-                                  offstage: !dockSettingsActive,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: _glassDockContentClearance +
-                                          MediaQuery.viewPaddingOf(context)
-                                              .bottom,
-                                    ),
-                                    child: const TimetableSettingsScreen(
-                                      embedded: true,
-                                    ),
-                                  ),
-                                ),
+                              if (_isHomePullQuickImportRunning ||
+                                  _homePullDragDistance > 0)
+                                _buildHomePullQuickImportIndicator(l10n),
+                              ValueListenableBuilder<int>(
+                                valueListenable: _visibleWeekListenable,
+                                builder: (context, visibleWeek, child) {
+                                  if (!_shouldShowFloatingBackToCurrentWeekButton(
+                                    provider,
+                                    provider.settings,
+                                    visibleWeek,
+                                  )) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return _buildFloatingBackToCurrentWeekButton(
+                                    provider,
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         ),
