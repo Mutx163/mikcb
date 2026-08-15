@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
@@ -6201,33 +6202,44 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞底部导航：周课表 / 日课表 / 设置。
   ///
-  /// 使用项目自研的 [HyperosLiquidGlassTabBar]：玻璃材质与项目其他
-  /// 液态玻璃表面完全一致（同一 tokens / superellipse / 层策略，真实折射
-  /// 不降级），胶囊形圆角（上圆接下圆），滑块无描边只有外层玻璃保留
-  /// 光学边缘；单击切换，长按左右拖动时高光跟随手指，松手吸附最近 Tab。
+  /// 使用 liquid_glass_widgets 的 [GlassTabBar.bottom]（iOS 26 官方形态：
+  /// 浮动药丸 + 拖拽指示器，自带真实折射 shader 与自适应质量）。
   Widget _buildGlassDockBar({
     required TimetableSettings settings,
     required AppLocalizations l10n,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
-    return HyperosLiquidGlassTabBar(
-      items: [
-        HyperosLiquidGlassTabBarItem(
-          icon: Icons.calendar_view_week_rounded,
+    final unselectedColor = isDark
+        ? Colors.white.withValues(alpha: 0.62)
+        : Colors.black.withValues(alpha: 0.48);
+    return GlassTabBar.bottom(
+      tabs: [
+        GlassTab(
+          icon: Icon(Icons.calendar_view_week_rounded),
           label: l10n.glassDockTabWeek,
         ),
-        HyperosLiquidGlassTabBarItem(
-          icon: Icons.today_rounded,
+        GlassTab(
+          icon: Icon(Icons.today_rounded),
           label: l10n.glassDockTabDay,
         ),
-        HyperosLiquidGlassTabBarItem(
-          icon: Icons.settings_rounded,
+        GlassTab(
+          icon: Icon(Icons.settings_rounded),
           label: l10n.settingsTitle,
         ),
       ],
-      currentIndex: _glassDockCurrentIndex,
-      onTap: (index) => unawaited(_onDockTabSelected(index, settings)),
-      activeColor: colorScheme.primary,
+      selectedIndex: _glassDockCurrentIndex,
+      onTabSelected: (index) => unawaited(_onDockTabSelected(index, settings)),
+      barHeight: 56,
+      barBorderRadius: 28,
+      iconSize: 22,
+      labelFontSize: 10,
+      horizontalPadding: 6,
+      verticalPadding: 6,
+      selectedIconColor: colorScheme.primary,
+      unselectedIconColor: unselectedColor,
+      selectedLabelColor: colorScheme.primary,
+      unselectedLabelColor: unselectedColor,
     );
   }
 

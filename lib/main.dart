@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -132,6 +133,9 @@ Future<void> main() async {
   // layer can render with the real launcher bitmap on its very first frame.
   WidgetsFlutterBinding.ensureInitialized();
   await BundledAssets.warmUpLauncherIcon();
+  // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the first
+  // glass bar frame does not stall on shader compilation.
+  await LiquidGlassWidgets.initialize();
   runZonedGuarded(
     () {
       WidgetsFlutterBinding.ensureInitialized();
@@ -195,7 +199,13 @@ Future<void> main() async {
       // after a cold start can swap from the fake frosted look to the real
       // shader mid-animation — a one-shot visible style flash.
       unawaited(LiquidGlassShaderProbe.probeIfNeeded());
-      runApp(const _PackageInfoLoader());
+      runApp(
+        LiquidGlassWidgets.wrap(
+          child: const _PackageInfoLoader(),
+          // MaterialApp 集成：让玻璃组件跟随应用 ThemeMode（而非系统亮度）。
+          brightnessResolver: Theme.maybeBrightnessOf,
+        ),
+      );
     },
     (error, stackTrace) {
       unawaited(
