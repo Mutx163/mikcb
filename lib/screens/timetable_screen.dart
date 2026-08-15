@@ -146,7 +146,7 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
 }
 
 class _TimetableScreenState extends State<TimetableScreen>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   static const int _minWeek = 1;
   static const double _weekDayHeaderHeight = 40;
   static const double _homeTitleHorizontalNudge = 4;
@@ -157,8 +157,30 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 玻璃坞形态下底部药丸导航悬浮时，课表/设置内容需要的底部避让高度。
   static const double _glassDockContentClearance = 96;
 
+  /// 玻璃坞 Tab 切换周↔日时的横向滑动转场时长。
+  static const Duration _dockViewSwitchDuration = Duration(milliseconds: 300);
+
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
+
+  /// 玻璃坞 Tab 切换周↔日时的横向滑动转场（周视图↔日视图左右联动滑动）。
+  /// value=0 为周视图原位；0→1 为日视图从右滑入、周视图向左让位；
+  /// 1→0 反向滑出。日期栏路径保持原展开动画，不使用本控制器。
+  late final AnimationController _dockViewSwitchAnimation;
+
+  /// 周视图在玻璃坞滑动转场中的向左让位距离。
+  static const double _dockViewWeekSlideDistance = 56;
+
+  /// 日视图在玻璃坞滑动转场中的右入位移（进入时从该距离滑到 0）。
+  static const double _dockViewDaySlideDistance = 120;
+
+  /// 滑动转场当前是否由玻璃坞 Tab 驱动。日期栏路径为 false（无滑动）。
+  bool _dockSlideActive = false;
+
+  /// 玻璃坞滑动转场的当前进度（0=周视图原位，1=日视图就位）。
+  double get _dockSlideProgress => _dockSlideActive
+      ? Curves.easeOutCubic.transform(_dockViewSwitchAnimation.value)
+      : 0.0;
 
   /// The single day-view pager: pages are globally continuous across weeks
   /// (globalPage = (week-1)*visibleCount + dayIndex), so crossing a week
@@ -314,6 +336,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dayExpandDuration,
     );
+    // 玻璃坞 Tab 切换周↔日时的横向滑动转场（value=0 表示周视图原位；
+    // 日期栏路径保持原展开动画，不使用本控制器）。
+    _dockViewSwitchAnimation = AnimationController(
+      vsync: this,
+      duration: _dockViewSwitchDuration,
+    );
     _dayAgendaProgressTimer = widget.enableProgressTimer
         ? Timer.periodic(const Duration(seconds: 1), (_) {
             if (!mounted || !_isDayView) {
@@ -339,6 +367,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _homePullQuickImportCancel?.call();
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
+    _dockViewSwitchAnimation.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
     _homeDownloadController?.cancel();
@@ -918,6 +947,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int dayOfWeek,
     required TimetableSettings settings,
   }) async {
+    // 日期栏路径：禁用玻璃坞滑动转场（保持锚点展开动画），
+    // 滑动控制器停在完成位姿（无横向位移）。
+    _dockSlideActive = false;
+    _dockViewSwitchAnimation.value = 1;
     final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
     final isSameSelection =
         _isDayView &&
@@ -966,6 +999,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _closeDayView(TimetableSettings settings) async {
+    // 日期栏路径：禁用玻璃坞滑动转场（保持锚点收起动画），
+    // 滑动控制器停在完成位姿（无横向位移）。
+    _dockSlideActive = false;
+    _dockViewSwitchAnimation.value = 1;
     if (!_isDayView) {
       return;
     }
@@ -2704,50 +2741,71 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification.metrics.axis == Axis.horizontal) {
-              if (notification is ScrollEndNotification) {
-                _finalizeWeekPageSettled(provider);
+        // 玻璃坞滑动转场：切日视图时周网格向左让位（日期栏路径无位移）。
+        AnimatedBuilder(
+          animation: _dockViewSwitchAnimation,
+          builder: (context, child) => Transform.translate(
+            offset: Offset(-_dockViewWeekSlideDistance * _dockSlideProgress, 0),
+            child: child,
+          ),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification.metrics.axis == Axis.horizontal) {
+                if (notification is ScrollEndNotification) {
+                  _finalizeWeekPageSettled(provider);
+                }
               }
-            }
-            return false;
-          },
-          child: PageView.builder(
-            controller: _weekPageController,
-            itemCount: settings.semesterWeekCount,
-            allowImplicitScrolling: true,
-            physics: _isDayView
-                ? const NeverScrollableScrollPhysics()
-                : const PageScrollPhysics(parent: ClampingScrollPhysics()),
-            onPageChanged: (page) =>
-                _handleWeekPageChanged(page, settings.semesterWeekCount),
-            itemBuilder: (context, index) {
-              final week = index + 1;
-              return RepaintBoundary(
-                // Lets card glass fills align to the wallpaper instance that
-                // slides with this page (see PreblurredWallpaperAlignedFill).
-                child: PreblurredWallpaperPage(
-                  pageIndex: index,
-                  child: _buildWeekPage(
-                    provider,
-                    settings,
-                    availableWidth,
-                    availableHeight,
-                    week,
-                  ),
-                ),
-              );
+              return false;
             },
+            child: PageView.builder(
+              controller: _weekPageController,
+              itemCount: settings.semesterWeekCount,
+              allowImplicitScrolling: true,
+              physics: _isDayView
+                  ? const NeverScrollableScrollPhysics()
+                  : const PageScrollPhysics(parent: ClampingScrollPhysics()),
+              onPageChanged: (page) =>
+                  _handleWeekPageChanged(page, settings.semesterWeekCount),
+              itemBuilder: (context, index) {
+                final week = index + 1;
+                return RepaintBoundary(
+                  // Lets card glass fills align to the wallpaper instance that
+                  // slides with this page (see PreblurredWallpaperAlignedFill).
+                  child: PreblurredWallpaperPage(
+                    pageIndex: index,
+                    child: _buildWeekPage(
+                      provider,
+                      settings,
+                      availableWidth,
+                      availableHeight,
+                      week,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned.fill(
             top: _weekDayHeaderHeight,
-            child: _buildAnchoredDayViewOverlay(
-              provider: provider,
-              settings: settings,
-              week: visibleDayViewWeek,
+            // 玻璃坞滑动转场：日视图从右侧滑入（日期栏路径动画值停在
+            // 完成位姿，无位移）。
+            child: AnimatedBuilder(
+              animation: _dockViewSwitchAnimation,
+              builder: (context, child) => Transform.translate(
+                offset: Offset(
+                  _dockViewDaySlideDistance *
+                      (1 - _dockViewSwitchAnimation.value),
+                  0,
+                ),
+                child: child,
+              ),
+              child: _buildAnchoredDayViewOverlay(
+                provider: provider,
+                settings: settings,
+                week: visibleDayViewWeek,
+              ),
             ),
           ),
         // Swipeable weekday bar: when day view is open, the bar is a
@@ -6249,8 +6307,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞 Tab 切换：周课表 / 日课表 / 设置。
   ///
-  /// 周、日直接驱动现有的 [_toggleDayView] / [_closeDayView] 状态机
-  /// （保留原有的展开动画与持久化），设置切换内嵌设置页。
+  /// 周、日之间的切换走「横向滑动转场」（[_openDayViewFromDock] /
+  /// [_closeDayViewFromDock]）：内容区像左右翻页一样联动滑动，而不是
+  /// 日期栏路径的锚点缩放渐变。设置切换内嵌设置页。
   Future<void> _onDockTabSelected(
     int index,
     TimetableSettings settings,
@@ -6261,7 +6320,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           setState(() => _dockSettingsActive = false);
         }
         if (_isDayView) {
-          await _closeDayView(settings);
+          await _closeDayViewFromDock(settings);
         }
       case 1: // 日课表
         if (_dockSettingsActive) {
@@ -6272,7 +6331,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             settings,
             settings.timetableLastViewedDayOfWeek,
           );
-          await _toggleDayView(
+          await _openDayViewFromDock(
             week: _visibleWeek,
             dayOfWeek: dayOfWeek,
             settings: settings,
@@ -6283,6 +6342,63 @@ class _TimetableScreenState extends State<TimetableScreen>
           setState(() => _dockSettingsActive = true);
         }
     }
+  }
+
+  /// 玻璃坞「日课表」Tab：状态直接切到日视图（不播展开动画），
+  /// 内容区做横向滑动转场——日视图从右滑入、周视图向左让位。
+  Future<void> _openDayViewFromDock({
+    required int week,
+    required int dayOfWeek,
+    required TimetableSettings settings,
+  }) async {
+    final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
+    _recreateDayViewPageController(
+      settings,
+      week: normalizedWeek,
+      dayOfWeek: dayOfWeek,
+    );
+    // 跳过锚点展开动画：面板直接以完整形态进入滑动转场。
+    _dayViewExpandController.value = 1;
+    _dayHeaderPreview.value = null;
+    setState(() {
+      _selectedWeekForDayView = normalizedWeek;
+      _selectedDayOfWeek = dayOfWeek;
+      _sharedFreeSegmentsExpanded = false;
+      _dockSlideActive = true;
+    });
+    _persistViewState(
+      context.read<TimetableProvider>(),
+      mode: TimetableHomeViewMode.day,
+      dayOfWeek: dayOfWeek,
+    );
+    _maybeSelectionClick(settings);
+    _dockViewSwitchAnimation.forward(from: 0);
+  }
+
+  /// 玻璃坞「周课表」Tab：内容区向右滑出日视图（周视图滑回原位），
+  /// 结束后直接清除日视图状态（不播收起动画）。
+  Future<void> _closeDayViewFromDock(TimetableSettings settings) async {
+    if (!_isDayView) {
+      return;
+    }
+    _maybeSelectionClick(settings);
+    await _dockViewSwitchAnimation.reverse();
+    if (!mounted) {
+      return;
+    }
+    _dayViewExpandController.value = 0;
+    _dayHeaderPreview.value = null;
+    setState(() {
+      _selectedWeekForDayView = null;
+      _selectedDayOfWeek = null;
+      _dayViewTransitionSourceWeek = null;
+      _dayViewTransitionSourceDayOfWeek = null;
+      _dockSlideActive = false;
+    });
+    _persistViewState(
+      context.read<TimetableProvider>(),
+      mode: TimetableHomeViewMode.week,
+    );
   }
 
   Widget _buildFloatingBackToCurrentWeekButton(TimetableProvider provider) {

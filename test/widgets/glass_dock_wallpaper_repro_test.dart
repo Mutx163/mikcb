@@ -110,15 +110,40 @@ void main() {
     expect(currentIndicatorIndex(), 0,
         reason: '初始指示器应在周课表 Tab');
 
-    // 切日视图
+    // 切日视图（玻璃坞：横向滑动转场 + 直接全宽，无锚点展开渐变）
     await tester.tap(find.text('日课表').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
     expect(tester.takeException(), isNull, reason: '切日视图（有壁纸）不应有异常');
     expect(
       find.byKey(const ValueKey('timetable-day-view-panel')),
       findsOneWidget,
       reason: '日视图面板应显示',
+    );
+    final earlyPanelRect = tester.getRect(
+      find.byKey(const ValueKey('timetable-day-view-panel')),
+    );
+    // 锚点展开动画会让面板处于 Align(widthFactor < 1) 的缩放槽中；
+    // 玻璃坞切换不应有这种缩放（直接全宽）。
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
+      ),
+      findsNothing,
+      reason: '玻璃坞切日视图应直接全宽（无锚点展开渐变）',
+    );
+    expect(
+      earlyPanelRect.left,
+      greaterThan(0),
+      reason: '玻璃坞切日视图应横向滑动进入（从右侧滑入）',
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    final settledPanelRect = tester.getRect(
+      find.byKey(const ValueKey('timetable-day-view-panel')),
+    );
+    expect(
+      settledPanelRect.left,
+      closeTo(0, 1),
+      reason: '滑动完成后日视图应就位',
     );
     expect(currentIndicatorIndex(), 1, reason: '日视图下指示器应在日课表 Tab');
 
@@ -258,6 +283,36 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(tester.takeException(), isNull, reason: '切回周视图不应有异常');
     expect(currentIndicatorIndex(), 0, reason: '周视图下指示器应回到周课表 Tab');
+
+    // 日期栏路径（点顶部日期单元格）：保持锚点展开动画（面板从小放大），
+    // 不做横向滑动转场（面板无右滑位移，且存在缩放中的 Align 槽）。
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    final anchorRect = tester.getRect(
+      find.byKey(const ValueKey('timetable-day-view-panel')),
+    );
+    expect(
+      anchorRect.left,
+      closeTo(0, 1),
+      reason: '日期栏路径不应有横向滑动位移',
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
+      ),
+      findsWidgets,
+      reason: '日期栏路径应保持锚点展开动画（存在缩放中的 Align 槽）',
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
+      ),
+      findsNothing,
+      reason: '日期栏路径展开动画应最终铺满（缩放槽消失）',
+    );
+    expect(tester.takeException(), isNull, reason: '日期栏路径不应有异常');
 
     // 收尾：推掉任何遗留的 fake timer。
     await tester.pump(const Duration(seconds: 9));
