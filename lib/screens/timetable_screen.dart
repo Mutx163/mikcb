@@ -2797,12 +2797,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 玻璃坞滑动转场：切日视图时周视图整页向左滑出（日期栏路径无位移）。
+        // 玻璃坞滑动转场：日课表是左侧 Tab——切日视图时周视图整页向右
+        // 滑出（日视图从左侧滑入，符合 TabBar 方向语义；日期栏路径无位移）。
         // 用整页宽度保证与日视图滑入同速、信息栏随页面整体移动不截断。
         AnimatedBuilder(
           animation: _dockViewSwitchAnimation,
           builder: (context, child) => Transform.translate(
-            offset: Offset(-screenWidth * _dockSlideProgress, 0),
+            offset: Offset(screenWidth * _dockSlideProgress, 0),
             child: child,
           ),
           child: NotificationListener<ScrollNotification>(
@@ -2854,10 +2855,10 @@ class _TimetableScreenState extends State<TimetableScreen>
               animation: _dockViewSwitchAnimation,
               builder: (context, child) => Transform.translate(
                 // 与周视图滑出使用同一 easeOutCubic 曲线插值：两页位移
-                // 互补（week 左移 p×W，day 右移 (1-p)×W），滑动中无缝
+                // 互补（week 右移 p×W，day 左移 (1-p)×W），滑动中无缝
                 // 衔接，不会在页面之间露出空隙。
                 offset: Offset(
-                  screenWidth *
+                  -screenWidth *
                       (1 - Curves.easeOutCubic.transform(
                             _dockViewSwitchAnimation.value,
                           )),

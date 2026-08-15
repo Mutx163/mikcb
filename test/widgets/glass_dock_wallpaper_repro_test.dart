@@ -141,8 +141,8 @@ void main() {
     );
     expect(
       earlyPanelRect.left,
-      greaterThan(0),
-      reason: '玻璃坞切日视图应横向滑动进入（从右侧滑入）',
+      lessThan(0),
+      reason: '日课表是左侧 Tab：切日视图应横向滑动进入（从左侧滑入）',
     );
     await tester.pump(const Duration(milliseconds: 400));
     final settledPanelRect = tester.getRect(
