@@ -510,21 +510,28 @@ class _TimetableScreenState extends State<TimetableScreen>
         })();
         if (dockSettingsActive) {
           // 玻璃坞设置页：独立全屏壳（不透明背景，与正常打开设置页一致）。
-          // 壁纸层 Offstage 常驻保持解码缓存，切回课表立即显示不黑闪。
+          // 壁纸 Image 常驻保活（Offstage 不绘制、不参与命中测试），切回
+          // 课表时解码缓存直接命中、无黑闪。
+          //
+          // 注意：Offstage 必须包在 Positioned 内部。[HomePageSlidingBackdropLayer]
+          // 与 [homePageBackdropLayer] 返回的 Positioned 只能作为 Stack 的
+          // 直接子级，若把 Offstage 放在它们外层，Positioned 会向
+          // RenderOffstage 施加 StackParentData，触发
+          // "Incorrect use of ParentDataWidget" 异常——release 下该异常导致
+          // 整个设置壳子树渲染失败（整页灰屏 + 底栏指示器停在原 Tab）。
+          // 这里用 [homePageBackdropImageWidget] 直接保活同一张壁纸 Image。
           return _wrapWithGlassDock(
             Stack(
               fit: StackFit.expand,
               children: [
                 if (hasBackdrop)
-                  Offstage(
-                    offstage: true,
-                    child: followsWeekPager
-                        ? HomePageSlidingBackdropLayer(
-                            controller: _weekPageController,
-                            pageCount: settings.semesterWeekCount,
-                            settings: settings,
-                          )
-                        : homePageBackdropLayer(settings: settings),
+                  Positioned.fill(
+                    child: Offstage(
+                      offstage: true,
+                      child:
+                          homePageBackdropImageWidget(settings: settings) ??
+                          const SizedBox.shrink(),
+                    ),
                   ),
                 TimetableSettingsScreen(
                   embedded: true,
