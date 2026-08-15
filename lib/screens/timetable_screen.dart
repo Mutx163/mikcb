@@ -425,8 +425,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         final headerUsesFrostedChrome =
             hasBackdrop &&
             (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
+        // 设置页形态下使用设置页同款表面色（scaffoldBackground），
+        // 避免与设置页内容形成「白条/色块」分层。
+        final settingsChromeBackground = dockSettingsActive
+            ? HyperosColors.scaffoldBackground(context)
+            : pageBackgroundColor;
         final headerBarColor = dockSettingsActive
-            ? pageBackgroundColor
+            ? settingsChromeBackground
             : (headerUsesFrostedChrome
                   ? Colors.transparent
                   : headerBackground.color);
@@ -513,19 +518,16 @@ class _TimetableScreenState extends State<TimetableScreen>
         Widget homeStack = Stack(
           fit: StackFit.expand,
           children: [
-            // 壁纸层保持挂载（Offstage 而非卸载）：切回课表时不重新解码/
-            // 重建模糊位图，避免壁纸变黑闪烁。
+            // 壁纸层常驻绘制（设置页壳为不透明背景，盖住壁纸无视觉影响；
+            // 切回课表时壁纸始终在画，避免重新解码/重建导致的黑闪与灰蒙）。
             if (hasBackdrop)
-              Offstage(
-                offstage: dockSettingsActive,
-                child: followsWeekPager
-                    ? HomePageSlidingBackdropLayer(
-                        controller: _weekPageController,
-                        pageCount: settings.semesterWeekCount,
-                        settings: settings,
-                      )
-                    : homePageBackdropLayer(settings: settings),
-              ),
+              followsWeekPager
+                  ? HomePageSlidingBackdropLayer(
+                      controller: _weekPageController,
+                      pageCount: settings.semesterWeekCount,
+                      settings: settings,
+                    )
+                  : homePageBackdropLayer(settings: settings),
             if (hasBackdrop && !statusBarShowsBackdrop)
               Offstage(
                 offstage: dockSettingsActive,
@@ -549,7 +551,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               overlayHeader: false,
               resizeToAvoidBottomInset: false,
               backgroundColor: dockSettingsActive
-                  ? pageBackgroundColor
+                  ? settingsChromeBackground
                   : scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
               headerPadding: EdgeInsets.fromLTRB(
@@ -559,7 +561,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 headerUsesFrostedChrome ? 0.0 : 2.0,
               ),
               systemOverlayStyle: HyperosColors.systemOverlayForBackground(
-                dockSettingsActive ? pageBackgroundColor : systemOverlayBackground,
+                dockSettingsActive
+                    ? settingsChromeBackground
+                    : systemOverlayBackground,
               ),
               title: glassDockForm && _dockSettingsActive
                   ? Text(
