@@ -265,10 +265,19 @@ class TimetableSettingsScreen extends StatelessWidget {
         // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
         // opaque background OVER its frost layer, so blur never showed.)
         final settingsList = HyperosListView(
-          // Inset lives inside the scrollable (like HyperosSubpage) so
-          // rows can pass under the frosted/liquid-glass top bar.
-          includeHeaderInset: !embedded,
+          // 内嵌形态与全屏一致：内容避开浮动大标题（否则首屏内容会被展开的
+          // 大标题遮住），并且滚动通知必须上浮给大标题折叠机制
+          // （blockVerticalScrollBubbling=false），标题才能随滚动折叠。
+          includeHeaderInset: true,
           blockVerticalScrollBubbling: false,
+          // 玻璃坞内嵌时底部避让作为「滚动内容 padding」而不是列表外部
+          // 压缩视口：内容可以滚到悬浮玻璃坞后面（透过玻璃可见），到底时
+          // 最后一项仍停在玻璃坞上方。全屏形态 bottomInset=0 无影响。
+          padding: embedded
+              ? HyperosTokens.listPadding.copyWith(
+                  bottom: HyperosTokens.listPadding.bottom + bottomInset,
+                )
+              : null,
           pageStorageKey: const PageStorageKey<String>(
             'timetable-settings-main',
           ),
@@ -309,10 +318,7 @@ class TimetableSettingsScreen extends StatelessWidget {
         return HyperosSubpage(
           title: Text(l10n.settingsTitle),
           onBack: embedded ? null : () => Navigator.pop(context),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: settingsList,
-          ),
+          child: settingsList,
         );
       },
     );

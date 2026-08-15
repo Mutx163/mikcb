@@ -508,43 +508,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           // summary card's stand-in frost reads like the band above it.
           return HyperosBlurredHeader.blurSigmaOf(context);
         })();
-        if (dockSettingsActive) {
-          // 玻璃坞设置页：独立全屏壳（不透明背景，与正常打开设置页一致）。
-          // 壁纸 Image 常驻保活（Offstage 不绘制、不参与命中测试），切回
-          // 课表时解码缓存直接命中、无黑闪。
-          //
-          // 注意：Offstage 必须包在 Positioned 内部。[HomePageSlidingBackdropLayer]
-          // 与 [homePageBackdropLayer] 返回的 Positioned 只能作为 Stack 的
-          // 直接子级，若把 Offstage 放在它们外层，Positioned 会向
-          // RenderOffstage 施加 StackParentData，触发
-          // "Incorrect use of ParentDataWidget" 异常——release 下该异常导致
-          // 整个设置壳子树渲染失败（整页灰屏 + 底栏指示器停在原 Tab）。
-          // 这里用 [homePageBackdropImageWidget] 直接保活同一张壁纸 Image。
-          return _wrapWithGlassDock(
-            Stack(
-              fit: StackFit.expand,
-              children: [
-                if (hasBackdrop)
-                  Positioned.fill(
-                    child: Offstage(
-                      offstage: true,
-                      child:
-                          homePageBackdropImageWidget(settings: settings) ??
-                          const SizedBox.shrink(),
-                    ),
-                  ),
-                TimetableSettingsScreen(
-                  embedded: true,
-                  bottomInset: _glassDockContentClearance +
-                      MediaQuery.viewPaddingOf(context).bottom,
-                ),
-              ],
-            ),
-            glassDockForm: true,
-            settings: settings,
-            l10n: l10n,
-          );
-        }
         Widget homeStack = Stack(
           fit: StackFit.expand,
           children: [
@@ -708,40 +671,56 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
           ],
         );
-        if (useHomePreblur) {
-          // Same pre-blur model as the week grid: sample one cached frost
-          // bitmap by card screen position. In day view the week pager is
-          // locked, so drive repaints from the day agenda pager and treat the
-          // wallpaper as screen-fixed (it never follows the day swipe).
-          final PageController preblurPageController;
-          final bool preblurFollowsPager;
-          if (_isDayView) {
-            preblurPageController = _ensureDayViewPageController(settings);
-            preblurFollowsPager = false;
-          } else {
-            preblurPageController = _weekPageController;
-            preblurFollowsPager = followsWeekPager;
-          }
+        // 玻璃坞形态下课表（含壁纸）与设置页都常驻挂载，用 Offstage 切换：
+        // - 设置页的滚动位置与大标题折叠状态不随 Tab 切换丢失（切走再切回，
+        //   标题保持离开时的折叠态）；
+        // - 壁纸层随 homeStack 常驻，解码缓存不失效，切回课表不黑闪。
+        // 玻璃坞导航始终由 [_wrapWithGlassDock] 浮在最上层。
+        final Widget dockContent = useHomePreblur
+            ? PreblurredWallpaperScope(
+                // Same pre-blur model as the week grid: sample one cached
+                // frost bitmap by card screen position. In day view the week
+                // pager is locked, so drive repaints from the day agenda pager
+                // and treat the wallpaper as screen-fixed (it never follows
+                // the day swipe).
+                wallpaperPath: resolveHomePageBackdropImagePath(settings),
+                blurSigma: homePreblurSigma,
+                pageController: _isDayView
+                    ? _ensureDayViewPageController(settings)
+                    : _weekPageController,
+                followsPager: _isDayView ? false : followsWeekPager,
+                // The open/close ramp drags cards around without any
+                // scrolling; fills must re-sample per frame or the frost
+                // rides along frozen.
+                repaint: _dayViewExpandController,
+                enabled: true,
+                child: homeStack,
+              )
+            : homeStack;
+        if (!glassDockForm) {
           return _wrapWithGlassDock(
-            PreblurredWallpaperScope(
-              wallpaperPath: resolveHomePageBackdropImagePath(settings),
-              blurSigma: homePreblurSigma,
-              pageController: preblurPageController,
-              followsPager: preblurFollowsPager,
-              // The open/close ramp drags cards around without any scrolling;
-              // fills must re-sample per frame or the frost rides along frozen.
-              repaint: _dayViewExpandController,
-              enabled: true,
-              child: homeStack,
-            ),
-            glassDockForm: glassDockForm,
+            dockContent,
+            glassDockForm: false,
             settings: settings,
             l10n: l10n,
           );
         }
         return _wrapWithGlassDock(
-          homeStack,
-          glassDockForm: glassDockForm,
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              Offstage(offstage: dockSettingsActive, child: dockContent),
+              Offstage(
+                offstage: !dockSettingsActive,
+                child: TimetableSettingsScreen(
+                  embedded: true,
+                  bottomInset: _glassDockContentClearance +
+                      MediaQuery.viewPaddingOf(context).bottom,
+                ),
+              ),
+            ],
+          ),
+          glassDockForm: true,
           settings: settings,
           l10n: l10n,
         );

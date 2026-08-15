@@ -10,7 +10,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// 复现环境：真实壁纸文件存在（hasBackdrop=true），与真机一致。
@@ -130,7 +130,117 @@ void main() {
     expect(find.text('课表管理'), findsOneWidget, reason: '设置列表应渲染');
     expect(currentIndicatorIndex(), 2, reason: '设置下指示器应在设置 Tab');
 
-    // 设置 → 日视图（设置页异常后仍可切换）
+    // —— 问题 2：周次概览不被浮动大标题遮挡 ——
+    final weekText = find.textContaining('当前第');
+    expect(weekText, findsOneWidget, reason: '设置页首屏应显示周次概览');
+    final weekRect = tester.getRect(weekText);
+    final titleRect = tester.getRect(find.byType(HyperosCollapsibleTopAppBar));
+    expect(
+      weekRect.top,
+      greaterThanOrEqualTo(titleRect.bottom - 1),
+      reason: '周次概览应位于展开的大标题下方，不被遮挡',
+    );
+
+    // —— 问题 3：列表视口全屏，玻璃坞悬浮其上（避让是滚动 padding）——
+    final listRect = tester.getRect(find.byType(HyperosListView));
+    expect(
+      listRect.height,
+      closeTo(600, 1),
+      reason: '玻璃坞内嵌时设置列表视口应为全屏（不是被底部避让压缩）',
+    );
+
+    // 滚动到中间：大标题应折叠 + 内容应从悬浮玻璃坞后面穿过。
+    // 慢速短距拖拽（惯性小），并等惯性完全结束再断言——否则惯性
+    // （BallisticScrollActivity）会把列表滚到底部，玻璃坞区域只剩
+    // 底部 padding，误判为「内容没有穿过玻璃坞」。
+    await tester.timedDrag(
+      find.byType(HyperosListView),
+      const Offset(0, -250),
+      const Duration(milliseconds: 800),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull, reason: '滚动设置页不应有异常');
+
+    // 大标题应折叠为小标题
+    final collapsibleState = tester
+        .widget<HyperosCollapsibleTopAppBar>(
+          find.byType(HyperosCollapsibleTopAppBar),
+        )
+        .scrollBehavior!
+        .state;
+    expect(
+      collapsibleState.heightOffset,
+      lessThan(-1),
+      reason: '滚动后大标题应折叠为小标题',
+    );
+
+    // 内容从悬浮玻璃坞后面穿过：滚动后列表内有文本与玻璃坞区域相交
+    // （玻璃坞是悬浮层，内容滚到它后面仍可见）。
+    final glassRect = tester.getRect(find.byType(GlassTabBar));
+    final glassOverlapTop = glassRect.top + 4;
+    final listTexts = find
+        .descendant(
+          of: find.byType(HyperosListView),
+          matching: find.byType(Text),
+        )
+        .evaluate();
+    var crossedUnderGlass = false;
+    for (final element in listTexts) {
+      final box = element.renderObject;
+      if (box is! RenderBox || !box.attached || !box.hasSize) {
+        continue;
+      }
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      if (rect.bottom > glassOverlapTop && rect.top < glassRect.bottom) {
+        crossedUnderGlass = true;
+        break;
+      }
+    }
+    expect(
+      crossedUnderGlass,
+      isTrue,
+      reason: '滚动内容应从悬浮玻璃坞后面穿过（玻璃坞浮在内容之上）',
+    );
+
+    // 记录滚动位置（设置页可能在 Offstage 中，finder 需跳过 offstage 过滤）
+    final scrollableFinder = find
+        .descendant(
+          of: find.byType(HyperosListView, skipOffstage: false),
+          matching: find.byType(Scrollable, skipOffstage: false),
+        )
+        .first;
+    final scrollable = tester.state<ScrollableState>(scrollableFinder);
+    final pixelsBefore = scrollable.position.pixels;
+    expect(pixelsBefore, greaterThan(50), reason: '列表应已滚动');
+
+    // 切周课表再切回设置：滚动位置与大标题折叠状态都应保留
+    await tester.tap(find.text('周课表').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.text('课表设置').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull, reason: '切回设置不应有异常');
+    final scrollableAfter = tester.state<ScrollableState>(scrollableFinder);
+    expect(
+      (scrollableAfter.position.pixels - pixelsBefore).abs(),
+      lessThan(1),
+      reason: '切走再切回后设置页滚动位置应保留',
+    );
+    final collapsibleStateAfter = tester
+        .widget<HyperosCollapsibleTopAppBar>(
+          find.byType(HyperosCollapsibleTopAppBar),
+        )
+        .scrollBehavior!
+        .state;
+    expect(
+      collapsibleStateAfter.heightOffset,
+      lessThan(-1),
+      reason: '切走再切回后大标题应保持折叠（不是重置为展开大字）',
+    );
+
+    // 设置 → 日视图（设置页滚动到中间后仍可切换）
     await tester.tap(find.text('日课表').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
