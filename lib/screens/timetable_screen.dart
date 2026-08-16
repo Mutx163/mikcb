@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/physics.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
@@ -156,8 +157,22 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
 
-  /// 玻璃坞形态下底部药丸导航悬浮时，课表/设置内容需要的底部避让高度。
-  static const double _glassDockContentClearance = 96;
+  /// 底栏指示器弹簧（与 liquid_glass_widgets 包内 GlassSpring.snappy
+  /// 完全同参数：350ms + 15% bounce）——页面切换动画使用同一弹簧并同时
+  /// 启动，保证页面位移与底栏指示器的运动轨迹同步到位、不过早不落后。
+  static final SpringDescription _dockIndicatorSpring =
+      SpringDescription.withDurationAndBounce(
+    duration: const Duration(milliseconds: 350),
+    bounce: 0.15,
+  );
+
+  /// 玻璃坞药丸占用高度：药丸 56 + 底部安全 6（药丸顶到屏幕底的距离）。
+  static const double _glassDockPillOccupancy = 62;
+  /// 避让模式内容底部到屏幕底的高度 = 药丸占用 + 紧凑间隙。
+  static const double _glassDockContentClearance = 74;
+  /// 避让模式内容底与药丸顶的可见间隙。
+  static const double _glassDockContentGap =
+      _glassDockContentClearance - _glassDockPillOccupancy;
 
   /// 玻璃坞 Tab 切换周↔日时的横向滑动转场时长。
   static const Duration _dockViewSwitchDuration = Duration(milliseconds: 300);
@@ -180,14 +195,62 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _dockSettingsSlideActive = false;
 
   /// 玻璃坞滑动转场的当前进度（0=周视图原位，1=日视图就位）。
-  double get _dockSlideProgress => _dockSlideActive
-      ? Curves.easeOutCubic.transform(_dockViewSwitchAnimation.value)
-      : 0.0;
+  ///
+  /// 动画值即底栏同款弹簧轨迹（含 15% bounce 过冲），直接用于位移——
+  /// 与底栏指示器完全同步，不再套第二层曲线。
+  double get _dockSlideProgress =>
+      _dockSlideActive ? _dockViewSwitchAnimation.value : 0.0;
 
   /// 设置切换滑动转场的当前进度（0=课表原位，1=设置页就位）。
-  double get _dockSettingsSlideProgress => _dockSettingsSlideActive
-      ? Curves.easeOutCubic.transform(_dockSettingsSwitchAnimation.value)
-      : 0.0;
+  ///
+  /// 跟手拖动期间返回原始动画值（线性跟随手指）；常规动画值即弹簧轨迹。
+  double get _dockSettingsSlideProgress {
+    if (_dockSettingsDragging) {
+      return _dockSettingsSwitchAnimation.value;
+    }
+    return _dockSettingsSlideActive
+        ? _dockSettingsSwitchAnimation.value
+        : 0.0;
+  }
+
+  /// 用底栏同款弹簧把周↔日切换动画驱动到 [target]（0=周视图，1=日视图）。
+  TickerFuture _springDockViewTo(double target, {double velocity = 0}) {
+    return _dockViewSwitchAnimation.animateWith(
+      SpringSimulation(
+        _dockIndicatorSpring,
+        _dockViewSwitchAnimation.value,
+        target,
+        velocity,
+      ),
+    );
+  }
+
+  /// 用底栏同款弹簧把课表↔设置切换动画驱动到 [target]
+  /// （0=课表，1=设置页）。
+  TickerFuture _springDockSettingsTo(double target, {double velocity = 0}) {
+    return _dockSettingsSwitchAnimation.animateWith(
+      SpringSimulation(
+        _dockIndicatorSpring,
+        _dockSettingsSwitchAnimation.value,
+        target,
+        velocity,
+      ),
+    );
+  }
+
+  /// 设置切换是否处于「跟手拖动」中（拖动时进度线性跟随手指）。
+  bool _dockSettingsDragging = false;
+
+  /// 拖动起始时的动画值（0=课表原位，1=设置页就位）。
+  double _dockSettingsDragStartValue = 0;
+
+  /// 玻璃坞动画代次：每次切换点击/拖动结束时 +1，旧动画的完成回调凭
+  /// 代次失效——快速连点（如 1→3→1→3）时中间动画被重定向打断，
+  /// 旧回调不得再复位状态，避免漏拍/跳变。
+  int _dockAnimEpoch = 0;
+
+  /// 玻璃坞当前目标 Tab（动画/拖动中用于底栏高亮与状态收敛）。
+  int _dockTargetIndex = 0;
 
   /// 滑动转场期间卡片玻璃 fill 需要每帧重采样（壁纸屏幕固定、卡片移动），
   /// 否则纹理停留在旧位置：卡片左半是旧壁纸、右半透明（撕裂）。
@@ -665,8 +728,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               child: Padding(
                 padding: EdgeInsets.only(
                   bottom: glassDockForm
-                      ? _glassDockContentClearance +
-                            MediaQuery.viewPaddingOf(context).bottom
+                      ? _glassDockBottomInset(settings)
                       : 0,
                 ),
                 child: Material(
@@ -765,15 +827,30 @@ class _TimetableScreenState extends State<TimetableScreen>
         final dockWidth = MediaQuery.sizeOf(context).width;
         final dockSlideInProgress = _dockSettingsSlideActive;
         return _wrapWithGlassDock(
-          Stack(
-            fit: StackFit.expand,
-            children: [
+          // 设置页跟手拖动切回课表（回调内部自行判断激活态与动画态）。
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragStart: _onDockSettingsDragStart,
+            onHorizontalDragUpdate: _onDockSettingsDragUpdate,
+            onHorizontalDragEnd: _onDockSettingsDragEnd,
+            onHorizontalDragCancel: _onDockSettingsDragCancel,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
               AnimatedBuilder(
                 animation: _dockSettingsSwitchAnimation,
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(-dockWidth * _dockSettingsSlideProgress, 0),
-                  child: child,
-                ),
+                builder: (context, child) {
+                  final p = _dockSettingsSlideProgress;
+                  // 滑出页淡出（M3 SharedAxis 思想：滑动 + 淡入淡出组合，
+                  // 避免纯平移的生硬感）。
+                  return Opacity(
+                    opacity: 1 - 0.3 * p,
+                    child: Transform.translate(
+                      offset: Offset(-dockWidth * p, 0),
+                      child: child,
+                    ),
+                  );
+                },
                 child: Offstage(
                   offstage: dockSettingsActive && !dockSlideInProgress,
                   child: dockContent,
@@ -781,29 +858,32 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               AnimatedBuilder(
                 animation: _dockSettingsSwitchAnimation,
-                builder: (context, child) => Transform.translate(
-                  // 与课表滑出使用同一 easeOutCubic 曲线插值：两页位移
-                  // 互补（课表左移 p×W，设置右移 (1-p)×W），滑动中无缝
-                  // 衔接，不会在页面之间露出黑色空隙。
-                  offset: Offset(
-                    dockWidth *
-                        (1 - Curves.easeOutCubic.transform(
-                              _dockSettingsSwitchAnimation.value,
-                            )),
-                    0,
-                  ),
-                  child: child,
-                ),
+                builder: (context, child) {
+                  // 设置页侧进度 = raw 动画值（弹簧轨迹；稳态 value=1 →
+                  // 就位；跟手拖动时线性）；不能用 _dockSettingsSlideProgress
+                  // （其稳态返回 0 会把设置页移出屏幕并半透明）。
+                  final p = _dockSettingsSwitchAnimation.value;
+                  // 与课表滑出同一曲线插值：两页位移互补（课表左移 p×W，
+                  // 设置右移 (1-p)×W），滑动中无缝衔接不露黑底；
+                  // 滑入页同步淡入。
+                  return Opacity(
+                    opacity: 0.5 + 0.5 * p,
+                    child: Transform.translate(
+                      offset: Offset(dockWidth * (1 - p), 0),
+                      child: child,
+                    ),
+                  );
+                },
                 child: Offstage(
                   offstage: !dockSettingsActive && !dockSlideInProgress,
                   child: TimetableSettingsScreen(
                     embedded: true,
-                    bottomInset: _glassDockContentClearance +
-                        MediaQuery.viewPaddingOf(context).bottom,
+                    bottomInset: _glassDockBottomInset(settings),
                   ),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
           glassDockForm: true,
           settings: settings,
@@ -2804,10 +2884,16 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 用整页宽度保证与日视图滑入同速、信息栏随页面整体移动不截断。
         AnimatedBuilder(
           animation: _dockViewSwitchAnimation,
-          builder: (context, child) => Transform.translate(
-            offset: Offset(screenWidth * _dockSlideProgress, 0),
-            child: child,
-          ),
+          builder: (context, child) {
+            final p = _dockSlideProgress;
+            return Opacity(
+              opacity: 1 - 0.3 * p,
+              child: Transform.translate(
+                offset: Offset(screenWidth * p, 0),
+                child: child,
+              ),
+            );
+          },
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (notification.metrics.axis == Axis.horizontal) {
@@ -2855,19 +2941,19 @@ class _TimetableScreenState extends State<TimetableScreen>
             // 停在完成位姿，无位移）。
             child: AnimatedBuilder(
               animation: _dockViewSwitchAnimation,
-              builder: (context, child) => Transform.translate(
-                // 与周视图滑出使用同一 easeOutCubic 曲线插值：两页位移
-                // 互补（week 右移 p×W，day 左移 (1-p)×W），滑动中无缝
-                // 衔接，不会在页面之间露出空隙。
-                offset: Offset(
-                  -screenWidth *
-                      (1 - Curves.easeOutCubic.transform(
-                            _dockViewSwitchAnimation.value,
-                          )),
-                  0,
-                ),
-                child: child,
-              ),
+              builder: (context, child) {
+                // 与周视图滑出同一弹簧轨迹：两页位移互补（week 右移 p×W，
+                // day 左移 (1-p)×W），滑动中无缝衔接不露空隙；滑入页淡入。
+                final p =
+                    _dockSlideActive ? _dockViewSwitchAnimation.value : 1.0;
+                return Opacity(
+                  opacity: 0.5 + 0.5 * p,
+                  child: Transform.translate(
+                    offset: Offset(-screenWidth * (1 - p), 0),
+                    child: child,
+                  ),
+                );
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -6298,6 +6384,20 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _canReturnToCurrentWeek(settings, visibleWeek);
   }
 
+  /// 玻璃坞形态下内容底部避让：
+  /// - [GlassDockLayout.overlay]：课表满屏显示，内容底部与药丸顶部齐平
+  ///   （零间隙、最后一行课程不被药丸遮挡）；
+  /// - [GlassDockLayout.inset]：内容底部再留出 12 的可见间隙
+  ///   （药丸与内容之间有小空隙）。
+  double _glassDockBottomInset(TimetableSettings settings) {
+    if (settings.glassDockLayout == GlassDockLayout.overlay) {
+      return _glassDockPillOccupancy +
+          MediaQuery.viewPaddingOf(context).bottom;
+    }
+    return _glassDockPillOccupancy + _glassDockContentGap +
+        MediaQuery.viewPaddingOf(context).bottom;
+  }
+
   /// 玻璃坞形态：把底部液态玻璃药丸导航叠加到页面之上。
   ///
   /// 经典形态直接返回原内容，行为与之前完全一致。
@@ -6342,9 +6442,31 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
-    final unselectedColor = isDark
+    // 底栏文字极性跟随当前所在页面的背景亮度（黑白动态变色）：
+    // - 课表 Tab：表面亮度由壁纸决定（24% 白玻璃只提亮一点），浅色主题 +
+    //   暗壁纸时用浅色文字（复用 _wallpaperBodyLuminance 采样；未就绪退主题）。
+    // - 设置 Tab：底栏浮在设置页（浅色主题白底 / 深色主题深底）之上，
+    //   极性只看主题，不能沿用课表壁纸亮度——否则暗壁纸 + 白底设置页会白底白字。
+    final onSettingsPage = _dockSettingsActive;
+    // 文字极性跟随「底栏实际表面亮度」：
+    // - 课表 Tab：表面 = 壁纸 + 24% 白玻璃，极性由壁纸亮度决定（与顶部
+    //   chrome 同一规则，采样就绪时覆盖主题判断——否则深色主题 + 亮壁纸
+    //   会白字看不清且与顶部黑字不一致）；采样未就绪回退主题。
+    // - 设置 Tab：表面 = 设置页纯色背景，极性只看主题。
+    final wallpaperLuminance = onSettingsPage ? null : _wallpaperBodyLuminance;
+    final barUsesLightInk = wallpaperLuminance != null
+        ? wallpaperLuminance < 0.45
+        : isDark;
+    final unselectedColor = barUsesLightInk
         ? Colors.white.withValues(alpha: 0.62)
         : Colors.black.withValues(alpha: 0.48);
+    // 选中色：暗表面用白色；亮表面上浅色主题的 primary 本身偏深可用，
+    // 深色主题的 primary 偏浅在亮玻璃上对比度不足 → 切深色墨。
+    final selectedColor = barUsesLightInk
+        ? Colors.white
+        : (isDark && wallpaperLuminance != null && wallpaperLuminance >= 0.45
+            ? Colors.black.withValues(alpha: 0.80)
+            : colorScheme.primary);
     // 底栏材质跟随「高级材质」设置（与弹窗/顶部/卡片统一）：
     // - 液态玻璃：与弹窗/顶部完全同一条参数路径（sheetSettingsFor 跟随
     //   「液态玻璃调校」，默认即官方 kBottomBarGlassDefaults），并用
@@ -6372,7 +6494,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
       ],
       selectedIndex: _glassDockCurrentIndex,
-      onTabSelected: (index) => unawaited(_onDockTabSelected(index, settings)),
+      onTabSelected: (index) => _onDockTabSelected(index, settings),
       barHeight: 56,
       barBorderRadius: 28,
       // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
@@ -6394,15 +6516,21 @@ class _TimetableScreenState extends State<TimetableScreen>
       labelFontSize: 10,
       horizontalPadding: 6,
       verticalPadding: 6,
-      selectedIconColor: colorScheme.primary,
+      selectedIconColor: selectedColor,
       unselectedIconColor: unselectedColor,
-      selectedLabelColor: colorScheme.primary,
+      selectedLabelColor: selectedColor,
       unselectedLabelColor: unselectedColor,
     );
   }
 
   /// 玻璃坞当前激活的 Tab：日课表(0) / 周课表(1) / 设置(2)。
+  ///
+  /// 动画/拖动进行中直接高亮目标 Tab（点击即反馈，不滞后）；
+  /// 稳态按实际状态判断。
   int get _glassDockCurrentIndex {
+    if (_dockSettingsSlideActive || _dockSettingsDragging) {
+      return _dockTargetIndex;
+    }
     if (_dockSettingsActive) {
       return 2;
     }
@@ -6414,83 +6542,87 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 所有切换都走「横向滑动转场」：日↔周为内容区左右翻页联动滑动，
   /// 课表↔设置为整页左右滑动（设置页从右滑入/滑出）。日期栏路径
   /// （[_toggleDayView] / [_closeDayView]）保持原锚点展开动画。
-  Future<void> _onDockTabSelected(
-    int index,
-    TimetableSettings settings,
-  ) async {
+  ///
+  /// 快速连点（如 1→3→1→3）不吞拍：每次点击都同步更新状态并重定向
+  /// 弹簧动画到新目标，旧动画完成回调凭 [_dockAnimEpoch] 失效。
+  void _onDockTabSelected(int index, TimetableSettings settings) {
+    final current = _dockSettingsActive
+        ? 2
+        : (_isDayView ? 0 : 1);
+    if (index == current && !_dockSettingsSlideActive && !_dockSettingsDragging) {
+      return; // 已在该页且无动画：重复点击无动作。
+    }
+    final epoch = ++_dockAnimEpoch;
+    _dockTargetIndex = index;
     switch (index) {
       case 0: // 日课表
         if (_dockSettingsActive) {
-          await _closeSettingsFromDock();
-        }
-        if (!_isDayView) {
-          final dayOfWeek = _resolveStoredDayOfWeek(
-            settings,
-            settings.timetableLastViewedDayOfWeek,
-          );
-          await _openDayViewFromDock(
-            week: _visibleWeek,
-            dayOfWeek: dayOfWeek,
-            settings: settings,
-          );
+          // 从设置切日视图：设置滑出，周→日转场并行。
+          setState(() {
+            _dockSettingsActive = false;
+            _dockSettingsSlideActive = true;
+          });
+          if (_isDayView) {
+            // 内容已是日视图：只需关设置。
+            _springDockSettingsTo(0).whenComplete(() => _finishDockAnim(epoch));
+          } else {
+            _startDayViewTransition(settings);
+            Future.wait([
+              _springDockSettingsTo(0),
+              _springDockViewTo(1),
+            ]).whenComplete(() => _finishDockAnim(epoch));
+          }
+        } else if (!_isDayView) {
+          // 直接开日视图（无设置动画）。
+          _startDayViewTransition(settings);
+          _springDockViewTo(1).whenComplete(() => _finishDockAnim(epoch));
         }
       case 1: // 周课表
         if (_dockSettingsActive) {
-          await _closeSettingsFromDock();
-        }
-        if (_isDayView) {
-          await _closeDayViewFromDock(settings);
-        }
-      case 2: // 设置
-        if (!_dockSettingsActive) {
           setState(() {
-            _dockSettingsActive = true;
+            _dockSettingsActive = false;
             _dockSettingsSlideActive = true;
           });
-          _dockSettingsSwitchAnimation.forward(from: 0).whenComplete(() {
-            // 滑动就位后隐藏课表页（非激活页 Offstage，省绘制）；
-            // 若期间已切走则交给 _closeSettingsFromDock 管理。
-            if (mounted && _dockSettingsActive) {
-              setState(() => _dockSettingsSlideActive = false);
-            }
-          });
+          final closeSettings = _springDockSettingsTo(0);
+          if (_isDayView) {
+            // 并行：设置页滑出与「日→周」转场同时播放。
+            _maybeSelectionClick(settings);
+            Future.wait([
+              closeSettings,
+              _springDockViewTo(0),
+            ]).whenComplete(() => _finishDockAnim(epoch));
+          } else {
+            closeSettings.whenComplete(() => _finishDockAnim(epoch));
+          }
+        } else if (_isDayView) {
+          // 直接切回周视图（无设置动画）。
+          _maybeSelectionClick(settings);
+          _springDockViewTo(0).whenComplete(() => _finishDockAnim(epoch));
         }
+      case 2: // 设置
+        setState(() {
+          _dockSettingsActive = true;
+          _dockSettingsSlideActive = true;
+        });
+        _springDockSettingsTo(1).whenComplete(() => _finishDockAnim(epoch));
     }
   }
 
-  /// 玻璃坞切回课表：设置页向右滑出、课表内容滑回，结束后关闭设置态。
-  Future<void> _closeSettingsFromDock() async {
-    if (!_dockSettingsActive) {
-      return;
-    }
-    // 出设置时恢复「滑动中」状态：课表页重新可见并滑回。
-    if (!_dockSettingsSlideActive) {
-      setState(() => _dockSettingsSlideActive = true);
-    }
-    await _dockSettingsSwitchAnimation.reverse();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _dockSettingsActive = false;
-      _dockSettingsSlideActive = false;
-    });
-  }
-
-  /// 玻璃坞「日课表」Tab：状态直接切到日视图（不播展开动画），
-  /// 内容区做横向滑动转场——日视图从右滑入、周视图向左让位。
-  Future<void> _openDayViewFromDock({
-    required int week,
-    required int dayOfWeek,
-    required TimetableSettings settings,
-  }) async {
-    final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
+  /// 准备日视图状态（周→日转场共用：设置并行路径与直切路径）。
+  void _startDayViewTransition(TimetableSettings settings) {
+    final dayOfWeek = _resolveStoredDayOfWeek(
+      settings,
+      settings.timetableLastViewedDayOfWeek,
+    );
+    final normalizedWeek = _clampWeek(
+      _visibleWeek,
+      settings.semesterWeekCount,
+    );
     _recreateDayViewPageController(
       settings,
       week: normalizedWeek,
       dayOfWeek: dayOfWeek,
     );
-    // 跳过锚点展开动画：面板直接以完整形态进入滑动转场。
     _dayViewExpandController.value = 1;
     _dayHeaderPreview.value = null;
     setState(() {
@@ -6505,33 +6637,95 @@ class _TimetableScreenState extends State<TimetableScreen>
       dayOfWeek: dayOfWeek,
     );
     _maybeSelectionClick(settings);
-    _dockViewSwitchAnimation.forward(from: 0);
   }
 
-  /// 玻璃坞「周课表」Tab：内容区向右滑出日视图（周视图滑回原位），
-  /// 结束后直接清除日视图状态（不播收起动画）。
-  Future<void> _closeDayViewFromDock(TimetableSettings settings) async {
-    if (!_isDayView) {
+  /// 玻璃坞动画完成收敛：凭代次确认仍是最新动画后复位滑动态，
+  /// 并按目标 Tab 收敛状态（目标为周视图时清除日视图状态）。
+  void _finishDockAnim(int epoch) {
+    if (!mounted || epoch != _dockAnimEpoch) {
       return;
     }
-    _maybeSelectionClick(settings);
-    await _dockViewSwitchAnimation.reverse();
-    if (!mounted) {
-      return;
-    }
-    _dayViewExpandController.value = 0;
-    _dayHeaderPreview.value = null;
+    final targetIsWeek = _dockTargetIndex == 1;
     setState(() {
-      _selectedWeekForDayView = null;
-      _selectedDayOfWeek = null;
-      _dayViewTransitionSourceWeek = null;
-      _dayViewTransitionSourceDayOfWeek = null;
-      _dockSlideActive = false;
+      _dockSettingsSlideActive = false;
+      if (targetIsWeek) {
+        _dayViewExpandController.value = 0;
+        _dayHeaderPreview.value = null;
+        _selectedWeekForDayView = null;
+        _selectedDayOfWeek = null;
+        _dayViewTransitionSourceWeek = null;
+        _dayViewTransitionSourceDayOfWeek = null;
+        _dockSlideActive = false;
+      }
     });
-    _persistViewState(
-      context.read<TimetableProvider>(),
-      mode: TimetableHomeViewMode.week,
-    );
+    if (targetIsWeek) {
+      _persistViewState(
+        context.read<TimetableProvider>(),
+        mode: TimetableHomeViewMode.week,
+      );
+    }
+  }
+
+  /// 设置页「跟手拖动」：内容区水平拖动可交互式切回课表
+  /// （HyperOS / iOS 风格），松手按位置与速度决定完成或回弹。
+  void _onDockSettingsDragStart(DragStartDetails details) {
+    if (!_dockSettingsActive ||
+        _dockSettingsSlideActive ||
+        _dockSettingsDragging) {
+      return;
+    }
+    _dockSettingsDragStartValue = _dockSettingsSwitchAnimation.value;
+    setState(() {
+      _dockSettingsDragging = true;
+      // 拖动期间两页保持可见（Offstage 依赖 slideActive 判断）。
+      _dockSettingsSlideActive = true;
+    });
+  }
+
+  void _onDockSettingsDragUpdate(DragUpdateDetails details) {
+    if (!_dockSettingsDragging) {
+      return;
+    }
+    final width = MediaQuery.sizeOf(context).width;
+    if (width <= 0) {
+      return;
+    }
+    final delta = (details.primaryDelta ?? 0) / width;
+    _dockSettingsSwitchAnimation.value =
+        (_dockSettingsDragStartValue + delta).clamp(0.0, 1.0);
+  }
+
+  void _onDockSettingsDragEnd(DragEndDetails details) {
+    if (!_dockSettingsDragging) {
+      return;
+    }
+    final value = _dockSettingsSwitchAnimation.value;
+    final velocity = details.primaryVelocity ?? 0;
+    final width = MediaQuery.sizeOf(context).width;
+    setState(() => _dockSettingsDragging = false);
+    final epoch = ++_dockAnimEpoch;
+    if (value > 0.5 || velocity < -400) {
+      // 过半或向左甩：留在设置页（弹簧带初始速度，更跟手）。
+      _dockTargetIndex = 2;
+      _springDockSettingsTo(1, velocity: (velocity / width).clamp(-4.0, 4.0))
+          .whenComplete(() => _finishDockAnim(epoch));
+    } else {
+      // 未过半或向右甩：切回课表（保持进入设置前的日/周视图）。
+      final backIndex = _isDayView ? 0 : 1;
+      _dockTargetIndex = backIndex;
+      setState(() {
+        _dockSettingsActive = false;
+        _dockSettingsSlideActive = true;
+      });
+      _springDockSettingsTo(0, velocity: (velocity / width).clamp(-4.0, 4.0))
+          .whenComplete(() => _finishDockAnim(epoch));
+    }
+  }
+
+  void _onDockSettingsDragCancel() {
+    if (_dockSettingsDragging) {
+      setState(() => _dockSettingsDragging = false);
+    }
   }
 
   Widget _buildFloatingBackToCurrentWeekButton(TimetableProvider provider) {

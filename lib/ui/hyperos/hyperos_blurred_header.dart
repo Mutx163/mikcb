@@ -12,7 +12,6 @@ export 'frosted/frosted_header_background.dart'
 // HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Scope for pages that overlay a frosted [FHeader] on scrollable content.
 class HyperosBlurredHeaderScope extends InheritedWidget {
@@ -303,7 +302,9 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
     final scope = HyperosBlurredHeaderScope.maybeOf(context);
     final routeBlur = scope?.blurEnabled ?? true;
     final underHeader = scope?.contentUnderHeader ?? true;
-    final useBlur =
+    // 顶栏规范：深色模式使用纯不透明深色（不做任何模糊/玻璃）。
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final useBlur = !isDark &&
         HyperosBlurredHeader.backdropBlurEnabled(context) &&
         routeBlur &&
         underHeader;
@@ -314,16 +315,8 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
         ? HyperosBlurredHeader.tintColor(context, withBlur: true)
         : atRestColor;
 
-    if (useBlur &&
-        FrostedAppearanceScope.of(context).glassMode ==
-            FrostedGlassMode.liquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.header,
-        instantUnderlay: true,
-        child: child,
-      );
-    }
-
+    // 顶栏统一走高斯模糊路径：即使全局开启液态玻璃，顶栏也不用折射 shader，
+    // 避免标题文字下方的液态观感与正文/弹窗不一致。
     return HyperosFrostedHeaderShell(
       blurEnabled: useBlur,
       tint: tint,

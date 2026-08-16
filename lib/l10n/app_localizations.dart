@@ -17592,6 +17592,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'日课表'**
   String get glassDockTabDay;
+
+  /// No description provided for @glassDockLayoutLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'玻璃坞内容布局'**
+  String get glassDockLayoutLabel;
+
+  /// No description provided for @glassDockLayoutOverlay.
+  ///
+  /// In zh, this message translates to:
+  /// **'满屏悬浮'**
+  String get glassDockLayoutOverlay;
+
+  /// No description provided for @glassDockLayoutOverlaySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表满屏显示，底栏浮动在课表之上'**
+  String get glassDockLayoutOverlaySubtitle;
+
+  /// No description provided for @glassDockLayoutInset.
+  ///
+  /// In zh, this message translates to:
+  /// **'内容避让'**
+  String get glassDockLayoutInset;
+
+  /// No description provided for @glassDockLayoutInsetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表底部预留空间，底栏悬浮在下方'**
+  String get glassDockLayoutInsetSubtitle;
 }
 
 class _AppLocalizationsDelegate

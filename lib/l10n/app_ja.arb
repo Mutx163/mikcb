@@ -5887,5 +5887,10 @@
   "homeNavigationFormGlassDock": "グラスドック",
   "homeNavigationFormGlassDockSubtitle": "画面下部に浮かぶ液体ガラスのピル型ナビ：スワイプまたはタップで週・日・設定を切り替え",
   "glassDockTabWeek": "週",
-  "glassDockTabDay": "日"
+  "glassDockTabDay": "日",
+  "glassDockLayoutLabel": "グラスドックのレイアウト",
+  "glassDockLayoutOverlay": "フルスクリーン重ね",
+  "glassDockLayoutOverlaySubtitle": "課表を全画面表示し、ドックをその上に重ねる",
+  "glassDockLayoutInset": "下にスペース確保",
+  "glassDockLayoutInsetSubtitle": "課表下部にスペースを確保し、ドックは下に配置"
 }

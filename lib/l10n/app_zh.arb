@@ -5891,5 +5891,10 @@
   "homeNavigationFormGlassDock": "玻璃坞",
   "homeNavigationFormGlassDockSubtitle": "底部悬浮液态玻璃药丸导航：滑动或点击即可在周课表、日课表与设置之间切换",
   "glassDockTabWeek": "周课表",
-  "glassDockTabDay": "日课表"
+  "glassDockTabDay": "日课表",
+  "glassDockLayoutLabel": "玻璃坞内容布局",
+  "glassDockLayoutOverlay": "满屏悬浮",
+  "glassDockLayoutOverlaySubtitle": "课表满屏显示，底栏浮动在课表之上",
+  "glassDockLayoutInset": "内容避让",
+  "glassDockLayoutInsetSubtitle": "课表底部预留空间，底栏悬浮在下方"
 }

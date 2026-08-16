@@ -173,6 +173,24 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               _updateDraft(_draft.copyWith(homeNavigationForm: value));
             },
           ),
+          if (_draft.homeNavigationForm == HomeNavigationForm.glassDock)
+            HyperosSelectTile<GlassDockLayout>(
+              label: l10n.glassDockLayoutLabel,
+              subtitle: switch (_draft.glassDockLayout) {
+                GlassDockLayout.overlay =>
+                  l10n.glassDockLayoutOverlaySubtitle,
+                GlassDockLayout.inset =>
+                  l10n.glassDockLayoutInsetSubtitle,
+              },
+              items: {
+                l10n.glassDockLayoutOverlay: GlassDockLayout.overlay,
+                l10n.glassDockLayoutInset: GlassDockLayout.inset,
+              },
+              value: _draft.glassDockLayout,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(glassDockLayout: value));
+              },
+            ),
           HyperosSelectTile<AppFontMode>(
             label: l10n.fontModeLabel,
             useSheetForPopup: true,

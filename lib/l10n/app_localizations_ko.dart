@@ -10012,4 +10012,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get glassDockTabDay => '일간';
+
+  @override
+  String get glassDockLayoutLabel => '글래스 독 레이아웃';
+
+  @override
+  String get glassDockLayoutOverlay => '전체 화면 오버레이';
+
+  @override
+  String get glassDockLayoutOverlaySubtitle => '시간표 전체 화면 표시, 독이 위에 떠 있음';
+
+  @override
+  String get glassDockLayoutInset => '하단 공간 확보';
+
+  @override
+  String get glassDockLayoutInsetSubtitle => '시간표 하단 공간 확보, 독은 아래에 배치';
 }

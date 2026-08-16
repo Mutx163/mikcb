@@ -180,7 +180,10 @@ void main() {
       findsWidgets,
       reason: '设置滑动期间课表页应保持可见（衔接滑动）',
     );
-    await tester.pump(const Duration(milliseconds: 500));
+    // 玻璃坞切换为弹簧动画（与底栏指示器同款：350ms + 15% bounce），
+    // 收敛需约 1.5s，固定 500ms 不够；等弹簧完全结束再断言。
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
     expect(
       tester.getRect(find.byType(TimetableSettingsScreen)).left,
       closeTo(0, 1),
@@ -282,10 +285,12 @@ void main() {
     // 切周课表再切回设置：滚动位置与大标题折叠状态都应保留
     await tester.tap(find.text('周课表').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
     await tester.tap(find.text('课表设置').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
     expect(tester.takeException(), isNull, reason: '切回设置不应有异常');
     final scrollableAfter = tester.state<ScrollableState>(scrollableFinder);
     expect(
@@ -308,7 +313,8 @@ void main() {
     // 设置 → 日视图（设置页滚动到中间后仍可切换）
     await tester.tap(find.text('日课表').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
     expect(tester.takeException(), isNull, reason: '设置→日视图不应有异常');
     expect(
       find.byKey(const ValueKey('timetable-day-view-panel')),
@@ -320,7 +326,8 @@ void main() {
     // 切回周课表
     await tester.tap(find.text('周课表').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
     expect(tester.takeException(), isNull, reason: '切回周视图不应有异常');
     expect(currentIndicatorIndex(), 1, reason: '周视图下指示器应回到周课表 Tab');
 

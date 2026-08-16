@@ -5890,5 +5890,10 @@
   "homeNavigationFormGlassDock": "Glass Dock",
   "homeNavigationFormGlassDockSubtitle": "Floating liquid-glass pill bar at the bottom: swipe or tap to switch between week view, day view and settings",
   "glassDockTabWeek": "Week",
-  "glassDockTabDay": "Day"
+  "glassDockTabDay": "Day",
+  "glassDockLayoutLabel": "Glass dock layout",
+  "glassDockLayoutOverlay": "Fullscreen overlay",
+  "glassDockLayoutOverlaySubtitle": "Timetable fills the screen with the dock floating on top",
+  "glassDockLayoutInset": "Reserve space below",
+  "glassDockLayoutInsetSubtitle": "Timetable leaves compact space at the bottom, dock sits below"
 }

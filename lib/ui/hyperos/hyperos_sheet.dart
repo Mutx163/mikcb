@@ -85,7 +85,7 @@ class HyperosSheetFrame extends StatelessWidget {
     this.frosted = true,
     this.chrome,
     this.liquidGlassRole = HyperosLiquidGlassRole.modal,
-    this.liquidGlassContentLegibilityFill = false,
+    this.liquidGlassContentLegibilityFill = true,
   });
 
   final Widget child;
@@ -108,8 +108,10 @@ class HyperosSheetFrame extends StatelessWidget {
 
   /// Whether liquid-glass content receives the extra opaque legibility fill.
   ///
-  /// Modal chrome defaults to no extra fill so the same clear glass is used by
-  /// sheets, dialogs, and anchored popups instead of producing white variants.
+  /// Modal chrome defaults to the legibility fill so every sheet/dialog keeps
+  /// a light (light theme) / dark (dark theme) milky panel over wallpapers —
+  /// the same look as anchored popups on light pages. Set false explicitly
+  /// for a deliberately clear-glass surface.
   final bool liquidGlassContentLegibilityFill;
 
   @override
@@ -165,9 +167,10 @@ class HyperosSheetFrame extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.20),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              // 与 anchored popup 气泡同级：轻投影，不再形成明显暗环。
+              color: const Color(0x24000000),
+              blurRadius: 20,
+              offset: Offset.zero,
             ),
           ],
         ),

@@ -9695,6 +9695,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get glassDockTabDay => '日课表';
+
+  @override
+  String get glassDockLayoutLabel => '玻璃坞内容布局';
+
+  @override
+  String get glassDockLayoutOverlay => '满屏悬浮';
+
+  @override
+  String get glassDockLayoutOverlaySubtitle => '课表满屏显示，底栏浮动在课表之上';
+
+  @override
+  String get glassDockLayoutInset => '内容避让';
+
+  @override
+  String get glassDockLayoutInsetSubtitle => '课表底部预留空间，底栏悬浮在下方';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -19433,6 +19448,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get glassDockTabDay => '日課表';
+
+  @override
+  String get glassDockLayoutLabel => '玻璃塢內容佈局';
+
+  @override
+  String get glassDockLayoutOverlay => '滿屏懸浮';
+
+  @override
+  String get glassDockLayoutOverlaySubtitle => '課表滿屏顯示，底欄浮動在課表之上';
+
+  @override
+  String get glassDockLayoutInset => '內容避讓';
+
+  @override
+  String get glassDockLayoutInsetSubtitle => '課表底部預留空間，底欄懸浮在下方';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -29171,4 +29201,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockTabDay => '日課表';
+
+  @override
+  String get glassDockLayoutLabel => '玻璃塢內容佈局';
+
+  @override
+  String get glassDockLayoutOverlay => '滿屏懸浮';
+
+  @override
+  String get glassDockLayoutOverlaySubtitle => '課表滿屏顯示，底欄浮動在課表之上';
+
+  @override
+  String get glassDockLayoutInset => '內容避讓';
+
+  @override
+  String get glassDockLayoutInsetSubtitle => '課表底部預留空間，底欄懸浮在下方';
 }

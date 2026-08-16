@@ -5887,5 +5887,10 @@
   "homeNavigationFormGlassDock": "글래스 독",
   "homeNavigationFormGlassDockSubtitle": "하단에 떠 있는 리퀴드 글래스 알약 내비게이션: 스와이프 또는 탭으로 주간·일간·설정 전환",
   "glassDockTabWeek": "주간",
-  "glassDockTabDay": "일간"
+  "glassDockTabDay": "일간",
+  "glassDockLayoutLabel": "글래스 독 레이아웃",
+  "glassDockLayoutOverlay": "전체 화면 오버레이",
+  "glassDockLayoutOverlaySubtitle": "시간표 전체 화면 표시, 독이 위에 떠 있음",
+  "glassDockLayoutInset": "하단 공간 확보",
+  "glassDockLayoutInsetSubtitle": "시간표 하단 공간 확보, 독은 아래에 배치"
 }

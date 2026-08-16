@@ -10258,4 +10258,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get glassDockTabDay => 'Day';
+
+  @override
+  String get glassDockLayoutLabel => 'Glass dock layout';
+
+  @override
+  String get glassDockLayoutOverlay => 'Fullscreen overlay';
+
+  @override
+  String get glassDockLayoutOverlaySubtitle =>
+      'Timetable fills the screen with the dock floating on top';
+
+  @override
+  String get glassDockLayoutInset => 'Reserve space below';
+
+  @override
+  String get glassDockLayoutInsetSubtitle =>
+      'Timetable leaves compact space at the bottom, dock sits below';
 }

@@ -277,6 +277,25 @@ extension HomeNavigationFormX on HomeNavigationForm {
   }
 }
 
+/// 玻璃坞形态下的内容布局：
+/// - [GlassDockLayout.overlay]：课表满屏显示，底栏药丸浮动在内容之上；
+/// - [GlassDockLayout.inset]：内容底部避让出药丸空间（紧凑间隙）。
+enum GlassDockLayout { overlay, inset }
+
+extension GlassDockLayoutX on GlassDockLayout {
+  String get value => switch (this) {
+        GlassDockLayout.overlay => 'overlay',
+        GlassDockLayout.inset => 'inset',
+      };
+
+  static GlassDockLayout fromValue(String? value) {
+    return GlassDockLayout.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => GlassDockLayout.inset,
+    );
+  }
+}
+
 extension BackToCurrentWeekButtonStyleX on BackToCurrentWeekButtonStyle {
   String get value => switch (this) {
     BackToCurrentWeekButtonStyle.inline => 'inline',
@@ -1060,6 +1079,7 @@ class TimetableSettings {
   final HomeTitleStyle homeTitleStyle;
   final TimetableHomeViewMode timetableHomeViewMode;
   final HomeNavigationForm homeNavigationForm;
+  final GlassDockLayout glassDockLayout;
   final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
   final double timetableFloatingBackToCurrentWeekButtonOpacity;
   final int timetableLastViewedDayOfWeek;
@@ -1234,6 +1254,7 @@ class TimetableSettings {
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
     this.homeNavigationForm = HomeNavigationForm.classic,
+    this.glassDockLayout = GlassDockLayout.inset,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
     this.timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
@@ -1545,6 +1566,7 @@ class TimetableSettings {
       'homeTitleStyle': homeTitleStyle.value,
       'timetableHomeViewMode': timetableHomeViewMode.value,
       'homeNavigationForm': homeNavigationForm.value,
+      'glassDockLayout': glassDockLayout.value,
       'timetableBackToCurrentWeekButtonStyle':
           timetableBackToCurrentWeekButtonStyle.value,
       'timetableFloatingBackToCurrentWeekButtonOpacity':
@@ -1780,6 +1802,9 @@ class TimetableSettings {
       ),
       homeNavigationForm: HomeNavigationFormX.fromValue(
         json['homeNavigationForm'] as String?,
+      ),
+      glassDockLayout: GlassDockLayoutX.fromValue(
+        json['glassDockLayout'] as String?,
       ),
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyleX.fromValue(
@@ -2121,6 +2146,7 @@ class TimetableSettings {
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
     HomeNavigationForm? homeNavigationForm,
+    GlassDockLayout? glassDockLayout,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
     int? timetableLastViewedDayOfWeek,
@@ -2305,6 +2331,7 @@ class TimetableSettings {
           timetableHomeViewMode ?? this.timetableHomeViewMode,
       homeNavigationForm:
           homeNavigationForm ?? this.homeNavigationForm,
+      glassDockLayout: glassDockLayout ?? this.glassDockLayout,
       timetableBackToCurrentWeekButtonStyle:
           timetableBackToCurrentWeekButtonStyle ??
           this.timetableBackToCurrentWeekButtonStyle,

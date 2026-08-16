@@ -5887,5 +5887,10 @@
   "homeNavigationFormGlassDock": "玻璃塢",
   "homeNavigationFormGlassDockSubtitle": "底部懸浮液態玻璃藥丸導覽：滑動或點擊即可在週課表、日課表與設定之間切換",
   "glassDockTabWeek": "週課表",
-  "glassDockTabDay": "日課表"
+  "glassDockTabDay": "日課表",
+  "glassDockLayoutLabel": "玻璃塢內容佈局",
+  "glassDockLayoutOverlay": "滿屏懸浮",
+  "glassDockLayoutOverlaySubtitle": "課表滿屏顯示，底欄浮動在課表之上",
+  "glassDockLayoutInset": "內容避讓",
+  "glassDockLayoutInsetSubtitle": "課表底部預留空間，底欄懸浮在下方"
 }

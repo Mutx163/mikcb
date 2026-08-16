@@ -9967,4 +9967,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get glassDockTabDay => '日';
+
+  @override
+  String get glassDockLayoutLabel => 'グラスドックのレイアウト';
+
+  @override
+  String get glassDockLayoutOverlay => 'フルスクリーン重ね';
+
+  @override
+  String get glassDockLayoutOverlaySubtitle => '課表を全画面表示し、ドックをその上に重ねる';
+
+  @override
+  String get glassDockLayoutInset => '下にスペース確保';
+
+  @override
+  String get glassDockLayoutInsetSubtitle => '課表下部にスペースを確保し、ドックは下に配置';
 }
