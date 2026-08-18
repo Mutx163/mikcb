@@ -5,12 +5,10 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
 
-/// Boot branding: launcher icon + app name on the splash background.
-///
-/// The icon matches the Android 12+ system splash exactly (108dp centered
-/// icon on splash_background colour) so the icon doesn't jump between the
-/// system splash and this page. The app name appears below the icon,
-/// giving the splash a finished brand look before content loads.
+/// In-app loading branding: launcher icon + app name on the splash
+/// background colour. Used by TimetableScreen when the provider is loading.
+/// Also exposes [backgroundColor] and [resolveAppLabel] as static helpers
+/// used by main.dart for the solid-colour boot overlay.
 
 /// Returns a positive cache dimension or null (0/negative → no constraint).
 int? _positiveCacheDimension(int? value) =>

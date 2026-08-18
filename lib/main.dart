@@ -128,8 +128,8 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 }
 
 Future<void> main() async {
-  // Keep Android's native SplashLayerDrawable visible until the Flutter brand
-  // layer can render with the real launcher bitmap on its very first frame.
+  // Pre-warm the launcher icon bitmap so that any in-app loading state
+  // (e.g. TimetableScreen's provider.isLoading) can show it synchronously.
   //
   // Binding initialization must happen inside the same zone that eventually
   // calls runApp, otherwise Flutter emits a "Zone mismatch" warning

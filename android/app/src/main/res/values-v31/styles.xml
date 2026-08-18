@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ system splash: show the real launcher icon so the system
-         splash matches the Flutter AppBootBranding handoff. The previous
-         splash_empty_icon (1dp transparent shape) fell back to a stretched/
-         clipped launcher icon on some ROMs (e.g. MIUI/HyperOS), producing a
-         "weird icon with a yellow line" before the correct splash appeared. -->
+    <!-- Android 12+ system splash: shows the launcher icon on the
+         splash_background colour. The icon uses a high-resolution PNG
+         (drawable-nodpi/splash_icon) with transparent rounded corners. -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowSplashScreenBackground">@color/splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
