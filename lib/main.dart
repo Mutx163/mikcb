@@ -128,16 +128,24 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 }
 
 Future<void> main() async {
-  // Keep Android's native SplashLayerDrawable visible until the Flutter brand
-  // layer can render with the real launcher bitmap on its very first frame.
-  WidgetsFlutterBinding.ensureInitialized();
-  await BundledAssets.warmUpLauncherIcon();
-  // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the first
-  // glass bar frame does not stall on shader compilation.
-  await LiquidGlassWidgets.initialize();
   runZonedGuarded(
-    () {
+    () async {
+      // Keep Android's native SplashLayerDrawable visible until the Flutter
+      // brand layer can render with the real launcher bitmap on its very
+      // first frame.
+      //
+      // ensureInitialized() MUST be called inside the same zone as runApp()
+      // to avoid a "Zone mismatch" assertion. The binding records the zone
+      // in which it was first initialized; if runApp() runs in a different
+      // zone (e.g. this runZonedGuarded child zone), Flutter throws a debug
+      // assertion that — on some devices — is promoted to a fatal crash,
+      // particularly after an Android process restart (e.g. returning from
+      // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
+      await BundledAssets.warmUpLauncherIcon();
+      // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the
+      // first glass bar frame does not stall on shader compilation.
+      await LiquidGlassWidgets.initialize();
       unawaited(AppLogService.instance.initialize());
       FairMemoryService.instance.ensureInitialized();
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
