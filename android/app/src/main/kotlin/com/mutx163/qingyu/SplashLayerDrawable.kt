@@ -3,7 +3,9 @@ package com.mutx163.qingyu
 import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.PixelFormat
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
@@ -56,7 +58,21 @@ class SplashLayerDrawable(
         val iconLeft = centerX - iconSize / 2
         val iconTop = blockTop.toInt()
         icon?.setBounds(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize)
+        // Clip the icon to a rounded rectangle so it matches AppBootBranding's
+        // ClipRRect(22dp) — prevents a square→rounded shape jump between stages.
+        val cornerRadius = 22f * density
+        val clipPath = Path().apply {
+            addRoundRect(
+                RectF(iconLeft.toFloat(), iconTop.toFloat(),
+                      (iconLeft + iconSize).toFloat(), (iconTop + iconSize).toFloat()),
+                cornerRadius, cornerRadius,
+                Path.Direction.CW,
+            )
+        }
+        canvas.save()
+        canvas.clipPath(clipPath)
         icon?.draw(canvas)
+        canvas.restore()
 
         val textBaseline = iconTop + iconSize + gap - textPaint.fontMetrics.ascent
         canvas.drawText(label.toString(), bounds.exactCenterX(), textBaseline, textPaint)
