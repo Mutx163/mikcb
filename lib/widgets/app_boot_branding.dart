@@ -92,37 +92,38 @@ class _AppBootBrandingState extends State<AppBootBranding> {
         ? const Color(0xE6FFFFFF)
         : const Color(0xE6000000);
 
-    // If the icon bitmap hasn't loaded yet, show nothing — the native
-    // SplashLayerDrawable (window background) is still visible with the
-    // icon + label.  Once the bitmap is ready, swap in the icon + label
-    // together so the user never sees text without the icon.
-    if (_bytes == null) {
-      return const SizedBox.shrink();
-    }
-
-    final iconWidget = ClipRRect(
-      borderRadius: BorderRadius.circular(
-        AppBootBranding.iconCornerRadius,
-      ),
-      child: SizedBox(
-        width: AppBootBranding.iconSize,
-        height: AppBootBranding.iconSize,
-        child: Image.memory(
-          _bytes!,
-          width: AppBootBranding.iconSize,
-          height: AppBootBranding.iconSize,
-          fit: BoxFit.cover,
-          cacheWidth: _positiveCacheDimension(
-            BundledAssets.bootLauncherIconCacheWidth,
-          ),
-          cacheHeight: _positiveCacheDimension(
-            BundledAssets.bootLauncherIconCacheHeight,
-          ),
-          gaplessPlayback: true,
-          filterQuality: FilterQuality.medium,
-        ),
-      ),
-    );
+    // First frame: _bytes is null → Material calendar icon (synchronous, same
+    // frame as the text).  After _resolveIcon completes: _bytes is set → the
+    // real launcher icon swaps in via setState without any flash.
+    final iconWidget = _bytes != null
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(
+              AppBootBranding.iconCornerRadius,
+            ),
+            child: SizedBox(
+              width: AppBootBranding.iconSize,
+              height: AppBootBranding.iconSize,
+              child: Image.memory(
+                _bytes!,
+                width: AppBootBranding.iconSize,
+                height: AppBootBranding.iconSize,
+                fit: BoxFit.cover,
+                cacheWidth: _positiveCacheDimension(
+                  BundledAssets.bootLauncherIconCacheWidth,
+                ),
+                cacheHeight: _positiveCacheDimension(
+                  BundledAssets.bootLauncherIconCacheHeight,
+                ),
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
+              ),
+            ),
+          )
+        : Icon(
+            Icons.calendar_month_rounded,
+            size: AppBootBranding.iconSize,
+            color: labelColor,
+          );
 
     return Center(
       child: Column(
