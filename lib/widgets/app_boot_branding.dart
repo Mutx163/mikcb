@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../logging/app_debug_log.dart';
 import '../services/bundled_assets.dart';
 
 /// Shared boot branding: rounded launcher icon + flavor-aware app name.
@@ -81,8 +82,9 @@ class _AppBootBrandingState extends State<AppBootBranding> {
       // Store into the global cache so other widgets benefit too.
       BundledAssets.remember(BundledAssets.launcherIcon, bytes);
       if (mounted) setState(() => _bytes = bytes);
-    } catch (_) {
+    } catch (error) {
       // Non-critical: the placeholder Icon stays visible.
+      appDebugLog('AppBootBranding', '加载启动图标失败：$error');
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -30,7 +32,15 @@ class BundledAssets {
 
   /// Loads the launcher icon before Flutter's first frame so the native
   /// Android splash hands off to the real bitmap instead of a placeholder.
-  static Future<void> warmUpLauncherIcon() => _loadIntoCache(launcherIcon);
+  /// Also sets [bootLauncherIconCacheWidth]/[Height] so Image.memory can
+  /// downsample the 717px PNG to the 96dp target, saving memory.
+  static Future<void> warmUpLauncherIcon() async {
+    await _loadIntoCache(launcherIcon);
+    final dpr = ui.PlatformDispatcher.instance.views.first.devicePixelRatio;
+    final px = (96 * dpr).round();
+    bootLauncherIconCacheWidth = px;
+    bootLauncherIconCacheHeight = px;
+  }
 
   /// Preloads common bitmaps. Failures are logged but never crash startup.
   static Future<void> warmUp() async {
