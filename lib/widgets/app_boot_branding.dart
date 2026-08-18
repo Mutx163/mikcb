@@ -5,11 +5,12 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
 
-/// Boot branding: centered launcher icon on the splash background.
+/// Boot branding: launcher icon + app name on the splash background.
 ///
-/// Matches the Android 12+ system splash exactly (108dp centered icon on
-/// splash_background colour) so the handoff is visually seamless — the user
-/// sees one consistent splash, then the app content.
+/// The icon matches the Android 12+ system splash exactly (108dp centered
+/// icon on splash_background colour) so the icon doesn't jump between the
+/// system splash and this page. The app name appears below the icon,
+/// giving the splash a finished brand look before content loads.
 
 /// Returns a positive cache dimension or null (0/negative → no constraint).
 int? _positiveCacheDimension(int? value) =>
@@ -31,6 +32,9 @@ class AppBootBranding extends StatefulWidget {
   /// Rounded-corner radius, matching splash_icon.png's built-in mask
   /// (154px on 717px → same ratio applied to 108dp).
   static const double iconCornerRadius = 23;
+
+  /// Gap between icon and label.
+  static const double labelGap = 16;
 
   /// Splash / scaffold fill used while branding is on screen.
   static Color backgroundColor({required bool isDark}) {
@@ -96,11 +100,9 @@ class _AppBootBrandingState extends State<AppBootBranding> {
         ? const Color(0xE6FFFFFF)
         : const Color(0xE6000000);
 
-    // Show ONLY the centered icon — no text label. This matches the Android
-    // 12+ system splash (which also shows just the icon), so the handoff from
-    // system splash → Flutter branding is visually seamless: same icon,
-    // same position, same background. The app name is not needed here because
-    // it already appears in the app's TopAppBar once content loads.
+    // Icon size and position match the Android 12+ system splash exactly
+    // (108dp centered) so the icon doesn't jump between system splash and
+    // this page. The app name appears below, giving a complete brand look.
     final iconWidget = _bytes != null
         ? ClipRRect(
             borderRadius: BorderRadius.circular(
@@ -131,6 +133,24 @@ class _AppBootBrandingState extends State<AppBootBranding> {
             color: iconColor,
           );
 
-    return Center(child: iconWidget);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          iconWidget,
+          const SizedBox(height: AppBootBranding.labelGap),
+          Text(
+            widget.appLabel,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: iconColor,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
