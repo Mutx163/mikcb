@@ -130,14 +130,16 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 Future<void> main() async {
   // Keep Android's native SplashLayerDrawable visible until the Flutter brand
   // layer can render with the real launcher bitmap on its very first frame.
-  WidgetsFlutterBinding.ensureInitialized();
-  await BundledAssets.warmUpLauncherIcon();
-  // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the first
-  // glass bar frame does not stall on shader compilation.
-  await LiquidGlassWidgets.initialize();
+  //
+  // Binding initialization must happen inside the same zone that eventually
+  // calls runApp, otherwise Flutter emits a "Zone mismatch" warning
+  // (BindingBase.debugCheckZone). We therefore create the zone FIRST and
+  // run the full boot sequence — including ensureInitialized — inside it.
   runZonedGuarded(
     () {
       WidgetsFlutterBinding.ensureInitialized();
+      unawaited(BundledAssets.warmUpLauncherIcon());
+      unawaited(LiquidGlassWidgets.initialize());
       unawaited(AppLogService.instance.initialize());
       FairMemoryService.instance.ensureInitialized();
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
@@ -1006,23 +1008,19 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
-    final appLabel = AppBootBranding.resolveAppLabel(widget.packageInfo, l10n);
     return Stack(
       fit: StackFit.expand,
       children: [
         if (_mainContentReady) TimetableScreen(packageInfo: widget.packageInfo),
-        // Do not alpha-fade this full-screen layer.  In dark mode the opaque
-        // branding background would be composited over the already-rendered
-        // home page during the fade, making wallpaper and liquid-glass cards
-        // look black before the layer disappears.  The main page is mounted
-        // and painted for one frame in [_revealMainContent] before this layer
-        // is removed, so the handoff is an atomic swap instead.
+        // Solid colour overlay matching the system splash background, kept
+        // up until TimetableScreen has painted its first frame so the user
+        // never sees a black/white flash between the system splash and the
+        // app content. No custom branding widget — the system splash already
+        // shows the logo; here we just hold the background colour.
         if (_isBootstrapping)
           IgnorePointer(
             child: ColoredBox(
               color: AppBootBranding.backgroundColor(isDark: isDark),
-              child: AppBootBranding(appLabel: appLabel, isDark: isDark),
             ),
           ),
       ],
@@ -1134,12 +1132,10 @@ class _PackageInfoLoaderState extends State<_PackageInfoLoader> {
     if (packageInfo == null) {
       final isDark =
           PlatformDispatcher.instance.platformBrightness == Brightness.dark;
-      final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: ColoredBox(
           color: AppBootBranding.backgroundColor(isDark: isDark),
-          child: AppBootBranding(appLabel: l10n.appTitle, isDark: isDark),
         ),
       );
     }
