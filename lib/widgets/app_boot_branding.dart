@@ -88,13 +88,15 @@ class _AppBootBrandingState extends State<AppBootBranding> {
 
   @override
   Widget build(BuildContext context) {
-    final labelColor = widget.isDark
+    final iconColor = widget.isDark
         ? const Color(0xE6FFFFFF)
         : const Color(0xE6000000);
 
-    // First frame: _bytes is null → Material calendar icon (synchronous, same
-    // frame as the text).  After _resolveIcon completes: _bytes is set → the
-    // real launcher icon swaps in via setState without any flash.
+    // Show ONLY the centered icon — no text label. This matches the Android
+    // 12+ system splash (which also shows just the icon), so the handoff from
+    // system splash → Flutter branding is visually seamless: same icon,
+    // same position, same background. The app name is not needed here because
+    // it already appears in the app's TopAppBar once content loads.
     final iconWidget = _bytes != null
         ? ClipRRect(
             borderRadius: BorderRadius.circular(
@@ -122,27 +124,9 @@ class _AppBootBrandingState extends State<AppBootBranding> {
         : Icon(
             Icons.calendar_month_rounded,
             size: AppBootBranding.iconSize,
-            color: labelColor,
+            color: iconColor,
           );
 
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          iconWidget,
-          const SizedBox(height: AppBootBranding.labelGap),
-          Text(
-            widget.appLabel,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: labelColor,
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
+    return Center(child: iconWidget);
   }
 }
