@@ -28,6 +28,10 @@ class AppBootBranding extends StatefulWidget {
   /// Matches the Android 12 system splash default icon size (108dp).
   static const double iconSize = 108;
 
+  /// Rounded-corner radius, matching splash_icon.png's built-in mask
+  /// (154px on 717px → same ratio applied to 108dp).
+  static const double iconCornerRadius = 23;
+
   /// Splash / scaffold fill used while branding is on screen.
   static Color backgroundColor({required bool isDark}) {
     // Keep the first Flutter frame identical to Android's native splash colors
@@ -98,26 +102,27 @@ class _AppBootBrandingState extends State<AppBootBranding> {
     // same position, same background. The app name is not needed here because
     // it already appears in the app's TopAppBar once content loads.
     final iconWidget = _bytes != null
-        ? SizedBox(
-            width: AppBootBranding.iconSize,
-            height: AppBootBranding.iconSize,
-            child: Image.memory(
-              _bytes!,
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(
+              AppBootBranding.iconCornerRadius,
+            ),
+            child: SizedBox(
               width: AppBootBranding.iconSize,
               height: AppBootBranding.iconSize,
-              // The PNG already has transparent rounded corners built in
-              // (generate_app_icons.py applies a rounded_rect_mask), so we
-              // use contain instead of cover and skip ClipRRect — this
-              // matches the system splash which shows the raw icon shape.
-              fit: BoxFit.contain,
-              cacheWidth: _positiveCacheDimension(
-                BundledAssets.bootLauncherIconCacheWidth,
+              child: Image.memory(
+                _bytes!,
+                width: AppBootBranding.iconSize,
+                height: AppBootBranding.iconSize,
+                fit: BoxFit.cover,
+                cacheWidth: _positiveCacheDimension(
+                  BundledAssets.bootLauncherIconCacheWidth,
+                ),
+                cacheHeight: _positiveCacheDimension(
+                  BundledAssets.bootLauncherIconCacheHeight,
+                ),
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
               ),
-              cacheHeight: _positiveCacheDimension(
-                BundledAssets.bootLauncherIconCacheHeight,
-              ),
-              gaplessPlayback: true,
-              filterQuality: FilterQuality.medium,
             ),
           )
         : Icon(
