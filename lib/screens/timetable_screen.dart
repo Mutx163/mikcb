@@ -4774,14 +4774,14 @@ class _TimetableScreenState extends State<TimetableScreen>
               text: teacherLine,
               ink: ink,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5.5),
             _buildCurrentDayAgendaInfoRow(
               icon: Icons.location_on_outlined,
               text: locationLine,
               ink: ink,
             ),
             if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 5.5),
               _buildCurrentDayAgendaInfoRow(
                 icon: Icons.sticky_note_2_outlined,
                 text: sessionPreview,
@@ -4968,14 +4968,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                     text: teacherLine,
                     ink: ink,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5.5),
                   _buildCurrentDayAgendaInfoRow(
                     icon: Icons.location_on_outlined,
                     text: locationLine,
                     ink: ink,
                   ),
                   if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5.5),
                     _buildCurrentDayAgendaInfoRow(
                       icon: Icons.sticky_note_2_outlined,
                       text: sessionPreview,
@@ -5173,7 +5173,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3.5),
                 if (exam.startTime.isNotEmpty && exam.endTime.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
@@ -5351,7 +5351,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   ),
                 ],
                 if (hasNote) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5.5),
                   _buildCurrentDayAgendaInfoRow(
                     icon: Icons.notes_rounded,
                     text: item.note!.trim(),
@@ -5516,7 +5516,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                   ],
                   if (hasNote) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5.5),
                     _buildCurrentDayAgendaInfoRow(
                       icon: Icons.notes_rounded,
                       text: item.note!.trim(),
