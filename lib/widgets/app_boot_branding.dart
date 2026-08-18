@@ -5,10 +5,12 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
 
-/// In-app loading branding: launcher icon + app name on the splash
-/// background colour. Used by TimetableScreen when the provider is loading.
-/// Also exposes [backgroundColor] and [resolveAppLabel] as static helpers
-/// used by main.dart for the solid-colour boot overlay.
+/// Loading branding: launcher icon + app name on the splash background.
+///
+/// Used in two places:
+/// 1. Boot overlay (main.dart): bridges the Android system splash and
+///    the app content — same icon, same background, no blank screen.
+/// 2. TimetableScreen loading state: shown while the provider reloads.
 
 /// Returns a positive cache dimension or null (0/negative → no constraint).
 int? _positiveCacheDimension(int? value) =>
