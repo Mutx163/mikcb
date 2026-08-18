@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-17T02:43:55+00:00",
+  "updatedAt": "2026-08-18T02:43:17+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 143,
-    "schools": 138,
+    "total": 144,
+    "schools": 139,
     "generic": 5
   },
   "schools": [
@@ -510,6 +510,13 @@
       "name": "江苏师范大学",
       "initial": "J",
       "resourceFolder": "JSNU",
+      "category": "school"
+    },
+    {
+      "id": "JSTC",
+      "name": "江苏旅游职业学院",
+      "initial": "J",
+      "resourceFolder": "JSTC",
       "category": "school"
     },
     {
