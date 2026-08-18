@@ -1132,14 +1132,17 @@ class _PackageInfoLoaderState extends State<_PackageInfoLoader> {
   Widget build(BuildContext context) {
     final packageInfo = _packageInfo;
     if (packageInfo == null) {
+      // PackageInfo not loaded yet — show only the background colour so the
+      // native SplashLayerDrawable (window background) remains visible with
+      // the correct manifest label.  Showing AppBootBranding here would
+      // display l10n.appTitle ("轻屿课表") instead of the flavor-aware label
+      // ("轻屿课表调试版"), causing a visible label flicker.
       final isDark =
           PlatformDispatcher.instance.platformBrightness == Brightness.dark;
-      final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: ColoredBox(
           color: AppBootBranding.backgroundColor(isDark: isDark),
-          child: AppBootBranding(appLabel: l10n.appTitle, isDark: isDark),
         ),
       );
     }
