@@ -5,10 +5,11 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
 
-/// Shared boot branding: rounded launcher icon + flavor-aware app name.
+/// Boot branding: centered launcher icon on the splash background.
 ///
-/// Mirrors the native [SplashLayerDrawable] layout (96dp icon, 16dp gap, 20sp
-/// medium label) so the handoff from the system splash feels continuous.
+/// Matches the Android 12+ system splash exactly (108dp centered icon on
+/// splash_background colour) so the handoff is visually seamless — the user
+/// sees one consistent splash, then the app content.
 
 /// Returns a positive cache dimension or null (0/negative → no constraint).
 int? _positiveCacheDimension(int? value) =>
@@ -24,9 +25,8 @@ class AppBootBranding extends StatefulWidget {
   final String appLabel;
   final bool isDark;
 
-  static const double iconSize = 96;
-  static const double iconCornerRadius = 22;
-  static const double labelGap = 16;
+  /// Matches the Android 12 system splash default icon size (108dp).
+  static const double iconSize = 108;
 
   /// Splash / scaffold fill used while branding is on screen.
   static Color backgroundColor({required bool isDark}) {
@@ -98,27 +98,26 @@ class _AppBootBrandingState extends State<AppBootBranding> {
     // same position, same background. The app name is not needed here because
     // it already appears in the app's TopAppBar once content loads.
     final iconWidget = _bytes != null
-        ? ClipRRect(
-            borderRadius: BorderRadius.circular(
-              AppBootBranding.iconCornerRadius,
-            ),
-            child: SizedBox(
+        ? SizedBox(
+            width: AppBootBranding.iconSize,
+            height: AppBootBranding.iconSize,
+            child: Image.memory(
+              _bytes!,
               width: AppBootBranding.iconSize,
               height: AppBootBranding.iconSize,
-              child: Image.memory(
-                _bytes!,
-                width: AppBootBranding.iconSize,
-                height: AppBootBranding.iconSize,
-                fit: BoxFit.cover,
-                cacheWidth: _positiveCacheDimension(
-                  BundledAssets.bootLauncherIconCacheWidth,
-                ),
-                cacheHeight: _positiveCacheDimension(
-                  BundledAssets.bootLauncherIconCacheHeight,
-                ),
-                gaplessPlayback: true,
-                filterQuality: FilterQuality.medium,
+              // The PNG already has transparent rounded corners built in
+              // (generate_app_icons.py applies a rounded_rect_mask), so we
+              // use contain instead of cover and skip ClipRRect — this
+              // matches the system splash which shows the raw icon shape.
+              fit: BoxFit.contain,
+              cacheWidth: _positiveCacheDimension(
+                BundledAssets.bootLauncherIconCacheWidth,
               ),
+              cacheHeight: _positiveCacheDimension(
+                BundledAssets.bootLauncherIconCacheHeight,
+              ),
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
             ),
           )
         : Icon(
