@@ -128,18 +128,16 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 }
 
 Future<void> main() async {
-  // Pre-warm the launcher icon bitmap so that any in-app loading state
-  // (e.g. TimetableScreen's provider.isLoading) can show it synchronously.
-  //
-  // Binding initialization must happen inside the same zone that eventually
-  // calls runApp, otherwise Flutter emits a "Zone mismatch" warning
-  // (BindingBase.debugCheckZone). We therefore create the zone FIRST and
-  // run the full boot sequence — including ensureInitialized — inside it.
+  // Keep Android's native SplashLayerDrawable visible until the Flutter brand
+  // layer can render with the real launcher bitmap on its very first frame.
+  WidgetsFlutterBinding.ensureInitialized();
+  await BundledAssets.warmUpLauncherIcon();
+  // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the first
+  // glass bar frame does not stall on shader compilation.
+  await LiquidGlassWidgets.initialize();
   runZonedGuarded(
     () {
       WidgetsFlutterBinding.ensureInitialized();
-      unawaited(BundledAssets.warmUpLauncherIcon());
-      unawaited(LiquidGlassWidgets.initialize());
       unawaited(AppLogService.instance.initialize());
       FairMemoryService.instance.ensureInitialized();
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
@@ -1014,11 +1012,12 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       fit: StackFit.expand,
       children: [
         if (_mainContentReady) TimetableScreen(packageInfo: widget.packageInfo),
-        // Loading overlay that bridges the system splash and the app
-        // content. Shows the same logo + app name on the same background
-        // colour as the system splash, so the transition feels continuous —
-        // no blank white/black screen. Removed atomically (one frame swap)
-        // once TimetableScreen has painted.
+        // Do not alpha-fade this full-screen layer.  In dark mode the opaque
+        // branding background would be composited over the already-rendered
+        // home page during the fade, making wallpaper and liquid-glass cards
+        // look black before the layer disappears.  The main page is mounted
+        // and painted for one frame in [_revealMainContent] before this layer
+        // is removed, so the handoff is an atomic swap instead.
         if (_isBootstrapping)
           IgnorePointer(
             child: ColoredBox(

@@ -133,11 +133,12 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        // The window background is set to @color/splash_background via
-        // LaunchTheme in styles.xml.  On Android 12+ the system splash
-        // (via installSplashScreen) shows the launcher icon, then the
-        // window transitions to a solid splash_background colour while
-        // Flutter initialises — no intermediate custom drawable layer.
+        window.setBackgroundDrawable(
+            SplashLayerDrawable(
+                this,
+                applicationInfo.loadLabel(packageManager),
+            ),
+        )
         installSplashScreen()
         super.onCreate(savedInstanceState)
         // Debug deep links first so automation routes never fall into import.

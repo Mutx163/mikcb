@@ -5,12 +5,10 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/bundled_assets.dart';
 
-/// Loading branding: launcher icon + app name on the splash background.
+/// Shared boot branding: rounded launcher icon + flavor-aware app name.
 ///
-/// Used in two places:
-/// 1. Boot overlay (main.dart): bridges the Android system splash and
-///    the app content — same icon, same background, no blank screen.
-/// 2. TimetableScreen loading state: shown while the provider reloads.
+/// Mirrors the native [SplashLayerDrawable] layout (96dp icon, 16dp gap, 20sp
+/// medium label) so the handoff from the system splash feels continuous.
 
 /// Returns a positive cache dimension or null (0/negative → no constraint).
 int? _positiveCacheDimension(int? value) =>
@@ -26,14 +24,8 @@ class AppBootBranding extends StatefulWidget {
   final String appLabel;
   final bool isDark;
 
-  /// Matches the Android 12 system splash default icon size (108dp).
-  static const double iconSize = 108;
-
-  /// Rounded-corner radius, matching splash_icon.png's built-in mask
-  /// (154px on 717px → same ratio applied to 108dp).
-  static const double iconCornerRadius = 23;
-
-  /// Gap between icon and label.
+  static const double iconSize = 96;
+  static const double iconCornerRadius = 22;
   static const double labelGap = 16;
 
   /// Splash / scaffold fill used while branding is on screen.
@@ -96,13 +88,13 @@ class _AppBootBrandingState extends State<AppBootBranding> {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = widget.isDark
+    final labelColor = widget.isDark
         ? const Color(0xE6FFFFFF)
         : const Color(0xE6000000);
 
-    // Icon size and position match the Android 12+ system splash exactly
-    // (108dp centered) so the icon doesn't jump between system splash and
-    // this page. The app name appears below, giving a complete brand look.
+    // First frame: _bytes is null → Material calendar icon (synchronous, same
+    // frame as the text).  After _resolveIcon completes: _bytes is set → the
+    // real launcher icon swaps in via setState without any flash.
     final iconWidget = _bytes != null
         ? ClipRRect(
             borderRadius: BorderRadius.circular(
@@ -130,7 +122,7 @@ class _AppBootBrandingState extends State<AppBootBranding> {
         : Icon(
             Icons.calendar_month_rounded,
             size: AppBootBranding.iconSize,
-            color: iconColor,
+            color: labelColor,
           );
 
     return Center(
@@ -143,7 +135,7 @@ class _AppBootBrandingState extends State<AppBootBranding> {
             widget.appLabel,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: iconColor,
+              color: labelColor,
               fontSize: 20,
               fontWeight: FontWeight.w500,
               height: 1.2,
