@@ -136,6 +136,10 @@ Future<void> main() async {
       // particularly after an Android process restart (e.g. returning from
       // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
+      // Single-stage boot: keep Android system splash (mipmap/ic_launcher)
+      // as the only branding until locally persisted timetable is ready.
+      // This avoids the 2-3 flickers: splash -> spinner -> timetable.
+      WidgetsBinding.instance.deferFirstFrame();
       // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the
       // first glass bar frame does not stall on shader compilation.
       await LiquidGlassWidgets.initialize();
@@ -404,6 +408,17 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       WebdavSyncCoordinator.instance();
   bool _startupHandled = false;
   bool _fairMemoryRecoveryHandled = false;
+  bool _allowFirstFrameCalled = false;
+
+  void _allowFirstFrameOnce() {
+    if (_allowFirstFrameCalled) return;
+    _allowFirstFrameCalled = true;
+    try {
+      WidgetsBinding.instance.allowFirstFrame();
+    } catch (_) {
+      // defer/allow mismatch is non-fatal; future first frame will proceed.
+    }
+  }
 
   @override
   void initState() {
@@ -503,10 +518,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       // 老用户快速路径：等待本地课表快照完成后再进入主界面。
       if (hasAcceptedPrivacy && hasSeenGuide) {
         _cloudSyncCoordinator.bindProvider(provider);
-        // Do not fade the brand layer until the local timetable snapshot is
-        // ready; otherwise the first visible frame can be an empty/default
-        // timetable while storage is still being read.
         await provider.initialize();
+        _allowFirstFrameOnce();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
         unawaited(_checkPendingExternalImport());
@@ -542,6 +555,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
       await Future.wait([providerInitFuture, legacyPackageFuture]);
       _cloudSyncCoordinator.bindProvider(provider);
+      _allowFirstFrameOnce();
       unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;
       final shouldShowMigrationGuide =
@@ -612,6 +626,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       await _revealMainContent();
     } catch (e, stackTrace) {
       // 初始化失败时降级进入主界面，避免白屏 hang
+      _allowFirstFrameOnce();
       unawaited(
         AppLogService.instance.error(
           'startup_flow_failed',

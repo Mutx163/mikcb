@@ -729,10 +729,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                 child: Material(
                   type: MaterialType.transparency,
                   child: provider.isLoading
-                      ? Center(
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      // Single-stage: system splash already covers loading;
+                      // render matching background to avoid spinner flash
+                      // if provider momentarily reports loading post-splash.
+                      ? ColoredBox(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF121212)
+                              : Colors.white,
                         )
                       : MediaQuery.removeViewInsets(
                           context: context,
