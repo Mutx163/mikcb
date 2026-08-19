@@ -133,12 +133,9 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        window.setBackgroundDrawable(
-            SplashLayerDrawable(
-                this,
-                applicationInfo.loadLabel(packageManager),
-            ),
-        )
+        // Install the Android/AndroidX splash before super.onCreate. Do not
+        // install a second custom window background here: the system splash is
+        // the only launch branding, and the first Flutter frame is the app UI.
         installSplashScreen()
         super.onCreate(savedInstanceState)
         // Debug deep links first so automation routes never fall into import.

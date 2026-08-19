@@ -46,7 +46,6 @@ import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/week_selector_picker_sheet.dart';
-import '../widgets/app_boot_branding.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -65,14 +64,10 @@ class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
   final bool enableProgressTimer;
 
-  /// Used for flavor-aware boot branding while [TimetableProvider.isLoading].
-  final PackageInfo? packageInfo;
-
   const TimetableScreen({
     super.key,
     this.enableUpdateCheck = true,
     this.enableProgressTimer = true,
-    this.packageInfo,
   });
 
   @override
@@ -734,18 +729,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 child: Material(
                   type: MaterialType.transparency,
                   child: provider.isLoading
-                      ? ColoredBox(
-                          color: AppBootBranding.backgroundColor(
-                            isDark: isDark,
-                          ),
-                          child: AppBootBranding(
-                            appLabel: widget.packageInfo != null
-                                ? AppBootBranding.resolveAppLabel(
-                                    widget.packageInfo!,
-                                    l10n,
-                                  )
-                                : l10n.appTitle,
-                            isDark: isDark,
+                      ? Center(
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         )
                       : MediaQuery.removeViewInsets(

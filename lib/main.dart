@@ -25,7 +25,6 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
-import 'widgets/app_boot_branding.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
@@ -45,7 +44,6 @@ import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
 import 'ui/hyperos_motion_bridge.dart';
-import 'utils/home_page_background.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -130,10 +128,6 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 Future<void> main() async {
   runZonedGuarded(
     () async {
-      // Keep Android's native SplashLayerDrawable visible until the Flutter
-      // brand layer can render with the real launcher bitmap on its very
-      // first frame.
-      //
       // ensureInitialized() MUST be called inside the same zone as runApp()
       // to avoid a "Zone mismatch" assertion. The binding records the zone
       // in which it was first initialized; if runApp() runs in a different
@@ -142,7 +136,6 @@ Future<void> main() async {
       // particularly after an Android process restart (e.g. returning from
       // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
-      await BundledAssets.warmUpLauncherIcon();
       // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the
       // first glass bar frame does not stall on shader compilation.
       await LiquidGlassWidgets.initialize();
@@ -203,13 +196,34 @@ Future<void> main() async {
       }
       // liquid_glass_widgets 的 AdaptiveGlass 自行处理引擎自适应
       // （Impeller 真折射 / Skia 轻量 shader / frosted 回退），无需启动探测。
+      late final PackageInfo packageInfo;
+      try {
+        packageInfo = await PackageInfo.fromPlatform();
+      } catch (error, stackTrace) {
+        debugPrint('PackageInfo.fromPlatform failed: $error');
+        unawaited(
+          AppLogService.instance.error(
+            'package_info_load_failed',
+            error.toString(),
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        );
+        packageInfo = PackageInfo(
+          appName: '轻屿课表',
+          packageName: 'com.mutx163.qingyu',
+          version: '',
+          buildNumber: '',
+        );
+      }
       runApp(
         LiquidGlassWidgets.wrap(
-          child: const _PackageInfoLoader(),
+          child: MyApp(packageInfo: packageInfo),
           // MaterialApp 集成：让玻璃组件跟随应用 ThemeMode（而非系统亮度）。
           brightnessResolver: Theme.maybeBrightnessOf,
         ),
       );
+      unawaited(_warmUpAfterFirstFrame(packageInfo));
     },
     (error, stackTrace) {
       unawaited(
@@ -389,8 +403,6 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   final WebdavSyncCoordinator _cloudSyncCoordinator =
       WebdavSyncCoordinator.instance();
   bool _startupHandled = false;
-  bool _isBootstrapping = true;
-  bool _mainContentReady = false;
   bool _fairMemoryRecoveryHandled = false;
 
   @override
@@ -659,36 +671,12 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
   }
 
-  /// Mount [TimetableScreen] under the boot overlay, paint one frame, then remove the overlay.
+  /// Android's mandatory system splash owns startup branding.
   Future<void> _revealMainContent() async {
     if (!mounted) {
       return;
     }
-
-    // The provider intentionally starts wallpaper decoding in the background
-    // so normal settings changes stay responsive. Startup is different: if the
-    // home backdrop is not decoded yet, the first timetable frame is an opaque
-    // dark surface and the wallpaper/glass appears one frame later. Keep the
-    // branding layer up until the image provider has delivered its first frame.
-    await precacheHomePageBackdropImage(
-      context.read<TimetableProvider>().settings,
-    );
-    if (!mounted) {
-      return;
-    }
-
-    if (!_mainContentReady) {
-      setState(() => _mainContentReady = true);
-      await WidgetsBinding.instance.endOfFrame;
-    }
-    if (!mounted || !_isBootstrapping) {
-      return;
-    }
-    setState(() => _isBootstrapping = false);
-    await WidgetsBinding.instance.endOfFrame;
-    if (mounted) {
-      await _restoreFairMemoryScene();
-    }
+    await _restoreFairMemoryScene();
   }
 
   Future<void> _restoreFairMemoryScene() async {
@@ -1013,28 +1001,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
-    final appLabel = AppBootBranding.resolveAppLabel(widget.packageInfo, l10n);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (_mainContentReady) TimetableScreen(packageInfo: widget.packageInfo),
-        // Do not alpha-fade this full-screen layer.  In dark mode the opaque
-        // branding background would be composited over the already-rendered
-        // home page during the fade, making wallpaper and liquid-glass cards
-        // look black before the layer disappears.  The main page is mounted
-        // and painted for one frame in [_revealMainContent] before this layer
-        // is removed, so the handoff is an atomic swap instead.
-        if (_isBootstrapping)
-          IgnorePointer(
-            child: ColoredBox(
-              color: AppBootBranding.backgroundColor(isDark: isDark),
-              child: AppBootBranding(appLabel: appLabel, isDark: isDark),
-            ),
-          ),
-      ],
-    );
+    // Android's mandatory system splash is the only launch branding.
+    // The normal timetable interface is mounted immediately after it.
+    return const TimetableScreen();
   }
 }
 
@@ -1107,55 +1076,5 @@ class _AppRouteLogObserver extends NavigatorObserver {
       return name;
     }
     return route.runtimeType.toString();
-  }
-}
-
-/// Loads [PackageInfo] after the first frame so [runApp] is not blocked.
-class _PackageInfoLoader extends StatefulWidget {
-  const _PackageInfoLoader();
-
-  @override
-  State<_PackageInfoLoader> createState() => _PackageInfoLoaderState();
-}
-
-class _PackageInfoLoaderState extends State<_PackageInfoLoader> {
-  PackageInfo? _packageInfo;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadPackageInfo());
-  }
-
-  Future<void> _loadPackageInfo() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    if (!mounted) {
-      return;
-    }
-    setState(() => _packageInfo = packageInfo);
-    unawaited(_warmUpAfterFirstFrame(packageInfo));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final packageInfo = _packageInfo;
-    if (packageInfo == null) {
-      // PackageInfo not loaded yet — show AppBootBranding with the generic
-      // app title so the icon stays visible (no blank screen).  For debug/
-      // profile flavors the label will briefly show "轻屿课表" before
-      // switching to the flavor-aware "轻屿课表调试版" once PackageInfo loads;
-      // this minor flicker is far less jarring than a blank coloured screen.
-      final isDark =
-          PlatformDispatcher.instance.platformBrightness == Brightness.dark;
-      final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: ColoredBox(
-          color: AppBootBranding.backgroundColor(isDark: isDark),
-          child: AppBootBranding(appLabel: l10n.appTitle, isDark: isDark),
-        ),
-      );
-    }
-    return MyApp(packageInfo: packageInfo);
   }
 }
