@@ -84,13 +84,77 @@ TOPIC_PAGES = (
 )
 
 
-def read_json(path: Path, fallback: Any) -> Any:
+def read_json(path: Path) -> Any:
     if not path.exists():
-        return fallback
+        raise SystemExit(f"Required SEO input is missing: {path}")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return fallback
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit(f"Required SEO input is invalid: {path}: {error}") from error
+
+
+def validate_schools_payload(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise SystemExit("schools.json must contain a JSON object")
+    schools = payload.get("schools")
+    counts = payload.get("counts")
+    if not isinstance(schools, list) or not isinstance(counts, dict):
+        raise SystemExit("schools.json must contain schools and counts")
+    actual_total = len(schools)
+    actual_school_count = sum(
+        1 for item in schools if isinstance(item, dict) and item.get("category") == "school"
+    )
+    actual_generic_count = sum(
+        1 for item in schools if isinstance(item, dict) and item.get("category") == "generic"
+    )
+    expected = {
+        "total": actual_total,
+        "schools": actual_school_count,
+        "generic": actual_generic_count,
+    }
+    for key, actual in expected.items():
+        declared = counts.get(key)
+        if not isinstance(declared, int) or declared != actual:
+            raise SystemExit(
+                f"schools.json counts.{key}={declared!r} does not match {actual}"
+            )
+    seen_ids: set[str] = set()
+    for item in schools:
+        if not isinstance(item, dict) or not text(item.get("id")):
+            raise SystemExit("schools.json contains an entry without a valid id")
+        school_id = text(item["id"])
+        if school_id in seen_ids:
+            raise SystemExit(f"schools.json contains duplicate id: {school_id}")
+        seen_ids.add(school_id)
+    return payload
+
+
+def validate_feed_payload(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise SystemExit("feed.json must contain a JSON object")
+    releases = payload.get("releases")
+    if not isinstance(releases, list):
+        raise SystemExit("feed.json releases must be a list")
+    declared_count = payload.get("releaseCount")
+    if not isinstance(declared_count, int):
+        raise SystemExit("feed.json releaseCount must be an integer")
+    # The feed keeps only the latest eight cards, while releaseCount records
+    # the total number of published releases returned by GitHub.
+    if declared_count < len(releases):
+        raise SystemExit(
+            f"feed.json releaseCount={declared_count} is smaller than serialized releases {len(releases)}"
+        )
+    if len(releases) > 8:
+        raise SystemExit("feed.json may serialize at most eight release cards")
+    seen_slugs: set[str] = set()
+    for item in releases:
+        if not isinstance(item, dict) or not text(item.get("version")):
+            raise SystemExit("feed.json contains a release without a version")
+        slug = slug_version(item["version"])
+        if slug in seen_slugs:
+            raise SystemExit(f"feed.json contains duplicate version slug: {slug}")
+        seen_slugs.add(slug)
+    return payload
 
 
 def text(value: Any, fallback: str = "") -> str:
@@ -199,6 +263,7 @@ def document(
     prefix: str,
     content: str,
     structured_data: dict[str, Any],
+    og_type: str = "article",
 ) -> str:
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -209,7 +274,7 @@ def document(
     <title>{body(title)}</title>
     <meta name="description" content="{attr(description)}" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-    <meta property="og:type" content="article" />
+    <meta property="og:type" content="{attr(og_type)}" />
     <meta property="og:site_name" content="轻屿课表" />
     <meta property="og:locale" content="zh_CN" />
     <meta property="og:title" content="{attr(title)}" />
@@ -367,6 +432,7 @@ def render_school_page(payload: dict[str, Any]) -> str:
         prefix="./",
         content=content,
         structured_data=structured,
+        og_type="website",
     )
 
 
@@ -412,6 +478,7 @@ def render_release_index(feed: dict[str, Any]) -> str:
         prefix="../",
         content=content,
         structured_data=structured,
+        og_type="website",
     )
 
 
@@ -474,16 +541,16 @@ def write_text(path: Path, content: str) -> None:
 
 def build_sitemap(feed: dict[str, Any], schools: dict[str, Any]) -> str:
     entries: list[tuple[str, str]] = [
-        (f"{BASE_URL}/", ""),
+        (f"{BASE_URL}/", TOPIC_LASTMOD),
         (f"{BASE_URL}/schools.html", date_only(schools.get("updatedAt"))),
         (f"{BASE_URL}/releases/", date_only(feed.get("generatedAt"))),
         (f"{BASE_URL}/hyperos-timetable.html", TOPIC_LASTMOD),
         (f"{BASE_URL}/course-import.html", TOPIC_LASTMOD),
         (f"{BASE_URL}/webdav-timetable-sync.html", TOPIC_LASTMOD),
         (f"{BASE_URL}/android-timetable.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/privacy.html", ""),
-        (f"{BASE_URL}/terms.html", ""),
-        (f"{BASE_URL}/contributing.html", ""),
+        (f"{BASE_URL}/privacy.html", TOPIC_LASTMOD),
+        (f"{BASE_URL}/terms.html", TOPIC_LASTMOD),
+        (f"{BASE_URL}/contributing.html", TOPIC_LASTMOD),
     ]
     for item in feed.get("releases", []):
         if isinstance(item, dict) and text(item.get("version")):
@@ -506,8 +573,8 @@ def main() -> int:
     if args.base_url != BASE_URL:
         raise SystemExit("This generator currently supports the canonical mutx.ccwu.cc site only")
 
-    schools = read_json(DOCS / "schools.json", {"schools": [], "counts": {}})
-    feed = read_json(DOCS / "releases" / "feed.json", {"releases": []})
+    schools = validate_schools_payload(read_json(DOCS / "schools.json"))
+    feed = validate_feed_payload(read_json(DOCS / "releases" / "feed.json"))
 
     for page in TOPIC_PAGES:
         write_text(DOCS / page["filename"], render_topic_page(page))

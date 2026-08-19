@@ -2,6 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://mutx.ccwu.cc/</loc>
+    <lastmod>2026-08-19</lastmod>
   </url>
   <url>
     <loc>https://mutx.ccwu.cc/schools.html</loc>
@@ -29,12 +30,15 @@
   </url>
   <url>
     <loc>https://mutx.ccwu.cc/privacy.html</loc>
+    <lastmod>2026-08-19</lastmod>
   </url>
   <url>
     <loc>https://mutx.ccwu.cc/terms.html</loc>
+    <lastmod>2026-08-19</lastmod>
   </url>
   <url>
     <loc>https://mutx.ccwu.cc/contributing.html</loc>
+    <lastmod>2026-08-19</lastmod>
   </url>
   <url>
     <loc>https://mutx.ccwu.cc/releases/v2.0.5.5.html</loc>

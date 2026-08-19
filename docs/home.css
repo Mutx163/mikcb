@@ -1098,6 +1098,17 @@ button {
   translate: 4px 0;
 }
 
+.bento-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 16px;
+}
+
+.bento-links .bento-link {
+  margin-top: 0;
+}
+
 .island-demo {
   display: flex;
   align-items: center;
