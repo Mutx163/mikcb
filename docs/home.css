@@ -1209,6 +1209,8 @@ button {
 
 #changelog .section-link-actions {
   justify-content: center;
+  max-width: 860px;
+  margin: 28px auto 36px;
 }
 
 #changelog .timeline {
