@@ -854,7 +854,7 @@ class AppSyncSnapshotService {
   }) async {
     try {
       final snapshot = parseSnapshotJson(content);
-      return applySnapshot(provider: provider, snapshot: snapshot);
+      return await applySnapshot(provider: provider, snapshot: snapshot);
     } on FormatException catch (error) {
       return error.message;
     } catch (_) {

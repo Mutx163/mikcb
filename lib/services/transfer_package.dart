@@ -215,26 +215,49 @@ class TransferPackage {
     DateTime? exportedAt,
   }) : packageId = packageId.trim(),
        exportedAt = exportedAt ?? DateTime.now() {
-    _requireUniqueIdsAcross(
-      'course',
-      courses.map((item) => item.id),
-      profiles.map((profile) => profile.courses.map((item) => item.id)),
-    );
-    _requireUniqueIdsAcross(
-      'task',
-      tasks.map((item) => item.id),
-      profiles.map((profile) => profile.tasks.map((item) => item.id)),
-    );
-    _requireUniqueIdsAcross(
-      'schedule_item',
-      scheduleItems.map((item) => item.id),
-      profiles.map((profile) => profile.scheduleItems.map((item) => item.id)),
-    );
-    _requireUniqueIdsAcross(
-      'exam',
-      exams.map((item) => item.id),
-      profiles.map((profile) => profile.exams.map((item) => item.id)),
-    );
+    if (channel == TransferChannel.cloud) {
+      _requireUniqueIdsAllowingCrossProfile(
+        'course',
+        courses.map((item) => item.id),
+        profiles.map((profile) => profile.courses.map((item) => item.id)),
+      );
+      _requireUniqueIdsAllowingCrossProfile(
+        'task',
+        tasks.map((item) => item.id),
+        profiles.map((profile) => profile.tasks.map((item) => item.id)),
+      );
+      _requireUniqueIdsAllowingCrossProfile(
+        'schedule_item',
+        scheduleItems.map((item) => item.id),
+        profiles.map((profile) => profile.scheduleItems.map((item) => item.id)),
+      );
+      _requireUniqueIdsAllowingCrossProfile(
+        'exam',
+        exams.map((item) => item.id),
+        profiles.map((profile) => profile.exams.map((item) => item.id)),
+      );
+    } else {
+      _requireUniqueIdsAcross(
+        'course',
+        courses.map((item) => item.id),
+        profiles.map((profile) => profile.courses.map((item) => item.id)),
+      );
+      _requireUniqueIdsAcross(
+        'task',
+        tasks.map((item) => item.id),
+        profiles.map((profile) => profile.tasks.map((item) => item.id)),
+      );
+      _requireUniqueIdsAcross(
+        'schedule_item',
+        scheduleItems.map((item) => item.id),
+        profiles.map((profile) => profile.scheduleItems.map((item) => item.id)),
+      );
+      _requireUniqueIdsAcross(
+        'exam',
+        exams.map((item) => item.id),
+        profiles.map((profile) => profile.exams.map((item) => item.id)),
+      );
+    }
     _requireUniqueIds('profile', profiles.map((item) => item.id));
     _requireUniqueIds('time_scheme', timeSchemes.map((item) => item.id));
     _requireUniqueIds('time_rule', scheduleDateRules.map((item) => item.id));
@@ -608,6 +631,20 @@ class TransferPackage {
       final TimetableProfile item => item.id,
       _ => throw const FormatException('transfer_entity_id_missing'),
     };
+  }
+
+  static void _requireUniqueIdsAllowingCrossProfile(
+    String kind,
+    Iterable<String> topLevelIds,
+    Iterable<Iterable<String>> nestedIds,
+  ) {
+    // Cloud snapshots may repeat an entity ID in separate profiles. Keep the
+    // duplicate guard within each profile and for top-level entities, while
+    // deliberately not comparing IDs across profile boundaries.
+    _requireUniqueIds(kind, topLevelIds);
+    for (final ids in nestedIds) {
+      _requireUniqueIds(kind, ids);
+    }
   }
 
   static void _requireUniqueIds(String kind, Iterable<String> ids) {

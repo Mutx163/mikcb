@@ -178,7 +178,7 @@ void main() {
     expect(jsonValidation.errors, contains('transfer_package_empty'));
   });
 
-  test('rejects duplicate IDs across profile payloads', () {
+  test('rejects duplicate IDs inside file-transfer profiles', () {
     final profile = TimetableProfile(
       id: 'profile-1',
       name: '大二下',
@@ -203,6 +203,38 @@ void main() {
           'transfer_course_id_duplicate',
         ),
       ),
+    );
+  });
+
+  test('allows repeated IDs between cloud profiles but not within one profile', () {
+    final first = TimetableProfile(
+      id: 'profile-1',
+      name: '主课表',
+      courses: [_course(id: 'shared-course')],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+      createdAt: DateTime(2026, 1, 1),
+      lastUsedAt: DateTime(2026, 1, 1),
+    );
+    final second = TimetableProfile(
+      id: 'profile-2',
+      name: '共享课表',
+      courses: [_course(id: 'shared-course')],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+      createdAt: DateTime(2026, 1, 1),
+      lastUsedAt: DateTime(2026, 1, 1),
+    );
+
+    expect(
+      TransferPackage(
+        packageId: 'cloud-duplicate',
+        scope: TransferScope.allData,
+        channel: TransferChannel.cloud,
+        profiles: [first, second],
+        isFullBackup: true,
+      ),
+      isA<TransferPackage>(),
     );
   });
 
