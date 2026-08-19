@@ -1207,6 +1207,10 @@ button {
   text-align: center;
 }
 
+#changelog .section-link-actions {
+  justify-content: center;
+}
+
 #changelog .timeline {
   margin-left: auto;
   margin-right: auto;
