@@ -1207,15 +1207,101 @@ button {
   text-align: center;
 }
 
-#changelog .section-link-actions {
-  justify-content: center;
-  max-width: 860px;
-  margin: 28px auto 36px;
-}
-
 #changelog .timeline {
   margin-left: auto;
   margin-right: auto;
+}
+
+/* 新：时间线收口后的功能脚注 — 与 timeline 同宽、同居中，风格走 bento 卡的玻璃拟态 */
+.changelog-foot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 860px;
+  margin: 38px auto 0;
+}
+
+.changelog-foot-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px 18px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.25s, background 0.25s, transform 0.22s, box-shadow 0.25s;
+}
+
+.changelog-foot-link:hover {
+  border-color: var(--line-strong);
+  background: var(--card-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.32);
+}
+
+.cfl-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(52, 130, 255, 0.1);
+  color: #8ab8ff;
+}
+
+.changelog-foot-link:last-child .cfl-icon {
+  background: rgba(45, 212, 191, 0.1);
+  color: #6ee7d8;
+}
+
+.cfl-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.cfl-text strong {
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.cfl-text small {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.cfl-arrow {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  transition: border-color 0.22s, color 0.22s, transform 0.22s, background 0.22s;
+}
+
+.changelog-foot-link:hover .cfl-arrow {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(3px);
+}
+
+@media (max-width: 640px) {
+  .changelog-foot {
+    grid-template-columns: 1fr;
+  }
 }
 
 .tl-item {
