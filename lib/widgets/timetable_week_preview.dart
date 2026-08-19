@@ -599,7 +599,11 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleBorder = context.theme.colors.border;
+    final hasBackdropForBorder = hasHomePageBackdropImage(settings);
+    final subtleBorder = hasBackdropForBorder
+        ? context.theme.colors.border
+        : HyperosColors.dividerLine(context);
+    final dividerWidth = hasBackdropForBorder ? 1.0 : 0.5;
     final visibleDays = _visibleDayNumbers(settings);
     final canReturnToCurrentWeek = _canReturnToCurrentWeek(settings, week);
     final showsInlineBackToCurrentWeek =
@@ -642,7 +646,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       decoration: BoxDecoration(
         border: hideBottomBorder
             ? null
-            : Border(bottom: BorderSide(color: subtleBorder, width: 1)),
+            : Border(
+                bottom: BorderSide(color: subtleBorder, width: dividerWidth),
+              ),
       ),
       child: Row(
         children: [
