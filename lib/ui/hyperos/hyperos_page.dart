@@ -33,6 +33,7 @@ class HyperosRootPage extends StatelessWidget {
     this.systemOverlayStyle,
     this.resizeToAvoidBottomInset = false,
     this.overlayHeader = true,
+    this.bottomBar,
   });
 
   final Widget title;
@@ -62,6 +63,12 @@ class HyperosRootPage extends StatelessWidget {
   /// pages like the main timetable where the body must not sit under the bar.
   final bool overlayHeader;
 
+  /// Optional fixed bar pinned at the bottom, outside the collapsible
+  /// translation (e.g. guide "Next" row). When set, the bar is rendered
+  /// via [Scaffold.bottomNavigationBar] so the scroll-driven
+  /// [_collapseInsetDelta] never lifts it.
+  final Widget? bottomBar;
+
   @override
   Widget build(BuildContext context) {
     final collapsibleTitle = hyperosExtractPageTitleText(title);
@@ -75,6 +82,7 @@ class HyperosRootPage extends StatelessWidget {
       headerExtension: headerExtension,
       collapsibleTitle: collapsibleTitle,
       collapsibleActions: suffixes,
+      bottomBar: bottomBar,
       // Root semantics (Forui root header): left-aligned interactive title.
       // The nested variant centers the title under an IgnorePointer, which
       // killed tap targets like the home profile switcher.
@@ -115,6 +123,7 @@ class HyperosSubpage extends StatelessWidget {
     this.overlayHeader = true,
     this.resizeToAvoidBottomInset = false,
     this.collapsibleLargeTitle = true,
+    this.bottomBar,
   });
 
   final Widget title;
@@ -141,6 +150,9 @@ class HyperosSubpage extends StatelessWidget {
   /// large-title collapse.
   final bool collapsibleLargeTitle;
 
+  /// See [HyperosRootPage.bottomBar].
+  final Widget? bottomBar;
+
   @override
   Widget build(BuildContext context) {
     final collapsibleTitle = collapsibleLargeTitle
@@ -166,6 +178,7 @@ class HyperosSubpage extends StatelessWidget {
       collapsibleTitle: collapsibleTitle,
       collapsibleNavigationIcon: navigationIcon,
       collapsibleActions: suffixes,
+      bottomBar: bottomBar,
       header: HyperosOverlayNestedHeader(
         prefixes:
             prefixes ??
@@ -195,6 +208,7 @@ class _HyperosBlurredPage extends StatefulWidget {
     this.collapsibleTitle,
     this.collapsibleNavigationIcon,
     this.collapsibleActions,
+    this.bottomBar,
   });
 
   final Widget header;
@@ -212,6 +226,7 @@ class _HyperosBlurredPage extends StatefulWidget {
   final String? collapsibleTitle;
   final Widget? collapsibleNavigationIcon;
   final List<Widget>? collapsibleActions;
+  final Widget? bottomBar;
 
   @override
   State<_HyperosBlurredPage> createState() => _HyperosBlurredPageState();
@@ -593,6 +608,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
         backgroundColor: pageBackground,
+        bottomNavigationBar: widget.bottomBar == null
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [widget.bottomBar!],
+              ),
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -644,6 +665,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
         backgroundColor: pageBackground,
+        bottomNavigationBar: widget.bottomBar == null
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [widget.bottomBar!],
+              ),
         body: _buildHeaderScope(
           contentTopInset: headerInset,
           routeBlurEnabled: _backdropBlurEnabled,

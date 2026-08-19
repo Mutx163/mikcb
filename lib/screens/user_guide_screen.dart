@@ -229,23 +229,17 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               : l10n.guideAndPermissionsTitle,
         ),
         headerExtension: _buildProgressBar(l10n),
+        bottomBar: _buildBottomBar(l10n),
         child: HyperosBlurredBodyInset(
-          child: Column(
+          child: PageView(
+            controller: _pageController,
+            physics: const ClampingScrollPhysics(),
+            onPageChanged: _onPageChanged,
             children: [
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const ClampingScrollPhysics(),
-                  onPageChanged: _onPageChanged,
-                  children: [
-                    _buildWelcomePage(l10n),
-                    _buildPrivacyPage(l10n),
-                    _buildPermissionsPage(l10n),
-                    _buildTipsPage(l10n),
-                  ],
-                ),
-              ),
-              _buildBottomBar(l10n),
+              _buildWelcomePage(l10n),
+              _buildPrivacyPage(l10n),
+              _buildPermissionsPage(l10n),
+              _buildTipsPage(l10n),
             ],
           ),
         ),
@@ -767,24 +761,25 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildBottomBar(AppLocalizations l10n) {
-    final colors = context.theme.colors;
     final isFirstPage = _currentPage == 0;
     final isLastPage = _currentPage == _totalPages - 1;
     final showPrev = !isFirstPage;
     final isPrivacyPage = widget.requirePrivacyConsent && _currentPage == 1;
     final canGoNext = !isPrivacyPage || _privacyChecked;
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: BoxDecoration(
-          color: colors.background,
-          border: Border(top: BorderSide(color: colors.border)),
-        ),
-        child: Row(
-          children: [
-            if (isPrivacyPage)
+    // Container outside SafeArea so the gesture-indicator inset is filled
+    // with the same color as the page (fixes the white-strip / blue mismatch).
+    // No top border — the bar should sit flush against content.
+    final barBackground = HyperosColors.scaffoldBackground(context);
+    return Container(
+      color: barBackground,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Row(
+            children: [
+              if (isPrivacyPage)
               HyperosButton(
                 label: l10n.exitAppAction,
                 variant: HyperosButtonVariant.secondary,
@@ -814,7 +809,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   void _finishGuide() {
