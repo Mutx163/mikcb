@@ -10,7 +10,8 @@ on:
   workflow_dispatch: # 允许在 Actions 面板手动触发
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Schools and releases both rewrite sitemap/pages; serialize their commits.
+  group: docs-data-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -218,11 +219,14 @@ jobs:
           );
           EOF
 
+      - name: Build crawlable docs pages and sitemap
+        run: python tool/build_docs_seo.py
+
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
         with:
           branch: ${{ github.event.repository.default_branch }}
-          commit_message: "chore(docs): auto-update releases json"
-          file_pattern: docs/releases/latest.json docs/releases/feed.json
+          commit_message: "chore(docs): auto-update releases json and SEO pages"
+          file_pattern: docs/releases/latest.json docs/releases/feed.json docs/schools.html docs/sitemap.xml docs/*.html docs/releases/index.html docs/releases/v*.html tool/build_docs_seo.py
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
