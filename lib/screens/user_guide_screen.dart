@@ -317,8 +317,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return ScrollConfiguration(
+      behavior: const _GuideClampingBehavior(),
+      child: ListView(
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         HyperosCard(
           padding: const EdgeInsets.all(20),
@@ -364,6 +367,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ],
         ),
       ],
+      ),
     );
   }
 
@@ -404,8 +408,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ? l10n.guidePrivacyHelperRequireConsent
         : l10n.guidePrivacyHelperViewOnly;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return ScrollConfiguration(
+      behavior: const _GuideClampingBehavior(),
+      child: ListView(
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         HyperosListGroup(
           children: [
@@ -484,6 +491,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ],
       ],
+      ),
     );
   }
 
@@ -501,8 +509,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ? 0.0
         : readyCount / countableItems.length;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return ScrollConfiguration(
+      behavior: const _GuideClampingBehavior(),
+      child: ListView(
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         HyperosSectionLabel(text: l10n.guidePermissionsHeader),
         const SizedBox(height: 8),
@@ -548,6 +559,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           title: Text(l10n.guidePermissionsFooterHint),
         ),
       ],
+      ),
     );
   }
 
@@ -620,8 +632,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final bodyStyle = _guideBodyStyle();
     final mutedBodyStyle = _guideMutedBodyStyle();
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return ScrollConfiguration(
+      behavior: const _GuideClampingBehavior(),
+      child: ListView(
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         HyperosSectionLabel(text: l10n.guideTipsHeader),
         Padding(
@@ -709,6 +724,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -1006,6 +1022,16 @@ class _GuidePermissionTile extends StatelessWidget {
       child: row,
     );
   }
+}
+
+class _GuideClampingBehavior extends ScrollBehavior {
+  const _GuideClampingBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) => const ClampingScrollPhysics();
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) => child;
 }
 
 class _PermissionItem {
