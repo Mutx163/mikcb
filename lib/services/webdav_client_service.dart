@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:webdav_plus/webdav_plus.dart';
 
 import 'app_sync_snapshot_service.dart';
@@ -255,7 +256,7 @@ class WebdavClientService {
         etag: await getRemoteEtag(client: client, remotePath: remotePath),
       );
     } catch (error) {
-      return WebdavRemoteMetaResult.failed(error.toString());
+      return const WebdavRemoteMetaResult.failed('invalid_response');
     }
   }
 
@@ -292,6 +293,11 @@ class WebdavClientService {
   /// Attempts to acquire an exclusive lock. Unsupported locking is reported
   /// separately so sync can fall back to versioned publication; transport and
   /// lock-conflict failures remain hard failures.
+  ///
+  /// Some providers return 403 for a collection LOCK even though the account
+  /// can read and write files. Only a response that explicitly describes an
+  /// unsupported LOCK is eligible for the fallback; an opaque 403 remains an
+  /// access-denied error.
   Future<WebdavLockResult> acquireWriteLock({
     required WebdavClient client,
     required String remotePath,
@@ -305,11 +311,28 @@ class WebdavClientService {
       return WebdavLockResult.acquired(token);
     } catch (error) {
       final statusCode = error is WebDAVException ? error.statusCode : null;
+      // 405/501 mean the server does not implement LOCK at all. A 403 is
+      // unsupported only when the response explicitly says so; plain 403
+      // usually means credentials or ACLs are insufficient.
       if (statusCode == 405 || statusCode == 501) {
         return const WebdavLockResult.unsupported();
       }
-      return WebdavLockResult.failed(error.toString());
+      if (statusCode == 403 && _looksLikeUnsupportedLock(error)) {
+        return const WebdavLockResult.unsupported();
+      }
+      return WebdavLockResult.failed(
+        statusCode == 403 ? 'access_denied' : error.toString(),
+      );
     }
+  }
+
+  static bool _looksLikeUnsupportedLock(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('cannot be locked') ||
+        message.contains('can not be locked') ||
+        message.contains('lock not supported') ||
+        message.contains('unsupported lock') ||
+        message.contains('lock method not allowed');
   }
 
   Future<void> releaseWriteLock({
@@ -387,11 +410,65 @@ class WebdavClientService {
   }
 
   /// Maps transport / protocol failures from [get] into a structured result.
+  ///
+  /// Returns clean error codes (not raw exception strings) so that
+  /// [sanitizeWebdavErrorMessage] and the sync-error localizer can map
+  /// them to user-facing text.  Raw exception strings leak internal
+  /// details (response bodies, URLs) and cannot be localized.
   static WebdavGetBytesResult classifyGetBytesFailure(Object error) {
     if (error is TimeoutException) {
       return const WebdavGetBytesResult.failed('connection_timeout');
     }
+    if (error is SocketException) {
+      return const WebdavGetBytesResult.failed('connection_failed');
+    }
+    if (error is HandshakeException) {
+      return const WebdavGetBytesResult.failed('certificate_error');
+    }
+    if (error is FormatException) {
+      return const WebdavGetBytesResult.failed('invalid_response');
+    }
+
+    // WebDAVException carries a statusCode — use it for precise mapping.
+    final statusCode = error is WebDAVException ? error.statusCode : null;
+    if (statusCode != null) {
+      if (statusCode == 401) {
+        return const WebdavGetBytesResult.failed('auth_failed');
+      }
+      if (statusCode == 403) {
+        return const WebdavGetBytesResult.failed('access_denied');
+      }
+      if (statusCode == 404) {
+        return const WebdavGetBytesResult.notFound();
+      }
+      if (statusCode >= 500) {
+        return const WebdavGetBytesResult.failed('invalid_response');
+      }
+      // Other 4xx / unexpected status codes.
+      return WebdavGetBytesResult.failed('http_$statusCode');
+    }
+
+    // Fall back to string matching for non-WebDAV exceptions (e.g. raw
+    // http client errors that were not wrapped by the package).
     final message = error.toString().toLowerCase();
+    final statusMatch = RegExp(r'\bhttp\s+(\d{3})\b').firstMatch(message);
+    final textualStatusCode =
+        statusMatch == null ? null : int.tryParse(statusMatch.group(1)!);
+    if (textualStatusCode == 401) {
+      return const WebdavGetBytesResult.failed('auth_failed');
+    }
+    if (textualStatusCode == 403) {
+      return const WebdavGetBytesResult.failed('access_denied');
+    }
+    if (textualStatusCode == 404) {
+      return const WebdavGetBytesResult.notFound();
+    }
+    if (textualStatusCode != null && textualStatusCode >= 500) {
+      return const WebdavGetBytesResult.failed('invalid_response');
+    }
+    if (textualStatusCode != null && textualStatusCode >= 400) {
+      return WebdavGetBytesResult.failed('http_$textualStatusCode');
+    }
     final looksMissing =
         message.contains('404') ||
         message.contains('not found') ||
@@ -401,6 +478,17 @@ class WebdavClientService {
     if (looksMissing) {
       return const WebdavGetBytesResult.notFound();
     }
-    return WebdavGetBytesResult.failed(error.toString());
+    if (message.contains('certificate') || message.contains('handshake')) {
+      return const WebdavGetBytesResult.failed('certificate_error');
+    }
+    if (message.contains('timeout')) {
+      return const WebdavGetBytesResult.failed('connection_timeout');
+    }
+    if (message.contains('connection') ||
+        message.contains('socket') ||
+        message.contains('network')) {
+      return const WebdavGetBytesResult.failed('connection_failed');
+    }
+    return const WebdavGetBytesResult.failed('sync_failed');
   }
 }

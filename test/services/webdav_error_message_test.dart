@@ -23,6 +23,17 @@ void main() {
     );
   });
 
+  test('sanitizeWebdavErrorMessage maps generic HTTP statuses', () {
+    expect(
+      sanitizeWebdavErrorMessage(const HttpException('statusCode=429')),
+      'http_429',
+    );
+    expect(
+      sanitizeWebdavErrorMessage(const HttpException('statusCode=500')),
+      'invalid_response',
+    );
+  });
+
   test('sanitizeWebdavErrorMessage keeps state error message', () {
     expect(
       sanitizeWebdavErrorMessage(StateError('backup_not_found')),

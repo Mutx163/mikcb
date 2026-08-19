@@ -33,12 +33,29 @@ void main() {
       expect(result.errorMessage, isNull);
     });
 
-    test('classifyGetBytesFailure keeps other errors as failed message', () {
+    test('classifyGetBytesFailure maps HTTP status messages safely', () {
+      final cases = <String, String>{
+        'HTTP 400 Bad Request': 'http_400',
+        'HTTP 409 Conflict': 'http_409',
+        'HTTP 429 Too Many Requests': 'http_429',
+        'HTTP 500 Internal Server Error': 'invalid_response',
+      };
+      for (final entry in cases.entries) {
+        final result = WebdavClientService.classifyGetBytesFailure(
+          StateError(entry.key),
+        );
+        expect(result.isFailed, isTrue, reason: entry.key);
+        expect(result.errorMessage, entry.value, reason: entry.key);
+      }
+    });
+
+    test('classifyGetBytesFailure sanitizes unknown error text', () {
       final result = WebdavClientService.classifyGetBytesFailure(
         StateError('auth_failed_custom'),
       );
       expect(result.isFailed, isTrue);
-      expect(result.errorMessage, contains('auth_failed_custom'));
+      expect(result.errorMessage, 'sync_failed');
+      expect(result.errorMessage, isNot(contains('auth_failed_custom')));
     });
   });
 }
