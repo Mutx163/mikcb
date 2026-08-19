@@ -1071,22 +1071,124 @@ main {
 /* Generated crawlable SEO pages share the site's visual language without
    depending on the homepage JavaScript bundle. */
 .seo-page .global-nav {
-  position: relative;
+  position: sticky;
+  top: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: rgba(5, 7, 13, 0.7);
+  backdrop-filter: saturate(160%) blur(18px);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+}
+
+.seo-page .nav-inner {
+  min-height: 64px;
+}
+
+.seo-page .nav-brand {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.seo-page .nav-brand-mark {
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 9px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.seo-page .nav-brand-mark img {
+  width: 32px;
+  height: 32px;
+  border-radius: 0;
+}
+
+.seo-page .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seo-page .nav-links a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  transition: color 0.2s, background 0.2s;
+}
+
+.seo-page .nav-links a:hover,
+.seo-page .nav-links a:focus-visible,
+.seo-page .nav-links a.is-active {
+  color: var(--text);
+  background: var(--surface-tint);
+}
+
+.seo-page .nav-links a.is-active::after {
+  display: none;
 }
 
 .seo-page .nav-actions {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .seo-page .nav-github {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
   color: var(--text-soft);
-  font-size: 0.84rem;
+  transition: color 0.2s, border-color 0.2s, transform 0.2s;
 }
 
 .seo-page .nav-github:hover {
   color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.seo-page .seo-nav-cta {
+  padding: 11px 22px;
+  font-size: 0.95rem;
+  background: linear-gradient(120deg, var(--blue), #2dd4bf);
+  box-shadow: 0 8px 30px rgba(52, 130, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.seo-page .seo-nav-cta:hover {
+  background: linear-gradient(120deg, var(--blue-hover), #40e0cc);
+  box-shadow: 0 14px 40px rgba(52, 130, 255, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.seo-page .nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  width: 44px;
+  height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+}
+
+.seo-page .nav-toggle span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+  transition: transform 0.25s, opacity 0.25s;
+}
+
+.seo-page .nav-toggle[aria-expanded="true"] span:first-child {
+  transform: translateY(4px) rotate(45deg);
+}
+
+.seo-page .nav-toggle[aria-expanded="true"] span:last-child {
+  transform: translateY(-4px) rotate(-45deg);
 }
 
 .seo-page .detail-page {
@@ -1095,6 +1197,18 @@ main {
 
 .seo-article {
   max-width: 960px;
+}
+
+.seo-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 38px;
+}
+
+.seo-related-links .primary-cta,
+.seo-related-links .secondary-cta {
+  min-height: 44px;
 }
 
 .seo-breadcrumb {
@@ -1455,7 +1569,48 @@ main {
   }
 
   .seo-page .nav-links {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 20px;
+    left: 20px;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 18px;
+    background: rgba(10, 14, 24, 0.96);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.25s, transform 0.25s, visibility 0.25s;
+  }
+
+  .seo-page .nav-links.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+
+  .seo-page .nav-links a {
+    padding: 12px 16px;
+  }
+
+  .seo-page .nav-toggle {
+    display: flex;
+  }
+
+  .seo-page .nav-github {
     display: none;
+  }
+
+  .seo-page .seo-nav-cta {
+    padding: 9px 16px;
+    font-size: 0.84rem;
   }
 
   .seo-page .nav-actions {

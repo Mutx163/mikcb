@@ -222,6 +222,27 @@ button {
   line-height: 1.75;
 }
 
+.section-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.section-link-actions .cta-btn {
+  min-height: 42px;
+  padding: 10px 17px;
+  font-size: 0.9rem;
+}
+
+.section-link-actions .cta-btn span {
+  transition: transform 0.2s ease;
+}
+
+.section-link-actions .cta-btn:hover span {
+  transform: translateX(3px);
+}
+
 .grad-text {
   background: var(--grad);
   -webkit-background-clip: text;
