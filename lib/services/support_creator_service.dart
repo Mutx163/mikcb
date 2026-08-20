@@ -53,12 +53,47 @@ class SupportDonorData {
         )
         .where((item) => item.name.isNotEmpty)
         .toList();
+
+    donorItems.sort(_compareDonorDateDesc);
+
     return SupportDonorData(
       title: (json['title'] as String?)?.trim(),
       subtitle: (json['subtitle'] as String?)?.trim(),
       updatedAt: (json['updatedAt'] as String?)?.trim(),
       donors: donorItems,
     );
+  }
+
+  static int _compareDonorDateDesc(SupportDonorEntry a, SupportDonorEntry b) {
+    final dateA = _parseDonorDate(a.date);
+    final dateB = _parseDonorDate(b.date);
+    if (dateA != null && dateB != null) {
+      final cmp = dateB.compareTo(dateA);
+      if (cmp != 0) return cmp;
+    } else if (dateA != null) {
+      return -1;
+    } else if (dateB != null) {
+      return 1;
+    } else {
+      final rawA = a.date?.trim() ?? '';
+      final rawB = b.date?.trim() ?? '';
+      if (rawA.isNotEmpty && rawB.isNotEmpty) {
+        final cmp = rawB.compareTo(rawA);
+        if (cmp != 0) return cmp;
+      } else if (rawA.isNotEmpty) {
+        return -1;
+      } else if (rawB.isNotEmpty) {
+        return 1;
+      }
+    }
+    return 0;
+  }
+
+  static DateTime? _parseDonorDate(String? raw) {
+    if (raw == null) return null;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    return DateTime.tryParse(trimmed);
   }
 }
 

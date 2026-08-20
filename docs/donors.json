@@ -4,22 +4,10 @@
     "updatedAt": "2026-08-20",
     "donors": [
     {
-        "name": "B*y",
-        "amount": "¥6.66",
-        "date": "2026-03-28 10:06:23",
-        "message": "感谢兄弟的免费课表"
-    },
-    {
-        "name": "做人要像清水",
-        "amount": "¥6.66",
-        "date": "2026-03-28 18:33:33",
-        "message": "非常棒的开发者继续 加油"
-    },
-    {
-        "name": "Perpetual-Memories",
-        "amount": "¥6.66",
-        "date": "2026-05-26 16:17:57",
-        "message": "麻烦看下issue#8，谢谢"
+        "name": "zuolee",
+        "amount": "¥1.93",
+        "date": "2026-08-20 19:30:23",
+        "message": "微信里没钱了，全给你了😭"
     },
     {
         "name": "欧宝XOU",
@@ -28,10 +16,22 @@
         "message": "加油！"
     },
     {
-        "name": "zuolee",
-        "amount": "¥1.93",
-        "date": "2026-08-20 19:30:23",
-        "message": "微信里没钱了，全给你了😭"
+        "name": "Perpetual-Memories",
+        "amount": "¥6.66",
+        "date": "2026-05-26 16:17:57",
+        "message": "麻烦看下issue#8，谢谢"
+    },
+    {
+        "name": "做人要像清水",
+        "amount": "¥6.66",
+        "date": "2026-03-28 18:33:33",
+        "message": "非常棒的开发者继续 加油"
+    },
+    {
+        "name": "B*y",
+        "amount": "¥6.66",
+        "date": "2026-03-28 10:06:23",
+        "message": "感谢兄弟的免费课表"
     }
     ]
  }

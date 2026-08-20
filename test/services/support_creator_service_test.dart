@@ -76,4 +76,23 @@ void main() {
 
     expect(data.donors.single.name, '小明同学');
   });
+
+  test('SupportDonorData.fromJson sorts donors by date descending (newest first)', () {
+    final json = {
+      'title': '鸣谢名单',
+      'donors': [
+        {'name': 'Old Donor', 'date': '2026-03-28 10:06:23'},
+        {'name': 'Middle Donor', 'date': '2026-05-26 16:17:57'},
+        {'name': 'Newest Donor', 'date': '2026-08-20 19:30:23'},
+        {'name': 'No Date Donor'},
+      ],
+    };
+
+    final data = SupportDonorData.fromJson(json);
+
+    expect(
+      data.donors.map((e) => e.name).toList(),
+      ['Newest Donor', 'Middle Donor', 'Old Donor', 'No Date Donor'],
+    );
+  });
 }
