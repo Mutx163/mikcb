@@ -226,20 +226,24 @@ class HolidayData {
       year = rawYear.toInt();
     } else if (rawYear is String) {
       final parsed = int.tryParse(rawYear);
-      if (parsed == null) throw FormatException('invalid holiday year: $rawYear');
+      if (parsed == null) {
+        throw FormatException('invalid holiday year: $rawYear');
+      }
       year = parsed;
     } else {
       throw const FormatException('missing holiday year');
     }
     final version = (json['version'] as num?)?.toInt() ?? 1;
-    final rawEntries = json['entries'] as List<dynamic>? ?? const [];
+    final rawEntries = json['entries'] is List
+        ? json['entries'] as List<dynamic>
+        : const <dynamic>[];
     final entries = <HolidayEntry>[];
     for (final e in rawEntries) {
       try {
-        if (e is! Map) continue;
-        entries.add(
-          HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)),
-        );
+        if (e is! Map) {
+          continue;
+        }
+        entries.add(HolidayEntry.fromJson(Map<String, dynamic>.from(e)));
       } catch (_) {
         continue;
       }

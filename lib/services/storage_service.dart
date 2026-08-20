@@ -103,6 +103,26 @@ class StorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  TimeScheme _snapshotTimeScheme(TimeScheme scheme) =>
+      TimeScheme.fromJson(Map<String, dynamic>.from(scheme.toJson()));
+
+  LocationTimeGroup _snapshotLocationTimeGroup(LocationTimeGroup group) =>
+      LocationTimeGroup.fromJson(Map<String, dynamic>.from(group.toJson()));
+
+  TimetableProfile _snapshotProfile(TimetableProfile profile) =>
+      TimetableProfile.fromJson(Map<String, dynamic>.from(profile.toJson()));
+
+  List<TimeScheme> _snapshotTimeSchemes(Iterable<TimeScheme> schemes) =>
+      schemes.map(_snapshotTimeScheme).toList();
+
+  List<LocationTimeGroup> _snapshotLocationTimeGroups(
+    Iterable<LocationTimeGroup> groups,
+  ) => groups.map(_snapshotLocationTimeGroup).toList();
+
+  List<TimetableProfile> _snapshotProfiles(
+    Iterable<TimetableProfile> profiles,
+  ) => profiles.map(_snapshotProfile).toList();
+
   Future<void> _backupAndRemoveCorruptString(String key, String raw) async {
     final prefs = _prefs;
     if (prefs == null) {
@@ -490,7 +510,7 @@ class StorageService {
     await _migrateHidePrefixDefault();
     final cached = _profilesListCache;
     if (cached != null) {
-      return List<TimetableProfile>.from(cached);
+      return _snapshotProfiles(cached);
     }
 
     final parseResult = await _parseProfilesFromDisk();
@@ -502,19 +522,17 @@ class StorageService {
         if (lockedResult.didDrop && lockedResult.profiles.isNotEmpty) {
           await _writeProfilesWithoutLock(lockedResult.profiles);
         } else if (!lockedResult.didDrop) {
-          _profilesListCache = List<TimetableProfile>.from(
-            lockedResult.profiles,
-          );
+          _profilesListCache = _snapshotProfiles(lockedResult.profiles);
         }
       });
       final healed = _profilesListCache;
       if (healed != null) {
-        return List<TimetableProfile>.from(healed);
+        return _snapshotProfiles(healed);
       }
     }
 
-    _profilesListCache = parseResult.profiles;
-    return List<TimetableProfile>.from(parseResult.profiles);
+    _profilesListCache = _snapshotProfiles(parseResult.profiles);
+    return _snapshotProfiles(parseResult.profiles);
   }
 
   /// Disk parse only (no write chain). Safe to call under [runProfilesWrite].
@@ -557,7 +575,7 @@ class StorageService {
       profiles.map((profile) => profile.toJson()).toList(),
     );
     await _prefs?.setString(_profilesKey, payload);
-    _profilesListCache = List<TimetableProfile>.from(profiles);
+    _profilesListCache = _snapshotProfiles(profiles);
   }
 
   /// Serializes profile disk writes (full put and RMW) on one chain.
@@ -613,7 +631,7 @@ class StorageService {
     await _ensureTimeSchemesInitialized();
     final cached = _timeSchemesListCache;
     if (cached != null) {
-      return List<TimeScheme>.from(cached);
+      return _snapshotTimeSchemes(cached);
     }
 
     final rawSchemes = _prefs?.getString(_timeSchemesKey);
@@ -639,8 +657,8 @@ class StorageService {
           continue;
         }
       }
-      _timeSchemesListCache = List<TimeScheme>.from(schemes);
-      return List<TimeScheme>.from(schemes);
+      _timeSchemesListCache = _snapshotTimeSchemes(schemes);
+      return _snapshotTimeSchemes(schemes);
     } catch (_) {
       final raw = _prefs?.getString(_timeSchemesKey);
       if (raw != null) {
@@ -657,14 +675,14 @@ class StorageService {
       schemes.map((scheme) => scheme.toJson()).toList(),
     );
     await _prefs?.setString(_timeSchemesKey, payload);
-    _timeSchemesListCache = List<TimeScheme>.from(schemes);
+    _timeSchemesListCache = _snapshotTimeSchemes(schemes);
   }
 
   Future<List<LocationTimeGroup>> getLocationTimeGroups() async {
     if (_prefs == null) await init();
     final cached = _locationTimeGroupsListCache;
     if (cached != null) {
-      return List<LocationTimeGroup>.from(cached);
+      return _snapshotLocationTimeGroups(cached);
     }
 
     final rawGroups = _prefs?.getString(_locationTimeGroupsKey);
@@ -691,8 +709,8 @@ class StorageService {
           continue;
         }
       }
-      _locationTimeGroupsListCache = List<LocationTimeGroup>.from(groups);
-      return List<LocationTimeGroup>.from(groups);
+      _locationTimeGroupsListCache = _snapshotLocationTimeGroups(groups);
+      return _snapshotLocationTimeGroups(groups);
     } catch (_) {
       final raw = _prefs?.getString(_locationTimeGroupsKey);
       if (raw != null) {
@@ -707,7 +725,7 @@ class StorageService {
     if (_prefs == null) await init();
     final payload = jsonEncode(groups.map((group) => group.toJson()).toList());
     await _prefs?.setString(_locationTimeGroupsKey, payload);
-    _locationTimeGroupsListCache = List<LocationTimeGroup>.from(groups);
+    _locationTimeGroupsListCache = _snapshotLocationTimeGroups(groups);
   }
 
   Future<List<ScheduleDateRule>> getScheduleDateRules() async {
@@ -992,7 +1010,9 @@ class StorageService {
     for (final item in rawSchemes) {
       try {
         if (item is! Map) continue;
-        schemes.add(TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)));
+        schemes.add(
+          TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+        );
       } catch (_) {
         continue;
       }

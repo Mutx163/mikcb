@@ -35,9 +35,9 @@ void main() {
 
     test('classifyGetBytesFailure maps HTTP status messages safely', () {
       final cases = <String, String>{
-        'HTTP 400 Bad Request': 'http_400',
-        'HTTP 409 Conflict': 'http_409',
-        'HTTP 429 Too Many Requests': 'http_429',
+        'HTTP 400 Bad Request': 'invalid_response',
+        'HTTP 409 Conflict': 'invalid_response',
+        'HTTP 429 Too Many Requests': 'invalid_response',
         'HTTP 500 Internal Server Error': 'invalid_response',
       };
       for (final entry in cases.entries) {

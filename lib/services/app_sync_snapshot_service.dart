@@ -191,6 +191,38 @@ class AppSyncSnapshotService {
   final WarehouseMacroService _warehouseMacroService;
   final HolidayService _holidayService;
   final DataTransferService _dataTransferService;
+  static List<String> _parseStringList(Object? raw) {
+    if (raw is! List) return const <String>[];
+    return raw.whereType<String>().where((item) => item.isNotEmpty).toList();
+  }
+
+  static Object? _selectSnapshotMacros(Map<String, dynamic> json) {
+    final warehouse = json['warehouse'];
+    if (warehouse is Map && warehouse['macros'] is List) {
+      return warehouse['macros'];
+    }
+    return json['macros'];
+  }
+
+  static List<T> _parseOptionalList<T>(
+    Object? raw,
+    T Function(Map<String, dynamic>) parse,
+  ) {
+    if (raw is! List) return <T>[];
+    final result = <T>[];
+    for (final item in raw) {
+      try {
+        if (item is! Map) {
+          continue;
+        }
+        result.add(parse(Map<String, dynamic>.from(item)));
+      } catch (_) {
+        continue;
+      }
+    }
+    return result;
+  }
+
   final TransferDiffService _transferDiffService = const TransferDiffService();
   late final UnifiedTransferService _unifiedTransferService =
       UnifiedTransferService(dataTransferService: _dataTransferService);
@@ -317,7 +349,6 @@ class AppSyncSnapshotService {
     if (rawProfiles is! List || rawTimeSchemes is! List) {
       throw const FormatException('missing_sync_timetable_data');
     }
-
     final payload = Map<String, dynamic>.from(json)..remove('contentSha256');
     final expectedHash = json['contentSha256'] as String? ?? '';
     final actualHash = computeContentSha256(payload);
@@ -341,63 +372,93 @@ class AppSyncSnapshotService {
       );
     }
 
+    final decodedProfiles = <TimetableProfile>[];
+    for (final item in rawProfiles) {
+      try {
+        if (item is! Map) {
+          continue;
+        }
+        decodedProfiles.add(
+          TimetableProfile.fromJson(Map<String, dynamic>.from(item)),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+    final decodedTimeSchemes = <TimeScheme>[];
+    for (final item in rawTimeSchemes) {
+      try {
+        if (item is! Map) {
+          continue;
+        }
+        decodedTimeSchemes.add(
+          TimeScheme.fromJson(Map<String, dynamic>.from(item)),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+    // Empty collections are valid for first-install/partner snapshots. A
+    // non-empty collection that yields no valid records is different: it is a
+    // corrupt core payload and must not be treated as an empty timetable.
+    if ((rawProfiles.isNotEmpty && decodedProfiles.isEmpty) ||
+        (rawTimeSchemes.isNotEmpty && decodedTimeSchemes.isEmpty)) {
+      throw const FormatException('missing_sync_timetable_data');
+    }
+
+    final rawLocationTimeGroups = json['locationTimeGroups'];
+    final decodedLocationTimeGroups = <LocationTimeGroup>[];
+    if (rawLocationTimeGroups is List) {
+      for (final item in rawLocationTimeGroups) {
+        try {
+          if (item is! Map) {
+            continue;
+          }
+          decodedLocationTimeGroups.add(
+            LocationTimeGroup.fromJson(Map<String, dynamic>.from(item)),
+          );
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+    final rawScheduleDateRules = json['scheduleDateRules'];
+    final decodedScheduleDateRules = <ScheduleDateRule>[];
+    if (rawScheduleDateRules is List) {
+      for (final item in rawScheduleDateRules) {
+        try {
+          if (item is! Map) {
+            continue;
+          }
+          decodedScheduleDateRules.add(
+            ScheduleDateRule.fromJson(Map<String, dynamic>.from(item)),
+          );
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+    final rawTeacherRecords = json['teacherRecords'];
+    final rawLocationRecords = json['locationRecords'];
     return AppSyncSnapshot(
-      profiles: rawProfiles
-          .map(
-            (item) => TimetableProfile.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .toList()
+      profiles: decodedProfiles
           .map(_stripLiveTestingFixtureCoursesFromProfile)
           .toList(),
       activeProfileId: json['activeProfileId'] as String?,
-      timeSchemes: rawTimeSchemes
-          .map(
-            (item) =>
-                TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
-      locationTimeGroups:
-          (json['locationTimeGroups'] as List<dynamic>? ?? const [])
-              .whereType<Map>()
-              .map(
-                (item) =>
-                    LocationTimeGroup.fromJson(Map<String, dynamic>.from(item)),
-              )
-              .toList(),
-      scheduleDateRules:
-          (json['scheduleDateRules'] as List<dynamic>? ?? const [])
-              .whereType<Map>()
-              .map(
-                (item) =>
-                    ScheduleDateRule.fromJson(Map<String, dynamic>.from(item)),
-              )
-              .toList(),
-      teacherRecords: (json['teacherRecords'] as List<dynamic>? ?? const [])
-          .map((item) => item.toString())
-          .where((item) => item.isNotEmpty)
-          .toList(),
-      locationRecords: (json['locationRecords'] as List<dynamic>? ?? const [])
-          .map((item) => item.toString())
-          .where((item) => item.isNotEmpty)
-          .toList(),
+      timeSchemes: decodedTimeSchemes,
+      locationTimeGroups: decodedLocationTimeGroups,
+      scheduleDateRules: decodedScheduleDateRules,
+      teacherRecords: _parseStringList(rawTeacherRecords),
+      locationRecords: _parseStringList(rawLocationRecords),
       warehouse: warehouse,
-      macros:
-          (json['warehouse']?['macros'] as List<dynamic>? ??
-                  json['macros'] as List<dynamic>? ??
-                  const [])
-              .whereType<Map>()
-              .map(
-                (item) => WarehouseMacroRecord.fromJson(
-                  Map<String, dynamic>.from(item),
-                ),
-              )
-              .toList(),
-      customHolidays: (json['customHolidays'] as List<dynamic>? ?? const [])
-          .whereType<Map>()
-          .map((item) => HolidayEntry.fromJson(Map<String, dynamic>.from(item)))
-          .toList(),
+      macros: _parseOptionalList(
+        _selectSnapshotMacros(json),
+        (item) => WarehouseMacroRecord.fromJson(item),
+      ),
+      customHolidays: _parseOptionalList(
+        json['customHolidays'],
+        (item) => HolidayEntry.fromJson(item),
+      ),
       exportedAt:
           DateTime.tryParse(json['exportedAt'] as String? ?? '') ??
           DateTime.now(),

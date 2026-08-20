@@ -248,12 +248,16 @@ class WarehouseMacroRecord {
           '',
       adapterAssetJsPath: json['adapterAssetJsPath'] as String? ?? '',
       steps: (() {
-        final rawSteps = json['steps'] as List<dynamic>? ?? const [];
+        final rawSteps = json['steps'] is List
+            ? json['steps'] as List<dynamic>
+            : const <dynamic>[];
         final out = <MacroStep>[];
         for (final s in rawSteps) {
           try {
-            if (s is! Map) continue;
-            out.add(MacroStep.fromJson(Map<String, dynamic>.from(s as Map)));
+            if (s is! Map) {
+              continue;
+            }
+            out.add(MacroStep.fromJson(Map<String, dynamic>.from(s)));
           } catch (_) {
             continue;
           }
@@ -264,7 +268,7 @@ class WarehouseMacroRecord {
         final raw = json['dialogResponses'];
         if (raw is Map) {
           try {
-            return Map<String, dynamic>.from(raw as Map);
+            return Map<String, dynamic>.from(raw);
           } catch (_) {
             return <String, dynamic>{};
           }

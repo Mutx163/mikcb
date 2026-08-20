@@ -34,14 +34,16 @@ class TimeScheme {
     if (rawId is! String || rawId.trim().isEmpty) {
       throw const FormatException('missing time scheme id');
     }
-    final rawSections = json['sections'] as List<dynamic>? ?? const [];
+    final rawSections = json['sections'] is List
+        ? json['sections'] as List<dynamic>
+        : const <dynamic>[];
     final sections = <SectionTime>[];
     for (final item in rawSections) {
       try {
-        if (item is! Map) continue;
-        sections.add(
-          SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
-        );
+        if (item is! Map) {
+          continue;
+        }
+        sections.add(SectionTime.fromJson(Map<String, dynamic>.from(item)));
       } catch (_) {
         continue;
       }
@@ -106,17 +108,15 @@ String? validateSectionTimes(List<SectionTime> sections) {
     final endMinutes = _clockMinutes(section.endTime);
 
     if (endMinutes <= startMinutes) {
-      return encodeServiceMessage(
-        'section_end_must_after_start',
-        {'sectionNumber': index + 1},
-      );
+      return encodeServiceMessage('section_end_must_after_start', {
+        'sectionNumber': index + 1,
+      });
     }
 
     if (previousEndMinutes >= 0 && startMinutes < previousEndMinutes) {
-      return encodeServiceMessage(
-        'section_start_before_previous_end',
-        {'sectionNumber': index + 1},
-      );
+      return encodeServiceMessage('section_start_before_previous_end', {
+        'sectionNumber': index + 1,
+      });
     }
 
     previousEndMinutes = endMinutes;
@@ -156,10 +156,9 @@ List<SectionTime> buildQuickSectionTimes({
       final currentEndMinutes = currentStartMinutes + classDurationMinutes;
       if (currentEndMinutes > 24 * 60) {
         throw FormatException(
-          encodeServiceMessage(
-            'section_crosses_midnight',
-            {'sectionNumber': sectionNumber},
-          ),
+          encodeServiceMessage('section_crosses_midnight', {
+            'sectionNumber': sectionNumber,
+          }),
         );
       }
       sections.add(

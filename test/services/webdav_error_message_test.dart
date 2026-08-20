@@ -23,10 +23,10 @@ void main() {
     );
   });
 
-  test('sanitizeWebdavErrorMessage maps generic HTTP statuses', () {
+  test('sanitizeWebdavErrorMessage maps generic HTTP statuses safely', () {
     expect(
       sanitizeWebdavErrorMessage(const HttpException('statusCode=429')),
-      'http_429',
+      'invalid_response',
     );
     expect(
       sanitizeWebdavErrorMessage(const HttpException('statusCode=500')),
@@ -34,10 +34,47 @@ void main() {
     );
   });
 
-  test('sanitizeWebdavErrorMessage keeps state error message', () {
-    expect(
-      sanitizeWebdavErrorMessage(StateError('backup_not_found')),
+  test('sanitizeWebdavErrorMessage keeps only allowlisted state codes', () {
+    for (final code in const [
+      'auth_failed',
+      'access_denied',
+      'certificate_error',
+      'connection_timeout',
+      'connection_failed',
+      'network_error',
+      'invalid_response',
+      'local_changes_pending_sync',
+      'missing_credentials',
       'backup_not_found',
-    );
+      'missing_backup_snapshot',
+      'cannot_delete_current_backup',
+      'provider_not_ready',
+      'insecure_url_blocked',
+      'sync_failed',
+    ]) {
+      expect(sanitizeWebdavErrorMessage(StateError(code)), code);
+    }
   });
+
+  test('sanitizeWebdavErrorMessage rejects arbitrary state error details', () {
+    const secret = 'https://dav.example.com/path Authorization=Bearer secret';
+    final message = sanitizeWebdavErrorMessage(
+      StateError('remote_backup_invalid: $secret\n{"password":"secret"}'),
+    );
+    expect(message, 'sync_failed');
+    expect(message, isNot(contains('dav.example.com')));
+    expect(message, isNot(contains('secret')));
+  });
+
+  test(
+    'sanitizeWebdavErrorMessage uses fixed codes for generic HTTP failures',
+    () {
+      expect(
+        sanitizeWebdavErrorMessage(
+          const HttpException('statusCode=429 body=secret'),
+        ),
+        'invalid_response',
+      );
+    },
+  );
 }

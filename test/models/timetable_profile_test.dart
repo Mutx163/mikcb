@@ -52,6 +52,25 @@ void main() {
     expect(restored.lastUsedAt, DateTime(2026, 3, 22, 10));
   });
 
+  test('timetable profile skips malformed nested collections', () {
+    final restored = TimetableProfile.fromJson({
+      'id': 'profile-1',
+      'name': '大一上',
+      'courses': ['bad-course'],
+      'tasks': [42],
+      'scheduleItems': {'bad': true},
+      'exams': [null],
+      'settings': TimetableSettings.defaults().toJson(),
+      'createdAt': '2026-03-22T09:00:00.000',
+      'lastUsedAt': '2026-03-22T10:00:00.000',
+    });
+
+    expect(restored.courses, isEmpty);
+    expect(restored.tasks, isEmpty);
+    expect(restored.scheduleItems, isEmpty);
+    expect(restored.exams, isEmpty);
+  });
+
   test('timetable profile clamps restored current week to semester length', () {
     final restored = TimetableProfile.fromJson({
       'id': 'profile-1',

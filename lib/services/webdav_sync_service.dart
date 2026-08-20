@@ -272,7 +272,7 @@ class WebdavSyncService {
       if (initialRemoteMeta.isFailed) {
         return WebdavSyncResult(
           kind: WebdavSyncResultKind.failed,
-          message: initialRemoteMeta.errorMessage ?? 'remote_meta_unavailable',
+          message: initialRemoteMeta.errorMessage ?? 'sync_failed',
         );
       }
 
@@ -291,7 +291,7 @@ class WebdavSyncService {
           case WebdavAutoUploadDecision.remoteDrifted:
             return const WebdavSyncResult(
               kind: WebdavSyncResultKind.cancelled,
-              message: 'remote_drifted_manual_sync_required',
+              message: 'local_changes_pending_sync',
             );
         }
       }
@@ -366,7 +366,7 @@ class WebdavSyncService {
       remotePath: config.normalizedRemoteFolder,
     );
     if (lockResult.isFailed) {
-      throw StateError(lockResult.errorMessage ?? 'remote_lock_unavailable');
+      throw StateError(lockResult.errorMessage ?? 'sync_failed');
     }
 
     final lockToken = lockResult.lockToken;
@@ -376,18 +376,16 @@ class WebdavSyncService {
         remotePath: config.metaRemotePath,
       );
       if (lockedRemoteMeta.isFailed) {
-        throw StateError(
-          lockedRemoteMeta.errorMessage ?? 'remote_meta_unavailable',
-        );
+        throw StateError(lockedRemoteMeta.errorMessage ?? 'sync_failed');
       }
       if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote &&
           lockResult.isUnsupported &&
           (lockedRemoteMeta.etag == null || lockedRemoteMeta.etag!.isEmpty)) {
-        throw StateError('remote_concurrency_unsupported');
+        throw StateError('sync_failed');
       }
       if (conflictPolicy == WebdavUploadConflictPolicy.requireUnchangedRemote &&
           _remoteMetaChanged(initialRemoteMeta, lockedRemoteMeta)) {
-        throw StateError('remote_changed_during_publish');
+        throw StateError('sync_failed');
       }
 
       final snapshotPath = _versionedSnapshotRemotePath(config, snapshot);
@@ -430,12 +428,12 @@ class WebdavSyncService {
         remotePath: config.metaRemotePath,
       );
       if (publishedMeta.isFailed || publishedMeta.meta == null) {
-        throw StateError('remote_meta_publish_verification_failed');
+        throw StateError('sync_failed');
       }
       final published = publishedMeta.meta!;
       if (published.contentSha256 != snapshot.contentSha256 ||
           published.snapshotPath != snapshotPath) {
-        throw StateError('remote_snapshot_meta_mismatch');
+        throw StateError('sync_failed');
       }
     } finally {
       if (lockToken != null && lockToken.isNotEmpty) {
@@ -463,12 +461,10 @@ class WebdavSyncService {
       remotePath: remotePath,
     );
     if (result.isFailed) {
-      throw StateError(
-        result.errorMessage ?? 'remote_snapshot_write_verification_failed',
-      );
+      throw StateError(result.errorMessage ?? 'sync_failed');
     }
     if (result.bytes == null || !_bytesEqual(result.bytes!, expectedBytes)) {
-      throw StateError('remote_snapshot_write_verification_failed');
+      throw StateError('sync_failed');
     }
   }
 
@@ -853,7 +849,7 @@ class WebdavSyncService {
       if (remoteMetaResult.isFailed) {
         return WebdavSyncResult(
           kind: WebdavSyncResultKind.failed,
-          message: remoteMetaResult.errorMessage ?? 'remote_meta_unavailable',
+          message: remoteMetaResult.errorMessage ?? 'sync_failed',
         );
       }
       final remoteMeta = remoteMetaResult.meta;
@@ -926,7 +922,7 @@ class WebdavSyncService {
       if (bytes == null || bytes.isEmpty) {
         return const WebdavSyncResult(
           kind: WebdavSyncResultKind.failed,
-          message: 'missing_remote_snapshot',
+          message: 'missing_backup_snapshot',
         );
       }
 
@@ -1109,13 +1105,9 @@ class WebdavSyncService {
         if (decoded is Map && decoded['entries'] is List) {
           return _backupIndexService.decodeIndex(utf8.decode(bytes));
         }
-        readableIndexResult = const WebdavGetBytesResult.failed(
-          'remote_backup_index_invalid',
-        );
+        readableIndexResult = const WebdavGetBytesResult.failed('sync_failed');
       } catch (_) {
-        readableIndexResult = const WebdavGetBytesResult.failed(
-          'remote_backup_index_invalid',
-        );
+        readableIndexResult = const WebdavGetBytesResult.failed('sync_failed');
       }
     }
 
@@ -1131,14 +1123,14 @@ class WebdavSyncService {
       case WebdavBackupIndexRecoveryAction.useIndex:
         // A successful index is returned above. Keep this branch defensive if
         // the result model grows another successful state later.
-        throw StateError('remote_backup_index_unavailable');
+        throw StateError('sync_failed');
       case WebdavBackupIndexRecoveryAction.empty:
         return const CloudBackupIndex();
       case WebdavBackupIndexRecoveryAction.failed:
         throw StateError(
           listingResult.errorMessage ??
               readableIndexResult.errorMessage ??
-              'remote_backup_index_unavailable',
+              'sync_failed',
         );
       case WebdavBackupIndexRecoveryAction.rebuildFromListing:
         break;
@@ -1149,9 +1141,7 @@ class WebdavSyncService {
       remotePath: config.metaRemotePath,
     );
     if (remoteMetaResult.isFailed) {
-      throw StateError(
-        remoteMetaResult.errorMessage ?? 'remote_meta_unavailable',
-      );
+      throw StateError(remoteMetaResult.errorMessage ?? 'sync_failed');
     }
     final currentHash = remoteMetaResult.meta?.contentSha256 ?? '';
     final entries = <CloudBackupEntry>[];
@@ -1162,9 +1152,7 @@ class WebdavSyncService {
         remotePath: config.historyBackupRemotePath(fileName),
       );
       if (backupResult.isFailed) {
-        throw StateError(
-          backupResult.errorMessage ?? 'remote_backup_unavailable',
-        );
+        throw StateError(backupResult.errorMessage ?? 'sync_failed');
       }
       if (backupResult.isNotFound) {
         // A concurrent prune may remove a listed file; it is safe to omit the
@@ -1196,7 +1184,7 @@ class WebdavSyncService {
           ),
         );
       } catch (error) {
-        throw StateError('remote_backup_invalid: $error');
+        throw StateError('sync_failed');
       }
     }
 

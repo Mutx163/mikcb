@@ -87,21 +87,30 @@ class LocationTimeGroup {
   }
 
   factory LocationTimeGroup.fromJson(Map<String, dynamic> json) {
-    final rawKeywords = json['keywords'] as List<dynamic>? ?? const [];
+    final rawKeywords = json['keywords'] is List
+        ? json['keywords'] as List<dynamic>
+        : const <dynamic>[];
+    final keywords = <LocationKeyword>[];
+    for (final item in rawKeywords) {
+      try {
+        if (item is! Map) {
+          continue;
+        }
+        final keyword = LocationKeyword.fromJson(
+          Map<String, dynamic>.from(item),
+        );
+        if (keyword.pattern.isNotEmpty) keywords.add(keyword);
+      } catch (_) {
+        continue;
+      }
+    }
     return LocationTimeGroup(
       id: json['id'] as String? ?? '',
       name: (json['name'] as String? ?? '').trim(),
       timeSchemeId: json['timeSchemeId'] as String? ?? '',
       enabled: json['enabled'] as bool? ?? true,
       priority: (json['priority'] as num?)?.toInt() ?? 0,
-      keywords: rawKeywords
-          .map(
-            (item) => LocationKeyword.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .where((keyword) => keyword.pattern.isNotEmpty)
-          .toList(),
+      keywords: keywords,
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/course_task.dart';
@@ -62,6 +64,59 @@ void main() {
     final backup = service.parseBackupJson(json);
 
     expect(backup.currentWeek, 16);
+  });
+
+  test('backup parser skips malformed optional entries', () {
+    final service = DataTransferService();
+    final json = service.buildBackupJson(
+      courses: const [],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+    );
+    final payload = Map<String, dynamic>.from(jsonDecode(json) as Map)
+      ..['courses'] = ['bad']
+      ..['tasks'] = [42]
+      ..['scheduleItems'] = ['bad']
+      ..['exams'] = [null]
+      ..['timeSchemes'] = ['bad']
+      ..['scheduleDateRules'] = [null]
+      ..['locationTimeGroups'] = [42];
+
+    final backup = service.parseBackupJson(jsonEncode(payload));
+    expect(backup.courses, isEmpty);
+    expect(backup.tasks, isEmpty);
+    expect(backup.scheduleItems, isEmpty);
+    expect(backup.exams, isEmpty);
+    expect(backup.timeSchemes, isEmpty);
+    expect(backup.scheduleDateRules, isEmpty);
+    expect(backup.locationTimeGroups, isEmpty);
+  });
+
+  test('full backup parser rejects completely malformed core lists', () {
+    final service = DataTransferService();
+    final json = service.buildFullBackupJson(
+      profiles: [
+        TimetableProfile(
+          id: 'profile-1',
+          name: '默认课表',
+          courses: const [],
+          settings: TimetableSettings.defaults(),
+          currentWeek: 1,
+          createdAt: DateTime(2026, 3, 22),
+          lastUsedAt: DateTime(2026, 3, 22),
+        ),
+      ],
+      activeProfileId: 'profile-1',
+      timeSchemes: const [],
+    );
+    final payload = Map<String, dynamic>.from(jsonDecode(json) as Map)
+      ..['profiles'] = ['bad']
+      ..['timeSchemes'] = ['bad'];
+
+    expect(
+      () => service.parseFullBackupJson(jsonEncode(payload)),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('full backup json preserves profiles and time schemes', () {

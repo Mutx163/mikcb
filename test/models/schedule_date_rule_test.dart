@@ -41,6 +41,33 @@ void main() {
       expect(restored.endDate, '2026-01-07');
     });
 
+    test('fromJson rejects missing or blank date fields', () {
+      final base = <String, dynamic>{
+        'id': 'rule-1',
+        'name': 'rule',
+        'timeSchemeId': 'scheme-1',
+        'startDate': '2026-01-01',
+        'endDate': '2026-01-07',
+      };
+
+      for (final value in [null, '', '   ', 20260101]) {
+        final json = {...base, 'startDate': value};
+        expect(
+          () => ScheduleDateRule.fromJson(json),
+          throwsA(isA<FormatException>()),
+          reason: 'startDate=$value',
+        );
+      }
+      for (final value in [null, '', '   ', 20260107]) {
+        final json = {...base, 'endDate': value};
+        expect(
+          () => ScheduleDateRule.fromJson(json),
+          throwsA(isA<FormatException>()),
+          reason: 'endDate=$value',
+        );
+      }
+    });
+
     test('json string helpers round-trip', () {
       const original = ScheduleDateRule(
         id: 'rule-2',

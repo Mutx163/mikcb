@@ -89,26 +89,26 @@ class TimetableProfile {
     return TimetableProfile(
       id: json['id'] as String,
       name: json['name'] as String? ?? '未命名课表',
-      courses: (json['courses'] as List<dynamic>? ?? const [])
-          .map(
-            (item) => Course.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
-      tasks: (json['tasks'] as List<dynamic>? ?? const [])
-          .map(
-            (item) =>
-                CourseTask.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
-      scheduleItems: (json['scheduleItems'] as List<dynamic>? ?? const [])
-          .map(
-            (item) =>
-                ScheduleItem.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
-      exams: (json['exams'] as List<dynamic>? ?? const [])
-          .map((item) => Exam.fromJson(Map<String, dynamic>.from(item as Map)))
-          .toList(),
+      courses: _parseListLenient(
+        json['courses'],
+        (map) => Course.fromJson(map),
+        onDropped: () {},
+      ),
+      tasks: _parseListLenient(
+        json['tasks'],
+        (map) => CourseTask.fromJson(map),
+        onDropped: () {},
+      ),
+      scheduleItems: _parseListLenient(
+        json['scheduleItems'],
+        (map) => ScheduleItem.fromJson(map),
+        onDropped: () {},
+      ),
+      exams: _parseListLenient(
+        json['exams'],
+        (map) => Exam.fromJson(map),
+        onDropped: () {},
+      ),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
         ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),

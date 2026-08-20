@@ -284,9 +284,9 @@ enum GlassDockLayout { overlay, inset }
 
 extension GlassDockLayoutX on GlassDockLayout {
   String get value => switch (this) {
-        GlassDockLayout.overlay => 'overlay',
-        GlassDockLayout.inset => 'inset',
-      };
+    GlassDockLayout.overlay => 'overlay',
+    GlassDockLayout.inset => 'inset',
+  };
 
   static GlassDockLayout fromValue(String? value) {
     return GlassDockLayout.values.firstWhere(
@@ -1728,7 +1728,9 @@ class TimetableSettings {
   }
 
   factory TimetableSettings.fromJson(Map<String, dynamic> json) {
-    final rawSections = json['sections'] as List<dynamic>? ?? const [];
+    final rawSections = json['sections'] is List
+        ? json['sections'] as List<dynamic>
+        : const <dynamic>[];
     // Empty sections fall back to defaults only for the section list; other
     // fields must still parse so a corrupt sections array does not wipe theme /
     // semester / live settings. Malformed SectionTime entries are skipped.
@@ -2118,8 +2120,8 @@ class TimetableSettings {
       homePageBackdropFollowsWeekPager:
           json['homePageBackdropFollowsWeekPager'] as bool? ?? true,
       savedThemes: (() {
-        final raw = json['savedThemes'] as List<dynamic>?;
-        if (raw == null) return const <SavedTheme>[];
+        final raw = json['savedThemes'];
+        if (raw is! List) return const <SavedTheme>[];
         final out = <SavedTheme>[];
         for (final t in raw) {
           try {
@@ -2377,8 +2379,7 @@ class TimetableSettings {
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
-      homeNavigationForm:
-          homeNavigationForm ?? this.homeNavigationForm,
+      homeNavigationForm: homeNavigationForm ?? this.homeNavigationForm,
       glassDockLayout: glassDockLayout ?? this.glassDockLayout,
       timetableBackToCurrentWeekButtonStyle:
           timetableBackToCurrentWeekButtonStyle ??

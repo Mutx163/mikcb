@@ -43,13 +43,21 @@ class ScheduleDateRule {
   }
 
   factory ScheduleDateRule.fromJson(Map<String, dynamic> json) {
+    final rawStartDate = json['startDate'];
+    final rawEndDate = json['endDate'];
+    if (rawStartDate is! String || rawStartDate.trim().isEmpty) {
+      throw const FormatException('missing schedule date rule start date');
+    }
+    if (rawEndDate is! String || rawEndDate.trim().isEmpty) {
+      throw const FormatException('missing schedule date rule end date');
+    }
     return ScheduleDateRule(
       id: json['id'] as String? ?? '',
       name: (json['name'] as String? ?? '').trim(),
       timeSchemeId: json['timeSchemeId'] as String? ?? '',
       enabled: json['enabled'] as bool? ?? true,
-      startDate: (json['startDate'] as String? ?? '').trim(),
-      endDate: (json['endDate'] as String? ?? '').trim(),
+      startDate: rawStartDate.trim(),
+      endDate: rawEndDate.trim(),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/course_task.dart';
@@ -384,6 +386,98 @@ void main() {
       expect(parsed.contentSha256, hash);
     },
   );
+
+  test('parse snapshot skips malformed optional records', () {
+    final service = AppSyncSnapshotService();
+    final payload = <String, dynamic>{
+      'app': 'mikcb',
+      'schemaVersion': AppSyncSnapshotService.schemaVersion,
+      'backupType': AppSyncSnapshotService.backupType,
+      'exportedAt': '2026-03-22T09:00:00.000',
+      'deviceId': 'device-1',
+      'activeProfileId': null,
+      'profiles': [
+        42,
+        {
+          'id': 'profile-1',
+          'name': '默认课表',
+          'courses': [],
+          'settings': TimetableSettings.defaults().toJson(),
+          'currentWeek': 1,
+          'createdAt': '2026-03-22T09:00:00.000',
+          'lastUsedAt': '2026-03-22T09:00:00.000',
+        },
+      ],
+      'timeSchemes': [
+        'bad',
+        {
+          'id': 'scheme-1',
+          'name': 'bad',
+          'sections': [],
+          'createdAt': '2026-03-22T09:00:00.000',
+          'updatedAt': '2026-03-22T09:00:00.000',
+        },
+      ],
+      'locationTimeGroups': [null],
+      'scheduleDateRules': [42],
+      'teacherRecords': ['张老师'],
+      'locationRecords': ['A101'],
+      'warehouse': {},
+      'macros': [
+        {
+          'schoolId': '',
+          'adapterId': '',
+          'schoolName': '',
+          'adapterName': '',
+          'importUrl': '',
+          'schoolResourceFolder': '',
+          'adapterAssetJsPath': '',
+          'steps': [],
+          'dialogResponses': {},
+          'createdAt': '2026-01-01T00:00:00.000',
+          'updatedAt': '2026-01-01T00:00:00.000',
+        },
+      ],
+      'customHolidays': [null],
+    };
+    payload['contentSha256'] = AppSyncSnapshotService.computeContentSha256(
+      payload,
+    );
+
+    final parsed = service.parseSnapshotJson(jsonEncode(payload));
+    expect(parsed.profiles, hasLength(1));
+    expect(parsed.timeSchemes, hasLength(1));
+    expect(parsed.locationTimeGroups, isEmpty);
+    expect(parsed.scheduleDateRules, isEmpty);
+    expect(parsed.teacherRecords, ['张老师']);
+    expect(parsed.locationRecords, ['A101']);
+    expect(parsed.macros, hasLength(1));
+    expect(parsed.customHolidays, isEmpty);
+  });
+
+  test('sync snapshot rejects completely malformed core lists', () {
+    final service = AppSyncSnapshotService();
+    final payload = <String, dynamic>{
+      'app': 'mikcb',
+      'schemaVersion': AppSyncSnapshotService.schemaVersion,
+      'backupType': AppSyncSnapshotService.backupType,
+      'exportedAt': '2026-03-22T09:00:00.000',
+      'deviceId': 'device-1',
+      'activeProfileId': null,
+      'profiles': ['bad'],
+      'timeSchemes': ['bad'],
+      'warehouse': {},
+      'customHolidays': [],
+    };
+    payload['contentSha256'] = AppSyncSnapshotService.computeContentSha256(
+      payload,
+    );
+
+    expect(
+      () => service.parseSnapshotJson(jsonEncode(payload)),
+      throwsA(isA<FormatException>()),
+    );
+  });
 
   test('sync snapshot round trip preserves location time groups', () {
     final service = AppSyncSnapshotService();

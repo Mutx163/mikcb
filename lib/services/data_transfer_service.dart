@@ -71,6 +71,25 @@ class FullAppDataBackup {
 }
 
 class DataTransferService {
+  static List<T> _parseOptionalList<T>(
+    Object? raw,
+    T Function(Map<String, dynamic>) parse,
+  ) {
+    if (raw is! List) return <T>[];
+    final result = <T>[];
+    for (final item in raw) {
+      try {
+        if (item is! Map) {
+          continue;
+        }
+        result.add(parse(Map<String, dynamic>.from(item)));
+      } catch (_) {
+        continue;
+      }
+    }
+    return result;
+  }
+
   static const int schemaVersion = TransferPackage.schemaVersion;
   static const String fileExtension = 'mikcb';
 
@@ -162,21 +181,18 @@ class DataTransferService {
       throw const FormatException('unrecognized_mikcb_data_file');
     }
 
-    final rawCourses = (json['courses'] as List<dynamic>? ?? const [])
-        .map((item) => Course.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList();
-    final rawTasks = (json['tasks'] as List<dynamic>? ?? const [])
-        .map(
-          (item) => CourseTask.fromJson(Map<String, dynamic>.from(item as Map)),
-        )
-        .toList();
-    final rawScheduleItems =
-        (json['scheduleItems'] as List<dynamic>? ?? const [])
-            .map(
-              (item) =>
-                  ScheduleItem.fromJson(Map<String, dynamic>.from(item as Map)),
-            )
-            .toList();
+    final rawCourses = _parseOptionalList(
+      json['courses'],
+      (item) => Course.fromJson(item),
+    );
+    final rawTasks = _parseOptionalList(
+      json['tasks'],
+      (item) => CourseTask.fromJson(item),
+    );
+    final rawScheduleItems = _parseOptionalList(
+      json['scheduleItems'],
+      (item) => ScheduleItem.fromJson(item),
+    );
     final rawSettings = json['settings'];
     if (rawSettings is! Map) {
       throw const FormatException('missing_settings_data');
@@ -192,31 +208,19 @@ class DataTransferService {
       courses: rawCourses,
       tasks: rawTasks,
       scheduleItems: rawScheduleItems,
-      exams: (json['exams'] as List<dynamic>? ?? const [])
-          .map((item) => Exam.fromJson(Map<String, dynamic>.from(item as Map)))
-          .toList(),
-      timeSchemes: (json['timeSchemes'] as List<dynamic>? ?? const [])
-          .map(
-            (item) =>
-                TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
-      scheduleDateRules:
-          (json['scheduleDateRules'] as List<dynamic>? ?? const [])
-              .map(
-                (item) => ScheduleDateRule.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList(),
-      locationTimeGroups:
-          (json['locationTimeGroups'] as List<dynamic>? ?? const [])
-              .map(
-                (item) => LocationTimeGroup.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList(),
+      exams: _parseOptionalList(json['exams'], (item) => Exam.fromJson(item)),
+      timeSchemes: _parseOptionalList(
+        json['timeSchemes'],
+        (item) => TimeScheme.fromJson(item),
+      ),
+      scheduleDateRules: _parseOptionalList(
+        json['scheduleDateRules'],
+        (item) => ScheduleDateRule.fromJson(item),
+      ),
+      locationTimeGroups: _parseOptionalList(
+        json['locationTimeGroups'],
+        (item) => LocationTimeGroup.fromJson(item),
+      ),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
         ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
@@ -278,38 +282,31 @@ class DataTransferService {
     if (rawProfiles is! List || rawTimeSchemes is! List) {
       throw const FormatException('missing_full_backup_data');
     }
+    final profiles = _parseOptionalList(
+      rawProfiles,
+      (item) => TimetableProfile.fromJson(item),
+    );
+    final timeSchemes = _parseOptionalList(
+      rawTimeSchemes,
+      (item) => TimeScheme.fromJson(item),
+    );
+    if ((rawProfiles.isNotEmpty && profiles.isEmpty) ||
+        (rawTimeSchemes.isNotEmpty && timeSchemes.isEmpty)) {
+      throw const FormatException('missing_full_backup_data');
+    }
 
     return FullAppDataBackup(
-      profiles: rawProfiles
-          .map(
-            (item) => TimetableProfile.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .toList(),
+      profiles: profiles,
       activeProfileId: json['activeProfileId'] as String?,
-      timeSchemes: rawTimeSchemes
-          .map(
-            (item) =>
-                TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
-      scheduleDateRules:
-          (json['scheduleDateRules'] as List<dynamic>? ?? const [])
-              .map(
-                (item) => ScheduleDateRule.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList(),
-      locationTimeGroups:
-          (json['locationTimeGroups'] as List<dynamic>? ?? const [])
-              .map(
-                (item) => LocationTimeGroup.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList(),
+      timeSchemes: timeSchemes,
+      scheduleDateRules: _parseOptionalList(
+        json['scheduleDateRules'],
+        (item) => ScheduleDateRule.fromJson(item),
+      ),
+      locationTimeGroups: _parseOptionalList(
+        json['locationTimeGroups'],
+        (item) => LocationTimeGroup.fromJson(item),
+      ),
       exportedAt:
           DateTime.tryParse((json['exportedAt'] as String?) ?? '') ??
           DateTime.now(),

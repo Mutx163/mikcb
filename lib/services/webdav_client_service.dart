@@ -237,7 +237,7 @@ class WebdavClientService {
     );
     if (bytesResult.isFailed) {
       return WebdavRemoteMetaResult.failed(
-        bytesResult.errorMessage ?? 'remote_meta_unavailable',
+        bytesResult.errorMessage ?? 'sync_failed',
       );
     }
     if (bytesResult.bytes == null || bytesResult.bytes!.isEmpty) {
@@ -246,7 +246,7 @@ class WebdavClientService {
     try {
       final decoded = jsonDecode(utf8.decode(bytesResult.bytes!));
       if (decoded is! Map) {
-        return const WebdavRemoteMetaResult.failed('remote_meta_invalid');
+        return const WebdavRemoteMetaResult.failed('invalid_response');
       }
       final meta = AppSyncSnapshotMeta.fromJson(
         Map<String, dynamic>.from(decoded),
@@ -320,9 +320,8 @@ class WebdavClientService {
       if (statusCode == 403 && _looksLikeUnsupportedLock(error)) {
         return const WebdavLockResult.unsupported();
       }
-      return WebdavLockResult.failed(
-        statusCode == 403 ? 'access_denied' : error.toString(),
-      );
+      final classified = classifyGetBytesFailure(error);
+      return WebdavLockResult.failed(classified.errorMessage ?? 'sync_failed');
     }
   }
 
@@ -405,7 +404,7 @@ class WebdavClientService {
       return const WebdavHistoryListResult.notFound();
     }
     return WebdavHistoryListResult.failed(
-      classified.errorMessage ?? error.toString(),
+      classified.errorMessage ?? 'sync_failed',
     );
   }
 
@@ -445,15 +444,16 @@ class WebdavClientService {
         return const WebdavGetBytesResult.failed('invalid_response');
       }
       // Other 4xx / unexpected status codes.
-      return WebdavGetBytesResult.failed('http_$statusCode');
+      return const WebdavGetBytesResult.failed('invalid_response');
     }
 
     // Fall back to string matching for non-WebDAV exceptions (e.g. raw
     // http client errors that were not wrapped by the package).
     final message = error.toString().toLowerCase();
     final statusMatch = RegExp(r'\bhttp\s+(\d{3})\b').firstMatch(message);
-    final textualStatusCode =
-        statusMatch == null ? null : int.tryParse(statusMatch.group(1)!);
+    final textualStatusCode = statusMatch == null
+        ? null
+        : int.tryParse(statusMatch.group(1)!);
     if (textualStatusCode == 401) {
       return const WebdavGetBytesResult.failed('auth_failed');
     }
@@ -467,7 +467,7 @@ class WebdavClientService {
       return const WebdavGetBytesResult.failed('invalid_response');
     }
     if (textualStatusCode != null && textualStatusCode >= 400) {
-      return WebdavGetBytesResult.failed('http_$textualStatusCode');
+      return const WebdavGetBytesResult.failed('invalid_response');
     }
     final looksMissing =
         message.contains('404') ||
