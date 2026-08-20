@@ -336,16 +336,32 @@ class HolidayService {
   /// Convert API response to grouped HolidayEntry list.
   /// xiaoai API daytype: 1=holiday, 2=makeup workday, 3=weekend, 4=workday
   List<HolidayEntry> _convertApiEntries(List<dynamic> list, int year) {
-    // Collect holidays and makeup workdays
+    // Collect holidays and makeup workdays — skip malformed remote entries.
     final holidayDates = <DateTime>[];
     final makeupDates = <DateTime>[];
     for (final item in list) {
-      final map = item as Map<String, dynamic>;
-      final daytype = map['daytype'] as int;
-      final rest = map['rest'] as int? ?? 1;
-      final date = DateTime.parse(map['date'] as String);
-      if (daytype == 1) holidayDates.add(date); // 假期
-      if (daytype == 3 && rest == 0) makeupDates.add(date); // 调休上班
+      try {
+        if (item is! Map) continue;
+        final map = Map<String, dynamic>.from(item as Map);
+        final rawDaytype = map['daytype'];
+        int daytype;
+        if (rawDaytype is int) {
+          daytype = rawDaytype;
+        } else if (rawDaytype is num) {
+          daytype = rawDaytype.toInt();
+        } else {
+          continue;
+        }
+        final rest = (map['rest'] as num?)?.toInt() ?? 1;
+        final rawDate = map['date'];
+        if (rawDate is! String || rawDate.trim().isEmpty) continue;
+        final date = DateTime.tryParse(rawDate);
+        if (date == null) continue;
+        if (daytype == 1) holidayDates.add(date); // 假期
+        if (daytype == 3 && rest == 0) makeupDates.add(date); // 调休上班
+      } catch (_) {
+        continue;
+      }
     }
 
     // Group consecutive holidays
@@ -418,15 +434,35 @@ class HolidayService {
     final makeupDates = <DateTime>[];
 
     for (final entry in holidayMap.entries) {
-      final map = entry.value as Map<String, dynamic>;
-      final date = DateTime.parse(map['date'] as String);
-      final isHoliday = map['holiday'] as bool;
-      final name = map['name'] as String? ?? '';
-
-      if (isHoliday) {
-        holidayDates.add(date);
-      } else if (name.contains('班')) {
-        makeupDates.add(date);
+      try {
+        final rawVal = entry.value;
+        if (rawVal is! Map) continue;
+        final map = Map<String, dynamic>.from(rawVal as Map);
+        final rawDate = map['date'];
+        if (rawDate is! String || (rawDate as String).trim().isEmpty) continue;
+        final date = DateTime.tryParse(rawDate as String);
+        if (date == null) continue;
+        final rawHoliday = map['holiday'];
+        final bool? isHoliday = switch (rawHoliday) {
+          bool value => value,
+          num value when value == 1 => true,
+          num value when value == 0 => false,
+          String value => switch (value.trim().toLowerCase()) {
+              'true' || '1' || 'yes' => true,
+              'false' || '0' || 'no' => false,
+              _ => null,
+            },
+          _ => null,
+        };
+        if (isHoliday == null) continue;
+        final name = map['name'] is String ? map['name'] as String : '';
+        if (isHoliday) {
+          holidayDates.add(date);
+        } else if (name.contains('班')) {
+          makeupDates.add(date);
+        }
+      } catch (_) {
+        continue;
       }
     }
 
@@ -552,11 +588,16 @@ class HolidayService {
       final raw = prefs.getString(_customHolidaysKey);
       if (raw == null) return <HolidayEntry>[];
       final list = jsonDecode(raw) as List<dynamic>;
-      return list
-          .map(
-            (e) => HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)),
-          )
-          .toList();
+      final out = <HolidayEntry>[];
+      for (final e in list) {
+        try {
+          if (e is! Map) continue;
+          out.add(HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)));
+        } catch (_) {
+          continue;
+        }
+      }
+      return out;
     } catch (_) {
       return <HolidayEntry>[];
     }

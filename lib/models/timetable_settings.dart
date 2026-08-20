@@ -763,10 +763,15 @@ class SectionTime {
   }
 
   factory SectionTime.fromJson(Map<String, dynamic> json) {
-    return SectionTime(
-      startTime: json['startTime'] as String,
-      endTime: json['endTime'] as String,
-    );
+    final rawStart = json['startTime'];
+    final rawEnd = json['endTime'];
+    if (rawStart is! String || rawStart.trim().isEmpty) {
+      throw const FormatException('missing section startTime');
+    }
+    if (rawEnd is! String || rawEnd.trim().isEmpty) {
+      throw const FormatException('missing section endTime');
+    }
+    return SectionTime(startTime: rawStart, endTime: rawEnd);
   }
 
   SectionTime copyWith({String? startTime, String? endTime}) {
@@ -803,12 +808,32 @@ class SavedTheme {
   };
 
   factory SavedTheme.fromJson(Map<String, dynamic> json) {
-    final themeDataJson = json['themeData'] as Map<String, dynamic>;
+    final rawId = json['id'];
+    final rawName = json['name'];
+    if (rawId is! String || rawId.trim().isEmpty) {
+      throw const FormatException('missing theme id');
+    }
+    if (rawName is! String || rawName.trim().isEmpty) {
+      throw const FormatException('missing theme name');
+    }
+    final rawThemeData = json['themeData'];
+    if (rawThemeData is! Map) {
+      throw const FormatException('missing themeData');
+    }
+    final themeDataJson = Map<String, dynamic>.from(rawThemeData as Map);
+    final rawCreated = json['createdAt'];
+    if (rawCreated is! String || rawCreated.trim().isEmpty) {
+      throw const FormatException('missing theme createdAt');
+    }
+    final parsedCreated = DateTime.tryParse(rawCreated);
+    if (parsedCreated == null) {
+      throw FormatException('invalid theme createdAt: $rawCreated');
+    }
     return SavedTheme(
-      id: json['id'] as String,
-      name: json['name'] as String,
+      id: rawId,
+      name: rawName,
       config: ThemeConfig.fromJson(themeDataJson),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: parsedCreated,
     );
   }
 }
@@ -1706,16 +1731,26 @@ class TimetableSettings {
     final rawSections = json['sections'] as List<dynamic>? ?? const [];
     // Empty sections fall back to defaults only for the section list; other
     // fields must still parse so a corrupt sections array does not wipe theme /
-    // semester / live settings.
-    final resolvedSections = rawSections.isEmpty
-        ? TimetableSettings.defaults().sections
-        : rawSections
-              .map(
-                (item) => SectionTime.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList();
+    // semester / live settings. Malformed SectionTime entries are skipped.
+    List<SectionTime> resolvedSections;
+    if (rawSections.isEmpty) {
+      resolvedSections = TimetableSettings.defaults().sections;
+    } else {
+      final parsed = <SectionTime>[];
+      for (final item in rawSections) {
+        try {
+          if (item is! Map) continue;
+          parsed.add(
+            SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
+          );
+        } catch (_) {
+          continue;
+        }
+      }
+      resolvedSections = parsed.isEmpty
+          ? TimetableSettings.defaults().sections
+          : parsed;
+    }
     final rawAppUpdateMirrorUrlPrefix =
         json['appUpdateMirrorUrlPrefix'] as String? ??
         defaultAppUpdateMirrorUrlPrefix;
@@ -2082,17 +2117,30 @@ class TimetableSettings {
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
       homePageBackdropFollowsWeekPager:
           json['homePageBackdropFollowsWeekPager'] as bool? ?? true,
-      savedThemes:
-          (json['savedThemes'] as List<dynamic>?)
-              ?.map((t) => SavedTheme.fromJson(t as Map<String, dynamic>))
-              .toList() ??
-          const [],
+      savedThemes: (() {
+        final raw = json['savedThemes'] as List<dynamic>?;
+        if (raw == null) return const <SavedTheme>[];
+        final out = <SavedTheme>[];
+        for (final t in raw) {
+          try {
+            if (t is! Map) continue;
+            out.add(SavedTheme.fromJson(Map<String, dynamic>.from(t as Map)));
+          } catch (_) {
+            continue;
+          }
+        }
+        return out;
+      })(),
       themeCheckpointName: json['themeCheckpointName'] as String?,
-      themeCheckpointConfig: json['themeCheckpointConfig'] != null
-          ? ThemeConfig.fromJson(
-              json['themeCheckpointConfig'] as Map<String, dynamic>,
-            )
-          : null,
+      themeCheckpointConfig: (() {
+        final r = json['themeCheckpointConfig'];
+        if (r is! Map) return null;
+        try {
+          return ThemeConfig.fromJson(Map<String, dynamic>.from(r as Map));
+        } catch (_) {
+          return null;
+        }
+      })(),
     );
   }
 

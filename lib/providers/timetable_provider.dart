@@ -373,7 +373,11 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// Record a teacher name persistently (if not already recorded).
-  Future<void> recordTeacher(String teacher) async {
+  Future<void> recordTeacher(String teacher) {
+    return _runMutation(() => _recordTeacherImpl(teacher));
+  }
+
+  Future<void> _recordTeacherImpl(String teacher) async {
     if (teacher.isEmpty) return;
     if (_teacherRecords.contains(teacher)) return;
     _teacherRecords.add(teacher);
@@ -383,7 +387,11 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// Record a location name persistently (if not already recorded).
-  Future<void> recordLocation(String location) async {
+  Future<void> recordLocation(String location) {
+    return _runMutation(() => _recordLocationImpl(location));
+  }
+
+  Future<void> _recordLocationImpl(String location) async {
     if (location.isEmpty) return;
     if (_locationRecords.contains(location)) return;
     _locationRecords.add(location);
@@ -1435,7 +1443,11 @@ class TimetableProvider with ChangeNotifier {
   /// Apply location routing to unlocked courses on the active profile.
   ///
   /// Returns match/update counts for toast feedback.
-  Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() async {
+  Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() {
+    return _runMutation(() => _applyLocationTimeRulesToActiveProfileImpl());
+  }
+
+  Future<LocationTimeApplyStats> _applyLocationTimeRulesToActiveProfileImpl() async {
     await initialize();
     const debugTag = 'LocationTimeApply';
     var unlockedCount = 0;
@@ -2137,8 +2149,8 @@ class TimetableProvider with ChangeNotifier {
       _courses.add(preparedCourse);
       await _syncHomeworkTasksWithCourses();
       await _persistActiveProfileState();
-      await recordTeacher(preparedCourse.teacher);
-      await recordLocation(preparedCourse.location);
+      await _recordTeacherImpl(preparedCourse.teacher);
+      await _recordLocationImpl(preparedCourse.location);
       _currentLiveCourseId = null;
       notifyListeners();
       _analytics.logEventLater(
@@ -2178,8 +2190,8 @@ class TimetableProvider with ChangeNotifier {
         final newKey = _sharedCourseKey(normalizedCourse);
 
         _courses[index] = normalizedCourse;
-        await recordTeacher(normalizedCourse.teacher);
-        await recordLocation(normalizedCourse.location);
+        await _recordTeacherImpl(normalizedCourse.teacher);
+        await _recordLocationImpl(normalizedCourse.location);
         for (var i = 0; i < _courses.length; i++) {
           if (i == index) {
             continue;
@@ -2422,9 +2434,10 @@ class TimetableProvider with ChangeNotifier {
           }
         }
         final noteTitle = note.trimmedText;
-        final title = noteTitle.isEmpty && existing?.title.isNotEmpty == true
-            ? existing!.title
-            : noteTitle;
+        if (noteTitle.isEmpty && existing == null) {
+          continue;
+        }
+        final title = noteTitle.isEmpty ? existing!.title : noteTitle;
         next.add(
           (existing ??
                   CourseTask(
@@ -2493,8 +2506,8 @@ class TimetableProvider with ChangeNotifier {
           _applySharedCourseFields(course, shared),
         );
         _courses.add(normalized);
-        await recordTeacher(normalized.teacher);
-        await recordLocation(normalized.location);
+        await _recordTeacherImpl(normalized.teacher);
+        await _recordLocationImpl(normalized.location);
       }
       _tasks.removeWhere(
         (task) =>
@@ -2548,10 +2561,10 @@ class TimetableProvider with ChangeNotifier {
       _courses.addAll(normalizedCourses);
       await _syncHomeworkTasksWithCourses();
       for (final teacher in teachers) {
-        await recordTeacher(teacher);
+        await _recordTeacherImpl(teacher);
       }
       for (final location in locations) {
-        await recordLocation(location);
+        await _recordLocationImpl(location);
       }
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
@@ -2568,7 +2581,12 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// 切换课程在指定周次的停课状态
-  Future<void> toggleCourseSuspension(String courseId, int week) async {
+  Future<void> toggleCourseSuspension(String courseId, int week) {
+    return _runMutation(() => _toggleCourseSuspensionImpl(courseId, week));
+  }
+
+  Future<void> _toggleCourseSuspensionImpl(String courseId, int week) async {
+    await initialize();
     final index = _courses.indexWhere((c) => c.id == courseId);
     if (index == -1) return;
 
@@ -2597,7 +2615,12 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// 停课全部周次
-  Future<void> suspendAllWeeks(String courseId) async {
+  Future<void> suspendAllWeeks(String courseId) {
+    return _runMutation(() => _suspendAllWeeksImpl(courseId));
+  }
+
+  Future<void> _suspendAllWeeksImpl(String courseId) async {
+    await initialize();
     final index = _courses.indexWhere((c) => c.id == courseId);
     if (index == -1) return;
     final course = _courses[index];
@@ -2613,7 +2636,12 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// 取消全部停课
-  Future<void> unsuspendAllWeeks(String courseId) async {
+  Future<void> unsuspendAllWeeks(String courseId) {
+    return _runMutation(() => _unsuspendAllWeeksImpl(courseId));
+  }
+
+  Future<void> _unsuspendAllWeeksImpl(String courseId) async {
+    await initialize();
     final index = _courses.indexWhere((c) => c.id == courseId);
     if (index == -1) return;
     _courses[index] = _courses[index].copyWith(suspendedWeeks: null);
@@ -2793,7 +2821,7 @@ class TimetableProvider with ChangeNotifier {
       }
 
       final updatedRoot = root.copyWith(
-        exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
+        exceptionDates: _normalizedExceptionDates(root.exceptionDates, requestedDate),
         updatedAt: DateTime.now(),
       );
       final nextItems = <ScheduleItem>[];
@@ -2882,7 +2910,7 @@ class TimetableProvider with ChangeNotifier {
         ),
       );
       final updatedRoot = root.copyWith(
-        exceptionDates: <DateTime>[...root.exceptionDates, requestedDate],
+        exceptionDates: _normalizedExceptionDates(root.exceptionDates, requestedDate),
         updatedAt: DateTime.now(),
       );
       final nextItems = <ScheduleItem>[];
@@ -3211,6 +3239,13 @@ class TimetableProvider with ChangeNotifier {
   Future<bool> deleteCourseOccurrence({
     required String courseId,
     required int sourceWeek,
+  }) {
+    return _runMutation(() => _deleteCourseOccurrenceImpl(courseId: courseId, sourceWeek: sourceWeek));
+  }
+
+  Future<bool> _deleteCourseOccurrenceImpl({
+    required String courseId,
+    required int sourceWeek,
   }) async {
     await initialize();
     final index = _courses.indexWhere((course) => course.id == courseId);
@@ -3264,6 +3299,28 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<bool> rescheduleCourseOccurrence({
+    required String courseId,
+    required int sourceWeek,
+    required int targetWeek,
+    required int targetDayOfWeek,
+    required int targetStartSection,
+    required int targetEndSection,
+    String? targetLocation,
+    String? targetTimeSchemeIdOverride,
+  }) {
+    return _runMutation(() => _rescheduleCourseOccurrenceImpl(
+          courseId: courseId,
+          sourceWeek: sourceWeek,
+          targetWeek: targetWeek,
+          targetDayOfWeek: targetDayOfWeek,
+          targetStartSection: targetStartSection,
+          targetEndSection: targetEndSection,
+          targetLocation: targetLocation,
+          targetTimeSchemeIdOverride: targetTimeSchemeIdOverride,
+        ));
+  }
+
+  Future<bool> _rescheduleCourseOccurrenceImpl({
     required String courseId,
     required int sourceWeek,
     required int targetWeek,
@@ -3376,7 +3433,11 @@ class TimetableProvider with ChangeNotifier {
     return true;
   }
 
-  Future<bool> clearActiveProfileCourses() async {
+  Future<bool> clearActiveProfileCourses() {
+    return _runMutation(() => _clearActiveProfileCoursesImpl());
+  }
+
+  Future<bool> _clearActiveProfileCoursesImpl() async {
     await initialize();
     final clearedCourseCount = _courses.length;
     if (clearedCourseCount == 0) {
@@ -3535,7 +3596,11 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  Future<bool> syncTemporalContext({DateTime? now}) async {
+  Future<bool> syncTemporalContext({DateTime? now}) {
+    return _runMutation(() => _syncTemporalContextImpl(now: now));
+  }
+
+  Future<bool> _syncTemporalContextImpl({DateTime? now}) async {
     await initialize();
     final reference = now ?? DateTime.now();
     final targetDayOfWeek = reference.weekday;
@@ -3554,7 +3619,7 @@ class TimetableProvider with ChangeNotifier {
 
     // Seasonal bulk-apply must run even when week/day labels did not change
     // (e.g. cold start after midnight, or rule starts mid-session).
-    final didApplySeasonal = await applyDueScheduleDateRules(now: reference);
+    final didApplySeasonal = await _applyDueScheduleDateRules(now: reference);
 
     if (!didChangeWeek && !didChangeCalendarWeek && !didChangeDay) {
       return didApplySeasonal;
@@ -3775,6 +3840,23 @@ class TimetableProvider with ChangeNotifier {
       return ScheduleItem.dateOnly(occurrenceDate);
     }
     return requestedDate;
+  }
+
+  List<DateTime> _normalizedExceptionDates(
+    List<DateTime> existing,
+    DateTime candidate,
+  ) {
+    final normalizedCandidate = ScheduleItem.dateOnly(candidate);
+    final merged = <String, DateTime>{};
+    for (final date in existing) {
+      final normalized = ScheduleItem.dateOnly(date);
+      merged[ScheduleItem.formatCalendarDate(normalized)] = normalized;
+    }
+    merged[ScheduleItem.formatCalendarDate(normalizedCandidate)] =
+        normalizedCandidate;
+    final result = merged.values.toList()
+      ..sort((a, b) => a.compareTo(b));
+    return result;
   }
 
   bool _isSameDate(DateTime left, DateTime right) {

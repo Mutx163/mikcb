@@ -909,7 +909,7 @@ class StatisticsService {
   static int _countScheduledWeeks(Course course) {
     int count = 0;
     for (int week = course.startWeek; week <= course.endWeek; week++) {
-      if (course.isInWeek(week)) count++;
+      if (course.isActiveInWeek(week)) count++;
     }
     return count;
   }

@@ -3029,21 +3029,29 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
     final pageChromeFallback = Theme.of(context).colorScheme.surface;
-    final weekdayHeader = homePageBackgroundLayer(
-      visual: homePageRegionChromeVisual(
-        settings: settings,
-        isDark: isDark,
-        darkFallback: pageChromeFallback,
-        region: HomePageBackgroundScope.weekdayBar,
-        chromeBlurEnabled: weekdayChromeBlurEnabled,
-      ),
-      child: _buildWeekDayHeader(
-        provider,
-        week,
-        settings,
-        timeColumnWidth,
-        hideBottomBorder: weekdayShowsBackdrop || weekdayChromeBlurEnabled,
-      ),
+    // Keep the week slot at a fixed height while the day overlay owns the
+    // visible header, avoiding duplicate weekday bars during the transition.
+    final weekdayHeader = SizedBox(
+      height: _weekDayHeaderHeight,
+      child: _shouldShowDayViewOverlay
+          ? const SizedBox.shrink()
+          : homePageBackgroundLayer(
+              visual: homePageRegionChromeVisual(
+                settings: settings,
+                isDark: isDark,
+                darkFallback: pageChromeFallback,
+                region: HomePageBackgroundScope.weekdayBar,
+                chromeBlurEnabled: weekdayChromeBlurEnabled,
+              ),
+              child: _buildWeekDayHeader(
+                provider,
+                week,
+                settings,
+                timeColumnWidth,
+                hideBottomBorder:
+                    weekdayShowsBackdrop || weekdayChromeBlurEnabled,
+              ),
+            ),
     );
 
     return KeyedSubtree(

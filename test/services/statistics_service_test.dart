@@ -296,6 +296,35 @@ void main() {
         expect(achievements, isEmpty);
       });
 
+      test('should exclude suspended weeks from perfect attendance denominator', () {
+        final course = Course(
+          id: 'suspended',
+          name: '停课课程',
+          teacher: '老师',
+          location: '教室',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 1,
+          endWeek: 4,
+          suspendedWeeks: [2],
+          courseNature: CourseNature.required,
+        );
+
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: [course],
+          currentWeek: 4,
+        );
+        final perfect = achievements.firstWhere(
+          (achievement) => achievement.id == 'perfect_attendance',
+        );
+
+        expect(perfect.isUnlocked, true);
+        expect(perfect.progressCurrent, 1);
+      });
+
       test('should not unlock perfect attendance mid-semester', () {
         final courses = [
           Course(

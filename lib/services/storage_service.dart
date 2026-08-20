@@ -61,6 +61,9 @@ class StorageService {
   }
 
   bool _hidePrefixMigrated = false;
+  Future<void>? _profilesEnsureFuture;
+  Future<void>? _timeSchemesEnsureFuture;
+  Future<void>? _hidePrefixMigrateFuture;
 
   Future<void>? _initFuture;
   Future<void> _coursesWriteChain = Future<void>.value();
@@ -70,6 +73,9 @@ class StorageService {
   @visibleForTesting
   void resetForTesting() {
     _initFuture = null;
+    _profilesEnsureFuture = null;
+    _timeSchemesEnsureFuture = null;
+    _hidePrefixMigrateFuture = null;
     _prefs = null;
     _ensuredForPrefs = null;
     _profilesListCache = null;
@@ -144,6 +150,8 @@ class StorageService {
       _ensuredForPrefs = _prefs;
       _invalidateProfilesListCache();
       _invalidateTimeSchemesListCache();
+      _locationTimeGroupsListCache = null;
+      _scheduleDateRulesListCache = null;
       _hidePrefixMigrated = false;
     }
   }
@@ -605,7 +613,7 @@ class StorageService {
     await _ensureTimeSchemesInitialized();
     final cached = _timeSchemesListCache;
     if (cached != null) {
-      return cached;
+      return List<TimeScheme>.from(cached);
     }
 
     final rawSchemes = _prefs?.getString(_timeSchemesKey);
@@ -620,14 +628,19 @@ class StorageService {
       return const [];
     }
     try {
-      final schemes = decoded
-          .map(
-            (item) =>
-                TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList();
-      _timeSchemesListCache = schemes;
-      return schemes;
+      final schemes = <TimeScheme>[];
+      for (final item in decoded) {
+        try {
+          if (item is! Map) continue;
+          schemes.add(
+            TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+          );
+        } catch (_) {
+          continue;
+        }
+      }
+      _timeSchemesListCache = List<TimeScheme>.from(schemes);
+      return List<TimeScheme>.from(schemes);
     } catch (_) {
       final raw = _prefs?.getString(_timeSchemesKey);
       if (raw != null) {
@@ -651,7 +664,7 @@ class StorageService {
     if (_prefs == null) await init();
     final cached = _locationTimeGroupsListCache;
     if (cached != null) {
-      return cached;
+      return List<LocationTimeGroup>.from(cached);
     }
 
     final rawGroups = _prefs?.getString(_locationTimeGroupsKey);
@@ -666,16 +679,20 @@ class StorageService {
       return const [];
     }
     try {
-      final groups = decoded
-          .map(
-            (item) => LocationTimeGroup.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .where((group) => group.id.isNotEmpty)
-          .toList();
-      _locationTimeGroupsListCache = groups;
-      return groups;
+      final groups = <LocationTimeGroup>[];
+      for (final item in decoded) {
+        try {
+          if (item is! Map) continue;
+          final group = LocationTimeGroup.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          );
+          if (group.id.isNotEmpty) groups.add(group);
+        } catch (_) {
+          continue;
+        }
+      }
+      _locationTimeGroupsListCache = List<LocationTimeGroup>.from(groups);
+      return List<LocationTimeGroup>.from(groups);
     } catch (_) {
       final raw = _prefs?.getString(_locationTimeGroupsKey);
       if (raw != null) {
@@ -697,7 +714,7 @@ class StorageService {
     if (_prefs == null) await init();
     final cached = _scheduleDateRulesListCache;
     if (cached != null) {
-      return cached;
+      return List<ScheduleDateRule>.from(cached);
     }
 
     final rawRules = _prefs?.getString(_scheduleDateRulesKey);
@@ -712,16 +729,20 @@ class StorageService {
       return const [];
     }
     try {
-      final rules = decoded
-          .map(
-            (item) => ScheduleDateRule.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .where((rule) => rule.id.isNotEmpty)
-          .toList();
-      _scheduleDateRulesListCache = rules;
-      return rules;
+      final rules = <ScheduleDateRule>[];
+      for (final item in decoded) {
+        try {
+          if (item is! Map) continue;
+          final rule = ScheduleDateRule.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          );
+          if (rule.id.isNotEmpty) rules.add(rule);
+        } catch (_) {
+          continue;
+        }
+      }
+      _scheduleDateRulesListCache = List<ScheduleDateRule>.from(rules);
+      return List<ScheduleDateRule>.from(rules);
     } catch (_) {
       final raw = _prefs?.getString(_scheduleDateRulesKey);
       if (raw != null) {
@@ -792,8 +813,22 @@ class StorageService {
     await _prefs?.setStringList(_locationRecordsKey, locations);
   }
 
-  Future<void> _ensureProfilesInitialized() async {
+  Future<void> _ensureProfilesInitialized() {
     _resetEnsureCacheIfNeeded();
+    if (_profilesEnsured) return Future.value();
+    final existing = _profilesEnsureFuture;
+    if (existing != null) return existing;
+    final future = _doEnsureProfilesInitialized();
+    _profilesEnsureFuture = future;
+    return future.whenComplete(() {
+      if (identical(_profilesEnsureFuture, future)) {
+        _profilesEnsureFuture = null;
+      }
+    });
+  }
+
+  Future<void> _doEnsureProfilesInitialized() async {
+    // _resetEnsureCacheIfNeeded already handled by wrapper; re-check flag
     if (_profilesEnsured) return;
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles != null && rawProfiles.isNotEmpty) {
@@ -836,8 +871,21 @@ class StorageService {
     _profilesEnsured = true;
   }
 
-  Future<void> _ensureTimeSchemesInitialized() async {
+  Future<void> _ensureTimeSchemesInitialized() {
     _resetEnsureCacheIfNeeded();
+    if (_timeSchemesEnsured) return Future.value();
+    final existing = _timeSchemesEnsureFuture;
+    if (existing != null) return existing;
+    final future = _doEnsureTimeSchemesInitialized();
+    _timeSchemesEnsureFuture = future;
+    return future.whenComplete(() {
+      if (identical(_timeSchemesEnsureFuture, future)) {
+        _timeSchemesEnsureFuture = null;
+      }
+    });
+  }
+
+  Future<void> _doEnsureTimeSchemesInitialized() async {
     if (_timeSchemesEnsured) return;
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles == null || rawProfiles.isEmpty) {
@@ -940,15 +988,33 @@ class StorageService {
   }
 
   List<TimeScheme> _parseStoredTimeSchemes(List<dynamic> rawSchemes) {
-    return rawSchemes
-        .map(
-          (item) => TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
-        )
-        .toList();
+    final schemes = <TimeScheme>[];
+    for (final item in rawSchemes) {
+      try {
+        if (item is! Map) continue;
+        schemes.add(TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)));
+      } catch (_) {
+        continue;
+      }
+    }
+    return schemes;
   }
 
-  Future<void> _migrateHidePrefixDefault() async {
+  Future<void> _migrateHidePrefixDefault() {
     _resetEnsureCacheIfNeeded();
+    if (_hidePrefixMigrated) return Future.value();
+    final existing = _hidePrefixMigrateFuture;
+    if (existing != null) return existing;
+    final future = _doMigrateHidePrefixDefault();
+    _hidePrefixMigrateFuture = future;
+    return future.whenComplete(() {
+      if (identical(_hidePrefixMigrateFuture, future)) {
+        _hidePrefixMigrateFuture = null;
+      }
+    });
+  }
+
+  Future<void> _doMigrateHidePrefixDefault() async {
     if (_hidePrefixMigrated) return;
     if (_prefs?.getBool(_hidePrefixDefaultMigrationKey) == true) {
       _hidePrefixMigrated = true;

@@ -230,18 +230,16 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ),
         headerExtension: _buildProgressBar(l10n),
         bottomBar: _buildBottomBar(l10n),
-        child: HyperosBlurredBodyInset(
-          child: PageView(
-            controller: _pageController,
-            physics: const ClampingScrollPhysics(),
-            onPageChanged: _onPageChanged,
-            children: [
-              _buildWelcomePage(l10n),
-              _buildPrivacyPage(l10n),
-              _buildPermissionsPage(l10n),
-              _buildTipsPage(l10n),
-            ],
-          ),
+        child: PageView(
+          controller: _pageController,
+          physics: const ClampingScrollPhysics(),
+          onPageChanged: _onPageChanged,
+          children: [
+            _buildWelcomePage(l10n),
+            _buildPrivacyPage(l10n),
+            _buildPermissionsPage(l10n),
+            _buildTipsPage(l10n),
+          ],
         ),
       ),
     );
@@ -313,15 +311,32 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
+  /// Keeps the page viewport under the overlay header while the list's
+  /// scrollable padding carries the expanded header clearance. The app bar can
+  /// then shrink its paint/layout height without leaving a stale gap between
+  /// the progress extension and the first card.
+  Widget _buildGuideList({required List<Widget> children}) {
+    return ScrollConfiguration(
+      behavior: const _GuideClampingBehavior(),
+      child: Builder(
+        builder: (context) {
+          final headerInset = HyperosBlurredHeaderScope.insetOf(context);
+          final topPadding = (headerInset > 0 ? headerInset : 0.0) + 8.0;
+          return ListView(
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, topPadding, 16, 16),
+            children: children,
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildWelcomePage(AppLocalizations l10n) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
 
-    return ScrollConfiguration(
-      behavior: const _GuideClampingBehavior(),
-      child: ListView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return _buildGuideList(
       children: [
         HyperosCard(
           padding: const EdgeInsets.all(20),
@@ -367,7 +382,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ],
         ),
       ],
-      ),
     );
   }
 
@@ -408,11 +422,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ? l10n.guidePrivacyHelperRequireConsent
         : l10n.guidePrivacyHelperViewOnly;
 
-    return ScrollConfiguration(
-      behavior: const _GuideClampingBehavior(),
-      child: ListView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return _buildGuideList(
       children: [
         HyperosListGroup(
           children: [
@@ -491,7 +501,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ],
       ],
-      ),
     );
   }
 
@@ -509,11 +518,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ? 0.0
         : readyCount / countableItems.length;
 
-    return ScrollConfiguration(
-      behavior: const _GuideClampingBehavior(),
-      child: ListView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return _buildGuideList(
       children: [
         HyperosSectionLabel(text: l10n.guidePermissionsHeader),
         const SizedBox(height: 8),
@@ -559,7 +564,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           title: Text(l10n.guidePermissionsFooterHint),
         ),
       ],
-      ),
     );
   }
 
@@ -632,11 +636,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final bodyStyle = _guideBodyStyle();
     final mutedBodyStyle = _guideMutedBodyStyle();
 
-    return ScrollConfiguration(
-      behavior: const _GuideClampingBehavior(),
-      child: ListView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return _buildGuideList(
       children: [
         HyperosSectionLabel(text: l10n.guideTipsHeader),
         Padding(
@@ -724,7 +724,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ),
       ],
-      ),
     );
   }
 
@@ -796,37 +795,37 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           child: Row(
             children: [
               if (isPrivacyPage)
-              HyperosButton(
-                label: l10n.exitAppAction,
-                variant: HyperosButtonVariant.secondary,
-                onPressed: _exitWithoutConsent,
-              )
-            else if (showPrev)
-              HyperosButton(
-                label: l10n.guidePrevButton,
-                variant: HyperosButtonVariant.secondary,
-                onPressed: _goPrev,
-              )
-            else
+                HyperosButton(
+                  label: l10n.exitAppAction,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: _exitWithoutConsent,
+                )
+              else if (showPrev)
+                HyperosButton(
+                  label: l10n.guidePrevButton,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: _goPrev,
+                )
+              else
+                const Spacer(),
               const Spacer(),
-            const Spacer(),
-            if (!isLastPage)
-              HyperosButton(
-                label: l10n.guideNextButton,
-                onPressed: canGoNext ? _goNext : null,
-              )
-            else
-              HyperosButton(
-                label: widget.requirePrivacyConsent
-                    ? l10n.agreeAndStartAction
-                    : l10n.startUsingAction,
-                onPressed: _finishGuide,
-              ),
-          ],
+              if (!isLastPage)
+                HyperosButton(
+                  label: l10n.guideNextButton,
+                  onPressed: canGoNext ? _goNext : null,
+                )
+              else
+                HyperosButton(
+                  label: widget.requirePrivacyConsent
+                      ? l10n.agreeAndStartAction
+                      : l10n.startUsingAction,
+                  onPressed: _finishGuide,
+                ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   void _finishGuide() {
@@ -1028,10 +1027,15 @@ class _GuideClampingBehavior extends ScrollBehavior {
   const _GuideClampingBehavior();
 
   @override
-  ScrollPhysics getScrollPhysics(BuildContext context) => const ClampingScrollPhysics();
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const ClampingScrollPhysics();
 
   @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) => child;
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => child;
 }
 
 class _PermissionItem {

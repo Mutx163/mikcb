@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import '../helpers_test_app.dart';
 
@@ -181,6 +182,53 @@ void main() {
     await tester.tap(find.text('上一步'));
     await tester.pumpAndSettle();
     expect(find.text('3 / 4'), findsOneWidget);
+  });
+
+  testWidgets('collapsible header keeps guide content gap aligned', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const TestApp(
+        home: UserGuideScreen(
+          requirePrivacyConsent: true,
+          initialPrivacyChecked: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+
+    RenderBox headerBox() =>
+        tester
+                .element(find.byType(HyperosCollapsibleTopAppBar))
+                .findRenderObject()
+            as RenderBox;
+    RenderBox firstGroupBox() =>
+        tester.element(find.byType(HyperosListGroup).first).findRenderObject()
+            as RenderBox;
+    double gap() {
+      final header = headerBox();
+      final group = firstGroupBox();
+      return group.localToGlobal(Offset.zero).dy -
+          (header.localToGlobal(Offset.zero).dy + header.size.height);
+    }
+
+    expect(gap(), closeTo(8, 0.5));
+    final list = find.byType(ListView).first;
+    await tester.drag(list, const Offset(0, -38));
+    await tester.pumpAndSettle();
+    expect(gap(), closeTo(8, 0.5));
+
+    await tester.drag(list, const Offset(0, 38));
+    await tester.pumpAndSettle();
+    expect(gap(), closeTo(8, 0.5));
+
+    await tester.drag(list, const Offset(0, -80));
+    await tester.pumpAndSettle();
+    await tester.drag(list, const Offset(0, 80));
+    await tester.pumpAndSettle();
+    expect(gap(), closeTo(8, 0.5));
   });
 
   testWidgets('language selector on welcome page with provider', (

@@ -30,16 +30,26 @@ class TimeScheme {
   }
 
   factory TimeScheme.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    if (rawId is! String || rawId.trim().isEmpty) {
+      throw const FormatException('missing time scheme id');
+    }
     final rawSections = json['sections'] as List<dynamic>? ?? const [];
+    final sections = <SectionTime>[];
+    for (final item in rawSections) {
+      try {
+        if (item is! Map) continue;
+        sections.add(
+          SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
     return TimeScheme(
-      id: json['id'] as String,
+      id: rawId,
       name: json['name'] as String? ?? '未命名时间模板',
-      sections: rawSections
-          .map(
-            (item) =>
-                SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
-          .toList(),
+      sections: sections,
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),

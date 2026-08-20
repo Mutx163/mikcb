@@ -63,9 +63,21 @@ class HolidayEntry {
   };
 
   factory HolidayEntry.fromJson(Map<String, dynamic> json) {
+    final rawDate = json['date'];
+    if (rawDate is! String || rawDate.trim().isEmpty) {
+      throw const FormatException('missing holiday date');
+    }
+    final parsedDate = DateTime.tryParse(rawDate);
+    if (parsedDate == null) {
+      throw FormatException('invalid holiday date: $rawDate');
+    }
+    final rawName = json['name'];
+    if (rawName is! String || rawName.trim().isEmpty) {
+      throw const FormatException('missing holiday name');
+    }
     return HolidayEntry(
-      date: DateTime.parse(json['date'] as String),
-      name: json['name'] as String,
+      date: parsedDate,
+      name: rawName,
       type: HolidayTypeX.fromValue(json['type'] as String?),
       groupId: json['groupId'] as String?,
     );
@@ -206,15 +218,33 @@ class HolidayData {
   };
 
   factory HolidayData.fromJson(Map<String, dynamic> json) {
-    return HolidayData(
-      year: json['year'] as int,
-      version: json['version'] as int? ?? 1,
-      entries: (json['entries'] as List<dynamic>? ?? const [])
-          .map(
-            (e) => HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)),
-          )
-          .toList(),
-    );
+    final rawYear = json['year'];
+    int year;
+    if (rawYear is int) {
+      year = rawYear;
+    } else if (rawYear is num) {
+      year = rawYear.toInt();
+    } else if (rawYear is String) {
+      final parsed = int.tryParse(rawYear);
+      if (parsed == null) throw FormatException('invalid holiday year: $rawYear');
+      year = parsed;
+    } else {
+      throw const FormatException('missing holiday year');
+    }
+    final version = (json['version'] as num?)?.toInt() ?? 1;
+    final rawEntries = json['entries'] as List<dynamic>? ?? const [];
+    final entries = <HolidayEntry>[];
+    for (final e in rawEntries) {
+      try {
+        if (e is! Map) continue;
+        entries.add(
+          HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+    return HolidayData(year: year, version: version, entries: entries);
   }
 
   String toJsonString() => jsonEncode(toJson());

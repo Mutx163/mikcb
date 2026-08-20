@@ -247,12 +247,30 @@ class WarehouseMacroRecord {
           json['schoolId'] as String? ??
           '',
       adapterAssetJsPath: json['adapterAssetJsPath'] as String? ?? '',
-      steps: ((json['steps'] as List<dynamic>?) ?? [])
-          .map((s) => MacroStep.fromJson(Map<String, dynamic>.from(s)))
-          .toList(),
-      dialogResponses: Map<String, dynamic>.from(
-        json['dialogResponses'] as Map<String, dynamic>? ?? {},
-      ),
+      steps: (() {
+        final rawSteps = json['steps'] as List<dynamic>? ?? const [];
+        final out = <MacroStep>[];
+        for (final s in rawSteps) {
+          try {
+            if (s is! Map) continue;
+            out.add(MacroStep.fromJson(Map<String, dynamic>.from(s as Map)));
+          } catch (_) {
+            continue;
+          }
+        }
+        return out;
+      })(),
+      dialogResponses: (() {
+        final raw = json['dialogResponses'];
+        if (raw is Map) {
+          try {
+            return Map<String, dynamic>.from(raw as Map);
+          } catch (_) {
+            return <String, dynamic>{};
+          }
+        }
+        return <String, dynamic>{};
+      })(),
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
