@@ -68,6 +68,11 @@ class StorageService {
   Future<void>? _initFuture;
   Future<void> _coursesWriteChain = Future<void>.value();
   Future<void> _profilesWriteChain = Future<void>.value();
+  Future<void> _timeSchemesWriteChain = Future<void>.value();
+  Future<void> _locationTimeGroupsWriteChain = Future<void>.value();
+  Future<void> _scheduleDateRulesWriteChain = Future<void>.value();
+  Future<void> _teacherRecordsWriteChain = Future<void>.value();
+  Future<void> _locationRecordsWriteChain = Future<void>.value();
 
   /// 仅用于测试：重置缓存的初始化状态
   @visibleForTesting
@@ -87,6 +92,11 @@ class StorageService {
     _hidePrefixMigrated = false;
     _coursesWriteChain = Future<void>.value();
     _profilesWriteChain = Future<void>.value();
+    _timeSchemesWriteChain = Future<void>.value();
+    _locationTimeGroupsWriteChain = Future<void>.value();
+    _scheduleDateRulesWriteChain = Future<void>.value();
+    _teacherRecordsWriteChain = Future<void>.value();
+    _locationRecordsWriteChain = Future<void>.value();
   }
 
   Future<void> init() async {
@@ -588,9 +598,27 @@ class StorageService {
       final result = await operation();
       writeCompleter.complete();
       return result;
-    } catch (error, stackTrace) {
-      writeCompleter.completeError(error, stackTrace);
+    } catch (error) {
+      // Keep later writes progressing without creating an unobserved error
+      // future in the chain. The failed operation still reports its own error.
+      writeCompleter.complete();
       rethrow;
+    }
+  }
+
+  Future<T> _runSerializedWrite<T>({
+    required Future<void> current,
+    required void Function(Future<void>) update,
+    required Future<T> Function() operation,
+  }) async {
+    final previous = current;
+    final completer = Completer<void>();
+    update(completer.future);
+    await previous.catchError((_) {});
+    try {
+      return await operation();
+    } finally {
+      completer.complete();
     }
   }
 
@@ -627,6 +655,7 @@ class StorageService {
 
   Future<List<TimeScheme>> getTimeSchemes() async {
     if (_prefs == null) await init();
+    await _timeSchemesWriteChain;
     await _ensureProfilesInitialized();
     await _ensureTimeSchemesInitialized();
     final cached = _timeSchemesListCache;
@@ -651,7 +680,7 @@ class StorageService {
         try {
           if (item is! Map) continue;
           schemes.add(
-            TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+            TimeScheme.fromJson(Map<String, dynamic>.from(item)),
           );
         } catch (_) {
           continue;
@@ -669,17 +698,25 @@ class StorageService {
     }
   }
 
-  Future<void> saveTimeSchemes(List<TimeScheme> schemes) async {
-    if (_prefs == null) await init();
-    final payload = jsonEncode(
-      schemes.map((scheme) => scheme.toJson()).toList(),
+  Future<void> saveTimeSchemes(List<TimeScheme> schemes) {
+    final snapshot = _snapshotTimeSchemes(schemes);
+    return _runSerializedWrite<void>(
+      current: _timeSchemesWriteChain,
+      update: (future) => _timeSchemesWriteChain = future,
+      operation: () async {
+        if (_prefs == null) await init();
+        final payload = jsonEncode(
+          snapshot.map((scheme) => scheme.toJson()).toList(),
+        );
+        await _prefs?.setString(_timeSchemesKey, payload);
+        _timeSchemesListCache = _snapshotTimeSchemes(snapshot);
+      },
     );
-    await _prefs?.setString(_timeSchemesKey, payload);
-    _timeSchemesListCache = _snapshotTimeSchemes(schemes);
   }
 
   Future<List<LocationTimeGroup>> getLocationTimeGroups() async {
     if (_prefs == null) await init();
+    await _locationTimeGroupsWriteChain;
     final cached = _locationTimeGroupsListCache;
     if (cached != null) {
       return _snapshotLocationTimeGroups(cached);
@@ -702,7 +739,7 @@ class StorageService {
         try {
           if (item is! Map) continue;
           final group = LocationTimeGroup.fromJson(
-            Map<String, dynamic>.from(item as Map),
+            Map<String, dynamic>.from(item),
           );
           if (group.id.isNotEmpty) groups.add(group);
         } catch (_) {
@@ -721,15 +758,25 @@ class StorageService {
     }
   }
 
-  Future<void> saveLocationTimeGroups(List<LocationTimeGroup> groups) async {
-    if (_prefs == null) await init();
-    final payload = jsonEncode(groups.map((group) => group.toJson()).toList());
-    await _prefs?.setString(_locationTimeGroupsKey, payload);
-    _locationTimeGroupsListCache = _snapshotLocationTimeGroups(groups);
+  Future<void> saveLocationTimeGroups(List<LocationTimeGroup> groups) {
+    final snapshot = _snapshotLocationTimeGroups(groups);
+    return _runSerializedWrite<void>(
+      current: _locationTimeGroupsWriteChain,
+      update: (future) => _locationTimeGroupsWriteChain = future,
+      operation: () async {
+        if (_prefs == null) await init();
+        final payload = jsonEncode(
+          snapshot.map((group) => group.toJson()).toList(),
+        );
+        await _prefs?.setString(_locationTimeGroupsKey, payload);
+        _locationTimeGroupsListCache = _snapshotLocationTimeGroups(snapshot);
+      },
+    );
   }
 
   Future<List<ScheduleDateRule>> getScheduleDateRules() async {
     if (_prefs == null) await init();
+    await _scheduleDateRulesWriteChain;
     final cached = _scheduleDateRulesListCache;
     if (cached != null) {
       return List<ScheduleDateRule>.from(cached);
@@ -752,7 +799,7 @@ class StorageService {
         try {
           if (item is! Map) continue;
           final rule = ScheduleDateRule.fromJson(
-            Map<String, dynamic>.from(item as Map),
+            Map<String, dynamic>.from(item),
           );
           if (rule.id.isNotEmpty) rules.add(rule);
         } catch (_) {
@@ -771,11 +818,22 @@ class StorageService {
     }
   }
 
-  Future<void> saveScheduleDateRules(List<ScheduleDateRule> rules) async {
-    if (_prefs == null) await init();
-    final payload = jsonEncode(rules.map((rule) => rule.toJson()).toList());
-    await _prefs?.setString(_scheduleDateRulesKey, payload);
-    _scheduleDateRulesListCache = List<ScheduleDateRule>.from(rules);
+  Future<void> saveScheduleDateRules(List<ScheduleDateRule> rules) {
+    final snapshot = rules.map((rule) => rule.copyWith()).toList();
+    return _runSerializedWrite<void>(
+      current: _scheduleDateRulesWriteChain,
+      update: (future) => _scheduleDateRulesWriteChain = future,
+      operation: () async {
+        if (_prefs == null) await init();
+        final payload = jsonEncode(
+          snapshot.map((rule) => rule.toJson()).toList(),
+        );
+        await _prefs?.setString(_scheduleDateRulesKey, payload);
+        _scheduleDateRulesListCache = snapshot
+            .map((rule) => rule.copyWith())
+            .toList();
+      },
+    );
   }
 
   /// Last bulk-applied date-rule signature (ruleId|schemeId|start|end).
@@ -811,24 +869,40 @@ class StorageService {
 
   Future<List<String>> getTeacherRecords() async {
     if (_prefs == null) await init();
+    await _teacherRecordsWriteChain;
     final raw = _prefs?.getStringList(_teacherRecordsKey);
-    return raw ?? [];
+    return List<String>.from(raw ?? const []);
   }
 
-  Future<void> saveTeacherRecords(List<String> teachers) async {
-    if (_prefs == null) await init();
-    await _prefs?.setStringList(_teacherRecordsKey, teachers);
+  Future<void> saveTeacherRecords(List<String> teachers) {
+    final snapshot = List<String>.from(teachers);
+    return _runSerializedWrite<void>(
+      current: _teacherRecordsWriteChain,
+      update: (future) => _teacherRecordsWriteChain = future,
+      operation: () async {
+        if (_prefs == null) await init();
+        await _prefs?.setStringList(_teacherRecordsKey, snapshot);
+      },
+    );
   }
 
   Future<List<String>> getLocationRecords() async {
     if (_prefs == null) await init();
+    await _locationRecordsWriteChain;
     final raw = _prefs?.getStringList(_locationRecordsKey);
-    return raw ?? [];
+    return List<String>.from(raw ?? const []);
   }
 
-  Future<void> saveLocationRecords(List<String> locations) async {
-    if (_prefs == null) await init();
-    await _prefs?.setStringList(_locationRecordsKey, locations);
+  Future<void> saveLocationRecords(List<String> locations) {
+    final snapshot = List<String>.from(locations);
+    return _runSerializedWrite<void>(
+      current: _locationRecordsWriteChain,
+      update: (future) => _locationRecordsWriteChain = future,
+      operation: () async {
+        if (_prefs == null) await init();
+        await _prefs?.setStringList(_locationRecordsKey, snapshot);
+      },
+    );
   }
 
   Future<void> _ensureProfilesInitialized() {
@@ -855,15 +929,25 @@ class StorageService {
         // Corrupt stored profiles were backed up and removed. Continue below so
         // the app can recreate a valid default profile.
       } else {
-        final activeProfileId = _prefs?.getString(_activeProfileIdKey);
-        if (activeProfileId == null || activeProfileId.isEmpty) {
-          final profiles = _parseStoredProfiles(rawProfileList);
-          if (profiles.isNotEmpty) {
+        final profiles = _parseStoredProfiles(rawProfileList);
+        if (profiles.isEmpty) {
+          // A valid empty container is still not usable by the Provider. For a
+          // non-empty payload, preserve the total-loss input before falling
+          // through to default-profile creation.
+          if (rawProfileList.isNotEmpty) {
+            final raw = _prefs?.getString(_profilesKey);
+            if (raw != null) {
+              await _backupAndRemoveCorruptString(_profilesKey, raw);
+            }
+          }
+        } else {
+          final activeProfileId = _prefs?.getString(_activeProfileIdKey);
+          if (activeProfileId == null || activeProfileId.isEmpty) {
             await setActiveProfileId(profiles.first.id);
           }
+          _profilesEnsured = true;
+          return;
         }
-        _profilesEnsured = true;
-        return;
       }
     }
 
@@ -905,6 +989,9 @@ class StorageService {
 
   Future<void> _doEnsureTimeSchemesInitialized() async {
     if (_timeSchemesEnsured) return;
+    // Profile initialization always creates a usable default profile when the
+    // stored collection is empty. At this point that profile is already on disk,
+    // so an empty time-scheme collection must still be initialized from it.
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles == null || rawProfiles.isEmpty) {
       _timeSchemesEnsured = true;
@@ -1011,7 +1098,7 @@ class StorageService {
       try {
         if (item is! Map) continue;
         schemes.add(
-          TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+          TimeScheme.fromJson(Map<String, dynamic>.from(item)),
         );
       } catch (_) {
         continue;

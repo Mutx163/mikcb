@@ -5,8 +5,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/time_scheme.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
+
+TimetableProfile _profile({List<SectionTime>? sections}) {
+  final now = DateTime(2026, 3, 22, 8);
+  final defaults = TimetableSettings.defaults();
+  return TimetableProfile(
+    id: 'profile-b5',
+    name: 'B5',
+    courses: const [],
+    settings: sections == null
+        ? defaults
+        : defaults.copyWith(sections: List<SectionTime>.from(sections)),
+    currentWeek: 1,
+    createdAt: now,
+    lastUsedAt: now,
+  );
+}
 
 TimeScheme _scheme(String id, String name) {
   return TimeScheme(
@@ -50,7 +67,7 @@ void main() {
       final storage = StorageService();
       await storage.init();
       await storage.getProfiles();
-      await storage.saveProfiles(const []);
+      await storage.saveProfiles([_profile()]);
       final a = _scheme('s-a', 'A');
       final b = _scheme('s-b', 'B');
       await storage.saveTimeSchemes([a, b]);
@@ -83,8 +100,8 @@ void main() {
       final storage = StorageService();
       await storage.init();
       await storage.getProfiles();
-      await storage.saveProfiles(const []);
       final a = _scheme('s-x', 'X');
+      await storage.saveProfiles([_profile(sections: a.sections)]);
       await storage.saveTimeSchemes([a]);
       // Force reload from disk by resetting caches via prefs swap simulation:
       // resetForTesting clears caches but keep disk; re-init should decode
@@ -119,7 +136,7 @@ void main() {
       final storage = StorageService();
       await storage.init();
       await storage.getProfiles();
-      await storage.saveProfiles(const []);
+      await storage.saveProfiles([_profile()]);
       final g1 = _group('g1', 's-a');
       final g2 = _group('g2', 's-a');
       await storage.saveLocationTimeGroups([g1, g2]);
@@ -141,7 +158,7 @@ void main() {
       final storage = StorageService();
       await storage.init();
       await storage.getProfiles();
-      await storage.saveProfiles(const []);
+      await storage.saveProfiles([_profile()]);
       final r1 = _rule('r1', 's-a');
       final r2 = _rule('r2', 's-a');
       await storage.saveScheduleDateRules([r1, r2]);
@@ -161,6 +178,7 @@ void main() {
         final storage = StorageService();
         await storage.init();
         await storage.getProfiles();
+        await storage.saveProfiles([_profile()]);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(
           'location_time_groups',
@@ -204,7 +222,7 @@ void main() {
       final storage = StorageService();
       await storage.init();
       await storage.getProfiles();
-      await storage.saveProfiles(const []);
+      await storage.saveProfiles([_profile()]);
       final g = _group('g1', 's-a');
       await storage.saveLocationTimeGroups([g]);
       final fetched = await storage.getLocationTimeGroups();
@@ -218,7 +236,7 @@ void main() {
       final storage = StorageService();
       await storage.init();
       await storage.getProfiles();
-      await storage.saveProfiles(const []);
+      await storage.saveProfiles([_profile()]);
       final sections = <SectionTime>[
         const SectionTime(startTime: '08:00', endTime: '08:45'),
       ];

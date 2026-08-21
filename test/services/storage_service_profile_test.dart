@@ -152,6 +152,49 @@ void main() {
     );
   });
 
+  test('creates a default profile for a valid empty profile list', () async {
+    SharedPreferences.setMockInitialValues({
+      'timetable_profiles': '[]',
+    });
+
+    final storage = StorageService();
+    await storage.init();
+
+    final profiles = await storage.getProfiles();
+
+    expect(profiles, hasLength(1));
+    expect(profiles.single.name, '默认课表');
+  });
+
+  test(
+    'backs up valid-json profiles with no recoverable entries and recreates default profile',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'timetable_profiles': jsonEncode([
+          <String, dynamic>{'id': null, 'name': '坏档案'},
+          <String, dynamic>{'settings': 'not-a-map'},
+        ]),
+        'active_timetable_profile_id': 'missing-profile',
+      });
+
+      final storage = StorageService();
+      await storage.init();
+
+      final profiles = await storage.getProfiles();
+      final prefs = await SharedPreferences.getInstance();
+
+      expect(profiles, hasLength(1));
+      expect(profiles.single.name, '默认课表');
+      expect(prefs.getString('timetable_profiles'), isNotEmpty);
+      expect(
+        prefs.getKeys().where(
+          (key) => key.startsWith('timetable_profiles_corrupt_backup_'),
+        ),
+        isNotEmpty,
+      );
+    },
+  );
+
   test(
     'backs up corrupt legacy courses and falls back to empty list',
     () async {
