@@ -288,7 +288,20 @@ abstract final class HyperosColors {
   }
 
   /// Status bar icons/background aligned to a solid page or header color.
+  ///
+  /// [background] must be opaque (alpha == 1.0): computeLuminance ignores
+  /// the alpha channel, so a transparent or translucent color is classified
+  /// purely by its RGB and typically reads as dark - producing white icons
+  /// over a light page. Callers rendering over blur/wallpaper must derive an
+  /// opaque representative color first (see resolveHomePageStatusBarBackground)
+  /// or build the SystemUiOverlayStyle explicitly.
   static SystemUiOverlayStyle systemOverlayForBackground(Color background) {
+    assert(
+      background.a == 1.0,
+      'systemOverlayForBackground: background must be opaque; got '
+      '$background. computeLuminance() ignores alpha, so translucent colors '
+      'are classified by RGB alone and yield the wrong icon polarity.',
+    );
     final light = background.computeLuminance() > 0.5;
     return SystemUiOverlayStyle(
       statusBarColor: background,

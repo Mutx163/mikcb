@@ -1400,10 +1400,13 @@ class _HyperosCollapsibleTopAppBarState
       }
     }
 
-    // 透明底色（磨砂壳内的折叠栏）不能参与状态栏推导：computeLuminance
-    // 忽略 alpha，透明色恒判为深色背景 → 恒发白色图标，会盖掉页面外壳
-    // 按「真实页面背景」推导的正确样式（浅色页面 → 深色图标）。此时
-    // 直接透传子树，让外层 AnnotatedRegion 决定状态栏样式。
+    // 底色不透明时才由本栏推导状态栏样式。computeLuminance 忽略 alpha：
+    // 透明/半透明底色会按 RGB 被误判为「深色背景」而恒发白色图标，且这层
+    // 内层注解绘制在最上方、覆盖状态栏区域，会盖掉页面外壳按真实背景
+    // 推导的正确样式（浅色设置页白底白字即此因）。磨砂壳内的折叠栏
+    // （color: Colors.transparent）因此直接透传子树，让外层
+    // AnnotatedRegion 决定状态栏样式。
+    final deriveOverlayFromBar = backgroundColor.a == 1.0;
     final barContent = SafeArea(
       top: true,
       bottom: false,
@@ -1417,7 +1420,7 @@ class _HyperosCollapsibleTopAppBarState
         ),
       ),
     );
-    final foreground = backgroundColor.a == 0
+    final foreground = !deriveOverlayFromBar
         ? barContent
         : AnnotatedRegion<SystemUiOverlayStyle>(
             value: HyperosColors.systemOverlayForBackground(backgroundColor),
