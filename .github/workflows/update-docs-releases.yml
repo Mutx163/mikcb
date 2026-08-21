@@ -32,13 +32,27 @@ jobs:
         run: |
           echo "Fetching latest releases from GitHub API..."
           mkdir -p docs/releases
-          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-               -H "Accept: application/vnd.github.v3+json" \
-               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100" > /tmp/releases.json
+          : > /tmp/releases.jsonl
+          page=1
+          while :; do
+            curl --fail --silent --show-error --location \
+                 -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                 -H "Accept: application/vnd.github.v3+json" \
+                 "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100&page=$page" \
+                 > "/tmp/releases-page.json"
+            if node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync("/tmp/releases-page.json","utf8")); if (!Array.isArray(value)) throw new Error("GitHub releases API response must be a JSON array"); fs.appendFileSync("/tmp/releases.jsonl", JSON.stringify(value)+"\n"); if (value.length === 0) process.exit(10);'; then
+              page=$((page + 1))
+            else
+              status=$?
+              if [ "$status" -eq 10 ]; then break; fi
+              exit "$status"
+            fi
+          done
           node <<'EOF'
           const fs = require("fs");
-
-          const releases = JSON.parse(fs.readFileSync("/tmp/releases.json", "utf8"));
+          const pages = fs.readFileSync("/tmp/releases.jsonl", "utf8").trim().split(/\r?\n/).filter(Boolean).map(JSON.parse);
+          if (!pages.every(Array.isArray)) throw new Error("GitHub releases pages must be JSON arrays");
+          const releases = pages.flat();
 
           function pickDownloadAsset(assets) {
             const normalizedAssets = Array.isArray(assets) ? assets : [];

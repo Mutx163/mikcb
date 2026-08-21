@@ -187,7 +187,27 @@ def body(value: Any) -> str:
 
 
 def json_ld(value: dict[str, Any]) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    # Keep untrusted release text from terminating the JSON-LD script element.
+    serialized = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return (
+        serialized.replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
+MANAGED_RELEASE_FILENAME = re.compile(r"^v[0-9A-Za-z._-]+\.html$")
+
+
+def remove_stale_release_pages(releases_dir: Path, generated: set[str]) -> int:
+    removed = 0
+    for path in releases_dir.iterdir():
+        if path.is_file() and MANAGED_RELEASE_FILENAME.fullmatch(path.name) and path.name not in generated:
+            path.unlink()
+            removed += 1
+    return removed
 
 
 def site_header(prefix: str) -> str:
@@ -586,8 +606,9 @@ def main() -> int:
             filename = f"v{slug_version(item['version'])}.html"
             write_text(DOCS / "releases" / filename, render_release_detail(item))
             generated_releases.add(filename)
+    removed_releases = remove_stale_release_pages(DOCS / "releases", generated_releases)
     write_text(DOCS / "sitemap.xml", build_sitemap(feed, schools))
-    print(f"Generated schools.html, releases/index.html, {len(generated_releases)} release pages, and sitemap.xml")
+    print(f"Generated schools.html, releases/index.html, {len(generated_releases)} release pages, removed {removed_releases} stale release pages, and sitemap.xml")
     return 0
 
 
