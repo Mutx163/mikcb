@@ -125,6 +125,9 @@ class _WallpaperPositionPickerPageState
   late double _alignY;
 
   Size? _imageSize;
+
+  /// 壁纸文件读取/解码失败（如设置残留了已被删除文件的旧路径）。
+  bool _imageLoadFailed = false;
   bool _switching = false;
   double? _topLuminance;
   String? _luminanceSampleKey;
@@ -140,23 +143,47 @@ class _WallpaperPositionPickerPageState
   }
 
   /// 只读图片头部拿原始宽高，不解码像素，进入页面无需等待整图解码。
+  ///
+  /// 文件缺失或损坏时置 [_imageLoadFailed] 显示占位，而不是让
+  /// PathNotFoundException 一路抛到全局错误处理。
   Future<void> _resolveImageSize() async {
-    final bytes = await File(_imagePath).readAsBytes();
-    if (!mounted) {
-      return;
+    try {
+      final file = File(_imagePath);
+      if (!await file.exists()) {
+        if (mounted) {
+          setState(() {
+            _imageLoadFailed = true;
+            _imageSize = null;
+          });
+        }
+        return;
+      }
+      final bytes = await file.readAsBytes();
+      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
+      final width = descriptor.width;
+      final height = descriptor.height;
+      descriptor.dispose();
+      buffer.dispose();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _imageSize = Size(width.toDouble(), height.toDouble());
+        _imageLoadFailed = false;
+      });
+    } catch (error, stackTrace) {
+      // 解码失败同样降级为占位；保留日志便于定位坏图来源。
+      debugPrint(
+        'WallpaperPositionPicker resolve image failed: $error\n$stackTrace',
+      );
+      if (mounted) {
+        setState(() {
+          _imageLoadFailed = true;
+          _imageSize = null;
+        });
+      }
     }
-    final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
-    final descriptor = await ui.ImageDescriptor.encoded(buffer);
-    final width = descriptor.width;
-    final height = descriptor.height;
-    descriptor.dispose();
-    buffer.dispose();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _imageSize = Size(width.toDouble(), height.toDouble());
-    });
   }
 
   /// 采样壁纸顶部亮度，决定状态栏图标与标题的对比色（与首页逻辑一致）。
@@ -355,13 +382,20 @@ class _WallpaperPositionPickerPageState
     final imageSize = _imageSize;
     if (imageSize == null) {
       return Center(
-        child: MiuixCircularProgressIndicator(
-          colors: MiuixProgressIndicatorColors(
-            foregroundColor: HyperosColors.primary(context),
-            disabledForegroundColor: HyperosColors.primary(context),
-            backgroundColor: Colors.transparent,
-          ),
-        ),
+        // 文件缺失/损坏时显示占位图标，而不是永远转圈或抛异常。
+        child: _imageLoadFailed
+            ? const Icon(
+                Icons.broken_image_outlined,
+                size: 56,
+                color: Colors.white38,
+              )
+            : MiuixCircularProgressIndicator(
+                colors: MiuixProgressIndicatorColors(
+                  foregroundColor: HyperosColors.primary(context),
+                  disabledForegroundColor: HyperosColors.primary(context),
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
       );
     }
     // 视口与首页一致：全屏大小。首页壁纸以 BoxFit.cover 铺满整屏，
@@ -411,6 +445,11 @@ class _WallpaperPositionPickerPageState
               _alignX.clamp(-1.0, 1.0),
               _alignY.clamp(-1.0, 1.0),
             ),
+            // 解码失败的兜底：保持黑底不崩帧，错误态由占位逻辑负责。
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('WallpaperPositionPicker preview failed: $error');
+              return const SizedBox.shrink();
+            },
           ),
         ),
       ],

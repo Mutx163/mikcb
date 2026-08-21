@@ -492,6 +492,27 @@ class _TimetablePageSettingsScreenState
       await _pickHomePageBackdropImage();
       return;
     }
+    // 壁纸文件可能已丢失（重装/清除数据后设置被备份恢复、跨设备同步只带回
+    // JSON 不带文件等）：此时进入位置编辑页会在读取图片时抛
+    // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
+    if (!await File(existingPath).exists()) {
+      evictHomePageImageCache(existingPath);
+      PreblurredWallpaperCache.instance.evict(existingPath);
+      if (!mounted) {
+        return;
+      }
+      _updateDraft(
+        _draft.copyWith(
+          clearHomePageWallpaperPath: true,
+          clearHomePageBackgroundImagePath: true,
+        ),
+      );
+      await _pickHomePageBackdropImage();
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final result = await pushWallpaperPositionPickerPage(
       context,
       imagePath: existingPath,
