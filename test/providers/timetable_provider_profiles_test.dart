@@ -1250,7 +1250,12 @@ void main() {
         .toList();
 
     expect(syncedCourses, hasLength(2));
-    expect(syncedCourses.map((course) => course.teacher).toSet(), {'李老师'});
+    // Teacher is per-schedule-entry: editing one slot must not rewrite the
+    // sibling's teacher (course-b keeps 张老师).
+    expect(syncedCourses.map((course) => course.teacher).toSet(), {
+      '李老师',
+      '张老师',
+    });
     expect(syncedCourses.map((course) => course.shortName).toSet(), {'机设基'});
     expect(syncedCourses.map((course) => course.courseNature).toSet(), {
       CourseNature.elective,
@@ -1433,6 +1438,146 @@ void main() {
       });
     },
   );
+
+  test(
+    'adding schedule entries keeps each entry teacher instead of using first',
+    () async {
+      // Mirrors the App create flow (addCourse is called once per entry).
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+
+      await provider.addCourse(
+        Course(
+          id: 'slot-1',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+      await provider.addCourse(
+        Course(
+          id: 'slot-2',
+          name: '高等数学',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 3,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+        ),
+      );
+
+      final byId = {
+        for (final course in provider.courses) course.id: course,
+      };
+      expect(provider.courses, hasLength(2));
+      expect(byId['slot-1']!.teacher, '张老师');
+      expect(byId['slot-2']!.teacher, '李老师');
+    },
+  );
+
+  test('updateCourseGroup preserves each slot teacher', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.addCourse(
+      Course(
+        id: 'old-slot',
+        name: '大学英语',
+        teacher: '王老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+
+    await provider.updateCourseGroup('大学英语', [
+      Course(
+        id: 'slot-a',
+        name: '大学英语',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+      Course(
+        id: 'slot-b',
+        name: '大学英语',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 3,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    ]);
+
+    final byId = {
+      for (final course in provider.courses) course.id: course,
+    };
+    expect(provider.courses, hasLength(2));
+    expect(byId['slot-a']!.teacher, '张老师');
+    expect(byId['slot-b']!.teacher, '李老师');
+  });
+
+  test('addCourseGroup preserves every slot teacher', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.addCourseGroup([
+      Course(
+        id: 'slot-a',
+        name: '线性代数',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+      Course(
+        id: 'slot-b',
+        name: '线性代数',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 3,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    ]);
+
+    final byId = {
+      for (final course in provider.courses) course.id: course,
+    };
+    expect(provider.courses, hasLength(2));
+    expect(byId['slot-a']!.teacher, '张老师');
+    expect(byId['slot-b']!.teacher, '李老师');
+  });
 
   test(
     'clearing short name falls back to course name for live island payload',

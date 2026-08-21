@@ -200,6 +200,7 @@ class TimetableProvider with ChangeNotifier {
   String? _lastHomeWidgetSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
   Future<void>? _initializationFuture;
+  Future<void>? _deferredDataFuture;
 
   /// Serializes native live/home-widget surface updates (island + widget).
   final SyncOperationGate _liveSurfaceGate = SyncOperationGate();
@@ -536,9 +537,9 @@ class TimetableProvider with ChangeNotifier {
       }
       _initializationFuture = null;
       await initialize();
-      // Deferred teacher/location load is unawaited in _init; wait here so UI
-      // sees storage-consistent records immediately after restore.
-      await _loadDeferredData();
+      // This method already holds the mutation gate. Load directly so it does
+      // not enqueue behind itself and deadlock.
+      await _loadDeferredDataImpl();
       // importFullAppDataBackup may have pushed live surfaces before teachers /
       // locations were reloaded; force one consistent resync after storage load.
       await _runLiveSurfaceExclusive(() async {
@@ -678,13 +679,43 @@ class TimetableProvider with ChangeNotifier {
     }
   }
 
-  /// 后台加载非关键数据：教师/地点记录
-  Future<void> _loadDeferredData() async {
+  /// 后台加载非关键数据：教师/地点记录。
+  ///
+  /// This load is placed on the same mutation gate as recordTeacher/Location.
+  /// Otherwise a stale read started before the first frame could overwrite a
+  /// record written by the user while the read was in flight.
+  Future<void> _loadDeferredData() {
+    final existing = _deferredDataFuture;
+    if (existing != null) {
+      return existing;
+    }
+    final future = _runMutation(_loadDeferredDataImpl);
+    _deferredDataFuture = future;
+    return future.whenComplete(() {
+      if (identical(_deferredDataFuture, future)) {
+        _deferredDataFuture = null;
+      }
+    });
+  }
+
+  Future<void> _loadDeferredDataImpl() async {
     final teacherFuture = _storageService.getTeacherRecords();
     final locationFuture = _storageService.getLocationRecords();
-    await Future.wait([teacherFuture, locationFuture]);
-    _teacherRecords = await teacherFuture;
-    _locationRecords = await locationFuture;
+    final results = await Future.wait<List<String>>([
+      teacherFuture,
+      locationFuture,
+    ]);
+    final loadedTeachers = List<String>.from(results[0]);
+    final loadedLocations = List<String>.from(results[1]);
+    final nextTeachers = <String>{...loadedTeachers, ..._teacherRecords}.toList()..sort();
+    final nextLocations = <String>{...loadedLocations, ..._locationRecords}.toList()..sort();
+    final teachersChanged = !listEquals(_teacherRecords, nextTeachers);
+    final locationsChanged = !listEquals(_locationRecords, nextLocations);
+    _teacherRecords = nextTeachers;
+    _locationRecords = nextLocations;
+    if (teachersChanged || locationsChanged) {
+      notifyListeners();
+    }
   }
 
   /// 后台执行 app logs 迁移，不阻塞首帧
@@ -1447,7 +1478,8 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(() => _applyLocationTimeRulesToActiveProfileImpl());
   }
 
-  Future<LocationTimeApplyStats> _applyLocationTimeRulesToActiveProfileImpl() async {
+  Future<LocationTimeApplyStats>
+  _applyLocationTimeRulesToActiveProfileImpl() async {
     await initialize();
     const debugTag = 'LocationTimeApply';
     var unlockedCount = 0;
@@ -2490,7 +2522,9 @@ class TimetableProvider with ChangeNotifier {
 
   /// Replace all schedule entries for a course group.  [updatedCourses] is
   /// the full list of schedules that should exist after the update.
-  /// Shared fields (name, teacher, color, etc.) are propagated to all entries.
+  /// Shared metadata fields (name, short name, color, course nature,
+  /// description) are propagated to all entries; per-entry fields such as
+  /// teacher and location keep each slot’s own value.
   Future<void> updateCourseGroup(
     String originalName,
     List<Course> updatedCourses,
@@ -2821,7 +2855,10 @@ class TimetableProvider with ChangeNotifier {
       }
 
       final updatedRoot = root.copyWith(
-        exceptionDates: _normalizedExceptionDates(root.exceptionDates, requestedDate),
+        exceptionDates: _normalizedExceptionDates(
+          root.exceptionDates,
+          requestedDate,
+        ),
         updatedAt: DateTime.now(),
       );
       final nextItems = <ScheduleItem>[];
@@ -2910,7 +2947,10 @@ class TimetableProvider with ChangeNotifier {
         ),
       );
       final updatedRoot = root.copyWith(
-        exceptionDates: _normalizedExceptionDates(root.exceptionDates, requestedDate),
+        exceptionDates: _normalizedExceptionDates(
+          root.exceptionDates,
+          requestedDate,
+        ),
         updatedAt: DateTime.now(),
       );
       final nextItems = <ScheduleItem>[];
@@ -3240,7 +3280,12 @@ class TimetableProvider with ChangeNotifier {
     required String courseId,
     required int sourceWeek,
   }) {
-    return _runMutation(() => _deleteCourseOccurrenceImpl(courseId: courseId, sourceWeek: sourceWeek));
+    return _runMutation(
+      () => _deleteCourseOccurrenceImpl(
+        courseId: courseId,
+        sourceWeek: sourceWeek,
+      ),
+    );
   }
 
   Future<bool> _deleteCourseOccurrenceImpl({
@@ -3308,16 +3353,18 @@ class TimetableProvider with ChangeNotifier {
     String? targetLocation,
     String? targetTimeSchemeIdOverride,
   }) {
-    return _runMutation(() => _rescheduleCourseOccurrenceImpl(
-          courseId: courseId,
-          sourceWeek: sourceWeek,
-          targetWeek: targetWeek,
-          targetDayOfWeek: targetDayOfWeek,
-          targetStartSection: targetStartSection,
-          targetEndSection: targetEndSection,
-          targetLocation: targetLocation,
-          targetTimeSchemeIdOverride: targetTimeSchemeIdOverride,
-        ));
+    return _runMutation(
+      () => _rescheduleCourseOccurrenceImpl(
+        courseId: courseId,
+        sourceWeek: sourceWeek,
+        targetWeek: targetWeek,
+        targetDayOfWeek: targetDayOfWeek,
+        targetStartSection: targetStartSection,
+        targetEndSection: targetEndSection,
+        targetLocation: targetLocation,
+        targetTimeSchemeIdOverride: targetTimeSchemeIdOverride,
+      ),
+    );
   }
 
   Future<bool> _rescheduleCourseOccurrenceImpl({
@@ -3854,8 +3901,7 @@ class TimetableProvider with ChangeNotifier {
     }
     merged[ScheduleItem.formatCalendarDate(normalizedCandidate)] =
         normalizedCandidate;
-    final result = merged.values.toList()
-      ..sort((a, b) => a.compareTo(b));
+    final result = merged.values.toList()..sort((a, b) => a.compareTo(b));
     return result;
   }
 
@@ -3939,10 +3985,12 @@ class TimetableProvider with ChangeNotifier {
       }
       return null;
     }();
+    // teacher (and location) are per-schedule-entry values: when a course name
+    // is shared across multiple schedule times each slot keeps its own teacher.
+    // Only genuinely shared/course-level metadata propagates here.
     return target.copyWith(
       name: source.name,
       shortName: source.shortName,
-      teacher: source.teacher,
       color: source.color,
       textColor: source.textColor,
       courseNature: source.courseNature,

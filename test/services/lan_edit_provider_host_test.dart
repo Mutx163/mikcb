@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/lan_edit_provider_host.dart';
+import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
 
 Course buildTestCourse({required String id, required String color}) {
@@ -17,6 +20,28 @@ Course buildTestCourse({required String id, required String color}) {
     startTime: '08:00',
     endTime: '08:45',
     color: color,
+  );
+}
+
+Course buildScheduleSlot({
+  required String id,
+  required String name,
+  required String teacher,
+  int dayOfWeek = 1,
+}) {
+  return Course(
+    id: id,
+    name: name,
+    teacher: teacher,
+    location: 'A101',
+    dayOfWeek: dayOfWeek,
+    startSection: 1,
+    endSection: 2,
+    startTime: '08:00',
+    endTime: '09:40',
+    color: '#2196F3',
+    startWeek: 1,
+    endWeek: 16,
   );
 }
 
@@ -83,5 +108,76 @@ void main() {
       normalizedPackage.profiles.single.courses.single.color,
       LanEditProviderHost.defaultLanCourseColor,
     );
+  });
+
+  test('LAN replaceCourseGroup keeps each slot teacher on create', () async {
+    SharedPreferences.setMockInitialValues({});
+    StorageService().resetForTesting();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    final host = LanEditProviderHost(provider);
+
+    final created = await host.replaceCourseGroup(
+      originalName: null,
+      slots: [
+        buildScheduleSlot(
+          id: 'lan-a',
+          name: '高等数学',
+          teacher: '张老师',
+          dayOfWeek: 1,
+        ),
+        buildScheduleSlot(
+          id: 'lan-b',
+          name: '高等数学',
+          teacher: '李老师',
+          dayOfWeek: 3,
+        ),
+      ],
+    );
+
+    expect(created, hasLength(2));
+    final byId = {for (final c in provider.courses) c.id: c};
+    expect(byId['lan-a']!.teacher, '张老师');
+    expect(byId['lan-b']!.teacher, '李老师');
+  });
+
+  test('LAN replaceGroup keeps each slot teacher on update', () async {
+    SharedPreferences.setMockInitialValues({});
+    StorageService().resetForTesting();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      buildScheduleSlot(id: 'old', name: '离散数学', teacher: '旧老师'),
+    );
+    final host = LanEditProviderHost(provider);
+
+    final replaced = await host.replaceCourseGroup(
+      originalName: '离散数学',
+      slots: [
+        buildScheduleSlot(
+          id: 'replaced-a',
+          name: '离散数学',
+          teacher: '张老师',
+          dayOfWeek: 1,
+        ),
+        buildScheduleSlot(
+          id: 'replaced-b',
+          name: '离散数学',
+          teacher: '李老师',
+          dayOfWeek: 3,
+        ),
+      ],
+    );
+
+    expect(replaced, hasLength(2));
+    final byId = {for (final c in provider.courses) c.id: c};
+    expect(byId['replaced-a']!.teacher, '张老师');
+    expect(byId['replaced-b']!.teacher, '李老师');
   });
 }
