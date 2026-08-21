@@ -206,11 +206,46 @@ void main() {
     );
   });
 
-  test('allows repeated IDs between cloud profiles but not within one profile', () {
+  test(
+    'allows repeated IDs between cloud profiles but not within one profile',
+    () {
+      final first = TimetableProfile(
+        id: 'profile-1',
+        name: '主课表',
+        courses: [_course(id: 'shared-course')],
+        settings: TimetableSettings.defaults(),
+        currentWeek: 1,
+        createdAt: DateTime(2026, 1, 1),
+        lastUsedAt: DateTime(2026, 1, 1),
+      );
+      final second = TimetableProfile(
+        id: 'profile-2',
+        name: '共享课表',
+        courses: [_course(id: 'shared-course')],
+        settings: TimetableSettings.defaults(),
+        currentWeek: 1,
+        createdAt: DateTime(2026, 1, 1),
+        lastUsedAt: DateTime(2026, 1, 1),
+      );
+
+      expect(
+        TransferPackage(
+          packageId: 'cloud-duplicate',
+          scope: TransferScope.allData,
+          channel: TransferChannel.cloud,
+          profiles: [first, second],
+          isFullBackup: true,
+        ),
+        isA<TransferPackage>(),
+      );
+    },
+  );
+
+  test('diff scopes repeated profile entity IDs independently', () {
     final first = TimetableProfile(
       id: 'profile-1',
       name: '主课表',
-      courses: [_course(id: 'shared-course')],
+      courses: [_course(id: 'shared-course', name: '数学')],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
       createdAt: DateTime(2026, 1, 1),
@@ -219,24 +254,88 @@ void main() {
     final second = TimetableProfile(
       id: 'profile-2',
       name: '共享课表',
-      courses: [_course(id: 'shared-course')],
+      courses: [_course(id: 'shared-course', name: '物理')],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
       createdAt: DateTime(2026, 1, 1),
       lastUsedAt: DateTime(2026, 1, 1),
     );
+    final current = TransferPackage(
+      packageId: 'current',
+      scope: TransferScope.allData,
+      channel: TransferChannel.cloud,
+      profiles: [first, second],
+      isFullBackup: true,
+    );
+    final incoming = TransferPackage(
+      packageId: 'incoming',
+      scope: TransferScope.allData,
+      channel: TransferChannel.cloud,
+      profiles: [
+        first,
+        second.copyWith(
+          courses: [_course(id: 'shared-course', name: '新物理')],
+        ),
+      ],
+      isFullBackup: true,
+    );
 
-    expect(
-      TransferPackage(
-        packageId: 'cloud-duplicate',
+    final diff = const TransferDiffService().compare(
+      current: current,
+      incoming: incoming,
+    );
+    final courseDiff = diff.forKind(TransferEntityKind.courses);
+    expect(courseDiff.addedCount, 0);
+    expect(courseDiff.updatedCount, 1);
+    expect(courseDiff.changes.single.id, 'shared-course');
+    expect(courseDiff.changes.single.toJson()['profileId'], 'profile-2');
+    expect(courseDiff.changes.single.after?['name'], '新物理');
+  });
+
+  test(
+    'keeps global and profile entities distinct across namespace separators',
+    () {
+      final profile = TimetableProfile(
+        id: 'profile-1',
+        name: '主课表',
+        courses: [_course(id: 'shared-course', name: '档案旧')],
+        settings: TimetableSettings.defaults(),
+        currentWeek: 1,
+        createdAt: DateTime(2026, 1, 1),
+        lastUsedAt: DateTime(2026, 1, 1),
+      );
+      final current = TransferPackage(
+        packageId: 'namespace-current',
         scope: TransferScope.allData,
         channel: TransferChannel.cloud,
-        profiles: [first, second],
+        courses: [_course(id: 'profile-1::shared-course', name: '全局')],
+        profiles: [profile],
         isFullBackup: true,
-      ),
-      isA<TransferPackage>(),
-    );
-  });
+      );
+      final incoming = TransferPackage(
+        packageId: 'namespace-incoming',
+        scope: TransferScope.allData,
+        channel: TransferChannel.cloud,
+        courses: [_course(id: 'profile-1::shared-course', name: '全局')],
+        profiles: [
+          profile.copyWith(
+            courses: [_course(id: 'shared-course', name: '档案新')],
+          ),
+        ],
+        isFullBackup: true,
+      );
+
+      final courseDiff = const TransferDiffService()
+          .compare(current: current, incoming: incoming)
+          .forKind(TransferEntityKind.courses);
+
+      expect(courseDiff.addedCount, 0);
+      expect(courseDiff.updatedCount, 1);
+      expect(courseDiff.removedCount, 0);
+      expect(courseDiff.changes.single.id, 'shared-course');
+      expect(courseDiff.changes.single.toJson()['profileId'], 'profile-1');
+    },
+  );
 
   test(
     'current transfer envelopes fail closed during compatibility parsing',

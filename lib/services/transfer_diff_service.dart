@@ -22,6 +22,8 @@ class TransferEntityChange {
   final TransferChangeType type;
   final String id;
   final String label;
+  /// Profile scope for profile-owned entities; null means package/global scope.
+  final String? profileId;
   final Map<String, dynamic>? before;
   final Map<String, dynamic>? after;
 
@@ -30,13 +32,16 @@ class TransferEntityChange {
     required this.type,
     required this.id,
     required this.label,
+    this.profileId,
     this.before,
     this.after,
   });
 
   /// Stable, transport-independent text that can be shown in a preview list.
   /// Localization can replace the operation word without re-parsing payloads.
-  String get description => '${type.value}: $readableLabel ($id)';
+  String get description => profileId == null
+      ? '${type.value}: $readableLabel ($id)'
+      : '${type.value}: $readableLabel ($id) [$profileId]';
 
   String get readableLabel => label.trim().isEmpty ? id : label.trim();
 
@@ -45,6 +50,7 @@ class TransferEntityChange {
     'type': type.value,
     'id': id,
     'label': label,
+    if (profileId != null) 'profileId': profileId,
     'description': description,
     if (before != null) 'before': before,
     if (after != null) 'after': after,
@@ -308,12 +314,12 @@ class TransferDiffService {
     required List<_TransferEntity> incoming,
     required bool reportRemovals,
   }) {
-    final currentById = {for (final item in current) item.id: item};
-    final incomingById = {for (final item in incoming) item.id: item};
+    final currentById = {for (final item in current) item.key: item};
+    final incomingById = {for (final item in incoming) item.key: item};
     final changes = <TransferEntityChange>[];
 
     for (final item in incoming) {
-      final before = currentById[item.id];
+      final before = currentById[item.key];
       if (before == null) {
         changes.add(
           TransferEntityChange(
@@ -321,6 +327,7 @@ class TransferDiffService {
             type: TransferChangeType.added,
             id: item.id,
             label: item.label,
+            profileId: item.profileId,
             after: item.json,
           ),
         );
@@ -331,6 +338,7 @@ class TransferDiffService {
             type: TransferChangeType.updated,
             id: item.id,
             label: item.label,
+            profileId: item.profileId,
             before: before.json,
             after: item.json,
           ),
@@ -339,13 +347,14 @@ class TransferDiffService {
     }
     if (reportRemovals) {
       for (final item in current) {
-        if (!incomingById.containsKey(item.id)) {
+        if (!incomingById.containsKey(item.key)) {
           changes.add(
             TransferEntityChange(
               kind: kind,
               type: TransferChangeType.removed,
               id: item.id,
               label: item.label,
+              profileId: item.profileId,
               before: item.json,
             ),
           );
@@ -361,16 +370,16 @@ class TransferDiffService {
   ) {
     switch (kind) {
       case TransferEntityKind.courses:
-        return _flatten(package, (profile) => profile.courses)
+        return _flatten(package, (profile) => profile.courses, profileId: true)
           ..addAll(package.courses.map(_TransferEntity.fromCourse));
       case TransferEntityKind.exams:
-        return _flatten(package, (profile) => profile.exams)
+        return _flatten(package, (profile) => profile.exams, profileId: true)
           ..addAll(package.exams.map(_TransferEntity.fromExam));
       case TransferEntityKind.tasks:
-        return _flatten(package, (profile) => profile.tasks)
+        return _flatten(package, (profile) => profile.tasks, profileId: true)
           ..addAll(package.tasks.map(_TransferEntity.fromTask));
       case TransferEntityKind.scheduleItems:
-        return _flatten(package, (profile) => profile.scheduleItems)
+        return _flatten(package, (profile) => profile.scheduleItems, profileId: true)
           ..addAll(package.scheduleItems.map(_TransferEntity.fromScheduleItem));
       case TransferEntityKind.timeSchemes:
         return package.timeSchemes.map(_TransferEntity.fromTimeScheme).toList();
@@ -399,15 +408,17 @@ class TransferDiffService {
 
   static List<_TransferEntity> _flatten<T>(
     TransferPackage package,
-    List<T> Function(TimetableProfile) selector,
-  ) {
-    final values = <T>[];
+    List<T> Function(TimetableProfile) selector, {
+    bool profileId = false,
+  }) {
+    final entities = <_TransferEntity>[];
     for (final profile in package.profiles) {
-      values.addAll(selector(profile));
+      for (final value in selector(profile)) {
+        final entity = _TransferEntity.fromValue(value as Object);
+        entities.add(profileId ? entity.withScope(profile.id) : entity);
+      }
     }
-    return values
-        .map((value) => _TransferEntity.fromValue(value as Object))
-        .toList();
+    return entities;
   }
 
   static bool _sameJson(Map<String, dynamic> left, Map<String, dynamic> right) {
@@ -445,12 +456,25 @@ class _TransferEntity {
   final String id;
   final String label;
   final Map<String, dynamic> json;
+  final String? profileId;
+
+  /// Encode both components structurally so IDs containing the separator
+  /// cannot alias another profile/entity pair.
+  String get key => jsonEncode(<Object?>[profileId, id]);
 
   const _TransferEntity({
     required this.id,
     required this.label,
     required this.json,
+    this.profileId,
   });
+
+  _TransferEntity withScope(String scope) => _TransferEntity(
+        id: id,
+        label: label,
+        json: json,
+        profileId: scope,
+      );
 
   factory _TransferEntity.fromValue(Object value) {
     return switch (value) {
