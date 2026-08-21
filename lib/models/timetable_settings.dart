@@ -278,7 +278,8 @@ extension HomeNavigationFormX on HomeNavigationForm {
 }
 
 /// 玻璃坞形态下的内容布局：
-/// - [GlassDockLayout.overlay]：课表满屏显示，底栏药丸浮动在内容之上；
+/// - [GlassDockLayout.overlay]：课表满屏显示并从药丸下方穿过，
+///   底栏药丸以玻璃材质浮在课表之上；
 /// - [GlassDockLayout.inset]：内容底部避让出药丸空间（紧凑间隙）。
 enum GlassDockLayout { overlay, inset }
 
