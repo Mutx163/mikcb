@@ -8,8 +8,9 @@ on:
 
 concurrency:
   # Schools and releases both rewrite sitemap/pages; serialize their commits.
+  # cancel-in-progress 必须为 false：两个定时任务共用本组，取消会丢同步。
   group: docs-data-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update-schools-json:

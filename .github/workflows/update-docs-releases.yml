@@ -11,8 +11,10 @@ on:
 
 concurrency:
   # Schools and releases both rewrite sitemap/pages; serialize their commits.
+  # cancel-in-progress 必须为 false：release 事件触发时若取消正在运行的
+  # 定时任务，会静默丢一次数据同步（与 serialize 语义一致）。
   group: docs-data-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update-json:
