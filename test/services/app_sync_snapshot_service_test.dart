@@ -455,6 +455,49 @@ void main() {
     expect(parsed.customHolidays, isEmpty);
   });
 
+  test(
+    'sync snapshot converts malformed root and typed fields to FormatException',
+    () {
+      final service = AppSyncSnapshotService();
+      expect(
+        () => service.parseSnapshotJson(jsonEncode(<Object>[1, 2, 3])),
+        throwsA(isA<FormatException>()),
+      );
+
+      final payload = <String, dynamic>{
+        'app': 'mikcb',
+        'schemaVersion': AppSyncSnapshotService.schemaVersion,
+        'backupType': AppSyncSnapshotService.backupType,
+        'profiles': <Object>[],
+        'timeSchemes': <Object>[],
+        'warehouse': <String, dynamic>{},
+        'contentSha256': '',
+      };
+      for (final entry in <String, Object?>{
+        'app': 123,
+        'schemaVersion': <String>['2'],
+        'backupType': <String, Object?>{'type': 'sync'},
+        // The snapshot body treats these fields as optional legacy metadata.
+        'contentSha256': <String>['bad'],
+      }.entries) {
+        final invalid = Map<String, dynamic>.from(payload)
+          ..[entry.key] = entry.value;
+        expect(
+          () => service.parseSnapshotJson(jsonEncode(invalid)),
+          throwsA(isA<FormatException>()),
+          reason: entry.key,
+        );
+      }
+
+      final validOptionalFieldPayload = Map<String, dynamic>.from(payload)
+        ..['activeProfileId'] = 123;
+      expect(
+        service.parseSnapshotJson(jsonEncode(validOptionalFieldPayload)),
+        isA<AppSyncSnapshot>(),
+      );
+    },
+  );
+
   test('sync snapshot rejects completely malformed core lists', () {
     final service = AppSyncSnapshotService();
     final payload = <String, dynamic>{

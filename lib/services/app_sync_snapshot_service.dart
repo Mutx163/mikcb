@@ -156,14 +156,22 @@ class AppSyncSnapshotMeta {
   };
 
   factory AppSyncSnapshotMeta.fromJson(Map<String, dynamic> json) {
+    String? stringValue(Object? value) => value is String ? value : null;
+    if (json['exportedAt'] != null && json['exportedAt'] is! String ||
+        json['contentSha256'] != null && json['contentSha256'] is! String ||
+        json['deviceId'] != null && json['deviceId'] is! String ||
+        json['appVersion'] != null && json['appVersion'] is! String ||
+        json['snapshotPath'] != null && json['snapshotPath'] is! String) {
+      throw const FormatException('invalid_sync_snapshot_meta');
+    }
     return AppSyncSnapshotMeta(
       exportedAt:
-          DateTime.tryParse(json['exportedAt'] as String? ?? '') ??
+          DateTime.tryParse(stringValue(json['exportedAt']) ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      contentSha256: json['contentSha256'] as String? ?? '',
-      deviceId: json['deviceId'] as String? ?? '',
-      appVersion: json['appVersion'] as String?,
-      snapshotPath: json['snapshotPath'] as String?,
+      contentSha256: stringValue(json['contentSha256']) ?? '',
+      deviceId: stringValue(json['deviceId']) ?? '',
+      appVersion: stringValue(json['appVersion']),
+      snapshotPath: stringValue(json['snapshotPath']),
     );
   }
 }
@@ -335,10 +343,19 @@ class AppSyncSnapshotService {
   }
 
   AppSyncSnapshot parseSnapshotJson(String content) {
-    final json = jsonDecode(content) as Map<String, dynamic>;
-    final app = json['app'] as String?;
-    final version = (json['schemaVersion'] as num?)?.toInt() ?? 0;
-    final type = json['backupType'] as String?;
+    final json = _decodeSnapshotObject(content);
+    final rawApp = json['app'];
+    final rawVersion = json['schemaVersion'];
+    final rawType = json['backupType'];
+    if (rawApp is! String ||
+        rawType is! String ||
+        rawVersion is! int &&
+            !(rawVersion is num && rawVersion == rawVersion.toInt())) {
+      throw const FormatException('unrecognized_sync_snapshot');
+    }
+    final app = rawApp;
+    final version = rawVersion is int ? rawVersion : rawVersion.toInt();
+    final type = rawType;
 
     if (app != 'mikcb' || version != schemaVersion || type != backupType) {
       throw const FormatException('unrecognized_sync_snapshot');
@@ -350,16 +367,27 @@ class AppSyncSnapshotService {
       throw const FormatException('missing_sync_timetable_data');
     }
     final payload = Map<String, dynamic>.from(json)..remove('contentSha256');
-    final expectedHash = json['contentSha256'] as String? ?? '';
+    final rawContentSha256 = json['contentSha256'];
+    if (rawContentSha256 != null && rawContentSha256 is! String) {
+      throw const FormatException('invalid_sync_snapshot_checksum');
+    }
+    final expectedHash = rawContentSha256 as String? ?? '';
     final actualHash = computeContentSha256(payload);
     if (expectedHash.isNotEmpty && expectedHash != actualHash) {
       throw const FormatException('sync_snapshot_checksum_failed');
     }
 
     final warehouseRaw = json['warehouse'];
-    final warehouse = warehouseRaw is Map
-        ? WarehouseSyncBundle.fromJson(Map<String, dynamic>.from(warehouseRaw))
-        : const WarehouseSyncBundle();
+    WarehouseSyncBundle warehouse;
+    try {
+      warehouse = warehouseRaw is Map
+          ? WarehouseSyncBundle.fromJson(
+              Map<String, dynamic>.from(warehouseRaw),
+            )
+          : const WarehouseSyncBundle();
+    } on TypeError catch (error) {
+      throw FormatException('invalid_sync_snapshot_warehouse', error);
+    }
 
     final includesPartnerTimetableBinding = json.containsKey(
       'partnerTimetableBinding',
@@ -367,9 +395,13 @@ class AppSyncSnapshotService {
     PartnerTimetableBinding? partnerTimetableBinding;
     final rawPartnerBinding = json['partnerTimetableBinding'];
     if (includesPartnerTimetableBinding && rawPartnerBinding is Map) {
-      partnerTimetableBinding = PartnerTimetableBinding.fromJson(
-        Map<String, dynamic>.from(rawPartnerBinding),
-      );
+      try {
+        partnerTimetableBinding = PartnerTimetableBinding.fromJson(
+          Map<String, dynamic>.from(rawPartnerBinding),
+        );
+      } on TypeError catch (error) {
+        throw FormatException('invalid_sync_snapshot_partner_binding', error);
+      }
     }
 
     final decodedProfiles = <TimetableProfile>[];
@@ -444,7 +476,7 @@ class AppSyncSnapshotService {
       profiles: decodedProfiles
           .map(_stripLiveTestingFixtureCoursesFromProfile)
           .toList(),
-      activeProfileId: json['activeProfileId'] as String?,
+      activeProfileId: _optionalString(json['activeProfileId']),
       timeSchemes: decodedTimeSchemes,
       locationTimeGroups: decodedLocationTimeGroups,
       scheduleDateRules: decodedScheduleDateRules,
@@ -460,25 +492,47 @@ class AppSyncSnapshotService {
         (item) => HolidayEntry.fromJson(item),
       ),
       exportedAt:
-          DateTime.tryParse(json['exportedAt'] as String? ?? '') ??
+          DateTime.tryParse(_optionalString(json['exportedAt']) ?? '') ??
           DateTime.now(),
-      deviceId: json['deviceId'] as String? ?? '',
+      deviceId: _optionalString(json['deviceId']) ?? '',
       contentSha256: expectedHash.isEmpty ? actualHash : expectedHash,
       partnerTimetableBinding: partnerTimetableBinding,
       includesPartnerTimetableBinding: includesPartnerTimetableBinding,
-      scheduleDateRuleLastAppliedSignature:
-          (json['scheduleDateRuleLastAppliedSignature'] as String?)
-                  ?.trim()
-                  .isEmpty ==
-              true
-          ? null
-          : (json['scheduleDateRuleLastAppliedSignature'] as String?)?.trim(),
+      scheduleDateRuleLastAppliedSignature: _normalizedOptionalString(
+        json['scheduleDateRuleLastAppliedSignature'],
+      ),
     );
   }
 
   AppSyncSnapshotMeta parseMetaJson(String content) {
-    final json = jsonDecode(content) as Map<String, dynamic>;
-    return AppSyncSnapshotMeta.fromJson(json);
+    final json = _decodeSnapshotObject(content);
+    try {
+      return AppSyncSnapshotMeta.fromJson(json);
+    } on TypeError catch (error) {
+      throw FormatException('invalid_sync_snapshot_meta', error);
+    }
+  }
+
+  static Map<String, dynamic> _decodeSnapshotObject(String content) {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is! Map) {
+        throw const FormatException('invalid_sync_snapshot_payload');
+      }
+      return Map<String, dynamic>.from(decoded);
+    } on FormatException {
+      rethrow;
+    } catch (error) {
+      throw FormatException('invalid_sync_snapshot_payload', error);
+    }
+  }
+
+  static String? _optionalString(Object? value) =>
+      value is String ? value : null;
+
+  static String? _normalizedOptionalString(Object? value) {
+    final normalized = _optionalString(value)?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
   }
 
   String buildMetaJson(AppSyncSnapshotMeta meta) {
