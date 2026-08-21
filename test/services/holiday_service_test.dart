@@ -916,12 +916,30 @@ void main() {
     test('handles malformed date in API response', () async {
       final service = HolidayService(client: _FakeClient({}));
 
+      // 自 1cc9aca 起解析改为容错语义：畸形条目静默跳过（上游
+      // _fetchFromXxx 对空结果返回 null 触发备用源/内置数据兜底），
+      // 不再对单条坏数据抛 FormatException 毒化整年假期。
       expect(
-        () => service.convertApiEntriesForTest([
+        service.convertApiEntriesForTest([
           {'date': 'not-a-date', 'daytype': 1},
         ], 2026),
-        throwsFormatException,
+        isEmpty,
       );
+    });
+
+    test('skips malformed entries but keeps valid ones in mixed payload', () async {
+      final service = HolidayService(client: _FakeClient({}));
+
+      final entries = service.convertApiEntriesForTest([
+        {'date': 'not-a-date', 'daytype': 1},
+        {'date': '2026-10-01', 'daytype': 1},
+        {'date': '2026-02-28', 'daytype': 3, 'rest': 0},
+      ], 2026);
+
+      expect(entries, isNotEmpty);
+      final dates = entries.map((e) => e.date).toSet();
+      expect(dates.contains(DateTime(2026, 10, 1)), isTrue,
+          reason: '合法条目必须与畸形条目共存时保留');
     });
 
     test('handles year with no builtin asset', () async {
