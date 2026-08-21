@@ -135,3 +135,14 @@ tool/chrome-devtools-mcp-guide.md
 
 # Local clone of flutter_miuix used via dependency_overrides for the system-font-weight PR
 .vendor/
+
+# AI 助手项目指引（含机器绑定路径，仅本地使用，不入库）
+AGENTS.md
+
+# 临时工作产物：截图/对比图、构建日志、评审快照、崩溃转储
+.tmp/
+.tmp_*.png
+.tmp_*.jpg
+.tmp_*.txt
+.review_*.diff
+*.stackdump
