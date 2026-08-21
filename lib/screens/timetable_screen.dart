@@ -6419,6 +6419,16 @@ class _TimetableScreenState extends State<TimetableScreen>
       barBorderRadius: 28,
       // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
       indicatorBorderRadius: 28,
+      // 长按拖出的「果冻玻璃」透镜：settings 只作用于底栏本体，指示器
+      // 有独立的 indicatorSettings 入口。不传时包内默认是刻意调淡的
+      // iOS 26 校准值（折射率 1.10 / 厚度 20 / 无色散），在纯色壁纸上
+      // 几乎看不出折射；液态玻璃模式换 dragLensSettings 拉满折射档，
+      // 并把凹透镜 pinch 开到包内校准的最大值 1.0（构造默认只有 0.4）。
+      // 非液态玻璃模式走 frosted 回退，保持包默认材质。
+      indicatorSettings: useLiquidGlass
+          ? MikcbLiquidGlassTokens.dragLensSettings
+          : null,
+      indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
       settings: useLiquidGlass
           ? MikcbLiquidGlassTokens.sheetSettingsFor(
               isDark ? Brightness.dark : Brightness.light,

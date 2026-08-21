@@ -43,6 +43,40 @@ abstract final class MikcbLiquidGlassTokens {
     glassColor: Color(0x3DFFFFFF),
   );
 
+  /// 玻璃坞拖拽透镜（GlassTabBar.bottom 的 [LiquidGlassSettings]）。
+  ///
+  /// 用在 [GlassTabBar.bottom] 的 indicatorSettings 上：长按底栏滑出的
+  /// 那颗「果冻玻璃」专用材质。包内默认（AnimatedGlassIndicator 的
+  /// baseIndicatorSettings）是刻意调淡的 iOS 26 校准值——折射率仅
+  /// 1.10、厚度 20、色散 0，在纯色壁纸/同色底上几乎看不出折射，观感
+  /// 「跟底色一样平」。产品要求拖起时给最强的光折射，因此这里拉满：
+  /// - refractiveIndex: 1.5 —— 应用「液态玻璃调校」滑杆的上限（≈玻璃），
+  ///   远高于包默认的 1.10；
+  /// - thickness: 36 —— 比 bar 本体（30）更厚，小透镜曲率更大，
+  ///   边缘弯折更夸张；
+  /// - chromaticAberration: 0.6 —— 明显的彩虹色散边，强化「真玻璃」
+  ///   光学感（包默认 0 = 无色散；iOS 26 药丸默认也只有 0.15）；
+  /// - ambientRim: 0.25 —— 提亮整圈边缘光环（高于包内 premium 地板值
+  ///   0.1），让拖起的透镜从底栏上明显「浮」出来；
+  /// - blur: 0 —— 保持透镜内容锐利，只有折弯没有雾化。
+  ///
+  /// 注意合并语义：AnimatedGlassIndicator 会把 indicatorSettings 里
+  /// 「不等于 LiquidGlassSettings() 构造默认值」的字段叠到
+  /// baseIndicatorSettings 上。这里每个字段都不同于构造默认
+  /// （thickness≠20、blur≠5、aberration≠0.01、ambientRim≠0、
+  /// refractiveIndex≠1.2），因此全部会生效。
+  ///
+  /// 刻意不跟随「液态玻璃调校」（[LiquidGlassTuning]）：这是瞬时交互
+  /// 强调件而非持久表面，固定最强档保证任何调校下拖起都有戏剧化的
+  /// 折射反馈。
+  static const dragLensSettings = LiquidGlassSettings(
+    thickness: 36,
+    blur: 0,
+    chromaticAberration: 0.6,
+    ambientRim: 0.25,
+    refractiveIndex: 1.5,
+  );
+
   /// Squircle radius matching HyperOS card chrome when possible.
   static double sheetBorderRadius() => HyperosTokens.cardRadius;
 
