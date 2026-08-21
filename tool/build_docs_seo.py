@@ -587,11 +587,11 @@ def build_sitemap(feed: dict[str, Any], schools: dict[str, Any]) -> str:
 
 
 def main() -> int:
+    # 说明：曾提供 --base-url 选项，但生成器仅支持规范站点 mutx.ccwu.cc
+    # （canonical/og:url/sitemap 均以 BASE_URL 为唯一事实源），传入其他值
+    # 只会被 SystemExit 拒绝，属死参数，已移除。
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default=BASE_URL)
-    args = parser.parse_args()
-    if args.base_url != BASE_URL:
-        raise SystemExit("This generator currently supports the canonical mutx.ccwu.cc site only")
+    parser.parse_args()
 
     schools = validate_schools_payload(read_json(DOCS / "schools.json"))
     feed = validate_feed_payload(read_json(DOCS / "releases" / "feed.json"))
