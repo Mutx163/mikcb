@@ -118,7 +118,7 @@ void main() {
     expect(dayTabX, lessThan(weekTabX), reason: '日课表应位于最左侧');
     expect(weekTabX, lessThan(settingsTabX), reason: '课表设置应位于最右侧');
 
-    // 切日视图（玻璃坞：横向滑动转场 + 直接全宽，无锚点展开渐变）
+    // 切日视图（玻璃坞：点 Tab 闪现直切 + 直接全宽，无锚点展开渐变）
     await tester.tap(find.text('日课表').first);
     await tester.pump();
     expect(tester.takeException(), isNull, reason: '切日视图（有壁纸）不应有异常');
@@ -126,9 +126,6 @@ void main() {
       find.byKey(const ValueKey('timetable-day-view-panel')),
       findsOneWidget,
       reason: '日视图面板应显示',
-    );
-    final earlyPanelRect = tester.getRect(
-      find.byKey(const ValueKey('timetable-day-view-panel')),
     );
     // 锚点展开动画会让面板处于 Align(widthFactor < 1) 的缩放槽中；
     // 玻璃坞切换不应有这种缩放（直接全宽）。
@@ -139,20 +136,15 @@ void main() {
       findsNothing,
       reason: '玻璃坞切日视图应直接全宽（无锚点展开渐变）',
     );
+    // 闪现切换：第一帧就直接就位，无横向滑入过程。
     expect(
-      earlyPanelRect.left,
-      lessThan(0),
-      reason: '日课表是左侧 Tab：切日视图应横向滑动进入（从左侧滑入）',
+      tester
+          .getRect(find.byKey(const ValueKey('timetable-day-view-panel')))
+          .left,
+      closeTo(0, 1),
+      reason: '点 Tab 应闪现就位（无滑动进入）',
     );
     await tester.pump(const Duration(milliseconds: 400));
-    final settledPanelRect = tester.getRect(
-      find.byKey(const ValueKey('timetable-day-view-panel')),
-    );
-    expect(
-      settledPanelRect.left,
-      closeTo(0, 1),
-      reason: '滑动完成后日视图应就位',
-    );
     expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
 
     // 日视图自带顶部信息栏：显示星期几（不是空白栏）
@@ -162,39 +154,24 @@ void main() {
       reason: '日视图顶部信息栏应显示星期',
     );
 
-    // 切设置（课表↔设置也走横向滑动转场：设置页从右侧滑入）
+    // 切设置（玻璃坞：点 Tab 闪现直切，无滑入过程）
     await tester.tap(find.text('课表设置').first);
     await tester.pump();
     expect(tester.takeException(), isNull, reason: '切设置（有壁纸）不应有异常');
-    final settingsEarlyRect = tester.getRect(
-      find.byType(TimetableSettingsScreen),
-    );
-    expect(
-      settingsEarlyRect.left,
-      greaterThan(0),
-      reason: '设置页应从右侧滑入（而非直接闪切）',
-    );
-    // 滑动转场期间课表内容保持可见（两页衔接滑动，不是课表瞬间消失露出黑底）
-    expect(
-      find.byKey(const ValueKey('week-page-1')),
-      findsWidgets,
-      reason: '设置滑动期间课表页应保持可见（衔接滑动）',
-    );
-    // 玻璃坞切换为弹簧动画（与底栏指示器同款：350ms + 15% bounce），
-    // 收敛需约 1.5s，固定 500ms 不够；等弹簧完全结束再断言。
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
+    // 闪现切换：第一帧设置页就就位（不再从右侧滑入）。
     expect(
       tester.getRect(find.byType(TimetableSettingsScreen)).left,
       closeTo(0, 1),
-      reason: '设置滑动完成后应就位',
+      reason: '设置页应闪现就位（无滑入过程）',
     );
-    // 滑动结束后课表页隐藏（非激活页 Offstage）
+    // 非激活页立即 Offstage：课表内容不再可见。
     expect(
       find.byKey(const ValueKey('week-page-1')),
       findsNothing,
-      reason: '设置就位后课表页应隐藏',
+      reason: '切到设置后课表页应立即隐藏',
     );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
     expect(find.text('课表管理'), findsOneWidget, reason: '设置列表应渲染');
     expect(currentIndicatorIndex(), 2, reason: '设置下指示器应在设置 Tab');
 
