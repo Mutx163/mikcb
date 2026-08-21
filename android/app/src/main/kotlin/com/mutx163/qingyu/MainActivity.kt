@@ -3614,6 +3614,9 @@ class LiveUpdateService : Service() {
                 !isDuringClassStatusBar
         val isActuallyPromotable = when {
             isDuringClassStatusBar || !shouldPromote -> false
+            // 通知权限未授予时 notify() 会被系统静默丢弃，无论提升通道是否就绪都上不了岛，
+            // 必须先于两条就绪路径拦截，否则自检页会在未授权时误报「已满足上岛条件」。
+            !hasNotificationPermissionCompat(this) -> false
             Build.VERSION.SDK_INT >= 36 &&
                 canPostPromoted &&
                 hasPromotableCharacteristics == true -> true
