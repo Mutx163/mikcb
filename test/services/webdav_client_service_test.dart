@@ -52,6 +52,8 @@ void main() {
         'HTTP 409 Conflict': 'invalid_response',
         'HTTP 429 Too Many Requests': 'invalid_response',
         'HTTP 500 Internal Server Error': 'invalid_response',
+        'HTTP/1.1 401 Unauthorized': 'auth_failed',
+        'HTTP/2 403 Forbidden': 'access_denied',
       };
       for (final entry in cases.entries) {
         final result = WebdavClientService.classifyGetBytesFailure(

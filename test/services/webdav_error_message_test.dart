@@ -47,6 +47,23 @@ void main() {
     );
   });
 
+  test('sanitizeWebdavErrorMessage recognizes standard wire status lines', () {
+    // 未被包包装的原始异常常带 "HTTP/1.1 401" 线格式；收紧正则时
+    // 不能丢掉这类最常见的认证错误识别。
+    expect(
+      sanitizeWebdavErrorMessage(
+        const HttpException('HTTP/1.1 401 Unauthorized'),
+      ),
+      'auth_failed',
+    );
+    expect(
+      sanitizeWebdavErrorMessage(
+        const HttpException('HTTP/1.1 403 Forbidden'),
+      ),
+      'access_denied',
+    );
+  });
+
   test('sanitizeWebdavErrorMessage keeps only allowlisted state codes', () {
     for (final code in const [
       'auth_failed',

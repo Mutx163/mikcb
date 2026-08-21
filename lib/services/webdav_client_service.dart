@@ -451,7 +451,7 @@ class WebdavClientService {
     // http client errors that were not wrapped by the package).
     final message = error.toString().toLowerCase();
     final statusMatch = RegExp(
-      r'\b(?:http\s+|statuscode\s*[=:]\s*)(\d{3})\b',
+      r'\b(?:https?\s*/\s*\d+(?:\.\d+)?\s+|http\s+|statuscode\s*[=:]\s*)(\d{3})\b',
       caseSensitive: false,
     ).firstMatch(message);
     final textualStatusCode = statusMatch == null

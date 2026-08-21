@@ -63,7 +63,7 @@ String sanitizeWebdavErrorMessage(Object error) {
 
   final lower = error.toString().toLowerCase();
   final statusMatch = RegExp(
-    r'\b(?:http\s+|statuscode\s*[=:]\s*|failed\s*:\s*)(\d{3})\b',
+    r'\b(?:https?\s*/\s*\d+(?:\.\d+)?\s+|http\s+|statuscode\s*[=:]\s*|failed\s*:\s*)(\d{3})\b',
     caseSensitive: false,
   ).firstMatch(lower);
   final textualStatusCode = statusMatch == null
