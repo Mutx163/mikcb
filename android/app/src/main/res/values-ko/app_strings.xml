@@ -65,6 +65,7 @@
     <string name="debug_promote_not_requested">현재 단계에서 승격 표시가 요청되지 않음</string>
     <string name="debug_os_not_supported">현재 OS 버전은 승격 알림 아일랜드 표시를 지원하지 않음</string>
     <string name="debug_notification_permission_off">알림 권한이 꺼져 있음</string>
+    <string name="debug_notification_channel_disabled">알림 채널이 꺼져 있음</string>
     <string name="debug_promoted_permission_not_declared">승격 알림 권한이 선언되지 않음</string>
     <string name="debug_system_denied_promoted">시스템이 승격 알림을 허용하지 않음</string>
     <string name="debug_notification_not_promotable">알림이 승격 표시 조건을 충족하지 않음</string>

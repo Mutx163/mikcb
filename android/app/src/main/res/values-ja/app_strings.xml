@@ -65,6 +65,7 @@
     <string name="debug_promote_not_requested">現在の段階では昇格表示が要求されていません</string>
     <string name="debug_os_not_supported">このOSバージョンは昇格通知のアイランド表示に対応していません</string>
     <string name="debug_notification_permission_off">通知権限が有効になっていません</string>
+    <string name="debug_notification_channel_disabled">通知チャンネルが無効です</string>
     <string name="debug_promoted_permission_not_declared">昇格通知権限が宣言されていません</string>
     <string name="debug_system_denied_promoted">システムが昇格通知を許可していません</string>
     <string name="debug_notification_not_promotable">通知が昇格表示の条件を満たしていません</string>

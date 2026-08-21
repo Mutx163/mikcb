@@ -68,6 +68,7 @@
     <string name="debug_promote_not_requested">当前阶段未请求提升显示</string>
     <string name="debug_os_not_supported">当前系统版本不支持提升通知上岛</string>
     <string name="debug_notification_permission_off">通知权限未开启</string>
+    <string name="debug_notification_channel_disabled">通知渠道已关闭</string>
     <string name="debug_promoted_permission_not_declared">应用未声明提升通知权限</string>
     <string name="debug_system_denied_promoted">系统未允许提升通知</string>
     <string name="debug_notification_not_promotable">当前通知不满足系统提升特征</string>

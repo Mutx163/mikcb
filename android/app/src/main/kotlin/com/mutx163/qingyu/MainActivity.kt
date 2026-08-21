@@ -1941,6 +1941,21 @@ class LiveUpdateService : Service() {
             }
         }
 
+        // 应用级通知总开关：Android 13+ 与运行时通知权限联动，13 以下反映系统设置里的
+        // 「显示通知」开关。两种状态为关时 notify() 都会被系统静默丢弃。
+        private fun areNotificationsEnabledCompat(context: Context): Boolean {
+            return context.getSystemService(NotificationManager::class.java)
+                ?.areNotificationsEnabled() == true
+        }
+
+        // 渠道级开关：live_update_channel 被单独关闭（importance = NONE）时同样无法出通知。
+        // 渠道尚未创建时视为开启，由 ensureNotificationChannel 在服务启动阶段兜底创建。
+        private fun isLiveUpdateChannelEnabledCompat(context: Context): Boolean {
+            val channel = context.getSystemService(NotificationManager::class.java)
+                ?.getNotificationChannel(CHANNEL_ID) ?: return true
+            return channel.importance != NotificationManager.IMPORTANCE_NONE
+        }
+
         private fun isPromotedPermissionDeclaredCompat(context: Context): Boolean {
             return try {
                 val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -3612,11 +3627,13 @@ class LiveUpdateService : Service() {
                 miuiFocusParam != null &&
                 shouldPromote &&
                 !isDuringClassStatusBar
+        // 应用级或渠道级通知任一被关时 notify() 都会被系统静默丢弃，
+        // 必须先于两条就绪路径拦截，否则自检页会误报「已满足上岛条件」而实际无法上岛。
+        val notificationsAllowed = areNotificationsEnabledCompat(this)
+        val liveChannelEnabled = isLiveUpdateChannelEnabledCompat(this)
         val isActuallyPromotable = when {
             isDuringClassStatusBar || !shouldPromote -> false
-            // 通知权限未授予时 notify() 会被系统静默丢弃，无论提升通道是否就绪都上不了岛，
-            // 必须先于两条就绪路径拦截，否则自检页会在未授权时误报「已满足上岛条件」。
-            !hasNotificationPermissionCompat(this) -> false
+            !notificationsAllowed || !liveChannelEnabled -> false
             Build.VERSION.SDK_INT >= 36 &&
                 canPostPromoted &&
                 hasPromotableCharacteristics == true -> true
@@ -3630,7 +3647,8 @@ class LiveUpdateService : Service() {
             !shouldPromote && isDuringClass && !promoteDuringClass ->
                 getString(R.string.debug_during_class_normal_notification)
             !shouldPromote -> getString(R.string.debug_promote_not_requested)
-            !hasNotificationPermissionCompat(this) -> getString(R.string.debug_notification_permission_off)
+            !notificationsAllowed -> getString(R.string.debug_notification_permission_off)
+            !liveChannelEnabled -> getString(R.string.debug_notification_channel_disabled)
             isActuallyPromotable -> ""
             Build.VERSION.SDK_INT >= 36 && !isPromotedPermissionDeclaredCompat(this) ->
                 getString(R.string.debug_promoted_permission_not_declared)
@@ -3725,6 +3743,8 @@ class LiveUpdateService : Service() {
                     "shouldPromote" to shouldPromote,
                     "showStandardNotification" to showStandardNotification,
                     "isDuringClassStatusBar" to isDuringClassStatusBar,
+                    "notificationsAllowed" to notificationsAllowed,
+                    "liveUpdateChannelEnabled" to liveChannelEnabled,
                     "canPostPromotedNotifications" to canPostPromoted,
                     "hasPromotableCharacteristics" to hasPromotableCharacteristics,
                     "miuiFocusParamPresent" to (miuiFocusParam != null),
@@ -3749,6 +3769,8 @@ class LiveUpdateService : Service() {
                         "stage" to stage,
                         "canPostPromoted" to canPostPromoted,
                         "hasPromotableCharacteristics" to hasPromotableCharacteristics,
+                        "notificationsAllowed" to notificationsAllowed,
+                        "liveChannelEnabled" to liveChannelEnabled,
                         "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                     )
                 )
@@ -3762,6 +3784,8 @@ class LiveUpdateService : Service() {
                         "stage" to stage,
                         "canPostPromoted" to canPostPromoted,
                         "hasPromotableCharacteristics" to hasPromotableCharacteristics,
+                        "notificationsAllowed" to notificationsAllowed,
+                        "liveChannelEnabled" to liveChannelEnabled,
                         "showStandardNotification" to showStandardNotification,
                         "remainingText" to remainingText,
                         "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,

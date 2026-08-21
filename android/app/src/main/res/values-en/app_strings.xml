@@ -65,6 +65,7 @@
     <string name="debug_promote_not_requested">Promotion not requested for current stage</string>
     <string name="debug_os_not_supported">System version does not support promoted notifications on island</string>
     <string name="debug_notification_permission_off">Notification permission not granted</string>
+    <string name="debug_notification_channel_disabled">Notification channel disabled</string>
     <string name="debug_promoted_permission_not_declared">App has not declared promoted notification permission</string>
     <string name="debug_system_denied_promoted">System denied promoted notifications</string>
     <string name="debug_notification_not_promotable">Notification does not meet promotion requirements</string>
