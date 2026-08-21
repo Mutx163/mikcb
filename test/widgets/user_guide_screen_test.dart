@@ -80,6 +80,18 @@ void main() {
     expect(find.text('同意并开始使用'), findsNothing);
     expect(find.text('3 / 4'), findsNothing);
     expect(find.text('系统权限设置'), findsNothing);
+
+    // Icon badges read the HyperOS palette, not the default Material scheme
+    // (regression: M3 seed purple rendered as near-black fills).
+    const hyperosPrimary = Color(0xFF3482FF);
+    final badge = tester.widget<Container>(
+      find.ancestor(
+        of: find.byIcon(Icons.school_rounded),
+        matching: find.byType(Container),
+      ).first,
+    );
+    final badgeColor = (badge.decoration! as BoxDecoration).color;
+    expect(badgeColor, hyperosPrimary);
   });
 
   testWidgets('auto-start status shows on permissions page', (tester) async {

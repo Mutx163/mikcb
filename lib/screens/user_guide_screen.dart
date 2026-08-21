@@ -430,7 +430,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               padding: HyperosTokens.rowPaddingUniform,
               child: Row(
                 children: [
-                  _GuideIconBadge(icon: Icons.school_rounded, filled: true),
+                  _GuideIconBadge(icon: Icons.school_rounded),
                   const SizedBox(width: HyperosTokens.rowContentGap),
                   Expanded(
                     child: Text(
@@ -849,27 +849,25 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 }
 
 class _GuideIconBadge extends StatelessWidget {
-  const _GuideIconBadge({required this.icon, this.filled = false});
+  const _GuideIconBadge({required this.icon});
 
   final IconData icon;
-  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    // HyperOS palette, not context.theme.colors: the Material scheme stays
-    // at the framework default (never customized in _appThemeData), whose
-    // M3 seed purple reads as near-black badge fills in light mode.
-    final primary = HyperosColors.primary(context);
-    final onPrimary = HyperosColors.onPrimary(context);
+    // Solid HyperOS badge: brand-blue fill, white glyph. Deliberately reads
+    // from HyperosColors, not context.theme.colors — the Material scheme
+    // stays at the framework default (never customized in _appThemeData),
+    // whose M3 seed purple rendered as near-black fills in light mode.
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: filled ? primary : HyperosColors.secondaryContainer(context),
+        color: HyperosColors.primary(context),
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
-      child: Icon(icon, size: 20, color: filled ? onPrimary : primary),
+      child: Icon(icon, size: 20, color: HyperosColors.onPrimary(context)),
     );
   }
 }
@@ -917,7 +915,7 @@ class _GuideActionTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _GuideIconBadge(icon: icon, filled: true),
+            _GuideIconBadge(icon: icon),
             const SizedBox(width: HyperosTokens.rowContentGap),
             Expanded(
               child: Column(
