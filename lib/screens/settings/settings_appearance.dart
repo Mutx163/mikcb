@@ -141,97 +141,102 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
         ),
       ),
-      // 主题 / 字体 — 应用级外观（语言与转场已迁到「通用」）
-      1 => HyperosListGroup(
-        children: [
-          HyperosSelectTile<AppThemeMode>(
-            label: l10n.themeModeLabel,
-            subtitle: l10n.displayModeSubtitle,
-            items: {
-              for (final v in AppThemeMode.values)
-                appThemeModeLabel(l10n, v): v,
-            },
-            value: _draft.appThemeMode,
-            onChanged: (value) {
-              _updateDraft(_draft.copyWith(appThemeMode: value));
-            },
-          ),
-          HyperosSelectTile<HomeNavigationForm>(
-            label: l10n.homeNavigationFormLabel,
-            subtitle: switch (_draft.homeNavigationForm) {
-              HomeNavigationForm.classic =>
-                l10n.homeNavigationFormClassicSubtitle,
-              HomeNavigationForm.glassDock =>
-                l10n.homeNavigationFormGlassDockSubtitle,
-            },
-            items: {
-              l10n.homeNavigationFormClassic: HomeNavigationForm.classic,
-              l10n.homeNavigationFormGlassDock: HomeNavigationForm.glassDock,
-            },
-            value: _draft.homeNavigationForm,
-            onChanged: (value) {
-              _updateDraft(_draft.copyWith(homeNavigationForm: value));
-            },
-          ),
-          if (_draft.homeNavigationForm == HomeNavigationForm.glassDock)
-            HyperosSelectTile<GlassDockLayout>(
-              label: l10n.glassDockLayoutLabel,
-              subtitle: switch (_draft.glassDockLayout) {
-                GlassDockLayout.overlay =>
-                  l10n.glassDockLayoutOverlaySubtitle,
-                GlassDockLayout.inset =>
-                  l10n.glassDockLayoutInsetSubtitle,
-              },
+      // 主题 / 字体 / 首页导航形态 — 应用级外观（语言与转场已迁到「通用」）。
+      // 本组原是页面中段唯一无标题的裸组，与下方 2/3/4 组样式不一致
+      // （IA 规范 §3「不许无名分组」），补齐区块标题。
+      1 => HyperosSettingsBlock(
+        title: l10n.appearanceThemeDisplaySectionTitle,
+        child: HyperosListGroup(
+          children: [
+            HyperosSelectTile<AppThemeMode>(
+              label: l10n.themeModeLabel,
+              subtitle: l10n.displayModeSubtitle,
               items: {
-                l10n.glassDockLayoutOverlay: GlassDockLayout.overlay,
-                l10n.glassDockLayoutInset: GlassDockLayout.inset,
+                for (final v in AppThemeMode.values)
+                  appThemeModeLabel(l10n, v): v,
               },
-              value: _draft.glassDockLayout,
+              value: _draft.appThemeMode,
               onChanged: (value) {
-                _updateDraft(_draft.copyWith(glassDockLayout: value));
+                _updateDraft(_draft.copyWith(appThemeMode: value));
               },
             ),
-          if (_draft.homeNavigationForm == HomeNavigationForm.glassDock &&
-              _draft.glassDockLayout == GlassDockLayout.inset)
-            HyperosSliderTile(
-              title: l10n.glassDockInsetClearanceLabel,
-              value: _draft.glassDockInsetClearance,
-              min: glassDockInsetClearanceMin,
-              max: glassDockInsetClearanceMax,
-              divisions:
-                  (glassDockInsetClearanceMax - glassDockInsetClearanceMin)
-                      .round(),
-              valueLabel:
-                  '${_draft.glassDockInsetClearance.toStringAsFixed(0)}px',
+            HyperosSelectTile<HomeNavigationForm>(
+              label: l10n.homeNavigationFormLabel,
+              subtitle: switch (_draft.homeNavigationForm) {
+                HomeNavigationForm.classic =>
+                  l10n.homeNavigationFormClassicSubtitle,
+                HomeNavigationForm.glassDock =>
+                  l10n.homeNavigationFormGlassDockSubtitle,
+              },
+              items: {
+                l10n.homeNavigationFormClassic: HomeNavigationForm.classic,
+                l10n.homeNavigationFormGlassDock: HomeNavigationForm.glassDock,
+              },
+              value: _draft.homeNavigationForm,
               onChanged: (value) {
-                _updateDraft(
-                  _draft.copyWith(glassDockInsetClearance: value),
-                  debounce: true,
+                _updateDraft(_draft.copyWith(homeNavigationForm: value));
+              },
+            ),
+            if (_draft.homeNavigationForm == HomeNavigationForm.glassDock)
+              HyperosSelectTile<GlassDockLayout>(
+                label: l10n.glassDockLayoutLabel,
+                subtitle: switch (_draft.glassDockLayout) {
+                  GlassDockLayout.overlay =>
+                    l10n.glassDockLayoutOverlaySubtitle,
+                  GlassDockLayout.inset => l10n.glassDockLayoutInsetSubtitle,
+                },
+                items: {
+                  l10n.glassDockLayoutOverlay: GlassDockLayout.overlay,
+                  l10n.glassDockLayoutInset: GlassDockLayout.inset,
+                },
+                value: _draft.glassDockLayout,
+                onChanged: (value) {
+                  _updateDraft(_draft.copyWith(glassDockLayout: value));
+                },
+              ),
+            if (_draft.homeNavigationForm == HomeNavigationForm.glassDock &&
+                _draft.glassDockLayout == GlassDockLayout.inset)
+              HyperosSliderTile(
+                title: l10n.glassDockInsetClearanceLabel,
+                value: _draft.glassDockInsetClearance,
+                min: glassDockInsetClearanceMin,
+                max: glassDockInsetClearanceMax,
+                divisions:
+                    (glassDockInsetClearanceMax - glassDockInsetClearanceMin)
+                        .round(),
+                valueLabel:
+                    '${_draft.glassDockInsetClearance.toStringAsFixed(0)}px',
+                onChanged: (value) {
+                  _updateDraft(
+                    _draft.copyWith(glassDockInsetClearance: value),
+                    debounce: true,
+                  );
+                },
+              ),
+            HyperosSelectTile<AppFontMode>(
+              label: l10n.fontModeLabel,
+              useSheetForPopup: true,
+              items: {
+                for (final v in AppFontMode.values)
+                  appFontModeLabel(l10n, v): v,
+              },
+              value: _draft.appFontMode,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(appFontMode: value));
+              },
+              itemTitleStyleBuilder: (mode) {
+                final spec = mode.fontSpec;
+                if (spec.fontFamily == null || spec.fontFamily!.isEmpty) {
+                  return null;
+                }
+                return TextStyle(
+                  fontFamily: spec.fontFamily,
+                  fontFamilyFallback: spec.fontFamilyFallback,
                 );
               },
             ),
-          HyperosSelectTile<AppFontMode>(
-            label: l10n.fontModeLabel,
-            useSheetForPopup: true,
-            items: {
-              for (final v in AppFontMode.values) appFontModeLabel(l10n, v): v,
-            },
-            value: _draft.appFontMode,
-            onChanged: (value) {
-              _updateDraft(_draft.copyWith(appFontMode: value));
-            },
-            itemTitleStyleBuilder: (mode) {
-              final spec = mode.fontSpec;
-              if (spec.fontFamily == null || spec.fontFamily!.isEmpty) {
-                return null;
-              }
-              return TextStyle(
-                fontFamily: spec.fontFamily,
-                fontFamilyFallback: spec.fontFamilyFallback,
-              );
-            },
-          ),
-        ],
+          ],
+        ),
       ),
       2 => HyperosSettingsBlock(
         title: l10n.homeTitleSectionTitle,

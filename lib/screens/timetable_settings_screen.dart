@@ -20,6 +20,7 @@ import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
+import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
@@ -285,32 +286,32 @@ class TimetableSettingsScreen extends StatelessWidget {
           // per-frame composite cost vs the old SingleChildScrollView.
           itemCount: 8,
           itemBuilder: (context, index) => _buildSettingsHomeSection(
-              context,
-              index,
-              provider: provider,
-              settings: settings,
-              l10n: l10n,
-              openSemesterSettings: openSemesterSettings,
-              openProfiles: openProfiles,
-              openHolidaySettings: openHolidaySettings,
-              openCourseCardSettings: openCourseCardSettings,
-              openTimetablePageSettings: openTimetablePageSettings,
-              openLiveSettings: openLiveSettings,
-              openHomeWidgetSettings: openHomeWidgetSettings,
-              openAppearance: openAppearance,
-              openGeneralSettings: openGeneralSettings,
-              openDataTransfer: openDataTransfer,
-              openCloudSync: openCloudSync,
-              openLanEdit: openLanEdit,
-              openCoupleTimetable: openCoupleTimetable,
-              openAbout: openAbout,
-              openUserGuide: openUserGuide,
-              openDiagnostics: openDiagnostics,
-              openMemoryStats: openMemoryStats,
-              openLiveTestingFixture: openLiveTestingFixture,
-              openHyperosShowcase: openHyperosShowcase,
-              openMiuixShowcase: openMiuixShowcase,
-            ),
+            context,
+            index,
+            provider: provider,
+            settings: settings,
+            l10n: l10n,
+            openSemesterSettings: openSemesterSettings,
+            openProfiles: openProfiles,
+            openHolidaySettings: openHolidaySettings,
+            openCourseCardSettings: openCourseCardSettings,
+            openTimetablePageSettings: openTimetablePageSettings,
+            openLiveSettings: openLiveSettings,
+            openHomeWidgetSettings: openHomeWidgetSettings,
+            openAppearance: openAppearance,
+            openGeneralSettings: openGeneralSettings,
+            openDataTransfer: openDataTransfer,
+            openCloudSync: openCloudSync,
+            openLanEdit: openLanEdit,
+            openCoupleTimetable: openCoupleTimetable,
+            openAbout: openAbout,
+            openUserGuide: openUserGuide,
+            openDiagnostics: openDiagnostics,
+            openMemoryStats: openMemoryStats,
+            openLiveTestingFixture: openLiveTestingFixture,
+            openHyperosShowcase: openHyperosShowcase,
+            openMiuixShowcase: openMiuixShowcase,
+          ),
         );
 
         // 玻璃坞内嵌形态：完整 HyperosSubpage 全屏壳（无返回键），
@@ -324,7 +325,8 @@ class TimetableSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _openTimeSchemeQuickSwitcher(BuildContext context) async {
+  /// 打开时间模板管理页。旧名 QuickSwitcher 名不副实（开的是完整管理页）。
+  Future<void> _openTimeSchemeManagement(BuildContext context) async {
     await HyperosNavigation.push(
       context,
       settings: const RouteSettings(name: '/settings/time-schemes'),
@@ -411,19 +413,21 @@ class TimetableSettingsScreen extends StatelessWidget {
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
-                  MiuixIcons.extended.byName('weeks')!,
+                  // 与「课表页面」页同名入口保持同字形同 accent（IA §4）；
+                  // 'weeks' 让给学期周数，时间模板用 timer 语义更准。
+                  MiuixIcons.extended.byName('timer')!,
                   HyperosIconColors.teal,
                 ),
                 title: l10n.timeSchemeEntryTitle,
-                endActions: provider.activeTimeScheme?.name != null
-                    ? [
-                        Text(
-                          provider.activeTimeScheme!.name,
-                          style: HyperosTypography.listDetail(context),
-                        ),
-                      ]
-                    : null,
-                onClick: () => _openTimeSchemeQuickSwitcher(context),
+                // 未选模板是待办态（IA §6）：行尾必须显示状态而不是留白。
+                endActions: [
+                  Text(
+                    provider.activeTimeScheme?.name ??
+                        l10n.timeSchemeEntryNotSelected,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: () => _openTimeSchemeManagement(context),
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
@@ -542,14 +546,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                 title: l10n.dataTransferEntryTitle,
                 onClick: openDataTransfer,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
-                  MiuixIcons.extended.byName('backup')!,
-                  HyperosIconColors.cyan,
-                ),
-                title: l10n.cloudSyncEntryTitle,
-                onClick: openCloudSync,
-              ),
+              _CloudSyncEntryTile(onTap: openCloudSync),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('link')!,
@@ -871,6 +868,95 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
           ? [Text(detailsText, style: HyperosTypography.listDetail(context))]
           : null,
       onClick: widget.onTap,
+    );
+  }
+}
+
+/// 云同步入口，带配置状态。
+///
+/// 「云同步不工作」的第一因是根本没配 WebDAV（IA 规范 §6 要求把该状态
+/// 前置到入口行尾）。配置存于 SharedPreferences：异步读一次并缓存 Future
+/// （不在 build 里发起 I/O），App 恢复前台时重读一次——用户去云同步页
+/// 开完开关回来要立刻反映。同步中的动态状态由 coordinator 的
+/// ChangeNotifier 供给，ListenableBuilder 直接跟随。
+class _CloudSyncEntryTile extends StatefulWidget {
+  const _CloudSyncEntryTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_CloudSyncEntryTile> createState() => _CloudSyncEntryTileState();
+}
+
+class _CloudSyncEntryTileState extends State<_CloudSyncEntryTile>
+    with WidgetsBindingObserver {
+  Future<bool>? _enabledFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _enabledFuture = _loadEnabled();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() {
+        _enabledFuture = _loadEnabled();
+      });
+    }
+  }
+
+  Future<bool> _loadEnabled() async {
+    final config = await WebdavSyncCoordinator.instance().syncService
+        .loadConfig();
+    return config.enabled;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListenableBuilder(
+      listenable: WebdavSyncCoordinator.instance(),
+      builder: (context, _) => FutureBuilder<bool>(
+        future: _enabledFuture,
+        builder: (context, snapshot) {
+          // 配置未读完前行尾留白，避免先闪一帧错误的「未开启」。
+          final detailsText = snapshot.connectionState != ConnectionState.done
+              ? null
+              : !(snapshot.data ?? false)
+              ? l10n.cloudSyncEntryDisabled
+              : WebdavSyncCoordinator.instance().status.isSyncing
+              ? l10n.cloudSyncEntrySyncing
+              : WebdavSyncCoordinator.instance().status.lastError != null
+              ? l10n.cloudSyncEntryError
+              : l10n.cloudSyncEntryEnabled;
+          return _MiuixSettingsPreference(
+            key: const ValueKey<String>('settings-cloud-sync-entry'),
+            startAction: _settingsIconBadge(
+              MiuixIcons.extended.byName('backup')!,
+              HyperosIconColors.cyan,
+            ),
+            title: l10n.cloudSyncEntryTitle,
+            endActions: detailsText == null
+                ? null
+                : [
+                    Text(
+                      detailsText,
+                      style: HyperosTypography.listDetail(context),
+                    ),
+                  ],
+            onClick: widget.onTap,
+          );
+        },
+      ),
     );
   }
 }

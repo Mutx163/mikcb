@@ -107,15 +107,22 @@ class _TimetablePageSettingsScreenState
       0 => HyperosSectionLabel(text: l10n.timetablePageSectionDensity),
       1 => HyperosListGroup(
         children: [
-          HyperosListTile(
-            icon: Icons.schedule_rounded,
-            iconAccent: HyperosIconColors.teal,
-            // 与设置首页「时间模板」同名同页，避免「两套时间系统」心智。
+          // 与设置首页「时间模板」同字形、同 accent、同空态文案（IA §4），
+          // 避免被当成两个功能或两套时间系统。
+          _MiuixSettingsPreference(
+            startAction: _settingsIconBadge(
+              MiuixIcons.extended.byName('timer')!,
+              HyperosIconColors.teal,
+            ),
             title: l10n.timeSchemeEntryTitle,
-            details:
+            endActions: [
+              Text(
                 _timetableProvider.activeTimeScheme?.name ??
-                l10n.timeSchemeEntrySubtitleNoneSelected,
-            onTap: () {
+                    l10n.timeSchemeEntryNotSelected,
+                style: HyperosTypography.listDetail(context),
+              ),
+            ],
+            onClick: () {
               HyperosNavigation.push(
                 context,
                 settings: const RouteSettings(name: '/settings/time-schemes'),
@@ -285,9 +292,9 @@ class _TimetablePageSettingsScreenState
                 path: resolveHomePageBackdropImagePath(_draft),
                 onPick:
                     (resolveHomePageBackdropImagePath(_draft)?.isNotEmpty ??
-                            false)
-                        ? _editHomePageBackdropPosition
-                        : _pickHomePageBackdropImage,
+                        false)
+                    ? _editHomePageBackdropPosition
+                    : _pickHomePageBackdropImage,
                 onClear: () {
                   evictHomePageImageCache(
                     resolveHomePageBackdropImagePath(_draft),
@@ -464,7 +471,9 @@ class _TimetablePageSettingsScreenState
     );
   }
 
-  Future<void> _pickHomePageBackdropImage({bool cleanupArtifacts = true}) async {
+  Future<void> _pickHomePageBackdropImage({
+    bool cleanupArtifacts = true,
+  }) async {
     final targetPath = await pickAndStoreManagedImage(
       directoryName: 'home_page_wallpaper',
       filePrefix: 'wallpaper',

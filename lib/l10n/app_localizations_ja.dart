@@ -109,7 +109,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appearanceEntryTitle => '外観と配色';
 
   @override
-  String get appearanceEntrySubtitle => 'テーマカラー、時間割背景、授業カードの色';
+  String get appearanceEntrySubtitle => 'アプリのテーマモード、フォント、ホームタイトル、シートのすりガラス';
+
+  @override
+  String get appearanceThemeDisplaySectionTitle => 'テーマと表示';
 
   @override
   String get layoutSectionEntryTitle => 'レイアウトと時限';
@@ -140,6 +143,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get timeSchemeEntrySubtitleNoneSelected => '切替、時限編集、コピーとテンプレート管理';
+
+  @override
+  String get timeSchemeEntryNotSelected => '未選択';
 
   @override
   String timeSchemeEntrySubtitleSelected(String name) {
@@ -399,6 +405,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudSyncEntrySubtitle => 'Jianguoyun などで時間割とインポートデータを複数端末同期';
+
+  @override
+  String get cloudSyncEntryDisabled => 'オフ';
+
+  @override
+  String get cloudSyncEntryEnabled => 'オン';
+
+  @override
+  String get cloudSyncEntrySyncing => '同期中';
+
+  @override
+  String get cloudSyncEntryError => '前回の同期に失敗';
 
   @override
   String get cloudSyncTitle => 'クラウド同期';
@@ -2228,6 +2246,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveSettingsTitle => 'スーパーアイランドと通知';
+
+  @override
+  String get liveGroupReminders => 'リマインダー';
+
+  @override
+  String get liveGroupDisplay => '表示内容';
+
+  @override
+  String get liveGroupMaintenance => 'メンテナンスと自己診断';
 
   @override
   String get liveReminderTimingEntryTitle => 'リマインダー時間帯';
@@ -9583,7 +9610,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsResetDefaultsConfirmTitle => 'リセットの確認';
 
   @override
-  String get settingsResetDefaultsConfirmBody => 'すべての設定が出荷時デフォルトにリセットされます。';
+  String get settingsResetConfirmBodyCourseCard =>
+      '授業カードの表示項目・レイアウト・色を既定値に戻します。';
+
+  @override
+  String get settingsResetConfirmBodyTimetablePage =>
+      '時間割ページの密度・「現在の週へ」ボタン・背景（壁紙を含む）を既定値に戻します。';
+
+  @override
+  String get settingsResetConfirmBodyAppearance =>
+      'テーマモード・フォント・ホームナビ形式・ホームタイトル・テーマカラー・すりガラス設定を既定値に戻します。';
+
+  @override
+  String get settingsResetConfirmBodyHomeWidget =>
+      'ホームウィジェットの表示項目と外観を既定値に戻します。';
 
   @override
   String get settingsResetDoneMessage => '設定がリセットされました';
@@ -9654,7 +9694,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveIslandLabelEntryDisabled => '無効';
 
   @override
-  String get settingsDisplayAppearanceSectionTitle => '表示と外観';
+  String get settingsDisplayAppearanceSectionTitle => '時間割表示';
 
   @override
   String get settingsReminderDesktopSectionTitle => 'リマインダーとデスクトップ';
@@ -9672,7 +9712,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsAboutSectionTitle => 'このアプリについて';
 
   @override
-  String get diagnosticsEntrySubtitle => 'ランタイム診断ログを表示';
+  String get diagnosticsEntrySubtitle => 'ログ・自己診断・メモリ';
 
   @override
   String get settingsSemesterScreenTitle => '学期設定';

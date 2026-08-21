@@ -109,7 +109,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appearanceEntryTitle => '외관 및 색상';
 
   @override
-  String get appearanceEntrySubtitle => '테마 색상, 시간표 배경, 수업 카드 색상';
+  String get appearanceEntrySubtitle => '앱 테마 모드, 글꼴, 홈 제목 및 시트 블러 설정';
+
+  @override
+  String get appearanceThemeDisplaySectionTitle => '테마 및 표시';
 
   @override
   String get layoutSectionEntryTitle => '레이아웃 및 교시';
@@ -140,6 +143,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get timeSchemeEntrySubtitleNoneSelected => '전환, 교시 편집, 복사 및 템플릿 관리';
+
+  @override
+  String get timeSchemeEntryNotSelected => '미선택';
 
   @override
   String timeSchemeEntrySubtitleSelected(String name) {
@@ -397,6 +403,18 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get cloudSyncEntrySubtitle =>
       'Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화';
+
+  @override
+  String get cloudSyncEntryDisabled => '꺼짐';
+
+  @override
+  String get cloudSyncEntryEnabled => '켜짐';
+
+  @override
+  String get cloudSyncEntrySyncing => '동기화 중';
+
+  @override
+  String get cloudSyncEntryError => '마지막 동기화 실패';
 
   @override
   String get cloudSyncTitle => '클라우드 동기화';
@@ -2239,6 +2257,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveSettingsTitle => '슈퍼아일랜드 및 알림';
+
+  @override
+  String get liveGroupReminders => '알림';
+
+  @override
+  String get liveGroupDisplay => '표시 내용';
+
+  @override
+  String get liveGroupMaintenance => '유지 관리 및 셀프 점검';
 
   @override
   String get liveReminderTimingEntryTitle => '알림 시간대';
@@ -9628,7 +9655,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsResetDefaultsConfirmTitle => '초기화 확인';
 
   @override
-  String get settingsResetDefaultsConfirmBody => '모든 설정이 공장 기본값으로 초기화됩니다.';
+  String get settingsResetConfirmBodyCourseCard =>
+      '강의 카드 표시 항목·레이아웃·색상을 기본값으로 되돌립니다.';
+
+  @override
+  String get settingsResetConfirmBodyTimetablePage =>
+      '시간표 페이지 밀도·이번 주 버튼·배경(배경화면 포함)을 기본값으로 되돌립니다.';
+
+  @override
+  String get settingsResetConfirmBodyAppearance =>
+      '테마 모드·글꼴·홈 내비게이션 형태·홈 제목·테마 색상·블러 설정을 기본값으로 되돌립니다.';
+
+  @override
+  String get settingsResetConfirmBodyHomeWidget =>
+      '홈 위젯 표시 항목과 외관을 기본값으로 되돌립니다.';
 
   @override
   String get settingsResetDoneMessage => '설정이 초기화되었습니다';
@@ -9699,7 +9739,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveIslandLabelEntryDisabled => '비활성화됨';
 
   @override
-  String get settingsDisplayAppearanceSectionTitle => '디스플레이 및 외관';
+  String get settingsDisplayAppearanceSectionTitle => '시간표 표시';
 
   @override
   String get settingsReminderDesktopSectionTitle => '알림 및 데스크톱';
@@ -9717,7 +9757,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsAboutSectionTitle => '정보';
 
   @override
-  String get diagnosticsEntrySubtitle => '런타임 진단 로그 보기';
+  String get diagnosticsEntrySubtitle => '로그 · 셀프 점검 · 메모리';
 
   @override
   String get settingsSemesterScreenTitle => '학기 설정';

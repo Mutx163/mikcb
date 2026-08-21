@@ -305,8 +305,14 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'主题色、背景图/壁纸、文字颜色与课程卡片颜色'**
+  /// **'主题模式、字体、首页标题与弹窗磨砂玻璃'**
   String get appearanceEntrySubtitle;
+
+  /// No description provided for @appearanceThemeDisplaySectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题与显示'**
+  String get appearanceThemeDisplaySectionTitle;
 
   /// No description provided for @layoutSectionEntryTitle.
   ///
@@ -367,6 +373,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'切换、编辑节次、复制和管理时间模板'**
   String get timeSchemeEntrySubtitleNoneSelected;
+
+  /// No description provided for @timeSchemeEntryNotSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择'**
+  String get timeSchemeEntryNotSelected;
 
   /// No description provided for @timeSchemeEntrySubtitleSelected.
   ///
@@ -823,6 +835,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'通过坚果云等多设备同步课表与导入数据'**
   String get cloudSyncEntrySubtitle;
+
+  /// No description provided for @cloudSyncEntryDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'未开启'**
+  String get cloudSyncEntryDisabled;
+
+  /// No description provided for @cloudSyncEntryEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已开启'**
+  String get cloudSyncEntryEnabled;
+
+  /// No description provided for @cloudSyncEntrySyncing.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步中'**
+  String get cloudSyncEntrySyncing;
+
+  /// No description provided for @cloudSyncEntryError.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次同步失败'**
+  String get cloudSyncEntryError;
 
   /// No description provided for @cloudSyncTitle.
   ///
@@ -4083,6 +4119,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'超级岛与通知'**
   String get liveSettingsTitle;
+
+  /// No description provided for @liveGroupReminders.
+  ///
+  /// In zh, this message translates to:
+  /// **'提醒'**
+  String get liveGroupReminders;
+
+  /// No description provided for @liveGroupDisplay.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示内容'**
+  String get liveGroupDisplay;
+
+  /// No description provided for @liveGroupMaintenance.
+  ///
+  /// In zh, this message translates to:
+  /// **'维护与自检'**
+  String get liveGroupMaintenance;
 
   /// No description provided for @liveReminderTimingEntryTitle.
   ///
@@ -16837,11 +16891,29 @@ abstract class AppLocalizations {
   /// **'确认恢复'**
   String get settingsResetDefaultsConfirmTitle;
 
-  /// No description provided for @settingsResetDefaultsConfirmBody.
+  /// No description provided for @settingsResetConfirmBodyCourseCard.
   ///
   /// In zh, this message translates to:
-  /// **'将重置所有设置为出厂默认值。'**
-  String get settingsResetDefaultsConfirmBody;
+  /// **'将把课程卡片的显示字段、布局与颜色恢复为默认值。'**
+  String get settingsResetConfirmBodyCourseCard;
+
+  /// No description provided for @settingsResetConfirmBodyTimetablePage.
+  ///
+  /// In zh, this message translates to:
+  /// **'将把课表页面的密度、回到当前周按钮与背景（含清除壁纸）恢复为默认值。'**
+  String get settingsResetConfirmBodyTimetablePage;
+
+  /// No description provided for @settingsResetConfirmBodyAppearance.
+  ///
+  /// In zh, this message translates to:
+  /// **'将把主题模式、字体、首页导航形态、首页标题、主题色与磨砂玻璃设置恢复为默认值。'**
+  String get settingsResetConfirmBodyAppearance;
+
+  /// No description provided for @settingsResetConfirmBodyHomeWidget.
+  ///
+  /// In zh, this message translates to:
+  /// **'将把桌面小组件的显示项与外观恢复为默认值。'**
+  String get settingsResetConfirmBodyHomeWidget;
 
   /// No description provided for @settingsResetDoneMessage.
   ///
@@ -16978,7 +17050,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDisplayAppearanceSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示与外观'**
+  /// **'课表显示'**
   String get settingsDisplayAppearanceSectionTitle;
 
   /// No description provided for @settingsReminderDesktopSectionTitle.
@@ -17014,7 +17086,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'查看运行诊断日志'**
+  /// **'日志 · 自检 · 内存'**
   String get diagnosticsEntrySubtitle;
 
   /// No description provided for @settingsSemesterScreenTitle.

@@ -87,6 +87,11 @@ TimetableSettings applySettingsReset(
     SettingsResetScope.appearance => current.copyWith(
       appThemeMode: d.appThemeMode,
       appFontMode: d.appFontMode,
+      // 首页导航形态 / 玻璃坞布局 / 玻璃坞避让都是本页暴露的字段，
+      // 且避让高度是滑块——按 IA 规范 §5 必须有恢复路径。
+      homeNavigationForm: d.homeNavigationForm,
+      glassDockLayout: d.glassDockLayout,
+      glassDockInsetClearance: d.glassDockInsetClearance,
       foruiTheme: d.foruiTheme,
       themeSeedColor: d.themeSeedColor,
       homeTitleStyle: d.homeTitleStyle,
@@ -138,12 +143,24 @@ class _SettingsResetTile extends StatelessWidget {
     );
   }
 
+  /// 按作用域枚举将被重置的内容。共用一句「重置所有设置」会谎报范围，
+  /// 让用户在其他页做的调整看起来也会丢。
+  String _confirmBody(AppLocalizations l10n) {
+    return switch (scope) {
+      SettingsResetScope.courseCard => l10n.settingsResetConfirmBodyCourseCard,
+      SettingsResetScope.timetablePage =>
+        l10n.settingsResetConfirmBodyTimetablePage,
+      SettingsResetScope.appearance => l10n.settingsResetConfirmBodyAppearance,
+      SettingsResetScope.homeWidget => l10n.settingsResetConfirmBodyHomeWidget,
+    };
+  }
+
   Future<void> _confirm(BuildContext context, AppLocalizations l10n) async {
     final provider = context.read<TimetableProvider>();
     final confirmed = await showHyperosConfirmDialog(
       context: context,
       title: l10n.settingsResetDefaultsConfirmTitle,
-      message: l10n.settingsResetDefaultsConfirmBody,
+      message: _confirmBody(l10n),
       cancelLabel: l10n.cancelAction,
       confirmLabel: l10n.settingsResetDefaultsTitle,
       destructive: true,

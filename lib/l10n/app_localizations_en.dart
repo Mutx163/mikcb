@@ -112,7 +112,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearanceEntrySubtitle =>
-      'Theme color, timetable background, and course card colors';
+      'App theme mode, fonts, home title and sheet frosted glass';
+
+  @override
+  String get appearanceThemeDisplaySectionTitle => 'Theme & Display';
 
   @override
   String get layoutSectionEntryTitle => 'Layout & Sections';
@@ -147,6 +150,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get timeSchemeEntrySubtitleNoneSelected =>
       'Switch, edit sections, duplicate, and manage time schemes';
+
+  @override
+  String get timeSchemeEntryNotSelected => 'Not set';
 
   @override
   String timeSchemeEntrySubtitleSelected(String name) {
@@ -419,6 +425,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cloudSyncEntrySubtitle =>
       'Sync timetables and import data across devices via Jianguoyun';
+
+  @override
+  String get cloudSyncEntryDisabled => 'Off';
+
+  @override
+  String get cloudSyncEntryEnabled => 'On';
+
+  @override
+  String get cloudSyncEntrySyncing => 'Syncing';
+
+  @override
+  String get cloudSyncEntryError => 'Last sync failed';
 
   @override
   String get cloudSyncTitle => 'Cloud Sync';
@@ -2324,6 +2342,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveSettingsTitle => 'Island & Notifications';
+
+  @override
+  String get liveGroupReminders => 'Reminders';
+
+  @override
+  String get liveGroupDisplay => 'Display content';
+
+  @override
+  String get liveGroupMaintenance => 'Maintenance & self-check';
 
   @override
   String get liveReminderTimingEntryTitle => 'Reminder Timing';
@@ -9858,8 +9885,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsResetDefaultsConfirmTitle => 'Confirm Reset';
 
   @override
-  String get settingsResetDefaultsConfirmBody =>
-      'All settings will be restored to factory defaults.';
+  String get settingsResetConfirmBodyCourseCard =>
+      'This resets course card fields, layout and colors to their defaults.';
+
+  @override
+  String get settingsResetConfirmBodyTimetablePage =>
+      'This resets timetable page density, back-to-current-week button and background (including wallpaper) to their defaults.';
+
+  @override
+  String get settingsResetConfirmBodyAppearance =>
+      'This resets theme mode, fonts, home navigation form, home title, theme color and frosted glass settings to their defaults.';
+
+  @override
+  String get settingsResetConfirmBodyHomeWidget =>
+      'This resets home widget visibility and appearance to their defaults.';
 
   @override
   String get settingsResetDoneMessage => 'Settings have been reset';
@@ -9931,7 +9970,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveIslandLabelEntryDisabled => 'Disabled';
 
   @override
-  String get settingsDisplayAppearanceSectionTitle => 'Display & Appearance';
+  String get settingsDisplayAppearanceSectionTitle => 'Timetable Display';
 
   @override
   String get settingsReminderDesktopSectionTitle => 'Reminders & Desktop';
@@ -9949,7 +9988,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAboutSectionTitle => 'About';
 
   @override
-  String get diagnosticsEntrySubtitle => 'View runtime diagnostics logs';
+  String get diagnosticsEntrySubtitle => 'Logs · Self-check · Memory';
 
   @override
   String get settingsSemesterScreenTitle => 'Semester Settings';

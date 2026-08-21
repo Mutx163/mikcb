@@ -109,7 +109,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appearanceEntryTitle => '外观与配色';
 
   @override
-  String get appearanceEntrySubtitle => '主题色、背景图/壁纸、文字颜色与课程卡片颜色';
+  String get appearanceEntrySubtitle => '主题模式、字体、首页标题与弹窗磨砂玻璃';
+
+  @override
+  String get appearanceThemeDisplaySectionTitle => '主题与显示';
 
   @override
   String get layoutSectionEntryTitle => '布局与节次';
@@ -140,6 +143,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timeSchemeEntrySubtitleNoneSelected => '切换、编辑节次、复制和管理时间模板';
+
+  @override
+  String get timeSchemeEntryNotSelected => '未选择';
 
   @override
   String timeSchemeEntrySubtitleSelected(String name) {
@@ -391,6 +397,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncEntrySubtitle => '通过坚果云等多设备同步课表与导入数据';
+
+  @override
+  String get cloudSyncEntryDisabled => '未开启';
+
+  @override
+  String get cloudSyncEntryEnabled => '已开启';
+
+  @override
+  String get cloudSyncEntrySyncing => '同步中';
+
+  @override
+  String get cloudSyncEntryError => '上次同步失败';
 
   @override
   String get cloudSyncTitle => '云同步';
@@ -2191,6 +2209,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveSettingsTitle => '超级岛与通知';
+
+  @override
+  String get liveGroupReminders => '提醒';
+
+  @override
+  String get liveGroupDisplay => '显示内容';
+
+  @override
+  String get liveGroupMaintenance => '维护与自检';
 
   @override
   String get liveReminderTimingEntryTitle => '提醒时段';
@@ -9312,7 +9339,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsResetDefaultsConfirmTitle => '确认恢复';
 
   @override
-  String get settingsResetDefaultsConfirmBody => '将重置所有设置为出厂默认值。';
+  String get settingsResetConfirmBodyCourseCard => '将把课程卡片的显示字段、布局与颜色恢复为默认值。';
+
+  @override
+  String get settingsResetConfirmBodyTimetablePage =>
+      '将把课表页面的密度、回到当前周按钮与背景（含清除壁纸）恢复为默认值。';
+
+  @override
+  String get settingsResetConfirmBodyAppearance =>
+      '将把主题模式、字体、首页导航形态、首页标题、主题色与磨砂玻璃设置恢复为默认值。';
+
+  @override
+  String get settingsResetConfirmBodyHomeWidget => '将把桌面小组件的显示项与外观恢复为默认值。';
 
   @override
   String get settingsResetDoneMessage => '设置已重置';
@@ -9383,7 +9421,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveIslandLabelEntryDisabled => '已关闭';
 
   @override
-  String get settingsDisplayAppearanceSectionTitle => '显示与外观';
+  String get settingsDisplayAppearanceSectionTitle => '课表显示';
 
   @override
   String get settingsReminderDesktopSectionTitle => '提醒与桌面';
@@ -9401,7 +9439,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAboutSectionTitle => '关于';
 
   @override
-  String get diagnosticsEntrySubtitle => '查看运行诊断日志';
+  String get diagnosticsEntrySubtitle => '日志 · 自检 · 内存';
 
   @override
   String get settingsSemesterScreenTitle => '学期设置';
@@ -9820,7 +9858,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get appearanceEntryTitle => '外觀與配色';
 
   @override
-  String get appearanceEntrySubtitle => '主題色、課表背景、課程卡片顏色';
+  String get appearanceEntrySubtitle => '主題模式、字型、首頁標題與彈出視窗磨砂玻璃';
+
+  @override
+  String get appearanceThemeDisplaySectionTitle => '主題與顯示';
 
   @override
   String get layoutSectionEntryTitle => '布局與節次';
@@ -9851,6 +9892,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get timeSchemeEntrySubtitleNoneSelected => '切換、編輯節次、複製和管理時間範本';
+
+  @override
+  String get timeSchemeEntryNotSelected => '未選擇';
 
   @override
   String timeSchemeEntrySubtitleSelected(String name) {
@@ -10102,6 +10146,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
+
+  @override
+  String get cloudSyncEntryDisabled => '未開啟';
+
+  @override
+  String get cloudSyncEntryEnabled => '已開啟';
+
+  @override
+  String get cloudSyncEntrySyncing => '同步中';
+
+  @override
+  String get cloudSyncEntryError => '上次同步失敗';
 
   @override
   String get cloudSyncTitle => '雲端同步';
@@ -11903,6 +11959,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveSettingsTitle => '超級島與通知';
+
+  @override
+  String get liveGroupReminders => '提醒';
+
+  @override
+  String get liveGroupDisplay => '顯示內容';
+
+  @override
+  String get liveGroupMaintenance => '維護與自檢';
 
   @override
   String get liveReminderTimingEntryTitle => '提醒時段';
@@ -19068,7 +19133,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsResetDefaultsConfirmTitle => '確認還原';
 
   @override
-  String get settingsResetDefaultsConfirmBody => '將會重設所有設定為出廠預設值。';
+  String get settingsResetConfirmBodyCourseCard => '將把課程卡片的顯示欄位、版面與顏色恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyTimetablePage =>
+      '將把課表頁面的密度、回到當前週按鈕與背景（含清除桌布）恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyAppearance =>
+      '將把主題模式、字型、首頁導覽型態、首頁標題、主題色與磨砂玻璃設定恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyHomeWidget => '將把桌面小組件的顯示項目與外觀恢復為預設值。';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';
@@ -19139,7 +19215,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveIslandLabelEntryDisabled => '已關閉';
 
   @override
-  String get settingsDisplayAppearanceSectionTitle => '顯示與外觀';
+  String get settingsDisplayAppearanceSectionTitle => '課表顯示';
 
   @override
   String get settingsReminderDesktopSectionTitle => '提醒與桌面';
@@ -19157,7 +19233,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsAboutSectionTitle => '關於';
 
   @override
-  String get diagnosticsEntrySubtitle => '查看運行診斷日誌';
+  String get diagnosticsEntrySubtitle => '日誌 · 自檢 · 記憶體';
 
   @override
   String get settingsSemesterScreenTitle => '學期設定';
@@ -19576,7 +19652,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get appearanceEntryTitle => '外觀與配色';
 
   @override
-  String get appearanceEntrySubtitle => '主題色、課表背景、課程卡片顏色';
+  String get appearanceEntrySubtitle => '主題模式、字型、首頁標題與彈出視窗磨砂玻璃';
+
+  @override
+  String get appearanceThemeDisplaySectionTitle => '主題與顯示';
 
   @override
   String get layoutSectionEntryTitle => '布局與節次';
@@ -19607,6 +19686,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get timeSchemeEntrySubtitleNoneSelected => '切換、編輯節次、複製和管理時間範本';
+
+  @override
+  String get timeSchemeEntryNotSelected => '未選擇';
 
   @override
   String timeSchemeEntrySubtitleSelected(String name) {
@@ -19858,6 +19940,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
+
+  @override
+  String get cloudSyncEntryDisabled => '未開啟';
+
+  @override
+  String get cloudSyncEntryEnabled => '已開啟';
+
+  @override
+  String get cloudSyncEntrySyncing => '同步中';
+
+  @override
+  String get cloudSyncEntryError => '上次同步失敗';
 
   @override
   String get cloudSyncTitle => '雲端同步';
@@ -21659,6 +21753,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveSettingsTitle => '超級島與通知';
+
+  @override
+  String get liveGroupReminders => '提醒';
+
+  @override
+  String get liveGroupDisplay => '顯示內容';
+
+  @override
+  String get liveGroupMaintenance => '維護與自檢';
 
   @override
   String get liveReminderTimingEntryTitle => '提醒時段';
@@ -28824,7 +28927,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsResetDefaultsConfirmTitle => '確認還原';
 
   @override
-  String get settingsResetDefaultsConfirmBody => '將會重設所有設定為出廠預設值。';
+  String get settingsResetConfirmBodyCourseCard => '將把課程卡片的顯示欄位、版面與顏色恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyTimetablePage =>
+      '將把課表頁面的密度、回到當前週按鈕與背景（含清除桌布）恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyAppearance =>
+      '將把主題模式、字型、首頁導覽型態、首頁標題、主題色與磨砂玻璃設定恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyHomeWidget => '將把桌面小工具的顯示項目與外觀恢復為預設值。';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';
@@ -28895,7 +29009,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveIslandLabelEntryDisabled => '已關閉';
 
   @override
-  String get settingsDisplayAppearanceSectionTitle => '顯示與外觀';
+  String get settingsDisplayAppearanceSectionTitle => '課表顯示';
 
   @override
   String get settingsReminderDesktopSectionTitle => '提醒與桌面';
@@ -28913,7 +29027,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsAboutSectionTitle => '關於';
 
   @override
-  String get diagnosticsEntrySubtitle => '查看執行診斷日誌';
+  String get diagnosticsEntrySubtitle => '日誌 · 自檢 · 記憶體';
 
   @override
   String get settingsSemesterScreenTitle => '學期設定';

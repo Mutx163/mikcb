@@ -31,6 +31,9 @@ void main() {
       homePageWallpaperPath: '/tmp/wallpaper.png',
       // 外观
       appThemeMode: AppThemeMode.dark,
+      homeNavigationForm: HomeNavigationForm.glassDock,
+      glassDockLayout: GlassDockLayout.inset,
+      glassDockInsetClearance: 88,
       themeSeedColor: '#FF0000',
       frostedBlurEnabled: false,
       frostedSheetBlurSigma: 20,
@@ -138,6 +141,7 @@ void main() {
     final dirty = dirtySettings();
     expect(result.courseCardFontSize, dirty.courseCardFontSize);
     expect(result.appThemeMode, dirty.appThemeMode);
+    expect(result.glassDockInsetClearance, dirty.glassDockInsetClearance);
     expectUntouchedEssentials(result);
   });
 
@@ -149,6 +153,11 @@ void main() {
     );
 
     expect(result.appThemeMode, defaults.appThemeMode);
+    // 首页导航形态 / 玻璃坞布局 / 避让高度是外观页字段（避让为滑块），
+    // 必须随本页恢复默认（IA §5）。
+    expect(result.homeNavigationForm, defaults.homeNavigationForm);
+    expect(result.glassDockLayout, defaults.glassDockLayout);
+    expect(result.glassDockInsetClearance, defaults.glassDockInsetClearance);
     expect(result.themeSeedColor, defaults.themeSeedColor);
     expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
     expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
@@ -174,6 +183,7 @@ void main() {
     expect(result.courseCardFontSize, dirty.courseCardFontSize);
     expect(result.sectionHeight, dirty.sectionHeight);
     expect(result.appThemeMode, dirty.appThemeMode);
+    expect(result.homeNavigationForm, dirty.homeNavigationForm);
     expectUntouchedEssentials(result);
   });
 }

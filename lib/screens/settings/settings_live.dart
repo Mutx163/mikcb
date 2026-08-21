@@ -43,91 +43,120 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
     final duringEndSummary = _draft.liveDuringEndFollowBeforeClass
         ? l10n.followBeforeClassSetting
         : _liveDisplaySummary(context, _draft.duringEndDisplaySettings);
-    return HyperosListGroup(
+    // 提醒 / 显示是偏好，保活与自检是维护诊断——两种心智不该挤在同一个
+    // 无名大组里（IA §3 分组可预期 + §8 隔离精神），拆成三个带标签组。
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        HyperosListTile(
-          icon: Icons.alarm_outlined,
-          title: l10n.liveReminderTimingTitle,
-          onTap: () async {
-            await HyperosNavigation.push(
-              context,
-              builder: (_) => const LiveReminderTimingScreen(),
-            );
-            if (!mounted) return;
-            setState(() {
-              _draft = context.read<TimetableProvider>().settings;
-            });
-          },
+        HyperosSectionLabel(text: l10n.liveGroupReminders),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.alarm_outlined,
+              iconAccent: HyperosIconColors.orange,
+              title: l10n.liveReminderTimingTitle,
+              onTap: () async {
+                await HyperosNavigation.push(
+                  context,
+                  builder: (_) => const LiveReminderTimingScreen(),
+                );
+                if (!mounted) return;
+                setState(() {
+                  _draft = context.read<TimetableProvider>().settings;
+                });
+              },
+            ),
+          ],
         ),
-        HyperosListTile(
-          icon: Icons.upcoming_outlined,
-          title: l10n.beforeClassDisplaySettingsTitle,
-          details: beforeClassSummary,
-          onTap: () async {
-            await HyperosNavigation.push(
-              context,
-              builder: (_) => LiveDisplaySettingsScreen(
-                title: l10n.beforeClassDisplaySettingsTitle,
-                forDuringEnd: false,
-              ),
-            );
-            if (!mounted) return;
-            setState(() {
-              _draft = context.read<TimetableProvider>().settings;
-            });
-          },
+        const HyperosSectionGap(),
+        HyperosSectionLabel(text: l10n.liveGroupDisplay),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.upcoming_outlined,
+              iconAccent: HyperosIconColors.cyan,
+              title: l10n.beforeClassDisplaySettingsTitle,
+              details: beforeClassSummary,
+              onTap: () async {
+                await HyperosNavigation.push(
+                  context,
+                  builder: (_) => LiveDisplaySettingsScreen(
+                    title: l10n.beforeClassDisplaySettingsTitle,
+                    forDuringEnd: false,
+                  ),
+                );
+                if (!mounted) return;
+                setState(() {
+                  _draft = context.read<TimetableProvider>().settings;
+                });
+              },
+            ),
+            HyperosListTile(
+              icon: Icons.timelapse_rounded,
+              iconAccent: HyperosIconColors.purple,
+              title: l10n.duringEndDisplaySettingsTitle,
+              details: duringEndSummary,
+              onTap: () async {
+                await HyperosNavigation.push(
+                  context,
+                  builder: (_) => LiveDisplaySettingsScreen(
+                    title: l10n.duringEndDisplaySettingsTitle,
+                    forDuringEnd: true,
+                  ),
+                );
+                if (!mounted) return;
+                setState(() {
+                  _draft = context.read<TimetableProvider>().settings;
+                });
+              },
+            ),
+          ],
         ),
-        HyperosListTile(
-          icon: Icons.timelapse_rounded,
-          title: l10n.duringEndDisplaySettingsTitle,
-          details: duringEndSummary,
-          onTap: () async {
-            await HyperosNavigation.push(
-              context,
-              builder: (_) => LiveDisplaySettingsScreen(
-                title: l10n.duringEndDisplaySettingsTitle,
-                forDuringEnd: true,
-              ),
-            );
-            if (!mounted) return;
-            setState(() {
-              _draft = context.read<TimetableProvider>().settings;
-            });
-          },
-        ),
-        HyperosListTile(
-          icon: Icons.shield_outlined,
-          title: l10n.liveKeepAliveTitle,
-          onTap: () async {
-            await HyperosNavigation.push(
-              context,
-              builder: (_) => const LiveKeepAliveSettingsScreen(),
-            );
-            if (!mounted) return;
-            setState(() {
-              _draft = context.read<TimetableProvider>().settings;
-            });
-          },
-        ),
-        // 正式版 / 性能版 / 调试版均需展示：用户主动排查超级岛时依赖此入口。
-        // 「测试」二字对普通用户暗示不稳定，改称「自检」并说明用途。
-        // 页内敏感项（假日覆盖、快速造课、友盟崩溃按钮等）仍由 !kReleaseMode 门控。
-        HyperosListTile(
-          key: const ValueKey<String>('settings-live-self-check'),
-          icon: Icons.science_outlined,
-          title: l10n.liveSelfCheckTitle,
-          details: l10n.liveSelfCheckSubtitle,
-          onTap: () async {
-            await HyperosNavigation.push(
-              context,
-              settings: const RouteSettings(name: '/settings/live/self-check'),
-              builder: (_) => const _LiveTestingSettingsScreen(),
-            );
-            if (!mounted) return;
-            setState(() {
-              _draft = context.read<TimetableProvider>().settings;
-            });
-          },
+        const HyperosSectionGap(),
+        HyperosSectionLabel(text: l10n.liveGroupMaintenance),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.shield_outlined,
+              iconAccent: HyperosIconColors.green,
+              title: l10n.liveKeepAliveTitle,
+              onTap: () async {
+                await HyperosNavigation.push(
+                  context,
+                  builder: (_) => const LiveKeepAliveSettingsScreen(),
+                );
+                if (!mounted) return;
+                setState(() {
+                  _draft = context.read<TimetableProvider>().settings;
+                });
+              },
+            ),
+            // 正式版 / 性能版 / 调试版均需展示：用户主动排查超级岛时依赖此入口。
+            // 「测试」二字对普通用户暗示不稳定，改称「自检」并说明用途。
+            // 页内敏感项（假日覆盖、快速造课、友盟崩溃按钮等）仍由 !kReleaseMode 门控。
+            HyperosListTile(
+              key: const ValueKey<String>('settings-live-self-check'),
+              icon: Icons.science_outlined,
+              // 与「诊断」页的自检入口同 accent（IA §4：同目的地须同视觉）。
+              iconAccent: HyperosIconColors.orange,
+              title: l10n.liveSelfCheckTitle,
+              details: l10n.liveSelfCheckSubtitle,
+              onTap: () async {
+                await HyperosNavigation.push(
+                  context,
+                  settings: const RouteSettings(
+                    name: '/settings/live/self-check',
+                  ),
+                  builder: (_) => const _LiveTestingSettingsScreen(),
+                );
+                if (!mounted) return;
+                setState(() {
+                  _draft = context.read<TimetableProvider>().settings;
+                });
+              },
+            ),
+          ],
         ),
       ],
     );
