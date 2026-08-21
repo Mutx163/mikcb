@@ -49,10 +49,11 @@ void main() {
     await tester.pumpWidget(const TestApp(home: UserGuideScreen()));
     await tester.pumpAndSettle();
 
-    // Welcome page
+    // Welcome page. Assert the REAL consent tile type — the screen wraps a
+    // MiuixCheckbox, so a Material Checkbox finder here was always vacuous.
     expect(find.text('1 / 4'), findsOneWidget);
     expect(find.text('轻屿课表'), findsOneWidget);
-    expect(find.byType(Checkbox), findsNothing);
+    expect(find.byType(HyperosCheckboxTile), findsNothing);
 
     // Navigate to privacy page
     await tester.tap(nextButton());
