@@ -1400,22 +1400,29 @@ class _HyperosCollapsibleTopAppBarState
       }
     }
 
-    final foreground = AnnotatedRegion<SystemUiOverlayStyle>(
-      value: HyperosColors.systemOverlayForBackground(backgroundColor),
-      child: SafeArea(
-        top: true,
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: Stack(
-            children: [
-              ClipRect(child: animatedBody),
-              measurer,
-            ],
-          ),
+    // 透明底色（磨砂壳内的折叠栏）不能参与状态栏推导：computeLuminance
+    // 忽略 alpha，透明色恒判为深色背景 → 恒发白色图标，会盖掉页面外壳
+    // 按「真实页面背景」推导的正确样式（浅色页面 → 深色图标）。此时
+    // 直接透传子树，让外层 AnnotatedRegion 决定状态栏样式。
+    final barContent = SafeArea(
+      top: true,
+      bottom: false,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: Stack(
+          children: [
+            ClipRect(child: animatedBody),
+            measurer,
+          ],
         ),
       ),
     );
+    final foreground = backgroundColor.a == 0
+        ? barContent
+        : AnnotatedRegion<SystemUiOverlayStyle>(
+            value: HyperosColors.systemOverlayForBackground(backgroundColor),
+            child: barContent,
+          );
 
     if (!widget.blurred) {
       return Material(color: backgroundColor, child: foreground);
