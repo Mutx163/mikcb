@@ -251,6 +251,92 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     ];
   }
 
+  /// 悬浮「回本周」按钮的预览替身：与主页
+  /// TimetableScreen._buildFloatingBackToCurrentWeekButton 同构——
+  /// HyperosFrostedSurface 毛玻璃底，描边/阴影/内容透明度都随浮动态
+  /// 透明度联动；只去掉交互、Tooltip 与安全区定位。此前是实色 Material
+  /// + 全强度描边的简化版，观感成了「描边按钮」，与主页不一致。
+  Widget _buildFloatingBackToCurrentWeekChip(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final foruiColors = context.theme.colors;
+    final buttonOpacity =
+        settings.timetableFloatingBackToCurrentWeekButtonOpacity;
+    final contentOpacity = buttonOpacity.clamp(0.0, 1.0);
+    final borderRadius = BorderRadius.circular(18);
+    // Do not wrap [HyperosFrostedSurface] in [Opacity]: Flutter's
+    // [BackdropFilter] cannot sample content behind an opacity layer, so the
+    // button would only show a solid tint and ignore the frosted-blur switch.
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final baseTint = HyperosBlurredHeader.homePageRegionTintColor(
+      context,
+      withBlur: useBlur,
+    );
+    final frostedTint = baseTint.withValues(
+      alpha: (baseTint.a * buttonOpacity).clamp(0.0, 1.0),
+    );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        border: Border.all(
+          color: foruiColors.border.withValues(
+            alpha: foruiColors.border.a * contentOpacity,
+          ),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha:
+                  (theme.brightness == Brightness.dark ? 0.12 : 0.06) *
+                  contentOpacity,
+            ),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: HyperosFrostedSurface(
+          borderRadius: borderRadius,
+          tint: frostedTint,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.my_location_rounded,
+                    size: 15,
+                    color: colorScheme.primary.withValues(
+                      alpha: colorScheme.primary.a * contentOpacity,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.backToCurrentWeekAction,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface.withValues(
+                        alpha: colorScheme.onSurface.a * contentOpacity,
+                      ),
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   static const double _headerHeight = 40;
   static const double _appHeaderHeight = 44;
   static const double _homeHeaderHeightEstimate = 44;
@@ -259,7 +345,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -399,51 +484,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                       Positioned(
                         right: 20,
                         bottom: 12,
+                        // 与主页同构的预览替身（毛玻璃底 + 随透明度联动的
+                        // 描边/阴影），仅去掉交互与安全区定位。
                         child: IgnorePointer(
-                          child: Material(
-                            color: colorScheme.surfaceContainerHigh.withValues(
-                              alpha: settings
-                                  .timetableFloatingBackToCurrentWeekButtonOpacity,
-                            ),
-                            elevation: 2,
-                            shadowColor: Colors.black.withValues(
-                              alpha: isDark ? 0.12 : 0.06,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              side: BorderSide(
-                                color: context.theme.colors.border,
-                                width: 1,
-                              ),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.my_location_rounded,
-                                    size: 15,
-                                    color: colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    l10n.backToCurrentWeekAction,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: colorScheme.onSurface,
-                                      height: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          child: _buildFloatingBackToCurrentWeekChip(context),
                         ),
                       ),
                   ],
