@@ -9710,6 +9710,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get glassDockLayoutInsetSubtitle => '课表底部预留空间，底栏悬浮在下方';
+
+  @override
+  String get glassDockInsetClearanceLabel => '避让高度';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -19463,6 +19466,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get glassDockLayoutInsetSubtitle => '課表底部預留空間，底欄懸浮在下方';
+
+  @override
+  String get glassDockInsetClearanceLabel => '避讓高度';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -29216,4 +29222,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockLayoutInsetSubtitle => '課表底部預留空間，底欄懸浮在下方';
+
+  @override
+  String get glassDockInsetClearanceLabel => '避讓高度';
 }

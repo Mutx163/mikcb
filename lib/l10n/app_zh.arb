@@ -5896,5 +5896,6 @@
   "glassDockLayoutOverlay": "满屏悬浮",
   "glassDockLayoutOverlaySubtitle": "课表满屏显示，底栏浮动在课表之上",
   "glassDockLayoutInset": "内容避让",
-  "glassDockLayoutInsetSubtitle": "课表底部预留空间，底栏悬浮在下方"
+  "glassDockLayoutInsetSubtitle": "课表底部预留空间，底栏悬浮在下方",
+  "glassDockInsetClearanceLabel": "避让高度"
 }

@@ -10275,4 +10275,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get glassDockLayoutInsetSubtitle =>
       'Timetable leaves compact space at the bottom, dock sits below';
+
+  @override
+  String get glassDockInsetClearanceLabel => 'Inset clearance height';
 }

@@ -5892,5 +5892,6 @@
   "glassDockLayoutOverlay": "フルスクリーン重ね",
   "glassDockLayoutOverlaySubtitle": "課表を全画面表示し、ドックをその上に重ねる",
   "glassDockLayoutInset": "下にスペース確保",
-  "glassDockLayoutInsetSubtitle": "課表下部にスペースを確保し、ドックは下に配置"
+  "glassDockLayoutInsetSubtitle": "課表下部にスペースを確保し、ドックは下に配置",
+  "glassDockInsetClearanceLabel": "回避スペースの高さ"
 }

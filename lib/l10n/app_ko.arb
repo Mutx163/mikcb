@@ -5892,5 +5892,6 @@
   "glassDockLayoutOverlay": "전체 화면 오버레이",
   "glassDockLayoutOverlaySubtitle": "시간표 전체 화면 표시, 독이 위에 떠 있음",
   "glassDockLayoutInset": "하단 공간 확보",
-  "glassDockLayoutInsetSubtitle": "시간표 하단 공간 확보, 독은 아래에 배치"
+  "glassDockLayoutInsetSubtitle": "시간표 하단 공간 확보, 독은 아래에 배치",
+  "glassDockInsetClearanceLabel": "여백 높이"
 }

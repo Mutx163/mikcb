@@ -163,9 +163,6 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞药丸占用高度：药丸 56 + 底部安全 6（药丸顶到屏幕底的距离）。
   static const double _glassDockPillOccupancy = 62;
-  /// 避让模式（[GlassDockLayout.inset]）内容底部到屏幕底的高度
-  /// = 药丸占用 + 紧凑间隙（12）。
-  static const double _glassDockContentClearance = 74;
 
   /// 设置页↔课表切换（跟手拖动松手回弹）的转场时长上限。
   static const Duration _dockViewSwitchDuration = Duration(milliseconds: 300);
@@ -832,7 +829,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   offstage: !dockSettingsActive && !dockSlideInProgress,
                   child: TimetableSettingsScreen(
                     embedded: true,
-                    bottomInset: _glassDockSettingsBottomInset(),
+                    bottomInset: _glassDockSettingsBottomInset(settings),
                   ),
                 ),
               ),
@@ -6305,20 +6302,21 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 玻璃坞形态下「课表内容」底部避让：
   /// - [GlassDockLayout.overlay]：0 —— 课表真·满屏，网格延伸到屏幕底、
   ///   从悬浮药丸后面穿过（底栏以玻璃材质浮在课表之上）；
-  /// - [GlassDockLayout.inset]：内容底部预留 药丸占用 + 紧凑间隙 +
-  ///   底部安全区，最后一行课程不被药丸遮挡。
+  /// - [GlassDockLayout.inset]：内容底部预留用户设定的
+  ///   [TimetableSettings.glassDockInsetClearance] + 底部安全区，
+  ///   最后一行课程不被药丸遮挡。
   double _glassDockContentBottomInset(TimetableSettings settings) {
     if (settings.glassDockLayout == GlassDockLayout.overlay) {
       return 0;
     }
-    return _glassDockContentClearance +
+    return settings.glassDockInsetClearance +
         MediaQuery.viewPaddingOf(context).bottom;
   }
 
   /// 玻璃坞形态下「设置页」的滚动底部避让：列表视口保持全屏，
   /// 避让以滚动 padding 实现，最后一项可滚到药丸上方。
-  double _glassDockSettingsBottomInset() {
-    return _glassDockContentClearance +
+  double _glassDockSettingsBottomInset(TimetableSettings settings) {
+    return settings.glassDockInsetClearance +
         MediaQuery.viewPaddingOf(context).bottom;
   }
 

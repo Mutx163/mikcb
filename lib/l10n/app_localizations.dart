@@ -17622,6 +17622,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'课表底部预留空间，底栏悬浮在下方'**
   String get glassDockLayoutInsetSubtitle;
+
+  /// No description provided for @glassDockInsetClearanceLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'避让高度'**
+  String get glassDockInsetClearanceLabel;
 }
 
 class _AppLocalizationsDelegate

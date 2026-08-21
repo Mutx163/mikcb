@@ -164,13 +164,16 @@ void main() {
   Future<double> pumpDockAndWeekPagerBottom(
     WidgetTester tester,
     HomeNavigationForm form,
-    GlassDockLayout layout,
-  ) async {
+    GlassDockLayout layout, {
+    double? insetClearance,
+  }) async {
     final provider = TimetableProvider(autoInitialize: false);
     await provider.updateTimetableSettings(
       provider.settings.copyWith(
         homeNavigationForm: form,
         glassDockLayout: layout,
+        glassDockInsetClearance:
+            insetClearance ?? glassDockInsetClearanceDefault,
       ),
     );
     await tester.pumpWidget(
@@ -229,10 +232,30 @@ void main() {
     );
     final screenHeight =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    // 内容避让：课表底部预留 药丸占用 + 紧凑间隙（74），最后一行不被遮挡。
+    // 内容避让：课表底部预留 药丸占用 + 紧凑间隙（74，默认避让高度），
+    // 最后一行不被遮挡。
     const noWallpaperInnerPadding = 8.0;
     expect(pagerBottom,
         closeTo(screenHeight - 74 - noWallpaperInnerPadding, 0.5),
         reason: '内容避让模式课表底部应预留玻璃坞空间');
+  });
+
+  testWidgets(
+      'glass dock inset layout: custom clearance height is respected',
+      (tester) async {
+    const customClearance = 100.0;
+    final pagerBottom = await pumpDockAndWeekPagerBottom(
+      tester,
+      HomeNavigationForm.glassDock,
+      GlassDockLayout.inset,
+      insetClearance: customClearance,
+    );
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    // 用户自定义避让高度（滑动条）应直接决定内容底边位置。
+    const noWallpaperInnerPadding = 8.0;
+    expect(pagerBottom,
+        closeTo(screenHeight - customClearance - noWallpaperInnerPadding, 0.5),
+        reason: '内容避让模式应使用用户设定的避让高度');
   });
 }

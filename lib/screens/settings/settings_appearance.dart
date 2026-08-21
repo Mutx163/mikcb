@@ -191,6 +191,25 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 _updateDraft(_draft.copyWith(glassDockLayout: value));
               },
             ),
+          if (_draft.homeNavigationForm == HomeNavigationForm.glassDock &&
+              _draft.glassDockLayout == GlassDockLayout.inset)
+            HyperosSliderTile(
+              title: l10n.glassDockInsetClearanceLabel,
+              value: _draft.glassDockInsetClearance,
+              min: glassDockInsetClearanceMin,
+              max: glassDockInsetClearanceMax,
+              divisions:
+                  (glassDockInsetClearanceMax - glassDockInsetClearanceMin)
+                      .round(),
+              valueLabel:
+                  '${_draft.glassDockInsetClearance.toStringAsFixed(0)}px',
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(glassDockInsetClearance: value),
+                  debounce: true,
+                );
+              },
+            ),
           HyperosSelectTile<AppFontMode>(
             label: l10n.fontModeLabel,
             useSheetForPopup: true,

@@ -10027,4 +10027,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get glassDockLayoutInsetSubtitle => '시간표 하단 공간 확보, 독은 아래에 배치';
+
+  @override
+  String get glassDockInsetClearanceLabel => '여백 높이';
 }

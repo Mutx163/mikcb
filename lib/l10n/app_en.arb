@@ -5895,5 +5895,6 @@
   "glassDockLayoutOverlay": "Fullscreen overlay",
   "glassDockLayoutOverlaySubtitle": "Timetable fills the screen with the dock floating on top",
   "glassDockLayoutInset": "Reserve space below",
-  "glassDockLayoutInsetSubtitle": "Timetable leaves compact space at the bottom, dock sits below"
+  "glassDockLayoutInsetSubtitle": "Timetable leaves compact space at the bottom, dock sits below",
+  "glassDockInsetClearanceLabel": "Inset clearance height"
 }

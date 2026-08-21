@@ -9982,4 +9982,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get glassDockLayoutInsetSubtitle => '課表下部にスペースを確保し、ドックは下に配置';
+
+  @override
+  String get glassDockInsetClearanceLabel => '回避スペースの高さ';
 }
