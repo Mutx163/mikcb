@@ -4284,40 +4284,47 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
-  Future<void> updatePartnerWeekOffset(int offset) async {
-    await initialize();
-    final binding = _partnerBinding;
-    if (binding == null) {
-      return;
-    }
-    final clamped = CoupleTimetableLogic.clampWeekOffset(offset);
-    if (clamped == binding.weekOffset) {
-      return;
-    }
-    _partnerBinding = binding.copyWith(weekOffset: clamped);
-    await _storageService.savePartnerTimetableBinding(_partnerBinding);
-    notifyUserDataChangedForSync();
-    notifyListeners();
+  Future<void> updatePartnerWeekOffset(int offset) {
+    // 与其他用户写入一致走 mutation 门：避免与云恢复/LAN 应用等
+    // 门内写者交错读写 _partnerBinding（check-then-act 竞态）。
+    return _runMutation(() async {
+      await initialize();
+      final binding = _partnerBinding;
+      if (binding == null) {
+        return;
+      }
+      final clamped = CoupleTimetableLogic.clampWeekOffset(offset);
+      if (clamped == binding.weekOffset) {
+        return;
+      }
+      _partnerBinding = binding.copyWith(weekOffset: clamped);
+      await _storageService.savePartnerTimetableBinding(_partnerBinding);
+      notifyUserDataChangedForSync();
+      notifyListeners();
+    });
   }
 
   Future<void> updatePartnerCoupleColors({
     String? mineColorHex,
     String? partnerColorHex,
     String? togetherColorHex,
-  }) async {
-    await initialize();
-    final binding = _partnerBinding;
-    if (binding == null) {
-      return;
-    }
-    _partnerBinding = binding.copyWith(
-      mineColorHex: mineColorHex,
-      partnerColorHex: partnerColorHex,
-      togetherColorHex: togetherColorHex,
-    );
-    await _storageService.savePartnerTimetableBinding(_partnerBinding);
-    notifyUserDataChangedForSync();
-    notifyListeners();
+  }) {
+    // 同 updatePartnerWeekOffset：纳入 mutation 门串行化。
+    return _runMutation(() async {
+      await initialize();
+      final binding = _partnerBinding;
+      if (binding == null) {
+        return;
+      }
+      _partnerBinding = binding.copyWith(
+        mineColorHex: mineColorHex,
+        partnerColorHex: partnerColorHex,
+        togetherColorHex: togetherColorHex,
+      );
+      await _storageService.savePartnerTimetableBinding(_partnerBinding);
+      notifyUserDataChangedForSync();
+      notifyListeners();
+    });
   }
 
   Future<void> unlinkPartner() {
