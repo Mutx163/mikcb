@@ -23,6 +23,19 @@ void main() {
     );
   });
 
+  test('sanitizeWebdavErrorMessage does not infer status from embedded digits', () {
+    for (final value in <String>[
+      'request /archives/4040 failed',
+      'lesson-404.json could not be read',
+    ]) {
+      expect(
+        sanitizeWebdavErrorMessage(StateError(value)),
+        'sync_failed',
+        reason: value,
+      );
+    }
+  });
+
   test('sanitizeWebdavErrorMessage maps generic HTTP statuses safely', () {
     expect(
       sanitizeWebdavErrorMessage(const HttpException('statusCode=429')),

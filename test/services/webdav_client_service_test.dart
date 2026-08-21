@@ -33,6 +33,19 @@ void main() {
       expect(result.errorMessage, isNull);
     });
 
+    test('classifyGetBytesFailure does not treat embedded 404 as notFound', () {
+      for (final message in <String>[
+        'request failed for /archives/4040',
+        'failed to read lesson-404.json',
+      ]) {
+        final result = WebdavClientService.classifyGetBytesFailure(
+          StateError(message),
+        );
+        expect(result.isFailed, isTrue, reason: message);
+        expect(result.errorMessage, isNot('backup_not_found'), reason: message);
+      }
+    });
+
     test('classifyGetBytesFailure maps HTTP status messages safely', () {
       final cases = <String, String>{
         'HTTP 400 Bad Request': 'invalid_response',

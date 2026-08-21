@@ -450,7 +450,10 @@ class WebdavClientService {
     // Fall back to string matching for non-WebDAV exceptions (e.g. raw
     // http client errors that were not wrapped by the package).
     final message = error.toString().toLowerCase();
-    final statusMatch = RegExp(r'\bhttp\s+(\d{3})\b').firstMatch(message);
+    final statusMatch = RegExp(
+      r'\b(?:http\s+|statuscode\s*[=:]\s*)(\d{3})\b',
+      caseSensitive: false,
+    ).firstMatch(message);
     final textualStatusCode = statusMatch == null
         ? null
         : int.tryParse(statusMatch.group(1)!);
@@ -469,12 +472,14 @@ class WebdavClientService {
     if (textualStatusCode != null && textualStatusCode >= 400) {
       return const WebdavGetBytesResult.failed('invalid_response');
     }
+    // Only accept explicit missing-resource forms here. Generic server text
+    // such as "the requested item does not exist" is not reliable enough to
+    // override the failed result without a real HTTP status.
     final looksMissing =
-        message.contains('404') ||
-        message.contains('not found') ||
-        message.contains('not_found') ||
-        message.contains('does not exist') ||
-        message.contains('no such file');
+        RegExp(r'\b404\s+not[ _-]?found\b').hasMatch(message) ||
+        RegExp(r'\b(?:file|resource|path|collection)\s+not[ _-]?found\b')
+            .hasMatch(message) ||
+        message.contains('no such file or directory');
     if (looksMissing) {
       return const WebdavGetBytesResult.notFound();
     }

@@ -63,7 +63,8 @@ String sanitizeWebdavErrorMessage(Object error) {
 
   final lower = error.toString().toLowerCase();
   final statusMatch = RegExp(
-    r'\b(?:http\s+|status(?:code)?[=: ]+)(\d{3})\b',
+    r'\b(?:http\s+|statuscode\s*[=:]\s*|failed\s*:\s*)(\d{3})\b',
+    caseSensitive: false,
   ).firstMatch(lower);
   final textualStatusCode = statusMatch == null
       ? null
@@ -82,15 +83,6 @@ String sanitizeWebdavErrorMessage(Object error) {
   }
   if (textualStatusCode != null && textualStatusCode >= 400) {
     return 'invalid_response';
-  }
-  if (lower.contains('401')) {
-    return 'auth_failed';
-  }
-  if (lower.contains('403')) {
-    return 'access_denied';
-  }
-  if (lower.contains('404')) {
-    return 'backup_not_found';
   }
   if (lower.contains('certificate') || lower.contains('handshake')) {
     return 'certificate_error';
