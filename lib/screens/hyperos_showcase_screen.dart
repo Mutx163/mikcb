@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../models/timetable_settings.dart';
+import '../services/app_update_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/hex_color.dart';
+import '../widgets/home_update_prompt.dart';
 
 /// Gallery of all HyperOS / 澎湃 UI components for visual QA.
 class HyperosShowcaseScreen extends StatefulWidget {
@@ -33,6 +39,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   final _selectPopupAnchorKey = GlobalKey();
   final _textController = TextEditingController();
   final _searchController = TextEditingController();
+  Timer? _demoUpdateProgressTimer;
 
   Map<String, String> _selectItemMap(AppLocalizations l10n) => {
     l10n.hyperosShowcaseSizeSmall: 'small',
@@ -69,6 +76,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
 
   @override
   void dispose() {
+    _demoUpdateProgressTimer?.cancel();
     _textController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -871,6 +879,14 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 details: 'edge · 贴边仅上圆角',
                 onTap: _demoEdgeSheet,
               ),
+              if (!kReleaseMode)
+                HyperosListTile(
+                  icon: Icons.system_update,
+                  iconAccent: HyperosIconColors.red,
+                  title: '模拟收到新版本更新',
+                  details: 'showHomeUpdatePrompt · 假数据',
+                  onTap: _demoAppUpdatePrompt,
+                ),
               HyperosListTile(
                 key: _selectPopupAnchorKey,
                 icon: Icons.arrow_drop_down_circle_outlined,
@@ -1031,6 +1047,84 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
         ),
       ),
     );
+  }
+
+  /// 模拟「发现新版本」推送：用假 Release 数据拉起首页同款更新弹窗。
+  ///
+  /// 仅调试/性能版可达本页。假下载只推进内存进度条，不访问网络、
+  /// 不写磁盘，便于验收弹窗的动作行 / 进度 / 取消 / 完成各状态。
+  Future<void> _demoAppUpdatePrompt() async {
+    String currentVersion;
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      currentVersion = packageInfo.version;
+    } on Exception catch (_) {
+      // 无插件环境（如纯 Widget 测试）下的兜底，保证弹窗始终能弹出。
+      currentVersion = '0.0.0';
+    }
+    if (!mounted) return;
+    const release = AppReleaseInfo(
+      version: '9.9.9',
+      title: '模拟更新 · 弹窗演示数据',
+      body: '这是一条用于验收更新弹窗的模拟更新日志。\n'
+          '- 假下载只播放进度动画，不访问网络\n'
+          '- 下拉或点击遮罩即可关闭',
+      releaseUrl: 'https://github.com/Mutx163/mikcb/releases',
+      downloadUrl:
+          'https://github.com/Mutx163/mikcb/releases/download/demo/demo.apk',
+      updatedAt: null,
+      isPrerelease: false,
+    );
+    final controller = HomeUpdatePromptController();
+    _demoUpdateProgressTimer?.cancel();
+    try {
+      await showHomeUpdatePrompt(
+        context,
+        release: release,
+        currentVersion: currentVersion,
+        downloadChannel: AppUpdateDownloadChannel.github,
+        hasDirectDownload: true,
+        controller: controller,
+        onDownload: () async {
+          const totalBytes = 96 * 1024 * 1024;
+          const ticks = 60; // 约 6 秒播完（100ms 一帧）。
+          final step = totalBytes ~/ ticks;
+          var downloaded = 0;
+          controller.beginInAppDownload();
+          _demoUpdateProgressTimer = Timer.periodic(
+            const Duration(milliseconds: 100),
+            (timer) {
+              if (!mounted) {
+                timer.cancel();
+                return;
+              }
+              downloaded += step;
+              if (downloaded >= totalBytes) {
+                timer.cancel();
+                _demoUpdateProgressTimer = null;
+                controller.finishInAppDownload(success: true);
+                return;
+              }
+              controller.updateInAppProgress(downloaded, totalBytes);
+            },
+          );
+          return true;
+        },
+        onViewRelease: () async {
+          if (!mounted) return;
+          _demoSnackBar('演示数据：跳过打开 Release 页面');
+        },
+        onCancelDownload: () {
+          _demoUpdateProgressTimer?.cancel();
+          _demoUpdateProgressTimer = null;
+          controller.finishInAppDownload(success: false, cancelled: true);
+        },
+      );
+    } finally {
+      _demoUpdateProgressTimer?.cancel();
+      _demoUpdateProgressTimer = null;
+      controller.dispose();
+    }
   }
 
   Future<void> _demoSelectPopup() async {
