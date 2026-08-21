@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
+import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/hex_color.dart';
@@ -1051,9 +1053,11 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
 
   /// 模拟「发现新版本」推送：用假 Release 数据拉起首页同款更新弹窗。
   ///
-  /// 仅调试/性能版可达本页。假下载只推进内存进度条，不访问网络、
-  /// 不写磁盘，便于验收弹窗的动作行 / 进度 / 取消 / 完成各状态。
+  /// 仅调试/性能版可达本页。主按钮文案与点击行为按当前设置
+  /// （下载渠道 / 来源 / 镜像）自适应，与线上分支一致；假下载只推进
+  /// 内存进度条，不访问网络、不写磁盘，便于验收各状态。
   Future<void> _demoAppUpdatePrompt() async {
+    final settings = context.read<TimetableProvider>().settings;
     String currentVersion;
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -1072,9 +1076,30 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
       releaseUrl: 'https://github.com/Mutx163/mikcb/releases',
       downloadUrl:
           'https://github.com/Mutx163/mikcb/releases/download/demo/demo.apk',
+      pgyerDownloadUrl: 'https://www.pgyer.com/qingyu',
       updatedAt: null,
       isPrerelease: false,
     );
+    final channel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    final source = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: AppUpdateMirrorPresetX.fromValue(settings.appUpdateMirrorPreset),
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
+    // 与线上首页同一条 URL 解析链路：渠道决定蒲公英/GitHub，
+    // 来源与镜像前缀只影响 GitHub 直链。
+    final effectiveDownloadUrl = AppUpdateService().getEffectiveDownloadUrl(
+      release: release,
+      channel: channel,
+      source: source,
+      mirrorUrlPrefix: mirrorPrefix,
+    );
+    final hasDirectDownload =
+        effectiveDownloadUrl != null && effectiveDownloadUrl.trim().isNotEmpty;
     final controller = HomeUpdatePromptController();
     _demoUpdateProgressTimer?.cancel();
     try {
@@ -1082,33 +1107,19 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
         context,
         release: release,
         currentVersion: currentVersion,
-        downloadChannel: AppUpdateDownloadChannel.github,
-        hasDirectDownload: true,
+        downloadChannel: channel,
+        hasDirectDownload: hasDirectDownload,
         controller: controller,
         onDownload: () async {
-          const totalBytes = 96 * 1024 * 1024;
-          const ticks = 60; // 约 6 秒播完（100ms 一帧）。
-          final step = totalBytes ~/ ticks;
-          var downloaded = 0;
-          controller.beginInAppDownload();
-          _demoUpdateProgressTimer = Timer.periodic(
-            const Duration(milliseconds: 100),
-            (timer) {
-              if (!mounted) {
-                timer.cancel();
-                return;
-              }
-              downloaded += step;
-              if (downloaded >= totalBytes) {
-                timer.cancel();
-                _demoUpdateProgressTimer = null;
-                controller.finishInAppDownload(success: true);
-                return;
-              }
-              controller.updateInAppProgress(downloaded, totalBytes);
-            },
-          );
-          return true;
+          // 与线上分支一致：蒲公英渠道或无直链时跳浏览器并关弹窗；
+          // 演示里仅以 toast 提示，不真正打开。
+          if (channel == AppUpdateDownloadChannel.pgyer || !hasDirectDownload) {
+            if (mounted) {
+              _demoSnackBar('演示数据：当前配置下会跳转浏览器打开下载页');
+            }
+            return false;
+          }
+          return _playFakeDownload(controller);
         },
         onViewRelease: () async {
           if (!mounted) return;
@@ -1125,6 +1136,33 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
       _demoUpdateProgressTimer = null;
       controller.dispose();
     }
+  }
+
+  /// 假下载动画：约 6 秒推进到 100%，期间可取消；返回 true 保持弹窗打开。
+  Future<bool> _playFakeDownload(HomeUpdatePromptController controller) {
+    const totalBytes = 96 * 1024 * 1024;
+    const ticks = 60; // 约 6 秒播完（100ms 一帧）。
+    final step = totalBytes ~/ ticks;
+    var downloaded = 0;
+    controller.beginInAppDownload();
+    _demoUpdateProgressTimer = Timer.periodic(
+      const Duration(milliseconds: 100),
+      (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        downloaded += step;
+        if (downloaded >= totalBytes) {
+          timer.cancel();
+          _demoUpdateProgressTimer = null;
+          controller.finishInAppDownload(success: true);
+          return;
+        }
+        controller.updateInAppProgress(downloaded, totalBytes);
+      },
+    );
+    return Future<bool>.value(true);
   }
 
   Future<void> _demoSelectPopup() async {
