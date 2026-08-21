@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/time_scheme.dart';
