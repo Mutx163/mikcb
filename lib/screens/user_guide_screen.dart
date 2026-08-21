@@ -173,17 +173,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   void _onPageChanged(int page) {
-    if (widget.requirePrivacyConsent && !_privacyChecked && page > 1) {
-      setState(() => _currentPage = 1);
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          1,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-        );
-      }
-      return;
-    }
     setState(() => _currentPage = page);
   }
 
@@ -234,15 +223,26 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           controller: _pageController,
           physics: const ClampingScrollPhysics(),
           onPageChanged: _onPageChanged,
-          children: [
-            _buildWelcomePage(l10n),
-            _buildPrivacyPage(l10n),
-            _buildPermissionsPage(l10n),
-            _buildTipsPage(l10n),
-          ],
+          children: _guidePages(l10n),
         ),
       ),
     );
+  }
+
+  /// Pages mounted in the [PageView]. Before privacy consent the guide ends
+  /// at the privacy page: later pages stay unmounted, so a forward swipe dies
+  /// at a real scroll boundary (native clamp, no snap-back) instead of
+  /// overshooting into pages it would have to bounce out of.
+  List<Widget> _guidePages(AppLocalizations l10n) {
+    if (!widget.requirePrivacyConsent || _privacyChecked) {
+      return [
+        _buildWelcomePage(l10n),
+        _buildPrivacyPage(l10n),
+        _buildPermissionsPage(l10n),
+        _buildTipsPage(l10n),
+      ];
+    }
+    return [_buildWelcomePage(l10n), _buildPrivacyPage(l10n)];
   }
 
   Widget _buildProgressBar(AppLocalizations l10n) {
@@ -856,20 +856,20 @@ class _GuideIconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
+    // HyperOS palette, not context.theme.colors: the Material scheme stays
+    // at the framework default (never customized in _appThemeData), whose
+    // M3 seed purple reads as near-black badge fills in light mode.
+    final primary = HyperosColors.primary(context);
+    final onPrimary = HyperosColors.onPrimary(context);
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: filled ? colors.primary : colors.secondary,
+        color: filled ? primary : HyperosColors.secondaryContainer(context),
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        icon,
-        size: 20,
-        color: filled ? colors.primaryForeground : colors.primary,
-      ),
+      child: Icon(icon, size: 20, color: filled ? onPrimary : primary),
     );
   }
 }
@@ -917,7 +917,7 @@ class _GuideActionTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _GuideIconBadge(icon: icon),
+            _GuideIconBadge(icon: icon, filled: true),
             const SizedBox(width: HyperosTokens.rowContentGap),
             Expanded(
               child: Column(

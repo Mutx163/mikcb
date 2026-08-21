@@ -74,11 +74,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 / 4'), findsOneWidget);
 
-    // Try to go forward without checking checkbox — should stay on page 2
-    // (onPageChanged snaps back because !_privacyChecked && page > 1)
-    // Note: _goNext animates to page 3 but onPageChanged snaps back to 2.
-    // We can't easily test swipe in widget tests, so just verify the state.
+    // Try to go forward without checking checkbox — should stay on page 2.
+    // Pages 3-4 stay unmounted before consent, so a forward swipe dies at a
+    // real scroll boundary instead of overshooting and snapping back.
     expect(find.text('同意并开始使用'), findsNothing);
+    expect(find.text('3 / 4'), findsNothing);
+    expect(find.text('系统权限设置'), findsNothing);
   });
 
   testWidgets('auto-start status shows on permissions page', (tester) async {
