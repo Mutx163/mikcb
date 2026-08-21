@@ -318,25 +318,36 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
         : downloadChannel == AppUpdateDownloadChannel.pgyer
         ? l10n.aboutOpenDownloadPageAction
         : l10n.aboutDownloadNowAction;
+    // 左右各占一半的均衡布局：次要动作（查看发布说明）居左，
+    // 主要动作（立即下载 / 打开页面）居右。
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        MiuixTextButton(
-          l10n.aboutViewReleaseAction,
-          onPressed: () async {
-            onDismiss();
-            await onViewRelease();
-          },
+        Expanded(
+          child: MiuixTextButton(
+            l10n.aboutViewReleaseAction,
+            onPressed: () async {
+              onDismiss();
+              await onViewRelease();
+            },
+          ),
         ),
         const SizedBox(width: 8),
-        MiuixButton(
-          onPressed: () async {
-            final keepOpen = await onDownload();
-            if (!keepOpen) {
-              onDismiss();
-            }
-          },
-          child: MiuixText(downloadLabel, style: textStyles.button),
+        Expanded(
+          child: MiuixButton(
+            onPressed: () async {
+              final keepOpen = await onDownload();
+              if (!keepOpen) {
+                onDismiss();
+              }
+            },
+            child: MiuixText(
+              downloadLabel,
+              style: textStyles.button,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ),
       ],
     );
