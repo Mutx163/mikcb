@@ -232,11 +232,16 @@ void main() {
     );
     final screenHeight =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    // 内容避让：课表底部预留 药丸占用 + 紧凑间隙（74，默认避让高度），
+    // 内容避让：课表底部预留默认避让高度（62，即可调下限=药丸占用），
     // 最后一行不被遮挡。
     const noWallpaperInnerPadding = 8.0;
     expect(pagerBottom,
-        closeTo(screenHeight - 74 - noWallpaperInnerPadding, 0.5),
+        closeTo(
+          screenHeight -
+              glassDockInsetClearanceDefault -
+              noWallpaperInnerPadding,
+          0.5,
+        ),
         reason: '内容避让模式课表底部应预留玻璃坞空间');
   });
 
@@ -257,5 +262,56 @@ void main() {
     expect(pagerBottom,
         closeTo(screenHeight - customClearance - noWallpaperInnerPadding, 0.5),
         reason: '内容避让模式应使用用户设定的避让高度');
+  });
+
+  testWidgets('glass dock inset day view: panel reaches screen bottom',
+      (tester) async {
+    await pumpDockAndWeekPagerBottom(
+      tester,
+      HomeNavigationForm.glassDock,
+      GlassDockLayout.inset,
+    );
+    // 切到日课表：列表视口应全屏（不再被外层布局 padding 在避让边界
+    // 硬裁），避让改由列表滚动 padding 承担——否则滚动时卡片在边界被
+    // 裁断，裁切线下的生壁纸空带与上方磨砂卡片区色差明显。
+    await tester.tap(find.text('日课表').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull, reason: '切日视图不应有异常');
+
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    // 测试环境无壁纸：课表面板外还有 8px 的无壁纸底部内边距。
+    const noWallpaperInnerPadding = 8.0;
+    final panelRect = tester.getRect(
+      find.byKey(const ValueKey('timetable-day-view-panel')),
+    );
+    expect(
+      panelRect.bottom,
+      closeTo(screenHeight - noWallpaperInnerPadding, 0.5),
+      reason: '日课表面板视口应延伸到屏幕底部（不再被避让 padding 压缩）',
+    );
+
+    // 避让量转移到滚动/内容 padding 上（默认避让高度 + 原有 8px 底距；
+    // 测试环境底部安全区为 0）。
+    final columnPads = tester
+        .widgetList<Padding>(
+          find.descendant(
+            of: find.byKey(const ValueKey('timetable-day-view-panel')),
+            matching: find.byType(Padding),
+          ),
+        )
+        .toList(growable: false);
+    final expectedBottom =
+        noWallpaperInnerPadding + glassDockInsetClearanceDefault;
+    expect(
+      columnPads.any(
+        (p) =>
+            (p.padding is EdgeInsets) &&
+            ((p.padding as EdgeInsets).bottom - expectedBottom).abs() < 0.5,
+      ),
+      isTrue,
+      reason: '日课表列/空态的底部 padding 应包含玻璃坞避让量',
+    );
   });
 }

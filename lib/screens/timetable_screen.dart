@@ -686,7 +686,12 @@ class _TimetableScreenState extends State<TimetableScreen>
               childPad: false,
               child: Padding(
                 padding: EdgeInsets.only(
-                  bottom: glassDockForm
+                  // 日课表的列表视口保持全屏：避让改为列表自身的滚动
+                  // padding（见 _buildExpandedDayColumnView），滚动中卡片
+                  // 连续穿过底部避让带，不在避让边界被硬裁出一条与磨砂
+                  // 卡片色差明显的「生壁纸」空带；周课表网格不可滚动，
+                  // 避让仍由这里的布局 padding 承担。
+                  bottom: glassDockForm && !_isDayView
                       ? _glassDockContentBottomInset(settings)
                       : 0,
                 ),
@@ -4237,10 +4242,17 @@ class _TimetableScreenState extends State<TimetableScreen>
       dayOfWeek: dayOfWeek,
       courseItems: displayItems,
     );
+    // 玻璃坞避让（含底部安全区）：日课表视口全屏，避让以滚动 padding
+    // 实现——静止在列表底部时最后一项仍停在玻璃坞上方，滚动中卡片则
+    // 连续穿过避让带，不再在边界被硬裁出与磨砂卡片色差明显的空带。
+    final dockScrollAvoidance =
+        settings.homeNavigationForm == HomeNavigationForm.glassDock
+            ? _glassDockContentBottomInset(settings)
+            : 0.0;
     if (agendaItems.isEmpty) {
       return Padding(
         key: key,
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        padding: EdgeInsets.fromLTRB(14, 0, 14, 8 + dockScrollAvoidance),
         child: _buildDayViewEmptyColumn(week: week, settings: settings),
       );
     }
@@ -4248,7 +4260,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // moves; the shared host keeps their BackdropFilter capture at grid scope.
     final agendaList = ListView.separated(
       key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+      padding: EdgeInsets.fromLTRB(14, 0, 14, 8 + dockScrollAvoidance),
       physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -6670,20 +6682,20 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final glassDockForm =
         provider.settings.homeNavigationForm == HomeNavigationForm.glassDock;
-    // 按钮需始终浮在玻璃坞药丸之上：
-    // - overlay 满屏模式：课表内容不再避让（延伸到屏幕底），这里自行垫
-    //   药丸占用 + 12 视觉间隙；
-    // - inset 避让模式：内容区底部已垫 clearance（74），再留 24px 视觉
-    //   边距即可——再加 clearance 会双重避让，把按钮抬到页面中部。
+    // 按钮需始终浮在玻璃坞药丸之上：玻璃坞形态下统一取「内容避让量 +
+    // 24 视觉边距」与「药丸占用 + 12 视觉间隙」的较大值——周视图由外层
+    // 布局避让垫高、日/设置页视口全屏时按钮自行避让，两种实现下都不被
+    // 药丸遮挡；经典形态保持原 24px 边距。
     final double dockBackButtonBottom;
     if (!glassDockForm) {
       dockBackButtonBottom = 24;
-    } else if (provider.settings.glassDockLayout == GlassDockLayout.overlay) {
-      dockBackButtonBottom = _glassDockPillOccupancy +
-          12 +
-          MediaQuery.viewPaddingOf(context).bottom;
     } else {
-      dockBackButtonBottom = 24 + MediaQuery.viewPaddingOf(context).bottom;
+      dockBackButtonBottom =
+          math.max(
+            _glassDockContentBottomInset(provider.settings) + 24,
+            _glassDockPillOccupancy + 12,
+          ) +
+          MediaQuery.viewPaddingOf(context).bottom;
     }
     return SafeArea(
       minimum: EdgeInsets.only(

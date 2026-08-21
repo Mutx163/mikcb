@@ -292,8 +292,9 @@ const double glassDockInsetClearanceMin = 62;
 /// 内容避让高度可调上限（逻辑像素）：给大间距偏好留足空间。
 const double glassDockInsetClearanceMax = 140;
 
-/// 内容避让高度默认值：药丸占用 + 紧凑间隙（12）。
-const double glassDockInsetClearanceDefault = 74;
+/// 内容避让高度默认值 = 可调下限（药丸占用高度）：默认最紧凑避让，
+/// 用户可用滑动条调大。
+const double glassDockInsetClearanceDefault = glassDockInsetClearanceMin;
 
 extension GlassDockLayoutX on GlassDockLayout {
   String get value => switch (this) {

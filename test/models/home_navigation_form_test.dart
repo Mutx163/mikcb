@@ -46,11 +46,15 @@ void main() {
   });
 
   group('GlassDockInsetClearance', () {
-    test('defaults to pill occupancy + compact gap', () {
+    test('defaults to the minimum (pill occupancy) clearance', () {
       expect(TimetableSettings.defaults().glassDockInsetClearance,
           glassDockInsetClearanceDefault);
+      expect(glassDockInsetClearanceDefault, glassDockInsetClearanceMin);
       expect(glassDockInsetClearanceMin, 62);
-      expect(glassDockInsetClearanceMax, greaterThan(glassDockInsetClearanceMin));
+      expect(
+        glassDockInsetClearanceMax,
+        greaterThan(glassDockInsetClearanceMin),
+      );
     });
 
     test('round-trips through json', () {
