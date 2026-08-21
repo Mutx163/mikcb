@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/schedule_date_rule.dart';
@@ -118,6 +121,35 @@ void main() {
     expect(rules.single.id, 'rule-queued');
     },
   );
+
+  test('getProfiles waits for in-flight profile writes before reading', () async {
+    final gate = Completer<void>();
+    const updatedName = '排队课表';
+
+    final write = storage.updateProfiles((current) async {
+      await gate.future;
+      return [
+        TimetableProfile(
+          id: 'profile-test',
+          name: updatedName,
+          courses: const [],
+          settings: TimetableSettings.defaults(),
+          currentWeek: 2,
+          createdAt: DateTime.utc(2026, 8, 1),
+          lastUsedAt: DateTime.utc(2026, 8, 1),
+        ),
+      ];
+    });
+    // 写仍挂在 gate 上时发起读：读必须等写链排空后取到新缓存，
+    // 而不是用旧缓存/旧磁盘快照立即返回。
+    final readFuture = storage.getProfiles();
+    gate.complete();
+
+    final profiles = await readFuture;
+    await write;
+
+    expect(profiles.single.name, updatedName);
+  });
 }
 
 TimeScheme _scheme(String id, String name) {

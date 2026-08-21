@@ -515,6 +515,9 @@ class StorageService {
 
   Future<List<TimetableProfile>> getProfiles() async {
     if (_prefs == null) await init();
+    // 与其余集合读取保持一致：先等写链排空，避免冷缓存首读在
+    // _parseProfilesFromDisk 的 await 点之间被排队写入回踩缓存。
+    await _profilesWriteChain;
     await _ensureProfilesInitialized();
     await _ensureTimeSchemesInitialized();
     await _migrateHidePrefixDefault();
