@@ -6,7 +6,6 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart';
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
@@ -234,7 +233,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const Positioned.fill(child: UndimmedBackdropCapture()),
+            // 原 UndimmedBackdropCapture 垫层已移除：树内无 grouped 过滤器，
+            // 垫层采样无消费者，纯多余全屏 pass。
             // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
             GestureDetector(
               behavior: HitTestBehavior.opaque,

@@ -143,7 +143,7 @@ void main() {
       }
     });
 
-    testWidgets('showHyperosSheet builds an undimmed capture group', (
+    testWidgets('showHyperosSheet mounts no redundant undimmed capture', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -174,11 +174,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BackdropGroup), findsOneWidget);
-      expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
+      // 树内没有 BackdropFilter.grouped 成员加入外层组，挂
+      // UndimmedBackdropCapture 只会白做一次全屏近零模糊采样。
+      expect(find.byType(UndimmedBackdropCapture), findsNothing);
       expect(find.text('sheet body'), findsOneWidget);
     });
 
-    testWidgets('showHyperosListPopup builds an undimmed capture group', (
+    testWidgets('showHyperosListPopup mounts no redundant undimmed capture', (
       tester,
     ) async {
       final anchorKey = GlobalKey();
@@ -215,7 +217,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BackdropGroup), findsOneWidget);
-      expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
+      // 同 showHyperosSheet：树内无 grouped 过滤器，垫层无消费者。
+      expect(find.byType(UndimmedBackdropCapture), findsNothing);
       expect(find.text('Option A'), findsOneWidget);
     });
 

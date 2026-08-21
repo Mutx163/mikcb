@@ -617,7 +617,9 @@ Future<T?> showHyperosSheet<T>({
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const Positioned.fill(child: UndimmedBackdropCapture()),
+            // 原 UndimmedBackdropCapture 垫层已移除：本树内没有任何
+            // BackdropFilter.grouped 成员加入该外层组，垫层每次开弹窗
+            // 白做一次全屏近零模糊采样（premium 玻璃走包内自有隔离组）。
             if (isDismissible)
               Positioned.fill(
                 child: GestureDetector(
