@@ -125,6 +125,27 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
   return l10n.appTitle;
 }
 
+/// 首帧放行门：正常路径由 _AppEntryScreenState._allowFirstFrameOnce 触发；
+/// main() 中的看门狗超时后强制放行，避免启动管线挂死时永久停在系统启动画面。
+final Completer<void> _firstFrameReleased = Completer<void>();
+
+void _releaseFirstFrame({required bool forced}) {
+  if (_firstFrameReleased.isCompleted) return;
+  _firstFrameReleased.complete();
+  try {
+    WidgetsBinding.instance.allowFirstFrame();
+  } catch (_) {
+    // defer/allow mismatch is non-fatal; future first frame will proceed.
+  }
+  if (forced) {
+    debugPrint('[boot] first-frame watchdog fired: forcing allowFirstFrame');
+    unawaited(AppLogService.instance.error(
+      'first_frame_watchdog',
+      '启动首帧超时未放行，看门狗已强制放行',
+    ));
+  }
+}
+
 Future<void> main() async {
   runZonedGuarded(
     () async {
@@ -136,10 +157,18 @@ Future<void> main() async {
       // particularly after an Android process restart (e.g. returning from
       // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
-      // Single-stage boot: keep Android system splash (mipmap/ic_launcher)
+      // Single-stage boot: keep the Android system splash (@drawable/splash_icon)
       // as the only branding until locally persisted timetable is ready.
       // This avoids the 2-3 flickers: splash -> spinner -> timetable.
       WidgetsBinding.instance.deferFirstFrame();
+      // 看门狗保险丝：若启动管线在任何放行点之前挂死（如存储 init 卡住）
+      // 或 widget 构建阶段抛异常，首帧将永不放行——表现为永远停在系统
+      // 启动画面且不触发 ANR。超时强制放行并留痕，保证可进入、可诊断。
+      Timer(const Duration(seconds: 6), () {
+        if (!_firstFrameReleased.isCompleted) {
+          _releaseFirstFrame(forced: true);
+        }
+      });
       // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the
       // first glass bar frame does not stall on shader compilation.
       await LiquidGlassWidgets.initialize();
@@ -413,11 +442,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   void _allowFirstFrameOnce() {
     if (_allowFirstFrameCalled) return;
     _allowFirstFrameCalled = true;
-    try {
-      WidgetsBinding.instance.allowFirstFrame();
-    } catch (_) {
-      // defer/allow mismatch is non-fatal; future first frame will proceed.
-    }
+    _releaseFirstFrame(forced: false);
   }
 
   @override
