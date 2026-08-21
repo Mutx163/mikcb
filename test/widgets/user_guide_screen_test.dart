@@ -94,6 +94,58 @@ void main() {
     expect(badgeColor, hyperosPrimary);
   });
 
+  testWidgets('real drag gestures: blocked pre-consent, unlocked after', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const TestApp(home: UserGuideScreen(requirePrivacyConsent: true)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 4'), findsOneWidget);
+
+    // A real horizontal drag toward page 3 stays pinned on the privacy page.
+    await tester.drag(find.byType(PageView), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('3 / 4'), findsNothing);
+
+    // Checking consent unlocks forward dragging. The consent tile sits at
+    // the BOTTOM of the privacy page list — scroll it into view first
+    // (offscreen sliver children are not built). HyperosCheckboxTile wraps
+    // a MiuixCheckbox; there is no Material Checkbox in this screen.
+    await tester.dragUntilVisible(
+      find.byType(HyperosCheckboxTile),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(HyperosCheckboxTile));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(PageView), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('3 / 4'), findsOneWidget);
+
+    // Returning to the privacy page and unchecking shrinks the pages again
+    // while resting exactly on the new boundary — must stay stable.
+    await tester.drag(find.byType(PageView), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 4'), findsOneWidget);
+    // Page remount reset the inner list offset — scroll down again.
+    await tester.dragUntilVisible(
+      find.byType(HyperosCheckboxTile),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(HyperosCheckboxTile));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('2 / 4'), findsOneWidget);
+  });
+
   testWidgets('auto-start status shows on permissions page', (tester) async {
     await tester.pumpWidget(
       const TestApp(
