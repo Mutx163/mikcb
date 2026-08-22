@@ -947,6 +947,20 @@ class TimetableProvider with ChangeNotifier {
     onDate: onDate,
   );
 
+  /// 上课闹钟等场景用：解析课程在其生效时间模板下的真实开始钟点。
+  ///
+  /// 与 LiveActivityLogic.resolveRealTime 同一套节次语义；当课程的开始节次
+  /// 超出模板节数（例如导入产生的幻影节次）时返回 null，调用方应跳过该课程，
+  /// 绝不能退回 Course.startTime 存量值（可能是不再同步的旧钟点或占位 00:00）。
+  String? resolvedCourseStartTime(Course course) {
+    final sections = _resolveSectionsForCourse(course);
+    final index = course.startSection - 1;
+    if (sections == null || index < 0 || index >= sections.length) {
+      return null;
+    }
+    return sections[index].startTime;
+  }
+
   /// Preview location → place-group routing without writing course times.
   LocationTimeMatchResult? matchLocationTime(String? location) =>
       LocationTimeMatchLogic.match(location, _locationTimeGroups);

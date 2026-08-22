@@ -69,9 +69,6 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
     if (scheme == null || scheme.sections.isEmpty) {
       return const [];
     }
-    final earliestClock = ClassAlarmLogic.formatClock(
-      ClassAlarmLogic.firstSectionStartMinutes(scheme.sections)!,
-    );
     final today = _normalized(DateTime.now());
 
     // 计算范围的结束日期（含当天）；起点一律从今天起——过去的日子无法设闹钟。
@@ -101,23 +98,31 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
       if (courses.isEmpty) {
         continue;
       }
-      // 课程时间以各自 startTime 为准（不同课程节次可以不同）；
-      // 时间缺失的课程退回时间模板里最早的节次。
+      // 课程真实钟点按「节次号 → 生效时间模板」解析（与超级岛同一套语义，
+      // 与课程卡片显示一致）。开始节次超出模板节数的课程是导入产生的幻影行
+      // （行内存量钟点可能是 00:00 等占位值），直接跳过，绝不能参与取最早。
       String? bestClock;
       var bestMinutes = -1;
       for (final course in courses) {
-        final minutes = ClassAlarmLogic.parseClockMinutes(course.startTime);
+        final realStart = provider.resolvedCourseStartTime(course);
+        if (realStart == null) {
+          continue;
+        }
+        final minutes = ClassAlarmLogic.parseClockMinutes(realStart);
         if (minutes == null) {
           continue;
         }
         if (bestMinutes < 0 || minutes < bestMinutes) {
           bestMinutes = minutes;
-          bestClock = course.startTime.trim();
+          bestClock = realStart.trim();
         }
+      }
+      if (bestClock == null) {
+        continue;
       }
       rows.add(ClassAlarmDayFirstSection(
         dayOfWeek: date.weekday,
-        startTime: bestClock ?? earliestClock,
+        startTime: bestClock,
       ));
     }
     return rows;

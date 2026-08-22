@@ -7215,11 +7215,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     final label = course.shortName?.trim().isNotEmpty == true
         ? course.shortName!.trim()
         : course.name.trim();
-    final startClock =
-        ClassAlarmLogic.formatClock(ClassAlarmLogic.parseClockMinutes(
-              course.startTime,
-            ) ??
-            0);
+    // 真实钟点按「节次号 → 生效时间模板」解析；节次越界的幻影课程
+    // （导入残留，行内钟点是 00:00 之类占位值）直接拒绝。
+    final resolvedStart = provider.resolvedCourseStartTime(course);
+    if (resolvedStart == null ||
+        ClassAlarmLogic.parseClockMinutes(resolvedStart) == null) {
+      showAppToast(
+        context,
+        message: l10n.classAlarmInvalidTimeToast,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    final startClock = resolvedStart.trim();
     final weekdayLabel = switch (course.dayOfWeek) {
       1 => l10n.weekdayMon,
       2 => l10n.weekdayTue,
@@ -7239,7 +7247,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     final plan = ClassAlarmLogic.buildCourseWeeklyPlan(
       dayOfWeek: course.dayOfWeek,
-      startTime: course.startTime,
+      startTime: startClock,
       label: '轻屿 · $label',
       leadMinutes: ClassAlarmLogic.clampLeadMinutes(
         settings.classAlarmLeadMinutes,
