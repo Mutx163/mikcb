@@ -3663,6 +3663,23 @@ class _TimetableScreenState extends State<TimetableScreen>
       gradient: LinearGradient(
         colors: [foruiTheme.colors.background, foruiTheme.colors.background],
       ),
+      // 摘要卡没有课程色填充可依托：无壁纸（纯色页面）时填充色与页面底色
+      // 相同，无边框无阴影会整张隐形（下方课程卡靠 hue + outerShadow 保持
+      // 边界）。补一套中性细描边 + 柔和投影，几何参数与 agenda 卡片一致，
+      // 让两种卡片在纯白底上读作同一个卡片系统。chromeGlass 分支自绘壁纸
+      // 采样材质，忽略这两个参数，不受影响。
+      border: useChromeGlass
+          ? null
+          : Border.all(color: summaryInk.withValues(alpha: 0.12)),
+      shadow: useChromeGlass
+          ? null
+          : [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         child: Column(
