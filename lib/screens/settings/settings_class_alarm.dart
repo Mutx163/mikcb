@@ -20,16 +20,29 @@ class _ClassAlarmSettingsScreen extends StatefulWidget {
 }
 
 class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
-  static const String _alarmLabel = '轻屿';
+  // 范围档位值与 TimetableSettings.classAlarmRange 的持久化语义一致。
   static const int _rangeNext4Weeks = 0;
   static const int _rangeNext8Weeks = 1;
   static const int _rangeUntilSemesterEnd = 2;
-  static const int _rangeWholeSemester = 3;
-
-  int _range = _rangeNext4Weeks;
 
   void _toast(String message, {AppToastKind kind = AppToastKind.info}) {
     showAppToast(context, message: message, kind: kind);
+  }
+
+  /// 写入设置并落盘；失败时提示而不是静默丢失改动。
+  Future<void> _updateSettingsSafely(
+    AppLocalizations l10n,
+    TimetableSettings Function(TimetableSettings) mutate,
+  ) async {
+    final provider = context.read<TimetableProvider>();
+    try {
+      await provider.updateSettings(mutate(provider.settings));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _toast(l10n.saveFailed, kind: AppToastKind.error);
+    }
   }
 
   String _weekdayLabel(AppLocalizations l10n, int dayOfWeek) => switch (dayOfWeek) {
@@ -77,7 +90,6 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
       case _rangeNext8Weeks:
         endDate = today.add(const Duration(days: 55));
       case _rangeUntilSemesterEnd:
-      case _rangeWholeSemester:
         if (settings.semesterStartDate == null) {
           endDate = today.add(const Duration(days: 27));
         } else {
@@ -136,7 +148,7 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
       _toast(l10n.classAlarmNoSchemeToast, kind: AppToastKind.warning);
       return;
     }
-    final rows = _collectOccurrences(_range);
+    final rows = _collectOccurrences(settings.classAlarmRange);
     if (rows.isEmpty) {
       _toast(l10n.classAlarmNoDataToast, kind: AppToastKind.warning);
       return;
@@ -151,39 +163,56 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
     }
     final detailParts = <String>[];
     for (final group in grouping.groups) {
-      final days = group.dayOfWeeks.map((d) => _weekdayLabel(l10n, d)).join('、');
+      final days = group.dayOfWeeks
+          .map((d) => _weekdayLabel(l10n, d))
+          .join(l10n.classAlarmDaySeparator);
       final clock = ClassAlarmLogic.formatClock(group.plan.hour * 60 + group.plan.minute);
       detailParts.add('$days $clock');
     }
-    var message = l10n.classAlarmConfirmMessage(detailParts.join('；'));
+    var message =
+        l10n.classAlarmConfirmMessage(detailParts.join(l10n.classAlarmDetailSeparator));
     if (grouping.variableDays.isNotEmpty) {
-      final variableDays = grouping.variableDays.map((d) => _weekdayLabel(l10n, d)).join('、');
+      final variableDays = grouping.variableDays
+          .map((d) => _weekdayLabel(l10n, d))
+          .join(l10n.classAlarmDaySeparator);
       message += l10n.classAlarmVariableSuffix(variableDays);
     }
     final confirmed = await showAppConfirmDialog(
       context,
       title: l10n.classAlarmConfirmTitle,
       message: message,
+      confirmLabel: l10n.confirmAction,
     );
     if (confirmed != true || !mounted) {
       return;
     }
-    var allLaunched = true;
+    // 逐组分发；首个失败立即中止并如实汇报已写入数量——系统时钟无法
+    // 读取去重，盲目连发只会堆积重复闹钟。
+    final total = grouping.groups.length;
+    final label = l10n.appTitle;
+    var launchedCount = 0;
     for (final group in grouping.groups) {
       final result = await ClassAlarmService.addAlarm(
-        group.plan.copyWith(label: _alarmLabel, skipUi: settings.classAlarmSkipUi),
+        group.plan.copyWith(label: label, skipUi: settings.classAlarmSkipUi),
       );
       if (!result.launched) {
-        allLaunched = false;
+        break;
       }
+      launchedCount++;
     }
     if (!mounted) {
       return;
     }
-    _toast(
-      allLaunched ? l10n.classAlarmAddedToast : l10n.classAlarmLaunchFailedToast,
-      kind: allLaunched ? AppToastKind.success : AppToastKind.error,
-    );
+    if (launchedCount == total) {
+      _toast(l10n.classAlarmAddedToast, kind: AppToastKind.success);
+    } else if (launchedCount == 0) {
+      _toast(l10n.classAlarmLaunchFailedToast, kind: AppToastKind.error);
+    } else {
+      _toast(
+        l10n.classAlarmPartialAddedToast(launchedCount, total),
+        kind: AppToastKind.warning,
+      );
+    }
   }
 
   Future<void> _openSystemClock() async {
@@ -199,7 +228,7 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
 
   Future<void> _pickLeadMinutes() async {
     final l10n = AppLocalizations.of(context)!;
-    final options = <int>[10, 15, 20, 30, 45, 60];
+    final options = <int>[0, 10, 15, 20, 30, 45, 60];
     final current = ClassAlarmLogic.clampLeadMinutes(
       context.read<TimetableProvider>().settings.classAlarmLeadMinutes,
     );
@@ -216,13 +245,16 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
     if (selected == null || selected == current || !mounted) {
       return;
     }
-    await context.read<TimetableProvider>().updateSettings(
-      context.read<TimetableProvider>().settings.copyWith(classAlarmLeadMinutes: selected),
+    await _updateSettingsSafely(
+      l10n,
+      (settings) => settings.copyWith(classAlarmLeadMinutes: selected),
     );
   }
 
   Future<void> _pickRange() async {
     final l10n = AppLocalizations.of(context)!;
+    final current =
+        context.read<TimetableProvider>().settings.classAlarmRange;
     final selected = await showHyperosSelectSheet<int>(
       context: context,
       title: l10n.classAlarmRangeLabel,
@@ -230,23 +262,25 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
         l10n.classAlarmRangeNext4Weeks: _rangeNext4Weeks,
         l10n.classAlarmRangeNext8Weeks: _rangeNext8Weeks,
         l10n.classAlarmRangeRemaining: _rangeUntilSemesterEnd,
-        l10n.classAlarmRangeWhole: _rangeWholeSemester,
       },
-      currentValue: _range,
+      currentValue:
+          current >= _rangeNext4Weeks && current <= _rangeUntilSemesterEnd
+              ? current
+              : _rangeNext4Weeks,
       cancelLabel: l10n.cancelAction,
     );
-    if (selected == null || selected == _range) {
+    if (selected == null || selected == current || !mounted) {
       return;
     }
-    setState(() {
-      _range = selected;
-    });
+    await _updateSettingsSafely(
+      l10n,
+      (settings) => settings.copyWith(classAlarmRange: selected),
+    );
   }
 
-  String _rangeLabel(AppLocalizations l10n) => switch (_range) {
+  String _rangeLabel(AppLocalizations l10n, int range) => switch (range) {
         _rangeNext8Weeks => l10n.classAlarmRangeNext8Weeks,
         _rangeUntilSemesterEnd => l10n.classAlarmRangeRemaining,
-        _rangeWholeSemester => l10n.classAlarmRangeWhole,
         _ => l10n.classAlarmRangeNext4Weeks,
       };
 
@@ -283,7 +317,7 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
               icon: Icons.date_range_outlined,
               iconAccent: HyperosIconColors.blue,
               title: l10n.classAlarmRangeLabel,
-              details: _rangeLabel(l10n),
+              details: _rangeLabel(l10n, settings.classAlarmRange),
               onTap: _pickRange,
             ),
             HyperosListTile(
@@ -314,8 +348,9 @@ class _ClassAlarmSettingsScreenState extends State<_ClassAlarmSettingsScreen> {
               subtitle: l10n.classAlarmSkipUiSubtitle,
               value: settings.classAlarmSkipUi,
               onChanged: (value) {
-                context.read<TimetableProvider>().updateSettings(
-                  settings.copyWith(classAlarmSkipUi: value),
+                _updateSettingsSafely(
+                  l10n,
+                  (current) => current.copyWith(classAlarmSkipUi: value),
                 );
               },
             ),

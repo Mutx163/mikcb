@@ -501,14 +501,17 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosListGroup(
             children: [
               _LiveEntryTile(onTap: openLiveSettings),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
-                  MiuixIcons.extended.byName('alarm')!,
-                  HyperosIconColors.orange,
+              // 上课闹钟依赖 Android AlarmClock 公开契约，其他平台没有
+              // 对应通道，入口直接隐藏而不是点了才报错。
+              if (!kIsWeb && Platform.isAndroid)
+                _MiuixSettingsPreference(
+                  startAction: _settingsIconBadge(
+                    MiuixIcons.extended.byName('alarm')!,
+                    HyperosIconColors.orange,
+                  ),
+                  title: l10n.classAlarmEntryTitle,
+                  onClick: openClassAlarmSettings,
                 ),
-                title: l10n.classAlarmEntryTitle,
-                onClick: openClassAlarmSettings,
-              ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('home')!,
