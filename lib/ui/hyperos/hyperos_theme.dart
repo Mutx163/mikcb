@@ -307,6 +307,15 @@ abstract final class HyperosColors {
       statusBarColor: background,
       statusBarIconBrightness: light ? Brightness.dark : Brightness.light,
       statusBarBrightness: light ? Brightness.light : Brightness.dark,
+      // 金标联盟「谷歌Android导航条适配」（Edge-to-Edge）：导航条保持
+      // 透明、无分割线，内容延伸到手势指示条下方；图标极性跟随页面
+      // 背景明暗。systemNavigationBarContrastEnforced=false 关闭 API 29+
+      // 的系统对比度遮罩，避免透明导航条被强制加半透明灰色 scrim。
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness:
+          light ? Brightness.dark : Brightness.light,
+      systemNavigationBarContrastEnforced: false,
     );
   }
 }
