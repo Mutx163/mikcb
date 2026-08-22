@@ -232,8 +232,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   left: -homePageChromeGlassEdgeOverdraw,
                   right: -homePageChromeGlassEdgeOverdraw,
                   bottom: 0,
-                  child: HomePageChromeGlassFill(
-                    wallpaperTopLuminance: wallpaperTopLuminance,
+                  child: const HomePageChromeGlassFill(
                     // The band is a small interior rectangle inside this
                     // preview, unlike the home page's screen-edge band: its
                     // own-bounds backdrop capture would clamp refraction

@@ -132,7 +132,6 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
     required this.weekdayBarBlurEnabled,
     required this.includeStatusBar,
     required this.weekdayBarHeight,
-    this.wallpaperTopLuminance,
     super.key,
   });
 
@@ -140,13 +139,6 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
   final bool weekdayBarBlurEnabled;
   final bool includeStatusBar;
   final double weekdayBarHeight;
-
-  /// Sampled luminance of the wallpaper behind this band, when known.
-  ///
-  /// Drives the legibility scrim's polarity so it never fights the ink colour
-  /// picked by [homePageChromeForegroundForLuminance]: a dark wallpaper gets a
-  /// dark scrim under light ink, not a white wash that flattens contrast.
-  final double? wallpaperTopLuminance;
 
   bool get _hasAnyBand => headerBlurEnabled || weekdayBarBlurEnabled;
 
@@ -190,9 +182,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
                 bottom: 0,
-                child: HomePageChromeGlassFill(
-                  wallpaperTopLuminance: wallpaperTopLuminance,
-                ),
+                child: const HomePageChromeGlassFill(),
               ),
             ],
           ),
@@ -211,13 +201,10 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
 /// scaled-down preview box.
 class HomePageChromeGlassFill extends StatelessWidget {
   const HomePageChromeGlassFill({
-    this.wallpaperTopLuminance,
     this.borderRadius = 0,
     this.useAncestorBackdropGroup = false,
     super.key,
   });
-
-  final double? wallpaperTopLuminance;
 
   /// Sample the nearest [BackdropGroup]'s full-size backdrop instead of the
   /// band's own clipped bounds.
@@ -237,11 +224,14 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// alone leaves square refraction / edge lighting.
   final double borderRadius;
 
-  /// Polarity-correct legibility scrim colour for this band.
+  /// Polarity-correct legibility wash colour over raw wallpaper.
   ///
-  /// Public so Opacity-safe stand-ins (day-view summary during the overlay
-  /// open/close ramp) can paint the exact same wash over a pre-blurred
-  /// wallpaper sample and read as the same glass.
+  /// The home chrome band itself no longer paints this scrim: in liquid-glass
+  /// mode it is plain glass, the same material as every other surface, and
+  /// chrome text contrast is handled by ink polarity
+  /// ([homePageChromeForegroundForLuminance]). Kept public for surfaces that
+  /// float directly on un-blurred wallpaper and still want a legibility wash —
+  /// e.g. the wallpaper picker's header buttons.
   static Color scrimColor(
     BuildContext context, {
     double? wallpaperTopLuminance,
@@ -258,65 +248,22 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// Wash colour a pre-blur stand-in must paint to read as this material.
   ///
   /// Mirrors [build] exactly. The gaussian-frost path tints with
-  /// [HyperosBlurredHeader.homePageRegionTintColor] and paints **no** scrim.
-  /// The liquid-glass path is the header glassColor's milky wash **plus**
-  /// [scrimColor] over it — the scrim alone reads clearly darker than the
-  /// band, so the two layers are composited into one equivalent colour.
-  static Color standInWashColor(
-    BuildContext context, {
-    double? wallpaperTopLuminance,
-  }) {
+  /// [HyperosBlurredHeader.homePageRegionTintColor]. The liquid-glass path is
+  /// just the header glassColor's milky tint — the band paints no extra
+  /// legibility scrim any more, so neither does the stand-in.
+  static Color standInWashColor(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
     if (useBlur && appearance.glassMode == FrostedGlassMode.liquidGlass) {
-      final glass = HyperosLiquidGlassSurface.settingsForRole(
+      return HyperosLiquidGlassSurface.settingsForRole(
         role: HyperosLiquidGlassRole.header,
         brightness: Theme.of(context).brightness,
         tuning: appearance.liquidGlassTuning,
       ).glassColor;
-      return _stackedWash(
-        glass,
-        scrimColor(context, wallpaperTopLuminance: wallpaperTopLuminance),
-      );
     }
     return HyperosBlurredHeader.homePageRegionTintColor(
       context,
       withBlur: useBlur,
-    );
-  }
-
-  /// Composites two translucent washes into the one equivalent translucent
-  /// colour of painting [over] on top of [under], over any backdrop.
-  static Color _stackedWash(Color under, Color over) {
-    final overA = over.a;
-    final underA = under.a * (1 - overA);
-    final outA = overA + underA;
-    if (outA <= 0) {
-      return const Color(0x00000000);
-    }
-    double channel(double u, double o) => (o * overA + u * underA) / outA;
-    return Color.from(
-      alpha: outA,
-      red: channel(under.r, over.r),
-      green: channel(under.g, over.g),
-      blue: channel(under.b, over.b),
-    );
-  }
-
-  /// Polarity-correct legibility scrim for this band.
-  ///
-  /// The generic sheet/header fill in [HyperosLiquidGlassSurface] keys off the
-  /// *theme* brightness, which is wrong here: with a light theme over a dark
-  /// wallpaper it washes the band white while the ink is already white. Follow
-  /// the sampled wallpaper luminance instead, and fall back to the theme when
-  /// no sample is available.
-  Widget _scrim(BuildContext context) {
-    final color = scrimColor(
-      context,
-      wallpaperTopLuminance: wallpaperTopLuminance,
-    );
-    return Positioned.fill(
-      child: IgnorePointer(child: ColoredBox(color: color)),
     );
   }
 
@@ -334,12 +281,11 @@ class HomePageChromeGlassFill extends StatelessWidget {
         borderRadius: borderRadius,
         instantUnderlay: false,
         useAncestorBackdropGroup: useAncestorBackdropGroup,
-        // This band paints its own wallpaper-aware scrim below.
+        // 与弹窗/菜单等其他液态玻璃表面同材质：不再为可读性叠加 scrim，
+        // chrome 文字对比度由墨色极性（homePageChromeForegroundForLuminance）
+        // 保证。
         contentLegibilityFill: false,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [_scrim(context), fill],
-        ),
+        child: fill,
       );
     }
 

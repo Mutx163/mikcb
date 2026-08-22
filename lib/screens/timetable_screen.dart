@@ -610,7 +610,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                 weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
                 includeStatusBar: statusBarShowsBackdrop,
                 weekdayBarHeight: _weekDayHeaderHeight,
-                wallpaperTopLuminance: _wallpaperTopLuminance,
               ),
             HyperosRootPage(
               overlayHeader: false,
@@ -4372,13 +4371,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             Positioned.fill(
               child: IgnorePointer(
                 child: ColoredBox(
-                  color: HomePageChromeGlassFill.standInWashColor(
-                    context,
-                    // Card region, not chrome band: scrim polarity must match
-                    // the wallpaper actually behind this card.
-                    wallpaperTopLuminance:
-                        _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
-                  ),
+                  // 与首页 chrome 玻璃带同观感：液态玻璃下只有玻璃本色，
+                  // 不再叠加可读性 scrim。
+                  color: HomePageChromeGlassFill.standInWashColor(context),
                 ),
               ),
             ),
