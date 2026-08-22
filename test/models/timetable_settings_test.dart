@@ -895,12 +895,18 @@ void main() {
     test('menu style roundtrips in json', () {
       final settings = TimetableSettings.defaults().copyWith(
         homeMenuStyle: HomeMenuStyle.grid,
+        // copyWith 会补回钉住的「课表设置」。
         homeGridMenuActions: ['tasks', 'overview', 'addCourse'],
       );
 
       final restored = TimetableSettings.fromJson(settings.toJson());
       expect(restored.homeMenuStyle, HomeMenuStyle.grid);
-      expect(restored.homeGridMenuActions, ['tasks', 'overview', 'addCourse']);
+      expect(restored.homeGridMenuActions, [
+        'tasks',
+        'overview',
+        'addCourse',
+        HomeGridMenu.pinnedActionId,
+      ]);
     });
 
     test('grid order dedupes but leaves id validity to the ui layer', () {
@@ -919,6 +925,7 @@ void main() {
         'overview',
         'bogus_action',
         'support',
+        HomeGridMenu.pinnedActionId,
       ]);
     });
 
@@ -946,7 +953,57 @@ void main() {
         ..['homeGridMenuActions'] = <Object?>['exams', 42, null, 'support'];
 
       final restored = TimetableSettings.fromJson(json);
-      expect(restored.homeGridMenuActions, ['exams', 'support']);
+      expect(restored.homeGridMenuActions, [
+        'exams',
+        'support',
+        HomeGridMenu.pinnedActionId,
+      ]);
+    });
+
+    test('settings entry is pinned back when missing', () {
+      // 钉住「课表设置」是防呆：删光可达设置的入口后，用户就再也进不了
+      // 自定义编辑器（先有鸡还是先有蛋）。解析路径强制补回。
+      final json = TimetableSettings.defaults().toJson()
+        ..['homeGridMenuActions'] = ['overview', 'tasks', 'support'];
+
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeGridMenuActions, [
+        'overview',
+        'tasks',
+        'support',
+        HomeGridMenu.pinnedActionId,
+      ]);
+    });
+
+    test('pinned entry evicts the last slot when grid is full', () {
+      // 满 8 个且没有 settings：挤掉末位补回钉住项，保证不超槽。
+      final json = TimetableSettings.defaults().toJson()
+        ..['homeGridMenuActions'] = [
+          'update',
+          'overview',
+          'statistics',
+          'addCourse',
+          'exams',
+          'importCourses',
+          'tasks',
+          'support',
+        ];
+
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeGridMenuActions.length, HomeGridMenu.maxSlots);
+      expect(restored.homeGridMenuActions.last, HomeGridMenu.pinnedActionId);
+      // 满槽时被挤掉的是末位的 support——钉住项优先级高于普通条目。
+      expect(restored.homeGridMenuActions.contains('support'), isFalse);
+    });
+
+    test('copyWith also enforces the pinned entry on write', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        homeGridMenuActions: ['tasks'],
+      );
+      expect(settings.homeGridMenuActions, [
+        'tasks',
+        HomeGridMenu.pinnedActionId,
+      ]);
     });
   });
 }

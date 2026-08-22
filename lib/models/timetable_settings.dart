@@ -128,11 +128,20 @@ extension HomeMenuStyleX on HomeMenuStyle {
 
 /// 八宫格菜单的槽位约束与默认排列。
 ///
-/// 动作 id 与 UI 层 HomeTopMenuAction.name 一一对应；模型层不感知具体
-/// 枚举（避免反向依赖 widgets），未知 id 由 UI 层解析时丢弃。
+/// id 是稳定持久化主键（内置九项沿用旧 HomeTopMenuAction.name，其余
+/// 来自 UI 目录 kHomeMenuCatalog）；模型层不感知具体条目含义（避免
+/// 反向依赖 widgets），未知 id 由 UI 层解析时丢弃。
 abstract final class HomeGridMenu {
   /// 八宫格最多容纳的按钮数量（4 列 × 2 行）。
   static const int maxSlots = 8;
+
+  /// 钉死的「课表设置」入口 id。
+  ///
+  /// 它是回到八宫格自定义编辑器的唯一稳定路径（设置 → 外观 → 自定义
+  /// 八宫格按钮）。若允许移除，用户把可达设置的入口删光后就再也进不了
+  /// 编辑器重新加回——先有鸡还是先有蛋的死锁。因此任何持久化排列都
+  /// 强制包含它（仍可拖动排序，只是不可移除）。
+  static const String pinnedActionId = 'settings';
 
   /// v2.0.5.5 已发布版本的默认排列（不含后来新增的任务入口）。
   static const List<String> defaultActions = [
@@ -142,25 +151,33 @@ abstract final class HomeGridMenu {
     'addCourse',
     'exams',
     'importCourses',
-    'settings',
+    pinnedActionId,
     'support',
   ];
 
-  /// 去重、剔除非字符串项并截断到 [maxSlots]。空输入保持空表——渲染层
-  /// 会把空表回退成 [defaultActions]，这样缺 key 与脏数据走同一条路。
+  /// 去重、剔除非字符串项并截断到 [maxSlots]，最后保证钉住项在场。
+  /// 空输入保持空表——渲染层会把空表回退成 [defaultActions]（本身
+  /// 含钉住项），缺 key 与脏数据走同一条路。
   static List<String> normalize(Iterable<Object?>? raw) {
     if (raw == null) {
       return const <String>[];
     }
-    final seen = <String>{};
+    final unique = <String>[];
     for (final item in raw) {
-      if (item is String && item.isNotEmpty && seen.add(item)) {
-        if (seen.length >= maxSlots) {
-          break;
-        }
+      if (item is String && item.isNotEmpty && !unique.contains(item)) {
+        unique.add(item);
       }
     }
-    return List<String>.unmodifiable(seen);
+    if (unique.length > maxSlots) {
+      unique.removeRange(maxSlots, unique.length);
+    }
+    if (!unique.contains(pinnedActionId)) {
+      if (unique.length >= maxSlots) {
+        unique.removeLast();
+      }
+      unique.add(pinnedActionId);
+    }
+    return List<String>.unmodifiable(unique);
   }
 }
 
@@ -2530,7 +2547,11 @@ class TimetableSettings {
           timetableHomeViewMode ?? this.timetableHomeViewMode,
       homeNavigationForm: homeNavigationForm ?? this.homeNavigationForm,
       homeMenuStyle: homeMenuStyle ?? this.homeMenuStyle,
-      homeGridMenuActions: homeGridMenuActions ?? this.homeGridMenuActions,
+      // 写入也过一遍归一：钉住项不因调用方疏漏而丢失（解析路径同）。
+      homeGridMenuActions:
+          homeGridMenuActions == null
+              ? this.homeGridMenuActions
+              : HomeGridMenu.normalize(homeGridMenuActions),
       glassDockLayout: glassDockLayout ?? this.glassDockLayout,
       glassDockInsetClearance:
           glassDockInsetClearance ?? this.glassDockInsetClearance,
