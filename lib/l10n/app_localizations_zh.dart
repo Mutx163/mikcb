@@ -9331,7 +9331,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsEntryTitle => '诊断';
 
   @override
-  String get memoryStatsEntryTitle => '内存状态';
+  String get memoryStatsEntryTitle => '内存监控';
 
   @override
   String get generalSettingsTitle => '通用';
@@ -9819,6 +9819,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeGridEditorAllAdded => '所有入口都已启用';
+
+  @override
+  String get homeGridEditorMaxReached => '已达上限';
+
+  @override
+  String get homeGridEditorPinnedTooltip => '此入口用于重新打开本页，不能移除';
+
+  @override
+  String get homeMenuCategoryFeatures => '功能入口';
+
+  @override
+  String get homeMenuCategoryData => '数据与同步';
+
+  @override
+  String get homeMenuCategoryPreferences => '偏好设置';
+
+  @override
+  String get homeMenuCategoryAbout => '关于与支持';
 
   @override
   String get classAlarmEntryTitle => '上课闹钟';
@@ -19292,7 +19310,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get diagnosticsEntryTitle => '診斷';
 
   @override
-  String get memoryStatsEntryTitle => '記憶體狀態';
+  String get memoryStatsEntryTitle => '記憶體監控';
 
   @override
   String get generalSettingsTitle => '一般';
@@ -19780,6 +19798,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeGridEditorAllAdded => '所有入口都已啟用';
+
+  @override
+  String get homeGridEditorMaxReached => '已達上限';
+
+  @override
+  String get homeGridEditorPinnedTooltip => '此入口用於重新開啟本頁，無法移除';
+
+  @override
+  String get homeMenuCategoryFeatures => '功能入口';
+
+  @override
+  String get homeMenuCategoryData => '資料與同步';
+
+  @override
+  String get homeMenuCategoryPreferences => '偏好設定';
+
+  @override
+  String get homeMenuCategoryAbout => '關於與支援';
 
   @override
   String get classAlarmEntryTitle => '上課鬧鐘';
@@ -29253,7 +29289,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get diagnosticsEntryTitle => '診斷';
 
   @override
-  String get memoryStatsEntryTitle => '記憶體狀態';
+  String get memoryStatsEntryTitle => '記憶體監控';
 
   @override
   String get generalSettingsTitle => '一般';
@@ -29741,6 +29777,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeGridEditorAllAdded => '所有入口都已啟用';
+
+  @override
+  String get homeGridEditorMaxReached => '已達上限';
+
+  @override
+  String get homeGridEditorPinnedTooltip => '此入口用於重新開啟本頁，無法移除';
+
+  @override
+  String get homeMenuCategoryFeatures => '功能入口';
+
+  @override
+  String get homeMenuCategoryData => '資料與同步';
+
+  @override
+  String get homeMenuCategoryPreferences => '偏好設定';
+
+  @override
+  String get homeMenuCategoryAbout => '關於與支援';
 
   @override
   String get classAlarmEntryTitle => '上課鬧鐘';

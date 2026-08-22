@@ -1,40 +1,41 @@
 part of '../timetable_settings_screen.dart';
 
 /// 八宫格按钮自定义编辑器。
-///
-/// 顶部预览当前排列；「已启用」列表支持拖动排序与逐个移除（至少保留
-/// 一个入口）；「可添加」列出尚未启用的动作，点击即加入。所有改动即时
-/// 回调 [onChanged]，由外观页统一走草稿 + 自动保存队列持久化。
+/// 候选来自 kHomeMenuCatalog（全应用的二级页面与功能），按分类分组展示；
+/// 「已启用」支持拖动排序与逐个移除（至少保留一个入口）。所有改动即时
+/// 回调 onChanged，由外观页统一走草稿 + 自动保存队列持久化。
 class _HomeGridMenuEditorScreen extends StatefulWidget {
   const _HomeGridMenuEditorScreen({
-    required this.initialActions,
+    required this.initialIds,
     required this.onChanged,
   });
 
-  final List<HomeTopMenuAction> initialActions;
-  final ValueChanged<List<HomeTopMenuAction>> onChanged;
+  final List<String> initialIds;
+  final ValueChanged<List<String>> onChanged;
 
   @override
   State<_HomeGridMenuEditorScreen> createState() =>
       _HomeGridMenuEditorScreenState();
 }
 
-class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
-  late List<HomeTopMenuAction> _actions = List.of(widget.initialActions);
+class _HomeGridMenuEditorScreenState
+    extends State<_HomeGridMenuEditorScreen> {
+  late List<String> _ids = [
+    // 目录可能随版本演进（改名/下线入口）；种子阶段就丢弃失效 id，
+    // 保证编辑器里出现的每一行都能解析出图标与标题。
+    for (final id in widget.initialIds)
+      if (homeMenuEntryById(id) != null) id,
+  ];
 
   int get _maxSlots => HomeGridMenu.maxSlots;
 
-  bool get _canAdd => _actions.length < _maxSlots;
+  bool get _canAdd => _ids.length < _maxSlots;
 
-  bool get _canRemove => _actions.length > 1;
+  bool get _canRemove => _ids.length > 1;
 
-  List<HomeTopMenuAction> get _availableActions => HomeTopMenuAction.values
-      .where((action) => !_actions.contains(action))
-      .toList(growable: false);
-
-  void _commit(List<HomeTopMenuAction> next) {
+  void _commit(List<String> next) {
     setState(() {
-      _actions = next;
+      _ids = next;
     });
     widget.onChanged(List.of(next));
   }
@@ -42,32 +43,29 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
   // onReorderItem 已自动校正下移时的 newIndex，无需手动 -1。
   void _reorder(int oldIndex, int newIndex) {
     setState(() {
-      final moved = _actions.removeAt(oldIndex);
-      _actions.insert(newIndex, moved);
+      final moved = _ids.removeAt(oldIndex);
+      _ids.insert(newIndex, moved);
     });
-    widget.onChanged(List.of(_actions));
+    widget.onChanged(List.of(_ids));
   }
 
-  void _add(HomeTopMenuAction action) {
-    if (!_canAdd || _actions.contains(action)) {
+  void _add(String id) {
+    if (!_canAdd || _ids.contains(id)) {
       return;
     }
-    _commit([..._actions, action]);
+    _commit([..._ids, id]);
   }
 
   void _removeAt(int index) {
     if (!_canRemove) {
       return;
     }
-    final next = List.of(_actions)..removeAt(index);
+    final next = List.of(_ids)..removeAt(index);
     _commit(next);
   }
 
   void _resetToDefault() {
-    _commit([
-      for (final id in HomeGridMenu.defaultActions)
-        HomeTopMenuActionIdX.fromId(id),
-    ].whereType<HomeTopMenuAction>().toList(growable: false));
+    _commit(HomeGridMenu.defaultActions);
   }
 
   @override
@@ -78,30 +76,20 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
       title: Text(l10n.homeGridCustomizeTitle),
       child: HyperosListView(
         children: [
-          _buildPreviewCard(context, l10n),
+          _buildPreviewCard(context),
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.homeGridEditorEnabledTitle),
           _buildEnabledReorderList(context, l10n),
           HyperosSectionDescription(
             text: l10n.homeGridEditorHintBody(_maxSlots),
           ),
-          const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.homeGridEditorAvailableTitle),
-          if (_availableActions.isNotEmpty)
-            HyperosListGroup(
-              children: [
-                for (final action in _availableActions)
-                  HyperosListTile(
-                    icon: homeTopMenuActionIcon(action),
-                    title: homeTopMenuActionTitle(l10n, action),
-                    onTap: () => _add(action),
-                  ),
-              ],
-            )
-          else
-            HyperosSectionDescription(
-              text: l10n.homeGridEditorAllAdded,
+          for (final category in HomeMenuEntryCategory.values) ...[
+            const HyperosSectionGap(),
+            HyperosSectionLabel(
+              text: homeMenuEntryCategoryLabel(l10n, category),
             ),
+            ..._buildAvailableGroup(context, l10n, category),
+          ],
           const HyperosSectionGap(),
           HyperosListGroup(
             children: [
@@ -118,54 +106,81 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
     );
   }
 
-  Widget _buildPreviewCard(BuildContext context, AppLocalizations l10n) {
+  /// 某分类下尚未启用的候选；全部启用时给一句说明而不是空组。
+  List<Widget> _buildAvailableGroup(
+    BuildContext context,
+    AppLocalizations l10n,
+    HomeMenuEntryCategory category,
+  ) {
+    final candidates = kHomeMenuCatalog
+        .where(
+          (entry) => entry.category == category && !_ids.contains(entry.id),
+        )
+        .toList(growable: false);
+    if (candidates.isEmpty) {
+      return [
+        HyperosSectionDescription(text: l10n.homeGridEditorAllAdded),
+      ];
+    }
+    return [
+      HyperosListGroup(
+        children: [
+          for (final entry in candidates)
+            HyperosListTile(
+              icon: entry.icon,
+              title: entry.title(l10n),
+              details: _canAdd ? null : l10n.homeGridEditorMaxReached,
+              onTap: _canAdd ? () => _add(entry.id) : null,
+            ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildPreviewCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return HyperosCard(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 12,
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 12,
-            children: [
-              for (final action in _actions)
-                SizedBox(
-                  width: 72,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: HyperosBlurredHeader.accentSurfaceTintColor(
-                            Theme.of(context).colorScheme.primary,
-                          ),
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(14),
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            homeTopMenuActionIcon(action),
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                        ),
+          for (final id in _ids)
+            SizedBox(
+              width: 72,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: HyperosBlurredHeader.accentSurfaceTintColor(
+                        Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        homeTopMenuActionTitle(l10n, action),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: HyperosTypography.listDetail(context),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(14),
                       ),
-                    ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        homeMenuEntryById(id)?.icon ?? Icons.help_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 24,
+                      ),
+                    ),
                   ),
-                ),
-            ],
-          ),
+                  const SizedBox(height: 5),
+                  Text(
+                    homeMenuEntryById(id)?.title(l10n) ?? id,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -176,7 +191,7 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       buildDefaultDragHandles: false,
-      itemCount: _actions.length,
+      itemCount: _ids.length,
       onReorderItem: _reorder,
       proxyDecorator: (child, index, animation) {
         return AnimatedBuilder(
@@ -193,15 +208,22 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
         );
       },
       itemBuilder: (context, index) {
-        final action = _actions[index];
+        final id = _ids[index];
+        final entry = homeMenuEntryById(id);
+        // 「课表设置」是回到本页的稳定路径，钉死不可移除（模型层同样
+        // 强制），否则删光可达设置的入口后编辑器自身就进不来了。
+        final isPinned = id == HomeGridMenu.pinnedActionId;
+        final canRemove = _canRemove && !isPinned;
         return _GridSlotRow(
-          key: ValueKey(action.id),
+          key: ValueKey(id),
           index: index,
-          icon: homeTopMenuActionIcon(action),
-          title: homeTopMenuActionTitle(l10n, action),
-          canRemove: _canRemove,
+          icon: entry?.icon ?? Icons.help_outline,
+          title: entry?.title(l10n) ?? id,
+          canRemove: canRemove,
           onRemove: () => _removeAt(index),
-          removeTooltip: l10n.homeGridEditorRemoveTooltip,
+          removeTooltip: isPinned
+              ? l10n.homeGridEditorPinnedTooltip
+              : l10n.homeGridEditorRemoveTooltip,
         );
       },
     );
@@ -209,8 +231,7 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
 }
 
 /// 「已启用」单行：拖动手柄 + 图标徽章 + 标题 + 移除按钮。
-///
-/// 视觉对齐 [HyperosListTile]（同卡色、同圆角、同 56dp 行高），但不用
+/// 视觉对齐 HyperosListTile（同卡色、同圆角、同 56dp 行高），但不用
 /// ListTile 本体——行尾是移除按钮而非 chevron，行首多一个拖动手柄。
 class _GridSlotRow extends StatelessWidget {
   const _GridSlotRow({

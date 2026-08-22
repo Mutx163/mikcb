@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import 'package:university_timetable/widgets/home_menu_catalog.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 import '../helpers_test_app.dart';
@@ -155,7 +156,7 @@ void main() {
     tester,
   ) async {
     final anchorKey = GlobalKey();
-    late Future<HomeTopMenuAction?> menuResult;
+    late Future<String?> menuResult;
 
     await tester.pumpWidget(
       TestApp(
@@ -168,7 +169,7 @@ void main() {
                   menuResult = showHomeTopGridMenuSheet(
                     context,
                     hasAvailableUpdate: false,
-                    actions: resolveHomeGridMenuActions(
+                    entries: resolveHomeGridMenuEntries(
                       TimetableSettings.defaults(),
                     ),
                   );
@@ -203,12 +204,12 @@ void main() {
     await tester.tap(find.text('课程总览'));
     await tester.pumpAndSettle();
 
-    expect(await menuResult, HomeTopMenuAction.overview);
+    expect(await menuResult, 'overview');
   });
 
   testWidgets('grid menu honors custom order and update badge', (tester) async {
     final anchorKey = GlobalKey();
-    late Future<HomeTopMenuAction?> menuResult;
+    late Future<String?> menuResult;
 
     await tester.pumpWidget(
       TestApp(
@@ -221,9 +222,11 @@ void main() {
                   menuResult = showHomeTopGridMenuSheet(
                     context,
                     hasAvailableUpdate: true,
-                    actions: resolveHomeGridMenuActions(
+                    entries: resolveHomeGridMenuEntries(
                       TimetableSettings.defaults().copyWith(
                         homeMenuStyle: HomeMenuStyle.grid,
+                        // copyWith 会钉住 settings，这里断言的是自定义
+                        // 排列顺序本身，settings 在尾部不影响本例。
                         homeGridMenuActions: ['tasks', 'support'],
                       ),
                     ),
@@ -251,6 +254,6 @@ void main() {
     await tester.tap(find.text('任务清单'));
     await tester.pumpAndSettle();
 
-    expect(await menuResult, HomeTopMenuAction.tasks);
+    expect(await menuResult, 'tasks');
   });
 }

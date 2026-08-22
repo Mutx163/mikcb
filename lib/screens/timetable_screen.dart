@@ -43,6 +43,7 @@ import '../widgets/course_note_sheet.dart';
 import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
+import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
@@ -54,11 +55,6 @@ import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
-import 'course_overview_screen.dart';
-import 'course_statistics_screen.dart';
-import 'exam_list_screen.dart';
-import 'support_creator_screen.dart';
-import 'task_list_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -7801,21 +7797,25 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
 
     // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层，
-    // 「列表」是当前的锚定弹窗；排列只在八宫格下生效。
-    final selected = settings.homeMenuStyle == HomeMenuStyle.grid
-        ? await showHomeTopGridMenuSheet(
-            context,
-            hasAvailableUpdate: _hasAvailableUpdate,
-            actions: resolveHomeGridMenuActions(settings),
-          )
-        : await showHomeTopMenuSheet(
-            context,
-            hasAvailableUpdate: _hasAvailableUpdate,
-            anchorKey: _topMenuButtonKey,
-            foregroundColor: menuForeground,
-          );
+    // 「列表」是当前的锚定弹窗；排列只在八宫格下生效。两种形态统一以
+    // 入口 id 回传，再经目录分发到全应用任意二级页面/功能。
+    final String? selectedId;
+    if (settings.homeMenuStyle == HomeMenuStyle.grid) {
+      selectedId = await showHomeTopGridMenuSheet(
+        context,
+        hasAvailableUpdate: _hasAvailableUpdate,
+        entries: resolveHomeGridMenuEntries(settings),
+      );
+    } else {
+      selectedId = (await showHomeTopMenuSheet(
+        context,
+        hasAvailableUpdate: _hasAvailableUpdate,
+        anchorKey: _topMenuButtonKey,
+        foregroundColor: menuForeground,
+      ))?.name;
+    }
 
-    if (!mounted || selected == null) {
+    if (!mounted || selectedId == null) {
       return;
     }
 
@@ -7825,32 +7825,19 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    switch (selected) {
-      case HomeTopMenuAction.update:
-        await _openTopMenuUpdatePage();
-      case HomeTopMenuAction.overview:
-        await _openTopMenuPage(const CourseOverviewScreen());
-      case HomeTopMenuAction.statistics:
-        await _openTopMenuPage(const CourseStatisticsScreen());
-      case HomeTopMenuAction.addCourse:
+    switch (selectedId) {
+      // 这两项依赖首页宿主上下文：添加课程要带日视图选中日期弹层，
+      // 更新入口要先做版本检查再进详情页。其余全部走目录分发。
+      case 'addCourse':
         await _navigateToAddCourse(context);
-      case HomeTopMenuAction.exams:
-        await _openTopMenuPage(const ExamListScreen());
-      case HomeTopMenuAction.importCourses:
-        await _openTopMenuPage(const CourseImportScreen());
-      case HomeTopMenuAction.tasks:
-        await _openTopMenuPage(const TaskListScreen());
-      case HomeTopMenuAction.settings:
-        await _openTopMenuPage(const TimetableSettingsScreen());
-      case HomeTopMenuAction.support:
-        await _openTopMenuPage(const SupportCreatorScreen());
+      case 'update':
+        await _openTopMenuUpdatePage();
+      default:
+        final entry = homeMenuEntryById(selectedId);
+        if (entry != null) {
+          await entry.open(context);
+        }
     }
-  }
-
-  Future<void> _openTopMenuPage(Widget page) {
-    return Navigator.of(
-      context,
-    ).push<void>(HyperosPageRoute<void>(builder: (_) => page));
   }
 
   Future<void> _openTopMenuUpdatePage() async {

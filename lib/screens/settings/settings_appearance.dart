@@ -200,7 +200,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 iconAccent: HyperosIconColors.blue,
                 title: l10n.homeGridCustomizeTitle,
                 details: l10n.homeGridCustomizeDetails(
-                  resolveHomeGridMenuActions(_draft).length,
+                  resolveHomeGridMenuEntries(_draft).length,
                   HomeGridMenu.maxSlots,
                 ),
                 onTap: () async {
@@ -208,14 +208,15 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     context,
                     settings: const RouteSettings(name: '/settings/home-menu'),
                     builder: (_) => _HomeGridMenuEditorScreen(
-                      initialActions: resolveHomeGridMenuActions(_draft),
-                      onChanged: (actions) {
+                      initialIds: [
+                        for (final entry in resolveHomeGridMenuEntries(
+                          _draft,
+                        ))
+                          entry.id,
+                      ],
+                      onChanged: (ids) {
                         _updateDraft(
-                          _draft.copyWith(
-                            homeGridMenuActions: [
-                              for (final action in actions) action.id,
-                            ],
-                          ),
+                          _draft.copyWith(homeGridMenuActions: ids),
                         );
                       },
                     ),

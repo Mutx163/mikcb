@@ -18,71 +18,46 @@ enum HomeTopMenuAction {
   support,
 }
 
-extension HomeTopMenuActionIdX on HomeTopMenuAction {
-  /// 持久化 id（与 [HomeGridMenu.defaultActions] 里的字符串对应）。
-  String get id => name;
+/// 八宫格候选入口的分类（编辑器分组展示用）。
+enum HomeMenuEntryCategory { features, data, preferences, about }
 
-  /// 从持久化 id 解析动作；未知 id 返回 null，由调用方丢弃。
-  static HomeTopMenuAction? fromId(String? id) {
-    if (id == null) {
-      return null;
-    }
-    for (final action in HomeTopMenuAction.values) {
-      if (action.name == id) {
-        return action;
-      }
-    }
-    return null;
-  }
-}
-
-/// 把设置里持久化的八宫格排列解析成动作序列：丢弃未知 id、保持用户
-/// 排序；空表或全部失效时回退到 v2.0.5.5 的默认排列。
-List<HomeTopMenuAction> resolveHomeGridMenuActions(
-  TimetableSettings settings,
-) {
-  final resolved = <HomeTopMenuAction>[];
-  for (final id in settings.homeGridMenuActions) {
-    final action = HomeTopMenuActionIdX.fromId(id);
-    if (action != null && !resolved.contains(action)) {
-      resolved.add(action);
-    }
-  }
-  if (resolved.isEmpty) {
-    return HomeGridMenu.defaultActions
-        .map(HomeTopMenuActionIdX.fromId)
-        .whereType<HomeTopMenuAction>()
-        .toList(growable: false);
-  }
-  return List.unmodifiable(resolved);
-}
-
-/// 八宫格瓷贴的图标。列表菜单不展示图标，只有瓷贴形态需要。
-IconData homeTopMenuActionIcon(HomeTopMenuAction action) => switch (action) {
-  HomeTopMenuAction.update => Icons.system_update_alt_rounded,
-  HomeTopMenuAction.overview => Icons.dashboard_customize_rounded,
-  HomeTopMenuAction.statistics => Icons.bar_chart_rounded,
-  HomeTopMenuAction.addCourse => Icons.add_circle_outline_rounded,
-  HomeTopMenuAction.exams => Icons.school_outlined,
-  HomeTopMenuAction.importCourses => Icons.file_upload_outlined,
-  HomeTopMenuAction.tasks => Icons.checklist_rounded,
-  HomeTopMenuAction.settings => Icons.tune_rounded,
-  HomeTopMenuAction.support => Icons.favorite_border_rounded,
+String homeMenuEntryCategoryLabel(
+  AppLocalizations l10n,
+  HomeMenuEntryCategory category,
+) => switch (category) {
+  HomeMenuEntryCategory.features => l10n.homeMenuCategoryFeatures,
+  HomeMenuEntryCategory.data => l10n.homeMenuCategoryData,
+  HomeMenuEntryCategory.preferences => l10n.homeMenuCategoryPreferences,
+  HomeMenuEntryCategory.about => l10n.homeMenuCategoryAbout,
 };
 
-/// 八宫格瓷贴的标题（复用列表菜单同一套文案）。
-String homeTopMenuActionTitle(AppLocalizations l10n, HomeTopMenuAction action) =>
-    switch (action) {
-      HomeTopMenuAction.update => l10n.homeMenuUpdateTitle,
-      HomeTopMenuAction.overview => l10n.homeMenuOverviewTitle,
-      HomeTopMenuAction.statistics => l10n.homeMenuStatisticsTitle,
-      HomeTopMenuAction.addCourse => l10n.homeMenuAddCourseTitle,
-      HomeTopMenuAction.exams => l10n.examListTitle,
-      HomeTopMenuAction.importCourses => l10n.homeMenuImportTitle,
-      HomeTopMenuAction.tasks => l10n.homeMenuTasksTitle,
-      HomeTopMenuAction.settings => l10n.homeMenuSettingsTitle,
-      HomeTopMenuAction.support => l10n.homeMenuCoffeeTitle,
-    };
+/// 一个可放入首页右上角八宫格的入口：应用内任意二级页面或功能。
+///
+/// [id] 是持久化主键（设置里的 homeGridMenuActions 存的就是它），
+/// 内置九项沿用 HomeTopMenuAction.name 以兼容旧数据；[open] 负责从
+/// 当前 context 导航，由目录统一提供实现。
+class HomeMenuEntry {
+  const HomeMenuEntry({
+    required this.id,
+    required this.title,
+    required this.icon,
+    required this.category,
+    required this.open,
+  });
+
+  final String id;
+  final String Function(AppLocalizations l10n) title;
+  final IconData icon;
+  final HomeMenuEntryCategory category;
+  final Future<void> Function(BuildContext context) open;
+}
+
+/// 目录条目的标准导航壳：与首页顶部菜单同一条 Hyperos 页面转场路径。
+Future<void> pushHomeMenuPage(BuildContext context, Widget page) {
+  return Navigator.of(
+    context,
+  ).push<void>(HyperosPageRoute<void>(builder: (_) => page));
+}
 
 /// Shows the home screen top-right action menu as a small anchored Miuix list
 /// popup — the same chrome as every other anchored popup in the app: spring
@@ -183,27 +158,30 @@ double _maxMenuTitleHeight({
 }
 
 /// 首页右上角「更多」菜单的八宫格形态——v2.0.5.5 已发布版本的底部弹层：
-/// 4 列图标瓷贴、磨砂卡面、更新入口带角标。[actions] 是用户自定义后的
+/// 4 列图标瓷贴、磨砂卡面、更新入口带角标。[entries] 是用户自定义后的
 /// 排列（最多 [HomeGridMenu.maxSlots] 个），不足一行的尾行按同样宽度排布。
-Future<HomeTopMenuAction?> showHomeTopGridMenuSheet(
+///
+/// 返回被点条目的 [HomeMenuEntry.id]，由调用方经目录分发导航；
+/// 点遮罩关闭返回 null。
+Future<String?> showHomeTopGridMenuSheet(
   BuildContext context, {
   required bool hasAvailableUpdate,
-  required List<HomeTopMenuAction> actions,
+  required List<HomeMenuEntry> entries,
 }) {
-  return showHomeHyperosSheet<HomeTopMenuAction>(
+  return showHomeHyperosSheet<String>(
     context: context,
     builder: (sheetContext) =>
-        _HomeTopGridMenuSheet(actions: actions, hasAvailableUpdate: hasAvailableUpdate),
+        _HomeTopGridMenuSheet(entries: entries, hasAvailableUpdate: hasAvailableUpdate),
   );
 }
 
 class _HomeTopGridMenuSheet extends StatelessWidget {
   const _HomeTopGridMenuSheet({
-    required this.actions,
+    required this.entries,
     required this.hasAvailableUpdate,
   });
 
-  final List<HomeTopMenuAction> actions;
+  final List<HomeMenuEntry> entries;
   final bool hasAvailableUpdate;
 
   @override
@@ -220,7 +198,7 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
     const columnsPerRow = 4;
 
     final menuTitles = [
-      for (final action in actions) homeTopMenuActionTitle(l10n, action),
+      for (final entry in entries) entry.title(l10n),
     ];
     final titleStyle = typo.body.xs2.copyWith(
       fontWeight: FontWeight.w400,
@@ -258,23 +236,19 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
                   textDirection: Directionality.of(context),
                 );
 
-          Widget tile({
-            required IconData icon,
-            required String title,
-            required HomeTopMenuAction action,
-            Color? accentColor,
-            String? badgeText,
-          }) {
+          Widget tile(HomeMenuEntry entry) {
+            final isUpdateSlot =
+                entry.id == 'update' && hasAvailableUpdate;
             return SizedBox(
               width: itemWidth,
               child: _HomeMenuActionTile(
-                icon: icon,
-                title: title,
+                icon: entry.icon,
+                title: entry.title(l10n),
                 titleStyle: titleStyle,
                 titleAreaHeight: titleAreaHeight,
-                accentColor: accentColor,
-                badgeText: badgeText,
-                onTap: () => Navigator.of(context).pop(action),
+                accentColor: isUpdateSlot ? colorScheme.primary : null,
+                badgeText: isUpdateSlot ? l10n.updateLabel : null,
+                onTap: () => Navigator.of(context).pop(entry.id),
               ),
             );
           }
@@ -296,26 +270,13 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
           // 用户自定义排列按每行 [columnsPerRow] 个切行；行宽与默认满 8 个
           // 时完全一致，尾行不足时靠左排布，不拉伸瓷贴。
           final rows = <List<Widget>>[];
-          for (var start = 0; start < actions.length; start += columnsPerRow) {
-            final slice = actions.sublist(
-              start,
-              math.min(start + columnsPerRow, actions.length),
-            );
+          for (var start = 0; start < entries.length; start += columnsPerRow) {
             rows.add([
-              for (final action in slice)
-                tile(
-                  icon: homeTopMenuActionIcon(action),
-                  title: homeTopMenuActionTitle(l10n, action),
-                  action: action,
-                  badgeText:
-                      action == HomeTopMenuAction.update && hasAvailableUpdate
-                      ? l10n.updateLabel
-                      : null,
-                  accentColor:
-                      action == HomeTopMenuAction.update && hasAvailableUpdate
-                      ? colorScheme.primary
-                      : null,
-                ),
+              for (final entry in entries.sublist(
+                start,
+                math.min(start + columnsPerRow, entries.length),
+              ))
+                tile(entry),
             ]);
           }
 

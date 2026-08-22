@@ -9647,7 +9647,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get diagnosticsEntryTitle => '진단';
 
   @override
-  String get memoryStatsEntryTitle => '메모리 상태';
+  String get memoryStatsEntryTitle => '메모리 모니터';
 
   @override
   String get generalSettingsTitle => '일반';
@@ -10141,6 +10141,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeGridEditorAllAdded => '모든 항목이 사용 중입니다';
+
+  @override
+  String get homeGridEditorMaxReached => '한도 초과';
+
+  @override
+  String get homeGridEditorPinnedTooltip =>
+      '이 항목은 이 페이지를 다시 여는 경로이므로 제거할 수 없습니다';
+
+  @override
+  String get homeMenuCategoryFeatures => '기능';
+
+  @override
+  String get homeMenuCategoryData => '데이터 및 동기화';
+
+  @override
+  String get homeMenuCategoryPreferences => '환경설정';
+
+  @override
+  String get homeMenuCategoryAbout => '정보 및 지원';
 
   @override
   String get classAlarmEntryTitle => '수업 알람';

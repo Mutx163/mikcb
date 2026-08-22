@@ -16876,7 +16876,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryStatsEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'内存状态'**
+  /// **'内存监控'**
   String get memoryStatsEntryTitle;
 
   /// No description provided for @generalSettingsTitle.
@@ -17826,6 +17826,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'所有入口都已启用'**
   String get homeGridEditorAllAdded;
+
+  /// No description provided for @homeGridEditorMaxReached.
+  ///
+  /// In zh, this message translates to:
+  /// **'已达上限'**
+  String get homeGridEditorMaxReached;
+
+  /// No description provided for @homeGridEditorPinnedTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'此入口用于重新打开本页，不能移除'**
+  String get homeGridEditorPinnedTooltip;
+
+  /// No description provided for @homeMenuCategoryFeatures.
+  ///
+  /// In zh, this message translates to:
+  /// **'功能入口'**
+  String get homeMenuCategoryFeatures;
+
+  /// No description provided for @homeMenuCategoryData.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据与同步'**
+  String get homeMenuCategoryData;
+
+  /// No description provided for @homeMenuCategoryPreferences.
+  ///
+  /// In zh, this message translates to:
+  /// **'偏好设置'**
+  String get homeMenuCategoryPreferences;
+
+  /// No description provided for @homeMenuCategoryAbout.
+  ///
+  /// In zh, this message translates to:
+  /// **'关于与支持'**
+  String get homeMenuCategoryAbout;
 
   /// No description provided for @classAlarmEntryTitle.
   ///

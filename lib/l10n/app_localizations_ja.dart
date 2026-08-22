@@ -9602,7 +9602,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsEntryTitle => '診断';
 
   @override
-  String get memoryStatsEntryTitle => 'メモリ統計';
+  String get memoryStatsEntryTitle => 'メモリ監視';
 
   @override
   String get generalSettingsTitle => '一般';
@@ -10095,6 +10095,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeGridEditorAllAdded => 'すべての入口が表示中です';
+
+  @override
+  String get homeGridEditorMaxReached => '上限に達しました';
+
+  @override
+  String get homeGridEditorPinnedTooltip => 'この入口はこのページを再度開くためのもので、削除はできません';
+
+  @override
+  String get homeMenuCategoryFeatures => '機能';
+
+  @override
+  String get homeMenuCategoryData => 'データと同期';
+
+  @override
+  String get homeMenuCategoryPreferences => '設定';
+
+  @override
+  String get homeMenuCategoryAbout => '情報とサポート';
 
   @override
   String get classAlarmEntryTitle => '授業アラーム';

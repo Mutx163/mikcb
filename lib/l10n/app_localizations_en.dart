@@ -9877,7 +9877,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsEntryTitle => 'Diagnostics';
 
   @override
-  String get memoryStatsEntryTitle => 'Memory Stats';
+  String get memoryStatsEntryTitle => 'Memory monitor';
 
   @override
   String get generalSettingsTitle => 'General';
@@ -10388,6 +10388,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeGridEditorAllAdded => 'All entries are enabled';
+
+  @override
+  String get homeGridEditorMaxReached => 'Limit reached';
+
+  @override
+  String get homeGridEditorPinnedTooltip =>
+      'This entry reopens this page and cannot be removed';
+
+  @override
+  String get homeMenuCategoryFeatures => 'Features';
+
+  @override
+  String get homeMenuCategoryData => 'Data & sync';
+
+  @override
+  String get homeMenuCategoryPreferences => 'Preferences';
+
+  @override
+  String get homeMenuCategoryAbout => 'About & support';
 
   @override
   String get classAlarmEntryTitle => 'Class alarms';

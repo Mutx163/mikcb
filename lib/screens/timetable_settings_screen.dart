@@ -27,7 +27,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
-import '../widgets/home_top_menu.dart';
+import '../widgets/home_menu_catalog.dart';
 import '../widgets/wallpaper_position_picker_sheet.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';
@@ -80,6 +80,25 @@ String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
     return l10n.liveTimeCorrectionDelay(seconds);
   }
   return l10n.liveTimeCorrectionAdvance(seconds.abs());
+}
+
+/// 八宫格等外部入口直达设置子页的工厂。
+///
+/// 各子页类保持库内私有，这里按稳定 id 暴露；未知 id 返回 null，
+/// 由调用方决定回退行为（例如打开设置首页）。
+Widget? settingsSubpageById(String id) {
+  return switch (id) {
+    'generalSettings' => const _GeneralSettingsScreen(),
+    'appearanceSettings' => const _AppearanceSettingsScreen(),
+    'timetablePageSettings' => const _TimetablePageSettingsScreen(),
+    'courseCardSettings' => const _CourseCardSettingsScreen(),
+    'liveSettings' => const _LiveSettingsScreen(),
+    'classAlarmSettings' => const _ClassAlarmSettingsScreen(),
+    'holidaySettings' => const _HolidaySettingsScreen(),
+    'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
+    'diagnosticsSettings' => const _DiagnosticsScreen(),
+    _ => null,
+  };
 }
 
 class TimetableSettingsScreen extends StatelessWidget {
