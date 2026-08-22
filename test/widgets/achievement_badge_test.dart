@@ -27,6 +27,16 @@ void main() {
       ),
     );
 
+    // 回归：未达成的锁定勋章必须可见（灰色态 + 锁角标），
+    // 不能被入场动画的初始透明度 0 藏成空白。
+    final fadeOpacities = tester
+        .widgetList<FadeTransition>(find.byType(FadeTransition))
+        .map((t) => t.opacity.value)
+        .toList();
+    expect(fadeOpacities, isNotEmpty);
+    expect(fadeOpacities, everyElement(1.0));
+    expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+
     expect(find.byType(AchievementBadge), findsOneWidget);
     await tester.tap(find.byType(AchievementBadge));
     await tester.pumpAndSettle();

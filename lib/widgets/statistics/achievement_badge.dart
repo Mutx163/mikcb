@@ -42,6 +42,10 @@ class _AchievementBadgeState extends State<AchievementBadge>
     ).drive(Tween<double>(begin: 0, end: 1));
     if (widget.achievement.isUnlocked) {
       _controller.forward();
+    } else {
+      // 未达成的勋章不播解锁动效，直接置于动效终点，
+      // 否则 FadeTransition 停在 0 会把整个锁定态勋章隐藏成空白。
+      _controller.value = 1.0;
     }
   }
 
