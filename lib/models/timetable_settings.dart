@@ -107,6 +107,63 @@ enum TimetableHomeViewMode { week, day }
 /// 药丸导航，滑动/点击即可切换周课表、日课表与设置。
 enum HomeNavigationForm { classic, glassDock }
 
+/// 首页右上角「更多」菜单形态：
+/// - [list] 锚定在按钮下方的列表弹窗（当前设计）；
+/// - [grid] 底部弹出的八宫格图标瓷贴（v2.0.5.5 已发布版本的样式）。
+enum HomeMenuStyle { list, grid }
+
+extension HomeMenuStyleX on HomeMenuStyle {
+  String get value => switch (this) {
+    HomeMenuStyle.list => 'list',
+    HomeMenuStyle.grid => 'grid',
+  };
+
+  static HomeMenuStyle fromValue(String? value) {
+    return HomeMenuStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => HomeMenuStyle.list,
+    );
+  }
+}
+
+/// 八宫格菜单的槽位约束与默认排列。
+///
+/// 动作 id 与 UI 层 HomeTopMenuAction.name 一一对应；模型层不感知具体
+/// 枚举（避免反向依赖 widgets），未知 id 由 UI 层解析时丢弃。
+abstract final class HomeGridMenu {
+  /// 八宫格最多容纳的按钮数量（4 列 × 2 行）。
+  static const int maxSlots = 8;
+
+  /// v2.0.5.5 已发布版本的默认排列（不含后来新增的任务入口）。
+  static const List<String> defaultActions = [
+    'update',
+    'overview',
+    'statistics',
+    'addCourse',
+    'exams',
+    'importCourses',
+    'settings',
+    'support',
+  ];
+
+  /// 去重、剔除非字符串项并截断到 [maxSlots]。空输入保持空表——渲染层
+  /// 会把空表回退成 [defaultActions]，这样缺 key 与脏数据走同一条路。
+  static List<String> normalize(Iterable<Object?>? raw) {
+    if (raw == null) {
+      return const <String>[];
+    }
+    final seen = <String>{};
+    for (final item in raw) {
+      if (item is String && item.isNotEmpty && seen.add(item)) {
+        if (seen.length >= maxSlots) {
+          break;
+        }
+      }
+    }
+    return List<String>.unmodifiable(seen);
+  }
+}
+
 enum BackToCurrentWeekButtonStyle { inline, floating }
 
 enum SectionTimeDisplayMode { hidden, startOnly, startAndEnd }
@@ -1118,6 +1175,13 @@ class TimetableSettings {
   final HomeTitleStyle homeTitleStyle;
   final TimetableHomeViewMode timetableHomeViewMode;
   final HomeNavigationForm homeNavigationForm;
+
+  /// 首页右上角「更多」菜单形态（列表弹窗 / 八宫格瓷贴）。
+  final HomeMenuStyle homeMenuStyle;
+
+  /// 八宫格菜单的按钮排列（动作 id，见 [HomeGridMenu]）。
+  /// 空表表示使用 [HomeGridMenu.defaultActions] 的默认排列。
+  final List<String> homeGridMenuActions;
   final GlassDockLayout glassDockLayout;
 
   /// 内容避让（[GlassDockLayout.inset]）模式下内容底部到屏幕底的预留
@@ -1316,6 +1380,8 @@ class TimetableSettings {
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
     this.homeNavigationForm = HomeNavigationForm.classic,
+    this.homeMenuStyle = HomeMenuStyle.list,
+    this.homeGridMenuActions = const <String>[],
     this.glassDockLayout = GlassDockLayout.inset,
     this.glassDockInsetClearance = glassDockInsetClearanceDefault,
     this.glassDockShowDayTab = true,
@@ -1636,6 +1702,8 @@ class TimetableSettings {
       'homeTitleStyle': homeTitleStyle.value,
       'timetableHomeViewMode': timetableHomeViewMode.value,
       'homeNavigationForm': homeNavigationForm.value,
+      'homeMenuStyle': homeMenuStyle.value,
+      'homeGridMenuActions': homeGridMenuActions,
       'glassDockLayout': glassDockLayout.value,
       'glassDockInsetClearance': glassDockInsetClearance,
       'glassDockShowDayTab': glassDockShowDayTab,
@@ -1889,6 +1957,12 @@ class TimetableSettings {
       ),
       homeNavigationForm: HomeNavigationFormX.fromValue(
         json['homeNavigationForm'] as String?,
+      ),
+      homeMenuStyle: HomeMenuStyleX.fromValue(
+        json['homeMenuStyle'] as String?,
+      ),
+      homeGridMenuActions: HomeGridMenu.normalize(
+        json['homeGridMenuActions'] as List<Object?>?,
       ),
       glassDockLayout: GlassDockLayoutX.fromValue(
         json['glassDockLayout'] as String?,
@@ -2264,6 +2338,8 @@ class TimetableSettings {
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
     HomeNavigationForm? homeNavigationForm,
+    HomeMenuStyle? homeMenuStyle,
+    List<String>? homeGridMenuActions,
     GlassDockLayout? glassDockLayout,
     double? glassDockInsetClearance,
     bool? glassDockShowDayTab,
@@ -2453,6 +2529,8 @@ class TimetableSettings {
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
       homeNavigationForm: homeNavigationForm ?? this.homeNavigationForm,
+      homeMenuStyle: homeMenuStyle ?? this.homeMenuStyle,
+      homeGridMenuActions: homeGridMenuActions ?? this.homeGridMenuActions,
       glassDockLayout: glassDockLayout ?? this.glassDockLayout,
       glassDockInsetClearance:
           glassDockInsetClearance ?? this.glassDockInsetClearance,

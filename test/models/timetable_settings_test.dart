@@ -883,4 +883,70 @@ void main() {
       isFalse,
     );
   });
+
+  group('home top menu style settings', () {
+    test('defaults to list style with empty grid order', () {
+      final settings = TimetableSettings.defaults();
+
+      expect(settings.homeMenuStyle, HomeMenuStyle.list);
+      expect(settings.homeGridMenuActions, isEmpty);
+    });
+
+    test('menu style roundtrips in json', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        homeMenuStyle: HomeMenuStyle.grid,
+        homeGridMenuActions: ['tasks', 'overview', 'addCourse'],
+      );
+
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(restored.homeMenuStyle, HomeMenuStyle.grid);
+      expect(restored.homeGridMenuActions, ['tasks', 'overview', 'addCourse']);
+    });
+
+    test('grid order dedupes but leaves id validity to the ui layer', () {
+      // 模型层只做结构归一（去重/截断/剔除非字符串）；未知 id 是否有效
+      // 属于 UI 知识，由 resolveHomeGridMenuActions 在渲染时丢弃。
+      final json = TimetableSettings.defaults().toJson()
+        ..['homeGridMenuActions'] = [
+          'overview',
+          'bogus_action',
+          'overview',
+          'support',
+        ];
+
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeGridMenuActions, [
+        'overview',
+        'bogus_action',
+        'support',
+      ]);
+    });
+
+    test('grid order caps at max slots', () {
+      final json = TimetableSettings.defaults().toJson()
+        ..['homeGridMenuActions'] = [
+          'update',
+          'overview',
+          'statistics',
+          'addCourse',
+          'exams',
+          'importCourses',
+          'tasks',
+          'settings',
+          'support',
+        ];
+
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeGridMenuActions.length, HomeGridMenu.maxSlots);
+      expect(restored.homeGridMenuActions.last, 'settings');
+    });
+
+    test('non-string entries are dropped', () {
+      final json = TimetableSettings.defaults().toJson()
+        ..['homeGridMenuActions'] = <Object?>['exams', 42, null, 'support'];
+
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeGridMenuActions, ['exams', 'support']);
+    });
+  });
 }

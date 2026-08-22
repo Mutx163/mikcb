@@ -98,6 +98,9 @@ TimetableSettings applySettingsReset(
       foruiTheme: d.foruiTheme,
       themeSeedColor: d.themeSeedColor,
       homeTitleStyle: d.homeTitleStyle,
+      // 右上角菜单形态与八宫格排列同样是本页暴露的偏好。
+      homeMenuStyle: d.homeMenuStyle,
+      homeGridMenuActions: d.homeGridMenuActions,
       frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
       frostedSheetBlurSigma: d.frostedSheetBlurSigma,
