@@ -5913,11 +5913,13 @@
   "glassDockShowSettingsTabTitle": "설정 탭 표시",
   "glassDockShowAddButtonTitle": "추가 버튼 표시",
   "glassDockShowAddButtonSubtitle": "내비게이션 바 옆에 독립된 원형 버튼을 표시하여 탭하면 바로 수업 추가",
-  "glassDockExtraButtonSemanticLabel": "수업 추가"
+  "glassDockExtraButtonSemanticLabel": "수업 추가",
   "classAlarmEntryTitle": "수업 알람",
   "classAlarmGroupSetup": "알람 추가",
   "classAlarmGroupBehavior": "동작 설정",
   "classAlarmAddAllTitle": "수업 알람 일괄 추가",
+  "classAlarmRangeNext4Weeks": "앞으로 4주",
+  "classAlarmRangeNext8Weeks": "앞으로 8주",
   "classAlarmRangeLabel": "범위",
   "classAlarmRangeRemaining": "이번 주부터 학기 끝까지",
   "classAlarmRangeWhole": "학기 전체",
@@ -5932,7 +5934,7 @@
   "classAlarmSkipUiSubtitle": "바로 쓰기를 시도합니다(일부 기기는 표시됨)",
   "classAlarmOpenClock": "시계 앱 열기",
   "classAlarmConfirmTitle": "반복 알람을 만들까요?",
-  "classAlarmConfirmMessage": ["시계 앱에 생성합니다: {detail}. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.", { detail: "String" }]
+  "classAlarmConfirmMessage": "시계 앱에 생성합니다: {detail}. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.",
   "classAlarmVariableSuffix": "또한 {days}의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.",
   "@classAlarmVariableSuffix": {
     "placeholders": {

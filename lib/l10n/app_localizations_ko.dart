@@ -10097,75 +10097,82 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => '수업 추가';
 
   @override
-  String get morningClassAlarmEntryTitle => '첫 교시 알람';
+  String get classAlarmEntryTitle => '수업 알람';
 
   @override
-  String get morningClassAlarmEntrySubtitle => '첫 수업 알람을 시계 앱에 추가';
+  String get classAlarmGroupSetup => '알람 추가';
 
   @override
-  String get morningClassAlarmGroupSetup => '알람 추가';
+  String get classAlarmGroupBehavior => '동작 설정';
 
   @override
-  String get morningClassAlarmGroupBehavior => '동작 설정';
+  String get classAlarmAddAllTitle => '수업 알람 일괄 추가';
 
   @override
-  String get morningClassAlarmAddAllTitle => '이후 모든 첫 수업 알람 추가';
+  String get classAlarmRangeNext4Weeks => '앞으로 4주';
 
   @override
-  String get morningClassAlarmAddAllSubtitle => '시계 앱에 매주 반복 알람 생성';
+  String get classAlarmRangeNext8Weeks => '앞으로 8주';
 
   @override
-  String get morningClassAlarmLeadTitle => '미리 울리기';
+  String get classAlarmRangeLabel => '범위';
 
   @override
-  String morningClassAlarmLeadMinutesLabel(int minutes) {
+  String get classAlarmRangeRemaining => '이번 주부터 학기 끝까지';
+
+  @override
+  String get classAlarmRangeWhole => '학기 전체';
+
+  @override
+  String get classAlarmLeadTitle => '시간 여유';
+
+  @override
+  String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes분 전';
   }
 
   @override
-  String get morningClassAlarmOpenClock => '시계 앱 열기';
+  String get classAlarmSkipUiTitle => '확인 화면 건너뛰기';
 
   @override
-  String get morningClassAlarmSkipUiTitle => '확인 화면 건너뛰기';
+  String get classAlarmSkipUiSubtitle => '바로 쓰기를 시도합니다(일부 기기는 표시됨)';
 
   @override
-  String get morningClassAlarmSkipUiSubtitle => '바로 쓰기 시도(일부 기기는 표시됨)';
+  String get classAlarmOpenClock => '시계 앱 열기';
 
   @override
-  String get morningClassAlarmWeeklyConfirmTitle => '매주 반복 알람을 추가할까요?';
+  String get classAlarmConfirmTitle => '반복 알람을 만들까요?';
 
   @override
-  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
-    return '시계 앱에 매주 $days 반복되는 $time 알람이 생성됩니다. 시스템 알람은 공휴일과 휴강을 인식하지 못하며 방학 중에도 울립니다. 삭제는 시계 앱에서 해야 합니다.';
+  String classAlarmConfirmMessage(String detail) {
+    return '시계 앱에 생성합니다: $detail. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.';
   }
 
   @override
-  String get morningClassAlarmDaysUnit => '일';
-
-  @override
-  String morningClassAlarmTimeDetail(String weekday, String time) {
-    return '매주 $weekday $time';
+  String classAlarmVariableSuffix(String days) {
+    return '또한 $days의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.';
   }
 
   @override
-  String get morningClassAlarmAddedToast => '시계 앱으로 전달했습니다';
+  String get classAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
 
   @override
-  String get morningClassAlarmLaunchFailedToast => '처리할 시계 앱을 찾을 수 없습니다';
+  String get classAlarmNoDataToast => '선택한 범위에서 시간표를 찾을 수 없습니다';
 
   @override
-  String get morningClassAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
+  String get classAlarmAddedToast => '시계 앱으로 전달했습니다';
 
   @override
-  String get morningClassAlarmPastToast => '이 수업은 이미 시작되었습니다';
+  String get classAlarmLaunchFailedToast => '처리할 시계 앱을 찾을 수 없습니다';
 
   @override
-  String get morningClassAlarmNoCourseToast => '이번 주 해당 요일에 수업이 없습니다';
+  String get classAlarmActionLabel => '이 수업 알람 설정';
 
   @override
-  String get morningClassAlarmTodayOnlyToast =>
-      '단발 알람은 오늘 수업만 지원합니다. 다른 요일은 설정에서 반복 알람을 사용하세요';
+  String get classAlarmCourseConfirmTitle => '이 수업의 반복 알람을 추가할까요?';
 
   @override
-  String get morningClassAlarmActionLabel => '수업 알람 설정';
+  String classAlarmCourseConfirmMessage(String weekday, String time) {
+    return '이 수업에 맞춰 시계 앱에 매주 $weekday $time 반복 알람을 만듭니다. 방학 중에도 울리며 삭제는 시계 앱에서 해야 합니다.';
+  }
 }

@@ -17749,137 +17749,149 @@ abstract class AppLocalizations {
   /// **'添加课程'**
   String get glassDockExtraButtonSemanticLabel;
 
-  /// No description provided for @morningClassAlarmEntryTitle.
+  /// No description provided for @classAlarmEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'早八闹钟'**
-  String get morningClassAlarmEntryTitle;
+  /// **'上课闹钟'**
+  String get classAlarmEntryTitle;
 
-  /// No description provided for @morningClassAlarmEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'把第一节课的闹钟写进系统时钟'**
-  String get morningClassAlarmEntrySubtitle;
-
-  /// No description provided for @morningClassAlarmGroupSetup.
+  /// No description provided for @classAlarmGroupSetup.
   ///
   /// In zh, this message translates to:
   /// **'添加闹钟'**
-  String get morningClassAlarmGroupSetup;
+  String get classAlarmGroupSetup;
 
-  /// No description provided for @morningClassAlarmGroupBehavior.
+  /// No description provided for @classAlarmGroupBehavior.
   ///
   /// In zh, this message translates to:
   /// **'响铃行为'**
-  String get morningClassAlarmGroupBehavior;
+  String get classAlarmGroupBehavior;
 
-  /// No description provided for @morningClassAlarmAddAllTitle.
+  /// No description provided for @classAlarmAddAllTitle.
   ///
   /// In zh, this message translates to:
-  /// **'添加后续所有第一节课闹钟'**
-  String get morningClassAlarmAddAllTitle;
+  /// **'批量添加上课闹钟'**
+  String get classAlarmAddAllTitle;
 
-  /// No description provided for @morningClassAlarmAddAllSubtitle.
+  /// No description provided for @classAlarmRangeNext4Weeks.
   ///
   /// In zh, this message translates to:
-  /// **'在系统时钟创建周重复闹钟'**
-  String get morningClassAlarmAddAllSubtitle;
+  /// **'未来 4 周'**
+  String get classAlarmRangeNext4Weeks;
 
-  /// No description provided for @morningClassAlarmLeadTitle.
+  /// No description provided for @classAlarmRangeNext8Weeks.
   ///
   /// In zh, this message translates to:
-  /// **'提前'**
-  String get morningClassAlarmLeadTitle;
+  /// **'未来 8 周'**
+  String get classAlarmRangeNext8Weeks;
 
-  /// No description provided for @morningClassAlarmLeadMinutesLabel.
+  /// No description provided for @classAlarmRangeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加范围'**
+  String get classAlarmRangeLabel;
+
+  /// No description provided for @classAlarmRangeRemaining.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周起至学期结束'**
+  String get classAlarmRangeRemaining;
+
+  /// No description provided for @classAlarmRangeWhole.
+  ///
+  /// In zh, this message translates to:
+  /// **'整学期'**
+  String get classAlarmRangeWhole;
+
+  /// No description provided for @classAlarmLeadTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'提前量'**
+  String get classAlarmLeadTitle;
+
+  /// No description provided for @classAlarmLeadMinutesLabel.
   ///
   /// In zh, this message translates to:
   /// **'提前 {minutes} 分钟'**
-  String morningClassAlarmLeadMinutesLabel(int minutes);
+  String classAlarmLeadMinutesLabel(int minutes);
 
-  /// No description provided for @morningClassAlarmOpenClock.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开系统时钟'**
-  String get morningClassAlarmOpenClock;
-
-  /// No description provided for @morningClassAlarmSkipUiTitle.
+  /// No description provided for @classAlarmSkipUiTitle.
   ///
   /// In zh, this message translates to:
   /// **'跳过确认页'**
-  String get morningClassAlarmSkipUiTitle;
+  String get classAlarmSkipUiTitle;
 
-  /// No description provided for @morningClassAlarmSkipUiSubtitle.
+  /// No description provided for @classAlarmSkipUiSubtitle.
   ///
   /// In zh, this message translates to:
   /// **'尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）'**
-  String get morningClassAlarmSkipUiSubtitle;
+  String get classAlarmSkipUiSubtitle;
 
-  /// No description provided for @morningClassAlarmWeeklyConfirmTitle.
+  /// No description provided for @classAlarmOpenClock.
   ///
   /// In zh, this message translates to:
-  /// **'添加周重复闹钟？'**
-  String get morningClassAlarmWeeklyConfirmTitle;
+  /// **'打开系统时钟'**
+  String get classAlarmOpenClock;
 
-  /// No description provided for @morningClassAlarmWeeklyConfirmMessage.
+  /// No description provided for @classAlarmConfirmTitle.
   ///
   /// In zh, this message translates to:
-  /// **'将在系统时钟创建每周{days}重复的 {time} 闹钟。系统闹钟无法识别假期与调休，停课期间也会照常响铃；删除需在系统时钟中完成。'**
-  String morningClassAlarmWeeklyConfirmMessage(String time, String days);
+  /// **'创建重复闹钟？'**
+  String get classAlarmConfirmTitle;
 
-  /// No description provided for @morningClassAlarmDaysUnit.
+  /// No description provided for @classAlarmConfirmMessage.
   ///
   /// In zh, this message translates to:
-  /// **'天'**
-  String get morningClassAlarmDaysUnit;
+  /// **'将在系统时钟创建：{detail}。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。'**
+  String classAlarmConfirmMessage(String detail);
 
-  /// No description provided for @morningClassAlarmTimeDetail.
+  /// No description provided for @classAlarmVariableSuffix.
   ///
   /// In zh, this message translates to:
-  /// **'每{weekday} {time}'**
-  String morningClassAlarmTimeDetail(String weekday, String time);
+  /// **'另外，{days}的第一节课时间在不同周不一致，这些天未创建闹钟。'**
+  String classAlarmVariableSuffix(String days);
 
-  /// No description provided for @morningClassAlarmAddedToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'已交给系统时钟处理'**
-  String get morningClassAlarmAddedToast;
-
-  /// No description provided for @morningClassAlarmLaunchFailedToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'未找到可处理的时钟应用'**
-  String get morningClassAlarmLaunchFailedToast;
-
-  /// No description provided for @morningClassAlarmNoSchemeToast.
+  /// No description provided for @classAlarmNoSchemeToast.
   ///
   /// In zh, this message translates to:
   /// **'请先在设置中选择时间模板'**
-  String get morningClassAlarmNoSchemeToast;
+  String get classAlarmNoSchemeToast;
 
-  /// No description provided for @morningClassAlarmPastToast.
+  /// No description provided for @classAlarmNoDataToast.
   ///
   /// In zh, this message translates to:
-  /// **'这节课已开始，无法再设提醒'**
-  String get morningClassAlarmPastToast;
+  /// **'所选范围内没有找到课表'**
+  String get classAlarmNoDataToast;
 
-  /// No description provided for @morningClassAlarmNoCourseToast.
+  /// No description provided for @classAlarmAddedToast.
   ///
   /// In zh, this message translates to:
-  /// **'当前周该日没有课程'**
-  String get morningClassAlarmNoCourseToast;
+  /// **'已交给系统时钟处理'**
+  String get classAlarmAddedToast;
 
-  /// No description provided for @morningClassAlarmTodayOnlyToast.
+  /// No description provided for @classAlarmLaunchFailedToast.
   ///
   /// In zh, this message translates to:
-  /// **'单次闹钟仅支持今天的课程；其他日期请在设置中使用周重复闹钟'**
-  String get morningClassAlarmTodayOnlyToast;
+  /// **'未找到可处理的时钟应用'**
+  String get classAlarmLaunchFailedToast;
 
-  /// No description provided for @morningClassAlarmActionLabel.
+  /// No description provided for @classAlarmActionLabel.
   ///
   /// In zh, this message translates to:
-  /// **'设上课闹钟'**
-  String get morningClassAlarmActionLabel;
+  /// **'设这节课的闹钟'**
+  String get classAlarmActionLabel;
+
+  /// No description provided for @classAlarmCourseConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加这节课的重复闹钟？'**
+  String get classAlarmCourseConfirmTitle;
+
+  /// No description provided for @classAlarmCourseConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'将在系统时钟创建每周{weekday} {time} 的重复闹钟（与这节课的排课一致）；假期与停课不会自动停止，删除需在系统时钟中完成。'**
+  String classAlarmCourseConfirmMessage(String weekday, String time);
 }
 
 class _AppLocalizationsDelegate

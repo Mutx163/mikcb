@@ -10344,81 +10344,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => 'Add course';
 
   @override
-  String get morningClassAlarmEntryTitle => 'Morning-class alarms';
+  String get classAlarmEntryTitle => 'Class alarms';
 
   @override
-  String get morningClassAlarmEntrySubtitle =>
-      'Write first-class alarms into the system clock';
+  String get classAlarmGroupSetup => 'Add alarms';
 
   @override
-  String get morningClassAlarmGroupSetup => 'Add alarms';
+  String get classAlarmGroupBehavior => 'Ring behavior';
 
   @override
-  String get morningClassAlarmGroupBehavior => 'Ring behavior';
+  String get classAlarmAddAllTitle => 'Batch add class alarms';
 
   @override
-  String get morningClassAlarmAddAllTitle => 'Add all upcoming first classes';
+  String get classAlarmRangeNext4Weeks => 'Next 4 weeks';
 
   @override
-  String get morningClassAlarmAddAllSubtitle =>
-      'Creates weekly repeating alarms in the system clock';
+  String get classAlarmRangeNext8Weeks => 'Next 8 weeks';
 
   @override
-  String get morningClassAlarmLeadTitle => 'Ring ahead';
+  String get classAlarmRangeLabel => 'Range';
 
   @override
-  String morningClassAlarmLeadMinutesLabel(int minutes) {
+  String get classAlarmRangeRemaining => 'This week to semester end';
+
+  @override
+  String get classAlarmRangeWhole => 'Whole semester';
+
+  @override
+  String get classAlarmLeadTitle => 'Lead time';
+
+  @override
+  String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes min ahead';
   }
 
   @override
-  String get morningClassAlarmOpenClock => 'Open system clock';
+  String get classAlarmSkipUiTitle => 'Skip confirmation page';
 
   @override
-  String get morningClassAlarmSkipUiTitle => 'Skip confirmation page';
-
-  @override
-  String get morningClassAlarmSkipUiSubtitle =>
+  String get classAlarmSkipUiSubtitle =>
       'Try writing the alarm directly; some devices still show it';
 
   @override
-  String get morningClassAlarmWeeklyConfirmTitle => 'Add weekly alarm?';
+  String get classAlarmOpenClock => 'Open system clock';
 
   @override
-  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
-    return 'A $time alarm repeating every $days in the system clock will be created. System alarms cannot recognize holidays or rescheduled days off and will ring during breaks; deletion must be done in the system clock.';
+  String get classAlarmConfirmTitle => 'Create repeating alarms?';
+
+  @override
+  String classAlarmConfirmMessage(String detail) {
+    return 'The system clock will create: $detail. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.';
   }
 
   @override
-  String get morningClassAlarmDaysUnit => 'day(s)';
-
-  @override
-  String morningClassAlarmTimeDetail(String weekday, String time) {
-    return '$weekday at $time';
+  String classAlarmVariableSuffix(String days) {
+    return 'Also, first-class times on $days differ between weeks; no alarm covers these days.';
   }
 
   @override
-  String get morningClassAlarmAddedToast => 'Handed to the system clock';
-
-  @override
-  String get morningClassAlarmLaunchFailedToast =>
-      'No clock app found to handle this';
-
-  @override
-  String get morningClassAlarmNoSchemeToast =>
+  String get classAlarmNoSchemeToast =>
       'Select a time scheme in settings first';
 
   @override
-  String get morningClassAlarmPastToast => 'This class has already started';
+  String get classAlarmNoDataToast =>
+      'No timetable found in the selected range';
 
   @override
-  String get morningClassAlarmNoCourseToast =>
-      'No course on this weekday in the current week';
+  String get classAlarmAddedToast => 'Handed to the system clock';
 
   @override
-  String get morningClassAlarmTodayOnlyToast =>
-      'One-shot alarms support today\'s classes only; use the weekly alarm in settings for other days';
+  String get classAlarmLaunchFailedToast => 'No clock app found to handle this';
 
   @override
-  String get morningClassAlarmActionLabel => 'Set class alarm';
+  String get classAlarmActionLabel => 'Set alarm for this class';
+
+  @override
+  String get classAlarmCourseConfirmTitle =>
+      'Add a repeating alarm for this class?';
+
+  @override
+  String classAlarmCourseConfirmMessage(String weekday, String time) {
+    return 'A weekly repeating alarm will be created in the system clock: every $weekday at $time, matching this class. It keeps ringing during breaks; delete it in the system clock.';
+  }
 }
