@@ -6056,6 +6056,40 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideTipsPageTitle => '사용 팁';
 
   @override
+  String get guidePersonalizePageTitle => '개인화 설정';
+
+  @override
+  String get guidePersonalizeHeader => '나만의 스타일로 꾸미기';
+
+  @override
+  String get guidePersonalizeSubtitle =>
+      '선택한 항목은 즉시 적용되며, 언제든지 \'설정 → 화면\'에서 변경할 수 있습니다';
+
+  @override
+  String get guidePersonalizeMenuStyleTitle => '메뉴 스타일';
+
+  @override
+  String get guidePersonalizeVisualEffectTitle => '시각 효과';
+
+  @override
+  String get guidePersonalizeVisualEffectSolid => '솔리드 카드';
+
+  @override
+  String get guideVisualEffectGaussianDesc => '배경에 실시간 가우시안 블러로 깊이감 있는 투명 효과';
+
+  @override
+  String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함 (배터리 소모 약간 증가)';
+
+  @override
+  String get guideVisualEffectSolidDesc => '블러 없음 — 최고의 성능';
+
+  @override
+  String get guidePersonalizeThemeModeTitle => '테마 모드';
+
+  @override
+  String get guidePersonalizeSeedColorTitle => '테마 색상';
+
+  @override
   String get guidePrevButton => '이전';
 
   @override

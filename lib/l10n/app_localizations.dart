@@ -10811,6 +10811,72 @@ abstract class AppLocalizations {
   /// **'使用技巧'**
   String get guideTipsPageTitle;
 
+  /// No description provided for @guidePersonalizePageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'个性化定制'**
+  String get guidePersonalizePageTitle;
+
+  /// No description provided for @guidePersonalizeHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'个性化外观'**
+  String get guidePersonalizeHeader;
+
+  /// No description provided for @guidePersonalizeSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'以下选择立即生效，之后可随时在「设置 → 外观」中调整'**
+  String get guidePersonalizeSubtitle;
+
+  /// No description provided for @guidePersonalizeMenuStyleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'菜单样式'**
+  String get guidePersonalizeMenuStyleTitle;
+
+  /// No description provided for @guidePersonalizeVisualEffectTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'视觉效果'**
+  String get guidePersonalizeVisualEffectTitle;
+
+  /// No description provided for @guidePersonalizeVisualEffectSolid.
+  ///
+  /// In zh, this message translates to:
+  /// **'实体卡片'**
+  String get guidePersonalizeVisualEffectSolid;
+
+  /// No description provided for @guideVisualEffectGaussianDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景实时高斯模糊，通透有层次'**
+  String get guideVisualEffectGaussianDesc;
+
+  /// No description provided for @guideVisualEffectLiquidDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃折射，更具质感（功耗略高）'**
+  String get guideVisualEffectLiquidDesc;
+
+  /// No description provided for @guideVisualEffectSolidDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'不启用模糊效果，性能最好'**
+  String get guideVisualEffectSolidDesc;
+
+  /// No description provided for @guidePersonalizeThemeModeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'深浅色模式'**
+  String get guidePersonalizeThemeModeTitle;
+
+  /// No description provided for @guidePersonalizeSeedColorTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题色'**
+  String get guidePersonalizeSeedColorTitle;
+
   /// No description provided for @guidePrevButton.
   ///
   /// In zh, this message translates to:

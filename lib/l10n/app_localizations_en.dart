@@ -6268,6 +6268,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideTipsPageTitle => 'Tips';
 
   @override
+  String get guidePersonalizePageTitle => 'Personalize';
+
+  @override
+  String get guidePersonalizeHeader => 'Make it yours';
+
+  @override
+  String get guidePersonalizeSubtitle =>
+      'These apply immediately and can be changed anytime in Settings → Appearance';
+
+  @override
+  String get guidePersonalizeMenuStyleTitle => 'Menu style';
+
+  @override
+  String get guidePersonalizeVisualEffectTitle => 'Visual effect';
+
+  @override
+  String get guidePersonalizeVisualEffectSolid => 'Solid cards';
+
+  @override
+  String get guideVisualEffectGaussianDesc =>
+      'Live gaussian blur behind surfaces — layered and translucent';
+
+  @override
+  String get guideVisualEffectLiquidDesc =>
+      'Liquid glass refraction with extra depth (slightly higher power use)';
+
+  @override
+  String get guideVisualEffectSolidDesc => 'No blur effects — best performance';
+
+  @override
+  String get guidePersonalizeThemeModeTitle => 'Theme mode';
+
+  @override
+  String get guidePersonalizeSeedColorTitle => 'Accent color';
+
+  @override
   String get guidePrevButton => 'Previous';
 
   @override

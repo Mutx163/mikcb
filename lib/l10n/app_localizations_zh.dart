@@ -5922,6 +5922,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideTipsPageTitle => '使用技巧';
 
   @override
+  String get guidePersonalizePageTitle => '个性化定制';
+
+  @override
+  String get guidePersonalizeHeader => '个性化外观';
+
+  @override
+  String get guidePersonalizeSubtitle => '以下选择立即生效，之后可随时在「设置 → 外观」中调整';
+
+  @override
+  String get guidePersonalizeMenuStyleTitle => '菜单样式';
+
+  @override
+  String get guidePersonalizeVisualEffectTitle => '视觉效果';
+
+  @override
+  String get guidePersonalizeVisualEffectSolid => '实体卡片';
+
+  @override
+  String get guideVisualEffectGaussianDesc => '背景实时高斯模糊，通透有层次';
+
+  @override
+  String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感（功耗略高）';
+
+  @override
+  String get guideVisualEffectSolidDesc => '不启用模糊效果，性能最好';
+
+  @override
+  String get guidePersonalizeThemeModeTitle => '深浅色模式';
+
+  @override
+  String get guidePersonalizeSeedColorTitle => '主题色';
+
+  @override
   String get guidePrevButton => '上一步';
 
   @override
@@ -15855,6 +15888,39 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideTipsPageTitle => '使用技巧';
+
+  @override
+  String get guidePersonalizePageTitle => '個人化設定';
+
+  @override
+  String get guidePersonalizeHeader => '打造專屬外觀';
+
+  @override
+  String get guidePersonalizeSubtitle => '以下選擇立即生效，之後可隨時在「設定 → 外觀」中調整';
+
+  @override
+  String get guidePersonalizeMenuStyleTitle => '選單樣式';
+
+  @override
+  String get guidePersonalizeVisualEffectTitle => '視覺效果';
+
+  @override
+  String get guidePersonalizeVisualEffectSolid => '實體卡片';
+
+  @override
+  String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
+
+  @override
+  String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感（功耗略高）';
+
+  @override
+  String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
+
+  @override
+  String get guidePersonalizeThemeModeTitle => '深淺色模式';
+
+  @override
+  String get guidePersonalizeSeedColorTitle => '主題色';
 
   @override
   String get guidePrevButton => '上一步';
@@ -25834,6 +25900,39 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideTipsPageTitle => '使用技巧';
+
+  @override
+  String get guidePersonalizePageTitle => '個人化設定';
+
+  @override
+  String get guidePersonalizeHeader => '打造專屬外觀';
+
+  @override
+  String get guidePersonalizeSubtitle => '以下選擇立即生效，之後可隨時在「設定 → 外觀」中調整';
+
+  @override
+  String get guidePersonalizeMenuStyleTitle => '選單樣式';
+
+  @override
+  String get guidePersonalizeVisualEffectTitle => '視覺效果';
+
+  @override
+  String get guidePersonalizeVisualEffectSolid => '實體卡片';
+
+  @override
+  String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
+
+  @override
+  String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感（功耗略高）';
+
+  @override
+  String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
+
+  @override
+  String get guidePersonalizeThemeModeTitle => '深淺色模式';
+
+  @override
+  String get guidePersonalizeSeedColorTitle => '主題色';
 
   @override
   String get guidePrevButton => '上一步';

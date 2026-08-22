@@ -6019,6 +6019,39 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideTipsPageTitle => '使い方のコツ';
 
   @override
+  String get guidePersonalizePageTitle => 'カスタマイズ';
+
+  @override
+  String get guidePersonalizeHeader => 'あなただけの見た目に';
+
+  @override
+  String get guidePersonalizeSubtitle => '選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます';
+
+  @override
+  String get guidePersonalizeMenuStyleTitle => 'メニュー形式';
+
+  @override
+  String get guidePersonalizeVisualEffectTitle => '視覚効果';
+
+  @override
+  String get guidePersonalizeVisualEffectSolid => 'ソリッドカード';
+
+  @override
+  String get guideVisualEffectGaussianDesc => '背景をリアルタイムにぼかし、透明感と奥行きを演出';
+
+  @override
+  String get guideVisualEffectLiquidDesc => 'リキッドグラスの屈折で質感をプラス（消費電力やや増）';
+
+  @override
+  String get guideVisualEffectSolidDesc => 'ぼかしを使用しない、最も高いパフォーマンス';
+
+  @override
+  String get guidePersonalizeThemeModeTitle => 'テーマモード';
+
+  @override
+  String get guidePersonalizeSeedColorTitle => 'テーマカラー';
+
+  @override
   String get guidePrevButton => '前へ';
 
   @override
