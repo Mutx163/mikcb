@@ -989,6 +989,74 @@ void main() {
     );
   });
 
+  testWidgets('day view still swipes after back to today', (tester) async {
+    final now = DateTime.now();
+    final todayWeek = _startOfCurrentWeek(now);
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterStartDate: todayWeek.subtract(const Duration(days: 7)),
+          semesterWeekCount: 20,
+          timetableHideWeekends: false,
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(5);
+    });
+
+    final anotherDay = now.weekday == 1 ? 2 : 1;
+    final swipesToNextDay = now.weekday < 7;
+    final expectedDay = swipesToNextDay ? now.weekday + 1 : now.weekday - 1;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-5-$anotherDay')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-5-$anotherDay')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('back-to-today-button')));
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-2-${now.weekday}')),
+      findsOneWidget,
+    );
+
+    // Regression: the day-pager IgnorePointer must be released once the
+    // "back to today" transition finishes, otherwise every later swipe is
+    // silently swallowed and the pager never reacts again.
+    final swipeArea = tester.getRect(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+    );
+    await tester.dragFrom(
+      swipeArea.topCenter + const Offset(0, 48),
+      swipesToNextDay ? const Offset(-420, 0) : const Offset(420, 0),
+    );
+    await _pumpUntilDayPagerSettled(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-2-$expectedDay')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('hides back to today when calendar is past semesterWeekCount', (
     tester,
   ) async {

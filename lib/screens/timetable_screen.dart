@@ -1400,6 +1400,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
     } finally {
       _isDaySwipeAnimating = false;
+      // 日视图滑动区外层的 IgnorePointer 在 build 时读取该标志：上面所有
+      // setState 都发生在标志仍为 true 的期间，若此处不复位后再补一次重建，
+      // 「回到今天」转场结束后 ignoring:true 会永久滞留，日视图左右滑动
+      // 就再也无响应。必须显式重建一帧把指针放行。
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
