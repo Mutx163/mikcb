@@ -3636,28 +3636,39 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final isDark = theme.brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdropImage(settings);
-    // Same ink path as weekday chrome (auto-contrast + keep custom hex), but
-    // judged from the card-region wallpaper band — the top band can be dark
-    // (white chrome ink) while mid-screen is bright: white-on-white here.
-    final summaryInk = homePageOverWallpaperInk(
-      configuredHex: isDark
-          ? settings.weekdayBarFontColorDark
-          : settings.weekdayBarFontColorLight,
-      defaultHex: isDark
-          ? TimetableSettings.defaultWeekdayBarFontColorDark
-          : TimetableSettings.defaultWeekdayBarFontColorLight,
-      themeFallback: foruiTheme.colors.foreground,
-      hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
-    );
-    final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
-    // With chrome blur on, the summary matches the top chrome band material
-    // (real gaussian / liquid glass) instead of the course-card pre-blur
-    // fill, so the card and the top bar read as one glass system.
-    final useChromeGlass = homePageHasAnyChromeBlur(
+    final backdropBlurOn =
+        hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
+    // 顶栏/信息栏开着玻璃时，摘要卡与顶部铬玻璃带同材质、同墨色极性。
+    final matchesChromeBand = homePageHasAnyChromeBlur(
       settings,
       hasBackdrop: hasBackdrop,
     );
+    // 课程卡切到「高斯模糊」档且有壁纸时，摘要卡也走铬玻璃亮磨砂材质：
+    // CourseSurface 的高斯路径只有 0.42 的弱中性 tint，深色壁纸会直接透出，
+    // 让「回到今天 / 关闭 / 日期」整张卡读作发黑的玻璃；铬玻璃 wash 与弹窗
+    // 同级（浅色主题约白色 0.68），保证卡片始终偏亮色。
+    final useChromeGlass =
+        matchesChromeBand ||
+        (backdropBlurOn &&
+            settings.courseCardSurfaceStyle ==
+                CourseCardSurfaceStyle.gaussian);
+    // Ink: 与顶部玻璃带同材质时沿用壁纸亮度自动黑白；否则卡面就是主题底色
+    // （或亮磨砂），墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
+    // 亮色卡面上不可读。
+    final summaryInk = matchesChromeBand
+        ? homePageOverWallpaperInk(
+            configuredHex: isDark
+                ? settings.weekdayBarFontColorDark
+                : settings.weekdayBarFontColorLight,
+            defaultHex: isDark
+                ? TimetableSettings.defaultWeekdayBarFontColorDark
+                : TimetableSettings.defaultWeekdayBarFontColorLight,
+            themeFallback: foruiTheme.colors.foreground,
+            hasBackdrop: hasBackdrop,
+            wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
+          )
+        : foruiTheme.colors.foreground;
+    final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
     final countBadgeColor = hasAgenda
         ? colorScheme.primary.withValues(alpha: 0.14)
         : summaryInk.withValues(alpha: 0.10);
@@ -3666,7 +3677,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         : summaryMutedInk;
     return _dayAgendaSurface(
       key: key,
-      settings: settings,
+      settings: useChromeGlass ||
+              settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid
+          ? settings
+          // 无壁纸/模糊被关掉时高斯档没有可用的磨砂来源，退化为实心亮卡。
+          : settings.copyWith(
+              courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
+            ),
       chromeGlass: useChromeGlass,
       // Neutral wash (not a course hue); CourseSurface owns glass vs solid.
       color: foruiTheme.colors.background,
@@ -5672,19 +5689,16 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// Default agenda-card ink when the course has no custom text colour.
   ///
-  /// Opaque styles keep the legacy white-on-hue. Glass styles show mostly
-  /// wallpaper through a ~40% tint, so the ink flips black/white against the
-  /// blend of course hue and the wallpaper band behind the cards — a bright
+  /// Opaque styles keep the legacy white-on-hue. The gaussian style shows
+  /// mostly wallpaper through a ~40% tint, so the ink flips black/white against
+  /// the blend of course hue and the wallpaper band behind the cards — a bright
   /// wallpaper region otherwise gives white-on-white.
   Color _dayAgendaAutoInk(Color fill, {TimetableSettings? settings}) {
     if (settings == null) {
       return Colors.white;
     }
-    final style = settings.courseCardSurfaceStyle;
-    final glassOverWallpaper =
-        hasHomePageBackdropImage(settings) &&
-        (style == CourseCardSurfaceStyle.gaussian ||
-            style == CourseCardSurfaceStyle.glass);
+    final glassOverWallpaper = hasHomePageBackdropImage(settings) &&
+        settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian;
     if (!glassOverWallpaper) {
       return Colors.white;
     }
