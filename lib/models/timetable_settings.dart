@@ -1226,8 +1226,6 @@ class TimetableSettings {
   final String appUpdateMirrorPreset;
   final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
-  final String pgyerApiKey;
-  final String pgyerAppKey;
   final bool holidayOverrideEnabled;
 
   /// 上课闹钟：上课前多少分钟响铃。
@@ -1408,8 +1406,6 @@ class TimetableSettings {
     this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
-    this.pgyerApiKey = '',
-    this.pgyerAppKey = '',
     this.holidayOverrideEnabled = false,
     this.classAlarmLeadMinutes = 30,
     this.classAlarmSkipUi = false,
@@ -1740,8 +1736,6 @@ class TimetableSettings {
       'appUpdateMirrorPreset': appUpdateMirrorPreset,
       'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
-      'pgyerApiKey': pgyerApiKey,
-      'pgyerAppKey': pgyerAppKey,
       'holidayOverrideEnabled': holidayOverrideEnabled,
       'classAlarmLeadMinutes': classAlarmLeadMinutes,
       'classAlarmSkipUi': classAlarmSkipUi,
@@ -2113,8 +2107,6 @@ class TimetableSettings {
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
-      pgyerApiKey: json['pgyerApiKey'] as String? ?? '',
-      pgyerAppKey: json['pgyerAppKey'] as String? ?? '',
       holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
       classAlarmLeadMinutes:
           (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
@@ -2352,8 +2344,6 @@ class TimetableSettings {
     String? appUpdateMirrorPreset,
     bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
-    String? pgyerApiKey,
-    String? pgyerAppKey,
     bool? holidayOverrideEnabled,
     int? classAlarmLeadMinutes,
     bool? classAlarmSkipUi,
@@ -2641,8 +2631,6 @@ class TimetableSettings {
           appUpdateIncludePrerelease ?? this.appUpdateIncludePrerelease,
       appUpdateMirrorUrlPrefix:
           appUpdateMirrorUrlPrefix ?? this.appUpdateMirrorUrlPrefix,
-      pgyerApiKey: pgyerApiKey ?? this.pgyerApiKey,
-      pgyerAppKey: pgyerAppKey ?? this.pgyerAppKey,
       holidayOverrideEnabled:
           holidayOverrideEnabled ?? this.holidayOverrideEnabled,
       // 提前量允许 0（下课即提醒的场景不存在，但保留合法输入区间）。
