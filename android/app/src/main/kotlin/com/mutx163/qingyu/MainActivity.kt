@@ -311,23 +311,26 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "setAlarm" -> {
-                        val hour = call.argument<Int>("hour")
-                        val minute = call.argument<Int>("minute")
-                        if (hour == null || minute == null ||
-                            hour !in 0..23 || minute !in 0..59
-                        ) {
-                            result.error(
-                                "INVALID_ARGUMENTS",
-                                "hour/minute missing or out of range",
-                                null,
-                            )
-                            return@setMethodCallHandler
-                        }
-                        val label = call.argument<String>("label") ?: ""
-                        val skipUi = call.argument<Boolean>("skipUi") ?: false
-                        @Suppress("UNCHECKED_CAST")
-                        val days = call.argument<List<Int>>("days")
+                        // 参数读取也必须位于 try 内：MethodCall.argument 是
+                        // unchecked cast，Dart 侧类型不符会抛 ClassCastException，
+                        // 若冲出 handler 会按主线程未捕获异常处理导致进程崩溃。
                         try {
+                            val hour = call.argument<Int>("hour")
+                            val minute = call.argument<Int>("minute")
+                            if (hour == null || minute == null ||
+                                hour !in 0..23 || minute !in 0..59
+                            ) {
+                                result.error(
+                                    "INVALID_ARGUMENTS",
+                                    "hour/minute missing or out of range",
+                                    null,
+                                )
+                                return@setMethodCallHandler
+                            }
+                            val label = call.argument<String>("label") ?: ""
+                            val skipUi = call.argument<Boolean>("skipUi") ?: false
+                            @Suppress("UNCHECKED_CAST")
+                            val days = call.argument<List<Int>>("days")
                             val outcome = SystemAlarmHelper.fireSetAlarm(
                                 this,
                                 hour,
@@ -341,6 +344,12 @@ class MainActivity : FlutterActivity() {
                                     "launched" to outcome.launched,
                                     "skipUi" to outcome.skipUiRequested,
                                 ),
+                            )
+                        } catch (e: ClassCastException) {
+                            result.error(
+                                "INVALID_ARGUMENTS",
+                                "malformed argument type: ${e.message}",
+                                null,
                             )
                         } catch (e: Exception) {
                             Log.e("MainActivity", "system_alarm: setAlarm failed", e)
