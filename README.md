@@ -31,13 +31,20 @@
 ## 核心能力
 
 - 周视图课表，支持左右滑动切周和一键回本周
+- 日课表视图，与周视图并列切换，聚焦当天安排
 - 多课表独立保存、快速切换，通知与超级岛跟随当前课表
 - 课程增删改查，支持课程简称、颜色、单双周、备注等信息
 - 时间模板系统，可按学校作息自定义节次时间
 - 上课前、课中、下课前提醒分阶段配置
+- 上课闹钟：基于系统时钟应用，按真实课表批量添加（适合早八）
 - HyperOS / 小米超级岛、通知栏、焦点通知联动
-- 今日桌面小组件与课程快照同步
-- 教务系统网页登录导入、`.ics` 导入、完整备份导出、恢复为当前课表或新课表
+- 今日桌面小组件与课程快照同步，另有课程统计 2×2 / 2×4 小组件
+- 应用形态可选：经典界面 / 玻璃坞（液态玻璃底部导航）
+- 自定义壁纸与液态玻璃质感，课程卡片支持真折射玻璃样式
+- 课程统计：学期/周双视图、趋势、热力图、教师与教室排行、成就与多课表对比
+- 二维码面对面传输（喷泉码多帧，无需网络）
+- 教务系统网页登录导入、`.ics` 导入与导出、完整备份导出、恢复为当前课表或新课表
+- 界面支持简体中文、繁体中文（台湾 / 香港）、英文、日文、韩文
 - 关于页读取 GitHub Releases，支持应用内更新检测
 
 ## 教务导入与适配
@@ -81,9 +88,9 @@
 | JDK | 17 |
 | Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
 | Android NDK | 28.2.13676358 |
-| Gradle | 8.11.1 |
-| Android Gradle Plugin | 8.9.1 |
-| Kotlin | 2.1.0 |
+| Gradle | 8.14 |
+| Android Gradle Plugin | 8.11.1 |
+| Kotlin | 2.2.20 |
 
 ### 本地开发
 
@@ -122,7 +129,11 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 - Flutter
 - Provider
 - SharedPreferences
-- Android Notification / Foreground Service
+- liquid_glass_widgets（液态玻璃界面）
+- fl_chart（统计图表）
+- flutter_miuix（HyperOS 风格组件）
+- mobile_scanner / fountain_codes（二维码传输）
+- Android Notification / Foreground Service / AlarmClock
 - GitHub Actions
 - GitHub Releases
 - 友盟移动统计 / U-APM
@@ -142,10 +153,11 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 项目仍在持续迭代，目前重点放在：
 
-- Android 端提醒链路稳定性
+- Android 端提醒链路稳定性（分阶段提醒与上课闹钟）
+- 玻璃坞应用形态与液态玻璃视觉打磨
+- 课程统计与桌面小组件能力扩展
 - HyperOS / 超级岛显示细节
-- 多课表与时间模板打磨
-- 教务导入、备份和更新体验完善
+- 教务导入、传输、备份和更新体验完善
 
 ## 许可证
 
