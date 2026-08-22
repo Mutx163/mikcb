@@ -142,6 +142,11 @@ class _HomeGridMenuEditorScreenState
     return HyperosCard(
       padding: const EdgeInsets.all(16),
       child: Wrap(
+        // 预览是示意卡：行内与多行都在卡内水平/垂直居中，
+        // 不满一行的尾排也不再靠左吊着。
+        alignment: WrapAlignment.center,
+        runAlignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 10,
         runSpacing: 12,
         children: [
