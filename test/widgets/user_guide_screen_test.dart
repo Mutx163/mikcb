@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -51,14 +52,14 @@ void main() {
 
     // Welcome page. Assert the REAL consent tile type — the screen wraps a
     // MiuixCheckbox, so a Material Checkbox finder here was always vacuous.
-    expect(find.text('1 / 4'), findsOneWidget);
+    expect(find.text('1 / 5'), findsOneWidget);
     expect(find.text('轻屿课表'), findsOneWidget);
     expect(find.byType(HyperosCheckboxTile), findsNothing);
 
     // Navigate to privacy page
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
   });
 
   testWidgets('consent-required guide blocks forward on privacy page', (
@@ -70,16 +71,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // Welcome page → privacy page via Next button
-    expect(find.text('1 / 4'), findsOneWidget);
+    expect(find.text('1 / 5'), findsOneWidget);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
 
     // Try to go forward without checking checkbox — should stay on page 2.
     // Pages 3-4 stay unmounted before consent, so a forward swipe dies at a
     // real scroll boundary instead of overshooting and snapping back.
     expect(find.text('同意并开始使用'), findsNothing);
-    expect(find.text('3 / 4'), findsNothing);
+    expect(find.text('3 / 5'), findsNothing);
     expect(find.text('系统权限设置'), findsNothing);
 
     // Icon badges read the HyperOS palette, not the default Material scheme
@@ -105,13 +106,13 @@ void main() {
 
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
 
     // A real horizontal drag toward page 3 stays pinned on the privacy page.
     await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 4'), findsOneWidget);
-    expect(find.text('3 / 4'), findsNothing);
+    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('3 / 5'), findsNothing);
 
     // Checking consent unlocks forward dragging. The consent tile sits at
     // the BOTTOM of the privacy page list — scroll it into view first
@@ -127,13 +128,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
-    expect(find.text('3 / 4'), findsOneWidget);
+    expect(find.text('3 / 5'), findsOneWidget);
 
     // Returning to the privacy page and unchecking shrinks the pages again
     // while resting exactly on the new boundary — must stay stable.
     await tester.drag(find.byType(PageView), const Offset(600, 0));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
     // Page remount reset the inner list offset — scroll down again.
     await tester.dragUntilVisible(
       find.byType(HyperosCheckboxTile),
@@ -144,7 +145,7 @@ void main() {
     await tester.tap(find.byType(HyperosCheckboxTile));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
   });
 
   testWidgets('auto-start status shows on permissions page', (tester) async {
@@ -164,7 +165,7 @@ void main() {
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
-    expect(find.text('3 / 4'), findsOneWidget);
+    expect(find.text('3 / 5'), findsOneWidget);
     expect(find.text('系统权限设置'), findsOneWidget);
     expect(find.text('自启动'), findsOneWidget);
     expect(find.textContaining('已就绪'), findsOneWidget);
@@ -189,22 +190,27 @@ void main() {
     await tester.pumpAndSettle();
 
     // Page 1: Welcome → Next
-    expect(find.text('1 / 4'), findsOneWidget);
+    expect(find.text('1 / 5'), findsOneWidget);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 2: Privacy (initialPrivacyChecked) → Next
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 3: Permissions → Next
-    expect(find.text('3 / 4'), findsOneWidget);
+    expect(find.text('3 / 5'), findsOneWidget);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
-    // Page 4: Tips → Agree
-    expect(find.text('4 / 4'), findsOneWidget);
+    // Page 4: Personalize → Next（无 Provider 时页面为空但可翻页）
+    expect(find.text('4 / 5'), findsOneWidget);
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+
+    // Page 5: Tips → Agree
+    expect(find.text('5 / 5'), findsOneWidget);
     await tester.tap(agreeButton());
     await tester.pumpAndSettle();
 
@@ -224,30 +230,37 @@ void main() {
     await tester.pumpAndSettle();
 
     // Page 1: Welcome
-    expect(find.text('1 / 4'), findsOneWidget);
+    expect(find.text('1 / 5'), findsOneWidget);
     expect(find.text('上一步'), findsNothing);
 
     // Navigate to page 2: Privacy
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 4'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
 
     // Navigate to page 3: Permissions (consent checked via initial flag)
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('3 / 4'), findsOneWidget);
+    expect(find.text('3 / 5'), findsOneWidget);
     expect(find.text('上一步'), findsOneWidget);
 
-    // Navigate to page 4: Tips
+    // Navigate to page 4: Personalize
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('4 / 4'), findsOneWidget);
+    expect(find.text('4 / 5'), findsOneWidget);
+
+    // Navigate to page 5: Tips
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+    expect(find.text('5 / 5'), findsOneWidget);
     expect(find.text('同意并开始使用'), findsOneWidget);
 
-    // Navigate back to page 3
+    // Navigate back to page 4, then to page 3
     await tester.tap(find.text('上一步'));
     await tester.pumpAndSettle();
-    expect(find.text('3 / 4'), findsOneWidget);
+    await tester.tap(find.text('上一步'));
+    await tester.pumpAndSettle();
+    expect(find.text('3 / 5'), findsOneWidget);
   });
 
   testWidgets('collapsible header keeps guide content gap aligned', (
@@ -313,6 +326,133 @@ void main() {
 
     expect(find.text('应用语言'), findsOneWidget);
     expect(find.text('语言选择'), findsOneWidget);
+  });
+
+  testWidgets('personalize page renders options and persists choices', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final provider = TimetableProvider(autoInitialize: false);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<TimetableProvider>.value(
+        value: provider,
+        child: const TestApp(home: UserGuideScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Navigate: welcome → privacy → permissions → personalize
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+
+    expect(find.text('4 / 5'), findsOneWidget);
+    expect(find.text('菜单样式'), findsOneWidget);
+    expect(find.text('视觉效果'), findsOneWidget);
+    expect(find.text('列表菜单'), findsOneWidget);
+    expect(find.text('八宫格菜单'), findsOneWidget);
+    expect(find.text('高斯模糊'), findsOneWidget);
+    expect(find.text('液态玻璃'), findsOneWidget);
+    expect(find.text('实体卡片'), findsOneWidget);
+
+    // 菜单样式 → 八宫格
+    await tester.tap(find.text('八宫格菜单'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.homeMenuStyle, HomeMenuStyle.grid);
+    await tester.tap(find.text('列表菜单'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.homeMenuStyle, HomeMenuStyle.list);
+
+    // 视觉效果三档映射。「高斯模糊」位于三档最上、初始即在视口内，
+    // 因此按 自上而下 的顺序点击，全程不向上回滚（避免目标落进
+    // 悬浮折叠顶栏的遮挡区导致点击丢失）。
+    await tester.tap(find.text('高斯模糊'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.frostedBlurEnabled, isTrue);
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
+
+    Future<void> tapEffect(String label) async {
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
+      // 轻微上提内容，让目标脱离底边裁剪区。
+      await tester.drag(find.byType(ListView), const Offset(0, -90));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+    }
+
+    await tapEffect('液态玻璃');
+    expect(provider.settings.frostedBlurEnabled, isTrue);
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.liquidGlass);
+
+    await tapEffect('实体卡片');
+    expect(provider.settings.frostedBlurEnabled, isFalse);
+  });
+
+  testWidgets('personalize theme mode and seed color persist', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final provider = TimetableProvider(autoInitialize: false);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<TimetableProvider>.value(
+        value: provider,
+        child: const TestApp(home: UserGuideScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+
+    // 深浅色分段控件（懒加载列表：先拖到构建出来，再对齐点击）
+    await tester.dragUntilVisible(
+      find.text('浅色模式'),
+      find.byType(ListView),
+      const Offset(0, -250),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -90));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('浅色模式'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.appThemeMode, AppThemeMode.light);
+
+    // 主题色色板：选一个非默认主题（默认 blue）
+    final target = ForuiTheme.values
+        .where((t) => t != ForuiTheme.blue)
+        .first;
+    final dotFinder = find.byWidgetPredicate(
+      (w) => w.runtimeType.toString() == '_GuideSeedDot',
+    );
+    await tester.dragUntilVisible(
+      dotFinder.last,
+      find.byType(ListView),
+      const Offset(0, -250),
+    );
+    await tester.pumpAndSettle();
+    expect(dotFinder, findsWidgets);
+    await tester.drag(find.byType(ListView), const Offset(0, -90));
+    await tester.pumpAndSettle();
+
+    // 逐个点色板直到目标主题生效（色板按 ForuiTheme.values 顺序排列）
+    for (final theme in ForuiTheme.values) {
+      if (provider.settings.foruiTheme == target) break;
+      await tester.tap(dotFinder.at(ForuiTheme.values.indexOf(theme)));
+      await tester.pumpAndSettle();
+    }
+    expect(provider.settings.foruiTheme, target);
+    expect(
+      provider.settings.themeSeedColor,
+      target.seedHex,
+    );
   });
 
   testWidgets('welcome page shows import and restore when callbacks provided', (
