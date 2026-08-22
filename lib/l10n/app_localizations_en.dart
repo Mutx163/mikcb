@@ -10342,6 +10342,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => 'Add course';
 
   @override
+  String get homeMenuStyleLabel => 'Top-right menu style';
+
+  @override
+  String get homeMenuStyleList => 'List menu';
+
+  @override
+  String get homeMenuStyleGrid => 'Eight-tile grid menu';
+
+  @override
+  String get homeMenuStyleListSubtitle =>
+      'Anchored text list right below the button, all entries at once';
+
+  @override
+  String get homeMenuStyleGridSubtitle =>
+      'Bottom icon tile sheet (v2.0.5.5 style), buttons customizable';
+
+  @override
+  String get homeGridCustomizeTitle => 'Customize grid buttons';
+
+  @override
+  String homeGridCustomizeDetails(int count, int max) {
+    return '$count/$max enabled';
+  }
+
+  @override
+  String homeGridEditorHintBody(int max) {
+    return 'The grid holds up to $max buttons; drag an item to reorder.';
+  }
+
+  @override
+  String get homeGridEditorEnabledTitle => 'Enabled';
+
+  @override
+  String get homeGridEditorAvailableTitle => 'Available to add';
+
+  @override
+  String get homeGridEditorRemoveTooltip => 'Remove';
+
+  @override
+  String get homeGridEditorAddTooltip => 'Add';
+
+  @override
+  String get homeGridEditorResetAction => 'Reset to default order';
+
+  @override
+  String get homeGridEditorAllAdded => 'All entries are enabled';
+
+  @override
   String get classAlarmEntryTitle => 'Class alarms';
 
   @override

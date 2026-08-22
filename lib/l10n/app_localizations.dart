@@ -17743,6 +17743,90 @@ abstract class AppLocalizations {
   /// **'添加课程'**
   String get glassDockExtraButtonSemanticLabel;
 
+  /// No description provided for @homeMenuStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'右上角菜单样式'**
+  String get homeMenuStyleLabel;
+
+  /// No description provided for @homeMenuStyleList.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表菜单'**
+  String get homeMenuStyleList;
+
+  /// No description provided for @homeMenuStyleGrid.
+  ///
+  /// In zh, this message translates to:
+  /// **'八宫格菜单'**
+  String get homeMenuStyleGrid;
+
+  /// No description provided for @homeMenuStyleListSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在按钮下方弹出文字列表，全部入口一屏展示'**
+  String get homeMenuStyleListSubtitle;
+
+  /// No description provided for @homeMenuStyleGridSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部弹出图标瓷贴（v2.0.5.5 样式），支持自定义按钮'**
+  String get homeMenuStyleGridSubtitle;
+
+  /// No description provided for @homeGridCustomizeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义八宫格按钮'**
+  String get homeGridCustomizeTitle;
+
+  /// No description provided for @homeGridCustomizeDetails.
+  ///
+  /// In zh, this message translates to:
+  /// **'已启用 {count}/{max} 个'**
+  String homeGridCustomizeDetails(int count, int max);
+
+  /// No description provided for @homeGridEditorHintBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'八宫格最多放置 {max} 个按钮；按住条目拖动即可排序。'**
+  String homeGridEditorHintBody(int max);
+
+  /// No description provided for @homeGridEditorEnabledTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'已启用'**
+  String get homeGridEditorEnabledTitle;
+
+  /// No description provided for @homeGridEditorAvailableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'可添加'**
+  String get homeGridEditorAvailableTitle;
+
+  /// No description provided for @homeGridEditorRemoveTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除'**
+  String get homeGridEditorRemoveTooltip;
+
+  /// No description provided for @homeGridEditorAddTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加'**
+  String get homeGridEditorAddTooltip;
+
+  /// No description provided for @homeGridEditorResetAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认排列'**
+  String get homeGridEditorResetAction;
+
+  /// No description provided for @homeGridEditorAllAdded.
+  ///
+  /// In zh, this message translates to:
+  /// **'所有入口都已启用'**
+  String get homeGridEditorAllAdded;
+
   /// No description provided for @classAlarmEntryTitle.
   ///
   /// In zh, this message translates to:

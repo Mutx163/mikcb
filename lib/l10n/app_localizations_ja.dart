@@ -10050,6 +10050,53 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => '授業を追加';
 
   @override
+  String get homeMenuStyleLabel => '右上メニューのスタイル';
+
+  @override
+  String get homeMenuStyleList => 'リストメニュー';
+
+  @override
+  String get homeMenuStyleGrid => '八宮格メニュー';
+
+  @override
+  String get homeMenuStyleListSubtitle => 'ボタンの下にテキストリストを表示し、すべての入口を一度に見せます';
+
+  @override
+  String get homeMenuStyleGridSubtitle =>
+      '下部にアイコンタイルを表示（v2.0.5.5 スタイル）、ボタンのカスタマイズ対応';
+
+  @override
+  String get homeGridCustomizeTitle => 'グリッドボタンのカスタマイズ';
+
+  @override
+  String homeGridCustomizeDetails(int count, int max) {
+    return '$count/$max 個表示中';
+  }
+
+  @override
+  String homeGridEditorHintBody(int max) {
+    return 'グリッドには最大 $max 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。';
+  }
+
+  @override
+  String get homeGridEditorEnabledTitle => '表示中';
+
+  @override
+  String get homeGridEditorAvailableTitle => '追加可能';
+
+  @override
+  String get homeGridEditorRemoveTooltip => '削除';
+
+  @override
+  String get homeGridEditorAddTooltip => '追加';
+
+  @override
+  String get homeGridEditorResetAction => 'デフォルトの並びに戻す';
+
+  @override
+  String get homeGridEditorAllAdded => 'すべての入口が表示中です';
+
+  @override
   String get classAlarmEntryTitle => '授業アラーム';
 
   @override

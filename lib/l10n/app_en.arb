@@ -5915,7 +5915,32 @@
   "glassDockShowSettingsTabTitle": "Show settings entry",
   "glassDockShowAddButtonTitle": "Show add button",
   "glassDockShowAddButtonSubtitle": "Show a separate round button next to the bar that opens add-course directly",
-  "glassDockExtraButtonSemanticLabel": "Add course",
+    "glassDockExtraButtonSemanticLabel": "Add course",
+  "homeMenuStyleLabel": "Top-right menu style",
+  "homeMenuStyleList": "List menu",
+  "homeMenuStyleGrid": "Eight-tile grid menu",
+  "homeMenuStyleListSubtitle": "Anchored text list right below the button, all entries at once",
+  "homeMenuStyleGridSubtitle": "Bottom icon tile sheet (v2.0.5.5 style), buttons customizable",
+  "homeGridCustomizeTitle": "Customize grid buttons",
+  "homeGridCustomizeDetails": "{count}/{max} enabled",
+  "@homeGridCustomizeDetails": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "homeGridEditorHintBody": "The grid holds up to {max} buttons; drag an item to reorder.",
+  "@homeGridEditorHintBody": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "homeGridEditorEnabledTitle": "Enabled",
+  "homeGridEditorAvailableTitle": "Available to add",
+  "homeGridEditorRemoveTooltip": "Remove",
+  "homeGridEditorAddTooltip": "Add",
+  "homeGridEditorResetAction": "Reset to default order",
+  "homeGridEditorAllAdded": "All entries are enabled",
   "classAlarmEntryTitle": "Class alarms",
   "classAlarmGroupSetup": "Add alarms",
   "classAlarmGroupBehavior": "Ring behavior",

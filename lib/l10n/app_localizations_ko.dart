@@ -10095,6 +10095,54 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => '수업 추가';
 
   @override
+  String get homeMenuStyleLabel => '오른쪽 위 메뉴 스타일';
+
+  @override
+  String get homeMenuStyleList => '리스트 메뉴';
+
+  @override
+  String get homeMenuStyleGrid => '여덟 칸 격자 메뉴';
+
+  @override
+  String get homeMenuStyleListSubtitle =>
+      '버튼 아래에 텍스트 목록이 펼쳐지며 모든 항목을 한 화면에서 보여 줍니다';
+
+  @override
+  String get homeMenuStyleGridSubtitle =>
+      '하단에 아이콘 타일 시트를 표시(v2.0.5.5 스타일), 버튼 사용자 지정 가능';
+
+  @override
+  String get homeGridCustomizeTitle => '격자 버튼 사용자 지정';
+
+  @override
+  String homeGridCustomizeDetails(int count, int max) {
+    return '$count/$max개 사용 중';
+  }
+
+  @override
+  String homeGridEditorHintBody(int max) {
+    return '격자에는 최대 $max개의 버튼을 배치할 수 있으며, 항목을 길게 눌러 드래그하면 순서가 바뀝니다.';
+  }
+
+  @override
+  String get homeGridEditorEnabledTitle => '사용 중';
+
+  @override
+  String get homeGridEditorAvailableTitle => '추가 가능';
+
+  @override
+  String get homeGridEditorRemoveTooltip => '제거';
+
+  @override
+  String get homeGridEditorAddTooltip => '추가';
+
+  @override
+  String get homeGridEditorResetAction => '기본 배열로 되돌리기';
+
+  @override
+  String get homeGridEditorAllAdded => '모든 항목이 사용 중입니다';
+
+  @override
   String get classAlarmEntryTitle => '수업 알람';
 
   @override

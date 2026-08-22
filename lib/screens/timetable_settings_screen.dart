@@ -27,6 +27,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
+import '../widgets/home_top_menu.dart';
 import '../widgets/wallpaper_position_picker_sheet.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';
@@ -60,6 +61,7 @@ import 'user_guide_screen.dart';
 import 'advanced_material_settings_screen.dart';
 
 part 'settings/settings_appearance.dart';
+part 'settings/settings_home_menu_editor.dart';
 part 'settings/settings_reset.dart';
 part 'settings/settings_diagnostics.dart';
 part 'settings/settings_course_card.dart';

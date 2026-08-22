@@ -177,6 +177,55 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 _updateDraft(_draft.copyWith(homeNavigationForm: value));
               },
             ),
+            // 右上角「更多」菜单形态：列表弹窗（当前设计）或八宫格瓷贴
+            // （v2.0.5.5 已发布样式）。八宫格下追加按钮自定义入口。
+            HyperosSelectTile<HomeMenuStyle>(
+              label: l10n.homeMenuStyleLabel,
+              subtitle: switch (_draft.homeMenuStyle) {
+                HomeMenuStyle.list => l10n.homeMenuStyleListSubtitle,
+                HomeMenuStyle.grid => l10n.homeMenuStyleGridSubtitle,
+              },
+              items: {
+                l10n.homeMenuStyleList: HomeMenuStyle.list,
+                l10n.homeMenuStyleGrid: HomeMenuStyle.grid,
+              },
+              value: _draft.homeMenuStyle,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(homeMenuStyle: value));
+              },
+            ),
+            if (_draft.homeMenuStyle == HomeMenuStyle.grid)
+              HyperosListTile(
+                icon: Icons.grid_view_outlined,
+                iconAccent: HyperosIconColors.blue,
+                title: l10n.homeGridCustomizeTitle,
+                details: l10n.homeGridCustomizeDetails(
+                  resolveHomeGridMenuActions(_draft).length,
+                  HomeGridMenu.maxSlots,
+                ),
+                onTap: () async {
+                  await HyperosNavigation.push(
+                    context,
+                    settings: const RouteSettings(name: '/settings/home-menu'),
+                    builder: (_) => _HomeGridMenuEditorScreen(
+                      initialActions: resolveHomeGridMenuActions(_draft),
+                      onChanged: (actions) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            homeGridMenuActions: [
+                              for (final action in actions) action.id,
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                  if (!mounted) return;
+                  setState(() {
+                    _draft = context.read<TimetableProvider>().settings;
+                  });
+                },
+              ),
             if (_draft.homeNavigationForm == HomeNavigationForm.glassDock)
               HyperosSelectTile<GlassDockLayout>(
                 label: l10n.glassDockLayoutLabel,

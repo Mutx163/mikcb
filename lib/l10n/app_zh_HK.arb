@@ -5912,7 +5912,32 @@
   "glassDockShowSettingsTabTitle": "顯示設定入口",
   "glassDockShowAddButtonTitle": "顯示新增按鈕",
   "glassDockShowAddButtonSubtitle": "在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程",
-  "glassDockExtraButtonSemanticLabel": "新增課程",
+    "glassDockExtraButtonSemanticLabel": "新增課程",
+  "homeMenuStyleLabel": "右上角選單樣式",
+  "homeMenuStyleList": "列表選單",
+  "homeMenuStyleGrid": "八宮格選單",
+  "homeMenuStyleListSubtitle": "在按鈕下方彈出文字列表，全部入口一屏展示",
+  "homeMenuStyleGridSubtitle": "底部彈出圖示瓷貼（v2.0.5.5 樣式），支援自訂按鈕",
+  "homeGridCustomizeTitle": "自訂八宮格按鈕",
+  "homeGridCustomizeDetails": "已啟用 {count}/{max} 個",
+  "@homeGridCustomizeDetails": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "homeGridEditorHintBody": "八宮格最多放置 {max} 個按鈕；按住項目拖動即可排序。",
+  "@homeGridEditorHintBody": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "homeGridEditorEnabledTitle": "已啟用",
+  "homeGridEditorAvailableTitle": "可新增",
+  "homeGridEditorRemoveTooltip": "移除",
+  "homeGridEditorAddTooltip": "新增",
+  "homeGridEditorResetAction": "恢復預設排列",
+  "homeGridEditorAllAdded": "所有入口都已啟用",
   "classAlarmEntryTitle": "上課鬧鐘",
   "classAlarmGroupSetup": "新增鬧鐘",
   "classAlarmGroupBehavior": "響鈴行為",

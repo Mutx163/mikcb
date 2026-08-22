@@ -9775,6 +9775,52 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockExtraButtonSemanticLabel => '添加课程';
 
   @override
+  String get homeMenuStyleLabel => '右上角菜单样式';
+
+  @override
+  String get homeMenuStyleList => '列表菜单';
+
+  @override
+  String get homeMenuStyleGrid => '八宫格菜单';
+
+  @override
+  String get homeMenuStyleListSubtitle => '在按钮下方弹出文字列表，全部入口一屏展示';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '底部弹出图标瓷贴（v2.0.5.5 样式），支持自定义按钮';
+
+  @override
+  String get homeGridCustomizeTitle => '自定义八宫格按钮';
+
+  @override
+  String homeGridCustomizeDetails(int count, int max) {
+    return '已启用 $count/$max 个';
+  }
+
+  @override
+  String homeGridEditorHintBody(int max) {
+    return '八宫格最多放置 $max 个按钮；按住条目拖动即可排序。';
+  }
+
+  @override
+  String get homeGridEditorEnabledTitle => '已启用';
+
+  @override
+  String get homeGridEditorAvailableTitle => '可添加';
+
+  @override
+  String get homeGridEditorRemoveTooltip => '移除';
+
+  @override
+  String get homeGridEditorAddTooltip => '添加';
+
+  @override
+  String get homeGridEditorResetAction => '恢复默认排列';
+
+  @override
+  String get homeGridEditorAllAdded => '所有入口都已启用';
+
+  @override
   String get classAlarmEntryTitle => '上课闹钟';
 
   @override
@@ -19690,6 +19736,52 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockExtraButtonSemanticLabel => '新增課程';
 
   @override
+  String get homeMenuStyleLabel => '右上角選單樣式';
+
+  @override
+  String get homeMenuStyleList => '列表選單';
+
+  @override
+  String get homeMenuStyleGrid => '八宮格選單';
+
+  @override
+  String get homeMenuStyleListSubtitle => '在按鈕下方彈出文字列表，全部入口一屏展示';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼（v2.0.5.5 樣式），支援自訂按鈕';
+
+  @override
+  String get homeGridCustomizeTitle => '自訂八宮格按鈕';
+
+  @override
+  String homeGridCustomizeDetails(int count, int max) {
+    return '已啟用 $count/$max 個';
+  }
+
+  @override
+  String homeGridEditorHintBody(int max) {
+    return '八宮格最多放置 $max 個按鈕；按住項目拖動即可排序。';
+  }
+
+  @override
+  String get homeGridEditorEnabledTitle => '已啟用';
+
+  @override
+  String get homeGridEditorAvailableTitle => '可新增';
+
+  @override
+  String get homeGridEditorRemoveTooltip => '移除';
+
+  @override
+  String get homeGridEditorAddTooltip => '新增';
+
+  @override
+  String get homeGridEditorResetAction => '恢復預設排列';
+
+  @override
+  String get homeGridEditorAllAdded => '所有入口都已啟用';
+
+  @override
   String get classAlarmEntryTitle => '上課鬧鐘';
 
   @override
@@ -29603,6 +29695,52 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockExtraButtonSemanticLabel => '新增課程';
+
+  @override
+  String get homeMenuStyleLabel => '右上角選單樣式';
+
+  @override
+  String get homeMenuStyleList => '列表選單';
+
+  @override
+  String get homeMenuStyleGrid => '八宮格選單';
+
+  @override
+  String get homeMenuStyleListSubtitle => '在按鈕下方彈出文字列表，全部入口一屏展示';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼（v2.0.5.5 樣式），支援自訂按鈕';
+
+  @override
+  String get homeGridCustomizeTitle => '自訂八宮格按鈕';
+
+  @override
+  String homeGridCustomizeDetails(int count, int max) {
+    return '已啟用 $count/$max 個';
+  }
+
+  @override
+  String homeGridEditorHintBody(int max) {
+    return '八宮格最多放置 $max 個按鈕；按住項目拖動即可排序。';
+  }
+
+  @override
+  String get homeGridEditorEnabledTitle => '已啟用';
+
+  @override
+  String get homeGridEditorAvailableTitle => '可新增';
+
+  @override
+  String get homeGridEditorRemoveTooltip => '移除';
+
+  @override
+  String get homeGridEditorAddTooltip => '新增';
+
+  @override
+  String get homeGridEditorResetAction => '恢復預設排列';
+
+  @override
+  String get homeGridEditorAllAdded => '所有入口都已啟用';
 
   @override
   String get classAlarmEntryTitle => '上課鬧鐘';

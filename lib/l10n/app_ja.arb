@@ -5912,7 +5912,32 @@
   "glassDockShowSettingsTabTitle": "設定タブを表示",
   "glassDockShowAddButtonTitle": "追加ボタンを表示",
   "glassDockShowAddButtonSubtitle": "ナビバーの横に独立した丸ボタンを表示し、タップで直接授業を追加",
-  "glassDockExtraButtonSemanticLabel": "授業を追加",
+    "glassDockExtraButtonSemanticLabel": "授業を追加",
+  "homeMenuStyleLabel": "右上メニューのスタイル",
+  "homeMenuStyleList": "リストメニュー",
+  "homeMenuStyleGrid": "八宮格メニュー",
+  "homeMenuStyleListSubtitle": "ボタンの下にテキストリストを表示し、すべての入口を一度に見せます",
+  "homeMenuStyleGridSubtitle": "下部にアイコンタイルを表示（v2.0.5.5 スタイル）、ボタンのカスタマイズ対応",
+  "homeGridCustomizeTitle": "グリッドボタンのカスタマイズ",
+  "homeGridCustomizeDetails": "{count}/{max} 個表示中",
+  "@homeGridCustomizeDetails": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "homeGridEditorHintBody": "グリッドには最大 {max} 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。",
+  "@homeGridEditorHintBody": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "homeGridEditorEnabledTitle": "表示中",
+  "homeGridEditorAvailableTitle": "追加可能",
+  "homeGridEditorRemoveTooltip": "削除",
+  "homeGridEditorAddTooltip": "追加",
+  "homeGridEditorResetAction": "デフォルトの並びに戻す",
+  "homeGridEditorAllAdded": "すべての入口が表示中です",
   "classAlarmEntryTitle": "授業アラーム",
   "classAlarmGroupSetup": "アラームを追加",
   "classAlarmGroupBehavior": "動作設定",
