@@ -9,17 +9,28 @@ class WarehouseRememberedLogin {
   final String username;
   final String password;
 
+  /// 绑定的教务站点主机名（保存凭据时的页面 host，小写）。
+  /// 自动填充前必须与当前页面 host 一致；旧版本数据无该字段（空串），
+  /// 按旧契约放行，待下次保存时补绑。
+  final String host;
+
   const WarehouseRememberedLogin({
     required this.username,
     required this.password,
+    this.host = '',
   });
 
-  Map<String, dynamic> toJson() => {'username': username, 'password': password};
+  Map<String, dynamic> toJson() => {
+    'username': username,
+    'password': password,
+    'host': host,
+  };
 
   factory WarehouseRememberedLogin.fromJson(Map<String, dynamic> json) {
     return WarehouseRememberedLogin(
       username: json['username'] as String? ?? '',
       password: json['password'] as String? ?? '',
+      host: json['host'] as String? ?? '',
     );
   }
 }
@@ -179,6 +190,7 @@ class WarehouseSyncBundle {
               login: WarehouseRememberedLogin(
                 username: entry.login.username,
                 password: '',
+                host: entry.login.host,
               ),
             ),
           )
@@ -456,6 +468,7 @@ class WarehouseImportPreferencesService {
         WarehouseRememberedLogin(
           username: entry.login.username,
           password: resolvedPassword,
+          host: entry.login.host,
         ),
       );
     }
@@ -515,6 +528,34 @@ class WarehouseImportPreferencesService {
 
     return rememberedLogins;
   }
+}
+
+/// 提取 URL 的主机名（小写）；无法解析或为空时返回 null。
+String? extractUrlHost(String? url) {
+  final trimmed = (url ?? '').trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  final uri = Uri.tryParse(trimmed);
+  final host = uri?.host.trim().toLowerCase() ?? '';
+  return host.isEmpty ? null : host;
+}
+
+/// 自动填充门禁（凭据绑定站点）：已绑定 host 的凭据只允许在
+/// 同一站点页面自动填充；未绑定 host 的旧数据按旧契约放行。
+/// [login] 为 null 时视为无可填充凭据。
+bool rememberedLoginAllowsUrl(
+  WarehouseRememberedLogin? login,
+  String? currentUrl,
+) {
+  if (login == null) {
+    return false;
+  }
+  final boundHost = login.host.trim().toLowerCase();
+  if (boundHost.isEmpty) {
+    return true;
+  }
+  return extractUrlHost(currentUrl) == boundHost;
 }
 
 /// Cloud restore / sync import: prefer non-empty remote password; otherwise

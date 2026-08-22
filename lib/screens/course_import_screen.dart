@@ -5039,6 +5039,19 @@ class _WarehouseAdapterWebLoginScreenState
     );
     _latestLoginCandidate = candidate;
 
+    // W7 凭据绑定站点：自动填充只允许发生在凭据来源的同一 host。
+    // 跨源页面（钓鱼页 / 换站）不提示也不回放填充；手动「填充」菜单
+    // 属于用户看清当前页面后的显式动作，不受此门禁限制。
+    if (!rememberedLoginAllowsUrl(
+      _rememberedLogin,
+      await _resolveCurrentUrl(),
+    )) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
     if (shouldPromptRememberedLoginAutofill(
       hasPasswordField: hasPasswordField,
       rememberedLogin: _rememberedLogin,
@@ -5097,7 +5110,7 @@ class _WarehouseAdapterWebLoginScreenState
     if (shouldSave == true) {
       await _preferencesService.setRememberedLogin(
         widget.adapter.adapterId,
-        candidate,
+        await _bindCurrentHostToLogin(candidate),
       );
       if (!mounted) return;
       setState(() {
@@ -5125,6 +5138,33 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     await _requestLoginStateProbe();
+  }
+
+  /// W7：读取 WebView 当前 URL；桥接不可用时退回状态里维护的地址。
+  Future<String?> _resolveCurrentUrl() async {
+    try {
+      return await _controller.currentUrl();
+    } catch (_) {
+      return _currentUrl;
+    }
+  }
+
+  /// W7：保存凭据时绑定其来源站点 host（已绑定的保持不变）。
+  Future<WarehouseRememberedLogin> _bindCurrentHostToLogin(
+    WarehouseRememberedLogin login,
+  ) async {
+    if (login.host.isNotEmpty) {
+      return login;
+    }
+    final host = extractUrlHost(await _resolveCurrentUrl());
+    if (host == null) {
+      return login;
+    }
+    return WarehouseRememberedLogin(
+      username: login.username,
+      password: login.password,
+      host: host,
+    );
   }
 
   Future<void> _autofillRememberedLogin() async {
@@ -5192,13 +5232,14 @@ class _WarehouseAdapterWebLoginScreenState
         _showLightTip(context, l10n.noUsernameOrPasswordRecognized);
         return;
       }
+      final boundLogin = await _bindCurrentHostToLogin(login);
       await _preferencesService.setRememberedLogin(
         widget.adapter.adapterId,
-        login,
+        boundLogin,
       );
       if (!mounted) return;
       setState(() {
-        _rememberedLogin = login;
+        _rememberedLogin = boundLogin;
         _lastScriptStatus = l10n.rememberedCurrentLoginStatus;
       });
       _showLightTip(context, l10n.rememberedCurrentLoginSuccess);
@@ -5519,6 +5560,13 @@ class _WarehouseAdapterWebLoginScreenState
                   widget.adapter.adapterId,
                 );
             if (!mounted) return false;
+            // W7：回放中的自动填充同样受站点绑定约束。
+            if (!rememberedLoginAllowsUrl(
+              remembered,
+              await _resolveCurrentUrl(),
+            )) {
+              return false;
+            }
             if (remembered != null && remembered.password.isNotEmpty) {
               if (_rememberedLogin == null) {
                 setState(() {
