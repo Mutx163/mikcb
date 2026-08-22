@@ -7,7 +7,9 @@ import 'package:flutter_miuix/miuix.dart';
 
 import '../l10n/app_localizations.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
+import 'home_page_region_blur.dart' show HomePageChromeGlassFill;
 
 /// 壁纸位置选择页的返回结果。
 ///
@@ -97,6 +99,8 @@ Future<WallpaperPositionPickerResult?> pushWallpaperPositionPickerPage(
 /// 预览铺满整个页面，与首页壁纸一样全屏显示（同屏幕尺寸、同 cover、
 /// 同对齐），所见即所得；拖动图片可同时调整水平和垂直对齐，
 /// 状态栏也透出壁纸；顶部悬浮「退出 / 标题 / 完成」，底部为「换壁纸」。
+/// 三个按钮的材质跟随全局「玻璃模式」设置（液态玻璃 ↔ 高斯模糊），
+/// 与首页玻璃带、弹窗保持同一条材质路径。
 class WallpaperPositionPickerPage extends StatefulWidget {
   const WallpaperPositionPickerPage({
     super.key,
@@ -325,11 +329,17 @@ class _WallpaperPositionPickerPageState
                           onPressed: _exit,
                           isCompact: true,
                           foregroundColor: inkColor,
+                          surfaceLuminance: _topLuminance,
                         ),
-                        const Spacer(),
-                        Flexible(
+                        // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
+                        // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
+                        // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
+                        // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
+                        // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
+                        Expanded(
                           child: Text(
                             l10n.wallpaperPositionPickerTitle,
+                            textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -339,12 +349,12 @@ class _WallpaperPositionPickerPageState
                             ),
                           ),
                         ),
-                        const Spacer(),
                         _HyperosHeaderTextButton(
                           label: l10n.wallpaperPositionPickerDone,
                           onPressed: _confirm,
                           isCompact: true,
                           foregroundColor: inkColor,
+                          surfaceLuminance: _topLuminance,
                         ),
                       ],
                     ),
@@ -374,6 +384,7 @@ class _WallpaperPositionPickerPageState
         onPressed: _switching ? null : _switchWallpaper,
         isCompact: false,
         foregroundColor: inkColor,
+        surfaceLuminance: _topLuminance,
       ),
     );
   }
@@ -457,7 +468,21 @@ class _WallpaperPositionPickerPageState
   }
 }
 
-/// 顶部栏的描边文字按钮，圆角与 HyperOS 按钮一致。
+/// 悬浮在壁纸上的玻璃按钮，圆角与 HyperOS 按钮一致。
+///
+/// 材质跟随全局「玻璃模式」设置（[FrostedAppearanceScope.glassMode]），
+/// 判定与首页玻璃带 / 底部玻璃坞完全同一条路径：
+///
+/// - **液态玻璃**：[HyperosLiquidGlassSurface]（nestedTile 角色）折射材质，
+///   与弹窗/首页顶部同参；文字浮在玻璃上，只叠一层极性衬底保证可读性。
+/// - **经典磨砂 / 高斯模糊 / 半透明**：实时 [BackdropFilter] 高斯模糊 +
+///   极性衬底（模糊强度跟随「模糊强度」滑杆）。
+/// - 系统降级（无障碍/减动效/高对比）或关闭「毛玻璃效果」时：只画衬底，
+///   与 [FrostedHeaderBackground] 的降级行为一致。
+///
+/// 衬底极性跟随 [surfaceLuminance]（壁纸顶部亮度采样），与首页玻璃带
+/// [HomePageChromeGlassFill.scrimColor] 同一条规则；文字颜色仍由调用方
+/// 通过 [foregroundColor]（同源采样）决定。
 ///
 /// [isCompact] 控制更小的尺寸，用于左上角/右上角按钮。
 class _HyperosHeaderTextButton extends StatelessWidget {
@@ -466,12 +491,16 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     required this.onPressed,
     this.isCompact = false,
     this.foregroundColor,
+    this.surfaceLuminance,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool isCompact;
   final Color? foregroundColor;
+
+  /// 所在表面（壁纸预览）的顶部亮度；为 null 时按主题明暗回退极性。
+  final double? surfaceLuminance;
 
   @override
   Widget build(BuildContext context) {
@@ -480,36 +509,87 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       HyperosMiuixButton.cornerRadius,
       minHeight,
     );
+    final radius = BorderRadius.circular(cornerRadius);
     final fgColor = foregroundColor ?? HyperosColors.primary(context);
     final borderColor = foregroundColor ?? HyperosColors.outline(context);
     final enabled = onPressed != null;
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(cornerRadius),
-        border: Border.all(color: borderColor),
+    final content = MiuixPressable(
+      onPressed: onPressed,
+      borderRadius: radius,
+      child: Container(
+        constraints: BoxConstraints(
+          minWidth: isCompact ? 56 : 120,
+          minHeight: minHeight,
+        ),
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 16 : 24,
+          vertical: 4,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: enabled ? fgColor : fgColor.withValues(alpha: 0.45),
+          ),
+        ),
       ),
-      child: MiuixPressable(
-        onPressed: onPressed,
-        borderRadius: BorderRadius.circular(cornerRadius),
-        child: Container(
-          constraints: BoxConstraints(
-            minWidth: isCompact ? 56 : 120,
-            minHeight: minHeight,
-          ),
-          alignment: Alignment.center,
-          padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 16 : 24,
-            vertical: 4,
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: enabled ? fgColor : fgColor.withValues(alpha: 0.45),
+    );
+
+    // 与首页玻璃带同一判定：backdropBlurEnabled 已包含系统降级策略
+    // （LiquidGlassDegradation：无障碍/减动效/高对比时回退实底材质）。
+    final appearance = FrostedAppearanceScope.of(context);
+    final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final wash = HomePageChromeGlassFill.scrimColor(
+      context,
+      wallpaperTopLuminance: surfaceLuminance,
+    );
+
+    if (blurEnabled &&
+        appearance.glassMode == FrostedGlassMode.liquidGlass) {
+      // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。液态玻璃自带
+      // 边缘高光，不再叠加描边；衬底压在玻璃上保证文字对比度
+      // （与课程玻璃卡片叠课程色 tint 同一做法）。
+      return HyperosLiquidGlassSurface(
+        role: HyperosLiquidGlassRole.nestedTile,
+        borderRadius: cornerRadius,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(child: ColoredBox(color: wash)),
             ),
-          ),
+            content,
+          ],
+        ),
+      );
+    }
+
+    // 高斯模糊路径（经典磨砂/高斯模糊/半透明共用）：模糊强度跟随设置；
+    // 关闭模糊或系统降级时 FrostedHeaderBackground 自动只画衬底。
+    // 描边保留，保证纯衬底状态下按钮轮廓仍然可辨。
+    return ClipRRect(
+      borderRadius: radius,
+      child: FrostedHeaderBackground(
+        blurEnabled: blurEnabled,
+        blurSigma: appearance.sheetBlurSigma,
+        tint: wash,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(color: borderColor),
+                ),
+              ),
+            ),
+            content,
+          ],
         ),
       ),
     );
