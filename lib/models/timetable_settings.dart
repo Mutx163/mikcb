@@ -463,29 +463,29 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
 }
 
 /// Visual surface style for course cards.
+///
+/// 只保留两档：实体卡片与高斯模糊。旧版本的「半透明」「玻璃（液态玻璃）」
+/// 档位已下线，读取旧配置时分别并入这两档（见
+/// [CourseCardSurfaceStyleX.fromValue]）。
 enum CourseCardSurfaceStyle {
   /// Solid opaque card with gradient wash (default).
   solid,
 
-  /// Semi-transparent milky card.
-  translucent,
-
   /// Gaussian blur backdrop over the page background.
   gaussian,
-
-  /// 玻璃卡片：液态玻璃模式用与弹窗/顶部同款的液态玻璃材质；
-  /// 标准/高斯材质模式退化为高斯模糊卡片（跟随全局高级材质设置）。
-  glass,
 }
 
 extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   String get value => name;
 
   static CourseCardSurfaceStyle fromValue(String? value) {
-    // Older settings may contain the legacy liquid-glass card style.
-    // 恢复为玻璃卡片（跟随全局高级材质设置渲染）。
-    if (value == 'liquidGlass') {
-      return CourseCardSurfaceStyle.glass;
+    // 旧档位迁移：半透明并入实体卡片；玻璃 / 液态玻璃并入高斯模糊。
+    switch (value) {
+      case 'translucent':
+        return CourseCardSurfaceStyle.solid;
+      case 'glass':
+      case 'liquidGlass':
+        return CourseCardSurfaceStyle.gaussian;
     }
     return CourseCardSurfaceStyle.values.firstWhere(
       (item) => item.value == value,
@@ -1233,6 +1233,9 @@ class TimetableSettings {
 
   /// 上课闹钟：写入系统时钟时是否尝试跳过确认页（EXTRA_SKIP_UI）。
   final bool classAlarmSkipUi;
+
+  /// 上课闹钟：批量添加的范围档位（0=未来4周 1=未来8周 2=本周起至学期结束）。
+  final int classAlarmRange;
   final String courseCardTitleColorLight;
   final String courseCardTitleColorDark;
   final String courseCardDetailColorLight;
@@ -1409,6 +1412,7 @@ class TimetableSettings {
     this.holidayOverrideEnabled = false,
     this.classAlarmLeadMinutes = 30,
     this.classAlarmSkipUi = false,
+    this.classAlarmRange = 0,
     this.courseCardTitleColorLight = defaultCourseCardTitleColor,
     this.courseCardTitleColorDark = defaultCourseCardTitleColor,
     this.courseCardDetailColorLight = defaultCourseCardDetailColor,
@@ -1574,6 +1578,7 @@ class TimetableSettings {
       holidayOverrideEnabled: false,
       classAlarmLeadMinutes: 30,
       classAlarmSkipUi: false,
+      classAlarmRange: 0,
       courseCardTitleColorLight: defaultCourseCardTitleColor,
       courseCardTitleColorDark: defaultCourseCardTitleColor,
       courseCardDetailColorLight: defaultCourseCardDetailColor,
@@ -1739,6 +1744,7 @@ class TimetableSettings {
       'holidayOverrideEnabled': holidayOverrideEnabled,
       'classAlarmLeadMinutes': classAlarmLeadMinutes,
       'classAlarmSkipUi': classAlarmSkipUi,
+      'classAlarmRange': classAlarmRange,
       'courseCardTitleColorLight': courseCardTitleColorLight,
       'courseCardTitleColorDark': courseCardTitleColorDark,
       'courseCardDetailColorLight': courseCardDetailColorLight,
@@ -2111,6 +2117,12 @@ class TimetableSettings {
       classAlarmLeadMinutes:
           (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
       classAlarmSkipUi: json['classAlarmSkipUi'] as bool? ?? false,
+      // 档位只允许 0-2（「整学期」与「至学期结束」行为相同已合并），
+      // 旧值或脏值一律回退默认的未来 4 周。
+      classAlarmRange: () {
+        final value = (json['classAlarmRange'] as num?)?.toInt() ?? 0;
+        return value >= 0 && value <= 2 ? value : 0;
+      }(),
       courseCardTitleColorLight:
           json['courseCardTitleColorLight'] as String? ??
           defaultCourseCardTitleColor,
@@ -2347,6 +2359,7 @@ class TimetableSettings {
     bool? holidayOverrideEnabled,
     int? classAlarmLeadMinutes,
     bool? classAlarmSkipUi,
+    int? classAlarmRange,
     String? courseCardTitleColorLight,
     String? courseCardTitleColorDark,
     String? courseCardDetailColorLight,
@@ -2637,6 +2650,7 @@ class TimetableSettings {
       classAlarmLeadMinutes:
           classAlarmLeadMinutes ?? this.classAlarmLeadMinutes,
       classAlarmSkipUi: classAlarmSkipUi ?? this.classAlarmSkipUi,
+      classAlarmRange: classAlarmRange ?? this.classAlarmRange,
       courseCardTitleColorLight:
           courseCardTitleColorLight ?? this.courseCardTitleColorLight,
       courseCardTitleColorDark:
