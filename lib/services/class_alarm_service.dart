@@ -10,8 +10,8 @@ import '../models/timetable_settings.dart' show SectionTime;
 /// with empty [repeatDays] therefore means a one-shot alarm, while a non-empty
 /// list repeats every week on those weekdays until the user deletes it.
 @immutable
-class MorningClassAlarmPlan {
-  const MorningClassAlarmPlan({
+class ClassAlarmPlan {
+  const ClassAlarmPlan({
     required this.hour,
     required this.minute,
     required this.label,
@@ -38,12 +38,39 @@ class MorningClassAlarmPlan {
 
   /// True when this plan fires exactly once (no EXTRA_DAYS is sent).
   final bool isOneShot;
+
+  /// Returns a copy with the given fields replaced; label/skipUi default to
+  /// the original values so callers can fill them in at dispatch time.
+  ClassAlarmPlan copyWith({String? label, bool? skipUi}) => ClassAlarmPlan(
+        hour: hour,
+        minute: minute,
+        label: label ?? this.label,
+        repeatDays: repeatDays,
+        skipUi: skipUi ?? this.skipUi,
+        isOneShot: isOneShot,
+      );
+}
+
+/// One weekly-repeat alarm bucket: weekdays whose first class shares the same
+/// ring time (e.g. Mon/Wed morning group vs Fri afternoon group).
+@immutable
+class ClassAlarmWeeklyGroup {
+  const ClassAlarmWeeklyGroup({
+    required this.dayOfWeeks,
+    required this.plan,
+  });
+
+  /// ISO weekdays (1=Mon .. 7=Sun) covered by this group, ascending.
+  final List<int> dayOfWeeks;
+
+  /// The weekly repeating plan shared by [dayOfWeeks].
+  final ClassAlarmPlan plan;
 }
 
 /// Result of a single SET_ALARM dispatch.
 @immutable
-class MorningClassAlarmResult {
-  const MorningClassAlarmResult({
+class ClassAlarmResult {
+  const ClassAlarmResult({
     required this.launched,
     required this.skipUiApplied,
     this.error,
@@ -56,8 +83,8 @@ class MorningClassAlarmResult {
 
 /// One input row describing "this weekday has a first section at HH:mm".
 @immutable
-class MorningClassDayFirstSection {
-  const MorningClassDayFirstSection({
+class ClassAlarmDayFirstSection {
+  const ClassAlarmDayFirstSection({
     required this.dayOfWeek,
     required this.startTime,
   });
@@ -73,17 +100,15 @@ class MorningClassDayFirstSection {
 /// android.provider.AlarmClock contract. This app never owns the alarm
 /// afterwards: there is no public API to read, edit or delete clock entries,
 /// so all management beyond creation is delegated to the clock app itself.
-class MorningClassAlarmService {
+class ClassAlarmService {
   static const MethodChannel _channel = MethodChannel(
     'com.mutx163.qingyu/system_alarm',
   );
 
-  /// Dispatches one SET_ALARM intent. Returns [MorningClassAlarmResult]
+  /// Dispatches one SET_ALARM intent. Returns [ClassAlarmResult]
   /// instead of throwing: platform failures degrade to a launched=false
   /// result the UI can surface as a toast.
-  static Future<MorningClassAlarmResult> addAlarm(
-    MorningClassAlarmPlan plan,
-  ) async {
+  static Future<ClassAlarmResult> addAlarm(ClassAlarmPlan plan) async {
     try {
       final args = <String, Object?>{
         'hour': plan.hour,
@@ -96,18 +121,18 @@ class MorningClassAlarmService {
       final map = raw != null
           ? Map<String, Object?>.from(raw as Map)
           : const <String, Object?>{};
-      return MorningClassAlarmResult(
+      return ClassAlarmResult(
         launched: map['launched'] == true,
         skipUiApplied: map['skipUi'] == true,
       );
     } on PlatformException catch (error) {
-      return MorningClassAlarmResult(
+      return ClassAlarmResult(
         launched: false,
         skipUiApplied: false,
         error: error.message ?? error.code,
       );
     } on MissingPluginException {
-      return const MorningClassAlarmResult(
+      return const ClassAlarmResult(
         launched: false,
         skipUiApplied: false,
         error: 'unsupported_platform',
@@ -131,8 +156,22 @@ class MorningClassAlarmService {
   }
 }
 
+/// Aggregation output: merged weekly groups plus weekdays whose first-class
+/// time varies inside the selected range (those cannot be represented by one
+/// honest weekly-repeat alarm and are reported back to the caller).
+@immutable
+class ClassAlarmGrouping {
+  const ClassAlarmGrouping({required this.groups, required this.variableDays});
+
+  /// One alarm bucket per distinct ring time, ordered by ring time.
+  final List<ClassAlarmWeeklyGroup> groups;
+
+  /// ISO weekdays whose first-class start differs between weeks.
+  final List<int> variableDays;
+}
+
 /// Pure helpers shared by the settings screen and unit tests.
-abstract final class MorningClassAlarmLogic {
+abstract final class ClassAlarmLogic {
   /// Parses "HH:mm" into minutes since midnight; null when malformed.
   static int? parseClockMinutes(String value) {
     final parts = value.trim().split(':');
@@ -204,7 +243,7 @@ abstract final class MorningClassAlarmLogic {
   ///
   /// Returns null when the resolved ring time is already in the past: the
   /// clock app would reject or silently create an overdue alarm.
-  static MorningClassAlarmPlan? buildSingleShotPlan({
+  static ClassAlarmPlan? buildSingleShotPlan({
     required String courseStartTime,
     required String label,
     required DateTime now,
@@ -221,7 +260,7 @@ abstract final class MorningClassAlarmLogic {
     }
     final lead = clampLeadMinutes(leadMinutes);
     final ring = startMinutes - lead;
-    return MorningClassAlarmPlan(
+    return ClassAlarmPlan(
       hour: ring ~/ 60,
       minute: ring % 60,
       label: label,
@@ -231,53 +270,139 @@ abstract final class MorningClassAlarmLogic {
     );
   }
 
-  /// Builds the recurring weekly plan covering every remaining teaching day.
+  /// Buckets weekdays by their own first-class ring time and emits one
+  /// weekly-repeating plan per bucket.
   ///
-  /// [days] must already be filtered to weekdays whose next occurrence is
-  /// today or later. The ring time derives from the earliest first-section
-  /// start minus [leadMinutes]; negative results wrap below midnight and the
-  /// alarm simply fires late in the previous evening on those days.
-  static MorningClassAlarmPlan? buildWeeklyPlan({
-    required List<MorningClassDayFirstSection> days,
+  /// Days whose first class happens in the morning and days whose first class
+  /// is in the afternoon produce separate alarms instead of one early alarm
+  /// wrongly firing every day. Input rows whose time cannot be parsed are
+  /// skipped; buckets are ordered by ring time ascending. Negative ring times
+  /// (huge lead before midnight) wrap below midnight so the repeat mask stays
+  /// aligned with class days.
+  static List<ClassAlarmWeeklyGroup> buildWeeklyGroups({
+    required List<ClassAlarmDayFirstSection> days,
     required String label,
     int leadMinutes = 30,
     bool skipUi = false,
   }) {
-    if (days.isEmpty) {
-      return null;
-    }
-    var earliestStart = -1;
+    final buckets = <int, List<int>>{};
     for (final day in days) {
-      final minutes = parseClockMinutes(day.startTime);
-      if (minutes == null) {
+      final start = parseClockMinutes(day.startTime);
+      final bit = weekdayBit(day.dayOfWeek);
+      if (start == null || bit == 0) {
         continue;
       }
-      if (earliestStart < 0 || minutes < earliestStart) {
-        earliestStart = minutes;
-      }
+      final ring =
+          ((start - clampLeadMinutes(leadMinutes)) % 1440 + 1440) % 1440;
+      buckets.putIfAbsent(ring, () => []).add(day.dayOfWeek);
     }
-    if (earliestStart < 0) {
+    final groups = <ClassAlarmWeeklyGroup>[];
+    for (final ring in buckets.keys.toList()..sort()) {
+      final weekDays = buckets[ring]!.toList()..sort();
+      groups.add(
+        ClassAlarmWeeklyGroup(
+          dayOfWeeks: weekDays,
+          plan: ClassAlarmPlan(
+            hour: ring ~/ 60,
+            minute: ring % 60,
+            label: label,
+            repeatDays: [
+              for (final day in weekDays) weekdayBit(day),
+            ]..sort(),
+            skipUi: skipUi,
+            isOneShot: false,
+          ),
+        ),
+      );
+    }
+    return groups;
+  }
+
+  /// Builds one weekly plan for a single course series ("arm this course").
+  ///
+  /// The alarm repeats on the course weekday at its own start time minus the
+  /// lead; null when [startTime] cannot be parsed.
+  static ClassAlarmPlan? buildCourseWeeklyPlan({
+    required int dayOfWeek,
+    required String startTime,
+    required String label,
+    int leadMinutes = 30,
+    bool skipUi = false,
+  }) {
+    final start = parseClockMinutes(startTime);
+    final bit = weekdayBit(dayOfWeek);
+    if (start == null || bit == 0) {
       return null;
     }
-    final bits = <int>{
-      for (final day in days)
-        if (parseClockMinutes(day.startTime) != null)
-          weekdayBit(day.dayOfWeek),
-    }..remove(0);
-    if (bits.isEmpty) {
-      return null;
-    }
-    final lead = clampLeadMinutes(leadMinutes);
-    final ring = earliestStart - lead;
-    // Wrap below midnight keeps the repeat mask aligned with class days.
-    final normalizedRing = (ring % 1440 + 1440) % 1440;
-    return MorningClassAlarmPlan(
-      hour: normalizedRing ~/ 60,
-      minute: normalizedRing % 60,
+    final ring =
+        ((start - clampLeadMinutes(leadMinutes)) % 1440 + 1440) % 1440;
+    return ClassAlarmPlan(
+      hour: ring ~/ 60,
+      minute: ring % 60,
       label: label,
-      repeatDays: bits.toList()..sort(),
+      repeatDays: [bit],
       skipUi: skipUi,
       isOneShot: false,
     );
+  }
+
+  /// Merges concrete first-class occurrences (one row per week/day; a weekday
+  /// may appear in many weeks) into the smallest set of honest weekly-repeating
+  /// alarms.
+  ///
+  /// A weekday whose first-class start varies inside the selected range cannot
+  /// map onto one weekly alarm; it is reported via [ClassAlarmGrouping.variableDays]
+  /// instead of being silently approximated. Duplicate rows collapse first, so
+  /// feeding every week of the semester is cheap and idempotent.
+  static ClassAlarmGrouping groupFromOccurrences({
+    required List<ClassAlarmDayFirstSection> rows,
+    required int leadMinutes,
+  }) {
+    // Collapse duplicates and detect per-weekday time stability.
+    final timesByDay = <int, Set<int>>{};
+    for (final row in rows) {
+      final start = parseClockMinutes(row.startTime);
+      if (start == null || row.dayOfWeek < 1 || row.dayOfWeek > 7) {
+        continue;
+      }
+      timesByDay.putIfAbsent(row.dayOfWeek, () => <int>{}).add(start);
+    }
+    final variableDays = <int>[
+      for (final entry in timesByDay.entries)
+        if (entry.value.length > 1) entry.key,
+    ]..sort();
+
+    // Bucket stable weekdays by their shared ring time.
+    final buckets = <int, List<int>>{};
+    for (final entry in timesByDay.entries) {
+      if (entry.value.length != 1) {
+        continue;
+      }
+      final ring =
+          ((entry.value.first - clampLeadMinutes(leadMinutes)) % 1440 + 1440) %
+              1440;
+      buckets.putIfAbsent(ring, () => []).add(entry.key);
+    }
+    final groups = <ClassAlarmWeeklyGroup>[];
+    for (final ring in buckets.keys.toList()..sort()) {
+      final weekDays = buckets[ring]!.toList()..sort();
+      groups.add(
+        ClassAlarmWeeklyGroup(
+          dayOfWeeks: weekDays,
+          plan: ClassAlarmPlan(
+            // Label is filled by the caller per user preference; keep pure.
+            label: '',
+            hour: ring ~/ 60,
+            minute: ring % 60,
+            repeatDays: [
+              for (final day in weekDays) weekdayBit(day),
+            ]..sort(),
+            skipUi: false,
+            isOneShot: false,
+          ),
+        ),
+      );
+    }
+    return ClassAlarmGrouping(groups: groups, variableDays: variableDays);
   }
 }
