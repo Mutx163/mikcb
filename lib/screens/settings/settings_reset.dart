@@ -168,7 +168,19 @@ class _SettingsResetTile extends StatelessWidget {
     if (confirmed != true || !context.mounted) {
       return;
     }
+    // 课表页 scope 会清掉壁纸路径：先留底旧文件，落盘后删除，
+    // 避免文档目录积累孤儿图片。
+    final staleBackdropPath = scope == SettingsResetScope.timetablePage
+        ? resolveHomePageBackdropImagePath(provider.settings)
+        : null;
     onReset(applySettingsReset(provider.settings, scope));
+    unawaited(
+      deleteManagedImage(
+        staleBackdropPath,
+        directoryName: 'home_page_wallpaper',
+        filePrefix: 'wallpaper',
+      ),
+    );
     if (!context.mounted) {
       return;
     }

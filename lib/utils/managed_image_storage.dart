@@ -54,6 +54,40 @@ Future<String?> pickAndStoreManagedImage({
   return targetPath;
 }
 
+/// 删除一张受管图片。
+///
+/// 防误删双保险：路径必须位于 [directoryName] 目录内、且文件名以
+/// [filePrefix] 开头才会动手；不满足时静默跳过。文件不存在视为成功，
+/// 方便「恢复默认」等幂等清理路径直接调用。
+Future<void> deleteManagedImage(
+  String? path, {
+  required String directoryName,
+  required String filePrefix,
+}) async {
+  if (path == null || path.isEmpty) {
+    return;
+  }
+  try {
+    final dir = await getApplicationDocumentsDirectory();
+    final managedDirPrefix =
+        '${dir.path}${Platform.pathSeparator}$directoryName${Platform.pathSeparator}';
+    final absolute = File(path).absolute.path;
+    if (!absolute.startsWith(managedDirPrefix)) {
+      return;
+    }
+    final name = absolute.split(Platform.pathSeparator).last;
+    if (!name.startsWith(filePrefix)) {
+      return;
+    }
+    final file = File(absolute);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  } on Exception {
+    // 清理失败不阻断主流程：孤儿文件不影响功能，可下次再清。
+  }
+}
+
 /// 从所选文件的文件名或路径中提取小写扩展名，取不到时回退为 png。
 String _extensionOf(XFile pickedImage) {
   for (final fileName in [pickedImage.name, pickedImage.path]) {

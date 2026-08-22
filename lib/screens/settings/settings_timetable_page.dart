@@ -296,11 +296,16 @@ class _TimetablePageSettingsScreenState
                     ? _editHomePageBackdropPosition
                     : _pickHomePageBackdropImage,
                 onClear: () {
-                  evictHomePageImageCache(
-                    resolveHomePageBackdropImagePath(_draft),
-                  );
-                  PreblurredWallpaperCache.instance.evict(
-                    resolveHomePageBackdropImagePath(_draft),
+                  final stalePath = resolveHomePageBackdropImagePath(_draft);
+                  evictHomePageImageCache(stalePath);
+                  PreblurredWallpaperCache.instance.evict(stalePath);
+                  // 壁纸文件一并删除，避免文档目录积累孤儿图片。
+                  unawaited(
+                    deleteManagedImage(
+                      stalePath,
+                      directoryName: 'home_page_wallpaper',
+                      filePrefix: 'wallpaper',
+                    ),
                   );
                   _updateDraft(
                     _draft.copyWith(

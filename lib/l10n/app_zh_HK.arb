@@ -254,7 +254,7 @@
   "lanEditKeepAliveWhenLeavingSubtitle": "開啟後，返回設定頁不會自動關閉局域網編輯；關閉後離開本頁即停止",
   "aboutSupportSectionTitle": "關於與支持",
   "feedbackEntryTitle": "問題回饋",
-  "feedbackEntrySubtitle": "Issue、社区渠道和建議反饋入口",
+  "feedbackEntrySubtitle": "Issue、社區渠道和建議反饋入口",
   "aboutEntryTitle": "關於軟件",
   "aboutEntrySubtitle": "開源說明、版本更新和 GitHub 倉庫",
   "setSemesterStartDateAction": "設定開學日期",
@@ -304,7 +304,7 @@
   "icsImportTitle": ".ics 日歷匯入",
   "applicableScenarioTitle": "適用場景",
   "icsScenarioIntro": "如果你已經能在 WakeUp 等課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩",
-  "stepLabel": "步骤 {step}",
+  "stepLabel": "步晝 {step}",
   "@stepLabel": {
     "placeholders": {
       "step": {
@@ -314,7 +314,7 @@
   },
   "icsStep1Subtitle": "先在其他課表應用裡匯出 .ics 日歷檔案",
   "icsStep2Subtitle": "回到這裡選擇檔案，可選“追加匯入”或“替換現有”",
-  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 周對應校歷第几周",
+  "icsStep3Subtitle": "匯入前還會讓你確認開學日期，以及課表第 1 周對應校歷第幾周",
   "supportedFilesTitle": "支持的檔案",
   "supportedFilesSuffix": "檔案後綴必須是 .ics",
   "supportedFilesImageHint": "如果你手裡只有截圖，不要走這裡，請返回上一頁選擇“識圖匯入”",
@@ -356,7 +356,7 @@
   },
   "feedbackTitle": "問題回饋",
   "feedbackIntro": "如果你遇到崩溃、課程顯示異常、匯入問題，或者想提交功能建議，可以通過下面這些渠道反饋",
-  "feedbackIssueHint": "涉及複現步骤、截圖、版本號和日誌的問題，建議優先走 GitHub Issue",
+  "feedbackIssueHint": "涉及複現步晝、截圖、版本號和日誌的問題，建議優先走 GitHub Issue",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "打開倉庫 Issue 頁面，可提交問題、建議或查看已有反饋記錄",
   "openIssuePage": "打開 Issue 頁面",
@@ -591,7 +591,7 @@
     }
   },
   "selectImportModeTitle": "選擇匯入方式",
-  "selectImportModeMessage": "你可以覆蓋目前課表，或者把備份匯入成一個新的独立課表",
+  "selectImportModeMessage": "你可以覆蓋目前課表，或者把備份匯入成一個新的獨立課表",
   "replaceCurrentTimetable": "覆蓋目前課表",
   "importAsNewTimetable": "匯入為新課表",
   "createdNewTimetableAfterImport": "匯入成功，已建立新的課表",
@@ -608,7 +608,7 @@
   "restoreBackupTitle": "從備份還原",
   "restoreBackupSubtitle": "從 .mikcb 備份檔案還原舊資料",
   "viewGuideTitle": "查看功能說明",
-  "viewGuideSubtitle": "先了解權限、超級島和基础設定",
+  "viewGuideSubtitle": "先了解權限、超級島和基礎設定",
   "migrationTitle": "遷移舊資料",
   "migrationSafeTitle": "別擔心，這不是資料丢失",
   "migrationSafeSubtitle": "我們更換了應用包名，所以桌面上會暫時出現兩個應用圖示，這是正常現象，舊資料仍在舊版應用裡，請先去舊版備份，再回到新版匯入",
@@ -797,7 +797,7 @@
     }
   },
   "currentScheduleTitle": "目前排課",
-  "currentScheduleSubtitle": "這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課",
+  "currentScheduleSubtitle": "這裡的星期、節次、教室、周次和單雙周只蠅響目前這一條排課",
   "timeSchemeLabel": "上課時間方案",
   "followCurrentTimetableWithName": "跟隨目前課表（{name}）",
   "@followCurrentTimetableWithName": {
@@ -808,7 +808,7 @@
     }
   },
   "followCurrentTimetableDescription": "未手動指定時，依上課地點自動匹配時間範本；未命中則跟隨課表主時間範本",
-  "overrideTimeSchemeDescription": "這門課會單独使用所選時間範本，不跟隨目前課表主時間範本",
+  "overrideTimeSchemeDescription": "這門課會單獨使用所選時間範本，不跟隨目前課表主時間範本",
   "weekdayLabel": "星期",
   "startSectionLabel": "開始節次",
   "endSectionLabel": "結束節次",
@@ -836,8 +836,8 @@
   "oddWeeksFilter": "單周",
   "evenWeeksFilter": "雙周",
   "rangeWeeksAllHint": "按開始周到結束周連續排課",
-  "rangeWeeksOddHint": "只保留范圍內的單周",
-  "rangeWeeksEvenHint": "只保留范圍內的雙周",
+  "rangeWeeksOddHint": "只保留範圍內的單周",
+  "rangeWeeksEvenHint": "只保留範圍內的雙周",
   "selectAllAction": "全選",
   "selectOddWeeksAction": "單周",
   "selectEvenWeeksAction": "雙周",
@@ -1036,7 +1036,7 @@
       }
     }
   },
-  "timeSchemeUsageIntro": "先看總影響范圍，再決定是直接編輯這套範本，還是先複製一套再改",
+  "timeSchemeUsageIntro": "先看總蠅響範圍，再決定是直接編輯這套範本，還是先複製一套再改",
   "profileCountLabel": "課表",
   "courseCountLabel": "課程",
   "overrideTimeSchemeLabel": "副時間表",
@@ -1045,10 +1045,10 @@
   "directlyBoundProfilesSubtitle": "這些課表切到這套範本後，預設都會按這套節次時間顯示",
   "followMainSchemeCoursesTitle": "跟隨課表主時間表的課程",
   "followMainSchemeCoursesEmpty": "目前沒有有課程通過課表主時間表間接使用它",
-  "followMainSchemeCoursesSubtitle": "這些課程沒有有單独設定副時間表，而是跟著所屬課表一起用這套範本",
+  "followMainSchemeCoursesSubtitle": "這些課程沒有有單獨設定副時間表，而是跟著所屬課表一起用這套範本",
   "overrideSchemeCoursesTitle": "把它作為副時間表的課程",
   "overrideSchemeCoursesEmpty": "目前沒有有課程把它作為副時間表",
-  "overrideSchemeCoursesSubtitle": "這些課程即使所在課表切換了主範本，也會繼續單独使用這套時間",
+  "overrideSchemeCoursesSubtitle": "這些課程即使所在課表切換了主範本，也會繼續單獨使用這套時間",
   "closeAction": "關閉",
   "editTimeSchemeTitle": "編輯時間範本",
   "backToSchemeList": "返回範本列表",
@@ -1064,7 +1064,7 @@
   "sectionCountLabel": "節數",
   "quickGenerateTimeSchemeTitle": "快捷生成課表時間",
   "addBreakRuleAction": "新增大課間規則",
-  "afterSectionLabel": "第几節後",
+  "afterSectionLabel": "第幾節後",
   "breakDurationMinutesLabel": "休息多久(分)",
   "fillNumbersValidationMessage": "請把節數和時長填寫為數字",
   "timeSchemeEditorActiveAndCoursesHint": "目前課表和部分課程正在使用這套時間範本，保存後會同步更新所有相關課表和課程",
@@ -1104,11 +1104,11 @@
       }
     }
   },
-  "morningSectionCountLabel": "上午几節",
+  "morningSectionCountLabel": "上午幾節",
   "morningFirstSectionTimeLabel": "早上第一節時間",
-  "afternoonSectionCountLabel": "下午几節",
+  "afternoonSectionCountLabel": "下午幾節",
   "afternoonFirstSectionTimeLabel": "下午第一節時間",
-  "eveningSectionCountLabel": "晚上几節",
+  "eveningSectionCountLabel": "晚上幾節",
   "eveningFirstSectionTimeLabel": "晚上第一節時間",
   "classDurationMinutesLabel": "單節課時長（分鐘）",
   "smallBreakDurationMinutesLabel": "小課間時長（分鐘）",
@@ -1142,7 +1142,7 @@
     }
   },
   "duringClassReminderTitle": "課中與下課提醒",
-  "duringClassReminderSubtitle": "只影響上課後到下課前的展示",
+  "duringClassReminderSubtitle": "只蠅響上課後到下課前的展示",
   "liveClassReminderLeadTitle": "下課前多久切到超級島 / 重點提醒",
   "liveClassReminderLeadOptionImmediate": "一上課就切換",
   "liveClassReminderLeadOptionMinutes": "下課前 {minutes} 分鐘切換",
@@ -1155,12 +1155,12 @@
   },
   "liveDisplayModeTitle": "展示方式",
   "liveDisplayModeSubtitle": "對已啟用的提醒時段生效",
-  "duringClassStatusNotificationTitle": "課中狀態栏通知",
-  "duringClassStatusNotificationImmediate": "上課後保留狀態栏通知",
+  "duringClassStatusNotificationTitle": "課中狀態欄通知",
+  "duringClassStatusNotificationImmediate": "上課後保留狀態欄通知",
   "duringClassStatusNotificationBeforeEnd": "在下課提醒開始前保留普通通知文案",
   "duringClassStatusNotificationPersistent": "上課後持續顯示普通課中通知，到下課提醒前再切換",
   "enableIslandDisplayTitle": "展示超級島",
-  "enableIslandDisplaySubtitle": "關閉後不會再尝試觸發系統超級島",
+  "enableIslandDisplaySubtitle": "關閉後不會再嘗試觸發系統超級島",
   "liveTimeThresholdTitle": "時間阈值",
   "liveTimeThresholdSubtitle": "控製上課前彈出、下課前多久切到超級島 / 重點提醒，以及最後秒級倒計時",
   "beforeClassPopupLabel": "上課前彈出時間",
@@ -1181,7 +1181,7 @@
       }
     }
   },
-  "timeCorrectionLabel": "鈴声時間矯正：{value}",
+  "timeCorrectionLabel": "鈴聲時間矯正：{value}",
   "@timeCorrectionLabel": {
     "placeholders": {
       "value": {
@@ -1189,11 +1189,11 @@
       }
     }
   },
-  "timeCorrectionHelp": "如果學校鈴声比課表快几秒，就調成提前；如果鈴声慢几秒，就調成延後",
+  "timeCorrectionHelp": "如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後",
   "duringEndTimeDisplayLabel": "課中 / 下課提醒時間樣式",
   "duringEndTimeDisplayHelp": "控製緊湊提醒裡顯示最近時間還是整段總時間",
   "liveDisplayContentTitle": "顯示內容",
-  "liveDisplayContentSubtitle": "這組設定只影響目前階段，不會改動另一組提醒顯示",
+  "liveDisplayContentSubtitle": "這組設定只蠅響目前階段，不會改動另一組提醒顯示",
   "showCourseNameTitle": "顯示課程名",
   "preferShortNameTitle": "優先顯示課程簡稱",
   "preferShortNameSubtitle": "建議簡稱控製在 3 個字以內",
@@ -1216,7 +1216,7 @@
     }
   },
   "liveIslandVisualTitle": "左側圖示與展開態",
-  "liveIslandVisualSubtitle": "左側文字圖、展開態大圖示和自定義圖片都按目前階段單独保存",
+  "liveIslandVisualSubtitle": "左側文字圖、展開態大圖示和自定義圖片都按目前階段單獨保存",
   "liveMiuiLabelImageTitle": "小米島左側文字圖示",
   "liveMiuiLabelImageSubtitle": "僅小米手機樣式生效，會把課程名或地點生成到左側圖示位",
   "liveMiuiLabelContentLabel": "左側文字內容",
@@ -1261,16 +1261,16 @@
   "selectImageAction": "選擇圖片",
   "replaceImageAction": "更換圖片",
   "liveDisplayConfigModeTitle": "配置方式",
-  "liveDisplayConfigModeSubtitle": "打開後，課中和下課提醒會完全跟隨上課前提醒顯示，下面的独立設定暫時不可編輯",
+  "liveDisplayConfigModeSubtitle": "打開後，課中和下課提醒會完全跟隨上課前提醒顯示，下面的獨立設定暫時不可編輯",
   "followBeforeClassDisplayTitle": "跟隨上課前提醒設定",
   "liveKeepAliveTitle": "後台保活",
   "liveKeepAliveOptionsTitle": "保活選項",
   "liveKeepAliveOptionsSubtitle": "用於提升超級島和提醒在後台場景下的穩定性",
   "hideFromRecentsTitle": "從最近任務中隱藏應用",
-  "hideFromRecentsSubtitle": "開啟後應用會尽量不顯示在最近任務列表中",
+  "hideFromRecentsSubtitle": "開啟後應用會盡量不顯示在最近任務列表中",
   "keepAliveServiceTitle": "輕嶼課表後台保活服務",
   "keepAliveServiceEnabledSubtitle": "目前已開啟，系統會保持後台保活輔助服務處於可用狀態",
-  "keepAliveServiceDisabledSubtitle": "目前未開啟，可進入系統無障礙設定手動打開輕嶼課表後台保活服務",
+  "keepAliveServiceDisabledSubtitle": "目前未開啟，可進入系統無漲礙設定手動打開輕嶼課表後台保活服務",
   "goEnableAction": "去開啟",
   "layoutEntryTitle": "布局與節次",
   "layoutEntrySubtitle": "節次時間、行高、時間列、周末顯示與卡片布局",
@@ -1435,7 +1435,7 @@
   "teacherLabel": "授課教師",
   "courseNatureLabel": "課程性質",
   "courseDescriptionOptional": "課程簡介 (可選)",
-  "currentScheduleHint": "這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課",
+  "currentScheduleHint": "這裡的星期、節次、教室、周次和單雙周只蠅響目前這一條排課",
   "followProfileTimeScheme": "跟隨目前課表（{name}）",
   "@followProfileTimeScheme": {
     "placeholders": {
@@ -1453,8 +1453,8 @@
   "oddWeeksLabel": "單周",
   "evenWeeksLabel": "雙周",
   "allWeeksHint": "按開始周到結束周連續排課",
-  "oddWeeksHint": "只保留范圍內的單周",
-  "evenWeeksHint": "只保留范圍內的雙周",
+  "oddWeeksHint": "只保留範圍內的單周",
+  "evenWeeksHint": "只保留範圍內的雙周",
   "customPaletteColor": "調色盤自定義顏色",
   "timeSchemeSetCountValue": "{count} 套",
   "@timeSchemeSetCountValue": {
@@ -1612,7 +1612,7 @@
   "homeTitleSectionSubtitle": "控制首頁左上角課表切換入口的樣式",
   "homeTitleStyleLabel": "標題樣式",
   "themeSeedSectionTitle": "應用主題色",
-  "themeSeedSectionSubtitle": "影響頂部欄、強調色和全局主色調",
+  "themeSeedSectionSubtitle": "蠅響頂部欄、強調色和全局主色調",
   "timetableBackgroundColorSectionTitle": "課表背景色",
   "timetableBackgroundColorSectionSubtitle": "只作用於課表頁面的大背景",
   "defaultTimetablePreviewName": "預設課表",
@@ -1650,7 +1650,7 @@
   "guideStatusEnabled": "已開啟",
   "guideStatusDisabled": "未開啟",
   "guideStatusIslandSupport": "焦點通知 / 超級島",
-  "guideStatusSystemAllowed": "系統已允许",
+  "guideStatusSystemAllowed": "系統已允許",
   "guideStatusEnabledPending": "已開啟但系統暫未確認",
   "guideStatusSuggestedCheck": "建議檢查",
   "guideStatusBatteryOptimization": "電池優化",
@@ -1658,76 +1658,76 @@
   "guideStatusBatteryRestricted": "仍受限制",
   "guideStatusKeepAlive": "後台保活輔助",
   "guideStatusAndroidVersion": "Android 版本",
-  "guideStatusVersionUnknown": "未識别",
+  "guideStatusVersionUnknown": "未識別",
   "guideStatusIslandSystemSupport": "超級島系統支持",
   "guideStatusIslandSystemRequirement": "需 HyperOS 3.0.300 及以上",
-  "guideStatusIslandHint": "如果你主要想用超級島，先確認系統版本至少是 HyperOS 3.0.300，再继续把下面權限清單按顺序點完",
+  "guideStatusIslandHint": "如果你主要想用超級島，先確認系統版本至少是 HyperOS 3.0.300，再繼續把下面權限清單按順序點完",
   "guidePermissionChecklistTitle": "權限清單",
-  "guidePermissionChecklistSubtitle": "按這個顺序檢查，最省事，也最不容易漏",
-  "guideChecklistRequestNotificationTitle": "申请通知權限",
+  "guidePermissionChecklistSubtitle": "按這個順序檢查，最省事，也最不容易漏",
+  "guideChecklistRequestNotificationTitle": "申請通知權限",
   "guideChecklistRequestNotificationSubtitle": "這是所有提醒的前提",
   "guideChecklistOpenNotificationTitle": "打開通知設定",
-  "guideChecklistOpenNotificationSubtitle": "檢查通知总開關、锁屏展示和实時通知權限",
+  "guideChecklistOpenNotificationSubtitle": "檢查通知總開關、锁屏展示和實時通知權限",
   "guideChecklistOpenIslandTitle": "打開焦點通知設定",
   "guideChecklistOpenIslandSubtitle": "HyperOS 3.0.300 及以上再檢查 promoted / 超級島通知",
   "guideChecklistOpenAutoStartTitle": "打開自啟動設定",
-  "guideChecklistOpenAutoStartSubtitle": "允许應用開机自啟和後台常驻",
+  "guideChecklistOpenAutoStartSubtitle": "允許應用開機自啟和後台常驻",
   "guideChecklistOpenBatteryTitle": "打開電池策略設定",
   "guideChecklistOpenBatterySubtitle": "建議改成無限制，避免上課提醒被中斷",
   "guideChecklistOpenKeepAliveTitle": "打開後台保活輔助",
   "guideChecklistOpenKeepAliveSubtitle": "進一步提升超級島和提醒在後台場景下的穩定性",
   "guideShortNameAdviceTitle": "課程簡稱建議",
-  "guideShortNameAdviceSubtitle": "超級島支持顯示課程簡稱，簡稱不是自動生成的，需要你在課程编辑裡自己填寫，建議控制在 3 個字以內，顯示会更穩定",
-  "guideShortNameRecommended": "推荐示例",
-  "guideShortNameNotRecommended": "不推荐",
+  "guideShortNameAdviceSubtitle": "超級島支持顯示課程簡稱，簡稱不是自動生成的，需要你在課程編輯裡自己填寫，建議控制在 3 個字以內，顯示會更穩定",
+  "guideShortNameRecommended": "推薦示例",
+  "guideShortNameNotRecommended": "不推薦",
   "guideShortNameRecommendedExample": "高數 / 概率 / 數控",
-  "guideShortNameNotRecommendedExample": "高等數学A(1) / 數控技術及應用",
+  "guideShortNameNotRecommendedExample": "高等數學A(1) / 數控技術及應用",
   "guideSetCourseShortNameAction": "去設定課程簡稱",
   "guideImportMethodsTitle": "課表導入方式",
-  "guideImportMethodsSubtitle": "目前版本已经支持部分学校的教務系統網頁登入導入；如果你的学校還没適配，也還有其他遷移方式",
-  "guideImportMethodStep1": "優先進入“導入課程 > 教務系統導入”，选擇学校和適配器後，直接在應用內打開教務網頁完成導入。",
-  "guideImportMethodStep2": "如果你的学校暫時没有適配，可以先在 WakeUp 等課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。",
-  "guideImportMethodStep3": "如果别人已经在用本應用，也可以让对方導出完整備份文件，你直接導入就能恢複課程和設定。",
-  "guideImportMethodExtra": "如果你会抓包、網頁偵錯或 JavaScript，也欢迎參與学校教務適配补充，让更多学校能直接導入。",
-  "guideFinalTipsTitle": "最後再看這 3 条",
-  "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不够，應用仍可正常發普通提醒。",
-  "guideFinalTip2": "2. 先在設定頁調整「上課前弹出」和「課中與臨近下課提醒」的閾值。",
-  "guideFinalTip3": "3. 完成系統權限設定後，再用測試通知驗證；如果島区還是偶尔消失，優先檢查自啟動和省電策略。",
-  "guidePrivacyHelperRequireConsent": "你勾选同意後，代表你已阅讀並同意上述友盟相關說明、隱私內容與免责提示",
-  "guidePrivacyHelperViewOnly": "這裡保留與首次啟動一致的隱私、第三方 SDK 與免责說明，方便你隨時查看；目前頁面不需要再次勾选同意",
-  "guidePrivacySectionTitle": "隱私、第三方 SDK 與免责說明",
-  "guidePrivacyParagraph1": "本應用主體功能按本地运行方式設計，課表、時間模板、課程記錄和大部分設定預設保存在你的裝置本地。",
-  "guidePrivacyParagraph2": "只有在你主動使用檢查更新、下載更新、導入導出等联網功能，或你勾选同意後初始化友盟相關 SDK 時，應用才会與外部服務發生資料交互。",
-  "guidePrivacyParagraph3": "本應用接入友盟移動統計 SDK、友盟應用性能监控 SDK 以及高級运营分析依赖庫。它們的服務用途包括移動統計分析、應用性能监控以及高級运营分析相關能力；只有在你勾选同意後，這些 SDK 才会正式初始化。",
-  "guidePrivacyParagraph4": "按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及高級运营分析依赖庫涉及的應用列表和地理位置相關資訊。",
-  "guideRiskTitle": "免责與风险提示",
-  "guideRiskParagraph1": "1. 超級島、焦點通知、後台提醒和保活效果依赖系統版本、机型、厂商策略、權限、自啟動、電池策略等外部条件，無法保证所有裝置表现完全一致。",
-  "guideRiskParagraph2": "2. 檢查更新、鏡像下載、系統下載器、導入導出與分享等能力依赖網路环境、第三方服務和系統文件能力；若出现失败、限速或文件異常，请以 Release 頁面、你自己保存的備份文件和系統提示為准。",
-  "guideRiskParagraph3": "3. 在遷移、導入或覆盖資料前，请先自行確認備份文件完整可用，並妥善保管含有課表資訊的文件；因用户自行刪除、覆盖、分享或保管不當造成的資料問題，需要由用户自行承担相應风险。",
+  "guideImportMethodsSubtitle": "目前版本已經支持部分學校的教務系統網頁登入導入；如果你的學校還没適配，也還有其他遷移方式",
+  "guideImportMethodStep1": "優先進入“導入課程 > 教務系統導入”，選擇學校和適配器後，直接在應用內打開教務網頁完成導入。",
+  "guideImportMethodStep2": "如果你的學校暫時没有適配，可以先在 WakeUp 等課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。",
+  "guideImportMethodStep3": "如果別人已經在用本應用，也可以讓對方導出完整備份文件，你直接導入就能恢複課程和設定。",
+  "guideImportMethodExtra": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎參與學校教務適配補充，讓更多學校能直接導入。",
+  "guideFinalTipsTitle": "最後再看這 3 條",
+  "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不夠，應用仍可正常發普通提醒。",
+  "guideFinalTip2": "2. 先在設定頁調整「上課前彈出」和「課中與臨近下課提醒」的閾值。",
+  "guideFinalTip3": "3. 完成系統權限設定後，再用測試通知驗證；如果島區還是偶尔消失，優先檢查自啟動和省電策略。",
+  "guidePrivacyHelperRequireConsent": "你勾選同意後，代表你已阅讀並同意上述友盟相關說明、隱私內容與免責提示",
+  "guidePrivacyHelperViewOnly": "這裡保留與首次啟動一致的隱私、第三方 SDK 與免責說明，方便你隨時查看；目前頁面不需要再次勾選同意",
+  "guidePrivacySectionTitle": "隱私、第三方 SDK 與免責說明",
+  "guidePrivacyParagraph1": "本應用主體功能按本地運行方式設計，課表、時間模板、課程記錄和大部分設定預設保存在你的裝置本地。",
+  "guidePrivacyParagraph2": "只有在你主動使用檢查更新、下載更新、導入導出等聯網功能，或你勾選同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。",
+  "guidePrivacyParagraph3": "本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運櫻分析依赖庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運櫻分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。",
+  "guidePrivacyParagraph4": "按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及高級運櫻分析依赖庫涉及的應用列表和地理位置相關資訊。",
+  "guideRiskTitle": "免責與風险提示",
+  "guideRiskParagraph1": "1. 超級島、焦點通知、後台提醒和保活效果依赖系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。",
+  "guideRiskParagraph2": "2. 檢查更新、鏡像下載、系統下載器、導入導出與分享等能力依赖網路環境、第三方服務和系統文件能力；若出現失敗、限速或文件異常，請以 Release 頁面、你自己保存的備份文件和系統提示為準。",
+  "guideRiskParagraph3": "3. 在遷移、導入或覆蓋資料前，請先自行確認備份文件完整可用，並妥善保管含有課表資訊的文件；因用戶自行刪除、覆蓋、分享或保管不當造成的資料問題，需要由用戶自行承擔相應風险。",
   "guideUmengPrivacyLink": "友盟隱私政策：https://www.umeng.com/page/policy",
   "liveDiagnosticsUnavailable": "目前還没有可查看的超級島診斷日誌",
   "liveDiagnosticsViewerTitle": "超級島診斷日誌",
-  "liveDiagnosticsShareText": "這是輕嶼課表導出的超級島診斷日誌，可用于排查“超級島没有弹出”等問題",
+  "liveDiagnosticsShareText": "這是輕嶼課表導出的超級島診斷日誌，可用于排查“超級島没有彈出”等問題",
   "liveDiagnosticsShareSubject": "輕嶼課表 - 超級島診斷日誌",
-  "liveDiagnosticsSnapshotShareText": "這是輕嶼課表目前測試診斷頁導出的超級島狀態快照，可用于排查“超級島没有弹出”等問題",
+  "liveDiagnosticsSnapshotShareText": "這是輕嶼課表目前測試診斷頁導出的超級島狀態快照，可用于排查“超級島没有彈出”等問題",
   "liveDiagnosticsSnapshotShareSubject": "輕嶼課表 - 超級島狀態快照",
   "liveDiagnosticsNothingToExport": "目前没有可導出的日誌文件，也没有可導出的狀態快照",
-  "liveDiagnosticsCleared": "已清空超級島診斷日誌，後续会重新開始收集",
-  "liveDiagnosticsClearFailed": "清空超級島診斷日誌失败",
+  "liveDiagnosticsCleared": "已清空超級島診斷日誌，後續會重新開始收集",
+  "liveDiagnosticsClearFailed": "清空超級島診斷日誌失敗",
   "liveTestingNotRefreshed": "尚未刷新",
   "liveTestingTitle": "測試與診斷",
   "liveTestingNotificationTitle": "測試通知",
-  "liveTestingNotificationSubtitle": "用于驗證超級島、通知栏和課程簡稱等顯示效果",
+  "liveTestingNotificationSubtitle": "用于驗證超級島、通知欄和課程簡稱等顯示效果",
   "liveTestingSendAction": "發送測試通知",
-  "liveTestingUmengHint": "下面兩個按鈕僅測試版顯示，用于驗證友盟 U-APM 崩溃和卡顿上報",
+  "liveTestingUmengHint": "下面兩個按鈕僅測試版顯示，用于驗證友盟 U-APM 崩溃和卡頓上報",
   "liveTestingCrashAction": "崩溃測試",
-  "liveTestingAnrAction": "異常卡顿測試",
+  "liveTestingAnrAction": "異常卡頓測試",
   "liveTestingIslandStatusTitle": "上島狀態診斷",
-  "liveTestingIslandStatusSubtitle": "這裡直接顯示原生实時服務、通知构造结果和不上島原因",
-  "liveTestingServiceStatusRunning": "服務运行中",
-  "liveTestingServiceStatusStopped": "服務未运行",
+  "liveTestingIslandStatusSubtitle": "這裡直接顯示原生實時服務、通知構造結果和不上島原因",
+  "liveTestingServiceStatusRunning": "服務運行中",
+  "liveTestingServiceStatusStopped": "服務未運行",
   "liveTestingNoIslandReasonTitle": "不上島原因",
-  "liveTestingNoIslandReasonEmpty": "目前無拦截原因",
+  "liveTestingNoIslandReasonEmpty": "目前無攔截原因",
   "liveTestingRefreshAction": "刷新診斷",
   "liveTestingRefreshing": "刷新中",
   "liveTestingExportAction": "導出並分享日誌",
@@ -1750,33 +1750,33 @@
       }
     }
   },
-  "liveTestingSectionEnvironment": "环境與權限",
+  "liveTestingSectionEnvironment": "環境與權限",
   "liveTestingSectionService": "服務狀態",
   "liveTestingSectionCourse": "課程資料",
   "liveTestingSectionTiming": "時間與階段",
   "liveTestingSectionSwitches": "階段開關",
   "liveTestingSectionDisplay": "島顯示配置",
-  "liveTestingSectionNotification": "通知判定结果",
+  "liveTestingSectionNotification": "通知判定結果",
   "liveTestingSectionRecentLogs": "最近診斷日誌",
   "liveTestingRawDataTitle": "原始偵錯資料",
-  "liveTestingRawDataSubtitle": "預設折叠，排查時再展開核对完整原生字段",
+  "liveTestingRawDataSubtitle": "預設折疊，排查時再展開核對完整原生字段",
   "liveTestingExpandRawJson": "展開原始 JSON",
-  "liveTestingExpandRawJsonSubtitle": "避免大段原始字段一直占满頁面",
+  "liveTestingExpandRawJsonSubtitle": "避免大段原始字段一直佔滿頁面",
   "liveTestingLocalLogsTitle": "本地診斷日誌",
-  "liveTestingLocalLogsSubtitle": "一键導出日誌文件，直接通過系統分享發给開發者；也可以清空後重新收集",
+  "liveTestingLocalLogsSubtitle": "一鍵導出日誌文件，直接通過系統分享發給開發者；也可以清空後重新收集",
   "liveTestingClearLogsAction": "清空日誌",
   "liveTestingClearingLogs": "清空中",
-  "liveTestingViewPhoneLogsAction": "查看手机日誌",
-  "liveTestingMoreTesterOptionsAction": "更多測試者选項",
+  "liveTestingViewPhoneLogsAction": "查看手機日誌",
+  "liveTestingMoreTesterOptionsAction": "更多測試者選項",
   "yesLabel": "是",
   "noLabel": "否",
   "liveTestingCurrentNativeFieldsSubtitle": "顯示目前原生診斷字段",
-  "liveTestingCrashSoon": "即将触發友盟 U-APM 測試崩溃，请重新打開應用查看後台是否收到上報",
-  "liveTestingAnrSoon": "即将触發约 30 秒主線程卡死，请脱离 flutter run 測試，並在卡死後重新打開應用查看友盟後台",
+  "liveTestingCrashSoon": "即將觸發友盟 U-APM 測試崩溃，請重新打開應用查看後台是否收到上報",
+  "liveTestingAnrSoon": "即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新打開應用查看友盟後台",
   "liveTestingNoCourseAvailable": "目前没有可測試的課程",
-  "liveTestingTestCourseNote": "此處顯示備注，可以在課程编辑頁進行設定",
-  "liveTestingNotificationSent": "已發送上課提醒測試通知，约 8 秒內会進入上課前提醒階段",
-  "sendFailedWithError": "發送失败: {error}",
+  "liveTestingTestCourseNote": "此處顯示備注，可以在課程編輯頁進行設定",
+  "liveTestingNotificationSent": "已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段",
+  "sendFailedWithError": "發送失敗: {error}",
   "@sendFailedWithError": {
     "placeholders": {
       "error": {
@@ -1786,16 +1786,16 @@
   },
   "homeWidgetSettingsTitle": "桌面小組件",
   "homeWidgetTodayCourseTitle": "今日課程組件",
-  "homeWidgetTodayCourseSubtitle": "首批支持 2×2、2×4、4×4 三种尺寸，點擊小組件会直接打開首頁，課程開始和结束時会主動刷新",
+  "homeWidgetTodayCourseSubtitle": "首批支持 2×2、2×4、4×4 三種尺寸，點擊小組件會直接打開首頁，課程開始和結束時會主動刷新",
   "homeWidgetQuickAddTitle": "快速添加到桌面",
   "homeWidgetCheckingPinSupport": "正在檢查目前桌面是否支持應用內添加小組件…",
-  "homeWidgetPinSupported": "支持的话会直接弹出系統添加確認，不是單独的權限弹窗；確認後即可固定到桌面",
-  "homeWidgetPinUnsupported": "目前桌面不支持應用內直接添加時，仍可长按桌面 → 小組件 → 輕嶼課表 手動添加",
-  "homeWidgetBackgroundStyleLabel": "背景样式",
+  "homeWidgetPinSupported": "支持的話會直接彈出系統添加確認，不是單獨的權限彈窗；確認後即可固定到桌面",
+  "homeWidgetPinUnsupported": "目前桌面不支持應用內直接添加時，仍可長按桌面 → 小組件 → 輕嶼課表 手動添加",
+  "homeWidgetBackgroundStyleLabel": "背景養式",
   "homeWidgetShowLocationTitle": "顯示地點",
-  "homeWidgetShowLocationSubtitle": "關閉後，小組件次級資訊会優先顯示周次和課程數量",
+  "homeWidgetShowLocationSubtitle": "關閉後，小組件次級資訊會優先顯示周次和課程數量",
   "homeWidgetShowCountdownTitle": "顯示倒計時",
-  "homeWidgetShowCountdownSubtitle": "先保留刷新開關，後续会用于下一節課和上課中的剩余時間展示",
+  "homeWidgetShowCountdownSubtitle": "先保留刷新開關，後續會用于下一節課和上課中的剩餘時間展示",
   "homeWidgetCountdownLeadTitle": "倒計時提前量",
   "homeWidgetCountdownLeadSubtitle": "設置上課前多少分鐘自動切換到倒計時模式",
   "homeWidgetCountdownLeadAlways": "始終顯示",
@@ -1809,7 +1809,7 @@
   },
   "widgetCountdownStyleTitle": "倒計時樣式",
   "homeWidgetHideCompletedTitle": "隱藏已上完課程",
-  "homeWidgetHideCompletedSubtitle": "開啟後，2×2、2×4 和 4×4 課程列表只顯示還没结束的課程",
+  "homeWidgetHideCompletedSubtitle": "開啟後，2×2、2×4 和 4×4 課程列表只顯示還没結束的課程",
   "homeWidgetHeightAdjustTitle": "卡片高度微調",
   "defaultLabel": "預設",
   "higherByValue": "更高 {value}",
@@ -1828,10 +1828,10 @@
       }
     }
   },
-  "homeWidgetCornerRadiusTitle": "卡片圆角",
+  "homeWidgetCornerRadiusTitle": "卡片圓角",
   "homeWidgetDescriptionTitle": "說明",
-  "homeWidgetDescriptionText": "小組件目前優先展示今日課程，無課狀態会保持完整卡片，不会出现空白；如果你切换課表或修改样式，桌面組件也会跟着刷新",
-  "homeWidgetPinRequested": "已發起“{label}”添加请求，请在系統弹窗裡確認並放到桌面",
+  "homeWidgetDescriptionText": "小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改養式，桌面組件也會跟着刷新",
+  "homeWidgetPinRequested": "已發起“{label}”添加請求，請在系統彈窗裡確認並放到桌面",
   "@homeWidgetPinRequested": {
     "placeholders": {
       "label": {
@@ -1839,7 +1839,7 @@
       }
     }
   },
-  "homeWidgetPinUnsupportedManual": "目前系統桌面不支持應用內直接添加小組件，请长按桌面 → 小組件 → 輕嶼課表，再手動添加“{label}”",
+  "homeWidgetPinUnsupportedManual": "目前系統桌面不支持應用內直接添加小組件，請長按桌面 → 小組件 → 輕嶼課表，再手動添加“{label}”",
   "@homeWidgetPinUnsupportedManual": {
     "placeholders": {
       "label": {
@@ -1847,8 +1847,8 @@
       }
     }
   },
-  "homeWidgetInvalidType": "小組件類型無效，请稍後重試",
-  "homeWidgetPinFailedManual": "發起添加失败，请长按桌面 → 小組件 → 輕嶼課表，再手動添加“{label}”",
+  "homeWidgetInvalidType": "小組件類型無效，請稍後重試",
+  "homeWidgetPinFailedManual": "發起添加失敗，請長按桌面 → 小組件 → 輕嶼課表，再手動添加“{label}”",
   "@homeWidgetPinFailedManual": {
     "placeholders": {
       "label": {
@@ -1858,12 +1858,12 @@
   },
   "layoutSettingsTitle": "布局與節次",
   "layoutDensityTitle": "課表密度",
-  "layoutAutoFitHeightTitle": "自動充满屏幕高度",
-  "layoutAutoFitHeightSubtitle": "開啟後会按目前節數自動铺满頁面底部，不再保留下方空隙",
+  "layoutAutoFitHeightTitle": "自動充滿屏幕高度",
+  "layoutAutoFitHeightSubtitle": "開啟後會按目前節數自動鋪滿頁面底部，不再保留下方空隙",
   "layoutHideWeekendsTitle": "隱藏周六周日",
-  "layoutHideWeekendsSubtitle": "開啟後首頁只顯示周一到周五，剩余列宽会自動铺满",
+  "layoutHideWeekendsSubtitle": "開啟後首頁只顯示周一到周五，剩餘列宽會自動鋪滿",
   "layoutEnableHapticsTitle": "啟用應用內震動反饋",
-  "layoutEnableHapticsSubtitle": "關閉後，頁码切换等交互不再触發輕微震動",
+  "layoutEnableHapticsSubtitle": "關閉後，頁碼切換等交互不再觸發輕微震動",
   "pageTransitionSpeedLabel": "頁面轉場速度 {speed}×",
   "@pageTransitionSpeedLabel": {
     "placeholders": {
@@ -1882,7 +1882,7 @@
     }
   },
   "layoutTimeColumnDisplayLabel": "首頁時間列顯示",
-  "layoutTimeColumnWidthLabel": "時間栏宽度",
+  "layoutTimeColumnWidthLabel": "時間欄宽度",
   "layoutBackToCurrentWeekButtonStyleLabel": "「返回本週」按鈕樣式",
   "layoutBackToCurrentWeekButtonStyleHelper": "預設維持現在的內嵌樣式；也可以改成周視圖右下角的小型懸浮按鈕",
   "layoutBackToCurrentWeekButtonStyleInline": "時間欄內嵌",
@@ -1912,7 +1912,7 @@
       }
     }
   },
-  "layoutCompactFontSizeLabel": "紧凑字級 {value}",
+  "layoutCompactFontSizeLabel": "緊湊字級 {value}",
   "@layoutCompactFontSizeLabel": {
     "placeholders": {
       "value": {
@@ -1936,16 +1936,16 @@
   "layoutShowTimeLabelsTitle": "顯示上下課字樣",
   "layoutShowTimeLabelsSubtitle": "關閉後僅顯示時間點，不顯示“上課”“下課”文字",
   "layoutShowWeeksTitle": "顯示週數",
-  "layoutShowWeeksSubtitle": "例如第 1-16 周、單双周",
+  "layoutShowWeeksSubtitle": "例如第 1-16 周、單雙周",
   "layoutShowDescriptionTitle": "顯示課程簡介",
-  "layoutShowDescriptionSubtitle": "預設關閉，空間不足時会最先被壓缩",
+  "layoutShowDescriptionSubtitle": "預設關閉，空間不足時會最先被壓縮",
   "layoutShowOtherWeeksTitle": "顯示非本周課程",
-  "layoutShowOtherWeeksSubtitle": "預設關閉，開啟後会用灰色半透明顯示不在目前周的課程",
+  "layoutShowOtherWeeksSubtitle": "預設關閉，開啟後會用灰色半透明顯示不在目前周的課程",
   "layoutVerticalAlignLabel": "垂直排版",
   "layoutHorizontalAlignLabel": "水平排版",
-  "layoutShowConflictBadgeTitle": "首頁顯示冲突小胶囊",
-  "layoutShowConflictBadgeSubtitle": "關閉後，首頁課表不再对冲突課程顯示“冲突”小胶囊",
-  "layoutConflictOpacityLabel": "冲突課程透明度 {value}%",
+  "layoutShowConflictBadgeTitle": "首頁顯示衝突小膠囊",
+  "layoutShowConflictBadgeSubtitle": "關閉後，首頁課表不再對衝突課程顯示“衝突”小膠囊",
+  "layoutConflictOpacityLabel": "衝突課程透明度 {value}%",
   "@layoutConflictOpacityLabel": {
     "placeholders": {
       "value": {
@@ -1954,7 +1954,7 @@
     }
   },
   "layoutConflictOpacityTitle": "衝突課程透明度",
-  "layoutConflictOpacitySubtitle": "冲突課程会自動层叠顯示，調低透明度後能同時看到多節課",
+  "layoutConflictOpacitySubtitle": "衝突課程會自動層疊顯示，調低透明度後能同時看到多節課",
   "layoutTipsText": "時間模板已移到設定首頁，這裡主要調課表行高、時間列、周末顯示和課程卡片布局；如果你想只改目前課表的時間，先在時間模板裡複制一套再應用",
   "currentWeekCompact": "{week}周",
   "@currentWeekCompact": {
@@ -1966,11 +1966,11 @@
   },
   "sampleCourseNumericalControl": "數控",
   "sampleCourseAdvancedMath": "高數",
-  "sampleTeacherZhang": "张老師",
+  "sampleTeacherZhang": "張老師",
   "sampleCourseEnglish": "英語",
   "sampleTeacherLi": "李老師",
   "aboutRepositorySheetTitle": "開源倉庫",
-  "aboutRepositorySheetHint": "如果你想补学校教務匯入適配，建議同時查看教務適配倉 qingyu_warehouse",
+  "aboutRepositorySheetHint": "如果你想補學校教務匯入適配，建議同時查看教務適配倉 qingyu_warehouse",
   "aboutOpenGitHubAction": "打開 GitHub",
   "aboutOpenWarehouseRepoAction": "打開教務適配倉",
   "copiedRepositoryAddress": "已複制倉庫地址",
@@ -1980,8 +1980,8 @@
   "aboutRefreshCheckTooltip": "重新檢查",
   "aboutCheckingLatestVersion": "正在檢查最新版本資訊…",
   "aboutCheckingForUpdate": "正在檢測更新…",
-  "aboutReadVersionFailed": "暫時無法讀取版本資訊，请稍後重試",
-  "aboutReadVersionFailedHint": "如果你目前網路访問 GitHub 不穩定，可稍後再試，或切到下面的國內下載方式後重試",
+  "aboutReadVersionFailed": "暫時無法讀取版本資訊，請稍後重試",
+  "aboutReadVersionFailedHint": "如果你目前網路訪問 GitHub 不穩定，可稍後再試，或切到下面的國內下載方式後重試",
   "aboutViewReleaseAction": "查看 Release",
   "aboutDownloadNowAction": "立即下載",
   "aboutOpenDownloadPageAction": "打開下載頁",
@@ -1990,8 +1990,8 @@
   "aboutUnreleasedLabel": "未發布",
   "aboutVersionChannelLabel": "版本通道",
   "aboutPrereleaseChannel": "測試版",
-  "aboutUpdateAvailableHint": "你现在只需要點下面的“立即下載”即可，測速、鏡像和測試版都已经收進後面的高級选項裡",
-  "aboutUpdateNoUpdateHint": "目前版本已经可正常使用；如果你要體验測試版，可以在後面的高級选項裡打開測試版檢測",
+  "aboutUpdateAvailableHint": "你現在只需要點下面的“立即下載”即可，測速、鏡像和測試版都已經收進後面的高級選項裡",
+  "aboutUpdateNoUpdateHint": "目前版本已經可正常使用；如果你要體驗測試版，可以在後面的高級選項裡打開測試版檢測",
   "aboutUpdatedAt": "更新時間：{time}",
   "@aboutUpdatedAt": {
     "placeholders": {
@@ -2001,17 +2001,17 @@
     }
   },
   "aboutUpdateNowTitle": "立即更新",
-  "aboutUpdateNowAndroidSubtitle": "普通使用只需要點一次立即下載，下載慢、下載失败、要换線路時，再去下面的高級选項",
-  "aboutUpdateNowOtherSubtitle": "目前平台会直接打開下載頁面，不会在應用內安装",
-  "aboutMirrorDownloadHint": "目前会優先使用國內下載，大多數國內網路直接點“立即下載”就行",
-  "aboutOriginalDownloadHint": "目前会優先使用國際源下載，如果下載慢或打不開，建議先切回“國內下載”",
+  "aboutUpdateNowAndroidSubtitle": "普通使用只需要點一次立即下載，下載慢、下載失敗、要換線路時，再去下面的高級選項",
+  "aboutUpdateNowOtherSubtitle": "目前平台會直接打開下載頁面，不會在應用內安裝",
+  "aboutMirrorDownloadHint": "目前會優先使用國內下載，大多數國內網路直接點“立即下載”就行",
+  "aboutOriginalDownloadHint": "目前會優先使用國際源下載，如果下載慢或打不開，建議先切回“國內下載”",
   "aboutUseSystemDownloaderAction": "使用系統下載器下載",
   "aboutOpenReleasePageAction": "打開 Release 頁面",
   "aboutDownloadMethodTitle": "下載方式",
-  "aboutDownloadMethodSubtitle": "預設推荐國內下載，只有你能穩定访問 GitHub 時，再切到國際源下載",
+  "aboutDownloadMethodSubtitle": "預設推薦國內下載，只有你能穩定訪問 GitHub 時，再切到國際源下載",
   "aboutDownloadMethodMirror": "國內下載",
   "aboutDownloadMethodOriginal": "國際源下載",
-  "aboutMirrorModeHintRecommended": "目前使用國內下載 · {current}，系統最近測速更推荐“{recommended}”，需要時可在後面的高級选項裡切换",
+  "aboutMirrorModeHintRecommended": "目前使用國內下載 · {current}，系統最近測速更推薦“{recommended}”，需要時可在後面的高級選項裡切換",
   "@aboutMirrorModeHintRecommended": {
     "placeholders": {
       "current": {
@@ -2022,7 +2022,7 @@
       }
     }
   },
-  "aboutMirrorModeHintCurrent": "目前使用國內下載 · {current}，如果下載慢或失败，再到後面的高級选項裡測速、换線路或填寫自定义地址",
+  "aboutMirrorModeHintCurrent": "目前使用國內下載 · {current}，如果下載慢或失敗，再到後面的高級選項裡測速、換線路或填寫自定義地址",
   "@aboutMirrorModeHintCurrent": {
     "placeholders": {
       "current": {
@@ -2030,24 +2030,24 @@
       }
     }
   },
-  "aboutOriginalModeHint": "目前使用國際源下載，只有你網路能穩定访問 GitHub 時才建議這样設定；否則请切回國內下載",
+  "aboutOriginalModeHint": "目前使用國際源下載，只有你網路能穩定訪問 GitHub 時才建議這養設定；否則請切回國內下載",
   "aboutReleaseNotesTitle": "本次更新說明",
   "aboutReleaseNotesSubtitle": "顯示目前檢測到版本的 Release 說明",
-  "aboutAdvancedOptionsTitle": "高級选項",
+  "aboutAdvancedOptionsTitle": "高級選項",
   "aboutAdvancedOptionsSubtitle": "只有下載慢、要手動切線路、或要檢測測試版時再展開",
   "aboutMirrorSectionTitle": "下載線路與鏡像",
-  "aboutMirrorSectionMirrorHint": "目前使用國內下載，這裡可以手動切線路、測速推荐，或填寫自定义下載地址",
-  "aboutMirrorSectionOriginalHint": "你现在使用的是國際源下載，下面的線路設定只有在切回“國內下載”後才会生效",
-  "aboutFillCustomMirrorFirst": "先填寫自定义下載地址",
-  "aboutCurrentCustomMirrorTitle": "目前自定义下載地址",
+  "aboutMirrorSectionMirrorHint": "目前使用國內下載，這裡可以手動切線路、測速推薦，或填寫自定義下載地址",
+  "aboutMirrorSectionOriginalHint": "你現在使用的是國際源下載，下面的線路設定只有在切回“國內下載”後才會生效",
+  "aboutFillCustomMirrorFirst": "先填寫自定義下載地址",
+  "aboutCurrentCustomMirrorTitle": "目前自定義下載地址",
   "aboutCurrentMirrorTitle": "目前下載線路地址",
   "aboutCurrentCustomMirrorHint": "目前正在使用你手動填寫的下載地址",
-  "aboutCurrentMirrorHint": "如果目前線路访問失败，可以切到其他內置線路，或改用自定义地址",
-  "aboutProbeMirrorsAction": "測速並推荐",
+  "aboutCurrentMirrorHint": "如果目前線路訪問失敗，可以切到其他內置線路，或改用自定義地址",
+  "aboutProbeMirrorsAction": "測速並推薦",
   "aboutProbingMirrors": "測速中…",
-  "aboutEditCustomMirrorAction": "修改自定义地址",
-  "aboutSetCustomMirrorAction": "填寫自定义地址",
-  "aboutSwitchToRecommendedAction": "切到推荐：{label}",
+  "aboutEditCustomMirrorAction": "修改自定義地址",
+  "aboutSetCustomMirrorAction": "填寫自定義地址",
+  "aboutSwitchToRecommendedAction": "切到推薦：{label}",
   "@aboutSwitchToRecommendedAction": {
     "placeholders": {
       "label": {
@@ -2055,23 +2055,23 @@
       }
     }
   },
-  "aboutMirrorDisabledHint": "目前没有使用國內下載，所以這裡的線路設定暫時不会生效，需要的话，请先在上面的“下載方式”裡切回國內下載",
-  "aboutRecentProbeResultsTitle": "最近測速结果",
+  "aboutMirrorDisabledHint": "目前没有使用國內下載，所以這裡的線路設定暫時不會生效，需要的話，請先在上面的“下載方式”裡切回國內下載",
+  "aboutRecentProbeResultsTitle": "最近測速結果",
   "aboutUnavailable": "不可用",
-  "aboutRecommended": "推荐",
+  "aboutRecommended": "推薦",
   "aboutCheckPrereleaseTitle": "檢測測試版本",
-  "aboutCheckPrereleaseSubtitle": "打開後会把測試版也纳入更新檢查；普通使用建議關閉",
+  "aboutCheckPrereleaseSubtitle": "打開後會把測試版也纳入更新檢查；普通使用建議關閉",
   "aboutDiagnosticsTitle": "測試與診斷",
-  "aboutDiagnosticsSubtitle": "只有遇到“超級島没弹出”或需要给開發者反饋時再展開",
+  "aboutDiagnosticsSubtitle": "只有遇到“超級島没彈出”或需要給開發者反饋時再展開",
   "aboutRecordDiagnosticsTitle": "記錄應用日誌",
-  "aboutRecordDiagnosticsSubtitle": "打開後会在本地持续記錄關键日誌，僅用于排查“该弹不弹”等問題",
+  "aboutRecordDiagnosticsSubtitle": "打開後會在本地持續記錄關鍵日誌，僅用于排查“該彈不彈”等問題",
   "aboutExportDiagnosticsAction": "匯出診斷日誌",
-  "aboutViewPhoneLogsAction": "查看手机日誌",
+  "aboutViewPhoneLogsAction": "查看手機日誌",
   "aboutClearAndRecollectAction": "清空並重新收集",
   "aboutLiveDiagnosticsEnabled": "已開啟超級島診斷日誌",
   "aboutLiveDiagnosticsDisabled": "已關閉超級島診斷日誌",
   "aboutNoDiagnosticsExportYet": "還没有可匯出的超級島診斷日誌",
-  "aboutProbeNoMirrorFound": "測速完成，但暫時没有發现可用鏡像線路",
+  "aboutProbeNoMirrorFound": "測速完成，但暫時没有發現可用鏡像線路",
   "aboutProbeCurrentFastest": "測速完成，目前線路“{label}”已是最快可用線路",
   "@aboutProbeCurrentFastest": {
     "placeholders": {
@@ -2080,7 +2080,7 @@
       }
     }
   },
-  "aboutProbeRecommendSwitch": "測速完成，推荐切换到“{label}”",
+  "aboutProbeRecommendSwitch": "測速完成，推薦切換到“{label}”",
   "@aboutProbeRecommendSwitch": {
     "placeholders": {
       "label": {
@@ -2088,7 +2088,7 @@
       }
     }
   },
-  "switchAction": "切换",
+  "switchAction": "切換",
   "aboutSwitchToMirrorAfterError": "{error}，可切到國內鏡像後再試",
   "@aboutSwitchToMirrorAfterError": {
     "placeholders": {
@@ -2097,7 +2097,7 @@
       }
     }
   },
-  "aboutSwitchPresetAfterError": "{error}，建議切换到“{label}”後重試",
+  "aboutSwitchPresetAfterError": "{error}，建議切換到“{label}”後重試",
   "@aboutSwitchPresetAfterError": {
     "placeholders": {
       "error": {
@@ -2110,14 +2110,14 @@
   },
   "aboutSetMirrorSourceTitle": "設定鏡像源",
   "aboutMirrorPrefixLabel": "鏡像前缀",
-  "aboutMirrorPrefixInvalid": "鏡像源格式不正確，请輸入完整的 http 或 https 地址",
+  "aboutMirrorPrefixInvalid": "鏡像源格式不正確，請輸入完整的 http 或 https 地址",
   "aboutMirrorSaved": "鏡像源已保存",
   "aboutDownloadCancelled": "已取消下載",
-  "aboutInstallReady": "安装包已准備好，已尝試打開安装界面；如果系統没有弹出，请稍後从通知或文件管理器手動安装",
+  "aboutInstallReady": "安裝包已準備好，已嘗試打開安裝界面；如果系統没有彈出，請稍後從通知或文件管理器手動安裝",
   "aboutUpdatePackageTitle": "輕嶼課表更新包",
-  "aboutUpdatePackageDescription": "已交给系統下載管理器下載，完成後可直接从系統通知安装",
-  "aboutSystemDownloaderQueued": "已交给系統下載管理器，请在系統通知或下載列表裡查看進度",
-  "aboutSystemDownloaderFailed": "調用系統下載管理器失败",
+  "aboutUpdatePackageDescription": "已交給系統下載管理器下載，完成後可直接從系統通知安裝",
+  "aboutSystemDownloaderQueued": "已交給系統下載管理器，請在系統通知或下載列表裡查看進度",
+  "aboutSystemDownloaderFailed": "調用系統下載管理器失敗",
   "aboutDownloadCancelling": "正在取消下載…",
   "aboutDownloadingBytes": "正在下載更新 {value}",
   "@aboutDownloadingBytes": {
@@ -2135,13 +2135,13 @@
       }
     }
   },
-  "aboutMirrorUnknownSizeHint": "鏡像源未返回文件总大小，先顯示已下載體积",
+  "aboutMirrorUnknownSizeHint": "鏡像源未返回文件總大小，先顯示已下載體積",
   "aboutCancelDownloadAction": "取消下載",
-  "aboutContributorsScreenTitle": "代码贡献者",
-  "aboutDevelopersTitle": "開發人员",
+  "aboutContributorsScreenTitle": "代碼贡獻者",
+  "aboutDevelopersTitle": "開發人員",
   "aboutDeveloperMaintainerSubtitle": "輕嶼課表開發與維護",
   "aboutWarehouseMaintainersTitle": "教務匯入適配者",
-  "aboutWarehouseMaintainersIntro": "以下名單来自 qingyu_warehouse 適配倉的 maintainer 字段汇总，若本地已有缓存，会先顯示缓存，再後台刷新",
+  "aboutWarehouseMaintainersIntro": "以下名單來自 qingyu_warehouse 適配倉的 maintainer 字段匯總，若本地已有緩存，會先顯示緩存，再後台刷新",
   "aboutWarehouseMaintainersLoadFailed": "暫時無法讀取適配者名單：{error}",
   "@aboutWarehouseMaintainersLoadFailed": {
     "placeholders": {
@@ -2160,10 +2160,10 @@
     }
   },
   "aboutParticipateWarehouseTitle": "參與教務適配",
-  "aboutParticipateWarehouseSubtitle": "如果你会抓包、網頁偵錯、JavaScript，或者愿意长期維護自己学校的教務系統，欢迎去 qingyu_warehouse 提交新的学校適配與修複",
-  "importFileReadFailed": "無法讀取所选文件",
+  "aboutParticipateWarehouseSubtitle": "如果你會抓包、網頁偵錯、JavaScript，或者願意長期維護自己學校的教務系統，歡迎去 qingyu_warehouse 提交新的學校適配與修複",
+  "importFileReadFailed": "無法讀取所選文件",
   "importReplaceExistingTitle": "匯入課程",
-  "importReplaceExistingMessage": "匯入 {name} 時，是否替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
+  "importReplaceExistingMessage": "匯入 {name} 時，是否替換現有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -2171,10 +2171,10 @@
       }
     }
   },
-  "importNoCoursesRecognized": "未識别到可匯入課程",
-  "importConfirmSemesterMappingTitle": "確認開学日期和周次对應",
-  "importConfirmSemesterMappingSubtitleIcs": "请选擇学校校歷的開学日期，系統已根据文件裡最早的上課日期给出預設周次对應，你也可以手動調整",
-  "importOverwriteCount": "已覆盖匯入 {count} 条課程",
+  "importNoCoursesRecognized": "未識別到可匯入課程",
+  "importConfirmSemesterMappingTitle": "確認開學日期和周次對應",
+  "importConfirmSemesterMappingSubtitleIcs": "請選擇學校校歷的開學日期，系統已根據文件裡最早的上課日期給出預設周次對應，你也可以手動調整",
+  "importOverwriteCount": "已覆蓋匯入 {count} 條課程",
   "@importOverwriteCount": {
     "placeholders": {
       "count": {
@@ -2182,7 +2182,7 @@
       }
     }
   },
-  "importUpdatedCount": "已更新課表：新增或更新 {count} 条課程",
+  "importUpdatedCount": "已更新課表：新增或更新 {count} 條課程",
   "@importUpdatedCount": {
     "placeholders": {
       "count": {
@@ -2192,7 +2192,7 @@
   },
   "importNoCourseChanges": "没有需要新增或更新的課程",
   "aiImportTitle": "識圖匯入",
-  "aiPreviewSummary": "識别到 {courseCount} 門課，最高到第 {sectionCount} 節{warningSuffix}",
+  "aiPreviewSummary": "識別到 {courseCount} 門課，最高到第 {sectionCount} 節{warningSuffix}",
   "@aiPreviewSummary": {
     "placeholders": {
       "courseCount": {
@@ -2206,7 +2206,7 @@
       }
     }
   },
-  "aiWarningCountSuffix": "，{count} 条提醒",
+  "aiWarningCountSuffix": "，{count} 條提醒",
   "@aiWarningCountSuffix": {
     "placeholders": {
       "count": {
@@ -2214,16 +2214,16 @@
       }
     }
   },
-  "aiWorkflowCompactTitle": "複制提示词 -> 豆包識圖 -> 匯入",
-  "aiWorkflowCompactSubtitle": "豆包專家模式 -> 複制 JSON -> 选擇開学日期",
-  "aiWorkflowTitle": "複制提示词 -> 豆包識圖 -> 粘贴 JSON -> 匯入",
-  "aiWorkflowSubtitle": "先複制提示词，再到豆包左下角切换為專家模式，把課表截圖和提示词一起發過去，把豆包返回的 JSON 複制回這裡，點擊匯入後再选擇開学日期",
-  "aiPromptShortAction": "提示词",
-  "aiExpertModeSuggestion": "建議豆包專家模式，支持多圖，截圖需带星期表头",
+  "aiWorkflowCompactTitle": "複制提示詞 -> 豆包識圖 -> 匯入",
+  "aiWorkflowCompactSubtitle": "豆包專家模式 -> 複制 JSON -> 選擇開學日期",
+  "aiWorkflowTitle": "複制提示詞 -> 豆包識圖 -> 粘贴 JSON -> 匯入",
+  "aiWorkflowSubtitle": "先複制提示詞，再到豆包左下角切換為專家模式，把課表截圖和提示詞一起發過去，把豆包返回的 JSON 複制回這裡，點擊匯入後再選擇開學日期",
+  "aiPromptShortAction": "提示詞",
+  "aiExpertModeSuggestion": "建議豆包專家模式，支持多圖，截圖需帶星期表頭",
   "aiHintExpertMode": "先切到豆包專家模式",
-  "aiHintSendScreenshot": "截圖和提示词一起發",
-  "aiHintCopyJsonBack": "返回结果複制 JSON",
-  "aiHintPickSemesterAfterImport": "匯入後再选開学日期",
+  "aiHintSendScreenshot": "截圖和提示詞一起發",
+  "aiHintCopyJsonBack": "返回結果複制 JSON",
+  "aiHintPickSemesterAfterImport": "匯入後再選開學日期",
   "jsonLabelShort": "JSON",
   "aiPasteJsonTitle": "粘贴 AI 返回的 JSON",
   "aiCourseCountChip": "{count} 門課",
@@ -2234,26 +2234,26 @@
       }
     }
   },
-  "aiParseFailedChip": "解析失败",
+  "aiParseFailedChip": "解析失敗",
   "aiPasteJsonHintShort": "粘贴 AI 返回的 JSON",
-  "aiPasteJsonHintLong": "把豆包返回的 JSON 原样粘贴到這裡，然後點擊匯入，支持纯 JSON，也兼容 ```json 代码块",
-  "detailAction": "详情",
-  "aiParseErrorTitle": "解析错误",
-  "viewDetailsAction": "查看详情",
-  "aiWorkflowFooter": "複制提示词 -> 豆包發送截圖和提示词 -> 把 JSON 贴回這裡 -> 點擊匯入 -> 选擇開学日期",
+  "aiPasteJsonHintLong": "把豆包返回的 JSON 原養粘贴到這裡，然後點擊匯入，支持純 JSON，也兼容 ```json 代碼塊",
+  "detailAction": "詳情",
+  "aiParseErrorTitle": "解析錯誤",
+  "viewDetailsAction": "查看詳情",
+  "aiWorkflowFooter": "複制提示詞 -> 豆包發送截圖和提示詞 -> 把 JSON 贴回這裡 -> 點擊匯入 -> 選擇開學日期",
   "previewAction": "預覽",
   "confirmImportAction": "確認匯入",
-  "promptCopiedHint": "提示词已複制，去豆包發送截圖和提示词",
+  "promptCopiedHint": "提示詞已複制，去豆包發送截圖和提示詞",
   "clipboardNoText": "剪贴板裡没有可用文本",
-  "aiPromptSheetTitle": "識圖提示词",
-  "aiPromptSheetSubtitle": "建議使用豆包，先把豆包左下角切换為專家模式，再把下面整段提示词和課表截圖一起發過去，让它只返回 JSON，生成後把 JSON 複制回本頁，點擊匯入後再选擇開学日期",
+  "aiPromptSheetTitle": "識圖提示詞",
+  "aiPromptSheetSubtitle": "建議使用豆包，先把豆包左下角切換為專家模式，再把下面整段提示詞和課表截圖一起發過去，讓它只返回 JSON，生成後把 JSON 複制回本頁，點擊匯入後再選擇開學日期",
   "aiPreviewTitle": "解析預覽",
-  "aiPasteJsonFirst": "请先粘贴 AI 返回的 JSON",
-  "aiParseFailedIncompleteJson": "解析失败，请確認粘贴的是完整 JSON",
-  "importAiResultTitle": "匯入 AI 解析结果",
-  "importAiReplaceMessage": "是否用目前這份 AI 解析结果替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
-  "importConfirmSemesterMappingSubtitleAi": "请选擇学校校歷的開学日期，再確認課表裡的第 1 周对應校歷第几周，如果学校第一周没課，這裡通常要改成第 2 周",
-  "aiWarningExtraSuffix": "，另有 {count} 条識别提醒",
+  "aiPasteJsonFirst": "請先粘贴 AI 返回的 JSON",
+  "aiParseFailedIncompleteJson": "解析失敗，請確認粘贴的是完整 JSON",
+  "importAiResultTitle": "匯入 AI 解析結果",
+  "importAiReplaceMessage": "是否用目前這份 AI 解析結果替換現有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
+  "importConfirmSemesterMappingSubtitleAi": "請選擇學校校歷的開學日期，再確認課表裡的第 1 周對應校歷第幾周，如果學校第一周没課，這裡通常要改成第 2 周",
+  "aiWarningExtraSuffix": "，另有 {count} 條識別提醒",
   "@aiWarningExtraSuffix": {
     "placeholders": {
       "count": {
@@ -2262,7 +2262,7 @@
     }
   },
   "pasteAction": "粘贴",
-  "importConfirmSemesterMappingSubtitleWarehouse": "教務脚本已返回課程周次，请確認校歷開学日期；如果学校前几周没有課，可把“課表第 1 周”对應到校歷後面的周次",
+  "importConfirmSemesterMappingSubtitleWarehouse": "教務脚本已返回課程周次，請確認校歷開學日期；如果學校前幾周没有課，可把“課表第 1 周”對應到校歷後面的周次",
   "aiPreviewCourseCount": "課程數量：{count}",
   "@aiPreviewCourseCount": {
     "placeholders": {
@@ -2279,9 +2279,9 @@
       }
     }
   },
-  "aiPreviewWarningsTitle": "識别提醒",
+  "aiPreviewWarningsTitle": "識別提醒",
   "aiPreviewCoursesTitle": "課程預覽",
-  "aiPreviewRemainingCourses": "其余 {count} 条将在匯入後寫入目前課表",
+  "aiPreviewRemainingCourses": "其餘 {count} 條將在匯入後寫入目前課表",
   "@aiPreviewRemainingCourses": {
     "placeholders": {
       "count": {
@@ -2289,11 +2289,11 @@
       }
     }
   },
-  "warehouseMissingSchoolTitle": "学校列表裡没有你的学校？",
-  "warehouseMissingSchoolSubtitle": "去反饋頁提一個 Issue 就行，建議一起寫上学校名稱、教務系統網址、登入後課表頁連結或截圖，這样更方便补適配",
+  "warehouseMissingSchoolTitle": "學校列表裡没有你的學校？",
+  "warehouseMissingSchoolSubtitle": "去反饋頁提一個 Issue 就行，建議一起寫上學校名稱、教務系統網址、登入後課表頁連結或截圖，這養更方便補適配",
   "laterAction": "稍後再說",
   "goFeedbackAction": "去反饋頁",
-  "warehouseFeedbackMissingSchoolTitle": "缺少学校？去反饋",
+  "warehouseFeedbackMissingSchoolTitle": "缺少學校？去反饋",
   "warehouseCustomDebugTitle": "自訂偵錯",
   "warehouseImportExecutionLogTitle": "課表匯入執行日誌",
   "warehouseImportExecutionLogMenuLabel": "課表匯入執行日誌",
@@ -2301,13 +2301,13 @@
   "warehouseImportExecutionLogShareSubject": "輕嶼課表 - 課表匯入執行日誌",
   "warehouseImportExecutionLogEmpty": "暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。",
   "warehouseRootLoadFailedTitle": "暫時無法讀取適配倉",
-  "searchSchoolHint": "搜索学校名稱、首字母或代码",
+  "searchSchoolHint": "搜索學校名稱、首字母或代碼",
   "clearSearchTooltip": "清空",
-  "noMatchingSchools": "没有找到匹配的学校",
-  "noAvailableSchools": "暫無可用学校",
-  "searchSchoolSuggestion": "試試学校全稱、首字母或倉庫裡的学校代码",
+  "noMatchingSchools": "没有找到匹配的學校",
+  "noAvailableSchools": "暫無可用學校",
+  "searchSchoolSuggestion": "試試學校全稱、首字母或倉庫裡的學校代碼",
   "deleteDebugRecordTitle": "刪除偵錯記錄",
-  "deleteDebugRecordMessage": "確認刪除“{name}”？刪除後不会影响已经匯入的課程",
+  "deleteDebugRecordMessage": "確認刪除“{name}”？刪除後不會蠅响已經匯入的課程",
   "@deleteDebugRecordMessage": {
     "placeholders": {
       "name": {
@@ -2323,15 +2323,15 @@
       }
     }
   },
-  "customDebugName": "自定义偵錯",
+  "customDebugName": "自定義偵錯",
   "localDebugMaintainer": "本地偵錯",
-  "customDebugDescription": "用户保存的自定义教務偵錯脚本",
+  "customDebugDescription": "用戶保存的自定義教務偵錯脚本",
   "addDebugRecordTooltip": "新增偵錯記錄",
   "customDebugIntroTitle": "這裡放你自己的教務偵錯記錄",
-  "customDebugIntroSubtitle": "每条記錄都可以保存自定义網址和整段脚本，保存後下次直接點“開始偵錯”就能複用，不需要再去某個学校详情頁裡找入口",
+  "customDebugIntroSubtitle": "每條記錄都可以保存自定義網址和整段脚本，保存後下次直接點“開始偵錯”就能複用，不需要再去某個學校詳情頁裡找入口",
   "addDebugRecordAction": "新增偵錯記錄",
   "noSavedDebugRecords": "還没有保存的偵錯記錄",
-  "noSavedDebugRecordsHint": "先新增一条，把網址和脚本贴進去，以後就能直接複用",
+  "noSavedDebugRecordsHint": "先新增一條，把網址和脚本贴進去，以後就能直接複用",
   "debugScriptLength": "脚本 {count} 字符",
   "@debugScriptLength": {
     "placeholders": {
@@ -2341,7 +2341,7 @@
     }
   },
   "startDebugAction": "開始偵錯",
-  "editAction": "编辑",
+  "editAction": "編輯",
   "scriptFileReadFailed": "無法讀取脚本文件",
   "scriptFileImported": "已匯入脚本文件：{name}",
   "@scriptFileImported": {
@@ -2351,7 +2351,7 @@
       }
     }
   },
-  "scriptFileImportFailed": "匯入脚本文件失败：{error}",
+  "scriptFileImportFailed": "匯入脚本文件失敗：{error}",
   "@scriptFileImportFailed": {
     "placeholders": {
       "error": {
@@ -2359,20 +2359,20 @@
       }
     }
   },
-  "debugRecordNameRequired": "请先填寫偵錯記錄名稱",
-  "invalidImportUrl": "请輸入有效的教務網址",
-  "debugScriptRequired": "请先填寫或匯入脚本",
-  "editDebugRecordTitle": "编辑偵錯記錄",
+  "debugRecordNameRequired": "請先填寫偵錯記錄名稱",
+  "invalidImportUrl": "請輸入有效的教務網址",
+  "debugScriptRequired": "請先填寫或匯入脚本",
+  "editDebugRecordTitle": "編輯偵錯記錄",
   "addDebugRecordTitle": "新增偵錯記錄",
   "savingAction": "保存中…",
-  "debugRecordFormula": "一条記錄 = 一個網址 + 一段脚本",
-  "debugRecordFormulaSubtitle": "適合你反複偵錯同一個学校，或者不同学校保留多套脚本，保存後会一直保留，後面可隨時修改",
+  "debugRecordFormula": "一條記錄 = 一個網址 + 一段脚本",
+  "debugRecordFormulaSubtitle": "適合你反複偵錯同一個學校，或者不同學校保留多套脚本，保存後會一直保留，後面可隨時修改",
   "debugRecordNameLabel": "記錄名稱",
-  "debugRecordNameHint": "例如：重庆机電-新版教務",
+  "debugRecordNameHint": "例如：重慶機電-新版教務",
   "importUrlLabel": "教務網址",
   "debugScriptLabel": "偵錯脚本",
-  "importFromFileAction": "从文件匯入",
-  "debugScriptHint": "把浏覽器擴展匯出的完整脚本粘贴到這裡",
+  "importFromFileAction": "從文件匯入",
+  "debugScriptHint": "把瀏覽器擴展匯出的完整脚本粘贴到這裡",
   "saveDebugRecordAction": "保存偵錯記錄",
   "fillUrlThenImport": "填寫網址後匯入",
   "webLoginImport": "網頁登入匯入",
@@ -2436,17 +2436,17 @@
   "startRecordingTooltip": "錄製操作",
   "savedImportUrlHint": "已保存教務網址，下次可直接匯入",
   "adapterIntroSubtitle": "可查看適配器資訊、登入入口與脚本狀態",
-  "schoolLabel": "学校",
-  "categoryLabel": "類别",
+  "schoolLabel": "學校",
+  "categoryLabel": "類別",
   "maintainerLabel": "維護者",
   "adapterInfoTitle": "適配器資訊",
   "scriptPathLabel": "脚本路徑",
   "loginEntryLabel": "登入入口",
   "unsetConfigLabel": "未配置",
-  "adapterOverrideImportUrlHint": "目前使用你手動覆盖的登入地址",
+  "adapterOverrideImportUrlHint": "目前使用你手動覆蓋的登入地址",
   "repositoryLabel": "倉庫",
   "scriptStatusTitle": "脚本狀態",
-  "scriptLoadedLength": "脚本已成功讀取，长度 {count} 字符",
+  "scriptLoadedLength": "脚本已成功讀取，長度 {count} 字符",
   "@scriptLoadedLength": {
     "placeholders": {
       "count": {
@@ -2456,22 +2456,22 @@
   },
   "scriptEmpty": "脚本為空",
   "openLoginInAppAction": "應用內打開登入入口",
-  "openInSystemBrowserAction": "系統浏覽器打開",
+  "openInSystemBrowserAction": "系統瀏覽器打開",
   "copiedImportLoginUrl": "已複制教務登入地址",
   "copyLoginAddressAction": "複制登入地址",
   "copiedScriptRawUrl": "已複制脚本原始地址",
   "copyScriptAddressAction": "複制脚本地址",
-  "customLoginAddressAction": "自定义登入地址",
-  "editCustomLoginAddressAction": "修改自定义地址",
-  "clearCustomLoginAddressAction": "清除自定义地址",
+  "customLoginAddressAction": "自定義登入地址",
+  "editCustomLoginAddressAction": "修改自定義地址",
+  "clearCustomLoginAddressAction": "清除自定義地址",
   "restoreRepositoryAddressAction": "恢複倉庫地址",
   "invalidLoginEntryUrl": "登入入口地址無效",
-  "savedCustomLoginAddress": "已保存自定义登入地址",
-  "clearedCustomLoginAddress": "已清除自定义登入地址",
+  "savedCustomLoginAddress": "已保存自定義登入地址",
+  "clearedCustomLoginAddress": "已清除自定義登入地址",
   "restoredRepositoryImportUrl": "已恢複倉庫裡的登入地址",
   "backToCurrentWeekAction": "返回本週",
   "nonCurrentWeekLabel": "非本周",
-  "conflictLabel": "冲突",
+  "conflictLabel": "衝突",
   "courseConflictSectionTitle": "衝突課程",
   "courseNormalSectionTitle": "其他課程",
   "courseConflictDetailTitle": "衝突詳情",
@@ -2488,7 +2488,7 @@
   "courseConflictOpenPartnerAction": "查看對方排課",
   "courseConflictEmpty": "目前沒有偵測到衝突",
   "courseConflictPairTitle": "衝突組合",
-  "selectWeekTitle": "选擇周次",
+  "selectWeekTitle": "選擇周次",
   "availableWeeksCount": "共 {count} 周",
   "@availableWeeksCount": {
     "placeholders": {
@@ -2513,7 +2513,7 @@
   "homeMenuSettingsTitle": "課表設定",
   "homeMenuCoffeeTitle": "請喝咖啡",
   "homeMenuFeedbackTitle": "問題回饋",
-  "switchTimetableTitle": "切换課表",
+  "switchTimetableTitle": "切換課表",
   "todayTimetableTitle": "今日課表",
   "dayTimetableTitle": "單日時間軸",
   "backToWeekViewAction": "返回周視圖",
@@ -2543,7 +2543,7 @@
       }
     }
   },
-  "courseDialogCurrentWeekHint": "目前查看第 {week} 周，可直接对這一周這節課調課",
+  "courseDialogCurrentWeekHint": "目前查看第 {week} 周，可直接對這一周這節課調課",
   "@courseDialogCurrentWeekHint": {
     "placeholders": {
       "week": {
@@ -2559,14 +2559,14 @@
       }
     }
   },
-  "editActionShort": "编辑",
+  "editActionShort": "編輯",
   "rescheduleAction": "調課",
   "deleteActionShort": "刪除",
   "deleteModeTitle": "刪除方式",
-  "deleteModeSubtitle": "你可以刪掉整条排課，也可以只刪目前看到的這一周這一節",
+  "deleteModeSubtitle": "你可以刪掉整條排課，也可以只刪目前看到的這一周這一節",
   "deleteCourseAction": "刪這個課",
   "deleteOccurrenceAction": "刪這節課",
-  "deleteModeHintCurrentWeek": "“刪這個課”会刪除這条排課的全部周次；“刪這節課”只会刪除第 {week} 周這一次",
+  "deleteModeHintCurrentWeek": "“刪這個課”會刪除這條排課的全部周次；“刪這節課”只會刪除第 {week} 周這一次",
   "@deleteModeHintCurrentWeek": {
     "placeholders": {
       "week": {
@@ -2574,7 +2574,7 @@
       }
     }
   },
-  "deleteModeHintUnavailable": "目前卡片不是第 {week} 周的实際排課，所以只能刪除整条排課",
+  "deleteModeHintUnavailable": "目前卡片不是第 {week} 周的實際排課，所以只能刪除整條排課",
   "@deleteModeHintUnavailable": {
     "placeholders": {
       "week": {
@@ -2582,7 +2582,7 @@
       }
     }
   },
-  "deleteScheduleConfirmMessage": "確定刪除“{name}”這条排課嗎？\n{detail}",
+  "deleteScheduleConfirmMessage": "確定刪除“{name}”這條排課嗎？\n{detail}",
   "@deleteScheduleConfirmMessage": {
     "placeholders": {
       "name": {
@@ -2615,7 +2615,7 @@
       }
     }
   },
-  "noChangesDetected": "未檢測到变更",
+  "noChangesDetected": "未檢測到變更",
   "rescheduleCurrentOccurrenceTitle": "調本周這節課",
   "rescheduleCurrentOccurrenceSubtitle": "僅改第 {week} 週本節，原課該週移除，其他週不變",
   "@rescheduleCurrentOccurrenceSubtitle": {
@@ -2625,10 +2625,10 @@
       }
     }
   },
-  "rescheduleTargetWeekLabel": "調到第几周",
+  "rescheduleTargetWeekLabel": "調到第幾周",
   "weekdayFieldLabel": "星期",
   "startSectionFieldLabel": "開始節次",
-  "endSectionFieldLabel": "结束節次",
+  "endSectionFieldLabel": "結束節次",
   "courseLocationFieldLabel": "上課地點",
   "confirmRescheduleAction": "確認調課",
   "homeTitleStyleClassicLabel": "經典文字",
@@ -2790,7 +2790,7 @@
   },
   "currentBadge": "當前",
   "feedbackXiaohongshuTitle": "小紅書",
-  "feedbackXiaohongshuSubtitle": "小紅書号：{id}",
+  "feedbackXiaohongshuSubtitle": "小紅書號：{id}",
   "@feedbackXiaohongshuSubtitle": {
     "placeholders": {
       "id": {
@@ -2799,7 +2799,7 @@
     }
   },
   "feedbackCoolapkTitle": "酷安",
-  "feedbackCoolapkSubtitle": "酷安号：{id}",
+  "feedbackCoolapkSubtitle": "酷安號：{id}",
   "@feedbackCoolapkSubtitle": {
     "placeholders": {
       "id": {
@@ -2808,7 +2808,7 @@
     }
   },
   "feedbackQqGroupTitle": "QQ 群",
-  "feedbackQqGroupSubtitle": "群号：{id}",
+  "feedbackQqGroupSubtitle": "群號：{id}",
   "@feedbackQqGroupSubtitle": {
     "placeholders": {
       "id": {
@@ -2882,8 +2882,8 @@
   "copiedCurrentAddress": "已複製當前地址",
   "warehouseLoginHintLocalDebug": "當前為本地偵錯腳本模式",
   "warehouseLoginHintImport": "在此登入教務系統後執行匯入",
-  "currentPageModeDesktop": "當前页面模式：桌面端",
-  "currentPageModeMobile": "當前页面模式：移动端",
+  "currentPageModeDesktop": "當前頁面模式：桌面端",
+  "currentPageModeMobile": "當前頁面模式：移動端",
   "localScriptLabel": "本地腳本：{scriptName}",
   "@localScriptLabel": {
     "placeholders": {
@@ -2921,7 +2921,7 @@
   },
   "importFlowFinished": "匯入流程已完成",
   "defaultContinuePrompt": "請按提示繼續操作",
-  "inputRequiredTitle": "需要输入",
+  "inputRequiredTitle": "需要輸入",
   "pleaseEnterFourDigitYear": "請輸入 4 位年份",
   "pleaseChooseTitle": "請選擇",
   "invalidCourseConfigFormat": "課程配置格式不正確",
@@ -2952,7 +2952,7 @@
     }
   },
   "importCancelledStatus": "已取消匯入",
-  "applyReturnedTimeSchemeFailed": "應用返回的節次模板失败：{error}",
+  "applyReturnedTimeSchemeFailed": "應用返回的節次模板失敗：{error}",
   "@applyReturnedTimeSchemeFailed": {
     "placeholders": {
       "error": {
@@ -3145,11 +3145,11 @@
   },
   "addScheduleEntryAction": "新增排課時段",
   "deleteScheduleEntryAction": "刪除排課",
-  "holidaySettingsEntryTitle": "假期標記",
+  "holidaySettingsEntryTitle": "假日標記",
   "holidaySettingsEntrySubtitle": "在課表上標記公眾假期和調休補班",
   "holidayMakeupWorkday": "補班",
-  "holidaySettingsTitle": "假期標記",
-  "holidayEnableTitle": "啟用假期標記",
+  "holidaySettingsTitle": "假日標記",
+  "holidayEnableTitle": "啟用假日標記",
   "holidayEnableSubtitle": "啟用後會在課表上標記公眾假期和調休補班",
   "holidayDataSectionTitle": "假期資料",
   "holidayDataYear": "年份",
@@ -3321,7 +3321,7 @@
       }
     }
   },
-  "textColorLowContrastWarning": "顏色對比度較低，可能會影響可讀性",
+  "textColorLowContrastWarning": "顏色對比度較低，可能會蠅響可讀性",
   "themeCurrentTheme": "當前主題",
   "themeBasedOnModified": "基於{baseName}（已修改）",
   "@themeBasedOnModified": {
@@ -3713,7 +3713,7 @@
       }
     }
   },
-  "courseWeekSuspendedLabel": "第{weeks}周停课",
+  "courseWeekSuspendedLabel": "第{weeks}周停課",
   "@courseWeekSuspendedLabel": {
     "placeholders": {
       "weeks": {
@@ -3721,7 +3721,7 @@
       }
     }
   },
-  "importSemesterStartDateTitle": "开学日期",
+  "importSemesterStartDateTitle": "開學日期",
   "importSemesterStartDateSubtitle": "按這一天所在週作為校曆第 1 週",
   "importFirstCourseWeekMappingLabel": "課表第 1 週對應校曆第幾週",
   "importFirstCourseWeekMappingSubtitle": "如果學校第一週沒課，就選第 2 週；前兩週都沒課就選第 3 週",
@@ -3745,10 +3745,10 @@
       }
     }
   },
-  "aboutDownloadPackageMethodTitle": "下载安装包方式",
-  "aboutInAppDownloadTitle": "应用内下载",
+  "aboutDownloadPackageMethodTitle": "下載安裝包方式",
+  "aboutInAppDownloadTitle": "應用內下載",
   "aboutInAppDownloadSubtitle": "下載完成後直接在應用內安裝",
-  "aboutSystemDownloaderTitle": "系统管理器",
+  "aboutSystemDownloaderTitle": "系統管理器",
   "aboutSystemDownloaderChoiceSubtitle": "交給系統下載管理器處理",
   "syncErrorAuthFailed": "帳號或密碼錯誤",
   "syncErrorAccessDenied": "沒有存取權限",
@@ -3768,17 +3768,17 @@
     "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"
   },
   "syncErrorSyncFailed": "同步失敗",
-  "sectionTimeDisplayHidden": "不显示",
-  "sectionTimeDisplayStartOnly": "仅显示上课时间",
-  "sectionTimeDisplayStartAndEnd": "显示上下课时间",
+  "sectionTimeDisplayHidden": "不顯示",
+  "sectionTimeDisplayStartOnly": "僅顯示上課時間",
+  "sectionTimeDisplayStartAndEnd": "顯示上下課時間",
   "examReminderNone": "不提醒",
-  "examReminderMin30": "考前 30 分钟",
-  "examReminderHour1": "考前 1 小时",
-  "examReminderHour1AndMin30": "考前 1 小时 + 30 分钟",
+  "examReminderMin30": "考前 30 分鐘",
+  "examReminderHour1": "考前 1 小時",
+  "examReminderHour1AndMin30": "考前 1 小時 + 30 分鐘",
   "examReminderDay1": "考前 1 天",
-  "examReminderDay1AndHour1": "考前 1 天 + 1 小时",
-  "examReminderCustom": "自定义",
-  "examReminderOffsetMinutes": "考前 {minutes} 分钟",
+  "examReminderDay1AndHour1": "考前 1 天 + 1 小時",
+  "examReminderCustom": "自定義",
+  "examReminderOffsetMinutes": "考前 {minutes} 分鐘",
   "@examReminderOffsetMinutes": {
     "placeholders": {
       "minutes": {
@@ -3786,7 +3786,7 @@
       }
     }
   },
-  "examReminderOffsetHours": "考前 {hours} 小时",
+  "examReminderOffsetHours": "考前 {hours} 小時",
   "@examReminderOffsetHours": {
     "placeholders": {
       "hours": {
@@ -3802,51 +3802,51 @@
       }
     }
   },
-  "examReminderCustomEmpty": "请至少选择一个提醒时间",
+  "examReminderCustomEmpty": "請至少選擇一個提醒時間",
   "examReminderAddCustom": "添加提醒",
-  "examReminderAddCustomTitle": "自定义提醒时间",
-  "examReminderAddCustomHint": "设置距离考试开始前多久提醒，可添加多个",
+  "examReminderAddCustomTitle": "自定義提醒時間",
+  "examReminderAddCustomHint": "設置距離考試開始前多久提醒，可添加多個",
   "examReminderPickerDays": "天",
-  "examReminderPickerHours": "小时",
-  "examReminderPickerMinutes": "分钟",
-  "examReminderCustomAlreadyAdded": "该提醒时间已添加",
-  "examReminderCustomInvalid": "请设置大于 0 的提醒时间",
-  "examReminderCustomEmptyHint": "还没有自定义提醒，点下方添加",
+  "examReminderPickerHours": "小時",
+  "examReminderPickerMinutes": "分鐘",
+  "examReminderCustomAlreadyAdded": "該提醒時間已添加",
+  "examReminderCustomInvalid": "請設置大于 0 的提醒時間",
+  "examReminderCustomEmptyHint": "還没有自定義提醒，點下方添加",
   "debugCopiedJson": "已複製 JSON",
-  "liveDuringClassTimeNearest": "最近时间",
-  "liveDuringClassTimeTotal": "总时间",
+  "liveDuringClassTimeNearest": "最近時間",
+  "liveDuringClassTimeTotal": "總時間",
   "liveCountdownTextStyleSmart": "智能（中文）",
   "liveCountdownTextStyleSmartMinS": "智能（英文）",
-  "liveCountdownTextStyleMinuteSecondCn": "分秒（5分钟19秒）",
+  "liveCountdownTextStyleMinuteSecondCn": "分秒（5分鐘19秒）",
   "liveCountdownTextStyleMinuteSecondColon": "mm:ss（05:19）",
   "liveCountdownTextStyleMinuteSecondMinS": "min+s（5min19s）",
   "liveCountdownTextStyleMinuteSecondMinSlashS": "min/s（5min/19s）",
-  "liveCountdownTextStyleMinuteOnlyCn": "纯分钟（5分钟）",
+  "liveCountdownTextStyleMinuteOnlyCn": "純分鐘（5分鐘）",
   "liveCountdownTextStyleMinuteOnlyMin": "min（5min）",
   "liveCountdownTextStyleMinuteOnlySlash": "/min（5/min）",
-  "liveCountdownTextStyleSecondOnlyCn": "纯秒（5秒）",
+  "liveCountdownTextStyleSecondOnlyCn": "純秒（5秒）",
   "liveCountdownTextStyleSecondOnlyShort": "s（5s）",
   "liveCountdownTextStyleSecondOnlySlash": "/s（5/s）",
-  "miuiIslandLabelStyleTextOnly": "仅文字",
-  "miuiIslandLabelStyleIconAndText": "图标+文字",
-  "miuiIslandLabelContentCourseName": "课程名",
+  "miuiIslandLabelStyleTextOnly": "僅文字",
+  "miuiIslandLabelStyleIconAndText": "圖標+文字",
+  "miuiIslandLabelContentCourseName": "課程名",
   "miuiIslandLabelContentLocation": "教室",
-  "miuiIslandLabelContentCourseNameAndLocation": "课程名+教室",
-  "miuiIslandLabelFontWeightRegular": "常规",
+  "miuiIslandLabelContentCourseNameAndLocation": "課程名+教室",
+  "miuiIslandLabelFontWeightRegular": "常規",
   "miuiIslandLabelFontWeightMedium": "中等",
   "miuiIslandLabelFontWeightBold": "加粗",
-  "miuiIslandLabelRenderQualityStandard": "标准",
+  "miuiIslandLabelRenderQualityStandard": "標準",
   "miuiIslandLabelRenderQualityHigh": "高清",
   "miuiIslandLabelRenderQualityUltra": "超高清",
-  "miuiIslandExpandedIconAppIcon": "应用图标",
-  "miuiIslandExpandedIconCustomImage": "自定义图片",
-  "miuiIslandExpandedIconHidden": "不显示",
-  "liveBeforeClassQuickActionNone": "不显示",
-  "liveBeforeClassQuickActionSilent": "打开静音",
-  "liveBeforeClassQuickActionDoNotDisturb": "打开免打扰",
-  "courseCardVerticalAlignTop": "顶部对齐",
+  "miuiIslandExpandedIconAppIcon": "應用圖標",
+  "miuiIslandExpandedIconCustomImage": "自定義圖片",
+  "miuiIslandExpandedIconHidden": "不顯示",
+  "liveBeforeClassQuickActionNone": "不顯示",
+  "liveBeforeClassQuickActionSilent": "打開靜音",
+  "liveBeforeClassQuickActionDoNotDisturb": "打開免打擾",
+  "courseCardVerticalAlignTop": "頂部對齊",
   "courseCardVerticalAlignCenter": "垂直居中",
-  "courseCardVerticalAlignBottom": "底部对齐",
+  "courseCardVerticalAlignBottom": "底部對齊",
   "courseCardVerticalAlignSpaceEvenly": "上下均布",
   "courseCardHorizontalAlignLeft": "居左",
   "courseCardHorizontalAlignCenter": "居中",
@@ -3856,11 +3856,11 @@
   "timetableCourseSpacingNarrow": "窄",
   "timetableCourseSpacingWide": "宽",
   "appUpdateDownloadSourceOriginal": "GitHub 原版",
-  "appUpdateDownloadSourceMirror": "国内镜像",
-  "appUpdateDownloadChannelPgyer": "蒲公英下载",
-  "appUpdateDownloadChannelGithub": "GitHub 下载",
-  "appUpdateDownloadChannelPgyerDescription": "国内高速下载，推荐使用",
-  "appUpdateDownloadChannelGithubDescription": "GitHub 原生 + 国内镜像",
+  "appUpdateDownloadSourceMirror": "國內镜像",
+  "appUpdateDownloadChannelPgyer": "蒲公英下載",
+  "appUpdateDownloadChannelGithub": "GitHub 下載",
+  "appUpdateDownloadChannelPgyerDescription": "國內高速下載，推薦使用",
+  "appUpdateDownloadChannelGithubDescription": "GitHub 原生 + 國內镜像",
   "holidayStatutoryLabel": "法定假日",
   "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
   "serviceMsgImportUseOverwriteForFullBackup": "This is a full data backup. Please import using overwrite current timetable.",
@@ -4429,9 +4429,9 @@
   "serviceMsgSyncFailed": "Sync failed.",
   "serviceMsgUsageTypeOverride": "override time scheme",
   "serviceMsgUsageTypeProfile": "profile main time scheme",
-  "dataTransferProfileShareText": "这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置",
-  "dataTransferProfileShareSubject": "轻屿课表备份",
-  "dataTransferProfileShareSubjectNamed": "{profileName} - 轻屿课表备份",
+  "dataTransferProfileShareText": "這是輕誘課表當前課表的完整備份文件，導入後可直接恢復課程和設置",
+  "dataTransferProfileShareSubject": "輕誘課表備份",
+  "dataTransferProfileShareSubjectNamed": "{profileName} - 輕誘課表備份",
   "@dataTransferProfileShareSubjectNamed": {
     "placeholders": {
       "profileName": {
@@ -4439,8 +4439,8 @@
       }
     }
   },
-  "dataTransferFullBackupShareText": "这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板",
-  "dataTransferFullBackupShareSubject": "轻屿课表 - 全部数据备份",
+  "dataTransferFullBackupShareText": "這是輕誘課表的全部數據備份文件，包含所有課表、當前選中課表和時間模板",
+  "dataTransferFullBackupShareSubject": "輕誘課表 - 全部數據備份",
   "courseWeekCustomDescription": "第{weeks}周",
   "@courseWeekCustomDescription": {
     "placeholders": {
@@ -4463,9 +4463,9 @@
       }
     }
   },
-  "courseWeekOddModeSuffix": " 单周",
-  "courseWeekEvenModeSuffix": " 双周",
-  "courseWeekSuspensionDescription": "第{weeks}周停课",
+  "courseWeekOddModeSuffix": " 單周",
+  "courseWeekEvenModeSuffix": " 雙周",
+  "courseWeekSuspensionDescription": "第{weeks}周停課",
   "@courseWeekSuspensionDescription": {
     "placeholders": {
       "weeks": {
@@ -4474,7 +4474,7 @@
     }
   },
   "courseWeekListSeparator": "、",
-  "holidayLogMemoryCacheHit": "{year}年：命中内存缓存（{count} 条），后台刷新中…",
+  "holidayLogMemoryCacheHit": "{year}年：命中內存緩存（{count} 條），後台刷新中…",
   "@holidayLogMemoryCacheHit": {
     "placeholders": {
       "year": {
@@ -4485,7 +4485,7 @@
       }
     }
   },
-  "holidayLogLocalCacheHit": "{year}年：命中本地缓存（{count} 条），后台刷新中…",
+  "holidayLogLocalCacheHit": "{year}年：命中本地緩存（{count} 條），後台刷新中…",
   "@holidayLogLocalCacheHit": {
     "placeholders": {
       "year": {
@@ -4496,7 +4496,7 @@
       }
     }
   },
-  "holidayLogNoCacheFetching": "{year}年：无缓存，正在拉取远程数据…",
+  "holidayLogNoCacheFetching": "{year}年：無緩存，正在拉取圓程數據…",
   "@holidayLogNoCacheFetching": {
     "placeholders": {
       "year": {
@@ -4504,7 +4504,7 @@
       }
     }
   },
-  "holidayLogRemoteSuccess": "{year}年：远程拉取成功（{count} 条），已缓存",
+  "holidayLogRemoteSuccess": "{year}年：圓程拉取成功（{count} 條），已緩存",
   "@holidayLogRemoteSuccess": {
     "placeholders": {
       "year": {
@@ -4515,7 +4515,7 @@
       }
     }
   },
-  "holidayLogRemoteFailedBuiltin": "{year}年：远程拉取失败，使用内置资产兜底",
+  "holidayLogRemoteFailedBuiltin": "{year}年：圓程拉取失敗，使用內置資產兜底",
   "@holidayLogRemoteFailedBuiltin": {
     "placeholders": {
       "year": {
@@ -4523,7 +4523,7 @@
       }
     }
   },
-  "holidayLogBuiltinLoaded": "{year}年：加载内置资产（{count} 条）",
+  "holidayLogBuiltinLoaded": "{year}年：加載內置資產（{count} 條）",
   "@holidayLogBuiltinLoaded": {
     "placeholders": {
       "year": {
@@ -4534,7 +4534,7 @@
       }
     }
   },
-  "holidayLogBackgroundSuccess": "{year}年：后台更新成功（{count} 条），已覆盖缓存",
+  "holidayLogBackgroundSuccess": "{year}年：後台更新成功（{count} 條），已覆蓋緩存",
   "@holidayLogBackgroundSuccess": {
     "placeholders": {
       "year": {
@@ -4545,7 +4545,7 @@
       }
     }
   },
-  "holidayLogBackgroundNoData": "{year}年：后台更新未获取到新数据",
+  "holidayLogBackgroundNoData": "{year}年：後台更新未获取到新數據",
   "@holidayLogBackgroundNoData": {
     "placeholders": {
       "year": {
@@ -4553,8 +4553,8 @@
       }
     }
   },
-  "holidayLogPrimaryApiFailed": "主 API 失败，尝试备用 API…",
-  "holidayLogRequesting": "正在请求 {uri} …",
+  "holidayLogPrimaryApiFailed": "主 API 失敗，嘗試備用 API…",
+  "holidayLogRequesting": "正在請求 {uri} …",
   "@holidayLogRequesting": {
     "placeholders": {
       "uri": {
@@ -4562,7 +4562,7 @@
       }
     }
   },
-  "holidayLogPrimaryApiStatus": "主 API 响应 {statusCode}，跳过",
+  "holidayLogPrimaryApiStatus": "主 API 响應 {statusCode}，跳過",
   "@holidayLogPrimaryApiStatus": {
     "placeholders": {
       "statusCode": {
@@ -4570,7 +4570,7 @@
       }
     }
   },
-  "holidayLogPrimaryApiError": "主 API 返回错误：{message}",
+  "holidayLogPrimaryApiError": "主 API 返回錯誤：{message}",
   "@holidayLogPrimaryApiError": {
     "placeholders": {
       "message": {
@@ -4578,7 +4578,7 @@
       }
     }
   },
-  "holidayLogPrimaryApiException": "主 API 异常：{error}",
+  "holidayLogPrimaryApiException": "主 API 異常：{error}",
   "@holidayLogPrimaryApiException": {
     "placeholders": {
       "error": {
@@ -4586,7 +4586,7 @@
       }
     }
   },
-  "holidayLogPrimaryApiParsing": "主 API 返回 {count} 条原始数据，正在解析…",
+  "holidayLogPrimaryApiParsing": "主 API 返回 {count} 條原始數據，正在解析…",
   "@holidayLogPrimaryApiParsing": {
     "placeholders": {
       "count": {
@@ -4594,8 +4594,8 @@
       }
     }
   },
-  "holidayLogNoValidEntries": "解析后无有效条目，跳过",
-  "holidayLogFallbackApiStatus": "备用 API 响应 {statusCode}，跳过",
+  "holidayLogNoValidEntries": "解析後無有效條目，跳過",
+  "holidayLogFallbackApiStatus": "備用 API 响應 {statusCode}，跳過",
   "@holidayLogFallbackApiStatus": {
     "placeholders": {
       "statusCode": {
@@ -4603,8 +4603,8 @@
       }
     }
   },
-  "holidayLogFallbackApiError": "备用 API 返回错误",
-  "holidayLogFallbackApiParsing": "备用 API 返回 {count} 条原始数据，正在解析…",
+  "holidayLogFallbackApiError": "備用 API 返回錯誤",
+  "holidayLogFallbackApiParsing": "備用 API 返回 {count} 條原始數據，正在解析…",
   "@holidayLogFallbackApiParsing": {
     "placeholders": {
       "count": {
@@ -4612,7 +4612,7 @@
       }
     }
   },
-  "holidayLogFallbackApiException": "备用 API 异常：{error}",
+  "holidayLogFallbackApiException": "備用 API 異常：{error}",
   "@holidayLogFallbackApiException": {
     "placeholders": {
       "error": {
@@ -4621,13 +4621,13 @@
     }
   },
   "holidayNameNewYear": "元旦",
-  "holidayNameLaborDay": "劳动节",
-  "holidayNameNationalDay": "国庆节",
-  "holidayNameSpringFestival": "春节",
-  "holidayNameQingming": "清明节",
-  "holidayNameDragonBoat": "端午节",
-  "holidayNameMidAutumn": "中秋节",
-  "macroReplayStatusFailed": "失败: {error}",
+  "holidayNameLaborDay": "勞動節",
+  "holidayNameNationalDay": "國慶節",
+  "holidayNameSpringFestival": "春節",
+  "holidayNameQingming": "清明節",
+  "holidayNameDragonBoat": "端午節",
+  "holidayNameMidAutumn": "中秋節",
+  "macroReplayStatusFailed": "失敗: {error}",
   "@macroReplayStatusFailed": {
     "placeholders": {
       "error": {
@@ -4635,7 +4635,7 @@
       }
     }
   },
-  "macroReplayStatusPaused": "等待手动操作: {reason}",
+  "macroReplayStatusPaused": "等待手動操作: {reason}",
   "@macroReplayStatusPaused": {
     "placeholders": {
       "reason": {
@@ -4643,18 +4643,18 @@
       }
     }
   },
-  "macroReplayStepNavigating": "正在导航...",
-  "macroReplayStepFilling": "正在填充表单...",
-  "macroReplayStepClicking": "正在点击...",
-  "macroReplayStepWaitUrl": "等待页面跳转...",
-  "macroReplayStepWaitSelector": "等待页面元素...",
-  "macroReplayStepWaitManual": "等待用户操作",
-  "macroReplayStepExecuteScript": "正在执行导入脚本...",
+  "macroReplayStepNavigating": "正在導航...",
+  "macroReplayStepFilling": "正在填充表單...",
+  "macroReplayStepClicking": "正在點擊...",
+  "macroReplayStepWaitUrl": "等待頁面跳轉...",
+  "macroReplayStepWaitSelector": "等待頁面元素...",
+  "macroReplayStepWaitManual": "等待用戶操作",
+  "macroReplayStepExecuteScript": "正在執行導入脚本...",
   "macroReplayStepDelay": "等待中...",
-  "macroReplayAcceleratedFallbackTip": "快捷路径失败，正在使用完整录制步骤重试…",
-  "macroReplayNoSteps": "没有录制的步骤",
-  "macroReplayUserCancelled": "用户取消",
-  "macroReplayStepFailed": "第 {current}/{total} 步失败: {error}",
+  "macroReplayAcceleratedFallbackTip": "快捷路徑失敗，正在使用完整錄制步晝重試…",
+  "macroReplayNoSteps": "没有錄制的步晝",
+  "macroReplayUserCancelled": "用戶取消",
+  "macroReplayStepFailed": "第 {current}/{total} 步失敗: {error}",
   "@macroReplayStepFailed": {
     "placeholders": {
       "current": {
@@ -4668,8 +4668,8 @@
       }
     }
   },
-  "macroReplayEmptyNavigateUrl": "导航 URL 为空",
-  "macroReplayInvalidUrl": "无效的 URL: {url}",
+  "macroReplayEmptyNavigateUrl": "導航 URL 為空",
+  "macroReplayInvalidUrl": "無效的 URL: {url}",
   "@macroReplayInvalidUrl": {
     "placeholders": {
       "url": {
@@ -4677,8 +4677,8 @@
       }
     }
   },
-  "macroReplayEmptyFillSelector": "填充字段的选择器为空",
-  "macroReplayFieldNotFound": "未找到表单字段: {selector}",
+  "macroReplayEmptyFillSelector": "填充字段的選擇器為空",
+  "macroReplayFieldNotFound": "未找到表單字段: {selector}",
   "@macroReplayFieldNotFound": {
     "placeholders": {
       "selector": {
@@ -4686,8 +4686,8 @@
       }
     }
   },
-  "macroReplayEmptyClickSelector": "点击元素的选择器为空",
-  "macroReplayClickNotFound": "未找到点击元素: {selector}",
+  "macroReplayEmptyClickSelector": "點擊元素的選擇器為空",
+  "macroReplayClickNotFound": "未找到點擊元素: {selector}",
   "@macroReplayClickNotFound": {
     "placeholders": {
       "selector": {
@@ -4703,7 +4703,7 @@
       }
     }
   },
-  "macroReplayEmptyWaitSelector": "等待元素的选择器为空",
+  "macroReplayEmptyWaitSelector": "等待元素的選擇器為空",
   "macroReplayWaitSelector": "等待元素: {selector}",
   "@macroReplayWaitSelector": {
     "placeholders": {
@@ -4712,8 +4712,8 @@
       }
     }
   },
-  "macroReplayManualActionRequired": "需要手动操作",
-  "macroReplayNavigateTo": "导航到 {url}",
+  "macroReplayManualActionRequired": "需要手動操作",
+  "macroReplayNavigateTo": "導航到 {url}",
   "@macroReplayNavigateTo": {
     "placeholders": {
       "url": {
@@ -4721,40 +4721,40 @@
       }
     }
   },
-  "macroReplayWaitPageLoad": "等待页面加载",
-  "macroReplayWaitDomReady": "等待 DOM 就绪",
-  "hyperosShowcaseTitle": "澎湃 UI 组件库",
+  "macroReplayWaitPageLoad": "等待頁面加載",
+  "macroReplayWaitDomReady": "等待 DOM 就緒",
+  "hyperosShowcaseTitle": "澎湃 UI 組件庫",
   "hyperosShowcaseSectionSummary": "概要卡片",
-  "hyperosShowcaseKitSubtitle": "mikcb 澎湃风格组件一览",
-  "hyperosShowcaseSectionTags": "标签 / 手风琴 / 提示",
-  "hyperosShowcaseAccordionSection1": "第一节",
-  "hyperosShowcaseAccordionSection1Body": "展开后显示的内容区域",
-  "hyperosShowcaseAccordionSection2": "第二节",
-  "hyperosShowcaseAccordionSection2Body": "可折叠分组，替代 FAccordion",
-  "hyperosShowcaseSectionNavRows": "列表行 · 导航",
-  "hyperosShowcaseNavRowWithIcon": "带图标",
-  "hyperosShowcaseNavRowNoIconSubtitle": "无左侧彩图标",
-  "hyperosShowcaseNavRowDetails": "详情",
-  "hyperosShowcaseSectionSwitchRows": "列表行 · 开关 / 危险",
-  "hyperosShowcaseSwitchRowSubtitle": "带图标开关行",
-  "hyperosShowcaseSwitchRowPlain": "纯文字开关行",
-  "hyperosShowcaseSectionChoiceRows": "列表行 · 单选 / 选择 / 日期",
-  "hyperosShowcaseOptionA": "选项 A",
-  "hyperosShowcaseOptionB": "选项 B",
-  "hyperosShowcaseOptionC": "选项 C",
-  "hyperosShowcaseSelectSizeTitle": "选择尺寸",
+  "hyperosShowcaseKitSubtitle": "mikcb 澎湃風格組件一覽",
+  "hyperosShowcaseSectionTags": "標簽 / 手風琴 / 提示",
+  "hyperosShowcaseAccordionSection1": "第一節",
+  "hyperosShowcaseAccordionSection1Body": "展開後顯示的內容區域",
+  "hyperosShowcaseAccordionSection2": "第二節",
+  "hyperosShowcaseAccordionSection2Body": "可折疊分組，替代 FAccordion",
+  "hyperosShowcaseSectionNavRows": "列表行 · 導航",
+  "hyperosShowcaseNavRowWithIcon": "帶圖標",
+  "hyperosShowcaseNavRowNoIconSubtitle": "無左側彩圖標",
+  "hyperosShowcaseNavRowDetails": "詳情",
+  "hyperosShowcaseSectionSwitchRows": "列表行 · 開關 / 危险",
+  "hyperosShowcaseSwitchRowSubtitle": "帶圖標開關行",
+  "hyperosShowcaseSwitchRowPlain": "純文字開關行",
+  "hyperosShowcaseSectionChoiceRows": "列表行 · 單選 / 選擇 / 日期",
+  "hyperosShowcaseOptionA": "選項 A",
+  "hyperosShowcaseOptionB": "選項 B",
+  "hyperosShowcaseOptionC": "選項 C",
+  "hyperosShowcaseSelectSizeTitle": "選擇尺寸",
   "hyperosShowcaseSizeSmall": "小",
   "hyperosShowcaseSizeMedium": "中",
   "hyperosShowcaseSizeLarge": "大",
   "hyperosShowcaseSectionControls": "控件卡片",
-  "hyperosShowcaseControlsSubtitle": "滑条、分段、按钮",
+  "hyperosShowcaseControlsSubtitle": "滑條、分段、按钮",
   "hyperosShowcaseSegmentLeft": "左",
   "hyperosShowcaseSegmentRight": "右",
-  "hyperosShowcaseSectionInput": "输入",
-  "hyperosShowcaseInputHint": "请输入内容",
-  "hyperosShowcaseInputCardLabel": "卡片内输入",
-  "hyperosShowcaseSectionPicker": "滚轮选择器",
-  "hyperosShowcasePickerCurrentValue": "当前值：{value}",
+  "hyperosShowcaseSectionInput": "輸入",
+  "hyperosShowcaseInputHint": "請輸入內容",
+  "hyperosShowcaseInputCardLabel": "卡片內輸入",
+  "hyperosShowcaseSectionPicker": "滾輪選擇器",
+  "hyperosShowcasePickerCurrentValue": "當前值：{value}",
   "@hyperosShowcasePickerCurrentValue": {
     "placeholders": {
       "value": {
@@ -4762,43 +4762,43 @@
       }
     }
   },
-  "hyperosShowcaseSectionInline": "基础控件 · 行内",
-  "hyperosShowcaseCheckboxSubtitle": "多选偏好行",
-  "hyperosShowcaseSectionNavActions": "导航与操作",
-  "hyperosShowcaseTooltipButton": "带 Tooltip 的按钮",
-  "hyperosShowcaseSectionProgress": "进度与刷新",
-  "hyperosShowcaseSectionColorChip": "颜色选择 · ColorChip",
-  "hyperosShowcaseSectionNavBar": "底部导航 · HyperosNavigationBar",
-  "hyperosShowcaseNavHome": "首页",
-  "hyperosShowcaseNavTimetable": "课表",
-  "hyperosShowcaseNavSettings": "设置",
-  "hyperosShowcaseSectionEmpty": "空态 / 分割线 / 装饰",
-  "hyperosShowcaseEmptySubtitle": "列表无数据时的占位",
+  "hyperosShowcaseSectionInline": "基礎控件 · 行內",
+  "hyperosShowcaseCheckboxSubtitle": "多選偏好行",
+  "hyperosShowcaseSectionNavActions": "導航猶操作",
+  "hyperosShowcaseTooltipButton": "帶 Tooltip 的按钮",
+  "hyperosShowcaseSectionProgress": "進度猶刷新",
+  "hyperosShowcaseSectionColorChip": "顏色選擇 · ColorChip",
+  "hyperosShowcaseSectionNavBar": "底部導航 · HyperosNavigationBar",
+  "hyperosShowcaseNavHome": "首頁",
+  "hyperosShowcaseNavTimetable": "課表",
+  "hyperosShowcaseNavSettings": "設置",
+  "hyperosShowcaseSectionEmpty": "空態 / 分割線 / 裝飾",
+  "hyperosShowcaseEmptySubtitle": "列表無數據時的佔位",
   "hyperosShowcaseActionButton": "操作按钮",
-  "hyperosShowcaseDividerRowTitle": "第二行（上方有缩进分割线）",
-  "hyperosShowcaseSectionPressable": "底层行 · HyperosPressableRow",
-  "hyperosShowcaseSectionShell": "页面壳层",
-  "hyperosShowcaseRootPageDetails": "无返回键根页",
-  "hyperosShowcaseSubpageSubtitle": "当前页即 Subpage + HyperosListView",
+  "hyperosShowcaseDividerRowTitle": "第二行（上方有縮進分割線）",
+  "hyperosShowcaseSectionPressable": "底層行 · HyperosPressableRow",
+  "hyperosShowcaseSectionShell": "頁面殼層",
+  "hyperosShowcaseRootPageDetails": "無返回鍵根頁",
+  "hyperosShowcaseSubpageSubtitle": "當前頁即 Subpage + HyperosListView",
   "hyperosShowcaseAlreadyInSubpage": "已在 Subpage 中",
-  "hyperosShowcaseSectionFrosted": "模糊顶栏 · 滚动物理",
-  "hyperosShowcaseSectionFeedback": "反馈 · 弹层",
-  "hyperosShowcaseSectionIconColors": "主题色 · HyperosIconColors",
-  "hyperosShowcaseFooterNote": "此页仅在非 Release 构建设置首页可见，用于组件视觉验收",
-  "hyperosShowcaseUndoAction": "撤销",
-  "hyperosShowcaseDialogMessage": "系统风格对话框示例",
-  "hyperosShowcaseConfirmTitle": "确认操作",
-  "hyperosShowcaseConfirmed": "已确认",
-  "hyperosShowcaseToastDescription": "带图标与副标题，App Toast 同款",
-  "hyperosShowcaseMenuCopy": "复制",
+  "hyperosShowcaseSectionFrosted": "模糊頂欄 · 滾動物理",
+  "hyperosShowcaseSectionFeedback": "反饋 · 彈層",
+  "hyperosShowcaseSectionIconColors": "主題色 · HyperosIconColors",
+  "hyperosShowcaseFooterNote": "此頁僅在非 Release 構建設置首頁可見，用于組件視覺驗收",
+  "hyperosShowcaseUndoAction": "撤銷",
+  "hyperosShowcaseDialogMessage": "系統風格對話框示例",
+  "hyperosShowcaseConfirmTitle": "確認操作",
+  "hyperosShowcaseConfirmed": "已確認",
+  "hyperosShowcaseToastDescription": "帶圖標猶副標題，App Toast 同款",
+  "hyperosShowcaseMenuCopy": "複製",
   "hyperosShowcaseMenuShare": "分享",
-  "hyperosShowcaseMenuDelete": "删除",
+  "hyperosShowcaseMenuDelete": "刪除",
   "hyperosShowcaseRefreshDone": "刷新完成",
   "hyperosShowcaseSearchTooltip": "搜索",
-  "hyperosShowcaseRootShellLabel": "根页壳层",
-  "hyperosShowcasePushSubtitle": "通过 HyperosNavigation.push 进入",
+  "hyperosShowcaseRootShellLabel": "根頁殼層",
+  "hyperosShowcasePushSubtitle": "通過 HyperosNavigation.push 進入",
   "hyperosShowcaseSampleText": "示例文本",
-  "courseImportQuickImportDescription": "快捷导入 {schoolName} {adapterName}",
+  "courseImportQuickImportDescription": "快捷導入 {schoolName} {adapterName}",
   "@courseImportQuickImportDescription": {
     "placeholders": {
       "schoolName": {
@@ -4809,15 +4809,15 @@
       }
     }
   },
-  "courseImportScriptNoCourses": "导入脚本未返回课程数据",
-  "courseImportScriptFailed": "脚本执行失败",
-  "courseImportRecordingStatus": "录制中…点击停止完成录制",
-  "courseImportRecordingStartedTip": "录制已开始，请按正常流程操作教务网站",
+  "courseImportScriptNoCourses": "導入脚本未返回課程數據",
+  "courseImportScriptFailed": "脚本執行失敗",
+  "courseImportRecordingStatus": "錄制中…點擊停止完成錄制",
+  "courseImportRecordingStartedTip": "錄制已開始，請按正常流程操作教務網站",
   "courseImportAutoRecordingStartedTip": "已在背景記錄操作，匯入成功後可儲存為快捷匯入",
-  "courseImportRecordingEmptyStatus": "未录制到任何操作",
-  "courseImportRecordingEmptyTip": "未录制到任何操作",
-  "courseImportSaveRecordingTitle": "保存录制",
-  "courseImportSaveRecordingMessage": "录制了 {count} 个操作步骤，是否保存为快捷导入？",
+  "courseImportRecordingEmptyStatus": "未錄制到任何操作",
+  "courseImportRecordingEmptyTip": "未錄制到任何操作",
+  "courseImportSaveRecordingTitle": "保存錄制",
+  "courseImportSaveRecordingMessage": "錄制了 {count} 個操作步晝，是否保存為快捷導入？",
   "@courseImportSaveRecordingMessage": {
     "placeholders": {
       "count": {
@@ -4833,7 +4833,7 @@
       }
     }
   },
-  "courseImportRecordingSavedStatus": "录制已保存（{count} 步）",
+  "courseImportRecordingSavedStatus": "錄制已保存（{count} 步）",
   "@courseImportRecordingSavedStatus": {
     "placeholders": {
       "count": {
@@ -4842,8 +4842,8 @@
     }
   },
   "courseImportWeekNotProvided": "未提供周次",
-  "courseImportLocationNotFilled": "未填写地点",
-  "courseImportPreviewLine": "周{weekday} 第{startSection}-{endSection}节  {name}  {location}  周次：{weekText}",
+  "courseImportLocationNotFilled": "未填寫地點",
+  "courseImportPreviewLine": "周{weekday} 第{startSection}-{endSection}節  {name}  {location}  周次：{weekText}",
   "@courseImportPreviewLine": {
     "placeholders": {
       "weekday": {
@@ -4866,7 +4866,7 @@
       }
     }
   },
-  "courseImportCalendarWeekLabel": "校历第 {week} 周",
+  "courseImportCalendarWeekLabel": "校曆第 {week} 周",
   "@courseImportCalendarWeekLabel": {
     "placeholders": {
       "week": {
@@ -4874,11 +4874,11 @@
       }
     }
   },
-  "courseImportTermStartDateTitle": "开学日期",
-  "courseImportFirstWeekMappingLabel": "课表第 1 周对应校历第几周",
-  "courseImportFirstWeekMappingSubtitle": "如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周",
-  "courseImportFirstWeekNoShift": "导入后会直接把课表第 1 周当作校历第 1 周",
-  "courseImportFirstWeekShifted": "导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周",
+  "courseImportTermStartDateTitle": "開學日期",
+  "courseImportFirstWeekMappingLabel": "課表第 1 周對應校曆第幾周",
+  "courseImportFirstWeekMappingSubtitle": "如果學校第一周没課，就選第 2 周；前兩周都没課就選第 3 周",
+  "courseImportFirstWeekNoShift": "導入後會直接把課表第 1 周當作校曆第 1 周",
+  "courseImportFirstWeekShifted": "導入後會把所有課程周次整體順延 {weeks} 周，讓課表第 1 周落在校曆第 {targetWeek} 周",
   "@courseImportFirstWeekShifted": {
     "placeholders": {
       "weeks": {
@@ -4889,11 +4889,11 @@
       }
     }
   },
-  "courseImportContinueAction": "继续导入",
-  "courseImportUpdateRecommendedAction": "更新课表（推荐）",
-  "courseImportOverwriteAction": "覆盖导入",
-  "courseImportSectionCountInsufficientTitle": "时间模板节次不足",
-  "courseImportSectionCountInsufficientMessage": "当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节，是否自动补齐后继续导入？",
+  "courseImportContinueAction": "繼續導入",
+  "courseImportUpdateRecommendedAction": "更新課表（推薦）",
+  "courseImportOverwriteAction": "覆蓋導入",
+  "courseImportSectionCountInsufficientTitle": "時間模板節次不足",
+  "courseImportSectionCountInsufficientMessage": "當前課表時間模板只有 {current} 節，但導入數據需要到第 {required} 節，是否自動補齊後繼續導入？",
   "@courseImportSectionCountInsufficientMessage": {
     "placeholders": {
       "current": {
@@ -4904,65 +4904,65 @@
       }
     }
   },
-  "courseImportAutoFillAndImportAction": "自动补齐并导入",
-  "courseImportPortalUrlTitle": "输入教务网址",
-  "courseImportPortalUrlSaveContinue": "保存并继续",
-  "courseImportPortalUrlLabel": "教务网址",
-  "courseImportPortalUrlHint": "保存后下次会直接使用，也可以在适配器信息页里修改",
-  "courseImportPortalUrlInvalid": "登录地址格式不正确",
-  "logAppLoggerInitialized": "应用日志服务已初始化",
-  "logPrivacyConsentUpdated": "隐私协议同意状态已更新",
-  "logAppLogRecordingEnabled": "应用日志记录已开启",
-  "logAppLogRecordingRemainsEnabled": "应用日志记录保持开启",
-  "logStartupFlowStarted": "启动流程处理已开始",
-  "logStartupFlowCompletedNoOnboarding": "启动流程已完成（无需引导页）",
-  "logStartupFlowCompletedAfterGuide": "启动流程已完成（经过引导页）",
-  "logStartupFlowFailed": "启动流程失败，进入降级模式",
-  "logAppLifecycleChanged": "应用生命周期已变更",
-  "logNavigatorRouteReplaced": "导航路由已替换",
-  "logNavigatorRouteChanged": "导航路由已变更",
-  "logAppLogsDefaultMigrated": "迁移时已默认开启应用日志记录",
-  "logTimetableLoadSettingsFailed": "加载课表设置失败",
-  "logTimetableLoadCoursesFailed": "加载课程数据失败",
-  "logTimetableLoadCurrentWeekFailed": "加载当前周次失败",
-  "logHomeWidgetPinSupportFailed": "检查桌面小组件固定支持失败",
-  "logHomeWidgetPinRequestFailed": "请求固定桌面小组件失败",
-  "logHomeWidgetSyncFailed": "同步桌面小组件快照失败",
-  "logHomeWidgetClearFailed": "清空桌面小组件快照失败",
-  "logHomeWidgetScheduleFailed": "调度桌面小组件刷新失败",
-  "logMiuiLiveInitializeFailed": "初始化 MIUI 超级岛通道失败",
-  "logMiuiLiveOpenPromotedSettingsFailed": "打开超级岛权限设置失败",
-  "logMiuiLiveOpenNotificationSettingsFailed": "打开通知设置失败",
-  "logMiuiLiveOpenAutostartSettingsFailed": "打开自启动设置失败",
-  "logMiuiLiveOpenBatterySettingsFailed": "打开电池优化设置失败",
-  "logMiuiLiveOpenAccessibilitySettingsFailed": "打开无障碍设置失败",
-  "logMiuiLiveHideFromRecentsFailed": "更新「从最近任务隐藏」失败",
-  "logLiveUpdateStartFailed": "从 Flutter 启动超级岛失败",
-  "logLiveUpdateStopFailed": "从 Flutter 停止超级岛失败",
-  "logLiveUpdateDebugStatusFailed": "获取原生超级岛调试状态失败",
-  "logLiveUpdateSnapshotSyncFailed": "同步超级岛课表快照失败",
-  "logLiveUpdateSnapshotClearFailed": "清空超级岛课表快照失败",
-  "logLiveUpdateSuspendTriggersFailed": "挂起超级岛课表调度失败",
-  "logLanEditAuthFailed": "局域网编辑：认证失败",
-  "logLanEditCourseCreated": "局域网编辑：已创建课程",
-  "logLanEditCourseUpdated": "局域网编辑：已更新课程",
-  "logLanEditCourseDeleted": "局域网编辑：已删除课程",
-  "logLanEditCourseGroupSaved": "局域网编辑：已保存课程组",
-  "logLanEditMergeImported": "局域网编辑：已导入合并备份",
-  "logLanEditCoursesBatchDeleted": "局域网编辑：已批量删除课程",
-  "logLanEditCurrentWeekSet": "局域网编辑：已设置当前周次",
-  "logLanEditProfileSwitched": "局域网编辑：已切换课表",
-  "logLanEditSpreadsheetImported": "局域网编辑：已导入表格",
-  "logLanEditSessionStarted": "局域网编辑：会话已启动",
-  "logLanEditSessionStopped": "局域网编辑：会话已停止",
-  "logLiveUpdateTestRequested": "用户请求手动超级岛测试通知",
-  "logLiveUpdateTestNoSelection": "手动超级岛测试：未找到可用课程",
-  "logLiveUpdateTestSelectionReady": "手动超级岛测试：已解析目标课程",
-  "logLiveUpdateTestSuspendSync": "手动超级岛测试：已临时暂停定时同步",
-  "logLiveUpdateTestStarting": "手动超级岛测试：正在启动原生超级岛",
-  "logLiveUpdateTestStarted": "手动超级岛测试：已成功请求原生超级岛",
-  "logLiveUpdateTestFailed": "手动超级岛测试：原生超级岛出现前失败",
-  "logLiveUpdateSettingsSynced": "Flutter 超级岛设置已同步：课前={beforeClass}，课中={duringClass}，下课前={beforeEnd}，提升={promote}，通知={notification}，倒计时={countdown}，课程名={courseName}，地点={location}",
+  "courseImportAutoFillAndImportAction": "自動補齊並導入",
+  "courseImportPortalUrlTitle": "輸入教務網址",
+  "courseImportPortalUrlSaveContinue": "保存並繼續",
+  "courseImportPortalUrlLabel": "教務網址",
+  "courseImportPortalUrlHint": "保存後下次會直接使用，也可以在適配器信息頁里修改",
+  "courseImportPortalUrlInvalid": "登錄地址格式不正確",
+  "logAppLoggerInitialized": "應用日志服務已初始化",
+  "logPrivacyConsentUpdated": "隱私協議同意壯態已更新",
+  "logAppLogRecordingEnabled": "應用日志記錄已開啟",
+  "logAppLogRecordingRemainsEnabled": "應用日志記錄保持開啟",
+  "logStartupFlowStarted": "啟動流程處理已開始",
+  "logStartupFlowCompletedNoOnboarding": "啟動流程已完成（無需引導頁）",
+  "logStartupFlowCompletedAfterGuide": "啟動流程已完成（經過引導頁）",
+  "logStartupFlowFailed": "啟動流程失敗，進入降級模式",
+  "logAppLifecycleChanged": "應用生命周期已變更",
+  "logNavigatorRouteReplaced": "導航路由已替換",
+  "logNavigatorRouteChanged": "導航路由已變更",
+  "logAppLogsDefaultMigrated": "遷移時已默認開啟應用日志記錄",
+  "logTimetableLoadSettingsFailed": "加載課表設置失敗",
+  "logTimetableLoadCoursesFailed": "加載課程數據失敗",
+  "logTimetableLoadCurrentWeekFailed": "加載當前周次失敗",
+  "logHomeWidgetPinSupportFailed": "檢查桌面小組件固定支持失敗",
+  "logHomeWidgetPinRequestFailed": "請求固定桌面小組件失敗",
+  "logHomeWidgetSyncFailed": "同步桌面小組件快照失敗",
+  "logHomeWidgetClearFailed": "清空桌面小組件快照失敗",
+  "logHomeWidgetScheduleFailed": "調度桌面小組件刷新失敗",
+  "logMiuiLiveInitializeFailed": "初始化 MIUI 超級島通道失敗",
+  "logMiuiLiveOpenPromotedSettingsFailed": "打開超級島權限設置失敗",
+  "logMiuiLiveOpenNotificationSettingsFailed": "打開通知設置失敗",
+  "logMiuiLiveOpenAutostartSettingsFailed": "打開自啟動設置失敗",
+  "logMiuiLiveOpenBatterySettingsFailed": "打開電池優化設置失敗",
+  "logMiuiLiveOpenAccessibilitySettingsFailed": "打開無漲礙設置失敗",
+  "logMiuiLiveHideFromRecentsFailed": "更新「從最近任務隱藏」失敗",
+  "logLiveUpdateStartFailed": "從 Flutter 啟動超級島失敗",
+  "logLiveUpdateStopFailed": "從 Flutter 停止超級島失敗",
+  "logLiveUpdateDebugStatusFailed": "获取原生超級島調試壯態失敗",
+  "logLiveUpdateSnapshotSyncFailed": "同步超級島課表快照失敗",
+  "logLiveUpdateSnapshotClearFailed": "清空超級島課表快照失敗",
+  "logLiveUpdateSuspendTriggersFailed": "掛起超級島課表調度失敗",
+  "logLanEditAuthFailed": "局域網編輯：認證失敗",
+  "logLanEditCourseCreated": "局域網編輯：已創建課程",
+  "logLanEditCourseUpdated": "局域網編輯：已更新課程",
+  "logLanEditCourseDeleted": "局域網編輯：已刪除課程",
+  "logLanEditCourseGroupSaved": "局域網編輯：已保存課程組",
+  "logLanEditMergeImported": "局域網編輯：已導入合並備份",
+  "logLanEditCoursesBatchDeleted": "局域網編輯：已批量刪除課程",
+  "logLanEditCurrentWeekSet": "局域網編輯：已設置當前周次",
+  "logLanEditProfileSwitched": "局域網編輯：已切換課表",
+  "logLanEditSpreadsheetImported": "局域網編輯：已導入表格",
+  "logLanEditSessionStarted": "局域網編輯：會話已啟動",
+  "logLanEditSessionStopped": "局域網編輯：會話已停止",
+  "logLiveUpdateTestRequested": "用戶請求手動超級島測試通知",
+  "logLiveUpdateTestNoSelection": "手動超級島測試：未找到可用課程",
+  "logLiveUpdateTestSelectionReady": "手動超級島測試：已解析目標課程",
+  "logLiveUpdateTestSuspendSync": "手動超級島測試：已臨時暂停定時同步",
+  "logLiveUpdateTestStarting": "手動超級島測試：正在啟動原生超級島",
+  "logLiveUpdateTestStarted": "手動超級島測試：已成功請求原生超級島",
+  "logLiveUpdateTestFailed": "手動超級島測試：原生超級島出現前失敗",
+  "logLiveUpdateSettingsSynced": "Flutter 超級島設置已同步：課前={beforeClass}，課中={duringClass}，下課前={beforeEnd}，提升={promote}，通知={notification}，倒計時={countdown}，課程名={courseName}，地點={location}",
   "@logLiveUpdateSettingsSynced": {
     "placeholders": {
       "beforeClass": {
@@ -4991,184 +4991,184 @@
       }
     }
   },
-  "logFieldSource": "来源",
+  "logFieldSource": "來源",
   "logFieldPlatform": "平台",
   "logFieldVersion": "版本",
-  "logFieldBuildNumber": "构建号",
-  "logFieldLoggingEnabled": "日志记录",
-  "logFieldPrivacyAccepted": "隐私协议",
+  "logFieldBuildNumber": "構建號",
+  "logFieldLoggingEnabled": "日志記錄",
+  "logFieldPrivacyAccepted": "隱私協議",
   "logFieldAccepted": "已同意",
-  "logFieldPrevious": "先前状态",
-  "logFieldTruncated": "已截断",
-  "logFieldTruncatedHint": "截断提示",
-  "logFieldThrowable": "异常",
+  "logFieldPrevious": "先前壯態",
+  "logFieldTruncated": "已截斷",
+  "logFieldTruncatedHint": "截斷提示",
+  "logFieldThrowable": "異常",
   "logFieldExtras": "附加信息",
-  "logFieldContext": "设备上下文",
-  "logFieldError": "错误",
+  "logFieldContext": "設備上下文",
+  "logFieldError": "錯誤",
   "logFieldBrand": "品牌",
   "logFieldManufacturer": "制造商",
-  "logFieldModel": "型号",
+  "logFieldModel": "型號",
   "logFieldSdkInt": "SDK 版本",
   "logFieldVersionName": "版本名",
   "logFieldChannel": "渠道",
-  "logFieldHasNotificationPermission": "通知权限",
-  "logFieldHasPromotedPermissionDeclared": "已声明提升通知权限",
-  "logFieldCanPostPromotedNotifications": "可发布提升通知",
-  "logFieldIgnoringBatteryOptimizations": "忽略电池优化",
-  "logFieldKeepAliveAccessibilityEnabled": "无障碍保活已启用",
-  "logFieldHideFromRecentsEnabled": "从最近任务隐藏",
-  "logFieldTaskRemovedRecently": "近期任务被移除",
-  "logFieldLastTaskRemovedAt": "上次任务移除时间",
-  "logFieldProcessImportance": "进程重要性",
-  "logFieldAutoStartStatus": "自启动状态",
-  "logFieldLiveEnableBeforeClass": "课前超级岛",
-  "logFieldLiveEnableDuringClass": "课中超级岛",
-  "logFieldLiveEnableBeforeEnd": "下课前超级岛",
-  "logFieldLivePromoteDuringClass": "课中提升通知",
-  "logFieldLiveShowDuringClassNotification": "课中状态栏通知",
-  "logFieldLiveShowCountdown": "显示倒计时",
-  "logFieldLiveShowStageText": "显示阶段文字",
-  "logFieldLiveShowCourseName": "显示课程名",
-  "logFieldLiveShowLocation": "显示地点",
-  "logFieldLiveUseShortName": "使用简称",
-  "logFieldLiveHidePrefixText": "隐藏前缀文字",
-  "logFieldLiveDuringClassTimeDisplayMode": "课中时间显示模式",
-  "logFieldLiveEnableMiuiIslandLabelImage": "岛标签图片",
-  "logFieldLiveMiuiIslandLabelStyle": "岛标签样式",
-  "logFieldLiveMiuiIslandLabelContent": "岛标签内容",
-  "logFieldLiveMiuiIslandLabelFontColor": "岛标签字体颜色",
-  "logFieldLiveMiuiIslandLabelFontWeight": "岛标签字重",
-  "logFieldLiveMiuiIslandLabelRenderQuality": "岛标签渲染质量",
-  "logFieldLiveMiuiIslandLabelFontSize": "岛标签字号",
-  "logFieldLiveMiuiIslandLabelOffsetX": "岛标签 X 偏移",
-  "logFieldLiveMiuiIslandLabelOffsetY": "岛标签 Y 偏移",
-  "logFieldLiveMiuiIslandExpandedIconMode": "展开图标模式",
-  "logFieldLiveShowBeforeClassMinutes": "课前显示分钟数",
-  "logFieldLiveClassReminderStartMinutes": "上课提醒开始分钟",
-  "logFieldLiveEndSecondsCountdownThreshold": "下课秒倒计时阈值",
-  "logFieldState": "状态",
+  "logFieldHasNotificationPermission": "通知權限",
+  "logFieldHasPromotedPermissionDeclared": "已聲明提升通知權限",
+  "logFieldCanPostPromotedNotifications": "可發布提升通知",
+  "logFieldIgnoringBatteryOptimizations": "忽略電池優化",
+  "logFieldKeepAliveAccessibilityEnabled": "無漲礙保活已啟用",
+  "logFieldHideFromRecentsEnabled": "從最近任務隱藏",
+  "logFieldTaskRemovedRecently": "近期任務被移除",
+  "logFieldLastTaskRemovedAt": "上次任務移除時間",
+  "logFieldProcessImportance": "進程重要性",
+  "logFieldAutoStartStatus": "自啟動壯態",
+  "logFieldLiveEnableBeforeClass": "課前超級島",
+  "logFieldLiveEnableDuringClass": "課中超級島",
+  "logFieldLiveEnableBeforeEnd": "下課前超級島",
+  "logFieldLivePromoteDuringClass": "課中提升通知",
+  "logFieldLiveShowDuringClassNotification": "課中壯態欄通知",
+  "logFieldLiveShowCountdown": "顯示倒計時",
+  "logFieldLiveShowStageText": "顯示階段文字",
+  "logFieldLiveShowCourseName": "顯示課程名",
+  "logFieldLiveShowLocation": "顯示地點",
+  "logFieldLiveUseShortName": "使用簡稱",
+  "logFieldLiveHidePrefixText": "隱藏前缀文字",
+  "logFieldLiveDuringClassTimeDisplayMode": "課中時間顯示模式",
+  "logFieldLiveEnableMiuiIslandLabelImage": "島標簽圖片",
+  "logFieldLiveMiuiIslandLabelStyle": "島標簽養式",
+  "logFieldLiveMiuiIslandLabelContent": "島標簽內容",
+  "logFieldLiveMiuiIslandLabelFontColor": "島標簽字體顏色",
+  "logFieldLiveMiuiIslandLabelFontWeight": "島標簽字重",
+  "logFieldLiveMiuiIslandLabelRenderQuality": "島標簽渲染質量",
+  "logFieldLiveMiuiIslandLabelFontSize": "島標簽字號",
+  "logFieldLiveMiuiIslandLabelOffsetX": "島標簽 X 偏移",
+  "logFieldLiveMiuiIslandLabelOffsetY": "島標簽 Y 偏移",
+  "logFieldLiveMiuiIslandExpandedIconMode": "展開圖標模式",
+  "logFieldLiveShowBeforeClassMinutes": "課前顯示分鐘數",
+  "logFieldLiveClassReminderStartMinutes": "上課提醒開始分鐘",
+  "logFieldLiveEndSecondsCountdownThreshold": "下課秒倒計時阈值",
+  "logFieldState": "壯態",
   "logFieldRoute": "路由",
   "logFieldPreviousRoute": "先前路由",
-  "logFieldProfileId": "课表配置 ID",
+  "logFieldProfileId": "課表配置 ID",
   "logFieldReason": "原因",
-  "logFieldClientIp": "客户端 IP",
+  "logFieldClientIp": "客戶端 IP",
   "logFieldPort": "端口",
-  "logFieldCourseName": "课程名",
-  "logFieldStage": "阶段",
-  "logFieldFrom": "来源页面",
-  "logFieldCurrentWeek": "当前周次",
+  "logFieldCourseName": "課程名",
+  "logFieldStage": "階段",
+  "logFieldFrom": "來源頁面",
+  "logFieldCurrentWeek": "當前周次",
   "logFieldWeekday": "星期",
-  "logFieldUntilMillis": "暂停截止时间",
-  "logFieldStartAtMillis": "开始时间",
-  "logFieldMergedCourseCount": "合并课程数",
-  "logFieldDeletedCount": "删除数量",
-  "logFieldRequested": "请求数量",
-  "logFieldTarget": "目标",
-  "logFieldCount": "数量",
+  "logFieldUntilMillis": "暂停截止時間",
+  "logFieldStartAtMillis": "開始時間",
+  "logFieldMergedCourseCount": "合並課程數",
+  "logFieldDeletedCount": "刪除數量",
+  "logFieldRequested": "請求數量",
+  "logFieldTarget": "目標",
+  "logFieldCount": "數量",
   "logFieldValue": "值",
-  "logFieldSnapshotLength": "快照长度",
-  "logFieldStoredSnapshotVersion": "存储快照版本",
-  "logFieldIntentIsNull": "Intent 为空",
+  "logFieldSnapshotLength": "快照長度",
+  "logFieldStoredSnapshotVersion": "存儲快照版本",
+  "logFieldIntentIsNull": "Intent 為空",
   "logFieldAction": "操作",
-  "logFieldStep": "步骤",
-  "logCatAppLoggerInitialized": "应用日志：初始化",
-  "logCatPrivacyConsentUpdated": "应用日志：隐私协议",
-  "logCatAppLogRecordingEnabled": "应用日志：记录开关",
-  "logCatStartupFlowStarted": "启动流程：开始",
-  "logCatStartupFlowCompleted": "启动流程：完成",
-  "logCatStartupFlowFailed": "启动流程：失败",
-  "logCatAppLifecycleStateChanged": "应用生命周期",
+  "logFieldStep": "步晝",
+  "logCatAppLoggerInitialized": "應用日志：初始化",
+  "logCatPrivacyConsentUpdated": "應用日志：隱私協議",
+  "logCatAppLogRecordingEnabled": "應用日志：記錄開關",
+  "logCatStartupFlowStarted": "啟動流程：開始",
+  "logCatStartupFlowCompleted": "啟動流程：完成",
+  "logCatStartupFlowFailed": "啟動流程：失敗",
+  "logCatAppLifecycleStateChanged": "應用生命周期",
   "logCatRoutePushed": "路由：入栈",
   "logCatRoutePopped": "路由：出栈",
-  "logCatRouteReplaced": "路由：替换",
-  "logCatFlutterFrameworkError": "Flutter 框架错误",
-  "logCatFlutterPlatformError": "Flutter 平台错误",
-  "logCatFlutterZoneError": "Flutter Zone 错误",
-  "logCatAppLogsDefaultMigrated": "应用日志：迁移",
-  "logCatTimetableLoadSettingsFailed": "课表：加载设置失败",
-  "logCatTimetableLoadCoursesFailed": "课表：加载课程失败",
-  "logCatTimetableLoadCurrentWeekFailed": "课表：加载周次失败",
-  "logCatHomeWidgetPinSupportFailed": "桌面小组件：检查固定支持",
-  "logCatHomeWidgetPinRequestFailed": "桌面小组件：请求固定",
-  "logCatHomeWidgetSyncFailed": "桌面小组件：同步失败",
-  "logCatHomeWidgetClearFailed": "桌面小组件：清空失败",
-  "logCatHomeWidgetScheduleFailed": "桌面小组件：调度刷新",
-  "logCatMiuiLiveInitializeFailed": "超级岛：初始化失败",
-  "logCatMiuiLiveOpenPromotedSettingsFailed": "超级岛：打开权限设置",
-  "logCatMiuiLiveOpenNotificationSettingsFailed": "超级岛：打开通知设置",
-  "logCatMiuiLiveOpenAutostartSettingsFailed": "超级岛：打开自启动设置",
-  "logCatMiuiLiveOpenBatterySettingsFailed": "超级岛：打开电池优化",
-  "logCatMiuiLiveOpenAccessibilitySettingsFailed": "超级岛：打开无障碍设置",
-  "logCatMiuiLiveHideFromRecentsFailed": "超级岛：隐藏最近任务",
-  "logCatLiveUpdateFlutterInitializeFailed": "超级岛：Flutter 初始化失败",
-  "logCatLiveUpdateStartFailed": "超级岛：启动失败",
-  "logCatLiveUpdateStopFailed": "超级岛：停止失败",
-  "logCatLiveUpdateDebugStatusFailed": "超级岛：调试状态失败",
-  "logCatLiveUpdateSettingsSynced": "超级岛：设置已同步",
-  "logCatLiveUpdateSnapshotSyncFailed": "超级岛：快照同步失败",
-  "logCatLiveUpdateSnapshotClearFailed": "超级岛：快照清空失败",
-  "logCatLanEditAuthFailed": "局域网编辑：认证",
-  "logCatLanEditCourseCreated": "局域网编辑：创建课程",
-  "logCatLanEditCourseUpdated": "局域网编辑：更新课程",
-  "logCatLanEditCourseDeleted": "局域网编辑：删除课程",
-  "logCatLanEditCourseGroupSaved": "局域网编辑：保存课程组",
-  "logCatLanEditMergeImported": "局域网编辑：合并导入",
-  "logCatLanEditCoursesBatchDeleted": "局域网编辑：批量删除",
-  "logCatLanEditCurrentWeekSet": "局域网编辑：设置周次",
-  "logCatLanEditSpreadsheetImported": "局域网编辑：表格导入",
-  "logCatLanEditSessionStarted": "局域网编辑：会话启动",
-  "logCatLanEditSessionStopped": "局域网编辑：会话停止",
-  "logCatLiveUpdateTestRequested": "超级岛测试：请求",
-  "logCatLiveUpdateTestNoSelection": "超级岛测试：无课程",
-  "logCatLiveUpdateTestSelectionReady": "超级岛测试：已选课程",
-  "logCatLiveUpdateTestSuspendSync": "超级岛测试：暂停同步",
-  "logCatLiveUpdateTestStarting": "超级岛测试：启动中",
-  "logCatLiveUpdateTestStarted": "超级岛测试：已启动",
-  "logCatLiveUpdateTestFailed": "超级岛测试：失败",
-  "logCatLiveUpdateSnapshotSettings": "超级岛：快照设置",
-  "logCatLiveUpdateSnapshotSynced": "超级岛：快照已同步",
-  "logCatLiveUpdateSnapshotCleared": "超级岛：快照已清空",
-  "logCatLiveUpdateAlarmTriggered": "超级岛：闹钟触发",
-  "logCatLiveUpdateSchedulerResume": "超级岛：调度恢复",
-  "logCatLiveUpdateRescheduleHoliday": "超级岛：节假日跳过",
-  "logCatLiveUpdateRescheduleActive": "超级岛：立即启动",
-  "logCatLiveUpdateRescheduleScheduled": "超级岛：已调度",
-  "logCatLiveUpdateSnapshotParseFailed": "超级岛：快照解析失败",
-  "logCatLiveUpdateSnapshotInvalidatedAfterUpgrade": "超级岛：升级后快照失效",
-  "logCatLiveUpdatePayloadSelected": "超级岛：已选负载",
-  "logCatLiveUpdateSchedulerStartFailed": "超级岛：调度启动失败",
-  "logCatLiveUpdateStartRequested": "超级岛：请求启动",
-  "logCatLiveUpdateStopRequested": "超级岛：请求停止",
-  "logCatLiveUpdateServiceMissingPayload": "超级岛：服务缺少负载",
-  "logCatLiveUpdateServiceStarted": "超级岛：服务已启动",
-  "logCatLiveUpdateServiceStartFailed": "超级岛：服务启动失败",
-  "logCatLiveUpdateTaskRemoved": "超级岛：任务被移除",
-  "logCatLiveUpdateTaskRemovedResumed": "超级岛：任务移除后恢复",
-  "logCatLiveUpdateBeforeClassQuickAction": "超级岛：课前快捷操作",
-  "logCatLiveUpdateBeforeClassQuickActionRestored": "超级岛：课前快捷操作已恢复",
-  "logCatLiveUpdateStatusBarDismissed": "超级岛：状态栏通知已关闭",
-  "logCatLiveUpdateNotPromoted": "超级岛：未提升通知",
-  "logCatLiveUpdatePromotedNotShown": "超级岛：提升未显示",
-  "logCatLiveUpdateServiceStopped": "超级岛：服务已停止",
-  "logCatKeepAliveAccessibilityConnected": "保活：无障碍已连接",
-  "logCatDiagnosticsEnabled": "诊断：已开启",
-  "logCatDiagnosticsCleared": "诊断：已清空",
-  "logCatDiagnosticsBootstrap": "诊断：引导",
-  "logCatFlutterDiagnostic": "Flutter 诊断",
-  "logCatFlutterDiagnosticEvent": "Flutter 诊断事件",
-  "logCatRenderFailed": "渲染失败",
-  "logCatDebugSnapshot": "调试快照",
-  "logExportTitle": "轻屿课表 - 应用日志",
-  "appUpdateMirrorPresetGhfast": "默认镜像",
-  "appUpdateMirrorPresetGhproxyCn": "备用镜像 1",
-  "appUpdateMirrorPresetGhLlkk": "备用镜像 2",
-  "appUpdateMirrorPresetGhProxyCom": "备用镜像 3",
-  "appUpdateMirrorPresetGhproxyNet": "备用镜像 4",
-  "appUpdateMirrorPresetCustom": "自定义",
-  "appUpdateMirrorPresetCustomDescription": "填写自定义镜像地址前缀",
-  "cloudBackupRetentionTitle": "备份保留策略",
-  "cloudBackupMaxCountTitle": "最多保留份数",
-  "cloudBackupMaxCountSubtitle": "超过后自动删除最旧的备份",
+  "logCatRouteReplaced": "路由：替換",
+  "logCatFlutterFrameworkError": "Flutter 框架錯誤",
+  "logCatFlutterPlatformError": "Flutter 平台錯誤",
+  "logCatFlutterZoneError": "Flutter Zone 錯誤",
+  "logCatAppLogsDefaultMigrated": "應用日志：遷移",
+  "logCatTimetableLoadSettingsFailed": "課表：加載設置失敗",
+  "logCatTimetableLoadCoursesFailed": "課表：加載課程失敗",
+  "logCatTimetableLoadCurrentWeekFailed": "課表：加載周次失敗",
+  "logCatHomeWidgetPinSupportFailed": "桌面小組件：檢查固定支持",
+  "logCatHomeWidgetPinRequestFailed": "桌面小組件：請求固定",
+  "logCatHomeWidgetSyncFailed": "桌面小組件：同步失敗",
+  "logCatHomeWidgetClearFailed": "桌面小組件：清空失敗",
+  "logCatHomeWidgetScheduleFailed": "桌面小組件：調度刷新",
+  "logCatMiuiLiveInitializeFailed": "超級島：初始化失敗",
+  "logCatMiuiLiveOpenPromotedSettingsFailed": "超級島：打開權限設置",
+  "logCatMiuiLiveOpenNotificationSettingsFailed": "超級島：打開通知設置",
+  "logCatMiuiLiveOpenAutostartSettingsFailed": "超級島：打開自啟動設置",
+  "logCatMiuiLiveOpenBatterySettingsFailed": "超級島：打開電池優化",
+  "logCatMiuiLiveOpenAccessibilitySettingsFailed": "超級島：打開無漲礙設置",
+  "logCatMiuiLiveHideFromRecentsFailed": "超級島：隱藏最近任務",
+  "logCatLiveUpdateFlutterInitializeFailed": "超級島：Flutter 初始化失敗",
+  "logCatLiveUpdateStartFailed": "超級島：啟動失敗",
+  "logCatLiveUpdateStopFailed": "超級島：停止失敗",
+  "logCatLiveUpdateDebugStatusFailed": "超級島：調試壯態失敗",
+  "logCatLiveUpdateSettingsSynced": "超級島：設置已同步",
+  "logCatLiveUpdateSnapshotSyncFailed": "超級島：快照同步失敗",
+  "logCatLiveUpdateSnapshotClearFailed": "超級島：快照清空失敗",
+  "logCatLanEditAuthFailed": "局域網編輯：認證",
+  "logCatLanEditCourseCreated": "局域網編輯：創建課程",
+  "logCatLanEditCourseUpdated": "局域網編輯：更新課程",
+  "logCatLanEditCourseDeleted": "局域網編輯：刪除課程",
+  "logCatLanEditCourseGroupSaved": "局域網編輯：保存課程組",
+  "logCatLanEditMergeImported": "局域網編輯：合並導入",
+  "logCatLanEditCoursesBatchDeleted": "局域網編輯：批量刪除",
+  "logCatLanEditCurrentWeekSet": "局域網編輯：設置周次",
+  "logCatLanEditSpreadsheetImported": "局域網編輯：表格導入",
+  "logCatLanEditSessionStarted": "局域網編輯：會話啟動",
+  "logCatLanEditSessionStopped": "局域網編輯：會話停止",
+  "logCatLiveUpdateTestRequested": "超級島測試：請求",
+  "logCatLiveUpdateTestNoSelection": "超級島測試：無課程",
+  "logCatLiveUpdateTestSelectionReady": "超級島測試：已選課程",
+  "logCatLiveUpdateTestSuspendSync": "超級島測試：暂停同步",
+  "logCatLiveUpdateTestStarting": "超級島測試：啟動中",
+  "logCatLiveUpdateTestStarted": "超級島測試：已啟動",
+  "logCatLiveUpdateTestFailed": "超級島測試：失敗",
+  "logCatLiveUpdateSnapshotSettings": "超級島：快照設置",
+  "logCatLiveUpdateSnapshotSynced": "超級島：快照已同步",
+  "logCatLiveUpdateSnapshotCleared": "超級島：快照已清空",
+  "logCatLiveUpdateAlarmTriggered": "超級島：鬧鐘觸發",
+  "logCatLiveUpdateSchedulerResume": "超級島：調度恢復",
+  "logCatLiveUpdateRescheduleHoliday": "超級島：節假日跳過",
+  "logCatLiveUpdateRescheduleActive": "超級島：立即啟動",
+  "logCatLiveUpdateRescheduleScheduled": "超級島：已調度",
+  "logCatLiveUpdateSnapshotParseFailed": "超級島：快照解析失敗",
+  "logCatLiveUpdateSnapshotInvalidatedAfterUpgrade": "超級島：升級後快照失效",
+  "logCatLiveUpdatePayloadSelected": "超級島：已選負載",
+  "logCatLiveUpdateSchedulerStartFailed": "超級島：調度啟動失敗",
+  "logCatLiveUpdateStartRequested": "超級島：請求啟動",
+  "logCatLiveUpdateStopRequested": "超級島：請求停止",
+  "logCatLiveUpdateServiceMissingPayload": "超級島：服務缺少負載",
+  "logCatLiveUpdateServiceStarted": "超級島：服務已啟動",
+  "logCatLiveUpdateServiceStartFailed": "超級島：服務啟動失敗",
+  "logCatLiveUpdateTaskRemoved": "超級島：任務被移除",
+  "logCatLiveUpdateTaskRemovedResumed": "超級島：任務移除後恢復",
+  "logCatLiveUpdateBeforeClassQuickAction": "超級島：課前快捷操作",
+  "logCatLiveUpdateBeforeClassQuickActionRestored": "超級島：課前快捷操作已恢復",
+  "logCatLiveUpdateStatusBarDismissed": "超級島：壯態欄通知已關閉",
+  "logCatLiveUpdateNotPromoted": "超級島：未提升通知",
+  "logCatLiveUpdatePromotedNotShown": "超級島：提升未顯示",
+  "logCatLiveUpdateServiceStopped": "超級島：服務已停止",
+  "logCatKeepAliveAccessibilityConnected": "保活：無漲礙已連接",
+  "logCatDiagnosticsEnabled": "偵斷：已開啟",
+  "logCatDiagnosticsCleared": "偵斷：已清空",
+  "logCatDiagnosticsBootstrap": "偵斷：引導",
+  "logCatFlutterDiagnostic": "Flutter 偵斷",
+  "logCatFlutterDiagnosticEvent": "Flutter 偵斷事件",
+  "logCatRenderFailed": "渲染失敗",
+  "logCatDebugSnapshot": "調試快照",
+  "logExportTitle": "輕誘課表 - 應用日志",
+  "appUpdateMirrorPresetGhfast": "默認镜像",
+  "appUpdateMirrorPresetGhproxyCn": "備用镜像 1",
+  "appUpdateMirrorPresetGhLlkk": "備用镜像 2",
+  "appUpdateMirrorPresetGhProxyCom": "備用镜像 3",
+  "appUpdateMirrorPresetGhproxyNet": "備用镜像 4",
+  "appUpdateMirrorPresetCustom": "自定義",
+  "appUpdateMirrorPresetCustomDescription": "填寫自定義镜像地址前缀",
+  "cloudBackupRetentionTitle": "備份保留策略",
+  "cloudBackupMaxCountTitle": "最多保留份數",
+  "cloudBackupMaxCountSubtitle": "超過後自動刪除最舊的備份",
   "cloudBackupMaxCountOption": "{count} 份",
   "@cloudBackupMaxCountOption": {
     "placeholders": {
@@ -5177,8 +5177,8 @@
       }
     }
   },
-  "cloudBackupMaxAgeTitle": "最长保留天数",
-  "cloudBackupMaxAgeSubtitle": "超过后自动删除过期备份",
+  "cloudBackupMaxAgeTitle": "最長保留天數",
+  "cloudBackupMaxAgeSubtitle": "超過後自動刪除過期備份",
   "cloudBackupMaxAgeOption": "{days} 天",
   "@cloudBackupMaxAgeOption": {
     "placeholders": {
@@ -5187,12 +5187,12 @@
       }
     }
   },
-  "statisticsShareText": "来自轻屿课表的学期统计",
+  "statisticsShareText": "來自輕誘課表的學期統計",
   "aboutUpdateAvailableHeadline": "有版本更新",
   "aboutAlreadyLatestHeadline": "已是最新版本",
-  "aboutDownloadChannelSectionTitle": "下载渠道",
-  "aboutMirrorProbeFailedLabel": "失败",
-  "timeSchemeImportSupplementName": "{name}（导入补齐）",
+  "aboutDownloadChannelSectionTitle": "下載渠道",
+  "aboutMirrorProbeFailedLabel": "失敗",
+  "timeSchemeImportSupplementName": "{name}（導入補齊）",
   "@timeSchemeImportSupplementName": {
     "placeholders": {
       "name": {
@@ -5200,7 +5200,7 @@
       }
     }
   },
-  "profileTimeSchemeName": "{profileName} 时间",
+  "profileTimeSchemeName": "{profileName} 時間",
   "@profileTimeSchemeName": {
     "placeholders": {
       "profileName": {
@@ -5208,11 +5208,11 @@
       }
     }
   },
-  "currentProfileTimeSchemeName": "当前课表时间",
-  "unnamedTimetableProfile": "未命名课表",
-  "cloudBackupManualProtectedTitle": "手动备份永不过期",
-  "cloudBackupManualProtectedSubtitle": "开启后，手动创建的备份不会被自动清理",
-  "courseImportPortalUrlMissingBody": "“{schoolName} / {adapterName}” 没有默认登录地址，请先输入学校教务系统网址",
+  "currentProfileTimeSchemeName": "當前課表時間",
+  "unnamedTimetableProfile": "未命名課表",
+  "cloudBackupManualProtectedTitle": "手動備份永不過期",
+  "cloudBackupManualProtectedSubtitle": "開啟後，手動創建的備份不會被自動清理",
+  "courseImportPortalUrlMissingBody": "“{schoolName} / {adapterName}” 没有默認登錄地址，請先輸入學校教務系統網址",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
       "schoolName": {
@@ -5223,7 +5223,7 @@
       }
     }
   },
-  "guidePermissionsProgressLabel": "已就绪 {ready}/{total}",
+  "guidePermissionsProgressLabel": "已就緒 {ready}/{total}",
   "@guidePermissionsProgressLabel": {
     "placeholders": {
       "ready": {
@@ -5238,11 +5238,11 @@
   "locationTimeMatchEntrySubtitle": "按上課地點關鍵詞自動選用時間範本",
   "locationTimeMatchTitle": "地點作息匹配",
   "locationTimeMatchSubtitle": "按地點關鍵詞自動匹配時間範本。重新匹配僅更新命中課程的鐘點，未命中課程保持不變。",
-  "locationTimeMatchWeekAxisNote": "说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。",
-  "locationTimeMatchPreviewLabel": "试匹配地点",
+  "locationTimeMatchWeekAxisNote": "說明：首頁左側時間列仍顯示課表默認模板；卡片/詳情/實況上的鐘點以地點匹配結果為準。",
+  "locationTimeMatchPreviewLabel": "試匹配地點",
   "locationTimeMatchPreviewHint": "例如 A1062 或 A主201",
-  "locationTimeMatchPreviewNoMatch": "未命中任何地点组，将使用课表默认时间模板",
-  "locationTimeMatchPreviewResult": "将匹配：{group} · {scheme}（关键词 {keyword}）",
+  "locationTimeMatchPreviewNoMatch": "未命中任何地點組，將使用課表默認時間模板",
+  "locationTimeMatchPreviewResult": "將匹配：{group} · {scheme}（關鍵詞 {keyword}）",
   "@locationTimeMatchPreviewResult": {
     "placeholders": {
       "group": {
@@ -5307,11 +5307,11 @@
     }
   },
   "locationTimeMatchEmpty": "還沒有地點組",
-  "locationTimeMatchCreateGroup": "新建地点组",
-  "locationTimeMatchEditGroup": "编辑地点组",
-  "locationTimeMatchUnknownScheme": "未知时间模板",
-  "locationTimeMatchNoKeywords": "未设置关键词",
-  "locationTimeMatchBoundScheme": "时间模板：{name}",
+  "locationTimeMatchCreateGroup": "新建地點組",
+  "locationTimeMatchEditGroup": "編輯地點組",
+  "locationTimeMatchUnknownScheme": "未知時間模板",
+  "locationTimeMatchNoKeywords": "未設置關鍵詞",
+  "locationTimeMatchBoundScheme": "時間模板：{name}",
   "@locationTimeMatchBoundScheme": {
     "placeholders": {
       "name": {
@@ -5319,7 +5319,7 @@
       }
     }
   },
-  "locationTimeMatchKeywordsLine": "关键词：{keywords}",
+  "locationTimeMatchKeywordsLine": "關鍵詞：{keywords}",
   "@locationTimeMatchKeywordsLine": {
     "placeholders": {
       "keywords": {
@@ -5327,8 +5327,8 @@
       }
     }
   },
-  "locationTimeMatchDeleteTitle": "删除地点组？",
-  "locationTimeMatchDeleteMessage": "確定刪除「{name}」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受影響。",
+  "locationTimeMatchDeleteTitle": "刪除地點組？",
+  "locationTimeMatchDeleteMessage": "確定刪除「{name}」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受蠅響。",
   "@locationTimeMatchDeleteMessage": {
     "placeholders": {
       "name": {
@@ -5336,26 +5336,26 @@
       }
     }
   },
-  "locationTimeMatchDeleted": "已删除地点组",
-  "locationTimeMatchGroupNameLabel": "地点组名称",
-  "locationTimeMatchGroupNameHint": "例如：主教学楼 / 其他教学楼",
-  "locationTimeMatchBoundSchemeLabel": "绑定时间模板",
-  "locationTimeMatchNeedTimeScheme": "请先创建至少一套时间模板",
-  "locationTimeMatchEnabledLabel": "启用此地点组",
-  "locationTimeMatchKeywordsSection": "地点关键词",
-  "locationTimeMatchKeywordsHelp": "可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。",
-  "locationTimeMatchAddKeyword": "手动添加关键词",
-  "locationTimeMatchKeywordLabel": "关键词",
+  "locationTimeMatchDeleted": "已刪除地點組",
+  "locationTimeMatchGroupNameLabel": "地點組名稱",
+  "locationTimeMatchGroupNameHint": "例如：主教學樓 / 其他教學樓",
+  "locationTimeMatchBoundSchemeLabel": "綁定時間模板",
+  "locationTimeMatchNeedTimeScheme": "請先創建至少一套時間模板",
+  "locationTimeMatchEnabledLabel": "啟用此地點組",
+  "locationTimeMatchKeywordsSection": "地點關鍵詞",
+  "locationTimeMatchKeywordsHelp": "可從課表地點一鍵識別樓棟，或手動填寫關鍵詞（如 A主、A1、A6）。匹配模式建議用「前缀」，更長的關鍵詞優先。",
+  "locationTimeMatchAddKeyword": "手動添加關鍵詞",
+  "locationTimeMatchKeywordLabel": "關鍵詞",
   "locationTimeMatchKeywordHint": "A1 / A主 / 六教",
   "locationTimeMatchModeLabel": "匹配模式",
   "locationTimeMatchModePrefix": "前缀",
   "locationTimeMatchModeContains": "包含",
-  "locationTimeMatchModeExact": "精确",
-  "locationTimeMatchKeywordTooShort": "关键词过短，容易误匹配",
-  "locationTimeMatchNameRequired": "请填写地点组名称",
-  "locationTimeMatchKeywordRequired": "请至少添加一个关键词",
-  "locationTimeMatchSaved": "地点组已保存",
-  "locationTimeMatchSaveFailed": "保存失败",
+  "locationTimeMatchModeExact": "精確",
+  "locationTimeMatchKeywordTooShort": "關鍵詞過短，容易誤匹配",
+  "locationTimeMatchNameRequired": "請填寫地點組名稱",
+  "locationTimeMatchKeywordRequired": "請至少添加一個關鍵詞",
+  "locationTimeMatchSaved": "地點組已保存",
+  "locationTimeMatchSaveFailed": "保存失敗",
   "followLocationAutoTimeScheme": "跟隨課表 / 地點自動",
   "followLocationAutoTimeSchemeDescription": "未手動指定時，依上課地點關鍵詞自動匹配時間範本；未命中則用課表預設範本",
   "locationTimeMatchedSchemeHint": "自動 · {scheme}",
@@ -5385,14 +5385,14 @@
       }
     }
   },
-  "locationTimeMatchSelectedKeywords": "已选关键词",
-  "locationTimeMatchNoSelectedKeywords": "尚未添加关键词",
-  "locationTimeMatchPickFromLocations": "从课表地点选择",
-  "locationTimeMatchBuildingSuggestions": "从课表识别的楼栋",
-  "locationTimeMatchNoBuildingSuggestions": "当前课表没有可识别的楼栋地点",
+  "locationTimeMatchSelectedKeywords": "已選關鍵詞",
+  "locationTimeMatchNoSelectedKeywords": "尚未添加關鍵詞",
+  "locationTimeMatchPickFromLocations": "從課表地點選擇",
+  "locationTimeMatchBuildingSuggestions": "從課表識別的樓棟",
+  "locationTimeMatchNoBuildingSuggestions": "當前課表没有可識別的樓棟地點",
   "locationTimeMatchAddBuilding": "添加",
-  "locationTimeMatchAddAllBuildings": "一键添加全部未配置楼栋",
-  "locationTimeMatchBuildingRoomCount": "{count} 间教室",
+  "locationTimeMatchAddAllBuildings": "一鍵添加全部未配置樓棟",
+  "locationTimeMatchBuildingRoomCount": "{count} 間教室",
   "@locationTimeMatchBuildingRoomCount": {
     "placeholders": {
       "count": {
@@ -5400,7 +5400,7 @@
       }
     }
   },
-  "locationTimeMatchBuildingGateTags": "标签：{tags}",
+  "locationTimeMatchBuildingGateTags": "標簽：{tags}",
   "@locationTimeMatchBuildingGateTags": {
     "placeholders": {
       "tags": {
@@ -5408,7 +5408,7 @@
       }
     }
   },
-  "locationTimeMatchKeywordExtracted": "已从地点提取关键词 {keyword}",
+  "locationTimeMatchKeywordExtracted": "已從地點提取關鍵詞 {keyword}",
   "@locationTimeMatchKeywordExtracted": {
     "placeholders": {
       "keyword": {
@@ -5416,7 +5416,7 @@
       }
     }
   },
-  "locationTimeMatchKeywordAlreadyExists": "关键词已存在",
+  "locationTimeMatchKeywordAlreadyExists": "關鍵詞已存在",
   "locationTimeMatchKeywordUsedByGroup": "關鍵詞已被「{group}」使用",
   "@locationTimeMatchKeywordUsedByGroup": {
     "placeholders": {
@@ -5667,8 +5667,8 @@
       }
     }
   },
-  "icsExportShareText": "這是來自輕屿課表的日曆檔案",
-  "icsExportShareSubject": "輕屿課表日曆",
+  "icsExportShareText": "這是來自輕誘課表的日曆檔案",
+  "icsExportShareSubject": "輕誘課表日曆",
   "coupleTimetableEntryTitle": "情侶課表",
   "coupleTimetableEntryBound": "已綁定",
   "coupleTimetableModeEnableTooltip": "開啟情侶課表",
@@ -5753,7 +5753,7 @@
   "coupleTimetableColorsSubtitle": "自訂「我的課」「對方課程」「一起上課」在疊加檢視中的顯示顏色，可按喜好自由搭配",
   "partnerImportRequiresSingleProfile": "請匯入單一課表備份檔案，不支援全量備份",
   "coupleWebdavTitle": "堅果雲拉取",
-  "coupleWebdavSubtitle": "登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不影響",
+  "coupleWebdavSubtitle": "登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不蠅響",
   "coupleWebdavNotConnected": "尚未連接堅果雲",
   "@coupleWebdavConnectedAs": {
     "placeholders": {
