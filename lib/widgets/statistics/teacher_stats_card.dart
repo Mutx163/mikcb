@@ -52,8 +52,9 @@ class TeacherStatsCard extends StatelessWidget {
                     width: 24,
                     child: Text(
                       '${i + 1}',
+                      // T2 名次数字：语义色已区分前三，字重收敛
                       style: HyperosTypography.listDetail(context).copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: i < 3
                             ? HyperosIconColors.yellow
                             : HyperosColors.secondaryText(context),
@@ -79,8 +80,9 @@ class TeacherStatsCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     '${stats[i].sections} ${l10n.statisticsSectionsUnit}',
+                    // T2 行内数据值：主题色 + w600
                     style: HyperosTypography.listTitle(context).copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       color: HyperosColors.primary(context),
                     ),
                   ),

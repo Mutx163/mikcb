@@ -157,9 +157,9 @@ class _AchievementBadgeState extends State<AchievementBadge>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: HyperosTypography.listDetail(context).copyWith(
+            // T0：勋章名是标签，回归常规体；锁定态用次级色区分
+            style: HyperosTypography.listTitle(context).copyWith(
               fontSize: HyperosMiuixTypography.footnote2,
-              fontWeight: FontWeight.w600,
               height: 1.1,
               color: unlocked
                   ? HyperosColors.primaryText(context)
@@ -173,9 +173,10 @@ class _AchievementBadgeState extends State<AchievementBadge>
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
+              // T1 轻强调：进度小字用 w500
               style: HyperosTypography.listDetail(context).copyWith(
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1.1,
                 color: unlocked
                     ? accent
@@ -260,7 +261,8 @@ Future<void> showAchievementDetailSheet({
                           ).withValues(alpha: 0.1),
                     textStyle: HyperosTypography.listDetail(context).copyWith(
                       fontSize: HyperosMiuixTypography.footnote2,
-                      fontWeight: FontWeight.w700,
+                      // T1 轻强调：弹窗状态 Tag 用 w500
+                      fontWeight: FontWeight.w500,
                       color: unlocked
                           ? accent
                           : HyperosColors.secondaryText(context),
@@ -280,7 +282,7 @@ Future<void> showAchievementDetailSheet({
                             ),
                       style: HyperosTypography.listDetail(context).copyWith(
                         fontSize: HyperosMiuixTypography.footnote2,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: HyperosColors.secondaryText(context),
                       ),
                     ),
@@ -299,7 +301,7 @@ Future<void> showAchievementDetailSheet({
                 description,
                 style: HyperosTypography.listTitle(context).copyWith(
                   fontSize: HyperosMiuixTypography.footnote2 + 2,
-                  fontWeight: FontWeight.w600,
+                  height: 1.45,
                   color: HyperosColors.primaryText(context),
                 ),
               ),

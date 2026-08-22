@@ -138,9 +138,9 @@ class _WeekSelector extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.statisticsWeekSelector(week),
+                    // 卡片标题回归常规体，靠字号(18)建立层级
                     style: HyperosTypography.listTitle(context).copyWith(
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
                       color: HyperosColors.primaryText(context),
                     ),
                   ),
@@ -153,7 +153,8 @@ class _WeekSelector extends StatelessWidget {
                     ).withValues(alpha: 0.12),
                     textStyle: HyperosTypography.listDetail(context).copyWith(
                       fontSize: HyperosMiuixTypography.footnote2,
-                      fontWeight: FontWeight.w600,
+                      // T1 轻强调：小号 Tag 用 w500
+                      fontWeight: FontWeight.w500,
                       color: HyperosColors.primary(context),
                     ),
                   ),
@@ -333,7 +334,8 @@ class _WeekMetricCell extends StatelessWidget {
             textAlign: TextAlign.center,
             style: HyperosTypography.listTitle(context).copyWith(
               fontSize: 22,
-              fontWeight: FontWeight.w800,
+              // T3 展示数字：字重低于旧 w800，靠字号对比建立层级
+              fontWeight: FontWeight.w700,
               height: 1,
               color: HyperosColors.primaryText(context),
             ),
@@ -402,7 +404,7 @@ class _WeekDailyChart extends StatelessWidget {
                       '${rod.toY.toInt()} ${l10n.statisticsSectionsUnit}',
                       HyperosTypography.listDetail(context).copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     );
                   },
@@ -433,7 +435,8 @@ class _WeekDailyChart extends StatelessWidget {
                           weekdayLabels[index],
                           style: HyperosTypography.listDetail(context).copyWith(
                             fontSize: HyperosMiuixTypography.footnote2,
-                            fontWeight: isMax ? FontWeight.w800 : FontWeight.w500,
+                            // T1 轻强调：轴标签高亮用 w500，避免小字加粗发闷
+                            fontWeight: isMax ? FontWeight.w500 : FontWeight.w400,
                             color: isMax
                                 ? HyperosColors.primary(context)
                                 : HyperosColors.secondaryText(context),
@@ -574,7 +577,8 @@ class _WeekCourseTile extends StatelessWidget {
                         textStyle: HyperosTypography.listDetail(context)
                             .copyWith(
                               fontSize: HyperosMiuixTypography.footnote2,
-                              fontWeight: FontWeight.w600,
+                              // T1 轻强调：小号 Tag 用 w500
+                              fontWeight: FontWeight.w500,
                               color: isRequired
                                   ? HyperosIconColors.blue
                                   : HyperosIconColors.purple,
@@ -613,8 +617,9 @@ class _WeekCourseTile extends StatelessWidget {
               children: [
                 Text(
                   '${stat.weeklySections}',
+                  // T2 行内数据值：主题色 + w600
                   style: HyperosTypography.listTitle(context).copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: HyperosColors.primary(context),
                   ),
                 ),

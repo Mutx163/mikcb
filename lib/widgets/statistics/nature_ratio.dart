@@ -127,9 +127,7 @@ class _LegendItem extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: HyperosTypography.listTitle(context).copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: HyperosTypography.listTitle(context),
               ),
               Text(
                 l10n.statisticsNatureLegendDetail(count, sections),
@@ -142,8 +140,9 @@ class _LegendItem extends StatelessWidget {
         ),
         Text(
           '${(ratio * 100).round()}%',
+          // T2 行内数据值：语义色 + w600
           style: HyperosTypography.listTitle(context).copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: color,
           ),
         ),

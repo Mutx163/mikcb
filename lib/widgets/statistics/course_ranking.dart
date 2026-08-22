@@ -118,7 +118,8 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
                         textStyle: HyperosTypography.listDetail(context)
                             .copyWith(
                               fontSize: HyperosMiuixTypography.footnote2,
-                              fontWeight: FontWeight.w600,
+                              // T1 轻强调：小号 Tag 用 w500
+                              fontWeight: FontWeight.w500,
                               color: isRequired
                                   ? HyperosIconColors.blue
                                   : HyperosIconColors.purple,
@@ -157,8 +158,9 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
               children: [
                 Text(
                   '${widget.stat.totalSections}',
+                  // T2 行内数据值：主题色 + w600，与 w400 行标题形成对比
                   style: HyperosTypography.listTitle(context).copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: HyperosColors.primary(context),
                   ),
                 ),
@@ -332,7 +334,7 @@ class _RankBadge extends StatelessWidget {
               '$rank',
               style: HyperosTypography.listTitle(
                 context,
-              ).copyWith(color: foreground, fontWeight: FontWeight.w700),
+              ).copyWith(color: foreground, fontWeight: FontWeight.w600),
             ),
     );
   }

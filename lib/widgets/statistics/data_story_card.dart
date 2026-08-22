@@ -131,7 +131,8 @@ class DataStoryCard extends StatelessWidget {
       spans.add(
         TextSpan(
           text: match.group(1),
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          // T2 强调片段：w600 相对 w400 正文已有清晰对比
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       );
       lastEnd = match.end;

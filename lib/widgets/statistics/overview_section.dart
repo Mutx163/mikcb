@@ -141,7 +141,8 @@ class _MetricCell extends StatelessWidget {
             value,
             style: HyperosTypography.listTitle(context).copyWith(
               fontSize: 28,
-              fontWeight: FontWeight.w800,
+              // T3 展示数字：字重低于旧 w800，靠字号对比建立层级
+              fontWeight: FontWeight.w700,
               height: 1,
               color: HyperosColors.primaryText(context),
             ),

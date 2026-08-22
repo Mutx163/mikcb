@@ -32,9 +32,10 @@ class TimeUtilizationCard extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             value,
+            // T2 弹窗/行内数据值
             style: HyperosTypography.listTitle(context).copyWith(
               fontSize: HyperosMiuixTypography.footnote2,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: HyperosColors.primaryText(context),
             ),
           ),

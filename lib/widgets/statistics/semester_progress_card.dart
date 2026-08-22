@@ -47,8 +47,9 @@ class SemesterProgressCard extends StatelessWidget {
                 ),
                 Text(
                   '${progress.weeksElapsed}/${progress.totalWeeks}',
+                  // T2 行内数据值：用主题色强调，不靠超粗字重
                   style: HyperosTypography.listTitle(context).copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: HyperosColors.primary(context),
                   ),
                 ),
@@ -128,7 +129,7 @@ class _ProgressFact extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           style: HyperosTypography.listTitle(context).copyWith(
             fontSize: 18,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: HyperosColors.primaryText(context),
           ),
         ),

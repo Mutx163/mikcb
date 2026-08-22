@@ -133,7 +133,8 @@ class _ComparisonCell extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           style: HyperosTypography.listTitle(context).copyWith(
             fontSize: 24,
-            fontWeight: FontWeight.w800,
+            // T3 展示数字：字重低于旧 w800，靠字号对比建立层级
+            fontWeight: FontWeight.w700,
             height: 1,
             color: accent,
           ),

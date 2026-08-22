@@ -60,7 +60,7 @@ class DailyChart extends StatelessWidget {
                       '${rod.toY.toStringAsFixed(1)} ${l10n.statisticsSectionsUnit}',
                       HyperosTypography.listDetail(context).copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     );
                   },
@@ -93,9 +93,10 @@ class DailyChart extends StatelessWidget {
                           weekdayLabels[index],
                           style: HyperosTypography.listDetail(context).copyWith(
                             fontSize: HyperosMiuixTypography.footnote2,
+                            // T1 轻强调：轴标签高亮用 w500，避免小字加粗发闷
                             fontWeight: isMax
-                                ? FontWeight.w800
-                                : FontWeight.w500,
+                                ? FontWeight.w500
+                                : FontWeight.w400,
                             color: isMax
                                 ? HyperosColors.primary(context)
                                 : HyperosColors.secondaryText(context),

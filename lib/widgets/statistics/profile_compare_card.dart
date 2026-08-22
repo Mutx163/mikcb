@@ -117,10 +117,12 @@ class _CompareRow extends StatelessWidget {
                           entry.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          // T1/T2：激活行 w600，非激活行回归常规体，
+                          // 用圆点颜色区分状态而不是全员加粗
                           style: HyperosTypography.listTitle(context).copyWith(
                             fontWeight: entry.isActive
-                                ? FontWeight.w800
-                                : FontWeight.w600,
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                         ),
                       ),
@@ -134,7 +136,8 @@ class _CompareRow extends StatelessWidget {
                           textStyle: HyperosTypography.listDetail(context)
                               .copyWith(
                                 fontSize: HyperosMiuixTypography.footnote2,
-                                fontWeight: FontWeight.w600,
+                                // T1 轻强调：小号 Tag 用 w500
+                                fontWeight: FontWeight.w500,
                                 color: HyperosColors.primary(context),
                               ),
                         ),
@@ -157,8 +160,9 @@ class _CompareRow extends StatelessWidget {
               children: [
                 Text(
                   '${entry.totalSections}',
+                  // T2 行内数据值：主题色 + w600
                   style: HyperosTypography.listTitle(context).copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: entry.isActive
                         ? HyperosColors.primary(context)
                         : HyperosColors.primaryText(context),
@@ -176,7 +180,7 @@ class _CompareRow extends StatelessWidget {
                     ),
                     style: HyperosTypography.listDetail(context).copyWith(
                       fontSize: HyperosMiuixTypography.footnote2,
-                      fontWeight: FontWeight.w600,
+                      // 语义色已足够区分正负，字重回归常规
                       color: delta > 0
                           ? HyperosIconColors.red
                           : (delta < 0
@@ -267,8 +271,9 @@ class _DetailRow extends StatelessWidget {
           ),
           Text(
             value,
+            // T2 弹窗数据值
             style: HyperosTypography.listTitle(context).copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: HyperosColors.primaryText(context),
             ),
           ),

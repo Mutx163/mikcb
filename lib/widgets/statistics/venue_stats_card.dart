@@ -130,7 +130,8 @@ class _BarRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: HyperosTypography.listDetail(context).copyWith(
-              fontWeight: FontWeight.w600,
+              // T2 行内数据值（14px 小字，w500 足够）
+              fontWeight: FontWeight.w500,
               color: HyperosColors.primaryText(context),
             ),
           ),
