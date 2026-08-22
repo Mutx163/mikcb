@@ -17863,6 +17863,12 @@ abstract class AppLocalizations {
   /// **'请先在设置中选择时间模板'**
   String get classAlarmNoSchemeToast;
 
+  /// No description provided for @classAlarmInvalidTimeToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'这门课的节次超出时间模板，无法设置闹钟'**
+  String get classAlarmInvalidTimeToast;
+
   /// No description provided for @classAlarmNoDataToast.
   ///
   /// In zh, this message translates to:

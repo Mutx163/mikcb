@@ -9841,6 +9841,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get classAlarmNoSchemeToast => '请先在设置中选择时间模板';
 
   @override
+  String get classAlarmInvalidTimeToast => '这门课的节次超出时间模板，无法设置闹钟';
+
+  @override
   String get classAlarmNoDataToast => '所选范围内没有找到课表';
 
   @override
@@ -19743,6 +19746,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get classAlarmNoSchemeToast => '請先在設定中選擇時間模板';
 
   @override
+  String get classAlarmInvalidTimeToast => '這門課的節次超出時間模板，無法設定鬧鐘';
+
+  @override
   String get classAlarmNoDataToast => '所選範圍內沒有找到課表';
 
   @override
@@ -29643,6 +29649,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get classAlarmNoSchemeToast => '請先在設定中選擇時間模板';
+
+  @override
+  String get classAlarmInvalidTimeToast => '這門課的節次超出時間模板，無法設定鬧鐘';
 
   @override
   String get classAlarmNoDataToast => '所選範圍內沒有找到課表';

@@ -10116,6 +10116,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classAlarmNoSchemeToast => '先に設定で時間テンプレートを選択してください';
 
   @override
+  String get classAlarmInvalidTimeToast =>
+      'この授業の時限が時間テンプレートの範囲外のため、アラームを設定できません';
+
+  @override
   String get classAlarmNoDataToast => '選択した範囲に授業が見つかりません';
 
   @override

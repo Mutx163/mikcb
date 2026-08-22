@@ -5951,6 +5951,7 @@
     }
   },
   "classAlarmNoSchemeToast": "Select a time scheme in settings first",
+  "classAlarmInvalidTimeToast": "This class's period is outside the time scheme; cannot set an alarm",
   "classAlarmNoDataToast": "No timetable found in the selected range",
   "classAlarmAddedToast": "Handed to the system clock",
   "classAlarmLaunchFailedToast": "No clock app found to handle this",

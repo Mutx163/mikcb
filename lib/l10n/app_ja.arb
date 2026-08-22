@@ -5948,6 +5948,7 @@
     }
   },
   "classAlarmNoSchemeToast": "先に設定で時間テンプレートを選択してください",
+  "classAlarmInvalidTimeToast": "この授業の時限が時間テンプレートの範囲外のため、アラームを設定できません",
   "classAlarmNoDataToast": "選択した範囲に授業が見つかりません",
   "classAlarmAddedToast": "システム時計に渡しました",
   "classAlarmLaunchFailedToast": "対応する時計アプリが見つかりません",

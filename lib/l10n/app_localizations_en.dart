@@ -10410,6 +10410,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select a time scheme in settings first';
 
   @override
+  String get classAlarmInvalidTimeToast =>
+      'This class\'s period is outside the time scheme; cannot set an alarm';
+
+  @override
   String get classAlarmNoDataToast =>
       'No timetable found in the selected range';
 

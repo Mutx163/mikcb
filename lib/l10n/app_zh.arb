@@ -5952,6 +5952,7 @@
     }
   },
   "classAlarmNoSchemeToast": "请先在设置中选择时间模板",
+  "classAlarmInvalidTimeToast": "这门课的节次超出时间模板，无法设置闹钟",
   "classAlarmNoDataToast": "所选范围内没有找到课表",
   "classAlarmAddedToast": "已交给系统时钟处理",
   "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",

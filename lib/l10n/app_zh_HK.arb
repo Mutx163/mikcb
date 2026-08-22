@@ -5948,6 +5948,7 @@
     }
   },
   "classAlarmNoSchemeToast": "請先在設定中選擇時間模板",
+  "classAlarmInvalidTimeToast": "這門課的節次超出時間模板，無法設定鬧鐘",
   "classAlarmNoDataToast": "所選範圍內沒有找到課表",
   "classAlarmAddedToast": "已交給系統時鐘處理",
   "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",

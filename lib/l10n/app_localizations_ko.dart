@@ -10161,6 +10161,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
 
   @override
+  String get classAlarmInvalidTimeToast =>
+      '이 수업의 교시가 시간표 템플릿 범위를 벗어나 알람을 설정할 수 없습니다';
+
+  @override
   String get classAlarmNoDataToast => '선택한 범위에서 시간표를 찾을 수 없습니다';
 
   @override
