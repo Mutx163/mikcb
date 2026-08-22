@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/hex_color.dart';
 import '../services/miui_live_activities_service.dart';
 import '../widgets/third_party_disclaimer_card.dart';
 import 'course_overview_screen.dart';
@@ -48,7 +52,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   late bool _privacyChecked;
   Timer? _settingsPollTimer;
 
-  int get _totalPages => 4;
+  /// 欢迎 · 隐私 · 权限 · 个性化定制 · 使用技巧。
+  int get _totalPages => 5;
 
   @override
   void initState() {
@@ -239,6 +244,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         _buildWelcomePage(l10n),
         _buildPrivacyPage(l10n),
         _buildPermissionsPage(l10n),
+        _buildPersonalizePage(l10n),
         _buildTipsPage(l10n),
       ];
     }
@@ -280,6 +286,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     if (_currentPage == 0) return l10n.welcomeTitle;
     if (_currentPage == 1) return l10n.guidePrivacyPageTitle;
     if (_currentPage == 2) return l10n.guidePermissionsPageTitle;
+    if (_currentPage == 3) return l10n.guidePersonalizePageTitle;
     return l10n.guideTipsPageTitle;
   }
 
@@ -630,6 +637,144 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       enabledColor: colors.primary,
       disabledColor: colors.mutedForeground,
     );
+  }
+
+  /// 个性化定制页：首次进入引导时即可选择菜单样式、视觉效果、深浅色
+  /// 与主题色。所有选择直接写入 [TimetableProvider] 并立即生效，之后
+  /// 仍可在「设置 → 外观」中修改。
+  Widget _buildPersonalizePage(AppLocalizations l10n) {
+    final provider = context.watch<TimetableProvider?>();
+    // 与欢迎页语言选择器同策略：Provider 不在树上（裸测试宿主）时整页隐藏。
+    if (provider == null) return const SizedBox.shrink();
+    final settings = provider.settings;
+    final currentEffect = _guideVisualEffectOf(settings);
+
+    return _buildGuideList(
+      children: [
+        HyperosSectionLabel(text: l10n.guidePersonalizeHeader),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          child: Text(l10n.guidePersonalizeSubtitle, style: _guideMutedBodyStyle()),
+        ),
+        HyperosControlCard(
+          title: l10n.guidePersonalizeMenuStyleTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              children: [
+                _GuideOptionTile(
+                  selected: settings.homeMenuStyle == HomeMenuStyle.list,
+                  title: l10n.homeMenuStyleList,
+                  subtitle: l10n.homeMenuStyleListSubtitle,
+                  preview: const _GuideMenuListPreview(),
+                  onTap: () => _applyHomeMenuStyle(HomeMenuStyle.list),
+                ),
+                const SizedBox(height: 8),
+                _GuideOptionTile(
+                  selected: settings.homeMenuStyle == HomeMenuStyle.grid,
+                  title: l10n.homeMenuStyleGrid,
+                  subtitle: l10n.homeMenuStyleGridSubtitle,
+                  preview: const _GuideMenuGridPreview(),
+                  onTap: () => _applyHomeMenuStyle(HomeMenuStyle.grid),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+        HyperosControlCard(
+          title: l10n.guidePersonalizeVisualEffectTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              children: [
+                for (final (index, effect) in _guideVisualEffectOptions.indexed) ...[
+                  if (index > 0) const SizedBox(height: 8),
+                  _GuideOptionTile(
+                    selected: currentEffect == effect,
+                    title: _guideVisualEffectLabel(l10n, effect),
+                    subtitle: _guideVisualEffectDescription(l10n, effect),
+                    preview: _GuideEffectPreview(effect: effect),
+                    onTap: () => _applyVisualEffect(effect),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+        HyperosControlCard(
+          title: l10n.guidePersonalizeThemeModeTitle,
+          child: HyperosControlCardInset(
+            child: _GuideThemeModeSegmented(
+              value: settings.appThemeMode,
+              onChanged: _applyAppThemeMode,
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
+        HyperosControlCard(
+          title: l10n.guidePersonalizeSeedColorTitle,
+          child: HyperosControlCardInset(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final theme in ForuiTheme.values)
+                  _GuideSeedDot(
+                    color: parseHexColorOrFallback(theme.seedHex, fallback: const Color(0xFF3482FF)),
+                    label: theme.name,
+                    selected: settings.foruiTheme == theme,
+                    onTap: () => _applyForuiTheme(theme),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  TimetableSettings get _currentSettings =>
+      context.read<TimetableProvider>().settings;
+
+  void _updateSettings(TimetableSettings next) {
+    final provider = context.read<TimetableProvider?>();
+    if (provider == null) return;
+    unawaited(provider.updateTimetableSettings(next));
+  }
+
+  void _applyHomeMenuStyle(HomeMenuStyle style) =>
+      _updateSettings(_currentSettings.copyWith(homeMenuStyle: style));
+
+  void _applyAppThemeMode(AppThemeMode mode) =>
+      _updateSettings(_currentSettings.copyWith(appThemeMode: mode));
+
+  void _applyForuiTheme(ForuiTheme theme) => _updateSettings(
+    _currentSettings.copyWith(foruiTheme: theme, themeSeedColor: theme.seedHex),
+  );
+
+  /// 视觉效果三档与设置字段的映射：
+  /// - 高斯模糊 → 开模糊 + gaussian 模式；
+  /// - 液态玻璃 → 开模糊 + liquidGlass 模式；
+  /// - 实体卡片 → 直接关闭模糊总开关（所有表面回落实体卡片）。
+  void _applyVisualEffect(_GuideVisualEffect effect) {
+    switch (effect) {
+      case _GuideVisualEffect.gaussian:
+        _updateSettings(
+          _currentSettings.copyWith(
+            frostedBlurEnabled: true,
+            frostedGlassMode: FrostedGlassMode.gaussian,
+          ),
+        );
+      case _GuideVisualEffect.liquidGlass:
+        _updateSettings(
+          _currentSettings.copyWith(
+            frostedBlurEnabled: true,
+            frostedGlassMode: FrostedGlassMode.liquidGlass,
+          ),
+        );
+      case _GuideVisualEffect.solid:
+        _updateSettings(_currentSettings.copyWith(frostedBlurEnabled: false));
+    }
   }
 
   Widget _buildTipsPage(AppLocalizations l10n) {
@@ -1052,4 +1197,419 @@ class _PermissionItem {
     required this.disabledLabel,
     this.onTap,
   });
+}
+
+/// 引导页「视觉效果」三档选择。与设置字段的映射见
+/// [_UserGuideScreenState._applyVisualEffect]。
+enum _GuideVisualEffect { gaussian, liquidGlass, solid }
+
+const List<_GuideVisualEffect> _guideVisualEffectOptions = <_GuideVisualEffect>[
+  _GuideVisualEffect.gaussian,
+  _GuideVisualEffect.liquidGlass,
+  _GuideVisualEffect.solid,
+];
+
+/// 从当前设置推导引导页视觉效果选中项（模糊关 → 实体卡片）。
+_GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
+  if (!settings.frostedBlurEnabled) return _GuideVisualEffect.solid;
+  if (settings.frostedGlassMode == FrostedGlassMode.liquidGlass) {
+    return _GuideVisualEffect.liquidGlass;
+  }
+  return _GuideVisualEffect.gaussian;
+}
+
+String _guideVisualEffectLabel(AppLocalizations l10n, _GuideVisualEffect effect) =>
+    switch (effect) {
+      _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
+      _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
+      _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
+    };
+
+String _guideVisualEffectDescription(
+  AppLocalizations l10n,
+  _GuideVisualEffect effect,
+) => switch (effect) {
+  _GuideVisualEffect.gaussian => l10n.guideVisualEffectGaussianDesc,
+  _GuideVisualEffect.liquidGlass => l10n.guideVisualEffectLiquidDesc,
+  _GuideVisualEffect.solid => l10n.guideVisualEffectSolidDesc,
+};
+
+/// 带左侧缩略预览的单个可选样式行（个性化定制页通用）。
+class _GuideOptionTile extends StatelessWidget {
+  const _GuideOptionTile({
+    required this.selected,
+    required this.title,
+    required this.subtitle,
+    required this.preview,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String title;
+  final String subtitle;
+  final Widget preview;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final borderColor = selected
+        ? colors.primary
+        : HyperosColors.dividerLine(context).withValues(alpha: 0.6);
+    final fillColor = selected
+        ? colors.primary.withValues(alpha: 0.06)
+        : HyperosColors.card(context);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: fillColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: selected ? 1.5 : 0.8),
+        ),
+        child: Row(
+          children: [
+            preview,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: HyperosTypography.listTitle(context)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: HyperosTypography.listDetail(context)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected
+                    ? colors.primary
+                    : Colors.transparent,
+                border: selected
+                    ? null
+                    : Border.all(
+                        color: HyperosColors.dividerLine(context),
+                        width: 1.2,
+                      ),
+              ),
+              child: selected
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 15,
+                      color: HyperosColors.onPrimary(context),
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 缩略预览公共尺寸。
+const Size _guidePreviewSize = Size(64, 44);
+
+/// 列表菜单缩略预览：三条带圆点的行。
+class _GuideMenuListPreview extends StatelessWidget {
+  const _GuideMenuListPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    return _previewFrame(
+      context,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (final width in [34.0, 26.0, 30.0])
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Container(
+                    width: width,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      color: colors.mutedForeground.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 八宫格菜单缩略预览：2 行 × 4 列瓷贴。
+class _GuideMenuGridPreview extends StatelessWidget {
+  const _GuideMenuGridPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    return _previewFrame(
+      context,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (var row = 0; row < 2; row++)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (var col = 0; col < 4; col++)
+                    Container(
+                      width: 11,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(3.5),
+                        color: (row + col) == 1
+                            ? colors.primary.withValues(alpha: 0.75)
+                            : colors.mutedForeground.withValues(alpha: 0.28),
+                      ),
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 视觉效果缩略预览：同一张彩色渐变底，按档位叠加不同表面处理，
+/// 直观呈现「高斯模糊 / 液态玻璃 / 实体卡片」的差异。
+class _GuideEffectPreview extends StatelessWidget {
+  const _GuideEffectPreview({required this.effect});
+
+  final _GuideVisualEffect effect;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget overlay = switch (effect) {
+      // 高斯模糊：整面实时模糊 + 轻奶白提亮。
+      _GuideVisualEffect.gaussian => ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Container(color: Colors.white.withValues(alpha: 0.18)),
+        ),
+      ),
+      // 液态玻璃：轻模糊 + 高光描边与斜向光泽，模拟折射质感。
+      _GuideVisualEffect.liquidGlass => ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: Stack(
+          children: [
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+              child: Container(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.42),
+                    Colors.white.withValues(alpha: 0.02),
+                  ],
+                  stops: const [0, 0.55],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      // 实体卡片：不透明卡片直接盖住背景（无任何模糊/透出）。
+      _GuideVisualEffect.solid => Container(
+        margin: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: HyperosColors.card(context),
+          borderRadius: BorderRadius.circular(7),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.crop_square_rounded,
+          size: 12,
+          color: context.theme.colors.mutedForeground.withValues(alpha: 0.6),
+        ),
+      ),
+    };
+
+    return _previewFrame(
+      context,
+      gradient: true,
+      child: overlay,
+    );
+  }
+}
+
+Widget _previewFrame(
+  BuildContext context, {
+  required Widget child,
+  bool gradient = false,
+}) {
+  return Container(
+    width: _guidePreviewSize.width,
+    height: _guidePreviewSize.height,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(10),
+      color: gradient ? null : HyperosColors.surfaceContainer(context),
+      gradient: gradient
+          ? const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF3482FF), Color(0xFF9C5CF7), Color(0xFFFF7A45)],
+            )
+          : null,
+    ),
+    child: child,
+  );
+}
+
+/// 深浅色模式胶囊分段控件（跟随系统 / 浅色 / 深色）。
+class _GuideThemeModeSegmented extends StatelessWidget {
+  const _GuideThemeModeSegmented({required this.value, required this.onChanged});
+
+  final AppThemeMode value;
+  final ValueChanged<AppThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: HyperosColors.surfaceContainer(context),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        children: [
+          for (final mode in AppThemeMode.values)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChanged(mode),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: value == mode
+                        ? colors.primary
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    appThemeModeLabel(l10n, mode),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: value == mode
+                          ? HyperosColors.onPrimary(context)
+                          : colors.mutedForeground,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 主题色圆形色板（选中时外圈高亮描边）。
+class _GuideSeedDot extends StatelessWidget {
+  const _GuideSeedDot({
+    required this.color,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Color color;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected
+                  ? context.theme.colors.primary
+                  : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+            child: selected
+                ? Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: color.computeLuminance() > 0.5
+                        ? Colors.black87
+                        : Colors.white,
+                  )
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
 }
