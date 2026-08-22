@@ -2330,6 +2330,8 @@
   },
   "aboutMirrorUnknownSizeHint": "镜像源未返回文件总大小，先显示已下载体积",
   "aboutCancelDownloadAction": "取消下载",
+"aboutContinueDownloadAction": "继续下载",
+"aboutDismissDialogAction": "关闭弹窗",
   "aboutContributorsScreenTitle": "代码贡献者",
   "aboutDevelopersTitle": "开发人员",
   "aboutDeveloperMaintainerSubtitle": "轻屿课表开发与维护",

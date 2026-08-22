@@ -7850,6 +7850,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         },
         onViewRelease: () => _openUpdateReleasePage(release.releaseUrl),
         onCancelDownload: _cancelHomeUpdateDownload,
+        onResumeDownload: () => _startHomeUpdateDownload(
+          release: release,
+          channel: channel,
+          downloadUrl: downloadUrl,
+        ),
       );
     } finally {
       _isUpdatePromptVisible = false;

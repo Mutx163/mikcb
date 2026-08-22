@@ -4278,6 +4278,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutCancelDownloadAction => 'ダウンロードをキャンセル';
 
   @override
+  String get aboutContinueDownloadAction => 'ダウンロードを再開';
+
+  @override
+  String get aboutDismissDialogAction => '閉じる';
+
+  @override
   String get aboutContributorsScreenTitle => 'コード貢献者';
 
   @override

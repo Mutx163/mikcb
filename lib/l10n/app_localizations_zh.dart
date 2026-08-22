@@ -4189,6 +4189,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutCancelDownloadAction => '取消下载';
 
   @override
+  String get aboutContinueDownloadAction => '继续下载';
+
+  @override
+  String get aboutDismissDialogAction => '关闭弹窗';
+
+  @override
   String get aboutContributorsScreenTitle => '代码贡献者';
 
   @override
@@ -13937,6 +13943,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aboutCancelDownloadAction => '取消下載';
+
+  @override
+  String get aboutContinueDownloadAction => '繼續下載';
+
+  @override
+  String get aboutDismissDialogAction => '關閉彈窗';
 
   @override
   String get aboutContributorsScreenTitle => '代碼贡獻者';
@@ -23731,6 +23743,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutCancelDownloadAction => '取消下載';
+
+  @override
+  String get aboutContinueDownloadAction => '繼續下載';
+
+  @override
+  String get aboutDismissDialogAction => '關閉彈窗';
 
   @override
   String get aboutContributorsScreenTitle => '代码贡献者';

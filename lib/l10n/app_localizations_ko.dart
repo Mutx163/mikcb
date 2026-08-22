@@ -4307,6 +4307,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutCancelDownloadAction => '다운로드 취소';
 
   @override
+  String get aboutContinueDownloadAction => '다운로드 재개';
+
+  @override
+  String get aboutDismissDialogAction => '닫기';
+
+  @override
   String get aboutContributorsScreenTitle => '코드 기여자';
 
   @override

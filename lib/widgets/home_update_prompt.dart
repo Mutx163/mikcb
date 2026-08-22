@@ -90,6 +90,7 @@ Future<void> showHomeUpdatePrompt(
   required Future<bool> Function() onDownload,
   required Future<void> Function() onViewRelease,
   required VoidCallback onCancelDownload,
+  required Future<bool> Function() onResumeDownload,
 }) {
   return _showHomeUpdatePromptDialog(
     context,
@@ -101,6 +102,7 @@ Future<void> showHomeUpdatePrompt(
     onDownload: onDownload,
     onViewRelease: onViewRelease,
     onCancelDownload: onCancelDownload,
+    onResumeDownload: onResumeDownload,
   );
 }
 
@@ -114,6 +116,7 @@ Future<void> _showHomeUpdatePromptDialog(
   required Future<bool> Function() onDownload,
   required Future<void> Function() onViewRelease,
   required VoidCallback onCancelDownload,
+  required Future<bool> Function() onResumeDownload,
 }) async {
   await showHyperosSheet<void>(
     context: context,
@@ -127,6 +130,7 @@ Future<void> _showHomeUpdatePromptDialog(
         onDownload: onDownload,
         onViewRelease: onViewRelease,
         onCancelDownload: onCancelDownload,
+        onResumeDownload: onResumeDownload,
         onDismiss: () => Navigator.of(sheetContext).pop(),
       );
     },
@@ -143,6 +147,7 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
     required this.onDownload,
     required this.onViewRelease,
     required this.onCancelDownload,
+    required this.onResumeDownload,
     required this.onDismiss,
   });
 
@@ -154,6 +159,7 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
   final Future<bool> Function() onDownload;
   final Future<void> Function() onViewRelease;
   final VoidCallback onCancelDownload;
+  final Future<bool> Function() onResumeDownload;
   final VoidCallback onDismiss;
 
   @override
@@ -273,21 +279,79 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                   color: colors.primary,
                   textAlign: TextAlign.center,
                 )
-              else if (isFailed)
+              else if (isFailed) ...[
                 MiuixText(
                   l10n.aboutSystemDownloaderFailed,
                   style: textStyles.body2,
                   color: colors.error,
                   textAlign: TextAlign.center,
-                )
-              else if (isCancelled)
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: MiuixTextButton(
+                        l10n.aboutDismissDialogAction,
+                        onPressed: onDismiss,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: MiuixButton(
+                        onPressed: () async {
+                          final keepOpen = await onDownload();
+                          if (!keepOpen) {
+                            onDismiss();
+                          }
+                        },
+                        child: MiuixText(
+                          l10n.aboutContinueDownloadAction,
+                          style: textStyles.button,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (isCancelled) ...[
                 MiuixText(
                   l10n.aboutDownloadCancelled,
                   style: textStyles.body2,
                   color: colors.onSurfaceSecondary,
                   textAlign: TextAlign.center,
-                )
-              else
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: MiuixTextButton(
+                        l10n.aboutDismissDialogAction,
+                        onPressed: onDismiss,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: MiuixButton(
+                        onPressed: () async {
+                          final keepOpen = await onResumeDownload();
+                          if (!keepOpen) {
+                            onDismiss();
+                          }
+                        },
+                        child: MiuixText(
+                          l10n.aboutContinueDownloadAction,
+                          style: textStyles.button,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else
                 _buildActions(l10n: l10n, textStyles: textStyles),
             ],
           ),

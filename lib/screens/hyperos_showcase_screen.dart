@@ -1130,6 +1130,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           _demoUpdateProgressTimer = null;
           controller.finishInAppDownload(success: false, cancelled: true);
         },
+        onResumeDownload: () => _playFakeDownload(controller),
       );
     } finally {
       _demoUpdateProgressTimer?.cancel();

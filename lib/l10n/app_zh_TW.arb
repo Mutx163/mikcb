@@ -2137,6 +2137,8 @@
   },
   "aboutMirrorUnknownSizeHint": "鏡像源未返回文件总大小，先顯示已下載體积",
   "aboutCancelDownloadAction": "取消下載",
+"aboutContinueDownloadAction": "繼續下載",
+"aboutDismissDialogAction": "關閉彈窗",
   "aboutContributorsScreenTitle": "代码贡献者",
   "aboutDevelopersTitle": "開發人员",
   "aboutDeveloperMaintainerSubtitle": "輕嶼課表開發與維護",

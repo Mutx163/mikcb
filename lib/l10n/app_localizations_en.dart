@@ -4469,6 +4469,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutCancelDownloadAction => 'Cancel download';
 
   @override
+  String get aboutContinueDownloadAction => 'Resume download';
+
+  @override
+  String get aboutDismissDialogAction => 'Close dialog';
+
+  @override
   String get aboutContributorsScreenTitle => 'Contributors';
 
   @override

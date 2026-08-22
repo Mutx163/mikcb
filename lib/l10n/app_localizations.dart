@@ -7719,6 +7719,18 @@ abstract class AppLocalizations {
   /// **'取消下载'**
   String get aboutCancelDownloadAction;
 
+  /// No description provided for @aboutContinueDownloadAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续下载'**
+  String get aboutContinueDownloadAction;
+
+  /// No description provided for @aboutDismissDialogAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭弹窗'**
+  String get aboutDismissDialogAction;
+
   /// No description provided for @aboutContributorsScreenTitle.
   ///
   /// In zh, this message translates to:

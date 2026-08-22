@@ -2140,6 +2140,8 @@
   },
   "aboutMirrorUnknownSizeHint": "ミラーソースがファイル総サイズを返さないため、ダウンロード済みサイズを先に表示",
   "aboutCancelDownloadAction": "ダウンロードをキャンセル",
+"aboutContinueDownloadAction": "ダウンロードを再開",
+"aboutDismissDialogAction": "閉じる",
   "aboutContributorsScreenTitle": "コード貢献者",
   "aboutDevelopersTitle": "開発者",
   "aboutDeveloperMaintainerSubtitle": "軽屿時間割の開発とメンテナンス",

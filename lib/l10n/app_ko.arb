@@ -2140,6 +2140,8 @@
   },
   "aboutMirrorUnknownSizeHint": "미러 소스가 파일 총 크기를 반환하지 않아 다운로드된 크기를 먼저 표시합니다",
   "aboutCancelDownloadAction": "다운로드 취소",
+"aboutContinueDownloadAction": "다운로드 재개",
+"aboutDismissDialogAction": "닫기",
   "aboutContributorsScreenTitle": "코드 기여자",
   "aboutDevelopersTitle": "개발자",
   "aboutDeveloperMaintainerSubtitle": "경屿 시간표 개발 및 유지보수",
