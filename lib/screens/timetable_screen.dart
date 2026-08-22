@@ -7800,12 +7800,20 @@ class _TimetableScreenState extends State<TimetableScreen>
       themeForeground: context.theme.colors.foreground,
     );
 
-    final selected = await showHomeTopMenuSheet(
-      context,
-      hasAvailableUpdate: _hasAvailableUpdate,
-      anchorKey: _topMenuButtonKey,
-      foregroundColor: menuForeground,
-    );
+    // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层，
+    // 「列表」是当前的锚定弹窗；排列只在八宫格下生效。
+    final selected = settings.homeMenuStyle == HomeMenuStyle.grid
+        ? await showHomeTopGridMenuSheet(
+            context,
+            hasAvailableUpdate: _hasAvailableUpdate,
+            actions: resolveHomeGridMenuActions(settings),
+          )
+        : await showHomeTopMenuSheet(
+            context,
+            hasAvailableUpdate: _hasAvailableUpdate,
+            anchorKey: _topMenuButtonKey,
+            foregroundColor: menuForeground,
+          );
 
     if (!mounted || selected == null) {
       return;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
@@ -149,4 +150,107 @@ void main() {
       expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
     },
   );
+
+  testWidgets('grid menu renders default eight tiles without tasks entry', (
+    tester,
+  ) async {
+    final anchorKey = GlobalKey();
+    late Future<HomeTopMenuAction?> menuResult;
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return Center(
+              child: ElevatedButton(
+                key: anchorKey,
+                onPressed: () {
+                  menuResult = showHomeTopGridMenuSheet(
+                    context,
+                    hasAvailableUpdate: false,
+                    actions: resolveHomeGridMenuActions(
+                      TimetableSettings.defaults(),
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    // v2.0.5.5 默认排列：8 个瓷贴，任务清单不在其中（列表菜单独有）。
+    for (final title in const [
+      '软件更新',
+      '课程总览',
+      '课程统计',
+      '添加课程',
+      '考试安排',
+      '导入课程',
+      '课表设置',
+      '请喝咖啡',
+    ]) {
+      expect(find.text(title), findsOneWidget);
+    }
+    expect(find.text('任务清单'), findsNothing);
+    expect(find.byIcon(Icons.system_update_alt_rounded), findsOneWidget);
+
+    await tester.tap(find.text('课程总览'));
+    await tester.pumpAndSettle();
+
+    expect(await menuResult, HomeTopMenuAction.overview);
+  });
+
+  testWidgets('grid menu honors custom order and update badge', (tester) async {
+    final anchorKey = GlobalKey();
+    late Future<HomeTopMenuAction?> menuResult;
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return Center(
+              child: ElevatedButton(
+                key: anchorKey,
+                onPressed: () {
+                  menuResult = showHomeTopGridMenuSheet(
+                    context,
+                    hasAvailableUpdate: true,
+                    actions: resolveHomeGridMenuActions(
+                      TimetableSettings.defaults().copyWith(
+                        homeMenuStyle: HomeMenuStyle.grid,
+                        homeGridMenuActions: ['tasks', 'support'],
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    // 自定义排列只渲染用户选择的入口，顺序与持久化一致。
+    expect(find.text('任务清单'), findsOneWidget);
+    expect(find.text('请喝咖啡'), findsOneWidget);
+    expect(find.text('软件更新'), findsNothing);
+
+    // 更新角标跟随 hasAvailableUpdate（本例没有更新瓷贴，因此无角标文本）。
+    expect(find.text('更新'), findsNothing);
+
+    await tester.tap(find.text('任务清单'));
+    await tester.pumpAndSettle();
+
+    expect(await menuResult, HomeTopMenuAction.tasks);
+  });
 }
