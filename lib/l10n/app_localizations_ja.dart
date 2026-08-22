@@ -10033,6 +10033,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '回避スペースの高さ';
 
   @override
+  String get glassDockEntriesSectionTitle => 'ドックの入口';
+
+  @override
+  String get glassDockShowDayTabTitle => '日課表タブを表示';
+
+  @override
+  String get glassDockShowSettingsTabTitle => '設定タブを表示';
+
+  @override
+  String get glassDockShowAddButtonTitle => '追加ボタンを表示';
+
+  @override
+  String get glassDockShowAddButtonSubtitle =>
+      'ナビバーの横に独立した丸ボタンを表示し、タップで直接授業を追加';
+
+  @override
+  String get glassDockExtraButtonSemanticLabel => '授業を追加';
+
+  @override
   String get morningClassAlarmEntryTitle => '1限目アラーム';
 
   @override

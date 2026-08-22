@@ -10078,6 +10078,25 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '여백 높이';
 
   @override
+  String get glassDockEntriesSectionTitle => '독 항목';
+
+  @override
+  String get glassDockShowDayTabTitle => '일간 탭 표시';
+
+  @override
+  String get glassDockShowSettingsTabTitle => '설정 탭 표시';
+
+  @override
+  String get glassDockShowAddButtonTitle => '추가 버튼 표시';
+
+  @override
+  String get glassDockShowAddButtonSubtitle =>
+      '내비게이션 바 옆에 독립된 원형 버튼을 표시하여 탭하면 바로 수업 추가';
+
+  @override
+  String get glassDockExtraButtonSemanticLabel => '수업 추가';
+
+  @override
   String get morningClassAlarmEntryTitle => '첫 교시 알람';
 
   @override

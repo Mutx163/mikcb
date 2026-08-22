@@ -10325,6 +10325,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockInsetClearanceLabel => 'Inset clearance height';
 
   @override
+  String get glassDockEntriesSectionTitle => 'Dock entries';
+
+  @override
+  String get glassDockShowDayTabTitle => 'Show day view entry';
+
+  @override
+  String get glassDockShowSettingsTabTitle => 'Show settings entry';
+
+  @override
+  String get glassDockShowAddButtonTitle => 'Show add button';
+
+  @override
+  String get glassDockShowAddButtonSubtitle =>
+      'Show a separate round button next to the bar that opens add-course directly';
+
+  @override
+  String get glassDockExtraButtonSemanticLabel => 'Add course';
+
+  @override
   String get morningClassAlarmEntryTitle => 'Morning-class alarms';
 
   @override

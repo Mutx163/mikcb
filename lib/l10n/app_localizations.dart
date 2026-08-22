@@ -17713,6 +17713,42 @@ abstract class AppLocalizations {
   /// **'避让高度'**
   String get glassDockInsetClearanceLabel;
 
+  /// No description provided for @glassDockEntriesSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底栏入口'**
+  String get glassDockEntriesSectionTitle;
+
+  /// No description provided for @glassDockShowDayTabTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示日课表入口'**
+  String get glassDockShowDayTabTitle;
+
+  /// No description provided for @glassDockShowSettingsTabTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示设置入口'**
+  String get glassDockShowSettingsTabTitle;
+
+  /// No description provided for @glassDockShowAddButtonTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示添加按钮'**
+  String get glassDockShowAddButtonTitle;
+
+  /// No description provided for @glassDockShowAddButtonSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在导航栏旁显示独立圆形按钮，点击直接添加课程'**
+  String get glassDockShowAddButtonSubtitle;
+
+  /// No description provided for @glassDockExtraButtonSemanticLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加课程'**
+  String get glassDockExtraButtonSemanticLabel;
+
   /// No description provided for @morningClassAlarmEntryTitle.
   ///
   /// In zh, this message translates to:

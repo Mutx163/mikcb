@@ -9759,6 +9759,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '避让高度';
 
   @override
+  String get glassDockEntriesSectionTitle => '底栏入口';
+
+  @override
+  String get glassDockShowDayTabTitle => '显示日课表入口';
+
+  @override
+  String get glassDockShowSettingsTabTitle => '显示设置入口';
+
+  @override
+  String get glassDockShowAddButtonTitle => '显示添加按钮';
+
+  @override
+  String get glassDockShowAddButtonSubtitle => '在导航栏旁显示独立圆形按钮，点击直接添加课程';
+
+  @override
+  String get glassDockExtraButtonSemanticLabel => '添加课程';
+
+  @override
   String get morningClassAlarmEntryTitle => '早八闹钟';
 
   @override
@@ -19631,6 +19649,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockInsetClearanceLabel => '避讓高度';
 
   @override
+  String get glassDockEntriesSectionTitle => '底欄入口';
+
+  @override
+  String get glassDockShowDayTabTitle => '顯示日課表入口';
+
+  @override
+  String get glassDockShowSettingsTabTitle => '顯示設定入口';
+
+  @override
+  String get glassDockShowAddButtonTitle => '顯示新增按鈕';
+
+  @override
+  String get glassDockShowAddButtonSubtitle => '在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程';
+
+  @override
+  String get glassDockExtraButtonSemanticLabel => '新增課程';
+
+  @override
   String get morningClassAlarmEntryTitle => '早八鬧鐘';
 
   @override
@@ -29501,6 +29537,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockInsetClearanceLabel => '避讓高度';
+
+  @override
+  String get glassDockEntriesSectionTitle => '底欄入口';
+
+  @override
+  String get glassDockShowDayTabTitle => '顯示日課表入口';
+
+  @override
+  String get glassDockShowSettingsTabTitle => '顯示設定入口';
+
+  @override
+  String get glassDockShowAddButtonTitle => '顯示新增按鈕';
+
+  @override
+  String get glassDockShowAddButtonSubtitle => '在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程';
+
+  @override
+  String get glassDockExtraButtonSemanticLabel => '新增課程';
 
   @override
   String get morningClassAlarmEntryTitle => '早八鬧鐘';
