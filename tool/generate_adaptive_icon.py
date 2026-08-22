@@ -16,9 +16,10 @@ SRC = ROOT / "assets" / "branding" / "launcher_icon.png"
 RES = ROOT / "android" / "app" / "src" / "main" / "res"
 PREVIEW = ROOT / ".tmp_adaptive_preview"
 BASE = 1024
-# 108dp adaptive canvas; shrink artwork so nothing important is clipped by
-# circular masks (72dp visible safe zone).
-FG_SCALE = 0.90
+# 108dp adaptive canvas; only the central 72dp safe zone is visible.
+# 72/108 = 0.667 maps the full artwork exactly onto the visible area,
+# matching how the legacy full-bleed bitmap filled the launcher mask.
+FG_SCALE = 0.67
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
 
 
@@ -76,6 +77,49 @@ ADAPTIVE_XML = (
 )
 
 
+# --- Bottom branding image (windowSplashScreenBrandingImage, 200x80dp) ---
+BRAND_TEXT = "轻屿课表"
+BRAND_COLOR = (138, 143, 150, 255)  # neutral gray readable on white and dark
+FONT_CANDIDATES = [
+    Path("C:/Windows/Fonts/msyhbd.ttc"),
+    Path("C:/Windows/Fonts/msyh.ttc"),
+    Path("C:/Windows/Fonts/simhei.ttf"),
+]
+
+
+def find_font() -> Path:
+    for p in FONT_CANDIDATES:
+        if p.exists():
+            return p
+    raise SystemExit("no CJK font found for branding text")
+
+
+def build_branding() -> Image.Image:
+    """Render BRAND_TEXT centered on a transparent 200x80dp canvas (5x supersampled)."""
+    from PIL import ImageFont
+    w, h = 1000, 400
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(str(find_font()), int(h * 0.30))
+    draw.text((w / 2, h / 2), BRAND_TEXT, font=font, fill=BRAND_COLOR, anchor="mm")
+    return img
+
+
+def emit_branding() -> None:
+    branding = build_branding()
+    buckets = {
+        "mdpi": (200, 80),
+        "hdpi": (300, 120),
+        "xhdpi": (400, 160),
+        "xxhdpi": (600, 240),
+        "xxxhdpi": (800, 320),
+    }
+    for density, (w, h) in buckets.items():
+        d = RES / ("drawable-" + density)
+        d.mkdir(parents=True, exist_ok=True)
+        branding.resize((w, h), Image.Resampling.LANCZOS).save(d / "splash_branding.png")
+
+
 def main() -> None:
     src = Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS)
     background = build_background(src)
@@ -91,6 +135,8 @@ def main() -> None:
     xml_dir = RES / "mipmap-anydpi-v26"
     xml_dir.mkdir(parents=True, exist_ok=True)
     (xml_dir / "ic_launcher.xml").write_text(ADAPTIVE_XML, encoding="utf-8")
+
+    emit_branding()
 
     # Previews for human review BEFORE trusting the result on device.
     PREVIEW.mkdir(parents=True, exist_ok=True)
