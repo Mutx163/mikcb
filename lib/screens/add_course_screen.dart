@@ -2008,11 +2008,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         // Editing existing group: replace all entries.
         await provider.updateCourseGroup(widget.courseGroup!.name, courses);
       } else if (widget.course != null) {
-        // Editing a single existing course: delete original, add all new entries.
-        await provider.deleteCourse(widget.course!.id);
-        for (final course in courses) {
-          await provider.addCourse(course);
-        }
+        // Editing a single existing course: replace every entry of the
+        // ORIGINAL name group with the edited set. Must NOT go through
+        // deleteCourse + addCourse: same-name sibling entries would survive
+        // the delete and addCourse's shared-field step would then resurrect
+        // their OLD color/name/nature over the user's edits — the save toast
+        // still shows success but nothing visibly changes.
+        // updateCourseGroup removes the whole original-name group first, so
+        // no stale sibling remains to overwrite the new shared fields. It is
+        // also atomic under the provider mutation gate.
+        await provider.updateCourseGroup(widget.course!.name, courses);
       } else {
         // Adding new courses: add all entries.
         for (final course in courses) {
