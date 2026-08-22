@@ -38,8 +38,9 @@ class StatisticsAnalysisScreen extends StatelessWidget {
           onBack: () => Navigator.pop(context),
           title: Text(_moduleTitle(l10n, module)),
           child: hasData
+              // 整页列表必须保留 overlay 标题栏顶部 inset（默认 true）：
+              // 传 false 会把第一屏内容顶进毛玻璃标题栏。
               ? HyperosListView(
-                  includeHeaderInset: false,
                   children: _buildModuleContent(
                     context,
                     l10n,
@@ -49,11 +50,13 @@ class StatisticsAnalysisScreen extends StatelessWidget {
                     semesterWeekCount,
                   ),
                 )
-              : Center(
-                  child: HyperosEmptyState(
-                    icon: Icons.analytics_outlined,
-                    title: l10n.statisticsNoData,
-                    subtitle: l10n.statisticsNoDataHint,
+              : HyperosBlurredBodyInset(
+                  child: Center(
+                    child: HyperosEmptyState(
+                      icon: Icons.analytics_outlined,
+                      title: l10n.statisticsNoData,
+                      subtitle: l10n.statisticsNoDataHint,
+                    ),
                   ),
                 ),
         );

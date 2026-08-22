@@ -243,6 +243,41 @@ def check_hyperos_colors_usage(text: str, rel: str, rule: dict) -> list[Violatio
     return []
 
 
+def check_header_inset_false(text: str, rel: str, rule: dict) -> list[Violation]:
+    """Flag `HyperosListView(includeHeaderInset: false)` unless the file also
+    proves a fixed-body split layout (the only legal use).
+
+    Overlay pages start content at y=0 behind the frosted title; skipping the
+    header inset without a `HyperosBlurredBodyInset` sibling pushes the first
+    screen of content INTO the title bar (statistics analysis regression).
+    """
+    if "includeHeaderInset" not in text:
+        return []
+    out: list[Violation] = []
+    rx = re.compile(r"includeHeaderInset\s*:\s*false", re.MULTILINE)
+    has_body_inset = "HyperosBlurredBodyInset" in text
+    lines = text.splitlines()
+    for match in rx.finditer(text):
+        if has_body_inset:
+            continue
+        line = line_number(text, match.start())
+        # Ignore historical warning comments that mention the flag by name.
+        if lines[line - 1].lstrip().startswith("//"):
+            continue
+        out.append(
+            Violation(
+                rule_id=rule["id"],
+                category=rule["category"],
+                severity=rule["severity"],
+                message=rule["message"],
+                file=rel,
+                line=line,
+                snippet=lines[line - 1].strip()[:120],
+            )
+        )
+    return out
+
+
 def check_switch_subtitle_maxlines_one(text: str, rel: str, rule: dict) -> list[Violation]:
     out: list[Violation] = []
     rx = re.compile(r"HyperosSwitchTile\s*\(", re.MULTILINE)
@@ -317,6 +352,8 @@ def scan_file(path: Path, checklist: dict) -> FileScan:
             violations.extend(check_edge_insets_grid(text, rel, rule, tokens))
         elif check == "hyperos_colors_usage":
             violations.extend(check_hyperos_colors_usage(text, rel, rule))
+        elif check == "header_inset_false":
+            violations.extend(check_header_inset_false(text, rel, rule))
         elif check == "switch_subtitle_maxlines_one":
             violations.extend(check_switch_subtitle_maxlines_one(text, rel, rule))
         elif check == "listtile_trailing_checkmark":

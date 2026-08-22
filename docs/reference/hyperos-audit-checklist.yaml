@@ -145,6 +145,15 @@ rules:
     check: prefer_hyperos_list_view
     message: HyperosSubpage 内列表应使用 HyperosListView（16dp padding）
 
+  - id: no-header-inset-false
+    category: spacing
+    severity: warn
+    check: header_inset_false
+    message: >-
+      HyperosListView includeHeaderInset:false 会把内容顶进毛玻璃标题栏；
+      仅「固定预览+下半列表」分栏（同文件含 HyperosBlurredBodyInset）可用，
+      整页列表保持默认 true
+
   - id: prefer-list-group
     category: spacing
     severity: info
