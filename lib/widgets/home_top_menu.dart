@@ -36,6 +36,9 @@ String homeMenuEntryCategoryLabel(
 /// [id] 是持久化主键（设置里的 homeGridMenuActions 存的就是它），
 /// 内置九项沿用 HomeTopMenuAction.name 以兼容旧数据；[open] 负责从
 /// 当前 context 导航，由目录统一提供实现。
+/// [visible] 是构建模式等环境可见性门控：返回 false 的条目不进八宫格、
+/// 不进编辑器候选，已持久化的 id 也会在解析时被丢弃——调试/性能版
+/// 工具绝不能经目录泄漏给正式版用户。
 class HomeMenuEntry {
   const HomeMenuEntry({
     required this.id,
@@ -43,13 +46,17 @@ class HomeMenuEntry {
     required this.icon,
     required this.category,
     required this.open,
+    this.visible = _alwaysVisible,
   });
+
+  static bool _alwaysVisible() => true;
 
   final String id;
   final String Function(AppLocalizations l10n) title;
   final IconData icon;
   final HomeMenuEntryCategory category;
   final Future<void> Function(BuildContext context) open;
+  final bool Function() visible;
 }
 
 /// 目录条目的标准导航壳：与首页顶部菜单同一条 Hyperos 页面转场路径。

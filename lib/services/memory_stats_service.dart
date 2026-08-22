@@ -20,7 +20,30 @@ class MemoryStatsService {
     return packageName.endsWith('.debug') || packageName.endsWith('.profile');
   }
 
+  static bool? _cachedIsDiagnosticsBuild;
+
+  /// [isDiagnosticsBuild] 的同步缓存视图；未预热前保守返回 false
+  /// （与正式版语义一致）。八宫格目录等无法 await 的同步过滤路径使用；
+  /// 设置页等既有异步路径仍直接调 [isDiagnosticsBuild]。
+  static bool get isDiagnosticsBuildCached => _cachedIsDiagnosticsBuild ?? false;
+
+  /// 启动时预热缓存（fire-and-forget），让同步判定尽早可用。
+  static Future<void> warmDiagnosticsBuildCache() async {
+    _cachedIsDiagnosticsBuild = await _computeIsDiagnosticsBuild();
+  }
+
+  @visibleForTesting
+  static void debugSetCachedDiagnosticsBuild(bool? value) {
+    _cachedIsDiagnosticsBuild = value;
+  }
+
   static Future<bool> isDiagnosticsBuild() async {
+    final result = await _computeIsDiagnosticsBuild();
+    _cachedIsDiagnosticsBuild = result;
+    return result;
+  }
+
+  static Future<bool> _computeIsDiagnosticsBuild() async {
     if (kIsWeb || !Platform.isAndroid) {
       return false;
     }

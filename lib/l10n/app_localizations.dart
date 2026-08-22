@@ -16942,7 +16942,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryStatsEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'内存监控'**
+  /// **'内存状态'**
   String get memoryStatsEntryTitle;
 
   /// No description provided for @generalSettingsTitle.

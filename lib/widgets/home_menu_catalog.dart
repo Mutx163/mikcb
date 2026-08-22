@@ -31,6 +31,7 @@ import 'package:university_timetable/screens/time_scheme_management_screen.dart'
 import 'package:university_timetable/screens/timetable_profiles_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
+import 'package:university_timetable/services/memory_stats_service.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 export 'home_top_menu.dart'
@@ -322,12 +323,15 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     open: (context) =>
         pushHomeMenuPage(context, const OpenSourceLicensesScreen()),
   ),
+  // 内存监控与设置页开发者组同源门控：仅 .debug/.profile 包名（调试版、
+  // 性能版）可见，正式版用户不得经八宫格绕过该限制。
   HomeMenuEntry(
     id: 'memoryStats',
     title: (l10n) => l10n.memoryStatsEntryTitle,
     icon: Icons.memory_outlined,
     category: HomeMenuEntryCategory.about,
     open: (context) => pushHomeMenuPage(context, const MemoryStatsScreen()),
+    visible: () => MemoryStatsService.isDiagnosticsBuildCached,
   ),
 ];
 
@@ -372,14 +376,19 @@ List<HomeMenuEntry> resolveHomeGridMenuEntries(TimetableSettings settings) {
   final resolved = <HomeMenuEntry>[];
   for (final id in settings.homeGridMenuActions) {
     final entry = homeMenuEntryById(id);
-    if (entry != null && !resolved.contains(entry)) {
+    // visible() 门控：调试/性能版专属条目在正式版被就地丢弃，即使 id
+    // 是从旧设备迁移过来的持久化数据。
+    if (entry != null && entry.visible() && !resolved.contains(entry)) {
       resolved.add(entry);
     }
   }
   if (resolved.isEmpty) {
     return [
       for (final id in HomeGridMenu.defaultActions) homeMenuEntryById(id),
-    ].whereType<HomeMenuEntry>().toList(growable: false);
+    ]
+        .whereType<HomeMenuEntry>()
+        .where((entry) => entry.visible())
+        .toList(growable: false);
   }
   return List.unmodifiable(resolved);
 }

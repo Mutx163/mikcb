@@ -9635,7 +9635,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsEntryTitle => '診断';
 
   @override
-  String get memoryStatsEntryTitle => 'メモリ監視';
+  String get memoryStatsEntryTitle => 'メモリ統計';
 
   @override
   String get generalSettingsTitle => '一般';

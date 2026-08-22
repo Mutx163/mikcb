@@ -9913,7 +9913,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsEntryTitle => 'Diagnostics';
 
   @override
-  String get memoryStatsEntryTitle => 'Memory monitor';
+  String get memoryStatsEntryTitle => 'Memory Stats';
 
   @override
   String get generalSettingsTitle => 'General';

@@ -9364,7 +9364,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsEntryTitle => '诊断';
 
   @override
-  String get memoryStatsEntryTitle => '内存监控';
+  String get memoryStatsEntryTitle => '内存状态';
 
   @override
   String get generalSettingsTitle => '通用';
@@ -19376,7 +19376,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get diagnosticsEntryTitle => '診斷';
 
   @override
-  String get memoryStatsEntryTitle => '記憶體監控';
+  String get memoryStatsEntryTitle => '記憶體狀態';
 
   @override
   String get generalSettingsTitle => '一般';
@@ -29388,7 +29388,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get diagnosticsEntryTitle => '診斷';
 
   @override
-  String get memoryStatsEntryTitle => '記憶體監控';
+  String get memoryStatsEntryTitle => '記憶體狀態';
 
   @override
   String get generalSettingsTitle => '一般';

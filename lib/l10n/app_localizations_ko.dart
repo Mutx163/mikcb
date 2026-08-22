@@ -9681,7 +9681,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get diagnosticsEntryTitle => '진단';
 
   @override
-  String get memoryStatsEntryTitle => '메모리 모니터';
+  String get memoryStatsEntryTitle => '메모리 상태';
 
   @override
   String get generalSettingsTitle => '일반';

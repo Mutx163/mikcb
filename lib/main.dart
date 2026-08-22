@@ -30,6 +30,7 @@ import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
 import 'services/fair_memory_service.dart';
+import 'services/memory_stats_service.dart';
 import 'services/debug_deep_link_navigator.dart';
 import 'services/debug_deep_link_service.dart';
 import 'services/lan_edit_foreground_service.dart';
@@ -192,6 +193,9 @@ Future<void> main() async {
       // first glass bar frame does not stall on shader compilation.
       await LiquidGlassWidgets.initialize();
       unawaited(AppLogService.instance.initialize());
+      // 预热诊断包名判定缓存：八宫格目录用它同步过滤调试/性能版专属
+      // 入口（内存监控），不 await，晚到前该入口按不可见处理（保守）。
+      unawaited(MemoryStatsService.warmDiagnosticsBuildCache());
       FairMemoryService.instance.ensureInitialized();
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 

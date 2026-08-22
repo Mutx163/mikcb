@@ -21,10 +21,10 @@ class _HomeGridMenuEditorScreen extends StatefulWidget {
 class _HomeGridMenuEditorScreenState
     extends State<_HomeGridMenuEditorScreen> {
   late List<String> _ids = [
-    // 目录可能随版本演进（改名/下线入口）；种子阶段就丢弃失效 id，
-    // 保证编辑器里出现的每一行都能解析出图标与标题。
+    // 目录可能随版本演进（改名/下线入口、构建模式门控）；种子阶段就丢
+    // 弹当前环境不可用的 id，保证编辑器里每一行都真实可解析、可打开。
     for (final id in widget.initialIds)
-      if (homeMenuEntryById(id) != null) id,
+      if (homeMenuEntryById(id)?.visible() ?? false) id,
   ];
 
   int get _maxSlots => HomeGridMenu.maxSlots;
@@ -114,7 +114,10 @@ class _HomeGridMenuEditorScreenState
   ) {
     final candidates = kHomeMenuCatalog
         .where(
-          (entry) => entry.category == category && !_ids.contains(entry.id),
+          (entry) =>
+              entry.category == category &&
+              entry.visible() &&
+              !_ids.contains(entry.id),
         )
         .toList(growable: false);
     if (candidates.isEmpty) {
