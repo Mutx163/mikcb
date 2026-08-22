@@ -1124,6 +1124,17 @@ class TimetableSettings {
   /// 高度（逻辑像素），范围 [glassDockInsetClearanceMin]..
   /// [glassDockInsetClearanceMax]；满屏悬浮模式不使用。
   final double glassDockInsetClearance;
+
+  /// 玻璃坞入口开关：日课表 Tab 是否显示。关闭后玻璃坞只剩周课表/设置。
+  /// 至少保留一个入口由 UI 层约束（设置页在关闭其他开关时锁定本开关）。
+  final bool glassDockShowDayTab;
+
+  /// 玻璃坞入口开关：设置 Tab 是否显示。关闭后玻璃坞只剩周课表/日课表。
+  final bool glassDockShowSettingsTab;
+
+  /// 玻璃坞入口开关：是否显示独立的圆形「添加」按钮（extraButton），
+  /// 点击直接打开添加课程弹层。
+  final bool glassDockShowAddButton;
   final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
   final double timetableFloatingBackToCurrentWeekButtonOpacity;
   final int timetableLastViewedDayOfWeek;
@@ -1219,14 +1230,11 @@ class TimetableSettings {
   final String pgyerAppKey;
   final bool holidayOverrideEnabled;
 
-  /// 早八闹钟：是否已开启「批量添加周重复闹钟」的引导开关（仅记录偏好）。
-  final bool morningClassAlarmEnabled;
+  /// 上课闹钟：上课前多少分钟响铃。
+  final int classAlarmLeadMinutes;
 
-  /// 早八闹钟：上课前多少分钟响铃。
-  final int morningClassAlarmLeadMinutes;
-
-  /// 早八闹钟：写入系统时钟时是否尝试跳过确认页（EXTRA_SKIP_UI）。
-  final bool morningClassAlarmSkipUi;
+  /// 上课闹钟：写入系统时钟时是否尝试跳过确认页（EXTRA_SKIP_UI）。
+  final bool classAlarmSkipUi;
   final String courseCardTitleColorLight;
   final String courseCardTitleColorDark;
   final String courseCardDetailColorLight;
@@ -1309,6 +1317,9 @@ class TimetableSettings {
     this.homeNavigationForm = HomeNavigationForm.classic,
     this.glassDockLayout = GlassDockLayout.inset,
     this.glassDockInsetClearance = glassDockInsetClearanceDefault,
+    this.glassDockShowDayTab = true,
+    this.glassDockShowSettingsTab = true,
+    this.glassDockShowAddButton = false,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
     this.timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
@@ -1400,9 +1411,8 @@ class TimetableSettings {
     this.pgyerApiKey = '',
     this.pgyerAppKey = '',
     this.holidayOverrideEnabled = false,
-    this.morningClassAlarmEnabled = false,
-    this.morningClassAlarmLeadMinutes = 30,
-    this.morningClassAlarmSkipUi = false,
+    this.classAlarmLeadMinutes = 30,
+    this.classAlarmSkipUi = false,
     this.courseCardTitleColorLight = defaultCourseCardTitleColor,
     this.courseCardTitleColorDark = defaultCourseCardTitleColor,
     this.courseCardDetailColorLight = defaultCourseCardDetailColor,
@@ -1566,9 +1576,8 @@ class TimetableSettings {
       appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
       holidayOverrideEnabled: false,
-      morningClassAlarmEnabled: false,
-      morningClassAlarmLeadMinutes: 30,
-      morningClassAlarmSkipUi: false,
+      classAlarmLeadMinutes: 30,
+      classAlarmSkipUi: false,
       courseCardTitleColorLight: defaultCourseCardTitleColor,
       courseCardTitleColorDark: defaultCourseCardTitleColor,
       courseCardDetailColorLight: defaultCourseCardDetailColor,
@@ -1628,6 +1637,9 @@ class TimetableSettings {
       'homeNavigationForm': homeNavigationForm.value,
       'glassDockLayout': glassDockLayout.value,
       'glassDockInsetClearance': glassDockInsetClearance,
+      'glassDockShowDayTab': glassDockShowDayTab,
+      'glassDockShowSettingsTab': glassDockShowSettingsTab,
+      'glassDockShowAddButton': glassDockShowAddButton,
       'timetableBackToCurrentWeekButtonStyle':
           timetableBackToCurrentWeekButtonStyle.value,
       'timetableFloatingBackToCurrentWeekButtonOpacity':
@@ -1731,9 +1743,8 @@ class TimetableSettings {
       'pgyerApiKey': pgyerApiKey,
       'pgyerAppKey': pgyerAppKey,
       'holidayOverrideEnabled': holidayOverrideEnabled,
-      'morningClassAlarmEnabled': morningClassAlarmEnabled,
-      'morningClassAlarmLeadMinutes': morningClassAlarmLeadMinutes,
-      'morningClassAlarmSkipUi': morningClassAlarmSkipUi,
+      'classAlarmLeadMinutes': classAlarmLeadMinutes,
+      'classAlarmSkipUi': classAlarmSkipUi,
       'courseCardTitleColorLight': courseCardTitleColorLight,
       'courseCardTitleColorDark': courseCardTitleColorDark,
       'courseCardDetailColorLight': courseCardDetailColorLight,
@@ -1889,6 +1900,10 @@ class TimetableSettings {
                 glassDockInsetClearanceMin,
                 glassDockInsetClearanceMax,
               ),
+      glassDockShowDayTab: json['glassDockShowDayTab'] as bool? ?? true,
+      glassDockShowSettingsTab:
+          json['glassDockShowSettingsTab'] as bool? ?? true,
+      glassDockShowAddButton: json['glassDockShowAddButton'] as bool? ?? false,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyleX.fromValue(
             json['timetableBackToCurrentWeekButtonStyle'] as String?,
@@ -2101,12 +2116,9 @@ class TimetableSettings {
       pgyerApiKey: json['pgyerApiKey'] as String? ?? '',
       pgyerAppKey: json['pgyerAppKey'] as String? ?? '',
       holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
-      morningClassAlarmEnabled:
-          json['morningClassAlarmEnabled'] as bool? ?? false,
-      morningClassAlarmLeadMinutes:
-          (json['morningClassAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
-      morningClassAlarmSkipUi:
-          json['morningClassAlarmSkipUi'] as bool? ?? false,
+      classAlarmLeadMinutes:
+          (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
+      classAlarmSkipUi: json['classAlarmSkipUi'] as bool? ?? false,
       courseCardTitleColorLight:
           json['courseCardTitleColorLight'] as String? ??
           defaultCourseCardTitleColor,
@@ -2250,6 +2262,9 @@ class TimetableSettings {
     HomeNavigationForm? homeNavigationForm,
     GlassDockLayout? glassDockLayout,
     double? glassDockInsetClearance,
+    bool? glassDockShowDayTab,
+    bool? glassDockShowSettingsTab,
+    bool? glassDockShowAddButton,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
     int? timetableLastViewedDayOfWeek,
@@ -2340,9 +2355,8 @@ class TimetableSettings {
     String? pgyerApiKey,
     String? pgyerAppKey,
     bool? holidayOverrideEnabled,
-    bool? morningClassAlarmEnabled,
-    int? morningClassAlarmLeadMinutes,
-    bool? morningClassAlarmSkipUi,
+    int? classAlarmLeadMinutes,
+    bool? classAlarmSkipUi,
     String? courseCardTitleColorLight,
     String? courseCardTitleColorDark,
     String? courseCardDetailColorLight,
@@ -2439,6 +2453,11 @@ class TimetableSettings {
       glassDockLayout: glassDockLayout ?? this.glassDockLayout,
       glassDockInsetClearance:
           glassDockInsetClearance ?? this.glassDockInsetClearance,
+      glassDockShowDayTab: glassDockShowDayTab ?? this.glassDockShowDayTab,
+      glassDockShowSettingsTab:
+          glassDockShowSettingsTab ?? this.glassDockShowSettingsTab,
+      glassDockShowAddButton:
+          glassDockShowAddButton ?? this.glassDockShowAddButton,
       timetableBackToCurrentWeekButtonStyle:
           timetableBackToCurrentWeekButtonStyle ??
           this.timetableBackToCurrentWeekButtonStyle,
@@ -2626,13 +2645,10 @@ class TimetableSettings {
       pgyerAppKey: pgyerAppKey ?? this.pgyerAppKey,
       holidayOverrideEnabled:
           holidayOverrideEnabled ?? this.holidayOverrideEnabled,
-      morningClassAlarmEnabled:
-          morningClassAlarmEnabled ?? this.morningClassAlarmEnabled,
       // 提前量允许 0（下课即提醒的场景不存在，但保留合法输入区间）。
-      morningClassAlarmLeadMinutes:
-          morningClassAlarmLeadMinutes ?? this.morningClassAlarmLeadMinutes,
-      morningClassAlarmSkipUi:
-          morningClassAlarmSkipUi ?? this.morningClassAlarmSkipUi,
+      classAlarmLeadMinutes:
+          classAlarmLeadMinutes ?? this.classAlarmLeadMinutes,
+      classAlarmSkipUi: classAlarmSkipUi ?? this.classAlarmSkipUi,
       courseCardTitleColorLight:
           courseCardTitleColorLight ?? this.courseCardTitleColorLight,
       courseCardTitleColorDark:

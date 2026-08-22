@@ -213,6 +213,41 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   );
                 },
               ),
+            if (_draft.homeNavigationForm == HomeNavigationForm.glassDock) ...[
+              // 底栏入口开关：日课表 / 设置两个 Tab 可分别隐藏；
+              // 加号按钮是独立圆形入口（GlassTabBar 的 extraButton）。
+              // 约束：至少保留一个 Tab 入口——关掉另一个时本开关锁定。
+              HyperosSwitchTile(
+                title: l10n.glassDockShowDayTabTitle,
+                value: _draft.glassDockShowDayTab,
+                onChanged: _draft.glassDockShowSettingsTab
+                    ? (value) {
+                        _updateDraft(
+                          _draft.copyWith(glassDockShowDayTab: value),
+                        );
+                      }
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.glassDockShowSettingsTabTitle,
+                value: _draft.glassDockShowSettingsTab,
+                onChanged: _draft.glassDockShowDayTab
+                    ? (value) {
+                        _updateDraft(
+                          _draft.copyWith(glassDockShowSettingsTab: value),
+                        );
+                      }
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.glassDockShowAddButtonTitle,
+                subtitle: l10n.glassDockShowAddButtonSubtitle,
+                value: _draft.glassDockShowAddButton,
+                onChanged: (value) {
+                  _updateDraft(_draft.copyWith(glassDockShowAddButton: value));
+                },
+              ),
+            ],
             HyperosSelectTile<AppFontMode>(
               label: l10n.fontModeLabel,
               useSheetForPopup: true,

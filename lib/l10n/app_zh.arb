@@ -5912,43 +5912,53 @@
   "glassDockLayoutInset": "内容避让",
   "glassDockLayoutInsetSubtitle": "课表底部预留空间，底栏悬浮在下方",
   "glassDockInsetClearanceLabel": "避让高度",
-  "morningClassAlarmEntryTitle": "早八闹钟",
-  "morningClassAlarmEntrySubtitle": "把第一节课的闹钟写进系统时钟",
-  "morningClassAlarmGroupSetup": "添加闹钟",
-  "morningClassAlarmGroupBehavior": "响铃行为",
-  "morningClassAlarmAddAllTitle": "添加后续所有第一节课闹钟",
-  "morningClassAlarmAddAllSubtitle": "在系统时钟创建周重复闹钟",
-  "morningClassAlarmLeadTitle": "提前",
-  "morningClassAlarmLeadMinutesLabel": "提前 {minutes} 分钟",
-  "@morningClassAlarmLeadMinutesLabel": {
+  "glassDockEntriesSectionTitle": "底栏入口",
+  "glassDockShowDayTabTitle": "显示日课表入口",
+  "glassDockShowSettingsTabTitle": "显示设置入口",
+  "glassDockShowAddButtonTitle": "显示添加按钮",
+  "glassDockShowAddButtonSubtitle": "在导航栏旁显示独立圆形按钮，点击直接添加课程",
+  "glassDockExtraButtonSemanticLabel": "添加课程"
+  "classAlarmEntryTitle": "上课闹钟",
+  "classAlarmGroupSetup": "添加闹钟",
+  "classAlarmGroupBehavior": "响铃行为",
+  "classAlarmAddAllTitle": "批量添加上课闹钟",
+  "classAlarmRangeLabel": "添加范围",
+  "classAlarmRangeRemaining": "本周起至学期结束",
+  "classAlarmRangeWhole": "整学期",
+  "classAlarmLeadTitle": "提前量",
+  "classAlarmLeadMinutesLabel": "提前 {minutes} 分钟",
+  "@classAlarmLeadMinutesLabel": {
     "placeholders": {
       "minutes": { "type": "int" }
     }
   },
-  "morningClassAlarmOpenClock": "打开系统时钟",
-  "morningClassAlarmSkipUiTitle": "跳过确认页",
-  "morningClassAlarmSkipUiSubtitle": "尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）",
-  "morningClassAlarmWeeklyConfirmTitle": "添加周重复闹钟？",
-  "morningClassAlarmWeeklyConfirmMessage": "将在系统时钟创建每周{days}重复的 {time} 闹钟。系统闹钟无法识别假期与调休，停课期间也会照常响铃；删除需在系统时钟中完成。",
-  "@morningClassAlarmWeeklyConfirmMessage": {
+  "classAlarmSkipUiTitle": "跳过确认页",
+  "classAlarmSkipUiSubtitle": "尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）",
+  "classAlarmOpenClock": "打开系统时钟",
+  "classAlarmConfirmTitle": "创建重复闹钟？",
+  "classAlarmConfirmMessage": "将在系统时钟创建：{detail}。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。",
+  "@classAlarmConfirmMessage": {
     "placeholders": {
-      "time": { "type": "String" },
+      "detail": { "type": "String" }
+    }
+  },
+  "classAlarmVariableSuffix": "另外，{days}的第一节课时间在不同周不一致，这些天未创建闹钟。",
+  "@classAlarmVariableSuffix": {
+    "placeholders": {
       "days": { "type": "String" }
     }
   },
-  "morningClassAlarmDaysUnit": "天",
-  "morningClassAlarmTimeDetail": "每{weekday} {time}",
-  "@morningClassAlarmTimeDetail": {
+  "classAlarmNoSchemeToast": "请先在设置中选择时间模板",
+  "classAlarmNoDataToast": "所选范围内没有找到课表",
+  "classAlarmAddedToast": "已交给系统时钟处理",
+  "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",
+  "classAlarmActionLabel": "设这节课的闹钟",
+  "classAlarmCourseConfirmTitle": "添加这节课的重复闹钟？",
+  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（与这节课的排课一致）；假期与停课不会自动停止，删除需在系统时钟中完成。",
+  "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
       "time": { "type": "String" }
     }
-  },
-  "morningClassAlarmAddedToast": "已交给系统时钟处理",
-  "morningClassAlarmLaunchFailedToast": "未找到可处理的时钟应用",
-  "morningClassAlarmNoSchemeToast": "请先在设置中选择时间模板",
-  "morningClassAlarmPastToast": "这节课已开始，无法再设提醒",
-  "morningClassAlarmNoCourseToast": "当前周该日没有课程",
-  "morningClassAlarmTodayOnlyToast": "单次闹钟仅支持今天的课程；其他日期请在设置中使用周重复闹钟",
-  "morningClassAlarmActionLabel": "设上课闹钟"
+  }
 }

@@ -5908,43 +5908,53 @@
   "glassDockLayoutInset": "內容避讓",
   "glassDockLayoutInsetSubtitle": "課表底部預留空間，底欄懸浮在下方",
   "glassDockInsetClearanceLabel": "避讓高度",
-  "morningClassAlarmEntryTitle": "早八鬧鐘",
-  "morningClassAlarmEntrySubtitle": "把第一節課的鬧鐘寫進系統時鐘",
-  "morningClassAlarmGroupSetup": "新增鬧鐘",
-  "morningClassAlarmGroupBehavior": "響鈴行為",
-  "morningClassAlarmAddAllTitle": "新增後續所有第一節課鬧鐘",
-  "morningClassAlarmAddAllSubtitle": "在系統時鐘建立週重複鬧鐘",
-  "morningClassAlarmLeadTitle": "提前",
-  "morningClassAlarmLeadMinutesLabel": "提前 {minutes} 分鐘",
-  "@morningClassAlarmLeadMinutesLabel": {
+  "glassDockEntriesSectionTitle": "底欄入口",
+  "glassDockShowDayTabTitle": "顯示日課表入口",
+  "glassDockShowSettingsTabTitle": "顯示設定入口",
+  "glassDockShowAddButtonTitle": "顯示新增按鈕",
+  "glassDockShowAddButtonSubtitle": "在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程",
+  "glassDockExtraButtonSemanticLabel": "新增課程"
+  "classAlarmEntryTitle": "上課鬧鐘",
+  "classAlarmGroupSetup": "新增鬧鐘",
+  "classAlarmGroupBehavior": "響鈴行為",
+  "classAlarmAddAllTitle": "批次新增上課鬧鐘",
+  "classAlarmRangeLabel": "新增範圍",
+  "classAlarmRangeRemaining": "本週起至學期結束",
+  "classAlarmRangeWhole": "整學期",
+  "classAlarmLeadTitle": "提前量",
+  "classAlarmLeadMinutesLabel": "提前 {minutes} 分鐘",
+  "@classAlarmLeadMinutesLabel": {
     "placeholders": {
       "minutes": { "type": "int" }
     }
   },
-  "morningClassAlarmOpenClock": "開啟系統時鐘",
-  "morningClassAlarmSkipUiTitle": "跳過確認頁",
-  "morningClassAlarmSkipUiSubtitle": "嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）",
-  "morningClassAlarmWeeklyConfirmTitle": "新增週重複鬧鐘？",
-  "morningClassAlarmWeeklyConfirmMessage": "將在系統時鐘建立每週{days}重複的 {time} 鬧鐘。系統鬧鐘無法識別假期與調休，停課期間也會照常響鈴；刪除需在系統時鐘中完成。",
-  "@morningClassAlarmWeeklyConfirmMessage": {
+  "classAlarmSkipUiTitle": "跳過確認頁",
+  "classAlarmSkipUiSubtitle": "嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）",
+  "classAlarmOpenClock": "開啟系統時鐘",
+  "classAlarmConfirmTitle": "建立重複鬧鐘？",
+  "classAlarmConfirmMessage": "將在系統時鐘建立：{detail}。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。",
+  "@classAlarmConfirmMessage": {
     "placeholders": {
-      "time": { "type": "String" },
+      "detail": { "type": "String" }
+    }
+  },
+  "classAlarmVariableSuffix": "另外，{days}的第一節課時間在不同週不一致，這些天未建立鬧鐘。",
+  "@classAlarmVariableSuffix": {
+    "placeholders": {
       "days": { "type": "String" }
     }
   },
-  "morningClassAlarmDaysUnit": "天",
-  "morningClassAlarmTimeDetail": "每{weekday} {time}",
-  "@morningClassAlarmTimeDetail": {
+  "classAlarmNoSchemeToast": "請先在設定中選擇時間模板",
+  "classAlarmNoDataToast": "所選範圍內沒有找到課表",
+  "classAlarmAddedToast": "已交給系統時鐘處理",
+  "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
+  "classAlarmActionLabel": "設這節課的鬧鐘",
+  "classAlarmCourseConfirmTitle": "新增這節課的重複鬧鐘？",
+  "classAlarmCourseConfirmMessage": "將在系統時鐘建立每週{weekday} {time} 的重複鬧鐘（與這節課的排課一致）；假期與停課不會自動停止，刪除需在系統時鐘中完成。",
+  "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
       "time": { "type": "String" }
     }
-  },
-  "morningClassAlarmAddedToast": "已交給系統時鐘處理",
-  "morningClassAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
-  "morningClassAlarmNoSchemeToast": "請先在設定中選擇時間模板",
-  "morningClassAlarmPastToast": "這節課已開始，無法再設提醒",
-  "morningClassAlarmNoCourseToast": "當前週該日沒有課程",
-  "morningClassAlarmTodayOnlyToast": "單次鬧鐘僅支援今天的課程；其他日期請在設定中使用週重複鬧鐘",
-  "morningClassAlarmActionLabel": "設上課鬧鐘"
+  }
 }

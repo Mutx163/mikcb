@@ -144,6 +144,14 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
   }
 }
 
+/// 玻璃坞底部导航的入口（Tab）。
+///
+/// 入口可由用户在设置中分别隐藏（[TimetableSettings.glassDockShowDayTab] /
+/// [TimetableSettings.glassDockShowSettingsTab]，周课表始终保留），
+/// 因此底栏的实际 Tab 列表与选中索引都是动态的：索引一律通过
+/// [_glassDockTabs] / [_glassDockCurrentIndex] 换算，不直接写魔法数字。
+enum _GlassDockEntry { day, week, settings }
+
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   static const int _minWeek = 1;
@@ -215,8 +223,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 旧回调不得再复位状态，避免漏拍/跳变。
   int _dockAnimEpoch = 0;
 
-  /// 玻璃坞当前目标 Tab（动画/拖动中用于底栏高亮与状态收敛）。
-  int _dockTargetIndex = 0;
+  /// 玻璃坞当前目标入口（动画/拖动中用于底栏高亮与状态收敛）。
+  _GlassDockEntry _dockTargetEntry = _GlassDockEntry.week;
 
   /// 日视图锚点展开/收起与设置页拖动转场期间，卡片玻璃 fill 需要每帧
   /// 重采样（壁纸屏幕固定、卡片移动），否则纹理停留在旧位置：
@@ -6373,8 +6381,12 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: SafeArea(
             minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
             child: Center(
+              // 独立「添加」按钮占用约 56 宽（按钮 48 + 间距 8）：
+              // 开启时同步放宽容器上限，保证 Tab 药丸不因挤压变形。
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 272),
+                constraints: BoxConstraints(
+                  maxWidth: settings.glassDockShowAddButton ? 328 : 272,
+                ),
                 child: _buildGlassDockBar(settings: settings, l10n: l10n),
               ),
             ),
@@ -6429,24 +6441,27 @@ class _TimetableScreenState extends State<TimetableScreen>
     final useLiquidGlass =
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context);
+    // 动态入口列表：周课表常驻，日课表/设置按设置开关决定是否保留。
+    final dockTabs = _glassDockTabs(settings, l10n);
     return GlassTabBar.bottom(
       tabs: [
-        // 用户期望的排序：日课表 / 周课表 / 课表设置。
-        GlassTab(
-          icon: Icon(Icons.today_rounded),
-          label: l10n.glassDockTabDay,
-        ),
-        GlassTab(
-          icon: Icon(Icons.calendar_view_week_rounded),
-          label: l10n.glassDockTabWeek,
-        ),
-        GlassTab(
-          icon: Icon(Icons.settings_rounded),
-          label: l10n.settingsTitle,
-        ),
+        for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
       ],
-      selectedIndex: _glassDockCurrentIndex,
-      onTabSelected: (index) => _onDockTabSelected(index, settings),
+      selectedIndex: _glassDockCurrentIndex(dockTabs),
+      onTabSelected: (index) =>
+          _onDockEntrySelected(dockTabs[index], settings),
+      // 独立圆形「添加」按钮（库内 extraButton 样式：独立于 Tab 药丸的
+      // 圆形玻璃按钮，默认置于药丸右侧）：点击直接打开添加课程弹层，
+      // 与顶部菜单「添加课程」同一路径。图标墨色跟随底栏未选中态。
+      extraButton: settings.glassDockShowAddButton
+          ? GlassTabBarExtraButton(
+              icon: Icon(Icons.add_rounded),
+              label: l10n.glassDockExtraButtonSemanticLabel,
+              onTap: () => unawaited(_showAddCourseSheet()),
+              iconColor: unselectedColor,
+              size: 48,
+            )
+          : null,
       barHeight: 56,
       barBorderRadius: 28,
       // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
@@ -6485,21 +6500,62 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 玻璃坞当前激活的 Tab：日课表(0) / 周课表(1) / 设置(2)。
-  ///
-  /// 动画/拖动进行中直接高亮目标 Tab（点击即反馈，不滞后）；
-  /// 稳态按实际状态判断。
-  int get _glassDockCurrentIndex {
-    if (_dockSettingsSlideActive || _dockSettingsDragging) {
-      return _dockTargetIndex;
-    }
-    if (_dockSettingsActive) {
-      return 2;
-    }
-    return _isDayView ? 0 : 1;
+  /// 当前设置下玻璃坞显示的入口序列（周课表常驻，其余可关）。
+  List<_GlassDockEntry> _glassDockTabs(
+    TimetableSettings settings,
+    AppLocalizations l10n,
+  ) {
+    return [
+      if (settings.glassDockShowDayTab) _GlassDockEntry.day,
+      _GlassDockEntry.week,
+      if (settings.glassDockShowSettingsTab) _GlassDockEntry.settings,
+    ];
   }
 
-  /// 玻璃坞 Tab 切换：日课表(0) / 周课表(1) / 设置(2)。
+  /// 入口 → GlassTab 视觉配置（排序沿用用户期望：日课表 / 周课表 / 设置）。
+  GlassTab _glassDockTabFor(_GlassDockEntry entry, AppLocalizations l10n) {
+    return switch (entry) {
+      _GlassDockEntry.day => GlassTab(
+        icon: Icon(Icons.today_rounded),
+        label: l10n.glassDockTabDay,
+      ),
+      _GlassDockEntry.week => GlassTab(
+        icon: Icon(Icons.calendar_view_week_rounded),
+        label: l10n.glassDockTabWeek,
+      ),
+      _GlassDockEntry.settings => GlassTab(
+        icon: Icon(Icons.settings_rounded),
+        label: l10n.settingsTitle,
+      ),
+    };
+  }
+
+  /// 当前激活的入口在 [tabs] 中的下标。
+  ///
+  /// 动画/拖动进行中直接高亮目标入口（点击即反馈，不滞后）；
+  /// 稳态按实际状态判断。目标入口刚被设置隐藏时回退高亮常驻的
+  /// 周课表，避免 indexOf 越界。
+  int _glassDockCurrentIndex(List<_GlassDockEntry> tabs) {
+    final index = tabs.indexOf(_currentDockEntry);
+    if (index >= 0) {
+      return index;
+    }
+    final weekIndex = tabs.indexOf(_GlassDockEntry.week);
+    return weekIndex < 0 ? 0 : weekIndex;
+  }
+
+  /// 当前实际所在的入口（动画/拖动中取目标入口）。
+  _GlassDockEntry get _currentDockEntry {
+    if (_dockSettingsSlideActive || _dockSettingsDragging) {
+      return _dockTargetEntry;
+    }
+    if (_dockSettingsActive) {
+      return _GlassDockEntry.settings;
+    }
+    return _isDayView ? _GlassDockEntry.day : _GlassDockEntry.week;
+  }
+
+  /// 玻璃坞入口切换。
   ///
   /// 「闪现切换」：点击后状态与切换动画值立即落到目标位姿，页面直接
   /// 就位，无横向滑动转场。日期栏路径（[_toggleDayView] / [_closeDayView]）
@@ -6507,18 +6563,20 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// 快速连点不吞拍：每次点击都同步收敛到目标；若设置页拖动松手的
   /// 弹簧还在收敛，先凭 [_dockAnimEpoch] 使其完成回调失效再停掉动画。
-  void _onDockTabSelected(int index, TimetableSettings settings) {
-    final current = _dockSettingsActive
-        ? 2
-        : (_isDayView ? 0 : 1);
-    if (index == current && !_dockSettingsSlideActive && !_dockSettingsDragging) {
+  void _onDockEntrySelected(
+    _GlassDockEntry entry,
+    TimetableSettings settings,
+  ) {
+    if (entry == _currentDockEntry &&
+        !_dockSettingsSlideActive &&
+        !_dockSettingsDragging) {
       return; // 已在该页且无动画：重复点击无动作。
     }
     _dockAnimEpoch++;
-    _dockTargetIndex = index;
+    _dockTargetEntry = entry;
     _dockSettingsSwitchAnimation.stop();
-    switch (index) {
-      case 0: // 日课表：关设置 + 开日视图，均闪现就位。
+    switch (entry) {
+      case _GlassDockEntry.day: // 日课表：关设置 + 开日视图，均闪现就位。
         setState(() {
           _dockSettingsActive = false;
           _dockSettingsSlideActive = false;
@@ -6528,7 +6586,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         if (!_isDayView) {
           _startDayViewTransition(settings);
         }
-      case 1: // 周课表：关设置 + 收日视图，均闪现就位。
+      case _GlassDockEntry.week: // 周课表：关设置 + 收日视图，均闪现就位。
         final leavingDay = _isDayView;
         setState(() {
           _dockSettingsActive = false;
@@ -6549,7 +6607,8 @@ class _TimetableScreenState extends State<TimetableScreen>
           context.read<TimetableProvider>(),
           mode: TimetableHomeViewMode.week,
         );
-      case 2: // 设置：直接就位（动画值落 1，非激活课表页随即 Offstage）。
+      case _GlassDockEntry
+          .settings: // 设置：直接就位（动画值落 1，非激活课表页随即 Offstage）。
         setState(() {
           _dockSettingsActive = true;
           _dockSettingsSlideActive = false;
@@ -6595,7 +6654,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!mounted || epoch != _dockAnimEpoch) {
       return;
     }
-    final targetIsWeek = _dockTargetIndex == 1;
+    final targetIsWeek = _dockTargetEntry == _GlassDockEntry.week;
     setState(() {
       _dockSettingsSlideActive = false;
       if (targetIsWeek) {
@@ -6655,13 +6714,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     final epoch = ++_dockAnimEpoch;
     if (value > 0.5 || velocity < -400) {
       // 过半或向左甩：留在设置页（弹簧带初始速度，更跟手）。
-      _dockTargetIndex = 2;
+      _dockTargetEntry = _GlassDockEntry.settings;
       _springDockSettingsTo(1, velocity: (velocity / width).clamp(-4.0, 4.0))
           .whenComplete(() => _finishDockAnim(epoch));
     } else {
       // 未过半或向右甩：切回课表（保持进入设置前的日/周视图）。
-      final backIndex = _isDayView ? 0 : 1;
-      _dockTargetIndex = backIndex;
+      final backEntry = _isDayView
+          ? _GlassDockEntry.day
+          : _GlassDockEntry.week;
+      _dockTargetEntry = backEntry;
       setState(() {
         _dockSettingsActive = false;
         _dockSettingsSlideActive = true;

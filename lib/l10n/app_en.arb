@@ -5911,43 +5911,53 @@
   "glassDockLayoutInset": "Reserve space below",
   "glassDockLayoutInsetSubtitle": "Timetable leaves compact space at the bottom, dock sits below",
   "glassDockInsetClearanceLabel": "Inset clearance height",
-  "morningClassAlarmEntryTitle": "Morning-class alarms",
-  "morningClassAlarmEntrySubtitle": "Write first-class alarms into the system clock",
-  "morningClassAlarmGroupSetup": "Add alarms",
-  "morningClassAlarmGroupBehavior": "Ring behavior",
-  "morningClassAlarmAddAllTitle": "Add all upcoming first classes",
-  "morningClassAlarmAddAllSubtitle": "Creates weekly repeating alarms in the system clock",
-  "morningClassAlarmLeadTitle": "Ring ahead",
-  "morningClassAlarmLeadMinutesLabel": "{minutes} min ahead",
-  "@morningClassAlarmLeadMinutesLabel": {
+  "glassDockEntriesSectionTitle": "Dock entries",
+  "glassDockShowDayTabTitle": "Show day view entry",
+  "glassDockShowSettingsTabTitle": "Show settings entry",
+  "glassDockShowAddButtonTitle": "Show add button",
+  "glassDockShowAddButtonSubtitle": "Show a separate round button next to the bar that opens add-course directly",
+  "glassDockExtraButtonSemanticLabel": "Add course"
+  "classAlarmEntryTitle": "Class alarms",
+  "classAlarmGroupSetup": "Add alarms",
+  "classAlarmGroupBehavior": "Ring behavior",
+  "classAlarmAddAllTitle": "Batch add class alarms",
+  "classAlarmRangeLabel": "Range",
+  "classAlarmRangeRemaining": "This week to semester end",
+  "classAlarmRangeWhole": "Whole semester",
+  "classAlarmLeadTitle": "Lead time",
+  "classAlarmLeadMinutesLabel": "{minutes} min ahead",
+  "@classAlarmLeadMinutesLabel": {
     "placeholders": {
       "minutes": { "type": "int" }
     }
   },
-  "morningClassAlarmOpenClock": "Open system clock",
-  "morningClassAlarmSkipUiTitle": "Skip confirmation page",
-  "morningClassAlarmSkipUiSubtitle": "Try writing the alarm directly; some devices still show it",
-  "morningClassAlarmWeeklyConfirmTitle": "Add weekly alarm?",
-  "morningClassAlarmWeeklyConfirmMessage": "A {time} alarm repeating every {days} in the system clock will be created. System alarms cannot recognize holidays or rescheduled days off and will ring during breaks; deletion must be done in the system clock.",
-  "@morningClassAlarmWeeklyConfirmMessage": {
+  "classAlarmSkipUiTitle": "Skip confirmation page",
+  "classAlarmSkipUiSubtitle": "Try writing the alarm directly; some devices still show it",
+  "classAlarmOpenClock": "Open system clock",
+  "classAlarmConfirmTitle": "Create repeating alarms?",
+  "classAlarmConfirmMessage": "The system clock will create: {detail}. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.",
+  "@classAlarmConfirmMessage": {
     "placeholders": {
-      "time": { "type": "String" },
+      "detail": { "type": "String" }
+    }
+  },
+  "classAlarmVariableSuffix": "Also, first-class times on {days} differ between weeks; no alarm covers these days.",
+  "@classAlarmVariableSuffix": {
+    "placeholders": {
       "days": { "type": "String" }
     }
   },
-  "morningClassAlarmDaysUnit": "day(s)",
-  "morningClassAlarmTimeDetail": "{weekday} at {time}",
-  "@morningClassAlarmTimeDetail": {
+  "classAlarmNoSchemeToast": "Select a time scheme in settings first",
+  "classAlarmNoDataToast": "No timetable found in the selected range",
+  "classAlarmAddedToast": "Handed to the system clock",
+  "classAlarmLaunchFailedToast": "No clock app found to handle this",
+  "classAlarmActionLabel": "Set alarm for this class",
+  "classAlarmCourseConfirmTitle": "Add a repeating alarm for this class?",
+  "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, matching this class. It keeps ringing during breaks; delete it in the system clock.",
+  "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
       "time": { "type": "String" }
     }
-  },
-  "morningClassAlarmAddedToast": "Handed to the system clock",
-  "morningClassAlarmLaunchFailedToast": "No clock app found to handle this",
-  "morningClassAlarmNoSchemeToast": "Select a time scheme in settings first",
-  "morningClassAlarmPastToast": "This class has already started",
-  "morningClassAlarmNoCourseToast": "No course on this weekday in the current week",
-  "morningClassAlarmTodayOnlyToast": "One-shot alarms support today's classes only; use the weekly alarm in settings for other days",
-  "morningClassAlarmActionLabel": "Set class alarm"
+  }
 }
