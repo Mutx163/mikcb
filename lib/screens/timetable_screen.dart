@@ -27,7 +27,8 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
-import '../services/morning_class_alarm_service.dart';
+import '../services/class_alarm_service.dart';
+import '../widgets/app_dialogs.dart';
 import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
@@ -7204,67 +7205,70 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 单次闹钟：仅支持「今天」的课程（系统时钟契约无日期参数，
-  /// 跨天写入会变成明天同刻，语义错误）。
+  /// 单节课闹钟：按「星期 + 开始时间」写周重复闹钟（学期语义：
+  /// 这门课每周这个时间都上）。系统时钟公开契约无日期参数，无法表达
+  /// 「仅某一天」，因此这里不做一次性闹钟；假期照响的限制在弹窗中说明。
   Future<void> _setSystemAlarmForCourse(Course course, int week) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
-    final now = DateTime.now();
-    if (settings.semesterStartDate == null ||
-        course.dayOfWeek != now.weekday ||
-        !course.isActiveInWeek(provider.currentWeek)) {
-      showAppToast(
-        context,
-        message: l10n.morningClassAlarmTodayOnlyToast,
-        kind: AppToastKind.warning,
-      );
-      return;
-    }
-    // 停课周不设提醒。
-    if (provider.getActiveCoursesForDay(now.weekday).isEmpty) {
-      showAppToast(
-        context,
-        message: l10n.morningClassAlarmNoCourseToast,
-        kind: AppToastKind.warning,
-      );
-      return;
-    }
     final label = course.shortName?.trim().isNotEmpty == true
         ? course.shortName!.trim()
         : course.name.trim();
-    final plan = MorningClassAlarmLogic.buildSingleShotPlan(
-      courseStartTime: course.startTime,
+    final startClock =
+        ClassAlarmLogic.formatClock(ClassAlarmLogic.parseClockMinutes(
+              course.startTime,
+            ) ??
+            0);
+    final weekdayLabel = switch (course.dayOfWeek) {
+      1 => l10n.weekdayMon,
+      2 => l10n.weekdayTue,
+      3 => l10n.weekdayWed,
+      4 => l10n.weekdayThu,
+      5 => l10n.weekdayFri,
+      6 => l10n.weekdaySat,
+      _ => l10n.weekdaySun,
+    };
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: l10n.classAlarmCourseConfirmTitle,
+      message: l10n.classAlarmCourseConfirmMessage(weekdayLabel, startClock),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    final plan = ClassAlarmLogic.buildCourseWeeklyPlan(
+      dayOfWeek: course.dayOfWeek,
+      startTime: course.startTime,
       label: '轻屿 · $label',
-      now: now,
-      leadMinutes: MorningClassAlarmLogic.clampLeadMinutes(
-        settings.morningClassAlarmLeadMinutes,
+      leadMinutes: ClassAlarmLogic.clampLeadMinutes(
+        settings.classAlarmLeadMinutes,
       ),
-      skipUi: settings.morningClassAlarmSkipUi,
+      skipUi: settings.classAlarmSkipUi,
     );
     if (plan == null) {
       showAppToast(
         context,
-        message: l10n.morningClassAlarmPastToast,
-        kind: AppToastKind.warning,
+        message: l10n.classAlarmLaunchFailedToast,
+        kind: AppToastKind.error,
       );
       return;
     }
-    final result = await MorningClassAlarmService.addAlarm(plan);
+    final result = await ClassAlarmService.addAlarm(plan);
     if (!mounted) {
       return;
     }
     if (result.launched) {
       showAppToast(
         context,
-        message: l10n.morningClassAlarmAddedToast,
+        message: l10n.classAlarmAddedToast,
         kind: AppToastKind.success,
       );
       return;
     }
     showAppToast(
       context,
-      message: result.error ?? l10n.morningClassAlarmLaunchFailedToast,
+      message: result.error ?? l10n.classAlarmLaunchFailedToast,
       kind: AppToastKind.error,
     );
   }

@@ -19,7 +19,7 @@ import '../providers/timetable_provider.dart';
 import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
-import '../services/morning_class_alarm_service.dart';
+import '../services/class_alarm_service.dart';
 import '../widgets/app_dialogs.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';
@@ -65,7 +65,7 @@ part 'settings/settings_diagnostics.dart';
 part 'settings/settings_course_card.dart';
 part 'settings/settings_general.dart';
 part 'settings/settings_live.dart';
-part 'settings/settings_morning_alarm.dart';
+part 'settings/settings_class_alarm.dart';
 part 'settings/settings_timetable_page.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
@@ -125,11 +125,11 @@ class TimetableSettingsScreen extends StatelessWidget {
           );
         }
 
-        void openMorningAlarmSettings() {
+        void openClassAlarmSettings() {
           HyperosNavigation.push(
             context,
-            settings: const RouteSettings(name: '/settings/morning-alarm'),
-            builder: (_) => createMorningAlarmSettingsScreen(),
+            settings: const RouteSettings(name: '/settings/class-alarm'),
+            builder: (_) => createClassAlarmSettingsScreen(),
           );
         }
 
@@ -308,7 +308,7 @@ class TimetableSettingsScreen extends StatelessWidget {
             openCourseCardSettings: openCourseCardSettings,
             openTimetablePageSettings: openTimetablePageSettings,
             openLiveSettings: openLiveSettings,
-            openMorningAlarmSettings: openMorningAlarmSettings,
+            openClassAlarmSettings: openClassAlarmSettings,
             openHomeWidgetSettings: openHomeWidgetSettings,
             openAppearance: openAppearance,
             openGeneralSettings: openGeneralSettings,
@@ -362,7 +362,7 @@ class TimetableSettingsScreen extends StatelessWidget {
     required VoidCallback openCourseCardSettings,
     required VoidCallback openTimetablePageSettings,
     required VoidCallback openLiveSettings,
-    required VoidCallback openMorningAlarmSettings,
+    required VoidCallback openClassAlarmSettings,
     required VoidCallback openHomeWidgetSettings,
     required VoidCallback openAppearance,
     required VoidCallback openGeneralSettings,
@@ -506,14 +506,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                   MiuixIcons.extended.byName('alarm')!,
                   HyperosIconColors.orange,
                 ),
-                title: l10n.morningClassAlarmEntryTitle,
-                endActions: [
-                  Text(
-                    l10n.morningClassAlarmEntrySubtitle,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ],
-                onClick: openMorningAlarmSettings,
+                title: l10n.classAlarmEntryTitle,
+                onClick: openClassAlarmSettings,
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(

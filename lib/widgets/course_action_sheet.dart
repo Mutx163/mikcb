@@ -746,10 +746,7 @@ class _CourseActionSheetContent extends StatelessWidget {
           if (onSetAlarm != null)
             _CourseDetailTile(
               icon: Icons.alarm_outlined,
-              title: l10n.morningClassAlarmActionLabel,
-              subtitle: provider.settings.semesterStartDate == null
-                  ? l10n.morningClassAlarmTodayOnlyToast
-                  : null,
+              title: l10n.classAlarmActionLabel,
               trailing: const Icon(Icons.chevron_right_rounded, size: 20),
               onTap: () =>
                   _closeSheetThenAfterDismiss(context, () => onSetAlarm!(course)),
