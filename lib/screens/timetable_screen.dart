@@ -7198,7 +7198,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
       onAddTask: (target) => _openTaskFromCourse(target, week),
-      onSetAlarm: (target) => _setSystemAlarmForCourse(target, week),
+      // 上课闹钟依赖 Android AlarmClock 契约，其他平台不显示入口。
+      onSetAlarm: (!kIsWeb && Platform.isAndroid)
+          ? (target) => _setSystemAlarmForCourse(target, week)
+          : null,
     );
   }
 
@@ -7219,9 +7222,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 单节课闹钟：按「星期 + 开始时间」写周重复闹钟（学期语义：
-  /// 这门课每周这个时间都上）。系统时钟公开契约无日期参数，无法表达
-  /// 「仅某一天」，因此这里不做一次性闹钟；假期照响的限制在弹窗中说明。
+  /// 单节课闹钟：按「星期 + 开始时间 − 提前量」写周重复闹钟，弹窗展示
+  /// 真实响铃时刻与上课周次。系统时钟公开契约无日期参数，无法表达
+  /// 「仅某一天」，因此这里不做一次性闹钟；假期与非上课周照响的限制
+  /// 在弹窗中说明。
   Future<void> _setSystemAlarmForCourse(Course course, int week) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
@@ -7241,7 +7245,26 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
       return;
     }
-    final startClock = resolvedStart.trim();
+    // 先构建计划再弹窗：确认框展示的是实际响铃时刻（含提前量），
+    // 而不是上课开始时刻，避免用户确认的时间与闹钟不一致。
+    final leadMinutes =
+        ClassAlarmLogic.clampLeadMinutes(settings.classAlarmLeadMinutes);
+    final plan = ClassAlarmLogic.buildCourseWeeklyPlan(
+      dayOfWeek: course.dayOfWeek,
+      startTime: resolvedStart.trim(),
+      label: '${l10n.appTitle} · $label',
+      leadMinutes: leadMinutes,
+      skipUi: settings.classAlarmSkipUi,
+    );
+    if (plan == null) {
+      showAppToast(
+        context,
+        message: l10n.classAlarmInvalidTimeToast,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    final ringClock = ClassAlarmLogic.formatClock(plan.hour * 60 + plan.minute);
     final weekdayLabel = switch (course.dayOfWeek) {
       1 => l10n.weekdayMon,
       2 => l10n.weekdayTue,
@@ -7254,44 +7277,27 @@ class _TimetableScreenState extends State<TimetableScreen>
     final confirmed = await showAppConfirmDialog(
       context,
       title: l10n.classAlarmCourseConfirmTitle,
-      message: l10n.classAlarmCourseConfirmMessage(weekdayLabel, startClock),
+      message: l10n.classAlarmCourseConfirmMessage(
+        weekdayLabel,
+        ringClock,
+        leadMinutes,
+        course.weekDescription(l10n),
+      ),
+      confirmLabel: l10n.confirmAction,
     );
     if (confirmed != true || !mounted) {
-      return;
-    }
-    final plan = ClassAlarmLogic.buildCourseWeeklyPlan(
-      dayOfWeek: course.dayOfWeek,
-      startTime: startClock,
-      label: '轻屿 · $label',
-      leadMinutes: ClassAlarmLogic.clampLeadMinutes(
-        settings.classAlarmLeadMinutes,
-      ),
-      skipUi: settings.classAlarmSkipUi,
-    );
-    if (plan == null) {
-      showAppToast(
-        context,
-        message: l10n.classAlarmLaunchFailedToast,
-        kind: AppToastKind.error,
-      );
       return;
     }
     final result = await ClassAlarmService.addAlarm(plan);
     if (!mounted) {
       return;
     }
-    if (result.launched) {
-      showAppToast(
-        context,
-        message: l10n.classAlarmAddedToast,
-        kind: AppToastKind.success,
-      );
-      return;
-    }
     showAppToast(
       context,
-      message: result.error ?? l10n.classAlarmLaunchFailedToast,
-      kind: AppToastKind.error,
+      message: result.launched
+          ? l10n.classAlarmAddedToast
+          : l10n.classAlarmLaunchFailedToast,
+      kind: result.launched ? AppToastKind.success : AppToastKind.error,
     );
   }
 
