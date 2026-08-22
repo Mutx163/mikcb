@@ -27,6 +27,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
+import '../services/morning_class_alarm_service.dart';
 import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
@@ -7121,6 +7122,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
       onAddTask: (target) => _openTaskFromCourse(target, week),
+      onSetAlarm: (target) => _setSystemAlarmForCourse(target, week),
     );
   }
 
@@ -7138,6 +7140,71 @@ class _TimetableScreenState extends State<TimetableScreen>
           initialWeek: week,
         ),
       ),
+    );
+  }
+
+  /// 单次闹钟：仅支持「今天」的课程（系统时钟契约无日期参数，
+  /// 跨天写入会变成明天同刻，语义错误）。
+  Future<void> _setSystemAlarmForCourse(Course course, int week) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    final settings = provider.settings;
+    final now = DateTime.now();
+    if (settings.semesterStartDate == null ||
+        course.dayOfWeek != now.weekday ||
+        !course.isActiveInWeek(provider.currentWeek)) {
+      showAppToast(
+        context,
+        message: l10n.morningClassAlarmTodayOnlyToast,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    // 停课周不设提醒。
+    if (provider.getActiveCoursesForDay(now.weekday).isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.morningClassAlarmNoCourseToast,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    final label = course.shortName?.trim().isNotEmpty == true
+        ? course.shortName!.trim()
+        : course.name.trim();
+    final plan = MorningClassAlarmLogic.buildSingleShotPlan(
+      courseStartTime: course.startTime,
+      label: '轻屿 · $label',
+      now: now,
+      leadMinutes: MorningClassAlarmLogic.clampLeadMinutes(
+        settings.morningClassAlarmLeadMinutes,
+      ),
+      skipUi: settings.morningClassAlarmSkipUi,
+    );
+    if (plan == null) {
+      showAppToast(
+        context,
+        message: l10n.morningClassAlarmPastToast,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    final result = await MorningClassAlarmService.addAlarm(plan);
+    if (!mounted) {
+      return;
+    }
+    if (result.launched) {
+      showAppToast(
+        context,
+        message: l10n.morningClassAlarmAddedToast,
+        kind: AppToastKind.success,
+      );
+      return;
+    }
+    showAppToast(
+      context,
+      message: result.error ?? l10n.morningClassAlarmLaunchFailedToast,
+      kind: AppToastKind.error,
     );
   }
 

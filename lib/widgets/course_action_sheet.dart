@@ -13,6 +13,9 @@ import 'course_note_sheet.dart';
 
 typedef CourseActionHandler = void Function(Course course);
 
+/// Fired when the user asks to arm the system-clock alarm for this course.
+typedef CourseAlarmHandler = Future<void> Function(Course course);
+
 class CourseActionPreviewItem {
   const CourseActionPreviewItem({
     required this.course,
@@ -43,6 +46,7 @@ Future<void> showCourseActionSheet(
   required CourseActionHandler onDelete,
   required CourseActionHandler onSuspend,
   required CourseActionHandler onAddTask,
+  CourseAlarmHandler? onSetAlarm,
 }) {
   return showHomeHyperosSheet<void>(
     context: context,
@@ -54,6 +58,7 @@ Future<void> showCourseActionSheet(
       onDelete: onDelete,
       onSuspend: onSuspend,
       onAddTask: onAddTask,
+      onSetAlarm: onSetAlarm,
     ),
   );
 }
@@ -68,6 +73,7 @@ class CourseActionSheetBody extends StatefulWidget {
     required this.onDelete,
     required this.onSuspend,
     required this.onAddTask,
+    this.onSetAlarm,
   });
 
   final List<CourseActionPreviewItem> previewItems;
@@ -77,6 +83,7 @@ class CourseActionSheetBody extends StatefulWidget {
   final CourseActionHandler onDelete;
   final CourseActionHandler onSuspend;
   final CourseActionHandler onAddTask;
+  final CourseAlarmHandler? onSetAlarm;
 
   @override
   State<CourseActionSheetBody> createState() => _CourseActionSheetBodyState();
@@ -145,6 +152,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
                     onDelete: widget.onDelete,
                     onSuspend: widget.onSuspend,
                     onAddTask: widget.onAddTask,
+                    onSetAlarm: widget.onSetAlarm,
                   ),
                   if (otherIndexes.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -475,6 +483,7 @@ class _CourseActionSheetContent extends StatelessWidget {
     required this.onDelete,
     required this.onSuspend,
     required this.onAddTask,
+    this.onSetAlarm,
   });
 
   final CourseActionPreviewItem previewItem;
@@ -484,6 +493,7 @@ class _CourseActionSheetContent extends StatelessWidget {
   final CourseActionHandler onDelete;
   final CourseActionHandler onSuspend;
   final CourseActionHandler onAddTask;
+  final CourseAlarmHandler? onSetAlarm;
 
   Course get course => previewItem.course;
 
@@ -733,6 +743,17 @@ class _CourseActionSheetContent extends StatelessWidget {
             onTap: () =>
                 _closeSheetThenAfterDismiss(context, () => onAddTask(course)),
           ),
+          if (onSetAlarm != null)
+            _CourseDetailTile(
+              icon: Icons.alarm_outlined,
+              title: l10n.morningClassAlarmActionLabel,
+              subtitle: provider.settings.semesterStartDate == null
+                  ? l10n.morningClassAlarmTodayOnlyToast
+                  : null,
+              trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+              onTap: () =>
+                  _closeSheetThenAfterDismiss(context, () => onSetAlarm!(course)),
+            ),
         ],
         const SizedBox(height: 12),
         _CourseDetailTile(
