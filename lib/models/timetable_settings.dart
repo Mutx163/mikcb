@@ -1218,6 +1218,15 @@ class TimetableSettings {
   final String pgyerApiKey;
   final String pgyerAppKey;
   final bool holidayOverrideEnabled;
+
+  /// 早八闹钟：是否已开启「批量添加周重复闹钟」的引导开关（仅记录偏好）。
+  final bool morningClassAlarmEnabled;
+
+  /// 早八闹钟：上课前多少分钟响铃。
+  final int morningClassAlarmLeadMinutes;
+
+  /// 早八闹钟：写入系统时钟时是否尝试跳过确认页（EXTRA_SKIP_UI）。
+  final bool morningClassAlarmSkipUi;
   final String courseCardTitleColorLight;
   final String courseCardTitleColorDark;
   final String courseCardDetailColorLight;
@@ -1391,6 +1400,9 @@ class TimetableSettings {
     this.pgyerApiKey = '',
     this.pgyerAppKey = '',
     this.holidayOverrideEnabled = false,
+    this.morningClassAlarmEnabled = false,
+    this.morningClassAlarmLeadMinutes = 30,
+    this.morningClassAlarmSkipUi = false,
     this.courseCardTitleColorLight = defaultCourseCardTitleColor,
     this.courseCardTitleColorDark = defaultCourseCardTitleColor,
     this.courseCardDetailColorLight = defaultCourseCardDetailColor,
@@ -1554,6 +1566,9 @@ class TimetableSettings {
       appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
       holidayOverrideEnabled: false,
+      morningClassAlarmEnabled: false,
+      morningClassAlarmLeadMinutes: 30,
+      morningClassAlarmSkipUi: false,
       courseCardTitleColorLight: defaultCourseCardTitleColor,
       courseCardTitleColorDark: defaultCourseCardTitleColor,
       courseCardDetailColorLight: defaultCourseCardDetailColor,
@@ -1716,6 +1731,9 @@ class TimetableSettings {
       'pgyerApiKey': pgyerApiKey,
       'pgyerAppKey': pgyerAppKey,
       'holidayOverrideEnabled': holidayOverrideEnabled,
+      'morningClassAlarmEnabled': morningClassAlarmEnabled,
+      'morningClassAlarmLeadMinutes': morningClassAlarmLeadMinutes,
+      'morningClassAlarmSkipUi': morningClassAlarmSkipUi,
       'courseCardTitleColorLight': courseCardTitleColorLight,
       'courseCardTitleColorDark': courseCardTitleColorDark,
       'courseCardDetailColorLight': courseCardDetailColorLight,
@@ -2083,6 +2101,12 @@ class TimetableSettings {
       pgyerApiKey: json['pgyerApiKey'] as String? ?? '',
       pgyerAppKey: json['pgyerAppKey'] as String? ?? '',
       holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
+      morningClassAlarmEnabled:
+          json['morningClassAlarmEnabled'] as bool? ?? false,
+      morningClassAlarmLeadMinutes:
+          (json['morningClassAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
+      morningClassAlarmSkipUi:
+          json['morningClassAlarmSkipUi'] as bool? ?? false,
       courseCardTitleColorLight:
           json['courseCardTitleColorLight'] as String? ??
           defaultCourseCardTitleColor,
@@ -2316,6 +2340,9 @@ class TimetableSettings {
     String? pgyerApiKey,
     String? pgyerAppKey,
     bool? holidayOverrideEnabled,
+    bool? morningClassAlarmEnabled,
+    int? morningClassAlarmLeadMinutes,
+    bool? morningClassAlarmSkipUi,
     String? courseCardTitleColorLight,
     String? courseCardTitleColorDark,
     String? courseCardDetailColorLight,
@@ -2599,6 +2626,13 @@ class TimetableSettings {
       pgyerAppKey: pgyerAppKey ?? this.pgyerAppKey,
       holidayOverrideEnabled:
           holidayOverrideEnabled ?? this.holidayOverrideEnabled,
+      morningClassAlarmEnabled:
+          morningClassAlarmEnabled ?? this.morningClassAlarmEnabled,
+      // 提前量允许 0（下课即提醒的场景不存在，但保留合法输入区间）。
+      morningClassAlarmLeadMinutes:
+          morningClassAlarmLeadMinutes ?? this.morningClassAlarmLeadMinutes,
+      morningClassAlarmSkipUi:
+          morningClassAlarmSkipUi ?? this.morningClassAlarmSkipUi,
       courseCardTitleColorLight:
           courseCardTitleColorLight ?? this.courseCardTitleColorLight,
       courseCardTitleColorDark:

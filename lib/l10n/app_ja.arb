@@ -5907,5 +5907,44 @@
   "glassDockLayoutOverlaySubtitle": "課表を全画面表示し、ドックをその上に重ねる",
   "glassDockLayoutInset": "下にスペース確保",
   "glassDockLayoutInsetSubtitle": "課表下部にスペースを確保し、ドックは下に配置",
-  "glassDockInsetClearanceLabel": "回避スペースの高さ"
+  "glassDockInsetClearanceLabel": "回避スペースの高さ",
+  "morningClassAlarmEntryTitle": "1限目アラーム",
+  "morningClassAlarmEntrySubtitle": "最初の授業のアラームをシステム時計へ",
+  "morningClassAlarmGroupSetup": "アラームを追加",
+  "morningClassAlarmGroupBehavior": "動作設定",
+  "morningClassAlarmAddAllTitle": "今後の全ての初回授業に追加",
+  "morningClassAlarmAddAllSubtitle": "システム時計に毎週繰り返すアラームを作成",
+  "morningClassAlarmLeadTitle": "事前に通知",
+  "morningClassAlarmLeadMinutesLabel": "{minutes}分前",
+  "@morningClassAlarmLeadMinutesLabel": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "morningClassAlarmOpenClock": "システム時計を開く",
+  "morningClassAlarmSkipUiTitle": "確認画面をスキップ",
+  "morningClassAlarmSkipUiSubtitle": "確認なしで直接書き込みを試みる（非対応機種あり）",
+  "morningClassAlarmWeeklyConfirmTitle": "毎週アラームを追加しますか？",
+  "morningClassAlarmWeeklyConfirmMessage": "システム時計に毎週{days}繰り返す{time}のアラームを作成します。システムアラームは休日や振替休校を判別できず、休み期間も鳴り続けます。削除はシステム時計で行ってください。",
+  "@morningClassAlarmWeeklyConfirmMessage": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "days": { "type": "String" }
+    }
+  },
+  "morningClassAlarmDaysUnit": "日",
+  "morningClassAlarmTimeDetail": "毎週{weekday} {time}",
+  "@morningClassAlarmTimeDetail": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "morningClassAlarmAddedToast": "システム時計に渡しました",
+  "morningClassAlarmLaunchFailedToast": "対応する時計アプリが見つかりません",
+  "morningClassAlarmNoSchemeToast": "先に設定で時間テンプレートを選択してください",
+  "morningClassAlarmPastToast": "この授業は既に始まっています",
+  "morningClassAlarmNoCourseToast": "今週のこの曜日に授業がありません",
+  "morningClassAlarmTodayOnlyToast": "単発アラームは今日の授業のみ対応します。他の日は設定の毎週アラームをご利用ください",
+  "morningClassAlarmActionLabel": "授業アラームを設定"
 }

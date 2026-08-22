@@ -10076,4 +10076,77 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get glassDockInsetClearanceLabel => '여백 높이';
+
+  @override
+  String get morningClassAlarmEntryTitle => '첫 교시 알람';
+
+  @override
+  String get morningClassAlarmEntrySubtitle => '첫 수업 알람을 시계 앱에 추가';
+
+  @override
+  String get morningClassAlarmGroupSetup => '알람 추가';
+
+  @override
+  String get morningClassAlarmGroupBehavior => '동작 설정';
+
+  @override
+  String get morningClassAlarmAddAllTitle => '이후 모든 첫 수업 알람 추가';
+
+  @override
+  String get morningClassAlarmAddAllSubtitle => '시계 앱에 매주 반복 알람 생성';
+
+  @override
+  String get morningClassAlarmLeadTitle => '미리 울리기';
+
+  @override
+  String morningClassAlarmLeadMinutesLabel(int minutes) {
+    return '$minutes분 전';
+  }
+
+  @override
+  String get morningClassAlarmOpenClock => '시계 앱 열기';
+
+  @override
+  String get morningClassAlarmSkipUiTitle => '확인 화면 건너뛰기';
+
+  @override
+  String get morningClassAlarmSkipUiSubtitle => '바로 쓰기 시도(일부 기기는 표시됨)';
+
+  @override
+  String get morningClassAlarmWeeklyConfirmTitle => '매주 반복 알람을 추가할까요?';
+
+  @override
+  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
+    return '시계 앱에 매주 $days 반복되는 $time 알람이 생성됩니다. 시스템 알람은 공휴일과 휴강을 인식하지 못하며 방학 중에도 울립니다. 삭제는 시계 앱에서 해야 합니다.';
+  }
+
+  @override
+  String get morningClassAlarmDaysUnit => '일';
+
+  @override
+  String morningClassAlarmTimeDetail(String weekday, String time) {
+    return '매주 $weekday $time';
+  }
+
+  @override
+  String get morningClassAlarmAddedToast => '시계 앱으로 전달했습니다';
+
+  @override
+  String get morningClassAlarmLaunchFailedToast => '처리할 시계 앱을 찾을 수 없습니다';
+
+  @override
+  String get morningClassAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
+
+  @override
+  String get morningClassAlarmPastToast => '이 수업은 이미 시작되었습니다';
+
+  @override
+  String get morningClassAlarmNoCourseToast => '이번 주 해당 요일에 수업이 없습니다';
+
+  @override
+  String get morningClassAlarmTodayOnlyToast =>
+      '단발 알람은 오늘 수업만 지원합니다. 다른 요일은 설정에서 반복 알람을 사용하세요';
+
+  @override
+  String get morningClassAlarmActionLabel => '수업 알람 설정';
 }

@@ -10323,4 +10323,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get glassDockInsetClearanceLabel => 'Inset clearance height';
+
+  @override
+  String get morningClassAlarmEntryTitle => 'Morning-class alarms';
+
+  @override
+  String get morningClassAlarmEntrySubtitle =>
+      'Write first-class alarms into the system clock';
+
+  @override
+  String get morningClassAlarmGroupSetup => 'Add alarms';
+
+  @override
+  String get morningClassAlarmGroupBehavior => 'Ring behavior';
+
+  @override
+  String get morningClassAlarmAddAllTitle => 'Add all upcoming first classes';
+
+  @override
+  String get morningClassAlarmAddAllSubtitle =>
+      'Creates weekly repeating alarms in the system clock';
+
+  @override
+  String get morningClassAlarmLeadTitle => 'Ring ahead';
+
+  @override
+  String morningClassAlarmLeadMinutesLabel(int minutes) {
+    return '$minutes min ahead';
+  }
+
+  @override
+  String get morningClassAlarmOpenClock => 'Open system clock';
+
+  @override
+  String get morningClassAlarmSkipUiTitle => 'Skip confirmation page';
+
+  @override
+  String get morningClassAlarmSkipUiSubtitle =>
+      'Try writing the alarm directly; some devices still show it';
+
+  @override
+  String get morningClassAlarmWeeklyConfirmTitle => 'Add weekly alarm?';
+
+  @override
+  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
+    return 'A $time alarm repeating every $days in the system clock will be created. System alarms cannot recognize holidays or rescheduled days off and will ring during breaks; deletion must be done in the system clock.';
+  }
+
+  @override
+  String get morningClassAlarmDaysUnit => 'day(s)';
+
+  @override
+  String morningClassAlarmTimeDetail(String weekday, String time) {
+    return '$weekday at $time';
+  }
+
+  @override
+  String get morningClassAlarmAddedToast => 'Handed to the system clock';
+
+  @override
+  String get morningClassAlarmLaunchFailedToast =>
+      'No clock app found to handle this';
+
+  @override
+  String get morningClassAlarmNoSchemeToast =>
+      'Select a time scheme in settings first';
+
+  @override
+  String get morningClassAlarmPastToast => 'This class has already started';
+
+  @override
+  String get morningClassAlarmNoCourseToast =>
+      'No course on this weekday in the current week';
+
+  @override
+  String get morningClassAlarmTodayOnlyToast =>
+      'One-shot alarms support today\'s classes only; use the weekly alarm in settings for other days';
+
+  @override
+  String get morningClassAlarmActionLabel => 'Set class alarm';
 }

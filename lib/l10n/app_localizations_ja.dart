@@ -10031,4 +10031,77 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get glassDockInsetClearanceLabel => '回避スペースの高さ';
+
+  @override
+  String get morningClassAlarmEntryTitle => '1限目アラーム';
+
+  @override
+  String get morningClassAlarmEntrySubtitle => '最初の授業のアラームをシステム時計へ';
+
+  @override
+  String get morningClassAlarmGroupSetup => 'アラームを追加';
+
+  @override
+  String get morningClassAlarmGroupBehavior => '動作設定';
+
+  @override
+  String get morningClassAlarmAddAllTitle => '今後の全ての初回授業に追加';
+
+  @override
+  String get morningClassAlarmAddAllSubtitle => 'システム時計に毎週繰り返すアラームを作成';
+
+  @override
+  String get morningClassAlarmLeadTitle => '事前に通知';
+
+  @override
+  String morningClassAlarmLeadMinutesLabel(int minutes) {
+    return '$minutes分前';
+  }
+
+  @override
+  String get morningClassAlarmOpenClock => 'システム時計を開く';
+
+  @override
+  String get morningClassAlarmSkipUiTitle => '確認画面をスキップ';
+
+  @override
+  String get morningClassAlarmSkipUiSubtitle => '確認なしで直接書き込みを試みる（非対応機種あり）';
+
+  @override
+  String get morningClassAlarmWeeklyConfirmTitle => '毎週アラームを追加しますか？';
+
+  @override
+  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
+    return 'システム時計に毎週$days繰り返す$timeのアラームを作成します。システムアラームは休日や振替休校を判別できず、休み期間も鳴り続けます。削除はシステム時計で行ってください。';
+  }
+
+  @override
+  String get morningClassAlarmDaysUnit => '日';
+
+  @override
+  String morningClassAlarmTimeDetail(String weekday, String time) {
+    return '毎週$weekday $time';
+  }
+
+  @override
+  String get morningClassAlarmAddedToast => 'システム時計に渡しました';
+
+  @override
+  String get morningClassAlarmLaunchFailedToast => '対応する時計アプリが見つかりません';
+
+  @override
+  String get morningClassAlarmNoSchemeToast => '先に設定で時間テンプレートを選択してください';
+
+  @override
+  String get morningClassAlarmPastToast => 'この授業は既に始まっています';
+
+  @override
+  String get morningClassAlarmNoCourseToast => '今週のこの曜日に授業がありません';
+
+  @override
+  String get morningClassAlarmTodayOnlyToast =>
+      '単発アラームは今日の授業のみ対応します。他の日は設定の毎週アラームをご利用ください';
+
+  @override
+  String get morningClassAlarmActionLabel => '授業アラームを設定';
 }

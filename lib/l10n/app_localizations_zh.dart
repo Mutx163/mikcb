@@ -9757,6 +9757,78 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get glassDockInsetClearanceLabel => '避让高度';
+
+  @override
+  String get morningClassAlarmEntryTitle => '早八闹钟';
+
+  @override
+  String get morningClassAlarmEntrySubtitle => '把第一节课的闹钟写进系统时钟';
+
+  @override
+  String get morningClassAlarmGroupSetup => '添加闹钟';
+
+  @override
+  String get morningClassAlarmGroupBehavior => '响铃行为';
+
+  @override
+  String get morningClassAlarmAddAllTitle => '添加后续所有第一节课闹钟';
+
+  @override
+  String get morningClassAlarmAddAllSubtitle => '在系统时钟创建周重复闹钟';
+
+  @override
+  String get morningClassAlarmLeadTitle => '提前';
+
+  @override
+  String morningClassAlarmLeadMinutesLabel(int minutes) {
+    return '提前 $minutes 分钟';
+  }
+
+  @override
+  String get morningClassAlarmOpenClock => '打开系统时钟';
+
+  @override
+  String get morningClassAlarmSkipUiTitle => '跳过确认页';
+
+  @override
+  String get morningClassAlarmSkipUiSubtitle => '尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）';
+
+  @override
+  String get morningClassAlarmWeeklyConfirmTitle => '添加周重复闹钟？';
+
+  @override
+  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
+    return '将在系统时钟创建每周$days重复的 $time 闹钟。系统闹钟无法识别假期与调休，停课期间也会照常响铃；删除需在系统时钟中完成。';
+  }
+
+  @override
+  String get morningClassAlarmDaysUnit => '天';
+
+  @override
+  String morningClassAlarmTimeDetail(String weekday, String time) {
+    return '每$weekday $time';
+  }
+
+  @override
+  String get morningClassAlarmAddedToast => '已交给系统时钟处理';
+
+  @override
+  String get morningClassAlarmLaunchFailedToast => '未找到可处理的时钟应用';
+
+  @override
+  String get morningClassAlarmNoSchemeToast => '请先在设置中选择时间模板';
+
+  @override
+  String get morningClassAlarmPastToast => '这节课已开始，无法再设提醒';
+
+  @override
+  String get morningClassAlarmNoCourseToast => '当前周该日没有课程';
+
+  @override
+  String get morningClassAlarmTodayOnlyToast => '单次闹钟仅支持今天的课程；其他日期请在设置中使用周重复闹钟';
+
+  @override
+  String get morningClassAlarmActionLabel => '设上课闹钟';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -19557,6 +19629,78 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get glassDockInsetClearanceLabel => '避讓高度';
+
+  @override
+  String get morningClassAlarmEntryTitle => '早八鬧鐘';
+
+  @override
+  String get morningClassAlarmEntrySubtitle => '把第一節課的鬧鐘寫進系統時鐘';
+
+  @override
+  String get morningClassAlarmGroupSetup => '新增鬧鐘';
+
+  @override
+  String get morningClassAlarmGroupBehavior => '響鈴行為';
+
+  @override
+  String get morningClassAlarmAddAllTitle => '新增後續所有第一節課鬧鐘';
+
+  @override
+  String get morningClassAlarmAddAllSubtitle => '在系統時鐘建立週重複鬧鐘';
+
+  @override
+  String get morningClassAlarmLeadTitle => '提前';
+
+  @override
+  String morningClassAlarmLeadMinutesLabel(int minutes) {
+    return '提前 $minutes 分鐘';
+  }
+
+  @override
+  String get morningClassAlarmOpenClock => '開啟系統時鐘';
+
+  @override
+  String get morningClassAlarmSkipUiTitle => '跳過確認頁';
+
+  @override
+  String get morningClassAlarmSkipUiSubtitle => '嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）';
+
+  @override
+  String get morningClassAlarmWeeklyConfirmTitle => '新增週重複鬧鐘？';
+
+  @override
+  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
+    return '將在系統時鐘建立每週$days重複的 $time 鬧鐘。系統鬧鐘無法識別假期與調休，停課期間也會照常響鈴；刪除需在系統時鐘中完成。';
+  }
+
+  @override
+  String get morningClassAlarmDaysUnit => '天';
+
+  @override
+  String morningClassAlarmTimeDetail(String weekday, String time) {
+    return '每$weekday $time';
+  }
+
+  @override
+  String get morningClassAlarmAddedToast => '已交給系統時鐘處理';
+
+  @override
+  String get morningClassAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
+
+  @override
+  String get morningClassAlarmNoSchemeToast => '請先在設定中選擇時間模板';
+
+  @override
+  String get morningClassAlarmPastToast => '這節課已開始，無法再設提醒';
+
+  @override
+  String get morningClassAlarmNoCourseToast => '當前週該日沒有課程';
+
+  @override
+  String get morningClassAlarmTodayOnlyToast => '單次鬧鐘僅支援今天的課程；其他日期請在設定中使用週重複鬧鐘';
+
+  @override
+  String get morningClassAlarmActionLabel => '設上課鬧鐘';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -29357,4 +29501,76 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockInsetClearanceLabel => '避讓高度';
+
+  @override
+  String get morningClassAlarmEntryTitle => '早八鬧鐘';
+
+  @override
+  String get morningClassAlarmEntrySubtitle => '把第一節課的鬧鐘寫進系統時鐘';
+
+  @override
+  String get morningClassAlarmGroupSetup => '新增鬧鐘';
+
+  @override
+  String get morningClassAlarmGroupBehavior => '響鈴行為';
+
+  @override
+  String get morningClassAlarmAddAllTitle => '新增後續所有第一節課鬧鐘';
+
+  @override
+  String get morningClassAlarmAddAllSubtitle => '在系統時鐘建立週重複鬧鐘';
+
+  @override
+  String get morningClassAlarmLeadTitle => '提前';
+
+  @override
+  String morningClassAlarmLeadMinutesLabel(int minutes) {
+    return '提前 $minutes 分鐘';
+  }
+
+  @override
+  String get morningClassAlarmOpenClock => '開啟系統時鐘';
+
+  @override
+  String get morningClassAlarmSkipUiTitle => '跳過確認頁';
+
+  @override
+  String get morningClassAlarmSkipUiSubtitle => '嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）';
+
+  @override
+  String get morningClassAlarmWeeklyConfirmTitle => '新增週重複鬧鐘？';
+
+  @override
+  String morningClassAlarmWeeklyConfirmMessage(String time, String days) {
+    return '將在系統時鐘建立每週$days重複的 $time 鬧鐘。系統鬧鐘無法識別假期與調休，停課期間也會照常響鈴；刪除需在系統時鐘中完成。';
+  }
+
+  @override
+  String get morningClassAlarmDaysUnit => '天';
+
+  @override
+  String morningClassAlarmTimeDetail(String weekday, String time) {
+    return '每$weekday $time';
+  }
+
+  @override
+  String get morningClassAlarmAddedToast => '已交給系統時鐘處理';
+
+  @override
+  String get morningClassAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
+
+  @override
+  String get morningClassAlarmNoSchemeToast => '請先在設定中選擇時間模板';
+
+  @override
+  String get morningClassAlarmPastToast => '這節課已開始，無法再設提醒';
+
+  @override
+  String get morningClassAlarmNoCourseToast => '當前週該日沒有課程';
+
+  @override
+  String get morningClassAlarmTodayOnlyToast => '單次鬧鐘僅支援今天的課程；其他日期請在設定中使用週重複鬧鐘';
+
+  @override
+  String get morningClassAlarmActionLabel => '設上課鬧鐘';
 }
