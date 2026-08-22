@@ -1,7 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:university_timetable/models/timetable_settings.dart'
-    show SectionTime;
 import 'package:university_timetable/services/class_alarm_service.dart';
 
 void main() {
@@ -28,6 +26,9 @@ void main() {
     test('parses valid clock times', () {
       expect(ClassAlarmLogic.parseClockMinutes('08:00'), 480);
       expect(ClassAlarmLogic.parseClockMinutes('21:35'), 1295);
+      // 午夜边界必须可用：跨午夜回绕依赖 00:00-00:59 的合法解析。
+      expect(ClassAlarmLogic.parseClockMinutes('00:00'), 0);
+      expect(ClassAlarmLogic.parseClockMinutes('23:59'), 1439);
     });
 
     test('rejects malformed times', () {
@@ -38,61 +39,48 @@ void main() {
     });
   });
 
-  group('ClassAlarmLogic.firstSectionStartMinutes', () {
-    test('returns earliest section start', () {
-      final minutes = ClassAlarmLogic.firstSectionStartMinutes(
-        buildSections(['10:00-11:40', '08:00-09:40', '14:00-15:40']),
-      );
-      expect(minutes, 480);
+  group('ClassAlarmLogic.formatClock', () {
+    test('formats within one day', () {
+      expect(ClassAlarmLogic.formatClock(0), '00:00');
+      expect(ClassAlarmLogic.formatClock(480), '08:00');
+      expect(ClassAlarmLogic.formatClock(1439), '23:59');
     });
 
-    test('returns null when nothing parses', () {
-      expect(ClassAlarmLogic.firstSectionStartMinutes(const []), isNull);
+    test('normalizes out-of-range minutes into one day', () {
+      expect(ClassAlarmLogic.formatClock(1440), '00:00');
+      expect(ClassAlarmLogic.formatClock(1440 + 480), '08:00');
     });
   });
 
-  group('ClassAlarmLogic.weekdayBit', () {
-    test('maps ISO weekdays onto Calendar constants used by EXTRA_DAYS', () {
-      // SUNDAY=1, MONDAY=2 ... SATURDAY=7 in java.util.Calendar.
-      expect(ClassAlarmLogic.weekdayBit(1), 2);
-      expect(ClassAlarmLogic.weekdayBit(5), 32);
-      expect(ClassAlarmLogic.weekdayBit(7), 1);
-      expect(ClassAlarmLogic.weekdayBit(0), 0);
-      expect(ClassAlarmLogic.weekdayBit(8), 0);
+  group('ClassAlarmLogic.calendarWeekday', () {
+    test(
+        'maps ISO weekdays onto java.util.Calendar constants used by EXTRA_DAYS',
+        () {
+      // java.util.Calendar: SUNDAY=1, MONDAY=2 ... SATURDAY=7。
+      // 回归背景：曾误用 2 的幂位掩码，导致周二错天、周三~周六重复日被丢弃。
+      expect(ClassAlarmLogic.calendarWeekday(1), 2); // Monday
+      expect(ClassAlarmLogic.calendarWeekday(2), 3); // Tuesday
+      expect(ClassAlarmLogic.calendarWeekday(3), 4); // Wednesday
+      expect(ClassAlarmLogic.calendarWeekday(4), 5); // Thursday
+      expect(ClassAlarmLogic.calendarWeekday(5), 6); // Friday
+      expect(ClassAlarmLogic.calendarWeekday(6), 7); // Saturday
+      expect(ClassAlarmLogic.calendarWeekday(7), 1); // Sunday
+    });
+
+    test('returns 0 for out-of-range input', () {
+      expect(ClassAlarmLogic.calendarWeekday(0), 0);
+      expect(ClassAlarmLogic.calendarWeekday(8), 0);
+      expect(ClassAlarmLogic.calendarWeekday(-1), 0);
     });
   });
 
   group('ClassAlarmLogic.clampLeadMinutes', () {
     test('clamps into [0, 120]', () {
       expect(ClassAlarmLogic.clampLeadMinutes(-5), 0);
+      expect(ClassAlarmLogic.clampLeadMinutes(0), 0);
       expect(ClassAlarmLogic.clampLeadMinutes(30), 30);
+      expect(ClassAlarmLogic.clampLeadMinutes(120), 120);
       expect(ClassAlarmLogic.clampLeadMinutes(999), 120);
-    });
-  });
-
-  group('ClassAlarmLogic.buildSingleShotPlan', () {
-    test('subtracts lead from course start', () {
-      final plan = ClassAlarmLogic.buildSingleShotPlan(
-        courseStartTime: '08:00',
-        label: '轻屿 · 数学',
-        now: DateTime(2026, 2, 23, 6, 0),
-        leadMinutes: 30,
-      );
-      expect(plan, isNotNull);
-      expect(plan!.hour, 7);
-      expect(plan.minute, 30);
-      expect(plan.isOneShot, isTrue);
-      expect(plan.repeatDays, isEmpty);
-      expect(plan.label, '轻屿 · 数学');
-    });
-
-    test('returns null when the class already started', () {
-      final plan = ClassAlarmLogic.buildSingleShotPlan(
-        courseStartTime: '08:00',
-        label: 'x',
-        now: DateTime(2026, 2, 23, 8, 0),
-      );
-      expect(plan, isNull);
     });
   });
 
@@ -112,11 +100,13 @@ void main() {
       expect(morning.dayOfWeeks, [1, 3]);
       expect(morning.plan.hour, 7);
       expect(morning.plan.minute, 30);
-      expect(morning.plan.repeatDays, [2, 8]);
+      // Calendar 常量：周一=2、周三=4。
+      expect(morning.plan.repeatDays, [2, 4]);
       final afternoon = grouping.groups.last;
       expect(afternoon.dayOfWeeks, [5]);
       expect(afternoon.plan.hour, 13);
       expect(afternoon.plan.minute, 30);
+      expect(afternoon.plan.repeatDays, [6]);
     });
 
     test('reports weekdays whose first-class time varies between weeks', () {
@@ -142,9 +132,14 @@ void main() {
       expect(grouping.groups.single.dayOfWeeks, [2]);
       expect(grouping.groups.single.plan.minute, 40);
       expect(grouping.groups.single.plan.hour, 9);
+      expect(grouping.groups.single.plan.repeatDays, [3]); // Calendar.TUESDAY
     });
 
-    test('wraps ring times below midnight without corrupting the mask', () {
+    test(
+        'shifts wrapped ring times below midnight to the previous weekday',
+        () {
+      // 周一 00:20 的课提前 30 分钟应在周日 23:50 响铃，
+      // 而不是周一 23:50（晚近 24 小时）。
       final grouping = ClassAlarmLogic.groupFromOccurrences(
         rows: [row(1, '00:20')],
         leadMinutes: 30,
@@ -152,6 +147,19 @@ void main() {
       final plan = grouping.groups.single.plan;
       expect(plan.hour, 23);
       expect(plan.minute, 50);
+      expect(grouping.groups.single.dayOfWeeks, [7]);
+      expect(plan.repeatDays, [1]); // Calendar.SUNDAY
+    });
+
+    test('keeps weekday unchanged when ring time does not wrap', () {
+      final grouping = ClassAlarmLogic.groupFromOccurrences(
+        rows: [row(1, '08:00')],
+        leadMinutes: 30,
+      );
+      final plan = grouping.groups.single.plan;
+      expect(plan.hour, 7);
+      expect(plan.minute, 30);
+      expect(grouping.groups.single.dayOfWeeks, [1]);
       expect(plan.repeatDays, [2]);
     });
   });
@@ -167,8 +175,7 @@ void main() {
       expect(plan, isNotNull);
       expect(plan!.hour, 13);
       expect(plan.minute, 15);
-      expect(plan.repeatDays, [8]);
-      expect(plan.isOneShot, isFalse);
+      expect(plan.repeatDays, [4]); // Calendar.WEDNESDAY
     });
 
     test('rejects malformed input', () {
@@ -189,18 +196,31 @@ void main() {
         isNull,
       );
     });
+
+    test('wraps below midnight onto the previous weekday', () {
+      final plan = ClassAlarmLogic.buildCourseWeeklyPlan(
+        dayOfWeek: 1,
+        startTime: '00:20',
+        label: 'x',
+        leadMinutes: 30,
+      );
+      expect(plan, isNotNull);
+      expect(plan!.hour, 23);
+      expect(plan.minute, 50);
+      expect(plan.repeatDays, [1]); // Calendar.SUNDAY
+    });
   });
 
   group('ClassAlarmService.addAlarm', () {
-    test('passes hour, minute, label and weekday mask to the channel', () async {
+    test('passes hour, minute, label and weekday constants to the channel',
+        () async {
       final result = await ClassAlarmService.addAlarm(
         const ClassAlarmPlan(
           hour: 7,
           minute: 30,
           label: '轻屿',
-          repeatDays: [2, 8],
+          repeatDays: [2, 4],
           skipUi: false,
-          isOneShot: false,
         ),
       );
       expect(result.launched, isTrue);
@@ -208,22 +228,8 @@ void main() {
       expect(recorded.single.arguments['hour'], 7);
       expect(recorded.single.arguments['minute'], 30);
       expect(recorded.single.arguments['label'], '轻屿');
-      expect(recorded.single.arguments['days'], [2, 8]);
-    });
-
-    test('omits days for one-shot plans', () async {
-      await ClassAlarmService.addAlarm(
-        const ClassAlarmPlan(
-          hour: 7,
-          minute: 30,
-          label: '轻屿',
-          repeatDays: [],
-          skipUi: true,
-          isOneShot: true,
-        ),
-      );
-      expect(recorded.single.arguments['days'], isNull);
-      expect(recorded.single.arguments['skipUi'], isTrue);
+      expect(recorded.single.arguments['days'], [2, 4]);
+      expect(recorded.single.arguments['skipUi'], false);
     });
 
     test('degrades platform exceptions to launched=false', () async {
@@ -236,13 +242,29 @@ void main() {
           hour: 7,
           minute: 30,
           label: '轻屿',
-          repeatDays: [],
-          skipUi: false,
-          isOneShot: true,
+          repeatDays: [2],
+          skipUi: true,
         ),
       );
       expect(result.launched, isFalse);
       expect(result.error, isNotNull);
+    });
+
+    test('degrades MissingPluginException to unsupported_platform', () async {
+      // 非 Android 平台未注册通道时引擎回空信封，服务层须降级而非抛出。
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+      final result = await ClassAlarmService.addAlarm(
+        const ClassAlarmPlan(
+          hour: 7,
+          minute: 30,
+          label: '轻屿',
+          repeatDays: <int>[],
+          skipUi: false,
+        ),
+      );
+      expect(result.launched, isFalse);
+      expect(result.error, 'unsupported_platform');
     });
   });
 
@@ -251,16 +273,14 @@ void main() {
       expect(await ClassAlarmService.openSystemAlarms(), isTrue);
       expect(recorded.single.method, 'showAlarms');
     });
+
+    test('returns false when the channel is missing', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+      expect(await ClassAlarmService.openSystemAlarms(), isFalse);
+    });
   });
 }
 
 ClassAlarmDayFirstSection row(int dayOfWeek, String start) =>
     ClassAlarmDayFirstSection(dayOfWeek: dayOfWeek, startTime: start);
-
-List<SectionTime> buildSections(List<String> ranges) => [
-      for (final range in ranges)
-        () {
-          final parts = range.split('-');
-          return SectionTime(startTime: parts[0], endTime: parts[1]);
-        }(),
-    ];

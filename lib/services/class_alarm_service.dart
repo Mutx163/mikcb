@@ -1,14 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../models/timetable_settings.dart' show SectionTime;
-
 /// One alarm payload destined for the system Clock app via ACTION_SET_ALARM.
 ///
-/// The Android public contract only supports "hour + minute + weekly repeat
-/// bitmask"; there is no way to express "only on this exact date". A plan
-/// with empty [repeatDays] therefore means a one-shot alarm, while a non-empty
-/// list repeats every week on those weekdays until the user deletes it.
+/// The Android public contract only supports "hour + minute + weekly repeat";
+/// there is no way to express "only on this exact date", so every plan created
+/// here repeats weekly on [repeatDays] until the user deletes it in the clock
+/// app.
 @immutable
 class ClassAlarmPlan {
   const ClassAlarmPlan({
@@ -17,7 +15,6 @@ class ClassAlarmPlan {
     required this.label,
     required this.repeatDays,
     required this.skipUi,
-    required this.isOneShot,
   });
 
   /// Alarm ring hour (0-23).
@@ -36,9 +33,6 @@ class ClassAlarmPlan {
   /// Whether to request skipping the clock app confirmation page.
   final bool skipUi;
 
-  /// True when this plan fires exactly once (no EXTRA_DAYS is sent).
-  final bool isOneShot;
-
   /// Returns a copy with the given fields replaced; label/skipUi default to
   /// the original values so callers can fill them in at dispatch time.
   ClassAlarmPlan copyWith({String? label, bool? skipUi}) => ClassAlarmPlan(
@@ -47,7 +41,6 @@ class ClassAlarmPlan {
         label: label ?? this.label,
         repeatDays: repeatDays,
         skipUi: skipUi ?? this.skipUi,
-        isOneShot: isOneShot,
       );
 }
 
@@ -70,14 +63,9 @@ class ClassAlarmWeeklyGroup {
 /// Result of a single SET_ALARM dispatch.
 @immutable
 class ClassAlarmResult {
-  const ClassAlarmResult({
-    required this.launched,
-    required this.skipUiApplied,
-    this.error,
-  });
+  const ClassAlarmResult({required this.launched, this.error});
 
   final bool launched;
-  final bool skipUiApplied;
   final String? error;
 }
 
@@ -115,26 +103,21 @@ class ClassAlarmService {
         'minute': plan.minute,
         'label': plan.label,
         'skipUi': plan.skipUi,
-        'days': plan.isOneShot ? null : plan.repeatDays,
+        'days': plan.repeatDays,
       };
       final raw = await _channel.invokeMethod<Object?>('setAlarm', args);
       final map = raw != null
           ? Map<String, Object?>.from(raw as Map)
           : const <String, Object?>{};
-      return ClassAlarmResult(
-        launched: map['launched'] == true,
-        skipUiApplied: map['skipUi'] == true,
-      );
+      return ClassAlarmResult(launched: map['launched'] == true);
     } on PlatformException catch (error) {
       return ClassAlarmResult(
         launched: false,
-        skipUiApplied: false,
         error: error.message ?? error.code,
       );
     } on MissingPluginException {
       return const ClassAlarmResult(
         launched: false,
-        skipUiApplied: false,
         error: 'unsupported_platform',
       );
     }
@@ -189,21 +172,6 @@ abstract final class ClassAlarmLogic {
     return hour * 60 + minute;
   }
 
-  /// Earliest section start across the scheme in minutes since midnight.
-  static int? firstSectionStartMinutes(List<SectionTime> sections) {
-    var best = -1;
-    for (final section in sections) {
-      final minutes = parseClockMinutes(section.startTime);
-      if (minutes == null) {
-        continue;
-      }
-      if (best < 0 || minutes < best) {
-        best = minutes;
-      }
-    }
-    return best < 0 ? null : best;
-  }
-
   /// Formats minutes-since-midnight back to "HH:mm" (clamped into one day).
   static String formatClock(int minutes) {
     var normalized = minutes % 1440;
@@ -215,18 +183,18 @@ abstract final class ClassAlarmLogic {
     return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
   }
 
-  /// Maps ISO weekday (1=Mon .. 7=Sun) to the EXTRA_DAYS Calendar constant
-  /// used by the system clock contract (SUNDAY=1 ... SATURDAY=7).
-  static int weekdayBit(int dayOfWeek) => switch (dayOfWeek) {
-        1 => 2, // Calendar.MONDAY
-        2 => 4, // Calendar.TUESDAY
-        3 => 8, // Calendar.WEDNESDAY
-        4 => 16, // Calendar.THURSDAY
-        5 => 32, // Calendar.FRIDAY
-        6 => 64, // Calendar.SATURDAY
-        7 => 1, // Calendar.SUNDAY
-        _ => 0,
-      };
+  /// Maps ISO weekday (1=Mon .. 7=Sun) to the java.util.Calendar day-of-week
+  /// constant required by the EXTRA_DAYS contract (SUNDAY=1 ... SATURDAY=7).
+  /// Returns 0 for out-of-range input; callers treat 0 as "skip this day".
+  static int calendarWeekday(int dayOfWeek) => const {
+        1: 2, // Calendar.MONDAY
+        2: 3, // Calendar.TUESDAY
+        3: 4, // Calendar.WEDNESDAY
+        4: 5, // Calendar.THURSDAY
+        5: 6, // Calendar.FRIDAY
+        6: 7, // Calendar.SATURDAY
+        7: 1, // Calendar.SUNDAY
+      }[dayOfWeek] ?? 0;
 
   /// Clamps user-configurable lead time into [0, 120] minutes.
   static int clampLeadMinutes(int minutes) {
@@ -239,89 +207,13 @@ abstract final class ClassAlarmLogic {
     return minutes;
   }
 
-  /// Builds the one-shot plan for one concrete class session.
-  ///
-  /// Returns null when the resolved ring time is already in the past: the
-  /// clock app would reject or silently create an overdue alarm.
-  static ClassAlarmPlan? buildSingleShotPlan({
-    required String courseStartTime,
-    required String label,
-    required DateTime now,
-    int leadMinutes = 30,
-    bool skipUi = false,
-  }) {
-    final startMinutes = parseClockMinutes(courseStartTime);
-    if (startMinutes == null) {
-      return null;
-    }
-    final nowMinutes = now.hour * 60 + now.minute;
-    if (nowMinutes >= startMinutes) {
-      return null;
-    }
-    final lead = clampLeadMinutes(leadMinutes);
-    final ring = startMinutes - lead;
-    return ClassAlarmPlan(
-      hour: ring ~/ 60,
-      minute: ring % 60,
-      label: label,
-      repeatDays: const [],
-      skipUi: skipUi,
-      isOneShot: true,
-    );
-  }
-
-  /// Buckets weekdays by their own first-class ring time and emits one
-  /// weekly-repeating plan per bucket.
-  ///
-  /// Days whose first class happens in the morning and days whose first class
-  /// is in the afternoon produce separate alarms instead of one early alarm
-  /// wrongly firing every day. Input rows whose time cannot be parsed are
-  /// skipped; buckets are ordered by ring time ascending. Negative ring times
-  /// (huge lead before midnight) wrap below midnight so the repeat mask stays
-  /// aligned with class days.
-  static List<ClassAlarmWeeklyGroup> buildWeeklyGroups({
-    required List<ClassAlarmDayFirstSection> days,
-    required String label,
-    int leadMinutes = 30,
-    bool skipUi = false,
-  }) {
-    final buckets = <int, List<int>>{};
-    for (final day in days) {
-      final start = parseClockMinutes(day.startTime);
-      final bit = weekdayBit(day.dayOfWeek);
-      if (start == null || bit == 0) {
-        continue;
-      }
-      final ring =
-          ((start - clampLeadMinutes(leadMinutes)) % 1440 + 1440) % 1440;
-      buckets.putIfAbsent(ring, () => []).add(day.dayOfWeek);
-    }
-    final groups = <ClassAlarmWeeklyGroup>[];
-    for (final ring in buckets.keys.toList()..sort()) {
-      final weekDays = buckets[ring]!.toList()..sort();
-      groups.add(
-        ClassAlarmWeeklyGroup(
-          dayOfWeeks: weekDays,
-          plan: ClassAlarmPlan(
-            hour: ring ~/ 60,
-            minute: ring % 60,
-            label: label,
-            repeatDays: [
-              for (final day in weekDays) weekdayBit(day),
-            ]..sort(),
-            skipUi: skipUi,
-            isOneShot: false,
-          ),
-        ),
-      );
-    }
-    return groups;
-  }
-
   /// Builds one weekly plan for a single course series ("arm this course").
   ///
   /// The alarm repeats on the course weekday at its own start time minus the
-  /// lead; null when [startTime] cannot be parsed.
+  /// lead. When the ring time wraps below midnight (huge lead before a
+  /// first-section class right after 00:00) both the hour/minute and the
+  /// repeat weekday shift to the previous calendar day, so the alarm fires
+  /// shortly BEFORE the class instead of nearly 24 hours after it.
   static ClassAlarmPlan? buildCourseWeeklyPlan({
     required int dayOfWeek,
     required String startTime,
@@ -330,19 +222,19 @@ abstract final class ClassAlarmLogic {
     bool skipUi = false,
   }) {
     final start = parseClockMinutes(startTime);
-    final bit = weekdayBit(dayOfWeek);
-    if (start == null || bit == 0) {
+    if (start == null || calendarWeekday(dayOfWeek) == 0) {
       return null;
     }
-    final ring =
-        ((start - clampLeadMinutes(leadMinutes)) % 1440 + 1440) % 1440;
+    final rawRing = start - clampLeadMinutes(leadMinutes);
+    final ring = ((rawRing % 1440) + 1440) % 1440;
+    final ringDay =
+        rawRing < 0 ? (dayOfWeek == 1 ? 7 : dayOfWeek - 1) : dayOfWeek;
     return ClassAlarmPlan(
       hour: ring ~/ 60,
       minute: ring % 60,
       label: label,
-      repeatDays: [bit],
+      repeatDays: [calendarWeekday(ringDay)],
       skipUi: skipUi,
-      isOneShot: false,
     );
   }
 
@@ -354,6 +246,11 @@ abstract final class ClassAlarmLogic {
   /// map onto one weekly alarm; it is reported via [ClassAlarmGrouping.variableDays]
   /// instead of being silently approximated. Duplicate rows collapse first, so
   /// feeding every week of the semester is cheap and idempotent.
+  ///
+  /// Ring times that wrap below midnight (lead larger than a first-section
+  /// start right after 00:00) shift both the clock time and the repeat weekday
+  /// to the previous calendar day: e.g. Monday 00:20 with a 30-minute lead
+  /// becomes Sunday 23:50, which is when the phone must actually ring.
   static ClassAlarmGrouping groupFromOccurrences({
     required List<ClassAlarmDayFirstSection> rows,
     required int leadMinutes,
@@ -372,16 +269,20 @@ abstract final class ClassAlarmLogic {
         if (entry.value.length > 1) entry.key,
     ]..sort();
 
-    // Bucket stable weekdays by their shared ring time.
+    // Bucket stable weekdays by their shared ring time. Days are keyed by the
+    // RING day, not the class day: a ring time wrapped below midnight belongs
+    // to the previous weekday.
+    final lead = clampLeadMinutes(leadMinutes);
     final buckets = <int, List<int>>{};
     for (final entry in timesByDay.entries) {
       if (entry.value.length != 1) {
         continue;
       }
-      final ring =
-          ((entry.value.first - clampLeadMinutes(leadMinutes)) % 1440 + 1440) %
-              1440;
-      buckets.putIfAbsent(ring, () => []).add(entry.key);
+      final rawRing = entry.value.first - lead;
+      final ring = ((rawRing % 1440) + 1440) % 1440;
+      final ringDay =
+          rawRing < 0 ? (entry.key == 1 ? 7 : entry.key - 1) : entry.key;
+      buckets.putIfAbsent(ring, () => []).add(ringDay);
     }
     final groups = <ClassAlarmWeeklyGroup>[];
     for (final ring in buckets.keys.toList()..sort()) {
@@ -395,10 +296,9 @@ abstract final class ClassAlarmLogic {
             hour: ring ~/ 60,
             minute: ring % 60,
             repeatDays: [
-              for (final day in weekDays) weekdayBit(day),
+              for (final day in weekDays) calendarWeekday(day),
             ]..sort(),
             skipUi: false,
-            isOneShot: false,
           ),
         ),
       );
