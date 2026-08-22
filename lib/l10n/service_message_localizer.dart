@@ -396,6 +396,8 @@ String localizeServiceMessage(
       );
     case 'warehouse_fetch_failed_github':
       return l10n.serviceMsgWarehouseFetchFailedGithub;
+    case 'warehouse_script_checksum_failed':
+      return l10n.serviceMsgWarehouseScriptChecksumFailed;
 
     // Warehouse macro
     case 'manual_input_captcha':

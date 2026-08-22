@@ -99,6 +99,10 @@ class WarehouseAdapterEntry {
   final String maintainer;
   final String description;
 
+  /// 适配器脚本的 SHA-256（小写十六进制），由仓库 adapters.yaml 声明。
+  /// 为空表示索引未提供校验和（旧版索引），拉取时跳过完整性校验。
+  final String sha256;
+
   const WarehouseAdapterEntry({
     required this.adapterId,
     required this.adapterName,
@@ -107,6 +111,7 @@ class WarehouseAdapterEntry {
     required this.importUrl,
     required this.maintainer,
     required this.description,
+    this.sha256 = '',
   });
 }
 

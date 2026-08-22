@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import '../l10n/service_message_localizer.dart';
@@ -88,21 +89,22 @@ class WarehouseRepositoryService {
     );
     final maps = _parseYamlListMaps(content, topLevelKey: 'adapters');
     final adapters = maps
-        .map(
-          (item) => WarehouseAdapterEntry(
-            adapterId: item['adapter_id'] ?? '',
-            adapterName: item['adapter_name'] ?? '',
-            category: item['category'] ?? '',
-            assetJsPath: item['asset_js_path'] ?? '',
-            importUrl: item['import_url'] ?? '',
-            maintainer: item['maintainer'] ?? '',
-            description: item['description'] ?? '',
-          ),
-        )
-        .where(
-          (item) => item.adapterId.isNotEmpty && item.assetJsPath.isNotEmpty,
-        )
-        .toList(growable: false);
+      .map(
+        (item) => WarehouseAdapterEntry(
+          adapterId: item['adapter_id'] ?? '',
+          adapterName: item['adapter_name'] ?? '',
+          category: item['category'] ?? '',
+          assetJsPath: item['asset_js_path'] ?? '',
+          importUrl: item['import_url'] ?? '',
+          maintainer: item['maintainer'] ?? '',
+          description: item['description'] ?? '',
+          sha256: item['sha256'] ?? '',
+        ),
+      )
+      .where(
+        (item) => item.adapterId.isNotEmpty && item.assetJsPath.isNotEmpty,
+      )
+      .toList(growable: false);
     if (adapters.isEmpty) {
       throw WarehouseRepositoryException(
         encodeServiceMessage('warehouse_no_adapters', {
@@ -120,10 +122,33 @@ class WarehouseRepositoryService {
     WarehouseFetchOptions? options,
   }) async {
     final path = 'resources/${school.resourceFolder}/${adapter.assetJsPath}';
-    return _fetchText(source.buildRawFileUri(path), options: options);
+    final bytes = await _fetchBytes(source.buildRawFileUri(path), options: options);
+    // Integrity gate: when the index declares a SHA-256 for the script, the
+    // fetched bytes must match before the script is ever handed to WebView.
+    // This closes the mirror-fallback / custom-prefix supply chain where a
+    // poisoned mirror can otherwise serve arbitrary JS into the bridge session.
+    // Legacy indexes without sha256 keep working unchanged (no verification).
+    final declared = adapter.sha256.trim().toLowerCase();
+    if (declared.isNotEmpty) {
+      final actual = sha256.convert(bytes).toString();
+      if (actual != declared) {
+        _log('脚本 SHA-256 校验失败：声明 $declared，实际 $actual');
+        throw const WarehouseRepositoryException(
+          'warehouse_script_checksum_failed',
+        );
+      }
+    }
+    return utf8.decode(bytes);
   }
 
   Future<String> _fetchText(Uri uri, {WarehouseFetchOptions? options}) async {
+    return utf8.decode(await _fetchBytes(uri, options: options));
+  }
+
+  Future<List<int>> _fetchBytes(
+    Uri uri, {
+    WarehouseFetchOptions? options,
+  }) async {
     final effectiveOptions =
         options ??
         const WarehouseFetchOptions(
@@ -151,7 +176,7 @@ class WarehouseRepositoryService {
           },
         );
         if (response.statusCode == 200) {
-          return utf8.decode(response.bodyBytes);
+          return response.bodyBytes;
         }
         lastError = StateError('http_${response.statusCode}');
       } catch (error) {

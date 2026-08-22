@@ -13359,6 +13359,12 @@ abstract class AppLocalizations {
   /// **'暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试'**
   String get serviceMsgWarehouseFetchFailedGithub;
 
+  /// No description provided for @serviceMsgWarehouseScriptChecksumFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'适配器脚本完整性校验失败：下载内容与仓库声明的 SHA-256 不一致，已阻止执行。请刷新学校列表后重试；若反复出现，请到 qingyu_warehouse 反馈该适配器'**
+  String get serviceMsgWarehouseScriptChecksumFailed;
+
   /// No description provided for @serviceMsgManualInputCaptcha.
   ///
   /// In zh, this message translates to:

@@ -7550,6 +7550,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Unable to read the adapter repository on GitHub. Check your network or switch to a mirror in Version Update.';
 
   @override
+  String get serviceMsgWarehouseScriptChecksumFailed =>
+      'Adapter script integrity check failed: downloaded content does not match the repository\'s declared SHA-256, so execution was blocked. Refresh the school list and try again; if it keeps happening, report the adapter to qingyu_warehouse.';
+
+  @override
   String get serviceMsgManualInputCaptcha =>
       'Enter the captcha manually, then tap Continue.';
 

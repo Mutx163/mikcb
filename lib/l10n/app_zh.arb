@@ -4565,6 +4565,7 @@
     }
   },
   "serviceMsgWarehouseFetchFailedGithub": "暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试",
+  "serviceMsgWarehouseScriptChecksumFailed": "适配器脚本完整性校验失败：下载内容与仓库声明的 SHA-256 不一致，已阻止执行。请刷新学校列表后重试；若反复出现，请到 qingyu_warehouse 反馈该适配器",
   "serviceMsgManualInputCaptcha": "请手动输入验证码；完成后点击继续",
   "serviceMsgManualInputPassword": "请手动输入密码；如已自动填充请直接继续",
   "serviceMsgMacroNoSteps": "没有录制的步骤",

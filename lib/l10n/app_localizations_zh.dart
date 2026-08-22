@@ -7401,6 +7401,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试';
 
   @override
+  String get serviceMsgWarehouseScriptChecksumFailed =>
+      '适配器脚本完整性校验失败：下载内容与仓库声明的 SHA-256 不一致，已阻止执行。请刷新学校列表后重试；若反复出现，请到 qingyu_warehouse 反馈该适配器';
+
+  @override
   String get serviceMsgManualInputCaptcha => '请手动输入验证码；完成后点击继续';
 
   @override
@@ -17294,6 +17298,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get serviceMsgWarehouseFetchFailedGithub =>
       'Unable to read the adapter repository on GitHub. Check your network or switch to a mirror in Version Update.';
+
+  @override
+  String get serviceMsgWarehouseScriptChecksumFailed =>
+      'Adapter script integrity check failed: downloaded content does not match the repository\'s declared SHA-256, so execution was blocked. Refresh the school list and try again; if it keeps happening, report the adapter to qingyu_warehouse.';
 
   @override
   String get serviceMsgManualInputCaptcha =>
@@ -27192,6 +27200,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get serviceMsgWarehouseFetchFailedGithub =>
       'Unable to read the adapter repository on GitHub. Check your network or switch to a mirror in Version Update.';
+
+  @override
+  String get serviceMsgWarehouseScriptChecksumFailed =>
+      'Adapter script integrity check failed: downloaded content does not match the repository\'s declared SHA-256, so execution was blocked. Refresh the school list and try again; if it keeps happening, report the adapter to qingyu_warehouse.';
 
   @override
   String get serviceMsgManualInputCaptcha =>
