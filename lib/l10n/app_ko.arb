@@ -5518,9 +5518,7 @@
   "courseCardSurfaceStyleLabel": "카드 외관",
   "courseCardSurfaceStyleSubtitle": "강의 카드의 시각적 스타일을 선택하세요",
   "courseCardSurfaceStyleSolid": "솔리드",
-  "courseCardSurfaceStyleTranslucent": "반투명",
   "courseCardSurfaceStyleGaussian": "가우시안 블러",
-  "courseCardSurfaceStyleGlass": "유리",
   "courseCardSectionColor": "색상",
   "liveSelfCheckTitle": "자체 점검",
   "collapsibleLargeTitle": "접을 수 있는 큰 제목",
@@ -5949,11 +5947,22 @@
   "classAlarmLaunchFailedToast": "처리할 시계 앱을 찾을 수 없습니다",
   "classAlarmActionLabel": "이 수업 알람 설정",
   "classAlarmCourseConfirmTitle": "이 수업의 반복 알람을 추가할까요?",
-  "classAlarmCourseConfirmMessage": "이 수업에 맞춰 시계 앱에 매주 {weekday} {time} 반복 알람을 만듭니다. 방학 중에도 울리며 삭제는 시계 앱에서 해야 합니다.",
+  "classAlarmCourseConfirmMessage": "시계 앱에 매주 {weekday} {time} 반복 알람을 만듭니다(수업 시작 {lead}분 전에 울리며 수업 주차는 {weeks}). 방학과 쉬는 주에도 울리며 삭제는 시계 앱에서 해야 합니다.",
   "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
-      "time": { "type": "String" }
+      "time": { "type": "String" },
+      "lead": { "type": "int" },
+      "weeks": { "type": "String" }
     }
-  }
+  },
+  "classAlarmPartialAddedToast": "{done}/{total}개의 알람을 시계 앱으로 전달했습니다. 나머지는 실패했습니다",
+  "@classAlarmPartialAddedToast": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "classAlarmDaySeparator": ", ",
+  "classAlarmDetailSeparator": "; "
 }

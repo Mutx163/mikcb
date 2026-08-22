@@ -5516,9 +5516,7 @@
   "courseCardSurfaceStyleLabel": "カードの外観",
   "courseCardSurfaceStyleSubtitle": "コースカードのビジュアルスタイルを選択",
   "courseCardSurfaceStyleSolid": "ソリッド",
-  "courseCardSurfaceStyleTranslucent": "半透明",
   "courseCardSurfaceStyleGaussian": "ガウスぼかし",
-  "courseCardSurfaceStyleGlass": "ガラス",
   "courseCardSectionColor": "色",
   "liveSelfCheckTitle": "セルフチェック",
   "collapsibleLargeTitle": "折りたたみ大タイトル",
@@ -5954,11 +5952,22 @@
   "classAlarmLaunchFailedToast": "対応する時計アプリが見つかりません",
   "classAlarmActionLabel": "この授業のアラームを設定",
   "classAlarmCourseConfirmTitle": "この授業の繰り返しアラームを追加しますか？",
-  "classAlarmCourseConfirmMessage": "この授業に合わせ、システム時計に毎週{weekday} {time} の繰り返しアラームを作成します。休み期間も鳴り続け、削除はシステム時計で行ってください。",
+  "classAlarmCourseConfirmMessage": "システム時計に毎週{weekday} {time}の繰り返しアラームを作成します（この授業の{lead}分前に鳴動。開始週：{weeks}）。休みや対象外の週も鳴ります。削除はシステム時計で行ってください。",
   "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
-      "time": { "type": "String" }
+      "time": { "type": "String" },
+      "lead": { "type": "int" },
+      "weeks": { "type": "String" }
     }
-  }
+  },
+  "classAlarmPartialAddedToast": "{done}/{total}件を時計アプリに送信しました。残りは失敗しました",
+  "@classAlarmPartialAddedToast": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "classAlarmDaySeparator": "、",
+  "classAlarmDetailSeparator": "；"
 }

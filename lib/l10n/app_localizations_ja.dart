@@ -9551,13 +9551,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleSolid => 'ソリッド';
 
   @override
-  String get courseCardSurfaceStyleTranslucent => '半透明';
-
-  @override
   String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
-
-  @override
-  String get courseCardSurfaceStyleGlass => 'ガラス';
 
   @override
   String get courseCardSectionColor => '色';
@@ -10135,7 +10129,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classAlarmCourseConfirmTitle => 'この授業の繰り返しアラームを追加しますか？';
 
   @override
-  String classAlarmCourseConfirmMessage(String weekday, String time) {
-    return 'この授業に合わせ、システム時計に毎週$weekday $time の繰り返しアラームを作成します。休み期間も鳴り続け、削除はシステム時計で行ってください。';
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return 'システム時計に毎週$weekday $timeの繰り返しアラームを作成します（この授業の$lead分前に鳴動。開始週：$weeks）。休みや対象外の週も鳴ります。削除はシステム時計で行ってください。';
   }
+
+  @override
+  String classAlarmPartialAddedToast(int done, int total) {
+    return '$done/$total件を時計アプリに送信しました。残りは失敗しました';
+  }
+
+  @override
+  String get classAlarmDaySeparator => '、';
+
+  @override
+  String get classAlarmDetailSeparator => '；';
 }

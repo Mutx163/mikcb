@@ -9596,13 +9596,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleSolid => '솔리드';
 
   @override
-  String get courseCardSurfaceStyleTranslucent => '반투명';
-
-  @override
   String get courseCardSurfaceStyleGaussian => '가우시안 블러';
-
-  @override
-  String get courseCardSurfaceStyleGlass => '유리';
 
   @override
   String get courseCardSectionColor => '색상';
@@ -10180,7 +10174,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classAlarmCourseConfirmTitle => '이 수업의 반복 알람을 추가할까요?';
 
   @override
-  String classAlarmCourseConfirmMessage(String weekday, String time) {
-    return '이 수업에 맞춰 시계 앱에 매주 $weekday $time 반복 알람을 만듭니다. 방학 중에도 울리며 삭제는 시계 앱에서 해야 합니다.';
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return '시계 앱에 매주 $weekday $time 반복 알람을 만듭니다(수업 시작 $lead분 전에 울리며 수업 주차는 $weeks). 방학과 쉬는 주에도 울리며 삭제는 시계 앱에서 해야 합니다.';
   }
+
+  @override
+  String classAlarmPartialAddedToast(int done, int total) {
+    return '$done/$total개의 알람을 시계 앱으로 전달했습니다. 나머지는 실패했습니다';
+  }
+
+  @override
+  String get classAlarmDaySeparator => ', ';
+
+  @override
+  String get classAlarmDetailSeparator => '; ';
 }

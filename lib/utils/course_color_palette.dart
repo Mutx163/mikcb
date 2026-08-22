@@ -120,10 +120,8 @@ double courseCardContrastRatio(Color a, Color b) {
 bool courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle style) {
   switch (style) {
     case CourseCardSurfaceStyle.solid:
-    case CourseCardSurfaceStyle.translucent:
       return false;
     case CourseCardSurfaceStyle.gaussian:
-    case CourseCardSurfaceStyle.glass:
       return true;
   }
 }

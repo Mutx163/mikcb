@@ -9826,13 +9826,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleSolid => 'Solid';
 
   @override
-  String get courseCardSurfaceStyleTranslucent => 'Translucent';
-
-  @override
   String get courseCardSurfaceStyleGaussian => 'Gaussian Blur';
-
-  @override
-  String get courseCardSurfaceStyleGlass => 'Glass';
 
   @override
   String get courseCardSectionColor => 'Color';
@@ -10431,7 +10425,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a repeating alarm for this class?';
 
   @override
-  String classAlarmCourseConfirmMessage(String weekday, String time) {
-    return 'A weekly repeating alarm will be created in the system clock: every $weekday at $time, matching this class. It keeps ringing during breaks; delete it in the system clock.';
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return 'A weekly repeating alarm will be created in the system clock: every $weekday at $time, ringing $lead minutes before this class starts (active weeks: $weeks). It keeps ringing during holidays and off-weeks; delete it in the system clock.';
   }
+
+  @override
+  String classAlarmPartialAddedToast(int done, int total) {
+    return 'Sent $done/$total alarms to the system clock; the rest failed';
+  }
+
+  @override
+  String get classAlarmDaySeparator => ', ';
+
+  @override
+  String get classAlarmDetailSeparator => '; ';
 }

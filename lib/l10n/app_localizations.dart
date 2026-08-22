@@ -16768,26 +16768,14 @@ abstract class AppLocalizations {
   /// No description provided for @courseCardSurfaceStyleSolid.
   ///
   /// In zh, this message translates to:
-  /// **'实心'**
+  /// **'实体卡片'**
   String get courseCardSurfaceStyleSolid;
-
-  /// No description provided for @courseCardSurfaceStyleTranslucent.
-  ///
-  /// In zh, this message translates to:
-  /// **'半透明'**
-  String get courseCardSurfaceStyleTranslucent;
 
   /// No description provided for @courseCardSurfaceStyleGaussian.
   ///
   /// In zh, this message translates to:
   /// **'高斯模糊'**
   String get courseCardSurfaceStyleGaussian;
-
-  /// No description provided for @courseCardSurfaceStyleGlass.
-  ///
-  /// In zh, this message translates to:
-  /// **'玻璃'**
-  String get courseCardSurfaceStyleGlass;
 
   /// No description provided for @courseCardSectionColor.
   ///
@@ -17902,8 +17890,31 @@ abstract class AppLocalizations {
   /// No description provided for @classAlarmCourseConfirmMessage.
   ///
   /// In zh, this message translates to:
-  /// **'将在系统时钟创建每周{weekday} {time} 的重复闹钟（与这节课的排课一致）；假期与停课不会自动停止，删除需在系统时钟中完成。'**
-  String classAlarmCourseConfirmMessage(String weekday, String time);
+  /// **'将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。'**
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  );
+
+  /// No description provided for @classAlarmPartialAddedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已写入 {done}/{total} 条闹钟，其余未能创建'**
+  String classAlarmPartialAddedToast(int done, int total);
+
+  /// No description provided for @classAlarmDaySeparator.
+  ///
+  /// In zh, this message translates to:
+  /// **'、'**
+  String get classAlarmDaySeparator;
+
+  /// No description provided for @classAlarmDetailSeparator.
+  ///
+  /// In zh, this message translates to:
+  /// **'；'**
+  String get classAlarmDetailSeparator;
 }
 
 class _AppLocalizationsDelegate

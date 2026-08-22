@@ -99,10 +99,7 @@ void main() {
       expect(find.byType(BackdropGroup), findsAtLeastNWidgets(1));
     });
 
-    for (final style in [
-      CourseCardSurfaceStyle.solid,
-      CourseCardSurfaceStyle.translucent,
-    ]) {
+    for (final style in [CourseCardSurfaceStyle.solid]) {
       testWidgets('$style grid needs no glass host', (tester) async {
         await pumpPreview(
           tester,

@@ -5514,10 +5514,8 @@
   "courseCardSectionLayout": "版面配置",
   "courseCardSurfaceStyleLabel": "卡片外觀",
   "courseCardSurfaceStyleSubtitle": "選擇課程卡片的視覺風格",
-  "courseCardSurfaceStyleSolid": "實心",
-  "courseCardSurfaceStyleTranslucent": "半透明",
+  "courseCardSurfaceStyleSolid": "實體卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
-  "courseCardSurfaceStyleGlass": "玻璃",
   "courseCardSectionColor": "顏色",
   "liveSelfCheckTitle": "自我檢查",
   "collapsibleLargeTitle": "折疊大標題",
@@ -5954,11 +5952,22 @@
   "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
   "classAlarmActionLabel": "設這節課的鬧鐘",
   "classAlarmCourseConfirmTitle": "新增這節課的重複鬧鐘？",
-  "classAlarmCourseConfirmMessage": "將在系統時鐘建立每週{weekday} {time} 的重複鬧鐘（與這節課的排課一致）；假期與停課不會自動停止，刪除需在系統時鐘中完成。",
+  "classAlarmCourseConfirmMessage": "將在系統時鐘建立每週{weekday} {time} 的重複鬧鐘（比上課提前{lead}分鐘響鈴；上課週次：{weeks}）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。",
   "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
-      "time": { "type": "String" }
+      "time": { "type": "String" },
+      "lead": { "type": "int" },
+      "weeks": { "type": "String" }
     }
-  }
+  },
+  "classAlarmPartialAddedToast": "已寫入 {done}/{total} 條鬧鐘，其餘未能建立",
+  "@classAlarmPartialAddedToast": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "classAlarmDaySeparator": "、",
+  "classAlarmDetailSeparator": "；"
 }

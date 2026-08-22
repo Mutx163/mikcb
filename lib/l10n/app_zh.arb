@@ -5739,11 +5739,8 @@
   "courseCardSectionLayout": "布局",
   "courseCardSurfaceStyleLabel": "卡片外观",
   "courseCardSurfaceStyleSubtitle": "选择课程卡片的视觉风格",
-  "courseCardSurfaceStyleSolid": "实心",
-  "courseCardSurfaceStyleTranslucent": "半透明",
+  "courseCardSurfaceStyleSolid": "实体卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
-  "courseCardSurfaceStyleGlass": "玻璃",
-  "courseCardSurfaceStyleGlass": "玻璃",
   "courseCardSectionColor": "颜色",
   "liveSelfCheckTitle": "自检",
   "collapsibleLargeTitle": "折叠大标题",
@@ -5958,11 +5955,22 @@
   "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",
   "classAlarmActionLabel": "设这节课的闹钟",
   "classAlarmCourseConfirmTitle": "添加这节课的重复闹钟？",
-  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（与这节课的排课一致）；假期与停课不会自动停止，删除需在系统时钟中完成。",
+  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",
   "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
-      "time": { "type": "String" }
+      "time": { "type": "String" },
+      "lead": { "type": "int" },
+      "weeks": { "type": "String" }
     }
-  }
+  },
+  "classAlarmPartialAddedToast": "已写入 {done}/{total} 条闹钟，其余未能创建",
+  "@classAlarmPartialAddedToast": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "classAlarmDaySeparator": "、",
+  "classAlarmDetailSeparator": "；"
 }

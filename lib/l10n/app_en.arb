@@ -5740,9 +5740,7 @@
   "courseCardSurfaceStyleLabel": "Card Appearance",
   "courseCardSurfaceStyleSubtitle": "Choose the visual style for course cards",
   "courseCardSurfaceStyleSolid": "Solid",
-  "courseCardSurfaceStyleTranslucent": "Translucent",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
-  "courseCardSurfaceStyleGlass": "Glass",
   "courseCardSectionColor": "Color",
   "liveSelfCheckTitle": "Self-Check",
   "collapsibleLargeTitle": "Collapsible Large Title",
@@ -5957,11 +5955,22 @@
   "classAlarmLaunchFailedToast": "No clock app found to handle this",
   "classAlarmActionLabel": "Set alarm for this class",
   "classAlarmCourseConfirmTitle": "Add a repeating alarm for this class?",
-  "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, matching this class. It keeps ringing during breaks; delete it in the system clock.",
+  "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, ringing {lead} minutes before this class starts (active weeks: {weeks}). It keeps ringing during holidays and off-weeks; delete it in the system clock.",
   "@classAlarmCourseConfirmMessage": {
     "placeholders": {
       "weekday": { "type": "String" },
-      "time": { "type": "String" }
+      "time": { "type": "String" },
+      "lead": { "type": "int" },
+      "weeks": { "type": "String" }
     }
-  }
+  },
+  "classAlarmPartialAddedToast": "Sent {done}/{total} alarms to the system clock; the rest failed",
+  "@classAlarmPartialAddedToast": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "classAlarmDaySeparator": ", ",
+  "classAlarmDetailSeparator": "; "
 }

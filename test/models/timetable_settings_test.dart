@@ -427,13 +427,19 @@ void main() {
     expect(restored.timetableCourseCardGap, 2.0);
   });
 
-  test('removed course-card liquid glass setting migrates to solid', () {
-    final restored = TimetableSettings.fromJson({
+  test('removed course-card styles migrate to the two surviving tiers', () {
+    TimetableSettings restore(String value) => TimetableSettings.fromJson({
       ...TimetableSettings.defaults().toJson(),
-      'courseCardSurfaceStyle': 'liquidGlass',
+      'courseCardSurfaceStyle': value,
     });
 
-    expect(restored.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
+    // 半透明并入实体卡片；玻璃 / 液态玻璃并入高斯模糊。
+    expect(restore('translucent').courseCardSurfaceStyle,
+        CourseCardSurfaceStyle.solid);
+    expect(restore('glass').courseCardSurfaceStyle,
+        CourseCardSurfaceStyle.gaussian);
+    expect(restore('liquidGlass').courseCardSurfaceStyle,
+        CourseCardSurfaceStyle.gaussian);
   });
 
   test('gaussian course-card style survives json round trip', () {
