@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:file_picker/file_picker.dart';
@@ -157,6 +158,24 @@ Future<void> main() async {
       // particularly after an Android process restart (e.g. returning from
       // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
+      // 金标联盟「谷歌Android导航条适配」（Edge-to-Edge，截止 2026-10-31）：
+      // 全局启用手势导航条沉浸式。Android 15+（targetSdk 35+）系统已强制
+      // 生效；此处覆盖 Android 10~14 设备，使内容延伸到透明导航条下方，
+      // 更低版本由引擎回退为传统系统栏。不 await：平台通道异步生效，
+      // 不阻塞启动管线；基线只声明导航栏字段（引擎按字段合并），状态栏
+      // 样式仍由各页面 AnnotatedRegion 控制。
+      if (!kIsWeb && Platform.isAndroid) {
+        unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+        // 该 API 在当前 SDK 返回 void（内部自行排队发送），直接调用即可。
+        SystemChrome.setSystemUIOverlayStyle(
+          const SystemUiOverlayStyle(
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.dark,
+            systemNavigationBarContrastEnforced: false,
+          ),
+        );
+      }
       // Single-stage boot: keep the Android system splash (@drawable/splash_icon)
       // as the only branding until locally persisted timetable is ready.
       // This avoids the 2-3 flickers: splash -> spinner -> timetable.
