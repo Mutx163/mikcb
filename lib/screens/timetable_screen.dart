@@ -278,9 +278,23 @@ class _TimetableScreenState extends State<TimetableScreen>
   String? _lastSyncedProfileId;
   Timer? _dayAgendaProgressTimer;
 
-  /// 1 Hz heartbeat for day-view progress cards / summary while day view is
-  /// open. Deliberately not a setState on this State: only the day pages
+  /// Minute-of-day the progress heartbeat last forwarded.
+  int _lastProgressMinuteOfDay = -1;
+
+  /// Verbose per-build day-view logging. Off by default: rebuilding all
+  /// cached pager pages floods the log otherwise (see the heartbeat below).
+  /// Flip temporarily when debugging the day view build pipeline.
+  static bool logDayViewBuilds = false;
+
+  /// Heartbeat for day-view ongoing-course badges / summary while day view
+  /// is open. Deliberately not a setState on this State: only the day pages
   /// rebuild on each tick.
+  ///
+  /// Everything those pages render depends on wall-clock time at **minute**
+  /// resolution (the provider matches "in progress" via hour*60+minute), so
+  /// the 1 s probe only forwards a tick when the minute actually rolled over.
+  /// Ticking every second used to rebuild all three cached pager pages with
+  /// byte-identical output — log flood plus wasted list-rebuild CPU.
   final ValueNotifier<int> _dayAgendaProgressTick = ValueNotifier<int>(0);
 
   /// Midpoint preview of the day the pager is heading to. Lets the weekday
@@ -418,9 +432,15 @@ class _TimetableScreenState extends State<TimetableScreen>
             if (!mounted || !_isDayView) {
               return;
             }
-            // Scoped tick: only the day pages listen (see _buildDayViewPanel).
-            // A whole-State setState here rebuilt the entire home screen —
-            // week pager included — every second while day view was open.
+            // The pages' output cannot change within one minute (ongoing
+            // badges resolve time at minute granularity), so skip identical
+            // seconds instead of dirtying three cached pager pages.
+            final now = DateTime.now();
+            final minuteOfDay = now.hour * 60 + now.minute;
+            if (minuteOfDay == _lastProgressMinuteOfDay) {
+              return;
+            }
+            _lastProgressMinuteOfDay = minuteOfDay;
             _dayAgendaProgressTick.value++;
           })
         : null;
@@ -3413,7 +3433,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int page,
   }) {
     final target = _dayViewTargetForPage(settings, page);
-    if (kDebugMode) {
+    if (logDayViewBuilds) {
       debugPrint(
         '[DayView] build page=$page -> week=${target.week} '
         'day=${target.dayOfWeek}',
@@ -3476,7 +3496,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         .where((item) => item.isScheduleItem)
         .map((item) => item.scheduleItem!)
         .toList(growable: false);
-    if (kDebugMode) {
+    if (logDayViewBuilds) {
       debugPrint(
         '[DayView] page=$page items: courses=${displayItems.length} '
         'agenda=${agendaItems.length} schedule=${scheduleItems.length}',
@@ -4479,7 +4499,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required _DayAgendaItem item,
   }) {
     if (item.isExam) {
-      if (kDebugMode) {
+      if (logDayViewBuilds) {
         debugPrint('[DayView] build agenda entry: exam id=${item.exam?.id}');
       }
       return _buildExamAgendaEntry(
@@ -4488,7 +4508,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
     }
     if (item.isScheduleItem) {
-      if (kDebugMode) {
+      if (logDayViewBuilds) {
         debugPrint(
           '[DayView] build agenda entry: schedule id=${item.scheduleItem?.id}',
         );
@@ -4497,7 +4517,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     final courseItem = item.courseItem!;
-    if (kDebugMode) {
+    if (logDayViewBuilds) {
       debugPrint(
         '[DayView] build agenda entry: course id=${courseItem.course.id} '
         'name=${courseItem.course.name}',
@@ -6480,82 +6500,43 @@ class _TimetableScreenState extends State<TimetableScreen>
             child: AnimatedBuilder(
               animation: _dockAddBtnCollapse,
               builder: (context, _) {
+                // 收起语义参考官方 collapse（extra 向药丸平移覆盖、渐隐）：
+                // 水滴回缩进左侧大卡片，而不是滑向屏幕角落或原地缩没。
                 final collapse = settings.glassDockShowAddButton
                     ? _dockAddBtnCollapse.value
                     : 1.0;
-                final slotWidth = 56 * (1 - collapse); // 48 按钮 + 8 间距
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: ConstrainedBox(
+                // 墨色与底栏未选中态同规则：按壁纸亮度自动黑白。
+                final lum = _wallpaperBodyLuminance;
+                final isDarkTheme =
+                    Theme.of(context).brightness == Brightness.dark;
+                final ink = (lum != null ? lum < 0.45 : isDarkTheme)
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : Colors.black.withValues(alpha: 0.75);
+                return Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 272),
                         child: _buildGlassDockBar(
                           settings: settings,
                           l10n: l10n,
                         ),
                       ),
-                    ),
-                    SizedBox(width: slotWidth),
-                  ],
+                      if (collapse < 1) _buildDockMergeSlot(
+                        collapse: collapse,
+                        ink: ink,
+                        l10n: l10n,
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           ),
         ),
-        if (settings.glassDockShowAddButton)
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              minimum: const EdgeInsets.fromLTRB(0, 0, 16, 6),
-              child: AnimatedBuilder(
-                animation: _dockAddBtnCollapse,
-                builder: (context, _) {
-                  final collapse = _dockAddBtnCollapse.value;
-                  if (collapse >= 1) {
-                    return const SizedBox.shrink();
-                  }
-                  // 墨色与底栏未选中态同规则：按壁纸亮度自动黑白。
-                  final lum = _wallpaperBodyLuminance;
-                  final isDarkTheme =
-                      Theme.of(context).brightness == Brightness.dark;
-                  final ink = (lum != null ? lum < 0.45 : isDarkTheme)
-                      ? Colors.white.withValues(alpha: 0.9)
-                      : Colors.black.withValues(alpha: 0.75);
-                  return ClipRect(
-                    child: SizedBox(
-                      width: 48,
-                      height: 56,
-                      child: OverflowBox(
-                        alignment: Alignment.centerLeft,
-                        minWidth: 48,
-                        maxWidth: 48,
-                        minHeight: 48,
-                        maxHeight: 48,
-                        child: Transform.translate(
-                          offset: Offset(collapse * 72, collapse * 40),
-                          child: Opacity(
-                            opacity: 1 - collapse,
-                            child: GlassButton(
-                              icon: Icon(Icons.add_rounded),
-                              onTap: () =>
-                                  unawaited(_openDockExtraButton()),
-                              label: l10n.glassDockExtraButtonSemanticLabel,
-                              width: 48,
-                              height: 48,
-                              iconSize: 22,
-                              iconColor: ink,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+
       ],
     );
   }
@@ -6651,6 +6632,48 @@ class _TimetableScreenState extends State<TimetableScreen>
       unselectedIconColor: unselectedColor,
       selectedLabelColor: selectedColor,
       unselectedLabelColor: unselectedColor,
+    );
+  }
+
+  /// 「水滴合并槽」：独立按钮与药丸之间的过渡区。
+  ///
+  /// 槽与药丸组件等高（68 = 56 药丸 + 上下各 6 padding），两者中心线
+  /// 天然对齐；宽度 = 8 间距 + 48 按钮随收起进度回收，药丸平滑补位。
+  /// 按钮在槽内贴右缘（紧挨药丸侧），向左平移沉入药丸方向、被槽缘裁
+  /// 掉——即官方 collapse 的 extra 向药丸覆盖融合效果。透明度用平方
+  /// 曲线：滑动全程清晰可见，末段才快速隐去。
+  Widget _buildDockMergeSlot({
+    required double collapse,
+    required Color ink,
+    required AppLocalizations l10n,
+  }) {
+    return ClipRect(
+      child: SizedBox(
+        width: 8 + 48 * (1 - collapse),
+        height: 68,
+        child: OverflowBox(
+          alignment: Alignment.centerRight,
+          minWidth: 48,
+          maxWidth: 48,
+          minHeight: 48,
+          maxHeight: 48,
+          child: Transform.translate(
+            offset: Offset(-collapse * 64, 0),
+            child: Opacity(
+              opacity: 1 - collapse * collapse,
+              child: GlassButton(
+                icon: Icon(Icons.add_rounded),
+                onTap: () => unawaited(_openDockExtraButton()),
+                label: l10n.glassDockExtraButtonSemanticLabel,
+                width: 48,
+                height: 48,
+                iconSize: 22,
+                iconColor: ink,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
