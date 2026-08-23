@@ -1381,6 +1381,42 @@
   "showStageTextSubtitle": "If countdown is hidden, you can still show labels like before class / in class / before end",
   "hidePrefixTextTitle": "Hide Prefix Text",
   "hidePrefixTextSubtitle": "For example, hide prefixes like “before class”",
+  "liveIslandPreviewTitle": "Super Island preview",
+  "liveIslandPreviewSummaryLabel": "Summary",
+  "liveIslandPreviewExpandedLabel": "Expanded",
+  "liveIslandPreviewFollowBadge": "Following before-class display settings; adjust those to preview changes",
+  "liveIslandPreviewStageBeforeClass": "Before class",
+  "liveIslandPreviewStageInClass": "In class",
+  "liveIslandPreviewStageBeforeEnd": "Before end",
+  "liveIslandPreviewUntilClassStart": "Starts in {time}",
+  "@liveIslandPreviewUntilClassStart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewUntilClassEnd": "Ends in {time}",
+  "@liveIslandPreviewUntilClassEnd": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewFinalDismiss": "Class ends in {time}",
+  "@liveIslandPreviewFinalDismiss": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewMilestoneLabel": "Break",
+  "liveIslandPreviewSampleCourse": "Mathematics",
+  "liveIslandPreviewSampleCourseShort": "Math",
+  "liveIslandPreviewSampleLocation": "Bldg 3-401",
+  "liveIslandPreviewSampleTeacher": "Mr. Wang",
   "beforeClassQuickActionTitle": "Before-class Quick Action",
   "beforeClassQuickActionSubtitle": "Only appears in the expanded before-class reminder. Silent/DND restores after class ends and on reboot. Do Not Disturb may open a system permission page on first use",
   "layoutEntryTitle": "Layout & Sections",

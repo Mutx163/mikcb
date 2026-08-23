@@ -2536,6 +2536,58 @@ class AppLocalizationsEn extends AppLocalizations {
       'For example, hide prefixes like “before class”';
 
   @override
+  String get liveIslandPreviewTitle => 'Super Island preview';
+
+  @override
+  String get liveIslandPreviewSummaryLabel => 'Summary';
+
+  @override
+  String get liveIslandPreviewExpandedLabel => 'Expanded';
+
+  @override
+  String get liveIslandPreviewFollowBadge =>
+      'Following before-class display settings; adjust those to preview changes';
+
+  @override
+  String get liveIslandPreviewStageBeforeClass => 'Before class';
+
+  @override
+  String get liveIslandPreviewStageInClass => 'In class';
+
+  @override
+  String get liveIslandPreviewStageBeforeEnd => 'Before end';
+
+  @override
+  String liveIslandPreviewUntilClassStart(String time) {
+    return 'Starts in $time';
+  }
+
+  @override
+  String liveIslandPreviewUntilClassEnd(String time) {
+    return 'Ends in $time';
+  }
+
+  @override
+  String liveIslandPreviewFinalDismiss(String time) {
+    return 'Class ends in $time';
+  }
+
+  @override
+  String get liveIslandPreviewMilestoneLabel => 'Break';
+
+  @override
+  String get liveIslandPreviewSampleCourse => 'Mathematics';
+
+  @override
+  String get liveIslandPreviewSampleCourseShort => 'Math';
+
+  @override
+  String get liveIslandPreviewSampleLocation => 'Bldg 3-401';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => 'Mr. Wang';
+
+  @override
   String get beforeClassQuickActionTitle => 'Before-class Quick Action';
 
   @override

@@ -2440,6 +2440,58 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hidePrefixTextSubtitle => '예: \'곧 수업\' 같은 접두사를 숨기기';
 
   @override
+  String get liveIslandPreviewTitle => '슈퍼 아일랜드 미리보기';
+
+  @override
+  String get liveIslandPreviewSummaryLabel => '요약';
+
+  @override
+  String get liveIslandPreviewExpandedLabel => '확장';
+
+  @override
+  String get liveIslandPreviewFollowBadge =>
+      '\'수업 전 표시\' 설정을 따르며, 해당 설정을 조정하면 미리보기에 반영됩니다';
+
+  @override
+  String get liveIslandPreviewStageBeforeClass => '곧 수업';
+
+  @override
+  String get liveIslandPreviewStageInClass => '수업 중';
+
+  @override
+  String get liveIslandPreviewStageBeforeEnd => '종료 알림';
+
+  @override
+  String liveIslandPreviewUntilClassStart(String time) {
+    return '수업 시작 $time 전';
+  }
+
+  @override
+  String liveIslandPreviewUntilClassEnd(String time) {
+    return '수업 종료 $time 전';
+  }
+
+  @override
+  String liveIslandPreviewFinalDismiss(String time) {
+    return '수업 종료까지 $time';
+  }
+
+  @override
+  String get liveIslandPreviewMilestoneLabel => '쉬는 시간';
+
+  @override
+  String get liveIslandPreviewSampleCourse => '고등 수학';
+
+  @override
+  String get liveIslandPreviewSampleCourseShort => '수학';
+
+  @override
+  String get liveIslandPreviewSampleLocation => '3동-401';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '왕 선생님';
+
+  @override
   String get beforeClassQuickActionTitle => '수업 전 빠른 작업';
 
   @override

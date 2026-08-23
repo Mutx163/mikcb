@@ -14,6 +14,7 @@ import '../services/miui_live_activities_service.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../widgets/live_island_preview.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
 const String _labelLogoDir = 'miui_label_logos';
@@ -759,6 +760,16 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             ),
             const HyperosSectionGap(),
           ],
+          HyperosSectionLabel(text: l10n.liveIslandPreviewTitle),
+          LiveIslandPreviewCard(
+            display: _followBeforeClass
+                ? _draft.beforeClassDisplaySettings
+                : display,
+            followBeforeClass: _followBeforeClass,
+            endSecondsCountdownThresholdSeconds:
+                _draft.liveEndSecondsCountdownThreshold,
+          ),
+          const HyperosSectionGap(),
           if (_followBeforeClass)
             IgnorePointer(
               ignoring: true,

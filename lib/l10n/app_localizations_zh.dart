@@ -2383,6 +2383,57 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hidePrefixTextSubtitle => '例如隐藏“即将上课”这类前缀';
 
   @override
+  String get liveIslandPreviewTitle => '超级岛预览';
+
+  @override
+  String get liveIslandPreviewSummaryLabel => '摘要态';
+
+  @override
+  String get liveIslandPreviewExpandedLabel => '展开态';
+
+  @override
+  String get liveIslandPreviewFollowBadge => '正在跟随“课前提醒显示”设置，调整课前提醒即可生效';
+
+  @override
+  String get liveIslandPreviewStageBeforeClass => '即将上课';
+
+  @override
+  String get liveIslandPreviewStageInClass => '上课中';
+
+  @override
+  String get liveIslandPreviewStageBeforeEnd => '下课提醒';
+
+  @override
+  String liveIslandPreviewUntilClassStart(String time) {
+    return '距上课$time';
+  }
+
+  @override
+  String liveIslandPreviewUntilClassEnd(String time) {
+    return '距下课$time';
+  }
+
+  @override
+  String liveIslandPreviewFinalDismiss(String time) {
+    return '整节下课 $time';
+  }
+
+  @override
+  String get liveIslandPreviewMilestoneLabel => '课间';
+
+  @override
+  String get liveIslandPreviewSampleCourse => '高等数学';
+
+  @override
+  String get liveIslandPreviewSampleCourseShort => '高数';
+
+  @override
+  String get liveIslandPreviewSampleLocation => '三教-401';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '王老师';
+
+  @override
   String get beforeClassQuickActionTitle => '上课前快捷操作';
 
   @override
@@ -12369,6 +12420,57 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get hidePrefixTextSubtitle => '例如隱藏“即將上課”這類前綴';
+
+  @override
+  String get liveIslandPreviewTitle => '超級島預覽';
+
+  @override
+  String get liveIslandPreviewSummaryLabel => '摘要態';
+
+  @override
+  String get liveIslandPreviewExpandedLabel => '展開態';
+
+  @override
+  String get liveIslandPreviewFollowBadge => '正在跟隨「課前提醒顯示」設定，調整課前提醒即可生效';
+
+  @override
+  String get liveIslandPreviewStageBeforeClass => '即將上課';
+
+  @override
+  String get liveIslandPreviewStageInClass => '上課中';
+
+  @override
+  String get liveIslandPreviewStageBeforeEnd => '下課提醒';
+
+  @override
+  String liveIslandPreviewUntilClassStart(String time) {
+    return '距上課$time';
+  }
+
+  @override
+  String liveIslandPreviewUntilClassEnd(String time) {
+    return '距下課$time';
+  }
+
+  @override
+  String liveIslandPreviewFinalDismiss(String time) {
+    return '整節下課 $time';
+  }
+
+  @override
+  String get liveIslandPreviewMilestoneLabel => '課間';
+
+  @override
+  String get liveIslandPreviewSampleCourse => '高等數學';
+
+  @override
+  String get liveIslandPreviewSampleCourseShort => '高數';
+
+  @override
+  String get liveIslandPreviewSampleLocation => '三教-401';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '王老師';
 
   @override
   String get beforeClassQuickActionTitle => '上課前快捷操作';
@@ -22400,6 +22502,57 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get hidePrefixTextSubtitle => '例如隱藏“即將上課”這類前綴';
+
+  @override
+  String get liveIslandPreviewTitle => '超級島預覽';
+
+  @override
+  String get liveIslandPreviewSummaryLabel => '摘要態';
+
+  @override
+  String get liveIslandPreviewExpandedLabel => '展開態';
+
+  @override
+  String get liveIslandPreviewFollowBadge => '正在跟隨「課前提醒顯示」設定，調整課前提醒即可生效';
+
+  @override
+  String get liveIslandPreviewStageBeforeClass => '即將上課';
+
+  @override
+  String get liveIslandPreviewStageInClass => '上課中';
+
+  @override
+  String get liveIslandPreviewStageBeforeEnd => '下課提醒';
+
+  @override
+  String liveIslandPreviewUntilClassStart(String time) {
+    return '距上課$time';
+  }
+
+  @override
+  String liveIslandPreviewUntilClassEnd(String time) {
+    return '距下課$time';
+  }
+
+  @override
+  String liveIslandPreviewFinalDismiss(String time) {
+    return '整節下課 $time';
+  }
+
+  @override
+  String get liveIslandPreviewMilestoneLabel => '課間';
+
+  @override
+  String get liveIslandPreviewSampleCourse => '高等數學';
+
+  @override
+  String get liveIslandPreviewSampleCourseShort => '高數';
+
+  @override
+  String get liveIslandPreviewSampleLocation => '三教-401';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '王老師';
 
   @override
   String get beforeClassQuickActionTitle => '上課前快捷操作';

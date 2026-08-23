@@ -1205,6 +1205,42 @@
   "showStageTextSubtitle": "關閉倒計時後，可繼續顯示“即將上課 / 上課中 / 下課提醒”",
   "hidePrefixTextTitle": "隱藏前綴文案",
   "hidePrefixTextSubtitle": "例如隱藏“即將上課”這類前綴",
+  "liveIslandPreviewTitle": "超級島預覽",
+  "liveIslandPreviewSummaryLabel": "摘要態",
+  "liveIslandPreviewExpandedLabel": "展開態",
+  "liveIslandPreviewFollowBadge": "正在跟隨「課前提醒顯示」設定，調整課前提醒即可生效",
+  "liveIslandPreviewStageBeforeClass": "即將上課",
+  "liveIslandPreviewStageInClass": "上課中",
+  "liveIslandPreviewStageBeforeEnd": "下課提醒",
+  "liveIslandPreviewUntilClassStart": "距上課{time}",
+  "@liveIslandPreviewUntilClassStart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewUntilClassEnd": "距下課{time}",
+  "@liveIslandPreviewUntilClassEnd": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewFinalDismiss": "整節下課 {time}",
+  "@liveIslandPreviewFinalDismiss": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewMilestoneLabel": "課間",
+  "liveIslandPreviewSampleCourse": "高等數學",
+  "liveIslandPreviewSampleCourseShort": "高數",
+  "liveIslandPreviewSampleLocation": "三教-401",
+  "liveIslandPreviewSampleTeacher": "王老師",
   "beforeClassQuickActionTitle": "上課前快捷操作",
   "beforeClassQuickActionSubtitle": "只在上課前提醒的展開通知裡顯示，靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁",
   "liveMiuiLabelSizePreview": "{value}",

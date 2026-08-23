@@ -1342,7 +1342,43 @@
   "showStageTextTitle": "显示阶段状态文案",
   "showStageTextSubtitle": "关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”",
   "hidePrefixTextTitle": "隐藏前缀文案",
-  "hidePrefixTextSubtitle": "例如隐藏“即将上课”这类前缀",
+      "hidePrefixTextSubtitle": "例如隐藏“即将上课”这类前缀",
+  "liveIslandPreviewTitle": "超级岛预览",
+  "liveIslandPreviewSummaryLabel": "摘要态",
+  "liveIslandPreviewExpandedLabel": "展开态",
+  "liveIslandPreviewFollowBadge": "正在跟随“课前提醒显示”设置，调整课前提醒即可生效",
+  "liveIslandPreviewStageBeforeClass": "即将上课",
+  "liveIslandPreviewStageInClass": "上课中",
+  "liveIslandPreviewStageBeforeEnd": "下课提醒",
+  "liveIslandPreviewUntilClassStart": "距上课{time}",
+  "@liveIslandPreviewUntilClassStart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewUntilClassEnd": "距下课{time}",
+  "@liveIslandPreviewUntilClassEnd": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewFinalDismiss": "整节下课 {time}",
+  "@liveIslandPreviewFinalDismiss": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewMilestoneLabel": "课间",
+  "liveIslandPreviewSampleCourse": "高等数学",
+  "liveIslandPreviewSampleCourseShort": "高数",
+  "liveIslandPreviewSampleLocation": "三教-401",
+  "liveIslandPreviewSampleTeacher": "王老师",
   "beforeClassQuickActionTitle": "上课前快捷操作",
   "beforeClassQuickActionSubtitle": "只在上课前提醒的展开通知里显示，静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页",
   "liveMiuiLabelSizePreview": "{value}",

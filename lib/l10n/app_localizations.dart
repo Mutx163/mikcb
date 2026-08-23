@@ -4444,6 +4444,96 @@ abstract class AppLocalizations {
   /// **'例如隐藏“即将上课”这类前缀'**
   String get hidePrefixTextSubtitle;
 
+  /// No description provided for @liveIslandPreviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛预览'**
+  String get liveIslandPreviewTitle;
+
+  /// No description provided for @liveIslandPreviewSummaryLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'摘要态'**
+  String get liveIslandPreviewSummaryLabel;
+
+  /// No description provided for @liveIslandPreviewExpandedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开态'**
+  String get liveIslandPreviewExpandedLabel;
+
+  /// No description provided for @liveIslandPreviewFollowBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在跟随“课前提醒显示”设置，调整课前提醒即可生效'**
+  String get liveIslandPreviewFollowBadge;
+
+  /// No description provided for @liveIslandPreviewStageBeforeClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'即将上课'**
+  String get liveIslandPreviewStageBeforeClass;
+
+  /// No description provided for @liveIslandPreviewStageInClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课中'**
+  String get liveIslandPreviewStageInClass;
+
+  /// No description provided for @liveIslandPreviewStageBeforeEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'下课提醒'**
+  String get liveIslandPreviewStageBeforeEnd;
+
+  /// No description provided for @liveIslandPreviewUntilClassStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'距上课{time}'**
+  String liveIslandPreviewUntilClassStart(String time);
+
+  /// No description provided for @liveIslandPreviewUntilClassEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'距下课{time}'**
+  String liveIslandPreviewUntilClassEnd(String time);
+
+  /// No description provided for @liveIslandPreviewFinalDismiss.
+  ///
+  /// In zh, this message translates to:
+  /// **'整节下课 {time}'**
+  String liveIslandPreviewFinalDismiss(String time);
+
+  /// No description provided for @liveIslandPreviewMilestoneLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'课间'**
+  String get liveIslandPreviewMilestoneLabel;
+
+  /// No description provided for @liveIslandPreviewSampleCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'高等数学'**
+  String get liveIslandPreviewSampleCourse;
+
+  /// No description provided for @liveIslandPreviewSampleCourseShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'高数'**
+  String get liveIslandPreviewSampleCourseShort;
+
+  /// No description provided for @liveIslandPreviewSampleLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'三教-401'**
+  String get liveIslandPreviewSampleLocation;
+
+  /// No description provided for @liveIslandPreviewSampleTeacher.
+  ///
+  /// In zh, this message translates to:
+  /// **'王老师'**
+  String get liveIslandPreviewSampleTeacher;
+
   /// No description provided for @beforeClassQuickActionTitle.
   ///
   /// In zh, this message translates to:

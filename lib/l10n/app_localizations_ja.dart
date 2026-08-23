@@ -2427,6 +2427,58 @@ class AppLocalizationsJa extends AppLocalizations {
   String get hidePrefixTextSubtitle => '例：「もうすぐ授業」などのプレフィックスを非表示';
 
   @override
+  String get liveIslandPreviewTitle => 'スーパー島プレビュー';
+
+  @override
+  String get liveIslandPreviewSummaryLabel => '概要';
+
+  @override
+  String get liveIslandPreviewExpandedLabel => '展開';
+
+  @override
+  String get liveIslandPreviewFollowBadge =>
+      '「授業前表示」の設定に従っています。そちらを調整すると反映されます';
+
+  @override
+  String get liveIslandPreviewStageBeforeClass => 'もうすぐ授業';
+
+  @override
+  String get liveIslandPreviewStageInClass => '授業中';
+
+  @override
+  String get liveIslandPreviewStageBeforeEnd => '終了リマインダー';
+
+  @override
+  String liveIslandPreviewUntilClassStart(String time) {
+    return '授業まで$time';
+  }
+
+  @override
+  String liveIslandPreviewUntilClassEnd(String time) {
+    return '終了まで$time';
+  }
+
+  @override
+  String liveIslandPreviewFinalDismiss(String time) {
+    return '授業終了まで$time';
+  }
+
+  @override
+  String get liveIslandPreviewMilestoneLabel => '休憩';
+
+  @override
+  String get liveIslandPreviewSampleCourse => '高等数学';
+
+  @override
+  String get liveIslandPreviewSampleCourseShort => '数学';
+
+  @override
+  String get liveIslandPreviewSampleLocation => '3号館-401';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '王先生';
+
+  @override
   String get beforeClassQuickActionTitle => '授業前クイックアクション';
 
   @override

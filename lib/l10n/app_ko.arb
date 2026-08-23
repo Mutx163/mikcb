@@ -1206,6 +1206,42 @@
   "showStageTextSubtitle": "카운트다운 끈 후에도 '곧 수업/수업 중/종료 알림'을 계속 표시할 수 있습니다",
   "hidePrefixTextTitle": "접두사 텍스트 숨기기",
   "hidePrefixTextSubtitle": "예: '곧 수업' 같은 접두사를 숨기기",
+  "liveIslandPreviewTitle": "슈퍼 아일랜드 미리보기",
+  "liveIslandPreviewSummaryLabel": "요약",
+  "liveIslandPreviewExpandedLabel": "확장",
+  "liveIslandPreviewFollowBadge": "'수업 전 표시' 설정을 따르며, 해당 설정을 조정하면 미리보기에 반영됩니다",
+  "liveIslandPreviewStageBeforeClass": "곧 수업",
+  "liveIslandPreviewStageInClass": "수업 중",
+  "liveIslandPreviewStageBeforeEnd": "종료 알림",
+  "liveIslandPreviewUntilClassStart": "수업 시작 {time} 전",
+  "@liveIslandPreviewUntilClassStart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewUntilClassEnd": "수업 종료 {time} 전",
+  "@liveIslandPreviewUntilClassEnd": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewFinalDismiss": "수업 종료까지 {time}",
+  "@liveIslandPreviewFinalDismiss": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandPreviewMilestoneLabel": "쉬는 시간",
+  "liveIslandPreviewSampleCourse": "고등 수학",
+  "liveIslandPreviewSampleCourseShort": "수학",
+  "liveIslandPreviewSampleLocation": "3동-401",
+  "liveIslandPreviewSampleTeacher": "왕 선생님",
   "beforeClassQuickActionTitle": "수업 전 빠른 작업",
   "beforeClassQuickActionSubtitle": "수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다",
   "liveMiuiLabelSizePreview": "{value}",
