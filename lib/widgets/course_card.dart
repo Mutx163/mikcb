@@ -3,6 +3,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
 import 'course_surface.dart';
 
@@ -89,12 +90,26 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _parseColor(overrideColorHex ?? course.color);
-    final titleColor = titleColorHex != null
-        ? _parseColor(titleColorHex!)
-        : Colors.white;
-    final detailColor = detailColorHex != null
-        ? _parseColor(detailColorHex!).withValues(alpha: 0.7)
-        : Colors.white70;
+    // 可读性兜底（仅实心卡面）：全局/单课自定义字色与卡色同色系时
+    // （如蓝字配蓝卡）替换为黑白最优墨色；高斯模糊档透出壁纸，卡色不
+    // 是可靠背景，保留用户选择。此前守卫函数一直存在但从未接入渲染。
+    final surfaceShowsWallpaper = courseCardSurfaceShowsWallpaper(
+      surfaceStyle,
+    );
+    final titleColor = resolveReadableCourseCardTitleColor(
+      preferred: titleColorHex != null
+          ? _parseColor(titleColorHex!)
+          : Colors.white,
+      cardColor: color,
+      surfaceShowsWallpaper: surfaceShowsWallpaper,
+    );
+    final detailColor = resolveReadableCourseCardTitleColor(
+      preferred: detailColorHex != null
+          ? _parseColor(detailColorHex!)
+          : Colors.white,
+      cardColor: color,
+      surfaceShowsWallpaper: surfaceShowsWallpaper,
+    ).withValues(alpha: 0.7);
 
     if (isCompact) {
       return _buildCompactCard(context, color, titleColor, detailColor);

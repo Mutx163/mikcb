@@ -4011,6 +4011,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 week: week,
                 dayOfWeek: dayOfWeek,
                 isToday: isToday,
+                ink: summaryInk,
               ),
             ],
           ],
@@ -4093,6 +4094,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required int dayOfWeek,
     required bool isToday,
+    // 摘要卡当前材质的墨色极性（玻璃下随壁纸自动黑白）。嵌套的空闲面板
+    // 与其中的文字必须跟母卡同极性，而不是主题 onSurface：高斯模糊档下
+    // 母卡是亮磨砂玻璃，主题墨色可能与实际卡面对比不足。
+    required Color ink,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final foruiTheme = context.theme;
@@ -4108,7 +4113,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? l10n.coupleTimetableNoSharedFree
         : l10n.coupleTimetableNoSharedFreeOtherDay;
     final mutedStyle = foruiTheme.typography.body.xs2.copyWith(
-      color: foruiTheme.colors.mutedForeground,
+      color: ink.withValues(alpha: 0.62),
       fontWeight: FontWeight.w400,
       height: 1.25,
     );
@@ -4123,13 +4128,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (intervals.isEmpty) {
       return _buildSharedFreeSummaryShell(
         key: const ValueKey('shared-free-summary-empty'),
+        ink: ink,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
               style: foruiTheme.typography.body.sm.copyWith(
-                color: foruiTheme.colors.foreground,
+                color: ink,
                 fontWeight: FontWeight.w400,
                 height: 1.2,
               ),
@@ -4153,6 +4159,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     return _buildSharedFreeSummaryShell(
       key: const ValueKey('shared-free-summary'),
+      ink: ink,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -4165,7 +4172,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: foruiTheme.typography.body.sm.copyWith(
-                    color: foruiTheme.colors.foreground,
+                    color: ink,
                     fontWeight: FontWeight.w400,
                     height: 1.2,
                   ),
@@ -4262,14 +4269,19 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Widget _buildSharedFreeSummaryShell({
     required Key key,
+    required Color ink,
     required Widget child,
   }) {
-    final foruiTheme = context.theme;
     return DecoratedBox(
       key: key,
       decoration: BoxDecoration(
-        color: foruiTheme.colors.secondary,
+        // 摘要卡内的嵌套面板跟随摘要墨色：浅洗底 + 细描边，玻璃/实心、
+        // 明暗主题都与母卡同极性。此前误用 colorScheme.secondary（M3 基线
+        // 浅色 #625B71 近黑），高斯模糊下整张卡在亮磨砂上读作发黑的一块，
+        // 标题墨色（onSurface 近黑）也低于可读下限。
+        color: ink.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ink.withValues(alpha: 0.10)),
       ),
       child: Padding(
         // 与摘要卡内其它区块同一套水平节奏，避免再套一层 14 造成左右过空。
@@ -5117,6 +5129,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    // 高斯模糊档下错误红只有 ~42% tint，亮色壁纸会透成浅粉底，写死的
+    // 白墨会洗没；与课程/日程卡一致改用自动黑白墨色。
+    final ink = _dayAgendaAutoInk(
+      colorScheme.error,
+      settings: provider.settings,
+    );
     final course = provider.getCourseForExam(exam);
     final courseName = course?.name ?? '';
     final location = exam.location ?? course?.location ?? '';
@@ -5181,24 +5199,20 @@ class _TimetableScreenState extends State<TimetableScreen>
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: _dayAgendaInkWash(ink, lightAlpha: 0.18),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.school_outlined,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                          Icon(Icons.school_outlined, size: 14, color: ink),
                           const SizedBox(width: 4),
                           Text(
                             l10n.examBadgeLabel,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: ink,
                             ),
                           ),
                         ],
@@ -5210,15 +5224,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.14),
+                        color: _dayAgendaInkWash(ink, lightAlpha: 0.16),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         countdownText,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: ink,
                         ),
                       ),
                     ),
@@ -5227,10 +5241,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                 const SizedBox(height: 10),
                 Text(
                   exam.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: ink,
                   ),
                 ),
                 const SizedBox(height: 3.5),
@@ -5241,7 +5255,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       '${exam.startTime} - ${exam.endTime}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: ink.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -5253,7 +5267,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       location,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: ink.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -5262,7 +5276,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     courseName,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: ink.withValues(alpha: 0.7),
                     ),
                   ),
               ],
@@ -5765,10 +5779,24 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Keep pastel import colors light; only a tiny white lift for depth.
     final fillColor = background;
     final baseColor = Color.lerp(fillColor, Colors.white, 0.06) ?? fillColor;
-    final foregroundColor =
-        foregroundHex == null || foregroundHex.trim().isEmpty
-        ? _dayAgendaAutoInk(fillColor, settings: settings)
+    final customInk = foregroundHex == null || foregroundHex.trim().isEmpty
+        ? null
         : _colorFromHex(foregroundHex, Colors.white);
+    // 自定义字色（导入/LAN 同步携带）在实心卡面上做可读性兜底：与卡色
+    // 同色系时（如蓝字配蓝卡）替换为黑白最优墨色。高斯模糊档透出壁纸、
+    // 卡色不再是可靠背景，保持用户选择，与 CourseCard 行为一致。
+    final foregroundColor = customInk == null
+        ? _dayAgendaAutoInk(fillColor, settings: settings)
+        : (settings != null &&
+              !courseCardSurfaceShowsWallpaper(
+                settings.courseCardSurfaceStyle,
+              )
+        ? resolveReadableCourseCardTitleColor(
+            preferred: customInk,
+            cardColor: fillColor,
+            surfaceShowsWallpaper: false,
+          )
+        : customInk);
     return _DayAgendaPalette(
       baseColor: baseColor,
       fillColor: fillColor,
@@ -6751,9 +6779,10 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞入口切换。
   ///
-  /// 「闪现切换」：点击后状态与切换动画值立即落到目标位姿，页面直接
-  /// 就位，无横向滑动转场。日期栏路径（[_toggleDayView] / [_closeDayView]）
-  /// 保持原锚点展开动画；设置页「跟手拖动返回」保留滑动交互。
+  /// 日↔周复用日期栏路径的锚点展开/收起动画（[_toggleDayView] /
+  /// [_closeDayView]）：玻璃面板流畅滑入滑出——长按拖拽指示器松手时
+  /// 库只在终点回调一次，若在此闪现就会「拖到哪都瞬间跳变」。设置页
+  /// 仍为闪现直切 + 跟手拖动返回（其页面切换本就是横向闪切）。
   ///
   /// 快速连点不吞拍：每次点击都同步收敛到目标；若设置页拖动松手的
   /// 弹簧还在收敛，先凭 [_dockAnimEpoch] 使其完成回调失效再停掉动画。
@@ -6766,14 +6795,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         !_dockSettingsDragging) {
       return; // 已在该页且无动画：重复点击无动作。
     }
-    // 通过守卫即视为一次真实切换：三个入口（含设置）统一在此给触觉
-    // 反馈，避免某条分支漏写导致「切设置不震」。重复点击已被上方拦截。
-    _maybeSelectionClick(settings);
+    // 震动改由各目标路径内部触发：日/周走 toggle/close 自带的一次，
+    // 设置分支单独调用——避免与动画路径叠加成双击感。
     _dockAnimEpoch++;
     _dockTargetEntry = entry;
     _dockSettingsSwitchAnimation.stop();
     switch (entry) {
-      case _GlassDockEntry.day: // 日课表：关设置 + 开日视图，均闪现就位。
+      case _GlassDockEntry.day: // 日课表：关设置闪现就位；面板锚点动画展开。
         setState(() {
           _dockSettingsActive = false;
           _dockSettingsSlideActive = false;
@@ -6781,25 +6809,33 @@ class _TimetableScreenState extends State<TimetableScreen>
         });
         _dockSettingsSwitchAnimation.value = 0;
         if (!_isDayView) {
-          _startDayViewTransition(settings);
+          unawaited(
+            _toggleDayView(
+              week: _visibleWeek,
+              dayOfWeek: _resolveStoredDayOfWeek(
+                settings,
+                settings.timetableLastViewedDayOfWeek,
+              ),
+              settings: settings,
+            ),
+          );
         }
-      case _GlassDockEntry.week: // 周课表：关设置 + 收日视图，均闪现就位。
+      case _GlassDockEntry.week: // 周课表：关设置闪现就位；日面板动画收起。
         setState(() {
           _dockSettingsActive = false;
           _dockSettingsSlideActive = false;
           _dockSettingsDragging = false;
-          _dayViewExpandController.value = 0;
-          _dayHeaderPreview.value = null;
-          _selectedWeekForDayView = null;
-          _selectedDayOfWeek = null;
-          _dayViewTransitionSourceWeek = null;
-          _dayViewTransitionSourceDayOfWeek = null;
         });
         _dockSettingsSwitchAnimation.value = 0;
-        _persistViewState(
-          context.read<TimetableProvider>(),
-          mode: TimetableHomeViewMode.week,
-        );
+        if (_isDayView) {
+          // 动画收起：_closeDayView 内部完成震动、状态清理与持久化。
+          unawaited(_closeDayView(settings));
+        } else {
+          _persistViewState(
+            context.read<TimetableProvider>(),
+            mode: TimetableHomeViewMode.week,
+          );
+        }
       case _GlassDockEntry
           .settings: // 设置：直接就位（动画值落 1，非激活课表页随即 Offstage）。
         setState(() {
@@ -6808,6 +6844,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           _dockSettingsDragging = false;
         });
         _dockSettingsSwitchAnimation.value = 1;
+        _maybeSelectionClick(settings);
     }
     _syncDockAddButtonCollapse();
   }
@@ -6822,35 +6859,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     } else {
       _dockAddBtnCollapse.reverse();
     }
-  }
-
-  /// 准备日视图状态（玻璃坞点 Tab 闪现直切：直接就位，无滑动转场）。
-  void _startDayViewTransition(TimetableSettings settings) {
-    final dayOfWeek = _resolveStoredDayOfWeek(
-      settings,
-      settings.timetableLastViewedDayOfWeek,
-    );
-    final normalizedWeek = _clampWeek(
-      _visibleWeek,
-      settings.semesterWeekCount,
-    );
-    _recreateDayViewPageController(
-      settings,
-      week: normalizedWeek,
-      dayOfWeek: dayOfWeek,
-    );
-    _dayViewExpandController.value = 1;
-    _dayHeaderPreview.value = null;
-    setState(() {
-      _selectedWeekForDayView = normalizedWeek;
-      _selectedDayOfWeek = dayOfWeek;
-      _sharedFreeSegmentsExpanded = false;
-    });
-    _persistViewState(
-      context.read<TimetableProvider>(),
-      mode: TimetableHomeViewMode.day,
-      dayOfWeek: dayOfWeek,
-    );
   }
 
   /// 设置页拖动转场动画完成收敛：凭代次确认仍是最新动画后复位转动态，
