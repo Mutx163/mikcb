@@ -1226,15 +1226,6 @@
       }
     }
   },
-  "liveIslandPreviewFinalDismiss": "整節下課 {time}",
-  "@liveIslandPreviewFinalDismiss": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "liveIslandPreviewMilestoneLabel": "課間",
   "liveIslandPreviewSampleCourse": "高等數學",
   "liveIslandPreviewSampleCourseShort": "高數",
   "liveIslandPreviewSampleLocation": "三教-401",

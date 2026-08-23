@@ -2562,14 +2562,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String liveIslandPreviewFinalDismiss(String time) {
-    return 'Class ends in $time';
-  }
-
-  @override
-  String get liveIslandPreviewMilestoneLabel => 'Break';
-
-  @override
   String get liveIslandPreviewSampleCourse => 'Mathematics';
 
   @override

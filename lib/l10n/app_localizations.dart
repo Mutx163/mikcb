@@ -4486,18 +4486,6 @@ abstract class AppLocalizations {
   /// **'距下课{time}'**
   String liveIslandPreviewUntilClassEnd(String time);
 
-  /// No description provided for @liveIslandPreviewFinalDismiss.
-  ///
-  /// In zh, this message translates to:
-  /// **'整节下课 {time}'**
-  String liveIslandPreviewFinalDismiss(String time);
-
-  /// No description provided for @liveIslandPreviewMilestoneLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'课间'**
-  String get liveIslandPreviewMilestoneLabel;
-
   /// No description provided for @liveIslandPreviewSampleCourse.
   ///
   /// In zh, this message translates to:

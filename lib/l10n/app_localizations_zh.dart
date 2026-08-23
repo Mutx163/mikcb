@@ -2408,14 +2408,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String liveIslandPreviewFinalDismiss(String time) {
-    return '整节下课 $time';
-  }
-
-  @override
-  String get liveIslandPreviewMilestoneLabel => '课间';
-
-  @override
   String get liveIslandPreviewSampleCourse => '高等数学';
 
   @override
@@ -12436,14 +12428,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String liveIslandPreviewUntilClassEnd(String time) {
     return '距下課$time';
   }
-
-  @override
-  String liveIslandPreviewFinalDismiss(String time) {
-    return '整節下課 $time';
-  }
-
-  @override
-  String get liveIslandPreviewMilestoneLabel => '課間';
 
   @override
   String get liveIslandPreviewSampleCourse => '高等數學';
@@ -22509,14 +22493,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String liveIslandPreviewUntilClassEnd(String time) {
     return '距下課$time';
   }
-
-  @override
-  String liveIslandPreviewFinalDismiss(String time) {
-    return '整節下課 $time';
-  }
-
-  @override
-  String get liveIslandPreviewMilestoneLabel => '課間';
 
   @override
   String get liveIslandPreviewSampleCourse => '高等數學';

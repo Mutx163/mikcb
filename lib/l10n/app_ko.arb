@@ -1227,15 +1227,6 @@
       }
     }
   },
-  "liveIslandPreviewFinalDismiss": "수업 종료까지 {time}",
-  "@liveIslandPreviewFinalDismiss": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "liveIslandPreviewMilestoneLabel": "쉬는 시간",
   "liveIslandPreviewSampleCourse": "고등 수학",
   "liveIslandPreviewSampleCourseShort": "수학",
   "liveIslandPreviewSampleLocation": "3동-401",

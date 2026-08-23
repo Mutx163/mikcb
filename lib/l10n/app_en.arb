@@ -1402,15 +1402,6 @@
       }
     }
   },
-  "liveIslandPreviewFinalDismiss": "Class ends in {time}",
-  "@liveIslandPreviewFinalDismiss": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "liveIslandPreviewMilestoneLabel": "Break",
   "liveIslandPreviewSampleCourse": "Mathematics",
   "liveIslandPreviewSampleCourseShort": "Math",
   "liveIslandPreviewSampleLocation": "Bldg 3-401",

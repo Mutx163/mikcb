@@ -2453,14 +2453,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String liveIslandPreviewFinalDismiss(String time) {
-    return '授業終了まで$time';
-  }
-
-  @override
-  String get liveIslandPreviewMilestoneLabel => '休憩';
-
-  @override
   String get liveIslandPreviewSampleCourse => '高等数学';
 
   @override

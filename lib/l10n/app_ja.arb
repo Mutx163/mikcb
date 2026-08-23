@@ -1227,15 +1227,6 @@
       }
     }
   },
-  "liveIslandPreviewFinalDismiss": "授業終了まで{time}",
-  "@liveIslandPreviewFinalDismiss": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "liveIslandPreviewMilestoneLabel": "休憩",
   "liveIslandPreviewSampleCourse": "高等数学",
   "liveIslandPreviewSampleCourseShort": "数学",
   "liveIslandPreviewSampleLocation": "3号館-401",

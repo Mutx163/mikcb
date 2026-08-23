@@ -2466,14 +2466,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String liveIslandPreviewFinalDismiss(String time) {
-    return '수업 종료까지 $time';
-  }
-
-  @override
-  String get liveIslandPreviewMilestoneLabel => '쉬는 시간';
-
-  @override
   String get liveIslandPreviewSampleCourse => '고등 수학';
 
   @override

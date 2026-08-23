@@ -26,9 +26,10 @@ import '../utils/hex_color.dart';
 /// * 右侧提示位 = hintInfo.title = visibleStatusText：受 showCountdown →
 ///   showStageText 控制，课中固定为“上课中”；倒计时时前缀受
 ///   hidePrefixText 控制。
-/// * 课中环形进度包住左侧图标；课间节点进度条与原生摘要态一致，
-///   显示在胶囊下方。课程名跟随 showCourseName / useShortName（含原生
-///   5 字截断）。
+/// * 课程名跟随 showCourseName / useShortName（含原生 5 字截断）。
+///
+/// 注意：原生参数里虽带 progressInfo（环形进度）与课间节点条，但真机
+/// 超级岛并不渲染它们，预览同样不画 —— 以真机实际观感为准。
 class LiveIslandPreviewCard extends StatefulWidget {
   const LiveIslandPreviewCard({
     super.key,
@@ -55,7 +56,6 @@ enum _PreviewStage { beforeClass, duringClass, beforeEnd }
 
 class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   static const _pillColor = Color(0xFF060608);
-  static const _progressGreen = Color(0xFF4CAF50);
   static const _defaultLabelColor = Color(0xFFFFFFFF);
 
   late final DateTime _anchor = DateTime.now();
@@ -107,19 +107,10 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     return (start: start, end: start.add(const Duration(minutes: 45)));
   }
 
-  ({DateTime start, DateTime end}) get _duringWindow {
-    final start = _anchor.subtract(const Duration(minutes: 27, seconds: 14));
-    return (start: start, end: start.add(const Duration(minutes: 45)));
-  }
-
   ({DateTime start, DateTime end}) get _endWindow {
     final start = _anchor.subtract(const Duration(minutes: 41, seconds: 40));
     return (start: start, end: start.add(const Duration(minutes: 45)));
   }
-
-  /// Milestone break at 70% of the demo lesson (stands in for course breaks).
-  static const _duringTotal = Duration(minutes: 45);
-  Duration get _duringMilestoneOffset => _duringTotal * 0.7;
 
   @override
   Widget build(BuildContext context) {
@@ -162,47 +153,15 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         ),
         const SizedBox(height: 14),
         _IslandCapsule(
-          iconSlot: _buildIconSlot(l10n, selectedStage, d),
+          iconSlot: _buildSmallIcon(l10n, d),
           title: _islandName(l10n, d),
           statusLine: _statusLine(l10n, selectedStage, d),
         ),
-        if (selectedStage == _PreviewStage.duringClass) ...[
-          const SizedBox(height: 8),
-          _MilestoneBar(
-            percent: _progressFraction(selectedStage),
-            milestoneFraction: 0.7,
-            leading: _nextMilestoneText(l10n, d) ?? '',
-            trailing: _finalDismissText(l10n, d),
-          ),
-        ],
       ],
     );
   }
 
   // --- Left icon slot (notification small-icon position) ------------------
-
-  Widget _buildIconSlot(
-    AppLocalizations l10n,
-    _PreviewStage stage,
-    LiveDisplaySettings d,
-  ) {
-    final icon = _buildSmallIcon(l10n, d);
-    if (stage != _PreviewStage.duringClass) {
-      return icon;
-    }
-    // 原生把 progressInfo 放进 imageTextInfoLeft：环包住小图标。
-    return SizedBox(
-      width: 38,
-      height: 38,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CustomPaint(painter: _RingPainter(progress: _progressFraction(stage))),
-          Center(child: icon),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSmallIcon(AppLocalizations l10n, LiveDisplaySettings d) {
     final labelEnabled = _isXiaomiFamily && d.enableMiuiIslandLabelImage;
@@ -360,37 +319,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     final text =
         _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
     return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
-  }
-
-  String? _nextMilestoneText(AppLocalizations l10n, LiveDisplaySettings d) {
-    final elapsed = DateTime.now().difference(_duringWindow.start);
-    final remaining = _duringMilestoneOffset - elapsed;
-    if (remaining.isNegative || remaining.inMilliseconds == 0) {
-      return null;
-    }
-    return '${l10n.liveIslandPreviewMilestoneLabel} '
-        '${_formatDuration(remaining, d.countdownTextStyle, 60)}';
-  }
-
-  String _finalDismissText(AppLocalizations l10n, LiveDisplaySettings d) {
-    final remaining = _duringWindow.end.difference(DateTime.now());
-    return l10n.liveIslandPreviewFinalDismiss(
-      _formatDuration(remaining, d.countdownTextStyle, 60),
-    );
-  }
-
-  double _progressFraction(_PreviewStage stage) {
-    if (stage != _PreviewStage.duringClass) {
-      return 0;
-    }
-    final window = _duringWindow;
-    final total = window.end.difference(window.start);
-    if (total.inMilliseconds <= 0) {
-      return 0;
-    }
-    final elapsed = DateTime.now().difference(window.start);
-    final fraction = elapsed.inMilliseconds / total.inMilliseconds;
-    return fraction.clamp(0.0, 1.0);
   }
 
   /// A区 title：课程名（showCourseName / useShortName + 原生 5 字截断）。
@@ -586,137 +514,6 @@ class _CameraHole extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.progress});
-
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.shortestSide / 2 - 2;
-    const strokeWidth = 2.5;
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..color = Colors.white.withValues(alpha: 0.2),
-    );
-    if (progress <= 0) {
-      return;
-    }
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -3.1415926535897932 / 2,
-      3.1415926535897932 * 2 * progress,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..color = _LiveIslandPreviewCardState._progressGreen,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.progress != progress;
-}
-
-class _MilestoneBar extends StatelessWidget {
-  const _MilestoneBar({
-    required this.percent,
-    required this.milestoneFraction,
-    required this.leading,
-    required this.trailing,
-  });
-
-  final double percent;
-  final double milestoneFraction;
-  final String leading;
-  final String trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            return SizedBox(
-              height: 8,
-              child: Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: (width * percent).clamp(0.0, width),
-                    decoration: BoxDecoration(
-                      color: _LiveIslandPreviewCardState._progressGreen,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  Positioned(
-                    left: (width * milestoneFraction).clamp(0.0, width - 8),
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _LiveIslandPreviewCardState._pillColor,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                leading,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              trailing,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.42),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
