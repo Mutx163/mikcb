@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
@@ -271,5 +274,83 @@ void main() {
       await tester.pump();
       expect(taps, 1);
     });
+  });
+
+  group('PreblurredWallpaperCache', () {
+    late Directory tempDir;
+    late String wallpaperPath;
+
+    setUpAll(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      tempDir = await Directory.systemTemp.createTemp('preblur_cache_test');
+      // 4x4 纯色位图编码为 PNG 落盘，让 FileImage 走真实解码路径。
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, 4, 4),
+        ui.Paint()..color = const Color(0xFF3366AA),
+      );
+      final picture = recorder.endRecording();
+      final image = picture.toImageSync(4, 4);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      picture.dispose();
+      wallpaperPath =
+          '${tempDir.path}${Platform.pathSeparator}wallpaper.png';
+      File(wallpaperPath).writeAsBytesSync(bytes!.buffer.asUint8List());
+    });
+
+    tearDownAll(() {
+      PreblurredWallpaperCache.instance.evict();
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test(
+      'concurrent callers each receive an independently disposable handle',
+      () async {
+        final cache = PreblurredWallpaperCache.instance;
+        cache.evict();
+
+        // 相同请求并发发起：两个调用方会加入同一个 in-flight build。
+        final futureA = cache.obtain(
+          path: wallpaperPath,
+          logicalSigma: 12,
+          devicePixelRatio: 2,
+        );
+        final futureB = cache.obtain(
+          path: wallpaperPath,
+          logicalSigma: 12,
+          devicePixelRatio: 2,
+        );
+        final a = await futureA;
+        final b = await futureB;
+
+        expect(a, isNotNull);
+        expect(b, isNotNull);
+        expect(
+          identical(a, b),
+          isFalse,
+          reason: '共享 Future 只广播一个实例；每个调用方必须持有自己的 clone，'
+              '否则一方的 dispose 会抽掉另一方正在绘制的纹理',
+        );
+
+        // 回归点：一方按自身所有权释放后，另一方的位图必须仍然可用，
+        // 否则绘制时命中 drawImageRect 的 assert(!image.debugDisposed)。
+        a!.dispose();
+        expect(b!.debugDisposed, isFalse);
+
+        // 构建完成后的重复请求走缓存快路径，同样必须拿到独立 clone。
+        final c = await cache.obtain(
+          path: wallpaperPath,
+          logicalSigma: 12,
+          devicePixelRatio: 2,
+        );
+        expect(c, isNotNull);
+        expect(identical(c, a) || identical(c, b), isFalse);
+        expect(c!.debugDisposed, isFalse);
+        c.dispose();
+        expect(b.debugDisposed, isFalse);
+      },
+    );
   });
 }

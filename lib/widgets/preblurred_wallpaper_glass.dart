@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -60,7 +61,12 @@ class PreblurredWallpaperCache {
 
   _PreblurRequest? _key;
   ui.Image? _image;
-  final Map<_PreblurRequest, Future<ui.Image?>> _inFlight = {};
+
+  /// In-flight builds. The future deliberately carries **no** [ui.Image]
+  /// handle: it only signals 'the cache has (or has not) published this
+  /// request'. Every caller clones [_image] for itself afterwards, so N
+  /// concurrent waiters can never end up sharing one disposable handle.
+  final Map<_PreblurRequest, Future<void>> _inFlight = {};
 
   /// Bumped by [evict] so a build that is already running cannot publish a
   /// stale bitmap afterwards.
@@ -96,70 +102,85 @@ class PreblurredWallpaperCache {
       return Future<ui.Image?>.value(_image!.clone());
     }
     final pending = _inFlight[request];
+    Future<void> settled;
     if (pending != null) {
-      return pending;
+      settled = pending;
+    } else {
+      final built = _build(request);
+      _inFlight[request] = built;
+      settled = built.whenComplete(() {
+        if (_inFlight[request] == built) {
+          _inFlight.remove(request);
+        }
+      });
     }
-    final future = _build(request);
-    _inFlight[request] = future;
-    return future.whenComplete(() {
-      if (_inFlight[request] == future) {
-        _inFlight.remove(request);
-      }
+    // Hand out a fresh clone of the cache-owned bitmap to *every* caller.
+    // A Dart future broadcasts the SAME instance to all listeners; handing
+    // that one instance to callers who each believe they exclusively own it
+    // (the startup primer disposes its copy, a page scope swaps and disposes
+    // its copy on the next sync) released the texture under another painter's
+    // feet — the debug crash `Canvas.drawImageRect:
+    // assert(!image.debugDisposed)` on glass card fills.
+    return settled.then((_) {
+      final image = _image;
+      return (_key == request && image != null) ? image.clone() : null;
     });
   }
 
-  Future<ui.Image?> _build(_PreblurRequest request) async {
+  /// Decodes + blurs [request] and publishes the result as the cache-owned
+  /// canonical bitmap in [_image].
+  ///
+  /// The future resolves with no payload: callers get their own handle by
+  /// cloning [_image] inside [obtain], so this future is safe to share across
+  /// any number of waiters and never leaks or double-disposes a texture.
+  Future<void> _build(_PreblurRequest request) async {
     final generation = _generation;
+    ui.Image? source;
+    ui.Image? blurred;
     try {
       final decodeWidth = (homePageBackdropDecodeWidth() * 0.55).round().clamp(
         480,
         1440,
       );
-      final source = await _decode(request.path, decodeWidth);
+      source = await _decode(request.path, decodeWidth);
       if (source == null) {
-        return null;
+        return;
       }
-      try {
-        // The blur runs in the decoded bitmap's pixel space, which is smaller
-        // than the screen and then upscaled back to full size. Convert the
-        // desired on-screen sigma into that space so the perceived frost
-        // strength remains stable across screen densities.
-        final physicalWidth = _screenPhysicalWidth();
-        final downscale = physicalWidth <= 0
-            ? 1.0
-            : source.width / physicalWidth;
-        final imageSigma =
-            (request.logicalSigma * request.devicePixelRatio * downscale).clamp(
-              0.5,
-              40.0,
-            );
+      // The blur runs in the decoded bitmap's pixel space, which is smaller
+      // than the screen and then upscaled back to full size. Convert the
+      // desired on-screen sigma into that space so the perceived frost
+      // strength remains stable across screen densities.
+      final physicalWidth = _screenPhysicalWidth();
+      final downscale = physicalWidth <= 0 ? 1.0 : source.width / physicalWidth;
+      final imageSigma =
+          (request.logicalSigma * request.devicePixelRatio * downscale).clamp(
+            0.5,
+            40.0,
+          );
 
-        final blurred = await _blur(source, imageSigma);
-        if (blurred == null) {
-          return null;
-        }
-
-        if (generation != _generation) {
-          // Evicted while we were building.
-          blurred.dispose();
-          return null;
-        }
-        if (_key == request && _image != null) {
-          // An identical request won the race.
-          blurred.dispose();
-          return _image!.clone();
-        }
-
-        _image?.dispose();
-        _image = blurred;
-        _key = request;
-        return blurred.clone();
-      } finally {
-        source.dispose();
+      blurred = await _blur(source, imageSigma);
+      if (blurred == null) {
+        return;
       }
+
+      if (generation != _generation) {
+        // Evicted while we were building; finally disposes [blurred].
+        return;
+      }
+      if (_key == request && _image != null) {
+        // An identical request won the race; finally disposes [blurred].
+        return;
+      }
+
+      _image?.dispose();
+      _image = blurred;
+      _key = request;
+      blurred = null; // Ownership moved to the cache.
     } catch (error, stackTrace) {
       debugPrint('PreblurredWallpaperCache failed: $error\n$stackTrace');
-      return null;
+    } finally {
+      source?.dispose();
+      blurred?.dispose();
     }
   }
 
@@ -352,6 +373,9 @@ class PreblurredWallpaperScope extends StatefulWidget {
 class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
   ui.Image? _image;
   int _revision = 0;
+
+  /// Replaced handles awaiting end-of-frame disposal. See [_replaceImage].
+  final List<ui.Image> _retiredImages = <ui.Image>[];
   Object? _pending;
   String? _loadedPath;
   double? _loadedSigma;
@@ -417,24 +441,49 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
     }());
   }
 
-  /// Swaps the owned image handle, disposing the previous clone.
+  /// Swaps the owned image handle, retiring the previous clone for disposal
+  /// once the current frame has finished painting.
   ///
   /// The cache hands out `clone()`s, so this state owns what it holds and must
   /// release it — otherwise every wallpaper / sigma change leaks a full-screen
-  /// bitmap handle.
+  /// bitmap handle. Disposal is deferred because render objects that still
+  /// hold the previous handle may repaint one last time in this very frame
+  /// (listener-driven `markNeedsPaint` can land between this swap and the
+  /// dependent rebuild); painting a disposed texture crashes in
+  /// [Canvas.drawImageRect].
   void _replaceImage(ui.Image? next) {
     final previous = _image;
     if (identical(previous, next)) {
       return;
     }
     _image = next;
-    previous?.dispose();
+    if (previous != null) {
+      _retiredImages.add(previous);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _disposeRetiredImages(),
+      );
+    }
+  }
+
+  void _disposeRetiredImages() {
+    if (_retiredImages.isEmpty) {
+      return;
+    }
+    final retired = List<ui.Image>.of(_retiredImages);
+    _retiredImages.clear();
+    for (final image in retired) {
+      image.dispose();
+    }
   }
 
   @override
   void dispose() {
     _pending = null;
     _replaceImage(null);
+    // This subtree is being torn down and will never paint again, so the
+    // retired handles (including the one just queued) can go right away —
+    // no need to wait for a frame that may never be scheduled (app paused).
+    _disposeRetiredImages();
     super.dispose();
   }
 
@@ -841,6 +890,14 @@ class _RenderPreblurredFill extends RenderBox {
   void paint(PaintingContext context, Offset offset) {
     final image = _image;
     if (image == null || size.isEmpty) {
+      return;
+    }
+    // Safety net: a bitmap swapped out by the scope can still be referenced
+    // for the tail of one frame before updateRenderObject delivers its
+    // replacement. Drawing a released native handle hits
+    // `Canvas.drawImageRect`'s `assert(!image.debugDisposed)` in debug builds
+    // — skip this frame instead; the next sync repaints with the new handle.
+    if (kDebugMode && image.debugDisposed) {
       return;
     }
     final screen = _screenSize;
