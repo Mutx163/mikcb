@@ -722,6 +722,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               colorHexes: [for (final theme in ForuiTheme.values) theme.seedHex],
               selectedHex: settings.foruiTheme.seedHex,
               onSelectedHex: _applyForuiThemeSeed,
+              // 尽量两行放完且各行数量相等（当前 10 色 → 5×2），
+              // 避免自动流式换行的「上 6 下 4」参差排布。
+              columns: (ForuiTheme.values.length + 1) ~/ 2,
               colorParser: (hex) => parseHexColorOrFallback(
                 hex,
                 fallback: const Color(0xFF3482FF),

@@ -567,6 +567,65 @@ void main() {
       final rightGap = paddedRect.right - lastChip.right;
       expect(leftGap, closeTo(rightGap, 1));
     });
+
+    testWidgets('columns layout splits chips into even rows', (tester) async {
+      const listWidth = 400.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(listWidth, 640));
+
+      const hexes = [
+        '#111111',
+        '#222222',
+        '#333333',
+        '#444444',
+        '#555555',
+        '#666666',
+        '#777777',
+        '#888888',
+        '#999999',
+        '#aaaaaaaa',
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: HyperosHexColorChipGroup(
+                colorHexes: hexes,
+                selectedHex: '#111111',
+                colorParser: (hex) => Colors.black,
+                onSelectedHex: (_) {},
+                columns: 5,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Rect chipRect(int i) =>
+          tester.getRect(find.byType(HyperosColorChip).at(i));
+
+      expect(find.byType(HyperosColorChip), findsNWidgets(10));
+
+      // 两行各 5 颗：行内顶部对齐，行距 = 色块高 + runSpacing。
+      for (var i = 1; i < 5; i++) {
+        expect(chipRect(i).top, chipRect(0).top);
+      }
+      expect(chipRect(5).top, closeTo(chipRect(0).top + 42 + 12, 0.5));
+
+      // 每行首尾与容器边缘对齐（均分铺满）。
+      expect(chipRect(0).left, 16);
+      expect(chipRect(4).right, listWidth - 16);
+      expect(chipRect(5).left, 16);
+      expect(chipRect(9).right, listWidth - 16);
+
+      // 行内列距一致。
+      final gapA = chipRect(1).left - chipRect(0).right;
+      final gapB = chipRect(3).left - chipRect(2).right;
+      expect(gapA, closeTo(gapB, 0.5));
+      expect(gapA, greaterThan(0));
+    });
   });
 
   group('HyperosButton', () {

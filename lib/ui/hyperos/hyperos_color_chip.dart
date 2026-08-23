@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -81,6 +83,8 @@ class HyperosColorChipGroup extends StatelessWidget {
     this.spacing = 12,
     this.runSpacing = 12,
     this.distributeHorizontally = true,
+    this.columns,
+    this.chipSize = 42,
   });
 
   final List<Color> colors;
@@ -92,18 +96,29 @@ class HyperosColorChipGroup extends StatelessWidget {
   /// When true, each row spreads chips so left/right edge gaps match (Miuix card pickers).
   final bool distributeHorizontally;
 
+  /// 固定列数：每行恰好 [columns] 颗并均分铺满可用宽度，各行节奏一致，
+  /// 避免自动流式换行出现「上 6 下 4」的参差行。null 时保持自动流式；
+  /// 可用宽度放不下目标列数（含最小间距）时也回退为自动流式。
+  final int? columns;
+
+  /// 色块边长。网格布局按它计算列距，同时透传给每颗 [HyperosColorChip]。
+  final double chipSize;
+
   @override
   Widget build(BuildContext context) {
-    return _hyperosColorChipWrap(
-      distributeHorizontally: distributeHorizontally,
+    return _hyperosColorChipLayout(
+      columns: columns,
+      chipSize: chipSize,
       spacing: spacing,
       runSpacing: runSpacing,
+      distributeHorizontally: distributeHorizontally,
       children: [
         for (final color in colors)
           HyperosColorChip(
             color: color,
             selected: color.toARGB32() == selectedColor.toARGB32(),
             onTap: () => onSelected(color),
+            size: chipSize,
           ),
       ],
     );
@@ -121,6 +136,8 @@ class HyperosHexColorChipGroup extends StatelessWidget {
     this.spacing = 12,
     this.runSpacing = 12,
     this.distributeHorizontally = true,
+    this.columns,
+    this.chipSize = 42,
   });
 
   final List<String> colorHexes;
@@ -131,22 +148,88 @@ class HyperosHexColorChipGroup extends StatelessWidget {
   final double runSpacing;
   final bool distributeHorizontally;
 
+  /// See [HyperosColorChipGroup.columns].
+  final int? columns;
+
+  /// See [HyperosColorChipGroup.chipSize].
+  final double chipSize;
+
   @override
   Widget build(BuildContext context) {
-    return _hyperosColorChipWrap(
-      distributeHorizontally: distributeHorizontally,
+    return _hyperosColorChipLayout(
+      columns: columns,
+      chipSize: chipSize,
       spacing: spacing,
       runSpacing: runSpacing,
+      distributeHorizontally: distributeHorizontally,
       children: [
         for (final hex in colorHexes)
           HyperosColorChip(
             color: colorParser(hex),
             selected: hex.toUpperCase() == selectedHex.toUpperCase(),
             onTap: () => onSelectedHex(hex),
+            size: chipSize,
           ),
       ],
     );
   }
+}
+
+/// 按 [_hyperosColorChipWrap] 的规则排布；[columns] 非空时改为等分网格：
+/// 每行恰好 columns 颗、按可用宽度均分列距，末行不足时保持同一列距左对齐。
+Widget _hyperosColorChipLayout({
+  required int? columns,
+  required double chipSize,
+  required double spacing,
+  required double runSpacing,
+  required bool distributeHorizontally,
+  required List<Widget> children,
+}) {
+  if (columns == null || columns < 1) {
+    return _hyperosColorChipWrap(
+      distributeHorizontally: distributeHorizontally,
+      spacing: spacing,
+      runSpacing: runSpacing,
+      children: children,
+    );
+  }
+
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final maxWidth = constraints.maxWidth;
+      final neededWidth = columns * chipSize + (columns - 1) * spacing;
+      if (children.isEmpty || maxWidth < neededWidth) {
+        // 宽度不足以容纳目标列数（含最小间距）→ 回退自动流式换行。
+        return _hyperosColorChipWrap(
+          distributeHorizontally: distributeHorizontally,
+          spacing: spacing,
+          runSpacing: runSpacing,
+          children: children,
+        );
+      }
+      final gap = (maxWidth - columns * chipSize) / (columns - 1);
+      final rows = <List<Widget>>[
+        for (var i = 0; i < children.length; i += columns)
+          children.sublist(i, math.min(i + columns, children.length)),
+      ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var r = 0; r < rows.length; r++) ...[
+            if (r > 0) SizedBox(height: runSpacing),
+            Row(
+              children: [
+                for (var c = 0; c < rows[r].length; c++) ...[
+                  if (c > 0) SizedBox(width: gap),
+                  rows[r][c],
+                ],
+              ],
+            ),
+          ],
+        ],
+      );
+    },
+  );
 }
 
 Widget _hyperosColorChipWrap({
