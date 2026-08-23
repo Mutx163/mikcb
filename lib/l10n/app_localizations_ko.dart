@@ -10119,6 +10119,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockShowSettingsTabTitle => '설정 탭 표시';
 
   @override
+  String get glassDockShowWeekTabTitle => '주간 탭 표시';
+
+  @override
+  String get glassDockButtonFunctionLabel => '독립 버튼 기능';
+
+  @override
   String get glassDockShowAddButtonTitle => '추가 버튼 표시';
 
   @override

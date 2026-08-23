@@ -10368,6 +10368,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockShowSettingsTabTitle => 'Show settings entry';
 
   @override
+  String get glassDockShowWeekTabTitle => 'Show week view entry';
+
+  @override
+  String get glassDockButtonFunctionLabel => 'Standalone button action';
+
+  @override
   String get glassDockShowAddButtonTitle => 'Show add button';
 
   @override

@@ -94,6 +94,8 @@ TimetableSettings applySettingsReset(
       glassDockInsetClearance: d.glassDockInsetClearance,
       glassDockShowDayTab: d.glassDockShowDayTab,
       glassDockShowSettingsTab: d.glassDockShowSettingsTab,
+      glassDockShowWeekTab: d.glassDockShowWeekTab,
+      glassDockButtonEntryId: d.glassDockButtonEntryId,
       glassDockShowAddButton: d.glassDockShowAddButton,
       foruiTheme: d.foruiTheme,
       themeSeedColor: d.themeSeedColor,

@@ -1006,4 +1006,42 @@ void main() {
       ]);
     });
   });
+
+  group('glass dock module tabs and extra button', () {
+    test('defaults show all three tabs and add-course button action', () {
+      final settings = TimetableSettings.defaults();
+
+      expect(settings.glassDockShowDayTab, isTrue);
+      expect(settings.glassDockShowWeekTab, isTrue);
+      expect(settings.glassDockShowSettingsTab, isTrue);
+      expect(settings.glassDockButtonEntryId, 'addCourse');
+      expect(settings.glassDockShowAddButton, isFalse);
+    });
+
+    test('week tab toggle and button entry roundtrip in json', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        glassDockShowWeekTab: false,
+        glassDockButtonEntryId: 'exams',
+      );
+
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(restored.glassDockShowWeekTab, isFalse);
+      expect(restored.glassDockShowDayTab, isTrue);
+      expect(restored.glassDockButtonEntryId, 'exams');
+    });
+
+    test('missing json keys fall back to shipped defaults', () {
+      final restored = TimetableSettings.fromJson(
+        TimetableSettings.defaults().toJson()
+          ..remove('glassDockShowWeekTab'),
+      );
+      expect(restored.glassDockShowWeekTab, isTrue);
+
+      final restored2 = TimetableSettings.fromJson(
+        TimetableSettings.defaults().toJson()
+          ..remove('glassDockButtonEntryId'),
+      );
+      expect(restored2.glassDockButtonEntryId, 'addCourse');
+    });
+  });
 }

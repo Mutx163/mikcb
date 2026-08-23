@@ -5924,6 +5924,8 @@
   "glassDockEntriesSectionTitle": "Dock entries",
   "glassDockShowDayTabTitle": "Show day view entry",
   "glassDockShowSettingsTabTitle": "Show settings entry",
+  "glassDockShowWeekTabTitle": "Show week view entry",
+  "glassDockButtonFunctionLabel": "Standalone button action",
   "glassDockShowAddButtonTitle": "Show add button",
   "glassDockShowAddButtonSubtitle": "Show a separate round button next to the bar that opens add-course directly",
     "glassDockExtraButtonSemanticLabel": "Add course",

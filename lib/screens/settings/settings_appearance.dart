@@ -264,13 +264,14 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 },
               ),
             if (_draft.homeNavigationForm == HomeNavigationForm.glassDock) ...[
-              // 底栏入口开关：日课表 / 设置两个 Tab 可分别隐藏；
-              // 加号按钮是独立圆形入口（GlassTabBar 的 extraButton）。
-              // 约束：至少保留一个 Tab 入口——关掉另一个时本开关锁定。
+              // 底栏入口开关：日课表 / 周课表 / 设置三个模块 Tab 可分别隐藏，
+              // 至少保留一个（关到最后一个时该开关锁定）。隐藏周课表 Tab
+              // 不影响周视图本身作为底图继续存在。
               HyperosSwitchTile(
                 title: l10n.glassDockShowDayTabTitle,
                 value: _draft.glassDockShowDayTab,
-                onChanged: _draft.glassDockShowSettingsTab
+                onChanged: _draft.glassDockShowWeekTab ||
+                        _draft.glassDockShowSettingsTab
                     ? (value) {
                         _updateDraft(
                           _draft.copyWith(glassDockShowDayTab: value),
@@ -279,9 +280,22 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     : null,
               ),
               HyperosSwitchTile(
+                title: l10n.glassDockShowWeekTabTitle,
+                value: _draft.glassDockShowWeekTab,
+                onChanged: _draft.glassDockShowDayTab ||
+                        _draft.glassDockShowSettingsTab
+                    ? (value) {
+                        _updateDraft(
+                          _draft.copyWith(glassDockShowWeekTab: value),
+                        );
+                      }
+                    : null,
+              ),
+              HyperosSwitchTile(
                 title: l10n.glassDockShowSettingsTabTitle,
                 value: _draft.glassDockShowSettingsTab,
-                onChanged: _draft.glassDockShowDayTab
+                onChanged: _draft.glassDockShowDayTab ||
+                        _draft.glassDockShowWeekTab
                     ? (value) {
                         _updateDraft(
                           _draft.copyWith(glassDockShowSettingsTab: value),
@@ -289,6 +303,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                       }
                     : null,
               ),
+              // 独立圆形按钮（GlassTabBar 的 extraButton，官方样式：药丸右侧
+              // 独立玻璃圆钮）：默认关闭；开启后可从八宫格目录里挑它打开的
+              // 功能。运行时在设置页自动滑动收起。
               HyperosSwitchTile(
                 title: l10n.glassDockShowAddButtonTitle,
                 subtitle: l10n.glassDockShowAddButtonSubtitle,
@@ -297,6 +314,26 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   _updateDraft(_draft.copyWith(glassDockShowAddButton: value));
                 },
               ),
+              if (_draft.glassDockShowAddButton)
+                Builder(
+                  builder: (context) {
+                    final options = _dockExtraButtonOptions(l10n);
+                    return HyperosSelectTile<String>(
+                      label: l10n.glassDockButtonFunctionLabel,
+                      useSheetForPopup: true,
+                      items: options,
+                      value: _dockExtraButtonValue(
+                        _draft.glassDockButtonEntryId,
+                        options,
+                      ),
+                      onChanged: (id) {
+                        _updateDraft(
+                          _draft.copyWith(glassDockButtonEntryId: id),
+                        );
+                      },
+                    );
+                  },
+                ),
             ],
             HyperosSelectTile<AppFontMode>(
               label: l10n.fontModeLabel,
@@ -527,6 +564,35 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       });
     }
   }
+}
+
+/// 玻璃坞独立按钮的可选功能表（label → 目录 id）。
+///
+/// 默认「添加课程」置顶；其余按八宫格目录的分类顺序列出。结构 Tab
+/// （day/week/settings）是视图切换而非「打开某页」的动作，不作候选；
+/// 当前环境不可见的条目（如正式版的内存监控）同样过滤。
+Map<String, String> _dockExtraButtonOptions(AppLocalizations l10n) {
+  final options = <String, String>{
+    l10n.homeMenuAddCourseTitle: 'addCourse',
+  };
+  for (final entry in kHomeMenuCatalog) {
+    if (!entry.visible()) {
+      continue;
+    }
+    if (entry.id == 'addCourse' ||
+        entry.id == 'day' ||
+        entry.id == 'week' ||
+        entry.id == HomeGridMenu.pinnedActionId) {
+      continue;
+    }
+    options[entry.title(l10n)] = entry.id;
+  }
+  return options;
+}
+
+/// 兜底：持久化的 id 失效（下线/门控变化）时回退默认添加课程。
+String _dockExtraButtonValue(String stored, Map<String, String> options) {
+  return options.containsValue(stored) ? stored : 'addCourse';
 }
 
 String _foruiThemeLabel(ForuiTheme theme) {

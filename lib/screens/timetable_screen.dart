@@ -144,7 +144,8 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
 /// 玻璃坞底部导航的入口（Tab）。
 ///
 /// 入口可由用户在设置中分别隐藏（[TimetableSettings.glassDockShowDayTab] /
-/// [TimetableSettings.glassDockShowSettingsTab]，周课表始终保留），
+/// [TimetableSettings.glassDockShowSettingsTab] /
+/// [TimetableSettings.glassDockShowWeekTab]，三者至少保留一个），
 /// 因此底栏的实际 Tab 列表与选中索引都是动态的：索引一律通过
 /// [_glassDockTabs] / [_glassDockCurrentIndex] 换算，不直接写魔法数字。
 enum _GlassDockEntry { day, week, settings }
@@ -180,6 +181,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 无滑动）；仅设置页「跟手拖动返回」时才真正播放（拖动线性跟随、
   /// 松手弹簧收敛）。
   late final AnimationController _dockSettingsSwitchAnimation;
+
+  /// 独立圆形按钮的收起动画：0=展开（日/周课表页可见），1=收起（设置
+  /// 页滑动收起）。跟随 [_dockSettingsActive] 目标位播放，时长短于页面
+  /// 切换，让按钮先滑走、药丸再补位。
+  late final AnimationController _dockAddBtnCollapse;
 
   /// 设置切换转场是否进行中（仅跟手拖动期间为 true；两页保持可见）。
   bool _dockSettingsSlideActive = false;
@@ -387,6 +393,11 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dockViewSwitchDuration,
     );
+    _dockAddBtnCollapse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      value: 0,
+    );
     // 日视图锚点展开/收起与设置页拖动转场期间，卡片玻璃 fill 必须每帧
     // 重采样壁纸（否则纹理停在旧屏幕位置，卡片呈现半边模糊半边透明）。
     _glassDockCardRepaint = Listenable.merge([
@@ -419,6 +430,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
     _dockSettingsSwitchAnimation.dispose();
+    _dockAddBtnCollapse.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
     _homeDownloadController?.cancel();
@@ -6454,73 +6466,109 @@ class _TimetableScreenState extends State<TimetableScreen>
     final useLiquidGlass =
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context);
-    // 动态入口列表：周课表常驻，日课表/设置按设置开关决定是否保留。
+    // 动态入口列表：日/周/设置三个模块 Tab 均可在设置中隐藏（至少留一）。
     final dockTabs = _glassDockTabs(settings, l10n);
-    return GlassTabBar.bottom(
-      tabs: [
-        for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
-      ],
-      selectedIndex: _glassDockCurrentIndex(dockTabs),
-      onTabSelected: (index) =>
-          _onDockEntrySelected(dockTabs[index], settings),
-      // 独立圆形「添加」按钮（库内 extraButton 样式：独立于 Tab 药丸的
-      // 圆形玻璃按钮，默认置于药丸右侧）：点击直接打开添加课程弹层，
-      // 与顶部菜单「添加课程」同一路径。图标墨色跟随底栏未选中态。
-      extraButton: settings.glassDockShowAddButton
-          ? GlassTabBarExtraButton(
-              icon: Icon(Icons.add_rounded),
-              label: l10n.glassDockExtraButtonSemanticLabel,
-              onTap: () => unawaited(_showAddCourseSheet()),
-              iconColor: unselectedColor,
-              size: 48,
-            )
-          : null,
-      barHeight: 56,
-      barBorderRadius: 28,
-      // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
-      indicatorBorderRadius: 28,
-      // 长按拖出的「果冻玻璃」透镜：settings 只作用于底栏本体，指示器
-      // 有独立的 indicatorSettings 入口。不传时包内默认是刻意调淡的
-      // iOS 26 校准值（折射率 1.10 / 厚度 20 / 无色散），在纯色壁纸上
-      // 几乎看不出折射；液态玻璃模式换 dragLensSettings 拉满折射档，
-      // 并把凹透镜 pinch 开到包内校准的最大值 1.0（构造默认只有 0.4）。
-      // 非液态玻璃模式走 frosted 回退，保持包默认材质。
-      indicatorSettings: useLiquidGlass
-          ? MikcbLiquidGlassTokens.dragLensSettings
-          : null,
-      indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
-      settings: useLiquidGlass
-          ? MikcbLiquidGlassTokens.sheetSettingsFor(
-              isDark ? Brightness.dark : Brightness.light,
-              tuning: appearance.liquidGlassTuning,
-            )
-          : LiquidGlassSettings(
-              blur: appearance.sheetBlurSigma,
-              glassColor: HyperosBlurredHeader.sheetTintColor(
-                context,
-                withBlur: true,
+    return AnimatedBuilder(
+      animation: _dockAddBtnCollapse,
+      builder: (context, _) {
+        return GlassTabBar.bottom(
+          tabs: [
+            for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
+          ],
+          selectedIndex: _glassDockCurrentIndex(dockTabs),
+          onTabSelected: (index) =>
+              _onDockEntrySelected(dockTabs[index], settings),
+          // 独立圆形按钮（库内 extraButton 官方样式：药丸右侧独立玻璃圆钮）。
+          // 功能由「八宫格目录」同步自定义（默认添加课程）；切到设置页时随
+          // _dockAddBtnCollapse 把 size 动画到 0 —— 库内布局逐帧读取
+          // config.size 预留宽度，因此药丸会平滑补位，即「滑动收起」。
+          extraButton: settings.glassDockShowAddButton
+              ? _buildGlassDockExtraButton(l10n, unselectedColor)
+              : null,
+          barHeight: 56,
+          barBorderRadius: 28,
+          // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
+          indicatorBorderRadius: 28,
+        // 长按拖出的「果冻玻璃」透镜：settings 只作用于底栏本体，指示器
+        // 有独立的 indicatorSettings 入口。不传时包内默认是刻意调淡的
+        // iOS 26 校准值（折射率 1.10 / 厚度 20 / 无色散），在纯色壁纸上
+        // 几乎看不出折射；液态玻璃模式换 dragLensSettings 拉满折射档，
+        // 并把凹透镜 pinch 开到包内校准的最大值 1.0（构造默认只有 0.4）。
+        // 非液态玻璃模式走 frosted 回退，保持包默认材质。
+        indicatorSettings: useLiquidGlass
+            ? MikcbLiquidGlassTokens.dragLensSettings
+            : null,
+        indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
+        settings: useLiquidGlass
+            ? MikcbLiquidGlassTokens.sheetSettingsFor(
+                isDark ? Brightness.dark : Brightness.light,
+                tuning: appearance.liquidGlassTuning,
+              )
+            : LiquidGlassSettings(
+                blur: appearance.sheetBlurSigma,
+                glassColor: HyperosBlurredHeader.sheetTintColor(
+                  context,
+                  withBlur: true,
+                ),
               ),
-            ),
-      quality: useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal,
-      iconSize: 22,
-      labelFontSize: 10,
-      horizontalPadding: 6,
-      verticalPadding: 6,
-      selectedIconColor: selectedColor,
-      unselectedIconColor: unselectedColor,
-      selectedLabelColor: selectedColor,
-      unselectedLabelColor: unselectedColor,
+        quality: useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal,
+        iconSize: 22,
+        labelFontSize: 10,
+        horizontalPadding: 6,
+        verticalPadding: 6,
+          selectedIconColor: selectedColor,
+          unselectedIconColor: unselectedColor,
+          selectedLabelColor: selectedColor,
+          unselectedLabelColor: unselectedColor,
+        );
+      },
     );
   }
 
-  /// 当前设置下玻璃坞显示的入口序列（周课表常驻，其余可关）。
+  /// 独立圆形按钮的运行时配置：size 跟随收起动画（设置页滑到 0），
+  /// 点击按「八宫格目录」自定义的入口分发；addCourse 走首页弹层路径。
+  GlassTabBarExtraButton? _buildGlassDockExtraButton(
+    AppLocalizations l10n,
+    Color iconColor,
+  ) {
+    final collapse = _dockAddBtnCollapse.value; // 0=展开 1=收起
+    if (collapse >= 1) {
+      return null; // 完全收起后释放点击区域。
+    }
+    return GlassTabBarExtraButton(
+      icon: Opacity(opacity: 1 - collapse, child: Icon(Icons.add_rounded)),
+      label: l10n.glassDockExtraButtonSemanticLabel,
+      onTap: () => unawaited(_openDockExtraButton()),
+      iconColor: iconColor,
+      size: 48 * (1 - collapse),
+    );
+  }
+
+  /// 独立按钮分发：默认/兜底走首页添加课程弹层（保留日期上下文），
+  /// 其余 id 经八宫格目录打开对应页面。
+  Future<void> _openDockExtraButton() async {
+    final settings = context.read<TimetableProvider>().settings;
+    final id = settings.glassDockButtonEntryId;
+    if (id == 'addCourse' || id.isEmpty) {
+      await _showAddCourseSheet();
+      return;
+    }
+    final entry = homeMenuEntryById(id);
+    if (entry == null || !entry.visible()) {
+      await _showAddCourseSheet();
+      return;
+    }
+    await entry.open(context);
+  }
+
+  /// 当前设置下玻璃坞显示的入口序列（三个模块 Tab 均可隐藏，至少留一）。
   List<_GlassDockEntry> _glassDockTabs(
     TimetableSettings settings,
     AppLocalizations l10n,
   ) {
     return [
       if (settings.glassDockShowDayTab) _GlassDockEntry.day,
-      _GlassDockEntry.week,
+      if (settings.glassDockShowWeekTab) _GlassDockEntry.week,
       if (settings.glassDockShowSettingsTab) _GlassDockEntry.settings,
     ];
   }
@@ -6627,6 +6675,19 @@ class _TimetableScreenState extends State<TimetableScreen>
           _dockSettingsDragging = false;
         });
         _dockSettingsSwitchAnimation.value = 1;
+    }
+    _syncDockAddButtonCollapse();
+  }
+
+  /// 独立按钮跟随所在页收起/展开：设置页滑动收起，回课表滑出。
+  void _syncDockAddButtonCollapse() {
+    if (!mounted) {
+      return;
+    }
+    if (_dockSettingsActive) {
+      _dockAddBtnCollapse.forward();
+    } else {
+      _dockAddBtnCollapse.reverse();
     }
   }
 
@@ -6744,6 +6805,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       _springDockSettingsTo(0, velocity: (velocity / width).clamp(-4.0, 4.0))
           .whenComplete(() => _finishDockAnim(epoch));
     }
+    _syncDockAddButtonCollapse();
   }
 
   void _onDockSettingsDragCancel() {

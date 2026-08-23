@@ -10073,6 +10073,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockShowSettingsTabTitle => '設定タブを表示';
 
   @override
+  String get glassDockShowWeekTabTitle => '週表示タブを表示';
+
+  @override
+  String get glassDockButtonFunctionLabel => '独立ボタンの機能';
+
+  @override
   String get glassDockShowAddButtonTitle => '追加ボタンを表示';
 
   @override

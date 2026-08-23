@@ -17791,6 +17791,18 @@ abstract class AppLocalizations {
   /// **'显示设置入口'**
   String get glassDockShowSettingsTabTitle;
 
+  /// No description provided for @glassDockShowWeekTabTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示周课表入口'**
+  String get glassDockShowWeekTabTitle;
+
+  /// No description provided for @glassDockButtonFunctionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'独立按钮功能'**
+  String get glassDockButtonFunctionLabel;
+
   /// No description provided for @glassDockShowAddButtonTitle.
   ///
   /// In zh, this message translates to:

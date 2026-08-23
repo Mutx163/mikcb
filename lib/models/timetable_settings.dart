@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/class_reminder.dart';
 
 enum AppUpdateDownloadSource { original, mirror }
 
@@ -1206,15 +1207,25 @@ class TimetableSettings {
   /// [glassDockInsetClearanceMax]；满屏悬浮模式不使用。
   final double glassDockInsetClearance;
 
-  /// 玻璃坞入口开关：日课表 Tab 是否显示。关闭后玻璃坞只剩周课表/设置。
-  /// 至少保留一个入口由 UI 层约束（设置页在关闭其他开关时锁定本开关）。
+  /// 玻璃坞入口开关：日课表 Tab 是否显示。
+  /// 至少保留一个模块 Tab 由 UI 层约束（设置页在关闭最后一个时锁定）。
   final bool glassDockShowDayTab;
 
-  /// 玻璃坞入口开关：设置 Tab 是否显示。关闭后玻璃坞只剩周课表/日课表。
+  /// 玻璃坞入口开关：设置 Tab 是否显示。
   final bool glassDockShowSettingsTab;
 
+  /// 玻璃坞入口开关：周课表 Tab 是否显示。与日/设置同规则，
+  /// 三者至少保留一个；隐藏周课表 Tab 不影响周视图本身继续作为底图。
+  final bool glassDockShowWeekTab;
+
+  /// 玻璃坞独立圆形按钮（extraButton）打开的入口 id。
+  /// 默认 'addCourse' 走首页添加课程弹层；其余 id 由八宫格目录分发，
+  /// 未知/不可见 id 运行时回退添加课程弹层。结构 Tab（day/week/settings）
+  /// 不允许作为按钮目标，由 UI 层过滤。
+  final String glassDockButtonEntryId;
+
   /// 玻璃坞入口开关：是否显示独立的圆形「添加」按钮（extraButton），
-  /// 点击直接打开添加课程弹层。
+  /// 点击执行 [glassDockButtonEntryId] 对应功能。
   final bool glassDockShowAddButton;
   final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
   final double timetableFloatingBackToCurrentWeekButtonOpacity;
@@ -1317,6 +1328,10 @@ class TimetableSettings {
 
   /// 上课闹钟：批量添加的范围档位（0=未来4周 1=未来8周 2=本周起至学期结束）。
   final int classAlarmRange;
+
+  /// 单节课提醒：按「课程 + 真实日期」一次性生效的本地通知提醒。
+  /// 随设置 JSON 持久化并参与云同步；原生侧经考试提醒管线统一调度。
+  final List<ClassReminderEntry> classReminders;
   final String courseCardTitleColorLight;
   final String courseCardTitleColorDark;
   final String courseCardDetailColorLight;
@@ -1403,6 +1418,8 @@ class TimetableSettings {
     this.glassDockInsetClearance = glassDockInsetClearanceDefault,
     this.glassDockShowDayTab = true,
     this.glassDockShowSettingsTab = true,
+    this.glassDockShowWeekTab = true,
+    this.glassDockButtonEntryId = 'addCourse',
     this.glassDockShowAddButton = false,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
@@ -1496,6 +1513,7 @@ class TimetableSettings {
     this.classAlarmLeadMinutes = 30,
     this.classAlarmSkipUi = false,
     this.classAlarmRange = 0,
+    this.classReminders = const [],
     this.courseCardTitleColorLight = defaultCourseCardTitleColor,
     this.courseCardTitleColorDark = defaultCourseCardTitleColor,
     this.courseCardDetailColorLight = defaultCourseCardDetailColor,
@@ -1662,6 +1680,7 @@ class TimetableSettings {
       classAlarmLeadMinutes: 30,
       classAlarmSkipUi: false,
       classAlarmRange: 0,
+      classReminders: [],
       courseCardTitleColorLight: defaultCourseCardTitleColor,
       courseCardTitleColorDark: defaultCourseCardTitleColor,
       courseCardDetailColorLight: defaultCourseCardDetailColor,
@@ -1725,6 +1744,8 @@ class TimetableSettings {
       'glassDockInsetClearance': glassDockInsetClearance,
       'glassDockShowDayTab': glassDockShowDayTab,
       'glassDockShowSettingsTab': glassDockShowSettingsTab,
+      'glassDockShowWeekTab': glassDockShowWeekTab,
+      'glassDockButtonEntryId': glassDockButtonEntryId,
       'glassDockShowAddButton': glassDockShowAddButton,
       'timetableBackToCurrentWeekButtonStyle':
           timetableBackToCurrentWeekButtonStyle.value,
@@ -1830,6 +1851,9 @@ class TimetableSettings {
       'classAlarmLeadMinutes': classAlarmLeadMinutes,
       'classAlarmSkipUi': classAlarmSkipUi,
       'classAlarmRange': classAlarmRange,
+      'classReminders': [
+        for (final entry in classReminders) entry.toJson(),
+      ],
       'courseCardTitleColorLight': courseCardTitleColorLight,
       'courseCardTitleColorDark': courseCardTitleColorDark,
       'courseCardDetailColorLight': courseCardDetailColorLight,
@@ -1994,6 +2018,9 @@ class TimetableSettings {
       glassDockShowDayTab: json['glassDockShowDayTab'] as bool? ?? true,
       glassDockShowSettingsTab:
           json['glassDockShowSettingsTab'] as bool? ?? true,
+      glassDockShowWeekTab: json['glassDockShowWeekTab'] as bool? ?? true,
+      glassDockButtonEntryId:
+          json['glassDockButtonEntryId'] as String? ?? 'addCourse',
       glassDockShowAddButton: json['glassDockShowAddButton'] as bool? ?? false,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyleX.fromValue(
@@ -2214,6 +2241,8 @@ class TimetableSettings {
         final value = (json['classAlarmRange'] as num?)?.toInt() ?? 0;
         return value >= 0 && value <= 2 ? value : 0;
       }(),
+      // 脏条目在 listFromJson 内逐条校验丢弃，绝不让单个坏值炸掉整个设置。
+      classReminders: ClassReminderEntry.listFromJson(json['classReminders']),
       courseCardTitleColorLight:
           json['courseCardTitleColorLight'] as String? ??
           defaultCourseCardTitleColor,
@@ -2361,6 +2390,8 @@ class TimetableSettings {
     double? glassDockInsetClearance,
     bool? glassDockShowDayTab,
     bool? glassDockShowSettingsTab,
+    bool? glassDockShowWeekTab,
+    String? glassDockButtonEntryId,
     bool? glassDockShowAddButton,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
@@ -2453,6 +2484,7 @@ class TimetableSettings {
     int? classAlarmLeadMinutes,
     bool? classAlarmSkipUi,
     int? classAlarmRange,
+    List<ClassReminderEntry>? classReminders,
     String? courseCardTitleColorLight,
     String? courseCardTitleColorDark,
     String? courseCardDetailColorLight,
@@ -2558,6 +2590,9 @@ class TimetableSettings {
       glassDockShowDayTab: glassDockShowDayTab ?? this.glassDockShowDayTab,
       glassDockShowSettingsTab:
           glassDockShowSettingsTab ?? this.glassDockShowSettingsTab,
+      glassDockShowWeekTab: glassDockShowWeekTab ?? this.glassDockShowWeekTab,
+      glassDockButtonEntryId:
+          glassDockButtonEntryId ?? this.glassDockButtonEntryId,
       glassDockShowAddButton:
           glassDockShowAddButton ?? this.glassDockShowAddButton,
       timetableBackToCurrentWeekButtonStyle:
@@ -2750,6 +2785,7 @@ class TimetableSettings {
           classAlarmLeadMinutes ?? this.classAlarmLeadMinutes,
       classAlarmSkipUi: classAlarmSkipUi ?? this.classAlarmSkipUi,
       classAlarmRange: classAlarmRange ?? this.classAlarmRange,
+      classReminders: classReminders ?? this.classReminders,
       courseCardTitleColorLight:
           courseCardTitleColorLight ?? this.courseCardTitleColorLight,
       courseCardTitleColorDark:

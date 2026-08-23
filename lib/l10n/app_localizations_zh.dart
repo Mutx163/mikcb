@@ -9799,6 +9799,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockShowSettingsTabTitle => '显示设置入口';
 
   @override
+  String get glassDockShowWeekTabTitle => '显示周课表入口';
+
+  @override
+  String get glassDockButtonFunctionLabel => '独立按钮功能';
+
+  @override
   String get glassDockShowAddButtonTitle => '显示添加按钮';
 
   @override
@@ -19811,6 +19817,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockShowSettingsTabTitle => '顯示設定入口';
 
   @override
+  String get glassDockShowWeekTabTitle => '顯示週課表入口';
+
+  @override
+  String get glassDockButtonFunctionLabel => '獨立按鈕功能';
+
+  @override
   String get glassDockShowAddButtonTitle => '顯示新增按鈕';
 
   @override
@@ -29821,6 +29833,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockShowSettingsTabTitle => '顯示設定入口';
+
+  @override
+  String get glassDockShowWeekTabTitle => '顯示週課表入口';
+
+  @override
+  String get glassDockButtonFunctionLabel => '獨立按鈕功能';
 
   @override
   String get glassDockShowAddButtonTitle => '顯示新增按鈕';

@@ -5924,6 +5924,8 @@
   "glassDockEntriesSectionTitle": "底栏入口",
   "glassDockShowDayTabTitle": "显示日课表入口",
   "glassDockShowSettingsTabTitle": "显示设置入口",
+  "glassDockShowWeekTabTitle": "显示周课表入口",
+  "glassDockButtonFunctionLabel": "独立按钮功能",
   "glassDockShowAddButtonTitle": "显示添加按钮",
   "glassDockShowAddButtonSubtitle": "在导航栏旁显示独立圆形按钮，点击直接添加课程",
     "glassDockExtraButtonSemanticLabel": "添加课程",
