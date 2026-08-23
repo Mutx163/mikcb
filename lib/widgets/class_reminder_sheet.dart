@@ -36,9 +36,6 @@ String _formatMinuteOfDay(int minutes) {
   return '$hour:$minute';
 }
 
-String _formatDate(DateTime date) =>
-    '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
 DateTime? _occurrenceDateFor(TimetableSettings settings, int week, int dayOfWeek) {
   final semesterStart = settings.semesterStartDate;
   if (semesterStart == null) {
@@ -104,7 +101,7 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
     await provider.setClassReminder(
       ClassReminderEntry(
         courseId: widget.course.id,
-        date: _formatDate(date),
+        date: ClassReminderEntry.formatDate(date),
         minuteOfDay: minuteOfDay,
       ),
     );
@@ -123,7 +120,7 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
     }
     final navigator = Navigator.of(context);
     final l10n = AppLocalizations.of(context)!;
-    await provider.removeClassReminder(widget.course.id, _formatDate(date));
+    await provider.removeClassReminder(widget.course.id, ClassReminderEntry.formatDate(date));
     navigator.pop();
     Future<void>.delayed(const Duration(milliseconds: 280), () {
       _toast(l10n.classAlarmRemovedToast);
@@ -164,7 +161,7 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
 
     final existing = date == null
         ? null
-        : provider.classReminderFor(widget.course.id, _formatDate(date));
+        : provider.classReminderFor(widget.course.id, ClassReminderEntry.formatDate(date));
 
     return HyperosSheet(
       frosted: true,

@@ -24,6 +24,12 @@ class ClassReminderEntry {
   /// 全局唯一身份，同时是原生侧取消/去重用的 fire id 前缀来源。
   String get id => 'classreminder:$courseId@$date';
 
+  /// 统一的 yyyy-MM-dd 格式化，UI 与持久化共用，避免各自手写漂移。
+  static String formatDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
   bool get isValid =>
       courseId.trim().isNotEmpty &&
       _isValidDate(date) &&

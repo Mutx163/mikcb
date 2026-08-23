@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/class_reminder.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
@@ -27,14 +28,14 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
-import '../services/class_alarm_service.dart';
-import '../widgets/app_dialogs.dart';
+import '../widgets/class_reminder_sheet.dart';
 import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
+import '../utils/home_startup_visual_primer.dart';
 import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
 import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import '../widgets/course_action_sheet.dart';
@@ -480,6 +481,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final darkFallback = colorScheme.surface;
         final settings = provider.settings;
+        // 启动预热器若已完成亮度采样，首帧直接采用：标题/状态栏/星期栏的
+        // 黑白墨极性第一帧即正确，不出现「按主题兜底再翻面」的闪变。仅在本页
+        // 尚未开始采样时生效；异步精确采样照常运行并以同值幂等收敛。
+        _seedWallpaperLuminanceFromStartupPrimer(settings);
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
         final dockSettingsActive = glassDockForm && _dockSettingsActive;
@@ -581,25 +586,19 @@ class _TimetableScreenState extends State<TimetableScreen>
         // and the card reads as transparent (bare wash over raw wallpaper).
         final useHomePreblur =
             useCoursePreblur || (backdropBlurOn && continuousChromeBlur);
-        final homePreblurSigma = (() {
-          final appearance = FrostedAppearanceScope.of(context);
-          // Gaussian cards are the dominant consumer when active: give them
-          // the exact sigma their live BackdropFilter would have used.
-          if (backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian) {
-            return HyperosBlurredHeader.blurSigmaOf(context);
-          }
-          // Preserve the global liquid-glass chrome path. Course cards no
-          // longer use liquid glass, but page chrome still may use it and the
-          // cached summary backdrop must match that tuning.
-          if (appearance.glassMode == FrostedGlassMode.liquidGlass) {
-            return (appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
-                .blur
-                .clamp(2.0, 24.0);
-          }
-          // Gaussian chrome: match the band's BackdropFilter sigma so the
-          // summary card's stand-in frost reads like the band above it.
-          return HyperosBlurredHeader.blurSigmaOf(context);
-        })();
+        // 共享纯函数解析，与启动预热器构造同一份 PreblurredWallpaperCache
+        // 键位（分支语义与原内联闭包一致）。
+        final dockAppearance = FrostedAppearanceScope.of(context);
+        final homePreblurSigma = resolveHomePreblurSigma(
+          gaussianCardsDrive:
+              backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian,
+          liquidGlassChrome:
+              dockAppearance.glassMode == FrostedGlassMode.liquidGlass,
+          sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+          liquidGlassTunedBlur:
+              (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
+                  .blur,
+        );
         Widget homeStack = Stack(
           fit: StackFit.expand,
           children: [
@@ -1640,6 +1639,30 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// File existence is checked asynchronously; results are cached per path,
   /// viewport and wallpaper alignment so a cover crop change cannot keep using
   /// a sample from an off-screen part of the image.
+  /// 采用启动预热器（HomeStartupVisualPrimer）缓存的壁纸亮度带作初值。
+  ///
+  /// 只在冷启动首帧前的空窗期生效一次：本页任何亮度字段已被赋值或常规
+  /// 异步采样已启动（requestedKey 非空）时直接返回，绝不覆盖精确采样结果。
+  void _seedWallpaperLuminanceFromStartupPrimer(
+    TimetableSettings settings,
+  ) {
+    if (_wallpaperTopLuminance != null ||
+        _wallpaperWeekdayLuminance != null ||
+        _wallpaperBodyLuminance != null ||
+        _wallpaperLuminanceRequestedKey != null) {
+      return;
+    }
+    final bands = HomeStartupVisualPrimer.seededBandsFor(
+      resolveHomePageBackdropImagePath(settings),
+    );
+    if (bands == null) {
+      return;
+    }
+    _wallpaperTopLuminance = bands.top;
+    _wallpaperWeekdayLuminance = bands.weekday;
+    _wallpaperBodyLuminance = bands.body;
+  }
+
   void _scheduleWallpaperLuminanceSampleIfNeeded(
     TimetableSettings settings, {
     required Size viewportSize,
@@ -5833,6 +5856,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                 item,
                 showConflictBadge,
               ),
+              // 日课表：这节课（课程×真实日期）已设单节课提醒时，在备注
+              // 角标旁亮铃铛；情侣对方的只读课不显示。
+              hasReminder: date != null &&
+                  !item.isPartnerCourse &&
+                  provider.classReminderFor(
+                        item.course.id,
+                        ClassReminderEntry.formatDate(date),
+                      ) !=
+                      null,
               showHomeworkIndicator:
                   !item.isPartnerCourse && item.course.hasHomeworkInWeek(week),
               isHighlighted: item.isCurrentCourse,
@@ -7259,9 +7291,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
       onAddTask: (target) => _openTaskFromCourse(target, week),
-      // 上课闹钟依赖 Android AlarmClock 契约，其他平台不显示入口。
+      // 单节课提醒依赖原生精确闹钟调度，其他平台不显示入口。
       onSetAlarm: (!kIsWeb && Platform.isAndroid)
-          ? (target) => _setSystemAlarmForCourse(target, week)
+          ? (target) => _openClassReminderSheet(target, week)
           : null,
     );
   }
@@ -7283,83 +7315,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 单节课闹钟：按「星期 + 开始时间 − 提前量」写周重复闹钟，弹窗展示
-  /// 真实响铃时刻与上课周次。系统时钟公开契约无日期参数，无法表达
-  /// 「仅某一天」，因此这里不做一次性闹钟；假期与非上课周照响的限制
-  /// 在弹窗中说明。
-  Future<void> _setSystemAlarmForCourse(Course course, int week) async {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<TimetableProvider>();
-    final settings = provider.settings;
-    final label = course.shortName?.trim().isNotEmpty == true
-        ? course.shortName!.trim()
-        : course.name.trim();
-    // 真实钟点按「节次号 → 生效时间模板」解析；节次越界的幻影课程
-    // （导入残留，行内钟点是 00:00 之类占位值）直接拒绝。
-    final resolvedStart = provider.resolvedCourseStartTime(course);
-    if (resolvedStart == null ||
-        ClassAlarmLogic.parseClockMinutes(resolvedStart) == null) {
-      showAppToast(
-        context,
-        message: l10n.classAlarmInvalidTimeToast,
-        kind: AppToastKind.warning,
-      );
-      return;
-    }
-    // 先构建计划再弹窗：确认框展示的是实际响铃时刻（含提前量），
-    // 而不是上课开始时刻，避免用户确认的时间与闹钟不一致。
-    final leadMinutes =
-        ClassAlarmLogic.clampLeadMinutes(settings.classAlarmLeadMinutes);
-    final plan = ClassAlarmLogic.buildCourseWeeklyPlan(
-      dayOfWeek: course.dayOfWeek,
-      startTime: resolvedStart.trim(),
-      label: '${l10n.appTitle} · $label',
-      leadMinutes: leadMinutes,
-      skipUi: settings.classAlarmSkipUi,
-    );
-    if (plan == null) {
-      showAppToast(
-        context,
-        message: l10n.classAlarmInvalidTimeToast,
-        kind: AppToastKind.warning,
-      );
-      return;
-    }
-    final ringClock = ClassAlarmLogic.formatClock(plan.hour * 60 + plan.minute);
-    final weekdayLabel = switch (course.dayOfWeek) {
-      1 => l10n.weekdayMon,
-      2 => l10n.weekdayTue,
-      3 => l10n.weekdayWed,
-      4 => l10n.weekdayThu,
-      5 => l10n.weekdayFri,
-      6 => l10n.weekdaySat,
-      _ => l10n.weekdaySun,
-    };
-    final confirmed = await showAppConfirmDialog(
-      context,
-      title: l10n.classAlarmCourseConfirmTitle,
-      message: l10n.classAlarmCourseConfirmMessage(
-        weekdayLabel,
-        ringClock,
-        leadMinutes,
-        course.weekDescription(l10n),
-      ),
-      confirmLabel: l10n.confirmAction,
-    );
-    if (confirmed != true || !mounted) {
-      return;
-    }
-    final result = await ClassAlarmService.addAlarm(plan);
-    if (!mounted) {
-      return;
-    }
-    showAppToast(
-      context,
-      message: result.launched
-          ? l10n.classAlarmAddedToast
-          : l10n.classAlarmLaunchFailedToast,
-      kind: result.launched ? AppToastKind.success : AppToastKind.error,
-    );
+  /// 单节课提醒：打开提醒设置弹层（快捷提前量 / 自定义时间 / 取消）。
+  Future<void> _openClassReminderSheet(Course course, int week) {
+    return showClassReminderSheet(context, course: course, week: week);
   }
 
   List<CourseActionPreviewItem> _buildCourseActionPreviewItems(

@@ -37,6 +37,10 @@ class CourseCard extends StatelessWidget {
   final String? compactOverlineText;
   final String? topRightBadgeText;
 
+  /// Shows a circular reminder bell on the top-right badge row（日课表：
+  /// 这节课已设置单节课提醒）。与备注角标并排展示。
+  final bool hasReminder;
+
   /// Shows a circular homework indicator on the card (typically week view).
   final bool showHomeworkIndicator;
   final bool isHighlighted;
@@ -68,6 +72,7 @@ class CourseCard extends StatelessWidget {
     this.surfaceOpacity = 1.0,
     this.compactOverlineText,
     this.topRightBadgeText,
+    this.hasReminder = false,
     this.showHomeworkIndicator = false,
     this.isHighlighted = false,
     this.isHoliday = false,
@@ -168,23 +173,38 @@ class CourseCard extends StatelessWidget {
             left: 8,
             child: _buildHomeworkIndicator(size: 18, iconSize: 11),
           ),
-        if (topRightBadgeText != null)
+        if (topRightBadgeText != null || hasReminder)
           Positioned(
             top: 8,
             right: 8,
-            child: _buildBadgeRow(context, customBadgeText: topRightBadgeText),
+            child: _buildBadgeRow(
+              context,
+              customBadgeText: topRightBadgeText,
+              showReminderBell: hasReminder,
+            ),
           ),
-        if (isHoliday && topRightBadgeText == null)
+        if (isHoliday && topRightBadgeText == null && !hasReminder)
           Positioned(
             top: 8,
             right: 8,
-            child: _buildBadgeRow(context, showHoliday: true),
+            child: _buildBadgeRow(
+              context,
+              showHoliday: true,
+              showReminderBell: hasReminder,
+            ),
           ),
-        if (isSuspended && topRightBadgeText == null && !isHoliday)
+        if (isSuspended &&
+            topRightBadgeText == null &&
+            !isHoliday &&
+            !hasReminder)
           Positioned(
             top: 8,
             right: 8,
-            child: _buildBadgeRow(context, showSuspended: true),
+            child: _buildBadgeRow(
+              context,
+              showSuspended: true,
+              showReminderBell: hasReminder,
+            ),
           ),
       ],
     );
@@ -369,26 +389,38 @@ class CourseCard extends StatelessWidget {
                 left: 4,
                 child: _buildHomeworkIndicator(size: 15, iconSize: 9),
               ),
-            if (topRightBadgeText != null)
+            if (topRightBadgeText != null || hasReminder)
               Positioned(
                 top: 6,
                 right: 6,
                 child: _buildBadgeRow(
                   context,
                   customBadgeText: topRightBadgeText,
+                  showReminderBell: hasReminder,
                 ),
               ),
-            if (isHoliday && topRightBadgeText == null)
+            if (isHoliday && topRightBadgeText == null && !hasReminder)
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadgeRow(context, showHoliday: true),
+                child: _buildBadgeRow(
+                  context,
+                  showHoliday: true,
+                  showReminderBell: hasReminder,
+                ),
               ),
-            if (isSuspended && topRightBadgeText == null && !isHoliday)
+            if (isSuspended &&
+                topRightBadgeText == null &&
+                !isHoliday &&
+                !hasReminder)
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadgeRow(context, showSuspended: true),
+                child: _buildBadgeRow(
+                  context,
+                  showSuspended: true,
+                  showReminderBell: hasReminder,
+                ),
               ),
           ],
         ),
@@ -436,6 +468,35 @@ class CourseCard extends StatelessWidget {
     );
   }
 
+  /// 圆形提醒铃铛角标：样式与作业角标一致，颜色用主题蓝以示区分。
+  Widget _buildReminderIndicator() {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.95),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.alarm_on_rounded,
+        size: 10,
+        color: Color(0xFF2563EB),
+      ),
+    );
+  }
+
   Widget _buildBadge(String text, {Color? color}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -466,9 +527,13 @@ class CourseCard extends StatelessWidget {
     String? customBadgeText,
     bool showHoliday = false,
     bool showSuspended = false,
+    bool showReminderBell = false,
   }) {
     final l10n = AppLocalizations.of(context);
     final badges = <Widget>[];
+    if (showReminderBell) {
+      badges.add(_buildReminderIndicator());
+    }
     if (showHoliday && l10n != null) {
       badges.add(
         _buildBadge(l10n.holidayBadgeLabel, color: Colors.orange.shade700),
