@@ -6527,39 +6527,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!glassDockForm) {
       return child;
     }
-    // 独立浮钮与药丸共用同一套玻璃材质（参数与 bar 内部计算完全一致），
-    // 否则两块玻璃 tint/blur 不同会一眼看出材质断层。
-    //
-    // [_kStockDockGlass] 实验态：包「原版」下两者不传参时会各自回退到
-    // 不同的内部默认（bar→kBottomBarGlassDefaults；button→主题回退档），
-    // 正是用户看到的「左右两块玻璃不一样」。因此把包官方底栏默认材质
-    // （stockBottomBarGlass）同时显式传给药丸与浮钮，保证零自定义参数
-    // 的前提下两边同质；quality 双方各自走 standard 类默认，无需干预。
-    LiquidGlassSettings? dockBtnSettings;
-    GlassQuality? dockBtnQuality;
-    if (_kStockDockGlass) {
-      dockBtnSettings = MikcbLiquidGlassTokens.stockBottomBarGlass;
-    } else {
-      final dockAppearance = FrostedAppearanceScope.of(context);
-      final dockUseLiquidGlass =
-          dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
-          !LiquidGlassDegradation.shouldDegrade(context);
-      final dockIsDark = Theme.of(context).brightness == Brightness.dark;
-      dockBtnSettings = dockUseLiquidGlass
-          ? MikcbLiquidGlassTokens.sheetSettingsFor(
-              dockIsDark ? Brightness.dark : Brightness.light,
-              tuning: dockAppearance.liquidGlassTuning,
-            )
-          : LiquidGlassSettings(
-              blur: dockAppearance.sheetBlurSigma,
-              glassColor: HyperosBlurredHeader.sheetTintColor(
-                context,
-                withBlur: true,
-              ),
-            );
-      dockBtnQuality =
-          dockUseLiquidGlass ? GlassQuality.premium : GlassQuality.minimal;
-    }
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -6570,48 +6537,17 @@ class _TimetableScreenState extends State<TimetableScreen>
           bottom: 0,
           child: SafeArea(
             minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            // 官方 iOS 26 形态：居中药丸 + 右侧独立玻璃圆钮。按钮不再走
-            // GlassTabBar.extraButton（其形状受 barBorderRadius 联动，会
-            // 失去正圆；且无独立显隐动画），改用原生 GlassButton 浮层，
-            // 收起时在裁切槽内向右下滑出并渐隐、占位宽度同步回收。
-            child: AnimatedBuilder(
-              animation: _dockAddBtnCollapse,
-              builder: (context, _) {
-                // 收起语义参考官方 collapse（extra 向药丸平移覆盖、渐隐）：
-                // 水滴回缩进左侧大卡片，而不是滑向屏幕角落或原地缩没。
-                final collapse = settings.glassDockShowAddButton
-                    ? _dockAddBtnCollapse.value
-                    : 1.0;
-                // 墨色与底栏未选中态同规则：按壁纸亮度自动黑白。
-                final lum = _wallpaperBodyLuminance;
-                final isDarkTheme =
-                    Theme.of(context).brightness == Brightness.dark;
-                final ink = (lum != null ? lum < 0.45 : isDarkTheme)
-                    ? Colors.white.withValues(alpha: 0.9)
-                    : Colors.black.withValues(alpha: 0.75);
-                return Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 272),
-                        child: _buildGlassDockBar(
-                          settings: settings,
-                          l10n: l10n,
-                        ),
-                      ),
-                      if (collapse < 1) _buildDockMergeSlot(
-                        collapse: collapse,
-                        ink: ink,
-                        l10n: l10n,
-                        settings: dockBtnSettings,
-                        quality: dockBtnQuality,
-                      ),
-                    ],
-                  ),
-                );
-              },
+            // 独立圆钮走官方 extraButton：与药丸同图层同材质（blend 融合），
+            // 尺寸=药丸全高 56 天然等高。收起动画由 _dockAddBtnCollapse 驱动
+            // config.size 渐缩（库逐帧读取预留宽度，药丸平滑补位），形状在
+            // barBorderRadius 回归默认后全程保持 LiquidOval 正圆。
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: settings.glassDockShowAddButton ? 328 : 272,
+                ),
+                child: _buildGlassDockBar(settings: settings, l10n: l10n),
+              ),
             ),
           ),
         ),
@@ -6673,6 +6609,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       selectedIndex: _glassDockCurrentIndex(dockTabs),
       onTabSelected: (index) =>
           _onDockEntrySelected(dockTabs[index], settings),
+      // 独立圆钮回到官方 extraButton 管线：与药丸同图层同材质同高，
+      // 收起时 size 随 _dockAddBtnCollapse 渐缩（库逐帧读取预留宽度，
+      // 药丸平滑补位），barBorderRadius 已回默认故全程正圆。
+      extraButton: settings.glassDockShowAddButton
+          ? _buildGlassDockExtraButton(settings, l10n, unselectedColor)
+          : null,
       barHeight: 56,
       // —— 玻璃材质实验（[_kStockDockGlass]）：true = 全部取包原版默认，
       // false = 旧的 mikcb 自定义调校。原版各值：
@@ -6724,58 +6666,32 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 「水滴合并槽」：独立按钮与药丸之间的过渡区。
+  /// 独立圆钮的官方 extraButton 配置。
   ///
-  /// 槽与药丸组件等高（68 = 56 药丸 + 上下各 6 padding），两者中心线
-  /// 天然对齐；宽度 = 8 间距 + 48 按钮随收起进度回收，药丸平滑补位。
-  /// 按钮在槽内贴右缘（紧挨药丸侧），向左平移沉入药丸方向、被槽缘裁
-  /// 掉——即官方 collapse 的 extra 向药丸覆盖融合效果。透明度用平方
-  /// 曲线：滑动全程清晰可见，末段才快速隐去。
-  Widget _buildDockMergeSlot({
-    required double collapse,
-    required Color ink,
-    required AppLocalizations l10n,
-    // null = GlassButton 走包原版默认材质/自适应质量（[_kStockDockGlass]）。
-    required LiquidGlassSettings? settings,
-    required GlassQuality? quality,
-  }) {
-    return ClipRect(
-      child: SizedBox(
-        width: 8 + 48 * (1 - collapse),
-        height: 68,
-        child: OverflowBox(
-          alignment: Alignment.centerRight,
-          minWidth: 48,
-          maxWidth: 48,
-          minHeight: 48,
-          maxHeight: 48,
-          child: Transform.translate(
-            // 平移距离 = 间距 8 + 半个按钮 24 + 少量越界：圆心恰好越过
-            // 药丸边缘，短距「吸入」而不是长途飞撞。
-            offset: Offset(-collapse * 44, 0),
-            child: Transform.scale(
-              // 对齐官方 collapsedExtraButtonScale=0.9：微缩保留玻璃
-              // 体量感，而不是缩没。
-              scale: 1 - 0.12 * collapse,
-              child: Opacity(
-                // 线性均匀淡出：全程与平移同步，融合过程连贯。
-                opacity: 1 - collapse,
-                child: GlassButton(
-                  icon: Icon(Icons.add_rounded),
-                  onTap: () => unawaited(_openDockExtraButton()),
-                  label: l10n.glassDockExtraButtonSemanticLabel,
-                  width: 48,
-                  height: 48,
-                  iconSize: 22,
-                  iconColor: ink,
-                  settings: settings,
-                  quality: quality,
-                ),
-              ),
-            ),
-          ),
-        ),
+  /// 尺寸 = 药丸全高 56，与三枚 Tab 所在胶囊上下边缘平齐；材质/混合/
+  /// 高度全部由库内 extraButton 管线继承（同图层 blend，天然与药丸一
+  /// 致）。收起时 size 随 [_dockAddBtnCollapse] 渐缩到 0（库逐帧读取
+  /// 预留宽度，药丸平滑补位），图标同步线性淡出；barBorderRadius 已回
+  /// 官方默认，任意尺寸下形状都是 LiquidOval 正圆。
+  GlassTabBarExtraButton? _buildGlassDockExtraButton(
+    TimetableSettings settings,
+    AppLocalizations l10n,
+    Color iconColor,
+  ) {
+    final collapse =
+        settings.glassDockShowAddButton ? _dockAddBtnCollapse.value : 1.0;
+    if (collapse >= 1) {
+      return null; // 完全收起后释放点击区域。
+    }
+    return GlassTabBarExtraButton(
+      icon: Opacity(
+        opacity: 1 - collapse,
+        child: Icon(Icons.add_rounded),
       ),
+      onTap: () => unawaited(_openDockExtraButton()),
+      label: l10n.glassDockExtraButtonSemanticLabel,
+      iconColor: iconColor,
+      size: 56 * (1 - collapse),
     );
   }
 
