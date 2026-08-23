@@ -178,9 +178,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// true = 包原版默认材质：底栏本体 kBottomBarGlassDefaults、拖拽透镜
   /// baseIndicatorSettings（轻微透镜弯曲）、pinch 0.4、expansion 水平12/
-  /// 垂直8、质量自适应；右侧浮钮同样不传 settings/quality。此前自定义的
-  /// 「拉满折射拖拽透镜」在纯色/浅色壁纸上呈四周折射、中间全透明的
-  /// 「甜甜圈」观感，故整体回退原版供对比。
+  /// 垂直8、质量自适应；右侧浮钮与药丸显式共用这份官方底栏材质——
+  /// 包「原版」下两者不传参时内部默认各不相同，会呈现玻璃断层。
+  /// 此前自定义的「拉满折射拖拽透镜」在纯色/浅色壁纸上呈四周折射、
+  /// 中间全透明的「甜甜圈」观感，故整体回退原版供对比。
   ///
   /// false = 旧的 mikcb 自定义调校（sheetSettingsFor 跟随「液态玻璃调
   /// 校」+ dragLensSettings 拉满折射 + pinch 1.0 + premium/minimal 强制
@@ -6529,11 +6530,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 独立浮钮与药丸共用同一套玻璃材质（参数与 bar 内部计算完全一致），
     // 否则两块玻璃 tint/blur 不同会一眼看出材质断层。
     //
-    // [_kStockDockGlass] 实验态：浮钮不传 settings/quality，与药丸一起
-    // 回包原版默认材质 + 自适应质量。
+    // [_kStockDockGlass] 实验态：包「原版」下两者不传参时会各自回退到
+    // 不同的内部默认（bar→kBottomBarGlassDefaults；button→主题回退档），
+    // 正是用户看到的「左右两块玻璃不一样」。因此把包官方底栏默认材质
+    // （stockBottomBarGlass）同时显式传给药丸与浮钮，保证零自定义参数
+    // 的前提下两边同质；quality 双方各自走 standard 类默认，无需干预。
     LiquidGlassSettings? dockBtnSettings;
     GlassQuality? dockBtnQuality;
-    if (!_kStockDockGlass) {
+    if (_kStockDockGlass) {
+      dockBtnSettings = MikcbLiquidGlassTokens.stockBottomBarGlass;
+    } else {
       final dockAppearance = FrostedAppearanceScope.of(context);
       final dockUseLiquidGlass =
           dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
@@ -6670,9 +6676,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       barHeight: 56,
       // —— 玻璃材质实验（[_kStockDockGlass]）：true = 全部取包原版默认，
       // false = 旧的 mikcb 自定义调校。原版各值：
-      // - 底栏本体 settings 不传 → 包内 kBottomBarGlassDefaults
-      //   （thickness 30 / blur 3 / 折射率 1.59 / 色散 0.3 / 24% 白，
-      //   iOS 26 Apple News/Safari tab bar 校准）；
+      // - 底栏本体显式传 stockBottomBarGlass（包内 kBottomBarGlassDefaults
+      //   的镜像：thickness 30 / blur 3 / 折射率 1.59 / 色散 0.3 / 24% 白，
+      //   iOS 26 Apple News/Safari tab bar 校准）。与不传参数等价，但能
+      //   同时给到右侧浮钮，消除两者内部默认不同导致的材质断层；
       // - 拖拽透镜 indicatorSettings 不传 → baseIndicatorSettings
       //   （thickness 20 / 折射率 1.10 / 无色散）：轻微透镜弯曲，不会出
       //   现自定义拉满档那种「四周强折射、中间全透明」的甜甜圈观感；
@@ -6683,7 +6690,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 「添加按钮不圆」的根因。指示器圆角官方默认即 barRadius-4=28。
       indicatorBorderRadius: _kStockDockGlass ? null : 28,
       settings: _kStockDockGlass
-          ? null
+          ? MikcbLiquidGlassTokens.stockBottomBarGlass
           : (useLiquidGlass
               ? MikcbLiquidGlassTokens.sheetSettingsFor(
                   isDark ? Brightness.dark : Brightness.light,

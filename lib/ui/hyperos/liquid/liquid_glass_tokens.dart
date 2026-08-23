@@ -43,6 +43,28 @@ abstract final class MikcbLiquidGlassTokens {
     glassColor: Color(0x3DFFFFFF),
   );
 
+  /// liquid_glass_widgets 底栏官方默认材质（kBottomBarGlassDefaults）镜像。
+  ///
+  /// 原常量在包内 `src/widgets/surfaces/tab_bar_bottom_internal.dart`，
+  /// 未从包级导出，故按值复制；升级包版本时需与上游核对同步。
+  ///
+  /// 用途：玻璃坞「原版材质」形态下，bar 与 GlassButton 不传 settings
+  /// 时各自回退到**不同**的内部默认（bar→kBottomBarGlassDefaults；
+  /// button→DefaultButtonSettings/主题回退档），并排会呈现明显的玻璃
+  /// 材质断层。把这份官方底栏材质同时显式传给药丸本体与右侧浮钮，
+  /// 即可在「零自定义参数」的前提下保证两块玻璃完全同质。
+  static const LiquidGlassSettings stockBottomBarGlass = LiquidGlassSettings(
+    thickness: 30,
+    blur: 3,
+    chromaticAberration: 0.3,
+    lightIntensity: 0.6,
+    refractiveIndex: 1.59,
+    saturation: 0.7,
+    ambientStrength: 1,
+    lightAngle: 0.75 * 3.14159265358979,
+    glassColor: Color(0x3DFFFFFF),
+  );
+
   /// 玻璃坞拖拽透镜（GlassTabBar.bottom 的 [LiquidGlassSettings]）。
   ///
   /// 用在 [GlassTabBar.bottom] 的 indicatorSettings 上：长按底栏滑出的
