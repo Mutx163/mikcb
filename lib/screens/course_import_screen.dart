@@ -32,6 +32,7 @@ import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
 import '../services/import_week_alignment_service.dart';
 import '../services/spreadsheet_import_service.dart';
+import '../services/warehouse_bridge_compat.dart';
 import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_import_session_log.dart';
 import '../services/warehouse_macro_service.dart';
@@ -4337,7 +4338,7 @@ class _WarehouseAdapterWebLoginScreenState
       return true;
     }
   };
-  try {
+$kWarehouseBridgeCompatShim  try {
     $script
   } catch (error) {
     QingyuBridge.postMessage(JSON.stringify({type: 'error', message: String(error)}));
