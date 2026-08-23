@@ -2584,6 +2584,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
+            key: const ValueKey('timetable-time-column'),
             width: timeColumnWidth,
             // Chrome blur is painted by HomePageContinuousChromeFrostedOverlay.
             child: Column(
@@ -3040,11 +3041,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     final chromeGridClearance = weekdayChromeBlurEnabled
         ? homePageFrostedRegionSeamOverlap
         : 0.0;
+    // 玻璃坞满屏悬浮下自适应节高会把网格铺到药丸后面，而自适应网格
+    // 没有纵向滚动可救：把底部药丸占用（含底部安全区）从可用高度里
+    // 扣掉，让网格收在药丸上方、课表下方留一条空白，课程不被遮挡。
+    final dockAutofitRelief =
+        settings.glassDockLayout == GlassDockLayout.overlay
+        ? _glassDockContentScrollInset(settings)
+        : 0.0;
     final bodyAvailableHeight =
-        (availableHeight - _weekDayHeaderHeight - chromeGridClearance).clamp(
-          0.0,
-          double.infinity,
-        );
+        (availableHeight -
+            _weekDayHeaderHeight -
+            chromeGridClearance -
+            dockAutofitRelief).clamp(0.0, double.infinity);
     final sectionHeight =
         settings.timetableAutoFitSectionHeight && settings.sectionCount > 0
         ? bodyAvailableHeight / settings.sectionCount
@@ -3123,6 +3131,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required Widget grid,
   }) {
+    // 玻璃坞满屏悬浮（overlay）下网格视口不避让，最后几节会停在药丸
+    // 后面；给纵向滚动补一段底部余量，用户可以把网格滑上来查看被遮的
+    // 课程（课表下方随之留出一条空白）。inset 布局的避让已由外层布局
+    // padding 承担，这里不再叠加。
+    final weekGridScrollRelief =
+        settings.glassDockLayout == GlassDockLayout.overlay
+        ? _glassDockContentScrollInset(settings)
+        : 0.0;
     final weekGrid = settings.timetableAutoFitSectionHeight
         ? grid
         : SingleChildScrollView(
@@ -3131,7 +3147,12 @@ class _TimetableScreenState extends State<TimetableScreen>
             physics: const ClampingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
-            child: grid,
+            child: weekGridScrollRelief > 0
+                ? Padding(
+                    padding: EdgeInsets.only(bottom: weekGridScrollRelief),
+                    child: grid,
+                  )
+                : grid,
           );
     // Drive opacity from the expand controller so open and close share the
     // same curve. A boolean AnimatedOpacity snaps the grid away on open while
@@ -4410,10 +4431,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 玻璃坞避让（含底部安全区）：日课表视口全屏，避让以滚动 padding
     // 实现——静止在列表底部时最后一项仍停在玻璃坞上方，滚动中卡片则
     // 连续穿过避让带，不再在边界被硬裁出与磨砂卡片色差明显的空带。
-    final dockScrollAvoidance =
-        settings.homeNavigationForm == HomeNavigationForm.glassDock
-            ? _glassDockContentBottomInset(settings)
-            : 0.0;
+    // 满屏悬浮（overlay）同样取滚动余量（药丸占用兜底）：此前 overlay
+    // 余量为 0，下滑到底最后一张卡仍压在药丸后面，无法滑出来看。
+    final dockScrollAvoidance = _glassDockContentScrollInset(settings);
     if (agendaItems.isEmpty) {
       return Padding(
         key: key,
@@ -6514,6 +6534,28 @@ class _TimetableScreenState extends State<TimetableScreen>
         MediaQuery.viewPaddingOf(context).bottom;
   }
 
+  /// 玻璃坞形态下「可滚动课表内容」的底部滚动余量（日课表列表、
+  /// 满屏悬浮下的周课表纵向滚动）：视口保持原样，余量只加长可滚动
+  /// 区间——静止时内容照常铺满，下滑到底后最后一项停在浮动药丸上方，
+  /// 被药丸遮住的课程可以滑出来看。
+  ///
+  /// - [GlassDockLayout.inset]：沿用用户设定的
+  ///   [TimetableSettings.glassDockInsetClearance] + 底部安全区；
+  /// - [GlassDockLayout.overlay]：没有布局避让，按药丸固定占用
+  ///   （[_glassDockPillOccupancy]）+ 底部安全区兜底，保证内容始终
+  ///   能整体滑出药丸带。
+  double _glassDockContentScrollInset(TimetableSettings settings) {
+    if (settings.homeNavigationForm != HomeNavigationForm.glassDock) {
+      return 0;
+    }
+    final double base =
+        settings.glassDockLayout == GlassDockLayout.overlay
+        ? _glassDockPillOccupancy
+        : settings.glassDockInsetClearance;
+    return math.max(base, _glassDockPillOccupancy) +
+        MediaQuery.viewPaddingOf(context).bottom;
+  }
+
   /// 玻璃坞形态下「设置页」的滚动底部避让：列表视口保持全屏，
   /// 避让以滚动 padding 实现，最后一项可滚到药丸上方。
   double _glassDockSettingsBottomInset(TimetableSettings settings) {
@@ -6533,6 +6575,34 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!glassDockForm) {
       return child;
     }
+    // 浮钮与药丸显式同源材质：stock 实验态传包官方底栏默认，
+    // 自定义态走 sheetSettingsFor / frosted 回退（与 bar 内部一致）。
+    LiquidGlassSettings? dockBtnSettings;
+    GlassQuality? dockBtnQuality;
+    if (_kStockDockGlass) {
+      dockBtnSettings = MikcbLiquidGlassTokens.stockBottomBarGlass;
+      dockBtnQuality = null; // 包原版自适应质量
+    } else {
+      final dockAppearance = FrostedAppearanceScope.of(context);
+      final dockUseLiquidGlass =
+          dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+          !LiquidGlassDegradation.shouldDegrade(context);
+      final dockIsDark = Theme.of(context).brightness == Brightness.dark;
+      dockBtnSettings = dockUseLiquidGlass
+          ? MikcbLiquidGlassTokens.sheetSettingsFor(
+              dockIsDark ? Brightness.dark : Brightness.light,
+              tuning: dockAppearance.liquidGlassTuning,
+            )
+          : LiquidGlassSettings(
+              blur: dockAppearance.sheetBlurSigma,
+              glassColor: HyperosBlurredHeader.sheetTintColor(
+                context,
+                withBlur: true,
+              ),
+            );
+      dockBtnQuality =
+          dockUseLiquidGlass ? GlassQuality.premium : GlassQuality.minimal;
+    }
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -6543,17 +6613,44 @@ class _TimetableScreenState extends State<TimetableScreen>
           bottom: 0,
           child: SafeArea(
             minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            // 独立圆钮走官方 extraButton：与药丸同图层同材质（blend 融合），
-            // 尺寸=药丸全高 56 天然等高。收起动画由 _dockAddBtnCollapse 驱动
-            // config.size 渐缩（库逐帧读取预留宽度，药丸平滑补位），形状在
-            // barBorderRadius 回归默认后全程保持 LiquidOval 正圆。
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: settings.glassDockShowAddButton ? 328 : 272,
-                ),
-                child: _buildGlassDockBar(settings: settings, l10n: l10n),
-              ),
+            // 官方 iOS 26 形态：居中药丸 + 右侧独立圆钮，整组居中。收起时
+            // 整颗按钮在圆形裁切槽内向左滑入药丸（水滴回缩），槽宽同步回
+            // 收让药丸平滑补位；材质经 dockBtnSettings 与药丸显式同源。
+            child: AnimatedBuilder(
+              animation: _dockAddBtnCollapse,
+              builder: (context, _) {
+                final collapse = settings.glassDockShowAddButton
+                    ? _dockAddBtnCollapse.value
+                    : 1.0;
+                final lum = _wallpaperBodyLuminance;
+                final isDarkTheme =
+                    Theme.of(context).brightness == Brightness.dark;
+                final ink = (lum != null ? lum < 0.45 : isDarkTheme)
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : Colors.black.withValues(alpha: 0.75);
+                return Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 272),
+                        child: _buildGlassDockBar(
+                          settings: settings,
+                          l10n: l10n,
+                        ),
+                      ),
+                      if (collapse < 1) _buildDockMergeSlot(
+                        collapse: collapse,
+                        ink: ink,
+                        l10n: l10n,
+                        settings: dockBtnSettings,
+                        quality: dockBtnQuality,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -6608,24 +6705,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         !LiquidGlassDegradation.shouldDegrade(context);
     // 动态入口列表：日/周/设置三个模块 Tab 均可在设置中隐藏（至少留一）。
     final dockTabs = _glassDockTabs(settings, l10n);
-    // extraButton 的 size/可见性随收起动画逐帧变化，必须监听控制器重建，
-    // 否则动画期间没有 setState、按钮停留在切换前的旧帧（收起失效根因）。
-    return AnimatedBuilder(
-      animation: _dockAddBtnCollapse,
-      builder: (context, _) {
-        return GlassTabBar.bottom(
+    return GlassTabBar.bottom(
       tabs: [
         for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
       ],
       selectedIndex: _glassDockCurrentIndex(dockTabs),
       onTabSelected: (index) =>
           _onDockEntrySelected(dockTabs[index], settings),
-      // 独立圆钮回到官方 extraButton 管线：与药丸同图层同材质同高，
-      // 收起时 size 随 _dockAddBtnCollapse 渐缩（库逐帧读取预留宽度，
-      // 药丸平滑补位），barBorderRadius 已回默认故全程正圆。
-      extraButton: settings.glassDockShowAddButton
-          ? _buildGlassDockExtraButton(settings, l10n, unselectedColor)
-          : null,
+      // 独立圆钮改由坞层「水滴合并槽」渲染（见 _wrapWithGlassDock）：
+      // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
       barHeight: 56,
       // —— 玻璃材质实验（[_kStockDockGlass]）：true = 全部取包原版默认，
       // false = 旧的 mikcb 自定义调校。原版各值：
@@ -6674,40 +6762,55 @@ class _TimetableScreenState extends State<TimetableScreen>
       unselectedIconColor: unselectedColor,
       selectedLabelColor: selectedColor,
       unselectedLabelColor: unselectedColor,
-        );
-      },
     );
   }
 
-  /// 独立圆钮的官方 extraButton 配置。
+  /// 「水滴合并槽」：独立按钮与药丸之间的过渡区。
   ///
-  /// 收起动画的铁律：**size 恒定 56**。库逐帧按 size 预留布局宽度，一旦
-  /// 缩小药丸就会同步变宽——此前「左边卡片越缩越大」的丑态即源于此。
-  /// 视觉收起改为：按钮整体向左平移滑到药丸后方（同图层 blend 会真实
-  /// 融合）并线性渐隐；完全隐去后才把 extraButton 置 null 回收占位。
-  GlassTabBarExtraButton? _buildGlassDockExtraButton(
-    TimetableSettings settings,
-    AppLocalizations l10n,
-    Color iconColor,
-  ) {
-    final collapse =
-        settings.glassDockShowAddButton ? _dockAddBtnCollapse.value : 1.0;
-    if (collapse >= 1) {
-      return null; // 完全隐去后一次性回收占位（此刻无可见跳变元素）。
-    }
-    return GlassTabBarExtraButton(
-      icon: Transform.translate(
-        // 向药丸方向平移：同层玻璃重叠即融合，配合渐隐像沉入药丸后方。
-        offset: Offset(-40 * collapse, 0),
-        child: Opacity(
-          opacity: (1 - collapse).clamp(0.0, 1.0),
-          child: Icon(Icons.add_rounded),
+  /// 按钮尺寸与药丸一致（56 = barHeight，三枚 Tab 胶囊的高度），左右
+  /// 并排时上下边缘完全平齐；槽总高 68 与药丸组件等高，中心线天然对
+  /// 齐。宽度 = 8 间距 + 56 按钮随收起进度回收。
+  ///
+  /// 收起运动：整颗按钮在槽内贴右缘向左平移、沉入药丸方向；裁切用
+  /// ClipRRect 圆角 28 —— 与药丸端帽半圆同弧度，滑入时是被「圆形端帽」
+  /// 吞掉而不是被直线切掉。透明度平方曲线：滑动全程清晰，末段快速隐去。
+  Widget _buildDockMergeSlot({
+    required double collapse,
+    required Color ink,
+    required AppLocalizations l10n,
+    required LiquidGlassSettings? settings,
+    required GlassQuality? quality,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: SizedBox(
+        width: 8 + 56 * (1 - collapse),
+        height: 68,
+        child: OverflowBox(
+          alignment: Alignment.centerRight,
+          minWidth: 56,
+          maxWidth: 56,
+          minHeight: 56,
+          maxHeight: 56,
+          child: Transform.translate(
+            offset: Offset(-collapse * 64, 0),
+            child: Opacity(
+              opacity: 1 - collapse * collapse,
+              child: GlassButton(
+                icon: Icon(Icons.add_rounded),
+                onTap: () => unawaited(_openDockExtraButton()),
+                label: l10n.glassDockExtraButtonSemanticLabel,
+                width: 56,
+                height: 56,
+                iconSize: 22,
+                iconColor: ink,
+                settings: settings,
+                quality: quality,
+              ),
+            ),
+          ),
         ),
       ),
-      onTap: collapse < 0.5 ? () => unawaited(_openDockExtraButton()) : () {},
-      label: l10n.glassDockExtraButtonSemanticLabel,
-      iconColor: iconColor,
-      size: 56,
     );
   }
 
