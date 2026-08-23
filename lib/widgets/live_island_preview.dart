@@ -28,8 +28,9 @@ import '../utils/hex_color.dart';
 ///   hidePrefixText 控制。
 /// * 课程名跟随 showCourseName / useShortName（含原生 5 字截断）。
 ///
-/// 注意：原生参数里虽带 progressInfo（环形进度）与课间节点条，但真机
-/// 超级岛并不渲染它们，预览同样不画 —— 以真机实际观感为准。
+/// 注意：原生参数里的 progressInfo（环形进度）服务于点开后的展开态
+/// 卡片（由系统渲染），摘要态胶囊没有它；本预览只模拟摘要态，因此
+/// 不画环与节点条。原生的发送逻辑保持不变。
 class LiveIslandPreviewCard extends StatefulWidget {
   const LiveIslandPreviewCard({
     super.key,
