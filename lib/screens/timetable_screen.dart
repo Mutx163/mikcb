@@ -300,6 +300,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// once by [_dayPagerPhysics] within the same event dispatch.
   double _dayPagerRescueVelocityX = 0;
   DateTime? _dayPagerRescueArmedAt;
+
+  /// 单次手势只允许一次日切换点击震感的闩锁。onPageChanged 在滑过每个页
+  /// 中点时都会触发：快速甩动一次跨两页、或甩动后弹簧回弹再越过中点，
+  /// 都会连响两次。指针按下 / 星期栏拖动开始时重新武装，settle 提交后也
+  /// 重新武装（覆盖纯惯性问题）。
+  bool _daySwipeHapticFired = false;
   late final _DayPagerFlickRescuePhysics _dayPagerPhysics =
       _DayPagerFlickRescuePhysics(
         takeRescueVelocity: _takeDayPagerRescueVelocity,
@@ -1468,7 +1474,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     // selection commit stays on ScrollEnd (_settleDayViewPage), which now
     // re-checks until the pager is truly stationary.
     _dayHeaderPreview.value = (target.week, target.dayOfWeek);
-    _maybeSelectionClick(settings);
+    // 单次手势只震一次：快速甩动跨两页 / 弹簧回弹再过中点时，onPageChanged
+    // 会连发多次，不闩锁就会一次滑动触发两次震动。
+    if (!_daySwipeHapticFired) {
+      _daySwipeHapticFired = true;
+      _maybeSelectionClick(settings);
+    }
   }
 
   /// Commits the settled day-pager page once the horizontal scroll has fully
@@ -1532,6 +1543,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       mode: TimetableHomeViewMode.day,
       dayOfWeek: target.dayOfWeek,
     );
+    // 手势收尾：重新武装点击震感，下一次滑动（含纯惯性续滑）可再次触发。
+    _daySwipeHapticFired = false;
     if (target.week != _visibleWeek && !_isSyncingWeekPage) {
       unawaited(_jumpToWeek(provider, target.week, animatePage: false));
     }
@@ -1584,6 +1597,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     _weekdayBarDragScale = _visibleDayNumbers(settings).length.toDouble();
+    // 星期栏刮擦也是一次手势：整段拖动只保留一次日切换点击震感。
+    _daySwipeHapticFired = false;
     _weekdayBarDrag = controller.position.drag(details, () {
       _weekdayBarDrag = null;
     });
@@ -3230,6 +3245,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                     // A new touch invalidates any leftover rescue velocity.
                     _dayPagerRescueVelocityX = 0;
                     _dayPagerRescueArmedAt = null;
+                    // 新手势重新允许一次日切换点击震感。
+                    _daySwipeHapticFired = false;
                     _dayPagerFlickProbes[event.pointer] = _DayPagerFlickProbe(
                       VelocityTracker.withKind(event.kind)
                         ..addPosition(event.timeStamp, event.position),
@@ -3315,6 +3332,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                     onNotification: (notification) {
                       if (notification.metrics.axis != Axis.horizontal) {
                         return false;
+                      }
+                      if (notification is ScrollUpdateNotification) {
+                        // 拦截 update 继续冒泡：HyperosRootPage 的触边震动
+                        // 监听会在学期首/末日到达页边界时再计一次
+                        // selectionClick，与上面的页中点点击叠加成一次滑动
+                        // 双震动。日切换反馈已在页中点给过，这里就地消费。
+                        return true;
                       }
                       if (notification is ScrollStartNotification) {
                         if (kDebugMode) {
