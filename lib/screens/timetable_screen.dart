@@ -418,7 +418,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
     _dockAddBtnCollapse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      // 对齐库官方 GlassBottomBarCollapseConfig.animationDuration（280ms）。
+      duration: const Duration(milliseconds: 280),
       value: 0,
     );
     // 日视图锚点展开/收起与设置页拖动转场期间，卡片玻璃 fill 必须每帧
@@ -6686,17 +6687,25 @@ class _TimetableScreenState extends State<TimetableScreen>
           minHeight: 48,
           maxHeight: 48,
           child: Transform.translate(
-            offset: Offset(-collapse * 64, 0),
-            child: Opacity(
-              opacity: 1 - collapse * collapse,
-              child: GlassButton(
-                icon: Icon(Icons.add_rounded),
-                onTap: () => unawaited(_openDockExtraButton()),
-                label: l10n.glassDockExtraButtonSemanticLabel,
-                width: 48,
-                height: 48,
-                iconSize: 22,
-                iconColor: ink,
+            // 平移距离 = 间距 8 + 半个按钮 24 + 少量越界：圆心恰好越过
+            // 药丸边缘，短距「吸入」而不是长途飞撞。
+            offset: Offset(-collapse * 44, 0),
+            child: Transform.scale(
+              // 对齐官方 collapsedExtraButtonScale=0.9：微缩保留玻璃
+              // 体量感，而不是缩没。
+              scale: 1 - 0.12 * collapse,
+              child: Opacity(
+                // 线性均匀淡出：全程与平移同步，融合过程连贯。
+                opacity: 1 - collapse,
+                child: GlassButton(
+                  icon: Icon(Icons.add_rounded),
+                  onTap: () => unawaited(_openDockExtraButton()),
+                  label: l10n.glassDockExtraButtonSemanticLabel,
+                  width: 48,
+                  height: 48,
+                  iconSize: 22,
+                  iconColor: ink,
+                ),
               ),
             ),
           ),
