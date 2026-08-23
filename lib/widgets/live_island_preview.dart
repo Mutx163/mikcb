@@ -12,25 +12,33 @@ import '../utils/hex_color.dart';
 
 /// Real-time HyperOS super-island capsule preview.
 ///
-/// 还原真实摘要态胶囊的单行左右分区：中间是摄像头开孔；左侧是实际会
-/// 显示的小图标位 + 课程名；右侧是实际的提示位（hintInfo，即状态文字：
-/// 倒计时或阶段词）。整条胶囊只有一行文本，与真机一致。展开态不在此
-/// 预览范围内。
+/// 还原真实摘要态胶囊的单行左右分区：中间是摄像头开孔；左侧是实际会显示的
+/// 小图标位 + 信息文本；右侧是实际的状态文本。整条胶囊只有一行文本，与真机
+/// 一致。展开态不在此预览范围内。
 ///
-/// 与原生 `MainActivity.kt` 的对应关系：
+/// 与原生 `MainActivity.kt` 的对应关系。真机摘要态胶囊的文本来自提升通知的
+/// shortCriticalText，即 islandCriticalText 的组合规则：
 ///
-/// * 左侧图标位 = 通知 smallIcon：默认为应用图标；仅小米设备允许开启
-///   自定义标签（enableMiuiIslandLabelImage），开启后按原生
-///   buildIslandLabelBitmap() 的规则绘制（图标/自定义 Logo + 标签文字，
-///   颜色、字号、字重、圆角均跟随设置）。
-/// * 右侧提示位 = hintInfo.title = visibleStatusText：受 showCountdown →
-///   showStageText 控制，课中固定为“上课中”；倒计时时前缀受
-///   hidePrefixText 控制。
-/// * 课程名跟随 showCourseName / useShortName（含原生 5 字截断）。
+/// * 左侧小图标位 = 通知 smallIcon：默认随阶段切换（ic_upcoming /
+///   ic_course / ic_countdown 白色模板图标）；仅小米设备允许开启自定义标签
+///   （enableMiuiIslandLabelImage），开启后按原生 buildIslandLabelBitmap()
+///   的规则绘制（图标/自定义 Logo + 标签文字，颜色、字号、字重、圆角均跟随
+///   设置）。
+/// * 左侧信息文本 = islandCourseName + islandLocation：分别受
+///   showCourseName / showLocation 门控，空白项过滤后以空格拼接；课程名跟随
+///   useShortName 并按原生规则截断 5 字。
+/// * 右侧状态文本 = islandCriticalStatusText：
+///   - 课中且显示倒计时时 = classProgress.criticalTimeText：裸倒计时（不带
+///     “距下课”前缀），样式由 countdownTextStyle 决定；原生 nearest 模式
+///     会优先最近课间节点的剩余时间，示例课为单节课、没有课间节点
+///     （buildLiveProgressMilestones 对单节课返回空），因此与 total 模式
+///     同为整节剩余时间；
+///   - 其余情况 = visibleStatusText：受 showCountdown → showStageText 控制，
+///     倒计时前缀（距上课/距下课）受 hidePrefixText 控制。
 ///
-/// 注意：原生参数里的 progressInfo（环形进度）服务于点开后的展开态
-/// 卡片（由系统渲染），摘要态胶囊没有它；本预览只模拟摘要态，因此
-/// 不画环与节点条。原生的发送逻辑保持不变。
+/// 注意：原生参数里的 progressInfo（环形进度）/ progressTextInfo 服务于点开
+/// 后的展开态卡片（由系统渲染），摘要态胶囊没有它；本预览只模拟摘要态，
+/// 因此不画环与节点条。原生的发送逻辑保持不变。
 class LiveIslandPreviewCard extends StatefulWidget {
   const LiveIslandPreviewCard({
     super.key,
@@ -158,8 +166,8 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
               ),
             ),
           _IslandCapsule(
-            iconSlot: _buildSmallIcon(l10n, d),
-            title: _islandName(l10n, d),
+            iconSlot: _buildSmallIcon(l10n, d, stages[index]),
+            infoLine: _infoLine(l10n, d),
             statusLine: _statusLine(l10n, stages[index], d),
           ),
           if (index != stages.length - 1) const SizedBox(height: 12),
@@ -170,16 +178,22 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
   // --- Left icon slot (notification small-icon position) ------------------
 
-  Widget _buildSmallIcon(AppLocalizations l10n, LiveDisplaySettings d) {
+  Widget _buildSmallIcon(
+    AppLocalizations l10n,
+    LiveDisplaySettings d,
+    _PreviewStage stage,
+  ) {
     final labelEnabled = _isXiaomiFamily && d.enableMiuiIslandLabelImage;
     if (!labelEnabled) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(7),
-        child: Image.asset(
-          BundledAssets.launcherIcon,
-          width: 28,
-          height: 28,
-          fit: BoxFit.cover,
+      // 原生 setSmallIcon：beforeClass=ic_upcoming（时钟）、
+      // duringClass=ic_course（书）、beforeEnd=ic_countdown（对勾圆环），
+      // 都是白色模板图标而不是应用图标。
+      return SizedBox.square(
+        dimension: 28,
+        child: Icon(
+          _stageSmallIconData(stage),
+          size: 24,
+          color: Colors.white,
         ),
       );
     }
@@ -246,6 +260,14 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     );
   }
 
+  /// 对应原生 ic_upcoming / ic_course / ic_countdown 三枚白色矢量图标的
+  /// 最接近的 Material 字形。
+  IconData _stageSmallIconData(_PreviewStage stage) => switch (stage) {
+        _PreviewStage.beforeClass => Icons.access_time,
+        _PreviewStage.duringClass => Icons.import_contacts,
+        _PreviewStage.beforeEnd => Icons.check_circle_outline,
+      };
+
   Widget _appIconImage(double size) => ClipRRect(
         borderRadius: BorderRadius.circular(size * 0.24),
         child: Image.asset(
@@ -256,7 +278,28 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         ),
       );
 
-  // --- Text composition (ports of MainActivity.kt rules) ------------------
+  // --- Left info line (islandCourseName + islandLocation) -----------------
+
+  /// 原生把 islandCourseName 与 islandLocation 过滤空白后以空格拼进
+  /// islandCriticalText；本预览把它们作为摄像头左侧的信息块渲染。
+  String _infoLine(AppLocalizations l10n, LiveDisplaySettings d) {
+    final name = _islandCourseName(l10n, d);
+    final location = d.showLocation ? l10n.liveIslandPreviewSampleLocation : '';
+    return [name, location].where((part) => part.isNotEmpty).join(' ');
+  }
+
+  /// islandCourseName：showCourseName / useShortName + 原生 5 字截断。
+  String _islandCourseName(AppLocalizations l10n, LiveDisplaySettings d) {
+    if (!d.showCourseName) {
+      return '';
+    }
+    final name = d.useShortName
+        ? l10n.liveIslandPreviewSampleCourseShort
+        : l10n.liveIslandPreviewSampleCourse;
+    return name.length > 5 ? name.substring(0, 5) : name;
+  }
+
+  // --- Right status line (ports of MainActivity.kt rules) -----------------
 
   String _stageWord(AppLocalizations l10n, _PreviewStage stage) {
     switch (stage) {
@@ -269,8 +312,28 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     }
   }
 
-  /// hintInfo.title = visibleStatusText：受 showCountdown → showStageText 控制。
+  /// islandCriticalStatusText：课中且显示倒计时时 = criticalTimeText，
+  /// 其余情况 = visibleStatusText。
   String _statusLine(
+    AppLocalizations l10n,
+    _PreviewStage stage,
+    LiveDisplaySettings d,
+  ) {
+    final isDuringOrEndingSoon =
+        stage == _PreviewStage.duringClass || stage == _PreviewStage.beforeEnd;
+    if (isDuringOrEndingSoon &&
+        d.showCountdown &&
+        stage == _PreviewStage.duringClass) {
+      // 原生只在 duringClass 阶段构建 classProgress；beforeEnd 阶段
+      // classProgress == null，回退到带前缀的 visibleStatusText。
+      return _duringClassCriticalTime(d);
+    }
+    return _visibleStatusText(l10n, stage, d);
+  }
+
+  /// computeRemainingText + ifBlank(stageTitle)：!showCountdown 时由
+  /// showStageText 决定阶段词；倒计时前缀受 hidePrefixText 控制。
+  String _visibleStatusText(
     AppLocalizations l10n,
     _PreviewStage stage,
     LiveDisplaySettings d,
@@ -278,30 +341,38 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     if (!d.showCountdown) {
       return d.showStageText ? _stageWord(l10n, stage) : '';
     }
-    return _countdownStatus(l10n, stage, d);
-  }
-
-  /// computeRemainingText：前缀受 hidePrefixText 影响；课中固定“上课中”。
-  String _countdownStatus(
-    AppLocalizations l10n,
-    _PreviewStage stage,
-    LiveDisplaySettings d,
-  ) {
-    final now = DateTime.now();
     switch (stage) {
       case _PreviewStage.beforeClass:
         // 原生课前格式化使用固定的 60s smart 阈值。
-        return _untilStart(l10n, d, _beforeWindow.start.difference(now), 60);
+        return _untilStart(
+          l10n,
+          d,
+          _beforeWindow.start.difference(DateTime.now()),
+          60,
+        );
       case _PreviewStage.duringClass:
+        // 原生 remainingText 在课中固定为“上课中”，但该值只进入 hintInfo /
+        // 非提升路径；摘要态胶囊在课中走 criticalTimeText（见 _statusLine），
+        // 这里仅为完整性保留同一回退语义。
         return l10n.liveIslandPreviewStageInClass;
       case _PreviewStage.beforeEnd:
         return _untilEnd(
           l10n,
           d,
-          _endWindow.end.difference(now),
+          _endWindow.end.difference(DateTime.now()),
           widget.endSecondsCountdownThresholdSeconds,
         );
     }
+  }
+
+  /// buildDuringClassProgress.criticalTimeText：裸倒计时（无前缀），使用
+  /// 原生 formatCountdownDuration 的默认 60s smart 阈值。nearest 模式原生会
+  /// 优先显示最近课间节点的剩余时间，但示例课只有一节、不存在课间节点
+  /// （buildLiveProgressMilestones 对 sectionCount < 2 返回空），因此两种
+  /// 课中时间模式在这里同为整节剩余。
+  String _duringClassCriticalTime(LiveDisplaySettings d) {
+    final remaining = _endWindow.end.difference(DateTime.now());
+    return _formatDuration(remaining, d.countdownTextStyle, 60);
   }
 
   String _untilStart(
@@ -326,17 +397,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     final text =
         _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
     return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
-  }
-
-  /// A区 title：课程名（showCourseName / useShortName + 原生 5 字截断）。
-  String _islandName(AppLocalizations l10n, LiveDisplaySettings d) {
-    if (!d.showCourseName) {
-      return '';
-    }
-    final name = d.useShortName
-        ? l10n.liveIslandPreviewSampleCourseShort
-        : l10n.liveIslandPreviewSampleCourse;
-    return name.length > 5 ? name.substring(0, 5) : name;
   }
 
   // --- Countdown formatter (port of CountdownFormat.kt) -------------------
@@ -418,16 +478,20 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
 // --- Mock widgets（HyperOS 超级岛观感，深色、与主题无关） --------------------
 
-/// 摘要态胶囊（单行）：中间摄像头，左侧图标/标签+课程名，右侧状态文字。
+/// 摘要态胶囊（单行）：中间摄像头，左侧图标位+信息文本，右侧状态文本。
 class _IslandCapsule extends StatelessWidget {
   const _IslandCapsule({
     required this.iconSlot,
-    required this.title,
+    required this.infoLine,
     required this.statusLine,
   });
 
   final Widget iconSlot;
-  final String title;
+
+  /// 摄像头左侧的信息文本（islandCourseName + islandLocation）。
+  final String infoLine;
+
+  /// 摄像头右侧的状态文本（islandCriticalStatusText）。
   final String statusLine;
 
   @override
@@ -447,14 +511,14 @@ class _IslandCapsule extends StatelessWidget {
               child: Row(
                 children: [
                   iconSlot,
-                  if (title.isNotEmpty) ...[
+                  if (infoLine.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Flexible(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          title,
+                          infoLine,
                           maxLines: 1,
                           style: const TextStyle(
                             color: Colors.white,
