@@ -56,8 +56,9 @@ abstract final class MikcbLiquidGlassTokens {
   ///   边缘弯折更夸张；
   /// - chromaticAberration: 0.6 —— 明显的彩虹色散边，强化「真玻璃」
   ///   光学感（包默认 0 = 无色散；iOS 26 药丸默认也只有 0.15）；
-  /// - ambientRim: 0.25 —— 提亮整圈边缘光环（高于包内 premium 地板值
-  ///   0.1），让拖起的透镜从底栏上明显「浮」出来；
+  /// - ambientRim: 0 —— 不加边缘光环：光环会把整颗透镜罩上一层灰白，
+  ///   看起来「和底下同色连成一体」。产品要求全透明只靠折射反射，
+  ///   glassColor 保持构造默认的全透明；
   /// - blur: 0 —— 保持透镜内容锐利，只有折弯没有雾化。
   ///
   /// 注意合并语义：AnimatedGlassIndicator 会把 indicatorSettings 里
@@ -73,7 +74,6 @@ abstract final class MikcbLiquidGlassTokens {
     thickness: 36,
     blur: 0,
     chromaticAberration: 0.6,
-    ambientRim: 0.25,
     refractiveIndex: 1.5,
   );
 

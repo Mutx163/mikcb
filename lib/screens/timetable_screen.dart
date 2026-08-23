@@ -6512,6 +6512,27 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!glassDockForm) {
       return child;
     }
+    // 独立浮钮与药丸共用同一套玻璃材质（参数与 bar 内部计算完全一致），
+    // 否则两块玻璃 tint/blur 不同会一眼看出材质断层。
+    final dockAppearance = FrostedAppearanceScope.of(context);
+    final dockUseLiquidGlass =
+        dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+    final dockIsDark = Theme.of(context).brightness == Brightness.dark;
+    final dockBtnSettings = dockUseLiquidGlass
+        ? MikcbLiquidGlassTokens.sheetSettingsFor(
+            dockIsDark ? Brightness.dark : Brightness.light,
+            tuning: dockAppearance.liquidGlassTuning,
+          )
+        : LiquidGlassSettings(
+            blur: dockAppearance.sheetBlurSigma,
+            glassColor: HyperosBlurredHeader.sheetTintColor(
+              context,
+              withBlur: true,
+            ),
+          );
+    final dockBtnQuality =
+        dockUseLiquidGlass ? GlassQuality.premium : GlassQuality.minimal;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -6557,6 +6578,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                         collapse: collapse,
                         ink: ink,
                         l10n: l10n,
+                        settings: dockBtnSettings,
+                        quality: dockBtnQuality,
                       ),
                     ],
                   ),
@@ -6639,6 +6662,11 @@ class _TimetableScreenState extends State<TimetableScreen>
       indicatorSettings: useLiquidGlass
           ? MikcbLiquidGlassTokens.dragLensSettings
           : null,
+      // 库默认 expansion 是水平 12 / 垂直 8：透镜比槽位大一圈，垂直方向
+      // 越界被药丸裁掉显得贴合，水平方向在两端 Tab 却越过药丸圆弧露出
+      // 缝隙（滑到最左/最右时有缝的根因）。改为只保留垂直外扩、水平归
+      // 零——四边观感统一贴合。
+      indicatorExpansion: const EdgeInsets.symmetric(vertical: 8),
       indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
       settings: useLiquidGlass
           ? MikcbLiquidGlassTokens.sheetSettingsFor(
@@ -6675,6 +6703,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     required double collapse,
     required Color ink,
     required AppLocalizations l10n,
+    required LiquidGlassSettings settings,
+    required GlassQuality quality,
   }) {
     return ClipRect(
       child: SizedBox(
@@ -6705,6 +6735,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   height: 48,
                   iconSize: 22,
                   iconColor: ink,
+                  settings: settings,
+                  quality: quality,
                 ),
               ),
             ),
