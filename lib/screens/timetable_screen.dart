@@ -174,6 +174,20 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 玻璃坞药丸占用高度：药丸 56 + 底部安全 6（药丸顶到屏幕底的距离）。
   static const double _glassDockPillOccupancy = 62;
 
+  /// 玻璃坞玻璃材质实验开关（用户 A/B 对比用）。
+  ///
+  /// true = 包原版默认材质：底栏本体 kBottomBarGlassDefaults、拖拽透镜
+  /// baseIndicatorSettings（轻微透镜弯曲）、pinch 0.4、expansion 水平12/
+  /// 垂直8、质量自适应；右侧浮钮同样不传 settings/quality。此前自定义的
+  /// 「拉满折射拖拽透镜」在纯色/浅色壁纸上呈四周折射、中间全透明的
+  /// 「甜甜圈」观感，故整体回退原版供对比。
+  ///
+  /// false = 旧的 mikcb 自定义调校（sheetSettingsFor 跟随「液态玻璃调
+  /// 校」+ dragLensSettings 拉满折射 + pinch 1.0 + premium/minimal 强制
+  /// 档 + 浮钮与药丸统一材质）。用户若不满意原版观感，改回 false 即可
+  /// 一键还原；确认满意后可删除 false 分支与本开关。
+  static const bool _kStockDockGlass = true;
+
   /// 设置页↔课表切换（跟手拖动松手回弹）的转场时长上限。
   static const Duration _dockViewSwitchDuration = Duration(milliseconds: 300);
 
@@ -6514,25 +6528,32 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     // 独立浮钮与药丸共用同一套玻璃材质（参数与 bar 内部计算完全一致），
     // 否则两块玻璃 tint/blur 不同会一眼看出材质断层。
-    final dockAppearance = FrostedAppearanceScope.of(context);
-    final dockUseLiquidGlass =
-        dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-    final dockIsDark = Theme.of(context).brightness == Brightness.dark;
-    final dockBtnSettings = dockUseLiquidGlass
-        ? MikcbLiquidGlassTokens.sheetSettingsFor(
-            dockIsDark ? Brightness.dark : Brightness.light,
-            tuning: dockAppearance.liquidGlassTuning,
-          )
-        : LiquidGlassSettings(
-            blur: dockAppearance.sheetBlurSigma,
-            glassColor: HyperosBlurredHeader.sheetTintColor(
-              context,
-              withBlur: true,
-            ),
-          );
-    final dockBtnQuality =
-        dockUseLiquidGlass ? GlassQuality.premium : GlassQuality.minimal;
+    //
+    // [_kStockDockGlass] 实验态：浮钮不传 settings/quality，与药丸一起
+    // 回包原版默认材质 + 自适应质量。
+    LiquidGlassSettings? dockBtnSettings;
+    GlassQuality? dockBtnQuality;
+    if (!_kStockDockGlass) {
+      final dockAppearance = FrostedAppearanceScope.of(context);
+      final dockUseLiquidGlass =
+          dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+          !LiquidGlassDegradation.shouldDegrade(context);
+      final dockIsDark = Theme.of(context).brightness == Brightness.dark;
+      dockBtnSettings = dockUseLiquidGlass
+          ? MikcbLiquidGlassTokens.sheetSettingsFor(
+              dockIsDark ? Brightness.dark : Brightness.light,
+              tuning: dockAppearance.liquidGlassTuning,
+            )
+          : LiquidGlassSettings(
+              blur: dockAppearance.sheetBlurSigma,
+              glassColor: HyperosBlurredHeader.sheetTintColor(
+                context,
+                withBlur: true,
+              ),
+            );
+      dockBtnQuality =
+          dockUseLiquidGlass ? GlassQuality.premium : GlassQuality.minimal;
+    }
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -6628,14 +6649,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         : (isDark && wallpaperLuminance != null && wallpaperLuminance >= 0.45
             ? Colors.black.withValues(alpha: 0.80)
             : colorScheme.primary);
-    // 底栏材质跟随「高级材质」设置（与弹窗/顶部/卡片统一）：
-    // - 液态玻璃：与弹窗/顶部完全同一条参数路径（sheetSettingsFor 跟随
-    //   「液态玻璃调校」，默认即官方 kBottomBarGlassDefaults），并用
-    //   premium 完整折射 shader——边缘厚度/折射效果与弹窗一致。
-    // - 标准/高斯：退化为高斯模糊药丸（blur/tint 与弹窗 frosted 一致），
-    //   避免底栏与弹窗观感分裂。
+    // 底栏材质（[_kStockDockGlass]=true 时下面全部走包原版默认，此段
+    // 仅在实验关闭时参与计算）：
+    // - 跟随「高级材质」设置（与弹窗/顶部/卡片统一）：液态玻璃用
+    //   sheetSettingsFor（跟随「液态玻璃调校」）+ premium 完整折射；
+    // - 标准/高斯：退化为高斯模糊药丸（blur/tint 与弹窗 frosted 一致）。
     final appearance = FrostedAppearanceScope.of(context);
-    final useLiquidGlass =
+    final useLiquidGlass = !_kStockDockGlass &&
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context);
     // 动态入口列表：日/周/设置三个模块 Tab 均可在设置中隐藏（至少留一）。
@@ -6648,39 +6668,44 @@ class _TimetableScreenState extends State<TimetableScreen>
       onTabSelected: (index) =>
           _onDockEntrySelected(dockTabs[index], settings),
       barHeight: 56,
+      // —— 玻璃材质实验（[_kStockDockGlass]）：true = 全部取包原版默认，
+      // false = 旧的 mikcb 自定义调校。原版各值：
+      // - 底栏本体 settings 不传 → 包内 kBottomBarGlassDefaults
+      //   （thickness 30 / blur 3 / 折射率 1.59 / 色散 0.3 / 24% 白，
+      //   iOS 26 Apple News/Safari tab bar 校准）；
+      // - 拖拽透镜 indicatorSettings 不传 → baseIndicatorSettings
+      //   （thickness 20 / 折射率 1.10 / 无色散）：轻微透镜弯曲，不会出
+      //   现自定义拉满档那种「四周强折射、中间全透明」的甜甜圈观感；
+      // - pinch 0.4、expansion 水平12/垂直8、quality 自适应均为构造
+      //   默认值（与不传参数完全等价）。
       // 不覆盖官方默认圆角（32）：barBorderRadius 一旦偏离默认值，库会把
       // 独立按钮的形状从原生 LiquidOval 正圆降级成圆角矩形——这正是此前
-      // 「添加按钮不圆」的根因。药丸端部回官方全圆观感。
-      // 指示器圆角单独保留 28（官方默认即 barRadius-4）。
-      indicatorBorderRadius: 28,
-      // 长按拖出的「果冻玻璃」透镜：settings 只作用于底栏本体，指示器
-      // 有独立的 indicatorSettings 入口。不传时包内默认是刻意调淡的
-      // iOS 26 校准值（折射率 1.10 / 厚度 20 / 无色散），在纯色壁纸上
-      // 几乎看不出折射；液态玻璃模式换 dragLensSettings 拉满折射档，
-      // 并把凹透镜 pinch 开到包内校准的最大值 1.0（构造默认只有 0.4）。
-      // 非液态玻璃模式走 frosted 回退，保持包默认材质。
-      indicatorSettings: useLiquidGlass
-          ? MikcbLiquidGlassTokens.dragLensSettings
-          : null,
-      // 库默认 expansion 是水平 12 / 垂直 8：透镜比槽位大一圈，垂直方向
-      // 越界被药丸裁掉显得贴合，水平方向在两端 Tab 却越过药丸圆弧露出
-      // 缝隙（滑到最左/最右时有缝的根因）。改为只保留垂直外扩、水平归
-      // 零——四边观感统一贴合。
-      indicatorExpansion: const EdgeInsets.symmetric(vertical: 8),
+      // 「添加按钮不圆」的根因。指示器圆角官方默认即 barRadius-4=28。
+      indicatorBorderRadius: _kStockDockGlass ? null : 28,
+      settings: _kStockDockGlass
+          ? null
+          : (useLiquidGlass
+              ? MikcbLiquidGlassTokens.sheetSettingsFor(
+                  isDark ? Brightness.dark : Brightness.light,
+                  tuning: appearance.liquidGlassTuning,
+                )
+              : LiquidGlassSettings(
+                  blur: appearance.sheetBlurSigma,
+                  glassColor: HyperosBlurredHeader.sheetTintColor(
+                    context,
+                    withBlur: true,
+                  ),
+                )),
+      indicatorSettings: _kStockDockGlass
+          ? null
+          : (useLiquidGlass ? MikcbLiquidGlassTokens.dragLensSettings : null),
+      indicatorExpansion: _kStockDockGlass
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+          : const EdgeInsets.symmetric(vertical: 8),
       indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
-      settings: useLiquidGlass
-          ? MikcbLiquidGlassTokens.sheetSettingsFor(
-              isDark ? Brightness.dark : Brightness.light,
-              tuning: appearance.liquidGlassTuning,
-            )
-          : LiquidGlassSettings(
-              blur: appearance.sheetBlurSigma,
-              glassColor: HyperosBlurredHeader.sheetTintColor(
-                context,
-                withBlur: true,
-              ),
-            ),
-      quality: useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal,
+      quality: _kStockDockGlass
+          ? null
+          : (useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal),
       iconSize: 22,
       labelFontSize: 10,
       horizontalPadding: 6,
@@ -6703,8 +6728,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required double collapse,
     required Color ink,
     required AppLocalizations l10n,
-    required LiquidGlassSettings settings,
-    required GlassQuality quality,
+    // null = GlassButton 走包原版默认材质/自适应质量（[_kStockDockGlass]）。
+    required LiquidGlassSettings? settings,
+    required GlassQuality? quality,
   }) {
     return ClipRect(
       child: SizedBox(
