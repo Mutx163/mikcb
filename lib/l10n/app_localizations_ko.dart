@@ -10202,77 +10202,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuCategoryAbout => '정보 및 지원';
 
   @override
-  String get classAlarmEntryTitle => '수업 알람';
-
-  @override
-  String get classAlarmGroupSetup => '알람 추가';
-
-  @override
-  String get classAlarmGroupBehavior => '동작 설정';
-
-  @override
-  String get classAlarmAddAllTitle => '수업 알람 일괄 추가';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '앞으로 4주';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '앞으로 8주';
-
-  @override
-  String get classAlarmRangeLabel => '범위';
-
-  @override
-  String get classAlarmRangeRemaining => '이번 주부터 학기 끝까지';
-
-  @override
-  String get classAlarmRangeWhole => '학기 전체';
-
-  @override
-  String get classAlarmLeadTitle => '시간 여유';
-
-  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes분 전';
   }
 
   @override
-  String get classAlarmSkipUiTitle => '확인 화면 건너뛰기';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '바로 쓰기를 시도합니다(일부 기기는 표시됨)';
-
-  @override
-  String get classAlarmOpenClock => '시계 앱 열기';
-
-  @override
-  String get classAlarmConfirmTitle => '반복 알람을 만들까요?';
-
-  @override
-  String classAlarmConfirmMessage(String detail) {
-    return '시계 앱에 생성합니다: $detail. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return '또한 $days의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.';
-  }
-
-  @override
-  String get classAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
-
-  @override
   String get classAlarmInvalidTimeToast =>
       '이 수업의 교시가 시간표 템플릿 범위를 벗어나 알람을 설정할 수 없습니다';
-
-  @override
-  String get classAlarmNoDataToast => '선택한 범위에서 시간표를 찾을 수 없습니다';
-
-  @override
-  String get classAlarmAddedToast => '시계 앱으로 전달했습니다';
-
-  @override
-  String get classAlarmLaunchFailedToast => '처리할 시계 앱을 찾을 수 없습니다';
 
   @override
   String get classAlarmSheetTitle => '수업 알림';
@@ -10306,22 +10242,71 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classAlarmActionLabel => '이 수업 알람 설정';
 
   @override
+  String classAlarmConfirmMessage(String detail) {
+    return '시계 앱에 생성합니다: $detail. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.';
+  }
+
+  @override
+  String classAlarmVariableSuffix(String days) {
+    return '또한 $days의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.';
+  }
+
+  @override
+  String get classAlarmEntryTitle => '수업 알람';
+
+  @override
+  String get classAlarmGroupSetup => '알람 추가';
+
+  @override
+  String get classAlarmGroupBehavior => '동작 설정';
+
+  @override
+  String get classAlarmAddAllTitle => '수업 알람 일괄 추가';
+
+  @override
+  String get classAlarmRangeNext4Weeks => '앞으로 4주';
+
+  @override
+  String get classAlarmRangeNext8Weeks => '앞으로 8주';
+
+  @override
+  String get classAlarmRangeLabel => '범위';
+
+  @override
+  String get classAlarmRangeRemaining => '이번 주부터 학기 끝까지';
+
+  @override
+  String get classAlarmRangeWhole => '학기 전체';
+
+  @override
+  String get classAlarmLeadTitle => '시간 여유';
+
+  @override
+  String get classAlarmSkipUiTitle => '확인 화면 건너뛰기';
+
+  @override
+  String get classAlarmSkipUiSubtitle => '바로 쓰기를 시도합니다(일부 기기는 표시됨)';
+
+  @override
+  String get classAlarmOpenClock => '시계 앱 열기';
+
+  @override
+  String get classAlarmConfirmTitle => '반복 알람을 만들까요?';
+
+  @override
+  String get classAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
+
+  @override
+  String get classAlarmNoDataToast => '선택한 범위에서 시간표를 찾을 수 없습니다';
+
+  @override
+  String get classAlarmAddedToast => '시계 앱으로 전달했습니다';
+
+  @override
+  String get classAlarmLaunchFailedToast => '처리할 시계 앱을 찾을 수 없습니다';
+
+  @override
   String get classAlarmCourseConfirmTitle => '이 수업의 반복 알람을 추가할까요?';
-
-  @override
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  ) {
-    return '시계 앱에 매주 $weekday $time 반복 알람을 만듭니다(수업 시작 $lead분 전에 울리며 수업 주차는 $weeks). 방학과 쉬는 주에도 울리며 삭제는 시계 앱에서 해야 합니다.';
-  }
-
-  @override
-  String classAlarmPartialAddedToast(int done, int total) {
-    return '$done/$total개의 알람을 시계 앱으로 전달했습니다. 나머지는 실패했습니다';
-  }
 
   @override
   String get classAlarmDaySeparator => ', ';

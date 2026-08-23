@@ -10154,77 +10154,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuCategoryAbout => '情報とサポート';
 
   @override
-  String get classAlarmEntryTitle => '授業アラーム';
-
-  @override
-  String get classAlarmGroupSetup => 'アラームを追加';
-
-  @override
-  String get classAlarmGroupBehavior => '動作設定';
-
-  @override
-  String get classAlarmAddAllTitle => '授業アラームを一括追加';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '今後4週間';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '今後8週間';
-
-  @override
-  String get classAlarmRangeLabel => '追加範囲';
-
-  @override
-  String get classAlarmRangeRemaining => '今週から学期末まで';
-
-  @override
-  String get classAlarmRangeWhole => '学期全体';
-
-  @override
-  String get classAlarmLeadTitle => '事前時間';
-
-  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes分前';
   }
 
   @override
-  String get classAlarmSkipUiTitle => '確認画面をスキップ';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '確認なしで直接書き込みを試みる（非対応機種あり）';
-
-  @override
-  String get classAlarmOpenClock => 'システム時計を開く';
-
-  @override
-  String get classAlarmConfirmTitle => '繰り返しアラームを作成しますか？';
-
-  @override
-  String classAlarmConfirmMessage(String detail) {
-    return 'システム時計に作成します：$detail。システムアラームは休日や休校を判別できず、その間も鳴ります。削除はシステム時計で行ってください。';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return 'なお、$daysの初回授業時刻は週により異なるため、これらの曜日にはアラームを作成していません。';
-  }
-
-  @override
-  String get classAlarmNoSchemeToast => '先に設定で時間テンプレートを選択してください';
-
-  @override
   String get classAlarmInvalidTimeToast =>
       'この授業の時限が時間テンプレートの範囲外のため、アラームを設定できません';
-
-  @override
-  String get classAlarmNoDataToast => '選択した範囲に授業が見つかりません';
-
-  @override
-  String get classAlarmAddedToast => 'システム時計に渡しました';
-
-  @override
-  String get classAlarmLaunchFailedToast => '対応する時計アプリが見つかりません';
 
   @override
   String get classAlarmSheetTitle => '授業リマインダー';
@@ -10258,22 +10194,71 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classAlarmActionLabel => 'この授業のアラームを設定';
 
   @override
+  String classAlarmConfirmMessage(String detail) {
+    return 'システム時計に作成します：$detail。システムアラームは休日や休校を判別できず、その間も鳴ります。削除はシステム時計で行ってください。';
+  }
+
+  @override
+  String classAlarmVariableSuffix(String days) {
+    return 'なお、$daysの初回授業時刻は週により異なるため、これらの曜日にはアラームを作成していません。';
+  }
+
+  @override
+  String get classAlarmEntryTitle => '授業アラーム';
+
+  @override
+  String get classAlarmGroupSetup => 'アラームを追加';
+
+  @override
+  String get classAlarmGroupBehavior => '動作設定';
+
+  @override
+  String get classAlarmAddAllTitle => '授業アラームを一括追加';
+
+  @override
+  String get classAlarmRangeNext4Weeks => '今後4週間';
+
+  @override
+  String get classAlarmRangeNext8Weeks => '今後8週間';
+
+  @override
+  String get classAlarmRangeLabel => '追加範囲';
+
+  @override
+  String get classAlarmRangeRemaining => '今週から学期末まで';
+
+  @override
+  String get classAlarmRangeWhole => '学期全体';
+
+  @override
+  String get classAlarmLeadTitle => '事前時間';
+
+  @override
+  String get classAlarmSkipUiTitle => '確認画面をスキップ';
+
+  @override
+  String get classAlarmSkipUiSubtitle => '確認なしで直接書き込みを試みる（非対応機種あり）';
+
+  @override
+  String get classAlarmOpenClock => 'システム時計を開く';
+
+  @override
+  String get classAlarmConfirmTitle => '繰り返しアラームを作成しますか？';
+
+  @override
+  String get classAlarmNoSchemeToast => '先に設定で時間テンプレートを選択してください';
+
+  @override
+  String get classAlarmNoDataToast => '選択した範囲に授業が見つかりません';
+
+  @override
+  String get classAlarmAddedToast => 'システム時計に渡しました';
+
+  @override
+  String get classAlarmLaunchFailedToast => '対応する時計アプリが見つかりません';
+
+  @override
   String get classAlarmCourseConfirmTitle => 'この授業の繰り返しアラームを追加しますか？';
-
-  @override
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  ) {
-    return 'システム時計に毎週$weekday $timeの繰り返しアラームを作成します（この授業の$lead分前に鳴動。開始週：$weeks）。休みや対象外の週も鳴ります。削除はシステム時計で行ってください。';
-  }
-
-  @override
-  String classAlarmPartialAddedToast(int done, int total) {
-    return '$done/$total件を時計アプリに送信しました。残りは失敗しました';
-  }
 
   @override
   String get classAlarmDaySeparator => '、';

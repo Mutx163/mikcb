@@ -10451,80 +10451,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuCategoryAbout => 'About & support';
 
   @override
-  String get classAlarmEntryTitle => 'Class alarms';
-
-  @override
-  String get classAlarmGroupSetup => 'Add alarms';
-
-  @override
-  String get classAlarmGroupBehavior => 'Ring behavior';
-
-  @override
-  String get classAlarmAddAllTitle => 'Batch add class alarms';
-
-  @override
-  String get classAlarmRangeNext4Weeks => 'Next 4 weeks';
-
-  @override
-  String get classAlarmRangeNext8Weeks => 'Next 8 weeks';
-
-  @override
-  String get classAlarmRangeLabel => 'Range';
-
-  @override
-  String get classAlarmRangeRemaining => 'This week to semester end';
-
-  @override
-  String get classAlarmRangeWhole => 'Whole semester';
-
-  @override
-  String get classAlarmLeadTitle => 'Lead time';
-
-  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes min ahead';
   }
 
   @override
-  String get classAlarmSkipUiTitle => 'Skip confirmation page';
-
-  @override
-  String get classAlarmSkipUiSubtitle =>
-      'Try writing the alarm directly; some devices still show it';
-
-  @override
-  String get classAlarmOpenClock => 'Open system clock';
-
-  @override
-  String get classAlarmConfirmTitle => 'Create repeating alarms?';
-
-  @override
-  String classAlarmConfirmMessage(String detail) {
-    return 'The system clock will create: $detail. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return 'Also, first-class times on $days differ between weeks; no alarm covers these days.';
-  }
-
-  @override
-  String get classAlarmNoSchemeToast =>
-      'Select a time scheme in settings first';
-
-  @override
   String get classAlarmInvalidTimeToast =>
       'This class\'s period is outside the time scheme; cannot set an alarm';
-
-  @override
-  String get classAlarmNoDataToast =>
-      'No timetable found in the selected range';
-
-  @override
-  String get classAlarmAddedToast => 'Handed to the system clock';
-
-  @override
-  String get classAlarmLaunchFailedToast => 'No clock app found to handle this';
 
   @override
   String get classAlarmSheetTitle => 'Class reminder';
@@ -10560,23 +10493,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get classAlarmActionLabel => 'Set alarm for this class';
 
   @override
+  String classAlarmConfirmMessage(String detail) {
+    return 'The system clock will create: $detail. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.';
+  }
+
+  @override
+  String classAlarmVariableSuffix(String days) {
+    return 'Also, first-class times on $days differ between weeks; no alarm covers these days.';
+  }
+
+  @override
+  String get classAlarmEntryTitle => 'Class alarms';
+
+  @override
+  String get classAlarmGroupSetup => 'Add alarms';
+
+  @override
+  String get classAlarmGroupBehavior => 'Ring behavior';
+
+  @override
+  String get classAlarmAddAllTitle => 'Batch add class alarms';
+
+  @override
+  String get classAlarmRangeNext4Weeks => 'Next 4 weeks';
+
+  @override
+  String get classAlarmRangeNext8Weeks => 'Next 8 weeks';
+
+  @override
+  String get classAlarmRangeLabel => 'Range';
+
+  @override
+  String get classAlarmRangeRemaining => 'This week to semester end';
+
+  @override
+  String get classAlarmRangeWhole => 'Whole semester';
+
+  @override
+  String get classAlarmLeadTitle => 'Lead time';
+
+  @override
+  String get classAlarmSkipUiTitle => 'Skip confirmation page';
+
+  @override
+  String get classAlarmSkipUiSubtitle =>
+      'Try writing the alarm directly; some devices still show it';
+
+  @override
+  String get classAlarmOpenClock => 'Open system clock';
+
+  @override
+  String get classAlarmConfirmTitle => 'Create repeating alarms?';
+
+  @override
+  String get classAlarmNoSchemeToast =>
+      'Select a time scheme in settings first';
+
+  @override
+  String get classAlarmNoDataToast =>
+      'No timetable found in the selected range';
+
+  @override
+  String get classAlarmAddedToast => 'Handed to the system clock';
+
+  @override
+  String get classAlarmLaunchFailedToast => 'No clock app found to handle this';
+
+  @override
   String get classAlarmCourseConfirmTitle =>
       'Add a repeating alarm for this class?';
-
-  @override
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  ) {
-    return 'A weekly repeating alarm will be created in the system clock: every $weekday at $time, ringing $lead minutes before this class starts (active weeks: $weeks). It keeps ringing during holidays and off-weeks; delete it in the system clock.';
-  }
-
-  @override
-  String classAlarmPartialAddedToast(int done, int total) {
-    return 'Sent $done/$total alarms to the system clock; the rest failed';
-  }
 
   @override
   String get classAlarmDaySeparator => ', ';

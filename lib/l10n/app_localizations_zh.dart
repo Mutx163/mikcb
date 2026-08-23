@@ -9878,76 +9878,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuCategoryAbout => '关于与支持';
 
   @override
-  String get classAlarmEntryTitle => '上课闹钟';
-
-  @override
-  String get classAlarmGroupSetup => '添加闹钟';
-
-  @override
-  String get classAlarmGroupBehavior => '响铃行为';
-
-  @override
-  String get classAlarmAddAllTitle => '批量添加上课闹钟';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '未来 4 周';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '未来 8 周';
-
-  @override
-  String get classAlarmRangeLabel => '添加范围';
-
-  @override
-  String get classAlarmRangeRemaining => '本周起至学期结束';
-
-  @override
-  String get classAlarmRangeWhole => '整学期';
-
-  @override
-  String get classAlarmLeadTitle => '提前量';
-
-  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '提前 $minutes 分钟';
   }
 
   @override
-  String get classAlarmSkipUiTitle => '跳过确认页';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）';
-
-  @override
-  String get classAlarmOpenClock => '打开系统时钟';
-
-  @override
-  String get classAlarmConfirmTitle => '创建重复闹钟？';
-
-  @override
-  String classAlarmConfirmMessage(String detail) {
-    return '将在系统时钟创建：$detail。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return '另外，$days的第一节课时间在不同周不一致，这些天未创建闹钟。';
-  }
-
-  @override
-  String get classAlarmNoSchemeToast => '请先在设置中选择时间模板';
-
-  @override
   String get classAlarmInvalidTimeToast => '这门课的节次超出时间模板，无法设置闹钟';
-
-  @override
-  String get classAlarmNoDataToast => '所选范围内没有找到课表';
-
-  @override
-  String get classAlarmAddedToast => '已交给系统时钟处理';
-
-  @override
-  String get classAlarmLaunchFailedToast => '未找到可处理的时钟应用';
 
   @override
   String get classAlarmSheetTitle => '上课提醒';
@@ -9981,22 +9917,71 @@ class AppLocalizationsZh extends AppLocalizations {
   String get classAlarmActionLabel => '设这节课的闹钟';
 
   @override
+  String classAlarmConfirmMessage(String detail) {
+    return '将在系统时钟创建：$detail。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。';
+  }
+
+  @override
+  String classAlarmVariableSuffix(String days) {
+    return '另外，$days的第一节课时间在不同周不一致，这些天未创建闹钟。';
+  }
+
+  @override
+  String get classAlarmEntryTitle => '上课闹钟';
+
+  @override
+  String get classAlarmGroupSetup => '添加闹钟';
+
+  @override
+  String get classAlarmGroupBehavior => '响铃行为';
+
+  @override
+  String get classAlarmAddAllTitle => '批量添加上课闹钟';
+
+  @override
+  String get classAlarmRangeNext4Weeks => '未来 4 周';
+
+  @override
+  String get classAlarmRangeNext8Weeks => '未来 8 周';
+
+  @override
+  String get classAlarmRangeLabel => '添加范围';
+
+  @override
+  String get classAlarmRangeRemaining => '本周起至学期结束';
+
+  @override
+  String get classAlarmRangeWhole => '整学期';
+
+  @override
+  String get classAlarmLeadTitle => '提前量';
+
+  @override
+  String get classAlarmSkipUiTitle => '跳过确认页';
+
+  @override
+  String get classAlarmSkipUiSubtitle => '尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）';
+
+  @override
+  String get classAlarmOpenClock => '打开系统时钟';
+
+  @override
+  String get classAlarmConfirmTitle => '创建重复闹钟？';
+
+  @override
+  String get classAlarmNoSchemeToast => '请先在设置中选择时间模板';
+
+  @override
+  String get classAlarmNoDataToast => '所选范围内没有找到课表';
+
+  @override
+  String get classAlarmAddedToast => '已交给系统时钟处理';
+
+  @override
+  String get classAlarmLaunchFailedToast => '未找到可处理的时钟应用';
+
+  @override
   String get classAlarmCourseConfirmTitle => '添加这节课的重复闹钟？';
-
-  @override
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  ) {
-    return '将在系统时钟创建每周$weekday $time 的重复闹钟（比上课提前$lead分钟响铃；上课周次：$weeks）。假期与非上课周仍会响铃，删除需在系统时钟中完成。';
-  }
-
-  @override
-  String classAlarmPartialAddedToast(int done, int total) {
-    return '已写入 $done/$total 条闹钟，其余未能创建';
-  }
 
   @override
   String get classAlarmDaySeparator => '、';
@@ -19924,76 +19909,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuCategoryAbout => '關於與支援';
 
   @override
-  String get classAlarmEntryTitle => '上課鬧鐘';
-
-  @override
-  String get classAlarmGroupSetup => '新增鬧鐘';
-
-  @override
-  String get classAlarmGroupBehavior => '響鈴行為';
-
-  @override
-  String get classAlarmAddAllTitle => '批次新增上課鬧鐘';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '未來 4 週';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '未來 8 週';
-
-  @override
-  String get classAlarmRangeLabel => '新增範圍';
-
-  @override
-  String get classAlarmRangeRemaining => '本週起至學期結束';
-
-  @override
-  String get classAlarmRangeWhole => '整學期';
-
-  @override
-  String get classAlarmLeadTitle => '提前量';
-
-  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '提前 $minutes 分鐘';
   }
 
   @override
-  String get classAlarmSkipUiTitle => '跳過確認頁';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）';
-
-  @override
-  String get classAlarmOpenClock => '開啟系統時鐘';
-
-  @override
-  String get classAlarmConfirmTitle => '建立重複鬧鐘？';
-
-  @override
-  String classAlarmConfirmMessage(String detail) {
-    return '將在系統時鐘建立：$detail。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return '另外，$days的第一節課時間在不同週不一致，這些天未建立鬧鐘。';
-  }
-
-  @override
-  String get classAlarmNoSchemeToast => '請先在設定中選擇時間模板';
-
-  @override
   String get classAlarmInvalidTimeToast => '這門課的節次超出時間模板，無法設定鬧鐘';
-
-  @override
-  String get classAlarmNoDataToast => '所選範圍內沒有找到課表';
-
-  @override
-  String get classAlarmAddedToast => '已交給系統時鐘處理';
-
-  @override
-  String get classAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
 
   @override
   String get classAlarmSheetTitle => '上課提醒';
@@ -20027,22 +19948,71 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get classAlarmActionLabel => '設這節課的鬧鐘';
 
   @override
-  String get classAlarmCourseConfirmTitle => '新增這節課的重複鬧鐘？';
-
-  @override
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  ) {
-    return '將在系統時鐘建立每週$weekday $time 的重複鬧鐘（比上課提前$lead分鐘響鈴；上課週次：$weeks）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。';
+  String classAlarmConfirmMessage(String detail) {
+    return '將在系統時鐘創建：$detail。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。';
   }
 
   @override
-  String classAlarmPartialAddedToast(int done, int total) {
-    return '已寫入 $done/$total 條鬧鐘，其餘未能建立';
+  String classAlarmVariableSuffix(String days) {
+    return '另外，$days的第一節課時間在不同周不一致，這些天未創建鬧鐘。';
   }
+
+  @override
+  String get classAlarmEntryTitle => '上課鬧鐘';
+
+  @override
+  String get classAlarmGroupSetup => '添加鬧鐘';
+
+  @override
+  String get classAlarmGroupBehavior => '響鈴行為';
+
+  @override
+  String get classAlarmAddAllTitle => '批量添加上課鬧鐘';
+
+  @override
+  String get classAlarmRangeNext4Weeks => '未來 4 周';
+
+  @override
+  String get classAlarmRangeNext8Weeks => '未來 8 周';
+
+  @override
+  String get classAlarmRangeLabel => '添加範圍';
+
+  @override
+  String get classAlarmRangeRemaining => '本週起至學期結束';
+
+  @override
+  String get classAlarmRangeWhole => '整學期';
+
+  @override
+  String get classAlarmLeadTitle => '提前量';
+
+  @override
+  String get classAlarmSkipUiTitle => '跳過確認頁';
+
+  @override
+  String get classAlarmSkipUiSubtitle => '嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支持）';
+
+  @override
+  String get classAlarmOpenClock => '打開系統時鐘';
+
+  @override
+  String get classAlarmConfirmTitle => '創建重複鬧鐘？';
+
+  @override
+  String get classAlarmNoSchemeToast => '請先在設置中選擇時間模板';
+
+  @override
+  String get classAlarmNoDataToast => '所選範圍內沒有找到課表';
+
+  @override
+  String get classAlarmAddedToast => '已交給系統時鐘處理';
+
+  @override
+  String get classAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
+
+  @override
+  String get classAlarmCourseConfirmTitle => '添加這節課的重複鬧鐘？';
 
   @override
   String get classAlarmDaySeparator => '、';
@@ -29970,76 +29940,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuCategoryAbout => '關於與支援';
 
   @override
-  String get classAlarmEntryTitle => '上課鬧鐘';
-
-  @override
-  String get classAlarmGroupSetup => '新增鬧鐘';
-
-  @override
-  String get classAlarmGroupBehavior => '響鈴行為';
-
-  @override
-  String get classAlarmAddAllTitle => '批次新增上課鬧鐘';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '未來 4 週';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '未來 8 週';
-
-  @override
-  String get classAlarmRangeLabel => '新增範圍';
-
-  @override
-  String get classAlarmRangeRemaining => '本週起至學期結束';
-
-  @override
-  String get classAlarmRangeWhole => '整學期';
-
-  @override
-  String get classAlarmLeadTitle => '提前量';
-
-  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '提前 $minutes 分鐘';
   }
 
   @override
-  String get classAlarmSkipUiTitle => '跳過確認頁';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）';
-
-  @override
-  String get classAlarmOpenClock => '開啟系統時鐘';
-
-  @override
-  String get classAlarmConfirmTitle => '建立重複鬧鐘？';
-
-  @override
-  String classAlarmConfirmMessage(String detail) {
-    return '將在系統時鐘建立：$detail。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return '另外，$days的第一節課時間在不同週不一致，這些天未建立鬧鐘。';
-  }
-
-  @override
-  String get classAlarmNoSchemeToast => '請先在設定中選擇時間模板';
-
-  @override
   String get classAlarmInvalidTimeToast => '這門課的節次超出時間模板，無法設定鬧鐘';
-
-  @override
-  String get classAlarmNoDataToast => '所選範圍內沒有找到課表';
-
-  @override
-  String get classAlarmAddedToast => '已交給系統時鐘處理';
-
-  @override
-  String get classAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
 
   @override
   String get classAlarmSheetTitle => '上課提醒';
@@ -30073,22 +29979,71 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get classAlarmActionLabel => '設這節課的鬧鐘';
 
   @override
-  String get classAlarmCourseConfirmTitle => '新增這節課的重複鬧鐘？';
-
-  @override
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  ) {
-    return '將在系統時鐘建立每週$weekday $time 的重複鬧鐘（比上課提前$lead分鐘響鈴；上課週次：$weeks）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。';
+  String classAlarmConfirmMessage(String detail) {
+    return '將在系統時鐘創建：$detail。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。';
   }
 
   @override
-  String classAlarmPartialAddedToast(int done, int total) {
-    return '已寫入 $done/$total 條鬧鐘，其餘未能建立';
+  String classAlarmVariableSuffix(String days) {
+    return '另外，$days的第一節課時間在不同周不一致，這些天未創建鬧鐘。';
   }
+
+  @override
+  String get classAlarmEntryTitle => '上課鬧鐘';
+
+  @override
+  String get classAlarmGroupSetup => '添加鬧鐘';
+
+  @override
+  String get classAlarmGroupBehavior => '響鈴行為';
+
+  @override
+  String get classAlarmAddAllTitle => '批量添加上課鬧鐘';
+
+  @override
+  String get classAlarmRangeNext4Weeks => '未來 4 周';
+
+  @override
+  String get classAlarmRangeNext8Weeks => '未來 8 周';
+
+  @override
+  String get classAlarmRangeLabel => '添加範圍';
+
+  @override
+  String get classAlarmRangeRemaining => '本週起至學期結束';
+
+  @override
+  String get classAlarmRangeWhole => '整學期';
+
+  @override
+  String get classAlarmLeadTitle => '提前量';
+
+  @override
+  String get classAlarmSkipUiTitle => '跳過確認頁';
+
+  @override
+  String get classAlarmSkipUiSubtitle => '嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支持）';
+
+  @override
+  String get classAlarmOpenClock => '打開系統時鐘';
+
+  @override
+  String get classAlarmConfirmTitle => '創建重複鬧鐘？';
+
+  @override
+  String get classAlarmNoSchemeToast => '請先在設置中選擇時間模板';
+
+  @override
+  String get classAlarmNoDataToast => '所選範圍內沒有找到課表';
+
+  @override
+  String get classAlarmAddedToast => '已交給系統時鐘處理';
+
+  @override
+  String get classAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
+
+  @override
+  String get classAlarmCourseConfirmTitle => '添加這節課的重複鬧鐘？';
 
   @override
   String get classAlarmDaySeparator => '、';

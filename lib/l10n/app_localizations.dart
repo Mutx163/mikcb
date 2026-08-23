@@ -17941,6 +17941,84 @@ abstract class AppLocalizations {
   /// **'关于与支持'**
   String get homeMenuCategoryAbout;
 
+  /// No description provided for @classAlarmLeadMinutesLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'提前 {minutes} 分钟'**
+  String classAlarmLeadMinutesLabel(int minutes);
+
+  /// No description provided for @classAlarmInvalidTimeToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'这门课的节次超出时间模板，无法设置闹钟'**
+  String get classAlarmInvalidTimeToast;
+
+  /// No description provided for @classAlarmSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课提醒'**
+  String get classAlarmSheetTitle;
+
+  /// No description provided for @classAlarmQuickOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前 {minutes} 分钟提醒'**
+  String classAlarmQuickOption(Object minutes);
+
+  /// No description provided for @classAlarmCustomOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义提醒时间…'**
+  String get classAlarmCustomOption;
+
+  /// No description provided for @classAlarmExistingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已设提醒：{time}'**
+  String classAlarmExistingLabel(Object time);
+
+  /// No description provided for @classAlarmSetToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'提醒已设置'**
+  String get classAlarmSetToast;
+
+  /// No description provided for @classAlarmRemovedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消这节课的提醒'**
+  String get classAlarmRemovedToast;
+
+  /// No description provided for @classAlarmPastToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'所选时间已经过了，请换一个时间'**
+  String get classAlarmPastToast;
+
+  /// No description provided for @classAlarmNoSemesterToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先在设置中填写学期开始日期'**
+  String get classAlarmNoSemesterToast;
+
+  /// No description provided for @classAlarmActionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'设这节课的闹钟'**
+  String get classAlarmActionLabel;
+
+  /// No description provided for @classAlarmConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'将在系统时钟创建：{detail}。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。'**
+  String classAlarmConfirmMessage(String detail);
+
+  /// No description provided for @classAlarmVariableSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **'另外，{days}的第一节课时间在不同周不一致，这些天未创建闹钟。'**
+  String classAlarmVariableSuffix(String days);
+
   /// No description provided for @classAlarmEntryTitle.
   ///
   /// In zh, this message translates to:
@@ -18001,12 +18079,6 @@ abstract class AppLocalizations {
   /// **'提前量'**
   String get classAlarmLeadTitle;
 
-  /// No description provided for @classAlarmLeadMinutesLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'提前 {minutes} 分钟'**
-  String classAlarmLeadMinutesLabel(int minutes);
-
   /// No description provided for @classAlarmSkipUiTitle.
   ///
   /// In zh, this message translates to:
@@ -18031,29 +18103,11 @@ abstract class AppLocalizations {
   /// **'创建重复闹钟？'**
   String get classAlarmConfirmTitle;
 
-  /// No description provided for @classAlarmConfirmMessage.
-  ///
-  /// In zh, this message translates to:
-  /// **'将在系统时钟创建：{detail}。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。'**
-  String classAlarmConfirmMessage(String detail);
-
-  /// No description provided for @classAlarmVariableSuffix.
-  ///
-  /// In zh, this message translates to:
-  /// **'另外，{days}的第一节课时间在不同周不一致，这些天未创建闹钟。'**
-  String classAlarmVariableSuffix(String days);
-
   /// No description provided for @classAlarmNoSchemeToast.
   ///
   /// In zh, this message translates to:
   /// **'请先在设置中选择时间模板'**
   String get classAlarmNoSchemeToast;
-
-  /// No description provided for @classAlarmInvalidTimeToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'这门课的节次超出时间模板，无法设置闹钟'**
-  String get classAlarmInvalidTimeToast;
 
   /// No description provided for @classAlarmNoDataToast.
   ///
@@ -18073,82 +18127,11 @@ abstract class AppLocalizations {
   /// **'未找到可处理的时钟应用'**
   String get classAlarmLaunchFailedToast;
 
-  /// No description provided for @classAlarmSheetTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'上课提醒'**
-  String get classAlarmSheetTitle;
-
-  /// No description provided for @classAlarmQuickOption.
-  ///
-  /// In zh, this message translates to:
-  /// **'上课前 {minutes} 分钟提醒'**
-  String classAlarmQuickOption(Object minutes);
-
-  /// No description provided for @classAlarmCustomOption.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义提醒时间…'**
-  String get classAlarmCustomOption;
-
-  /// No description provided for @classAlarmExistingLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'已设提醒：{time}'**
-  String classAlarmExistingLabel(Object time);
-
-  /// No description provided for @classAlarmSetToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'提醒已设置'**
-  String get classAlarmSetToast;
-
-  /// No description provided for @classAlarmRemovedToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'已取消这节课的提醒'**
-  String get classAlarmRemovedToast;
-
-  /// No description provided for @classAlarmPastToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'所选时间已经过了，请换一个时间'**
-  String get classAlarmPastToast;
-
-  /// No description provided for @classAlarmNoSemesterToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'请先在设置中填写学期开始日期'**
-  String get classAlarmNoSemesterToast;
-
-  /// No description provided for @classAlarmActionLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'设这节课的闹钟'**
-  String get classAlarmActionLabel;
-
   /// No description provided for @classAlarmCourseConfirmTitle.
   ///
   /// In zh, this message translates to:
   /// **'添加这节课的重复闹钟？'**
   String get classAlarmCourseConfirmTitle;
-
-  /// No description provided for @classAlarmCourseConfirmMessage.
-  ///
-  /// In zh, this message translates to:
-  /// **'将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。'**
-  String classAlarmCourseConfirmMessage(
-    String weekday,
-    String time,
-    int lead,
-    String weeks,
-  );
-
-  /// No description provided for @classAlarmPartialAddedToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'已写入 {done}/{total} 条闹钟，其余未能创建'**
-  String classAlarmPartialAddedToast(int done, int total);
 
   /// No description provided for @classAlarmDaySeparator.
   ///
