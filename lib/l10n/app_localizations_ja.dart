@@ -10227,6 +10227,34 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classAlarmLaunchFailedToast => '対応する時計アプリが見つかりません';
 
   @override
+  String get classAlarmSheetTitle => '授業リマインダー';
+
+  @override
+  String classAlarmQuickOption(Object minutes) {
+    return '授業 $minutes 分前に通知';
+  }
+
+  @override
+  String get classAlarmCustomOption => '時間を自分で指定…';
+
+  @override
+  String classAlarmExistingLabel(Object time) {
+    return '$time にリマインダー設定済み';
+  }
+
+  @override
+  String get classAlarmSetToast => 'リマインダーを設定しました';
+
+  @override
+  String get classAlarmRemovedToast => 'この授業のリマインダーを取り消しました';
+
+  @override
+  String get classAlarmPastToast => 'その時刻はすでに過ぎています。別の時刻を選んでください';
+
+  @override
+  String get classAlarmNoSemesterToast => '先に学期開始日を設定してください';
+
+  @override
   String get classAlarmActionLabel => 'この授業のアラームを設定';
 
   @override

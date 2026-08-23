@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import '../l10n/service_message_localizer.dart';
+import '../models/class_reminder.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
 import '../models/exam.dart';
@@ -28,6 +29,7 @@ import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
+import '../services/class_reminder_service.dart';
 import '../services/exam_reminder_service.dart';
 import '../services/partner_timetable_service.dart';
 import '../services/storage_service.dart';
@@ -3174,14 +3176,70 @@ class TimetableProvider with ChangeNotifier {
   /// Reconcile native exam-reminder alarms with the active profile exam list.
   Future<void> _syncExamReminders() async {
     try {
+      final coursesById = <String, Course>{
+        for (final course in courses) course.id: course,
+      };
       await _examReminderService.reconcile(
         exams: _exams,
         resolveCourse: getCourseForExam,
         scheduleItems: _scheduleItems,
+        // 单节课提醒与考试/日程共用同一原生调度管线：全量重建，
+        // 课程被删、日期已过或条目非法都会在这里被自然过滤。
+        additionalFires: ClassReminderService.buildFires(
+          entries: settings.classReminders,
+          resolveCourse: (courseId) => coursesById[courseId],
+        ),
       );
     } catch (error) {
       appDebugLog('ExamReminder', 'sync failed: $error');
     }
+  }
+
+  /// 查询某节课在某个真实日期的提醒条目；无则返回 null。
+  ClassReminderEntry? classReminderFor(String courseId, String date) {
+    for (final entry in settings.classReminders) {
+      if (entry.courseId == courseId && entry.date == date) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  /// 设置（或覆盖）某节课某天的提醒；同课同日只保留一条。
+  Future<void> setClassReminder(ClassReminderEntry entry) async {
+    final current = settings;
+    final rest = current.classReminders
+        .where(
+          (existing) =>
+              !(existing.courseId == entry.courseId &&
+                  existing.date == entry.date),
+        )
+        .toList()
+      ..add(entry)
+      ..sort((a, b) {
+        final byDate = a.date.compareTo(b.date);
+        if (byDate != 0) {
+          return byDate;
+        }
+        return a.minuteOfDay.compareTo(b.minuteOfDay);
+      });
+    await updateSettings(current.copyWith(classReminders: rest));
+    unawaited(_syncExamReminders());
+  }
+
+  /// 取消某节课某天的提醒；不存在时静默幂等。
+  Future<void> removeClassReminder(String courseId, String date) async {
+    final current = settings;
+    final rest = current.classReminders
+        .where(
+          (existing) => !(existing.courseId == courseId && existing.date == date),
+        )
+        .toList();
+    if (rest.length == current.classReminders.length) {
+      return;
+    }
+    await updateSettings(current.copyWith(classReminders: rest));
+    unawaited(_syncExamReminders());
   }
 
   // ---- 节假日相关 ----

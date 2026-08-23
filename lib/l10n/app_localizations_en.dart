@@ -10527,6 +10527,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get classAlarmLaunchFailedToast => 'No clock app found to handle this';
 
   @override
+  String get classAlarmSheetTitle => 'Class reminder';
+
+  @override
+  String classAlarmQuickOption(Object minutes) {
+    return 'Remind me $minutes min before class';
+  }
+
+  @override
+  String get classAlarmCustomOption => 'Pick a custom time…';
+
+  @override
+  String classAlarmExistingLabel(Object time) {
+    return 'Reminder set for $time';
+  }
+
+  @override
+  String get classAlarmSetToast => 'Reminder set';
+
+  @override
+  String get classAlarmRemovedToast => 'Class reminder removed';
+
+  @override
+  String get classAlarmPastToast =>
+      'That time has already passed, pick another one';
+
+  @override
+  String get classAlarmNoSemesterToast =>
+      'Set the semester start date in Settings first';
+
+  @override
   String get classAlarmActionLabel => 'Set alarm for this class';
 
   @override

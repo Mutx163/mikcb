@@ -5997,6 +5997,24 @@
   "classAlarmNoDataToast": "所选范围内没有找到课表",
   "classAlarmAddedToast": "已交给系统时钟处理",
   "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",
+  "classAlarmSheetTitle": "上课提醒",
+  "classAlarmQuickOption": "上课前 {minutes} 分钟提醒",
+  "@classAlarmQuickOption": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "classAlarmCustomOption": "自定义提醒时间…",
+  "classAlarmExistingLabel": "已设提醒：{time}",
+  "@classAlarmExistingLabel": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "classAlarmSetToast": "提醒已设置",
+  "classAlarmRemovedToast": "已取消这节课的提醒",
+  "classAlarmPastToast": "所选时间已经过了，请换一个时间",
+  "classAlarmNoSemesterToast": "请先在设置中填写学期开始日期",
   "classAlarmActionLabel": "设这节课的闹钟",
   "classAlarmCourseConfirmTitle": "添加这节课的重复闹钟？",
   "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",

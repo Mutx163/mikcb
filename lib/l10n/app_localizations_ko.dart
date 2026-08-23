@@ -10275,6 +10275,34 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classAlarmLaunchFailedToast => '처리할 시계 앱을 찾을 수 없습니다';
 
   @override
+  String get classAlarmSheetTitle => '수업 알림';
+
+  @override
+  String classAlarmQuickOption(Object minutes) {
+    return '수업 $minutes분 전에 알림';
+  }
+
+  @override
+  String get classAlarmCustomOption => '직접 시간 지정…';
+
+  @override
+  String classAlarmExistingLabel(Object time) {
+    return '$time 알림 설정됨';
+  }
+
+  @override
+  String get classAlarmSetToast => '알림이 설정되었습니다';
+
+  @override
+  String get classAlarmRemovedToast => '이 수업 알림을 취소했습니다';
+
+  @override
+  String get classAlarmPastToast => '선택한 시간이 이미 지났습니다. 다른 시간을 고르세요';
+
+  @override
+  String get classAlarmNoSemesterToast => '설정에서 학기 시작일을 먼저 입력하세요';
+
+  @override
   String get classAlarmActionLabel => '이 수업 알람 설정';
 
   @override

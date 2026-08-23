@@ -18073,6 +18073,54 @@ abstract class AppLocalizations {
   /// **'未找到可处理的时钟应用'**
   String get classAlarmLaunchFailedToast;
 
+  /// No description provided for @classAlarmSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课提醒'**
+  String get classAlarmSheetTitle;
+
+  /// No description provided for @classAlarmQuickOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前 {minutes} 分钟提醒'**
+  String classAlarmQuickOption(Object minutes);
+
+  /// No description provided for @classAlarmCustomOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义提醒时间…'**
+  String get classAlarmCustomOption;
+
+  /// No description provided for @classAlarmExistingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已设提醒：{time}'**
+  String classAlarmExistingLabel(Object time);
+
+  /// No description provided for @classAlarmSetToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'提醒已设置'**
+  String get classAlarmSetToast;
+
+  /// No description provided for @classAlarmRemovedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消这节课的提醒'**
+  String get classAlarmRemovedToast;
+
+  /// No description provided for @classAlarmPastToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'所选时间已经过了，请换一个时间'**
+  String get classAlarmPastToast;
+
+  /// No description provided for @classAlarmNoSemesterToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先在设置中填写学期开始日期'**
+  String get classAlarmNoSemesterToast;
+
   /// No description provided for @classAlarmActionLabel.
   ///
   /// In zh, this message translates to:

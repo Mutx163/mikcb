@@ -9950,6 +9950,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get classAlarmLaunchFailedToast => '未找到可处理的时钟应用';
 
   @override
+  String get classAlarmSheetTitle => '上课提醒';
+
+  @override
+  String classAlarmQuickOption(Object minutes) {
+    return '上课前 $minutes 分钟提醒';
+  }
+
+  @override
+  String get classAlarmCustomOption => '自定义提醒时间…';
+
+  @override
+  String classAlarmExistingLabel(Object time) {
+    return '已设提醒：$time';
+  }
+
+  @override
+  String get classAlarmSetToast => '提醒已设置';
+
+  @override
+  String get classAlarmRemovedToast => '已取消这节课的提醒';
+
+  @override
+  String get classAlarmPastToast => '所选时间已经过了，请换一个时间';
+
+  @override
+  String get classAlarmNoSemesterToast => '请先在设置中填写学期开始日期';
+
+  @override
   String get classAlarmActionLabel => '设这节课的闹钟';
 
   @override
@@ -19968,6 +19996,34 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get classAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
 
   @override
+  String get classAlarmSheetTitle => '上課提醒';
+
+  @override
+  String classAlarmQuickOption(Object minutes) {
+    return '上課前 $minutes 分鐘提醒';
+  }
+
+  @override
+  String get classAlarmCustomOption => '自訂提醒時間…';
+
+  @override
+  String classAlarmExistingLabel(Object time) {
+    return '已設提醒：$time';
+  }
+
+  @override
+  String get classAlarmSetToast => '提醒已設定';
+
+  @override
+  String get classAlarmRemovedToast => '已取消這堂課的提醒';
+
+  @override
+  String get classAlarmPastToast => '所選時間已過，請換一個時間';
+
+  @override
+  String get classAlarmNoSemesterToast => '請先在設定中填寫學期開始日期';
+
+  @override
   String get classAlarmActionLabel => '設這節課的鬧鐘';
 
   @override
@@ -29984,6 +30040,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get classAlarmLaunchFailedToast => '未找到可處理的時鐘應用';
+
+  @override
+  String get classAlarmSheetTitle => '上課提醒';
+
+  @override
+  String classAlarmQuickOption(Object minutes) {
+    return '上課前 $minutes 分鐘提醒';
+  }
+
+  @override
+  String get classAlarmCustomOption => '自訂提醒時間…';
+
+  @override
+  String classAlarmExistingLabel(Object time) {
+    return '已設提醒：$time';
+  }
+
+  @override
+  String get classAlarmSetToast => '提醒已設定';
+
+  @override
+  String get classAlarmRemovedToast => '已取消這堂課的提醒';
+
+  @override
+  String get classAlarmPastToast => '所選時間已過，請換一個時間';
+
+  @override
+  String get classAlarmNoSemesterToast => '請先在設定中填寫學期開始日期';
 
   @override
   String get classAlarmActionLabel => '設這節課的鬧鐘';
