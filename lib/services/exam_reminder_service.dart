@@ -330,6 +330,9 @@ class ExamReminderService {
     required List<Exam> exams,
     required Course? Function(Exam exam) resolveCourse,
     List<ScheduleItem> scheduleItems = const [],
+
+    /// 额外触发点（如单节课提醒），与考试/日程走同一原生调度管线。
+    List<ExamReminderFire> additionalFires = const [],
     DateTime? now,
   }) async {
     final referenceNow = now ?? DateTime.now();
@@ -340,6 +343,7 @@ class ExamReminderService {
         now: referenceNow,
       ),
       ...buildScheduleFires(scheduleItems: scheduleItems, now: referenceNow),
+      ...additionalFires,
     ];
     final activeExamIds = exams
         .where((exam) => !exam.isExpired)
