@@ -26,6 +26,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'utils/home_startup_visual_primer.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
@@ -567,6 +568,10 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (hasAcceptedPrivacy && hasSeenGuide) {
         _cloudSyncCoordinator.bindProvider(provider);
         await provider.initialize();
+        // 启动画面保持到首页视觉资产（壁纸位图 / 预模糊磨砂 / 墨色亮度采样）
+        // 就绪：放行后的第一帧必须是完整界面，不允许露出主题兜底的半成品
+        // 底色。prime 内部有预算与异常兜底，不会拖死启动管线。
+        await HomeStartupVisualPrimer.prime(provider.settings);
         _allowFirstFrameOnce();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
@@ -603,6 +608,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
       await Future.wait([providerInitFuture, legacyPackageFuture]);
       _cloudSyncCoordinator.bindProvider(provider);
+      // 与老用户快速路径同一保证：首帧即完整界面（无壁纸时 prime 立即返回）。
+      await HomeStartupVisualPrimer.prime(provider.settings);
       _allowFirstFrameOnce();
       unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;
