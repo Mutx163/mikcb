@@ -4450,18 +4450,6 @@ abstract class AppLocalizations {
   /// **'超级岛预览'**
   String get liveIslandPreviewTitle;
 
-  /// No description provided for @liveIslandPreviewSummaryLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'摘要态'**
-  String get liveIslandPreviewSummaryLabel;
-
-  /// No description provided for @liveIslandPreviewExpandedLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'展开态'**
-  String get liveIslandPreviewExpandedLabel;
-
   /// No description provided for @liveIslandPreviewFollowBadge.
   ///
   /// In zh, this message translates to:
@@ -4527,12 +4515,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'三教-401'**
   String get liveIslandPreviewSampleLocation;
-
-  /// No description provided for @liveIslandPreviewSampleTeacher.
-  ///
-  /// In zh, this message translates to:
-  /// **'王老师'**
-  String get liveIslandPreviewSampleTeacher;
 
   /// No description provided for @beforeClassQuickActionTitle.
   ///

@@ -2539,12 +2539,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveIslandPreviewTitle => 'Super Island preview';
 
   @override
-  String get liveIslandPreviewSummaryLabel => 'Summary';
-
-  @override
-  String get liveIslandPreviewExpandedLabel => 'Expanded';
-
-  @override
   String get liveIslandPreviewFollowBadge =>
       'Following before-class display settings; adjust those to preview changes';
 
@@ -2583,9 +2577,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveIslandPreviewSampleLocation => 'Bldg 3-401';
-
-  @override
-  String get liveIslandPreviewSampleTeacher => 'Mr. Wang';
 
   @override
   String get beforeClassQuickActionTitle => 'Before-class Quick Action';

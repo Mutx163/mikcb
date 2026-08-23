@@ -2386,12 +2386,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveIslandPreviewTitle => '超级岛预览';
 
   @override
-  String get liveIslandPreviewSummaryLabel => '摘要态';
-
-  @override
-  String get liveIslandPreviewExpandedLabel => '展开态';
-
-  @override
   String get liveIslandPreviewFollowBadge => '正在跟随“课前提醒显示”设置，调整课前提醒即可生效';
 
   @override
@@ -2429,9 +2423,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveIslandPreviewSampleLocation => '三教-401';
-
-  @override
-  String get liveIslandPreviewSampleTeacher => '王老师';
 
   @override
   String get beforeClassQuickActionTitle => '上课前快捷操作';
@@ -12425,12 +12416,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveIslandPreviewTitle => '超級島預覽';
 
   @override
-  String get liveIslandPreviewSummaryLabel => '摘要態';
-
-  @override
-  String get liveIslandPreviewExpandedLabel => '展開態';
-
-  @override
   String get liveIslandPreviewFollowBadge => '正在跟隨「課前提醒顯示」設定，調整課前提醒即可生效';
 
   @override
@@ -12468,9 +12453,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveIslandPreviewSampleLocation => '三教-401';
-
-  @override
-  String get liveIslandPreviewSampleTeacher => '王老師';
 
   @override
   String get beforeClassQuickActionTitle => '上課前快捷操作';
@@ -22507,12 +22489,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveIslandPreviewTitle => '超級島預覽';
 
   @override
-  String get liveIslandPreviewSummaryLabel => '摘要態';
-
-  @override
-  String get liveIslandPreviewExpandedLabel => '展開態';
-
-  @override
   String get liveIslandPreviewFollowBadge => '正在跟隨「課前提醒顯示」設定，調整課前提醒即可生效';
 
   @override
@@ -22550,9 +22526,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveIslandPreviewSampleLocation => '三教-401';
-
-  @override
-  String get liveIslandPreviewSampleTeacher => '王老師';
 
   @override
   String get beforeClassQuickActionTitle => '上課前快捷操作';

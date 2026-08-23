@@ -2443,12 +2443,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveIslandPreviewTitle => '슈퍼 아일랜드 미리보기';
 
   @override
-  String get liveIslandPreviewSummaryLabel => '요약';
-
-  @override
-  String get liveIslandPreviewExpandedLabel => '확장';
-
-  @override
   String get liveIslandPreviewFollowBadge =>
       '\'수업 전 표시\' 설정을 따르며, 해당 설정을 조정하면 미리보기에 반영됩니다';
 
@@ -2487,9 +2481,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveIslandPreviewSampleLocation => '3동-401';
-
-  @override
-  String get liveIslandPreviewSampleTeacher => '왕 선생님';
 
   @override
   String get beforeClassQuickActionTitle => '수업 전 빠른 작업';

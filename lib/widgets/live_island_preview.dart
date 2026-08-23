@@ -1,23 +1,33 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
+import '../services/bundled_assets.dart';
+import '../services/miui_live_activities_service.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../utils/hex_color.dart';
 
-/// Real-time super-island preview for the live reminder display settings.
+/// Real-time HyperOS super-island capsule preview.
 ///
-/// The mock mirrors the native text composition in
-/// \`android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt\`
-/// bug-for-bug so every toggle on the settings page has a visible effect:
+/// 还原真实摘要态胶囊的左右分区：中间是摄像头开孔，左侧是实际会显示的
+/// 小图标位 + 文本块（imageTextInfoLeft），右侧是实际的提示位
+/// （hintInfo，即状态文字）。展开态不在此预览范围内。
 ///
-/// * 摘要态胶囊 = buildIslandSummary() A区（imageTextInfoLeft）：恒为倒计时
-///   风格，不受 showCountdown / showStageText 控制，且始终带
-///   “距上课 / 距下课”前缀 —— 与原生行为一致。
-/// * 课中环形进度 + 课间节点条 = DuringClassProgress。
-/// * 展开态卡片 = promotedContentText：受 showCountdown / showStageText /
-///   hidePrefixText 控制。
+/// 与原生 `MainActivity.kt` 的对应关系：
+///
+/// * 左侧文本块 = buildIslandSummary() A区：恒为倒计时风格，不受
+///   showCountdown / showStageText 控制，且始终带“距上课 / 距下课”前缀。
+/// * 左侧图标位 = 通知 smallIcon：默认为应用图标；仅小米设备允许开启
+///   自定义标签（enableMiuiIslandLabelImage），开启后按原生
+///   buildIslandLabelBitmap() 的规则绘制（图标/自定义 Logo + 标签文字，
+///   颜色、字号、字重、圆角均跟随设置）。
+/// * 右侧提示位 = hintInfo.title = visibleStatusText：受 showCountdown →
+///   showStageText 控制，课中固定为“上课中”。
+/// * 课中环形进度包住左侧图标；课间节点进度条与原生摘要态一致，
+///   显示在胶囊下方。
 class LiveIslandPreviewCard extends StatefulWidget {
   const LiveIslandPreviewCard({
     super.key,
@@ -32,7 +42,7 @@ class LiveIslandPreviewCard extends StatefulWidget {
   /// renders an explanatory badge instead of silently previewing.
   final bool followBeforeClass;
 
-  /// Native endSecondsCountdownThreshold; only the before-end status-line
+  /// Native endSecondsCountdownThreshold; only the before-end right-side
   /// countdown formatting uses it (computeRemainingText parity).
   final int endSecondsCountdownThresholdSeconds;
 
@@ -43,14 +53,14 @@ class LiveIslandPreviewCard extends StatefulWidget {
 enum _PreviewStage { beforeClass, duringClass, beforeEnd }
 
 class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
-  static const _islandBg = Color(0xFF0A0A0C);
-  static const _cardBg = Color(0xFF14161B);
-  static const _avatarBg = Color(0xFF26282E);
+  static const _pillColor = Color(0xFF060608);
   static const _progressGreen = Color(0xFF4CAF50);
+  static const _defaultLabelColor = Color(0xFFFFFFFF);
 
   late final DateTime _anchor = DateTime.now();
   Timer? _ticker;
   int _stageIndex = 0;
+  bool _isXiaomiFamily = false;
 
   @override
   void initState() {
@@ -60,12 +70,33 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         setState(() {});
       }
     });
+    _detectXiaomiFamily();
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
     super.dispose();
+  }
+
+  /// 只有小米系机型才会真正渲染自定义标签（isXiaomiFamilyDevice()），
+  /// 预览同样按机型能力展示。
+  Future<void> _detectXiaomiFamily() async {
+    try {
+      final status =
+          await MiuiLiveActivitiesService().getLiveUpdateDebugStatus();
+      final environment = status['environment'];
+      final flag = environment is Map
+          ? environment['isXiaomiFamilyDevice']
+          : null;
+      if (mounted) {
+        setState(() => _isXiaomiFamily = flag == true);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isXiaomiFamily = false);
+      }
+    }
   }
 
   // --- Demo course windows anchored at [_anchor]; numbers tick naturally ---
@@ -128,41 +159,138 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
           selectedIndex: _stageIndex,
           onChanged: (index) => setState(() => _stageIndex = index),
         ),
-        const SizedBox(height: 12),
-        Text(
-          l10n.liveIslandPreviewSummaryLabel,
-          style: HyperosTypography.listDetail(context),
-        ),
-        const SizedBox(height: 6),
-        _SummaryPill(
-          stage: selectedStage,
-          progressPercent: _progressFraction(selectedStage),
+        const SizedBox(height: 14),
+        _IslandCapsule(
+          iconSlot: _buildIconSlot(l10n, selectedStage, d),
           title: _islandName(l10n, d),
           content: _islandContent(l10n, selectedStage, d),
+          statusLine: _statusLine(l10n, selectedStage, d),
         ),
         if (selectedStage == _PreviewStage.duringClass) ...[
           const SizedBox(height: 8),
           _MilestoneBar(
-            percent: _progressFraction(_PreviewStage.duringClass),
+            percent: _progressFraction(selectedStage),
             milestoneFraction: 0.7,
             leading: _nextMilestoneText(l10n, d) ?? '',
             trailing: _finalDismissText(l10n, d),
           ),
         ],
-        const SizedBox(height: 12),
-        Text(
-          l10n.liveIslandPreviewExpandedLabel,
-          style: HyperosTypography.listDetail(context),
-        ),
-        const SizedBox(height: 6),
-        _ExpandedCard(
-          iconStage: selectedStage,
-          title: _expandedTitle(l10n, selectedStage, d),
-          body: _promotedContentText(l10n, selectedStage, d),
-        ),
       ],
     );
   }
+
+  // --- Left icon slot (notification small-icon position) ------------------
+
+  Widget _buildIconSlot(
+    AppLocalizations l10n,
+    _PreviewStage stage,
+    LiveDisplaySettings d,
+  ) {
+    final icon = _buildSmallIcon(l10n, d);
+    if (stage != _PreviewStage.duringClass) {
+      return icon;
+    }
+    // 原生把 progressInfo 放进 imageTextInfoLeft：环包住小图标。
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(painter: _RingPainter(progress: _progressFraction(stage))),
+          Center(child: icon),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallIcon(AppLocalizations l10n, LiveDisplaySettings d) {
+    final labelEnabled = _isXiaomiFamily && d.enableMiuiIslandLabelImage;
+    if (!labelEnabled) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(7),
+        child: Image.asset(
+          BundledAssets.launcherIcon,
+          width: 28,
+          height: 28,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    // 原生 buildIslandLabelBitmap：可选图标部分 + 自动缩放的标签文字。
+    final includeIcon =
+        d.miuiIslandLabelStyle == MiuiIslandLabelStyle.iconAndText;
+    final nameToUse = d.useShortName
+        ? l10n.liveIslandPreviewSampleCourseShort
+        : l10n.liveIslandPreviewSampleCourse;
+    final labelText = switch (d.miuiIslandLabelContent) {
+      MiuiIslandLabelContent.courseName => nameToUse,
+      MiuiIslandLabelContent.location =>
+        l10n.liveIslandPreviewSampleLocation,
+      MiuiIslandLabelContent.courseNameAndLocation =>
+        '$nameToUse ${l10n.liveIslandPreviewSampleLocation}',
+    };
+    final fontWeight = switch (d.miuiIslandLabelFontWeight) {
+      MiuiIslandLabelFontWeight.medium => FontWeight.w500,
+      MiuiIslandLabelFontWeight.bold => FontWeight.w700,
+      MiuiIslandLabelFontWeight.regular => FontWeight.w400,
+    };
+    final label = Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          labelText,
+          maxLines: 1,
+          style: TextStyle(
+            color: parseHexColorOrFallback(
+              d.miuiIslandLabelFontColor,
+              fallback: _defaultLabelColor,
+            ),
+            fontSize: d.miuiIslandLabelFontSize.clamp(4.0, 32.0),
+            fontWeight: fontWeight,
+          ),
+        ),
+      ),
+    );
+    if (!includeIcon) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: label,
+      );
+    }
+    final logoPath = d.miuiIslandLabelLogoPath;
+    final corner = d.miuiIslandLabelLogoCornerRadius.clamp(0.0, 12.0);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(corner),
+          child: logoPath != null
+              ? Image.file(
+                  File(logoPath),
+                  width: 22,
+                  height: 22,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _appIconImage(22),
+                )
+              : _appIconImage(22),
+        ),
+        const SizedBox(width: 3),
+        label,
+      ],
+    );
+  }
+
+  Widget _appIconImage(double size) => ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.24),
+        child: Image.asset(
+          BundledAssets.launcherIcon,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
+      );
 
   // --- Text composition (ports of MainActivity.kt rules) ------------------
 
@@ -177,7 +305,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     }
   }
 
-  /// visibleStatusText: gated by showCountdown → showStageText.
+  /// hintInfo.title = visibleStatusText：受 showCountdown → showStageText 控制。
   String _statusLine(
     AppLocalizations l10n,
     _PreviewStage stage,
@@ -189,8 +317,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     return _countdownStatus(l10n, stage, d);
   }
 
-  /// computeRemainingText: prefix honours hidePrefixText; the during-class
-  /// branch is fixed to the "in class" word.
+  /// computeRemainingText：前缀受 hidePrefixText 影响；课中固定“上课中”。
   String _countdownStatus(
     AppLocalizations l10n,
     _PreviewStage stage,
@@ -199,13 +326,8 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     final now = DateTime.now();
     switch (stage) {
       case _PreviewStage.beforeClass:
-        // Native before-class formatting uses a fixed 60s smart threshold.
-        return _untilStart(
-          l10n,
-          d,
-          _beforeWindow.start.difference(now),
-          60,
-        );
+        // 原生课前格式化使用固定的 60s smart 阈值。
+        return _untilStart(l10n, d, _beforeWindow.start.difference(now), 60);
       case _PreviewStage.duringClass:
         return l10n.liveIslandPreviewStageInClass;
       case _PreviewStage.beforeEnd:
@@ -224,7 +346,8 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     Duration remaining,
     int thresholdSeconds,
   ) {
-    final text = _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
+    final text =
+        _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
     return d.hidePrefixText
         ? text
         : l10n.liveIslandPreviewUntilClassStart(text);
@@ -236,13 +359,13 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     Duration remaining,
     int thresholdSeconds,
   ) {
-    final text = _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
+    final text =
+        _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
     return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
   }
 
-  /// buildIslandSummary islandContentText: ignores showCountdown /
-  /// showStageText / hidePrefixText entirely (native parity), and its
-  /// countdown always uses the default 60s smart threshold.
+  /// buildIslandSummary islandContentText（A区 content）：无视 showCountdown /
+  /// showStageText / hidePrefixText（原生如此），倒计时恒用默认 60s 阈值。
   String _islandContent(
     AppLocalizations l10n,
     _PreviewStage stage,
@@ -289,7 +412,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     );
   }
 
-  /// compactDisplayText: nearest → next milestone, total → final dismiss.
+  /// compactDisplayText：nearest → 最近节点，total → 整节下课。
   String? _compactDisplayText(AppLocalizations l10n, LiveDisplaySettings d) {
     final finalText = _finalDismissText(l10n, d);
     if (d.duringClassTimeDisplayMode == LiveDuringClassTimeDisplayMode.total) {
@@ -312,33 +435,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     return fraction.clamp(0.0, 1.0);
   }
 
-  /// promotedContentText / baseInfo.content of the expanded card.
-  String _promotedContentText(
-    AppLocalizations l10n,
-    _PreviewStage stage,
-    LiveDisplaySettings d,
-  ) {
-    // classProgress is only built during the during-class stage natively,
-    // so the progress branch never applies to beforeEnd.
-    final hasProgress =
-        stage == _PreviewStage.duringClass && d.showCountdown;
-    final parts = <String>[
-      if (hasProgress)
-        _compactDisplayText(l10n, d) ?? ''
-      else
-        _statusLine(l10n, stage, d),
-      if (d.showLocation) l10n.liveIslandPreviewSampleLocation,
-    ].where((part) => part.trim().isNotEmpty).toList();
-    // baseInfo.content falls back to the hint text when blank; the closest
-    // stable analogue here is the stage word itself.
-    if (parts.isEmpty) {
-      parts.add(_stageWord(l10n, stage));
-    }
-    return parts.join(' · ');
-  }
-
-  /// Pill A区 title: course name honouring showCourseName/useShortName with
-  /// the native 5-char truncation (islandCourseName).
+  /// A区 title：课程名（showCourseName / useShortName + 原生 5 字截断）。
   String _islandName(AppLocalizations l10n, LiveDisplaySettings d) {
     if (!d.showCourseName) {
       return '';
@@ -347,27 +444,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         ? l10n.liveIslandPreviewSampleCourseShort
         : l10n.liveIslandPreviewSampleCourse;
     return name.length > 5 ? name.substring(0, 5) : name;
-  }
-
-  /// Expanded-card header title (title in buildNotification): uses the
-  /// short-name rule with 8-char truncation.
-  String _expandedTitle(
-    AppLocalizations l10n,
-    _PreviewStage stage,
-    LiveDisplaySettings d,
-  ) {
-    final nameToUse = d.useShortName
-        ? l10n.liveIslandPreviewSampleCourseShort
-        : l10n.liveIslandPreviewSampleCourse;
-    final shortCourseName =
-        nameToUse.length > 8 ? '${nameToUse.substring(0, 8)}..' : nameToUse;
-    switch (stage) {
-      case _PreviewStage.beforeClass:
-      case _PreviewStage.beforeEnd:
-        return '${_stageWord(l10n, stage)}: $shortCourseName';
-      case _PreviewStage.duringClass:
-        return shortCourseName;
-    }
   }
 
   // --- Countdown formatter (port of CountdownFormat.kt) -------------------
@@ -401,8 +477,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
       case LiveCountdownTextStyle.secondOnlyCn:
         return '$totalSeconds秒';
       case LiveCountdownTextStyle.secondOnlyShort:
-        // Adjacent-literal concat: '59s' without triggering
-        // unnecessary_brace_in_string_interps ('s' would extend the ident).
+        // 相邻字面量拼接：'59s'，避免 's' 并入标识符触发插值花括号 lint。
         return '$totalSeconds' 's';
       case LiveCountdownTextStyle.secondOnlySlash:
         return '$totalSeconds/s';
@@ -436,7 +511,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
       return '$minutes$minuteSuffix$seconds$secondSuffix';
     }
     if (minutes > 0) {
-      // Kotlin trims the trailing slash for the min/ variant.
+      // Kotlin 对 min/ 变体去掉尾部斜杠。
       final trimmed = minuteSuffix.endsWith('/')
           ? minuteSuffix.substring(0, minuteSuffix.length - 1)
           : minuteSuffix;
@@ -448,61 +523,91 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   int _minutesFloor(int totalSeconds) => (totalSeconds ~/ 60).clamp(1, 1 << 30);
 }
 
-// --- Mock widgets (HyperOS island look, theme-independent dark style) ------
+// --- Mock widgets（HyperOS 超级岛观感，深色、与主题无关） --------------------
 
-class _SummaryPill extends StatelessWidget {
-  const _SummaryPill({
-    required this.stage,
-    required this.progressPercent,
+/// 摘要态胶囊：中间摄像头，左侧图标+文本块，右侧提示文字。
+class _IslandCapsule extends StatelessWidget {
+  const _IslandCapsule({
+    required this.iconSlot,
     required this.title,
     required this.content,
+    required this.statusLine,
   });
 
-  final _PreviewStage stage;
-  final double progressPercent;
+  final Widget iconSlot;
   final String title;
   final String content;
+  final String statusLine;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
+      height: 56,
       decoration: BoxDecoration(
-        color: _LiveIslandPreviewCardState._islandBg,
-        borderRadius: BorderRadius.circular(29),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: _LiveIslandPreviewCardState._pillColor,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
-      padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
       child: Row(
         children: [
-          _StageAvatar(stage: stage, progressPercent: progressPercent),
-          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title.isNotEmpty)
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(13, 0, 4, 0),
+              child: Row(
+                children: [
+                  iconSlot,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (title.isNotEmpty)
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        Text(
+                          content,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                Text(
-                  content,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 12.5,
-                  ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          ),
+          const _CameraHole(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(6, 0, 13, 0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: statusLine.isEmpty
+                    ? const SizedBox.shrink()
+                    : Text(
+                        statusLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+              ),
             ),
           ),
         ],
@@ -511,44 +616,30 @@ class _SummaryPill extends StatelessWidget {
   }
 }
 
-class _StageAvatar extends StatelessWidget {
-  const _StageAvatar({required this.stage, required this.progressPercent});
-
-  final _PreviewStage stage;
-  final double progressPercent;
+/// 居中前置摄像头开孔。
+class _CameraHole extends StatelessWidget {
+  const _CameraHole();
 
   @override
   Widget build(BuildContext context) {
-    const avatarSize = 46.0;
-    final showRing = stage == _PreviewStage.duringClass;
-    final icon = switch (stage) {
-      _PreviewStage.beforeClass => Icons.notifications_active_outlined,
-      _PreviewStage.duringClass => Icons.menu_book_outlined,
-      _PreviewStage.beforeEnd => Icons.alarm_outlined,
-    };
-    return SizedBox(
-      width: avatarSize,
-      height: avatarSize,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (showRing)
-            CustomPaint(painter: _RingPainter(progress: progressPercent))
-          else
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: _LiveIslandPreviewCardState._avatarBg,
-                shape: BoxShape.circle,
-              ),
-            ),
-          Center(
-            child: Icon(
-              icon,
-              size: 20,
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
+    return Container(
+      width: 27,
+      height: 27,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF08090B),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+      ),
+      child: Center(
+        child: Container(
+          width: 11,
+          height: 11,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFF191B20),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -563,16 +654,14 @@ class _RingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.shortestSide / 2 - 2;
-    const strokeWidth = 3.0;
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..color = Colors.white.withValues(alpha: 0.2);
-    canvas.drawCircle(center, radius, trackPaint);
+    const strokeWidth = 2.5;
     canvas.drawCircle(
       center,
-      radius - strokeWidth,
-      Paint()..color = _LiveIslandPreviewCardState._avatarBg,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..color = Colors.white.withValues(alpha: 0.2),
     );
     if (progress <= 0) {
       return;
@@ -645,7 +734,7 @@ class _MilestoneBar extends StatelessWidget {
                         color: Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _LiveIslandPreviewCardState._islandBg,
+                          color: _LiveIslandPreviewCardState._pillColor,
                           width: 1.5,
                         ),
                       ),
@@ -683,65 +772,6 @@ class _MilestoneBar extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ExpandedCard extends StatelessWidget {
-  const _ExpandedCard({
-    required this.iconStage,
-    required this.title,
-    required this.body,
-  });
-
-  final _PreviewStage iconStage;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _LiveIslandPreviewCardState._cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _StageAvatar(stage: iconStage, progressPercent: 0),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.62),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

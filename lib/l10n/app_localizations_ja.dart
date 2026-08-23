@@ -2430,12 +2430,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveIslandPreviewTitle => 'スーパー島プレビュー';
 
   @override
-  String get liveIslandPreviewSummaryLabel => '概要';
-
-  @override
-  String get liveIslandPreviewExpandedLabel => '展開';
-
-  @override
   String get liveIslandPreviewFollowBadge =>
       '「授業前表示」の設定に従っています。そちらを調整すると反映されます';
 
@@ -2474,9 +2468,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveIslandPreviewSampleLocation => '3号館-401';
-
-  @override
-  String get liveIslandPreviewSampleTeacher => '王先生';
 
   @override
   String get beforeClassQuickActionTitle => '授業前クイックアクション';
