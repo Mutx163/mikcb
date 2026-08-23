@@ -38,6 +38,8 @@ import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
 import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
+import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
+    show UndimmedBackdropCapture;
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -599,9 +601,14 @@ class _TimetableScreenState extends State<TimetableScreen>
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
                   .blur,
         );
-        Widget homeStack = Stack(
-          fit: StackFit.expand,
-          children: [
+        // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
+        // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
+        // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
+        // 景，折射位移在带边被钳制，观感与预览（组内全尺寸采样）不一致。
+        Widget homeStack = BackdropGroup(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
             if (hasBackdrop)
               followsWeekPager
                   ? HomePageSlidingBackdropLayer(
@@ -612,6 +619,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                   : homePageBackdropLayer(settings: settings),
             if (hasBackdrop && !statusBarShowsBackdrop)
               HomePageStatusBarBackdropMask(color: pageBackgroundColor),
+            // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带采样，
+            // 与预览的 UndimmedBackdropCapture 同款、同相对位置。
+            if (continuousChromeBlur)
+              const Positioned.fill(child: UndimmedBackdropCapture()),
             // Single continuous glass for title + weekday (no time-column blur).
             // Stays fixed above the sliding wallpaper so chrome text stays sharp
             // while the photo moves as one continuous sheet.
@@ -757,7 +768,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         );
         // 玻璃坞形态下课表（含壁纸）与设置页都常驻挂载，用 Offstage 切换：
         // - 设置页的滚动位置与大标题折叠状态不随 Tab 切换丢失（切走再切回，

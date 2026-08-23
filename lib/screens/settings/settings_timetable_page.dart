@@ -77,6 +77,10 @@ class _TimetablePageSettingsScreenState
                     settings: _draft,
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
+                    // 与首页同构的连续 chrome（标题行 + 星期行一整片玻璃带）：
+                    // 不带标题行时星期栏会成为孤立的 40px 玻璃条，观感与
+                    // 首页的连续玻璃带不一致。
+                    includeAppHeader: true,
                   ),
                 ),
               ),
