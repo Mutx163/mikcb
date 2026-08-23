@@ -930,11 +930,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final timePreview =
         '$weekdayLabel · ${l10n.sectionRangeLabel(entry.startSection, entry.endSection)}';
 
+    // 每条排课记录的内衬底色：极浅中性洗色（浅色模式 5% 墨 / 深色模式 6% 白），
+    // 与 HyperosBlurredHeader.nestedSurfaceTintColor 无模糊分支同源。
+    // 不再用 muted@35% 深灰填充——那会在白卡/深卡上读成一整块死灰色，
+    // 与液态玻璃等通透材质并置时尤其突兀（用户反馈“整个框框是灰色的”）。
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final entryInsetFill = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.05);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: colors.muted.withValues(alpha: 0.35),
+        color: entryInsetFill,
         borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
         border: Border.all(color: HyperosColors.outline(context)),
       ),
