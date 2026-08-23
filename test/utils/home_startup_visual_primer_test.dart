@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/utils/home_startup_visual_primer.dart';
 import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 
