@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-20T02:39:48+00:00",
+  "updatedAt": "2026-08-23T02:46:50+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 144,
-    "schools": 139,
+    "total": 146,
+    "schools": 141,
     "generic": 5
   },
   "schools": [
@@ -237,6 +237,13 @@
       "name": "福建船政交通职业学院",
       "initial": "F",
       "resourceFolder": "FJCPC",
+      "category": "school"
+    },
+    {
+      "id": "GPNU",
+      "name": "广东技术师范大学",
+      "initial": "G",
+      "resourceFolder": "GPNU",
       "category": "school"
     },
     {
@@ -741,6 +748,13 @@
       "name": "山西工程职业学院",
       "initial": "S",
       "resourceFolder": "SXGCXY",
+      "category": "school"
+    },
+    {
+      "id": "SYIST",
+      "name": "沈阳科技学院",
+      "initial": "S",
+      "resourceFolder": "SYIST",
       "category": "school"
     },
     {
