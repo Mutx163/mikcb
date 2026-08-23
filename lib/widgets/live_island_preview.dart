@@ -34,11 +34,16 @@ class LiveIslandPreviewCard extends StatefulWidget {
   const LiveIslandPreviewCard({
     super.key,
     required this.display,
+    required this.forDuringEnd,
     this.followBeforeClass = false,
     this.endSecondsCountdownThresholdSeconds = 60,
   });
 
   final LiveDisplaySettings display;
+
+  /// 课中/下课提醒页传 true：该页同时预览「上课中」与「下课提醒」两个岛；
+  /// 课前提醒页传 false：只预览「即将上课」岛。
+  final bool forDuringEnd;
 
   /// True on the during/end page while it follows the before-class config;
   /// renders an explanatory badge instead of silently previewing.
@@ -60,7 +65,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
   late final DateTime _anchor = DateTime.now();
   Timer? _ticker;
-  int _stageIndex = 0;
   bool _isXiaomiFamily = false;
 
   @override
@@ -116,8 +120,9 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final d = widget.display;
-    const stages = _PreviewStage.values;
-    final selectedStage = stages[_stageIndex];
+    final stages = widget.forDuringEnd
+        ? const [_PreviewStage.duringClass, _PreviewStage.beforeEnd]
+        : const [_PreviewStage.beforeClass];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,21 +147,22 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
               ],
             ),
           ),
-        HyperosSegmentedControl(
-          tabs: [
-            l10n.liveIslandPreviewStageBeforeClass,
-            l10n.liveIslandPreviewStageInClass,
-            l10n.liveIslandPreviewStageBeforeEnd,
-          ],
-          selectedIndex: _stageIndex,
-          onChanged: (index) => setState(() => _stageIndex = index),
-        ),
-        const SizedBox(height: 14),
-        _IslandCapsule(
-          iconSlot: _buildSmallIcon(l10n, d),
-          title: _islandName(l10n, d),
-          statusLine: _statusLine(l10n, selectedStage, d),
-        ),
+        for (var index = 0; index < stages.length; index++) ...[
+          if (stages.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                _stageWord(l10n, stages[index]),
+                style: HyperosTypography.listDetail(context),
+              ),
+            ),
+          _IslandCapsule(
+            iconSlot: _buildSmallIcon(l10n, d),
+            title: _islandName(l10n, d),
+            statusLine: _statusLine(l10n, stages[index], d),
+          ),
+          if (index != stages.length - 1) const SizedBox(height: 12),
+        ],
       ],
     );
   }

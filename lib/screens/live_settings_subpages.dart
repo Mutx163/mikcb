@@ -765,6 +765,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             display: _followBeforeClass
                 ? _draft.beforeClassDisplaySettings
                 : display,
+            forDuringEnd: widget.forDuringEnd,
             followBeforeClass: _followBeforeClass,
             endSecondsCountdownThresholdSeconds:
                 _draft.liveEndSecondsCountdownThreshold,
