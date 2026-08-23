@@ -227,42 +227,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   });
                 },
               ),
-            if (_draft.homeNavigationForm == HomeNavigationForm.glassDock)
-              HyperosSelectTile<GlassDockLayout>(
-                label: l10n.glassDockLayoutLabel,
-                subtitle: switch (_draft.glassDockLayout) {
-                  GlassDockLayout.overlay =>
-                    l10n.glassDockLayoutOverlaySubtitle,
-                  GlassDockLayout.inset => l10n.glassDockLayoutInsetSubtitle,
-                },
-                items: {
-                  l10n.glassDockLayoutOverlay: GlassDockLayout.overlay,
-                  l10n.glassDockLayoutInset: GlassDockLayout.inset,
-                },
-                value: _draft.glassDockLayout,
-                onChanged: (value) {
-                  _updateDraft(_draft.copyWith(glassDockLayout: value));
-                },
-              ),
-            if (_draft.homeNavigationForm == HomeNavigationForm.glassDock &&
-                _draft.glassDockLayout == GlassDockLayout.inset)
-              HyperosSliderTile(
-                title: l10n.glassDockInsetClearanceLabel,
-                value: _draft.glassDockInsetClearance,
-                min: glassDockInsetClearanceMin,
-                max: glassDockInsetClearanceMax,
-                divisions:
-                    (glassDockInsetClearanceMax - glassDockInsetClearanceMin)
-                        .round(),
-                valueLabel:
-                    '${_draft.glassDockInsetClearance.toStringAsFixed(0)}px',
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(glassDockInsetClearance: value),
-                    debounce: true,
-                  );
-                },
-              ),
+
             if (_draft.homeNavigationForm == HomeNavigationForm.glassDock) ...[
               // 底栏入口开关：日课表 / 周课表 / 设置三个模块 Tab 可分别隐藏，
               // 至少保留一个（关到最后一个时该开关锁定）。隐藏周课表 Tab

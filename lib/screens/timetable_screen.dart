@@ -761,7 +761,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   // 卡片色差明显的「生壁纸」空带；周课表网格不可滚动，
                   // 避让仍由这里的布局 padding 承担。
                   bottom: glassDockForm && !_isDayView
-                      ? _glassDockContentBottomInset(settings)
+                      ? 0.0
                       : 0,
                 ),
                 child: Material(
@@ -3044,10 +3044,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 玻璃坞满屏悬浮下自适应节高会把网格铺到药丸后面，而自适应网格
     // 没有纵向滚动可救：把底部药丸占用（含底部安全区）从可用高度里
     // 扣掉，让网格收在药丸上方、课表下方留一条空白，课程不被遮挡。
-    final dockAutofitRelief =
-        settings.glassDockLayout == GlassDockLayout.overlay
-        ? _glassDockContentScrollInset(settings)
-        : 0.0;
+    final dockAutofitRelief = _glassDockContentScrollInset(settings);
     final bodyAvailableHeight =
         (availableHeight -
             _weekDayHeaderHeight -
@@ -3131,14 +3128,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required Widget grid,
   }) {
-    // 玻璃坞满屏悬浮（overlay）下网格视口不避让，最后几节会停在药丸
-    // 后面；给纵向滚动补一段底部余量，用户可以把网格滑上来查看被遮的
-    // 课程（课表下方随之留出一条空白）。inset 布局的避让已由外层布局
-    // padding 承担，这里不再叠加。
-    final weekGridScrollRelief =
-        settings.glassDockLayout == GlassDockLayout.overlay
-        ? _glassDockContentScrollInset(settings)
-        : 0.0;
+    // 网格视口不避让，最后几节会停在药丸后面；给纵向滚动补一段底部余
+    // 量，用户可以把网格滑上来查看被遮的课程（课表下方随之留出空白）。
+    final weekGridScrollRelief = _glassDockContentScrollInset(settings);
     final weekGrid = settings.timetableAutoFitSectionHeight
         ? grid
         : SingleChildScrollView(
@@ -6520,47 +6512,21 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _canReturnToCurrentWeek(settings, visibleWeek);
   }
 
-  /// 玻璃坞形态下「课表内容」底部避让：
-  /// - [GlassDockLayout.overlay]：0 —— 课表真·满屏，网格延伸到屏幕底、
-  ///   从悬浮药丸后面穿过（底栏以玻璃材质浮在课表之上）；
-  /// - [GlassDockLayout.inset]：内容底部预留用户设定的
-  ///   [TimetableSettings.glassDockInsetClearance] + 底部安全区，
-  ///   最后一行课程不被药丸遮挡。
-  double _glassDockContentBottomInset(TimetableSettings settings) {
-    if (settings.glassDockLayout == GlassDockLayout.overlay) {
-      return 0;
-    }
-    return settings.glassDockInsetClearance +
-        MediaQuery.viewPaddingOf(context).bottom;
-  }
-
-  /// 玻璃坞形态下「可滚动课表内容」的底部滚动余量（日课表列表、
-  /// 满屏悬浮下的周课表纵向滚动）：视口保持原样，余量只加长可滚动
-  /// 区间——静止时内容照常铺满，下滑到底后最后一项停在浮动药丸上方，
-  /// 被药丸遮住的课程可以滑出来看。
-  ///
-  /// - [GlassDockLayout.inset]：沿用用户设定的
-  ///   [TimetableSettings.glassDockInsetClearance] + 底部安全区；
-  /// - [GlassDockLayout.overlay]：没有布局避让，按药丸固定占用
-  ///   （[_glassDockPillOccupancy]）+ 底部安全区兜底，保证内容始终
-  ///   能整体滑出药丸带。
+  /// 玻璃坞形态下「可滚动课表内容」的底部滚动余量（日课表列表、周课
+  /// 表纵向滚动）：视口保持原样，余量只加长可滚动区间——静止时内容
+  /// 照常铺满，下滑到底后最后一项停在浮动药丸上方，被药丸遮住的课程
+  /// 可以滑出来看。按药丸固定占用 + 底部安全区兜底。
   double _glassDockContentScrollInset(TimetableSettings settings) {
     if (settings.homeNavigationForm != HomeNavigationForm.glassDock) {
       return 0;
     }
-    final double base =
-        settings.glassDockLayout == GlassDockLayout.overlay
-        ? _glassDockPillOccupancy
-        : settings.glassDockInsetClearance;
-    return math.max(base, _glassDockPillOccupancy) +
-        MediaQuery.viewPaddingOf(context).bottom;
+    return _glassDockPillOccupancy + MediaQuery.viewPaddingOf(context).bottom;
   }
 
-  /// 玻璃坞形态下「设置页」的滚动底部避让：列表视口保持全屏，
-  /// 避让以滚动 padding 实现，最后一项可滚到药丸上方。
+  /// 玻璃坞形态下「设置页」的滚动底部避让：列表视口保持全屏，避让以
+  /// 滚动 padding 实现，最后一项可滚到药丸上方。与内容余量同源。
   double _glassDockSettingsBottomInset(TimetableSettings settings) {
-    return settings.glassDockInsetClearance +
-        MediaQuery.viewPaddingOf(context).bottom;
+    return _glassDockContentScrollInset(settings);
   }
 
   /// 玻璃坞形态：把底部液态玻璃药丸导航叠加到页面之上。
@@ -7129,10 +7095,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       dockBackButtonBottom = 24;
     } else {
       dockBackButtonBottom =
-          math.max(
-            _glassDockContentBottomInset(provider.settings) + 24,
-            _glassDockPillOccupancy + 12,
-          ) +
+          math.max(24, _glassDockPillOccupancy + 12) +
           MediaQuery.viewPaddingOf(context).bottom;
     }
     return SafeArea(

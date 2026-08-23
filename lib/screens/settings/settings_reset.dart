@@ -87,11 +87,8 @@ TimetableSettings applySettingsReset(
     SettingsResetScope.appearance => current.copyWith(
       appThemeMode: d.appThemeMode,
       appFontMode: d.appFontMode,
-      // 首页导航形态 / 玻璃坞布局 / 玻璃坞避让都是本页暴露的字段，
-      // 且避让高度是滑块——按 IA 规范 §5 必须有恢复路径。
+      // 首页导航形态是本页暴露的字段——按 IA 规范 §5 必须有恢复路径。
       homeNavigationForm: d.homeNavigationForm,
-      glassDockLayout: d.glassDockLayout,
-      glassDockInsetClearance: d.glassDockInsetClearance,
       glassDockShowDayTab: d.glassDockShowDayTab,
       glassDockShowSettingsTab: d.glassDockShowSettingsTab,
       glassDockShowWeekTab: d.glassDockShowWeekTab,

@@ -352,38 +352,6 @@ extension HomeNavigationFormX on HomeNavigationForm {
   }
 }
 
-/// 玻璃坞形态下的内容布局：
-/// - [GlassDockLayout.overlay]：课表满屏显示并从药丸下方穿过，
-///   底栏药丸以玻璃材质浮在课表之上；
-/// - [GlassDockLayout.inset]：内容底部避让出
-///   [TimetableSettings.glassDockInsetClearance] 的空间。
-enum GlassDockLayout { overlay, inset }
-
-/// 内容避让（[GlassDockLayout.inset]）高度可调下限（逻辑像素）：
-/// 玻璃坞药丸占用高度（药丸 56 + 底部安全 6），避让模式下内容永不
-/// 藏到药丸后面。
-const double glassDockInsetClearanceMin = 62;
-
-/// 内容避让高度可调上限（逻辑像素）：给大间距偏好留足空间。
-const double glassDockInsetClearanceMax = 140;
-
-/// 内容避让高度默认值 = 可调下限（药丸占用高度）：默认最紧凑避让，
-/// 用户可用滑动条调大。
-const double glassDockInsetClearanceDefault = glassDockInsetClearanceMin;
-
-extension GlassDockLayoutX on GlassDockLayout {
-  String get value => switch (this) {
-    GlassDockLayout.overlay => 'overlay',
-    GlassDockLayout.inset => 'inset',
-  };
-
-  static GlassDockLayout fromValue(String? value) {
-    return GlassDockLayout.values.firstWhere(
-      (item) => item.value == value,
-      orElse: () => GlassDockLayout.inset,
-    );
-  }
-}
 
 extension BackToCurrentWeekButtonStyleX on BackToCurrentWeekButtonStyle {
   String get value => switch (this) {
@@ -1200,13 +1168,6 @@ class TimetableSettings {
   /// 八宫格菜单的按钮排列（动作 id，见 [HomeGridMenu]）。
   /// 空表表示使用 [HomeGridMenu.defaultActions] 的默认排列。
   final List<String> homeGridMenuActions;
-  final GlassDockLayout glassDockLayout;
-
-  /// 内容避让（[GlassDockLayout.inset]）模式下内容底部到屏幕底的预留
-  /// 高度（逻辑像素），范围 [glassDockInsetClearanceMin]..
-  /// [glassDockInsetClearanceMax]；满屏悬浮模式不使用。
-  final double glassDockInsetClearance;
-
   /// 玻璃坞入口开关：日课表 Tab 是否显示。
   /// 至少保留一个模块 Tab 由 UI 层约束（设置页在关闭最后一个时锁定）。
   final bool glassDockShowDayTab;
@@ -1408,8 +1369,6 @@ class TimetableSettings {
     this.homeNavigationForm = HomeNavigationForm.classic,
     this.homeMenuStyle = HomeMenuStyle.list,
     this.homeGridMenuActions = const <String>[],
-    this.glassDockLayout = GlassDockLayout.inset,
-    this.glassDockInsetClearance = glassDockInsetClearanceDefault,
     this.glassDockShowDayTab = true,
     this.glassDockShowSettingsTab = true,
     this.glassDockShowWeekTab = true,
@@ -1730,8 +1689,6 @@ class TimetableSettings {
       'homeNavigationForm': homeNavigationForm.value,
       'homeMenuStyle': homeMenuStyle.value,
       'homeGridMenuActions': homeGridMenuActions,
-      'glassDockLayout': glassDockLayout.value,
-      'glassDockInsetClearance': glassDockInsetClearance,
       'glassDockShowDayTab': glassDockShowDayTab,
       'glassDockShowSettingsTab': glassDockShowSettingsTab,
       'glassDockShowWeekTab': glassDockShowWeekTab,
@@ -1993,16 +1950,7 @@ class TimetableSettings {
       homeGridMenuActions: HomeGridMenu.normalize(
         json['homeGridMenuActions'] as List<Object?>?,
       ),
-      glassDockLayout: GlassDockLayoutX.fromValue(
-        json['glassDockLayout'] as String?,
-      ),
-      glassDockInsetClearance:
-          ((json['glassDockInsetClearance'] as num?)?.toDouble() ??
-                  glassDockInsetClearanceDefault)
-              .clamp(
-                glassDockInsetClearanceMin,
-                glassDockInsetClearanceMax,
-              ),
+
       glassDockShowDayTab: json['glassDockShowDayTab'] as bool? ?? true,
       glassDockShowSettingsTab:
           json['glassDockShowSettingsTab'] as bool? ?? true,
@@ -2367,8 +2315,6 @@ class TimetableSettings {
     HomeNavigationForm? homeNavigationForm,
     HomeMenuStyle? homeMenuStyle,
     List<String>? homeGridMenuActions,
-    GlassDockLayout? glassDockLayout,
-    double? glassDockInsetClearance,
     bool? glassDockShowDayTab,
     bool? glassDockShowSettingsTab,
     bool? glassDockShowWeekTab,
@@ -2563,9 +2509,6 @@ class TimetableSettings {
           homeGridMenuActions == null
               ? this.homeGridMenuActions
               : HomeGridMenu.normalize(homeGridMenuActions),
-      glassDockLayout: glassDockLayout ?? this.glassDockLayout,
-      glassDockInsetClearance:
-          glassDockInsetClearance ?? this.glassDockInsetClearance,
       glassDockShowDayTab: glassDockShowDayTab ?? this.glassDockShowDayTab,
       glassDockShowSettingsTab:
           glassDockShowSettingsTab ?? this.glassDockShowSettingsTab,

@@ -163,18 +163,13 @@ void main() {
   /// 泵起玻璃坞应用并返回其 provider（供测试读取 currentWeek 等）。
   Future<TimetableProvider> pumpDockApp(
     WidgetTester tester,
-    HomeNavigationForm form,
-    GlassDockLayout layout, {
-    double? insetClearance,
+    HomeNavigationForm form, {
     bool autoFitSectionHeight = false,
   }) async {
     final provider = TimetableProvider(autoInitialize: false);
     await provider.updateTimetableSettings(
       provider.settings.copyWith(
         homeNavigationForm: form,
-        glassDockLayout: layout,
-        glassDockInsetClearance:
-            insetClearance ?? glassDockInsetClearanceDefault,
         timetableAutoFitSectionHeight: autoFitSectionHeight,
       ),
     );
@@ -210,10 +205,8 @@ void main() {
   Future<double> pumpDockAndWeekPagerBottom(
     WidgetTester tester,
     HomeNavigationForm form,
-    GlassDockLayout layout, {
-    double? insetClearance,
-  }) async {
-    await pumpDockApp(tester, form, layout, insetClearance: insetClearance);
+  ) async {
+    await pumpDockApp(tester, form);
     return tester.getBottomRight(find.byType(PageView).first).dy;
   }
 
@@ -225,7 +218,6 @@ void main() {
     final pagerBottom = await pumpDockAndWeekPagerBottom(
       tester,
       HomeNavigationForm.glassDock,
-      GlassDockLayout.overlay,
     );
     final screenHeight =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
@@ -239,97 +231,6 @@ void main() {
         reason: '满屏悬浮模式下课表应延伸到屏幕底部');
   });
 
-  testWidgets('glass dock inset layout: content reserves pill clearance',
-      (tester) async {
-    final pagerBottom = await pumpDockAndWeekPagerBottom(
-      tester,
-      HomeNavigationForm.glassDock,
-      GlassDockLayout.inset,
-    );
-    final screenHeight =
-        tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    // 内容避让：课表底部预留默认避让高度（62，即可调下限=药丸占用），
-    // 最后一行不被遮挡。
-    const noWallpaperInnerPadding = 8.0;
-    expect(pagerBottom,
-        closeTo(
-          screenHeight -
-              glassDockInsetClearanceDefault -
-              noWallpaperInnerPadding,
-          0.5,
-        ),
-        reason: '内容避让模式课表底部应预留玻璃坞空间');
-  });
-
-  testWidgets(
-      'glass dock inset layout: custom clearance height is respected',
-      (tester) async {
-    const customClearance = 100.0;
-    final pagerBottom = await pumpDockAndWeekPagerBottom(
-      tester,
-      HomeNavigationForm.glassDock,
-      GlassDockLayout.inset,
-      insetClearance: customClearance,
-    );
-    final screenHeight =
-        tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    // 用户自定义避让高度（滑动条）应直接决定内容底边位置。
-    const noWallpaperInnerPadding = 8.0;
-    expect(pagerBottom,
-        closeTo(screenHeight - customClearance - noWallpaperInnerPadding, 0.5),
-        reason: '内容避让模式应使用用户设定的避让高度');
-  });
-
-  testWidgets('glass dock inset day view: panel reaches screen bottom',
-      (tester) async {
-    await pumpDockAndWeekPagerBottom(
-      tester,
-      HomeNavigationForm.glassDock,
-      GlassDockLayout.inset,
-    );
-    // 切到日课表：列表视口应全屏（不再被外层布局 padding 在避让边界
-    // 硬裁），避让改由列表滚动 padding 承担——否则滚动时卡片在边界被
-    // 裁断，裁切线下的生壁纸空带与上方磨砂卡片区色差明显。
-    await tester.tap(find.text('日课表').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(tester.takeException(), isNull, reason: '切日视图不应有异常');
-
-    final screenHeight =
-        tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    // 测试环境无壁纸：课表面板外还有 8px 的无壁纸底部内边距。
-    const noWallpaperInnerPadding = 8.0;
-    final panelRect = tester.getRect(
-      find.byKey(const ValueKey('timetable-day-view-panel')),
-    );
-    expect(
-      panelRect.bottom,
-      closeTo(screenHeight - noWallpaperInnerPadding, 0.5),
-      reason: '日课表面板视口应延伸到屏幕底部（不再被避让 padding 压缩）',
-    );
-
-    // 避让量转移到滚动/内容 padding 上（默认避让高度 + 原有 8px 底距；
-    // 测试环境底部安全区为 0）。
-    final columnPads = tester
-        .widgetList<Padding>(
-          find.descendant(
-            of: find.byKey(const ValueKey('timetable-day-view-panel')),
-            matching: find.byType(Padding),
-          ),
-        )
-        .toList(growable: false);
-    final expectedBottom =
-        noWallpaperInnerPadding + glassDockInsetClearanceDefault;
-    expect(
-      columnPads.any(
-        (p) =>
-            (p.padding is EdgeInsets) &&
-            ((p.padding as EdgeInsets).bottom - expectedBottom).abs() < 0.5,
-      ),
-      isTrue,
-      reason: '日课表列/空态的底部 padding 应包含玻璃坞避让量',
-    );
-  });
 
   testWidgets(
       'glass dock overlay day view: list keeps scroll relief above pill',
@@ -337,7 +238,6 @@ void main() {
     await pumpDockAndWeekPagerBottom(
       tester,
       HomeNavigationForm.glassDock,
-      GlassDockLayout.overlay,
     );
     await tester.tap(find.text('日课表').first);
     await tester.pump();
@@ -385,7 +285,6 @@ void main() {
     await pumpDockAndWeekPagerBottom(
       tester,
       HomeNavigationForm.glassDock,
-      GlassDockLayout.overlay,
     );
     // 默认非自适应：周网格在纵向 SingleChildScrollView 里滚动。
     final scrollFinder = find.byKey(
@@ -407,7 +306,6 @@ void main() {
     await pumpDockApp(
       tester,
       HomeNavigationForm.glassDock,
-      GlassDockLayout.overlay,
       autoFitSectionHeight: true,
     );
     // 自适应网格没有纵向滚动可救：节高计算必须扣掉药丸占用，
