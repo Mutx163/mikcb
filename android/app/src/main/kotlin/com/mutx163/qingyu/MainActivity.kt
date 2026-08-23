@@ -83,7 +83,6 @@ class MainActivity : FlutterActivity() {
         private const val FROSTED_BLUR_CHANNEL = "com.mutx163.qingyu/frosted_blur"
         private const val LAUNCH_URL_CHANNEL = "com.mutx163.qingyu/launch_url"
         private const val HAPTIC_CHANNEL = "com.mutx163.qingyu/haptic"
-        private const val SYSTEM_ALARM_CHANNEL = "com.mutx163.qingyu/system_alarm"
 
         /** Schemes allowed for the `launch_url` channel (feedback deep links). */
         private val ALLOWED_LAUNCH_SCHEMES = setOf(
@@ -306,67 +305,6 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
-        // ── 早八闹钟：调用系统时钟（公开 AlarmClock 契约，只写不读不删） ──
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_ALARM_CHANNEL)
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "setAlarm" -> {
-                        // 参数读取也必须位于 try 内：MethodCall.argument 是
-                        // unchecked cast，Dart 侧类型不符会抛 ClassCastException，
-                        // 若冲出 handler 会按主线程未捕获异常处理导致进程崩溃。
-                        try {
-                            val hour = call.argument<Int>("hour")
-                            val minute = call.argument<Int>("minute")
-                            if (hour == null || minute == null ||
-                                hour !in 0..23 || minute !in 0..59
-                            ) {
-                                result.error(
-                                    "INVALID_ARGUMENTS",
-                                    "hour/minute missing or out of range",
-                                    null,
-                                )
-                                return@setMethodCallHandler
-                            }
-                            val label = call.argument<String>("label") ?: ""
-                            val skipUi = call.argument<Boolean>("skipUi") ?: false
-                            @Suppress("UNCHECKED_CAST")
-                            val days = call.argument<List<Int>>("days")
-                            val outcome = SystemAlarmHelper.fireSetAlarm(
-                                this,
-                                hour,
-                                minute,
-                                label,
-                                skipUi,
-                                days,
-                            )
-                            result.success(
-                                mapOf(
-                                    "launched" to outcome.launched,
-                                    "skipUi" to outcome.skipUiRequested,
-                                ),
-                            )
-                        } catch (e: ClassCastException) {
-                            result.error(
-                                "INVALID_ARGUMENTS",
-                                "malformed argument type: ${e.message}",
-                                null,
-                            )
-                        } catch (e: Exception) {
-                            Log.e("MainActivity", "system_alarm: setAlarm failed", e)
-                            result.error("SET_ALARM_FAILED", e.message, null)
-                        }
-                    }
-                    "showAlarms" -> {
-                        try {
-                            result.success(SystemAlarmHelper.fireShowAlarms(this))
-                        } catch (e: Exception) {
-                            Log.e("MainActivity", "system_alarm: showAlarms failed", e)
-                            result.error("SHOW_ALARMS_FAILED", e.message, null)
-                        }
-                    }
-                    else -> result.notImplemented()
-                }
-            }
 
         // ── Feedback: direct Intent launch (bypasses url_launcher on MIUI) ──
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LAUNCH_URL_CHANNEL)

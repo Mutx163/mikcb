@@ -5957,38 +5957,13 @@
   "homeMenuCategoryData": "데이터 및 동기화",
   "homeMenuCategoryPreferences": "환경설정",
   "homeMenuCategoryAbout": "정보 및 지원",
-  "classAlarmEntryTitle": "수업 알람",
-  "classAlarmGroupSetup": "알람 추가",
-  "classAlarmGroupBehavior": "동작 설정",
-  "classAlarmAddAllTitle": "수업 알람 일괄 추가",
-  "classAlarmRangeNext4Weeks": "앞으로 4주",
-  "classAlarmRangeNext8Weeks": "앞으로 8주",
-  "classAlarmRangeLabel": "범위",
-  "classAlarmRangeRemaining": "이번 주부터 학기 끝까지",
-  "classAlarmRangeWhole": "학기 전체",
-  "classAlarmLeadTitle": "시간 여유",
   "classAlarmLeadMinutesLabel": "{minutes}분 전",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
       "minutes": { "type": "int" }
     }
   },
-  "classAlarmSkipUiTitle": "확인 화면 건너뛰기",
-  "classAlarmSkipUiSubtitle": "바로 쓰기를 시도합니다(일부 기기는 표시됨)",
-  "classAlarmOpenClock": "시계 앱 열기",
-  "classAlarmConfirmTitle": "반복 알람을 만들까요?",
-  "classAlarmConfirmMessage": "시계 앱에 생성합니다: {detail}. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.",
-  "classAlarmVariableSuffix": "또한 {days}의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": { "type": "String" }
-    }
-  },
-  "classAlarmNoSchemeToast": "먼저 설정에서 시간표 템플릿을 선택하세요",
   "classAlarmInvalidTimeToast": "이 수업의 교시가 시간표 템플릿 범위를 벗어나 알람을 설정할 수 없습니다",
-  "classAlarmNoDataToast": "선택한 범위에서 시간표를 찾을 수 없습니다",
-  "classAlarmAddedToast": "시계 앱으로 전달했습니다",
-  "classAlarmLaunchFailedToast": "처리할 시계 앱을 찾을 수 없습니다",
   "classAlarmSheetTitle": "수업 알림",
   "classAlarmQuickOption": "수업 {minutes}분 전에 알림",
   "classAlarmCustomOption": "직접 시간 지정…",
@@ -5998,23 +5973,4 @@
   "classAlarmPastToast": "선택한 시간이 이미 지났습니다. 다른 시간을 고르세요",
   "classAlarmNoSemesterToast": "설정에서 학기 시작일을 먼저 입력하세요",
   "classAlarmActionLabel": "이 수업 알람 설정",
-  "classAlarmCourseConfirmTitle": "이 수업의 반복 알람을 추가할까요?",
-  "classAlarmCourseConfirmMessage": "시계 앱에 매주 {weekday} {time} 반복 알람을 만듭니다(수업 시작 {lead}분 전에 울리며 수업 주차는 {weeks}). 방학과 쉬는 주에도 울리며 삭제는 시계 앱에서 해야 합니다.",
-  "@classAlarmCourseConfirmMessage": {
-    "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" },
-      "lead": { "type": "int" },
-      "weeks": { "type": "String" }
-    }
-  },
-  "classAlarmPartialAddedToast": "{done}/{total}개의 알람을 시계 앱으로 전달했습니다. 나머지는 실패했습니다",
-  "@classAlarmPartialAddedToast": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  },
-  "classAlarmDaySeparator": ", ",
-  "classAlarmDetailSeparator": "; "
 }

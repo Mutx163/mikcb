@@ -5960,43 +5960,13 @@
   "homeMenuCategoryData": "Data & sync",
   "homeMenuCategoryPreferences": "Preferences",
   "homeMenuCategoryAbout": "About & support",
-  "classAlarmEntryTitle": "Class alarms",
-  "classAlarmGroupSetup": "Add alarms",
-  "classAlarmGroupBehavior": "Ring behavior",
-  "classAlarmAddAllTitle": "Batch add class alarms",
-  "classAlarmRangeNext4Weeks": "Next 4 weeks",
-  "classAlarmRangeNext8Weeks": "Next 8 weeks",
-  "classAlarmRangeLabel": "Range",
-  "classAlarmRangeRemaining": "This week to semester end",
-  "classAlarmRangeWhole": "Whole semester",
-  "classAlarmLeadTitle": "Lead time",
   "classAlarmLeadMinutesLabel": "{minutes} min ahead",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
       "minutes": { "type": "int" }
     }
   },
-  "classAlarmSkipUiTitle": "Skip confirmation page",
-  "classAlarmSkipUiSubtitle": "Try writing the alarm directly; some devices still show it",
-  "classAlarmOpenClock": "Open system clock",
-  "classAlarmConfirmTitle": "Create repeating alarms?",
-  "classAlarmConfirmMessage": "The system clock will create: {detail}. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.",
-  "@classAlarmConfirmMessage": {
-    "placeholders": {
-      "detail": { "type": "String" }
-    }
-  },
-  "classAlarmVariableSuffix": "Also, first-class times on {days} differ between weeks; no alarm covers these days.",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": { "type": "String" }
-    }
-  },
-  "classAlarmNoSchemeToast": "Select a time scheme in settings first",
   "classAlarmInvalidTimeToast": "This class's period is outside the time scheme; cannot set an alarm",
-  "classAlarmNoDataToast": "No timetable found in the selected range",
-  "classAlarmAddedToast": "Handed to the system clock",
-  "classAlarmLaunchFailedToast": "No clock app found to handle this",
   "classAlarmSheetTitle": "Class reminder",
   "classAlarmQuickOption": "Remind me {minutes} min before class",
   "classAlarmCustomOption": "Pick a custom time…",
@@ -6006,23 +5976,4 @@
   "classAlarmPastToast": "That time has already passed, pick another one",
   "classAlarmNoSemesterToast": "Set the semester start date in Settings first",
   "classAlarmActionLabel": "Set alarm for this class",
-  "classAlarmCourseConfirmTitle": "Add a repeating alarm for this class?",
-  "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, ringing {lead} minutes before this class starts (active weeks: {weeks}). It keeps ringing during holidays and off-weeks; delete it in the system clock.",
-  "@classAlarmCourseConfirmMessage": {
-    "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" },
-      "lead": { "type": "int" },
-      "weeks": { "type": "String" }
-    }
-  },
-  "classAlarmPartialAddedToast": "Sent {done}/{total} alarms to the system clock; the rest failed",
-  "@classAlarmPartialAddedToast": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  },
-  "classAlarmDaySeparator": ", ",
-  "classAlarmDetailSeparator": "; "
 }

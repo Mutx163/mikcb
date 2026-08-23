@@ -19,8 +19,6 @@ import '../providers/timetable_provider.dart';
 import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
-import '../services/class_alarm_service.dart';
-import '../widgets/app_dialogs.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
@@ -67,7 +65,6 @@ part 'settings/settings_diagnostics.dart';
 part 'settings/settings_course_card.dart';
 part 'settings/settings_general.dart';
 part 'settings/settings_live.dart';
-part 'settings/settings_class_alarm.dart';
 part 'settings/settings_timetable_page.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
@@ -93,7 +90,6 @@ Widget? settingsSubpageById(String id) {
     'timetablePageSettings' => const _TimetablePageSettingsScreen(),
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const _LiveSettingsScreen(),
-    'classAlarmSettings' => const _ClassAlarmSettingsScreen(),
     'holidaySettings' => const _HolidaySettingsScreen(),
     'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
     'diagnosticsSettings' => const _DiagnosticsScreen(),
@@ -143,14 +139,6 @@ class TimetableSettingsScreen extends StatelessWidget {
             context,
             settings: const RouteSettings(name: '/settings/live'),
             builder: (_) => const _LiveSettingsScreen(),
-          );
-        }
-
-        void openClassAlarmSettings() {
-          HyperosNavigation.push(
-            context,
-            settings: const RouteSettings(name: '/settings/class-alarm'),
-            builder: (_) => createClassAlarmSettingsScreen(),
           );
         }
 
@@ -329,7 +317,6 @@ class TimetableSettingsScreen extends StatelessWidget {
             openCourseCardSettings: openCourseCardSettings,
             openTimetablePageSettings: openTimetablePageSettings,
             openLiveSettings: openLiveSettings,
-            openClassAlarmSettings: openClassAlarmSettings,
             openHomeWidgetSettings: openHomeWidgetSettings,
             openAppearance: openAppearance,
             openGeneralSettings: openGeneralSettings,
@@ -383,7 +370,6 @@ class TimetableSettingsScreen extends StatelessWidget {
     required VoidCallback openCourseCardSettings,
     required VoidCallback openTimetablePageSettings,
     required VoidCallback openLiveSettings,
-    required VoidCallback openClassAlarmSettings,
     required VoidCallback openHomeWidgetSettings,
     required VoidCallback openAppearance,
     required VoidCallback openGeneralSettings,
@@ -522,17 +508,6 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosListGroup(
             children: [
               _LiveEntryTile(onTap: openLiveSettings),
-              // 上课闹钟依赖 Android AlarmClock 公开契约，其他平台没有
-              // 对应通道，入口直接隐藏而不是点了才报错。
-              if (!kIsWeb && Platform.isAndroid)
-                _MiuixSettingsPreference(
-                  startAction: _settingsIconBadge(
-                    MiuixIcons.extended.byName('alarm')!,
-                    HyperosIconColors.orange,
-                  ),
-                  title: l10n.classAlarmEntryTitle,
-                  onClick: openClassAlarmSettings,
-                ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('home')!,

@@ -242,11 +242,6 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.notifications_active_outlined,
   ),
   _settingsSubpageEntry(
-    id: 'classAlarmSettings',
-    title: (l10n) => l10n.classAlarmEntryTitle,
-    icon: Icons.alarm_rounded,
-  ),
-  _settingsSubpageEntry(
     id: 'holidaySettings',
     title: (l10n) => l10n.holidaySettingsTitle,
     icon: Icons.celebration_outlined,

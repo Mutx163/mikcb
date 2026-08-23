@@ -5957,43 +5957,13 @@
   "homeMenuCategoryData": "資料與同步",
   "homeMenuCategoryPreferences": "偏好設定",
   "homeMenuCategoryAbout": "關於與支援",
-  "classAlarmEntryTitle": "上課鬧鐘",
-  "classAlarmGroupSetup": "新增鬧鐘",
-  "classAlarmGroupBehavior": "響鈴行為",
-  "classAlarmAddAllTitle": "批次新增上課鬧鐘",
-  "classAlarmRangeNext4Weeks": "未來 4 週",
-  "classAlarmRangeNext8Weeks": "未來 8 週",
-  "classAlarmRangeLabel": "新增範圍",
-  "classAlarmRangeRemaining": "本週起至學期結束",
-  "classAlarmRangeWhole": "整學期",
-  "classAlarmLeadTitle": "提前量",
   "classAlarmLeadMinutesLabel": "提前 {minutes} 分鐘",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
       "minutes": { "type": "int" }
     }
   },
-  "classAlarmSkipUiTitle": "跳過確認頁",
-  "classAlarmSkipUiSubtitle": "嘗試直接寫入鬧鐘，不彈出時鐘確認頁（部分機型不支援）",
-  "classAlarmOpenClock": "開啟系統時鐘",
-  "classAlarmConfirmTitle": "建立重複鬧鐘？",
-  "classAlarmConfirmMessage": "將在系統時鐘建立：{detail}。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。",
-  "@classAlarmConfirmMessage": {
-    "placeholders": {
-      "detail": { "type": "String" }
-    }
-  },
-  "classAlarmVariableSuffix": "另外，{days}的第一節課時間在不同週不一致，這些天未建立鬧鐘。",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": { "type": "String" }
-    }
-  },
-  "classAlarmNoSchemeToast": "請先在設定中選擇時間模板",
   "classAlarmInvalidTimeToast": "這門課的節次超出時間模板，無法設定鬧鐘",
-  "classAlarmNoDataToast": "所選範圍內沒有找到課表",
-  "classAlarmAddedToast": "已交給系統時鐘處理",
-  "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
   "classAlarmSheetTitle": "上課提醒",
   "classAlarmQuickOption": "上課前 {minutes} 分鐘提醒",
   "classAlarmCustomOption": "自訂提醒時間…",
@@ -6003,23 +5973,4 @@
   "classAlarmPastToast": "所選時間已過，請換一個時間",
   "classAlarmNoSemesterToast": "請先在設定中填寫學期開始日期",
   "classAlarmActionLabel": "設這節課的鬧鐘",
-  "classAlarmCourseConfirmTitle": "新增這節課的重複鬧鐘？",
-  "classAlarmCourseConfirmMessage": "將在系統時鐘建立每週{weekday} {time} 的重複鬧鐘（比上課提前{lead}分鐘響鈴；上課週次：{weeks}）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。",
-  "@classAlarmCourseConfirmMessage": {
-    "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" },
-      "lead": { "type": "int" },
-      "weeks": { "type": "String" }
-    }
-  },
-  "classAlarmPartialAddedToast": "已寫入 {done}/{total} 條鬧鐘，其餘未能建立",
-  "@classAlarmPartialAddedToast": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  },
-  "classAlarmDaySeparator": "、",
-  "classAlarmDetailSeparator": "；"
 }
