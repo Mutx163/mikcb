@@ -6681,11 +6681,10 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 独立圆钮的官方 extraButton 配置。
   ///
-  /// 尺寸 = 药丸全高 56，与三枚 Tab 所在胶囊上下边缘平齐；材质/混合/
-  /// 高度全部由库内 extraButton 管线继承（同图层 blend，天然与药丸一
-  /// 致）。收起时 size 随 [_dockAddBtnCollapse] 渐缩到 0（库逐帧读取
-  /// 预留宽度，药丸平滑补位），图标同步线性淡出；barBorderRadius 已回
-  /// 官方默认，任意尺寸下形状都是 LiquidOval 正圆。
+  /// 收起动画的铁律：**size 恒定 56**。库逐帧按 size 预留布局宽度，一旦
+  /// 缩小药丸就会同步变宽——此前「左边卡片越缩越大」的丑态即源于此。
+  /// 视觉收起改为：按钮整体向左平移滑到药丸后方（同图层 blend 会真实
+  /// 融合）并线性渐隐；完全隐去后才把 extraButton 置 null 回收占位。
   GlassTabBarExtraButton? _buildGlassDockExtraButton(
     TimetableSettings settings,
     AppLocalizations l10n,
@@ -6694,17 +6693,21 @@ class _TimetableScreenState extends State<TimetableScreen>
     final collapse =
         settings.glassDockShowAddButton ? _dockAddBtnCollapse.value : 1.0;
     if (collapse >= 1) {
-      return null; // 完全收起后释放点击区域。
+      return null; // 完全隐去后一次性回收占位（此刻无可见跳变元素）。
     }
     return GlassTabBarExtraButton(
-      icon: Opacity(
-        opacity: 1 - collapse,
-        child: Icon(Icons.add_rounded),
+      icon: Transform.translate(
+        // 向药丸方向平移：同层玻璃重叠即融合，配合渐隐像沉入药丸后方。
+        offset: Offset(-40 * collapse, 0),
+        child: Opacity(
+          opacity: (1 - collapse).clamp(0.0, 1.0),
+          child: Icon(Icons.add_rounded),
+        ),
       ),
-      onTap: () => unawaited(_openDockExtraButton()),
+      onTap: collapse < 0.5 ? () => unawaited(_openDockExtraButton()) : () {},
       label: l10n.glassDockExtraButtonSemanticLabel,
       iconColor: iconColor,
-      size: 56 * (1 - collapse),
+      size: 56,
     );
   }
 
