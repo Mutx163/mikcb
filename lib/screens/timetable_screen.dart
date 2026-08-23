@@ -6585,6 +6585,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         !_dockSettingsDragging) {
       return; // 已在该页且无动画：重复点击无动作。
     }
+    // 通过守卫即视为一次真实切换：三个入口（含设置）统一在此给触觉
+    // 反馈，避免某条分支漏写导致「切设置不震」。重复点击已被上方拦截。
+    _maybeSelectionClick(settings);
     _dockAnimEpoch++;
     _dockTargetEntry = entry;
     _dockSettingsSwitchAnimation.stop();
@@ -6600,7 +6603,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           _startDayViewTransition(settings);
         }
       case _GlassDockEntry.week: // 周课表：关设置 + 收日视图，均闪现就位。
-        final leavingDay = _isDayView;
         setState(() {
           _dockSettingsActive = false;
           _dockSettingsSlideActive = false;
@@ -6613,9 +6615,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           _dayViewTransitionSourceDayOfWeek = null;
         });
         _dockSettingsSwitchAnimation.value = 0;
-        if (leavingDay) {
-          _maybeSelectionClick(settings);
-        }
         _persistViewState(
           context.read<TimetableProvider>(),
           mode: TimetableHomeViewMode.week,
@@ -6658,7 +6657,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       mode: TimetableHomeViewMode.day,
       dayOfWeek: dayOfWeek,
     );
-    _maybeSelectionClick(settings);
   }
 
   /// 设置页拖动转场动画完成收敛：凭代次确认仍是最新动画后复位转动态，
@@ -6725,6 +6723,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final width = MediaQuery.sizeOf(context).width;
     setState(() => _dockSettingsDragging = false);
     final epoch = ++_dockAnimEpoch;
+    // 拖拽松手完成一次页面切换（进设置或回课表），与点 Tab 同一套触觉
+    // 反馈；拖拽只可能从课表页发起，两支都是真实切换。
+    _maybeSelectionClick(context.read<TimetableProvider>().settings);
     if (value > 0.5 || velocity < -400) {
       // 过半或向左甩：留在设置页（弹簧带初始速度，更跟手）。
       _dockTargetEntry = _GlassDockEntry.settings;
