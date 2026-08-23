@@ -118,3 +118,29 @@ window.AndroidBridgePromise ||= window.shiguangBridgePromise;
 | sha256 重算遗漏导致新 App 校验失败拒载 | compat 测试强制「垫片 ⇔ sha256 一致」校验（B 层第 3 条） |
 | 上游彻底弃用 yaml 索引 | C 层哨兵检查提前告警；届时切 pb 解析（C 层中期项） |
 | 回滚 | 垫片纯附加、可逆；App 端别名无破坏性；yaml 主链路未动，回滚即移除对应步骤 |
+
+---
+
+## 七、实施记录（2026-08-23）
+
+### A 层 ✅ 已完成（mikcb commit ae06e41）
+- 新增 `lib/services/warehouse_bridge_compat.dart`：`kWarehouseBridgeCompatShim` 常量（v1↔v2 双向别名，幂等）；
+- `course_import_screen.dart` wrappedScript 在 v1 桥实现后插值垫片；
+- `test/services/warehouse_bridge_compat_test.dart` 3 例单测锁定行为。
+
+### B 层 ✅ 已完成并上线（qingyu_warehouse commits e31aa9c…5274d22，已推送 origin/main）
+- `apply_v2_bridge_shim`：检测到 v2 桥调用的脚本自动前置幂等垫片；落盘后、post 校验前统一应用；
+- 校验器方法白名单扩展到 `window.shiguangBridge*`，修复 v2 未实现方法漏判缺口；
+- 新增 `--refresh-existing`（默认关闭，定时任务行为不变）与 `--quarantine-blocking` 隔离机制（`--no-quarantine` 恢复整批中止旧行为）;
+- 过程中修复两个原有缺陷：预检暂存只写首个 asset_js_path（多适配器学校误报）、未兼容上游 asset_js_path 占位约定（幽灵脚本阻断）；
+- 已执行一次全量刷新：**150 个脚本带垫片更新为上游 v2 版本**，仅 HUAT 因调用轻屿未实现的 showConfirmDialog 被隔离（保持本地旧版脚本）；GLOBAL_TOOLS/test.js 等占位按警告跳过。远端 raw 抽验通过。
+- 单测 18/18 通过。
+
+> 注：adapters.yaml 与 pb 索引实际均无 sha256 字段，方案中最危险的"重算"环节在本仓库不存在，天然消除该风险。
+
+### C 层 ✅ 按计划维持现状
+继续使用 root_index.yaml + adapters.yaml；pb 解析留作后续可选增强。
+
+### 遗留事项
+- HUAT：待轻屿实现 showConfirmDialog（或确认映射到 showAlert）后重新纳入刷新；
+- 上游如新增桥接方法，校验器会以 unknown_bridge_method 阻断并隔离对应学校，届时在 App 端补实现即可。
