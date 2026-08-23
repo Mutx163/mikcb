@@ -128,6 +128,13 @@ class CourseSurface extends StatelessWidget {
     final preblur = blurEnabled
         ? PreblurredWallpaperScope.maybeOf(context)
         : null;
+    // 位图仍在后台构建时不回退实时 BackdropFilter：对尚未解码完成的空
+    // backdrop 做分组采样既触发首帧 shader 编译风暴，也会把空缓冲采成脏色。
+    // 先以纯 tint 过渡；位图就绪后 InheritedWidget 通知本卡片切到位图填充。
+    final preblurPending =
+        preblur == null &&
+        blurEnabled &&
+        PreblurredWallpaperScope.isWaitingForBitmap(context);
 
     return ClipRRect(
       borderRadius: radius,
@@ -139,7 +146,7 @@ class CourseSurface extends StatelessWidget {
             const Positioned.fill(
               child: RepaintBoundary(child: PreblurredWallpaperAlignedFill()),
             )
-          else if (blurEnabled)
+          else if (blurEnabled && !preblurPending)
             Positioned.fill(
               // Grouped: shares one backdrop capture with the sibling cards in
               // the surrounding BackdropGroup instead of capturing per card.
