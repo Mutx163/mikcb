@@ -9839,6 +9839,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockButtonFunctionLabel => '独立按钮功能';
 
   @override
+  String get glassDockButtonBackToWeekLabel => '回本周 / 今天';
+
+  @override
   String get glassDockShowAddButtonTitle => '显示添加按钮';
 
   @override
@@ -19904,6 +19907,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockButtonFunctionLabel => '獨立按鈕功能';
 
   @override
+  String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
+
+  @override
   String get glassDockShowAddButtonTitle => '顯示新增按鈕';
 
   @override
@@ -29967,6 +29973,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockButtonFunctionLabel => '獨立按鈕功能';
+
+  @override
+  String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
   String get glassDockShowAddButtonTitle => '顯示新增按鈕';

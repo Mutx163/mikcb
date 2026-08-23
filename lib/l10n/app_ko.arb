@@ -5947,6 +5947,7 @@
   "glassDockShowSettingsTabTitle": "설정 탭 표시",
   "glassDockShowWeekTabTitle": "주간 탭 표시",
   "glassDockButtonFunctionLabel": "독립 버튼 기능",
+  "glassDockButtonBackToWeekLabel": "이번 주로 / 오늘",
   "glassDockShowAddButtonTitle": "추가 버튼 표시",
   "glassDockShowAddButtonSubtitle": "내비게이션 바 옆에 독립된 원형 버튼을 표시하여 탭하면 바로 수업 추가",
     "glassDockExtraButtonSemanticLabel": "수업 추가",

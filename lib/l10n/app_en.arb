@@ -5950,6 +5950,7 @@
   "glassDockShowSettingsTabTitle": "Show settings entry",
   "glassDockShowWeekTabTitle": "Show week view entry",
   "glassDockButtonFunctionLabel": "Standalone button action",
+  "glassDockButtonBackToWeekLabel": "Back to this week / today",
   "glassDockShowAddButtonTitle": "Show add button",
   "glassDockShowAddButtonSubtitle": "Show a separate round button next to the bar that opens add-course directly",
     "glassDockExtraButtonSemanticLabel": "Add course",

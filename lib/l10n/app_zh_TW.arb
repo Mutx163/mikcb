@@ -5947,6 +5947,7 @@
   "glassDockShowSettingsTabTitle": "顯示設定入口",
   "glassDockShowWeekTabTitle": "顯示週課表入口",
   "glassDockButtonFunctionLabel": "獨立按鈕功能",
+  "glassDockButtonBackToWeekLabel": "回本週 / 今天",
   "glassDockShowAddButtonTitle": "顯示新增按鈕",
   "glassDockShowAddButtonSubtitle": "在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程",
     "glassDockExtraButtonSemanticLabel": "新增課程",

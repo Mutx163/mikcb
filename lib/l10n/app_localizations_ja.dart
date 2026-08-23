@@ -10114,6 +10114,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockButtonFunctionLabel => '独立ボタンの機能';
 
   @override
+  String get glassDockButtonBackToWeekLabel => '今週へ戻る / 今日';
+
+  @override
   String get glassDockShowAddButtonTitle => '追加ボタンを表示';
 
   @override

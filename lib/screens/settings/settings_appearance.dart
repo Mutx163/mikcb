@@ -574,6 +574,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
 Map<String, String> _dockExtraButtonOptions(AppLocalizations l10n) {
   final options = <String, String>{
     l10n.homeMenuAddCourseTitle: 'addCourse',
+    // 随视图语义：周视图回本周、日视图把日页滑到今天。
+    l10n.glassDockButtonBackToWeekLabel: 'backToWeek',
   };
   for (final entry in kHomeMenuCatalog) {
     if (!entry.visible()) {

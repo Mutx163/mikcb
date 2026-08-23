@@ -10409,6 +10409,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockButtonFunctionLabel => 'Standalone button action';
 
   @override
+  String get glassDockButtonBackToWeekLabel => 'Back to this week / today';
+
+  @override
   String get glassDockShowAddButtonTitle => 'Show add button';
 
   @override

@@ -5947,6 +5947,7 @@
   "glassDockShowSettingsTabTitle": "設定タブを表示",
   "glassDockShowWeekTabTitle": "週表示タブを表示",
   "glassDockButtonFunctionLabel": "独立ボタンの機能",
+  "glassDockButtonBackToWeekLabel": "今週へ戻る / 今日",
   "glassDockShowAddButtonTitle": "追加ボタンを表示",
   "glassDockShowAddButtonSubtitle": "ナビバーの横に独立した丸ボタンを表示し、タップで直接授業を追加",
     "glassDockExtraButtonSemanticLabel": "授業を追加",

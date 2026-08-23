@@ -10160,6 +10160,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockButtonFunctionLabel => '독립 버튼 기능';
 
   @override
+  String get glassDockButtonBackToWeekLabel => '이번 주로 / 오늘';
+
+  @override
   String get glassDockShowAddButtonTitle => '추가 버튼 표시';
 
   @override

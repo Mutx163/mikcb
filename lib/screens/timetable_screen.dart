@@ -6487,6 +6487,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (_isDayView) {
       return false;
     }
+    // 玻璃坞独立按钮已设为「回本周」时由它接管，顶部浮动按钮不再重复。
+    if (settings.homeNavigationForm == HomeNavigationForm.glassDock &&
+        settings.glassDockShowAddButton &&
+        settings.glassDockButtonEntryId == 'backToWeek') {
+      return false;
+    }
     if (settings.timetableBackToCurrentWeekButtonStyle !=
         BackToCurrentWeekButtonStyle.floating) {
       return false;
@@ -6602,7 +6608,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         !LiquidGlassDegradation.shouldDegrade(context);
     // 动态入口列表：日/周/设置三个模块 Tab 均可在设置中隐藏（至少留一）。
     final dockTabs = _glassDockTabs(settings, l10n);
-    return GlassTabBar.bottom(
+    // extraButton 的 size/可见性随收起动画逐帧变化，必须监听控制器重建，
+    // 否则动画期间没有 setState、按钮停留在切换前的旧帧（收起失效根因）。
+    return AnimatedBuilder(
+      animation: _dockAddBtnCollapse,
+      builder: (context, _) {
+        return GlassTabBar.bottom(
       tabs: [
         for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
       ],
@@ -6663,6 +6674,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       unselectedIconColor: unselectedColor,
       selectedLabelColor: selectedColor,
       unselectedLabelColor: unselectedColor,
+        );
+      },
     );
   }
 
@@ -6702,6 +6715,33 @@ class _TimetableScreenState extends State<TimetableScreen>
     final id = settings.glassDockButtonEntryId;
     if (id == 'addCourse' || id.isEmpty) {
       await _showAddCourseSheet();
+      return;
+    }
+    if (id == 'backToWeek') {
+      // 周视图：回当前周；日视图：把日页滑到「今天」所在页。
+      if (_isDayView) {
+        final currentWeek = _resolveCurrentSemesterWeek(settings);
+        if (currentWeek == null) {
+          await _showAddCourseSheet();
+          return;
+        }
+        final visibleDays = _visibleDayNumbers(settings);
+        var dayOfWeek = DateTime.now().weekday;
+        if (!visibleDays.contains(dayOfWeek)) {
+          dayOfWeek = visibleDays.first; // 今天被隐藏（如周末）时落到当周首日
+        }
+        final page = _dayViewPageIndexForDay(settings, currentWeek, dayOfWeek);
+        final controller = _ensureDayViewPageController(settings);
+        if (controller.hasClients) {
+          await controller.animateToPage(
+            page,
+            duration: _dockViewSwitchDuration,
+            curve: Curves.easeOutCubic,
+          );
+        }
+      } else {
+        await _jumpToCurrentWeek(context.read<TimetableProvider>());
+      }
       return;
     }
     final entry = homeMenuEntryById(id);
@@ -6965,6 +7005,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       alpha: (baseTint.a * buttonOpacity).clamp(0.0, 1.0),
     );
     final contentOpacity = buttonOpacity.clamp(0.0, 1.0);
+    // 液态玻璃模式下用真折射圆角玻璃，而不是高斯模糊磨砂——
+    // 与底栏/独立按钮同一套材质语言。
+    final dockAppearance = FrostedAppearanceScope.of(context);
+    final useLiquidGlassMaterial =
+        dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context);
 
     final glassDockForm =
         provider.settings.homeNavigationForm == HomeNavigationForm.glassDock;
@@ -7013,51 +7059,94 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: borderRadius,
-              child: HyperosFrostedSurface(
-                borderRadius: borderRadius,
-                tint: frostedTint,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    key: const ValueKey('back-to-current-week-button'),
+            child: useLiquidGlassMaterial
+                ? GlassButton.custom(
                     onTap: () => _jumpToCurrentWeek(provider),
-                    borderRadius: borderRadius,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.my_location_rounded,
-                            size: 15,
-                            color: colorScheme.primary.withValues(
-                              alpha: colorScheme.primary.a * contentOpacity,
+                    shape: const LiquidRoundedRectangle(borderRadius: 18),
+                    settings: MikcbLiquidGlassTokens.sheetSettingsFor(
+                      theme.brightness,
+                      tuning: dockAppearance.liquidGlassTuning,
+                    ),
+                    quality: GlassQuality.premium,
+                    child: Opacity(
+                      opacity: contentOpacity,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.my_location_rounded,
+                              size: 15,
+                              color: colorScheme.primary,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.backToCurrentWeekAction,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: colorScheme.onSurface.withValues(
-                                alpha: colorScheme.onSurface.a * contentOpacity,
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.backToCurrentWeekAction,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onSurface,
+                                height: 1,
                               ),
-                              height: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : ClipRRect(
+                    borderRadius: borderRadius,
+                    child: HyperosFrostedSurface(
+                      borderRadius: borderRadius,
+                      tint: frostedTint,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          key: const ValueKey(
+                            'back-to-current-week-button',
+                          ),
+                          onTap: () => _jumpToCurrentWeek(provider),
+                          borderRadius: borderRadius,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.my_location_rounded,
+                                  size: 15,
+                                  color: colorScheme.primary.withValues(
+                                    alpha:
+                                    colorScheme.primary.a * contentOpacity,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.backToCurrentWeekAction,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: colorScheme.onSurface.a *
+                                          contentOpacity,
+                                    ),
+                                    height: 1,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
           ),
         ),
       ),

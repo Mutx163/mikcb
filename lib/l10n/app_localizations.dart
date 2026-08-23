@@ -17863,6 +17863,12 @@ abstract class AppLocalizations {
   /// **'独立按钮功能'**
   String get glassDockButtonFunctionLabel;
 
+  /// No description provided for @glassDockButtonBackToWeekLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'回本周 / 今天'**
+  String get glassDockButtonBackToWeekLabel;
+
   /// No description provided for @glassDockShowAddButtonTitle.
   ///
   /// In zh, this message translates to:
