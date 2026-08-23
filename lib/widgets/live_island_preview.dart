@@ -12,22 +12,23 @@ import '../utils/hex_color.dart';
 
 /// Real-time HyperOS super-island capsule preview.
 ///
-/// 还原真实摘要态胶囊的左右分区：中间是摄像头开孔，左侧是实际会显示的
-/// 小图标位 + 文本块（imageTextInfoLeft），右侧是实际的提示位
-/// （hintInfo，即状态文字）。展开态不在此预览范围内。
+/// 还原真实摘要态胶囊的单行左右分区：中间是摄像头开孔；左侧是实际会
+/// 显示的小图标位 + 课程名；右侧是实际的提示位（hintInfo，即状态文字：
+/// 倒计时或阶段词）。整条胶囊只有一行文本，与真机一致。展开态不在此
+/// 预览范围内。
 ///
 /// 与原生 `MainActivity.kt` 的对应关系：
 ///
-/// * 左侧文本块 = buildIslandSummary() A区：恒为倒计时风格，不受
-///   showCountdown / showStageText 控制，且始终带“距上课 / 距下课”前缀。
 /// * 左侧图标位 = 通知 smallIcon：默认为应用图标；仅小米设备允许开启
 ///   自定义标签（enableMiuiIslandLabelImage），开启后按原生
 ///   buildIslandLabelBitmap() 的规则绘制（图标/自定义 Logo + 标签文字，
 ///   颜色、字号、字重、圆角均跟随设置）。
 /// * 右侧提示位 = hintInfo.title = visibleStatusText：受 showCountdown →
-///   showStageText 控制，课中固定为“上课中”。
+///   showStageText 控制，课中固定为“上课中”；倒计时时前缀受
+///   hidePrefixText 控制。
 /// * 课中环形进度包住左侧图标；课间节点进度条与原生摘要态一致，
-///   显示在胶囊下方。
+///   显示在胶囊下方。课程名跟随 showCourseName / useShortName（含原生
+///   5 字截断）。
 class LiveIslandPreviewCard extends StatefulWidget {
   const LiveIslandPreviewCard({
     super.key,
@@ -163,7 +164,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         _IslandCapsule(
           iconSlot: _buildIconSlot(l10n, selectedStage, d),
           title: _islandName(l10n, d),
-          content: _islandContent(l10n, selectedStage, d),
           statusLine: _statusLine(l10n, selectedStage, d),
         ),
         if (selectedStage == _PreviewStage.duringClass) ...[
@@ -235,8 +235,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
       MiuiIslandLabelFontWeight.bold => FontWeight.w700,
       MiuiIslandLabelFontWeight.regular => FontWeight.w400,
     };
-    final label = Flexible(
-      child: FittedBox(
+    final label = FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.centerLeft,
         child: Text(
@@ -251,8 +250,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
             fontWeight: fontWeight,
           ),
         ),
-      ),
-    );
+      );
     if (!includeIcon) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -277,7 +275,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
               : _appIconImage(22),
         ),
         const SizedBox(width: 3),
-        label,
+        Flexible(child: label),
       ],
     );
   }
@@ -364,37 +362,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
   }
 
-  /// buildIslandSummary islandContentText（A区 content）：无视 showCountdown /
-  /// showStageText / hidePrefixText（原生如此），倒计时恒用默认 60s 阈值。
-  String _islandContent(
-    AppLocalizations l10n,
-    _PreviewStage stage,
-    LiveDisplaySettings d,
-  ) {
-    final now = DateTime.now();
-    switch (stage) {
-      case _PreviewStage.beforeClass:
-        final remaining = _beforeWindow.start.difference(now);
-        if (!remaining.isNegative) {
-          return l10n.liveIslandPreviewUntilClassStart(
-            _formatDuration(remaining, d.countdownTextStyle, 60),
-          );
-        }
-        return l10n.liveIslandPreviewStageBeforeClass;
-      case _PreviewStage.beforeEnd:
-        final remaining = _endWindow.end.difference(now);
-        if (!remaining.isNegative) {
-          return l10n.liveIslandPreviewUntilClassEnd(
-            _formatDuration(remaining, d.countdownTextStyle, 60),
-          );
-        }
-        return l10n.liveIslandPreviewStageBeforeEnd;
-      case _PreviewStage.duringClass:
-        return _compactDisplayText(l10n, d) ??
-            l10n.liveIslandPreviewStageInClass;
-    }
-  }
-
   String? _nextMilestoneText(AppLocalizations l10n, LiveDisplaySettings d) {
     final elapsed = DateTime.now().difference(_duringWindow.start);
     final remaining = _duringMilestoneOffset - elapsed;
@@ -410,15 +377,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     return l10n.liveIslandPreviewFinalDismiss(
       _formatDuration(remaining, d.countdownTextStyle, 60),
     );
-  }
-
-  /// compactDisplayText：nearest → 最近节点，total → 整节下课。
-  String? _compactDisplayText(AppLocalizations l10n, LiveDisplaySettings d) {
-    final finalText = _finalDismissText(l10n, d);
-    if (d.duringClassTimeDisplayMode == LiveDuringClassTimeDisplayMode.total) {
-      return finalText;
-    }
-    return _nextMilestoneText(l10n, d) ?? finalText;
   }
 
   double _progressFraction(_PreviewStage stage) {
@@ -525,18 +483,16 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
 // --- Mock widgets（HyperOS 超级岛观感，深色、与主题无关） --------------------
 
-/// 摘要态胶囊：中间摄像头，左侧图标+文本块，右侧提示文字。
+/// 摘要态胶囊（单行）：中间摄像头，左侧图标/标签+课程名，右侧状态文字。
 class _IslandCapsule extends StatelessWidget {
   const _IslandCapsule({
     required this.iconSlot,
     required this.title,
-    required this.content,
     required this.statusLine,
   });
 
   final Widget iconSlot;
   final String title;
-  final String content;
   final String statusLine;
 
   @override
@@ -556,35 +512,24 @@ class _IslandCapsule extends StatelessWidget {
               child: Row(
                 children: [
                   iconSlot,
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (title.isNotEmpty)
-                          Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        Text(
-                          content,
+                  if (title.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          title,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.72),
-                            fontSize: 11.5,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
