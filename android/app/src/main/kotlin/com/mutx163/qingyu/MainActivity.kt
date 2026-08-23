@@ -2814,7 +2814,9 @@ class LiveUpdateService : Service() {
             color = textColor
             textSize = sp(resolvedFontSizeSp)
             this.typeface = typeface
-            isFakeBoldText = fontWeight == "bold"
+            // 字重完全交给真实 Typeface（BOLD/Medium/Regular）。
+            // 不再用 isFakeBoldText 叠加假粗体：假粗体靠描边撑粗笔画，
+            // 经系统降采样后边缘发虚，是标签小字“发糊”的原因之一。
             isSubpixelText = true
             isLinearText = true
         }
@@ -2836,14 +2838,17 @@ class LiveUpdateService : Service() {
             fittedSizeSp -= 1f
         }
 
+        // 清晰度修正：
+        // 1) 不叠加 isFakeBoldText，字重由真实 Typeface 提供；
+        // 2) 去掉 setShadowLayer 文字投影——半透明阴影经系统缩小后
+        //    晕成灰色光晕包住笔画，是小字观感“完全模糊”的主要来源；
+        // 3) 字号取整到整数物理像素，避免轮廓被分数像素缩放软化。
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = textColor
-            textSize = sp(fittedSizeSp) * renderScale
+            textSize = Math.round(sp(fittedSizeSp) * renderScale).toFloat()
             this.typeface = typeface
-            isFakeBoldText = fontWeight == "bold"
             isSubpixelText = true
             isLinearText = true
-            setShadowLayer(dp(0.75f) * renderScale, 0f, dp(0.25f) * renderScale, 0x44000000)
         }
 
         val displayText = if (baseTextPaint.measureText(text) <= maxTextWidthPx) {
@@ -2933,7 +2938,13 @@ class LiveUpdateService : Service() {
             ).coerceIn(horizontalPaddingPx, width - horizontalPaddingPx - textWidthPx)
         }
         val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f + verticalOffsetPx
-        canvas.drawText(displayText, textStartX, baseline, textPaint)
+        // 绘制坐标取整到整数物理像素，消除子像素抗锯齿造成的整体发蒙。
+        canvas.drawText(
+            displayText,
+            Math.round(textStartX).toFloat(),
+            Math.round(baseline).toFloat(),
+            textPaint,
+        )
         return bitmap
     }
 
