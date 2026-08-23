@@ -3246,7 +3246,6 @@
   "guidePermissionsPageTitle": "시스템 권한",
   "guideTipsPageTitle": "사용 팁",
   "guidePersonalizePageTitle": "개인화 설정",
-  "guidePersonalizeHeader": "나만의 스타일로 꾸미기",
   "guidePersonalizeSubtitle": "선택한 항목은 즉시 적용되며, 언제든지 '설정 → 화면'에서 변경할 수 있습니다",
   "guidePersonalizeMenuStyleTitle": "메뉴 스타일",
   "guidePersonalizeVisualEffectTitle": "시각 효과",
@@ -5955,7 +5954,7 @@
   "homeMenuStyleList": "리스트 메뉴",
   "homeMenuStyleGrid": "여덟 칸 격자 메뉴",
   "homeMenuStyleListSubtitle": "버튼 아래에 텍스트 목록이 펼쳐지며 모든 항목을 한 화면에서 보여 줍니다",
-  "homeMenuStyleGridSubtitle": "하단에 아이콘 타일 시트를 표시(v2.0.5.5 스타일), 버튼 사용자 지정 가능",
+  "homeMenuStyleGridSubtitle": "하단에 아이콘 타일 시트를 표시, 버튼 사용자 지정 가능",
   "homeGridCustomizeTitle": "격자 버튼 사용자 지정",
   "homeGridCustomizeDetails": "{count}/{max}개 사용 중",
   "@homeGridCustomizeDetails": {

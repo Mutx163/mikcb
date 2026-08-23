@@ -6094,9 +6094,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizePageTitle => '개인화 설정';
 
   @override
-  String get guidePersonalizeHeader => '나만의 스타일로 꾸미기';
-
-  @override
   String get guidePersonalizeSubtitle =>
       '선택한 항목은 즉시 적용되며, 언제든지 \'설정 → 화면\'에서 변경할 수 있습니다';
 
@@ -10186,8 +10183,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '버튼 아래에 텍스트 목록이 펼쳐지며 모든 항목을 한 화면에서 보여 줍니다';
 
   @override
-  String get homeMenuStyleGridSubtitle =>
-      '하단에 아이콘 타일 시트를 표시(v2.0.5.5 스타일), 버튼 사용자 지정 가능';
+  String get homeMenuStyleGridSubtitle => '하단에 아이콘 타일 시트를 표시, 버튼 사용자 지정 가능';
 
   @override
   String get homeGridCustomizeTitle => '격자 버튼 사용자 지정';

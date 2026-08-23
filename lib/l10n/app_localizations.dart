@@ -10877,12 +10877,6 @@ abstract class AppLocalizations {
   /// **'个性化定制'**
   String get guidePersonalizePageTitle;
 
-  /// No description provided for @guidePersonalizeHeader.
-  ///
-  /// In zh, this message translates to:
-  /// **'个性化外观'**
-  String get guidePersonalizeHeader;
-
   /// No description provided for @guidePersonalizeSubtitle.
   ///
   /// In zh, this message translates to:
@@ -17914,7 +17908,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeMenuStyleGridSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'底部弹出图标瓷贴（v2.0.5.5 样式），支持自定义按钮'**
+  /// **'底部弹出图标瓷贴，支持自定义按钮'**
   String get homeMenuStyleGridSubtitle;
 
   /// No description provided for @homeGridCustomizeTitle.

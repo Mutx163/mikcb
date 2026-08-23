@@ -425,13 +425,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(provider.settings.appThemeMode, AppThemeMode.light);
 
-    // 主题色色板：选一个非默认主题（默认 blue）
+    // 主题色色板：选一个非默认主题（默认 blue）。
+    // 色板为 HyperosColorChip，按 ForuiTheme.values 顺序排列。
     final target = ForuiTheme.values
         .where((t) => t != ForuiTheme.blue)
         .first;
-    final dotFinder = find.byWidgetPredicate(
-      (w) => w.runtimeType.toString() == '_GuideSeedDot',
-    );
+    final dotFinder = find.byType(HyperosColorChip);
     await tester.dragUntilVisible(
       dotFinder.last,
       find.byType(ListView),

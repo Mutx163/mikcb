@@ -6057,9 +6057,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guidePersonalizePageTitle => 'カスタマイズ';
 
   @override
-  String get guidePersonalizeHeader => 'あなただけの見た目に';
-
-  @override
   String get guidePersonalizeSubtitle => '選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます';
 
   @override
@@ -10139,8 +10136,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuStyleListSubtitle => 'ボタンの下にテキストリストを表示し、すべての入口を一度に見せます';
 
   @override
-  String get homeMenuStyleGridSubtitle =>
-      '下部にアイコンタイルを表示（v2.0.5.5 スタイル）、ボタンのカスタマイズ対応';
+  String get homeMenuStyleGridSubtitle => '下部にアイコンタイルを表示、ボタンのカスタマイズ対応';
 
   @override
   String get homeGridCustomizeTitle => 'グリッドボタンのカスタマイズ';

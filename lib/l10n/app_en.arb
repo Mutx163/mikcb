@@ -3483,7 +3483,6 @@
   "guidePermissionsPageTitle": "Permissions",
   "guideTipsPageTitle": "Tips",
   "guidePersonalizePageTitle": "Personalize",
-  "guidePersonalizeHeader": "Make it yours",
   "guidePersonalizeSubtitle": "These apply immediately and can be changed anytime in Settings → Appearance",
   "guidePersonalizeMenuStyleTitle": "Menu style",
   "guidePersonalizeVisualEffectTitle": "Visual effect",
@@ -5958,7 +5957,7 @@
   "homeMenuStyleList": "List menu",
   "homeMenuStyleGrid": "Eight-tile grid menu",
   "homeMenuStyleListSubtitle": "Anchored text list right below the button, all entries at once",
-  "homeMenuStyleGridSubtitle": "Bottom icon tile sheet (v2.0.5.5 style), buttons customizable",
+  "homeMenuStyleGridSubtitle": "Bottom icon tile sheet, buttons customizable",
   "homeGridCustomizeTitle": "Customize grid buttons",
   "homeGridCustomizeDetails": "{count}/{max} enabled",
   "@homeGridCustomizeDetails": {

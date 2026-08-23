@@ -3483,7 +3483,6 @@
   "guidePermissionsPageTitle": "系统权限",
   "guideTipsPageTitle": "使用技巧",
   "guidePersonalizePageTitle": "个性化定制",
-  "guidePersonalizeHeader": "个性化外观",
   "guidePersonalizeSubtitle": "以下选择立即生效，之后可随时在「设置 → 外观」中调整",
   "guidePersonalizeMenuStyleTitle": "菜单样式",
   "guidePersonalizeVisualEffectTitle": "视觉效果",
@@ -5958,7 +5957,7 @@
   "homeMenuStyleList": "列表菜单",
   "homeMenuStyleGrid": "八宫格菜单",
   "homeMenuStyleListSubtitle": "在按钮下方弹出文字列表，全部入口一屏展示",
-  "homeMenuStyleGridSubtitle": "底部弹出图标瓷贴（v2.0.5.5 样式），支持自定义按钮",
+  "homeMenuStyleGridSubtitle": "底部弹出图标瓷贴，支持自定义按钮",
   "homeGridCustomizeTitle": "自定义八宫格按钮",
   "homeGridCustomizeDetails": "已启用 {count}/{max} 个",
   "@homeGridCustomizeDetails": {

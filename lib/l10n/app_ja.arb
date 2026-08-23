@@ -3246,7 +3246,6 @@
   "guidePermissionsPageTitle": "システム権限",
   "guideTipsPageTitle": "使い方のコツ",
   "guidePersonalizePageTitle": "カスタマイズ",
-  "guidePersonalizeHeader": "あなただけの見た目に",
   "guidePersonalizeSubtitle": "選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます",
   "guidePersonalizeMenuStyleTitle": "メニュー形式",
   "guidePersonalizeVisualEffectTitle": "視覚効果",
@@ -5955,7 +5954,7 @@
   "homeMenuStyleList": "リストメニュー",
   "homeMenuStyleGrid": "八宮格メニュー",
   "homeMenuStyleListSubtitle": "ボタンの下にテキストリストを表示し、すべての入口を一度に見せます",
-  "homeMenuStyleGridSubtitle": "下部にアイコンタイルを表示（v2.0.5.5 スタイル）、ボタンのカスタマイズ対応",
+  "homeMenuStyleGridSubtitle": "下部にアイコンタイルを表示、ボタンのカスタマイズ対応",
   "homeGridCustomizeTitle": "グリッドボタンのカスタマイズ",
   "homeGridCustomizeDetails": "{count}/{max} 個表示中",
   "@homeGridCustomizeDetails": {

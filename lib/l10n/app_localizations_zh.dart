@@ -5959,9 +5959,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizePageTitle => '个性化定制';
 
   @override
-  String get guidePersonalizeHeader => '个性化外观';
-
-  @override
   String get guidePersonalizeSubtitle => '以下选择立即生效，之后可随时在「设置 → 外观」中调整';
 
   @override
@@ -9863,7 +9860,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuStyleListSubtitle => '在按钮下方弹出文字列表，全部入口一屏展示';
 
   @override
-  String get homeMenuStyleGridSubtitle => '底部弹出图标瓷贴（v2.0.5.5 样式），支持自定义按钮';
+  String get homeMenuStyleGridSubtitle => '底部弹出图标瓷贴，支持自定义按钮';
 
   @override
   String get homeGridCustomizeTitle => '自定义八宫格按钮';
@@ -15983,9 +15980,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizePageTitle => '個人化設定';
 
   @override
-  String get guidePersonalizeHeader => '打造專屬外觀';
-
-  @override
   String get guidePersonalizeSubtitle => '以下選擇立即生效，之後可隨時在「設定 → 外觀」中調整';
 
   @override
@@ -19931,7 +19925,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuStyleListSubtitle => '在按鈕下方彈出文字列表，全部入口一屏展示';
 
   @override
-  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼（v2.0.5.5 樣式），支援自訂按鈕';
+  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼，支援自訂按鈕';
 
   @override
   String get homeGridCustomizeTitle => '自訂八宮格按鈕';
@@ -26051,9 +26045,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizePageTitle => '個人化設定';
 
   @override
-  String get guidePersonalizeHeader => '打造專屬外觀';
-
-  @override
   String get guidePersonalizeSubtitle => '以下選擇立即生效，之後可隨時在「設定 → 外觀」中調整';
 
   @override
@@ -29999,7 +29990,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuStyleListSubtitle => '在按鈕下方彈出文字列表，全部入口一屏展示';
 
   @override
-  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼（v2.0.5.5 樣式），支援自訂按鈕';
+  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼，支援自訂按鈕';
 
   @override
   String get homeGridCustomizeTitle => '自訂八宮格按鈕';

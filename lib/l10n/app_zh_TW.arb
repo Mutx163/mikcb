@@ -3246,7 +3246,6 @@
   "guidePermissionsPageTitle": "系統權限",
   "guideTipsPageTitle": "使用技巧",
   "guidePersonalizePageTitle": "個人化設定",
-  "guidePersonalizeHeader": "打造專屬外觀",
   "guidePersonalizeSubtitle": "以下選擇立即生效，之後可隨時在「設定 → 外觀」中調整",
   "guidePersonalizeMenuStyleTitle": "選單樣式",
   "guidePersonalizeVisualEffectTitle": "視覺效果",
@@ -5955,7 +5954,7 @@
   "homeMenuStyleList": "列表選單",
   "homeMenuStyleGrid": "八宮格選單",
   "homeMenuStyleListSubtitle": "在按鈕下方彈出文字列表，全部入口一屏展示",
-  "homeMenuStyleGridSubtitle": "底部彈出圖示瓷貼（v2.0.5.5 樣式），支援自訂按鈕",
+  "homeMenuStyleGridSubtitle": "底部彈出圖示瓷貼，支援自訂按鈕",
   "homeGridCustomizeTitle": "自訂八宮格按鈕",
   "homeGridCustomizeDetails": "已啟用 {count}/{max} 個",
   "@homeGridCustomizeDetails": {

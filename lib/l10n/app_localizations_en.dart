@@ -6306,9 +6306,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizePageTitle => 'Personalize';
 
   @override
-  String get guidePersonalizeHeader => 'Make it yours';
-
-  @override
   String get guidePersonalizeSubtitle =>
       'These apply immediately and can be changed anytime in Settings → Appearance';
 
@@ -10436,7 +10433,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeMenuStyleGridSubtitle =>
-      'Bottom icon tile sheet (v2.0.5.5 style), buttons customizable';
+      'Bottom icon tile sheet, buttons customizable';
 
   @override
   String get homeGridCustomizeTitle => 'Customize grid buttons';
