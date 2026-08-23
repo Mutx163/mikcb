@@ -6473,18 +6473,89 @@ class _TimetableScreenState extends State<TimetableScreen>
           bottom: 0,
           child: SafeArea(
             minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            child: Center(
-              // 独立「添加」按钮占用约 56 宽（按钮 48 + 间距 8）：
-              // 开启时同步放宽容器上限，保证 Tab 药丸不因挤压变形。
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: settings.glassDockShowAddButton ? 328 : 272,
-                ),
-                child: _buildGlassDockBar(settings: settings, l10n: l10n),
-              ),
+            // 官方 iOS 26 形态：居中药丸 + 右侧独立玻璃圆钮。按钮不再走
+            // GlassTabBar.extraButton（其形状受 barBorderRadius 联动，会
+            // 失去正圆；且无独立显隐动画），改用原生 GlassButton 浮层，
+            // 收起时在裁切槽内向右下滑出并渐隐、占位宽度同步回收。
+            child: AnimatedBuilder(
+              animation: _dockAddBtnCollapse,
+              builder: (context, _) {
+                final collapse = settings.glassDockShowAddButton
+                    ? _dockAddBtnCollapse.value
+                    : 1.0;
+                final slotWidth = 56 * (1 - collapse); // 48 按钮 + 8 间距
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 272),
+                        child: _buildGlassDockBar(
+                          settings: settings,
+                          l10n: l10n,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: slotWidth),
+                  ],
+                );
+              },
             ),
           ),
         ),
+        if (settings.glassDockShowAddButton)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              minimum: const EdgeInsets.fromLTRB(0, 0, 16, 6),
+              child: AnimatedBuilder(
+                animation: _dockAddBtnCollapse,
+                builder: (context, _) {
+                  final collapse = _dockAddBtnCollapse.value;
+                  if (collapse >= 1) {
+                    return const SizedBox.shrink();
+                  }
+                  // 墨色与底栏未选中态同规则：按壁纸亮度自动黑白。
+                  final lum = _wallpaperBodyLuminance;
+                  final isDarkTheme =
+                      Theme.of(context).brightness == Brightness.dark;
+                  final ink = (lum != null ? lum < 0.45 : isDarkTheme)
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : Colors.black.withValues(alpha: 0.75);
+                  return ClipRect(
+                    child: SizedBox(
+                      width: 48,
+                      height: 56,
+                      child: OverflowBox(
+                        alignment: Alignment.centerLeft,
+                        minWidth: 48,
+                        maxWidth: 48,
+                        minHeight: 48,
+                        maxHeight: 48,
+                        child: Transform.translate(
+                          offset: Offset(collapse * 72, collapse * 40),
+                          child: Opacity(
+                            opacity: 1 - collapse,
+                            child: GlassButton(
+                              icon: Icon(Icons.add_rounded),
+                              onTap: () =>
+                                  unawaited(_openDockExtraButton()),
+                              label: l10n.glassDockExtraButtonSemanticLabel,
+                              width: 48,
+                              height: 48,
+                              iconSize: 22,
+                              iconColor: ink,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -6536,79 +6607,50 @@ class _TimetableScreenState extends State<TimetableScreen>
         !LiquidGlassDegradation.shouldDegrade(context);
     // 动态入口列表：日/周/设置三个模块 Tab 均可在设置中隐藏（至少留一）。
     final dockTabs = _glassDockTabs(settings, l10n);
-    return AnimatedBuilder(
-      animation: _dockAddBtnCollapse,
-      builder: (context, _) {
-        return GlassTabBar.bottom(
-          tabs: [
-            for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
-          ],
-          selectedIndex: _glassDockCurrentIndex(dockTabs),
-          onTabSelected: (index) =>
-              _onDockEntrySelected(dockTabs[index], settings),
-          // 独立圆形按钮（库内 extraButton 官方样式：药丸右侧独立玻璃圆钮）。
-          // 功能由「八宫格目录」同步自定义（默认添加课程）；切到设置页时随
-          // _dockAddBtnCollapse 把 size 动画到 0 —— 库内布局逐帧读取
-          // config.size 预留宽度，因此药丸会平滑补位，即「滑动收起」。
-          extraButton: settings.glassDockShowAddButton
-              ? _buildGlassDockExtraButton(l10n, unselectedColor)
-              : null,
-          barHeight: 56,
-          barBorderRadius: 28,
-          // 指示器圆角与底栏一致（默认是 barBorderRadius - 4，观感偏方）。
-          indicatorBorderRadius: 28,
-        // 长按拖出的「果冻玻璃」透镜：settings 只作用于底栏本体，指示器
-        // 有独立的 indicatorSettings 入口。不传时包内默认是刻意调淡的
-        // iOS 26 校准值（折射率 1.10 / 厚度 20 / 无色散），在纯色壁纸上
-        // 几乎看不出折射；液态玻璃模式换 dragLensSettings 拉满折射档，
-        // 并把凹透镜 pinch 开到包内校准的最大值 1.0（构造默认只有 0.4）。
-        // 非液态玻璃模式走 frosted 回退，保持包默认材质。
-        indicatorSettings: useLiquidGlass
-            ? MikcbLiquidGlassTokens.dragLensSettings
-            : null,
-        indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
-        settings: useLiquidGlass
-            ? MikcbLiquidGlassTokens.sheetSettingsFor(
-                isDark ? Brightness.dark : Brightness.light,
-                tuning: appearance.liquidGlassTuning,
-              )
-            : LiquidGlassSettings(
-                blur: appearance.sheetBlurSigma,
-                glassColor: HyperosBlurredHeader.sheetTintColor(
-                  context,
-                  withBlur: true,
-                ),
+    return GlassTabBar.bottom(
+      tabs: [
+        for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
+      ],
+      selectedIndex: _glassDockCurrentIndex(dockTabs),
+      onTabSelected: (index) =>
+          _onDockEntrySelected(dockTabs[index], settings),
+      barHeight: 56,
+      // 不覆盖官方默认圆角（32）：barBorderRadius 一旦偏离默认值，库会把
+      // 独立按钮的形状从原生 LiquidOval 正圆降级成圆角矩形——这正是此前
+      // 「添加按钮不圆」的根因。药丸端部回官方全圆观感。
+      // 指示器圆角单独保留 28（官方默认即 barRadius-4）。
+      indicatorBorderRadius: 28,
+      // 长按拖出的「果冻玻璃」透镜：settings 只作用于底栏本体，指示器
+      // 有独立的 indicatorSettings 入口。不传时包内默认是刻意调淡的
+      // iOS 26 校准值（折射率 1.10 / 厚度 20 / 无色散），在纯色壁纸上
+      // 几乎看不出折射；液态玻璃模式换 dragLensSettings 拉满折射档，
+      // 并把凹透镜 pinch 开到包内校准的最大值 1.0（构造默认只有 0.4）。
+      // 非液态玻璃模式走 frosted 回退，保持包默认材质。
+      indicatorSettings: useLiquidGlass
+          ? MikcbLiquidGlassTokens.dragLensSettings
+          : null,
+      indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
+      settings: useLiquidGlass
+          ? MikcbLiquidGlassTokens.sheetSettingsFor(
+              isDark ? Brightness.dark : Brightness.light,
+              tuning: appearance.liquidGlassTuning,
+            )
+          : LiquidGlassSettings(
+              blur: appearance.sheetBlurSigma,
+              glassColor: HyperosBlurredHeader.sheetTintColor(
+                context,
+                withBlur: true,
               ),
-        quality: useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal,
-        iconSize: 22,
-        labelFontSize: 10,
-        horizontalPadding: 6,
-        verticalPadding: 6,
-          selectedIconColor: selectedColor,
-          unselectedIconColor: unselectedColor,
-          selectedLabelColor: selectedColor,
-          unselectedLabelColor: unselectedColor,
-        );
-      },
-    );
-  }
-
-  /// 独立圆形按钮的运行时配置：size 跟随收起动画（设置页滑到 0），
-  /// 点击按「八宫格目录」自定义的入口分发；addCourse 走首页弹层路径。
-  GlassTabBarExtraButton? _buildGlassDockExtraButton(
-    AppLocalizations l10n,
-    Color iconColor,
-  ) {
-    final collapse = _dockAddBtnCollapse.value; // 0=展开 1=收起
-    if (collapse >= 1) {
-      return null; // 完全收起后释放点击区域。
-    }
-    return GlassTabBarExtraButton(
-      icon: Opacity(opacity: 1 - collapse, child: Icon(Icons.add_rounded)),
-      label: l10n.glassDockExtraButtonSemanticLabel,
-      onTap: () => unawaited(_openDockExtraButton()),
-      iconColor: iconColor,
-      size: 48 * (1 - collapse),
+            ),
+      quality: useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal,
+      iconSize: 22,
+      labelFontSize: 10,
+      horizontalPadding: 6,
+      verticalPadding: 6,
+      selectedIconColor: selectedColor,
+      unselectedIconColor: unselectedColor,
+      selectedLabelColor: selectedColor,
+      unselectedLabelColor: unselectedColor,
     );
   }
 
