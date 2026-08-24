@@ -269,7 +269,7 @@ Widget _hyperosTrailingDetails(BuildContext context, String details) {
 class HyperosListTile extends StatelessWidget {
   const HyperosListTile({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     this.onTap,
     this.onLongPress,
@@ -277,7 +277,7 @@ class HyperosListTile extends StatelessWidget {
     this.iconAccent,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String? details;
   final VoidCallback? onTap;
@@ -295,11 +295,15 @@ class HyperosListTile extends StatelessWidget {
       padding: hyperosChevronRowPadding(context),
       child: Row(
         children: [
-          HyperosIconBadge(
-            icon: icon,
-            accent: iconAccent ?? HyperosIconColors.blue,
-          ),
-          const SizedBox(width: HyperosTokens.rowContentGap),
+          // 行首图标可选：设置 hub 一级入口卡带图标；二级页选项行按
+          // 设计规范传 null 省略徽章。
+          if (icon != null) ...[
+            HyperosIconBadge(
+              icon: icon!,
+              accent: iconAccent ?? HyperosIconColors.blue,
+            ),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+          ],
           Expanded(
             child: Text(
               title,
@@ -431,13 +435,13 @@ class HyperosSwitchTile extends StatelessWidget {
 class HyperosActionTile extends StatelessWidget {
   const HyperosActionTile({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     this.onTap,
     this.showDivider = false,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final VoidCallback? onTap;
   final bool showDivider;
@@ -458,8 +462,10 @@ class HyperosActionTile extends StatelessWidget {
             padding: hyperosRowPadding(context),
             child: Row(
               children: [
-                HyperosIconBadge(icon: icon, accent: HyperosIconColors.blue),
-                const SizedBox(width: HyperosTokens.rowContentGap),
+                if (icon != null) ...[
+                  HyperosIconBadge(icon: icon!, accent: HyperosIconColors.blue),
+                  const SizedBox(width: HyperosTokens.rowContentGap),
+                ],
                 Expanded(
                   child: Text(
                     title,

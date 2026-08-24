@@ -53,8 +53,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         HyperosListGroup(
           children: [
             HyperosListTile(
-              icon: Icons.alarm_outlined,
-              iconAccent: HyperosIconColors.orange,
               title: l10n.liveReminderTimingTitle,
               onTap: () async {
                 await HyperosNavigation.push(
@@ -74,8 +72,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         HyperosListGroup(
           children: [
             HyperosListTile(
-              icon: Icons.upcoming_outlined,
-              iconAccent: HyperosIconColors.cyan,
               title: l10n.beforeClassDisplaySettingsTitle,
               details: beforeClassSummary,
               onTap: () async {
@@ -93,8 +89,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
               },
             ),
             HyperosListTile(
-              icon: Icons.timelapse_rounded,
-              iconAccent: HyperosIconColors.purple,
               title: l10n.duringEndDisplaySettingsTitle,
               details: duringEndSummary,
               onTap: () async {
@@ -118,8 +112,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         HyperosListGroup(
           children: [
             HyperosListTile(
-              icon: Icons.shield_outlined,
-              iconAccent: HyperosIconColors.green,
               title: l10n.liveKeepAliveTitle,
               onTap: () async {
                 await HyperosNavigation.push(

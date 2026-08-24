@@ -140,8 +140,6 @@ class _SettingsResetTile extends StatelessWidget {
         HyperosListGroup(
           children: [
             HyperosListTile(
-              icon: Icons.restart_alt_rounded,
-              iconAccent: HyperosIconColors.red,
               title: l10n.settingsResetDefaultsTitle,
               onTap: () => _confirm(context, l10n),
             ),

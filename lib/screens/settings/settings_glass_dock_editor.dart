@@ -15,8 +15,7 @@ class _GlassDockEditorScreen extends StatefulWidget {
   final ValueChanged<List<String>> onChanged;
 
   @override
-  State<_GlassDockEditorScreen> createState() =>
-      _GlassDockEditorScreenState();
+  State<_GlassDockEditorScreen> createState() => _GlassDockEditorScreenState();
 }
 
 class _GlassDockEditorScreenState extends State<_GlassDockEditorScreen> {
@@ -106,8 +105,6 @@ class _GlassDockEditorScreenState extends State<_GlassDockEditorScreen> {
           HyperosListGroup(
             children: [
               HyperosListTile(
-                icon: Icons.restart_alt_rounded,
-                iconAccent: HyperosIconColors.red,
                 title: l10n.homeGridEditorResetAction,
                 onTap: _resetToDefault,
               ),
@@ -160,9 +157,7 @@ class _GlassDockEditorScreenState extends State<_GlassDockEditorScreen> {
         )
         .toList(growable: false);
     if (candidates.isEmpty) {
-      return [
-        HyperosSectionDescription(text: l10n.homeGridEditorAllAdded),
-      ];
+      return [HyperosSectionDescription(text: l10n.homeGridEditorAllAdded)];
     }
     return [
       HyperosListGroup(
@@ -203,9 +198,7 @@ class _GlassDockEditorScreenState extends State<_GlassDockEditorScreen> {
                       color: HyperosBlurredHeader.accentSurfaceTintColor(
                         Theme.of(context).colorScheme.primary,
                       ),
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(14),
-                      ),
+                      borderRadius: const BorderRadius.all(Radius.circular(14)),
                     ),
                     child: Center(
                       child: Icon(
@@ -242,7 +235,10 @@ class _GlassDockEditorScreenState extends State<_GlassDockEditorScreen> {
         return AnimatedBuilder(
           animation: animation,
           builder: (context, _) {
-            final elevation = Tween<double>(begin: 0, end: 6).animate(animation);
+            final elevation = Tween<double>(
+              begin: 0,
+              end: 6,
+            ).animate(animation);
             return Material(
               elevation: elevation.value,
               borderRadius: BorderRadius.circular(16),
@@ -334,7 +330,9 @@ class _DockSlotRow extends StatelessWidget {
                 Icons.remove_circle_outline_rounded,
                 color: canRemove
                     ? HyperosIconColors.red
-                    : HyperosColors.secondaryText(context).withValues(alpha: 0.4),
+                    : HyperosColors.secondaryText(
+                        context,
+                      ).withValues(alpha: 0.4),
               ),
             ),
             const SizedBox(width: 6),

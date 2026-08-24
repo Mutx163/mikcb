@@ -51,8 +51,6 @@ class _GlassDockIconPickerScreenState
           HyperosListGroup(
             children: [
               HyperosListTile(
-                icon: Icons.add_rounded,
-                iconAccent: HyperosIconColors.blue,
                 title: l10n.glassDockButtonIconDefault,
                 details: _selected == null ? '✓' : null,
                 onTap: () {

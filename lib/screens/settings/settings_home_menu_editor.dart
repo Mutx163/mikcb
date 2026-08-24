@@ -18,8 +18,7 @@ class _HomeGridMenuEditorScreen extends StatefulWidget {
       _HomeGridMenuEditorScreenState();
 }
 
-class _HomeGridMenuEditorScreenState
-    extends State<_HomeGridMenuEditorScreen> {
+class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
   late List<String> _ids = [
     // 目录可能随版本演进（改名/下线入口、构建模式门控）；种子阶段就丢
     // 弹当前环境不可用的 id，保证编辑器里每一行都真实可解析、可打开。
@@ -94,8 +93,6 @@ class _HomeGridMenuEditorScreenState
           HyperosListGroup(
             children: [
               HyperosListTile(
-                icon: Icons.restart_alt_rounded,
-                iconAccent: HyperosIconColors.red,
                 title: l10n.homeGridEditorResetAction,
                 onTap: _resetToDefault,
               ),
@@ -121,9 +118,7 @@ class _HomeGridMenuEditorScreenState
         )
         .toList(growable: false);
     if (candidates.isEmpty) {
-      return [
-        HyperosSectionDescription(text: l10n.homeGridEditorAllAdded),
-      ];
+      return [HyperosSectionDescription(text: l10n.homeGridEditorAllAdded)];
     }
     return [
       HyperosListGroup(
@@ -166,9 +161,7 @@ class _HomeGridMenuEditorScreenState
                       color: HyperosBlurredHeader.accentSurfaceTintColor(
                         Theme.of(context).colorScheme.primary,
                       ),
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(14),
-                      ),
+                      borderRadius: const BorderRadius.all(Radius.circular(14)),
                     ),
                     child: Center(
                       child: Icon(
@@ -205,7 +198,10 @@ class _HomeGridMenuEditorScreenState
         return AnimatedBuilder(
           animation: animation,
           builder: (context, _) {
-            final elevation = Tween<double>(begin: 0, end: 6).animate(animation);
+            final elevation = Tween<double>(
+              begin: 0,
+              end: 6,
+            ).animate(animation);
             return Material(
               elevation: elevation.value,
               borderRadius: BorderRadius.circular(16),
@@ -306,7 +302,9 @@ class _GridSlotRow extends StatelessWidget {
                 Icons.remove_circle_outline_rounded,
                 color: canRemove
                     ? HyperosIconColors.red
-                    : HyperosColors.secondaryText(context).withValues(alpha: 0.4),
+                    : HyperosColors.secondaryText(
+                        context,
+                      ).withValues(alpha: 0.4),
               ),
             ),
             const SizedBox(width: 6),

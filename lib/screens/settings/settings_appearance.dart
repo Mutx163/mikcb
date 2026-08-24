@@ -193,8 +193,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         child: HyperosListGroup(
           children: [
             HyperosListTile(
-              icon: Icons.style_outlined,
-              iconAccent: HyperosIconColors.purple,
               title: l10n.themeManageTitle,
               details: l10n.themeManageSubtitle,
               onTap: () {
@@ -263,8 +261,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             ),
             if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass)
               HyperosListTile(
-                icon: Icons.auto_awesome_outlined,
-                iconAccent: HyperosIconColors.purple,
                 title: l10n.advancedMaterialTitle,
                 details: l10n.advancedMaterialEntrySubtitle,
                 onTap: () async {
@@ -477,19 +473,16 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
           HyperosChoiceGroup(
             children: [
               HyperosActionTile(
-                icon: Icons.ios_share_outlined,
                 title: l10n.themeExport,
                 onTap: () => _exportTheme(context),
                 showDivider: true,
               ),
               HyperosActionTile(
-                icon: Icons.download_outlined,
                 title: l10n.themeImport,
                 onTap: () => _importTheme(context),
                 showDivider: true,
               ),
               HyperosActionTile(
-                icon: Icons.bookmark_add_outlined,
                 title: l10n.themeSaveCurrent,
                 onTap: () => _showSaveThemeDialog(context),
               ),

@@ -33,15 +33,11 @@ class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
               HyperosListGroup(
                 children: [
                   HyperosListTile(
-                    icon: Icons.article_outlined,
-                    iconAccent: HyperosIconColors.cyan,
                     title: l10n.aboutAppLogsTitle,
                     details: l10n.aboutAppLogsSubtitle,
                     onTap: _openAppLogsPage,
                   ),
                   HyperosListTile(
-                    icon: Icons.science_outlined,
-                    iconAccent: HyperosIconColors.orange,
                     title: l10n.liveSelfCheckTitle,
                     details: l10n.liveSelfCheckSubtitle,
                     onTap: () {
@@ -56,8 +52,6 @@ class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
                   ),
                   if (showMemoryStats)
                     HyperosListTile(
-                      icon: Icons.memory_outlined,
-                      iconAccent: HyperosIconColors.indigo,
                       title: l10n.memoryStatsEntryTitle,
                       onTap: () {
                         HyperosNavigation.push(

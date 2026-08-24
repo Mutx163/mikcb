@@ -109,8 +109,6 @@ class _HomeNavigationSettingsScreenState
               child: HyperosListGroup(
                 children: [
                   HyperosListTile(
-                    icon: Icons.dock_outlined,
-                    iconAccent: HyperosIconColors.blue,
                     title: l10n.glassDockCustomizeTitle,
                     details: l10n.homeGridCustomizeDetails(
                       resolveGlassDockActionIds(_draft).length,
@@ -154,8 +152,6 @@ class _HomeNavigationSettingsScreenState
                     },
                   ),
                   HyperosListTile(
-                    icon: Icons.palette_outlined,
-                    iconAccent: HyperosIconColors.purple,
                     title: l10n.glassDockButtonIconTitle,
                     details:
                         _draft.glassDockButtonIconName ??
@@ -191,8 +187,6 @@ class _HomeNavigationSettingsScreenState
             child: HyperosListGroup(
               children: [
                 HyperosListTile(
-                  icon: Icons.grid_view_outlined,
-                  iconAccent: HyperosIconColors.blue,
                   title: l10n.homeGridCustomizeTitle,
                   details: l10n.homeGridCustomizeDetails(
                     resolveHomeGridMenuEntries(_draft).length,
@@ -201,10 +195,14 @@ class _HomeNavigationSettingsScreenState
                   onTap: () async {
                     await HyperosNavigation.push(
                       context,
-                      settings: const RouteSettings(name: '/settings/home-menu'),
+                      settings: const RouteSettings(
+                        name: '/settings/home-menu',
+                      ),
                       builder: (_) => _HomeGridMenuEditorScreen(
                         initialIds: [
-                          for (final entry in resolveHomeGridMenuEntries(_draft))
+                          for (final entry in resolveHomeGridMenuEntries(
+                            _draft,
+                          ))
                             entry.id,
                         ],
                         onChanged: (ids) {
