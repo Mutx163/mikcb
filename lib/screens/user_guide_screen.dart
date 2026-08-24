@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter/services.dart';
@@ -254,8 +253,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   Widget _buildProgressBar(AppLocalizations l10n) {
     if (_totalPages <= 1) return const SizedBox.shrink();
 
-    final typo = context.theme.typography.body;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
@@ -265,14 +262,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             children: [
               Text(
                 '${_currentPage + 1} / $_totalPages',
-                style: typo.xs2.copyWith(
-                  color: HyperosColors.secondaryText(context),
-                ),
+                style: HyperosTypography.sectionDescription(context),
               ),
               const SizedBox(width: 8),
               Text(
                 _buildPageTitle(l10n),
-                style: typo.xs2.copyWith(
+                style: HyperosTypography.sectionDescription(context).copyWith(
                   color: HyperosColors.primary(context),
                 ),
               ),
@@ -339,9 +334,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildWelcomePage(AppLocalizations l10n) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
-
     return _buildGuideList(
       storageId: 'welcome',
       children: [
@@ -350,11 +342,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.welcomeAppName, style: typo.sm),
+              Text(l10n.welcomeAppName, style: HyperosTypography.title(context)),
               const SizedBox(height: 8),
               Text(
                 l10n.welcomeSubtitle,
-                style: typo.sm.copyWith(color: colors.mutedForeground),
+                style: HyperosTypography.listDetail(context),
               ),
             ],
           ),
@@ -635,10 +627,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  /// 个性化定制页：首次进入引导时即可选择菜单样式、视觉效果、深浅色
-  /// 与主题色。所有选择直接写入 [TimetableProvider] 并立即生效，之后
-  /// 仍可在「设置 → 外观」中修改。选项行 / 分段 / 色板全部使用组件库
-  /// 现成组件（flutter_miuix 单选偏好行、MiuixTabRow 分段、HyperOS 色板）。
+  /// 个性化定制页：首次进入引导时即可选择视觉效果、深浅色与主题色。
+  /// 所有选择直接写入 [TimetableProvider] 并立即生效，之后仍可在
+  /// 「设置 → 外观」中修改。选项行 / 分段 / 色板全部使用组件库现成
+  /// 组件（HyperosChoiceTile 单选行、HyperosTabRow 分段、HyperOS 色板）。
   Widget _buildPersonalizePage(AppLocalizations l10n) {
     final provider = context.watch<TimetableProvider?>();
     // 与欢迎页语言选择器同策略：Provider 不在树上（裸测试宿主）时整页隐藏。
@@ -658,16 +650,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           child: HyperosControlCardInset(
             child: Column(
               children: [
-                for (final (index, effect) in _guideVisualEffectOptions.indexed) ...[
-                  if (index > 0) const MiuixHorizontalDivider(),
+                for (final (index, effect) in _guideVisualEffectOptions.indexed)
                   _guideOptionRow(
                     context,
                     title: _guideVisualEffectLabel(l10n, effect),
                     summary: _guideVisualEffectDescription(l10n, effect),
                     selected: currentEffect == effect,
+                    showDivider: index > 0,
                     onTap: () => _applyVisualEffect(effect),
                   ),
-                ],
               ],
             ),
           ),
@@ -893,11 +884,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildTipItem(IconData icon, String text) {
-    final colors = context.theme.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: colors.primary),
+        Icon(icon, size: 18, color: HyperosColors.primary(context)),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: _guideBodyStyle())),
       ],
@@ -1122,37 +1112,26 @@ String _guideVisualEffectDescription(
   _GuideVisualEffect.solid => l10n.guideVisualEffectSolidDesc,
 };
 
-/// 个性化页通用单选偏好行：flutter_miuix 的 [MiuixRadioButtonPreference]。
+/// 个性化页通用单选偏好行：组件库 [HyperosChoiceTile]（radio 变体）。
 ///
-/// 显式传入配色以跟随应用 Material 种子色——本页会实时切换主题色，
-/// 不能停留在 flutter_miuix 默认蓝。水平内边距交给外层卡片 inset，
-/// 行内只保留垂直呼吸感（库默认 minHeight 56 兜底）。
+/// 旧实现直接用 flutter_miuix 的 RadioButtonPreference 并取 Material
+/// colorScheme 配色，但 `_appThemeData` 从不定制 colorScheme——所谓
+/// 「跟随主题种子色」实际是框架默认 M3 紫，与本页实时切换的种子色和
+/// 全页 HyperOS 蓝都不一致。改走 facade 语义配色后不再依赖 Material
+/// scheme；行内分割线用 ChoiceTile 自带的缩进 divider。
 Widget _guideOptionRow(
   BuildContext context, {
   required String title,
   required String summary,
   required bool selected,
   required VoidCallback onTap,
+  bool showDivider = false,
 }) {
-  final scheme = Theme.of(context).colorScheme;
-  MiuixBasicComponentColors rowText(Color color) =>
-      MiuixBasicComponentColors(color: color, disabledColor: scheme.outline);
-
-  return MiuixRadioButtonPreference(
+  return HyperosChoiceTile(
     title: title,
-    summary: summary,
+    subtitle: Text(summary),
     selected: selected,
-    onClick: onTap,
-    insideMargin: const EdgeInsets.symmetric(vertical: 12),
-    colors: MiuixRadioButtonPreferenceColors(
-      titleColor: rowText(scheme.onSurface),
-      selectedTitleColor: rowText(scheme.primary),
-      summaryColor: rowText(scheme.onSurfaceVariant),
-      selectedSummaryColor: rowText(scheme.primary),
-    ),
-    radioButtonColors: MiuixRadioButtonColors(
-      selectedColor: scheme.primary,
-      disabledSelectedColor: scheme.outline,
-    ),
+    showDivider: showDivider,
+    onTap: onTap,
   );
 }

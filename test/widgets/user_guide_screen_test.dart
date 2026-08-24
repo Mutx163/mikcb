@@ -369,9 +369,17 @@ void main() {
     Future<void> tapEffect(String label) async {
       await tester.ensureVisible(find.text(label));
       await tester.pumpAndSettle();
-      // 轻微上提内容，让目标脱离底边裁剪区。
-      await tester.drag(find.byType(ListView), const Offset(0, -90));
-      await tester.pumpAndSettle();
+      // 按目标当前位置精确补偿，把它挪到屏幕竖直 45% 处：既脱离底边
+      // 裁剪区，也避开顶部悬浮折叠栏的遮挡区（行高变化时不再依赖
+      // 写死的像素偏移）。
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      final rect = tester.getRect(find.text(label));
+      final shift = screenHeight * 0.45 - rect.center.dy;
+      if (shift.abs() > 1) {
+        await tester.drag(find.byType(ListView), Offset(0, shift));
+        await tester.pumpAndSettle();
+      }
       await tester.tap(find.text(label));
       await tester.pumpAndSettle();
     }
