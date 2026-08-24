@@ -393,7 +393,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       suffixes: [
         FHeaderAction(
           icon: const Icon(Icons.tune_rounded),
-          semanticsLabel: l10n.cloudSyncAdvancedTitle,
+          semanticsLabel: l10n.holidayAdvancedTitle,
           onPress: () {
             HyperosNavigation.push(
               context,
@@ -620,7 +620,18 @@ class _HolidayAdvancedSettingsScreenState
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
-      title: Text(l10n.cloudSyncAdvancedTitle),
+      title: Text(l10n.holidayAdvancedTitle),
+      // 副题放顶栏扩展区：说明该页职责（手动刷新 + 更新日志），
+      // 不占用滚动内容的首个分区标签。
+      headerExtension: HyperosBlurredHeaderExtension(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            l10n.holidayAdvancedSubtitle,
+            style: HyperosTypography.listDetail(context),
+          ),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

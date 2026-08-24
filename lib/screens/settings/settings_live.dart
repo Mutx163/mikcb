@@ -132,30 +132,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 });
               },
             ),
-            // 正式版 / 性能版 / 调试版均需展示：用户主动排查超级岛时依赖此入口。
-            // 「测试」二字对普通用户暗示不稳定，改称「自检」并说明用途。
-            // 页内敏感项（假日覆盖、快速造课、友盟崩溃按钮等）仍由 !kReleaseMode 门控。
-            HyperosListTile(
-              key: const ValueKey<String>('settings-live-self-check'),
-              icon: Icons.science_outlined,
-              // 与「诊断」页的自检入口同 accent（IA §4：同目的地须同视觉）。
-              iconAccent: HyperosIconColors.orange,
-              title: l10n.liveSelfCheckTitle,
-              details: l10n.liveSelfCheckSubtitle,
-              onTap: () async {
-                await HyperosNavigation.push(
-                  context,
-                  settings: const RouteSettings(
-                    name: '/settings/live/self-check',
-                  ),
-                  builder: (_) => const _LiveTestingSettingsScreen(),
-                );
-                if (!mounted) return;
-                setState(() {
-                  _draft = context.read<TimetableProvider>().settings;
-                });
-              },
-            ),
           ],
         ),
       ],

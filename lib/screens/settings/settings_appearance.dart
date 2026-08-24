@@ -10,11 +10,12 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   /// Visual groups on this page (not one card per control).
-  /// 0 preview · 1 app display · 2 home title · 3 theme manage + seed · 4 frosted.
+  /// 0 preview · 1 app display · 2 theme manage + seed · 3 frosted · 4 reset.
   ///
   /// 页面背景、壁纸与背景区域已移到「课表页面」，统一课卡颜色已移到
-  /// 「课程卡片」：它们染的不是应用，而是课表页和课卡。
-  static const _appearanceSectionCount = 6;
+  /// 「课程卡片」：它们染的不是应用，而是课表页和课卡。导航形态 /
+  /// 玻璃坞 / 首页标题等结构性设置已迁到「首页与导航」。
+  static const _appearanceSectionCount = 5;
 
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
@@ -141,9 +142,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
         ),
       ),
-      // 主题 / 字体 / 首页导航形态 — 应用级外观（语言与转场已迁到「通用」）。
-      // 本组原是页面中段唯一无标题的裸组，与下方 2/3/4 组样式不一致
-      // （IA 规范 §3「不许无名分组」），补齐区块标题。
+      // 主题 / 字体 — 应用级外观（语言与转场已迁到「通用」，导航形态与
+      // 首页标题已迁到「首页与导航」）。本组原是页面中段唯一无标题的裸组，
+      // 与后续分组样式不一致（IA 规范 §3「不许无名分组」），补齐区块标题。
       1 => HyperosSettingsBlock(
         title: l10n.appearanceThemeDisplaySectionTitle,
         child: HyperosListGroup(
@@ -160,146 +161,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 _updateDraft(_draft.copyWith(appThemeMode: value));
               },
             ),
-            HyperosSelectTile<HomeNavigationForm>(
-              label: l10n.homeNavigationFormLabel,
-              subtitle: switch (_draft.homeNavigationForm) {
-                HomeNavigationForm.classic =>
-                  l10n.homeNavigationFormClassicSubtitle,
-                HomeNavigationForm.glassDock =>
-                  l10n.homeNavigationFormGlassDockSubtitle,
-              },
-              items: {
-                l10n.homeNavigationFormClassic: HomeNavigationForm.classic,
-                l10n.homeNavigationFormGlassDock: HomeNavigationForm.glassDock,
-              },
-              value: _draft.homeNavigationForm,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(homeNavigationForm: value));
-              },
-            ),
-            // 右上角「更多」菜单形态：列表弹窗（当前设计）或八宫格瓷贴
-            // （v2.0.5.5 已发布样式）。八宫格下追加按钮自定义入口。
-            HyperosSelectTile<HomeMenuStyle>(
-              label: l10n.homeMenuStyleLabel,
-              subtitle: switch (_draft.homeMenuStyle) {
-                HomeMenuStyle.list => l10n.homeMenuStyleListSubtitle,
-                HomeMenuStyle.grid => l10n.homeMenuStyleGridSubtitle,
-              },
-              items: {
-                l10n.homeMenuStyleList: HomeMenuStyle.list,
-                l10n.homeMenuStyleGrid: HomeMenuStyle.grid,
-              },
-              value: _draft.homeMenuStyle,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(homeMenuStyle: value));
-              },
-            ),
-            if (_draft.homeMenuStyle == HomeMenuStyle.grid)
-              HyperosListTile(
-                icon: Icons.grid_view_outlined,
-                iconAccent: HyperosIconColors.blue,
-                title: l10n.homeGridCustomizeTitle,
-                details: l10n.homeGridCustomizeDetails(
-                  resolveHomeGridMenuEntries(_draft).length,
-                  HomeGridMenu.maxSlots,
-                ),
-                onTap: () async {
-                  await HyperosNavigation.push(
-                    context,
-                    settings: const RouteSettings(name: '/settings/home-menu'),
-                    builder: (_) => _HomeGridMenuEditorScreen(
-                      initialIds: [
-                        for (final entry in resolveHomeGridMenuEntries(
-                          _draft,
-                        ))
-                          entry.id,
-                      ],
-                      onChanged: (ids) {
-                        _updateDraft(
-                          _draft.copyWith(homeGridMenuActions: ids),
-                        );
-                      },
-                    ),
-                  );
-                  if (!mounted) return;
-                  setState(() {
-                    _draft = context.read<TimetableProvider>().settings;
-                  });
-                },
-              ),
-
-            if (_draft.homeNavigationForm == HomeNavigationForm.glassDock) ...[
-              // 底栏入口开关：日课表 / 周课表 / 设置三个模块 Tab 可分别隐藏，
-              // 至少保留一个（关到最后一个时该开关锁定）。隐藏周课表 Tab
-              // 不影响周视图本身作为底图继续存在。
-              HyperosSwitchTile(
-                title: l10n.glassDockShowDayTabTitle,
-                value: _draft.glassDockShowDayTab,
-                onChanged: _draft.glassDockShowWeekTab ||
-                        _draft.glassDockShowSettingsTab
-                    ? (value) {
-                        _updateDraft(
-                          _draft.copyWith(glassDockShowDayTab: value),
-                        );
-                      }
-                    : null,
-              ),
-              HyperosSwitchTile(
-                title: l10n.glassDockShowWeekTabTitle,
-                value: _draft.glassDockShowWeekTab,
-                onChanged: _draft.glassDockShowDayTab ||
-                        _draft.glassDockShowSettingsTab
-                    ? (value) {
-                        _updateDraft(
-                          _draft.copyWith(glassDockShowWeekTab: value),
-                        );
-                      }
-                    : null,
-              ),
-              HyperosSwitchTile(
-                title: l10n.glassDockShowSettingsTabTitle,
-                value: _draft.glassDockShowSettingsTab,
-                onChanged: _draft.glassDockShowDayTab ||
-                        _draft.glassDockShowWeekTab
-                    ? (value) {
-                        _updateDraft(
-                          _draft.copyWith(glassDockShowSettingsTab: value),
-                        );
-                      }
-                    : null,
-              ),
-              // 独立圆形按钮（GlassTabBar 的 extraButton，官方样式：药丸右侧
-              // 独立玻璃圆钮）：默认关闭；开启后可从八宫格目录里挑它打开的
-              // 功能。运行时在设置页自动滑动收起。
-              HyperosSwitchTile(
-                title: l10n.glassDockShowAddButtonTitle,
-                subtitle: l10n.glassDockShowAddButtonSubtitle,
-                value: _draft.glassDockShowAddButton,
-                onChanged: (value) {
-                  _updateDraft(_draft.copyWith(glassDockShowAddButton: value));
-                },
-              ),
-              if (_draft.glassDockShowAddButton)
-                Builder(
-                  builder: (context) {
-                    final options = _dockExtraButtonOptions(l10n);
-                    return HyperosSelectTile<String>(
-                      label: l10n.glassDockButtonFunctionLabel,
-                      useSheetForPopup: true,
-                      items: options,
-                      value: _dockExtraButtonValue(
-                        _draft.glassDockButtonEntryId,
-                        options,
-                      ),
-                      onChanged: (id) {
-                        _updateDraft(
-                          _draft.copyWith(glassDockButtonEntryId: id),
-                        );
-                      },
-                    );
-                  },
-                ),
-            ],
             HyperosSelectTile<AppFontMode>(
               label: l10n.fontModeLabel,
               useSheetForPopup: true,
@@ -325,30 +186,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
+      // 主题管理并入主题色卡，避免单行孤岛。（首页标题分区已迁到
+      // 「首页与导航」，含预览与样式选择。）
       2 => HyperosSettingsBlock(
-        title: l10n.homeTitleSectionTitle,
-        child: HyperosListGroup(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: _HomeTitleStylePreview(style: _draft.homeTitleStyle),
-            ),
-            HyperosSelectTile<HomeTitleStyle>(
-              label: l10n.homeTitleStyleLabel,
-              items: {
-                for (final v in HomeTitleStyle.values)
-                  homeTitleStyleLabel(l10n, v): v,
-              },
-              value: _draft.homeTitleStyle,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(homeTitleStyle: value));
-              },
-            ),
-          ],
-        ),
-      ),
-      // 主题管理并入主题色卡，避免单行孤岛。
-      3 => HyperosSettingsBlock(
         title: l10n.themeSeedSectionTitle,
         child: HyperosListGroup(
           children: [
@@ -384,7 +224,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      4 => HyperosSettingsBlock(
+      3 => HyperosSettingsBlock(
         title: l10n.frostedSheetSectionTitle,
         child: HyperosListGroup(
           children: [
@@ -474,7 +314,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      5 => _SettingsResetTile(
+      4 => _SettingsResetTile(
         scope: SettingsResetScope.appearance,
         onReset: _updateDraft,
       ),
@@ -529,37 +369,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       });
     }
   }
-}
-
-/// 玻璃坞独立按钮的可选功能表（label → 目录 id）。
-///
-/// 默认「添加课程」置顶；其余按八宫格目录的分类顺序列出。结构 Tab
-/// （day/week/settings）是视图切换而非「打开某页」的动作，不作候选；
-/// 当前环境不可见的条目（如正式版的内存监控）同样过滤。
-Map<String, String> _dockExtraButtonOptions(AppLocalizations l10n) {
-  final options = <String, String>{
-    l10n.homeMenuAddCourseTitle: 'addCourse',
-    // 随视图语义：周视图回本周、日视图把日页滑到今天。
-    l10n.glassDockButtonBackToWeekLabel: 'backToWeek',
-  };
-  for (final entry in kHomeMenuCatalog) {
-    if (!entry.visible()) {
-      continue;
-    }
-    if (entry.id == 'addCourse' ||
-        entry.id == 'day' ||
-        entry.id == 'week' ||
-        entry.id == HomeGridMenu.pinnedActionId) {
-      continue;
-    }
-    options[entry.title(l10n)] = entry.id;
-  }
-  return options;
-}
-
-/// 兜底：持久化的 id 失效（下线/门控变化）时回退默认添加课程。
-String _dockExtraButtonValue(String stored, Map<String, String> options) {
-  return options.containsValue(stored) ? stored : 'addCourse';
 }
 
 String _foruiThemeLabel(ForuiTheme theme) {

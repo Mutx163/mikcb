@@ -59,6 +59,7 @@ import 'user_guide_screen.dart';
 import 'advanced_material_settings_screen.dart';
 
 part 'settings/settings_appearance.dart';
+part 'settings/settings_home_navigation.dart';
 part 'settings/settings_home_menu_editor.dart';
 part 'settings/settings_reset.dart';
 part 'settings/settings_diagnostics.dart';
@@ -131,6 +132,14 @@ class TimetableSettingsScreen extends StatelessWidget {
             context,
             settings: const RouteSettings(name: '/settings/appearance'),
             builder: (_) => const _AppearanceSettingsScreen(),
+          );
+        }
+
+        void openHomeNavigation() {
+          HyperosNavigation.push(
+            context,
+            settings: const RouteSettings(name: '/settings/home-navigation'),
+            builder: (_) => const _HomeNavigationSettingsScreen(),
           );
         }
 
@@ -304,7 +313,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
           // Lazy builder: only visible sections are mounted, reducing
           // per-frame composite cost vs the old SingleChildScrollView.
-          itemCount: 8,
+          itemCount: 9,
           itemBuilder: (context, index) => _buildSettingsHomeSection(
             context,
             index,
@@ -316,6 +325,7 @@ class TimetableSettingsScreen extends StatelessWidget {
             openHolidaySettings: openHolidaySettings,
             openCourseCardSettings: openCourseCardSettings,
             openTimetablePageSettings: openTimetablePageSettings,
+            openHomeNavigation: openHomeNavigation,
             openLiveSettings: openLiveSettings,
             openHomeWidgetSettings: openHomeWidgetSettings,
             openAppearance: openAppearance,
@@ -345,19 +355,11 @@ class TimetableSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// 打开时间模板管理页。旧名 QuickSwitcher 名不副实（开的是完整管理页）。
-  Future<void> _openTimeSchemeManagement(BuildContext context) async {
-    await HyperosNavigation.push(
-      context,
-      settings: const RouteSettings(name: '/settings/time-schemes'),
-      builder: (_) => const TimeSchemeManagementScreen(),
-    );
-  }
-
   /// Lazy section builder for the settings home list.
   ///
-  /// Sections: 0 summary · 1 timetable · 2 display · 3 reminder/desktop
-  /// · 4 app · 5 data/share · 6 about · 7 developer tools.
+  /// Sections: 0 summary · 1 timetable · 2 display · 3 home & navigation
+  /// · 4 reminder/desktop · 5 app · 6 data/share · 7 about
+  /// · 8 developer tools.
   Widget _buildSettingsHomeSection(
     BuildContext context,
     int index, {
@@ -369,6 +371,7 @@ class TimetableSettingsScreen extends StatelessWidget {
     required VoidCallback openHolidaySettings,
     required VoidCallback openCourseCardSettings,
     required VoidCallback openTimetablePageSettings,
+    required VoidCallback openHomeNavigation,
     required VoidCallback openLiveSettings,
     required VoidCallback openHomeWidgetSettings,
     required VoidCallback openAppearance,
@@ -433,24 +436,6 @@ class TimetableSettingsScreen extends StatelessWidget {
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
-                  // 与「课表页面」页同名入口保持同字形同 accent（IA §4）；
-                  // 'weeks' 让给学期周数，时间模板用 timer 语义更准。
-                  MiuixIcons.extended.byName('timer')!,
-                  HyperosIconColors.teal,
-                ),
-                title: l10n.timeSchemeEntryTitle,
-                // 未选模板是待办态（IA §6）：行尾必须显示状态而不是留白。
-                endActions: [
-                  Text(
-                    provider.activeTimeScheme?.name ??
-                        l10n.timeSchemeEntryNotSelected,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ],
-                onClick: () => _openTimeSchemeManagement(context),
-              ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('favorites')!,
                   HyperosIconColors.yellow,
                 ),
@@ -498,8 +483,35 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 3 — Reminder & desktop (live island / home widget).
+      // 3 — Home & navigation（自外观迁出的结构性设置，IA 重构 A3）。
       3 => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.homeNavigationTitle),
+          HyperosListGroup(
+            children: [
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('sidebar')!,
+                  HyperosIconColors.teal,
+                ),
+                title: l10n.homeNavigationTitle,
+                endActions: [
+                  Text(
+                    l10n.homeNavigationSubtitle,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: openHomeNavigation,
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 4 — Reminder & desktop (live island / home widget).
+      4 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -520,8 +532,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 4 — App-level (appearance / general).
-      4 => Column(
+      // 5 — App-level (appearance / general).
+      5 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -549,8 +561,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 5 — Data & sharing.
-      5 => Column(
+      // 6 — Data & sharing.
+      6 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -595,8 +607,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 6 — About & help.
-      6 => Column(
+      // 7 — About & help.
+      7 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -638,7 +650,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 7 — Developer tools + trailing gap.
+      // 8 — Developer tools + trailing gap.
       _ => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

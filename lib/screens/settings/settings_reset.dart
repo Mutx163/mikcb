@@ -15,6 +15,9 @@ enum SettingsResetScope {
   /// 外观与主题页（全应用外观）。
   appearance,
 
+  /// 首页与导航页（导航形态与玻璃坞）。
+  homeNavigation,
+
   /// 桌面小组件页。
   homeWidget,
 }
@@ -84,28 +87,27 @@ TimetableSettings applySettingsReset(
       clearHomePageWallpaperPath: true,
       clearHomePageBackgroundImagePath: true,
     ),
+    // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色与玻璃质感。
     SettingsResetScope.appearance => current.copyWith(
       appThemeMode: d.appThemeMode,
       appFontMode: d.appFontMode,
-      // 首页导航形态是本页暴露的字段——按 IA 规范 §5 必须有恢复路径。
-      homeNavigationForm: d.homeNavigationForm,
-      glassDockShowDayTab: d.glassDockShowDayTab,
-      glassDockShowSettingsTab: d.glassDockShowSettingsTab,
-      glassDockShowWeekTab: d.glassDockShowWeekTab,
-      glassDockButtonEntryId: d.glassDockButtonEntryId,
-      glassDockShowAddButton: d.glassDockShowAddButton,
       foruiTheme: d.foruiTheme,
       themeSeedColor: d.themeSeedColor,
-      homeTitleStyle: d.homeTitleStyle,
-      // 右上角菜单形态与八宫格排列同样是本页暴露的偏好。
-      homeMenuStyle: d.homeMenuStyle,
-      homeGridMenuActions: d.homeGridMenuActions,
       frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
       frostedSheetBlurSigma: d.frostedSheetBlurSigma,
       frostedSheetTintAlpha: d.frostedSheetTintAlpha,
       frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
       liquidGlassTuning: d.liquidGlassTuning,
+    ),
+    // 「首页与导航」页暴露的字段——按 IA 规范 §5 必须有恢复路径。已删除
+    // UI 的字段（设置 Tab、加号钮、右上角菜单形态、内容避让布局）不纳入
+    // 任何 scope，保持「作用域 = 本页开关」的一一对应。
+    SettingsResetScope.homeNavigation => current.copyWith(
+      homeNavigationForm: d.homeNavigationForm,
+      glassDockShowDayTab: d.glassDockShowDayTab,
+      glassDockShowWeekTab: d.glassDockShowWeekTab,
+      homeTitleStyle: d.homeTitleStyle,
     ),
     SettingsResetScope.homeWidget => current.copyWith(
       widgetBackgroundStyle: d.widgetBackgroundStyle,
@@ -156,6 +158,8 @@ class _SettingsResetTile extends StatelessWidget {
       SettingsResetScope.timetablePage =>
         l10n.settingsResetConfirmBodyTimetablePage,
       SettingsResetScope.appearance => l10n.settingsResetConfirmBodyAppearance,
+      SettingsResetScope.homeNavigation =>
+        l10n.settingsResetConfirmBodyHomeNavigation,
       SettingsResetScope.homeWidget => l10n.settingsResetConfirmBodyHomeWidget,
     };
   }
