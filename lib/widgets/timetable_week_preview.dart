@@ -356,9 +356,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
             settings.timetablePageBackgroundColor,
             fallback: colorScheme.surface,
           );
-    final showsFloatingButton =
-        settings.timetableBackToCurrentWeekButtonStyle ==
-        BackToCurrentWeekButtonStyle.floating;
+    // 回本周收敛为浮钮单一入口后恒显示（仅非当前周）。
+    final showsFloatingButton = true;
     final visibleSectionCount = _resolveVisibleSectionCount();
     final appHeaderHeight = includeAppHeader ? _appHeaderHeight : 0.0;
     final weekdayChromeBlurEnabled =
@@ -648,11 +647,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         : HyperosColors.dividerLine(context);
     final dividerWidth = hasBackdropForBorder ? 1.0 : 0.5;
     final visibleDays = _visibleDayNumbers(settings);
-    final canReturnToCurrentWeek = _canReturnToCurrentWeek(settings, week);
-    final showsInlineBackToCurrentWeek =
-        canReturnToCurrentWeek &&
-        settings.timetableBackToCurrentWeekButtonStyle ==
-            BackToCurrentWeekButtonStyle.inline;
+    // 内嵌小字入口已移除（回本周唯一入口是右下浮钮）。
     final weekdayChromeOverWallpaper =
         hasBackdrop &&
         (homePageRegionShowsBackdrop(
@@ -681,7 +676,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       hasBackdrop: weekdayChromeOverWallpaper,
       wallpaperLuminance: weekdayLuminance,
     );
-    final weekLabelMutedColor = homePageOverWallpaperMutedInk(weekLabelColor);
 
     return Container(
       height: _headerHeight,
@@ -709,13 +703,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                     color: weekLabelColor,
                   ),
                 ),
-                if (showsInlineBackToCurrentWeek)
-                  Text(
-                    l10n.backToCurrentWeekAction,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 8, color: weekLabelMutedColor),
-                  ),
               ],
             ),
           ),

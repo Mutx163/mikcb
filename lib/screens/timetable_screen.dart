@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/physics.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
@@ -17,7 +16,6 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../models/class_reminder.dart';
 import '../models/course.dart';
@@ -29,7 +27,6 @@ import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../widgets/class_reminder_sheet.dart';
-import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
@@ -47,8 +44,7 @@ import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_menu_catalog.dart';
-import '../widgets/home_top_menu.dart';
-import '../widgets/home_update_prompt.dart';
+import '../widgets/home_top_menu.dart' show showHomeTopGridMenuSheet;
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/week_selector_picker_sheet.dart';
@@ -59,7 +55,6 @@ import 'add_task_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'timetable_profiles_screen.dart';
-import 'timetable_settings_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
@@ -147,11 +142,10 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
 /// 玻璃坞底部导航的入口（Tab）。
 ///
 /// 入口可由用户在设置中分别隐藏（[TimetableSettings.glassDockShowDayTab] /
-/// [TimetableSettings.glassDockShowSettingsTab] /
-/// [TimetableSettings.glassDockShowWeekTab]，三者至少保留一个），
-/// 因此底栏的实际 Tab 列表与选中索引都是动态的：索引一律通过
-/// [_glassDockTabs] / [_glassDockCurrentIndex] 换算，不直接写魔法数字。
-enum _GlassDockEntry { day, week, settings }
+/// 底栏只承载高频切换：[TimetableSettings.glassDockShowDayTab] /
+/// [TimetableSettings.glassDockShowWeekTab]（至少保留一个，全部隐藏时
+/// 兜底显示周课表）。设置改走 ⋮ 菜单，不再占用底栏黄金位。
+enum _GlassDockEntry { day, week }
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
@@ -161,15 +155,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
-
-  /// 底栏指示器弹簧（与 liquid_glass_widgets 包内 GlassSpring.snappy
-  /// 完全同参数：350ms + 15% bounce）——设置页跟手拖动松手后的回弹
-  /// 使用同一弹簧，与底栏指示器的运动手感保持一致。
-  static final SpringDescription _dockIndicatorSpring =
-      SpringDescription.withDurationAndBounce(
-    duration: const Duration(milliseconds: 350),
-    bounce: 0.15,
-  );
 
   /// 玻璃坞药丸占用高度：药丸 56 + 底部安全 6（药丸顶到屏幕底的距离）。
   static const double _glassDockPillOccupancy = 62;
@@ -189,63 +174,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 一键还原；确认满意后可删除 false 分支与本开关。
   static const bool _kStockDockGlass = true;
 
-  /// 设置页↔课表切换（跟手拖动松手回弹）的转场时长上限。
-  static const Duration _dockViewSwitchDuration = Duration(milliseconds: 300);
-
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
 
-  /// 设置页↔课表切换动画：玻璃坞点 Tab 时直接落到目标值（闪现直切，
-  /// 无滑动）；仅设置页「跟手拖动返回」时才真正播放（拖动线性跟随、
-  /// 松手弹簧收敛）。
-  late final AnimationController _dockSettingsSwitchAnimation;
-
-  /// 独立圆形按钮的收起动画：0=展开（日/周课表页可见），1=收起（设置
-  /// 页滑动收起）。跟随 [_dockSettingsActive] 目标位播放，时长短于页面
-  /// 切换，让按钮先滑走、药丸再补位。
-  late final AnimationController _dockAddBtnCollapse;
-
-  /// 设置切换转场是否进行中（仅跟手拖动期间为 true；两页保持可见）。
-  bool _dockSettingsSlideActive = false;
-
-  /// 设置切换滑动转场的当前进度（0=课表原位，1=设置页就位）。
-  ///
-  /// 跟手拖动期间返回原始动画值（线性跟随手指）；常规动画值即弹簧轨迹。
-  double get _dockSettingsSlideProgress {
-    if (_dockSettingsDragging) {
-      return _dockSettingsSwitchAnimation.value;
-    }
-    return _dockSettingsSlideActive
-        ? _dockSettingsSwitchAnimation.value
-        : 0.0;
-  }
-
-  /// 用底栏同款弹簧把设置页切换动画驱动到 [target]
-  /// （0=课表，1=设置页；仅跟手拖动松手路径使用）。
-  TickerFuture _springDockSettingsTo(double target, {double velocity = 0}) {
-    return _dockSettingsSwitchAnimation.animateWith(
-      SpringSimulation(
-        _dockIndicatorSpring,
-        _dockSettingsSwitchAnimation.value,
-        target,
-        velocity,
-      ),
-    );
-  }
-
-  /// 设置切换是否处于「跟手拖动」中（拖动时进度线性跟随手指）。
-  bool _dockSettingsDragging = false;
-
-  /// 拖动起始时的动画值（0=课表原位，1=设置页就位）。
-  double _dockSettingsDragStartValue = 0;
-
-  /// 玻璃坞动画代次：每次切换点击/拖动结束时 +1，旧动画的完成回调凭
-  /// 代次失效——快速连点（如 1→3→1→3）时中间动画被重定向打断，
-  /// 旧回调不得再复位状态，避免漏拍/跳变。
-  int _dockAnimEpoch = 0;
-
-  /// 玻璃坞当前目标入口（动画/拖动中用于底栏高亮与状态收敛）。
-  _GlassDockEntry _dockTargetEntry = _GlassDockEntry.week;
 
   /// 日视图锚点展开/收起与设置页拖动转场期间，卡片玻璃 fill 需要每帧
   /// 重采样（壁纸屏幕固定、卡片移动），否则纹理停留在旧位置：
@@ -279,14 +210,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// Anchor for the top-right "more" menu popup (positioned below this key).
   final GlobalKey _topMenuButtonKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
-  final SupportCreatorService _supportCreatorService = SupportCreatorService();
-  final HomeUpdatePromptController _updatePromptController =
-      HomeUpdatePromptController();
   bool _hasAvailableUpdate = false;
-  bool _isUpdatePromptVisible = false;
-  bool _hasPresentedUpdatePrompt = false;
   AppUpdateDownloadController? _homeDownloadController;
-  StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
   TimetableProvider? _lastSyncedProvider;
@@ -362,8 +287,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
 
-  /// 玻璃坞形态下「设置」Tab 是否激活（内嵌设置页）。
-  bool _dockSettingsActive = false;
   static const int _sharedFreeVisibleSegmentLimit = 2;
   static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
 
@@ -426,23 +349,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dayExpandDuration,
     );
-    // 设置页↔课表切换动画（点 Tab 直接落值闪现；拖动时才真正播放）。
-    _dockSettingsSwitchAnimation = AnimationController(
-      vsync: this,
-      duration: _dockViewSwitchDuration,
-    );
-    _dockAddBtnCollapse = AnimationController(
-      vsync: this,
-      // 对齐库官方 GlassBottomBarCollapseConfig.animationDuration（280ms）。
-      duration: const Duration(milliseconds: 280),
-      value: 0,
-    );
-    // 日视图锚点展开/收起与设置页拖动转场期间，卡片玻璃 fill 必须每帧
-    // 重采样壁纸（否则纹理停在旧屏幕位置，卡片呈现半边模糊半边透明）。
-    _glassDockCardRepaint = Listenable.merge([
-      _dayViewExpandController,
-      _dockSettingsSwitchAnimation,
-    ]);
+    // 日视图锚点展开/收起期间，卡片玻璃 fill 必须每帧重采样壁纸
+    // （否则纹理停在旧屏幕位置，卡片呈现半边模糊半边透明）。
+    _glassDockCardRepaint = _dayViewExpandController;
     _dayAgendaProgressTimer = widget.enableProgressTimer
         ? Timer.periodic(const Duration(seconds: 1), (_) {
             if (!mounted || !_isDayView) {
@@ -474,13 +383,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     _homePullQuickImportCancel?.call();
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
-    _dockSettingsSwitchAnimation.dispose();
-    _dockAddBtnCollapse.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
     _homeDownloadController?.cancel();
-    _systemDownloadSubscription?.cancel();
-    _updatePromptController.dispose();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
     final dayViewController = _dayViewPageController;
@@ -531,7 +436,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         _seedWallpaperLuminanceFromStartupPrimer(settings);
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
-        final dockSettingsActive = glassDockForm && _dockSettingsActive;
         final viewportSize = MediaQuery.sizeOf(context);
         final hasBackdrop = hasHomePageBackdropImage(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
@@ -847,70 +751,10 @@ class _TimetableScreenState extends State<TimetableScreen>
             l10n: l10n,
           );
         }
-        // 课表↔设置切换：玻璃坞点 Tab 直接闪切（动画值立即落位，
-        // 非激活页随即 Offstage）；仅设置页「跟手拖动返回」时两页
-        // 保持可见、横向衔接滑动（拖动期间 Offstage 不生效）。
-        final dockWidth = MediaQuery.sizeOf(context).width;
-        final dockSlideInProgress = _dockSettingsSlideActive;
+        // 底栏只承载日/周切换；设置统一走 ⋮ 菜单进入独立页面
+        // （内嵌设置宿主与其跟手拖动转场已随 IA 收敛移除）。
         return _wrapWithGlassDock(
-          // 设置页跟手拖动切回课表（回调内部自行判断激活态与动画态）。
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragStart: _onDockSettingsDragStart,
-            onHorizontalDragUpdate: _onDockSettingsDragUpdate,
-            onHorizontalDragEnd: _onDockSettingsDragEnd,
-            onHorizontalDragCancel: _onDockSettingsDragCancel,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-              AnimatedBuilder(
-                animation: _dockSettingsSwitchAnimation,
-                builder: (context, child) {
-                  final p = _dockSettingsSlideProgress;
-                  // 滑出页淡出（M3 SharedAxis 思想：滑动 + 淡入淡出组合，
-                  // 避免纯平移的生硬感）。
-                  return Opacity(
-                    opacity: 1 - 0.3 * p,
-                    child: Transform.translate(
-                      offset: Offset(-dockWidth * p, 0),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Offstage(
-                  offstage: dockSettingsActive && !dockSlideInProgress,
-                  child: dockContent,
-                ),
-              ),
-              AnimatedBuilder(
-                animation: _dockSettingsSwitchAnimation,
-                builder: (context, child) {
-                  // 设置页侧进度 = raw 动画值（弹簧轨迹；稳态 value=1 →
-                  // 就位；跟手拖动时线性）；不能用 _dockSettingsSlideProgress
-                  // （其稳态返回 0 会把设置页移出屏幕并半透明）。
-                  final p = _dockSettingsSwitchAnimation.value;
-                  // 与课表滑出同一曲线插值：两页位移互补（课表左移 p×W，
-                  // 设置右移 (1-p)×W），滑动中无缝衔接不露黑底；
-                  // 滑入页同步淡入。
-                  return Opacity(
-                    opacity: 0.5 + 0.5 * p,
-                    child: Transform.translate(
-                      offset: Offset(dockWidth * (1 - p), 0),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Offstage(
-                  offstage: !dockSettingsActive && !dockSlideInProgress,
-                  child: TimetableSettingsScreen(
-                    embedded: true,
-                    bottomInset: _glassDockSettingsBottomInset(settings),
-                  ),
-                ),
-              ),
-              ],
-            ),
-          ),
+          dockContent,
           glassDockForm: true,
           settings: settings,
           l10n: l10n,
@@ -2132,12 +1976,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       hasBackdrop: weekdayChromeOverWallpaper,
       wallpaperLuminance: weekdayLuminance,
     );
-    final weekLabelMutedColor = homePageOverWallpaperMutedInk(weekLabelColor);
-    final canReturnToCurrentWeek = _canReturnToCurrentWeek(settings, week);
-    final showsInlineBackToCurrentWeek =
-        canReturnToCurrentWeek &&
-        settings.timetableBackToCurrentWeekButtonStyle ==
-            BackToCurrentWeekButtonStyle.inline;
     final visibleDays = _visibleDayNumbers(settings);
 
     // Shared full-row builder: week label + back-to-current-week + the seven
@@ -2170,36 +2008,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                   ),
                 ),
-                if (showExtras && showsInlineBackToCurrentWeek)
-                  SizedBox(
-                    height: 10,
-                    child: OverflowBox(
-                      minWidth: 0,
-                      maxWidth: 72,
-                      alignment: Alignment.topCenter,
-                      child: InkWell(
-                        key: const ValueKey('back-to-current-week-button'),
-                        onTap: () => _jumpToCurrentWeek(provider),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1,
-                          ),
-                          child: Text(
-                            l10n.backToCurrentWeekAction,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.visible,
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: weekLabelMutedColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                // （内嵌「回本周」小字已移除）
               ],
             ),
           ),
@@ -6499,12 +6308,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (_isDayView) {
       return false;
     }
-    // 玻璃坞独立按钮已设为「回本周」时由它接管，顶部浮动按钮不再重复。
-    if (settings.homeNavigationForm == HomeNavigationForm.glassDock &&
-        settings.glassDockShowAddButton &&
-        settings.glassDockButtonEntryId == 'backToWeek') {
-      return false;
-    }
+    // 「回本周」已收敛为浮钮唯一入口（样式枚举仅存兼容，读取时
+    // 一律迁移为 floating），此处不再有接管分支。
     if (settings.timetableBackToCurrentWeekButtonStyle !=
         BackToCurrentWeekButtonStyle.floating) {
       return false;
@@ -6521,12 +6326,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       return 0;
     }
     return _glassDockPillOccupancy + MediaQuery.viewPaddingOf(context).bottom;
-  }
-
-  /// 玻璃坞形态下「设置页」的滚动底部避让：列表视口保持全屏，避让以
-  /// 滚动 padding 实现，最后一项可滚到药丸上方。与内容余量同源。
-  double _glassDockSettingsBottomInset(TimetableSettings settings) {
-    return _glassDockContentScrollInset(settings);
   }
 
   /// 玻璃坞形态：把底部液态玻璃药丸导航叠加到页面之上。
@@ -6579,15 +6378,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           bottom: 0,
           child: SafeArea(
             minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            // 官方 iOS 26 形态：居中药丸 + 右侧独立圆钮，整组居中。收起时
-            // 整颗按钮在圆形裁切槽内向左滑入药丸（水滴回缩），槽宽同步回
-            // 收让药丸平滑补位；材质经 dockBtnSettings 与药丸显式同源。
-            child: AnimatedBuilder(
-              animation: _dockAddBtnCollapse,
-              builder: (context, _) {
-                final collapse = settings.glassDockShowAddButton
-                    ? _dockAddBtnCollapse.value
-                    : 1.0;
+            // 官方 iOS 26 形态：居中药丸 + 右侧独立圆钮，整组居中。
+            // 圆钮固定展开（加课程唯一主动入口，不再随页收起）；
+            // 材质经 dockBtnSettings 与药丸显式同源。
+            child: Builder(builder: (context) {
                 final lum = _wallpaperBodyLuminance;
                 final isDarkTheme =
                     Theme.of(context).brightness == Brightness.dark;
@@ -6606,8 +6400,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                           l10n: l10n,
                         ),
                       ),
-                      if (collapse < 1) _buildDockMergeSlot(
-                        collapse: collapse,
+                      _buildDockMergeSlot(
                         ink: ink,
                         l10n: l10n,
                         settings: dockBtnSettings,
@@ -6635,18 +6428,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
-    // 底栏文字极性跟随当前所在页面的背景亮度（黑白动态变色）：
-    // - 课表 Tab：表面亮度由壁纸决定（24% 白玻璃只提亮一点），浅色主题 +
-    //   暗壁纸时用浅色文字（复用 _wallpaperBodyLuminance 采样；未就绪退主题）。
-    // - 设置 Tab：底栏浮在设置页（浅色主题白底 / 深色主题深底）之上，
-    //   极性只看主题，不能沿用课表壁纸亮度——否则暗壁纸 + 白底设置页会白底白字。
-    final onSettingsPage = _dockSettingsActive;
-    // 文字极性跟随「底栏实际表面亮度」：
-    // - 课表 Tab：表面 = 壁纸 + 24% 白玻璃，极性由壁纸亮度决定（与顶部
-    //   chrome 同一规则，采样就绪时覆盖主题判断——否则深色主题 + 亮壁纸
-    //   会白字看不清且与顶部黑字不一致）；采样未就绪回退主题。
-    // - 设置 Tab：表面 = 设置页纯色背景，极性只看主题。
-    final wallpaperLuminance = onSettingsPage ? null : _wallpaperBodyLuminance;
+    // 底栏文字极性跟随「底栏实际表面亮度」（黑白动态变色）：
+    // 表面 = 壁纸 + 24% 白玻璃，极性由壁纸亮度决定（与顶部 chrome 同一
+    // 规则，采样就绪时覆盖主题判断——否则深色主题 + 亮壁纸会白字看不清
+    // 且与顶部黑字不一致）；采样未就绪回退主题。
+    final wallpaperLuminance = _wallpaperBodyLuminance;
     final barUsesLightInk = wallpaperLuminance != null
         ? wallpaperLuminance < 0.45
         : isDark;
@@ -6731,17 +6517,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 「水滴合并槽」：独立按钮与药丸之间的过渡区。
+  /// 「水滴合并槽」：独立按钮与药丸之间的过渡区（恒展开）。
   ///
-  /// 按钮尺寸与药丸一致（56 = barHeight，三枚 Tab 胶囊的高度），左右
-  /// 并排时上下边缘完全平齐；槽总高 68 与药丸组件等高，中心线天然对
-  /// 齐。宽度 = 8 间距 + 56 按钮随收起进度回收。
-  ///
-  /// 收起运动：整颗按钮在槽内贴右缘向左平移、沉入药丸方向；裁切用
-  /// ClipRRect 圆角 28 —— 与药丸端帽半圆同弧度，滑入时是被「圆形端帽」
-  /// 吞掉而不是被直线切掉。透明度平方曲线：滑动全程清晰，末段快速隐去。
+  /// 按钮尺寸与药丸一致（56 = barHeight，两枚 Tab 胶囊的高度），左右
+  /// 并排时上下边缘完全平齐；槽总高 68 与药丸组件等高，中心线天然对齐。
+  /// 裁切用 ClipRRect 圆角 28 —— 与药丸端帽半圆同弧度。
   Widget _buildDockMergeSlot({
-    required double collapse,
     required Color ink,
     required AppLocalizations l10n,
     required LiquidGlassSettings? settings,
@@ -6750,7 +6531,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: SizedBox(
-        width: 8 + 56 * (1 - collapse),
+        width: 8 + 56,
         height: 68,
         child: OverflowBox(
           alignment: Alignment.centerRight,
@@ -6758,85 +6539,38 @@ class _TimetableScreenState extends State<TimetableScreen>
           maxWidth: 56,
           minHeight: 56,
           maxHeight: 56,
-          child: Transform.translate(
-            offset: Offset(-collapse * 64, 0),
-            child: Opacity(
-              opacity: 1 - collapse * collapse,
-              child: GlassButton(
-                icon: Icon(Icons.add_rounded),
-                onTap: () => unawaited(_openDockExtraButton()),
-                label: l10n.glassDockExtraButtonSemanticLabel,
-                width: 56,
-                height: 56,
-                iconSize: 22,
-                iconColor: ink,
-                settings: settings,
-                quality: quality,
-              ),
-            ),
+          child: GlassButton(
+            icon: Icon(Icons.add_rounded),
+            // 圆钮固定为「加课程」唯一主动入口（⋮ 菜单去重）。
+            onTap: () => unawaited(_showAddCourseSheet()),
+            label: l10n.glassDockExtraButtonSemanticLabel,
+            width: 56,
+            height: 56,
+            iconSize: 22,
+            iconColor: ink,
+            settings: settings,
+            quality: quality,
           ),
         ),
       ),
     );
   }
 
-  /// 独立按钮分发：默认/兜底走首页添加课程弹层（保留日期上下文），
-  /// 其余 id 经八宫格目录打开对应页面。
-  Future<void> _openDockExtraButton() async {
-    final settings = context.read<TimetableProvider>().settings;
-    final id = settings.glassDockButtonEntryId;
-    if (id == 'addCourse' || id.isEmpty) {
-      await _showAddCourseSheet();
-      return;
-    }
-    if (id == 'backToWeek') {
-      // 周视图：回当前周；日视图：把日页滑到「今天」所在页。
-      if (_isDayView) {
-        final currentWeek = _resolveCurrentSemesterWeek(settings);
-        if (currentWeek == null) {
-          await _showAddCourseSheet();
-          return;
-        }
-        final visibleDays = _visibleDayNumbers(settings);
-        var dayOfWeek = DateTime.now().weekday;
-        if (!visibleDays.contains(dayOfWeek)) {
-          dayOfWeek = visibleDays.first; // 今天被隐藏（如周末）时落到当周首日
-        }
-        final page = _dayViewPageIndexForDay(settings, currentWeek, dayOfWeek);
-        final controller = _ensureDayViewPageController(settings);
-        if (controller.hasClients) {
-          await controller.animateToPage(
-            page,
-            duration: _dockViewSwitchDuration,
-            curve: Curves.easeOutCubic,
-          );
-        }
-      } else {
-        await _jumpToCurrentWeek(context.read<TimetableProvider>());
-      }
-      return;
-    }
-    final entry = homeMenuEntryById(id);
-    if (entry == null || !entry.visible()) {
-      await _showAddCourseSheet();
-      return;
-    }
-    await entry.open(context);
-  }
-
-  /// 当前设置下玻璃坞显示的入口序列（三个模块 Tab 均可隐藏，至少留一）。
+  /// 当前设置下玻璃坞显示的入口序列（日/周可分别隐藏，全隐兜底周）。
   List<_GlassDockEntry> _glassDockTabs(
     TimetableSettings settings,
     AppLocalizations l10n,
   ) {
-    return [
+    final tabs = [
       if (settings.glassDockShowDayTab) _GlassDockEntry.day,
       if (settings.glassDockShowWeekTab) _GlassDockEntry.week,
-      if (settings.glassDockShowSettingsTab) _GlassDockEntry.settings,
     ];
+    // 全部隐藏时兜底显示周课表（旧约束「至少留一」的运行时保障）。
+    if (tabs.isEmpty) return const [_GlassDockEntry.week];
+    return tabs;
   }
 
-  /// 入口 → GlassTab 视觉配置（排序沿用用户期望：日课表 / 周课表 / 设置）。
+  /// 入口 → GlassTab 视觉配置（排序：日课表 / 周课表）。
   GlassTab _glassDockTabFor(_GlassDockEntry entry, AppLocalizations l10n) {
     return switch (entry) {
       _GlassDockEntry.day => GlassTab(
@@ -6846,10 +6580,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       _GlassDockEntry.week => GlassTab(
         icon: Icon(Icons.calendar_view_week_rounded),
         label: l10n.glassDockTabWeek,
-      ),
-      _GlassDockEntry.settings => GlassTab(
-        icon: Icon(Icons.settings_rounded),
-        label: l10n.settingsTitle,
       ),
     };
   }
@@ -6868,48 +6598,23 @@ class _TimetableScreenState extends State<TimetableScreen>
     return weekIndex < 0 ? 0 : weekIndex;
   }
 
-  /// 当前实际所在的入口（动画/拖动中取目标入口）。
+  /// 当前实际所在的入口（底栏只承载日/周切换）。
   _GlassDockEntry get _currentDockEntry {
-    if (_dockSettingsSlideActive || _dockSettingsDragging) {
-      return _dockTargetEntry;
-    }
-    if (_dockSettingsActive) {
-      return _GlassDockEntry.settings;
-    }
     return _isDayView ? _GlassDockEntry.day : _GlassDockEntry.week;
   }
 
-  /// 玻璃坞入口切换。
-  ///
-  /// 日↔周复用日期栏路径的锚点展开/收起动画（[_toggleDayView] /
-  /// [_closeDayView]）：玻璃面板流畅滑入滑出——长按拖拽指示器松手时
-  /// 库只在终点回调一次，若在此闪现就会「拖到哪都瞬间跳变」。设置页
-  /// 仍为闪现直切 + 跟手拖动返回（其页面切换本就是横向闪切）。
-  ///
-  /// 快速连点不吞拍：每次点击都同步收敛到目标；若设置页拖动松手的
-  /// 弹簧还在收敛，先凭 [_dockAnimEpoch] 使其完成回调失效再停掉动画。
+  /// 玻璃坞入口切换：日↔周复用日期栏路径的锚点展开/收起动画
+  /// （[_toggleDayView] / [_closeDayView]），玻璃面板随锚点滑入滑出。
+  /// 设置入口已收敛到 ⋮ 菜单，不再占用底栏（IA 重构决策）。
   void _onDockEntrySelected(
     _GlassDockEntry entry,
     TimetableSettings settings,
   ) {
-    if (entry == _currentDockEntry &&
-        !_dockSettingsSlideActive &&
-        !_dockSettingsDragging) {
-      return; // 已在该页且无动画：重复点击无动作。
+    if (entry == _currentDockEntry) {
+      return; // 已在该页：重复点击无动作。
     }
-    // 震动改由各目标路径内部触发：日/周走 toggle/close 自带的一次，
-    // 设置分支单独调用——避免与动画路径叠加成双击感。
-    _dockAnimEpoch++;
-    _dockTargetEntry = entry;
-    _dockSettingsSwitchAnimation.stop();
     switch (entry) {
-      case _GlassDockEntry.day: // 日课表：关设置闪现就位；面板锚点动画展开。
-        setState(() {
-          _dockSettingsActive = false;
-          _dockSettingsSlideActive = false;
-          _dockSettingsDragging = false;
-        });
-        _dockSettingsSwitchAnimation.value = 0;
+      case _GlassDockEntry.day:
         if (!_isDayView) {
           unawaited(
             _toggleDayView(
@@ -6922,13 +6627,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
           );
         }
-      case _GlassDockEntry.week: // 周课表：关设置闪现就位；日面板动画收起。
-        setState(() {
-          _dockSettingsActive = false;
-          _dockSettingsSlideActive = false;
-          _dockSettingsDragging = false;
-        });
-        _dockSettingsSwitchAnimation.value = 0;
+      case _GlassDockEntry.week:
         if (_isDayView) {
           // 动画收起：_closeDayView 内部完成震动、状态清理与持久化。
           unawaited(_closeDayView(settings));
@@ -6938,122 +6637,6 @@ class _TimetableScreenState extends State<TimetableScreen>
             mode: TimetableHomeViewMode.week,
           );
         }
-      case _GlassDockEntry
-          .settings: // 设置：直接就位（动画值落 1，非激活课表页随即 Offstage）。
-        setState(() {
-          _dockSettingsActive = true;
-          _dockSettingsSlideActive = false;
-          _dockSettingsDragging = false;
-        });
-        _dockSettingsSwitchAnimation.value = 1;
-        _maybeSelectionClick(settings);
-    }
-    _syncDockAddButtonCollapse();
-  }
-
-  /// 独立按钮跟随所在页收起/展开：设置页滑动收起，回课表滑出。
-  void _syncDockAddButtonCollapse() {
-    if (!mounted) {
-      return;
-    }
-    if (_dockSettingsActive) {
-      _dockAddBtnCollapse.forward();
-    } else {
-      _dockAddBtnCollapse.reverse();
-    }
-  }
-
-  /// 设置页拖动转场动画完成收敛：凭代次确认仍是最新动画后复位转动态，
-  /// 并按目标 Tab 收敛状态（目标为周视图时清除日视图状态）。
-  void _finishDockAnim(int epoch) {
-    if (!mounted || epoch != _dockAnimEpoch) {
-      return;
-    }
-    final targetIsWeek = _dockTargetEntry == _GlassDockEntry.week;
-    setState(() {
-      _dockSettingsSlideActive = false;
-      if (targetIsWeek) {
-        _dayViewExpandController.value = 0;
-        _dayHeaderPreview.value = null;
-        _selectedWeekForDayView = null;
-        _selectedDayOfWeek = null;
-        _dayViewTransitionSourceWeek = null;
-        _dayViewTransitionSourceDayOfWeek = null;
-      }
-    });
-    if (targetIsWeek) {
-      _persistViewState(
-        context.read<TimetableProvider>(),
-        mode: TimetableHomeViewMode.week,
-      );
-    }
-  }
-
-  /// 设置页「跟手拖动」：内容区水平拖动可交互式切回课表
-  /// （HyperOS / iOS 风格），松手按位置与速度决定完成或回弹。
-  void _onDockSettingsDragStart(DragStartDetails details) {
-    if (!_dockSettingsActive ||
-        _dockSettingsSlideActive ||
-        _dockSettingsDragging) {
-      return;
-    }
-    _dockSettingsDragStartValue = _dockSettingsSwitchAnimation.value;
-    setState(() {
-      _dockSettingsDragging = true;
-      // 拖动期间两页保持可见（Offstage 依赖 slideActive 判断）。
-      _dockSettingsSlideActive = true;
-    });
-  }
-
-  void _onDockSettingsDragUpdate(DragUpdateDetails details) {
-    if (!_dockSettingsDragging) {
-      return;
-    }
-    final width = MediaQuery.sizeOf(context).width;
-    if (width <= 0) {
-      return;
-    }
-    final delta = (details.primaryDelta ?? 0) / width;
-    _dockSettingsSwitchAnimation.value =
-        (_dockSettingsDragStartValue + delta).clamp(0.0, 1.0);
-  }
-
-  void _onDockSettingsDragEnd(DragEndDetails details) {
-    if (!_dockSettingsDragging) {
-      return;
-    }
-    final value = _dockSettingsSwitchAnimation.value;
-    final velocity = details.primaryVelocity ?? 0;
-    final width = MediaQuery.sizeOf(context).width;
-    setState(() => _dockSettingsDragging = false);
-    final epoch = ++_dockAnimEpoch;
-    // 拖拽松手完成一次页面切换（进设置或回课表），与点 Tab 同一套触觉
-    // 反馈；拖拽只可能从课表页发起，两支都是真实切换。
-    _maybeSelectionClick(context.read<TimetableProvider>().settings);
-    if (value > 0.5 || velocity < -400) {
-      // 过半或向左甩：留在设置页（弹簧带初始速度，更跟手）。
-      _dockTargetEntry = _GlassDockEntry.settings;
-      _springDockSettingsTo(1, velocity: (velocity / width).clamp(-4.0, 4.0))
-          .whenComplete(() => _finishDockAnim(epoch));
-    } else {
-      // 未过半或向右甩：切回课表（保持进入设置前的日/周视图）。
-      final backEntry = _isDayView
-          ? _GlassDockEntry.day
-          : _GlassDockEntry.week;
-      _dockTargetEntry = backEntry;
-      setState(() {
-        _dockSettingsActive = false;
-        _dockSettingsSlideActive = true;
-      });
-      _springDockSettingsTo(0, velocity: (velocity / width).clamp(-4.0, 4.0))
-          .whenComplete(() => _finishDockAnim(epoch));
-    }
-    _syncDockAddButtonCollapse();
-  }
-
-  void _onDockSettingsDragCancel() {
-    if (_dockSettingsDragging) {
-      setState(() => _dockSettingsDragging = false);
     }
   }
 
@@ -8063,37 +7646,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     // dark over light) instead of the theme's onSurface color.
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
-    final headerShowsBackdrop = homePageRegionShowsBackdrop(
-      settings,
-      HomePageBackgroundScope.header,
-    );
-    final headerUsesFrostedChrome =
-        hasBackdrop &&
-        (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-    final menuForeground = _resolveHomeChromeForeground(
-      headerShowsWallpaper: headerUsesFrostedChrome,
-      themeForeground: context.theme.colors.foreground,
-    );
+    // 菜单前景色由八宫格弹层内部按壁纸亮度自适应，无需宿主传入。
 
-    // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层，
-    // 「列表」是当前的锚定弹窗；排列只在八宫格下生效。两种形态统一以
-    // 入口 id 回传，再经目录分发到全应用任意二级页面/功能。
-    final String? selectedId;
-    if (settings.homeMenuStyle == HomeMenuStyle.grid) {
-      selectedId = await showHomeTopGridMenuSheet(
-        context,
-        hasAvailableUpdate: _hasAvailableUpdate,
-        entries: resolveHomeGridMenuEntries(settings),
-      );
-    } else {
-      selectedId = (await showHomeTopMenuSheet(
-        context,
-        hasAvailableUpdate: _hasAvailableUpdate,
-        anchorKey: _topMenuButtonKey,
-        foregroundColor: menuForeground,
-      ))?.name;
-    }
+    // 菜单唯一形态：八宫格瓷贴（旧锚定列表弹窗已随 IA 收敛移除）。
+    // 统一以入口 id 回传，再经目录分发到全应用任意二级页面/功能。
+    final selectedId = await showHomeTopGridMenuSheet(
+      context,
+      hasAvailableUpdate: _hasAvailableUpdate,
+      entries: resolveHomeGridMenuEntries(settings),
+    );
 
     if (!mounted || selectedId == null) {
       return;
@@ -8192,7 +7753,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       setState(() {
         _hasAvailableUpdate = result.hasUpdate;
       });
-      _scheduleHomeUpdatePrompt(result);
     } catch (_) {
       // Ignore update check failures on home screen; About page provides details.
     } finally {
@@ -8200,213 +7760,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  void _scheduleHomeUpdatePrompt(AppUpdateCheckResult result) {
-    if (!result.hasUpdate ||
-        result.latestRelease == null ||
-        _hasPresentedUpdatePrompt ||
-        _isUpdatePromptVisible) {
-      return;
-    }
-    final release = result.latestRelease!;
-    final provider = context.read<TimetableProvider>();
-    final settings = provider.settings;
-    final channel = AppUpdateDownloadChannelX.fromValue(
-      settings.appUpdateDownloadChannel,
-    );
-    final source = AppUpdateDownloadSourceX.fromValue(
-      settings.appUpdateDownloadSource,
-    );
-    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
-      settings.appUpdateMirrorPreset,
-    );
-    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
-      preset: mirrorPreset,
-      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-    );
-    final effectiveDownloadUrl = _updateService.getEffectiveDownloadUrl(
-      release: release,
-      channel: channel,
-      source: source,
-      mirrorUrlPrefix: mirrorPrefix,
-    );
-    final hasDirectDownload =
-        effectiveDownloadUrl != null && effectiveDownloadUrl.trim().isNotEmpty;
-    final promptDownloadUrl = effectiveDownloadUrl ?? release.releaseUrl;
-    if (promptDownloadUrl.trim().isEmpty) {
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _hasPresentedUpdatePrompt || _isUpdatePromptVisible) {
-        return;
-      }
-      if (ModalRoute.of(context)?.isCurrent != true) {
-        return;
-      }
-      _hasPresentedUpdatePrompt = true;
-      _isUpdatePromptVisible = true;
-      unawaited(
-        _showHomeUpdatePromptAndTrackState(
-          release: release,
-          currentVersion: result.currentVersion,
-          channel: channel,
-          downloadUrl: promptDownloadUrl,
-          hasDirectDownload: hasDirectDownload,
-        ),
-      );
-    });
-  }
-
-  Future<void> _showHomeUpdatePromptAndTrackState({
-    required AppReleaseInfo release,
-    required String currentVersion,
-    required AppUpdateDownloadChannel channel,
-    required String downloadUrl,
-    required bool hasDirectDownload,
-  }) async {
-    try {
-      await showHomeUpdatePrompt(
-        context,
-        release: release,
-        currentVersion: currentVersion,
-        downloadChannel: channel,
-        hasDirectDownload: hasDirectDownload,
-        controller: _updatePromptController,
-        onDownload: () async {
-          if (!hasDirectDownload) {
-            await _openUpdateReleasePage(release.releaseUrl);
-            return false;
-          }
-          return _startHomeUpdateDownload(
-            release: release,
-            channel: channel,
-            downloadUrl: downloadUrl,
-          );
-        },
-        onViewRelease: () => _openUpdateReleasePage(release.releaseUrl),
-        onCancelDownload: _cancelHomeUpdateDownload,
-        onResumeDownload: () => _startHomeUpdateDownload(
-          release: release,
-          channel: channel,
-          downloadUrl: downloadUrl,
-        ),
-      );
-    } finally {
-      _isUpdatePromptVisible = false;
-    }
-  }
-
-  Future<bool> _startHomeUpdateDownload({
-    required AppReleaseInfo release,
-    required AppUpdateDownloadChannel channel,
-    required String downloadUrl,
-  }) async {
-    if (channel == AppUpdateDownloadChannel.pgyer) {
-      await _openUpdateReleasePage(downloadUrl);
-      return false;
-    }
-
-    final settings = context.read<TimetableProvider>().settings;
-    if (settings.appUpdateDownloadChannel ==
-        AppUpdateDownloadChannel.pgyer.value) {
-      await _openUpdateReleasePage(downloadUrl);
-      return false;
-    }
-
-    if (_useSystemUpdateDownloader(settings)) {
-      final version = release.version.trim().replaceAll(' ', '_');
-      final downloadId = await _supportCreatorService.enqueueSystemDownload(
-        url: downloadUrl,
-        fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
-        title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
-        description: AppLocalizations.of(
-          context,
-        )!.aboutUpdatePackageDescription,
-      );
-      if (downloadId == null) {
-        return false;
-      }
-      final initialProgress = await _supportCreatorService
-          .querySystemDownloadProgress(downloadId);
-      if (initialProgress != null) {
-        _updatePromptController.beginSystemDownload(
-          downloadId: downloadId,
-          progress: initialProgress,
-        );
-      }
-      _watchSystemUpdateDownload(downloadId);
-      return true;
-    }
-
-    final controller = AppUpdateDownloadController();
-    _homeDownloadController = controller;
-    _updatePromptController.beginInAppDownload();
-    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
-      settings.appUpdateMirrorPreset,
-    );
-    final mirrorPrefix = resolveAppUpdateMirrorUrlPrefix(
-      preset: mirrorPreset,
-      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-    );
-    final error = await _updateService.downloadAndInstallUpdate(
-      downloadUrl,
-      (downloadedBytes, totalBytes) {
-        _updatePromptController.updateInAppProgress(
-          downloadedBytes,
-          totalBytes,
-        );
-      },
-      controller,
-      mirrorUrlPrefix: mirrorPrefix,
-    );
-    if (!mounted) {
-      return true;
-    }
-    _homeDownloadController = null;
-    final wasCancelled = error == AppUpdateService.downloadCancelledMessage;
-    _updatePromptController.finishInAppDownload(
-      success: error == null,
-      cancelled: wasCancelled,
-    );
-    if (wasCancelled) {
-      return true;
-    }
-    return true;
-  }
-
-  bool _useSystemUpdateDownloader(TimetableSettings settings) {
-    return settings.appUpdateUseSystemDownloader;
-  }
-
-  void _watchSystemUpdateDownload(int downloadId) {
-    unawaited(() async {
-      try {
-        await for (final progress
-            in _supportCreatorService.watchSystemDownloadProgress(downloadId)) {
-          if (!mounted) {
-            return;
-          }
-          _updatePromptController.updateSystemDownload(progress);
-        }
-      } catch (_) {
-        // The system queue can briefly disappear while the provider starts;
-        // keep the prompt visible and let the next observation recover.
-      }
-    }());
-  }
-
-  void _cancelHomeUpdateDownload() {
-    _homeDownloadController?.cancel();
-    _updatePromptController.markCancelling();
-  }
-
-  Future<void> _openUpdateReleasePage(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      return;
-    }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
 }
 
 void _openPopupActionPage(

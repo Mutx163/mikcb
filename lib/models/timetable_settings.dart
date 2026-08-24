@@ -359,11 +359,14 @@ extension BackToCurrentWeekButtonStyleX on BackToCurrentWeekButtonStyle {
     BackToCurrentWeekButtonStyle.floating => 'floating',
   };
 
+  /// 解析旧档：inline（时间栏内嵌小字）已收敛为浮钮唯一入口，
+  /// 存量 'inline' 值迁移为 floating；枚举保留两值仅为兼容旧 JSON。
   static BackToCurrentWeekButtonStyle fromValue(String? value) {
-    return BackToCurrentWeekButtonStyle.values.firstWhere(
-      (item) => item.value == value,
-      orElse: () => BackToCurrentWeekButtonStyle.inline,
-    );
+    if (value == 'floating') {
+      return BackToCurrentWeekButtonStyle.floating;
+    }
+    // 'inline' 与未知值一律落到 floating。
+    return BackToCurrentWeekButtonStyle.floating;
   }
 }
 

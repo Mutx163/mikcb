@@ -224,24 +224,9 @@ class _TimetablePageSettingsScreenState
           HyperosSectionLabel(text: l10n.timetablePageSectionBackToWeek),
           HyperosListGroup(
             children: [
-              HyperosSelectTile<BackToCurrentWeekButtonStyle>(
-                label: l10n.layoutBackToCurrentWeekButtonStyleLabel,
-                items: {
-                  for (final v in BackToCurrentWeekButtonStyle.values)
-                    _backToCurrentWeekButtonStyleLabel(l10n, v): v,
-                },
-                value: _draft.timetableBackToCurrentWeekButtonStyle,
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(
-                      timetableBackToCurrentWeekButtonStyle: value,
-                    ),
-                  );
-                },
-              ),
-              if (_draft.timetableBackToCurrentWeekButtonStyle ==
-                  BackToCurrentWeekButtonStyle.floating)
-                HyperosSliderTile(
+              // 「回本周」已收敛为浮钮唯一入口，样式选择行随之移除；
+              // 仅保留浮钮透明度调节。
+              HyperosSliderTile(
                   title: l10n.layoutBackToCurrentWeekButtonOpacityTitle,
                   value: _draft.timetableFloatingBackToCurrentWeekButtonOpacity,
                   min: 0.55,
@@ -418,18 +403,6 @@ class _TimetablePageSettingsScreenState
         ),
       ),
     );
-  }
-
-  String _backToCurrentWeekButtonStyleLabel(
-    AppLocalizations l10n,
-    BackToCurrentWeekButtonStyle style,
-  ) {
-    return switch (style) {
-      BackToCurrentWeekButtonStyle.inline =>
-        l10n.layoutBackToCurrentWeekButtonStyleInline,
-      BackToCurrentWeekButtonStyle.floating =>
-        l10n.layoutBackToCurrentWeekButtonStyleFloating,
-    };
   }
 
   Widget _buildHomePageImageTile(

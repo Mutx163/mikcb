@@ -657,31 +657,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           child: Text(l10n.guidePersonalizeSubtitle, style: _guideMutedBodyStyle()),
         ),
         HyperosControlCard(
-          title: l10n.guidePersonalizeMenuStyleTitle,
-          child: HyperosControlCardInset(
-            child: Column(
-              children: [
-                _guideOptionRow(
-                  context,
-                  title: l10n.homeMenuStyleList,
-                  summary: l10n.homeMenuStyleListSubtitle,
-                  selected: settings.homeMenuStyle == HomeMenuStyle.list,
-                  onTap: () => _applyHomeMenuStyle(HomeMenuStyle.list),
-                ),
-                const MiuixHorizontalDivider(),
-                _guideOptionRow(
-                  context,
-                  title: l10n.homeMenuStyleGrid,
-                  summary: l10n.homeMenuStyleGridSubtitle,
-                  selected: settings.homeMenuStyle == HomeMenuStyle.grid,
-                  onTap: () => _applyHomeMenuStyle(HomeMenuStyle.grid),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const HyperosSectionGap(),
-        HyperosControlCard(
           title: l10n.guidePersonalizeVisualEffectTitle,
           child: HyperosControlCardInset(
             child: Column(
@@ -744,9 +719,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     if (provider == null) return;
     unawaited(provider.updateTimetableSettings(next));
   }
-
-  void _applyHomeMenuStyle(HomeMenuStyle style) =>
-      _updateSettings(_currentSettings.copyWith(homeMenuStyle: style));
 
   void _applyAppThemeMode(AppThemeMode mode) =>
       _updateSettings(_currentSettings.copyWith(appThemeMode: mode));
