@@ -65,9 +65,14 @@ class _GlassDockIconPickerScreenState
           const HyperosSectionGap(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: HyperosSearchBar(
-              hint: l10n.glassDockButtonIconSearchHint,
-              onChanged: (value) => setState(() => _filter = value),
+            // 输入组件不裸放在 scaffold 背景上：搜索框填充 #F0F0F0 对
+            // 页面背景 #F2F2F2 无对比；按 showcase 同款惯例垫卡片给表面。
+            child: HyperosCard(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: HyperosSearchBar(
+                hint: l10n.glassDockButtonIconSearchHint,
+                onChanged: (value) => setState(() => _filter = value),
+              ),
             ),
           ),
           Padding(
