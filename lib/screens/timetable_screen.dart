@@ -211,7 +211,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   final GlobalKey _topMenuButtonKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
   bool _hasAvailableUpdate = false;
-  AppUpdateDownloadController? _homeDownloadController;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
   TimetableProvider? _lastSyncedProvider;
@@ -385,7 +384,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
-    _homeDownloadController?.cancel();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
     final dayViewController = _dayViewPageController;
@@ -638,7 +636,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                               width: 9,
                               height: 9,
                               decoration: BoxDecoration(
-                                color: Colors.redAccent,
+                                color: HyperosColors.destructive, // 更新红点与危险语义统一色
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: headerBarColor.a == 0
@@ -4913,7 +4911,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       child: const Icon(
         Icons.assignment_outlined,
         size: 11,
-        color: Color(0xFFE05D44),
+        color: HyperosColors.destructive,
       ),
     );
   }
@@ -5531,7 +5529,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             )!.dayAgendaInProgressStatus(remainingMinutes),
       statusBackgroundColor: Colors.white,
       statusTextColor: isEndingSoon
-          ? const Color(0xFFE05D44)
+          ? HyperosColors.destructive
           : palette.fillColor,
       baseColor: palette.baseColor,
       fillColor: palette.fillColor,
@@ -5575,7 +5573,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               context,
             )!.scheduleAgendaInProgressStatus(remainingMinutes),
       statusBackgroundColor: Colors.white,
-      statusTextColor: isEndingSoon ? const Color(0xFFE05D44) : fillColor,
+      statusTextColor: isEndingSoon ? HyperosColors.destructive : fillColor,
       baseColor: baseColor,
       fillColor: fillColor,
     );
