@@ -255,7 +255,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     if (_totalPages <= 1) return const SizedBox.shrink();
 
     final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -266,12 +265,16 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             children: [
               Text(
                 '${_currentPage + 1} / $_totalPages',
-                style: typo.xs2.copyWith(color: colors.mutedForeground),
+                style: typo.xs2.copyWith(
+                  color: HyperosColors.secondaryText(context),
+                ),
               ),
               const SizedBox(width: 8),
               Text(
                 _buildPageTitle(l10n),
-                style: typo.xs2.copyWith(color: colors.primary),
+                style: typo.xs2.copyWith(
+                  color: HyperosColors.primary(context),
+                ),
               ),
             ],
           ),
@@ -318,24 +321,20 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  /// Keeps the page viewport under the overlay header while the list's
-  /// scrollable padding carries the expanded header clearance. The app bar can
-  /// then shrink its paint/layout height without leaving a stale gap between
-  /// the progress extension and the first card.
-  Widget _buildGuideList({required List<Widget> children}) {
-    return ScrollConfiguration(
-      behavior: const _GuideClampingBehavior(),
-      child: Builder(
-        builder: (context) {
-          final headerInset = HyperosBlurredHeaderScope.insetOf(context);
-          final topPadding = (headerInset > 0 ? headerInset : 0.0) + 8.0;
-          return ListView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, topPadding, 16, 16),
-            children: children,
-          );
-        },
-      ),
+  /// 标准列表容器：组件库 [HyperosListView] 自带折叠顶栏 inset（与旧手写
+  /// 的 headerInset+8 首屏让位完全等价），滚动时行内容仍从磨砂栏下穿过；
+  /// 横向翻页边界由 PageView 自身的 ClampingScrollPhysics 负责，与纵向
+  /// 列表物理解耦。五个引导页共享同一条 ModalRoute，若都落到路由级默认
+  /// key，PageStorage 会互相恢复彼此的滚动偏移——每页必须传独立 storageId。
+  Widget _buildGuideList({
+    required String storageId,
+    required List<Widget> children,
+  }) {
+    return HyperosListView(
+      itemCount: children.length,
+      itemBuilder: (context, index) => children[index],
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      pageStorageKey: PageStorageKey<String>('user-guide-$storageId'),
     );
   }
 
@@ -344,6 +343,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final colors = context.theme.colors;
 
     return _buildGuideList(
+      storageId: 'welcome',
       children: [
         HyperosCard(
           padding: const EdgeInsets.all(20),
@@ -430,6 +430,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         : l10n.guidePrivacyHelperViewOnly;
 
     return _buildGuideList(
+      storageId: 'privacy',
       children: [
         HyperosListGroup(
           children: [
@@ -526,9 +527,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         : readyCount / countableItems.length;
 
     return _buildGuideList(
+      storageId: 'permissions',
       children: [
         HyperosSectionLabel(text: l10n.guidePermissionsHeader),
         const SizedBox(height: 8),
+        // 摘要卡：副标题 + 就绪计数 + 进度条。刷新入口只保留顶栏
+        // action——从系统设置返回本页时生命周期与轮询会自动刷新，
+        // 卡内不再重复放一颗 secondary 按钮。
         HyperosControlCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,23 +543,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 style: HyperosTypography.listDetail(context),
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.guidePermissionsProgressLabel(
-                        readyCount,
-                        countableItems.length,
-                      ),
-                      style: context.theme.typography.body.sm,
-                    ),
-                  ),
-                  HyperosButton(
-                    label: l10n.refreshStatusTooltip,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: _refreshStatus,
-                  ),
-                ],
+              Text(
+                l10n.guidePermissionsProgressLabel(
+                  readyCount,
+                  countableItems.length,
+                ),
+                style: HyperosTypography.listTitle(context),
               ),
               const SizedBox(height: 10),
               HyperosLinearProgress(value: progress),
@@ -578,6 +572,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return [
       _PermissionItem(
         icon: Icons.notifications_active_outlined,
+        accent: HyperosIconColors.blue,
         title: l10n.guideStatusNotificationPermission,
         enabled: _hasNotificationPermission,
         enabledLabel: l10n.guideStatusEnabled,
@@ -588,6 +583,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.auto_awesome,
+        accent: HyperosIconColors.purple,
         title: l10n.guideStatusIslandSupport,
         enabled: _canPostPromoted,
         enabledLabel: l10n.guideStatusSystemAllowed,
@@ -598,6 +594,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.play_circle_outline_rounded,
+        accent: HyperosIconColors.green,
         title: l10n.quickActionAutoStartTitle,
         enabled: _isAutoStartEnabled,
         enabledLabel: l10n.guideStatusEnabled,
@@ -606,6 +603,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.battery_saver_outlined,
+        accent: HyperosIconColors.teal,
         title: l10n.guideStatusBatteryOptimization,
         enabled: _isIgnoringBatteryOptimizations,
         enabledLabel: l10n.guideStatusBatteryUnrestricted,
@@ -614,6 +612,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.accessibility_new_rounded,
+        accent: HyperosIconColors.orange,
         title: l10n.guideStatusKeepAlive,
         enabled: _isKeepAliveAccessibilityEnabled,
         enabledLabel: l10n.guideStatusEnabled,
@@ -624,18 +623,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildPermissionTile(_PermissionItem item) {
-    final colors = context.theme.colors;
-    final enabled = item.enabled == true;
-    final statusLabel = enabled ? item.enabledLabel : item.disabledLabel;
-
-    return _GuidePermissionTile(
+    // HyperOS 设置行范式：彩底圆角方徽章 + 标题 + 右侧灰色状态字 + 细
+    // chevron（同系统权限管理）。状态不再用自绘描边胶囊表达，避免与
+    // 尾部勾/箭头形成双重状态指示器。
+    return HyperosListTile(
       icon: item.icon,
+      iconAccent: item.accent,
       title: item.title,
-      statusLabel: statusLabel,
-      enabled: enabled,
+      details: item.enabled == true ? item.enabledLabel : item.disabledLabel,
       onTap: item.onTap,
-      enabledColor: colors.primary,
-      disabledColor: colors.mutedForeground,
     );
   }
 
@@ -651,6 +647,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final currentEffect = _guideVisualEffectOf(settings);
 
     return _buildGuideList(
+      storageId: 'personalize',
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
@@ -702,7 +699,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               columns: (ForuiTheme.values.length + 1) ~/ 2,
               colorParser: (hex) => parseHexColorOrFallback(
                 hex,
-                fallback: const Color(0xFF3482FF),
+                fallback: HyperosIconColors.blue,
               ),
             ),
           ),
@@ -766,6 +763,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final mutedBodyStyle = _guideMutedBodyStyle();
 
     return _buildGuideList(
+      storageId: 'tips',
       children: [
         HyperosSectionLabel(text: l10n.guideTipsHeader),
         Padding(
@@ -868,7 +866,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildNumberedLine(String step, String text) {
-    final colors = context.theme.colors;
     final bodyStyle = _guideBodyStyle();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,12 +875,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           height: 22,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.1),
+            color: HyperosColors.primary(context).withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Text(
             step,
-            style: TextStyle(fontSize: 11, color: colors.primary),
+            style: HyperosTypography.listDetail(context).copyWith(
+              fontSize: 11,
+              color: HyperosColors.primary(context),
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -1009,14 +1009,6 @@ EdgeInsets _guideChevronRowPadding(BuildContext context) {
   );
 }
 
-EdgeInsets _guideRowPadding(BuildContext context) {
-  final scope = HyperosListTileScope.maybeOf(context);
-  return HyperosTokens.rowPadding(
-    isFirst: scope?.isFirst ?? true,
-    isLast: scope?.isLast ?? true,
-  );
-}
-
 class _GuideActionTile extends StatelessWidget {
   const _GuideActionTile({
     required this.icon,
@@ -1073,100 +1065,11 @@ class _GuideActionTile extends StatelessWidget {
   }
 }
 
-class _GuidePermissionTile extends StatelessWidget {
-  const _GuidePermissionTile({
-    required this.icon,
-    required this.title,
-    required this.statusLabel,
-    required this.enabled,
-    required this.enabledColor,
-    required this.disabledColor,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String statusLabel;
-  final bool enabled;
-  final Color enabledColor;
-  final Color disabledColor;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cardColor = HyperosColors.card(context);
-    final highlightColor = HyperosColors.rowHighlight(context);
-
-    final row = ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: HyperosTokens.listRowMinHeight,
-      ),
-      child: Padding(
-        padding: _guideRowPadding(context),
-        child: Row(
-          children: [
-            Icon(icon, color: enabledColor),
-            const SizedBox(width: HyperosTokens.rowContentGap),
-            Expanded(
-              child: Text(title, style: HyperosTypography.listTitle(context)),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: enabled
-                    ? enabledColor.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-                border: enabled
-                    ? null
-                    : Border.all(color: disabledColor.withValues(alpha: 0.35)),
-              ),
-              child: Text(
-                statusLabel,
-                style: HyperosTypography.listDetail(
-                  context,
-                ).copyWith(color: enabled ? enabledColor : disabledColor),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              enabled
-                  ? Icons.check_circle_rounded
-                  : Icons.chevron_right_rounded,
-              size: 20,
-              color: enabled ? enabledColor : disabledColor,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return HyperosPressableRow(
-      onTap: onTap,
-      backgroundColor: cardColor,
-      highlightColor: highlightColor,
-      child: row,
-    );
-  }
-}
-
-class _GuideClampingBehavior extends ScrollBehavior {
-  const _GuideClampingBehavior();
-
-  @override
-  ScrollPhysics getScrollPhysics(BuildContext context) =>
-      const ClampingScrollPhysics();
-
-  @override
-  Widget buildOverscrollIndicator(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) => child;
-}
-
 class _PermissionItem {
   final IconData icon;
+
+  /// 徽章底色，取自 HyperOS 图标彩板（[HyperosIconColors]）。
+  final Color accent;
   final String title;
   final bool? enabled;
   final String enabledLabel;
@@ -1175,6 +1078,7 @@ class _PermissionItem {
 
   const _PermissionItem({
     required this.icon,
+    required this.accent,
     required this.title,
     required this.enabled,
     required this.enabledLabel,

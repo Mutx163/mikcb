@@ -122,7 +122,9 @@ rules:
   - id: no-material-colors
     category: colors
     severity: warn
-    pattern: 'Colors\.(white|black|grey|blue|red|green|orange|purple|teal|amber|brown)\b'
+    # 左侧不得是标识符字符：避免把组件库官方彩板（HyperosIconColors.* /
+    # HyperosColors.* 等）的子串当成 Material 原生 Colors.*
+    pattern: '(?<![A-Za-z0-9_])Colors\.(white|black|grey|blue|red|green|orange|purple|teal|amber|brown)\b'
     message: 使用 HyperosColors；暗色模式依赖 Forui FColors 回落
 
   - id: require-hyperos-colors-in-settings

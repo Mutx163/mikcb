@@ -93,7 +93,7 @@
       "category": "settings",
       "expectedShell": "HyperosSubpage",
       "manualStatus": "pass",
-      "notes": ""
+      "notes": "五页引导流（欢迎/隐私/权限/个性化/技巧）。权限行走 HyperosListTile（彩底徽章+右侧状态字）；列表容器为 HyperosListView（折叠顶栏 inset 内建），每页独立 pageStorageKey 防止同路由下五页互相恢复滚动位置；刷新入口仅顶栏 action。2026-08 权限页澎湃化重构后 audit 0 violation。"
     },
     {
       "id": "timetable-profiles",
