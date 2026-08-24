@@ -9830,6 +9830,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '避让高度';
 
   @override
+  String get glassDockRoundActionLabel => '圆钮功能';
+
+  @override
+  String get glassDockButtonIconTitle => '圆钮图标';
+
+  @override
+  String get glassDockButtonIconDefault => '默认（加号）';
+
+  @override
   String get glassDockCustomizeSectionTitle => '底部导航栏';
 
   @override
@@ -19885,6 +19894,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockInsetClearanceLabel => '避讓高度';
 
   @override
+  String get glassDockRoundActionLabel => '圓鈕功能';
+
+  @override
+  String get glassDockButtonIconTitle => '圓鈕圖示';
+
+  @override
+  String get glassDockButtonIconDefault => '預設（加號）';
+
+  @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';
 
   @override
@@ -29938,6 +29956,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockInsetClearanceLabel => '避讓高度';
+
+  @override
+  String get glassDockRoundActionLabel => '圓鈕功能';
+
+  @override
+  String get glassDockButtonIconTitle => '圓鈕圖示';
+
+  @override
+  String get glassDockButtonIconDefault => '預設（加號）';
 
   @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';

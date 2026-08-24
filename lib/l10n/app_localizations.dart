@@ -17851,6 +17851,24 @@ abstract class AppLocalizations {
   /// **'避让高度'**
   String get glassDockInsetClearanceLabel;
 
+  /// No description provided for @glassDockRoundActionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'圆钮功能'**
+  String get glassDockRoundActionLabel;
+
+  /// No description provided for @glassDockButtonIconTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'圆钮图标'**
+  String get glassDockButtonIconTitle;
+
+  /// No description provided for @glassDockButtonIconDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认（加号）'**
+  String get glassDockButtonIconDefault;
+
   /// No description provided for @glassDockCustomizeSectionTitle.
   ///
   /// In zh, this message translates to:

@@ -10107,6 +10107,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '回避スペースの高さ';
 
   @override
+  String get glassDockRoundActionLabel => '丸ボタンの機能';
+
+  @override
+  String get glassDockButtonIconTitle => '丸ボタンのアイコン';
+
+  @override
+  String get glassDockButtonIconDefault => 'デフォルト（＋）';
+
+  @override
   String get glassDockCustomizeSectionTitle => '下部ナビゲーション';
 
   @override

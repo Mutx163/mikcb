@@ -106,6 +106,8 @@ TimetableSettings applySettingsReset(
     SettingsResetScope.homeNavigation => current.copyWith(
       homeNavigationForm: d.homeNavigationForm,
       glassDockActions: d.glassDockActions,
+      glassDockButtonEntryId: d.glassDockButtonEntryId,
+      glassDockButtonIconName: d.glassDockButtonIconName,
       homeTitleStyle: d.homeTitleStyle,
     ),
     SettingsResetScope.homeWidget => current.copyWith(

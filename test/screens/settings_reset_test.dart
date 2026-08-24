@@ -38,6 +38,8 @@ void main() {
       homeNavigationForm: HomeNavigationForm.glassDock,
       homeTitleStyle: HomeTitleStyle.brand,
       glassDockActions: const ['week', 'settings', 'statistics'],
+      glassDockButtonEntryId: 'exams',
+      glassDockButtonIconName: 'star',
       // 小组件
       widgetShowLocation: false,
       widgetShowCountdown: false,

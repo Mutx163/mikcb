@@ -10403,6 +10403,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockInsetClearanceLabel => 'Inset clearance height';
 
   @override
+  String get glassDockRoundActionLabel => 'Round button action';
+
+  @override
+  String get glassDockButtonIconTitle => 'Round button icon';
+
+  @override
+  String get glassDockButtonIconDefault => 'Default (+)';
+
+  @override
   String get glassDockCustomizeSectionTitle => 'Bottom dock';
 
   @override

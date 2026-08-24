@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
@@ -6418,7 +6419,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             // 圆钮固定展开（加课程唯一主动入口，不再随页收起）；
             // 材质经 dockBtnSettings 与药丸显式同源。
             child: Builder(builder: (context) {
-                final lum = _wallpaperBodyLuminance;
+                final lum = _dockInlinePageId != null ? null : _wallpaperBodyLuminance; // 内嵌页表态只看主题
                 final isDarkTheme =
                     Theme.of(context).brightness == Brightness.dark;
                 final ink = (lum != null ? lum < 0.45 : isDarkTheme)
@@ -6578,9 +6579,12 @@ class _TimetableScreenState extends State<TimetableScreen>
           minHeight: 56,
           maxHeight: 56,
           child: GlassButton(
-            icon: Icon(Icons.add_rounded),
-            // 圆钮固定为「加课程」唯一主动入口（⋮ 菜单去重）。
-            onTap: () => unawaited(_showAddCourseSheet()),
+            icon: _roundButtonIcon(
+              context.read<TimetableProvider>().settings,
+            ),
+            onTap: () => _handleRoundButtonTap(
+              context.read<TimetableProvider>().settings,
+            ),
             label: l10n.glassDockExtraButtonSemanticLabel,
             width: 56,
             height: 56,
@@ -6600,6 +6604,46 @@ class _TimetableScreenState extends State<TimetableScreen>
       icon: Icon(glassDockActionIcon(id)),
       label: glassDockActionLabel(l10n, id),
     );
+  }
+
+  /// 圆钮图标：用户自选的 Miuix 矢量图标优先；未选时 addCourse 显示
+  /// 加号、其余功能显示目录图标。
+  Widget _roundButtonIcon(TimetableSettings settings) {
+    final customName = settings.glassDockButtonIconName;
+    if (customName != null && customName.isNotEmpty) {
+      final vector = MiuixIcons.extended.byName(customName);
+      if (vector != null) {
+        return MiuixIcon(vector: vector);
+      }
+    }
+    final id = settings.glassDockButtonEntryId;
+    if (id != 'addCourse' && id.isNotEmpty) {
+      final entry = homeMenuEntryById(id);
+      if (entry != null) {
+        return Icon(entry.icon);
+      }
+    }
+    return const Icon(Icons.add_rounded);
+  }
+
+  /// 圆钮点击分发：addCourse/空走添加课程弹层；内嵌注册页在首页栈内
+  /// 切换（坞常驻，再点同钮收回）；其余目录条目普通推入。
+  void _handleRoundButtonTap(TimetableSettings settings) {
+    final id = settings.glassDockButtonEntryId;
+    if (id == 'addCourse' || id.isEmpty) {
+      unawaited(_showAddCourseSheet());
+      return;
+    }
+    if (inlineDockPageFor(id) != null) {
+      setState(() {
+        _dockInlinePageId = (_dockInlinePageId == id) ? null : id;
+      });
+      return;
+    }
+    final entry = homeMenuEntryById(id);
+    if (entry != null) {
+      unawaited(entry.open(context));
+    }
   }
 
   /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，

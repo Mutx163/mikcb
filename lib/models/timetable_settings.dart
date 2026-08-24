@@ -1202,6 +1202,7 @@ class TimetableSettings {
 
   /// 玻璃坞底栏按钮排列（'day'/'week' 为视图动作，其余为目录 id）。
   final List<String> glassDockActions;
+
   /// 玻璃坞入口开关：日课表 Tab 是否显示。
   /// 至少保留一个模块 Tab 由 UI 层约束（设置页在关闭最后一个时锁定）。
   final bool glassDockShowDayTab;
@@ -1216,8 +1217,11 @@ class TimetableSettings {
   /// 玻璃坞独立圆形按钮（extraButton）打开的入口 id。
   /// 默认 'addCourse' 走首页添加课程弹层；其余 id 由八宫格目录分发，
   /// 未知/不可见 id 运行时回退添加课程弹层。结构 Tab（day/week/settings）
-  /// 不允许作为按钮目标，由 UI 层过滤。
+  /// 不允许作为按钮目标，由 UI 层过滤。圆钮可另选自定义图标：
+  /// [glassDockButtonIconName] 存 Miuix 扩展图标名（小驼峰），null =
+  /// 按功能自动（addCourse 显示加号，其余显示目录图标）。
   final String glassDockButtonEntryId;
+  final String? glassDockButtonIconName;
 
   /// 玻璃坞入口开关：是否显示独立的圆形「添加」按钮（extraButton），
   /// 点击执行 [glassDockButtonEntryId] 对应功能。
@@ -1408,6 +1412,7 @@ class TimetableSettings {
     this.glassDockShowSettingsTab = true,
     this.glassDockShowWeekTab = true,
     this.glassDockButtonEntryId = 'addCourse',
+  this.glassDockButtonIconName = null,
     this.glassDockShowAddButton = false,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
@@ -1729,6 +1734,7 @@ class TimetableSettings {
       'glassDockShowSettingsTab': glassDockShowSettingsTab,
       'glassDockShowWeekTab': glassDockShowWeekTab,
       'glassDockButtonEntryId': glassDockButtonEntryId,
+      'glassDockButtonIconName': glassDockButtonIconName,
       'glassDockShowAddButton': glassDockShowAddButton,
       'timetableBackToCurrentWeekButtonStyle':
           timetableBackToCurrentWeekButtonStyle.value,
@@ -2001,6 +2007,7 @@ class TimetableSettings {
       glassDockShowWeekTab: json['glassDockShowWeekTab'] as bool? ?? true,
       glassDockButtonEntryId:
           json['glassDockButtonEntryId'] as String? ?? 'addCourse',
+      glassDockButtonIconName: json['glassDockButtonIconName'] as String?,
       glassDockShowAddButton: json['glassDockShowAddButton'] as bool? ?? false,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyleX.fromValue(
@@ -2364,6 +2371,7 @@ class TimetableSettings {
     bool? glassDockShowSettingsTab,
     bool? glassDockShowWeekTab,
     String? glassDockButtonEntryId,
+  String? glassDockButtonIconName,
     bool? glassDockShowAddButton,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
@@ -2564,6 +2572,8 @@ class TimetableSettings {
       glassDockShowWeekTab: glassDockShowWeekTab ?? this.glassDockShowWeekTab,
       glassDockButtonEntryId:
           glassDockButtonEntryId ?? this.glassDockButtonEntryId,
+      glassDockButtonIconName:
+          glassDockButtonIconName ?? this.glassDockButtonIconName,
       glassDockShowAddButton:
           glassDockShowAddButton ?? this.glassDockShowAddButton,
       timetableBackToCurrentWeekButtonStyle:

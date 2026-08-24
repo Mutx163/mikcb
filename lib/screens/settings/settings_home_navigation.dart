@@ -137,6 +137,50 @@ class _HomeNavigationSettingsScreenState
                       });
                     },
                   ),
+                  HyperosSelectTile<String>(
+                    label: l10n.glassDockRoundActionLabel,
+                    items: {
+                      l10n.homeMenuAddCourseTitle: 'addCourse',
+                      for (final entry in kHomeMenuCatalog)
+                        if (entry.visible()) entry.title(l10n): entry.id,
+                    },
+                    value: _draft.glassDockButtonEntryId.isEmpty
+                        ? 'addCourse'
+                        : _draft.glassDockButtonEntryId,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(glassDockButtonEntryId: value),
+                      );
+                    },
+                  ),
+                  HyperosListTile(
+                    icon: Icons.palette_outlined,
+                    iconAccent: HyperosIconColors.purple,
+                    title: l10n.glassDockButtonIconTitle,
+                    details:
+                        _draft.glassDockButtonIconName ??
+                        l10n.glassDockButtonIconDefault,
+                    onTap: () async {
+                      await HyperosNavigation.push(
+                        context,
+                        settings: const RouteSettings(
+                          name: '/settings/glass-dock-icon',
+                        ),
+                        builder: (_) => _GlassDockIconPickerScreen(
+                          initialName: _draft.glassDockButtonIconName,
+                          onChanged: (name) {
+                            _updateDraft(
+                              _draft.copyWith(glassDockButtonIconName: name),
+                            );
+                          },
+                        ),
+                      );
+                      if (!mounted) return;
+                      setState(() {
+                        _draft = context.read<TimetableProvider>().settings;
+                      });
+                    },
+                  ),
                 ],
               ),
             ),
