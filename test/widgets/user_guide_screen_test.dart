@@ -351,27 +351,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('4 / 5'), findsOneWidget);
-    // 菜单样式卡已随「八宫格唯一形态」收敛从引导页移除。
-    expect(find.text('菜单样式'), findsNothing);
+    // 菜单样式卡随「列表/八宫格」双形态恢复而回归引导页。
+    expect(find.text('菜单样式'), findsOneWidget);
     expect(find.text('视觉效果'), findsOneWidget);
     expect(find.text('高斯模糊'), findsOneWidget);
     expect(find.text('液态玻璃'), findsOneWidget);
     expect(find.text('实体卡片'), findsOneWidget);
 
-    // 视觉效果三档映射。「高斯模糊」位于三档最上、初始即在视口内，
-    // 因此按 自上而下 的顺序点击，全程不向上回滚（避免目标落进
-    // 悬浮折叠顶栏的遮挡区导致点击丢失）。
-    await tester.tap(find.text('高斯模糊'));
-    await tester.pumpAndSettle();
-    expect(provider.settings.frostedBlurEnabled, isTrue);
-    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
-
+    // 按目标当前位置精确补偿，把它挪到屏幕竖直 45% 处：既脱离底边
+    // 裁剪区，也避开顶部悬浮折叠栏的遮挡区（行高变化时不再依赖
+    // 写死的像素偏移）。
     Future<void> tapEffect(String label) async {
       await tester.ensureVisible(find.text(label));
       await tester.pumpAndSettle();
-      // 按目标当前位置精确补偿，把它挪到屏幕竖直 45% 处：既脱离底边
-      // 裁剪区，也避开顶部悬浮折叠栏的遮挡区（行高变化时不再依赖
-      // 写死的像素偏移）。
       final screenHeight =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
       final rect = tester.getRect(find.text(label));
@@ -383,6 +375,20 @@ void main() {
       await tester.tap(find.text(label));
       await tester.pumpAndSettle();
     }
+
+    // 菜单样式双形态写入。
+    await tester.tap(find.text('八宫格菜单'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.homeMenuStyle, HomeMenuStyle.grid);
+    await tester.tap(find.text('列表菜单'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.homeMenuStyle, HomeMenuStyle.list);
+
+    // 视觉效果三档映射。统一走 tapEffect（按目标位置精确居中），
+    // 避免目标落入悬浮折叠顶栏遮挡区导致点击丢失。
+    await tapEffect('高斯模糊');
+    expect(provider.settings.frostedBlurEnabled, isTrue);
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
 
     await tapEffect('液态玻璃');
     expect(provider.settings.frostedBlurEnabled, isTrue);

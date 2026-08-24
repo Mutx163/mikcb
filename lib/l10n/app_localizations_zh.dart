@@ -5967,6 +5967,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizeMenuStyleTitle => '菜单样式';
 
   @override
+  String get guidePersonalizeNavFormTitle => '导航形态';
+
+  @override
   String get guidePersonalizeVisualEffectTitle => '视觉效果';
 
   @override
@@ -9860,10 +9863,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockShowWeekTabTitle => '显示周课表入口';
 
   @override
+  String get glassDockShowAddButtonTitle => '显示圆钮';
+
+  @override
+  String get glassDockShowAddButtonSubtitle => '在药丸右侧显示独立圆钮，功能与图标可在下方自定义';
+
+  @override
   String get glassDockButtonBackToWeekLabel => '回本周 / 今天';
 
   @override
   String get glassDockExtraButtonSemanticLabel => '添加课程';
+
+  @override
+  String get homeMenuStyleLabel => '右上角菜单样式';
+
+  @override
+  String get homeMenuStyleList => '列表菜单';
+
+  @override
+  String get homeMenuStyleGrid => '八宫格菜单';
+
+  @override
+  String get homeMenuStyleListSubtitle => '锚定列表，一屏展示';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '图标瓷贴，可自定义';
 
   @override
   String get homeGridCustomizeTitle => '自定义八宫格按钮';
@@ -15990,6 +16014,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizeMenuStyleTitle => '選單樣式';
 
   @override
+  String get guidePersonalizeNavFormTitle => '導覽形態';
+
+  @override
   String get guidePersonalizeVisualEffectTitle => '視覺效果';
 
   @override
@@ -19927,10 +19954,31 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockShowWeekTabTitle => '顯示週課表入口';
 
   @override
+  String get glassDockShowAddButtonTitle => '顯示圓鈕';
+
+  @override
+  String get glassDockShowAddButtonSubtitle => '在藥丸右側顯示獨立圓鈕，功能與圖示可在下方自訂';
+
+  @override
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
   String get glassDockExtraButtonSemanticLabel => '新增課程';
+
+  @override
+  String get homeMenuStyleLabel => '右上角選單樣式';
+
+  @override
+  String get homeMenuStyleList => '列表選單';
+
+  @override
+  String get homeMenuStyleGrid => '八宮格選單';
+
+  @override
+  String get homeMenuStyleListSubtitle => '錨定清單，一屏呈現';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '圖示瓷貼，可自訂';
 
   @override
   String get homeGridCustomizeTitle => '自訂八宮格按鈕';
@@ -26057,6 +26105,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizeMenuStyleTitle => '選單樣式';
 
   @override
+  String get guidePersonalizeNavFormTitle => '導覽形態';
+
+  @override
   String get guidePersonalizeVisualEffectTitle => '視覺效果';
 
   @override
@@ -29994,10 +30045,31 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get glassDockShowWeekTabTitle => '顯示週課表入口';
 
   @override
+  String get glassDockShowAddButtonTitle => '顯示圓鈕';
+
+  @override
+  String get glassDockShowAddButtonSubtitle => '在藥丸右側顯示獨立圓鈕，功能與圖示可在下方自訂';
+
+  @override
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
   String get glassDockExtraButtonSemanticLabel => '新增課程';
+
+  @override
+  String get homeMenuStyleLabel => '右上角選單樣式';
+
+  @override
+  String get homeMenuStyleList => '列表選單';
+
+  @override
+  String get homeMenuStyleGrid => '八宮格選單';
+
+  @override
+  String get homeMenuStyleListSubtitle => '錨定清單，一屏呈現';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '圖示瓷貼，可自訂';
 
   @override
   String get homeGridCustomizeTitle => '自訂八宮格按鈕';

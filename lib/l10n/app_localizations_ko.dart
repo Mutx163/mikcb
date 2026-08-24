@@ -6099,6 +6099,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizeMenuStyleTitle => '메뉴 스타일';
 
   @override
+  String get guidePersonalizeNavFormTitle => '탐색 형태';
+
+  @override
   String get guidePersonalizeVisualEffectTitle => '시각 효과';
 
   @override
@@ -10180,10 +10183,32 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockShowWeekTabTitle => '주간 탭 표시';
 
   @override
+  String get glassDockShowAddButtonTitle => '원형 버튼 표시';
+
+  @override
+  String get glassDockShowAddButtonSubtitle =>
+      '알약 오른쪽에 독립된 원형 버튼을 표시 — 기능과 아이콘은 아래에서 설정';
+
+  @override
   String get glassDockButtonBackToWeekLabel => '이번 주로 / 오늘';
 
   @override
   String get glassDockExtraButtonSemanticLabel => '수업 추가';
+
+  @override
+  String get homeMenuStyleLabel => '오른쪽 위 메뉴 스타일';
+
+  @override
+  String get homeMenuStyleList => '리스트 메뉴';
+
+  @override
+  String get homeMenuStyleGrid => '여덟 칸 격자 메뉴';
+
+  @override
+  String get homeMenuStyleListSubtitle => '앵커 텍스트 목록';
+
+  @override
+  String get homeMenuStyleGridSubtitle => '아이콘 타일, 맞춤 설정';
 
   @override
   String get homeGridCustomizeTitle => '격자 버튼 사용자 지정';

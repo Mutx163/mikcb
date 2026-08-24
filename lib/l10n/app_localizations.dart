@@ -10895,6 +10895,12 @@ abstract class AppLocalizations {
   /// **'菜单样式'**
   String get guidePersonalizeMenuStyleTitle;
 
+  /// No description provided for @guidePersonalizeNavFormTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航形态'**
+  String get guidePersonalizeNavFormTitle;
+
   /// No description provided for @guidePersonalizeVisualEffectTitle.
   ///
   /// In zh, this message translates to:
@@ -17911,6 +17917,18 @@ abstract class AppLocalizations {
   /// **'显示周课表入口'**
   String get glassDockShowWeekTabTitle;
 
+  /// No description provided for @glassDockShowAddButtonTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示圆钮'**
+  String get glassDockShowAddButtonTitle;
+
+  /// No description provided for @glassDockShowAddButtonSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在药丸右侧显示独立圆钮，功能与图标可在下方自定义'**
+  String get glassDockShowAddButtonSubtitle;
+
   /// No description provided for @glassDockButtonBackToWeekLabel.
   ///
   /// In zh, this message translates to:
@@ -17922,6 +17940,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'添加课程'**
   String get glassDockExtraButtonSemanticLabel;
+
+  /// No description provided for @homeMenuStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'右上角菜单样式'**
+  String get homeMenuStyleLabel;
+
+  /// No description provided for @homeMenuStyleList.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表菜单'**
+  String get homeMenuStyleList;
+
+  /// No description provided for @homeMenuStyleGrid.
+  ///
+  /// In zh, this message translates to:
+  /// **'八宫格菜单'**
+  String get homeMenuStyleGrid;
+
+  /// No description provided for @homeMenuStyleListSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'锚定列表，一屏展示'**
+  String get homeMenuStyleListSubtitle;
+
+  /// No description provided for @homeMenuStyleGridSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'图标瓷贴，可自定义'**
+  String get homeMenuStyleGridSubtitle;
 
   /// No description provided for @homeGridCustomizeTitle.
   ///

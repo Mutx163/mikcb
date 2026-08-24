@@ -645,6 +645,43 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
           child: Text(l10n.guidePersonalizeSubtitle, style: _guideMutedBodyStyle()),
         ),
+        // 菜单样式卡：8833fcd 八宫格唯一化时随设置收敛移除；应用户要求
+        // 与「首页与导航」的菜单形态选择器一同恢复。
+        HyperosControlCard(
+          title: l10n.guidePersonalizeMenuStyleTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              children: [
+                _guideOptionRow(
+                  context,
+                  title: l10n.homeMenuStyleList,
+                  summary: l10n.homeMenuStyleListSubtitle,
+                  selected: settings.homeMenuStyle == HomeMenuStyle.list,
+                  onTap: () =>
+                      _updateSettings(
+                        _currentSettings.copyWith(
+                          homeMenuStyle: HomeMenuStyle.list,
+                        ),
+                      ),
+                ),
+                _guideOptionRow(
+                  context,
+                  title: l10n.homeMenuStyleGrid,
+                  summary: l10n.homeMenuStyleGridSubtitle,
+                  selected: settings.homeMenuStyle == HomeMenuStyle.grid,
+                  showDivider: true,
+                  onTap: () =>
+                      _updateSettings(
+                        _currentSettings.copyWith(
+                          homeMenuStyle: HomeMenuStyle.grid,
+                        ),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
         HyperosControlCard(
           title: l10n.guidePersonalizeVisualEffectTitle,
           child: HyperosControlCardInset(

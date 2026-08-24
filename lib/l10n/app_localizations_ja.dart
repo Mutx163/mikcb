@@ -6064,6 +6064,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guidePersonalizeMenuStyleTitle => 'メニュー形式';
 
   @override
+  String get guidePersonalizeNavFormTitle => 'ナビゲーション形態';
+
+  @override
   String get guidePersonalizeVisualEffectTitle => '視覚効果';
 
   @override
@@ -10137,10 +10140,32 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockShowWeekTabTitle => '週表示タブを表示';
 
   @override
+  String get glassDockShowAddButtonTitle => '丸ボタンを表示';
+
+  @override
+  String get glassDockShowAddButtonSubtitle =>
+      'ピルの右側に独立した丸ボタンを表示 — 機能とアイコンは下でカスタマイズ可';
+
+  @override
   String get glassDockButtonBackToWeekLabel => '今週へ戻る / 今日';
 
   @override
   String get glassDockExtraButtonSemanticLabel => '授業を追加';
+
+  @override
+  String get homeMenuStyleLabel => '右上メニューのスタイル';
+
+  @override
+  String get homeMenuStyleList => 'リストメニュー';
+
+  @override
+  String get homeMenuStyleGrid => '八宮格メニュー';
+
+  @override
+  String get homeMenuStyleListSubtitle => 'アンカーのリスト表示';
+
+  @override
+  String get homeMenuStyleGridSubtitle => 'アイコンタイル、カスタマイズ可';
 
   @override
   String get homeGridCustomizeTitle => 'グリッドボタンのカスタマイズ';

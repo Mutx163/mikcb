@@ -6316,6 +6316,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizeMenuStyleTitle => 'Menu style';
 
   @override
+  String get guidePersonalizeNavFormTitle => 'Navigation form';
+
+  @override
   String get guidePersonalizeVisualEffectTitle => 'Visual effect';
 
   @override
@@ -10433,10 +10436,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockShowWeekTabTitle => 'Show week view entry';
 
   @override
+  String get glassDockShowAddButtonTitle => 'Show round button';
+
+  @override
+  String get glassDockShowAddButtonSubtitle =>
+      'Show a separate round button to the right of the pill — function and icon customizable below';
+
+  @override
   String get glassDockButtonBackToWeekLabel => 'Back to this week / today';
 
   @override
   String get glassDockExtraButtonSemanticLabel => 'Add course';
+
+  @override
+  String get homeMenuStyleLabel => 'Top-right menu style';
+
+  @override
+  String get homeMenuStyleList => 'List menu';
+
+  @override
+  String get homeMenuStyleGrid => 'Eight-tile grid menu';
+
+  @override
+  String get homeMenuStyleListSubtitle => 'Anchored list';
+
+  @override
+  String get homeMenuStyleGridSubtitle => 'Icon grid, customizable';
 
   @override
   String get homeGridCustomizeTitle => 'Customize grid buttons';
