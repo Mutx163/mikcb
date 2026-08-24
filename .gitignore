@@ -141,6 +141,7 @@ AGENTS.md
 
 # 临时工作产物：截图/对比图、构建日志、评审快照、崩溃转储
 .tmp/
+.tmp_*/
 .tmp_*.png
 .tmp_*.jpg
 .tmp_*.txt
