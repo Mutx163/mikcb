@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>轻屿课表 · 重设计方案 · 2026-08-24</title>
+<style>
+  :root{
+    --primary:#3482FF; --bg:#F2F2F2; --card:#FFFFFF; --ink:#333333; --ink-2:#999999;
+    --c-blue:#90CAF9; --c-blue-i:#0D47A1;
+    --c-green:#A5D6A7; --c-green-i:#1B5E20;
+    --c-orange:#FFCC80; --c-orange-i:#B34700;
+    --c-pink:#F48FB1; --c-pink-i:#880E4F;
+    --c-purple:#CE93D8; --c-purple-i:#4A148C;
+    --r-card:24px; --r-control:16px; --r-chip:12px; --r-small:8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"MiSans","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,sans-serif;background:#E9EBEF;color:var(--ink);padding:48px 24px 80px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.hero{margin-bottom:40px}
+  .kicker{font-size:13px;letter-spacing:.18em;color:var(--primary);font-weight:600;margin-bottom:10px}
+  h1{font-size:34px;font-weight:600;line-height:1.25}
+  .northstar{margin-top:16px;font-size:17px;color:#555;border-left:3px solid var(--primary);padding:6px 0 6px 16px;line-height:1.6}
+  .meta{margin-top:14px;font-size:12.5px;color:#9aa0a6}
+  section{margin-top:56px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px}
+  .sec-no{font-size:13px;font-weight:700;color:var(--primary);letter-spacing:.1em}
+  .sec-head h2{font-size:23px;font-weight:600}
+  .duo{display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start}
+  .stage{flex:0 0 auto;display:flex;gap:36px;flex-wrap:wrap}
+  .phone{width:300px;background:#0b0b0f;border-radius:44px;padding:10px;box-shadow:0 24px 60px rgba(20,30,60,.28),0 4px 14px rgba(20,30,60,.18);flex:0 0 auto}
+  .screen{background:var(--bg);border-radius:35px;overflow:hidden;height:632px;display:flex;flex-direction:column;position:relative}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px;font-size:12px;font-weight:600;color:var(--ink)}
+  .statusbar .right{display:flex;gap:5px;align-items:center}
+  .sig{display:flex;gap:1.5px;align-items:flex-end}
+  .sig i{width:3px;background:var(--ink);border-radius:1px;display:block}
+  .sig i:nth-child(1){height:4px}.sig i:nth-child(2){height:6px}.sig i:nth-child(3){height:8px}.sig i:nth-child(4){height:10px}
+  .batt{width:20px;height:10px;border:1.4px solid var(--ink);border-radius:3px;position:relative}
+  .batt::before{content:"";position:absolute;inset:1.5px;right:5px;background:var(--ink);border-radius:1px}
+  .batt::after{content:"";position:absolute;right:-3.5px;top:2.5px;width:1.8px;height:4px;background:var(--ink);border-radius:0 2px 2px 0}
+  .apphead{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 6px}
+  .profile{display:flex;align-items:center;gap:7px;font-size:19px;font-weight:600;color:var(--ink)}
+  .profile .chev{width:8px;height:8px;border-right:2px solid #bbb;border-bottom:2px solid #bbb;transform:rotate(45deg) translateY(-2px);border-radius:1px}
+  .head-actions{display:flex;gap:6px}
+  .iconbtn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;color:#666;font-size:15px}
+  .iconbtn.love{color:#E91E63}
+  .dot{position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:#FF4D4A;border:1.5px solid var(--bg)}
+  .weekrow{padding:6px 14px 8px}
+  .weeklabel{font-size:11.5px;color:var(--ink-2);text-align:center;margin-bottom:6px}
+  .days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .day{background:var(--card);border-radius:var(--r-small);text-align:center;padding:6px 0 5px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .day b{display:block;font-size:11px;color:var(--ink-2);font-weight:500}
+  .day span{display:block;font-size:15px;font-weight:600;color:var(--ink);margin-top:1px}
+  .day.today{background:var(--primary)}
+  .day.today b,.day.today span{color:#fff}
+  .tt{flex:1;display:grid;grid-template-columns:22px repeat(7,1fr);gap:3px;padding:2px 10px 90px;align-content:start}
+  .tno{font-size:9.5px;color:#b5b5b5;text-align:center;padding-top:3px;line-height:1.3}
+  .tno small{display:block;font-size:7.5px;transform:scale(.85)}
+  .course{border-radius:var(--r-chip);padding:5px 5px 4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.07)}
+  .course b{display:block;font-size:9.5px;font-weight:600;line-height:1.3}
+  .course small{display:block;font-size:7.8px;opacity:.78;margin-top:1.5px;line-height:1.35}
+  .bg-blue{background:var(--c-blue);color:var(--c-blue-i)}
+  .bg-green{background:var(--c-green);color:var(--c-green-i)}
+  .bg-orange{background:var(--c-orange);color:var(--c-orange-i)}
+  .bg-pink{background:var(--c-pink);color:var(--c-pink-i)}
+  .bg-purple{background:var(--c-purple);color:var(--c-purple-i)}
+  .backfab{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600;color:var(--primary);box-shadow:0 4px 14px rgba(52,130,255,.25)}
+  .dock{position:absolute;left:14px;right:14px;bottom:18px;height:54px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.62);backdrop-filter:blur(18px) saturate(1.4);border-radius:999px;padding:5px;box-shadow:0 8px 26px rgba(20,30,60,.16),inset 0 0 0 1px rgba(255,255,255,.55)}
+  .seg{display:flex;border-radius:999px;flex:1;margin-left:3px}
+  .seg .tab{flex:1;text-align:center;padding:9px 0;border-radius:999px;font-size:13px;color:#777;font-weight:500}
+  .seg .tab.on{background:#fff;color:var(--primary);font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.09)}
+  .addbtn{width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 5px 16px rgba(52,130,255,.42);margin-left:6px;flex:0 0 auto}
+  .sheetmenu{position:absolute;left:0;right:0;bottom:0;background:rgba(247,247,247,.97);backdrop-filter:blur(20px);border-radius:26px 26px 0 0;padding:16px 16px 20px;box-shadow:0 -10px 40px rgba(0,0,0,.14)}
+  .grabber{width:34px;height:4.5px;border-radius:99px;background:#d5d5d5;margin:0 auto 14px}
+  .grid8{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px;margin-bottom:16px}
+  .tile{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .tile .ic{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff}
+  .tile span{font-size:10.5px;color:#555}
+  .allrow{display:flex;align-items:center;justify-content:center;gap:5px;background:#fff;border-radius:var(--r-control);padding:11px;font-size:12.5px;color:#666;font-weight:500}
+  .ic.blue{background:linear-gradient(135deg,#5AA2FF,#2E7CF6)}
+  .ic.green{background:linear-gradient(135deg,#5FC96A,#2FA84C)}
+  .ic.orange{background:linear-gradient(135deg,#FFB057,#F68F1E)}
+  .ic.pink{background:linear-gradient(135deg,#FF7DA5,#F45B87)}
+  .ic.purple{background:linear-gradient(135deg,#B57BEA,#8E4FD8)}
+  .ic.cyan{background:linear-gradient(135deg,#4FC8DC,#1FA9C9)}
+  .ic.red{background:linear-gradient(135deg,#FF7B72,#EE5A50)}
+  .ic.slate{background:linear-gradient(135deg,#98A6B8,#6E829B)}
+  .notes{flex:1;min-width:300px;display:flex;flex-direction:column;gap:14px}
+  .note{background:#fff;border-radius:var(--r-control);padding:16px 18px;box-shadow:0 2px 10px rgba(20,30,60,.06)}
+  .note h4{font-size:14.5px;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .tag{font-size:10.5px;font-weight:700;padding:2.5px 8px;border-radius:99px;letter-spacing:.04em}
+  .tag.rm{background:#FFE9E7;color:#D84338}.tag.new{background:#E5F0FF;color:#2563EB}.tag.keep{background:#EAF7EC;color:#2E7D43}
+  .note p{font-size:12.8px;color:#666;line-height:1.65;margin-top:6px}
+  .note p b{color:var(--ink)}
+  .ia{display:grid;grid-template-columns:1fr 56px 1fr;gap:0;align-items:start}
+  @media(max-width:900px){.ia{grid-template-columns:1fr}.arrowmid{transform:rotate(90deg)}}
+  .tree{background:#fff;border-radius:var(--r-card);padding:24px 26px;box-shadow:0 2px 10px rgba(20,30,60,.06)}
+  .tree h3{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  ul.tr{list-style:none}
+  ul.tr>li{margin-bottom:10px}
+  .grp{font-weight:600;font-size:13.5px;color:var(--ink)}
+  ul.sub{list-style:none;margin:6px 0 0 14px;border-left:2px solid #ECEEF2;padding-left:12px}
+  ul.sub li{font-size:12.5px;color:#666;padding:2.5px 0;line-height:1.6}
+  ul.sub li.warn{color:#D84338}
+  ul.sub li.good{color:#2E7D43;font-weight:500}
+  .arrowmid{display:flex;align-items:center;justify-content:center;padding-top:120px}
+  .arrowmid svg{width:34px;height:34px}
+  .tokgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+  .tokcard{background:#fff;border-radius:var(--r-card);padding:22px;box-shadow:0 2px 10px rgba(20,30,60,.06)}
+  .tokcard h3{font-size:14.5px;font-weight:600;margin-bottom:14px}
+  .swatches{display:flex;flex-direction:column;gap:8px}
+  .sw{display:flex;align-items:center;gap:12px;font-size:12px;color:#555}
+  .sw .chip{width:44px;height:30px;border-radius:8px;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+  .sw code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:#888;margin-left:auto}
+  .radii{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+  .rad{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11px;color:#777}
+  .rad i{display:block;width:58px;height:44px;background:#EAF1FF;border:1.6px solid var(--primary)}
+  .type-demo div{line-height:1.5;margin-bottom:9px}
+  .fixpair{display:flex;gap:10px;margin-top:12px}
+  .fixpair .p{flex:1;border-radius:var(--r-chip);padding:12px 10px;font-size:11px;font-weight:600;line-height:1.5}
+  .roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px}
+  .phase{border-radius:var(--r-card);padding:22px;background:#fff;box-shadow:0 2px 10px rgba(20,30,60,.06);border-top:4px solid var(--primary)}
+  .phase:nth-child(2){border-top-color:#7BAAF9}.phase:nth-child(3){border-top-color:#B9D2FF}
+  .phase h3{font-size:15px;font-weight:600}
+  .phase .when{font-size:11.5px;color:var(--ink-2);margin:3px 0 12px}
+  .phase li{font-size:12.8px;color:#555;line-height:1.7;margin-left:16px}
+  footer{margin-top:70px;text-align:center;font-size:12px;color:#9aa0a6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">QINGYU TIMETABLE &middot; REDESIGN PROPOSAL</div>
+  <h1>轻屿课表 —— 打开即答案，个性不设防</h1>
+  <div class="northstar">首屏零学习成本呈现今天与本周的安排；个性化能力全部保留，但从「参数面板」重组为「场景预设」。<br>三个原则：<b>一个动作一个门</b> &middot; <b>预设优先于参数</b> &middot; <b>玻璃是点缀不是地板</b>。</div>
+  <div class="meta">2026-08-24 · 基于全量代码审计（theme tokens / timetable_screen / settings ×10 / l10n_zh / 课程色板 WCAG 实测）</div>
+</header>
+
+<section>
+  <div class="sec-head"><span class="sec-no">01</span><h2>首页：底栏减负，一屏一焦点</h2></div>
+  <div class="duo">
+    <div class="stage">
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span></div>
+        <div class="apphead">
+          <div class="profile">第三学期 <i class="chev"></i></div>
+          <div class="head-actions">
+            <div class="iconbtn love">&#9829;</div>
+            <div class="iconbtn">&#8942;<span class="dot"></span></div>
+          </div>
+        </div>
+        <div class="weekrow">
+          <div class="weeklabel">第 3 周 · 9 月 7 日 – 9 月 13 日</div>
+          <div class="days">
+            <div class="day today"><b>周一</b><span>7</span></div>
+            <div class="day"><b>周二</b><span>8</span></div>
+            <div class="day"><b>周三</b><span>9</span></div>
+            <div class="day"><b>周四</b><span>10</span></div>
+            <div class="day"><b>周五</b><span>11</span></div>
+            <div class="day"><b>周六</b><span>12</span></div>
+            <div class="day"><b>周日</b><span>13</span></div>
+          </div>
+        </div>
+        <div class="tt">
+          <div class="tno">1<small>08:00</small></div>
+          <div class="course bg-orange" style="grid-row:span 2"><b>高等数学</b><small>教301<br>张教授</small></div>
+          <div></div><div></div><div class="course bg-blue" style="grid-row:span 2"><b>大学英语</b><small>文B202<br>李老师</small></div>
+          <div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+          <div class="tno">3<small>10:00</small></div>
+          <div></div><div class="course bg-green" style="grid-row:span 2"><b>数据结构</b><small>机房402<br>王老师</small></div><div></div>
+          <div class="course bg-pink" style="grid-row:span 2"><b>线性代数</b><small>理112<br>赵老师</small></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+          <div class="tno">5<small>14:00</small></div>
+          <div></div><div></div><div class="course bg-purple" style="grid-row:span 2"><b>体育</b><small>体育馆</small></div><div></div><div></div><div></div><div></div>
+        </div>
+        <div class="backfab">&#10226; 回本周</div>
+        <div class="dock">
+          <div class="seg"><div class="tab">日</div><div class="tab on">周</div></div>
+          <div class="addbtn">＋</div>
+        </div>
+      </div></div>
+    </div>
+    <div class="notes">
+      <div class="note"><h4><span class="tag rm">移除</span> 底栏不再承载「设置」</h4><p>设置是低频操作却常驻黄金位。dock 收敛为 <b>[日|周] 两段药丸 + 固定加号钮</b>；设置走 ⋮ 菜单或标题长按（横拖返回手势保留）。加号从「目录任选」改为唯一职责：<b>加课程</b>，⋮ 菜单同步去重。</p></div>
+      <div class="note"><h4><span class="tag new">收敛</span> 「回本周」三入口 → 浮钮单入口</h4><p>现状：星期栏小字 + 磨砂浮钮 + dock 圆钮可配置，三处表达同一状态。改为<b>仅一枚浮钮</b>：非当前周淡入、当前周彻底消失；小字与圆钮配置项删除。</p></div>
+      <div class="note"><h4><span class="tag new">新增</span> 标题可点暗示 &amp; 更新静默化</h4><p>课表切换器补 chevron 缀饰（现状无任何视觉暗示）；启动不再强弹更新 sheet——保留顶栏红点 + ⋮ 置顶项即可，重大安全版本才允许一次弹窗。</p></div>
+      <div class="note"><h4><span class="tag keep">保留</span> 连续玻璃 chrome 带 + 课程粉彩卡</h4><p>状态栏→标题→星期栏的连续磨砂带是本应用最正确的决定；课程卡沿用验证过的 9 组「粉彩底×深墨字」，仅修正橙对墨色（见 §04）。</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-no">02</span><h2>菜单：38 项平铺 → 三层漏斗</h2></div>
+  <div class="duo">
+    <div class="stage">
+      <div class="phone"><div class="screen" style="background:linear-gradient(#dfe7f2,#eef1f5)">
+        <div style="flex:1;filter:blur(2px);opacity:.45">
+          <div class="apphead"><div class="profile">第三学期</div><div class="head-actions"><div class="iconbtn love">&#9829;</div><div class="iconbtn" style="color:#333;font-weight:700">&#8942;</div></div></div>
+          <div class="weekrow"><div class="days">
+            <div class="day today"><b>周一</b><span>7</span></div><div class="day"><b>周二</b><span>8</span></div><div class="day"><b>周三</b><span>9</span></div><div class="day"><b>周四</b><span>10</span></div><div class="day"><b>周五</b><span>11</span></div><div class="day"><b>周六</b><span>12</span></div><div class="day"><b>周日</b><span>13</span></div>
+          </div></div>
+        </div>
+        <div class="sheetmenu">
+          <div class="grabber"></div>
+          <div class="grid8">
+            <div class="tile"><div class="ic blue">&#9638;</div><span>课程总览</span></div>
+            <div class="tile"><div class="ic green">&#128202;</div><span>课程统计</span></div>
+            <div class="tile"><div class="ic orange">&#11014;</div><span>导入课程</span></div>
+            <div class="tile"><div class="ic pink">&#127891;</div><span>考试安排</span></div>
+            <div class="tile"><div class="ic cyan">&#10003;</div><span>任务清单</span></div>
+            <div class="tile"><div class="ic purple">&#9633;</div><span>面对面传输</span></div>
+            <div class="tile"><div class="ic slate">&#9729;</div><span>云同步</span></div>
+            <div class="tile"><div class="ic red">&#9881;</div><span>设置</span></div>
+          </div>
+          <div class="allrow">全部功能 · 按 功能 / 数据 / 设备 分组 &#8595;</div>
+        </div>
+      </div></div>
+    </div>
+    <div class="notes">
+      <div class="note"><h4><span class="tag keep">定版</span> 八宫格成为唯一形态</h4><p>删除 list/grid 双形态（少一套配置矩阵、少一类 bug）。默认 8 项覆盖最高频场景，支持换位；预置三套模板：<b>学习 / 考试季 / 极简</b>，一键套用——预设优先于参数。</p></div>
+      <div class="note"><h4><span class="tag new">分层</span> 其余 30 项按心智分三层</h4><p>「全部功能」二级面板按 <b>功能（添加/工具）/ 数据（备份/同步/传输）/ 设备（小组件/超级岛/局域网）</b> 分组；诊断、内存状态只在开发者模式出现。找「加课程」与找「局域网编辑」不再扫同一个平面。</p></div>
+      <div class="note"><h4><span class="tag rm">治理</span> 打扰与不可发现性</h4><p>更新红点保留但永不自动弹窗；下拉快捷导课手势补<b>首次引导气泡</b>（现状零静态提示，等于不存在）；隐藏手势全部登记到使用引导页。</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-no">03</span><h2>设置：结构归结构，外观归外观</h2></div>
+  <div class="ia">
+    <div class="tree">
+      <h3><span class="tag rm">现状</span> 入口重复 · 归类错位 · 页面超载</h3>
+      <ul class="tr">
+        <li><span class="grp">课表</span><ul class="sub"><li>课表管理 · 时间模板 <span style="color:#D84338">⚠ 与「课表页面」重复</span> · 节假日标记</li></ul></li>
+        <li><span class="grp">课表显示</span><ul class="sub"><li>课程卡片（约 18 条 ⚠ 超载）· 课表页面（约 22 条 ⚠ 超标 2.4×）</li></ul></li>
+        <li><span class="grp">提醒与桌面</span><ul class="sub"><li>超级岛（自检 ⚠ 与诊断重复）· 小组件（14 条 ⚠）</li></ul></li>
+        <li><span class="grp">应用</span><ul class="sub"><li style="color:#D84338">「外观与配色」混入玻璃坞形态/八宫格/首页标题等结构性设置（9–19 条）</li><li>通用</li></ul></li>
+        <li><span class="grp">数据与共享</span><ul class="sub"><li>备份 · 云同步 · 局域网编辑 · 情侣课表</li></ul></li>
+        <li><span class="grp">关于 / 开发者</span><ul class="sub"><li style="color:#D84338">内存状态与诊断页重复；节假日高级页借用云同步键名；恢复默认仅 4/10 页有</li></ul></li>
+      </ul>
+    </div>
+    <div class="arrowmid">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h14m0 0-5-5m5 5-5 5" stroke="#3482FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="tree">
+      <h3><span class="tag new">建议</span> 每页 ≤9 条 · 一功能一口 · 全页可恢复</h3>
+      <ul class="tr">
+        <li><span class="grp">首页与导航 ★新组</span><ul class="sub"><li class="good">玻璃坞形态 · 八宫格编辑器 · 首页标题 · 回本周行为 —— 从「外观」迁出</li></ul></li>
+        <li><span class="grp">外观与配色 → 瘦身为主题五件事</span><ul class="sub"><li class="good">主题模式 · 种子色 · 字体 · 图标 · 玻璃质感（命名预设四选一，裸滑杆收进高级）</li></ul></li>
+        <li><span class="grp">课表</span><ul class="sub"><li class="good">时间模板只留此处；背景 scope 四开关合并为一张示意图上的点击热区</li></ul></li>
+        <li><span class="grp">课表显示 / 提醒与桌面</span><ul class="sub"><li class="good">超 9 条的部分折叠进「高级选项」；自检统一入诊断</li></ul></li>
+        <li><span class="grp">通用规则</span><ul class="sub"><li class="good">所有设置页标配「恢复默认」（作用域＝本页全部开关）；节假日高级页正名「节假日数据更新」</li></ul></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-no">04</span><h2>视觉令牌：骨架不动，清欠账</h2></div>
+  <div class="tokgrid">
+    <div class="tokcard">
+      <h3>色彩 · 保持 Miuix 双色板，补语义槽位</h3>
+      <div class="swatches">
+        <div class="sw"><span class="chip" style="background:#3482FF"></span>主色 primary<code>#3482FF / 暗 #277AF7</code></div>
+        <div class="sw"><span class="chip" style="background:#F2F2F2"></span>背景 scaffold<code>#F2F2F2 / 暗 #242424</code></div>
+        <div class="sw"><span class="chip" style="background:#FFFFFF"></span>卡片 surface<code>#FFFFFF / 暗 #2D2D2D</code></div>
+        <div class="sw"><span class="chip" style="background:#333333"></span>主文本<code>#333333 / 暗 E6 FFFFFF</code></div>
+        <div class="sw"><span class="chip" style="background:#E05D44"></span>危险 destructive ★收编 4 处复用<code>#E05D44</code></div>
+        <div class="sw"><span class="chip" style="background:#2E9E5B"></span>成功 success ★新增槽位<code>待定</code></div>
+      </div>
+    </div>
+    <div class="tokcard">
+      <h3>课程色板 · 双轨合一，修复橙对</h3>
+      <div class="fixpair">
+        <div class="p" style="background:#FFCC80;color:#E65100">橙对现状<br>对比度 2.56 ✗<br>&lt; 自家 3.0 标准</div>
+        <div class="p" style="background:#FFCC80;color:#B34700">修复后<br>对比度 3.72 ✓<br>ink &#8594; #B34700</div>
+      </div>
+      <p style="font-size:11.5px;color:#888;margin-top:12px;line-height:1.7">以 9 组「粉彩底×深墨字」为唯一真源：picker 取色与随机导课色均从 pairs 派生。其余 8 对实测 3.05–6.90 全部达标（红对 3.05 贴线顺手加深）。</p>
+    </div>
+    <div class="tokcard">
+      <h3>圆角 · 18 种字面量 → 五档刻度</h3>
+      <div class="radii">
+        <div class="rad"><i style="border-radius:24px"></i>card 24</div>
+        <div class="rad"><i style="border-radius:16px"></i>control 16</div>
+        <div class="rad"><i style="border-radius:12px"></i>chip 12</div>
+        <div class="rad"><i style="border-radius:8px"></i>small 8</div>
+        <div class="rad"><i style="border-radius:999px;height:26px;align-self:center"></i>pill StadiumShape</div>
+      </div>
+      <p style="font-size:11.5px;color:#888;margin-top:12px;line-height:1.7">现状：202 处 circular 中 127 处字面量、18 种值、999 hack ×17。五档之外禁止新增，CI 统计把关。</p>
+    </div>
+    <div class="tokcard">
+      <h3>字体 · 字号已齐，补字重层级</h3>
+      <div class="type-demo">
+        <div style="font-size:20px;font-weight:600">title3 20 · 页面标题 w600 ★</div>
+        <div style="font-size:17px">main 17 · 正文 w400</div>
+        <div style="font-size:14px;color:#777">body2 14 · 副题 ≤14 字 w400</div>
+        <div style="font-size:13px;font-weight:500;color:#999">footnote 13 · 组标签 w500 ★</div>
+      </div>
+      <p style="font-size:11.5px;color:#888;margin-top:8px;line-height:1.7">现状几乎全站纯 w400，层级只靠字号单维支撑。改动集中在 HyperosTypography 一处全局生效。</p>
+    </div>
+    <div class="tokcard">
+      <h3>玻璃预算制 · 同屏 ≤2 面</h3>
+      <div class="swatches">
+        <div class="sw"><span class="chip" style="background:linear-gradient(135deg,#cfe3ff,#a9ccff)"></span>chrome 带（保留）</div>
+        <div class="sw"><span class="chip" style="background:linear-gradient(135deg,#e8eef6,#dbe4ee)"></span>dock 或浮钮 二选一为焦点面</div>
+        <div class="sw"><span class="chip" style="background:#fff"></span>其余表面降级纯色 / tint</div>
+      </div>
+      <p style="font-size:11.5px;color:#888;margin-top:12px;line-height:1.7">玻璃模式四选一改为命名预设「标准磨砂 / 液态玻璃 / 清透 / 薄雾」；折射率默认 1.59 对齐上限 1.5；三份重复常量合一；删除 _kStockDockGlass 实验开关。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-no">05</span><h2>落地节奏</h2></div>
+  <div class="roadmap">
+    <div class="phase"><h3>P0 止血</h3><div class="when">1 周 · 纯文案＋一行逻辑</div><ul>
+      <li>修正 10 处副题（删路线图泄漏「先保留刷新开关…」等）</li>
+      <li>移除启动强弹更新 sheet</li>
+      <li>节假日高级页正名</li>
+    </ul></div>
+    <div class="phase"><h3>P1 收敛</h3><div class="when">1 个月 · 中等改动</div><ul>
+      <li>dock 去「设置」Tab；＋固定加课程</li>
+      <li>「回本周」单一入口</li>
+      <li>时间模板 / 自检 / 内存状态入口去重</li>
+      <li>橙对墨色修复随版发布</li>
+    </ul></div>
+    <div class="phase"><h3>P2 重构</h3><div class="when">1 个季度 · 大改动</div><ul>
+      <li>设置每页 ≤9 条目改造</li>
+      <li>玻璃预算制 + 命名预设落地</li>
+      <li>radius 五档 + CI lint 门禁</li>
+      <li>timetable_screen.dart 拆分为 dock / 日视图 / 菜单分发 / 更新四模块</li>
+    </ul></div>
+  </div>
+</section>
+
+<footer>轻屿课表 UI/UX 重设计提案 · 配套评审文档 docs/plans/2026-08-24-ui-design-audit-and-redesign.md · 所有色值与结论均可在代码中复核</footer>
+</div>
+</body>
+</html>
