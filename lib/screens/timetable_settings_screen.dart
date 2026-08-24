@@ -61,6 +61,7 @@ import 'advanced_material_settings_screen.dart';
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
 part 'settings/settings_home_menu_editor.dart';
+part 'settings/settings_glass_dock_editor.dart';
 part 'settings/settings_reset.dart';
 part 'settings/settings_diagnostics.dart';
 part 'settings/settings_course_card.dart';

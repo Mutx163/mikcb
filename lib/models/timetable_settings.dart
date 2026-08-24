@@ -182,6 +182,34 @@ abstract final class HomeGridMenu {
   }
 }
 
+/// 玻璃坞底栏按钮的槽位约束与默认排列。
+///
+/// id 语义：'day' / 'week' 是视图切换动作，其余 id 走八宫格目录
+/// （kHomeMenuCatalog，含 'settings'）。空排列合法——渲染层回退到
+/// [defaultActions]，因此不做钉住补位（区别于八宫格的 normalize）。
+abstract final class HomeDockMenu {
+  /// 底栏最多容纳的按钮数量（含视图切换与页面入口）。
+  static const int maxSlots = 5;
+
+  static const List<String> defaultActions = <String>['day', 'week'];
+
+  static List<String> normalize(Iterable<Object?>? raw) {
+    if (raw == null) {
+      return const <String>[];
+    }
+    final unique = <String>[];
+    for (final item in raw) {
+      if (item is String && item.isNotEmpty && !unique.contains(item)) {
+        unique.add(item);
+      }
+    }
+    if (unique.length > maxSlots) {
+      unique.removeRange(maxSlots, unique.length);
+    }
+    return List<String>.unmodifiable(unique);
+  }
+}
+
 enum BackToCurrentWeekButtonStyle { inline, floating }
 
 enum SectionTimeDisplayMode { hidden, startOnly, startAndEnd }
@@ -1171,6 +1199,9 @@ class TimetableSettings {
   /// 八宫格菜单的按钮排列（动作 id，见 [HomeGridMenu]）。
   /// 空表表示使用 [HomeGridMenu.defaultActions] 的默认排列。
   final List<String> homeGridMenuActions;
+
+  /// 玻璃坞底栏按钮排列（'day'/'week' 为视图动作，其余为目录 id）。
+  final List<String> glassDockActions;
   /// 玻璃坞入口开关：日课表 Tab 是否显示。
   /// 至少保留一个模块 Tab 由 UI 层约束（设置页在关闭最后一个时锁定）。
   final bool glassDockShowDayTab;
@@ -1372,6 +1403,7 @@ class TimetableSettings {
     this.homeNavigationForm = HomeNavigationForm.classic,
     this.homeMenuStyle = HomeMenuStyle.list,
     this.homeGridMenuActions = const <String>[],
+  this.glassDockActions = HomeDockMenu.defaultActions,
     this.glassDockShowDayTab = true,
     this.glassDockShowSettingsTab = true,
     this.glassDockShowWeekTab = true,
@@ -1692,6 +1724,7 @@ class TimetableSettings {
       'homeNavigationForm': homeNavigationForm.value,
       'homeMenuStyle': homeMenuStyle.value,
       'homeGridMenuActions': homeGridMenuActions,
+      'glassDockActions': glassDockActions,
       'glassDockShowDayTab': glassDockShowDayTab,
       'glassDockShowSettingsTab': glassDockShowSettingsTab,
       'glassDockShowWeekTab': glassDockShowWeekTab,
@@ -1949,6 +1982,14 @@ class TimetableSettings {
       ),
       homeMenuStyle: HomeMenuStyleX.fromValue(
         json['homeMenuStyle'] as String?,
+      ),
+      glassDockActions: HomeDockMenu.normalize(
+        (json['glassDockActions'] as List<Object?>?) ??
+            [
+              // 迁移：旧档无此键时由日/周 Tab 开关推导（旧默认均 true）。
+              if ((json['glassDockShowDayTab'] as bool? ?? true)) 'day',
+              if ((json['glassDockShowWeekTab'] as bool? ?? true)) 'week',
+            ],
       ),
       homeGridMenuActions: HomeGridMenu.normalize(
         json['homeGridMenuActions'] as List<Object?>?,
@@ -2318,6 +2359,7 @@ class TimetableSettings {
     HomeNavigationForm? homeNavigationForm,
     HomeMenuStyle? homeMenuStyle,
     List<String>? homeGridMenuActions,
+  List<String>? glassDockActions,
     bool? glassDockShowDayTab,
     bool? glassDockShowSettingsTab,
     bool? glassDockShowWeekTab,
@@ -2512,6 +2554,10 @@ class TimetableSettings {
           homeGridMenuActions == null
               ? this.homeGridMenuActions
               : HomeGridMenu.normalize(homeGridMenuActions),
+      glassDockActions:
+          glassDockActions == null
+              ? this.glassDockActions
+              : HomeDockMenu.normalize(glassDockActions),
       glassDockShowDayTab: glassDockShowDayTab ?? this.glassDockShowDayTab,
       glassDockShowSettingsTab:
           glassDockShowSettingsTab ?? this.glassDockShowSettingsTab,

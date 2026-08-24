@@ -101,12 +101,11 @@ TimetableSettings applySettingsReset(
       liquidGlassTuning: d.liquidGlassTuning,
     ),
     // 「首页与导航」页暴露的字段——按 IA 规范 §5 必须有恢复路径。已删除
-    // UI 的字段（设置 Tab、加号钮、右上角菜单形态、内容避让布局）不纳入
-    // 任何 scope，保持「作用域 = 本页开关」的一一对应。
+    // UI 的字段（设置 Tab、加号钮、右上角菜单形态、内容避让布局、日/周
+    // Tab 布尔开关——已被 glassDockActions 取代）不纳入任何 scope。
     SettingsResetScope.homeNavigation => current.copyWith(
       homeNavigationForm: d.homeNavigationForm,
-      glassDockShowDayTab: d.glassDockShowDayTab,
-      glassDockShowWeekTab: d.glassDockShowWeekTab,
+      glassDockActions: d.glassDockActions,
       homeTitleStyle: d.homeTitleStyle,
     ),
     SettingsResetScope.homeWidget => current.copyWith(

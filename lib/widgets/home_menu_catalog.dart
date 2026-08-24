@@ -392,3 +392,52 @@ List<HomeMenuEntry> resolveHomeGridMenuEntries(TimetableSettings settings) {
   }
   return List.unmodifiable(resolved);
 }
+
+/// 玻璃坞底栏的特殊视图动作 id（非目录页，走首页宿主切换）。
+const String kGlassDockActionDay = 'day';
+const String kGlassDockActionWeek = 'week';
+
+/// 解析底栏按钮排列：丢弃不可见/未知 id、去重保序；空排列回退
+/// [HomeDockMenu.defaultActions]（'day'+'week'）。
+List<String> resolveGlassDockActionIds(TimetableSettings settings) {
+  final resolved = <String>[];
+  for (final id in settings.glassDockActions) {
+    if (id == kGlassDockActionDay || id == kGlassDockActionWeek) {
+      if (!resolved.contains(id)) {
+        resolved.add(id);
+      }
+      continue;
+    }
+    final entry = homeMenuEntryById(id);
+    if (entry != null && entry.visible() && !resolved.contains(id)) {
+      resolved.add(id);
+    }
+  }
+  if (resolved.isEmpty) {
+    return List.unmodifiable(HomeDockMenu.defaultActions);
+  }
+  return resolved;
+}
+
+/// 底栏按钮的展示标题（特殊动作用 Tab 文案，其余取目录标题）。
+String glassDockActionLabel(AppLocalizations l10n, String id) {
+  switch (id) {
+    case kGlassDockActionDay:
+      return l10n.glassDockTabDay;
+    case kGlassDockActionWeek:
+      return l10n.glassDockTabWeek;
+  }
+  return homeMenuEntryById(id)?.title(l10n) ?? id;
+}
+
+/// 底栏按钮的展示图标（特殊动作用视图图标，其余取目录图标）。
+ IconData glassDockActionIcon(String id) {
+  switch (id) {
+    case kGlassDockActionDay:
+      return Icons.today_rounded;
+    case kGlassDockActionWeek:
+      return Icons.calendar_view_week_rounded;
+  }
+  return homeMenuEntryById(id)?.icon ?? Icons.circle_outlined;
+}
+

@@ -10150,6 +10150,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '여백 높이';
 
   @override
+  String get glassDockCustomizeSectionTitle => '하단 내비게이션';
+
+  @override
+  String get glassDockCustomizeTitle => '독 버튼 사용자 지정';
+
+  @override
+  String get homeDockEditorViewCategory => '뷰 전환';
+
+  @override
   String get glassDockEntriesSectionTitle => '독 항목';
 
   @override

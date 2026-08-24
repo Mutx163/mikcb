@@ -10403,6 +10403,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockInsetClearanceLabel => 'Inset clearance height';
 
   @override
+  String get glassDockCustomizeSectionTitle => 'Bottom dock';
+
+  @override
+  String get glassDockCustomizeTitle => 'Customize dock buttons';
+
+  @override
+  String get homeDockEditorViewCategory => 'View switching';
+
+  @override
   String get glassDockEntriesSectionTitle => 'Dock entries';
 
   @override

@@ -139,14 +139,6 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
   }
 }
 
-/// 玻璃坞底部导航的入口（Tab）。
-///
-/// 入口可由用户在设置中分别隐藏（[TimetableSettings.glassDockShowDayTab] /
-/// 底栏只承载高频切换：[TimetableSettings.glassDockShowDayTab] /
-/// [TimetableSettings.glassDockShowWeekTab]（至少保留一个，全部隐藏时
-/// 兜底显示周课表）。设置改走 ⋮ 菜单，不再占用底栏黄金位。
-enum _GlassDockEntry { day, week }
-
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   static const int _minWeek = 1;
@@ -6453,15 +6445,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     final useLiquidGlass = !_kStockDockGlass &&
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context);
-    // 动态入口列表：日/周/设置三个模块 Tab 均可在设置中隐藏（至少留一）。
-    final dockTabs = _glassDockTabs(settings, l10n);
+    // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
+    // （'day'/'week' 视图动作 + 目录任意条目，含设置页）。
+    final dockIds = resolveGlassDockActionIds(settings);
     return GlassTabBar.bottom(
       tabs: [
-        for (final entry in dockTabs) _glassDockTabFor(entry, l10n),
+        for (final id in dockIds) _dockTabForId(id, l10n),
       ],
-      selectedIndex: _glassDockCurrentIndex(dockTabs),
+      selectedIndex: _dockSelectedIndex(dockIds),
       onTabSelected: (index) =>
-          _onDockEntrySelected(dockTabs[index], settings),
+          _handleDockTap(dockIds[index], settings),
       // 独立圆钮改由坞层「水滴合并槽」渲染（见 _wrapWithGlassDock）：
       // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
       barHeight: 56,
@@ -6554,90 +6547,57 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 当前设置下玻璃坞显示的入口序列（日/周可分别隐藏，全隐兜底周）。
-  List<_GlassDockEntry> _glassDockTabs(
-    TimetableSettings settings,
-    AppLocalizations l10n,
-  ) {
-    final tabs = [
-      if (settings.glassDockShowDayTab) _GlassDockEntry.day,
-      if (settings.glassDockShowWeekTab) _GlassDockEntry.week,
-    ];
-    // 全部隐藏时兜底显示周课表（旧约束「至少留一」的运行时保障）。
-    if (tabs.isEmpty) return const [_GlassDockEntry.week];
-    return tabs;
+  /// 底栏按钮 → GlassTab 视觉配置：视图动作用固定图标，页面条目取目录。
+  GlassTab _dockTabForId(String id, AppLocalizations l10n) {
+    return GlassTab(
+      icon: Icon(glassDockActionIcon(id)),
+      label: glassDockActionLabel(l10n, id),
+    );
   }
 
-  /// 入口 → GlassTab 视觉配置（排序：日课表 / 周课表）。
-  GlassTab _glassDockTabFor(_GlassDockEntry entry, AppLocalizations l10n) {
-    return switch (entry) {
-      _GlassDockEntry.day => GlassTab(
-        icon: Icon(Icons.today_rounded),
-        label: l10n.glassDockTabDay,
-      ),
-      _GlassDockEntry.week => GlassTab(
-        icon: Icon(Icons.calendar_view_week_rounded),
-        label: l10n.glassDockTabWeek,
-      ),
-    };
+  /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，
+  /// 避免库断言越界（此时底栏全是页面入口，无「当前页」语义）。
+  int _dockSelectedIndex(List<String> ids) {
+    final current = _isDayView ? kGlassDockActionDay : kGlassDockActionWeek;
+    final index = ids.indexOf(current);
+    return index >= 0 ? index : 0;
   }
 
-  /// 当前激活的入口在 [tabs] 中的下标。
-  ///
-  /// 动画/拖动进行中直接高亮目标入口（点击即反馈，不滞后）；
-  /// 稳态按实际状态判断。目标入口刚被设置隐藏时回退高亮常驻的
-  /// 周课表，避免 indexOf 越界。
-  int _glassDockCurrentIndex(List<_GlassDockEntry> tabs) {
-    final index = tabs.indexOf(_currentDockEntry);
-    if (index >= 0) {
-      return index;
-    }
-    final weekIndex = tabs.indexOf(_GlassDockEntry.week);
-    return weekIndex < 0 ? 0 : weekIndex;
-  }
-
-  /// 当前实际所在的入口（底栏只承载日/周切换）。
-  _GlassDockEntry get _currentDockEntry {
-    return _isDayView ? _GlassDockEntry.day : _GlassDockEntry.week;
-  }
-
-  /// 玻璃坞入口切换：日↔周复用日期栏路径的锚点展开/收起动画
-  /// （[_toggleDayView] / [_closeDayView]），玻璃面板随锚点滑入滑出。
-  /// 设置入口已收敛到 ⋮ 菜单，不再占用底栏（IA 重构决策）。
-  void _onDockEntrySelected(
-    _GlassDockEntry entry,
-    TimetableSettings settings,
-  ) {
-    if (entry == _currentDockEntry) {
-      return; // 已在该页：重复点击无动作。
-    }
-    switch (entry) {
-      case _GlassDockEntry.day:
-        if (!_isDayView) {
-          unawaited(
-            _toggleDayView(
-              week: _visibleWeek,
-              dayOfWeek: _resolveStoredDayOfWeek(
-                settings,
-                settings.timetableLastViewedDayOfWeek,
-              ),
-              settings: settings,
-            ),
-          );
-        }
-      case _GlassDockEntry.week:
+  /// 底栏点击分发：''day''/''week'' 复用锚点展开/收起动画；其余 id 走
+  /// 八宫格目录打开对应页面（如设置页以普通路由推入，覆盖在坞上方）。
+  void _handleDockTap(String id, TimetableSettings settings) {
+    switch (id) {
+      case kGlassDockActionDay:
         if (_isDayView) {
-          // 动画收起：_closeDayView 内部完成震动、状态清理与持久化。
-          unawaited(_closeDayView(settings));
-        } else {
+          return;
+        }
+        unawaited(
+          _toggleDayView(
+            week: _visibleWeek,
+            dayOfWeek: _resolveStoredDayOfWeek(
+              settings,
+              settings.timetableLastViewedDayOfWeek,
+            ),
+            settings: settings,
+          ),
+        );
+      case kGlassDockActionWeek:
+        if (!_isDayView) {
           _persistViewState(
             context.read<TimetableProvider>(),
             mode: TimetableHomeViewMode.week,
           );
+          return;
+        }
+        // 动画收起：_closeDayView 内部完成震动、状态清理与持久化。
+        unawaited(_closeDayView(settings));
+      default:
+        final entry = homeMenuEntryById(id);
+        if (entry != null) {
+          unawaited(entry.open(context));
         }
     }
   }
-
   Widget _buildFloatingBackToCurrentWeekButton(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);

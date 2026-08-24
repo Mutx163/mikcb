@@ -17851,6 +17851,24 @@ abstract class AppLocalizations {
   /// **'避让高度'**
   String get glassDockInsetClearanceLabel;
 
+  /// No description provided for @glassDockCustomizeSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部导航栏'**
+  String get glassDockCustomizeSectionTitle;
+
+  /// No description provided for @glassDockCustomizeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义底栏按钮'**
+  String get glassDockCustomizeTitle;
+
+  /// No description provided for @homeDockEditorViewCategory.
+  ///
+  /// In zh, this message translates to:
+  /// **'视图切换'**
+  String get homeDockEditorViewCategory;
+
   /// No description provided for @glassDockEntriesSectionTitle.
   ///
   /// In zh, this message translates to:

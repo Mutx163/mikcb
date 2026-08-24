@@ -9830,6 +9830,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '避让高度';
 
   @override
+  String get glassDockCustomizeSectionTitle => '底部导航栏';
+
+  @override
+  String get glassDockCustomizeTitle => '自定义底栏按钮';
+
+  @override
+  String get homeDockEditorViewCategory => '视图切换';
+
+  @override
   String get glassDockEntriesSectionTitle => '底栏入口';
 
   @override
@@ -19876,6 +19885,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockInsetClearanceLabel => '避讓高度';
 
   @override
+  String get glassDockCustomizeSectionTitle => '底部導覽列';
+
+  @override
+  String get glassDockCustomizeTitle => '自訂底欄按鈕';
+
+  @override
+  String get homeDockEditorViewCategory => '檢視切換';
+
+  @override
   String get glassDockEntriesSectionTitle => '底欄入口';
 
   @override
@@ -29920,6 +29938,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockInsetClearanceLabel => '避讓高度';
+
+  @override
+  String get glassDockCustomizeSectionTitle => '底部導覽列';
+
+  @override
+  String get glassDockCustomizeTitle => '自訂底欄按鈕';
+
+  @override
+  String get homeDockEditorViewCategory => '檢視切換';
 
   @override
   String get glassDockEntriesSectionTitle => '底欄入口';

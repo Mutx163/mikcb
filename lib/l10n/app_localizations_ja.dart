@@ -10107,6 +10107,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockInsetClearanceLabel => '回避スペースの高さ';
 
   @override
+  String get glassDockCustomizeSectionTitle => '下部ナビゲーション';
+
+  @override
+  String get glassDockCustomizeTitle => 'ドックボタンをカスタマイズ';
+
+  @override
+  String get homeDockEditorViewCategory => 'ビュー切替';
+
+  @override
   String get glassDockEntriesSectionTitle => 'ドックの入口';
 
   @override

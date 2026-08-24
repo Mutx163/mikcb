@@ -37,8 +37,7 @@ void main() {
       // 首页与导航（自外观页拆出的独立恢复作用域）
       homeNavigationForm: HomeNavigationForm.glassDock,
       homeTitleStyle: HomeTitleStyle.brand,
-      glassDockShowDayTab: false,
-      glassDockShowWeekTab: false,
+      glassDockActions: const ['week', 'settings', 'statistics'],
       // 小组件
       widgetShowLocation: false,
       widgetShowCountdown: false,
@@ -176,8 +175,7 @@ void main() {
     );
 
     expect(result.homeNavigationForm, defaults.homeNavigationForm);
-    expect(result.glassDockShowDayTab, defaults.glassDockShowDayTab);
-    expect(result.glassDockShowWeekTab, defaults.glassDockShowWeekTab);
+    expect(result.glassDockActions, defaults.glassDockActions);
     expect(result.homeTitleStyle, defaults.homeTitleStyle);
 
     // 外观字段不被导航页连带重置。

@@ -96,93 +96,91 @@ class _HomeNavigationSettingsScreenState
           ),
         ],
       ),
-      // 底栏入口开关（仅玻璃坞）：日/周 Tab 可分别隐藏，至少保留一个。
-      // 设置 Tab 开关已按产品决策移除，但其持久化状态仍参与「至少一个」
-      // 约束——历史关闭过全部入口的用户不至于被锁死在当前组合上。
-      // 底栏入口开关（仅玻璃坞）＋ 右上角「⋮」八宫格菜单的自定义入口
-      // （两种导航形态下都存在，故本分区常显）。
+      // 底栏（仅玻璃坞）：最多 5 个按钮自由编排（含 日/周 视图切换与
+      // 目录全部条目）；＋ 右上角「⋮」八宫格菜单自定义入口（常显）。
       1 => Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (isGlassDock) ...[
-                const HyperosSectionGap(),
-                HyperosSettingsBlock(
-                  title: l10n.glassDockEntriesSectionTitle,
-                  child: HyperosListGroup(
-                    children: [
-                      HyperosSwitchTile(
-                        title: l10n.glassDockShowDayTabTitle,
-                        value: _draft.glassDockShowDayTab,
-                        onChanged: _draft.glassDockShowWeekTab ||
-                                _draft.glassDockShowSettingsTab
-                            ? (value) {
-                                _updateDraft(
-                                  _draft.copyWith(glassDockShowDayTab: value),
-                                );
-                              }
-                            : null,
-                      ),
-                      HyperosSwitchTile(
-                        title: l10n.glassDockShowWeekTabTitle,
-                        value: _draft.glassDockShowWeekTab,
-                        onChanged: _draft.glassDockShowDayTab ||
-                                _draft.glassDockShowSettingsTab
-                            ? (value) {
-                                _updateDraft(
-                                  _draft.copyWith(glassDockShowWeekTab: value),
-                                );
-                              }
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-                ],
-                const HyperosSectionGap(),
-                HyperosSettingsBlock(
-                  title: l10n.homeMenuCustomizeSectionTitle,
-                  child: HyperosListGroup(
-                    children: [
-                      HyperosListTile(
-                        icon: Icons.grid_view_outlined,
-                        iconAccent: HyperosIconColors.blue,
-                        title: l10n.homeGridCustomizeTitle,
-                        details: l10n.homeGridCustomizeDetails(
-                          resolveHomeGridMenuEntries(_draft).length,
-                          HomeGridMenu.maxSlots,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isGlassDock) ...[
+            const HyperosSectionGap(),
+            HyperosSettingsBlock(
+              title: l10n.glassDockCustomizeSectionTitle,
+              child: HyperosListGroup(
+                children: [
+                  HyperosListTile(
+                    icon: Icons.dock_outlined,
+                    iconAccent: HyperosIconColors.blue,
+                    title: l10n.glassDockCustomizeTitle,
+                    details: l10n.homeGridCustomizeDetails(
+                      resolveGlassDockActionIds(_draft).length,
+                      HomeDockMenu.maxSlots,
+                    ),
+                    onTap: () async {
+                      await HyperosNavigation.push(
+                        context,
+                        settings: const RouteSettings(
+                          name: '/settings/glass-dock',
                         ),
-                        onTap: () async {
-                          await HyperosNavigation.push(
-                            context,
-                            settings: const RouteSettings(
-                              name: '/settings/home-menu',
-                            ),
-                            builder: (_) => _HomeGridMenuEditorScreen(
-                              initialIds: [
-                                for (final entry
-                                    in resolveHomeGridMenuEntries(_draft))
-                                  entry.id,
-                              ],
-                              onChanged: (ids) {
-                                _updateDraft(
-                                  _draft.copyWith(homeGridMenuActions: ids),
-                                );
-                              },
-                            ),
+                        builder: (_) => _GlassDockEditorScreen(
+                          initialIds: resolveGlassDockActionIds(_draft),
+                          onChanged: (ids) {
+                            _updateDraft(
+                              _draft.copyWith(glassDockActions: ids),
+                            );
+                          },
+                        ),
+                      );
+                      if (!mounted) return;
+                      setState(() {
+                        _draft = context.read<TimetableProvider>().settings;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const HyperosSectionGap(),
+          HyperosSettingsBlock(
+            title: l10n.homeMenuCustomizeSectionTitle,
+            child: HyperosListGroup(
+              children: [
+                HyperosListTile(
+                  icon: Icons.grid_view_outlined,
+                  iconAccent: HyperosIconColors.blue,
+                  title: l10n.homeGridCustomizeTitle,
+                  details: l10n.homeGridCustomizeDetails(
+                    resolveHomeGridMenuEntries(_draft).length,
+                    HomeGridMenu.maxSlots,
+                  ),
+                  onTap: () async {
+                    await HyperosNavigation.push(
+                      context,
+                      settings: const RouteSettings(name: '/settings/home-menu'),
+                      builder: (_) => _HomeGridMenuEditorScreen(
+                        initialIds: [
+                          for (final entry in resolveHomeGridMenuEntries(_draft))
+                            entry.id,
+                        ],
+                        onChanged: (ids) {
+                          _updateDraft(
+                            _draft.copyWith(homeGridMenuActions: ids),
                           );
-                          if (!mounted) return;
-                          setState(() {
-                            _draft =
-                                context.read<TimetableProvider>().settings;
-                          });
                         },
                       ),
-                    ],
-                  ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
                 ),
               ],
             ),
+          ),
+        ],
+      ),
       // 首页标题样式：预览 + 选择，自外观页原样迁入。
       2 => Column(
         mainAxisSize: MainAxisSize.min,
