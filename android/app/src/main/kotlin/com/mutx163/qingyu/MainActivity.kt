@@ -2814,9 +2814,10 @@ class LiveUpdateService : Service() {
             color = textColor
             textSize = sp(resolvedFontSizeSp)
             this.typeface = typeface
-            // 字重完全交给真实 Typeface（BOLD/Medium/Regular）。
-            // 不再用 isFakeBoldText 叠加假粗体：假粗体靠描边撑粗笔画，
-            // 经系统降采样后边缘发虚，是标签小字“发糊”的原因之一。
+            // 粗细档位说明：真实 Typeface 的 BOLD 样式对拉丁字形有效，
+            // 但中文字形走系统回退字体（MiSans 等），样式请求常不生效，
+            // 可见的加粗主要依赖 isFakeBoldText 描边实现，故 bold 档必须保留。
+            isFakeBoldText = fontWeight == "bold"
             isSubpixelText = true
             isLinearText = true
         }
@@ -2838,8 +2839,9 @@ class LiveUpdateService : Service() {
             fittedSizeSp -= 1f
         }
 
-        // 清晰度修正：
-        // 1) 不叠加 isFakeBoldText，字重由真实 Typeface 提供；
+        // 清晰度修正（在保留字重档位可见性的前提下）：
+        // 1) bold 档保留 isFakeBoldText——中文字形走系统回退字体，
+        //    真实 Bold 样式请求常不生效，假粗体是“粗”的唯一可靠来源；
         // 2) 去掉 setShadowLayer 文字投影——半透明阴影经系统缩小后
         //    晕成灰色光晕包住笔画，是小字观感“完全模糊”的主要来源；
         // 3) 字号取整到整数物理像素，避免轮廓被分数像素缩放软化。
@@ -2847,6 +2849,7 @@ class LiveUpdateService : Service() {
             color = textColor
             textSize = Math.round(sp(fittedSizeSp) * renderScale).toFloat()
             this.typeface = typeface
+            isFakeBoldText = fontWeight == "bold"
             isSubpixelText = true
             isLinearText = true
         }
