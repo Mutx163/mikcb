@@ -2888,15 +2888,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     final chromeGridClearance = weekdayChromeBlurEnabled
         ? homePageFrostedRegionSeamOverlap
         : 0.0;
-    // 玻璃坞满屏悬浮下自适应节高会把网格铺到药丸后面，而自适应网格
-    // 没有纵向滚动可救：把底部药丸占用（含底部安全区）从可用高度里
-    // 扣掉，让网格收在药丸上方、课表下方留一条空白，课程不被遮挡。
-    final dockAutofitRelief = _glassDockContentScrollInset(settings);
+    // 自适应节高按完整可用高度计算：玻璃坞满屏悬浮下网格延伸到药丸
+    // 底下（层次感）；被遮住的最后几节由 _buildWeekPageBody 的滚动余
+    // 量救回——上滑把整段课表完全滑出到药丸上方，下滑再让药丸盖回。
     final bodyAvailableHeight =
-        (availableHeight -
-            _weekDayHeaderHeight -
-            chromeGridClearance -
-            dockAutofitRelief).clamp(0.0, double.infinity);
+        (availableHeight - _weekDayHeaderHeight - chromeGridClearance).clamp(
+          0.0,
+          double.infinity,
+        );
     final sectionHeight =
         settings.timetableAutoFitSectionHeight && settings.sectionCount > 0
         ? bodyAvailableHeight / settings.sectionCount
@@ -2975,24 +2974,36 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required Widget grid,
   }) {
-    // 网格视口不避让，最后几节会停在药丸后面；给纵向滚动补一段底部余
-    // 量，用户可以把网格滑上来查看被遮的课程（课表下方随之留出空白）。
+    // 玻璃坞满屏悬浮：网格视口不避让、铺到药丸底下——静止时最后几节
+    // 停在药丸后面；给纵向滚动补一段底部余量，上滑把课表整体滑上来、
+    // 被遮的课程完全露到药丸上方，下滑再让药丸盖回内容。自适应与非自
+    // 适应在此统一（自适应网格同样可滚）。经典形态无坞（余量为 0），
+    // 保持原样：自适应恰满视口不滚，非自适应维持原滚动结构。
     final weekGridScrollRelief = _glassDockContentScrollInset(settings);
-    final weekGrid = settings.timetableAutoFitSectionHeight
-        ? grid
-        : SingleChildScrollView(
-            key: PageStorageKey<String>('week-scroll-$week'),
-            // Explicit clamp: do not inherit HyperOS rubber-band here.
-            physics: const ClampingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            child: weekGridScrollRelief > 0
-                ? Padding(
-                    padding: EdgeInsets.only(bottom: weekGridScrollRelief),
-                    child: grid,
-                  )
-                : grid,
-          );
+    final Widget weekGrid;
+    if (weekGridScrollRelief > 0) {
+      weekGrid = SingleChildScrollView(
+        key: PageStorageKey<String>('week-scroll-$week'),
+        // Explicit clamp: do not inherit HyperOS rubber-band here.
+        physics: const ClampingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: weekGridScrollRelief),
+          child: grid,
+        ),
+      );
+    } else if (settings.timetableAutoFitSectionHeight) {
+      weekGrid = grid;
+    } else {
+      weekGrid = SingleChildScrollView(
+        key: PageStorageKey<String>('week-scroll-$week'),
+        physics: const ClampingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        child: grid,
+      );
+    }
     // Drive opacity from the expand controller so open and close share the
     // same curve. A boolean AnimatedOpacity snaps the grid away on open while
     // the panel still grows, which reads as "open has no transition".

@@ -153,15 +153,32 @@ void main() {
   });
 
   testWidgets(
-      'glass dock overlay autofit grid: sits above pill leaving blank strip',
+      'glass dock overlay autofit grid: spans under pill with scroll relief',
       (tester) async {
     await pumpDockApp(
       tester,
       HomeNavigationForm.glassDock,
       autoFitSectionHeight: true,
     );
-    // 自适应网格没有纵向滚动可救：节高计算必须扣掉药丸占用，
-    // 让网格收在药丸上方、课表下方留一条空白。
+    // 自适应与非自适应在玻璃坞下统一：节高按完整可用高度计算，网格
+    // 满屏铺到药丸底下（静止时最后几节停在药丸后面），并包滚动余量
+    // ——上滑整段课表完全滑出到药丸上方，下滑再让药丸盖回内容。
+    final scrollFinder = find.byKey(
+      const PageStorageKey<String>('week-scroll-1'),
+    );
+    expect(
+      scrollFinder,
+      findsOneWidget,
+      reason: '自适应网格在玻璃坞下也应可纵向滚动',
+    );
+    final scrollView = tester.widget<SingleChildScrollView>(scrollFinder);
+    final child = scrollView.child;
+    expect(child, isA<Padding>(),
+        reason: '玻璃坞下周网格滚动应包一层底部余量 padding');
+    final bottom = ((child! as Padding).padding as EdgeInsets).bottom;
+    expect(bottom, closeTo(kGlassDockPillOccupancy, 0.5),
+        reason: '底部余量应兜底药丸固定占用');
+
     // 时间列/网格盒本身会被 body 拉伸到满高，量不到内容底边；
     // 改量时间列的节单元格：内容底边 = 首格顶 + 各节高之和。
     final columnFinder = find.byKey(const ValueKey('timetable-time-column'));
@@ -171,17 +188,29 @@ void main() {
     final sectionCells = column.children.whereType<Container>().toList();
     expect(sectionCells, isNotEmpty);
     // Container 的 height 参数没有公开 getter，直接量渲染矩形。
+    double measureBottom(List<Rect> rects) => rects.first.top +
+        rects.fold<double>(0, (sum, r) => sum + r.height);
     final cellRects = sectionCells
         .map((c) => tester.getRect(find.byWidget(c)))
         .toList(growable: false);
-    final contentBottom = cellRects.first.top +
-        cellRects.fold<double>(0, (sum, r) => sum + r.height);
     final pagerBottom =
         tester.getBottomRight(find.byType(PageView).first).dy;
     expect(
-      contentBottom,
-      closeTo(pagerBottom - kGlassDockPillOccupancy, 1.0),
-      reason: '自适应网格内容底边应在药丸上方（课表下方留白）',
+      measureBottom(cellRects),
+      closeTo(pagerBottom, 1.5),
+      reason: '自适应网格应满屏延伸、从药丸下方穿过（不再上方留白）',
+    );
+
+    // 上滑：最大滚动 = 底部余量，整段课表恰好完全升到药丸上方。
+    await tester.drag(scrollFinder, const Offset(0, -120));
+    await tester.pump();
+    final draggedRects = sectionCells
+        .map((c) => tester.getRect(find.byWidget(c)))
+        .toList(growable: false);
+    expect(
+      measureBottom(draggedRects),
+      closeTo(pagerBottom - kGlassDockPillOccupancy, 1.5),
+      reason: '上滑到底后课程内容应整体停到药丸上方、不被遮挡',
     );
   });
 }
