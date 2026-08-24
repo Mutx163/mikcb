@@ -357,6 +357,16 @@ class TimetableSettingsScreen extends StatelessWidget {
 
   /// Lazy section builder for the settings home list.
   ///
+  /// 打开时间模板管理页（旧名 QuickSwitcher 名不副实：开的是完整管理
+  /// 页）。hub 与「课表页面」两处入口共用本方法，指向同一路由。
+  void _openTimeSchemeManagement(BuildContext context) {
+    HyperosNavigation.push(
+      context,
+      settings: const RouteSettings(name: '/settings/time-schemes'),
+      builder: (_) => const TimeSchemeManagementScreen(),
+    );
+  }
+
   /// Sections: 0 summary · 1 timetable · 2 display · 3 home & navigation
   /// · 4 reminder/desktop · 5 app · 6 data/share · 7 about
   /// · 8 developer tools.
@@ -433,6 +443,23 @@ class TimetableSettingsScreen extends StatelessWidget {
                       ]
                     : null,
                 onClick: openProfiles,
+              ),
+              // 时间模板：高频配置（开学前几乎必动），按用户反馈保留在
+              // hub 一级位；「课表页面」内的同名入口并存，指向同一页面。
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('timer')!,
+                  HyperosIconColors.teal,
+                ),
+                title: l10n.timeSchemeEntryTitle,
+                endActions: [
+                  Text(
+                    provider.activeTimeScheme?.name ??
+                        l10n.timeSchemeEntryNotSelected,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: () => _openTimeSchemeManagement(context),
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
