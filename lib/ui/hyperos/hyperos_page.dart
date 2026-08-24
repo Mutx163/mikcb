@@ -110,6 +110,20 @@ class HyperosRootPage extends StatelessWidget {
 /// When [overlayHeader] is true and [title] is a plain [Text], the shell uses
 /// [HyperosCollapsibleTopAppBar] (Miuix-style large-title collapse). Complex
 /// title widgets fall back to the nested frosted header.
+/// 内嵌宿主标记：由底栏内嵌壳提供。被包裹的 [HyperosSubpage] 隐藏
+/// 返回箭头——底栏点开的页没有「返回上一页」语义（坞常驻，系统返回
+/// 由宿主拦截收回页面）；普通推入的路由不包此标记，行为不变。
+class HyperosSubpageNoBack extends InheritedWidget {
+  const HyperosSubpageNoBack({super.key, required super.child});
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<HyperosSubpageNoBack>() !=
+      null;
+
+  @override
+  bool updateShouldNotify(HyperosSubpageNoBack oldWidget) => false;
+}
+
 class HyperosSubpage extends StatelessWidget {
   const HyperosSubpage({
     super.key,
@@ -159,7 +173,9 @@ class HyperosSubpage extends StatelessWidget {
         ? hyperosExtractPageTitleText(title)
         : null;
     final Widget? navigationIcon;
-    if (onBack != null) {
+    // 底栏内嵌宿主里的子页不渲染返回键（见 [HyperosSubpageNoBack]）。
+    final showBack = onBack != null && !HyperosSubpageNoBack.of(context);
+    if (showBack) {
       navigationIcon = HyperosIconButton(
         icon: Icons.arrow_back,
         onPressed: onBack,
@@ -183,7 +199,7 @@ class HyperosSubpage extends StatelessWidget {
         prefixes:
             prefixes ??
             [
-              if (onBack != null)
+              if (showBack)
                 HyperosIconButton(icon: Icons.arrow_back, onPressed: onBack),
             ],
         suffixes: suffixes ?? const [],

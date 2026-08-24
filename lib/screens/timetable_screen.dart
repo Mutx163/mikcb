@@ -755,28 +755,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                 fit: StackFit.expand,
                 children: [
                   dockContent,
+                  // 与旧「设置 Tab」一致：点底栏闪现直切，无滑动转场。
                   Positioned.fill(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: 1),
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, t, child) {
-                        return FadeTransition(
-                          opacity: AlwaysStoppedAnimation(t),
-                          child: SlideTransition(
-                            position: AlwaysStoppedAnimation(
-                              Offset(1 - t, 0),
-                            ),
-                            child: child!,
-                          ),
-                        );
-                      },
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: Scaffold(
-                          backgroundColor:
-                              Theme.of(context).scaffoldBackgroundColor,
-                          body: Builder(builder: inlineBuilder),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: Scaffold(
+                        backgroundColor:
+                            Theme.of(context).scaffoldBackgroundColor,
+                        body: HyperosSubpageNoBack(
+                          child: Builder(builder: inlineBuilder),
                         ),
                       ),
                     ),
@@ -6477,11 +6464,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
-    // 底栏文字极性跟随「底栏实际表面亮度」（黑白动态变色）：
-    // 表面 = 壁纸 + 24% 白玻璃，极性由壁纸亮度决定（与顶部 chrome 同一
-    // 规则，采样就绪时覆盖主题判断——否则深色主题 + 亮壁纸会白字看不清
-    // 且与顶部黑字不一致）；采样未就绪回退主题。
-    final wallpaperLuminance = _wallpaperBodyLuminance;
+    // 底栏文字极性分派：课表态跟随壁纸亮度（表面 = 壁纸 + 白玻璃）；
+    // 内嵌页表态底栏浮在纯色页面上，只看主题——否则白底设置页会沿用
+    // 暗壁纸的浅色墨，白字看不见（自动反色失效的根因）。
+    final wallpaperLuminance = _dockInlinePageId != null
+        ? null
+        : _wallpaperBodyLuminance;
     final barUsesLightInk = wallpaperLuminance != null
         ? wallpaperLuminance < 0.45
         : isDark;
