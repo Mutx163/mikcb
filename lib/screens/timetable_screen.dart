@@ -12,6 +12,7 @@ import 'package:flutter/gestures.dart'
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -286,16 +287,30 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
 
   /// Finger travel (after resistance) required to fire quick import.
-  static const double _homePullQuickImportTriggerDistance = 120;
+  static const double _homePullQuickImportTriggerDistance =
+      HyperosHomePullPhysics.triggerDistance;
 
   /// Visual / tracked pull cap; keep above the trigger so the indicator can
   /// overshoot slightly before release.
-  static const double _homePullQuickImportMaxDistance = 180;
+  static const double _homePullQuickImportMaxDistance =
+      HyperosHomePullPhysics.maxVisualDistance;
 
-  /// Pull-down damping so reaching the trigger needs a longer physical stroke.
-  /// Collapse (negative delta) stays 1:1 so retracting the pull feels immediate.
-  static const double _homePullDownResistance = 0.62;
+  /// Damping range for the cubic curve f(x)=x - x\u00B2 + x\u00B3/3; f(1)\u00B7range = maxVisual.
+  static const double _homePullDampingRange = HyperosHomePullPhysics.dampingRange;
+
+  // Raw finger travel (clamped); visual offset = damped(touch/range)*range.
+  double _homePullTouchDistance = 0;
+
+  // Visual pull offset (derived from _homePullTouchDistance).
   double _homePullDragDistance = 0;
+
+  // Threshold haptic latch: arm below trigger, fire once above.
+  bool _homePullHapticArmed = true;
+
+  // Spring-back + spinner (created in initState, disposed there).
+  AnimationController? _homePullSettleSpring;
+  AnimationController? _homePullSpin;
+  int _homePullSettleGeneration = 0;
   bool _isHomePullQuickImportRunning = false;
   VoidCallback? _homePullQuickImportCancel;
   double? _wallpaperTopLuminance;
@@ -364,6 +379,12 @@ class _TimetableScreenState extends State<TimetableScreen>
             _dayAgendaProgressTick.value++;
           })
         : null;
+    _homePullSettleSpring = AnimationController.unbounded(vsync: this)
+      ..addListener(_driveHomePullSettle);
+    _homePullSpin = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 760),
+    );
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
@@ -376,6 +397,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _homePullQuickImportCancel?.call();
+    _homePullSettleSpring?.dispose();
+    _homePullSpin?.dispose();
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
@@ -2534,78 +2557,106 @@ class _TimetableScreenState extends State<TimetableScreen>
     final showLabel =
         _isHomePullQuickImportRunning ||
         _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.55;
-    // Sit just under the weekday (Mon–Sun) row so the bar is not covered.
     const indicatorTopInset = _weekDayHeaderHeight + 8;
+    // Follow finger slightly with capped translation so the pill reads connected.
+    final followY = () {
+      if (_isHomePullQuickImportRunning) return 0.0;
+      final d = _homePullDragDistance;
+      const cap = 64.0;
+      if (d <= cap) return d * 0.42;
+      return cap * 0.42 + (d - cap) * 0.10;
+    }();
+    final scale = _isHomePullQuickImportRunning
+        ? 1.0
+        : (0.88 + pullProgress * 0.12).clamp(0.88, 1.0);
+    final opacity = _isHomePullQuickImportRunning
+        ? 1.0
+        : (0.35 + pullProgress * 0.65).clamp(0.35, 1.0);
     return Positioned(
       top: indicatorTopInset,
       left: 0,
       right: 0,
       child: Center(
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 120),
-          opacity: _isHomePullQuickImportRunning
-              ? 1
-              : (0.35 + pullProgress * 0.65),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surface.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    value: _isHomePullQuickImportRunning
-                        ? null
-                        : math.max(pullProgress, 0.08),
-                  ),
-                ),
-                if (showLabel) ...[
-                  const SizedBox(width: 10),
-                  Text(
-                    l10n.homePullQuickImportFetchingCourses,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-                if (_isHomePullQuickImportRunning) ...[
-                  const SizedBox(width: 8),
-                  Material(
-                    type: MaterialType.transparency,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: _cancelHomePullQuickImport,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+        child: Transform.translate(
+          offset: Offset(0, followY),
+          child: Transform.scale(
+            scale: scale,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 120),
+              opacity: opacity,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(20),
+                  border: _isHomePullQuickImportRunning
+                      ? null
+                      : Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outlineVariant
+                              .withValues(alpha: 0.35 * pullProgress),
+                          width: 0.8,
                         ),
-                        child: Text(
-                          l10n.quickImportCancelImportAction,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08 + pullProgress * 0.04),
+                      blurRadius: 14 + pullProgress * 6,
+                      offset: Offset(0, 5 + pullProgress * 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CustomPaint(
+                        painter: _HomePullRingPainter(
+                          progress: pullProgress,
+                          isRunning: _isHomePullQuickImportRunning,
+                          spin: _homePullSpin,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ],
+                    if (showLabel) ...[
+                      const SizedBox(width: 10),
+                      Text(
+                        l10n.homePullQuickImportFetchingCourses,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                    if (_isHomePullQuickImportRunning) ...[
+                      const SizedBox(width: 8),
+                      Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _cancelHomePullQuickImport,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: Text(
+                              l10n.quickImportCancelImportAction,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -2617,46 +2668,109 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (_isHomePullQuickImportRunning) {
       return;
     }
-    if (deltaDy <= 0 && _homePullDragDistance <= 0) {
+    final atRest = _homePullDragDistance <= 0.5 && _homePullTouchDistance <= 0.5;
+    if (deltaDy <= 0 && atRest) {
       return;
     }
-    // Stretch on the way down; collapse without damping so upward motion first
-    // puts away the pull UI instead of scrolling the timetable.
-    final adjustedDelta = deltaDy > 0
-        ? deltaDy * _homePullDownResistance
-        : deltaDy;
-    final nextDistance = (_homePullDragDistance + adjustedDelta).clamp(
-      0.0,
-      _homePullQuickImportMaxDistance,
-    );
-    if (nextDistance == _homePullDragDistance) {
+    // Finger takes over from any in-flight settle spring.
+    if (_homePullSettleSpring?.isAnimating ?? false) {
+      _homePullSettleGeneration++;
+      _homePullSettleSpring?.stop(canceled: true);
+    }
+    if (deltaDy > 0) {
+      _homePullTouchDistance = (_homePullTouchDistance + deltaDy).clamp(
+        0.0,
+        _homePullDampingRange,
+      );
+    } else {
+      // Retract "feels immediate"; keep raw travel 1:1.
+      _homePullTouchDistance = (_homePullTouchDistance + deltaDy).clamp(
+        0.0,
+        _homePullDampingRange,
+      );
+    }
+    final nextVisual = HyperosHomePullPhysics.visualOffset(
+      _homePullTouchDistance,
+      _homePullDampingRange,
+    ).clamp(0.0, _homePullQuickImportMaxDistance);
+    final threshold = _homePullQuickImportTriggerDistance;
+    final crossedUp =
+        _homePullDragDistance < threshold && nextVisual >= threshold;
+    final reArmed =
+        _homePullDragDistance >= threshold &&
+        nextVisual < threshold * 0.88;
+    if (reArmed) _homePullHapticArmed = true;
+    if (nextVisual == _homePullDragDistance && !crossedUp) {
       return;
+    }
+    if (crossedUp && _homePullHapticArmed) {
+      _homePullHapticArmed = false;
+      try {
+        final settings = context.read<TimetableProvider>().settings;
+        if (settings.enableHaptics) HapticFeedback.selectionClick();
+      } catch (_) {}
     }
     setState(() {
-      _homePullDragDistance = nextDistance;
+      _homePullDragDistance = nextVisual;
     });
   }
 
   void _finishHomePullDrag() {
     final shouldTrigger =
         _homePullDragDistance >= _homePullQuickImportTriggerDistance;
-    if (_homePullDragDistance != 0) {
-      setState(() {
-        _homePullDragDistance = 0;
-      });
-    }
+    _homePullSettleTo(0);
+    _homePullHapticArmed = true;
     if (shouldTrigger) {
       unawaited(_runHomePullQuickImport());
     }
   }
 
   void _cancelHomePullDrag() {
-    if (_homePullDragDistance == 0) {
+    _homePullSettleTo(0);
+    _homePullHapticArmed = true;
+  }
+
+  // --- Home pull spring helpers (HyperOS critical-damped, period 0.4s) ---
+  void _driveHomePullSettle() {
+    final spring = _homePullSettleSpring;
+    if (spring == null) return;
+    final v = spring.value;
+    if (!mounted) return;
+    setState(() {
+      _homePullDragDistance = v.clamp(0.0, _homePullQuickImportMaxDistance);
+      _homePullTouchDistance =
+          HyperosHomePullPhysics.touchForOffset(v, _homePullDampingRange)
+              .clamp(0.0, _homePullDampingRange);
+    });
+  }
+
+  void _homePullSettleTo(double target) {
+    final spring = _homePullSettleSpring;
+    if (spring == null) {
+      setState(() {
+        _homePullDragDistance = target;
+        _homePullTouchDistance =
+            HyperosHomePullPhysics.touchForOffset(target, _homePullDampingRange);
+      });
       return;
     }
-    setState(() {
-      _homePullDragDistance = 0;
-    });
+    final generation = ++_homePullSettleGeneration;
+    spring.value = _homePullDragDistance;
+    final sim = SpringSimulation(
+      HyperosHomePullPhysics.spring,
+      spring.value,
+      target,
+      0,
+    );
+    // ignore: discarded_futures
+    spring.animateWith(sim).then((_) {
+      if (!mounted || generation != _homePullSettleGeneration) return;
+      setState(() {
+        _homePullDragDistance = target;
+        _homePullTouchDistance =
+            HyperosHomePullPhysics.touchForOffset(target, _homePullDampingRange);
+      });
+    }).catchError((Object _) {});
   }
 
   /// Clamping overscroll at the top of the week/day vertical scrollables.
@@ -2711,6 +2825,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     cancel();
+    _homePullSpin?.stop();
     if (mounted) {
       setState(() {
         _isHomePullQuickImportRunning = false;
@@ -2724,11 +2839,21 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final l10n = AppLocalizations.of(context)!;
+    _homePullSettleGeneration++;
+    _homePullSettleSpring?.stop(canceled: true);
+    _homePullHapticArmed = true;
+    _homePullTouchDistance = 0;
     setState(() {
       _isHomePullQuickImportRunning = true;
       _homePullDragDistance = 0;
       _homePullQuickImportCancel = null;
     });
+    _homePullSpin?.repeat();
+    try {
+      if (context.read<TimetableProvider>().settings.enableHaptics) {
+        HapticFeedback.mediumImpact();
+      }
+    } catch (_) {}
     try {
       await runHomePullWarehouseQuickImport(
         context,
@@ -2752,10 +2877,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
     } finally {
       if (mounted) {
+        _homePullSpin?.stop();
         setState(() {
           _isHomePullQuickImportRunning = false;
           _homePullQuickImportCancel = null;
         });
+      } else {
+        _homePullSpin?.stop();
       }
     }
   }
@@ -8256,3 +8384,81 @@ class _HomePullVerticalDragDetectorState
     );
   }
 }
+
+// ---------------- Home pull ring (HyperOS 拉伸质感 + 轨道点刷新) ----------------
+class _HomePullRingPainter extends CustomPainter {
+  _HomePullRingPainter({
+    required this.progress,
+    required this.isRunning,
+    required this.spin,
+    required this.color,
+  }) : super(repaint: spin);
+
+  final double progress;
+  final bool isRunning;
+  final Animation<double>? spin;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = 2.2;
+    final radius = math.min(size.width, size.height) / 2 - strokeWidth / 2;
+    final center = Offset(size.width / 2, size.height / 2);
+    final bg = Paint()
+      ..color = color.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    final fg = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    if (isRunning) {
+      // Miuix 风格：细底环 + 轨道点公转。
+      canvas.drawCircle(center, radius, bg);
+      final t = spin?.value ?? 0;
+      final angle = (t % 1) * 2 * math.pi - math.pi / 2;
+      final orbitR = radius - strokeWidth;
+      final dot = center + Offset(orbitR * math.cos(angle), orbitR * math.sin(angle));
+      canvas.drawCircle(dot, strokeWidth + 0.6, Paint()..color = color);
+      return;
+    }
+
+    final p = progress.clamp(0.0, 1.0);
+    // Never fully empty — keep a subtle trace even at p~0.
+    final minSweep = 0.18;
+    final sweep = (minSweep + p * (1 - minSweep)) * 2 * math.pi;
+    // faint bg
+    canvas.drawCircle(center, radius, bg);
+    if (p < 0.995) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        sweep,
+        false,
+        fg,
+      );
+    } else {
+      // Closed circle at threshold with a subtle inner glow.
+      canvas.drawCircle(center, radius, fg);
+      canvas.drawCircle(
+        center,
+        radius - 1.0,
+        Paint()
+          ..color = color.withValues(alpha: 0.22)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HomePullRingPainter old) =>
+      old.progress != progress ||
+      old.isRunning != isRunning ||
+      old.color != color ||
+      old.spin != spin;
+}
+
