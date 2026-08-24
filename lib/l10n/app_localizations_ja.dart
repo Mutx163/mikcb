@@ -10116,6 +10116,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockButtonIconDefault => 'デフォルト（＋）';
 
   @override
+  String get glassDockButtonIconSearchHint => 'アイコンを検索';
+
+  @override
   String get glassDockCustomizeSectionTitle => '下部ナビゲーション';
 
   @override

@@ -10159,6 +10159,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockButtonIconDefault => '기본(+)';
 
   @override
+  String get glassDockButtonIconSearchHint => '아이콘 검색';
+
+  @override
   String get glassDockCustomizeSectionTitle => '하단 내비게이션';
 
   @override

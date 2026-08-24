@@ -5951,6 +5951,7 @@
   "glassDockRoundActionLabel": "圆钮功能",
   "glassDockButtonIconTitle": "圆钮图标",
   "glassDockButtonIconDefault": "默认（加号）",
+  "glassDockButtonIconSearchHint": "搜索图标名称",
   "glassDockCustomizeSectionTitle": "底部导航栏",
   "glassDockCustomizeTitle": "自定义底栏按钮",
   "homeDockEditorViewCategory": "视图切换",

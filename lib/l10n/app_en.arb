@@ -5951,6 +5951,7 @@
   "glassDockRoundActionLabel": "Round button action",
   "glassDockButtonIconTitle": "Round button icon",
   "glassDockButtonIconDefault": "Default (+)",
+  "glassDockButtonIconSearchHint": "Search icons",
   "glassDockCustomizeSectionTitle": "Bottom dock",
   "glassDockCustomizeTitle": "Customize dock buttons",
   "homeDockEditorViewCategory": "View switching",

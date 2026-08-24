@@ -10412,6 +10412,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockButtonIconDefault => 'Default (+)';
 
   @override
+  String get glassDockButtonIconSearchHint => 'Search icons';
+
+  @override
   String get glassDockCustomizeSectionTitle => 'Bottom dock';
 
   @override

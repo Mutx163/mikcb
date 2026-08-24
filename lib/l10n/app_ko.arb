@@ -5948,6 +5948,7 @@
   "glassDockRoundActionLabel": "라운드 버튼 기능",
   "glassDockButtonIconTitle": "라운드 버튼 아이콘",
   "glassDockButtonIconDefault": "기본(+)",
+  "glassDockButtonIconSearchHint": "아이콘 검색",
   "glassDockCustomizeSectionTitle": "하단 내비게이션",
   "glassDockCustomizeTitle": "독 버튼 사용자 지정",
   "homeDockEditorViewCategory": "뷰 전환",

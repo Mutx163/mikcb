@@ -65,14 +65,9 @@ class _GlassDockIconPickerScreenState
           const HyperosSectionGap(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: TextField(
+            child: HyperosSearchBar(
+              hint: l10n.glassDockButtonIconSearchHint,
               onChanged: (value) => setState(() => _filter = value),
-              decoration: InputDecoration(
-                isDense: true,
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                hintText: '${_allNames.length} icons',
-                border: const OutlineInputBorder(),
-              ),
             ),
           ),
           Padding(
@@ -151,9 +146,11 @@ class _IconCell extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: HyperosTypography.listDetail(context).copyWith(
-                fontSize: 9,
-                color:
-                    selected ? primary : HyperosColors.secondaryText(context),
+                // 11 为字阶最小档：图标名微字不再新增字号刻度
+                fontSize: 11,
+                color: selected
+                    ? primary
+                    : HyperosColors.secondaryText(context),
               ),
             ),
           ],

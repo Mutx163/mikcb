@@ -5948,6 +5948,7 @@
   "glassDockRoundActionLabel": "圓鈕功能",
   "glassDockButtonIconTitle": "圓鈕圖示",
   "glassDockButtonIconDefault": "預設（加號）",
+  "glassDockButtonIconSearchHint": "搜尋圖示名稱",
   "glassDockCustomizeSectionTitle": "底部導覽列",
   "glassDockCustomizeTitle": "自訂底欄按鈕",
   "homeDockEditorViewCategory": "檢視切換",

@@ -9839,6 +9839,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockButtonIconDefault => '默认（加号）';
 
   @override
+  String get glassDockButtonIconSearchHint => '搜索图标名称';
+
+  @override
   String get glassDockCustomizeSectionTitle => '底部导航栏';
 
   @override
@@ -19903,6 +19906,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockButtonIconDefault => '預設（加號）';
 
   @override
+  String get glassDockButtonIconSearchHint => '搜尋圖示名稱';
+
+  @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';
 
   @override
@@ -29965,6 +29971,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockButtonIconDefault => '預設（加號）';
+
+  @override
+  String get glassDockButtonIconSearchHint => '搜尋圖示名稱';
 
   @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';

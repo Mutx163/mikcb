@@ -17869,6 +17869,12 @@ abstract class AppLocalizations {
   /// **'默认（加号）'**
   String get glassDockButtonIconDefault;
 
+  /// No description provided for @glassDockButtonIconSearchHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索图标名称'**
+  String get glassDockButtonIconSearchHint;
+
   /// No description provided for @glassDockCustomizeSectionTitle.
   ///
   /// In zh, this message translates to:
