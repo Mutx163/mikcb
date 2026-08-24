@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
@@ -307,9 +308,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   // Threshold haptic latch: arm below trigger, fire once above.
   bool _homePullHapticArmed = true;
 
-  // Spring-back + spinner (created in initState, disposed there).
+  // Spring-back (created in initState, disposed there).
   AnimationController? _homePullSettleSpring;
-  AnimationController? _homePullSpin;
   int _homePullSettleGeneration = 0;
   bool _isHomePullQuickImportRunning = false;
   VoidCallback? _homePullQuickImportCancel;
@@ -381,10 +381,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         : null;
     _homePullSettleSpring = AnimationController.unbounded(vsync: this)
       ..addListener(_driveHomePullSettle);
-    _homePullSpin = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 760),
-    );
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
@@ -398,7 +394,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.removeObserver(this);
     _homePullQuickImportCancel?.call();
     _homePullSettleSpring?.dispose();
-    _homePullSpin?.dispose();
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
@@ -2554,24 +2549,127 @@ class _TimetableScreenState extends State<TimetableScreen>
           0.0,
           1.0,
         );
+    // Show label a bit earlier so the pill never looks like a lone spinner.
     final showLabel =
         _isHomePullQuickImportRunning ||
-        _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.55;
+        _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.45;
     const indicatorTopInset = _weekDayHeaderHeight + 8;
-    // Follow finger slightly with capped translation so the pill reads connected.
+    // Subtle follow — 11px max, eased, not the previous 27px linear slide.
     final followY = () {
       if (_isHomePullQuickImportRunning) return 0.0;
       final d = _homePullDragDistance;
-      const cap = 64.0;
-      if (d <= cap) return d * 0.42;
-      return cap * 0.42 + (d - cap) * 0.10;
+      const cap = 32.0;
+      if (d <= cap) return d * 0.34;
+      return cap * 0.34 + (d - cap) * 0.06;
     }();
+    final eased = Curves.easeOutCubic.transform(pullProgress);
     final scale = _isHomePullQuickImportRunning
         ? 1.0
-        : (0.88 + pullProgress * 0.12).clamp(0.88, 1.0);
-    final opacity = _isHomePullQuickImportRunning
-        ? 1.0
-        : (0.35 + pullProgress * 0.65).clamp(0.35, 1.0);
+        : (0.92 + eased * 0.08).clamp(0.92, 1.0);
+    // Fade from 0 so the pill doesn't flash at tiny drags.
+    final opacity = _isHomePullQuickImportRunning ? 1.0 : eased.clamp(0.0, 1.0);
+    // Don't build the pill at all when fully transparent to avoid hit-test.
+    if (!_isHomePullQuickImportRunning && pullProgress < 0.02) {
+      return const SizedBox.shrink();
+    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pill = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: (isDark
+                ? HyperosMiuixDarkColors.surfaceContainerHigh
+                : HyperosMiuixLightColors.surfaceContainer)
+            .withValues(alpha: isDark ? 0.88 : 0.92),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: (isDark ? Colors.white : HyperosMiuixLightColors.outline)
+              .withValues(alpha: isDark ? 0.10 : 0.14),
+          width: 0.6,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.05),
+            blurRadius: 36,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: _isHomePullQuickImportRunning
+                ? MiuixCircularProgressIndicator(
+                    progress: null,
+                    size: 16,
+                    strokeWidth: 1.9,
+                  )
+                : MiuixCircularProgressIndicator(
+                    progress: pullProgress.clamp(0.0, 1.0),
+                    size: 16,
+                    strokeWidth: 1.9,
+                  ),
+          ),
+          if (showLabel) ...[
+            const SizedBox(width: 10),
+            Text(
+              l10n.homePullQuickImportFetchingCourses,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: HyperosColors.primaryText(context),
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
+            ),
+          ],
+          if (_isHomePullQuickImportRunning) ...[
+            const SizedBox(width: 10),
+            Container(width: 0.8, height: 14, color: HyperosColors.dividerLine(context)),
+            const SizedBox(width: 10),
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: _cancelHomePullQuickImport,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    l10n.quickImportCancelImportAction,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: HyperosColors.primary(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // Frosted glass when a wallpaper is behind the grid, otherwise the solid
+    // Miuix card above. Keep the blur cheap: single BackdropFilter on the pill
+    // only, not the whole page.
+    final hasBackdrop = hasHomePageBackdropImage(
+      context.read<TimetableProvider>().settings,
+    );
+    final decoratedPill = hasBackdrop
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: pill,
+            ),
+          )
+        : pill;
+
     return Positioned(
       top: indicatorTopInset,
       left: 0,
@@ -2582,81 +2680,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: Transform.scale(
             scale: scale,
             child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 120),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
               opacity: opacity,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surface.withValues(alpha: 0.94),
-                  borderRadius: BorderRadius.circular(20),
-                  border: _isHomePullQuickImportRunning
-                      ? null
-                      : Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outlineVariant
-                              .withValues(alpha: 0.35 * pullProgress),
-                          width: 0.8,
-                        ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08 + pullProgress * 0.04),
-                      blurRadius: 14 + pullProgress * 6,
-                      offset: Offset(0, 5 + pullProgress * 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CustomPaint(
-                        painter: _HomePullRingPainter(
-                          progress: pullProgress,
-                          isRunning: _isHomePullQuickImportRunning,
-                          spin: _homePullSpin,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    if (showLabel) ...[
-                      const SizedBox(width: 10),
-                      Text(
-                        l10n.homePullQuickImportFetchingCourses,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                    if (_isHomePullQuickImportRunning) ...[
-                      const SizedBox(width: 8),
-                      Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: _cancelHomePullQuickImport,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              l10n.quickImportCancelImportAction,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+              child: decoratedPill,
             ),
           ),
         ),
@@ -2825,7 +2852,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     cancel();
-    _homePullSpin?.stop();
     if (mounted) {
       setState(() {
         _isHomePullQuickImportRunning = false;
@@ -2848,7 +2874,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       _homePullDragDistance = 0;
       _homePullQuickImportCancel = null;
     });
-    _homePullSpin?.repeat();
     try {
       if (context.read<TimetableProvider>().settings.enableHaptics) {
         HapticFeedback.mediumImpact();
@@ -2877,13 +2902,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
     } finally {
       if (mounted) {
-        _homePullSpin?.stop();
         setState(() {
           _isHomePullQuickImportRunning = false;
           _homePullQuickImportCancel = null;
         });
-      } else {
-        _homePullSpin?.stop();
       }
     }
   }
@@ -8384,81 +8406,3 @@ class _HomePullVerticalDragDetectorState
     );
   }
 }
-
-// ---------------- Home pull ring (HyperOS 拉伸质感 + 轨道点刷新) ----------------
-class _HomePullRingPainter extends CustomPainter {
-  _HomePullRingPainter({
-    required this.progress,
-    required this.isRunning,
-    required this.spin,
-    required this.color,
-  }) : super(repaint: spin);
-
-  final double progress;
-  final bool isRunning;
-  final Animation<double>? spin;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final strokeWidth = 2.2;
-    final radius = math.min(size.width, size.height) / 2 - strokeWidth / 2;
-    final center = Offset(size.width / 2, size.height / 2);
-    final bg = Paint()
-      ..color = color.withValues(alpha: 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    final fg = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    if (isRunning) {
-      // Miuix 风格：细底环 + 轨道点公转。
-      canvas.drawCircle(center, radius, bg);
-      final t = spin?.value ?? 0;
-      final angle = (t % 1) * 2 * math.pi - math.pi / 2;
-      final orbitR = radius - strokeWidth;
-      final dot = center + Offset(orbitR * math.cos(angle), orbitR * math.sin(angle));
-      canvas.drawCircle(dot, strokeWidth + 0.6, Paint()..color = color);
-      return;
-    }
-
-    final p = progress.clamp(0.0, 1.0);
-    // Never fully empty — keep a subtle trace even at p~0.
-    final minSweep = 0.18;
-    final sweep = (minSweep + p * (1 - minSweep)) * 2 * math.pi;
-    // faint bg
-    canvas.drawCircle(center, radius, bg);
-    if (p < 0.995) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        sweep,
-        false,
-        fg,
-      );
-    } else {
-      // Closed circle at threshold with a subtle inner glow.
-      canvas.drawCircle(center, radius, fg);
-      canvas.drawCircle(
-        center,
-        radius - 1.0,
-        Paint()
-          ..color = color.withValues(alpha: 0.22)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.0,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _HomePullRingPainter old) =>
-      old.progress != progress ||
-      old.isRunning != isRunning ||
-      old.color != color ||
-      old.spin != spin;
-}
-
