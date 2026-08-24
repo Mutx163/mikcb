@@ -93,33 +93,17 @@ void main() {
 
     final provider = await createInitializedTestProvider(tester);
 
+    // 超级岛设置页的「自检」重复入口行已删除（诊断页入口保留）；
+    // 直接泵起 _LiveTestingSettingsScreen 子页（公开工厂
+    // [createLiveTestingSettingsScreen]），验证一秒自刷新不变。
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(home: TimetableSettingsScreen()),
+        child: TestApp(home: createLiveTestingSettingsScreen()),
       ),
     );
-    await _pumpScreen(tester);
-
-    final homeList = find.byType(HyperosListView).first;
-    await tester.scrollUntilVisible(
-      find.text('超级岛与通知'),
-      200,
-      scrollable: _scrollableUnder(homeList),
-    );
-    await tester.tap(find.text('超级岛与通知'));
-    await tester.pumpAndSettle();
-
-    final liveList = find.byType(HyperosListView).last;
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey<String>('settings-live-self-check')),
-      200,
-      scrollable: _scrollableUnder(liveList),
-    );
-    await tester.tap(
-      find.byKey(const ValueKey<String>('settings-live-self-check')),
-    );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     final diagnosticsList = find.byType(HyperosListView).last;
     await tester.scrollUntilVisible(

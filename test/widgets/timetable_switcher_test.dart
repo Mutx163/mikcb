@@ -161,9 +161,23 @@ void main() {
     );
     await _pumpTimetableFrame(tester);
 
+    // ⋮ 菜单唯一形态 = 八宫格底部弹层（showHomeTopGridMenuSheet）。
+    // 持久化空表经 HomeGridMenu.normalize 只会剩钉住的「课表设置」一枚
+    // 瓷贴，因此显式注入 v2.0.5.5 默认全排列，保证弹层含常规功能入口。
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          homeGridMenuActions: List<String>.of(HomeGridMenu.defaultActions),
+        ),
+      );
+    });
+
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpTimetableFrame(tester);
 
+    // 弹层确已打开（避免下面的 findsNothing 空转通过）。
+    expect(find.byType(HyperosSheetFrame), findsOneWidget);
+    // 课表管理入口不在 ⋮ 弹层中，而在标题切换器里（见下方用例）。
     expect(find.text('课表管理'), findsNothing);
     expect(find.text('课程总览'), findsOneWidget);
   });

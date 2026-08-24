@@ -101,7 +101,7 @@ void main() {
   });
 
   testWidgets(
-    'liquid menu uses clear header glass for its single anchored popup',
+    'liquid menu anchors its single popup with legibility fill',
     (tester) async {
       final anchorKey = GlobalKey();
       const liquidAppearance = FrostedAppearance(
@@ -147,7 +147,9 @@ void main() {
         find.byType(HyperosLiquidGlassSurface),
       );
       expect(outerGlass.role, HyperosLiquidGlassRole.modal);
-      expect(outerGlass.contentLegibilityFill, isFalse);
+      // 与弹窗/选择 sheet 统一：液态玻璃带内容可读性衬底（暗背景下保持
+      // 白色面板观感），不再是无衬底的「透亮」材质。
+      expect(outerGlass.contentLegibilityFill, isTrue);
       expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
     },
   );

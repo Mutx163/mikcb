@@ -8,9 +8,12 @@ import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 
-/// 快速连点回归：玻璃坞 1→3→1→3（日课表→设置→日课表→设置）不允许丢拍。
+/// 快速连点回归：玻璃坞 日/周 两 Tab 快速交替连点不允许丢拍
+/// （原 1→3→1→3 三 Tab 场景随「设置」Tab 移除而改为两态交替）。
 void main() {
-  testWidgets('glass dock: rapid 1-3-1-3 taps never drop a beat', (tester) async {
+  testWidgets(
+      'glass dock: rapid day/week alternating taps never drop a beat',
+      (tester) async {
     final provider = TimetableProvider(autoInitialize: false);
     await provider.updateTimetableSettings(
       provider.settings.copyWith(
@@ -57,18 +60,17 @@ void main() {
 
     expect(indicatorIndex(), 1, reason: '初始应在周课表 Tab');
 
-    // 底栏 label 用 .last（树序最后是底栏；设置页可见时 .first 会命中其大标题）
+    // 底栏 label 用 .last（树序最后是底栏，避开页面内同名文本）
     final dayTab = find.text('日课表').last;
-    final settingsTab = find.text('课表设置').last;
+    final weekTab = find.text('周课表').last;
 
-    // 快速连点 1→3→1→3：动画未完成就点下一个（每拍之间只 pump 一帧）
+    // 快速连点 周→日→周→日：动画未完成就点下一个（每拍之间只 pump 一帧），
+    // 防抖/丢拍实现会让最后一下丢失。
     await tester.tap(dayTab);
     await tester.pump();
-    await tester.tap(settingsTab);
+    await tester.tap(weekTab);
     await tester.pump();
     await tester.tap(dayTab);
-    await tester.pump();
-    await tester.tap(settingsTab);
     await tester.pump();
 
     // 等全部弹簧动画收敛
@@ -76,7 +78,11 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull, reason: '快速连点不应有异常');
-    expect(indicatorIndex(), 2, reason: '连点 1313 后应最终停在设置 Tab（不丢最后一下）');
-    expect(find.text('课表管理'), findsOneWidget, reason: '设置页应最终渲染');
+    expect(indicatorIndex(), 0, reason: '连点后应最终停在日课表 Tab（不丢最后一下）');
+    expect(
+      find.byKey(const ValueKey('timetable-day-view-panel')),
+      findsOneWidget,
+      reason: '日课表应最终渲染',
+    );
   });
 }

@@ -351,21 +351,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('4 / 5'), findsOneWidget);
-    expect(find.text('菜单样式'), findsOneWidget);
+    // 菜单样式卡已随「八宫格唯一形态」收敛从引导页移除。
+    expect(find.text('菜单样式'), findsNothing);
     expect(find.text('视觉效果'), findsOneWidget);
-    expect(find.text('列表菜单'), findsOneWidget);
-    expect(find.text('八宫格菜单'), findsOneWidget);
     expect(find.text('高斯模糊'), findsOneWidget);
     expect(find.text('液态玻璃'), findsOneWidget);
     expect(find.text('实体卡片'), findsOneWidget);
-
-    // 菜单样式 → 八宫格
-    await tester.tap(find.text('八宫格菜单'));
-    await tester.pumpAndSettle();
-    expect(provider.settings.homeMenuStyle, HomeMenuStyle.grid);
-    await tester.tap(find.text('列表菜单'));
-    await tester.pumpAndSettle();
-    expect(provider.settings.homeMenuStyle, HomeMenuStyle.list);
 
     // 视觉效果三档映射。「高斯模糊」位于三档最上、初始即在视口内，
     // 因此按 自上而下 的顺序点击，全程不向上回滚（避免目标落进

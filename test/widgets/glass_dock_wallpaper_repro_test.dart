@@ -10,17 +10,17 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
-import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// 复现环境：真实壁纸文件存在（hasBackdrop=true），与真机一致。
 ///
-/// 曾复现真机 bug：设置页壳把 [HomePageSlidingBackdropLayer] /
+/// 曾复现真机 bug：页面壳把 [HomePageSlidingBackdropLayer] /
 /// [homePageBackdropLayer]（内含 Positioned）包进 Offstage，触发
 /// "Incorrect use of ParentDataWidget"，release 下整页灰屏、
-/// 底栏指示器停在原 Tab。修复后本测试断言：周→日→设置→周 全链路
-/// 无异常、设置内容渲染、指示器跟随 selectedIndex。
+/// 底栏指示器停在原 Tab。修复后本测试断言：周→日→周 全链路无异常、
+/// 指示器跟随 selectedIndex（「设置」Tab 已移除，
+/// 原周→日→设置→日→周 路径随之收敛为 周→日→周）。
 void main() {
   // 1x1 纯色 PNG
   const tinyPngBase64 =
@@ -46,7 +46,6 @@ void main() {
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
@@ -109,16 +108,17 @@ void main() {
     expect(tester.takeException(), isNull, reason: '周视图初始渲染不应有异常');
     expect(find.byType(GlassTabBar), findsOneWidget);
     expect(currentIndicatorIndex(), 1,
-        reason: '初始指示器应在周课表 Tab（排序：日课表/周课表/设置）');
+        reason: '初始指示器应在周课表 Tab（排序：日课表/周课表）');
 
-    // Tab 排序：日课表(左) / 周课表(中) / 课表设置(右)
+    // Tab 排序：日课表(左) / 周课表(右)；「设置」Tab 已移除，底栏不再出现。
+    expect(find.text('课表设置'), findsNothing,
+        reason: '玻璃坞底栏只有 日/周 两个 Tab');
     final dayTabX = tester.getCenter(find.text('日课表').first).dx;
     final weekTabX = tester.getCenter(find.text('周课表').first).dx;
-    final settingsTabX = tester.getCenter(find.text('课表设置').first).dx;
-    expect(dayTabX, lessThan(weekTabX), reason: '日课表应位于最左侧');
-    expect(weekTabX, lessThan(settingsTabX), reason: '课表设置应位于最右侧');
+    expect(dayTabX, lessThan(weekTabX), reason: '日课表应位于周课表左侧');
 
-    // 切日视图（玻璃坞：点 Tab 闪现直切 + 直接全宽，无锚点展开渐变）
+    // 切日视图（玻璃坞：日↔周复用日期栏路径的锚点展开动画，
+    // 玻璃面板随锚点从小放大滑入）。
     await tester.tap(find.text('日课表').first);
     await tester.pump();
     expect(tester.takeException(), isNull, reason: '切日视图（有壁纸）不应有异常');
@@ -127,25 +127,24 @@ void main() {
       findsOneWidget,
       reason: '日视图面板应显示',
     );
-    // 锚点展开动画会让面板处于 Align(widthFactor < 1) 的缩放槽中；
-    // 玻璃坞切换不应有这种缩放（直接全宽）。
+    // 锚点展开进行中：面板处于 Align(widthFactor < 1) 的缩放槽里。
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
+      ),
+      findsWidgets,
+      reason: '玻璃坞切日视图应播放锚点展开动画（存在缩放中的 Align 槽）',
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
+    // 展开完成后铺满全宽（缩放槽消失）。
     expect(
       find.byWidgetPredicate(
         (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
       ),
       findsNothing,
-      reason: '玻璃坞切日视图应直接全宽（无锚点展开渐变）',
+      reason: '锚点展开动画应最终铺满（缩放槽消失）',
     );
-    // 闪现切换：第一帧就直接就位，无横向滑入过程。
-    expect(
-      tester
-          .getRect(find.byKey(const ValueKey('timetable-day-view-panel')))
-          .left,
-      closeTo(0, 1),
-      reason: '点 Tab 应闪现就位（无滑动进入）',
-    );
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
 
     // 日视图自带顶部信息栏：显示星期几（不是空白栏）
     expect(
@@ -153,152 +152,6 @@ void main() {
       findsWidgets,
       reason: '日视图顶部信息栏应显示星期',
     );
-
-    // 切设置（玻璃坞：点 Tab 闪现直切，无滑入过程）
-    await tester.tap(find.text('课表设置').first);
-    await tester.pump();
-    expect(tester.takeException(), isNull, reason: '切设置（有壁纸）不应有异常');
-    // 闪现切换：第一帧设置页就就位（不再从右侧滑入）。
-    expect(
-      tester.getRect(find.byType(TimetableSettingsScreen)).left,
-      closeTo(0, 1),
-      reason: '设置页应闪现就位（无滑入过程）',
-    );
-    // 非激活页立即 Offstage：课表内容不再可见。
-    expect(
-      find.byKey(const ValueKey('week-page-1')),
-      findsNothing,
-      reason: '切到设置后课表页应立即隐藏',
-    );
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-    expect(find.text('课表管理'), findsOneWidget, reason: '设置列表应渲染');
-    expect(currentIndicatorIndex(), 2, reason: '设置下指示器应在设置 Tab');
-
-    // —— 问题 2：周次概览不被浮动大标题遮挡 ——
-    final weekText = find.textContaining('当前第');
-    expect(weekText, findsOneWidget, reason: '设置页首屏应显示周次概览');
-    final weekRect = tester.getRect(weekText);
-    final titleRect = tester.getRect(find.byType(HyperosCollapsibleTopAppBar));
-    expect(
-      weekRect.top,
-      greaterThanOrEqualTo(titleRect.bottom - 1),
-      reason: '周次概览应位于展开的大标题下方，不被遮挡',
-    );
-
-    // —— 问题 3：列表视口全屏，玻璃坞悬浮其上（避让是滚动 padding）——
-    final listRect = tester.getRect(find.byType(HyperosListView));
-    expect(
-      listRect.height,
-      closeTo(600, 1),
-      reason: '玻璃坞内嵌时设置列表视口应为全屏（不是被底部避让压缩）',
-    );
-
-    // 滚动到中间：大标题应折叠 + 内容应从悬浮玻璃坞后面穿过。
-    // 慢速短距拖拽（惯性小），并等惯性完全结束再断言——否则惯性
-    // （BallisticScrollActivity）会把列表滚到底部，玻璃坞区域只剩
-    // 底部 padding，误判为「内容没有穿过玻璃坞」。
-    await tester.timedDrag(
-      find.byType(HyperosListView),
-      const Offset(0, -250),
-      const Duration(milliseconds: 800),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    expect(tester.takeException(), isNull, reason: '滚动设置页不应有异常');
-
-    // 大标题应折叠为小标题
-    final collapsibleState = tester
-        .widget<HyperosCollapsibleTopAppBar>(
-          find.byType(HyperosCollapsibleTopAppBar),
-        )
-        .scrollBehavior!
-        .state;
-    expect(
-      collapsibleState.heightOffset,
-      lessThan(-1),
-      reason: '滚动后大标题应折叠为小标题',
-    );
-
-    // 内容从悬浮玻璃坞后面穿过：滚动后列表内有文本与玻璃坞区域相交
-    // （玻璃坞是悬浮层，内容滚到它后面仍可见）。
-    final glassRect = tester.getRect(find.byType(GlassTabBar));
-    final glassOverlapTop = glassRect.top + 4;
-    final listTexts = find
-        .descendant(
-          of: find.byType(HyperosListView),
-          matching: find.byType(Text),
-        )
-        .evaluate();
-    var crossedUnderGlass = false;
-    for (final element in listTexts) {
-      final box = element.renderObject;
-      if (box is! RenderBox || !box.attached || !box.hasSize) {
-        continue;
-      }
-      final rect = box.localToGlobal(Offset.zero) & box.size;
-      if (rect.bottom > glassOverlapTop && rect.top < glassRect.bottom) {
-        crossedUnderGlass = true;
-        break;
-      }
-    }
-    expect(
-      crossedUnderGlass,
-      isTrue,
-      reason: '滚动内容应从悬浮玻璃坞后面穿过（玻璃坞浮在内容之上）',
-    );
-
-    // 记录滚动位置（设置页可能在 Offstage 中，finder 需跳过 offstage 过滤）
-    final scrollableFinder = find
-        .descendant(
-          of: find.byType(HyperosListView, skipOffstage: false),
-          matching: find.byType(Scrollable, skipOffstage: false),
-        )
-        .first;
-    final scrollable = tester.state<ScrollableState>(scrollableFinder);
-    final pixelsBefore = scrollable.position.pixels;
-    expect(pixelsBefore, greaterThan(50), reason: '列表应已滚动');
-
-    // 切周课表再切回设置：滚动位置与大标题折叠状态都应保留
-    await tester.tap(find.text('周课表').first);
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-    await tester.tap(find.text('课表设置').first);
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-    expect(tester.takeException(), isNull, reason: '切回设置不应有异常');
-    final scrollableAfter = tester.state<ScrollableState>(scrollableFinder);
-    expect(
-      (scrollableAfter.position.pixels - pixelsBefore).abs(),
-      lessThan(1),
-      reason: '切走再切回后设置页滚动位置应保留',
-    );
-    final collapsibleStateAfter = tester
-        .widget<HyperosCollapsibleTopAppBar>(
-          find.byType(HyperosCollapsibleTopAppBar),
-        )
-        .scrollBehavior!
-        .state;
-    expect(
-      collapsibleStateAfter.heightOffset,
-      lessThan(-1),
-      reason: '切走再切回后大标题应保持折叠（不是重置为展开大字）',
-    );
-
-    // 设置 → 日视图（设置页滚动到中间后仍可切换）
-    await tester.tap(find.text('日课表').first);
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-    expect(tester.takeException(), isNull, reason: '设置→日视图不应有异常');
-    expect(
-      find.byKey(const ValueKey('timetable-day-view-panel')),
-      findsOneWidget,
-      reason: '设置切回后日视图面板应显示',
-    );
-    expect(currentIndicatorIndex(), 0, reason: '设置→日视图后指示器应在日课表 Tab');
 
     // 切回周课表
     await tester.tap(find.text('周课表').first);
@@ -342,11 +195,11 @@ void main() {
     await tester.pump(const Duration(seconds: 9));
   }
 
-  testWidgets('glass dock + wallpaper: 周→日→设置→日→周（壁纸随周次滑动）', (tester) async {
+  testWidgets('glass dock + wallpaper: 周→日→周（壁纸随周次滑动）', (tester) async {
     await runScenarios(tester, followsWeekPager: true);
   });
 
-  testWidgets('glass dock + wallpaper: 周→日→设置→日→周（壁纸固定）', (tester) async {
+  testWidgets('glass dock + wallpaper: 周→日→周（壁纸固定）', (tester) async {
     await runScenarios(tester, followsWeekPager: false);
   });
 }

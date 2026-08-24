@@ -22,7 +22,7 @@ void main() {
 
       expect(find.text('权限管控'), findsOneWidget);
       expect(style.fontSize, HyperosMiuixSpec.settingsSectionLabelSize);
-      expect(style.fontWeight, FontWeight.w400);
+      expect(style.fontWeight, FontWeight.w500);
       expect(style.color, HyperosMiuixSpec.settingsSectionLabelColor);
       expect(style.color, isNot(HyperosTokens.secondaryText));
       expect(style.color, isNot(HyperosTokens.primaryText));
@@ -32,7 +32,7 @@ void main() {
       expect(HyperosTheme.cardShape(), isA<RoundedSuperellipseBorder>());
     });
 
-    testWidgets('list title uses regular weight per HyperOS settings rows', (
+    testWidgets('list title uses medium weight per HyperOS settings rows', (
       tester,
     ) async {
       late TextStyle listStyle;
@@ -53,7 +53,8 @@ void main() {
       );
 
       for (final style in [listStyle, sheetStyle, summaryStyle]) {
-        expect(style.fontWeight, FontWeight.w400);
+        // 标题层统一升到 w500：层级不再只靠字号单维支撑。
+        expect(style.fontWeight, FontWeight.w500);
         expect(style.fontSize, HyperosTokens.titleSize);
       }
     });

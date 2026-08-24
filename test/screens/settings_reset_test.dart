@@ -31,10 +31,14 @@ void main() {
       homePageWallpaperPath: '/tmp/wallpaper.png',
       // 外观
       appThemeMode: AppThemeMode.dark,
-      homeNavigationForm: HomeNavigationForm.glassDock,
       themeSeedColor: '#FF0000',
       frostedBlurEnabled: false,
       frostedSheetBlurSigma: 20,
+      // 首页与导航（自外观页拆出的独立恢复作用域）
+      homeNavigationForm: HomeNavigationForm.glassDock,
+      homeTitleStyle: HomeTitleStyle.brand,
+      glassDockShowDayTab: false,
+      glassDockShowWeekTab: false,
       // 小组件
       widgetShowLocation: false,
       widgetShowCountdown: false,
@@ -150,16 +154,38 @@ void main() {
     );
 
     expect(result.appThemeMode, defaults.appThemeMode);
-    // 首页导航形态是外观页字段，必须随本页恢复默认（IA §5）。
-    expect(result.homeNavigationForm, defaults.homeNavigationForm);
     expect(result.themeSeedColor, defaults.themeSeedColor);
     expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
     expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
 
+    // 首页与导航的字段保持「脏」值：导航形态已拆到独立 scope。
     final dirty = dirtySettings();
     expect(result.courseCardFontSize, dirty.courseCardFontSize);
     expect(result.sectionHeight, dirty.sectionHeight);
     expect(result.widgetShowCountdown, dirty.widgetShowCountdown);
+    expect(result.homeNavigationForm, dirty.homeNavigationForm);
+    expect(result.homeTitleStyle, dirty.homeTitleStyle);
+    expectUntouchedEssentials(result);
+  });
+
+  test('首页与导航恢复默认只重置导航字段', () {
+    final defaults = TimetableSettings.defaults();
+    final result = applySettingsReset(
+      dirtySettings(),
+      SettingsResetScope.homeNavigation,
+    );
+
+    expect(result.homeNavigationForm, defaults.homeNavigationForm);
+    expect(result.glassDockShowDayTab, defaults.glassDockShowDayTab);
+    expect(result.glassDockShowWeekTab, defaults.glassDockShowWeekTab);
+    expect(result.homeTitleStyle, defaults.homeTitleStyle);
+
+    // 外观字段不被导航页连带重置。
+    final dirty = dirtySettings();
+    expect(result.appThemeMode, dirty.appThemeMode);
+    expect(result.themeSeedColor, dirty.themeSeedColor);
+    expect(result.frostedSheetBlurSigma, dirty.frostedSheetBlurSigma);
+    expect(result.courseCardFontSize, dirty.courseCardFontSize);
     expectUntouchedEssentials(result);
   });
 

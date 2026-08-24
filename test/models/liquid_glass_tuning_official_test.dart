@@ -35,7 +35,9 @@ void main() {
       );
       expect(settings.lightIntensity, barGlassDefaults.lightIntensity);
       expect(settings.ambientStrength, barGlassDefaults.ambientStrength);
-      expect(settings.refractiveIndex, barGlassDefaults.refractiveIndex);
+      // 项目默认折射率已从 1.59 收敛为 1.5（与滑杆上限 maxRefractiveIndex
+      // 对齐，clamp 后无漂移），刻意不再跟随包内底栏默认的 1.59。
+      expect(settings.refractiveIndex, 1.5);
       expect(settings.saturation, barGlassDefaults.saturation);
       expect(
         settings.chromaticAberration,

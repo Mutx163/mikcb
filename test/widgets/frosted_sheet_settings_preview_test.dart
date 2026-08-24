@@ -46,10 +46,11 @@ void main() {
     );
 
     test('passes values at or below the ceiling through unchanged', () {
-      const tuning = LiquidGlassTuning(thickness: 16, blur: 7);
+      const tuning = LiquidGlassTuning(thickness: 16, blur: 5);
       final safe = FrostedSheetSettingsPreview.previewSafeTuning(tuning)!;
+      // dense 预设现为 thickness 36 / blur 6：低于上限的原样通过。
       expect(safe.thickness, 16);
-      expect(safe.blur, 7);
+      expect(safe.blur, 5);
     });
 
     test('keeps the dense preset itself intact', () {
@@ -63,7 +64,8 @@ void main() {
       final safe = FrostedSheetSettingsPreview.previewSafeTuning(
         const LiquidGlassTuning(thickness: 32, blur: 18),
       )!;
-      expect(safe.thickness, LiquidGlassTuning.presetDense.thickness);
+      // 高于 dense 上限的维度被钳回上限，未超的保持原值。
+      expect(safe.thickness, 32);
       expect(safe.blur, LiquidGlassTuning.presetDense.blur);
     });
 
