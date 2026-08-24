@@ -5,6 +5,7 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
+import '../ui/hyperos/hyperos_theme.dart';
 import 'course_surface.dart';
 
 class CourseCard extends StatelessWidget {
@@ -478,7 +479,7 @@ class CourseCard extends StatelessWidget {
       child: Icon(
         Icons.assignment_outlined,
         size: iconSize,
-        color: const Color(0xFFE05D44),
+        color: HyperosColors.destructive,
       ),
     );
   }

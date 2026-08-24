@@ -89,7 +89,9 @@ class CourseColorPair {
 const List<CourseColorPair> kPresetCourseColorPairs = [
   CourseColorPair(cardHex: '#90CAF9', textHex: '#0D47A1'), // blue
   CourseColorPair(cardHex: '#A5D6A7', textHex: '#1B5E20'), // green
-  CourseColorPair(cardHex: '#FFCC80', textHex: '#E65100'), // orange
+  // 橙墨加深至 #B34700：原 #E65100 在 #FFCC80 上对比度仅 2.56，
+  // 未达自家 courseCardMinContrastRatio(3.0)；#B34700 实测 3.72。
+  CourseColorPair(cardHex: '#FFCC80', textHex: '#B34700'), // orange
   CourseColorPair(cardHex: '#F48FB1', textHex: '#880E4F'), // pink
   CourseColorPair(cardHex: '#CE93D8', textHex: '#4A148C'), // purple
   CourseColorPair(cardHex: '#80DEEA', textHex: '#006064'), // cyan

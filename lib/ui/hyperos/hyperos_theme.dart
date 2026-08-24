@@ -81,6 +81,10 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.surfaceContainerHighest;
   }
 
+  /// 危险/破坏性操作强调色（删除、停课等）。此前以 #E05D44 字面量
+  /// 散落多处，收编为语义 token（亮暗同值）。
+  static const Color destructive = Color(0xFFE05D44);
+
   /// Error / destructive color.
   static Color error(BuildContext context) {
     return _brightness(context) == Brightness.dark
@@ -322,10 +326,12 @@ abstract final class HyperosColors {
 
 abstract final class HyperosTypography {
   /// Canonical settings title — list rows, card headers, page/sheet/dialog titles.
+  /// 标题层用 w500：此前全站纯 w400，层级只靠字号单维支撑；正文/
+  /// 副题保持 w4x 不变，仅标题与分组标签抬一档形成字重层级。
   static TextStyle title(BuildContext context) {
     return TextStyle(
       fontSize: HyperosTokens.titleSize,
-      fontWeight: FontWeight.w400,
+      fontWeight: FontWeight.w500,
       color: HyperosColors.primaryText(context),
       height: 1.25,
     );
@@ -350,7 +356,7 @@ abstract final class HyperosTypography {
   static TextStyle sectionLabel(BuildContext context) {
     return TextStyle(
       fontSize: HyperosTokens.sectionLabelSize,
-      fontWeight: FontWeight.w400,
+      fontWeight: FontWeight.w500,
       height: 1.3,
       color: HyperosColors.sectionLabel(context),
     );

@@ -124,7 +124,10 @@ class LiquidGlassTuning {
   static const double defaultTintAlpha = 0.24; // Color(0x3DFFFFFF).a
   static const double defaultLightIntensity = 0.6;
   static const double defaultAmbientStrength = 1;
-  static const double defaultRefractiveIndex = 1.59;
+  // 默认折射率与滑杆上限(maxRefractiveIndex=1.5)对齐：原默认 1.59
+  // 超出上限，fromJson 经 clamp() 后持久化值漂移到 1.5，与内存默认
+  // 不一致（首次保存前后观感跳变）。取上限值本身，行为可预期。
+  static const double defaultRefractiveIndex = 1.5;
   static const double defaultSaturation = 0.7;
   static const double defaultChromaticAberration = 0.3;
   static const double defaultLightAngleDegrees = 135; // 0.75 * pi rad（官方默认，左上光源）
