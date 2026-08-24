@@ -179,8 +179,8 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
           HyperosListGroup(
             children: [
               HyperosSelectTile<CourseCardSurfaceStyle>(
+                // 表面样式副题原为复述标题的零信息文案，随文案治理删除。
                 label: l10n.courseCardSurfaceStyleLabel,
-                subtitle: l10n.courseCardSurfaceStyleSubtitle,
                 items: {
                   for (final style in CourseCardSurfaceStyle.values)
                     courseCardSurfaceStyleLabel(l10n, style): style,
