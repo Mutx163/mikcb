@@ -1022,12 +1022,16 @@ void main() {
       final settings = TimetableSettings.defaults().copyWith(
         glassDockShowWeekTab: false,
         glassDockButtonEntryId: 'exams',
+        glassDockShowAddButton: false,
+        glassDockButtonIconName: 'star',
       );
 
       final restored = TimetableSettings.fromJson(settings.toJson());
       expect(restored.glassDockShowWeekTab, isFalse);
       expect(restored.glassDockShowDayTab, isTrue);
       expect(restored.glassDockButtonEntryId, 'exams');
+      expect(restored.glassDockShowAddButton, isFalse);
+      expect(restored.glassDockButtonIconName, 'star');
     });
 
     test('missing json keys fall back to shipped defaults', () {
@@ -1042,6 +1046,12 @@ void main() {
           ..remove('glassDockButtonEntryId'),
       );
       expect(restored2.glassDockButtonEntryId, 'addCourse');
+
+      final restored3 = TimetableSettings.fromJson(
+        TimetableSettings.defaults().toJson()
+          ..remove('glassDockShowAddButton'),
+      );
+      expect(restored3.glassDockShowAddButton, isFalse);
     });
   });
 }

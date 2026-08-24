@@ -47,7 +47,7 @@ import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_menu_catalog.dart';
-import '../widgets/home_top_menu.dart' show showHomeTopGridMenuSheet;
+import '../widgets/home_top_menu.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/week_selector_picker_sheet.dart';
@@ -6587,12 +6587,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                           l10n: l10n,
                         ),
                       ),
-                      _buildDockMergeSlot(
-                        ink: ink,
-                        l10n: l10n,
-                        settings: dockBtnSettings,
-                        quality: dockBtnQuality,
-                      ),
+                      if (settings.glassDockShowAddButton) ...[
+                        const SizedBox(width: 8),
+                        _buildDockMergeSlot(
+                          ink: ink,
+                          l10n: l10n,
+                          settings: dockBtnSettings,
+                          quality: dockBtnQuality,
+                        ),
+                      ],
                     ],
                   ),
                 );
@@ -6706,44 +6709,45 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 「水滴合并槽」：独立按钮与药丸之间的过渡区（恒展开）。
+  /// 独立圆钮：与药丸同质的液态玻璃圆钮（56 正圆）。
   ///
-  /// 按钮尺寸与药丸一致（56 = barHeight，两枚 Tab 胶囊的高度），左右
-  /// 并排时上下边缘完全平齐；槽总高 68 与药丸组件等高，中心线天然对齐。
-  /// 裁切用 ClipRRect 圆角 28 —— 与药丸端帽半圆同弧度。
+  /// 材质与药丸显式同源（_wrapWithGlassDock 传入 stockBottomBarGlass），
+  /// useOwnLayer:true + isStationary:true 保证 minimal 回退时仍保留
+  /// BackdropFilter 模糊——与药丸 frosted 回退一致，消除“两种材质”断层。
   Widget _buildDockMergeSlot({
     required Color ink,
     required AppLocalizations l10n,
     required LiquidGlassSettings? settings,
     required GlassQuality? quality,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: SizedBox(
-        width: 8 + 56,
-        height: 68,
-        child: OverflowBox(
-          alignment: Alignment.centerRight,
-          minWidth: 56,
-          maxWidth: 56,
-          minHeight: 56,
-          maxHeight: 56,
-          child: GlassButton(
-            icon: _roundButtonIcon(
-              context.read<TimetableProvider>().settings,
-            ),
-            onTap: () => _handleRoundButtonTap(
-              context.read<TimetableProvider>().settings,
-            ),
-            label: l10n.glassDockExtraButtonSemanticLabel,
-            width: 56,
-            height: 56,
-            iconSize: 22,
-            iconColor: ink,
-            settings: settings,
-            quality: quality,
-          ),
+    // 材质断层根因：此前此处以 useOwnLayer:false 渲染（LiquidGlass.grouped），
+    // 但坞层 Row 树外没有任何 LiquidGlassLayer/BluetoothGroup 祖先，
+    // Impeller 下 grouped 在无层时直接回退为固色无玻璃——看起来像一块
+    // 实色圆片，与药丸的真液态玻璃完全两种材质。改为 useOwnLayer:true
+    // + isStationary:true 后，按钮与药丸共享同质的 stockBottomBarGlass /
+    // sheetSettings，且在 minimal/降级路径两侧一致保留 BackdropFilter。
+    // 独立圆钮与药丸端帽同圆（56 正圆），外层 SizedBox(56) 与 Row 间距
+    // 由调用侧 SizedBox(width:8) 承担，无需 68 高的方形过渡槽及二次
+    // ClipRRect 裁切（会把玻璃边缘光切硬）。
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: GlassButton(
+        icon: _roundButtonIcon(
+          context.read<TimetableProvider>().settings,
         ),
+        onTap: () => _handleRoundButtonTap(
+          context.read<TimetableProvider>().settings,
+        ),
+        label: l10n.glassDockExtraButtonSemanticLabel,
+        width: 56,
+        height: 56,
+        iconSize: 22,
+        iconColor: ink,
+        settings: settings,
+        quality: quality,
+        useOwnLayer: true,
+        isStationary: true,
       ),
     );
   }
@@ -7862,15 +7866,38 @@ class _TimetableScreenState extends State<TimetableScreen>
     // dark over light) instead of the theme's onSurface color.
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
-    // 菜单前景色由八宫格弹层内部按壁纸亮度自适应，无需宿主传入。
-
-    // 菜单唯一形态：八宫格瓷贴（旧锚定列表弹窗已随 IA 收敛移除）。
-    // 统一以入口 id 回传，再经目录分发到全应用任意二级页面/功能。
-    final selectedId = await showHomeTopGridMenuSheet(
-      context,
-      hasAvailableUpdate: _hasAvailableUpdate,
-      entries: resolveHomeGridMenuEntries(settings),
+    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final headerShowsBackdrop = homePageRegionShowsBackdrop(
+      settings,
+      HomePageBackgroundScope.header,
     );
+    final headerUsesFrostedChrome =
+        hasBackdrop &&
+        (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
+    final menuForeground = _resolveHomeChromeForeground(
+      headerShowsWallpaper: headerUsesFrostedChrome,
+      themeForeground: context.theme.colors.foreground,
+    );
+
+    // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层，
+    // 「列表」是当前的锚定弹窗；排列只在八宫格下生效。两种形态统一以
+    // 入口 id 回传，再经目录分发到全应用任意二级页面/功能。
+    final String? selectedId;
+    if (settings.homeMenuStyle == HomeMenuStyle.grid) {
+      selectedId = await showHomeTopGridMenuSheet(
+        context,
+        hasAvailableUpdate: _hasAvailableUpdate,
+        entries: resolveHomeGridMenuEntries(settings),
+      );
+    } else {
+      selectedId = (await showHomeTopMenuSheet(
+        context,
+        hasAvailableUpdate: _hasAvailableUpdate,
+        anchorKey: _topMenuButtonKey,
+        foregroundColor: menuForeground,
+      ))
+          ?.name;
+    }
 
     if (!mounted || selectedId == null) {
       return;

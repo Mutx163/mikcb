@@ -100,14 +100,16 @@ TimetableSettings applySettingsReset(
       frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
       liquidGlassTuning: d.liquidGlassTuning,
     ),
-    // 「首页与导航」页暴露的字段——按 IA 规范 §5 必须有恢复路径。已删除
-    // UI 的字段（设置 Tab、加号钮、右上角菜单形态、内容避让布局、日/周
-    // Tab 布尔开关——已被 glassDockActions 取代）不纳入任何 scope。
+    // 已删除 UI 的字段（设置 Tab、右上角菜单形态、内容避让布局、
+    // 日/周布尔开关——已被 glassDockActions 取代）不纳入任何 scope。
+    // 加号圆钮显隐开关 glassDockShowAddButton 已随 a1fc0f0 后的修复回归，
+    // 必须纳入恢复路径，否则切玻璃坞后新用户永远看不到圆钮。
     SettingsResetScope.homeNavigation => current.copyWith(
       homeNavigationForm: d.homeNavigationForm,
       glassDockActions: d.glassDockActions,
+      glassDockShowAddButton: d.glassDockShowAddButton,
       glassDockButtonEntryId: d.glassDockButtonEntryId,
-      glassDockButtonIconName: d.glassDockButtonIconName,
+      clearGlassDockButtonIconName: true,
       homeTitleStyle: d.homeTitleStyle,
     ),
     SettingsResetScope.homeWidget => current.copyWith(

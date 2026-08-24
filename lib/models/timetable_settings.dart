@@ -2372,6 +2372,7 @@ class TimetableSettings {
     bool? glassDockShowWeekTab,
     String? glassDockButtonEntryId,
   String? glassDockButtonIconName,
+    bool clearGlassDockButtonIconName = false,
     bool? glassDockShowAddButton,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     double? timetableFloatingBackToCurrentWeekButtonOpacity,
@@ -2572,8 +2573,9 @@ class TimetableSettings {
       glassDockShowWeekTab: glassDockShowWeekTab ?? this.glassDockShowWeekTab,
       glassDockButtonEntryId:
           glassDockButtonEntryId ?? this.glassDockButtonEntryId,
-      glassDockButtonIconName:
-          glassDockButtonIconName ?? this.glassDockButtonIconName,
+      glassDockButtonIconName: clearGlassDockButtonIconName
+          ? null
+          : glassDockButtonIconName ?? this.glassDockButtonIconName,
       glassDockShowAddButton:
           glassDockShowAddButton ?? this.glassDockShowAddButton,
       timetableBackToCurrentWeekButtonStyle:

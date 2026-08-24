@@ -38,6 +38,7 @@ void main() {
       homeNavigationForm: HomeNavigationForm.glassDock,
       homeTitleStyle: HomeTitleStyle.brand,
       glassDockActions: const ['week', 'settings', 'statistics'],
+      glassDockShowAddButton: true,
       glassDockButtonEntryId: 'exams',
       glassDockButtonIconName: 'star',
       // 小组件
@@ -178,6 +179,9 @@ void main() {
 
     expect(result.homeNavigationForm, defaults.homeNavigationForm);
     expect(result.glassDockActions, defaults.glassDockActions);
+    expect(result.glassDockShowAddButton, defaults.glassDockShowAddButton);
+    expect(result.glassDockButtonEntryId, defaults.glassDockButtonEntryId);
+    expect(result.glassDockButtonIconName, defaults.glassDockButtonIconName);
     expect(result.homeTitleStyle, defaults.homeTitleStyle);
 
     // 外观字段不被导航页连带重置。
