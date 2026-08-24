@@ -275,6 +275,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
 
+  /// 底栏点选的内嵌页 id（非 null 时内容区切换为该页，玻璃坞常驻）。
+  String? _dockInlinePageId;
+
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
 
@@ -741,13 +744,58 @@ class _TimetableScreenState extends State<TimetableScreen>
             l10n: l10n,
           );
         }
-        // 底栏只承载日/周切换；设置统一走 ⋮ 菜单进入独立页面
-        // （内嵌设置宿主与其跟手拖动转场已随 IA 收敛移除）。
-        return _wrapWithGlassDock(
-          dockContent,
-          glassDockForm: true,
-          settings: settings,
-          l10n: l10n,
+        // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
+        // 玻璃坞常驻悬浮），仅未登记的流程页才推入新路由。系统返回
+        // 优先收回内嵌页而不是退出应用。
+        final inlineId = _dockInlinePageId;
+        final inlineBuilder = inlineId == null ? null : inlineDockPageFor(inlineId);
+        Widget hostedContent = inlineBuilder == null
+            ? dockContent
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  dockContent,
+                  Positioned.fill(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, t, child) {
+                        return FadeTransition(
+                          opacity: AlwaysStoppedAnimation(t),
+                          child: SlideTransition(
+                            position: AlwaysStoppedAnimation(
+                              Offset(1 - t, 0),
+                            ),
+                            child: child!,
+                          ),
+                        );
+                      },
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Scaffold(
+                          backgroundColor:
+                              Theme.of(context).scaffoldBackgroundColor,
+                          body: Builder(builder: inlineBuilder),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+        return PopScope(
+          canPop: inlineId == null,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && mounted && _dockInlinePageId != null) {
+              setState(() => _dockInlinePageId = null);
+            }
+          },
+          child: _wrapWithGlassDock(
+            hostedContent,
+            glassDockForm: true,
+            settings: settings,
+            l10n: l10n,
+          ),
         );
       },
     );
@@ -6558,14 +6606,23 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，
   /// 避免库断言越界（此时底栏全是页面入口，无「当前页」语义）。
   int _dockSelectedIndex(List<String> ids) {
+    final inline = _dockInlinePageId;
+    if (inline != null && ids.contains(inline)) {
+      return ids.indexOf(inline);
+    }
     final current = _isDayView ? kGlassDockActionDay : kGlassDockActionWeek;
     final index = ids.indexOf(current);
     return index >= 0 ? index : 0;
   }
 
-  /// 底栏点击分发：''day''/''week'' 复用锚点展开/收起动画；其余 id 走
-  /// 八宫格目录打开对应页面（如设置页以普通路由推入，覆盖在坞上方）。
+  /// 底栏点击分发：'day'/'week' 复用锚点展开/收起动画并收回内嵌页；
+  /// 页面条目走内嵌宿主（坞常驻），未登记的流程页才推入新路由。
   void _handleDockTap(String id, TimetableSettings settings) {
+    if (_dockInlinePageId != null &&
+        (id == kGlassDockActionDay || id == kGlassDockActionWeek)) {
+      // 从内嵌页点视图切换：先收页再切视图，避免两层状态叠加。
+      setState(() => _dockInlinePageId = null);
+    }
     switch (id) {
       case kGlassDockActionDay:
         if (_isDayView) {
@@ -6592,6 +6649,14 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 动画收起：_closeDayView 内部完成震动、状态清理与持久化。
         unawaited(_closeDayView(settings));
       default:
+        // 内嵌优先：注册过的页面在首页栈内切换，玻璃坞保持悬浮；
+        // 再次点击同一切换钮或系统返回则收回。未登记的走普通推入。
+        if (inlineDockPageFor(id) != null) {
+          setState(() {
+            _dockInlinePageId = (_dockInlinePageId == id) ? null : id;
+          });
+          return;
+        }
         final entry = homeMenuEntryById(id);
         if (entry != null) {
           unawaited(entry.open(context));

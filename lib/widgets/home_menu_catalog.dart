@@ -353,6 +353,46 @@ HomeMenuEntry _settingsSubpageEntry({
 }
 
 /// 按 id 查目录条目；未知 id（旧版本残留、拼写变化）返回 null 由调用方丢弃。
+/// 底栏内嵌页注册表：这些 id 点选时不再推入新路由，而是在首页栈内
+/// 切换内容区，玻璃坞保持悬浮（对齐旧「设置 Tab」的常驻体验）。
+/// 未登记的 id（表单类/需要上下文的流程页）仍走普通推入。
+final Map<String, WidgetBuilder> kInlineDockPages = {
+  'settings': (context) => const TimetableSettingsScreen(),
+  'overview': (context) => const CourseOverviewScreen(),
+  'statistics': (context) => const CourseStatisticsScreen(),
+  'exams': (context) => const ExamListScreen(),
+  'tasks': (context) => const TaskListScreen(),
+  'dataTransfer': (context) => const DataTransferScreen(),
+  'cloudSync': (context) => const CloudSyncScreen(),
+  'lanEdit': (context) => const LanEditScreen(),
+  'coupleTimetable': (context) => const CoupleTimetableSettingsScreen(),
+  'timeSchemes': (context) => const TimeSchemeManagementScreen(),
+  'icsExport': (context) => const IcsExportScreen(),
+  'profiles': (context) => const TimetableProfilesScreen(),
+  'feedback': (context) => const FeedbackScreen(),
+  'changelog': (context) => const ChangelogScreen(),
+  'openSourceLicenses': (context) => const OpenSourceLicensesScreen(),
+  'userGuide': (context) => const UserGuideScreen(),
+  'support': (context) => const SupportCreatorScreen(),
+  'statisticsSettings': (context) => const StatisticsSettingsScreen(),
+  'locationTimeMatch': (context) => const LocationTimeMatchScreen(),
+  'scheduleDateRule': (context) => const ScheduleDateRuleScreen(),
+  'memoryStats': (context) => const MemoryStatsScreen(),
+  // 软件更新页构造需要 PackageInfo：用 FutureBuilder 在内嵌壳内自取。
+  'update': (context) => FutureBuilder(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return AboutUpdateScreen(packageInfo: snapshot.data!);
+        },
+      ),
+};
+
+/// id 对应的内嵌页构建器；未登记返回 null（调用方回退为推入路由）。
+WidgetBuilder? inlineDockPageFor(String id) => kInlineDockPages[id];
+
 HomeMenuEntry? homeMenuEntryById(String? id) {
   if (id == null || id.isEmpty) {
     return null;
