@@ -3584,7 +3584,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAppLogsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'查看全等级运行日志'**
+  /// **'查看运行日志'**
   String get aboutAppLogsSubtitle;
 
   /// No description provided for @appLogsShareText.
@@ -6756,7 +6756,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowLocationSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后，小组件次级信息会优先显示周次和课程数量'**
+  /// **'关闭后改显周次与课程数'**
   String get homeWidgetShowLocationSubtitle;
 
   /// No description provided for @homeWidgetShowCountdownTitle.
@@ -6768,7 +6768,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowCountdownSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示'**
+  /// **'显示下节课倒计时'**
   String get homeWidgetShowCountdownSubtitle;
 
   /// No description provided for @homeWidgetCountdownLeadTitle.
@@ -6810,7 +6810,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetHideCompletedSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程'**
+  /// **'只显示未结束的课程'**
   String get homeWidgetHideCompletedSubtitle;
 
   /// No description provided for @homeWidgetShowTomorrowTitle.
@@ -6822,7 +6822,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetShowTomorrowSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后，今日课程全部结束时小组件自动切换显示明天的课程'**
+  /// **'今日课后自动显示明天课程'**
   String get homeWidgetShowTomorrowSubtitle;
 
   /// No description provided for @homeWidgetHeightAdjustTitle.
@@ -7140,7 +7140,7 @@ abstract class AppLocalizations {
   /// No description provided for @layoutShowOtherWeeksSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认关闭，开启后会用灰色半透明显示不在当前周的课程'**
+  /// **'非本周课程以半透明灰色显示'**
   String get layoutShowOtherWeeksSubtitle;
 
   /// No description provided for @layoutVerticalAlignLabel.
@@ -10396,6 +10396,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'检查更新'**
   String get holidayCheckUpdate;
+
+  /// No description provided for @holidayAdvancedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'节假日数据更新'**
+  String get holidayAdvancedTitle;
+
+  /// No description provided for @holidayAdvancedSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动更新节假日数据与调休'**
+  String get holidayAdvancedSubtitle;
 
   /// No description provided for @holidayUpcomingSectionTitle.
   ///
@@ -16879,12 +16891,6 @@ abstract class AppLocalizations {
   /// **'卡片外观'**
   String get courseCardSurfaceStyleLabel;
 
-  /// No description provided for @courseCardSurfaceStyleSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'选择课程卡片的视觉风格'**
-  String get courseCardSurfaceStyleSubtitle;
-
   /// No description provided for @courseCardSurfaceStyleSolid.
   ///
   /// In zh, this message translates to:
@@ -17032,7 +17038,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetConfirmBodyAppearance.
   ///
   /// In zh, this message translates to:
-  /// **'将把主题模式、字体、首页导航形态、首页标题、主题色与磨砂玻璃设置恢复为默认值。'**
+  /// **'将把主题模式、字体、主题色与玻璃质感恢复为默认值。'**
   String get settingsResetConfirmBodyAppearance;
 
   /// No description provided for @settingsResetConfirmBodyHomeWidget.
@@ -17040,6 +17046,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'将把桌面小组件的显示项与外观恢复为默认值。'**
   String get settingsResetConfirmBodyHomeWidget;
+
+  /// No description provided for @settingsResetConfirmBodyHomeNavigation.
+  ///
+  /// In zh, this message translates to:
+  /// **'将把底栏、菜单与首页标题设置恢复为默认值。'**
+  String get settingsResetConfirmBodyHomeNavigation;
 
   /// No description provided for @settingsResetDoneMessage.
   ///
@@ -17749,6 +17761,18 @@ abstract class AppLocalizations {
   /// **'轻屿课表日历'**
   String get icsExportShareSubject;
 
+  /// No description provided for @homeNavigationTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页与导航'**
+  String get homeNavigationTitle;
+
+  /// No description provided for @homeNavigationSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底栏形态、菜单与首页标题'**
+  String get homeNavigationSubtitle;
+
   /// No description provided for @homeNavigationFormLabel.
   ///
   /// In zh, this message translates to:
@@ -17776,7 +17800,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeNavigationFormGlassDockSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'底部悬浮液态玻璃药丸导航：滑动或点击即可在周课表、日课表与设置之间切换'**
+  /// **'悬浮玻璃底栏，切换日/周课表'**
   String get homeNavigationFormGlassDockSubtitle;
 
   /// No description provided for @glassDockTabWeek.
@@ -17839,23 +17863,11 @@ abstract class AppLocalizations {
   /// **'显示日课表入口'**
   String get glassDockShowDayTabTitle;
 
-  /// No description provided for @glassDockShowSettingsTabTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示设置入口'**
-  String get glassDockShowSettingsTabTitle;
-
   /// No description provided for @glassDockShowWeekTabTitle.
   ///
   /// In zh, this message translates to:
   /// **'显示周课表入口'**
   String get glassDockShowWeekTabTitle;
-
-  /// No description provided for @glassDockButtonFunctionLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'独立按钮功能'**
-  String get glassDockButtonFunctionLabel;
 
   /// No description provided for @glassDockButtonBackToWeekLabel.
   ///
@@ -17863,53 +17875,11 @@ abstract class AppLocalizations {
   /// **'回本周 / 今天'**
   String get glassDockButtonBackToWeekLabel;
 
-  /// No description provided for @glassDockShowAddButtonTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示添加按钮'**
-  String get glassDockShowAddButtonTitle;
-
-  /// No description provided for @glassDockShowAddButtonSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'在导航栏旁显示独立圆形按钮，点击直接添加课程'**
-  String get glassDockShowAddButtonSubtitle;
-
   /// No description provided for @glassDockExtraButtonSemanticLabel.
   ///
   /// In zh, this message translates to:
   /// **'添加课程'**
   String get glassDockExtraButtonSemanticLabel;
-
-  /// No description provided for @homeMenuStyleLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'右上角菜单样式'**
-  String get homeMenuStyleLabel;
-
-  /// No description provided for @homeMenuStyleList.
-  ///
-  /// In zh, this message translates to:
-  /// **'列表菜单'**
-  String get homeMenuStyleList;
-
-  /// No description provided for @homeMenuStyleGrid.
-  ///
-  /// In zh, this message translates to:
-  /// **'八宫格菜单'**
-  String get homeMenuStyleGrid;
-
-  /// No description provided for @homeMenuStyleListSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'在按钮下方弹出文字列表，全部入口一屏展示'**
-  String get homeMenuStyleListSubtitle;
-
-  /// No description provided for @homeMenuStyleGridSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'底部弹出图标瓷贴，支持自定义按钮'**
-  String get homeMenuStyleGridSubtitle;
 
   /// No description provided for @homeGridCustomizeTitle.
   ///

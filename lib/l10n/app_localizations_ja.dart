@@ -1950,7 +1950,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutAppLogsTitle => 'アプリログ';
 
   @override
-  String get aboutAppLogsSubtitle => '全レベルのログを確認';
+  String get aboutAppLogsSubtitle => '実行ログを確認';
 
   @override
   String get appLogsShareText =>
@@ -3716,13 +3716,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetShowLocationTitle => '場所を表示';
 
   @override
-  String get homeWidgetShowLocationSubtitle => 'オフにすると、ウィジェットのサブ情報は週次と授業数を優先表示';
+  String get homeWidgetShowLocationSubtitle => 'オフにすると週数と授業数を表示';
 
   @override
   String get homeWidgetShowCountdownTitle => 'カウントダウンを表示';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '更新スイッチを保持，次回の授業と授業中の残り時間表示に使用';
+  String get homeWidgetShowCountdownSubtitle => '次の授業までのカウントダウンを表示';
 
   @override
   String get homeWidgetCountdownLeadTitle => 'カウントダウン先行量';
@@ -3745,15 +3745,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetHideCompletedTitle => '完了済み授業を非表示';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      'オンにすると、2×2、2×4、4×4の授業リストは終了前の授業のみ表示';
+  String get homeWidgetHideCompletedSubtitle => '終了していない授業のみ表示';
 
   @override
   String get homeWidgetShowTomorrowTitle => '授業後に明日の授業を表示';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle =>
-      'オンにすると、今日の授業が全て終了時にウィジェットが自動的に明日の授業に切替';
+  String get homeWidgetShowTomorrowSubtitle => '今日の授業終了後は明日の授業を自動表示';
 
   @override
   String get homeWidgetHeightAdjustTitle => 'カード高さ微調整';
@@ -3944,7 +3942,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '非今週の授業を表示';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => 'デフォルトオフ，オンにすると現在週にない授業をグレー半透明で表示';
+  String get layoutShowOtherWeeksSubtitle => '今週以外の授業は半透明のグレーで表示';
 
   @override
   String get layoutVerticalAlignLabel => '垂直レイアウト';
@@ -5803,6 +5801,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get holidayCheckUpdate => '更新を確認';
+
+  @override
+  String get holidayAdvancedTitle => '休日データの更新';
+
+  @override
+  String get holidayAdvancedSubtitle => '休日データと振替出勤日を手動で更新';
 
   @override
   String get holidayUpcomingSectionTitle => '近日の休日';
@@ -9610,9 +9614,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => 'カードの外観';
 
   @override
-  String get courseCardSurfaceStyleSubtitle => 'コースカードのビジュアルスタイルを選択';
-
-  @override
   String get courseCardSurfaceStyleSolid => 'ソリッド';
 
   @override
@@ -9688,11 +9689,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyAppearance =>
-      'テーマモード・フォント・ホームナビ形式・ホームタイトル・テーマカラー・すりガラス設定を既定値に戻します。';
+      'テーマモード・フォント・テーマカラー・ガラス質感を既定値に戻します。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget =>
       'ホームウィジェットの表示項目と外観を既定値に戻します。';
+
+  @override
+  String get settingsResetConfirmBodyHomeNavigation =>
+      'ボトムバー・メニュー・ホームタイトルの設定を既定値に戻します。';
 
   @override
   String get settingsResetDoneMessage => '設定がリセットされました';
@@ -10056,6 +10061,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportShareSubject => '軽屿課表カレンダー';
 
   @override
+  String get homeNavigationTitle => 'ホームとナビゲーション';
+
+  @override
+  String get homeNavigationSubtitle => 'ボトムバーの形式・メニュー・ホームタイトル';
+
+  @override
   String get homeNavigationFormLabel => 'ホームフォーム';
 
   @override
@@ -10069,7 +10080,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeNavigationFormGlassDockSubtitle =>
-      '画面下部に浮かぶ液体ガラスのピル型ナビ：スワイプまたはタップで週・日・設定を切り替え';
+      '下に浮かぶガラスのボトムバーで日/週の時間割を切り替え';
 
   @override
   String get glassDockTabWeek => '週';
@@ -10102,41 +10113,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockShowDayTabTitle => '日課表タブを表示';
 
   @override
-  String get glassDockShowSettingsTabTitle => '設定タブを表示';
-
-  @override
   String get glassDockShowWeekTabTitle => '週表示タブを表示';
-
-  @override
-  String get glassDockButtonFunctionLabel => '独立ボタンの機能';
 
   @override
   String get glassDockButtonBackToWeekLabel => '今週へ戻る / 今日';
 
   @override
-  String get glassDockShowAddButtonTitle => '追加ボタンを表示';
-
-  @override
-  String get glassDockShowAddButtonSubtitle =>
-      'ナビバーの横に独立した丸ボタンを表示し、タップで直接授業を追加';
-
-  @override
   String get glassDockExtraButtonSemanticLabel => '授業を追加';
-
-  @override
-  String get homeMenuStyleLabel => '右上メニューのスタイル';
-
-  @override
-  String get homeMenuStyleList => 'リストメニュー';
-
-  @override
-  String get homeMenuStyleGrid => '八宮格メニュー';
-
-  @override
-  String get homeMenuStyleListSubtitle => 'ボタンの下にテキストリストを表示し、すべての入口を一度に見せます';
-
-  @override
-  String get homeMenuStyleGridSubtitle => '下部にアイコンタイルを表示、ボタンのカスタマイズ対応';
 
   @override
   String get homeGridCustomizeTitle => 'グリッドボタンのカスタマイズ';

@@ -2035,7 +2035,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutAppLogsTitle => 'App logs';
 
   @override
-  String get aboutAppLogsSubtitle => 'View all-level runtime logs';
+  String get aboutAppLogsSubtitle => 'View runtime logs';
 
   @override
   String get appLogsShareText =>
@@ -3883,14 +3883,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetShowLocationSubtitle =>
-      'When turned off, the widget secondary info will prioritize week info and course count';
+      'When turned off, shows week number and course count instead';
 
   @override
   String get homeWidgetShowCountdownTitle => 'Show countdown';
 
   @override
   String get homeWidgetShowCountdownSubtitle =>
-      'The refresh switch is kept for now and will later be used to show remaining time before the next class and during class';
+      'Show a countdown to the next class';
 
   @override
   String get homeWidgetCountdownLeadTitle => 'Countdown lead time';
@@ -3915,14 +3915,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetHideCompletedSubtitle =>
-      'When enabled, the 2×2, 2×4, and 4×4 course lists show only classes that have not finished yet';
+      'Show only classes that have not ended yet';
 
   @override
   String get homeWidgetShowTomorrowTitle => 'Show tomorrow\'s classes';
 
   @override
   String get homeWidgetShowTomorrowSubtitle =>
-      'When enabled, the widget automatically switches to tomorrow\'s classes after today\'s classes end';
+      'Automatically show tomorrow\'s classes after today\'s classes end';
 
   @override
   String get homeWidgetHeightAdjustTitle => 'Card height adjustment';
@@ -4123,7 +4123,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get layoutShowOtherWeeksSubtitle =>
-      'Off by default. When enabled, courses not in the current week are shown in semi-transparent gray';
+      'Courses outside the current week are shown in semi-transparent gray';
 
   @override
   String get layoutVerticalAlignLabel => 'Vertical alignment';
@@ -6042,6 +6042,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get holidayCheckUpdate => 'Check for updates';
+
+  @override
+  String get holidayAdvancedTitle => 'Holiday Data Update';
+
+  @override
+  String get holidayAdvancedSubtitle =>
+      'Manually update holiday data and makeup workdays';
 
   @override
   String get holidayUpcomingSectionTitle => 'Upcoming Holidays';
@@ -9887,10 +9894,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => 'Card Appearance';
 
   @override
-  String get courseCardSurfaceStyleSubtitle =>
-      'Choose the visual style for course cards';
-
-  @override
   String get courseCardSurfaceStyleSolid => 'Solid';
 
   @override
@@ -9966,11 +9969,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyAppearance =>
-      'This resets theme mode, fonts, home navigation form, home title, theme color and frosted glass settings to their defaults.';
+      'This resets theme mode, fonts, theme color and glass effect to their defaults.';
 
   @override
   String get settingsResetConfirmBodyHomeWidget =>
       'This resets home widget visibility and appearance to their defaults.';
+
+  @override
+  String get settingsResetConfirmBodyHomeNavigation =>
+      'This resets bottom bar, menu and home title settings to their defaults.';
 
   @override
   String get settingsResetDoneMessage => 'Settings have been reset';
@@ -10348,6 +10355,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportShareSubject => 'Qingyu Timetable calendar';
 
   @override
+  String get homeNavigationTitle => 'Home & Navigation';
+
+  @override
+  String get homeNavigationSubtitle => 'Bottom bar style, menu and home title';
+
+  @override
   String get homeNavigationFormLabel => 'Home form';
 
   @override
@@ -10362,7 +10375,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeNavigationFormGlassDockSubtitle =>
-      'Floating liquid-glass pill bar at the bottom: swipe or tap to switch between week view, day view and settings';
+      'Floating glass bottom bar to switch between day/week timetable';
 
   @override
   String get glassDockTabWeek => 'Week';
@@ -10397,43 +10410,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockShowDayTabTitle => 'Show day view entry';
 
   @override
-  String get glassDockShowSettingsTabTitle => 'Show settings entry';
-
-  @override
   String get glassDockShowWeekTabTitle => 'Show week view entry';
-
-  @override
-  String get glassDockButtonFunctionLabel => 'Standalone button action';
 
   @override
   String get glassDockButtonBackToWeekLabel => 'Back to this week / today';
 
   @override
-  String get glassDockShowAddButtonTitle => 'Show add button';
-
-  @override
-  String get glassDockShowAddButtonSubtitle =>
-      'Show a separate round button next to the bar that opens add-course directly';
-
-  @override
   String get glassDockExtraButtonSemanticLabel => 'Add course';
-
-  @override
-  String get homeMenuStyleLabel => 'Top-right menu style';
-
-  @override
-  String get homeMenuStyleList => 'List menu';
-
-  @override
-  String get homeMenuStyleGrid => 'Eight-tile grid menu';
-
-  @override
-  String get homeMenuStyleListSubtitle =>
-      'Anchored text list right below the button, all entries at once';
-
-  @override
-  String get homeMenuStyleGridSubtitle =>
-      'Bottom icon tile sheet, buttons customizable';
 
   @override
   String get homeGridCustomizeTitle => 'Customize grid buttons';

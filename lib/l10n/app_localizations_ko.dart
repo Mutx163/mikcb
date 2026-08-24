@@ -1959,7 +1959,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutAppLogsTitle => '앱 로그';
 
   @override
-  String get aboutAppLogsSubtitle => '전 레벨 로그 확인';
+  String get aboutAppLogsSubtitle => '실행 로그 확인';
 
   @override
   String get appLogsShareText =>
@@ -3738,15 +3738,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowLocationTitle => '장소 표시';
 
   @override
-  String get homeWidgetShowLocationSubtitle =>
-      '끄면 위젯의 부가 정보가 주차와 수업 수를 우선 표시합니다';
+  String get homeWidgetShowLocationSubtitle => '끄면 주차와 수업 수를 대신 표시합니다';
 
   @override
   String get homeWidgetShowCountdownTitle => '카운트다운 표시';
 
   @override
-  String get homeWidgetShowCountdownSubtitle =>
-      '새로고침 스위치를 유지합니다. 다음 수업과 수업 중 남은 시간 표시에 사용됩니다';
+  String get homeWidgetShowCountdownSubtitle => '다음 수업까지 카운트다운 표시';
 
   @override
   String get homeWidgetCountdownLeadTitle => '카운트다운 선행량';
@@ -3770,15 +3768,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetHideCompletedTitle => '완료된 수업 숨기기';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      '켜면 2×2, 2×4, 4×4 수업 목록에 아직 끝나지 않은 수업만 표시됩니다';
+  String get homeWidgetHideCompletedSubtitle => '아직 끝나지 않은 수업만 표시합니다';
 
   @override
   String get homeWidgetShowTomorrowTitle => '수업 후 내일 수업 표시';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle =>
-      '켜면 오늘 수업이 모두 끝나면 위젯이 자동으로 내일 수업을 표시합니다';
+  String get homeWidgetShowTomorrowSubtitle => '오늘 수업이 끝나면 내일 수업을 자동으로 표시합니다';
 
   @override
   String get homeWidgetHeightAdjustTitle => '카드 높이 미세 조정';
@@ -3970,8 +3966,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '비이번주 수업 표시';
 
   @override
-  String get layoutShowOtherWeeksSubtitle =>
-      '기본 꺼짐. 켜면 현재 주에 없는 수업을 회색 반투명으로 표시합니다';
+  String get layoutShowOtherWeeksSubtitle => '현재 주가 아닌 수업은 반투명 회색으로 표시됩니다';
 
   @override
   String get layoutVerticalAlignLabel => '수직 레이아웃';
@@ -5838,6 +5833,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get holidayCheckUpdate => '업데이트 확인';
+
+  @override
+  String get holidayAdvancedTitle => '공휴일 데이터 업데이트';
+
+  @override
+  String get holidayAdvancedSubtitle => '공휴일 데이터와 대체 근무일을 수동으로 업데이트';
 
   @override
   String get holidayUpcomingSectionTitle => '다가오는 공휴일';
@@ -9656,9 +9657,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => '카드 외관';
 
   @override
-  String get courseCardSurfaceStyleSubtitle => '강의 카드의 시각적 스타일을 선택하세요';
-
-  @override
   String get courseCardSurfaceStyleSolid => '솔리드';
 
   @override
@@ -9734,11 +9732,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyAppearance =>
-      '테마 모드·글꼴·홈 내비게이션 형태·홈 제목·테마 색상·블러 설정을 기본값으로 되돌립니다.';
+      '테마 모드·글꼴·테마 색상·유리 질감을 기본값으로 되돌립니다.';
 
   @override
   String get settingsResetConfirmBodyHomeWidget =>
       '홈 위젯 표시 항목과 외관을 기본값으로 되돌립니다.';
+
+  @override
+  String get settingsResetConfirmBodyHomeNavigation =>
+      '하단 바·메뉴·홈 제목 설정을 기본값으로 되돌립니다.';
 
   @override
   String get settingsResetDoneMessage => '설정이 초기화되었습니다';
@@ -10102,6 +10104,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportShareSubject => '轻屿课表 캘린더';
 
   @override
+  String get homeNavigationTitle => '홈 및 탐색';
+
+  @override
+  String get homeNavigationSubtitle => '하단 바 형태·메뉴·홈 제목';
+
+  @override
   String get homeNavigationFormLabel => '홈 형태';
 
   @override
@@ -10115,7 +10123,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeNavigationFormGlassDockSubtitle =>
-      '하단에 떠 있는 리퀴드 글래스 알약 내비게이션: 스와이프 또는 탭으로 주간·일간·설정 전환';
+      '떠 있는 글래스 하단 바로 일간/주간 시간표 전환';
 
   @override
   String get glassDockTabWeek => '주간';
@@ -10148,42 +10156,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockShowDayTabTitle => '일간 탭 표시';
 
   @override
-  String get glassDockShowSettingsTabTitle => '설정 탭 표시';
-
-  @override
   String get glassDockShowWeekTabTitle => '주간 탭 표시';
-
-  @override
-  String get glassDockButtonFunctionLabel => '독립 버튼 기능';
 
   @override
   String get glassDockButtonBackToWeekLabel => '이번 주로 / 오늘';
 
   @override
-  String get glassDockShowAddButtonTitle => '추가 버튼 표시';
-
-  @override
-  String get glassDockShowAddButtonSubtitle =>
-      '내비게이션 바 옆에 독립된 원형 버튼을 표시하여 탭하면 바로 수업 추가';
-
-  @override
   String get glassDockExtraButtonSemanticLabel => '수업 추가';
-
-  @override
-  String get homeMenuStyleLabel => '오른쪽 위 메뉴 스타일';
-
-  @override
-  String get homeMenuStyleList => '리스트 메뉴';
-
-  @override
-  String get homeMenuStyleGrid => '여덟 칸 격자 메뉴';
-
-  @override
-  String get homeMenuStyleListSubtitle =>
-      '버튼 아래에 텍스트 목록이 펼쳐지며 모든 항목을 한 화면에서 보여 줍니다';
-
-  @override
-  String get homeMenuStyleGridSubtitle => '하단에 아이콘 타일 시트를 표시, 버튼 사용자 지정 가능';
 
   @override
   String get homeGridCustomizeTitle => '격자 버튼 사용자 지정';

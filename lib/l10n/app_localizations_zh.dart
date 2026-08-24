@@ -1917,7 +1917,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutAppLogsTitle => '应用日志';
 
   @override
-  String get aboutAppLogsSubtitle => '查看全等级运行日志';
+  String get aboutAppLogsSubtitle => '查看运行日志';
 
   @override
   String get appLogsShareText =>
@@ -3644,13 +3644,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetShowLocationTitle => '显示地点';
 
   @override
-  String get homeWidgetShowLocationSubtitle => '关闭后，小组件次级信息会优先显示周次和课程数量';
+  String get homeWidgetShowLocationSubtitle => '关闭后改显周次与课程数';
 
   @override
   String get homeWidgetShowCountdownTitle => '显示倒计时';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示';
+  String get homeWidgetShowCountdownSubtitle => '显示下节课倒计时';
 
   @override
   String get homeWidgetCountdownLeadTitle => '倒计时提前量';
@@ -3673,14 +3673,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetHideCompletedTitle => '隐藏已上完课程';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      '开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程';
+  String get homeWidgetHideCompletedSubtitle => '只显示未结束的课程';
 
   @override
   String get homeWidgetShowTomorrowTitle => '课后显示明日课程';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle => '开启后，今日课程全部结束时小组件自动切换显示明天的课程';
+  String get homeWidgetShowTomorrowSubtitle => '今日课后自动显示明天课程';
 
   @override
   String get homeWidgetHeightAdjustTitle => '卡片高度微调';
@@ -3866,7 +3865,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutShowOtherWeeksTitle => '显示非本周课程';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '默认关闭，开启后会用灰色半透明显示不在当前周的课程';
+  String get layoutShowOtherWeeksSubtitle => '非本周课程以半透明灰色显示';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -5707,6 +5706,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get holidayCheckUpdate => '检查更新';
+
+  @override
+  String get holidayAdvancedTitle => '节假日数据更新';
+
+  @override
+  String get holidayAdvancedSubtitle => '手动更新节假日数据与调休';
 
   @override
   String get holidayUpcomingSectionTitle => '近期节假日';
@@ -9338,9 +9343,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => '卡片外观';
 
   @override
-  String get courseCardSurfaceStyleSubtitle => '选择课程卡片的视觉风格';
-
-  @override
   String get courseCardSurfaceStyleSolid => '实体卡片';
 
   @override
@@ -9414,11 +9416,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '将把课表页面的密度、回到当前周按钮与背景（含清除壁纸）恢复为默认值。';
 
   @override
-  String get settingsResetConfirmBodyAppearance =>
-      '将把主题模式、字体、首页导航形态、首页标题、主题色与磨砂玻璃设置恢复为默认值。';
+  String get settingsResetConfirmBodyAppearance => '将把主题模式、字体、主题色与玻璃质感恢复为默认值。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget => '将把桌面小组件的显示项与外观恢复为默认值。';
+
+  @override
+  String get settingsResetConfirmBodyHomeNavigation => '将把底栏、菜单与首页标题设置恢复为默认值。';
 
   @override
   String get settingsResetDoneMessage => '设置已重置';
@@ -9781,6 +9785,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportShareSubject => '轻屿课表日历';
 
   @override
+  String get homeNavigationTitle => '首页与导航';
+
+  @override
+  String get homeNavigationSubtitle => '底栏形态、菜单与首页标题';
+
+  @override
   String get homeNavigationFormLabel => '应用形态';
 
   @override
@@ -9793,8 +9803,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeNavigationFormGlassDock => '玻璃坞';
 
   @override
-  String get homeNavigationFormGlassDockSubtitle =>
-      '底部悬浮液态玻璃药丸导航：滑动或点击即可在周课表、日课表与设置之间切换';
+  String get homeNavigationFormGlassDockSubtitle => '悬浮玻璃底栏，切换日/周课表';
 
   @override
   String get glassDockTabWeek => '周课表';
@@ -9827,40 +9836,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockShowDayTabTitle => '显示日课表入口';
 
   @override
-  String get glassDockShowSettingsTabTitle => '显示设置入口';
-
-  @override
   String get glassDockShowWeekTabTitle => '显示周课表入口';
-
-  @override
-  String get glassDockButtonFunctionLabel => '独立按钮功能';
 
   @override
   String get glassDockButtonBackToWeekLabel => '回本周 / 今天';
 
   @override
-  String get glassDockShowAddButtonTitle => '显示添加按钮';
-
-  @override
-  String get glassDockShowAddButtonSubtitle => '在导航栏旁显示独立圆形按钮，点击直接添加课程';
-
-  @override
   String get glassDockExtraButtonSemanticLabel => '添加课程';
-
-  @override
-  String get homeMenuStyleLabel => '右上角菜单样式';
-
-  @override
-  String get homeMenuStyleList => '列表菜单';
-
-  @override
-  String get homeMenuStyleGrid => '八宫格菜单';
-
-  @override
-  String get homeMenuStyleListSubtitle => '在按钮下方弹出文字列表，全部入口一屏展示';
-
-  @override
-  String get homeMenuStyleGridSubtitle => '底部弹出图标瓷贴，支持自定义按钮';
 
   @override
   String get homeGridCustomizeTitle => '自定义八宫格按钮';
@@ -11938,7 +11920,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutAppLogsTitle => '應用日誌';
 
   @override
-  String get aboutAppLogsSubtitle => '查看全等級運行日誌';
+  String get aboutAppLogsSubtitle => '查看運行日誌';
 
   @override
   String get appLogsShareText =>
@@ -13665,13 +13647,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetShowLocationTitle => '顯示地點';
 
   @override
-  String get homeWidgetShowLocationSubtitle => '關閉後，小組件次級資訊會優先顯示周次和課程數量';
+  String get homeWidgetShowLocationSubtitle => '關閉後改顯週次與課程數';
 
   @override
   String get homeWidgetShowCountdownTitle => '顯示倒計時';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '先保留刷新開關，後續會用于下一節課和上課中的剩餘時間展示';
+  String get homeWidgetShowCountdownSubtitle => '顯示下一節課倒計時';
 
   @override
   String get homeWidgetCountdownLeadTitle => '倒計時提前量';
@@ -13694,15 +13676,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetHideCompletedTitle => '隱藏已上完課程';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      '開啟後，2×2、2×4 和 4×4 課程列表只顯示還没結束的課程';
+  String get homeWidgetHideCompletedSubtitle => '只顯示未結束的課程';
 
   @override
   String get homeWidgetShowTomorrowTitle => '課後顯示明日課程';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle =>
-      '啟用後，當今日課程全部結束時，桌面小組件會自動切換顯示明日課程';
+  String get homeWidgetShowTomorrowSubtitle => '今日課後自動顯示明天課程';
 
   @override
   String get homeWidgetHeightAdjustTitle => '卡片高度微調';
@@ -13888,7 +13868,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutShowOtherWeeksTitle => '顯示非本周課程';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '預設關閉，開啟後會用灰色半透明顯示不在目前周的課程';
+  String get layoutShowOtherWeeksSubtitle => '非本週課程以半透明灰色顯示';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -15728,6 +15708,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get holidayCheckUpdate => '檢查更新';
+
+  @override
+  String get holidayAdvancedTitle => '假期資料更新';
+
+  @override
+  String get holidayAdvancedSubtitle => '手動更新假期資料與調休';
 
   @override
   String get holidayUpcomingSectionTitle => '近期假期';
@@ -19403,9 +19389,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleLabel => '卡片外觀';
 
   @override
-  String get courseCardSurfaceStyleSubtitle => '選擇課程卡片的視覺風格';
-
-  @override
   String get courseCardSurfaceStyleSolid => '實體卡片';
 
   @override
@@ -19479,11 +19462,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '將把課表頁面的密度、回到當前週按鈕與背景（含清除桌布）恢復為預設值。';
 
   @override
-  String get settingsResetConfirmBodyAppearance =>
-      '將把主題模式、字型、首頁導覽型態、首頁標題、主題色與磨砂玻璃設定恢復為預設值。';
+  String get settingsResetConfirmBodyAppearance => '將把主題模式、字型、主題色與玻璃質感恢復為預設值。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget => '將把桌面小組件的顯示項目與外觀恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyHomeNavigation => '將把底欄、選單與首頁標題設定恢復為預設值。';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';
@@ -19846,6 +19831,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get icsExportShareSubject => '輕誘課表日曆';
 
   @override
+  String get homeNavigationTitle => '首頁與導覽';
+
+  @override
+  String get homeNavigationSubtitle => '底欄形態、選單與首頁標題';
+
+  @override
   String get homeNavigationFormLabel => '應用形態';
 
   @override
@@ -19858,8 +19849,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeNavigationFormGlassDock => '玻璃塢';
 
   @override
-  String get homeNavigationFormGlassDockSubtitle =>
-      '底部懸浮液態玻璃藥丸導覽：滑動或點擊即可在週課表、日課表與設定之間切換';
+  String get homeNavigationFormGlassDockSubtitle => '懸浮玻璃底欄，切換日/週課表';
 
   @override
   String get glassDockTabWeek => '週課表';
@@ -19892,40 +19882,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockShowDayTabTitle => '顯示日課表入口';
 
   @override
-  String get glassDockShowSettingsTabTitle => '顯示設定入口';
-
-  @override
   String get glassDockShowWeekTabTitle => '顯示週課表入口';
-
-  @override
-  String get glassDockButtonFunctionLabel => '獨立按鈕功能';
 
   @override
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
-  String get glassDockShowAddButtonTitle => '顯示新增按鈕';
-
-  @override
-  String get glassDockShowAddButtonSubtitle => '在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程';
-
-  @override
   String get glassDockExtraButtonSemanticLabel => '新增課程';
-
-  @override
-  String get homeMenuStyleLabel => '右上角選單樣式';
-
-  @override
-  String get homeMenuStyleList => '列表選單';
-
-  @override
-  String get homeMenuStyleGrid => '八宮格選單';
-
-  @override
-  String get homeMenuStyleListSubtitle => '在按鈕下方彈出文字列表，全部入口一屏展示';
-
-  @override
-  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼，支援自訂按鈕';
 
   @override
   String get homeGridCustomizeTitle => '自訂八宮格按鈕';
@@ -22003,7 +21966,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutAppLogsTitle => '應用日誌';
 
   @override
-  String get aboutAppLogsSubtitle => '查看全等級運行日誌';
+  String get aboutAppLogsSubtitle => '查看執行日誌';
 
   @override
   String get appLogsShareText =>
@@ -23730,13 +23693,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetShowLocationTitle => '顯示地點';
 
   @override
-  String get homeWidgetShowLocationSubtitle => '關閉後，小工具次級資訊会優先顯示周次和課程數量';
+  String get homeWidgetShowLocationSubtitle => '關閉後改顯週次與課程數';
 
   @override
   String get homeWidgetShowCountdownTitle => '顯示倒計時';
 
   @override
-  String get homeWidgetShowCountdownSubtitle => '先保留刷新開關，後续会用于下一節課和上課中的剩余時間展示';
+  String get homeWidgetShowCountdownSubtitle => '顯示下一節課倒計時';
 
   @override
   String get homeWidgetCountdownLeadTitle => '倒計時提前量';
@@ -23759,15 +23722,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetHideCompletedTitle => '隱藏已上完課程';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      '開啟後，2×2、2×4 和 4×4 課程列表只顯示還没结束的課程';
+  String get homeWidgetHideCompletedSubtitle => '只顯示未結束的課程';
 
   @override
   String get homeWidgetShowTomorrowTitle => '下課後顯示明天課程';
 
   @override
-  String get homeWidgetShowTomorrowSubtitle =>
-      '啟用後，當今天的課程全部結束時，桌面小工具會自動切換顯示明天的課程';
+  String get homeWidgetShowTomorrowSubtitle => '今日課後自動顯示明天課程';
 
   @override
   String get homeWidgetHeightAdjustTitle => '卡片高度微調';
@@ -23953,7 +23914,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutShowOtherWeeksTitle => '顯示非本周課程';
 
   @override
-  String get layoutShowOtherWeeksSubtitle => '預設關閉，開啟後会用灰色半透明顯示不在目前周的課程';
+  String get layoutShowOtherWeeksSubtitle => '非本週課程以半透明灰色顯示';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -25793,6 +25754,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get holidayCheckUpdate => '檢查更新';
+
+  @override
+  String get holidayAdvancedTitle => '假日資料更新';
+
+  @override
+  String get holidayAdvancedSubtitle => '手動更新假日資料與補班日';
 
   @override
   String get holidayUpcomingSectionTitle => '近期假日';
@@ -29468,9 +29435,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseCardSurfaceStyleLabel => '卡片外觀';
 
   @override
-  String get courseCardSurfaceStyleSubtitle => '選擇課程卡片的視覺風格';
-
-  @override
   String get courseCardSurfaceStyleSolid => '實體卡片';
 
   @override
@@ -29544,11 +29508,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '將把課表頁面的密度、回到當前週按鈕與背景（含清除桌布）恢復為預設值。';
 
   @override
-  String get settingsResetConfirmBodyAppearance =>
-      '將把主題模式、字型、首頁導覽型態、首頁標題、主題色與磨砂玻璃設定恢復為預設值。';
+  String get settingsResetConfirmBodyAppearance => '將把主題模式、字型、主題色與玻璃質感恢復為預設值。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget => '將把桌面小工具的顯示項目與外觀恢復為預設值。';
+
+  @override
+  String get settingsResetConfirmBodyHomeNavigation => '將把底欄、選單與首頁標題設定恢復為預設值。';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';
@@ -29911,6 +29877,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get icsExportShareSubject => '輕屿課表日曆';
 
   @override
+  String get homeNavigationTitle => '首頁與導覽';
+
+  @override
+  String get homeNavigationSubtitle => '底欄形態、選單與首頁標題';
+
+  @override
   String get homeNavigationFormLabel => '應用形態';
 
   @override
@@ -29923,8 +29895,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeNavigationFormGlassDock => '玻璃塢';
 
   @override
-  String get homeNavigationFormGlassDockSubtitle =>
-      '底部懸浮液態玻璃藥丸導覽：滑動或點擊即可在週課表、日課表與設定之間切換';
+  String get homeNavigationFormGlassDockSubtitle => '懸浮玻璃底欄，切換日/週課表';
 
   @override
   String get glassDockTabWeek => '週課表';
@@ -29957,40 +29928,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get glassDockShowDayTabTitle => '顯示日課表入口';
 
   @override
-  String get glassDockShowSettingsTabTitle => '顯示設定入口';
-
-  @override
   String get glassDockShowWeekTabTitle => '顯示週課表入口';
-
-  @override
-  String get glassDockButtonFunctionLabel => '獨立按鈕功能';
 
   @override
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
-  String get glassDockShowAddButtonTitle => '顯示新增按鈕';
-
-  @override
-  String get glassDockShowAddButtonSubtitle => '在導覽列旁顯示獨立圓形按鈕，點擊直接新增課程';
-
-  @override
   String get glassDockExtraButtonSemanticLabel => '新增課程';
-
-  @override
-  String get homeMenuStyleLabel => '右上角選單樣式';
-
-  @override
-  String get homeMenuStyleList => '列表選單';
-
-  @override
-  String get homeMenuStyleGrid => '八宮格選單';
-
-  @override
-  String get homeMenuStyleListSubtitle => '在按鈕下方彈出文字列表，全部入口一屏展示';
-
-  @override
-  String get homeMenuStyleGridSubtitle => '底部彈出圖示瓷貼，支援自訂按鈕';
 
   @override
   String get homeGridCustomizeTitle => '自訂八宮格按鈕';
