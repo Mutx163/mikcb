@@ -64,7 +64,9 @@ class _GlassDockIconPickerScreenState
           ),
           const HyperosSectionGap(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            // 水平缩进由 HyperosListView 的 listPadding 统一提供，这里只补
+            // 垂直间距；再包一层 16 会比上方分组卡窄一档。
+            padding: const EdgeInsets.symmetric(vertical: 4),
             // 输入组件不裸放在 scaffold 背景上：搜索框填充 #F0F0F0 对
             // 页面背景 #F2F2F2 无对比；按 showcase 同款惯例垫卡片给表面。
             child: HyperosCard(
@@ -76,7 +78,9 @@ class _GlassDockIconPickerScreenState
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            // 同上：水平对齐 listPadding，网格与卡片同宽；格间留白交给
+            // Wrap 的 spacing/runSpacing。
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Wrap(
               alignment: WrapAlignment.center,
               spacing: 8,
