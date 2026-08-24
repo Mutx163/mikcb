@@ -41,7 +41,7 @@ dependencies:
   fl_chart: ^1.2.0
   fast_gbk: ^1.0.0
   flutter_svg: ^2.3.0
-  image: ^4.8.0
+  image: ^4.9.2
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
