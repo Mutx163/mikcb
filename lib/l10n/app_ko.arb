@@ -5931,6 +5931,7 @@
   "courseActionMixedRelatedCount": "관련 수업 {count}개 더",
   "courseActionPartnerReadOnlyNotice": "상대방 시간표의 수업으로, 볼 수만 있고 편집이나 변경은 할 수 없습니다",
   "homeNavigationTitle": "홈 및 탐색",
+  "homeMenuCustomizeSectionTitle": "우측 상단 메뉴",
   "homeNavigationSubtitle": "하단 바 형태·메뉴·홈 제목",
   "homeNavigationFormLabel": "홈 형태",
   "homeNavigationFormClassic": "클래식",

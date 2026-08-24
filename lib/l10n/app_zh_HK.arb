@@ -5931,6 +5931,7 @@
   "courseActionMixedRelatedCount": "還有 {count} 節相關課程",
   "courseActionPartnerReadOnlyNotice": "這是對方課表中的課程，僅供查看，無法編輯或調課",
   "homeNavigationTitle": "首頁與導覽",
+  "homeMenuCustomizeSectionTitle": "右上角選單",
   "homeNavigationSubtitle": "底欄形態、選單與首頁標題",
   "homeNavigationFormLabel": "應用形態",
   "homeNavigationFormClassic": "經典形態",

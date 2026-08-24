@@ -10107,6 +10107,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeNavigationTitle => '홈 및 탐색';
 
   @override
+  String get homeMenuCustomizeSectionTitle => '우측 상단 메뉴';
+
+  @override
   String get homeNavigationSubtitle => '하단 바 형태·메뉴·홈 제목';
 
   @override

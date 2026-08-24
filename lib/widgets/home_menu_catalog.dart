@@ -377,7 +377,12 @@ List<HomeMenuEntry> resolveHomeGridMenuEntries(TimetableSettings settings) {
       resolved.add(entry);
     }
   }
-  if (resolved.isEmpty) {
+  // 自愈：历史版本对「空排列」执行 normalize 时会钉入 'settings'，把
+  // 从未配置过的档位固化成单入口；叠加八宫格编辑器入口一度缺失，用户
+  // 无法自行恢复。这种「只剩钉住项」的档位视作未配置，回退默认八项。
+  final degenerate = resolved.length == 1 &&
+      resolved.single.id == HomeGridMenu.pinnedActionId;
+  if (resolved.isEmpty || degenerate) {
     return [
       for (final id in HomeGridMenu.defaultActions) homeMenuEntryById(id),
     ]

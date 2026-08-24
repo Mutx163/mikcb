@@ -17767,6 +17767,12 @@ abstract class AppLocalizations {
   /// **'首页与导航'**
   String get homeNavigationTitle;
 
+  /// No description provided for @homeMenuCustomizeSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'右上角菜单'**
+  String get homeMenuCustomizeSectionTitle;
+
   /// No description provided for @homeNavigationSubtitle.
   ///
   /// In zh, this message translates to:

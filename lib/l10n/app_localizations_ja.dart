@@ -10064,6 +10064,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeNavigationTitle => 'ホームとナビゲーション';
 
   @override
+  String get homeMenuCustomizeSectionTitle => '右上メニュー';
+
+  @override
   String get homeNavigationSubtitle => 'ボトムバーの形式・メニュー・ホームタイトル';
 
   @override

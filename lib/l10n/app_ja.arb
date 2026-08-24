@@ -5931,6 +5931,7 @@
   "courseActionMixedRelatedCount": "あと{count}コマの関連授業",
   "courseActionPartnerReadOnlyNotice": "これは相手の時間割の授業で、閲覧のみで編集・振替はできません",
   "homeNavigationTitle": "ホームとナビゲーション",
+  "homeMenuCustomizeSectionTitle": "右上メニュー",
   "homeNavigationSubtitle": "ボトムバーの形式・メニュー・ホームタイトル",
   "homeNavigationFormLabel": "ホームフォーム",
   "homeNavigationFormClassic": "クラシック",

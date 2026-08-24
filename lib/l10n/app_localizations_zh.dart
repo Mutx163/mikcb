@@ -9788,6 +9788,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeNavigationTitle => '首页与导航';
 
   @override
+  String get homeMenuCustomizeSectionTitle => '右上角菜单';
+
+  @override
   String get homeNavigationSubtitle => '底栏形态、菜单与首页标题';
 
   @override
@@ -19834,6 +19837,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeNavigationTitle => '首頁與導覽';
 
   @override
+  String get homeMenuCustomizeSectionTitle => '右上角選單';
+
+  @override
   String get homeNavigationSubtitle => '底欄形態、選單與首頁標題';
 
   @override
@@ -29878,6 +29884,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeNavigationTitle => '首頁與導覽';
+
+  @override
+  String get homeMenuCustomizeSectionTitle => '右上角選單';
 
   @override
   String get homeNavigationSubtitle => '底欄形態、選單與首頁標題';

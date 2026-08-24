@@ -10358,6 +10358,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeNavigationTitle => 'Home & Navigation';
 
   @override
+  String get homeMenuCustomizeSectionTitle => 'Top-right menu';
+
+  @override
   String get homeNavigationSubtitle => 'Bottom bar style, menu and home title';
 
   @override

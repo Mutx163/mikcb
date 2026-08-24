@@ -16,7 +16,7 @@ class _HomeNavigationSettingsScreen extends StatefulWidget {
 class _HomeNavigationSettingsScreenState
     extends State<_HomeNavigationSettingsScreen> {
   /// Visual groups on this page (not one card per control).
-  /// 0 nav form / dock layout · 1 dock tab entries · 2 home title · 3 reset.
+  /// 0 nav form · 1 dock tabs ＋ grid-menu customize · 2 home title · 3 reset.
   static const _homeNavigationSectionCount = 4;
 
   late final TimetableProvider _timetableProvider;
@@ -99,12 +99,13 @@ class _HomeNavigationSettingsScreenState
       // 底栏入口开关（仅玻璃坞）：日/周 Tab 可分别隐藏，至少保留一个。
       // 设置 Tab 开关已按产品决策移除，但其持久化状态仍参与「至少一个」
       // 约束——历史关闭过全部入口的用户不至于被锁死在当前组合上。
-      1 => !isGlassDock
-          ? const SizedBox.shrink()
-          : Column(
+      // 底栏入口开关（仅玻璃坞）＋ 右上角「⋮」八宫格菜单的自定义入口
+      // （两种导航形态下都存在，故本分区常显）。
+      1 => Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (isGlassDock) ...[
                 const HyperosSectionGap(),
                 HyperosSettingsBlock(
                   title: l10n.glassDockEntriesSectionTitle,
@@ -133,6 +134,49 @@ class _HomeNavigationSettingsScreenState
                                 );
                               }
                             : null,
+                      ),
+                    ],
+                  ),
+                ),
+                ],
+                const HyperosSectionGap(),
+                HyperosSettingsBlock(
+                  title: l10n.homeMenuCustomizeSectionTitle,
+                  child: HyperosListGroup(
+                    children: [
+                      HyperosListTile(
+                        icon: Icons.grid_view_outlined,
+                        iconAccent: HyperosIconColors.blue,
+                        title: l10n.homeGridCustomizeTitle,
+                        details: l10n.homeGridCustomizeDetails(
+                          resolveHomeGridMenuEntries(_draft).length,
+                          HomeGridMenu.maxSlots,
+                        ),
+                        onTap: () async {
+                          await HyperosNavigation.push(
+                            context,
+                            settings: const RouteSettings(
+                              name: '/settings/home-menu',
+                            ),
+                            builder: (_) => _HomeGridMenuEditorScreen(
+                              initialIds: [
+                                for (final entry
+                                    in resolveHomeGridMenuEntries(_draft))
+                                  entry.id,
+                              ],
+                              onChanged: (ids) {
+                                _updateDraft(
+                                  _draft.copyWith(homeGridMenuActions: ids),
+                                );
+                              },
+                            ),
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            _draft =
+                                context.read<TimetableProvider>().settings;
+                          });
+                        },
                       ),
                     ],
                   ),
