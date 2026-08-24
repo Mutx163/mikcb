@@ -5711,9 +5711,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidayAdvancedTitle => '节假日数据更新';
 
   @override
-  String get holidayAdvancedSubtitle => '手动更新节假日数据与调休';
-
-  @override
   String get holidayUpcomingSectionTitle => '近期节假日';
 
   @override
@@ -15714,9 +15711,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get holidayAdvancedTitle => '假期資料更新';
-
-  @override
-  String get holidayAdvancedSubtitle => '手動更新假期資料與調休';
 
   @override
   String get holidayUpcomingSectionTitle => '近期假期';
@@ -25763,9 +25757,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get holidayAdvancedTitle => '假日資料更新';
-
-  @override
-  String get holidayAdvancedSubtitle => '手動更新假日資料與補班日';
 
   @override
   String get holidayUpcomingSectionTitle => '近期假日';

@@ -10403,12 +10403,6 @@ abstract class AppLocalizations {
   /// **'节假日数据更新'**
   String get holidayAdvancedTitle;
 
-  /// No description provided for @holidayAdvancedSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'手动更新节假日数据与调休'**
-  String get holidayAdvancedSubtitle;
-
   /// No description provided for @holidayUpcomingSectionTitle.
   ///
   /// In zh, this message translates to:

@@ -5806,9 +5806,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get holidayAdvancedTitle => '休日データの更新';
 
   @override
-  String get holidayAdvancedSubtitle => '休日データと振替出勤日を手動で更新';
-
-  @override
   String get holidayUpcomingSectionTitle => '近日の休日';
 
   @override

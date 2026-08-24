@@ -5838,9 +5838,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holidayAdvancedTitle => '공휴일 데이터 업데이트';
 
   @override
-  String get holidayAdvancedSubtitle => '공휴일 데이터와 대체 근무일을 수동으로 업데이트';
-
-  @override
   String get holidayUpcomingSectionTitle => '다가오는 공휴일';
 
   @override

@@ -3179,7 +3179,6 @@
   "holidayDataEmpty": "休日データなし",
   "holidayCheckUpdate": "更新を確認",
   "holidayAdvancedTitle": "休日データの更新",
-  "holidayAdvancedSubtitle": "休日データと振替出勤日を手動で更新",
   "holidayUpcomingSectionTitle": "近日の休日",
   "holidayNoUpcoming": "近日休日なし",
   "holidayBadgeLabel": "休",

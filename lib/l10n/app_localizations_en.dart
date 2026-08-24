@@ -6047,10 +6047,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayAdvancedTitle => 'Holiday Data Update';
 
   @override
-  String get holidayAdvancedSubtitle =>
-      'Manually update holiday data and makeup workdays';
-
-  @override
   String get holidayUpcomingSectionTitle => 'Upcoming Holidays';
 
   @override
