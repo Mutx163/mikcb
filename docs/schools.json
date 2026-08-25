@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-24T02:47:39+00:00",
+  "updatedAt": "2026-08-25T02:41:25+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 147,
-    "schools": 142,
+    "total": 148,
+    "schools": 143,
     "generic": 5
   },
   "schools": [
@@ -629,6 +629,13 @@
       "name": "南昌航空大学科技学院",
       "initial": "N",
       "resourceFolder": "STCNCHU",
+      "category": "school"
+    },
+    {
+      "id": "NTU",
+      "name": "南通大学",
+      "initial": "N",
+      "resourceFolder": "NTU",
       "category": "school"
     },
     {
