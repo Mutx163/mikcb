@@ -97,6 +97,7 @@ object StatsWidgetSupport {
     fun updateAll(context: Context) {
         StatsCompactWidgetProvider.updateAll(context)
         StatsMediumWidgetProvider.updateAll(context)
+        StatsStripWidgetProvider.updateAll(context)
     }
 
     fun deltaLabel(context: Context, delta: Int): String {

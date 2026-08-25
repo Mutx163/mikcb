@@ -1061,6 +1061,7 @@ class MainActivity : FlutterActivity() {
             "stats_compact" -> StatsCompactWidgetProvider::class.java
             "stats_medium" -> StatsMediumWidgetProvider::class.java
             "today_strip" -> TodayStripWidgetProvider::class.java
+            "stats_strip" -> StatsStripWidgetProvider::class.java
             else -> null
         } ?: return null
         return ComponentName(this, providerClass)

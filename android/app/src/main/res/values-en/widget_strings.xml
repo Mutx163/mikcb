@@ -7,6 +7,7 @@
     <string name="widget_stats_compact_name">Course Stats 2×2</string>
     <string name="widget_stats_medium_name">Course Stats 2×4</string>
   <string name="widget_today_strip_name">Today bar 4×1</string>
+  <string name="widget_stats_strip_name">Stats bar 4×1</string>
 
     <string name="widget_today_courses">Today</string>
     <string name="widget_tomorrow_courses">Tomorrow</string>

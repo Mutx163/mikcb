@@ -15,7 +15,8 @@ enum HomeWidgetPinTarget {
   large44('large'),
   stats22('stats_compact'),
   stats24('stats_medium'),
-  todayStrip41('today_strip');
+  todayStrip41('today_strip'),
+  statsStrip41('stats_strip');
 
   const HomeWidgetPinTarget(this.value);
 

@@ -7,6 +7,7 @@
     <string name="widget_stats_compact_name">授業統計 2×2</string>
     <string name="widget_stats_medium_name">授業統計 2×4</string>
   <string name="widget_today_strip_name">今日バー 4×1</string>
+  <string name="widget_stats_strip_name">統計バー 4×1</string>
 
     <string name="widget_today_courses">今日の授業</string>
     <string name="widget_tomorrow_courses">明日の授業</string>

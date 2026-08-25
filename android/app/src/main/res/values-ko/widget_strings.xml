@@ -7,6 +7,7 @@
     <string name="widget_stats_compact_name">수업 통계 2×2</string>
     <string name="widget_stats_medium_name">수업 통계 2×4</string>
   <string name="widget_today_strip_name">오늘 바 4×1</string>
+  <string name="widget_stats_strip_name">통계 바 4×1</string>
 
     <string name="widget_today_courses">오늘 수업</string>
     <string name="widget_tomorrow_courses">내일 수업</string>

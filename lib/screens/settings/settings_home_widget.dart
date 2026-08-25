@@ -147,7 +147,11 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(child: SizedBox()),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.statsStrip41,
+                        ),
+                      ),
                     ],
                   ),
                 ],
