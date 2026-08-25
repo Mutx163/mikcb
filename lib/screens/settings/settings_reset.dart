@@ -99,6 +99,11 @@ TimetableSettings applySettingsReset(
       frostedSheetTintAlpha: d.frostedSheetTintAlpha,
       frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
       liquidGlassTuning: d.liquidGlassTuning,
+      liquidGlassPopupEnabled: d.liquidGlassPopupEnabled,
+      liquidGlassSelectSheetEnabled: d.liquidGlassSelectSheetEnabled,
+      liquidGlassSheetDialogEnabled: d.liquidGlassSheetDialogEnabled,
+      liquidGlassHomeChromeEnabled: d.liquidGlassHomeChromeEnabled,
+      liquidGlassDockEnabled: d.liquidGlassDockEnabled,
     ),
     // 已删除 UI 的字段（设置 Tab、右上角菜单形态、内容避让布局、
     // 日/周布尔开关——已被 glassDockActions 取代）不纳入任何 scope。

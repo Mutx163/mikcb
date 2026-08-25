@@ -222,93 +222,161 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      3 => HyperosSettingsBlock(
-        title: l10n.frostedSheetSectionTitle,
-        child: HyperosListGroup(
-          children: [
-            HyperosSelectTile<FrostedGlassMode>(
-              label: l10n.frostedGlassModeLabel,
-              items: {
-                for (final mode in FrostedGlassMode.values)
-                  frostedGlassModeLabel(l10n, mode): mode,
-              },
-              value: _draft.frostedGlassMode,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(frostedGlassMode: value));
-              },
+      3 => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HyperosSettingsBlock(
+            title: l10n.frostedSheetSectionTitle,
+            child: HyperosListGroup(
+              children: [
+                HyperosSelectTile<FrostedGlassMode>(
+                  label: l10n.frostedGlassModeLabel,
+                  items: {
+                    for (final mode in FrostedGlassMode.values)
+                      frostedGlassModeLabel(l10n, mode): mode,
+                  },
+                  value: _draft.frostedGlassMode,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(frostedGlassMode: value));
+                  },
+                ),
+                HyperosSwitchTile(
+                  title: l10n.frostedBlurEnabledTitle,
+                  value: _draft.frostedBlurEnabled,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(frostedBlurEnabled: value));
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: FrostedSheetSettingsPreview(
+                    provider: provider,
+                    settings: _draft,
+                    week: provider.currentWeek,
+                    blurSigma: _draft.frostedSheetBlurSigma,
+                    tintAlpha: _draft.frostedSheetTintAlpha,
+                    barrierAlpha: _draft.frostedSheetBarrierAlpha,
+                    blurEnabled: _draft.frostedBlurEnabled,
+                    glassMode: _draft.frostedGlassMode,
+                    liquidGlassTuning: _draft.liquidGlassTuning,
+                    onOpenDemoSheet: () => showFrostedSheetSettingsDemo(context),
+                  ),
+                ),
+                if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass)
+                  HyperosListTile(
+                    title: l10n.advancedMaterialTitle,
+                    details: l10n.advancedMaterialEntrySubtitle,
+                    onTap: () async {
+                      await HyperosNavigation.push(
+                        context,
+                        settings: const RouteSettings(
+                          name: '/settings/advanced-material',
+                        ),
+                        builder: (_) => const AdvancedMaterialSettingsScreen(),
+                      );
+                      if (!mounted) return;
+                      setState(() {
+                        _draft = context.read<TimetableProvider>().settings;
+                      });
+                    },
+                  ),
+                if (_draft.frostedGlassMode == FrostedGlassMode.gaussian) ...[
+                  HyperosSliderTile(
+                    title: l10n.frostedSheetBlurLabel,
+                    value: _draft.frostedSheetBlurSigma,
+                    min: 0,
+                    max: 24,
+                    divisions: 24,
+                    valueLabel: _draft.frostedSheetBlurSigma.toStringAsFixed(0),
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(frostedSheetBlurSigma: value),
+                        debounce: true,
+                      );
+                    },
+                  ),
+                  HyperosSliderTile(
+                    title: l10n.frostedSheetTintLabel,
+                    value: _draft.frostedSheetTintAlpha,
+                    min: 0,
+                    max: 0.75,
+                    divisions: 75,
+                    valueLabel: '${(_draft.frostedSheetTintAlpha * 100).round()}%',
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(frostedSheetTintAlpha: value),
+                        debounce: true,
+                      );
+                    },
+                  ),
+                ],
+              ],
             ),
-            HyperosSwitchTile(
-              title: l10n.frostedBlurEnabledTitle,
-              value: _draft.frostedBlurEnabled,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(frostedBlurEnabled: value));
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: FrostedSheetSettingsPreview(
-                provider: provider,
-                settings: _draft,
-                week: provider.currentWeek,
-                blurSigma: _draft.frostedSheetBlurSigma,
-                tintAlpha: _draft.frostedSheetTintAlpha,
-                barrierAlpha: _draft.frostedSheetBarrierAlpha,
-                blurEnabled: _draft.frostedBlurEnabled,
-                glassMode: _draft.frostedGlassMode,
-                liquidGlassTuning: _draft.liquidGlassTuning,
-                onOpenDemoSheet: () => showFrostedSheetSettingsDemo(context),
+          ),
+          // 液态玻璃作用范围：全局模式为液态玻璃时，允许逐表面家族关闭
+          // 折射材质（关闭的家族回退高斯磨砂；模糊总开关关时回落实底）。
+          // 默认：下拉选择弹窗开、全屏选择面板关、其余家族开。
+          if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass) ...[
+            const HyperosSectionGap(),
+            HyperosSettingsBlock(
+              title: l10n.liquidGlassScopeSectionTitle,
+              child: HyperosListGroup(
+                children: [
+                  HyperosSwitchTile(
+                    title: l10n.liquidGlassScopePopupTitle,
+                    subtitle: l10n.liquidGlassScopePopupSubtitle,
+                    value: _draft.liquidGlassPopupEnabled,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(liquidGlassPopupEnabled: value),
+                      );
+                    },
+                  ),
+                  HyperosSwitchTile(
+                    title: l10n.liquidGlassScopeSelectSheetTitle,
+                    subtitle: l10n.liquidGlassScopeSelectSheetSubtitle,
+                    value: _draft.liquidGlassSelectSheetEnabled,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(liquidGlassSelectSheetEnabled: value),
+                      );
+                    },
+                  ),
+                  HyperosSwitchTile(
+                    title: l10n.liquidGlassScopeSheetDialogTitle,
+                    subtitle: l10n.liquidGlassScopeSheetDialogSubtitle,
+                    value: _draft.liquidGlassSheetDialogEnabled,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(liquidGlassSheetDialogEnabled: value),
+                      );
+                    },
+                  ),
+                  HyperosSwitchTile(
+                    title: l10n.liquidGlassScopeHomeChromeTitle,
+                    subtitle: l10n.liquidGlassScopeHomeChromeSubtitle,
+                    value: _draft.liquidGlassHomeChromeEnabled,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(liquidGlassHomeChromeEnabled: value),
+                      );
+                    },
+                  ),
+                  HyperosSwitchTile(
+                    title: l10n.liquidGlassScopeDockTitle,
+                    subtitle: l10n.liquidGlassScopeDockSubtitle,
+                    value: _draft.liquidGlassDockEnabled,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(liquidGlassDockEnabled: value),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass)
-              HyperosListTile(
-                title: l10n.advancedMaterialTitle,
-                details: l10n.advancedMaterialEntrySubtitle,
-                onTap: () async {
-                  await HyperosNavigation.push(
-                    context,
-                    settings: const RouteSettings(
-                      name: '/settings/advanced-material',
-                    ),
-                    builder: (_) => const AdvancedMaterialSettingsScreen(),
-                  );
-                  if (!mounted) return;
-                  setState(() {
-                    _draft = context.read<TimetableProvider>().settings;
-                  });
-                },
-              ),
-            if (_draft.frostedGlassMode == FrostedGlassMode.gaussian) ...[
-              HyperosSliderTile(
-                title: l10n.frostedSheetBlurLabel,
-                value: _draft.frostedSheetBlurSigma,
-                min: 0,
-                max: 24,
-                divisions: 24,
-                valueLabel: _draft.frostedSheetBlurSigma.toStringAsFixed(0),
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(frostedSheetBlurSigma: value),
-                    debounce: true,
-                  );
-                },
-              ),
-              HyperosSliderTile(
-                title: l10n.frostedSheetTintLabel,
-                value: _draft.frostedSheetTintAlpha,
-                min: 0,
-                max: 0.75,
-                divisions: 75,
-                valueLabel: '${(_draft.frostedSheetTintAlpha * 100).round()}%',
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(frostedSheetTintAlpha: value),
-                    debounce: true,
-                  );
-                },
-              ),
-            ],
           ],
-        ),
+        ],
       ),
       4 => _SettingsResetTile(
         scope: SettingsResetScope.appearance,

@@ -9859,6 +9859,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeLabel => 'Glass Mode';
 
   @override
+  String get liquidGlassScopeSectionTitle => 'Liquid Glass Surfaces';
+
+  @override
+  String get liquidGlassScopePopupTitle => 'Dropdown popups';
+
+  @override
+  String get liquidGlassScopePopupSubtitle =>
+      'Small anchored menus opened from settings rows like Glass Mode';
+
+  @override
+  String get liquidGlassScopeSelectSheetTitle => 'Fullscreen picker panels';
+
+  @override
+  String get liquidGlassScopeSelectSheetSubtitle =>
+      'Long-list selection dialogs such as Preset Themes and Fonts; frosted by default';
+
+  @override
+  String get liquidGlassScopeSheetDialogTitle => 'Sheets & dialogs';
+
+  @override
+  String get liquidGlassScopeSheetDialogSubtitle =>
+      'Bottom sheets, confirm dialogs and action menus';
+
+  @override
+  String get liquidGlassScopeHomeChromeTitle => 'Home chrome glass';
+
+  @override
+  String get liquidGlassScopeHomeChromeSubtitle =>
+      'Glass band behind the title bar and weekday bar';
+
+  @override
+  String get liquidGlassScopeDockTitle => 'Glass dock navigation';
+
+  @override
+  String get liquidGlassScopeDockSubtitle =>
+      'Floating bottom pill and add-course button';
+
+  @override
   String get frostedGlassModeFrosted => 'Classic Frosted';
 
   @override

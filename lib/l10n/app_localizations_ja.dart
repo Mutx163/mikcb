@@ -9581,6 +9581,40 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeLabel => 'ガラスモード';
 
   @override
+  String get liquidGlassScopeSectionTitle => 'リキッドガラスの適用範囲';
+
+  @override
+  String get liquidGlassScopePopupTitle => 'プルダウンポップアップ';
+
+  @override
+  String get liquidGlassScopePopupSubtitle => 'ガラスモードなど設定行から開く小さなアンカーメニュー';
+
+  @override
+  String get liquidGlassScopeSelectSheetTitle => '全画面セレクターパネル';
+
+  @override
+  String get liquidGlassScopeSelectSheetSubtitle =>
+      'プリセットテーマやフォントなど長いリストの選択ダイアログ。既定はすりガラス';
+
+  @override
+  String get liquidGlassScopeSheetDialogTitle => 'シートとダイアログ';
+
+  @override
+  String get liquidGlassScopeSheetDialogSubtitle => 'ボトムシート、確認ダイアログ、アクションメニュー';
+
+  @override
+  String get liquidGlassScopeHomeChromeTitle => 'ホームのガラス帯';
+
+  @override
+  String get liquidGlassScopeHomeChromeSubtitle => 'タイトルバーと曜日バーのガラス背景';
+
+  @override
+  String get liquidGlassScopeDockTitle => 'ガラスドック操作';
+
+  @override
+  String get liquidGlassScopeDockSubtitle => '下部のフローティングピルと授業追加ボタン';
+
+  @override
   String get frostedGlassModeFrosted => 'クラシックフロスト';
 
   @override

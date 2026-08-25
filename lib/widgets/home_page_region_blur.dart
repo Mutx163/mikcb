@@ -61,6 +61,7 @@ int homePageChromeSettleFrameCount({
   required bool headerBlurEnabled,
   required bool weekdayBarBlurEnabled,
   required FrostedGlassMode glassMode,
+  bool homeChromeLiquidGlassEnabled = true,
 }) {
   if (!hasBackdrop || !frostedBlurEnabled) {
     return 0;
@@ -68,7 +69,10 @@ int homePageChromeSettleFrameCount({
   if (!headerBlurEnabled && !weekdayBarBlurEnabled) {
     return 0;
   }
-  return glassMode == FrostedGlassMode.liquidGlass ? 2 : 1;
+  // 「液态玻璃作用范围 → 首页玻璃带」关闭时按高斯磨砂结算。
+  final chromeIsLiquid = glassMode == FrostedGlassMode.liquidGlass &&
+      homeChromeLiquidGlassEnabled;
+  return chromeIsLiquid ? 2 : 1;
 }
 
 HomePageBackgroundVisual homePageRegionChromeVisual({
@@ -254,7 +258,10 @@ class HomePageChromeGlassFill extends StatelessWidget {
   static Color standInWashColor(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
-    if (useBlur && appearance.glassMode == FrostedGlassMode.liquidGlass) {
+    // 与 [HomePageChromeGlassFill.build] 同判：家族开关关 → 磨砂洗色。
+    if (useBlur &&
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassHomeChromeEnabled) {
       return HyperosLiquidGlassSurface.settingsForRole(
         role: HyperosLiquidGlassRole.header,
         brightness: Theme.of(context).brightness,
@@ -270,8 +277,12 @@ class HomePageChromeGlassFill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final glassMode = FrostedAppearanceScope.of(context).glassMode;
-    final useLiquidGlass = useBlur && glassMode == FrostedGlassMode.liquidGlass;
+    final appearance = FrostedAppearanceScope.of(context);
+    // 「液态玻璃作用范围 → 首页玻璃带」关闭时回退磨砂材质。
+    final useLiquidGlass =
+        useBlur &&
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassHomeChromeEnabled;
 
     const fill = SizedBox.expand();
 

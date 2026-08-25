@@ -16825,6 +16825,72 @@ abstract class AppLocalizations {
   /// **'玻璃模式'**
   String get frostedGlassModeLabel;
 
+  /// No description provided for @liquidGlassScopeSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃作用范围'**
+  String get liquidGlassScopeSectionTitle;
+
+  /// No description provided for @liquidGlassScopePopupTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'下拉选择弹窗'**
+  String get liquidGlassScopePopupTitle;
+
+  /// No description provided for @liquidGlassScopePopupSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'玻璃模式等设置行弹出的小气泡菜单'**
+  String get liquidGlassScopePopupSubtitle;
+
+  /// No description provided for @liquidGlassScopeSelectSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'全屏选择面板'**
+  String get liquidGlassScopeSelectSheetTitle;
+
+  /// No description provided for @liquidGlassScopeSelectSheetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'预设主题、字体等长列表选择弹窗，默认保持磨砂'**
+  String get liquidGlassScopeSelectSheetSubtitle;
+
+  /// No description provided for @liquidGlassScopeSheetDialogTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'弹窗与对话框'**
+  String get liquidGlassScopeSheetDialogTitle;
+
+  /// No description provided for @liquidGlassScopeSheetDialogSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部弹窗、确认对话框与操作菜单'**
+  String get liquidGlassScopeSheetDialogSubtitle;
+
+  /// No description provided for @liquidGlassScopeHomeChromeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页玻璃带'**
+  String get liquidGlassScopeHomeChromeTitle;
+
+  /// No description provided for @liquidGlassScopeHomeChromeSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'标题栏与星期栏的玻璃背景带'**
+  String get liquidGlassScopeHomeChromeSubtitle;
+
+  /// No description provided for @liquidGlassScopeDockTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'玻璃坞导航'**
+  String get liquidGlassScopeDockTitle;
+
+  /// No description provided for @liquidGlassScopeDockSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部悬浮药丸与加课圆钮'**
+  String get liquidGlassScopeDockSubtitle;
+
   /// No description provided for @frostedGlassModeFrosted.
   ///
   /// In zh, this message translates to:

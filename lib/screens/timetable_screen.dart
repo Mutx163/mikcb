@@ -552,8 +552,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         final homePreblurSigma = resolveHomePreblurSigma(
           gaussianCardsDrive:
               backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian,
+          // 预模糊位图服务的是首页玻璃带/摘要卡，跟随「首页玻璃带」开关。
           liquidGlassChrome:
-              dockAppearance.glassMode == FrostedGlassMode.liquidGlass,
+              dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+              dockAppearance.liquidGlassHomeChromeEnabled,
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
@@ -6536,8 +6538,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       dockBtnQuality = null; // 包原版自适应质量
     } else {
       final dockAppearance = FrostedAppearanceScope.of(context);
+      // 「液态玻璃作用范围 → 玻璃坞导航」关闭时圆钮回退磨砂药丸材质。
       final dockUseLiquidGlass =
           dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+          dockAppearance.liquidGlassDockEnabled &&
           !LiquidGlassDegradation.shouldDegrade(context);
       final dockIsDark = Theme.of(context).brightness == Brightness.dark;
       dockBtnSettings = dockUseLiquidGlass
@@ -6643,8 +6647,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     //   sheetSettingsFor（跟随「液态玻璃调校」）+ premium 完整折射；
     // - 标准/高斯：退化为高斯模糊药丸（blur/tint 与弹窗 frosted 一致）。
     final appearance = FrostedAppearanceScope.of(context);
+    // 「液态玻璃作用范围 → 玻璃坞导航」关闭时底栏回退磨砂药丸。
     final useLiquidGlass = !_kStockDockGlass &&
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassDockEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
     // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
     // （'day'/'week' 视图动作 + 目录任意条目，含设置页）。
@@ -6883,8 +6889,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 液态玻璃模式下用真折射圆角玻璃，而不是高斯模糊磨砂——
     // 与底栏/独立按钮同一套材质语言。
     final dockAppearance = FrostedAppearanceScope.of(context);
+    // 「液态玻璃作用范围 → 玻璃坞导航」关闭时回浮按钮回磨砂圆片。
     final useLiquidGlassMaterial =
         dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+        dockAppearance.liquidGlassDockEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
 
     final glassDockForm =

@@ -45,6 +45,16 @@ enum HyperosSheetChrome {
   edge,
 }
 
+/// 本框的液态玻璃材质受「液态玻璃作用范围」哪一档开关控制。
+enum HyperosSheetLiquidGlassGroup {
+  /// 底部弹窗与对话框（showHyperosSheet / HyperosDialog 系，默认开）。
+  sheetDialog,
+
+  /// 对话式全屏选择面板——预设主题、字体等长列表选择弹窗（默认关：
+  /// 大面积折射在长列表上偏炫且更费电，默认保持经典磨砂）。
+  selectSheet,
+}
+
 /// Provides default [HyperosSheetChrome] for nested [HyperosSheetFrame]s.
 class HyperosSheetChromeScope extends InheritedWidget {
   const HyperosSheetChromeScope({
@@ -86,6 +96,7 @@ class HyperosSheetFrame extends StatelessWidget {
     this.chrome,
     this.liquidGlassRole = HyperosLiquidGlassRole.modal,
     this.liquidGlassContentLegibilityFill = true,
+    this.liquidGlassGroup = HyperosSheetLiquidGlassGroup.sheetDialog,
   });
 
   final Widget child;
@@ -113,6 +124,19 @@ class HyperosSheetFrame extends StatelessWidget {
   /// the same look as anchored popups on light pages. Set false explicitly
   /// for a deliberately clear-glass surface.
   final bool liquidGlassContentLegibilityFill;
+
+  /// 「液态玻璃作用范围」开关档位：本框液态材质跟随弹窗对话框（默认）
+  /// 还是对话式全屏选择面板（预设主题等长列表选择弹窗）。
+  final HyperosSheetLiquidGlassGroup liquidGlassGroup;
+
+  /// 本框当前是否允许使用液态玻璃材质（全局模式 × 家族开关）。
+  bool _liquidGlassAllowed(FrostedAppearance appearance) =>
+      switch (liquidGlassGroup) {
+        HyperosSheetLiquidGlassGroup.sheetDialog =>
+          appearance.liquidGlassSheetDialogEnabled,
+        HyperosSheetLiquidGlassGroup.selectSheet =>
+          appearance.liquidGlassSelectSheetEnabled,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +275,9 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while the nested
     // tiles keep rendering liquid glass.
+    // 「液态玻璃作用范围」对应家族开关关闭时，整框回退磨砂/实底材质。
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        _liquidGlassAllowed(appearance) &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosLiquidGlassSurface(
         role: liquidGlassRole,
@@ -301,7 +327,9 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while nested
     // tiles keep rendering liquid glass.
+    // 「液态玻璃作用范围」对应家族开关关闭时，整框回退磨砂/实底材质。
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        _liquidGlassAllowed(appearance) &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosFrostedPanelScope(
         child: HyperosLiquidGlassSurface(

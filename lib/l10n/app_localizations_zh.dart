@@ -9310,6 +9310,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
+  String get liquidGlassScopeSectionTitle => '液态玻璃作用范围';
+
+  @override
+  String get liquidGlassScopePopupTitle => '下拉选择弹窗';
+
+  @override
+  String get liquidGlassScopePopupSubtitle => '玻璃模式等设置行弹出的小气泡菜单';
+
+  @override
+  String get liquidGlassScopeSelectSheetTitle => '全屏选择面板';
+
+  @override
+  String get liquidGlassScopeSelectSheetSubtitle => '预设主题、字体等长列表选择弹窗，默认保持磨砂';
+
+  @override
+  String get liquidGlassScopeSheetDialogTitle => '弹窗与对话框';
+
+  @override
+  String get liquidGlassScopeSheetDialogSubtitle => '底部弹窗、确认对话框与操作菜单';
+
+  @override
+  String get liquidGlassScopeHomeChromeTitle => '首页玻璃带';
+
+  @override
+  String get liquidGlassScopeHomeChromeSubtitle => '标题栏与星期栏的玻璃背景带';
+
+  @override
+  String get liquidGlassScopeDockTitle => '玻璃坞导航';
+
+  @override
+  String get liquidGlassScopeDockSubtitle => '底部悬浮药丸与加课圆钮';
+
+  @override
   String get frostedGlassModeFrosted => '经典磨砂';
 
   @override
@@ -19419,6 +19452,39 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
+  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍';
+
+  @override
+  String get liquidGlassScopePopupTitle => '下拉選擇彈窗';
+
+  @override
+  String get liquidGlassScopePopupSubtitle => '玻璃模式等設定列彈出的小氣泡選單';
+
+  @override
+  String get liquidGlassScopeSelectSheetTitle => '全螢幕選擇面板';
+
+  @override
+  String get liquidGlassScopeSelectSheetSubtitle => '預設主題、字體等長列表選擇彈窗，預設保持磨砂';
+
+  @override
+  String get liquidGlassScopeSheetDialogTitle => '彈窗與對話框';
+
+  @override
+  String get liquidGlassScopeSheetDialogSubtitle => '底部彈窗、確認對話框與動作選單';
+
+  @override
+  String get liquidGlassScopeHomeChromeTitle => '首頁玻璃帶';
+
+  @override
+  String get liquidGlassScopeHomeChromeSubtitle => '標題列與星期列的玻璃背景帶';
+
+  @override
+  String get liquidGlassScopeDockTitle => '玻璃塢導航';
+
+  @override
+  String get liquidGlassScopeDockSubtitle => '底部懸浮藥丸與加課圓鈕';
+
+  @override
   String get frostedGlassModeFrosted => '經典磨砂';
 
   @override
@@ -29526,6 +29592,39 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍';
+
+  @override
+  String get liquidGlassScopePopupTitle => '下拉選擇彈窗';
+
+  @override
+  String get liquidGlassScopePopupSubtitle => '玻璃模式等設定列彈出的小氣泡選單';
+
+  @override
+  String get liquidGlassScopeSelectSheetTitle => '全螢幕選擇面板';
+
+  @override
+  String get liquidGlassScopeSelectSheetSubtitle => '預設主題、字體等長列表選擇彈窗，預設保持磨砂';
+
+  @override
+  String get liquidGlassScopeSheetDialogTitle => '彈窗與對話框';
+
+  @override
+  String get liquidGlassScopeSheetDialogSubtitle => '底部彈窗、確認對話框與動作選單';
+
+  @override
+  String get liquidGlassScopeHomeChromeTitle => '首頁玻璃帶';
+
+  @override
+  String get liquidGlassScopeHomeChromeSubtitle => '標題列與星期列的玻璃背景帶';
+
+  @override
+  String get liquidGlassScopeDockTitle => '玻璃塢導航';
+
+  @override
+  String get liquidGlassScopeDockSubtitle => '底部懸浮藥丸與加課圓鈕';
 
   @override
   String get frostedGlassModeFrosted => '經典磨砂';

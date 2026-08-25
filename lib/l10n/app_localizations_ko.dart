@@ -9624,6 +9624,40 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeLabel => '유리 모드';
 
   @override
+  String get liquidGlassScopeSectionTitle => '액체 유리 적용 범위';
+
+  @override
+  String get liquidGlassScopePopupTitle => '드롭다운 팝업';
+
+  @override
+  String get liquidGlassScopePopupSubtitle => '유리 모드 등 설정 행에서 열리는 작은 앵커 메뉴';
+
+  @override
+  String get liquidGlassScopeSelectSheetTitle => '전체 화면 선택 패널';
+
+  @override
+  String get liquidGlassScopeSelectSheetSubtitle =>
+      '프리셋 테마, 글꼴 등 긴 목록 선택 대화상자. 기본은 블러 유지';
+
+  @override
+  String get liquidGlassScopeSheetDialogTitle => '시트 및 대화상자';
+
+  @override
+  String get liquidGlassScopeSheetDialogSubtitle => '바텀 시트, 확인 대화상자, 작업 메뉴';
+
+  @override
+  String get liquidGlassScopeHomeChromeTitle => '홈 유리 밴드';
+
+  @override
+  String get liquidGlassScopeHomeChromeSubtitle => '제목 표시줄과 요일 표시줄의 유리 배경';
+
+  @override
+  String get liquidGlassScopeDockTitle => '글래스 독 내비게이션';
+
+  @override
+  String get liquidGlassScopeDockSubtitle => '하단 플로팅 필과 수업 추가 버튼';
+
+  @override
   String get frostedGlassModeFrosted => '클래식 프로스트';
 
   @override

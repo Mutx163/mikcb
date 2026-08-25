@@ -472,8 +472,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     // Liquid glass owns its own blur/refraction and must not be gated by the
     // platform BackdropFilter capability. Otherwise anchored popups become
     // solid surfaces on desktop while sheets and headers keep their glass.
+    // 「液态玻璃作用范围 → 下拉选择弹窗」关闭时回退磨砂/实底材质。
     final useLiquidGlass =
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassPopupEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
 
     if (useLiquidGlass) {
@@ -561,6 +563,9 @@ Future<T?> showHyperosSelectSheet<T>({
       return HyperosSheetFrame(
         chrome: HyperosSheetChrome.floating,
         frosted: true,
+        // 对话式选择面板走「液态玻璃作用范围 → 全屏选择面板」开关
+        //（默认关）：预设主题/字体等长列表弹窗默认保持磨砂材质。
+        liquidGlassGroup: HyperosSheetLiquidGlassGroup.selectSheet,
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,

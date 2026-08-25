@@ -1147,6 +1147,14 @@ class TimetableSettings {
   static const double defaultFrostedSheetTintAlpha = 0.70;
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
+
+  /// 液态玻璃作用范围默认值：下拉选择小弹窗开；对话式全屏选择面板关
+  /// （大面积折射长列表默认保持磨砂）；其余家族维持既有行为（开）。
+  static const bool defaultLiquidGlassPopupEnabled = true;
+  static const bool defaultLiquidGlassSelectSheetEnabled = false;
+  static const bool defaultLiquidGlassSheetDialogEnabled = true;
+  static const bool defaultLiquidGlassHomeChromeEnabled = true;
+  static const bool defaultLiquidGlassDockEnabled = true;
   static const double defaultPageTransitionSpeed = 1.0;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
@@ -1344,6 +1352,11 @@ class TimetableSettings {
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
     liquidGlassTuning: liquidGlassTuning,
+    liquidGlassPopupEnabled: liquidGlassPopupEnabled,
+    liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
+    liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
+    liquidGlassHomeChromeEnabled: liquidGlassHomeChromeEnabled,
+    liquidGlassDockEnabled: liquidGlassDockEnabled,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1352,6 +1365,13 @@ class TimetableSettings {
   final double frostedSheetBarrierAlpha;
   final bool frostedBlurEnabled;
   final FrostedGlassMode frostedGlassMode;
+
+  /// 液态玻璃作用范围开关（见 [FrostedAppearance] 同名字段）。
+  final bool liquidGlassPopupEnabled;
+  final bool liquidGlassSelectSheetEnabled;
+  final bool liquidGlassSheetDialogEnabled;
+  final bool liquidGlassHomeChromeEnabled;
+  final bool liquidGlassDockEnabled;
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
   final LiquidGlassPreset liquidGlassPreset;
   final LiquidGlassTuning? liquidGlassTuning;
@@ -1521,6 +1541,14 @@ class TimetableSettings {
     this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
     this.frostedGlassMode = FrostedGlassMode.frosted,
+    this.liquidGlassPopupEnabled = defaultLiquidGlassPopupEnabled,
+    this.liquidGlassSelectSheetEnabled =
+        defaultLiquidGlassSelectSheetEnabled,
+    this.liquidGlassSheetDialogEnabled =
+        defaultLiquidGlassSheetDialogEnabled,
+    this.liquidGlassHomeChromeEnabled =
+        defaultLiquidGlassHomeChromeEnabled,
+    this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,
     this.liquidGlassTuning,
@@ -1857,6 +1885,11 @@ class TimetableSettings {
       'frostedSheetBarrierAlpha': frostedSheetBarrierAlpha,
       'frostedBlurEnabled': frostedBlurEnabled,
       'frostedGlassMode': frostedGlassMode.value,
+      'liquidGlassPopupEnabled': liquidGlassPopupEnabled,
+      'liquidGlassSelectSheetEnabled': liquidGlassSelectSheetEnabled,
+      'liquidGlassSheetDialogEnabled': liquidGlassSheetDialogEnabled,
+      'liquidGlassHomeChromeEnabled': liquidGlassHomeChromeEnabled,
+      'liquidGlassDockEnabled': liquidGlassDockEnabled,
       'courseCardSurfaceStyle': courseCardSurfaceStyle.value,
       'liquidGlassPreset': liquidGlassPreset.value,
       if (liquidGlassTuning != null)
@@ -2268,6 +2301,21 @@ class TimetableSettings {
       frostedGlassMode: FrostedGlassModeX.fromValue(
         json['frostedGlassMode'] as String?,
       ),
+      liquidGlassPopupEnabled:
+          json['liquidGlassPopupEnabled'] as bool? ??
+          defaultLiquidGlassPopupEnabled,
+      liquidGlassSelectSheetEnabled:
+          json['liquidGlassSelectSheetEnabled'] as bool? ??
+          defaultLiquidGlassSelectSheetEnabled,
+      liquidGlassSheetDialogEnabled:
+          json['liquidGlassSheetDialogEnabled'] as bool? ??
+          defaultLiquidGlassSheetDialogEnabled,
+      liquidGlassHomeChromeEnabled:
+          json['liquidGlassHomeChromeEnabled'] as bool? ??
+          defaultLiquidGlassHomeChromeEnabled,
+      liquidGlassDockEnabled:
+          json['liquidGlassDockEnabled'] as bool? ??
+          defaultLiquidGlassDockEnabled,
       courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
         json['courseCardSurfaceStyle'] as String?,
       ),
@@ -2480,6 +2528,11 @@ class TimetableSettings {
     double? frostedSheetBarrierAlpha,
     bool? frostedBlurEnabled,
     FrostedGlassMode? frostedGlassMode,
+    bool? liquidGlassPopupEnabled,
+    bool? liquidGlassSelectSheetEnabled,
+    bool? liquidGlassSheetDialogEnabled,
+    bool? liquidGlassHomeChromeEnabled,
+    bool? liquidGlassDockEnabled,
     CourseCardSurfaceStyle? courseCardSurfaceStyle,
     LiquidGlassPreset? liquidGlassPreset,
     LiquidGlassTuning? liquidGlassTuning,
@@ -2797,6 +2850,16 @@ class TimetableSettings {
           frostedSheetBarrierAlpha ?? this.frostedSheetBarrierAlpha,
       frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
       frostedGlassMode: frostedGlassMode ?? this.frostedGlassMode,
+      liquidGlassPopupEnabled:
+          liquidGlassPopupEnabled ?? this.liquidGlassPopupEnabled,
+      liquidGlassSelectSheetEnabled:
+          liquidGlassSelectSheetEnabled ?? this.liquidGlassSelectSheetEnabled,
+      liquidGlassSheetDialogEnabled:
+          liquidGlassSheetDialogEnabled ?? this.liquidGlassSheetDialogEnabled,
+      liquidGlassHomeChromeEnabled:
+          liquidGlassHomeChromeEnabled ?? this.liquidGlassHomeChromeEnabled,
+      liquidGlassDockEnabled:
+          liquidGlassDockEnabled ?? this.liquidGlassDockEnabled,
       courseCardSurfaceStyle:
           courseCardSurfaceStyle ?? this.courseCardSurfaceStyle,
       liquidGlassPreset: liquidGlassPreset ?? this.liquidGlassPreset,

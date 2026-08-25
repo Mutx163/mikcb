@@ -72,6 +72,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // 作用范围开关直读草稿设置，保证预览/演示与真实表面判定一致。
     final appearance = FrostedAppearance(
       sheetBlurSigma: blurSigma,
       sheetTintAlpha: tintAlpha,
@@ -79,6 +80,11 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       blurEnabled: blurEnabled,
       glassMode: glassMode,
       liquidGlassTuning: previewSafeTuning(liquidGlassTuning),
+      liquidGlassPopupEnabled: settings.liquidGlassPopupEnabled,
+      liquidGlassSelectSheetEnabled: settings.liquidGlassSelectSheetEnabled,
+      liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,
+      liquidGlassHomeChromeEnabled: settings.liquidGlassHomeChromeEnabled,
+      liquidGlassDockEnabled: settings.liquidGlassDockEnabled,
     );
 
     return FrostedAppearanceScope(
@@ -129,9 +135,11 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appearance = FrostedAppearanceScope.of(context);
+    // 演示的是真实弹窗材质：跟随「液态玻璃作用范围 → 弹窗与对话框」。
     final useLiquidGlass =
-        FrostedAppearanceScope.of(context).glassMode ==
-            FrostedGlassMode.liquidGlass &&
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassSheetDialogEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
 
     return _buildSheet(context, useLiquidGlass: useLiquidGlass);
@@ -289,9 +297,10 @@ class _DemoMenuTile extends StatelessWidget {
       ),
     );
 
+    final appearance = FrostedAppearanceScope.of(context);
     final useLiquidGlass =
-        FrostedAppearanceScope.of(context).glassMode ==
-            FrostedGlassMode.liquidGlass &&
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassSheetDialogEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
     if (useLiquidGlass) {
       return HyperosLiquidGlassSurface(
