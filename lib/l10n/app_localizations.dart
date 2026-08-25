@@ -9265,6 +9265,12 @@ abstract class AppLocalizations {
   /// **'考试倒计时 2×2'**
   String get homeWidgetTargetExamCard22;
 
+  /// No description provided for @homeWidgetTargetTodayWide42.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日横宽 4×2'**
+  String get homeWidgetTargetTodayWide42;
+
   /// No description provided for @addCourseSheetTitle.
   ///
   /// In zh, this message translates to:

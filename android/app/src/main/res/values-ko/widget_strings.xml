@@ -9,6 +9,7 @@
   <string name="widget_today_strip_name">오늘 바 4×1</string>
   <string name="widget_stats_strip_name">통계 바 4×1</string>
   <string name="widget_exam_card_name">시험 카운트다운 2×2</string>
+  <string name="widget_today_wide_name">오늘 와이드 4×2</string>
   <string name="widget_exam_card_chip">시험 카운트다운</string>
   <string name="widget_exam_unit_day">일</string>
   <string name="widget_exam_none">시험 예정 없음</string>

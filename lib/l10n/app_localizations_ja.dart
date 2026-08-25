@@ -5145,6 +5145,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetTargetExamCard22 => '試験カウントダウン 2×2';
 
   @override
+  String get homeWidgetTargetTodayWide42 => '今日ワイド 4×2';
+
+  @override
   String get addCourseSheetTitle => 'コンテンツ追加';
 
   @override

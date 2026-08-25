@@ -2673,6 +2673,7 @@
   "homeWidgetTargetTodayStrip41": "今日橫條 4×1",
   "homeWidgetTargetStatsStrip41": "統計橫條 4×1",
   "homeWidgetTargetExamCard22": "考試倒數 2×2",
+  "homeWidgetTargetTodayWide42": "今日橫寬 4×2",
   "dayAgendaInProgressStatus": "進行中 · 剩餘 {minutes} 分鐘",
   "@dayAgendaInProgressStatus": {
     "placeholders": {

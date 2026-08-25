@@ -15,6 +15,7 @@ String _homeWidgetTargetLabel(
     HomeWidgetPinTarget.todayStrip41 => l10n.homeWidgetTargetTodayStrip41,
     HomeWidgetPinTarget.statsStrip41 => l10n.homeWidgetTargetStatsStrip41,
     HomeWidgetPinTarget.examCard22 => l10n.homeWidgetTargetExamCard22,
+    HomeWidgetPinTarget.todayWide42 => l10n.homeWidgetTargetTodayWide42,
   };
 }
 
@@ -165,7 +166,11 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(child: SizedBox()),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.todayWide42,
+                        ),
+                      ),
                     ],
                   ),
                 ],

@@ -9,6 +9,7 @@
   <string name="widget_today_strip_name">今日橫條 4×1</string>
   <string name="widget_stats_strip_name">統計橫條 4×1</string>
   <string name="widget_exam_card_name">考試倒數 2×2</string>
+  <string name="widget_today_wide_name">今日橫寬 4×2</string>
   <string name="widget_exam_card_chip">考試倒數</string>
   <string name="widget_exam_unit_day">天</string>
   <string name="widget_exam_none">暫無考試安排</string>

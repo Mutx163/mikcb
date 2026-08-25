@@ -17,7 +17,8 @@ enum HomeWidgetPinTarget {
   stats24('stats_medium'),
   todayStrip41('today_strip'),
   statsStrip41('stats_strip'),
-  examCard22('exam_card');
+  examCard22('exam_card'),
+  todayWide42('today_wide');
 
   const HomeWidgetPinTarget(this.value);
 

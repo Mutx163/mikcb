@@ -5052,6 +5052,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetTargetExamCard22 => '考试倒计时 2×2';
 
   @override
+  String get homeWidgetTargetTodayWide42 => '今日横宽 4×2';
+
+  @override
   String get addCourseSheetTitle => '添加内容';
 
   @override
@@ -15112,6 +15115,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetTargetExamCard22 => '考試倒數 2×2';
+
+  @override
+  String get homeWidgetTargetTodayWide42 => '今日橫寬 4×2';
 
   @override
   String get addCourseSheetTitle => '新增內容';
@@ -25218,6 +25224,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetTargetExamCard22 => '考試倒數 2×2';
+
+  @override
+  String get homeWidgetTargetTodayWide42 => '今日橫寬 4×2';
 
   @override
   String get addCourseSheetTitle => '新增內容';

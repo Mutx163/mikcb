@@ -2867,6 +2867,7 @@
   "homeWidgetTargetTodayStrip41": "今日横条 4×1",
   "homeWidgetTargetStatsStrip41": "统计横条 4×1",
   "homeWidgetTargetExamCard22": "考试倒计时 2×2",
+  "homeWidgetTargetTodayWide42": "今日横宽 4×2",
   "addCourseSheetTitle": "添加内容",
   "addCourseSheetSubtitle": "空白课表区域不响应点击，请从这里明确选择是加一节临时课、整学期重复课，还是插入一条单次日程",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}节",

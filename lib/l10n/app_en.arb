@@ -2867,6 +2867,7 @@
   "homeWidgetTargetTodayStrip41": "Today bar 4×1",
   "homeWidgetTargetStatsStrip41": "Stats bar 4×1",
   "homeWidgetTargetExamCard22": "Exam countdown 2×2",
+  "homeWidgetTargetTodayWide42": "Today wide 4×2",
   "addCourseSheetTitle": "Add Content",
   "addCourseSheetSubtitle": "Blank timetable areas do not respond to taps. Choose clearly whether to add a one-off lesson, a recurring course, or a one-time schedule item",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} Sections {startSection}-{endSection}",

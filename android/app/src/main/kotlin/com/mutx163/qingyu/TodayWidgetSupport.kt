@@ -155,6 +155,7 @@ object TodayWidgetSupport {
         TodayLargeWidgetProvider.updateAll(context)
         TodayStripWidgetProvider.updateAll(context)
         ExamCountdownWidgetProvider.updateAll(context)
+        TodayWideWidgetProvider.updateAll(context)
     }
 
     fun buildSnapshotFromFlutterState(

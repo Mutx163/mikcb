@@ -2677,6 +2677,7 @@
   "homeWidgetTargetTodayStrip41": "오늘 바 4×1",
   "homeWidgetTargetStatsStrip41": "통계 바 4×1",
   "homeWidgetTargetExamCard22": "시험 카운트다운 2×2",
+  "homeWidgetTargetTodayWide42": "오늘 와이드 4×2",
   "addCourseSheetTitle": "콘텐츠 추가",
   "addCourseSheetSubtitle": "빈 시간표 영역은 탭에 반응하지 않습니다. 임시 수업, 학기 전체 반복 수업, 또는 단일 일정 삽입을 명확히 선택하세요",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} {startSection}-{endSection}교시",
