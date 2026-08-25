@@ -6940,6 +6940,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                       tuning: dockAppearance.liquidGlassTuning,
                     ),
                     quality: GlassQuality.premium,
+                    // 崩溃修复：此钮挂在无任何 LiquidGlassLayer 祖先的裸 Stack 上，
+                    // premium + 默认 useOwnLayer:false 会触发 LiquidGlassBlendGroup
+                    // 的 renderLink != null 断言。显式自带层；isStationary 与
+                    // _buildDockMergeSlot / 包内 BottomBarExtraBtn 对齐，
+                    // 保证引擎降级路径仍保留 BackdropFilter 模糊。
+                    useOwnLayer: true,
+                    isStationary: true,
                     child: Opacity(
                       opacity: contentOpacity,
                       child: Padding(
