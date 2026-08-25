@@ -563,12 +563,6 @@ class TimetableSettingsScreen extends StatelessWidget {
                   HyperosIconColors.teal,
                 ),
                 title: l10n.homeNavigationTitle,
-                endActions: [
-                  Text(
-                    l10n.homeNavigationSubtitle,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ],
                 onClick: openHomeNavigation,
               ),
               _MiuixSettingsPreference(
