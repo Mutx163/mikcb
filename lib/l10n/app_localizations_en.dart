@@ -420,7 +420,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coupleWebdavNotConnectedError => 'Connect Nutstore first';
 
   @override
-  String get cloudSyncEntryTitle => 'Cloud Sync (WebDAV)';
+  String get cloudSyncEntryTitle => 'Cloud Sync';
 
   @override
   String get cloudSyncEntrySubtitle =>

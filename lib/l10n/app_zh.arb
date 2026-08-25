@@ -186,7 +186,7 @@
   "coupleWebdavPartnerFileMissing": "未找到对方课表文件，请让对方先上传",
   "coupleWebdavPullFailed": "拉取对方课表失败，请稍后重试",
   "coupleWebdavNotConnectedError": "请先连接坚果云",
-  "cloudSyncEntryTitle": "云同步（WebDAV）",
+  "cloudSyncEntryTitle": "云同步",
   "cloudSyncEntrySubtitle": "通过坚果云等多设备同步课表与导入数据",
   "cloudSyncEntryDisabled": "已关闭",
   "cloudSyncEntryEnabled": "已开启",

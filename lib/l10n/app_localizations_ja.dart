@@ -401,7 +401,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleWebdavNotConnectedError => '先にナットストアに接続してください';
 
   @override
-  String get cloudSyncEntryTitle => 'クラウド同期（WebDAV）';
+  String get cloudSyncEntryTitle => 'クラウド同期';
 
   @override
   String get cloudSyncEntrySubtitle => 'Jianguoyun などで時間割とインポートデータを複数端末同期';

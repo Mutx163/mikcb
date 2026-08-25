@@ -56,7 +56,7 @@
   },
   "dataTransferEntryTitle": "資料備份與遷移",
   "dataTransferEntrySubtitle": "匯出完整課表檔案，給別人直接匯入使用",
-  "cloudSyncEntryTitle": "雲端同步（WebDAV）",
+  "cloudSyncEntryTitle": "雲端同步",
   "cloudSyncEntrySubtitle": "透過堅果雲等多裝置同步課表與匯入資料",
   "cloudSyncEntryDisabled": "已關閉",
   "cloudSyncEntryEnabled": "已開啟",

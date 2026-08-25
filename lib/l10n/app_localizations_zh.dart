@@ -393,7 +393,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleWebdavNotConnectedError => '请先连接坚果云';
 
   @override
-  String get cloudSyncEntryTitle => '云同步（WebDAV）';
+  String get cloudSyncEntryTitle => '云同步';
 
   @override
   String get cloudSyncEntrySubtitle => '通过坚果云等多设备同步课表与导入数据';
@@ -10440,7 +10440,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleWebdavNotConnectedError => '請先連接堅果雲';
 
   @override
-  String get cloudSyncEntryTitle => '雲端同步（WebDAV）';
+  String get cloudSyncEntryTitle => '雲端同步';
 
   @override
   String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
@@ -20531,7 +20531,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleWebdavNotConnectedError => '請先連接堅果雲';
 
   @override
-  String get cloudSyncEntryTitle => '雲端同步（WebDAV）';
+  String get cloudSyncEntryTitle => '雲端同步';
 
   @override
   String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';

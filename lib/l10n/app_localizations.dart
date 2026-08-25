@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'云同步（WebDAV）'**
+  /// **'云同步'**
   String get cloudSyncEntryTitle;
 
   /// No description provided for @cloudSyncEntrySubtitle.

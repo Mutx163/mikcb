@@ -56,7 +56,7 @@
   },
   "dataTransferEntryTitle": "데이터 백업 및 마이그레이션",
   "dataTransferEntrySubtitle": "시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다",
-  "cloudSyncEntryTitle": "클라우드 동기화 (WebDAV)",
+  "cloudSyncEntryTitle": "클라우드 동기화",
   "cloudSyncEntrySubtitle": "Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화",
   "cloudSyncEntryDisabled": "꺼짐",
   "cloudSyncEntryEnabled": "켜짐",

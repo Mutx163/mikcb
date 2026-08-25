@@ -186,7 +186,7 @@
   "coupleWebdavPartnerFileMissing": "Partner timetable file not found. Ask them to upload first.",
   "coupleWebdavPullFailed": "Failed to pull partner timetable. Try again later.",
   "coupleWebdavNotConnectedError": "Connect Nutstore first",
-  "cloudSyncEntryTitle": "Cloud Sync (WebDAV)",
+  "cloudSyncEntryTitle": "Cloud Sync",
   "cloudSyncEntrySubtitle": "Sync timetables and import data across devices via Jianguoyun",
   "cloudSyncEntryDisabled": "Off",
   "cloudSyncEntryEnabled": "On",

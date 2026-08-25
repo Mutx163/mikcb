@@ -56,7 +56,7 @@
   },
   "dataTransferEntryTitle": "データバックアップと移行",
   "dataTransferEntrySubtitle": "時間割ファイルをエクスポートして、他の人が直接インポート可能",
-  "cloudSyncEntryTitle": "クラウド同期（WebDAV）",
+  "cloudSyncEntryTitle": "クラウド同期",
   "cloudSyncEntrySubtitle": "Jianguoyun などで時間割とインポートデータを複数端末同期",
   "cloudSyncEntryDisabled": "オフ",
   "cloudSyncEntryEnabled": "オン",

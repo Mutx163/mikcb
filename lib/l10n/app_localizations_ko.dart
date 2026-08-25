@@ -398,7 +398,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleWebdavNotConnectedError => '먼저 너트스토어에 연결하세요';
 
   @override
-  String get cloudSyncEntryTitle => '클라우드 동기화 (WebDAV)';
+  String get cloudSyncEntryTitle => '클라우드 동기화';
 
   @override
   String get cloudSyncEntrySubtitle =>
