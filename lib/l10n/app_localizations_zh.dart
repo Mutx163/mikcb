@@ -393,13 +393,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleWebdavNotConnectedError => '请先连接坚果云';
 
   @override
-  String get cloudSyncEntryTitle => '云同步';
+  String get cloudSyncEntryTitle => '云同步（WebDAV）';
 
   @override
   String get cloudSyncEntrySubtitle => '通过坚果云等多设备同步课表与导入数据';
 
   @override
-  String get cloudSyncEntryDisabled => '未开启';
+  String get cloudSyncEntryDisabled => '已关闭';
 
   @override
   String get cloudSyncEntryEnabled => '已开启';
@@ -418,7 +418,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      '配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置';
+      '配置坚果云 WebDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步设置';
@@ -439,7 +439,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncProviderJianguoyun => '坚果云';
 
   @override
-  String get cloudSyncProviderCustom => '自定义 WEBDAV';
+  String get cloudSyncProviderCustom => '自定义 WebDAV';
 
   @override
   String get cloudSyncModeTitle => '同步方式';
@@ -475,7 +475,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncAdvancedTitle => '高级设置';
 
   @override
-  String get cloudSyncBaseUrlLabel => 'WEBDAV 地址';
+  String get cloudSyncBaseUrlLabel => 'WebDAV 地址';
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
@@ -511,7 +511,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncHelpBody =>
-      '打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码，WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ ';
+      '打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码，WebDAV 地址默认为 https://dav.jianguoyun.com/dav/ ';
 
   @override
   String get cloudSyncTestConnection => '测试连接';
@@ -523,10 +523,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncSyncNowSubtitle => '与其他设备对齐课表：先拉取云端更新，再上传本机修改';
 
   @override
-  String get cloudSyncTestSuccess => 'WEBDAV 连接成功';
+  String get cloudSyncTestSuccess => 'WebDAV 连接成功';
 
   @override
-  String get cloudSyncTestFailed => 'WEBDAV 连接失败，请检查账号、应用密码和网络';
+  String get cloudSyncTestFailed => 'WebDAV 连接失败，请检查账号、应用密码和网络';
 
   @override
   String get cloudSyncResultUploaded => '已上传到云端';
@@ -579,7 +579,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncDisconnectBody =>
-      '断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机，是否继续？';
+      '断开后将清除本机保存的 WebDAV 凭据，课表数据仍保留在本机，是否继续？';
 
   @override
   String get cloudSyncLoginSheetTitle => '连接坚果云';
@@ -9487,7 +9487,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsTimetableSectionTitle => '课表';
 
   @override
-  String get liveIslandLabelEntryEnabled => '已启用';
+  String get liveIslandLabelEntryEnabled => '已开启';
 
   @override
   String get liveIslandLabelEntryDisabled => '已关闭';
@@ -10440,13 +10440,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleWebdavNotConnectedError => '請先連接堅果雲';
 
   @override
-  String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
+  String get cloudSyncEntryTitle => '雲端同步（WebDAV）';
 
   @override
   String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
 
   @override
-  String get cloudSyncEntryDisabled => '未開啟';
+  String get cloudSyncEntryDisabled => '已關閉';
 
   @override
   String get cloudSyncEntryEnabled => '已開啟';
@@ -10465,7 +10465,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      '設定堅果雲 WEBDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定';
+      '設定堅果雲 WebDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步設定';
@@ -10486,7 +10486,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncProviderJianguoyun => '堅果雲';
 
   @override
-  String get cloudSyncProviderCustom => '自訂 WEBDAV';
+  String get cloudSyncProviderCustom => '自訂 WebDAV';
 
   @override
   String get cloudSyncModeTitle => '同步方式';
@@ -10523,7 +10523,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncAdvancedTitle => '進階設定';
 
   @override
-  String get cloudSyncBaseUrlLabel => 'WEBDAV 網址';
+  String get cloudSyncBaseUrlLabel => 'WebDAV 網址';
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
@@ -10559,7 +10559,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncHelpBody =>
-      '開啟堅果雲網頁或客戶端 → 帳戶資料 → 安全選項 → 新增應用程式密碼，WEBDAV 網址預設為 https://dav.jianguoyun.com/dav/ ';
+      '開啟堅果雲網頁或客戶端 → 帳戶資料 → 安全選項 → 新增應用程式密碼，WebDAV 網址預設為 https://dav.jianguoyun.com/dav/ ';
 
   @override
   String get cloudSyncTestConnection => '測試連線';
@@ -10571,10 +10571,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncSyncNowSubtitle => '與其他設備對齊課表：先拉取雲端更新，再上傳本地修改';
 
   @override
-  String get cloudSyncTestSuccess => 'WEBDAV 連線成功';
+  String get cloudSyncTestSuccess => 'WebDAV 連線成功';
 
   @override
-  String get cloudSyncTestFailed => 'WEBDAV 連線失敗，請檢查帳號、應用程式密碼和網絡';
+  String get cloudSyncTestFailed => 'WebDAV 連線失敗，請檢查帳號、應用程式密碼和網絡';
 
   @override
   String get cloudSyncResultUploaded => '已上傳到雲端';
@@ -10627,7 +10627,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncDisconnectBody =>
-      '中斷後將清除本機儲存的 WEBDAV 憑證，課表資料仍保留在本機，是否繼續？';
+      '中斷後將清除本機儲存的 WebDAV 憑證，課表資料仍保留在本機，是否繼續？';
 
   @override
   String get cloudSyncLoginSheetTitle => '連接堅果雲';
@@ -19519,7 +19519,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsResetDoneMessage => '設定已重設';
 
   @override
-  String get timetablePageSettingsTitle => '時間表頁面';
+  String get timetablePageSettingsTitle => '課表頁面';
 
   @override
   String get timetablePageSectionDensity => '密度';
@@ -19575,10 +19575,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get gotItAction => '知道了';
 
   @override
-  String get settingsTimetableSectionTitle => '時間表';
+  String get settingsTimetableSectionTitle => '課表';
 
   @override
-  String get liveIslandLabelEntryEnabled => '已啟用';
+  String get liveIslandLabelEntryEnabled => '已開啟';
 
   @override
   String get liveIslandLabelEntryDisabled => '已關閉';
@@ -20531,13 +20531,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleWebdavNotConnectedError => '請先連接堅果雲';
 
   @override
-  String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
+  String get cloudSyncEntryTitle => '雲端同步（WebDAV）';
 
   @override
   String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
 
   @override
-  String get cloudSyncEntryDisabled => '未開啟';
+  String get cloudSyncEntryDisabled => '已關閉';
 
   @override
   String get cloudSyncEntryEnabled => '已開啟';
@@ -20556,7 +20556,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      '設定堅果雲 WEBDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定';
+      '設定堅果雲 WebDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步設定';
@@ -20577,7 +20577,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncProviderJianguoyun => '堅果雲';
 
   @override
-  String get cloudSyncProviderCustom => '自訂 WEBDAV';
+  String get cloudSyncProviderCustom => '自訂 WebDAV';
 
   @override
   String get cloudSyncModeTitle => '同步方式';
@@ -20614,7 +20614,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncAdvancedTitle => '進階設定';
 
   @override
-  String get cloudSyncBaseUrlLabel => 'WEBDAV 網址';
+  String get cloudSyncBaseUrlLabel => 'WebDAV 網址';
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
@@ -20650,7 +20650,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncHelpBody =>
-      '開啟堅果雲網頁或客戶端 → 帳戶資訊 → 安全選項 → 新增應用程式密碼，WEBDAV 網址預設為 https://dav.jianguoyun.com/dav/ ';
+      '開啟堅果雲網頁或客戶端 → 帳戶資訊 → 安全選項 → 新增應用程式密碼，WebDAV 網址預設為 https://dav.jianguoyun.com/dav/ ';
 
   @override
   String get cloudSyncTestConnection => '測試連線';
@@ -20662,10 +20662,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncSyncNowSubtitle => '與其他裝置對齊課表：先拉取雲端更新，再上傳本機修改';
 
   @override
-  String get cloudSyncTestSuccess => 'WEBDAV 連線成功';
+  String get cloudSyncTestSuccess => 'WebDAV 連線成功';
 
   @override
-  String get cloudSyncTestFailed => 'WEBDAV 連線失敗，請檢查帳號、應用程式密碼和網路';
+  String get cloudSyncTestFailed => 'WebDAV 連線失敗，請檢查帳號、應用程式密碼和網路';
 
   @override
   String get cloudSyncResultUploaded => '已上傳到雲端';
@@ -20718,7 +20718,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncDisconnectBody =>
-      '中斷後將清除本機儲存的 WEBDAV 憑證，課表資料仍保留在本機，是否繼續？';
+      '中斷後將清除本機儲存的 WebDAV 憑證，課表資料仍保留在本機，是否繼續？';
 
   @override
   String get cloudSyncLoginSheetTitle => '連接堅果雲';
@@ -29669,7 +29669,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsTimetableSectionTitle => '課表';
 
   @override
-  String get liveIslandLabelEntryEnabled => '已啟用';
+  String get liveIslandLabelEntryEnabled => '已開啟';
 
   @override
   String get liveIslandLabelEntryDisabled => '已關閉';

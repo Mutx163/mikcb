@@ -315,7 +315,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
           // Lazy builder: only visible sections are mounted, reducing
           // per-frame composite cost vs the old SingleChildScrollView.
-          itemCount: 9,
+          itemCount: 8,
           itemBuilder: (context, index) => _buildSettingsHomeSection(
             context,
             index,
@@ -369,9 +369,9 @@ class TimetableSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Sections: 0 summary · 1 timetable · 2 display · 3 home & navigation
-  /// · 4 reminder/desktop · 5 app · 6 data/share · 7 about
-  /// · 8 developer tools.
+  /// Sections: 0 summary · 1 timetable · 2 display · 3 reminder/desktop
+  /// · 4 app (appearance / home navigation / general) · 5 data/share
+  /// · 6 about · 7 developer tools.
   Widget _buildSettingsHomeSection(
     BuildContext context,
     int index, {
@@ -512,35 +512,12 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 3 — Home & navigation（自外观迁出的结构性设置，IA 重构 A3）。
+      // 3 — Reminder & desktop (live island / home widget).
+      //
+      // 「首页与导航」不再单独成组：单条目组的组名会与行名完全相同，违反
+      // IA 规范 §3「不许组名 = 组内唯一项名」；其入口行已并入下方「应用」组，
+      // 子页本身（底栏形态/菜单/首页标题）不变。
       3 => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.homeNavigationTitle),
-          HyperosListGroup(
-            children: [
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
-                  MiuixIcons.extended.byName('sidebar')!,
-                  HyperosIconColors.teal,
-                ),
-                title: l10n.homeNavigationTitle,
-                endActions: [
-                  Text(
-                    l10n.homeNavigationSubtitle,
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ],
-                onClick: openHomeNavigation,
-              ),
-            ],
-          ),
-        ],
-      ),
-      // 4 — Reminder & desktop (live island / home widget).
-      4 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -561,8 +538,10 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 5 — App-level (appearance / general).
-      5 => Column(
+      // 4 — App-level (appearance / home navigation / general).
+      // 「首页与导航」自独立组并入此处（IA §3 组名=唯一项名禁令）；
+      // 图标 sidebar/teal 沿用原入口。
+      4 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -580,6 +559,20 @@ class TimetableSettingsScreen extends StatelessWidget {
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('sidebar')!,
+                  HyperosIconColors.teal,
+                ),
+                title: l10n.homeNavigationTitle,
+                endActions: [
+                  Text(
+                    l10n.homeNavigationSubtitle,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: openHomeNavigation,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('tune')!,
                   HyperosIconColors.indigo,
                 ),
@@ -590,8 +583,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 6 — Data & sharing.
-      6 => Column(
+      // 5 — Data & sharing.
+      5 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -636,8 +629,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 7 — About & help.
-      7 => Column(
+      // 6 — About & help.
+      6 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -663,7 +656,7 @@ class TimetableSettingsScreen extends StatelessWidget {
               ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
-                  MiuixIcons.extended.byName('help')!,
+                  MiuixIcons.extended.byName('report')!,
                   HyperosIconColors.teal,
                 ),
                 title: l10n.diagnosticsEntryTitle,
@@ -679,7 +672,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 8 — Developer tools + trailing gap.
+      // 7 — Developer tools + trailing gap.
       _ => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1120,7 +1113,7 @@ class _SettingsDeveloperListGroupState
                     builder: (context, _) => _MiuixSettingsSwitchPreference(
                       startAction: _settingsIconBadge(
                         MiuixIcons.extended.byName('show')!,
-                        HyperosIconColors.purple,
+                        HyperosIconColors.red,
                       ),
                       title: l10n.debugUiOverlayToggleTitle,
                       value: BlackBoxOverlayPreferences.instance.visible,

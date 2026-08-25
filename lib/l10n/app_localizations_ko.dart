@@ -398,7 +398,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleWebdavNotConnectedError => '먼저 너트스토어에 연결하세요';
 
   @override
-  String get cloudSyncEntryTitle => '클라우드 동기화 (WEBDAV)';
+  String get cloudSyncEntryTitle => '클라우드 동기화 (WebDAV)';
 
   @override
   String get cloudSyncEntrySubtitle =>
@@ -424,7 +424,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      'Jianguoyun WEBDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다';
+      'Jianguoyun WebDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다';
 
   @override
   String get cloudSyncSettingsSectionTitle => '동기화 설정';
@@ -445,7 +445,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncProviderJianguoyun => 'Jianguoyun';
 
   @override
-  String get cloudSyncProviderCustom => '사용자 지정 WEBDAV';
+  String get cloudSyncProviderCustom => '사용자 지정 WebDAV';
 
   @override
   String get cloudSyncModeTitle => '동기화 방식';
@@ -483,7 +483,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncAdvancedTitle => '고급 설정';
 
   @override
-  String get cloudSyncBaseUrlLabel => 'WEBDAV 주소';
+  String get cloudSyncBaseUrlLabel => 'WebDAV 주소';
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
@@ -519,7 +519,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncHelpBody =>
-      'Jianguoyun 웹 또는 클라이언트 → 계정 정보 → 보안 → 앱 비밀번호 추가. WEBDAV 주소 기본값: https://dav.jianguoyun.com/dav/';
+      'Jianguoyun 웹 또는 클라이언트 → 계정 정보 → 보안 → 앱 비밀번호 추가. WebDAV 주소 기본값: https://dav.jianguoyun.com/dav/';
 
   @override
   String get cloudSyncTestConnection => '연결 테스트';
@@ -532,10 +532,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '다른 기기와 시간표를 맞춥니다: 클라우드에서 받은 뒤 기기 변경을 업로드';
 
   @override
-  String get cloudSyncTestSuccess => 'WEBDAV 연결 성공';
+  String get cloudSyncTestSuccess => 'WebDAV 연결 성공';
 
   @override
-  String get cloudSyncTestFailed => 'WEBDAV 연결 실패. 계정, 앱 비밀번호, 네트워크를 확인하세요';
+  String get cloudSyncTestFailed => 'WebDAV 연결 실패. 계정, 앱 비밀번호, 네트워크를 확인하세요';
 
   @override
   String get cloudSyncResultUploaded => '클라우드에 업로드됨';
@@ -590,7 +590,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncDisconnectBody =>
-      '연결 해제 시 이 기기에 저장된 WEBDAV 자격 증명이 삭제됩니다. 시간표 데이터는 기기에 남습니다. 계속하시겠습니까?';
+      '연결 해제 시 이 기기에 저장된 WebDAV 자격 증명이 삭제됩니다. 시간표 데이터는 기기에 남습니다. 계속하시겠습니까?';
 
   @override
   String get cloudSyncLoginSheetTitle => 'Jianguoyun 연결';
@@ -9805,10 +9805,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsTimetableSectionTitle => '시간표';
 
   @override
-  String get liveIslandLabelEntryEnabled => '활성화됨';
+  String get liveIslandLabelEntryEnabled => '켜짐';
 
   @override
-  String get liveIslandLabelEntryDisabled => '비활성화됨';
+  String get liveIslandLabelEntryDisabled => '꺼짐';
 
   @override
   String get settingsDisplayAppearanceSectionTitle => '시간표 표시';

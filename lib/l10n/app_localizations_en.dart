@@ -420,7 +420,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coupleWebdavNotConnectedError => 'Connect Nutstore first';
 
   @override
-  String get cloudSyncEntryTitle => 'Cloud Sync (WEBDAV)';
+  String get cloudSyncEntryTitle => 'Cloud Sync (WebDAV)';
 
   @override
   String get cloudSyncEntrySubtitle =>
@@ -446,7 +446,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      'Configure Jianguoyun WEBDAV to sync timetables, warehouse accounts, and related settings across devices';
+      'Configure Jianguoyun WebDAV to sync timetables, warehouse accounts, and related settings across devices';
 
   @override
   String get cloudSyncSettingsSectionTitle => 'Sync settings';
@@ -469,7 +469,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncProviderJianguoyun => 'Jianguoyun';
 
   @override
-  String get cloudSyncProviderCustom => 'Custom WEBDAV';
+  String get cloudSyncProviderCustom => 'Custom WebDAV';
 
   @override
   String get cloudSyncModeTitle => 'Sync mode';
@@ -508,7 +508,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncAdvancedTitle => 'Advanced';
 
   @override
-  String get cloudSyncBaseUrlLabel => 'WEBDAV URL';
+  String get cloudSyncBaseUrlLabel => 'WebDAV URL';
 
   @override
   String get cloudSyncBaseUrlSecurityNote =>
@@ -544,7 +544,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncHelpBody =>
-      'Open Jianguoyun → Account → Security → Add app password. Default WEBDAV URL: https://dav.jianguoyun.com/dav/';
+      'Open Jianguoyun → Account → Security → Add app password. Default WebDAV URL: https://dav.jianguoyun.com/dav/';
 
   @override
   String get cloudSyncTestConnection => 'Test connection';
@@ -557,11 +557,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep timetables aligned across devices: pull cloud updates, then upload local changes';
 
   @override
-  String get cloudSyncTestSuccess => 'WEBDAV connection succeeded';
+  String get cloudSyncTestSuccess => 'WebDAV connection succeeded';
 
   @override
   String get cloudSyncTestFailed =>
-      'WEBDAV connection failed. Check account, app password, and network.';
+      'WebDAV connection failed. Check account, app password, and network.';
 
   @override
   String get cloudSyncResultUploaded => 'Uploaded to cloud';
@@ -616,7 +616,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncDisconnectBody =>
-      'This removes saved WEBDAV credentials from this device. Local timetables are kept. Continue?';
+      'This removes saved WebDAV credentials from this device. Local timetables are kept. Continue?';
 
   @override
   String get cloudSyncLoginSheetTitle => 'Connect Jianguoyun';
@@ -741,7 +741,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudBackupDetailSummary => 'Contents';
 
   @override
-  String get lanEditEntryTitle => 'LAN editing';
+  String get lanEditEntryTitle => 'LAN Editing';
 
   @override
   String get lanEditEntrySubtitle =>
@@ -10042,10 +10042,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTimetableSectionTitle => 'Timetable';
 
   @override
-  String get liveIslandLabelEntryEnabled => 'Enabled';
+  String get liveIslandLabelEntryEnabled => 'On';
 
   @override
-  String get liveIslandLabelEntryDisabled => 'Disabled';
+  String get liveIslandLabelEntryDisabled => 'Off';
 
   @override
   String get settingsDisplayAppearanceSectionTitle => 'Timetable Display';

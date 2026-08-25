@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'云同步'**
+  /// **'云同步（WebDAV）'**
   String get cloudSyncEntryTitle;
 
   /// No description provided for @cloudSyncEntrySubtitle.
@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncEntryDisabled.
   ///
   /// In zh, this message translates to:
-  /// **'未开启'**
+  /// **'已关闭'**
   String get cloudSyncEntryDisabled;
 
   /// No description provided for @cloudSyncEntryEnabled.
@@ -875,7 +875,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncIntroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置'**
+  /// **'配置坚果云 WebDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置'**
   String get cloudSyncIntroSubtitle;
 
   /// No description provided for @cloudSyncSettingsSectionTitle.
@@ -917,7 +917,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncProviderCustom.
   ///
   /// In zh, this message translates to:
-  /// **'自定义 WEBDAV'**
+  /// **'自定义 WebDAV'**
   String get cloudSyncProviderCustom;
 
   /// No description provided for @cloudSyncModeTitle.
@@ -989,7 +989,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncBaseUrlLabel.
   ///
   /// In zh, this message translates to:
-  /// **'WEBDAV 地址'**
+  /// **'WebDAV 地址'**
   String get cloudSyncBaseUrlLabel;
 
   /// 安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用
@@ -1049,7 +1049,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncHelpBody.
   ///
   /// In zh, this message translates to:
-  /// **'打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码，WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ '**
+  /// **'打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码，WebDAV 地址默认为 https://dav.jianguoyun.com/dav/ '**
   String get cloudSyncHelpBody;
 
   /// No description provided for @cloudSyncTestConnection.
@@ -1073,13 +1073,13 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncTestSuccess.
   ///
   /// In zh, this message translates to:
-  /// **'WEBDAV 连接成功'**
+  /// **'WebDAV 连接成功'**
   String get cloudSyncTestSuccess;
 
   /// No description provided for @cloudSyncTestFailed.
   ///
   /// In zh, this message translates to:
-  /// **'WEBDAV 连接失败，请检查账号、应用密码和网络'**
+  /// **'WebDAV 连接失败，请检查账号、应用密码和网络'**
   String get cloudSyncTestFailed;
 
   /// No description provided for @cloudSyncResultUploaded.
@@ -1175,7 +1175,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncDisconnectBody.
   ///
   /// In zh, this message translates to:
-  /// **'断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机，是否继续？'**
+  /// **'断开后将清除本机保存的 WebDAV 凭据，课表数据仍保留在本机，是否继续？'**
   String get cloudSyncDisconnectBody;
 
   /// No description provided for @cloudSyncLoginSheetTitle.
@@ -17176,7 +17176,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveIslandLabelEntryEnabled.
   ///
   /// In zh, this message translates to:
-  /// **'已启用'**
+  /// **'已开启'**
   String get liveIslandLabelEntryEnabled;
 
   /// No description provided for @liveIslandLabelEntryDisabled.
