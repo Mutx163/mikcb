@@ -8,6 +8,11 @@
     <string name="widget_stats_medium_name">课程统计 2×4</string>
   <string name="widget_today_strip_name">今日横条 4×1</string>
   <string name="widget_stats_strip_name">统计横条 4×1</string>
+  <string name="widget_exam_card_name">考试倒计时 2×2</string>
+  <string name="widget_exam_card_chip">考试倒计时</string>
+  <string name="widget_exam_unit_day">天</string>
+  <string name="widget_exam_none">暂无考试安排</string>
+  <string name="widget_exam_today_big">今天</string>
 
     <string name="widget_today_courses">今日课程</string>
     <string name="widget_tomorrow_courses">明日课程</string>

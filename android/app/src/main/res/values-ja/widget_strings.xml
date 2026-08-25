@@ -8,6 +8,11 @@
     <string name="widget_stats_medium_name">授業統計 2×4</string>
   <string name="widget_today_strip_name">今日バー 4×1</string>
   <string name="widget_stats_strip_name">統計バー 4×1</string>
+  <string name="widget_exam_card_name">試験カウントダウン 2×2</string>
+  <string name="widget_exam_card_chip">試験カウントダウン</string>
+  <string name="widget_exam_unit_day">日</string>
+  <string name="widget_exam_none">試験の予定なし</string>
+  <string name="widget_exam_today_big">今日</string>
 
     <string name="widget_today_courses">今日の授業</string>
     <string name="widget_tomorrow_courses">明日の授業</string>

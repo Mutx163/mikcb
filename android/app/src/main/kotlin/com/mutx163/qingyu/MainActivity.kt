@@ -1062,6 +1062,7 @@ class MainActivity : FlutterActivity() {
             "stats_medium" -> StatsMediumWidgetProvider::class.java
             "today_strip" -> TodayStripWidgetProvider::class.java
             "stats_strip" -> StatsStripWidgetProvider::class.java
+            "exam_card" -> ExamCountdownWidgetProvider::class.java
             else -> null
         } ?: return null
         return ComponentName(this, providerClass)

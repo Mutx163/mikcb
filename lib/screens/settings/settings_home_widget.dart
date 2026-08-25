@@ -13,6 +13,8 @@ String _homeWidgetTargetLabel(
     HomeWidgetPinTarget.stats22 => l10n.homeWidgetTargetStats22,
     HomeWidgetPinTarget.stats24 => l10n.homeWidgetTargetStats24,
     HomeWidgetPinTarget.todayStrip41 => l10n.homeWidgetTargetTodayStrip41,
+    HomeWidgetPinTarget.statsStrip41 => l10n.homeWidgetTargetStatsStrip41,
+    HomeWidgetPinTarget.examCard22 => l10n.homeWidgetTargetExamCard22,
   };
 }
 
@@ -152,6 +154,18 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                           HomeWidgetPinTarget.statsStrip41,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.examCard22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(child: SizedBox()),
                     ],
                   ),
                 ],

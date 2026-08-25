@@ -359,6 +359,18 @@
         </receiver>
 
         <receiver
+            android:name=".ExamCountdownWidgetProvider"
+            android:label="@string/widget_exam_card_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_exam_card_info" />
+        </receiver>
+
+        <receiver
             android:name=".HomeWidgetRefreshReceiver"
             android:enabled="true"
             android:exported="true">
