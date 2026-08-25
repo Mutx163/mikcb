@@ -153,6 +153,7 @@ object TodayWidgetSupport {
         TodayMiniListWidgetProvider.updateAll(context)
         TodayMediumWidgetProvider.updateAll(context)
         TodayLargeWidgetProvider.updateAll(context)
+        TodayStripWidgetProvider.updateAll(context)
     }
 
     fun buildSnapshotFromFlutterState(

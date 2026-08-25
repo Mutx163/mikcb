@@ -6,6 +6,7 @@
     <string name="widget_today_large_name">今日課程列表 4×4</string>
     <string name="widget_stats_compact_name">課程統計 2×2</string>
     <string name="widget_stats_medium_name">課程統計 2×4</string>
+  <string name="widget_today_strip_name">今日橫條 4×1</string>
 
     <string name="widget_today_courses">今日課程</string>
     <string name="widget_tomorrow_courses">明日課程</string>
