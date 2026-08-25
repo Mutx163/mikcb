@@ -136,30 +136,30 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
                 )
             }
 
-            // 自适应：矮高度降字号并隐藏进度条；窄宽度隐藏环比，最后只留节数。
+            // 自适应：横条天然矮高度，内容不按 isShort 门控；仅窄宽度时逐级收起次要信息。
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_week,
-                if (profile.isShort) 10f else 11f,
+                if (profile.widthDp < 200) 10f else 11f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_sections,
-                if (profile.isShort) 13f else 15f,
+                if (profile.widthDp < 200) 13f else 15f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_delta,
-                if (profile.isShort) 10f else 12f,
+                if (profile.widthDp < 200) 10f else 12f,
             )
-            val showProgress = !profile.isShort && snapshot != null && profile.widthDp >= 230
+            val showProgress = snapshot != null && profile.widthDp >= 230
             views.setViewVisibility(
                 R.id.stats_strip_progress,
                 if (showProgress) View.VISIBLE else View.GONE,
             )
             views.setViewVisibility(
                 R.id.stats_strip_delta,
-                if (profile.widthDp < 160 || profile.isShort) View.GONE else View.VISIBLE,
+                if (profile.widthDp < 160) View.GONE else View.VISIBLE,
             )
 
             views.setOnClickPendingIntent(
