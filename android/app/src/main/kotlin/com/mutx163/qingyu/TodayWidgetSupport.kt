@@ -1066,7 +1066,7 @@ object TodayWidgetSupport {
         )
     }
 
-    private fun readActiveProfileJson(context: Context): JSONObject? {
+    fun readActiveProfileJson(context: Context): JSONObject? {
         val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
         val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
         return try {

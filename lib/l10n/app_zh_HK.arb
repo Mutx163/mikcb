@@ -2668,6 +2668,11 @@
   "homeWidgetTargetMiniList22": "迷你清單 2×2",
   "homeWidgetTargetMedium24": "概覽 2×4",
   "homeWidgetTargetLarge44": "清單 4×4",
+  "homeWidgetTargetStats22": "統計 2×2",
+  "homeWidgetTargetStats24": "統計概覽 2×4",
+  "homeWidgetTargetTodayStrip41": "今日橫條 4×1",
+  "homeWidgetTargetStatsStrip41": "統計橫條 4×1",
+  "homeWidgetTargetExamCard22": "考試倒數 2×2",
   "dayAgendaInProgressStatus": "進行中 · 剩餘 {minutes} 分鐘",
   "@dayAgendaInProgressStatus": {
     "placeholders": {

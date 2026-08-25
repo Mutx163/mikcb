@@ -57,15 +57,47 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_stats_compact)
             val snapshot = StatsWidgetSupport.readSnapshot(context)
+            // 与今日系列同源的外观设置：背景风格 / 圆角 / 高度微调。
+            val chrome = StatsWidgetSupport.readChrome(context)
+            val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
+            val primaryColor = TodayWidgetSupport.primaryTextColor(chrome.backgroundStyle)
+            val secondaryColor = TodayWidgetSupport.secondaryTextColor(chrome.backgroundStyle)
+
+            views.setInt(
+                R.id.widget_card,
+                "setBackgroundResource",
+                TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
+            )
+            TodayWidgetSupport.applySquareishPadding(
+                views,
+                R.id.widget_root,
+                profile,
+                baseHorizontalDp = 14,
+                baseVerticalDp = 14,
+                heightAdjustmentDp = chrome.heightAdjustment,
+                targetAspect = 1f,
+            )
+
+            // 周数 chip：与今日组件同一套徽章底色与配色。
+            views.setTextViewText(
+                R.id.stats_week,
+                if (snapshot != null) {
+                    context.getString(R.string.widget_stats_week, snapshot.currentWeek)
+                } else {
+                    context.getString(R.string.widget_stats_no_data)
+                }
+            )
+            views.setInt(
+                R.id.stats_week,
+                "setBackgroundResource",
+                TodayWidgetSupport.statusBackgroundRes("upcoming", chrome.backgroundStyle),
+            )
+            views.setTextColor(R.id.stats_week, secondaryColor)
+
             if (snapshot == null) {
-                views.setTextViewText(R.id.stats_week, context.getString(R.string.widget_stats_no_data))
                 views.setTextViewText(R.id.stats_sections, "--")
                 views.setTextViewText(R.id.stats_delta, context.getString(R.string.widget_tap_to_open))
             } else {
-                views.setTextViewText(
-                    R.id.stats_week,
-                    context.getString(R.string.widget_stats_week, snapshot.currentWeek),
-                )
                 views.setTextViewText(
                     R.id.stats_sections,
                     context.getString(R.string.widget_stats_week_sections, snapshot.weekSections),
@@ -75,6 +107,35 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
                     StatsWidgetSupport.deltaLabel(context, snapshot.deltaVsLastWeek),
                 )
             }
+            views.setTextColor(R.id.stats_sections, primaryColor)
+            views.setTextColor(R.id.stats_delta, secondaryColor)
+
+            // 按实际尺寸画像自适应字号（对齐 TodayCompact 的分档）。
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_week,
+                if (profile.isNarrow || profile.isShort) 10f else 11f,
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_sections,
+                when {
+                    profile.isShort -> 16f
+                    profile.isWide -> 20f
+                    else -> 18f
+                },
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_delta,
+                if (profile.isNarrow || profile.isShort) 11f else 12f,
+            )
+
+            views.setOnClickPendingIntent(
+                R.id.widget_root,
+                TodayWidgetSupport.buildLaunchPendingIntent(context, 20000 + appWidgetId),
+            )
+
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }

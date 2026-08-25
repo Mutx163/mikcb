@@ -8,9 +8,7 @@
         android:id="@+id/widget_card"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/widget_stats_bg"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -20,18 +18,29 @@
 
             <TextView
                 android:id="@+id/stats_week"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:background="@drawable/widget_status_chip_strong"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:paddingLeft="10dp"
+                android:paddingTop="4dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="4dp"
                 android:text="第 1 周"
-                android:textColor="#0F172A"
-                android:textSize="13sp"
+                android:textColor="#64748B"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/stats_progress_text"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="right"
+                android:maxLines="1"
                 android:text="已上 30 / 共 160 节"
                 android:textColor="#64748B"
                 android:textSize="11sp" />
@@ -42,7 +51,7 @@
             android:id="@+id/stats_progress"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="4dp"
+            android:layout_height="6dp"
             android:layout_marginTop="10dp"
             android:max="100"
             android:progressTint="#2563EB"
@@ -52,7 +61,7 @@
             android:id="@+id/stats_sections"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="本周 12 节 · 6 门课"
@@ -72,6 +81,7 @@
             android:textSize="12sp" />
 
         <LinearLayout
+            android:id="@+id/stats_nature_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -93,6 +103,7 @@
                 android:id="@+id/stats_streak"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="最长连续 5 天"

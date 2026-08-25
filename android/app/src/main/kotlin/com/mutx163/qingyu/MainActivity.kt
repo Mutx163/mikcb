@@ -1058,6 +1058,8 @@ class MainActivity : FlutterActivity() {
             "mini_list" -> TodayMiniListWidgetProvider::class.java
             "medium" -> TodayMediumWidgetProvider::class.java
             "large" -> TodayLargeWidgetProvider::class.java
+            "stats_compact" -> StatsCompactWidgetProvider::class.java
+            "stats_medium" -> StatsMediumWidgetProvider::class.java
             else -> null
         } ?: return null
         return ComponentName(this, providerClass)

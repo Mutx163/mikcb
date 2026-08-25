@@ -5130,6 +5130,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetTargetLarge44 => 'リスト4×4';
 
   @override
+  String get homeWidgetTargetStats22 => '統計 2×2';
+
+  @override
+  String get homeWidgetTargetStats24 => '統計概要 2×4';
+
+  @override
+  String get homeWidgetTargetTodayStrip41 => '今日バー 4×1';
+
+  @override
+  String get homeWidgetTargetStatsStrip41 => '統計バー 4×1';
+
+  @override
+  String get homeWidgetTargetExamCard22 => '試験カウントダウン 2×2';
+
+  @override
   String get addCourseSheetTitle => 'コンテンツ追加';
 
   @override

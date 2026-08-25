@@ -10,6 +10,8 @@ String _homeWidgetTargetLabel(
     HomeWidgetPinTarget.miniList22 => l10n.homeWidgetTargetMiniList22,
     HomeWidgetPinTarget.medium24 => l10n.homeWidgetTargetMedium24,
     HomeWidgetPinTarget.large44 => l10n.homeWidgetTargetLarge44,
+    HomeWidgetPinTarget.stats22 => l10n.homeWidgetTargetStats22,
+    HomeWidgetPinTarget.stats24 => l10n.homeWidgetTargetStats24,
   };
 }
 
@@ -115,6 +117,22 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                       Expanded(
                         child: _buildPinWidgetButton(
                           HomeWidgetPinTarget.large44,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.stats22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.stats24,
                         ),
                       ),
                     ],

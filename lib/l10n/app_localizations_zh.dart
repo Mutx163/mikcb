@@ -5037,6 +5037,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetTargetLarge44 => '列表 4×4';
 
   @override
+  String get homeWidgetTargetStats22 => '统计 2×2';
+
+  @override
+  String get homeWidgetTargetStats24 => '统计概览 2×4';
+
+  @override
+  String get homeWidgetTargetTodayStrip41 => '今日横条 4×1';
+
+  @override
+  String get homeWidgetTargetStatsStrip41 => '统计横条 4×1';
+
+  @override
+  String get homeWidgetTargetExamCard22 => '考试倒计时 2×2';
+
+  @override
   String get addCourseSheetTitle => '添加内容';
 
   @override
@@ -15082,6 +15097,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetTargetLarge44 => '清單 4×4';
+
+  @override
+  String get homeWidgetTargetStats22 => '統計 2×2';
+
+  @override
+  String get homeWidgetTargetStats24 => '統計概覽 2×4';
+
+  @override
+  String get homeWidgetTargetTodayStrip41 => '今日橫條 4×1';
+
+  @override
+  String get homeWidgetTargetStatsStrip41 => '統計橫條 4×1';
+
+  @override
+  String get homeWidgetTargetExamCard22 => '考試倒數 2×2';
 
   @override
   String get addCourseSheetTitle => '新增內容';
@@ -25173,6 +25203,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetTargetLarge44 => '清單 4×4';
+
+  @override
+  String get homeWidgetTargetStats22 => '統計 2×2';
+
+  @override
+  String get homeWidgetTargetStats24 => '統計概覽 2×4';
+
+  @override
+  String get homeWidgetTargetTodayStrip41 => '今日橫條 4×1';
+
+  @override
+  String get homeWidgetTargetStatsStrip41 => '統計橫條 4×1';
+
+  @override
+  String get homeWidgetTargetExamCard22 => '考試倒數 2×2';
 
   @override
   String get addCourseSheetTitle => '新增內容';

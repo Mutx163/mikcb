@@ -31,10 +31,27 @@ data class StatsWidgetSnapshot(
     }
 }
 
+/**
+ * 统计小组件的外观设置，与今日系列共用同一份用户配置：
+ * 背景风格（solid/glass/gradient）、圆角档位、高度微调。
+ */
+data class StatsWidgetChrome(
+    val backgroundStyle: String,
+    val cornerRadius: Int,
+    val heightAdjustment: Int,
+)
+
 /** Storage + shared rendering helpers for the stats widgets. */
 object StatsWidgetSupport {
     private const val PREFS_NAME = "stats_widget_prefs"
     private const val KEY_SNAPSHOT_JSON = "snapshot_json"
+
+    /** 默认值与 TimetableSettings 的默认外观保持一致（solid / 22dp / -11dp）。 */
+    private val DEFAULT_CHROME = StatsWidgetChrome(
+        backgroundStyle = "solid",
+        cornerRadius = 22,
+        heightAdjustment = -11,
+    )
 
     fun syncSnapshot(context: Context, snapshot: Map<String, Any?>) {
         val payload = JSONObject(snapshot).toString()
@@ -61,6 +78,20 @@ object StatsWidgetSupport {
         } catch (_: Exception) {
             null
         }
+    }
+
+    /**
+     * 直接从 Flutter SharedPreferences 读取与今日小组件同源的外观设置，
+     * 无需 Dart 侧扩协议；无档案时回退到默认值。
+     */
+    fun readChrome(context: Context): StatsWidgetChrome {
+        val settings = TodayWidgetSupport.readActiveProfileJson(context)
+            ?.optJSONObject("settings") ?: JSONObject()
+        return StatsWidgetChrome(
+            backgroundStyle = settings.optString("widgetBackgroundStyle", DEFAULT_CHROME.backgroundStyle),
+            cornerRadius = settings.optDouble("widgetCornerRadius", DEFAULT_CHROME.cornerRadius.toDouble()).toInt(),
+            heightAdjustment = settings.optDouble("widgetHeightAdjustment", DEFAULT_CHROME.heightAdjustment.toDouble()).toInt(),
+        )
     }
 
     fun updateAll(context: Context) {

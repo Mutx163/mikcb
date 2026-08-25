@@ -5160,6 +5160,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetTargetLarge44 => '목록 4×4';
 
   @override
+  String get homeWidgetTargetStats22 => '통계 2×2';
+
+  @override
+  String get homeWidgetTargetStats24 => '통계 개요 2×4';
+
+  @override
+  String get homeWidgetTargetTodayStrip41 => '오늘 바 4×1';
+
+  @override
+  String get homeWidgetTargetStatsStrip41 => '통계 바 4×1';
+
+  @override
+  String get homeWidgetTargetExamCard22 => '시험 카운트다운 2×2';
+
+  @override
   String get addCourseSheetTitle => '콘텐츠 추가';
 
   @override

@@ -5356,6 +5356,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetTargetLarge44 => 'List 4×4';
 
   @override
+  String get homeWidgetTargetStats22 => 'Stats 2×2';
+
+  @override
+  String get homeWidgetTargetStats24 => 'Stats overview 2×4';
+
+  @override
+  String get homeWidgetTargetTodayStrip41 => 'Today bar 4×1';
+
+  @override
+  String get homeWidgetTargetStatsStrip41 => 'Stats bar 4×1';
+
+  @override
+  String get homeWidgetTargetExamCard22 => 'Exam countdown 2×2';
+
+  @override
   String get addCourseSheetTitle => 'Add Content';
 
   @override

@@ -28,6 +28,7 @@ class WidgetRefreshWorker(
     override suspend fun doWork(): Result {
         return try {
             TodayWidgetSupport.updateAll(applicationContext)
+            StatsWidgetSupport.updateAll(applicationContext)
             HomeWidgetStorage.rescheduleRefresh(applicationContext)
             Result.success()
         } catch (e: Exception) {

@@ -9235,6 +9235,36 @@ abstract class AppLocalizations {
   /// **'列表 4×4'**
   String get homeWidgetTargetLarge44;
 
+  /// No description provided for @homeWidgetTargetStats22.
+  ///
+  /// In zh, this message translates to:
+  /// **'统计 2×2'**
+  String get homeWidgetTargetStats22;
+
+  /// No description provided for @homeWidgetTargetStats24.
+  ///
+  /// In zh, this message translates to:
+  /// **'统计概览 2×4'**
+  String get homeWidgetTargetStats24;
+
+  /// No description provided for @homeWidgetTargetTodayStrip41.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日横条 4×1'**
+  String get homeWidgetTargetTodayStrip41;
+
+  /// No description provided for @homeWidgetTargetStatsStrip41.
+  ///
+  /// In zh, this message translates to:
+  /// **'统计横条 4×1'**
+  String get homeWidgetTargetStatsStrip41;
+
+  /// No description provided for @homeWidgetTargetExamCard22.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试倒计时 2×2'**
+  String get homeWidgetTargetExamCard22;
+
   /// No description provided for @addCourseSheetTitle.
   ///
   /// In zh, this message translates to:

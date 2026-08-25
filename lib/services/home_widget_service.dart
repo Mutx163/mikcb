@@ -12,7 +12,9 @@ enum HomeWidgetPinTarget {
   compact22('compact'),
   miniList22('mini_list'),
   medium24('medium'),
-  large44('large');
+  large44('large'),
+  stats22('stats_compact'),
+  stats24('stats_medium');
 
   const HomeWidgetPinTarget(this.value);
 
