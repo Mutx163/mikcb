@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-25T02:41:25+00:00",
+  "updatedAt": "2026-08-26T02:49:08+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 148,
-    "schools": 143,
+    "total": 151,
+    "schools": 146,
     "generic": 5
   },
   "schools": [
@@ -576,6 +576,20 @@
       "category": "school"
     },
     {
+      "id": "LUT",
+      "name": "兰州理工大学",
+      "initial": "L",
+      "resourceFolder": "LUT",
+      "category": "school"
+    },
+    {
+      "id": "USTL",
+      "name": "辽宁科技大学",
+      "initial": "L",
+      "resourceFolder": "USTL",
+      "category": "school"
+    },
+    {
       "id": "MMPT",
       "name": "茂名职业技术学院",
       "initial": "M",
@@ -1007,6 +1021,13 @@
       "name": "中国计量大学",
       "initial": "Z",
       "resourceFolder": "CJLU",
+      "category": "school"
+    },
+    {
+      "id": "SYSU",
+      "name": "中山大学",
+      "initial": "Z",
+      "resourceFolder": "SYSU",
       "category": "school"
     },
     {
