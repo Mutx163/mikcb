@@ -4,6 +4,7 @@
     android:initialLayout="@layout/widget_today_large"
     android:minWidth="250dp"
     android:minHeight="220dp"
+    android:previewImage="@drawable/widget_preview_today_large"
     android:previewLayout="@layout/widget_today_large"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"
