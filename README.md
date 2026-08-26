@@ -8,7 +8,7 @@
 
 一个面向校园场景的 Android 课表应用。
 
-🌐 官网：<https://mutx.ccwu.cc> · [下载最新版本](https://github.com/Mutx163/mikcb/releases)
+🌐 官网：<https://163366.xyz> · [下载最新版本](https://github.com/Mutx163/mikcb/releases)
 
 轻屿课表的重点不是单纯展示课程，而是把课表、提醒、通知、小组件和 HyperOS 超级岛串成一条完整链路。它关注的是“接下来要上什么课、现在这节课进行到哪、能不能不打开应用就知道状态”。
 

@@ -258,7 +258,7 @@
   "privacy.h4": "4. 제3자 서비스",
   "privacy.p4": "버전 업데이트, 사이트 표시, GitHub Releases, 앱 내 선택 통계/진단은 GitHub, 미러, Umeng 등에 의존할 수 있습니다. 앱 내 통계는 옵트인 후에만. 웹사이트 방문 통계는 다음 절.",
   "privacy.h5": "5. 웹사이트 방문 통계",
-  "privacy.p5": "이 사이트(mutx.ccwu.cc) 방문 시 사이트 개선을 위해 Google Analytics(GA4)를 사용할 수 있습니다. 측정 ID는 페이지 meta(G-XXXXXXXX 형식)에 있습니다.",
+  "privacy.p5": "이 사이트(163366.xyz) 방문 시 사이트 개선을 위해 Google Analytics(GA4)를 사용할 수 있습니다. 측정 ID는 페이지 meta(G-XXXXXXXX 형식)에 있습니다.",
   "privacy.l5a": "「동의」를 누른 뒤에만 Google Analytics 스크립트를 로드합니다. 미동의 또는 「거부」 시 로드하지 않습니다.",
   "privacy.l5b": "페이지 경로, 언어, 기기/브라우저 유형, 유입 경로, 다운로드 클릭 등 이벤트 데이터를 수집할 수 있습니다. 광고 용도가 아닙니다.",
   "privacy.l5c": "브라우저 Do Not Track이 켜져 있으면 이전에 동의했더라도 Google Analytics를 로드하지 않습니다.",

@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
-BASE_URL = "https://mutx.ccwu.cc"
+BASE_URL = "https://163366.xyz"
 TOPIC_LASTMOD = "2026-08-19"
 RELEASE_TYPES = ("新增", "优化", "修复", "调整", "测试", "移除", "更新")
 
@@ -587,7 +587,7 @@ def build_sitemap(feed: dict[str, Any], schools: dict[str, Any]) -> str:
 
 
 def main() -> int:
-    # 说明：曾提供 --base-url 选项，但生成器仅支持规范站点 mutx.ccwu.cc
+    # 说明：曾提供 --base-url 选项，但生成器仅支持规范站点 163366.xyz
     # （canonical/og:url/sitemap 均以 BASE_URL 为唯一事实源），传入其他值
     # 只会被 SystemExit 拒绝，属死参数，已移除。
     parser = argparse.ArgumentParser(description=__doc__)

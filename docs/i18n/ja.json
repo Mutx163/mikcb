@@ -258,7 +258,7 @@
   "privacy.h4": "4. サードパーティサービス",
   "privacy.p4": "バージョン更新、公式サイト表示、GitHub Releases、アプリ内の任意統計／診断は GitHub、ミラー、Umeng などに依存する場合があります。アプリ内統計はオプトイン後のみ。サイト訪問統計は次節。",
   "privacy.h5": "5. サイト訪問統計",
-  "privacy.p5": "本サイト（mutx.ccwu.cc）訪問時、サイト改善のため Google Analytics（GA4）を使う場合があります。測定 ID はページ meta（G-XXXXXXXX 形式）に記載します。",
+  "privacy.p5": "本サイト（163366.xyz）訪問時、サイト改善のため Google Analytics（GA4）を使う場合があります。測定 ID はページ meta（G-XXXXXXXX 形式）に記載します。",
   "privacy.l5a": "「同意する」を押したときのみ Google Analytics を読み込みます。未同意または「拒否する」では読み込みません。",
   "privacy.l5b": "ページパス、言語、端末／ブラウザ種別、参照元、ダウンロードクリック等のイベントを収集する場合があります。広告用途ではありません。",
   "privacy.l5c": "ブラウザの Do Not Track が有効な場合、以前同意していても Google Analytics は読み込みません。",

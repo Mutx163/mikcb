@@ -281,7 +281,7 @@
   "privacy.h4": "4. 第三方服务",
   "privacy.p4": "版本更新、官网展示、GitHub Releases、部分统计或诊断能力可能依赖 GitHub、镜像线路或友盟等第三方服务。App 内统计 / 诊断以你主动开启为前提。官网访问统计见下一节。",
   "privacy.h5": "5. 官网访问统计",
-  "privacy.p5": "访问本官网（mutx.ccwu.cc）时，我们可能使用 Google Analytics（GA4）了解页面访问与交互，以便改进官网。测量 ID 写在页面 meta 中（形如 G-XXXXXXXX）。",
+  "privacy.p5": "访问本官网（163366.xyz）时，我们可能使用 Google Analytics（GA4）了解页面访问与交互，以便改进官网。测量 ID 写在页面 meta 中（形如 G-XXXXXXXX）。",
   "privacy.l5a": "仅在你点击「同意」后才会加载 Google Analytics 脚本；未同意或点击「拒绝」则不加载。",
   "privacy.l5b": "可能收集的数据包括：页面路径、语言、设备 / 浏览器类型、来源、以及我们主动上报的交互事件（如下载按钮点击）。不用于广告投放。",
   "privacy.l5c": "若浏览器开启「禁止跟踪」（Do Not Track），即使你曾同意，我们也不会加载 Google Analytics。",

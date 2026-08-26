@@ -258,7 +258,7 @@
   "privacy.h4": "4. 第三方服務",
   "privacy.p4": "版本更新、官網展示、GitHub Releases、部分統計或診斷能力可能依賴 GitHub、映像線路或友盟等第三方服務。App 內統計／診斷以你主動開啟為前提。官網造訪統計見下一節。",
   "privacy.h5": "5. 官網造訪統計",
-  "privacy.p5": "造訪本官網（mutx.ccwu.cc）時，我們可能使用 Google Analytics（GA4）瞭解頁面造訪與互動，以便改進官網。測量 ID 寫在頁面 meta 中（形如 G-XXXXXXXX）。",
+  "privacy.p5": "造訪本官網（163366.xyz）時，我們可能使用 Google Analytics（GA4）瞭解頁面造訪與互動，以便改進官網。測量 ID 寫在頁面 meta 中（形如 G-XXXXXXXX）。",
   "privacy.l5a": "僅在你點擊「同意」後才會載入 Google Analytics 腳本；未同意或點擊「拒絕」則不載入。",
   "privacy.l5b": "可能收集的資料包括：頁面路徑、語言、裝置／瀏覽器類型、來源，以及我們主動上報的互動事件（如下載按鈕點擊）。不用於廣告投放。",
   "privacy.l5c": "若瀏覽器開啟「禁止追蹤」（Do Not Track），即使你曾同意，我們也不會載入 Google Analytics。",
