@@ -85,6 +85,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,
       liquidGlassHomeChromeEnabled: settings.liquidGlassHomeChromeEnabled,
       liquidGlassDockEnabled: settings.liquidGlassDockEnabled,
+      liquidGlassPickerButtonsEnabled: settings.liquidGlassPickerButtonsEnabled,
     );
 
     return FrostedAppearanceScope(

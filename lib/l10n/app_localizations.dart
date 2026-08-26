@@ -16891,6 +16891,18 @@ abstract class AppLocalizations {
   /// **'底部悬浮药丸与加课圆钮'**
   String get liquidGlassScopeDockSubtitle;
 
+  /// No description provided for @liquidGlassScopePickerButtonsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸选点按钮'**
+  String get liquidGlassScopePickerButtonsTitle;
+
+  /// No description provided for @liquidGlassScopePickerButtonsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸位置选择页悬浮在壁纸上的玻璃按钮'**
+  String get liquidGlassScopePickerButtonsSubtitle;
+
   /// No description provided for @frostedGlassModeFrosted.
   ///
   /// In zh, this message translates to:

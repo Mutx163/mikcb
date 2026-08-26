@@ -5774,6 +5774,8 @@
   "liquidGlassScopeHomeChromeSubtitle": "Glass band behind the title bar and weekday bar",
   "liquidGlassScopeDockTitle": "Glass dock navigation",
   "liquidGlassScopeDockSubtitle": "Floating bottom pill and add-course button",
+  "liquidGlassScopePickerButtonsTitle": "Wallpaper picker buttons",
+  "liquidGlassScopePickerButtonsSubtitle": "Floating glass buttons on the wallpaper position picker",
   "frostedGlassModeFrosted": "Classic Frosted",
   "frostedGlassModeLiquid": "Liquid Glass",
   "frostedGlassModeGaussian": "Gaussian Blur",

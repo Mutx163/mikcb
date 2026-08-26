@@ -9658,6 +9658,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassScopeDockSubtitle => '하단 플로팅 필과 수업 추가 버튼';
 
   @override
+  String get liquidGlassScopePickerButtonsTitle => '배경화면 선택 버튼';
+
+  @override
+  String get liquidGlassScopePickerButtonsSubtitle =>
+      '배경화면 위치 선택 페이지에서 배경 위에 떠 있는 유리 버튼';
+
+  @override
   String get frostedGlassModeFrosted => '클래식 프로스트';
 
   @override

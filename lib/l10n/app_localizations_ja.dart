@@ -9615,6 +9615,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassScopeDockSubtitle => '下部のフローティングピルと授業追加ボタン';
 
   @override
+  String get liquidGlassScopePickerButtonsTitle => '壁紙配置ボタン';
+
+  @override
+  String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選択ページで壁紙に浮かぶガラスボタン';
+
+  @override
   String get frostedGlassModeFrosted => 'クラシックフロスト';
 
   @override

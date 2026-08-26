@@ -22,6 +22,7 @@ void main() {
     bool sheetDialog = true,
     bool homeChrome = true,
     bool dock = true,
+    bool pickerButtons = true,
   }) {
     final settings = TimetableSettings.defaults().copyWith(
       frostedBlurEnabled: true,
@@ -31,6 +32,7 @@ void main() {
       liquidGlassSheetDialogEnabled: sheetDialog,
       liquidGlassHomeChromeEnabled: homeChrome,
       liquidGlassDockEnabled: dock,
+      liquidGlassPickerButtonsEnabled: pickerButtons,
     );
     return settings.frostedAppearance;
   }
@@ -43,9 +45,10 @@ void main() {
       expect(d.liquidGlassSheetDialogEnabled, isTrue);
       expect(d.liquidGlassHomeChromeEnabled, isTrue);
       expect(d.liquidGlassDockEnabled, isTrue);
+      expect(d.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
-    test('frostedAppearance 映射五个开关', () {
+    test('frostedAppearance 映射六个开关', () {
       final a = liquidAppearance(selectSheet: false, dock: false);
       expect(a.glassMode, FrostedGlassMode.liquidGlass);
       expect(a.liquidGlassPopupEnabled, isTrue);
@@ -53,6 +56,7 @@ void main() {
       expect(a.liquidGlassSheetDialogEnabled, isTrue);
       expect(a.liquidGlassHomeChromeEnabled, isTrue);
       expect(a.liquidGlassDockEnabled, isFalse);
+      expect(a.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
     test('JSON 往返保留开关；老档案缺键回退默认值', () {
@@ -62,6 +66,7 @@ void main() {
         liquidGlassSheetDialogEnabled: false,
         liquidGlassHomeChromeEnabled: false,
         liquidGlassDockEnabled: false,
+        liquidGlassPickerButtonsEnabled: false,
       );
       final restored = TimetableSettings.fromJson(custom.toJson());
       expect(restored.liquidGlassPopupEnabled, isFalse);
@@ -69,6 +74,7 @@ void main() {
       expect(restored.liquidGlassSheetDialogEnabled, isFalse);
       expect(restored.liquidGlassHomeChromeEnabled, isFalse);
       expect(restored.liquidGlassDockEnabled, isFalse);
+      expect(restored.liquidGlassPickerButtonsEnabled, isFalse);
 
       final legacy = TimetableSettings.fromJson(const {'sections': []});
       expect(legacy.liquidGlassPopupEnabled, isTrue);
@@ -76,6 +82,7 @@ void main() {
       expect(legacy.liquidGlassSheetDialogEnabled, isTrue);
       expect(legacy.liquidGlassHomeChromeEnabled, isTrue);
       expect(legacy.liquidGlassDockEnabled, isTrue);
+      expect(legacy.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
     test('外观恢复默认作用域覆盖五个开关', () {
@@ -85,6 +92,7 @@ void main() {
         liquidGlassSheetDialogEnabled: false,
         liquidGlassHomeChromeEnabled: false,
         liquidGlassDockEnabled: false,
+        liquidGlassPickerButtonsEnabled: false,
       );
       final reset = applySettingsReset(dirty, SettingsResetScope.appearance);
       expect(reset.liquidGlassPopupEnabled, isTrue);
@@ -92,6 +100,7 @@ void main() {
       expect(reset.liquidGlassSheetDialogEnabled, isTrue);
       expect(reset.liquidGlassHomeChromeEnabled, isTrue);
       expect(reset.liquidGlassDockEnabled, isTrue);
+      expect(reset.liquidGlassPickerButtonsEnabled, isTrue);
     });
   });
 

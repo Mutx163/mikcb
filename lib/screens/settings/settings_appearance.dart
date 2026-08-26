@@ -372,6 +372,16 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                       );
                     },
                   ),
+                  HyperosSwitchTile(
+                    title: l10n.liquidGlassScopePickerButtonsTitle,
+                    subtitle: l10n.liquidGlassScopePickerButtonsSubtitle,
+                    value: _draft.liquidGlassPickerButtonsEnabled,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(liquidGlassPickerButtonsEnabled: value),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),

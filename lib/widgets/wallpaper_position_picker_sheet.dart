@@ -547,8 +547,10 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       wallpaperTopLuminance: surfaceLuminance,
     );
 
+    // 「液态玻璃作用范围 → 壁纸选点按钮」关闭时回退磨砂材质。
     if (blurEnabled &&
-        appearance.glassMode == FrostedGlassMode.liquidGlass) {
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassPickerButtonsEnabled) {
       // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。液态玻璃自带
       // 边缘高光，不再叠加描边；衬底压在玻璃上保证文字对比度
       // （与课程玻璃卡片叠课程色 tint 同一做法）。

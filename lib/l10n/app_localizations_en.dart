@@ -9897,6 +9897,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Floating bottom pill and add-course button';
 
   @override
+  String get liquidGlassScopePickerButtonsTitle => 'Wallpaper picker buttons';
+
+  @override
+  String get liquidGlassScopePickerButtonsSubtitle =>
+      'Floating glass buttons on the wallpaper position picker';
+
+  @override
   String get frostedGlassModeFrosted => 'Classic Frosted';
 
   @override

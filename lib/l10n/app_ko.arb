@@ -5544,6 +5544,8 @@
   "liquidGlassScopeHomeChromeSubtitle": "제목 표시줄과 요일 표시줄의 유리 배경",
   "liquidGlassScopeDockTitle": "글래스 독 내비게이션",
   "liquidGlassScopeDockSubtitle": "하단 플로팅 필과 수업 추가 버튼",
+  "liquidGlassScopePickerButtonsTitle": "배경화면 선택 버튼",
+  "liquidGlassScopePickerButtonsSubtitle": "배경화면 위치 선택 페이지에서 배경 위에 떠 있는 유리 버튼",
   "frostedGlassModeFrosted": "클래식 프로스트",
   "frostedGlassModeLiquid": "리퀴드 글래스",
   "frostedGlassModeGaussian": "가우시안 블러",

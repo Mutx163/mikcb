@@ -1155,6 +1155,7 @@ class TimetableSettings {
   static const bool defaultLiquidGlassSheetDialogEnabled = true;
   static const bool defaultLiquidGlassHomeChromeEnabled = true;
   static const bool defaultLiquidGlassDockEnabled = true;
+  static const bool defaultLiquidGlassPickerButtonsEnabled = true;
   static const double defaultPageTransitionSpeed = 1.0;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
@@ -1357,6 +1358,7 @@ class TimetableSettings {
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
     liquidGlassHomeChromeEnabled: liquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
+  liquidGlassPickerButtonsEnabled: liquidGlassPickerButtonsEnabled,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1372,6 +1374,7 @@ class TimetableSettings {
   final bool liquidGlassSheetDialogEnabled;
   final bool liquidGlassHomeChromeEnabled;
   final bool liquidGlassDockEnabled;
+  final bool liquidGlassPickerButtonsEnabled;
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
   final LiquidGlassPreset liquidGlassPreset;
   final LiquidGlassTuning? liquidGlassTuning;
@@ -1549,6 +1552,8 @@ class TimetableSettings {
     this.liquidGlassHomeChromeEnabled =
         defaultLiquidGlassHomeChromeEnabled,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
+    this.liquidGlassPickerButtonsEnabled =
+        defaultLiquidGlassPickerButtonsEnabled,
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,
     this.liquidGlassTuning,
@@ -1890,6 +1895,7 @@ class TimetableSettings {
       'liquidGlassSheetDialogEnabled': liquidGlassSheetDialogEnabled,
       'liquidGlassHomeChromeEnabled': liquidGlassHomeChromeEnabled,
       'liquidGlassDockEnabled': liquidGlassDockEnabled,
+      'liquidGlassPickerButtonsEnabled': liquidGlassPickerButtonsEnabled,
       'courseCardSurfaceStyle': courseCardSurfaceStyle.value,
       'liquidGlassPreset': liquidGlassPreset.value,
       if (liquidGlassTuning != null)
@@ -2316,6 +2322,9 @@ class TimetableSettings {
       liquidGlassDockEnabled:
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
+      liquidGlassPickerButtonsEnabled:
+          json['liquidGlassPickerButtonsEnabled'] as bool? ??
+          defaultLiquidGlassPickerButtonsEnabled,
       courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
         json['courseCardSurfaceStyle'] as String?,
       ),
@@ -2533,6 +2542,7 @@ class TimetableSettings {
     bool? liquidGlassSheetDialogEnabled,
     bool? liquidGlassHomeChromeEnabled,
     bool? liquidGlassDockEnabled,
+    bool? liquidGlassPickerButtonsEnabled,
     CourseCardSurfaceStyle? courseCardSurfaceStyle,
     LiquidGlassPreset? liquidGlassPreset,
     LiquidGlassTuning? liquidGlassTuning,
@@ -2860,6 +2870,9 @@ class TimetableSettings {
           liquidGlassHomeChromeEnabled ?? this.liquidGlassHomeChromeEnabled,
       liquidGlassDockEnabled:
           liquidGlassDockEnabled ?? this.liquidGlassDockEnabled,
+      liquidGlassPickerButtonsEnabled:
+          liquidGlassPickerButtonsEnabled ??
+          this.liquidGlassPickerButtonsEnabled,
       courseCardSurfaceStyle:
           courseCardSurfaceStyle ?? this.courseCardSurfaceStyle,
       liquidGlassPreset: liquidGlassPreset ?? this.liquidGlassPreset,

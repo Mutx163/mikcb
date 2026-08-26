@@ -39,6 +39,7 @@ void main() {
       liquidGlassSheetDialogEnabled: false,
       liquidGlassHomeChromeEnabled: false,
       liquidGlassDockEnabled: false,
+      liquidGlassPickerButtonsEnabled: false,
       // 首页与导航（自外观页拆出的独立恢复作用域）
       homeNavigationForm: HomeNavigationForm.glassDock,
       homeTitleStyle: HomeTitleStyle.brand,
@@ -170,6 +171,7 @@ void main() {
     expect(result.liquidGlassSheetDialogEnabled, isTrue);
     expect(result.liquidGlassHomeChromeEnabled, isTrue);
     expect(result.liquidGlassDockEnabled, isTrue);
+    expect(result.liquidGlassPickerButtonsEnabled, isTrue);
 
     // 首页与导航的字段保持「脏」值：导航形态已拆到独立 scope。
     final dirty = dirtySettings();

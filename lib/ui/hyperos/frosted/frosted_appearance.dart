@@ -19,6 +19,7 @@ const kDefaultLiquidGlassSelectSheetEnabled = false;
 const kDefaultLiquidGlassSheetDialogEnabled = true;
 const kDefaultLiquidGlassHomeChromeEnabled = true;
 const kDefaultLiquidGlassDockEnabled = true;
+const kDefaultLiquidGlassPickerButtonsEnabled = true;
 
 /// User-tunable frosted glass appearance for home sheets and related surfaces.
 /// Glass-surface rendering mode for frosted/Wallpaper-backgrounded sheets and cards.
@@ -62,6 +63,8 @@ class FrostedAppearance {
         kDefaultLiquidGlassSheetDialogEnabled,
     this.liquidGlassHomeChromeEnabled = kDefaultLiquidGlassHomeChromeEnabled,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
+    this.liquidGlassPickerButtonsEnabled =
+        kDefaultLiquidGlassPickerButtonsEnabled,
   });
 
   static const defaults = FrostedAppearance(
@@ -103,6 +106,9 @@ class FrostedAppearance {
   /// 液态玻璃作用范围：玻璃坞导航（底部悬浮药丸与加课圆钮）。
   final bool liquidGlassDockEnabled;
 
+  /// 液态玻璃作用范围：壁纸位置选择页悬浮在壁纸上的玻璃按钮。
+  final bool liquidGlassPickerButtonsEnabled;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -117,7 +123,8 @@ class FrostedAppearance {
           liquidGlassSelectSheetEnabled == other.liquidGlassSelectSheetEnabled &&
           liquidGlassSheetDialogEnabled == other.liquidGlassSheetDialogEnabled &&
           liquidGlassHomeChromeEnabled == other.liquidGlassHomeChromeEnabled &&
-          liquidGlassDockEnabled == other.liquidGlassDockEnabled;
+          liquidGlassDockEnabled == other.liquidGlassDockEnabled &&
+          liquidGlassPickerButtonsEnabled == other.liquidGlassPickerButtonsEnabled;
 
   @override
   int get hashCode => Object.hash(
@@ -132,6 +139,7 @@ class FrostedAppearance {
     liquidGlassSheetDialogEnabled,
     liquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled,
+    liquidGlassPickerButtonsEnabled,
   );
 }
 

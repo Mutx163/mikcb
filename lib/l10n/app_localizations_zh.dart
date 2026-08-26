@@ -9343,6 +9343,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassScopeDockSubtitle => '底部悬浮药丸与加课圆钮';
 
   @override
+  String get liquidGlassScopePickerButtonsTitle => '壁纸选点按钮';
+
+  @override
+  String get liquidGlassScopePickerButtonsSubtitle => '壁纸位置选择页悬浮在壁纸上的玻璃按钮';
+
+  @override
   String get frostedGlassModeFrosted => '经典磨砂';
 
   @override
@@ -19485,6 +19491,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassScopeDockSubtitle => '底部懸浮藥丸與加課圓鈕';
 
   @override
+  String get liquidGlassScopePickerButtonsTitle => '壁紙選點按鈕';
+
+  @override
+  String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選擇頁懸浮在壁紙上的玻璃按鈕';
+
+  @override
   String get frostedGlassModeFrosted => '經典磨砂';
 
   @override
@@ -29625,6 +29637,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liquidGlassScopeDockSubtitle => '底部懸浮藥丸與加課圓鈕';
+
+  @override
+  String get liquidGlassScopePickerButtonsTitle => '壁紙選點按鈕';
+
+  @override
+  String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選擇頁懸浮在壁紙上的玻璃按鈕';
 
   @override
   String get frostedGlassModeFrosted => '經典磨砂';

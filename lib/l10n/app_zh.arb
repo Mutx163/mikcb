@@ -5774,6 +5774,8 @@
   "liquidGlassScopeHomeChromeSubtitle": "标题栏与星期栏的玻璃背景带",
   "liquidGlassScopeDockTitle": "玻璃坞导航",
   "liquidGlassScopeDockSubtitle": "底部悬浮药丸与加课圆钮",
+  "liquidGlassScopePickerButtonsTitle": "壁纸选点按钮",
+  "liquidGlassScopePickerButtonsSubtitle": "壁纸位置选择页悬浮在壁纸上的玻璃按钮",
   "frostedGlassModeFrosted": "经典磨砂",
   "frostedGlassModeLiquid": "液态玻璃",
   "frostedGlassModeGaussian": "高斯模糊",
