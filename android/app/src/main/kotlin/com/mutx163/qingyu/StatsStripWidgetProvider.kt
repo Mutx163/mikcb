@@ -224,8 +224,9 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
             }
 
             // 第三行：高度充裕时的学期进度与连续天数摘要。
+            // 用短进度句，保证 4×1 最小宽度下也不被 ellipsize 成「0.…」。
             val sub2Text = if (profile.heightDp >= 150 && snapshot != null && snapshot.semesterTotal > 0) {
-                context.getString(R.string.widget_stats_progress, snapshot.semesterDone, snapshot.semesterTotal) +
+                context.getString(R.string.widget_stats_progress_short, snapshot.semesterDone, snapshot.semesterTotal) +
                     " · " + context.getString(R.string.widget_stats_streak, snapshot.longestStreak)
             } else {
                 ""

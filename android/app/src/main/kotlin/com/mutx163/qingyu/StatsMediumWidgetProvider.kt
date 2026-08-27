@@ -107,7 +107,8 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.stats_nature, "")
                 views.setTextViewText(R.id.stats_streak, "")
                 views.setProgressBar(R.id.stats_progress, 100, 0, false)
-                views.setViewVisibility(R.id.stats_extra, View.GONE)
+                views.setViewVisibility(R.id.stats_extra_pct, View.GONE)
+                views.setViewVisibility(R.id.stats_extra_daily, View.GONE)
             } else {
                 val max = if (snapshot.semesterTotal > 0) snapshot.semesterTotal else 1
                 val done = snapshot.semesterDone.coerceIn(0, max)
@@ -143,19 +144,26 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                     context.getString(R.string.widget_stats_streak, snapshot.longestStreak),
                 )
 
-                // 中段统计带（高度充裕时）：单条合并文本，避免双列在窄宽度被截断。
+                // 中段统计带（高度充裕时）：两条全宽短行，禁止合并长句截断。
                 val showExtraRow = heightDp >= 210 && !profile.isNarrow
                 if (showExtraRow) {
                     val percent = ((done.toDouble() / max) * 100).roundToInt()
                     val dailyAvg = String.format(Locale.getDefault(), "%.1f", snapshot.weekSections / 5.0)
                     views.setTextViewText(
-                        R.id.stats_extra,
-                        context.getString(R.string.widget_stats_percent, percent) + " · " +
-                            context.getString(R.string.widget_stats_daily, dailyAvg),
+                        R.id.stats_extra_pct,
+                        context.getString(R.string.widget_stats_percent, percent),
+                    )
+                    views.setTextViewText(
+                        R.id.stats_extra_daily,
+                        context.getString(R.string.widget_stats_daily, dailyAvg),
                     )
                 }
                 views.setViewVisibility(
-                    R.id.stats_extra,
+                    R.id.stats_extra_pct,
+                    if (showExtraRow) View.VISIBLE else View.GONE,
+                )
+                views.setViewVisibility(
+                    R.id.stats_extra_daily,
                     if (showExtraRow) View.VISIBLE else View.GONE,
                 )
             }
@@ -164,7 +172,8 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.stats_delta, secondaryColor)
             views.setTextColor(R.id.stats_nature, secondaryColor)
             views.setTextColor(R.id.stats_streak, secondaryColor)
-            views.setTextColor(R.id.stats_extra, secondaryColor)
+            views.setTextColor(R.id.stats_extra_pct, secondaryColor)
+            views.setTextColor(R.id.stats_extra_daily, secondaryColor)
 
             // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 30+，低版本保留蓝色兜底）。
             // 注意：这里反射的是 ProgressBar 的 setter 名，必须是 *TintList 形式，
@@ -201,7 +210,12 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
-                R.id.stats_extra,
+                R.id.stats_extra_pct,
+                if (profile.isNarrow || profile.isShort) 12f else 13f,
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_extra_daily,
                 if (profile.isNarrow || profile.isShort) 12f else 13f,
             )
             TodayWidgetSupport.setTextSizeSp(

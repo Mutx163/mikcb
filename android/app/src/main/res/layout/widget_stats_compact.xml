@@ -72,15 +72,15 @@
             android:textColor="#64748B"
             android:textSize="11sp" />
 
-        <!-- 合并单行：双列(weight+wrap)在窄宽度会互挤截断，保持左对齐单行。 -->
+        <!-- 单行只放学期进度百分比：合并长句在 2 列宽摆位会被截断。 -->
         <TextView
-            android:id="@+id/stats_extra"
+            android:id="@+id/stats_extra_pct"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="已上 5% · 日均约 0.6 节"
+            android:text="已上 18%"
             android:textColor="#64748B"
             android:textSize="11sp" />
 

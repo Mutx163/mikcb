@@ -88,18 +88,31 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- 中段带：单条合并文本。不要拆成 weight+wrap 双 TextView——
-             真机 2 列宽度（约150dp）下 wrap 侧先占满宽度，weighted 侧会被
-             ellipsize 成「已上 …」。 -->
+        <!-- 中段带：必须拆成两条全宽短行。任何含「 · 」的合并长句在真机
+             2 列宽（约150dp）都会被 ellipsize 成「0.…」式假小数点。
+             全宽单行与底部必修/连续行同构，是最稳妥的形态。 -->
         <TextView
-            android:id="@+id/stats_extra"
+            android:id="@+id/stats_extra_pct"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="已上 5% · 日均约 0.6 节"
+            android:text="已上 18%"
             android:textColor="#64748B"
-            android:textSize="13sp" />
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/stats_extra_daily"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="日均约 4.4 节"
+            android:textColor="#64748B"
+            android:textSize="13sp"
+            android:visibility="gone" />
 
         <!-- 下弹性空隙：与上方对称，让底部明细区贴住下边缘。 -->
         <LinearLayout
