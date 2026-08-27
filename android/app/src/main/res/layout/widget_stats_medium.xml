@@ -81,8 +81,10 @@
             android:textColor="#64748B"
             android:textSize="12sp" />
 
-        <!-- 弹性空隙：把富余高度全部吃在这里，顶部核心区钉顶、明细区沉底。 -->
-        <Space
+        <!-- 弹性空隙：把富余高度全部吃在这里，顶部核心区钉顶、明细区沉底。
+             注意：RemoteViews 布局不支持 <Space>（不在允许的视图白名单内，
+             会导致「载入窗口小组件时出现问题」），必须用普通 View 占位。 -->
+        <View
             android:id="@+id/stats_flex"
             android:layout_width="match_parent"
             android:layout_height="0dp"
