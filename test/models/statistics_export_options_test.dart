@@ -37,8 +37,8 @@ void main() {
 
   group('StatisticsExportBrand', () {
     test('exposes stable public brand urls', () {
-      expect(StatisticsExportBrand.websiteUrl, contains('mutx.ccwu.cc'));
-      expect(StatisticsExportBrand.websiteDisplay, 'mutx.ccwu.cc');
+      expect(StatisticsExportBrand.websiteUrl, contains('163366.xyz'));
+      expect(StatisticsExportBrand.websiteDisplay, '163366.xyz');
       expect(StatisticsExportBrand.githubUrl, contains('Mutx163/mikcb'));
       expect(StatisticsExportBrand.githubDisplay, 'github.com/Mutx163/mikcb');
     });
