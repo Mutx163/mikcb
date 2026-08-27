@@ -10,7 +10,9 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingLeft="16dp"
-        android:paddingRight="16dp">
+        android:paddingTop="14dp"
+        android:paddingRight="16dp"
+        android:paddingBottom="12dp">
 
         <!-- 双栏主体：height=0dp+weight 吃掉页脚之上全部高度，
              栏内容各自在内部垂直分布，避免上下大片同质留白。 -->

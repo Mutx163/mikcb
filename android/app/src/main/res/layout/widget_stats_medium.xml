@@ -88,37 +88,18 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <LinearLayout
-            android:id="@+id/stats_extra_row"
+        <!-- 中段带：单条合并文本。不要拆成 weight+wrap 双 TextView——
+             真机 2 列宽度（约150dp）下 wrap 侧先占满宽度，weighted 侧会被
+             ellipsize 成「已上 …」。 -->
+        <TextView
+            android:id="@+id/stats_extra"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/stats_percent"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="已上 18%"
-                android:textColor="#64748B"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/stats_daily"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="日均约 4.4 节"
-                android:textColor="#64748B"
-                android:textSize="13sp" />
-
-        </LinearLayout>
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="已上 5% · 日均约 0.6 节"
+            android:textColor="#64748B"
+            android:textSize="13sp" />
 
         <!-- 下弹性空隙：与上方对称，让底部明细区贴住下边缘。 -->
         <LinearLayout
