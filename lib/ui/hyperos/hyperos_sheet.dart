@@ -95,7 +95,7 @@ class HyperosSheetFrame extends StatelessWidget {
     this.frosted = true,
     this.chrome,
     this.liquidGlassRole = HyperosLiquidGlassRole.modal,
-    this.liquidGlassContentLegibilityFill = true,
+    this.liquidGlassContentLegibilityFill = false,
     this.liquidGlassGroup = HyperosSheetLiquidGlassGroup.sheetDialog,
   });
 
@@ -119,10 +119,9 @@ class HyperosSheetFrame extends StatelessWidget {
 
   /// Whether liquid-glass content receives the extra opaque legibility fill.
   ///
-  /// Modal chrome defaults to the legibility fill so every sheet/dialog keeps
-  /// a light (light theme) / dark (dark theme) milky panel over wallpapers —
-  /// the same look as anchored popups on light pages. Set false explicitly
-  /// for a deliberately clear-glass surface.
+  /// Defaults to false so every sheet/dialog uses the same clear material as
+  /// the home chrome band (9de96b8 / A 方案通透统一). Set true explicitly
+  /// only for a deliberately milky panel.
   final bool liquidGlassContentLegibilityFill;
 
   /// 「液态玻璃作用范围」开关档位：本框液态材质跟随弹窗对话框（默认）

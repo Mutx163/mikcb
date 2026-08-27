@@ -482,8 +482,9 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.modal,
         borderRadius: cornerRadius,
-        // 与弹窗/选择 sheet 统一：液态玻璃带衬底，暗背景下保持白色面板观感。
-        contentLegibilityFill: true,
+        // 与首页标题/星期栏玻璃同材质：不再叠加可读性衬底，保持通透
+        // 观感统一（对应 9de96b8 标题带去衬底）。
+        contentLegibilityFill: false,
         // Sample the same undimmed modal capture as every other popup.
         useAncestorBackdropGroup: true,
         instantUnderlay: true,
