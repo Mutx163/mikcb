@@ -147,9 +147,9 @@ void main() {
         find.byType(HyperosLiquidGlassSurface),
       );
       expect(outerGlass.role, HyperosLiquidGlassRole.modal);
-      // 与弹窗/选择 sheet 统一：液态玻璃带内容可读性衬底（暗背景下保持
-      // 白色面板观感），不再是无衬底的「透亮」材质。
-      expect(outerGlass.contentLegibilityFill, isTrue);
+      // 152cd9b4 起弹窗与 Sheet 的液态玻璃不再叠加可读性衬底，保持通透材质
+      // 与首页标题/星期栏统一（选择弹窗同为 contentLegibilityFill=false）。
+      expect(outerGlass.contentLegibilityFill, isFalse);
       expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
     },
   );

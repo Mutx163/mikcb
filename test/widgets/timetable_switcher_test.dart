@@ -161,12 +161,13 @@ void main() {
     );
     await _pumpTimetableFrame(tester);
 
-    // ⋮ 菜单唯一形态 = 八宫格底部弹层（showHomeTopGridMenuSheet）。
-    // 持久化空表经 HomeGridMenu.normalize 只会剩钉住的「课表设置」一枚
-    // 瓷贴，因此显式注入 v2.0.5.5 默认全排列，保证弹层含常规功能入口。
+    // ⋮ 菜单由设置分流：默认 list=锚定小弹窗，grid=八宫格底部弹层。
+    // 本用例校验溢出菜单不含课表管理（课表管理在标题切换器里），
+    // 为可断言固定八宫格，显式切到 grid 并注入 v2.0.5.5 默认全排列。
     await runRealAsync(tester, () async {
       await provider.updateTimetableSettings(
         provider.settings.copyWith(
+          homeMenuStyle: HomeMenuStyle.grid,
           homeGridMenuActions: List<String>.of(HomeGridMenu.defaultActions),
         ),
       );

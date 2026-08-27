@@ -22,7 +22,7 @@ void main() {
 
       expect(find.text('权限管控'), findsOneWidget);
       expect(style.fontSize, HyperosMiuixSpec.settingsSectionLabelSize);
-      expect(style.fontWeight, FontWeight.w500);
+      expect(style.fontWeight, FontWeight.w400);
       expect(style.color, HyperosMiuixSpec.settingsSectionLabelColor);
       expect(style.color, isNot(HyperosTokens.secondaryText));
       expect(style.color, isNot(HyperosTokens.primaryText));
@@ -53,8 +53,8 @@ void main() {
       );
 
       for (final style in [listStyle, sheetStyle, summaryStyle]) {
-        // 标题层统一升到 w500：层级不再只靠字号单维支撑。
-        expect(style.fontWeight, FontWeight.w500);
+        // 全站标题统一 w400（1c99cce0）：字号与颜色承担层级，避免二级页全加粗。
+        expect(style.fontWeight, FontWeight.w400);
         expect(style.fontSize, HyperosTokens.titleSize);
       }
     });
