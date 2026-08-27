@@ -134,7 +134,14 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
                 isShowingTomorrow -> snapshot.tomorrowCourses.first().let { course ->
                     course.startTime + " - " + course.endTime
                 }
-                state == "completed" -> context.getString(R.string.widget_today_ended_short)
+                // 结束态（走不到明日分支）：meta 不再重复「已经结束」，
+                // 改为今日节数摘要，与标题形成信息互补。
+                state == "completed" ->
+                    if (snapshot.totalTodayCourseCount > 0) {
+                        context.getString(R.string.widget_today_count, snapshot.totalTodayCourseCount)
+                    } else {
+                        ""
+                    }
                 state == "no_course" -> ""
                 else -> TodayWidgetSupport.countdownText(context, snapshot)
                     ?: TodayWidgetSupport.heroTimeText(context, snapshot)

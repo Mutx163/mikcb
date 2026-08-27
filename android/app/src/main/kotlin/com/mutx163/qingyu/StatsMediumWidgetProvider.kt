@@ -10,6 +10,8 @@ import android.graphics.Color
 import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
+import java.util.Locale
+import kotlin.math.roundToInt
 
 class StatsMediumWidgetProvider : AppWidgetProvider() {
     override fun onAppWidgetOptionsChanged(
@@ -104,13 +106,24 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.stats_nature, "")
                 views.setTextViewText(R.id.stats_streak, "")
                 views.setProgressBar(R.id.stats_progress, 100, 0, false)
+                views.setViewVisibility(R.id.stats_extra_row, View.GONE)
             } else {
                 val max = if (snapshot.semesterTotal > 0) snapshot.semesterTotal else 1
                 val done = snapshot.semesterDone.coerceIn(0, max)
                 views.setProgressBar(R.id.stats_progress, max, done, false)
-                views.setTextViewText(
+                // 顶部「已上 x / 共 y 节」与周数 chip 同行，窄宽度按档降级：
+                // 长句 → 短句 → 仅保留进度条。
+                val progressText = when {
+                    profile.widthDp >= 200 ->
+                        context.getString(R.string.widget_stats_progress, done, snapshot.semesterTotal)
+                    profile.isNarrow -> ""
+                    else ->
+                        context.getString(R.string.widget_stats_progress_short, done, snapshot.semesterTotal)
+                }
+                views.setTextViewText(R.id.stats_progress_text, progressText)
+                views.setViewVisibility(
                     R.id.stats_progress_text,
-                    context.getString(R.string.widget_stats_progress, snapshot.semesterDone, snapshot.semesterTotal),
+                    if (progressText.isEmpty()) View.GONE else View.VISIBLE,
                 )
                 views.setTextViewText(
                     R.id.stats_sections,
@@ -128,12 +141,33 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                     R.id.stats_streak,
                     context.getString(R.string.widget_stats_streak, snapshot.longestStreak),
                 )
+
+                // 高个位补充行：进度百分比 + 日均节数，填满竖长卡片下半部分。
+                val showExtraRow = profile.isTall && !profile.isNarrow
+                if (showExtraRow) {
+                    val percent = ((done.toDouble() / max) * 100).roundToInt()
+                    val dailyAvg = String.format(Locale.getDefault(), "%.1f", snapshot.weekSections / 5.0)
+                    views.setTextViewText(
+                        R.id.stats_percent,
+                        context.getString(R.string.widget_stats_percent, percent),
+                    )
+                    views.setTextViewText(
+                        R.id.stats_daily,
+                        context.getString(R.string.widget_stats_daily, dailyAvg),
+                    )
+                }
+                views.setViewVisibility(
+                    R.id.stats_extra_row,
+                    if (showExtraRow) View.VISIBLE else View.GONE,
+                )
             }
             views.setTextColor(R.id.stats_progress_text, secondaryColor)
             views.setTextColor(R.id.stats_sections, primaryColor)
             views.setTextColor(R.id.stats_delta, secondaryColor)
             views.setTextColor(R.id.stats_nature, secondaryColor)
             views.setTextColor(R.id.stats_streak, secondaryColor)
+            views.setTextColor(R.id.stats_percent, secondaryColor)
+            views.setTextColor(R.id.stats_daily, secondaryColor)
 
             // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 30+，低版本保留蓝色兜底）。
             // 注意：这里反射的是 ProgressBar 的 setter 名，必须是 *TintList 形式，
@@ -162,9 +196,20 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 R.id.stats_sections,
                 when {
                     profile.isShort -> 15f
+                    profile.isTall && !profile.isWide -> 24f
                     profile.isWide -> 22f
                     else -> 20f
                 },
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_percent,
+                if (profile.isNarrow || profile.isShort) 11f else 12f,
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_daily,
+                if (profile.isNarrow || profile.isShort) 11f else 12f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,

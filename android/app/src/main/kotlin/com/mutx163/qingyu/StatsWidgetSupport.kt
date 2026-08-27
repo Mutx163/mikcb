@@ -107,4 +107,13 @@ object StatsWidgetSupport {
             else -> context.getString(R.string.widget_stats_vs_last_flat)
         }
     }
+
+    /** 窄宽度档的环比缩写（"+2 节"/"-2 节"/"持平"），配合两档显示门限使用。 */
+    fun deltaShortLabel(context: Context, delta: Int): String {
+        return when {
+            delta > 0 -> context.getString(R.string.widget_stats_delta_short_up, delta)
+            delta < 0 -> context.getString(R.string.widget_stats_delta_short_down, -delta)
+            else -> context.getString(R.string.widget_stats_delta_short_flat)
+        }
+    }
 }

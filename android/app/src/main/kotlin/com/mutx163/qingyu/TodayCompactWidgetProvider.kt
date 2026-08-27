@@ -136,7 +136,19 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                     }
                     state == "completed" -> {
                         val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
-                        examText ?: context.getString(R.string.widget_today_ended_short)
+                        examText ?: buildString {
+                            append(context.getString(R.string.widget_today_ended_short))
+                            // 补一行今日节数，避免下半张卡片只剩一句占位话。
+                            if (snapshot.totalTodayCourseCount > 0) {
+                                append("\n")
+                                append(
+                                    context.getString(
+                                        R.string.widget_today_count,
+                                        snapshot.totalTodayCourseCount,
+                                    )
+                                )
+                            }
+                        }
                     }
                     else -> {
                         val cd = TodayWidgetSupport.countdownText(context, snapshot)

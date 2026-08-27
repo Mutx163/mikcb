@@ -92,6 +92,10 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
                 state
             }
             val isExamOngoing = snapshot != null && TodayWidgetSupport.isExamOngoing(snapshot)
+            val isShowingTomorrow = snapshot != null && TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
+            // 结束/无课且无明日可列：右栏没有任何行内容，整栏收起、左栏铺满全宽。
+            val isSparseEnded = snapshot != null && !isExamOngoing && !isShowingTomorrow &&
+                (state == "completed" || state == "no_course")
 
             // 左栏：状态徽章 + 主课程 + 时间（倒计时优先）· 地点
             views.setTextViewText(
@@ -127,8 +131,18 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
                 isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
                 state == "holiday" -> TodayWidgetSupport.examCountdownText(context, snapshot)
                     ?: context.getString(R.string.widget_rest_well)
-                state == "no_course" -> context.getString(R.string.widget_take_a_break)
-                state == "completed" -> context.getString(R.string.widget_today_ended_short)
+                state == "no_course" ->
+                    if (isSparseEnded) {
+                        TodayWidgetSupport.rightInfoText(context, snapshot)
+                    } else {
+                        context.getString(R.string.widget_take_a_break)
+                    }
+                state == "completed" ->
+                    if (isSparseEnded) {
+                        TodayWidgetSupport.rightInfoText(context, snapshot)
+                    } else {
+                        context.getString(R.string.widget_today_ended_short)
+                    }
                 else -> TodayWidgetSupport.countdownText(context, snapshot)
                     ?: TodayWidgetSupport.heroTimeText(context, snapshot)
             }
@@ -145,7 +159,6 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_wide_meta, secondaryColor)
 
             // 右栏：接下来两节课 + 周数
-            val isShowingTomorrow = snapshot != null && TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
             views.setTextViewText(
                 R.id.widget_wide_right_label,
                 if (isShowingTomorrow) {
@@ -168,9 +181,10 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
             // 右栏列宽实测：卡片左右内边距共 32dp，两栏等分后再扣掉 16dp 栏间距。
             val rightColumnWidthDp = (profile.widthDp - 48) / 2f
             // 一行课目的时间串约需 80dp 列宽才不被裁掉。
-            val showRightRows = rightColumnWidthDp >= 80f
-            // 列宽容不下「接下来 · 第6周」时整栏隐藏，把宽度让给等分的左栏。
-            val showRightColumn = rightColumnWidthDp >= 66f
+            val showRightRows = rightColumnWidthDp >= 80f && !isSparseEnded
+            // 无行内容（结束态/列宽不足）时整栏收起，避免只留孤立表头，
+            // 同时把宽度让给左栏主信息。
+            val showRightColumn = showRightRows
             val upcoming = if (snapshot == null || !showRightRows) {
                 emptyList()
             } else {

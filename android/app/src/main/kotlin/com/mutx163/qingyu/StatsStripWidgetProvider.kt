@@ -154,9 +154,12 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
                 if (compact) 10f else 12f,
             )
             // 收起门限按当前字号档实测需求设定：chip / 环比 / 进度条都是固定宽度，
-            // 宽度不足时被裁掉的是卡片右边界外的视图，因此宁可整项隐藏。
+            // 宽度不足时被裁掉的是卡片右边界外的视图，因此宁可整项隐藏或换短句。
+            // 环比两档显示：宽档用完整「较上周 ±N 节」，中档用「±N 节」缩写——
+            // 否则真机 4 列（约 330-390dp）会整项隐藏，加权节数文本在中部撑出大空档。
             val progressMinWidthDp = if (compact) 250 else 290
-            val deltaMinWidthDp = if (compact) 360 else 400
+            val deltaShortMinWidthDp = if (compact) 300 else 330
+            val deltaFullMinWidthDp = if (compact) 400 else 440
             views.setViewVisibility(
                 R.id.stats_strip_progress,
                 if (snapshot != null && profile.widthDp >= progressMinWidthDp) {
@@ -165,9 +168,21 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
                     View.GONE
                 },
             )
+            val showDelta = snapshot != null && profile.widthDp >= deltaShortMinWidthDp
+            if (showDelta) {
+                views.setTextViewText(
+                    R.id.stats_strip_delta,
+                    if (profile.widthDp >= deltaFullMinWidthDp) {
+                        StatsWidgetSupport.deltaLabel(context, snapshot.deltaVsLastWeek)
+                    } else {
+                        StatsWidgetSupport.deltaShortLabel(context, snapshot.deltaVsLastWeek)
+                    },
+                )
+                views.setTextColor(R.id.stats_strip_delta, secondaryColor)
+            }
             views.setViewVisibility(
                 R.id.stats_strip_delta,
-                if (profile.widthDp >= deltaMinWidthDp) View.VISIBLE else View.GONE,
+                if (showDelta) View.VISIBLE else View.GONE,
             )
 
             views.setOnClickPendingIntent(
