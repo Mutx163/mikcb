@@ -642,6 +642,9 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
 }
 
 Future<void> _liveSyncHomeWidgetSnapshot(TimetableProvider host) async {
+  // 统计小组件与今日小组件共用这一入口：冷启动、回前台、课表变更都会走到，
+  // 否则用户不进统计页时桌面统计组件永远读不到快照。
+  await _liveSyncStatsWidgetSnapshot(host);
   final now = DateTime.now();
   final snapshot = host.buildHomeWidgetSnapshot();
   if (snapshot == null) {
@@ -674,6 +677,20 @@ Future<void> _liveSyncHomeWidgetSnapshot(TimetableProvider host) async {
           countdownLeadMinutes: host._settings.widgetCountdownLeadMinutes,
         );
   await host._homeWidgetService.scheduleRefresh(triggerAtMillis);
+}
+
+Future<void> _liveSyncStatsWidgetSnapshot(TimetableProvider host) async {
+  final snapshot = StatsWidgetSnapshot.fromCourses(
+    courses: host.courses,
+    currentWeek: host.currentWeek,
+    semesterWeekCount: host._settings.semesterWeekCount,
+    profileName: host.activeProfile?.name ?? '',
+  );
+  if (snapshot == null) {
+    await StatsWidgetService.clearSnapshot();
+    return;
+  }
+  await StatsWidgetService.syncSnapshot(snapshot);
 }
 
 Future<void> _liveRefreshNow(

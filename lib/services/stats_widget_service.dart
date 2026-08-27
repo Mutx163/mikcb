@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 
-/// 统计小组件（桌面）快照：由统计页计算后同步给原生渲染。
+import '../models/course.dart';
+import 'statistics_service.dart';
+
+/// 统计小组件（桌面）快照：由课表数据计算后同步给原生渲染。
 class StatsWidgetSnapshot {
   final String profileName;
   final int currentWeek;
@@ -40,6 +45,49 @@ class StatsWidgetSnapshot {
       'longestStreak': longestStreak,
     };
   }
+
+  /// 从课表数据构建快照；无课时返回 null，由调用方决定跳过还是清空。
+  static StatsWidgetSnapshot? fromCourses({
+    required List<Course> courses,
+    required int currentWeek,
+    required int semesterWeekCount,
+    required String profileName,
+  }) {
+    if (courses.isEmpty) {
+      return null;
+    }
+    final weekStats = StatisticsService.calculate(
+      allCourses: courses,
+      week: currentWeek,
+    );
+    final semesterStats = StatisticsService.calculateSemester(
+      allCourses: courses,
+      currentWeek: currentWeek,
+      semesterWeekCount: semesterWeekCount,
+    );
+    final progress = StatisticsService.calculateSemesterProgress(
+      allCourses: courses,
+      currentWeek: currentWeek,
+      semesterWeekCount: semesterWeekCount,
+    );
+    final comparison = StatisticsService.calculateWeeklyComparison(
+      allCourses: courses,
+      currentWeek: currentWeek,
+      semesterWeekCount: semesterWeekCount,
+    );
+    return StatsWidgetSnapshot(
+      profileName: profileName,
+      currentWeek: currentWeek,
+      weekSections: weekStats.totalSections,
+      weekCourseCount: weekStats.totalCourses,
+      deltaVsLastWeek: comparison.deltaVsLastWeek,
+      semesterDone: semesterStats.totalSections,
+      semesterTotal: progress.sectionsTotal,
+      requiredCount: semesterStats.natureStats.requiredCount,
+      electiveCount: semesterStats.natureStats.electiveCount,
+      longestStreak: semesterStats.longestStreak,
+    );
+  }
 }
 
 /// 同步统计快照到原生小组件（复用 home_widget channel，方法级隔离）。
@@ -50,15 +98,24 @@ class StatsWidgetService {
     'com.mutx163.qingyu/home_widget',
   );
 
+  /// 上次成功推送的负载；统计页每次 build 都会调用同步，靠它挡掉重复跨端写入。
+  static String? _lastPushedPayload;
+
   static Future<void> syncSnapshot(StatsWidgetSnapshot snapshot) async {
+    final payload = jsonEncode(snapshot.toJson());
+    if (payload == _lastPushedPayload) {
+      return;
+    }
     try {
       await _channel.invokeMethod('syncStatsSnapshot', snapshot.toJson());
+      _lastPushedPayload = payload;
     } catch (_) {
       // 平台未实现（非 Android / 桌面调试）时静默
     }
   }
 
   static Future<void> clearSnapshot() async {
+    _lastPushedPayload = null;
     try {
       await _channel.invokeMethod('clearStatsSnapshot');
     } catch (_) {

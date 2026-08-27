@@ -103,37 +103,15 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
 
         final hasData = courses.isNotEmpty;
 
-        // 同步桌面统计小组件快照（幂等，廉价 JSON；失败静默）
-        if (hasData) {
-          final weekStatsForWidget = StatisticsService.calculate(
-            allCourses: courses,
-            week: currentWeek,
-          );
-          final semesterForWidget = semesterStats;
-          final progressForWidget = StatisticsService.calculateSemesterProgress(
-            allCourses: courses,
-            currentWeek: currentWeek,
-            semesterWeekCount: semesterWeekCount,
-          );
-          final comparisonForWidget = StatisticsService.calculateWeeklyComparison(
-            allCourses: courses,
-            currentWeek: currentWeek,
-            semesterWeekCount: semesterWeekCount,
-          );
-          StatsWidgetService.syncSnapshot(
-            StatsWidgetSnapshot(
-              profileName: provider.activeProfile?.name ?? '',
-              currentWeek: currentWeek,
-              weekSections: weekStatsForWidget.totalSections,
-              weekCourseCount: weekStatsForWidget.totalCourses,
-              deltaVsLastWeek: comparisonForWidget.deltaVsLastWeek,
-              semesterDone: semesterForWidget.totalSections,
-              semesterTotal: progressForWidget.sectionsTotal,
-              requiredCount: semesterForWidget.natureStats.requiredCount,
-              electiveCount: semesterForWidget.natureStats.electiveCount,
-              longestStreak: semesterForWidget.longestStreak,
-            ),
-          );
+        // 同步桌面统计小组件快照（与课表变更时的推送共用同一计算口径；幂等、失败静默）
+        final statsWidgetSnapshot = StatsWidgetSnapshot.fromCourses(
+          courses: courses,
+          currentWeek: currentWeek,
+          semesterWeekCount: semesterWeekCount,
+          profileName: provider.activeProfile?.name ?? '',
+        );
+        if (statsWidgetSnapshot != null) {
+          StatsWidgetService.syncSnapshot(statsWidgetSnapshot);
         }
 
         return HyperosSubpage(

@@ -32,6 +32,7 @@ import '../services/home_widget_snapshot_service.dart';
 import '../services/class_reminder_service.dart';
 import '../services/exam_reminder_service.dart';
 import '../services/partner_timetable_service.dart';
+import '../services/stats_widget_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
