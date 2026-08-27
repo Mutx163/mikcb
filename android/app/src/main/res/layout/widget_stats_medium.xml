@@ -81,14 +81,17 @@
             android:textColor="#64748B"
             android:textSize="12sp" />
 
-        <!-- 弹性空隙：把富余高度全部吃在这里，顶部核心区钉顶、明细区沉底。
-             注意：RemoteViews 布局不支持 <Space>（不在允许的视图白名单内，
-             会导致「载入窗口小组件时出现问题」），必须用普通 View 占位。 -->
-        <View
-            android:id="@+id/stats_flex"
+        <!-- 明细区：自身 weight=1 吃掉富余高度、gravity=bottom 让明细行沉到卡底；
+             只用 RemoteViews 白名单内的 LinearLayout——部分 ROM（如 MIUI）对
+             <Space> 甚至普通 <View> 都会报「载入窗口小组件时出现问题」。
+             内部明细行按高度分档显隐，全部隐藏时本区只是一个不可见的空隙。 -->
+        <LinearLayout
+            android:id="@+id/stats_detail_area"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:gravity="bottom"
+            android:orientation="vertical">
 
         <LinearLayout
             android:id="@+id/stats_nature_row"
@@ -151,6 +154,8 @@
                 android:text="日均约 4.4 节"
                 android:textColor="#64748B"
                 android:textSize="12sp" />
+
+        </LinearLayout>
 
         </LinearLayout>
 
