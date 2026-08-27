@@ -269,10 +269,13 @@ void main() {
         final fill = tester.widget<HomePageChromeGlassFill>(
           find.byType(HomePageChromeGlassFill),
         );
-        expect(fill.useAncestorBackdropGroup, isTrue);
-        // (The fill's forwarding into HyperosLiquidGlassSurface is a one-line
-        // pass-through inside its liquid branch, which this engine cannot
-        // reach: liveBlurSupported is false off Android/iOS.)
+        // useAncestorBackdropGroup 自玻璃引擎切换(cc98db3a)起就是死参数：
+        // HyperosLiquidGlassSurface 只存储从不读取，真实采样行为完全由
+        // liquid_glass_widgets 内部决定。预览侧不再声称依赖它，而是用
+        // 「玻璃形状四边全部越出可见裁剪区」的几何契约自证安全——任何
+        // 版本的包内部边缘处理都够不到可见区（四边越界断言见
+        // timetable_week_preview_test.dart 的 chrome glass band 组）。
+        expect(fill.useAncestorBackdropGroup, isFalse);
       },
     );
   });

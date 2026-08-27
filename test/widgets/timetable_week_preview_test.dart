@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/widgets/course_grid_surface_host.dart';
+import 'package:university_timetable/widgets/home_page_region_blur.dart';
 import 'package:university_timetable/widgets/timetable_week_preview.dart';
 
 import '../helpers_test_app.dart';
@@ -123,5 +126,68 @@ void main() {
       );
       expect(tester.takeException(), isNull, reason: 'style: $style');
     }
+  });
+
+  // 回归护栏：星期栏玻璃形状必须四边全部越出可见裁剪区，可见区内只出现
+  // 玻璃内部。此前底边贴着带边界，thickness 档（最高 40）宽度的边缘折射/
+  // 边缘光在 40dp 孤立星期栏玻璃条上糊成一条贴着文字下方的粗白亮线，随
+  // 「预览去模拟标题行」「玻璃包升级」等周边改动已经复发两次；任何把底边
+  // 改回贴边的实现都会在此断言爆掉。
+  group('chrome glass band edges never land inside the visible strip', () {
+    Future<File> writeOpaqueWallpaper() async {
+      final recorder = ui.PictureRecorder();
+      Canvas(recorder).drawRect(
+        const Rect.fromLTWH(0, 0, 1000000, 1000000),
+        Paint()..color = const Color(0xFF6688AA),
+      );
+      final image = await recorder.endRecording().toImage(16, 16);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      final dir = await Directory.systemTemp.createTemp('weekbar_glass_test');
+      return File('${dir.path}/wall.png')
+        ..writeAsBytesSync(bytes!.buffer.asUint8List());
+    }
+
+    testWidgets('isolated weekday strip overdraws all four sides',
+        (tester) async {
+      final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
+      await pumpPreview(
+        tester,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageWallpaperPath: wallpaper.path,
+          homePageWeekdayBarBlurEnabled: true,
+          frostedGlassMode: FrostedGlassMode.liquidGlass,
+        ),
+      );
+
+      expect(find.byType(HomePageChromeGlassFill), findsOneWidget);
+      final glassRect = tester.getRect(find.byType(HomePageChromeGlassFill));
+      final previewRect = tester.getRect(find.byType(TimetableWeekPreview));
+      const headerHeight = 40.0; // 预览私有常量 _headerHeight
+      expect(
+        glassRect.top,
+        lessThanOrEqualTo(
+          previewRect.top - homePageChromeGlassTopEdgeOverdraw,
+        ),
+      );
+      expect(
+        glassRect.left,
+        lessThanOrEqualTo(previewRect.left - homePageChromeGlassEdgeOverdraw),
+      );
+      expect(
+        glassRect.right,
+        greaterThanOrEqualTo(
+          previewRect.right + homePageChromeGlassEdgeOverdraw,
+        ),
+      );
+      expect(
+        glassRect.bottom,
+        greaterThanOrEqualTo(
+          previewRect.top +
+              headerHeight +
+              homePageChromeGlassBottomEdgeOverdraw,
+        ),
+      );
+    });
   });
 }

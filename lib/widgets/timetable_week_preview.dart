@@ -209,12 +209,14 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       return null;
     }
 
-    // Overdraw the glass beyond the band on the left and right so the
-    // shape's corners (the source of the diagonal "triangle" fringe /
-    // picture-frame streaks at high thickness) stay outside the ClipRect —
-    // same trick as HomePageContinuousChromeFrostedOverlay. The top keeps
-    // its hairline-seam overdraw and the bottom stays at the band boundary
-    // so thickness tuning keeps its visible edge refraction.
+    // Overdraw the glass beyond the band on ALL four sides so every
+    // shape-edge refraction / rim-light zone stays outside the ClipRect —
+    // same trick as HomePageContinuousChromeFrostedOverlay's left/right/top
+    // treatment. The bottom used to stay at the band boundary (the home
+    // page keeps a thin intentional edge sheen on its tall continuous
+    // sheet), but in an isolated ~40dp strip the whole bar falls inside the
+    // thickness-wide edge zone and the bottom highlight smears into a thick
+    // white line right under the weekday row — regressed twice already.
     return [
       Positioned(
         top: top,
@@ -231,16 +233,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   top: -homePageChromeGlassTopEdgeOverdraw,
                   left: -homePageChromeGlassEdgeOverdraw,
                   right: -homePageChromeGlassEdgeOverdraw,
-                  bottom: 0,
-                  child: const HomePageChromeGlassFill(
-                    // The band is a small interior rectangle inside this
-                    // preview, unlike the home page's screen-edge band: its
-                    // own-bounds backdrop capture would clamp refraction
-                    // displacement against the band edges and streak them
-                    // into a "picture frame". Sample the grouped full-size
-                    // wallpaper capture instead (see the BackdropGroup below).
-                    useAncestorBackdropGroup: true,
-                  ),
+                  bottom: -homePageChromeGlassBottomEdgeOverdraw,
+                  child: const HomePageChromeGlassFill(),
                 ),
               ],
             ),

@@ -36,6 +36,18 @@ const homePageChromeGlassTopEdgeOverdraw = 4.0;
 /// the whole band.
 const homePageChromeGlassEdgeOverdraw = 48.0;
 
+/// Extra glass painted BELOW the band's bottom edge, outside the visible
+/// ClipRect.
+///
+/// 不越界时玻璃形状的底边恰好压在可见边界上，thickness 档（滑杆最高 40）
+/// 宽度的边缘折射/边缘光全部落在带内。首页连续高带（状态栏+标题+星期栏
+/// 约 130dp）里这只是细窄的正常玻璃包边；但设置预览里孤立星期栏玻璃条仅
+/// 40dp 高，整条都处在边缘区，底边高光会糊成一条贴在星期栏文字正下方的
+/// 粗白亮线——该回归已随周边改动（预览去掉模拟标题行、玻璃包升级）复发了
+/// 两次。底边与左右一致越界后，可见区内不再出现任何形状边缘，这条视觉规
+/// 则不再依赖采样/着色器内部行为。
+const homePageChromeGlassBottomEdgeOverdraw = 48.0;
+
 /// Whether any home chrome frosted band should paint over the wallpaper.
 ///
 /// Time column is intentionally excluded: it never uses blur / liquid glass.
