@@ -152,6 +152,11 @@ class ExamCountdownWidgetProvider : AppWidgetProvider() {
                 R.id.exam_day_unit,
                 if (numericDays) View.VISIBLE else View.GONE,
             )
+            // 用户把 2×2 竖向拉到一行高时四行放不下会被上下同时裁切，先让出地点行。
+            views.setViewVisibility(
+                R.id.exam_meta,
+                if (profile.heightDp < 100) View.GONE else View.VISIBLE,
+            )
 
             // 自适应：矮高度压大字号；窄宽度缩名称行。
             TodayWidgetSupport.setTextSizeSp(views, R.id.exam_chip, if (profile.isShort) 10f else 11f)

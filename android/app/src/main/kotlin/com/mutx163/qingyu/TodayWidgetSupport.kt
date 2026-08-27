@@ -527,15 +527,28 @@ object TodayWidgetSupport {
         return triggers.filter { it > nowMillis }.minOrNull()
     }
 
+    /**
+     * 尺寸画像：优先用启动器回报的格位尺寸；尚未回报时（首次添加、开机恢复的第一帧）
+     * 回落到各自 appwidget-provider 声明的 minWidth/minHeight（单位同为 dp），
+     * 而不是统一按 110dp 兜底——那会把 4×1 横条当成方卡、把 4×4 列表当成矮卡，
+     * 而 isShort / isWide 字号档与自适应内边距都由这两个值决定，首帧就会选错档。
+     */
     fun sizeProfile(
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
     ): TodayWidgetSizeProfile {
         val options: Bundle = appWidgetManager.getAppWidgetOptions(appWidgetId)
-        val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
-            .coerceAtLeast(110)
-        val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-            .coerceAtLeast(110)
+        var width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+        var height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+        if (width <= 0 || height <= 0) {
+            val info = appWidgetManager.getAppWidgetInfo(appWidgetId)
+            if (width <= 0) {
+                width = info?.minWidth?.takeIf { it > 0 } ?: 110
+            }
+            if (height <= 0) {
+                height = info?.minHeight?.takeIf { it > 0 } ?: 110
+            }
+        }
         return TodayWidgetSizeProfile(widthDp = width, heightDp = height)
     }
 
