@@ -111,29 +111,6 @@ class _TimetablePageSettingsScreenState
       0 => HyperosSectionLabel(text: l10n.timetablePageSectionDensity),
       1 => HyperosListGroup(
         children: [
-          // 与设置首页「时间模板」同字形、同 accent、同空态文案（IA §4），
-          // 避免被当成两个功能或两套时间系统。
-          _MiuixSettingsPreference(
-            startAction: _settingsIconBadge(
-              MiuixIcons.extended.byName('timer')!,
-              HyperosIconColors.teal,
-            ),
-            title: l10n.timeSchemeEntryTitle,
-            endActions: [
-              Text(
-                _timetableProvider.activeTimeScheme?.name ??
-                    l10n.timeSchemeEntryNotSelected,
-                style: HyperosTypography.listDetail(context),
-              ),
-            ],
-            onClick: () {
-              HyperosNavigation.push(
-                context,
-                settings: const RouteSettings(name: '/settings/time-schemes'),
-                builder: (_) => const TimeSchemeManagementScreen(),
-              );
-            },
-          ),
           HyperosSwitchTile(
             title: l10n.layoutAutoFitHeightTitle,
             value: _draft.timetableAutoFitSectionHeight,
