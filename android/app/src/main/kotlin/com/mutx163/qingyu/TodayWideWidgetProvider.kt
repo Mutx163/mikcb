@@ -197,18 +197,42 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
                 if (showRightColumn) View.VISIBLE else View.GONE,
             )
 
-            // 自适应字号：矮高度压主课程字号，超宽时才放大到 22sp。
+            // 自适应字号：矮高度压主课程字号；高度充裕时主副信息整体升档，
+            // 配合弹性分布把卡面撑满。
+            val tall = profile.heightDp >= 230
             TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_status, if (profile.isShort) 10f else 11f)
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_wide_course,
                 when {
                     profile.isShort -> 17f
+                    tall && profile.widthDp >= 320 -> 28f
+                    tall -> 26f
                     profile.widthDp >= 320 -> 22f
                     else -> 20f
                 },
             )
-            TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_meta, if (profile.isShort) 11f else 13f)
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_wide_meta,
+                if (profile.isShort) 11f else if (tall) 15f else 13f,
+            )
+            TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_row_1_time, if (tall) 11f else 10f)
+            TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_row_1_title, if (tall) 15f else 13f)
+            TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_row_2_time, if (tall) 11f else 10f)
+            TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_row_2_title, if (tall) 15f else 13f)
+
+            // 底部锚定信息行：档案名 · 今日 N 节 / 明日 N 节等，占住下边缘。
+            views.setTextViewText(
+                R.id.widget_wide_footer,
+                if (snapshot != null) {
+                    TodayWidgetSupport.footerText(context, snapshot)
+                } else {
+                    context.getString(R.string.widget_tap_to_open)
+                },
+            )
+            views.setTextColor(R.id.widget_wide_footer, secondaryColor)
+            TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_footer, if (profile.isShort) 10f else 11f)
 
             views.setOnClickPendingIntent(
                 R.id.widget_root,

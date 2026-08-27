@@ -223,6 +223,21 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
                 )
             }
 
+            // 第三行：高度充裕时的学期进度与连续天数摘要。
+            val sub2Text = if (profile.heightDp >= 150 && snapshot != null && snapshot.semesterTotal > 0) {
+                context.getString(R.string.widget_stats_progress, snapshot.semesterDone, snapshot.semesterTotal) +
+                    " · " + context.getString(R.string.widget_stats_streak, snapshot.longestStreak)
+            } else {
+                ""
+            }
+            views.setViewVisibility(
+                R.id.stats_strip_sub2,
+                if (sub2Text.isNotBlank()) View.VISIBLE else View.GONE,
+            )
+            views.setTextViewText(R.id.stats_strip_sub2, sub2Text)
+            views.setTextColor(R.id.stats_strip_sub2, secondaryColor)
+            TodayWidgetSupport.setTextSizeSp(views, R.id.stats_strip_sub2, if (compact) 10f else 11f)
+
             views.setOnClickPendingIntent(
                 R.id.widget_root,
                 TodayWidgetSupport.buildLaunchPendingIntent(context, 40000 + appWidgetId),

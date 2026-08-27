@@ -5,7 +5,13 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.os.Build
+import android.view.View
 import android.widget.RemoteViews
+import java.util.Locale
+import kotlin.math.roundToInt
 
 class StatsCompactWidgetProvider : AppWidgetProvider() {
     override fun onAppWidgetOptionsChanged(
@@ -96,7 +102,17 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
             if (snapshot == null) {
                 views.setTextViewText(R.id.stats_sections, "--")
                 views.setTextViewText(R.id.stats_delta, context.getString(R.string.widget_tap_to_open))
+                views.setTextViewText(R.id.stats_nature, "")
+                views.setTextViewText(R.id.stats_percent, "")
+                views.setTextViewText(R.id.stats_daily, "")
+                views.setProgressBar(R.id.stats_bar, 100, 0, false)
+                views.setViewVisibility(R.id.stats_nature, View.GONE)
+                views.setViewVisibility(R.id.stats_percent, View.GONE)
+                views.setViewVisibility(R.id.stats_daily, View.GONE)
             } else {
+                val max = if (snapshot.semesterTotal > 0) snapshot.semesterTotal else 1
+                val done = snapshot.semesterDone.coerceIn(0, max)
+                views.setProgressBar(R.id.stats_bar, max, done, false)
                 views.setTextViewText(
                     R.id.stats_sections,
                     context.getString(R.string.widget_stats_week_sections, snapshot.weekSections),
@@ -105,9 +121,46 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
                     R.id.stats_delta,
                     StatsWidgetSupport.deltaLabel(context, snapshot.deltaVsLastWeek),
                 )
+                val percent = ((done.toDouble() / max) * 100).roundToInt()
+                val dailyAvg = String.format(Locale.getDefault(), "%.1f", snapshot.weekSections / 5.0)
+                views.setTextViewText(
+                    R.id.stats_percent,
+                    context.getString(R.string.widget_stats_percent, percent),
+                )
+                views.setTextViewText(
+                    R.id.stats_daily,
+                    context.getString(R.string.widget_stats_daily, dailyAvg),
+                )
+                views.setTextViewText(
+                    R.id.stats_nature,
+                    context.getString(R.string.widget_stats_nature, snapshot.requiredCount, snapshot.electiveCount),
+                )
             }
             views.setTextColor(R.id.stats_sections, primaryColor)
             views.setTextColor(R.id.stats_delta, secondaryColor)
+            views.setTextColor(R.id.stats_nature, secondaryColor)
+            views.setTextColor(R.id.stats_percent, secondaryColor)
+            views.setTextColor(R.id.stats_daily, secondaryColor)
+
+            // gradient 背景下进度条换白色系（反射 setter 名必须是 *TintList 形式）。
+            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                views.setColorStateList(
+                    R.id.stats_bar,
+                    "setProgressTintList",
+                    ColorStateList.valueOf(Color.WHITE),
+                )
+                views.setColorStateList(
+                    R.id.stats_bar,
+                    "setProgressBackgroundTintList",
+                    ColorStateList.valueOf(Color.parseColor("#33FFFFFF")),
+                )
+            }
+
+            // 明细行按高度/宽度分档：矮卡只留核心三行，正常方卡全量显示。
+            val showDetail = !profile.isShort && !profile.isNarrow
+            views.setViewVisibility(R.id.stats_nature, if (showDetail) View.VISIBLE else View.GONE)
+            views.setViewVisibility(R.id.stats_percent, if (showDetail) View.VISIBLE else View.GONE)
+            views.setViewVisibility(R.id.stats_daily, if (showDetail) View.VISIBLE else View.GONE)
 
             // 按实际尺寸画像自适应字号（对齐 TodayCompact 的分档）。
             TodayWidgetSupport.setTextSizeSp(

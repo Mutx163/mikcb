@@ -81,23 +81,55 @@
             android:textColor="#64748B"
             android:textSize="12sp" />
 
-        <!-- 明细区：自身 weight=1 吃掉富余高度、gravity=bottom 让明细行沉到卡底；
-             只用 RemoteViews 白名单内的 LinearLayout——部分 ROM（如 MIUI）对
-             <Space> 甚至普通 <View> 都会报「载入窗口小组件时出现问题」。
-             内部明细行按高度分档显隐，全部隐藏时本区只是一个不可见的空隙。 -->
+        <!-- 上弹性空隙：白名单 LinearLayout 占位（部分 ROM 拒载 Space/普通 View），
+             与下方空隙均分剩余高度，把「百分比·日均」带顶到卡片正中段。 -->
         <LinearLayout
-            android:id="@+id/stats_detail_area"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:gravity="bottom"
-            android:orientation="vertical">
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/stats_extra_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/stats_percent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="已上 18%"
+                android:textColor="#64748B"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/stats_daily"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="日均约 4.4 节"
+                android:textColor="#64748B"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- 下弹性空隙：与上方对称，让底部明细区贴住下边缘。 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <LinearLayout
             android:id="@+id/stats_nature_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="vertical">
 
             <TextView
@@ -120,42 +152,6 @@
                 android:text="最长连续 5 天"
                 android:textColor="#64748B"
                 android:textSize="12sp" />
-
-        </LinearLayout>
-
-        <!-- 高个位时补一行进度百分比 + 日均节数，避免下半张卡片大面积留白。 -->
-        <LinearLayout
-            android:id="@+id/stats_extra_row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/stats_percent"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="已上 18%"
-                android:textColor="#64748B"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/stats_daily"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="日均约 4.4 节"
-                android:textColor="#64748B"
-                android:textSize="12sp" />
-
-        </LinearLayout>
 
         </LinearLayout>
 

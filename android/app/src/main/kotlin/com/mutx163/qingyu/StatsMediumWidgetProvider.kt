@@ -206,12 +206,12 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_percent,
-                if (profile.isNarrow || profile.isShort) 11f else 12f,
+                if (profile.isNarrow || profile.isShort) 12f else 13f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_daily,
-                if (profile.isNarrow || profile.isShort) 11f else 12f,
+                if (profile.isNarrow || profile.isShort) 12f else 13f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,

@@ -107,6 +107,19 @@
 
         </LinearLayout>
 
+        <!-- 第三行：高度充裕时的学期进度与连续天数摘要。 -->
+        <TextView
+            android:id="@+id/stats_strip_sub2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text=""
+            android:textColor="#64748B"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
     </LinearLayout>
 
 </FrameLayout>

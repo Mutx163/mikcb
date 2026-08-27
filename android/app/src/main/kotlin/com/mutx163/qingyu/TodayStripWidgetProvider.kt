@@ -230,6 +230,32 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
                 if (compact) 10f else 11f,
             )
 
+            // 第三行：高度充裕时放延伸信息——进行中→明日首课预告；
+            // 已结束且明日可列→明日第二节；考试期→考试倒计时行。
+            val sub2Text = if (profile.heightDp >= 150 && snapshot != null) {
+                when {
+                    state == "holiday" -> ""
+                    isExamOngoing ->
+                        TodayWidgetSupport.examCountdownText(context, snapshot) ?: ""
+                    state == "ongoing" || state == "upcoming" ->
+                        snapshot.tomorrowCourses.firstOrNull()?.let {
+                            context.getString(R.string.widget_tomorrow_courses) + " " + it.startTime
+                        } ?: ""
+                    isShowingTomorrow ->
+                        snapshot.tomorrowCourses.getOrNull(1)?.let { it.startTime + " " + it.name } ?: ""
+                    else -> ""
+                }
+            } else {
+                ""
+            }
+            views.setViewVisibility(
+                R.id.strip_sub2,
+                if (sub2Text.isNotBlank()) View.VISIBLE else View.GONE,
+            )
+            views.setTextViewText(R.id.strip_sub2, sub2Text)
+            views.setTextColor(R.id.strip_sub2, secondaryColor)
+            TodayWidgetSupport.setTextSizeSp(views, R.id.strip_sub2, if (compact) 10f else 11f)
+
             views.setOnClickPendingIntent(
                 R.id.widget_root,
                 TodayWidgetSupport.buildLaunchPendingIntent(context, 30000 + appWidgetId),
