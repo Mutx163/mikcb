@@ -75,11 +75,10 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
                 "setBackgroundResource",
                 TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 12,
                 baseVerticalDp = 8,
                 heightAdjustmentDp = chrome.heightAdjustment,
                 targetAspect = 4f,
@@ -122,44 +121,53 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.stats_strip_sections, primaryColor)
             views.setTextColor(R.id.stats_strip_delta, secondaryColor)
 
-            // gradient 背景下进度条换白色系（API 31+ 才有 RemoteViews 着色通道）。
-            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 30+，低版本保留蓝色兜底）。
+            // 反射的是 ProgressBar 的 setter 名，必须写成 *TintList 形式。
+            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 views.setColorStateList(
                     R.id.stats_strip_progress,
-                    "setProgressTint",
+                    "setProgressTintList",
                     ColorStateList.valueOf(Color.WHITE),
                 )
                 views.setColorStateList(
                     R.id.stats_strip_progress,
-                    "setProgressBackgroundTint",
+                    "setProgressBackgroundTintList",
                     ColorStateList.valueOf(Color.parseColor("#33FFFFFF")),
                 )
             }
 
             // 自适应：横条天然矮高度，内容不按 isShort 门控；仅窄宽度时逐级收起次要信息。
+            val compact = profile.isShort
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_week,
-                if (profile.widthDp < 200) 10f else 11f,
+                if (compact) 10f else 11f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_sections,
-                if (profile.widthDp < 200) 13f else 15f,
+                if (compact) 13f else 15f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_delta,
-                if (profile.widthDp < 200) 10f else 12f,
+                if (compact) 10f else 12f,
             )
-            val showProgress = snapshot != null && profile.widthDp >= 230
+            // 收起门限按当前字号档实测需求设定：chip / 环比 / 进度条都是固定宽度，
+            // 宽度不足时被裁掉的是卡片右边界外的视图，因此宁可整项隐藏。
+            val progressMinWidthDp = if (compact) 250 else 290
+            val deltaMinWidthDp = if (compact) 360 else 400
             views.setViewVisibility(
                 R.id.stats_strip_progress,
-                if (showProgress) View.VISIBLE else View.GONE,
+                if (snapshot != null && profile.widthDp >= progressMinWidthDp) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                },
             )
             views.setViewVisibility(
                 R.id.stats_strip_delta,
-                if (profile.widthDp < 160) View.GONE else View.VISIBLE,
+                if (profile.widthDp >= deltaMinWidthDp) View.VISIBLE else View.GONE,
             )
 
             views.setOnClickPendingIntent(

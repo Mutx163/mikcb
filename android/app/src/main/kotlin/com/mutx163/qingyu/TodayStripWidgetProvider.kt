@@ -70,15 +70,18 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
             views.setInt(
                 R.id.widget_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28),
+                TodayWidgetSupport.backgroundRes(
+                    style,
+                    snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+                ),
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 12,
                 baseVerticalDp = 8,
-                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                heightAdjustmentDp =
+                    snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
                 targetAspect = 4f,
             )
 
@@ -151,33 +154,39 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_strip_week, secondaryColor)
 
             // 横条自适应：矮高度降字号；窄宽度先隐藏周数、再隐藏时间。
+            val compact = profile.isShort
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_strip_status,
-                if (profile.isShort) 10f else 11f,
+                if (compact) 10f else 11f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_strip_course,
-                if (profile.isShort) 13f else 15f,
+                if (compact) 13f else 15f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_strip_meta,
-                if (profile.isShort) 10f else 12f,
+                if (compact) 10f else 12f,
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_strip_week,
-                if (profile.isShort) 10f else 11f,
+                if (compact) 10f else 11f,
             )
+            // 收起门限按当前字号档的实测需求设定：单行里 chip / 时间 / 周数都是
+            // wrap_content，会先于加权的课程名被满足，宽度不足时若仍显示尾部
+            // 视图，被裁掉的是它们而不是课程名（课程名另有 48dp 保底）。
+            val metaMinWidthDp = if (compact) 260 else 300
+            val weekMinWidthDp = if (compact) 330 else 380
             views.setViewVisibility(
                 R.id.widget_strip_week,
-                if (profile.widthDp < 230) View.GONE else View.VISIBLE,
+                if (profile.widthDp < weekMinWidthDp) View.GONE else View.VISIBLE,
             )
             views.setViewVisibility(
                 R.id.widget_strip_meta,
-                if (profile.widthDp < 160) View.GONE else View.VISIBLE,
+                if (profile.widthDp < metaMinWidthDp) View.GONE else View.VISIBLE,
             )
 
             views.setOnClickPendingIntent(

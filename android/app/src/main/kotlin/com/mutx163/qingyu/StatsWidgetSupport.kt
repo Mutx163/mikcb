@@ -49,8 +49,8 @@ object StatsWidgetSupport {
     /** 默认值与 TimetableSettings 的默认外观保持一致（solid / 22dp / -11dp）。 */
     private val DEFAULT_CHROME = StatsWidgetChrome(
         backgroundStyle = "solid",
-        cornerRadius = 22,
-        heightAdjustment = -11,
+        cornerRadius = TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+        heightAdjustment = TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
     )
 
     fun syncSnapshot(context: Context, snapshot: Map<String, Any?>) {

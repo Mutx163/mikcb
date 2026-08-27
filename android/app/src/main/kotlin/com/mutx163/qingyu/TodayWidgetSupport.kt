@@ -127,6 +127,10 @@ object TodayWidgetSupport {
     private const val KEY_CUSTOM_HOLIDAYS = "flutter.custom_holidays"
     private const val KEY_HOLIDAY_DATA_PREFIX = "flutter.holiday_data_"
 
+    /** 无档案可读时的外观兜底，必须与 TimetableSettings 默认值一致。 */
+    const val DEFAULT_CORNER_RADIUS_DP = 22
+    const val DEFAULT_HEIGHT_ADJUSTMENT_DP = -11
+
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
         // Prefer real-time computed snapshot (state reflects current time).
         // The stored snapshot from Flutter has a stale `state` that doesn't
@@ -403,8 +407,14 @@ object TodayWidgetSupport {
             showCountdown = effectiveShowCountdown,
             countdownTextStyle = settingsJson.optString("widgetCountdownTextStyle", "smart"),
             hideCompletedCourses = hideCompletedCourses,
-            heightAdjustment = settingsJson.optDouble("widgetHeightAdjustment", -11.0).toInt(),
-            cornerRadius = settingsJson.optDouble("widgetCornerRadius", 22.0).toInt(),
+            heightAdjustment = settingsJson.optDouble(
+                "widgetHeightAdjustment",
+                DEFAULT_HEIGHT_ADJUSTMENT_DP.toDouble(),
+            ).toInt(),
+            cornerRadius = settingsJson.optDouble(
+                "widgetCornerRadius",
+                DEFAULT_CORNER_RADIUS_DP.toDouble(),
+            ).toInt(),
             totalTodayCourseCount = todayCourses.size,
             todayCourses = todayCourses.map { it.toWidgetCourseInfo() },
             visibleTodayCourses = visibleTodayCourses.map { it.toWidgetCourseInfo() },
@@ -529,11 +539,15 @@ object TodayWidgetSupport {
         return TodayWidgetSizeProfile(widthDp = width, heightDp = height)
     }
 
-    fun applySquareishPadding(
+    /**
+     * 只调根视图的垂直内边距（随尺寸画像与「高度微调」变化）。
+     * 水平内边距一律由各自 layout 中卡片的静态 padding 提供，此处恒为 0，
+     * 避免与卡片静态 padding 叠加。
+     */
+    fun applyAdaptiveVerticalPadding(
         views: RemoteViews,
         rootId: Int,
         profile: TodayWidgetSizeProfile,
-        baseHorizontalDp: Int,
         baseVerticalDp: Int,
         heightAdjustmentDp: Int,
         targetAspect: Float = 1f,
@@ -1023,8 +1037,14 @@ object TodayWidgetSupport {
             showCountdown = json.optBoolean("showCountdown", true),
             countdownTextStyle = json.optString("countdownTextStyle", "smart"),
             hideCompletedCourses = json.optBoolean("hideCompletedCourses", false),
-            heightAdjustment = json.optDouble("heightAdjustment", 0.0).toInt(),
-            cornerRadius = json.optDouble("cornerRadius", 28.0).toInt(),
+            heightAdjustment = json.optDouble(
+                "heightAdjustment",
+                DEFAULT_HEIGHT_ADJUSTMENT_DP.toDouble(),
+            ).toInt(),
+            cornerRadius = json.optDouble(
+                "cornerRadius",
+                DEFAULT_CORNER_RADIUS_DP.toDouble(),
+            ).toInt(),
             totalTodayCourseCount = json.optInt(
                 "totalTodayCourseCount",
                 allCourses.size

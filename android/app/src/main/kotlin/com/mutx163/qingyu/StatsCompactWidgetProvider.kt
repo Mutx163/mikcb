@@ -68,11 +68,10 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
                 "setBackgroundResource",
                 TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 14,
                 baseVerticalDp = 14,
                 heightAdjustmentDp = chrome.heightAdjustment,
                 targetAspect = 1f,

@@ -70,15 +70,18 @@ class ExamCountdownWidgetProvider : AppWidgetProvider() {
             views.setInt(
                 R.id.widget_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28),
+                TodayWidgetSupport.backgroundRes(
+                    style,
+                    snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+                ),
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 14,
                 baseVerticalDp = 14,
-                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                heightAdjustmentDp =
+                    snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
                 targetAspect = 1f,
             )
 
@@ -104,64 +107,50 @@ class ExamCountdownWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.exam_chip, secondaryColor)
 
             // 大字区：常规显示天数，今天考试显示"今天"，进行中显示结束时间，无数据显示占位。
-            val hasExam = snapshot?.nextExamName != null
-            when {
-                snapshot == null || !hasExam -> {
-                    views.setTextViewText(R.id.exam_days, "--")
-                    views.setTextViewText(R.id.exam_day_unit, "")
-                    views.setTextViewText(R.id.exam_name, context.getString(R.string.widget_exam_none))
-                    views.setTextViewText(R.id.exam_meta, context.getString(R.string.widget_tap_to_open))
-                }
-                isExamOngoing -> {
-                    views.setTextViewText(
-                        R.id.exam_days,
-                        context.getString(R.string.widget_exam_until, snapshot.nextExamEndTime ?: ""),
-                    )
-                    views.setTextViewText(R.id.exam_day_unit, "")
-                    views.setTextViewText(
-                        R.id.exam_name,
-                        TodayWidgetSupport.examDisplayName(snapshot)
-                            ?: context.getString(R.string.widget_exam_fallback_name),
-                    )
-                    views.setTextViewText(R.id.exam_meta, examMeta(snapshot))
-                }
-                (snapshot.nextExamDaysUntil ?: 0) == 0 -> {
-                    views.setTextViewText(R.id.exam_days, context.getString(R.string.widget_exam_today_big))
-                    views.setTextViewText(R.id.exam_day_unit, "")
-                    views.setTextViewText(
-                        R.id.exam_name,
-                        TodayWidgetSupport.examDisplayName(snapshot)
-                            ?: context.getString(R.string.widget_exam_fallback_name),
-                    )
-                    views.setTextViewText(R.id.exam_meta, examMeta(snapshot))
-                }
-                else -> {
-                    val days = snapshot.nextExamDaysUntil ?: 0
-                    views.setTextViewText(R.id.exam_days, days.toString())
-                    views.setTextViewText(R.id.exam_day_unit, context.getString(R.string.widget_exam_unit_day))
-                    views.setTextViewText(
-                        R.id.exam_name,
-                        TodayWidgetSupport.examDisplayName(snapshot)
-                            ?: context.getString(R.string.widget_exam_fallback_name),
-                    )
-                    views.setTextViewText(R.id.exam_meta, examMeta(snapshot))
-                }
-            }
+            val endTimeText = snapshot?.nextExamEndTime.orEmpty()
+                .takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
+            val daysUntil = snapshot?.nextExamDaysUntil ?: 0
+            val noExam = snapshot == null || snapshot.nextExamName == null
+            // 「数字天数」与「-- 占位」都是短数字形态，保持超大字号；
+            // 「今天」/「In exam」/「10:30」这类文案必须降档，否则 44sp 在 2×2 卡里必然左右裁切。
+            val bigIsNumeric = noExam || (!isExamOngoing && daysUntil > 0)
+            // 只有「数字 + 天」这一形态需要单位行。
+            val numericDays = !noExam && !isExamOngoing && daysUntil > 0
+            views.setTextViewText(
+                R.id.exam_days,
+                when {
+                    noExam -> "--"
+                    isExamOngoing -> endTimeText
+                        ?: context.getString(R.string.widget_status_exam_ongoing)
+                    daysUntil == 0 -> context.getString(R.string.widget_exam_today_big)
+                    else -> daysUntil.toString()
+                },
+            )
+            views.setTextViewText(
+                R.id.exam_day_unit,
+                if (numericDays) context.getString(R.string.widget_exam_unit_day) else "",
+            )
+            views.setTextViewText(
+                R.id.exam_name,
+                snapshot?.takeIf { !noExam }?.let {
+                    TodayWidgetSupport.examDisplayName(it)
+                        ?: context.getString(R.string.widget_exam_fallback_name)
+                } ?: context.getString(R.string.widget_exam_none),
+            )
+            views.setTextViewText(
+                R.id.exam_meta,
+                snapshot?.takeIf { !noExam }?.let { examMeta(it) }
+                    ?: context.getString(R.string.widget_tap_to_open),
+            )
             views.setTextColor(R.id.exam_days, primaryColor)
             views.setTextColor(R.id.exam_day_unit, secondaryColor)
             views.setTextColor(R.id.exam_name, primaryColor)
             views.setTextColor(R.id.exam_meta, secondaryColor)
 
-            // 无考试时隐藏大字号下的空单位行。
+            // 单位行只服务「数字 + 天」形态，其余形态隐藏避免空行占位。
             views.setViewVisibility(
                 R.id.exam_day_unit,
-                if (snapshot == null || !hasExam || isExamOngoing ||
-                    (snapshot.nextExamDaysUntil ?: 0) == 0
-                ) {
-                    View.GONE
-                } else {
-                    View.VISIBLE
-                }
+                if (numericDays) View.VISIBLE else View.GONE,
             )
 
             // 自适应：矮高度压大字号；窄宽度缩名称行。
@@ -170,6 +159,7 @@ class ExamCountdownWidgetProvider : AppWidgetProvider() {
                 views,
                 R.id.exam_days,
                 when {
+                    !bigIsNumeric -> if (profile.isShort) 20f else 26f
                     profile.isShort -> 30f
                     profile.isWide -> 52f
                     else -> 44f

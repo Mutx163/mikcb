@@ -72,11 +72,10 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 "setBackgroundResource",
                 TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 16,
                 baseVerticalDp = 16,
                 heightAdjustmentDp = chrome.heightAdjustment,
                 targetAspect = 0.5f,
@@ -136,16 +135,18 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.stats_nature, secondaryColor)
             views.setTextColor(R.id.stats_streak, secondaryColor)
 
-            // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 31+，低版本保留蓝色兜底）。
-            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 30+，低版本保留蓝色兜底）。
+            // 注意：这里反射的是 ProgressBar 的 setter 名，必须是 *TintList 形式，
+            // 写成 setProgressTint 只会静默失效。
+            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 views.setColorStateList(
                     R.id.stats_progress,
-                    "setProgressTint",
+                    "setProgressTintList",
                     ColorStateList.valueOf(Color.WHITE),
                 )
                 views.setColorStateList(
                     R.id.stats_progress,
-                    "setProgressBackgroundTint",
+                    "setProgressBackgroundTintList",
                     ColorStateList.valueOf(Color.parseColor("#33FFFFFF")),
                 )
             }

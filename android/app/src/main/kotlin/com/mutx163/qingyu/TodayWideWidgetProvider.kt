@@ -70,15 +70,18 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
             views.setInt(
                 R.id.widget_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28),
+                TodayWidgetSupport.backgroundRes(
+                    style,
+                    snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+                ),
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 16,
                 baseVerticalDp = 12,
-                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                heightAdjustmentDp =
+                    snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
                 targetAspect = 2f,
             )
 
@@ -162,15 +165,25 @@ class TodayWideWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_wide_right_label, secondaryColor)
             views.setTextColor(R.id.widget_wide_week, secondaryColor)
 
-            val upcoming = if (snapshot == null) {
+            // 右栏列宽实测：卡片左右内边距共 32dp，两栏等分后再扣掉 16dp 栏间距。
+            val rightColumnWidthDp = (profile.widthDp - 48) / 2f
+            // 一行课目的时间串约需 80dp 列宽才不被裁掉。
+            val showRightRows = rightColumnWidthDp >= 80f
+            // 列宽容不下「接下来 · 第6周」时整栏隐藏，把宽度让给等分的左栏。
+            val showRightColumn = rightColumnWidthDp >= 66f
+            val upcoming = if (snapshot == null || !showRightRows) {
                 emptyList()
             } else {
                 TodayWidgetSupport.secondaryCourses(snapshot, 2)
             }
             bindRow(views, R.id.widget_wide_row_1, R.id.widget_wide_row_1_time, R.id.widget_wide_row_1_title, upcoming.getOrNull(0), secondaryColor, primaryColor)
             bindRow(views, R.id.widget_wide_row_2, R.id.widget_wide_row_2_time, R.id.widget_wide_row_2_title, upcoming.getOrNull(1), secondaryColor, primaryColor)
+            views.setViewVisibility(
+                R.id.widget_wide_right,
+                if (showRightColumn) View.VISIBLE else View.GONE,
+            )
 
-            // 自适应字号；窄宽度时右栏退化为只显示周数行。
+            // 自适应字号：矮高度压主课程字号，超宽时才放大到 22sp。
             TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_status, if (profile.isShort) 10f else 11f)
             TodayWidgetSupport.setTextSizeSp(
                 views,

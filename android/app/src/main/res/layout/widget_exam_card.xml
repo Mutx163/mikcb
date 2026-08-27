@@ -9,7 +9,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp">
 
         <TextView
             android:id="@+id/exam_chip"
@@ -38,6 +40,7 @@
                 android:id="@+id/exam_days"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:text="12"
@@ -67,8 +70,6 @@
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
             android:text="高等数学期末"
             android:textColor="#0F172A"
             android:textSize="14sp"
@@ -82,8 +83,6 @@
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
             android:text="06-25 · 一教C104"
             android:textColor="#64748B"
             android:textSize="11sp" />

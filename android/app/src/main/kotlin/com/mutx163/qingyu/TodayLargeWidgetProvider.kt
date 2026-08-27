@@ -62,15 +62,18 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
             views.setInt(
                 R.id.widget_large_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28)
+                TodayWidgetSupport.backgroundRes(
+                    style,
+                    snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+                )
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_large_root,
                 profile,
-                baseHorizontalDp = 14,
                 baseVerticalDp = 14,
-                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                heightAdjustmentDp =
+                    snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
                 targetAspect = 1f,
             )
             views.setTextColor(R.id.widget_large_heading, secondaryColor)

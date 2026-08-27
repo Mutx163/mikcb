@@ -69,16 +69,16 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 "setBackgroundResource",
                 TodayWidgetSupport.backgroundRes(
                     backgroundStyle,
-                    snapshot?.cornerRadius ?: 28
+                    snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP
                 )
             )
-            TodayWidgetSupport.applySquareishPadding(
+            TodayWidgetSupport.applyAdaptiveVerticalPadding(
                 views,
                 R.id.widget_root,
                 profile,
-                baseHorizontalDp = 14,
                 baseVerticalDp = 14,
-                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                heightAdjustmentDp =
+                    snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
                 targetAspect = 1f,
             )
             val isExamOngoing = snapshot != null && TodayWidgetSupport.isExamOngoing(snapshot)
