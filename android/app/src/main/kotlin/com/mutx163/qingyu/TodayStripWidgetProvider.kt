@@ -196,6 +196,40 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
                 if (profile.widthDp < metaMinWidthDp) View.GONE else View.VISIBLE,
             )
 
+            views.setViewVisibility(
+                R.id.strip_sub_row,
+                if (profile.heightDp >= 92) View.VISIBLE else View.GONE,
+            )
+            // 第二行补充信息：进行中→地点；明日可列→首课地点；
+            // 结束且无明日→周数+日期。与主行各字段互不重复。
+            if (snapshot != null && profile.heightDp >= 92) {
+                val subLeft = when {
+                    state == "holiday" -> ""
+                    isExamOngoing ->
+                        snapshot.nextExamLocation.orEmpty()
+                            .takeIf { snapshot.showLocation && it.isNotBlank() } ?: ""
+                    state == "ongoing" || state == "upcoming" ->
+                        snapshot.highlightedCourse?.location
+                            ?.takeIf { snapshot.showLocation && it.isNotBlank() } ?: ""
+                    isShowingTomorrow ->
+                        snapshot.tomorrowCourses.firstOrNull()?.location
+                            ?.takeIf { snapshot.showLocation && it.isNotBlank() } ?: ""
+                    else -> TodayWidgetSupport.rightInfoText(context, snapshot)
+                }
+                views.setTextViewText(R.id.strip_sub_left, subLeft)
+                views.setTextColor(R.id.strip_sub_left, secondaryColor)
+            }
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.strip_sub_left,
+                if (compact) 10f else 11f,
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.strip_sub_right,
+                if (compact) 10f else 11f,
+            )
+
             views.setOnClickPendingIntent(
                 R.id.widget_root,
                 TodayWidgetSupport.buildLaunchPendingIntent(context, 30000 + appWidgetId),

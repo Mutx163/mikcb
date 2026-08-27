@@ -8,7 +8,6 @@
         android:id="@+id/widget_card"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_vertical"
         android:orientation="vertical"
         android:padding="18dp">
 
@@ -81,6 +80,13 @@
             android:text="较上周 +2 节"
             android:textColor="#64748B"
             android:textSize="12sp" />
+
+        <!-- 弹性空隙：把富余高度全部吃在这里，顶部核心区钉顶、明细区沉底。 -->
+        <Space
+            android:id="@+id/stats_flex"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <LinearLayout
             android:id="@+id/stats_nature_row"

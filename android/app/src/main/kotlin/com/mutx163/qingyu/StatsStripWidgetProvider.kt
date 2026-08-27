@@ -10,6 +10,8 @@ import android.graphics.Color
 import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
+import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * 课程统计横向长条 4×1：单行展示 [周数徽章 | 本周节数 | 环比 | 迷你学期进度条]。
@@ -184,6 +186,42 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
                 R.id.stats_strip_delta,
                 if (showDelta) View.VISIBLE else View.GONE,
             )
+
+            // 高度足够时亮出第二行：完整环比沉到左端、右端放进度百分比与日均，
+            // 拉高后的横条不再是上下全空的孤零零一线。
+            val twoLine = profile.heightDp >= 92
+            views.setViewVisibility(
+                R.id.strip_sub_row,
+                if (twoLine) View.VISIBLE else View.GONE,
+            )
+            if (twoLine && snapshot != null) {
+                views.setTextViewText(
+                    R.id.stats_strip_sub_left,
+                    StatsWidgetSupport.deltaLabel(context, snapshot.deltaVsLastWeek),
+                )
+                val maxTotal = if (snapshot.semesterTotal > 0) snapshot.semesterTotal else 1
+                val percent = (
+                    (snapshot.semesterDone.coerceIn(0, maxTotal).toDouble() / maxTotal) * 100
+                    ).roundToInt()
+                val dailyAvg = String.format(Locale.getDefault(), "%.1f", snapshot.weekSections / 5.0)
+                views.setTextViewText(
+                    R.id.stats_strip_sub_right,
+                    context.getString(R.string.widget_stats_percent, percent) + " · " +
+                        context.getString(R.string.widget_stats_daily, dailyAvg),
+                )
+                views.setTextColor(R.id.stats_strip_sub_left, secondaryColor)
+                views.setTextColor(R.id.stats_strip_sub_right, secondaryColor)
+                TodayWidgetSupport.setTextSizeSp(
+                    views,
+                    R.id.stats_strip_sub_left,
+                    if (compact) 10f else 11f,
+                )
+                TodayWidgetSupport.setTextSizeSp(
+                    views,
+                    R.id.stats_strip_sub_right,
+                    if (compact) 10f else 11f,
+                )
+            }
 
             views.setOnClickPendingIntent(
                 R.id.widget_root,

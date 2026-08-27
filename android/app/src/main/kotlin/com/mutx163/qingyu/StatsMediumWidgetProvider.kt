@@ -66,6 +66,7 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
             // 与今日系列同源的外观设置：背景风格 / 圆角 / 高度微调。
             val chrome = StatsWidgetSupport.readChrome(context)
             val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
+            val heightDp = profile.heightDp
             val primaryColor = TodayWidgetSupport.primaryTextColor(chrome.backgroundStyle)
             val secondaryColor = TodayWidgetSupport.secondaryTextColor(chrome.backgroundStyle)
 
@@ -143,7 +144,7 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 )
 
                 // 高个位补充行：进度百分比 + 日均节数，填满竖长卡片下半部分。
-                val showExtraRow = profile.isTall && !profile.isNarrow
+                val showExtraRow = heightDp >= 210 && !profile.isNarrow
                 if (showExtraRow) {
                     val percent = ((done.toDouble() / max) * 100).roundToInt()
                     val dailyAvg = String.format(Locale.getDefault(), "%.1f", snapshot.weekSections / 5.0)
@@ -196,7 +197,8 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 R.id.stats_sections,
                 when {
                     profile.isShort -> 15f
-                    profile.isTall && !profile.isWide -> 24f
+                    heightDp >= 280 -> 27f
+                    heightDp >= 220 -> 24f
                     profile.isWide -> 22f
                     else -> 20f
                 },
@@ -226,9 +228,11 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
                 R.id.stats_streak,
                 if (profile.isNarrow || profile.isShort) 11f else 12f,
             )
+            // 高度分档：矮卡只留核心区，越高越多明细行；明细区由布局里的弹性
+            // 空隙钉在卡片底部，保证 2×4 这类大高度上下都被内容占满。
             views.setViewVisibility(
                 R.id.stats_nature_row,
-                if (profile.isShort) View.GONE else View.VISIBLE,
+                if (!profile.isShort && heightDp >= 170) View.VISIBLE else View.GONE,
             )
 
             views.setOnClickPendingIntent(
