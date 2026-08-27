@@ -123,9 +123,10 @@ class StatsStripWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.stats_strip_sections, primaryColor)
             views.setTextColor(R.id.stats_strip_delta, secondaryColor)
 
-            // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 30+，低版本保留蓝色兜底）。
+            // gradient 背景下进度条换白色系（RemoteViews.setColorStateList 需 API 31+，
+            // 低版本保留蓝色兜底）。
             // 反射的是 ProgressBar 的 setter 名，必须写成 *TintList 形式。
-            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 views.setColorStateList(
                     R.id.stats_strip_progress,
                     "setProgressTintList",

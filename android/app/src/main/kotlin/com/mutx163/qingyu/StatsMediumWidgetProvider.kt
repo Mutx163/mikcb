@@ -175,10 +175,11 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.stats_extra_pct, secondaryColor)
             views.setTextColor(R.id.stats_extra_daily, secondaryColor)
 
-            // gradient 背景下进度条换白色系（RemoteViews 着色 API 需 30+，低版本保留蓝色兜底）。
+            // gradient 背景下进度条换白色系（RemoteViews.setColorStateList 需 API 31+，
+            // 低版本保留蓝色兜底）。
             // 注意：这里反射的是 ProgressBar 的 setter 名，必须是 *TintList 形式，
             // 写成 setProgressTint 只会静默失效。
-            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 views.setColorStateList(
                     R.id.stats_progress,
                     "setProgressTintList",

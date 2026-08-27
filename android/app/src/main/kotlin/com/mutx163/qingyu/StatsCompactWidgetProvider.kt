@@ -134,8 +134,9 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.stats_nature, secondaryColor)
             views.setTextColor(R.id.stats_extra_pct, secondaryColor)
 
-            // gradient 背景下进度条换白色系（反射 setter 名必须是 *TintList 形式）。
-            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // gradient 背景下进度条换白色系（RemoteViews.setColorStateList 需 API 31+，
+            // 低版本保留布局里的蓝色兜底；反射 setter 名必须是 *TintList 形式）。
+            if (chrome.backgroundStyle == "gradient" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 views.setColorStateList(
                     R.id.stats_bar,
                     "setProgressTintList",
@@ -149,7 +150,8 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
             }
 
             // 明细行按高度/宽度分档：矮卡只留核心三行，正常方卡全量显示。
-            val showDetail = !profile.isShort && !profile.isNarrow
+            // 无数据时文本已置空，保持 GONE，避免空行高+边距在小卡上白占高度。
+            val showDetail = snapshot != null && !profile.isShort && !profile.isNarrow
             views.setViewVisibility(R.id.stats_nature, if (showDetail) View.VISIBLE else View.GONE)
             views.setViewVisibility(R.id.stats_extra_pct, if (showDetail) View.VISIBLE else View.GONE)
 
