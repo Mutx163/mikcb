@@ -4,6 +4,7 @@
     android:initialLayout="@layout/widget_stats_strip"
     android:minWidth="250dp"
     android:minHeight="40dp"
+    android:previewImage="@drawable/widget_preview_stats_strip"
     android:previewLayout="@layout/widget_stats_strip"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"

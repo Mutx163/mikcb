@@ -4,6 +4,7 @@
     android:initialLayout="@layout/widget_exam_card"
     android:minWidth="110dp"
     android:minHeight="110dp"
+    android:previewImage="@drawable/widget_preview_exam_card"
     android:previewLayout="@layout/widget_exam_card"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="2"
