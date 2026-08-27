@@ -39,13 +39,9 @@ const homePageChromeGlassEdgeOverdraw = 48.0;
 /// Extra glass painted BELOW the band's bottom edge, outside the visible
 /// ClipRect.
 ///
-/// 不越界时玻璃形状的底边恰好压在可见边界上，thickness 档（滑杆最高 40）
-/// 宽度的边缘折射/边缘光全部落在带内。首页连续高带（状态栏+标题+星期栏
-/// 约 130dp）里这只是细窄的正常玻璃包边；但设置预览里孤立星期栏玻璃条仅
-/// 40dp 高，整条都处在边缘区，底边高光会糊成一条贴在星期栏文字正下方的
-/// 粗白亮线——该回归已随周边改动（预览去掉模拟标题行、玻璃包升级）复发了
-/// 两次。底边与左右一致越界后，可见区内不再出现任何形状边缘，这条视觉规
-/// 则不再依赖采样/着色器内部行为。
+/// Kept for API completeness; the preview narrow strip no longer hides the
+/// bottom edge — it keeps the edge at the band boundary (like the home page)
+/// and caps thickness proportionally so the rim-light stays a thin sheen.
 const homePageChromeGlassBottomEdgeOverdraw = 48.0;
 
 /// Whether any home chrome frosted band should paint over the wallpaper.
@@ -219,6 +215,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
   const HomePageChromeGlassFill({
     this.borderRadius = 0,
     this.useAncestorBackdropGroup = false,
+    this.maxThickness,
     super.key,
   });
 
@@ -233,6 +230,8 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// grouped capture (wallpaper layer + [UndimmedBackdropCapture] inside the
   /// group) so the displacement range stays inside the captured backdrop.
   final bool useAncestorBackdropGroup;
+
+  final double? maxThickness;
 
   /// Corner radius of the glass shape itself. The chrome band is square (0);
   /// the day-view summary card reuses this material with its card radius —
@@ -304,6 +303,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
         borderRadius: borderRadius,
         instantUnderlay: false,
         useAncestorBackdropGroup: useAncestorBackdropGroup,
+        maxThickness: maxThickness,
         // 与弹窗/菜单等其他液态玻璃表面同材质：不再为可读性叠加 scrim，
         // chrome 文字对比度由墨色极性（homePageChromeForegroundForLuminance）
         // 保证。

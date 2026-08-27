@@ -209,14 +209,16 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       return null;
     }
 
-    // Overdraw the glass beyond the band on ALL four sides so every
-    // shape-edge refraction / rim-light zone stays outside the ClipRect —
-    // same trick as HomePageContinuousChromeFrostedOverlay's left/right/top
-    // treatment. The bottom used to stay at the band boundary (the home
-    // page keeps a thin intentional edge sheen on its tall continuous
-    // sheet), but in an isolated ~40dp strip the whole bar falls inside the
-    // thickness-wide edge zone and the bottom highlight smears into a thick
-    // white line right under the weekday row — regressed twice already.
+    // Narrow isolated strips (weekday-only 40dp) would otherwise let
+    // the thickness-wide edge zone flood the whole bar and smear the
+    // bottom highlight into a thick white line under the weekday text —
+    // regressed twice already. Keep the bottom at the band boundary (like
+    // the home page's thin intentional sheen) and cap glass thickness
+    // proportionally so the edge highlight stays a thin sheen while the
+    // interior remains real liquid refraction — not flat gaussian blur.
+    // Combined bands (~84dp) keep full thickness like the home sheet.
+    final double? bandMaxThickness =
+        height <= 52 ? (height * 0.28).clamp(8.0, 14.0) : null;
     return [
       Positioned(
         top: top,
@@ -233,8 +235,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   top: -homePageChromeGlassTopEdgeOverdraw,
                   left: -homePageChromeGlassEdgeOverdraw,
                   right: -homePageChromeGlassEdgeOverdraw,
-                  bottom: -homePageChromeGlassBottomEdgeOverdraw,
-                  child: const HomePageChromeGlassFill(),
+                  bottom: 0,
+                  child: HomePageChromeGlassFill(
+                    maxThickness: bandMaxThickness,
+                  ),
                 ),
               ],
             ),

@@ -2,6 +2,7 @@
 // (premium shader on capable devices, lightweight shader / frosted fallback
 // automatically), so no per-process shader probe is needed here anymore.
 
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -143,6 +144,7 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     /// page is handled by [UndimmedBackdropCapture] / [UndimmedBackdropLayer]
     /// where needed.
     this.useAncestorBackdropGroup = false,
+    this.maxThickness,
     super.key,
   });
 
@@ -155,6 +157,11 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
   final bool contentLegibilityFill;
   final HyperosLiquidGlassLayerMode? layerMode;
   final bool useAncestorBackdropGroup;
+
+  /// Caps effective [LiquidGlassSettings.thickness] so a narrow isolated
+  /// strip (e.g. the 40dp preview weekday-only band) does not let the
+  /// thickness-wide edge rim-light flood the whole bar. Null = no cap.
+  final double? maxThickness;
 
   /// Whether this device can run real liquid-glass refraction shaders.
   ///
@@ -224,12 +231,16 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     final shape = resolvedRadius <= 0.01
         ? const LiquidRoundedRectangle(borderRadius: 0)
         : LiquidRoundedSuperellipse(borderRadius: resolvedRadius);
-    final settings = HyperosLiquidGlassSurface.settingsForRole(
+    var settings = HyperosLiquidGlassSurface.settingsForRole(
       role: role,
       brightness: brightness,
       tuning: tuning,
       glassColor: glassColor,
     );
+    final cap = widget.maxThickness;
+    if (cap != null && cap > 0 && settings.thickness > cap) {
+      settings = settings.copyWith(thickness: math.min(settings.thickness, cap));
+    }
 
     final glassChild = contentLegibilityFill
         ? _wrapChildForLegibility(
