@@ -743,7 +743,13 @@ class _CourseActionSheetContent extends StatelessWidget {
             onTap: () =>
                 _closeSheetThenAfterDismiss(context, () => onAddTask(course)),
           ),
-          if (onSetAlarm != null) ...[
+          if (onSetAlarm != null &&
+              _isAlarmAvailable(
+                settings: provider.settings,
+                week: week,
+                course: course,
+                provider: provider,
+              )) ...[
             const SizedBox(height: 8),
             _CourseDetailTile(
               icon: Icons.alarm_outlined,
@@ -1036,4 +1042,29 @@ DateTime? _dateForWeekDay(TimetableSettings settings, int week, int dayOfWeek) {
   ).subtract(Duration(days: semesterStart.weekday - 1));
 
   return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+}
+
+bool _isAlarmAvailable({
+  required TimetableSettings settings,
+  required int week,
+  required Course course,
+  required TimetableProvider provider,
+}) {
+  final date = _dateForWeekDay(settings, week, course.dayOfWeek);
+  if (date == null) return false;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final courseDate = DateTime(date.year, date.month, date.day);
+  if (courseDate.isBefore(today)) return false;
+  if (courseDate.isAfter(today)) return true;
+  // 当天：已开课的不显示闹钟入口。
+  final startText = provider.resolvedCourseStartTime(course);
+  if (startText == null) return false;
+  final parts = startText.split(':');
+  if (parts.length != 2) return false;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return false;
+  final startAt = DateTime(now.year, now.month, now.day, hour, minute);
+  return now.isBefore(startAt);
 }

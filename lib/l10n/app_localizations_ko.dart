@@ -10427,6 +10427,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classAlarmCourseConfirmTitle => '이 수업의 반복 알람을 추가할까요?';
 
   @override
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return '시스템 시계에 매주 $weekday $time 반복 알람을 만듭니다(수업 $lead분 전 울림, 대상 주차: $weeks). 휴일·휴강 주에도 울리니 삭제는 시스템 시계에서 해주세요.';
+  }
+
+  @override
   String get classAlarmDaySeparator => ', ';
 
   @override

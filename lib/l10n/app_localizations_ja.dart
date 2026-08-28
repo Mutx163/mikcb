@@ -10382,6 +10382,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classAlarmCourseConfirmTitle => 'この授業の繰り返しアラームを追加しますか？';
 
   @override
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return 'システム時計に毎週$weekday $time の繰り返しアラームを作成します（授業開始の$lead分前に鳴動、対象週：$weeks）。休日や休講週でも鳴ります。削除はシステム時計で行ってください。';
+  }
+
+  @override
   String get classAlarmDaySeparator => '、';
 
   @override

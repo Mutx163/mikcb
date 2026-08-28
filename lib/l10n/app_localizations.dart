@@ -18367,6 +18367,17 @@ abstract class AppLocalizations {
   /// **'添加这节课的重复闹钟？'**
   String get classAlarmCourseConfirmTitle;
 
+  /// No description provided for @classAlarmCourseConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。'**
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  );
+
   /// No description provided for @classAlarmDaySeparator.
   ///
   /// In zh, this message translates to:

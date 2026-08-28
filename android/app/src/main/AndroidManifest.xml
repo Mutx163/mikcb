@@ -35,6 +35,13 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="weixin" />
         </intent>
+        <!-- 系统闹钟（这节课闹钟）：包可见性探测 -->
+        <intent>
+            <action android:name="android.intent.action.SET_ALARM" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SHOW_ALARMS" />
+        </intent>
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -46,6 +53,8 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- 这节课闹钟静默写入（EXTRA_SKIP_UI）所需权限，确认页模式可不依赖 -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM"/>
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>

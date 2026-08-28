@@ -6049,6 +6049,8 @@
   "classAlarmAddedToast": "已交給系統時鐘處理",
   "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
   "classAlarmCourseConfirmTitle": "添加這節課的重複鬧鐘？",
+  "classAlarmCourseConfirmMessage": "將在系統時鐘創建每週{weekday} {time} 的重複鬧鐘（比上課提前{lead}分鐘響鈴；上課週次：{weeks}）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。",
+  "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；"
 }

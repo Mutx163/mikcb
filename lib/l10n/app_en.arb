@@ -6052,6 +6052,8 @@
   "classAlarmAddedToast": "Handed to the system clock",
   "classAlarmLaunchFailedToast": "No clock app found to handle this",
   "classAlarmCourseConfirmTitle": "Add a repeating alarm for this class?",
+  "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, ringing {lead} minutes before this class starts (active weeks: {weeks}). It keeps ringing during holidays and off-weeks; delete it in the system clock.",
+  "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": ", ",
   "classAlarmDetailSeparator": "; "
 }

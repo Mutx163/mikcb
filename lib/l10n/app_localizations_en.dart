@@ -10690,6 +10690,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a repeating alarm for this class?';
 
   @override
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return 'A weekly repeating alarm will be created in the system clock: every $weekday at $time, ringing $lead minutes before this class starts (active weeks: $weeks). It keeps ringing during holidays and off-weeks; delete it in the system clock.';
+  }
+
+  @override
   String get classAlarmDaySeparator => ', ';
 
   @override

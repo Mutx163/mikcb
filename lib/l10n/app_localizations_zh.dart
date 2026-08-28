@@ -10102,6 +10102,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get classAlarmCourseConfirmTitle => '添加这节课的重复闹钟？';
 
   @override
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return '将在系统时钟创建每周$weekday $time 的重复闹钟（比上课提前$lead分钟响铃；上课周次：$weeks）。假期与非上课周仍会响铃，删除需在系统时钟中完成。';
+  }
+
+  @override
   String get classAlarmDaySeparator => '、';
 
   @override
@@ -20250,6 +20260,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get classAlarmCourseConfirmTitle => '添加這節課的重複鬧鐘？';
 
   @override
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return '將在系統時鐘創建每週$weekday $time 的重複鬧鐘（比上課提前$lead分鐘響鈴；上課週次：$weeks）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。';
+  }
+
+  @override
   String get classAlarmDaySeparator => '、';
 
   @override
@@ -30396,6 +30416,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get classAlarmCourseConfirmTitle => '添加這節課的重複鬧鐘？';
+
+  @override
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  ) {
+    return '將在系統時鐘創建每週$weekday $time 的重複鬧鐘（比上課提前$lead分鐘響鈴；上課週次：$weeks）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。';
+  }
 
   @override
   String get classAlarmDaySeparator => '、';

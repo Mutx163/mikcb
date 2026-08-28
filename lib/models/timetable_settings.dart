@@ -1328,11 +1328,12 @@ class TimetableSettings {
   final String appUpdateMirrorUrlPrefix;
   final bool holidayOverrideEnabled;
 
-  /// 上课提醒：一键添加时的默认提前量（分钟）。
+  /// 上课闹钟：提前量与是否跳过系统时钟确认页。
   final int classAlarmLeadMinutes;
+  final bool classAlarmSkipUi;
 
-  /// 单节课提醒：按「课程 + 真实日期」一次性生效的本地通知提醒。
-  /// 随设置 JSON 持久化并参与云同步；原生侧经考试提醒管线统一调度。
+  /// 单节课提醒：按「课程 + 真实日期」一次性生效的本地通知提醒（保留兼容）。
+  /// 新的「这节课闹钟」改为写入系统时钟，不再新增此类条目。
   final List<ClassReminderEntry> classReminders;
   final String courseCardTitleColorLight;
   final String courseCardTitleColorDark;
@@ -1527,6 +1528,7 @@ class TimetableSettings {
     this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
     this.holidayOverrideEnabled = false,
     this.classAlarmLeadMinutes = 30,
+    this.classAlarmSkipUi = false,
     this.classReminders = const [],
     this.courseCardTitleColorLight = defaultCourseCardTitleColor,
     this.courseCardTitleColorDark = defaultCourseCardTitleColor,
@@ -1702,6 +1704,7 @@ class TimetableSettings {
       appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
       holidayOverrideEnabled: false,
       classAlarmLeadMinutes: 30,
+      classAlarmSkipUi: false,
       classReminders: [],
       courseCardTitleColorLight: defaultCourseCardTitleColor,
       courseCardTitleColorDark: defaultCourseCardTitleColor,
@@ -1871,6 +1874,7 @@ class TimetableSettings {
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
       'holidayOverrideEnabled': holidayOverrideEnabled,
       'classAlarmLeadMinutes': classAlarmLeadMinutes,
+      'classAlarmSkipUi': classAlarmSkipUi,
       'classReminders': [
         for (final entry in classReminders) entry.toJson(),
       ],
@@ -2260,6 +2264,7 @@ class TimetableSettings {
       holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
       classAlarmLeadMinutes:
           (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
+      classAlarmSkipUi: json['classAlarmSkipUi'] as bool? ?? false,
       // 脏条目在 listFromJson 内逐条校验丢弃，绝不让单个坏值炸掉整个设置。
       classReminders: ClassReminderEntry.listFromJson(json['classReminders']),
       courseCardTitleColorLight:
@@ -2520,6 +2525,7 @@ class TimetableSettings {
     String? appUpdateMirrorUrlPrefix,
     bool? holidayOverrideEnabled,
     int? classAlarmLeadMinutes,
+    bool? classAlarmSkipUi,
     List<ClassReminderEntry>? classReminders,
     String? courseCardTitleColorLight,
     String? courseCardTitleColorDark,
@@ -2829,7 +2835,7 @@ class TimetableSettings {
       // 提前量允许 0（下课即提醒的场景不存在，但保留合法输入区间）。
       classAlarmLeadMinutes:
           classAlarmLeadMinutes ?? this.classAlarmLeadMinutes,
-
+      classAlarmSkipUi: classAlarmSkipUi ?? this.classAlarmSkipUi,
       classReminders: classReminders ?? this.classReminders,
       courseCardTitleColorLight:
           courseCardTitleColorLight ?? this.courseCardTitleColorLight,

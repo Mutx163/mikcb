@@ -6062,6 +6062,8 @@
   "classAlarmAddedToast": "已交给系统时钟处理",
   "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",
   "classAlarmCourseConfirmTitle": "添加这节课的重复闹钟？",
+  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",
+  "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；"
 }
