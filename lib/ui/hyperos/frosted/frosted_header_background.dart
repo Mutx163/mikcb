@@ -3,6 +3,17 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 import '../hyperos_blurred_header.dart';
+import '../hyperos_sheet.dart';
+import 'liquid_glass_degradation.dart';
+
+bool _isLiquidSheetPanel(BuildContext context) {
+  if (LiquidGlassDegradation.shouldDegrade(context)) return false;
+  final scope = FrostedAppearanceScope.maybeOf(context);
+  if (scope == null) return false;
+  final a = scope.appearance;
+  return a.glassMode == FrostedGlassMode.liquidGlass &&
+      a.liquidGlassSheetDialogEnabled;
+}
 
 /// Frosted top bar: Flutter [BackdropFilter] blur + tint scrim.
 class FrostedHeaderBackground extends StatelessWidget {
@@ -80,6 +91,8 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
 }
 
 /// Rounded frosted surface for cards, menu tiles, and icon wells.
+///
+/// 嵌套在液体玻璃 Sheet 内时不再叠加 BackdropFilter，避免双重模糊/发黑。
 class HyperosFrostedSurface extends StatelessWidget {
   const HyperosFrostedSurface({
     required this.child,
@@ -98,17 +111,28 @@ class HyperosFrostedSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var content = child;
+    if (padding != null) {
+      content = Padding(padding: padding!, child: child);
+    }
+
+    final inLiquidPanel =
+        _isLiquidSheetPanel(context) && HyperosFrostedPanelScope.of(context);
+    if (inLiquidPanel) {
+      final resolvedTint =
+          tint ?? HyperosBlurredHeader.nestedLiquidTileTintColor(context);
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: ColoredBox(color: resolvedTint, child: content),
+      );
+    }
+
     final useBlur =
         HyperosBlurredHeader.backdropBlurEnabled(context) &&
         (blurEnabled ?? true);
     final resolvedTint =
         tint ??
         HyperosBlurredHeader.nestedSurfaceTintColor(context, withBlur: useBlur);
-
-    var content = child;
-    if (padding != null) {
-      content = Padding(padding: padding!, child: child);
-    }
 
     return ClipRRect(
       borderRadius: borderRadius,

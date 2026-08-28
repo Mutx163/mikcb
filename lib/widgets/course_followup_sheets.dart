@@ -232,18 +232,17 @@ class _DeleteCourseConfirmSheetBody extends StatelessWidget {
             title: title,
           ),
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: colors.muted.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              message,
-              style: typo.xs2.copyWith(
-                color: colors.mutedForeground,
-                height: 1.45,
+          HyperosFrostedSurface(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Text(
+                message,
+                style: typo.xs2.copyWith(
+                  color: colors.mutedForeground,
+                  height: 1.45,
+                ),
               ),
             ),
           ),
@@ -251,18 +250,17 @@ class _DeleteCourseConfirmSheetBody extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: HyperosButton(
+                child: HyperosFrostedSheetButton(
                   label: l10n.cancelAction,
-                  variant: HyperosButtonVariant.secondary,
                   expand: true,
                   onPressed: () => Navigator.of(context).pop(false),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: HyperosButton(
+                child: HyperosFrostedSheetButton(
                   label: l10n.deleteAction,
-                  variant: HyperosButtonVariant.destructive,
+                  variant: HyperosFrostedSheetButtonVariant.destructive,
                   expand: true,
                   onPressed: () => Navigator.of(context).pop(true),
                 ),
@@ -411,41 +409,44 @@ class _CourseRescheduleSheetBodyState
     required VoidCallback onTap,
   }) {
     final theme = context.theme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.colors.border),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    style: theme.typography.body.sm,
-                    children: [
-                      TextSpan(
-                        text: '$label ',
-                        style: TextStyle(color: theme.colors.mutedForeground),
-                      ),
-                      TextSpan(text: value),
-                    ],
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.colors.border.withValues(alpha: 0.6)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      style: theme.typography.body.sm,
+                      children: [
+                        TextSpan(
+                          text: '$label ',
+                          style: TextStyle(color: theme.colors.mutedForeground),
+                        ),
+                        TextSpan(text: value),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 16,
-                color: theme.colors.mutedForeground,
-              ),
-            ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: theme.colors.mutedForeground,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -509,9 +510,8 @@ class _CourseRescheduleSheetBodyState
       actions: Row(
         children: [
           Expanded(
-            child: HyperosButton(
+            child: HyperosFrostedSheetButton(
               label: l10n.cancelAction,
-              variant: HyperosButtonVariant.secondary,
               expand: true,
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -787,33 +787,34 @@ class _WeekdayChoiceChip extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final highlight = selected ? colorScheme.primary : colors.foreground;
 
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onSelected,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected
-                ? highlight.withValues(alpha: 0.14)
-                : colors.muted.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected
-                  ? highlight.withValues(alpha: 0.45)
-                  : colors.border,
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(999),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onSelected,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: selected ? highlight.withValues(alpha: 0.10) : Colors.transparent,
+              border: Border.all(
+                color: selected
+                    ? highlight.withValues(alpha: 0.45)
+                    : colors.border.withValues(alpha: 0.5),
+              ),
             ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: typo.xs2.copyWith(
-                color: highlight,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            child: Center(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: typo.xs2.copyWith(
+                  color: highlight,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
               ),
             ),
           ),
@@ -912,19 +913,15 @@ class _FollowupOptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final typo = context.theme.typography.body;
-    final tileBg = colors.muted.withValues(alpha: 0.35);
     final foreground = enabled ? colors.foreground : colors.mutedForeground;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: tileBg,
-            borderRadius: BorderRadius.circular(12),
-          ),
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
@@ -984,9 +981,8 @@ class _FollowupCancelButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: HyperosButton(
+      child: HyperosFrostedSheetButton(
         label: l10n.cancelAction,
-        variant: HyperosButtonVariant.secondary,
         expand: true,
         onPressed: onPress,
       ),

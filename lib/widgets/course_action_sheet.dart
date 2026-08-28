@@ -807,10 +807,10 @@ class _CourseActionSheetContent extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: HyperosButton(
+                child: HyperosFrostedSheetButton(
                   key: ValueKey('course-action-delete-${course.id}'),
                   label: l10n.courseActionDeleteSecondary,
-                  variant: HyperosButtonVariant.destructive,
+                  variant: HyperosFrostedSheetButtonVariant.destructive,
                   expand: true,
                   onPressed: () =>
                       _closeSheetThen(context, () => onDelete(course)),
