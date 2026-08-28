@@ -779,6 +779,8 @@ class HyperosButton extends StatelessWidget {
   }
 }
 
+enum HyperosFrostedSheetButtonVariant { neutral, destructive }
+
 /// Tappable control on frosted home sheets — nested [HyperosFrostedSurface]
 /// stays visible over the panel (flat [HyperosButtonVariant.secondary] does not).
 class HyperosFrostedSheetButton extends StatelessWidget {
@@ -789,6 +791,7 @@ class HyperosFrostedSheetButton extends StatelessWidget {
     this.expand = false,
     this.dense = false,
     this.bordered = false,
+    this.variant = HyperosFrostedSheetButtonVariant.neutral,
   });
 
   final String label;
@@ -799,13 +802,27 @@ class HyperosFrostedSheetButton extends StatelessWidget {
   /// Outline for full-width bar actions; grid tiles match course detail cards.
   final bool bordered;
 
+  final HyperosFrostedSheetButtonVariant variant;
+
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
-    final fg = enabled
-        ? HyperosColors.onSecondaryVariant(context)
-        : HyperosColors.disabledOnSecondaryVariant(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDestructive = variant == HyperosFrostedSheetButtonVariant.destructive;
+    final Color fg;
+    final Color? tint;
+    if (isDestructive) {
+      final error = HyperosColors.error(context);
+      fg = enabled ? error : error.withValues(alpha: 0.45);
+      tint = enabled
+          ? error.withValues(alpha: isDark ? 0.14 : 0.10)
+          : error.withValues(alpha: 0.06);
+    } else {
+      fg = enabled
+          ? HyperosColors.onSecondaryVariant(context)
+          : HyperosColors.disabledOnSecondaryVariant(context);
+      tint = null;
+    }
     // Neutral grey edge — theme outline reads slightly cool/blue on frosted glass.
     final outline = isDark
         ? Colors.white.withValues(alpha: 0.16)
@@ -842,6 +859,7 @@ class HyperosFrostedSheetButton extends StatelessWidget {
 
     final button = HyperosFrostedSurface(
       borderRadius: radius,
+      tint: tint,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
