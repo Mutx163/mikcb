@@ -296,7 +296,9 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                         child: Ink(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: colors.muted.withValues(alpha: 0.25),
+                            // 承托白色二维码的井底必须不透明：onSurface 半透明
+                            // 水洗叠在液态玻璃半透明卡上会直接透出壁纸发黑。
+                            color: HyperosColors.secondaryVariant(context),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: colors.border.withValues(alpha: 0.55),
@@ -563,13 +565,19 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                         horizontal: 8,
                         vertical: 2,
                       ),
+                      // M3 `secondary` 是深色强调色（亮色 #625B71），配
+                      // onSurface 文字会变成深底深字；改用与上方爱心图标井
+                      // 同款 primary@12% 水洗 + primary 文字，玻璃半透明卡
+                      // 上也保持可读。
                       decoration: BoxDecoration(
-                        color: colors.secondary,
+                        color: colors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         donor.amount!,
-                        style: _emphasisBodyStyle(typo, colors),
+                        style: _emphasisBodyStyle(typo, colors).copyWith(
+                          color: colors.primary,
+                        ),
                       ),
                     )
                   : null,
@@ -644,8 +652,9 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
+            // 同主页二维码井：不透明底，防止玻璃弹窗上透出壁纸发黑。
             decoration: BoxDecoration(
-              color: colors.muted.withValues(alpha: 0.25),
+              color: HyperosColors.secondaryVariant(context),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: colors.border),
             ),
