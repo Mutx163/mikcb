@@ -20,7 +20,6 @@
 常见依赖包括（非 exhaustive）：
 
 - `provider` — MIT
-- `forui` — MIT（UI 过渡组件，逐步迁移至内置 HyperOS 组件）
 - `http` — BSD-3-Clause
 - `webview_flutter` — BSD-3-Clause
 - `fl_chart` — MIT
@@ -49,4 +48,4 @@
 
 ## 更新
 
-发版时若新增重大第三方依赖，应更新本文件。Last updated: 2026-07-11.
+发版时若新增重大第三方依赖，应更新本文件。Last updated: 2026-08-27.

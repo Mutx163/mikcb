@@ -80,7 +80,7 @@ flutter gen-l10n
 4. 在 Dart 代码中通过：
 
 ```dart
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 ```
 
 并使用：

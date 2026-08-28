@@ -25,4 +25,4 @@ curl.exe -sL "https://forui.dev/docs/llms.txt" -o docs/reference/forui/llms.txt
 curl.exe -sL "https://forui.dev/docs/llms-full.txt" -o docs/reference/forui/llms-full.txt
 ```
 
-当前项目依赖：`forui: ^0.23.0`（见 `pubspec.yaml`）。
+当前项目已移除 `forui` 依赖（历史版本 `forui: ^0.23.0`，见提交 2b19a896）；本目录仅保留文档镜像供离线查阅。
