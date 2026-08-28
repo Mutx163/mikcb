@@ -31,7 +31,8 @@ void main() {
       // All profile lists must have same single id
       final firstId = (results[0] as List).first.id as String;
       for (final r in results) {
-        final list = r is List ? r : [];
+        // ignore: dead_code, unnecessary_type_check
+        final list = r is List ? (r as List) : <dynamic>[];
         // getActiveProfileId branch returns List too
         if (list.isNotEmpty) {
           expect(list, hasLength(1));

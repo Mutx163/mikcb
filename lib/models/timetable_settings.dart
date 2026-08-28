@@ -908,7 +908,7 @@ class SavedTheme {
     if (rawThemeData is! Map) {
       throw const FormatException('missing themeData');
     }
-    final themeDataJson = Map<String, dynamic>.from(rawThemeData as Map);
+    final themeDataJson = Map<String, dynamic>.from(rawThemeData);
     final rawCreated = json['createdAt'];
     if (rawCreated is! String || rawCreated.trim().isEmpty) {
       throw const FormatException('missing theme createdAt');
@@ -1928,7 +1928,7 @@ class TimetableSettings {
         try {
           if (item is! Map) continue;
           parsed.add(
-            SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
+            SectionTime.fromJson(Map<String, dynamic>.from(item)),
           );
         } catch (_) {
           continue;
@@ -2351,7 +2351,7 @@ class TimetableSettings {
         for (final t in raw) {
           try {
             if (t is! Map) continue;
-            out.add(SavedTheme.fromJson(Map<String, dynamic>.from(t as Map)));
+            out.add(SavedTheme.fromJson(Map<String, dynamic>.from(t)));
           } catch (_) {
             continue;
           }
@@ -2363,7 +2363,7 @@ class TimetableSettings {
         final r = json['themeCheckpointConfig'];
         if (r is! Map) return null;
         try {
-          return ThemeConfig.fromJson(Map<String, dynamic>.from(r as Map));
+          return ThemeConfig.fromJson(Map<String, dynamic>.from(r));
         } catch (_) {
           return null;
         }

@@ -342,7 +342,7 @@ class HolidayService {
     for (final item in list) {
       try {
         if (item is! Map) continue;
-        final map = Map<String, dynamic>.from(item as Map);
+        final map = Map<String, dynamic>.from(item);
         final rawDaytype = map['daytype'];
         int daytype;
         if (rawDaytype is int) {
@@ -437,10 +437,10 @@ class HolidayService {
       try {
         final rawVal = entry.value;
         if (rawVal is! Map) continue;
-        final map = Map<String, dynamic>.from(rawVal as Map);
+        final map = Map<String, dynamic>.from(rawVal);
         final rawDate = map['date'];
-        if (rawDate is! String || (rawDate as String).trim().isEmpty) continue;
-        final date = DateTime.tryParse(rawDate as String);
+        if (rawDate is! String || rawDate.trim().isEmpty) continue;
+        final date = DateTime.tryParse(rawDate);
         if (date == null) continue;
         final rawHoliday = map['holiday'];
         final bool? isHoliday = switch (rawHoliday) {
@@ -592,7 +592,7 @@ class HolidayService {
       for (final e in list) {
         try {
           if (e is! Map) continue;
-          out.add(HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)));
+          out.add(HolidayEntry.fromJson(Map<String, dynamic>.from(e)));
         } catch (_) {
           continue;
         }
