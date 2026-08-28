@@ -743,7 +743,8 @@ class _CourseActionSheetContent extends StatelessWidget {
             onTap: () =>
                 _closeSheetThenAfterDismiss(context, () => onAddTask(course)),
           ),
-          if (onSetAlarm != null)
+          if (onSetAlarm != null) ...[
+            const SizedBox(height: 8),
             _CourseDetailTile(
               icon: Icons.alarm_outlined,
               title: l10n.classAlarmActionLabel,
@@ -751,6 +752,7 @@ class _CourseActionSheetContent extends StatelessWidget {
               onTap: () =>
                   _closeSheetThenAfterDismiss(context, () => onSetAlarm!(course)),
             ),
+          ],
         ],
         const SizedBox(height: 12),
         _CourseDetailTile(
