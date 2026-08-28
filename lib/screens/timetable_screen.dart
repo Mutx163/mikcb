@@ -1102,8 +1102,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     // fill (and the PageView) would latch onto it, and once the deferred
     // disposal runs a stale LayoutBuilder rebuild can hit the disposed
     // controller and throw.
+    //
+    // A client-less controller is NOT stale: several build-pass call sites
+    // (pre-blur scope, weekday bar, day panel) resolve the controller before
+    // the PageView attaches. Replacing a healthy-but-unattached controller
+    // here used to orphan the weekday bar's AnimatedBuilder subscription on
+    // the first instance, freezing the bar at the crossing-start frame while
+    // the pager kept scrolling.
     if (existing != null &&
-        existing.hasClients &&
         !_pendingDayViewControllerDisposals.contains(existing) &&
         !_disposedDayViewControllers.contains(existing)) {
       return existing;

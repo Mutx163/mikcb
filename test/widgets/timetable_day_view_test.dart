@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
@@ -11,12 +13,24 @@ import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/holiday_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 
 import '../helpers_test_app.dart';
+
+HolidayService _mockHolidayService() {
+  final client = MockClient((request) async {
+    final url = request.url.toString();
+    if (url.contains('ailcc')) {
+      return http.Response('{"code":0,"holiday":{}}', 200);
+    }
+    return http.Response('{"code":0,"data":[]}', 200);
+  });
+  return HolidayService(client: client);
+}
 
 String _weekdayLabelForTest(int weekday) {
   const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -149,6 +163,7 @@ Future<TimetableProvider> _createProviderWithTodayCourse(
     provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
+      holidayService: _mockHolidayService(),
     );
     await provider.initialize();
     await provider.updateTimetableSettings(
@@ -1265,7 +1280,7 @@ void main() {
     },
   );
 
-  testWidgets('back to today button arrow follows relative day direction', (
+  testWidgets('back to today arrow points forward on current week', (
     tester,
   ) async {
     final now = DateTime.now();
@@ -1306,12 +1321,15 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-
+  testWidgets('back to today arrow points back on a future week', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
     final futureProvider = await createInitializedTestProvider(tester);
-    await runRealAsync(tester, () async {
+    await tester.runAsync(() async {
       await futureProvider.updateTimetableSettings(
         futureProvider.settings.copyWith(
           semesterStartDate: currentWeekStart.subtract(
@@ -2211,6 +2229,7 @@ void main() {
         provider = TimetableProvider(
           autoInitialize: false,
           enableLiveActivitySync: false,
+          holidayService: _mockHolidayService(),
         );
         await provider.initialize();
         await provider.updateTimetableSettings(
