@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/holiday_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_navigation.dart';
 
 class TestApp extends StatelessWidget {
@@ -48,16 +51,26 @@ Future<T> runRealAsync<T>(
 Future<TimetableProvider> createInitializedTestProvider(
   WidgetTester tester,
 ) async {
+  // Mock holiday HTTP so getDataForYear never blocks on network inside
+  // testWidgets FakeAsync (where Future.timeout is dilatated).
+  // xiaoai returns {code, data:[]}, fallback ailcc expects {code, holiday:{}}.
+  // Return empty list so both paths are fast and valid regardless of URL.
+  final mockHolidayClient = MockClient((request) async {
+    final url = request.url.toString();
+    if (url.contains('ailcc')) {
+      return http.Response('{"code":0,"holiday":{}}', 200);
+    }
+    return http.Response('{"code":0,"data":[]}', 200);
+  });
+  final holidayService = HolidayService(client: mockHolidayClient);
   late TimetableProvider provider;
   await tester.runAsync(() async {
     provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
+      holidayService: holidayService,
     );
     await provider.initialize();
-    // Drain background holiday / surface bootstrap so later mutations
-    // (setCurrentWeek, addCourse) are not raced by residual I/O.
-    await Future<void>.delayed(const Duration(milliseconds: 150));
   });
   return provider;
 }
