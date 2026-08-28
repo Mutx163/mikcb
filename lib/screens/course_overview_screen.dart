@@ -5,7 +5,6 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
-import '../utils/hex_color.dart';
 import 'add_course_screen.dart';
 import 'course_conflict_screen.dart';
 
@@ -200,11 +199,6 @@ class _CourseGroupTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = context.theme;
-    final courseColor = parseHexColorOrFallback(
-      group.color,
-      fallback: theme.colors.primary,
-    );
-    final initial = group.name.isNotEmpty ? group.name[0] : '?';
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
     final primaryText = HyperosColors.primaryText(context);
@@ -215,24 +209,6 @@ class _CourseGroupTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: HyperosTokens.iconBadgeSize,
-            height: HyperosTokens.iconBadgeSize,
-            decoration: BoxDecoration(
-              color: courseColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(
-                HyperosTokens.iconBadgeRadius,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: HyperosTypography.listTitle(
-                context,
-              ).copyWith(color: courseColor, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: HyperosTokens.rowContentGap),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
