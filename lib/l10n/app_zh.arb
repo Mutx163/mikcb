@@ -2285,6 +2285,8 @@
   "aboutRecommended": "推荐",
   "aboutCheckPrereleaseTitle": "检测测试版本",
   "aboutCheckPrereleaseSubtitle": "打开后会把测试版也纳入更新检查；普通使用建议关闭",
+  "aboutUpdatePromptTitle": "弹窗提醒",
+  "aboutUpdatePromptSubtitle": "发现新版本时在首页自动弹窗，关闭后仅显示红点角标",
   "aboutDiagnosticsTitle": "测试与诊断",
   "aboutDiagnosticsSubtitle": "只有遇到“超级岛没弹出”或需要给开发者反馈时再展开",
   "aboutRecordDiagnosticsTitle": "记录应用日志",

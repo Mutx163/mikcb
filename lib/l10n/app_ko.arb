@@ -2095,6 +2095,8 @@
   "aboutRecommended": "권장",
   "aboutCheckPrereleaseTitle": "시험판 검출",
   "aboutCheckPrereleaseSubtitle": "켜면 시험판도 업데이트 확인에 포함됩니다. 일반 사용은 끄기를 권장합니다",
+  "aboutUpdatePromptTitle": "업데이트 알림",
+  "aboutUpdatePromptSubtitle": "새 버전이 감지되면 홈 화면에 자동으로 표시합니다",
   "aboutDiagnosticsTitle": "테스트 및 진단",
   "aboutDiagnosticsSubtitle": "'슈퍼아일랜드가 표시되지 않음' 또는 개발자 피드백이 필요한 경우에만 펼치세요",
   "aboutRecordDiagnosticsTitle": "앱 로그 기록",

@@ -2285,6 +2285,8 @@
   "aboutRecommended": "Recommended",
   "aboutCheckPrereleaseTitle": "Check prerelease versions",
   "aboutCheckPrereleaseSubtitle": "When enabled, prereleases are also included in update checks. It is recommended to keep this off for normal use",
+  "aboutUpdatePromptTitle": "Update prompt",
+  "aboutUpdatePromptSubtitle": "Automatically show a dialog on the home screen when a new version is found",
   "aboutDiagnosticsTitle": "Testing & diagnostics",
   "aboutDiagnosticsSubtitle": "Expand this only when the Island does not appear or when you need to send feedback to the developer",
   "aboutRecordDiagnosticsTitle": "Record app logs",

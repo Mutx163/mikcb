@@ -4220,6 +4220,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutCheckPrereleaseSubtitle => 'オンにするとテスト版も更新確認に含む，通常使用はオフ推奨';
 
   @override
+  String get aboutUpdatePromptTitle => '更新ダイアログ';
+
+  @override
+  String get aboutUpdatePromptSubtitle => '新しいバージョンを検出したらホーム画面で自動的に表示します';
+
+  @override
   String get aboutDiagnosticsTitle => 'テストと診断';
 
   @override

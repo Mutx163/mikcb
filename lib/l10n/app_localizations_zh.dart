@@ -4137,6 +4137,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutCheckPrereleaseSubtitle => '打开后会把测试版也纳入更新检查；普通使用建议关闭';
 
   @override
+  String get aboutUpdatePromptTitle => '弹窗提醒';
+
+  @override
+  String get aboutUpdatePromptSubtitle => '发现新版本时在首页自动弹窗，关闭后仅显示红点角标';
+
+  @override
   String get aboutDiagnosticsTitle => '测试与诊断';
 
   @override
@@ -14271,6 +14277,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aboutCheckPrereleaseSubtitle => '打開後會把測試版也纳入更新檢查；普通使用建議關閉';
+
+  @override
+  String get aboutUpdatePromptTitle => '彈窗提醒';
+
+  @override
+  String get aboutUpdatePromptSubtitle => '發現新版本時在首頁自動彈窗，關閉後僅顯示紅點角標';
 
   @override
   String get aboutDiagnosticsTitle => '測試與診斷';
@@ -24450,6 +24462,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutCheckPrereleaseSubtitle => '打開後会把測試版也纳入更新檢查；普通使用建議關閉';
+
+  @override
+  String get aboutUpdatePromptTitle => '彈窗提醒';
+
+  @override
+  String get aboutUpdatePromptSubtitle => '發現新版本時在首頁自動彈窗，關閉後僅顯示紅點角標';
 
   @override
   String get aboutDiagnosticsTitle => '測試與診斷';

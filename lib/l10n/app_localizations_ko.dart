@@ -4246,6 +4246,12 @@ class AppLocalizationsKo extends AppLocalizations {
       '켜면 시험판도 업데이트 확인에 포함됩니다. 일반 사용은 끄기를 권장합니다';
 
   @override
+  String get aboutUpdatePromptTitle => '업데이트 알림';
+
+  @override
+  String get aboutUpdatePromptSubtitle => '새 버전이 감지되면 홈 화면에 자동으로 표시합니다';
+
+  @override
   String get aboutDiagnosticsTitle => '테스트 및 진단';
 
   @override

@@ -2095,6 +2095,8 @@
   "aboutRecommended": "推奨",
   "aboutCheckPrereleaseTitle": "テスト版を検出",
   "aboutCheckPrereleaseSubtitle": "オンにするとテスト版も更新確認に含む，通常使用はオフ推奨",
+  "aboutUpdatePromptTitle": "更新ダイアログ",
+  "aboutUpdatePromptSubtitle": "新しいバージョンを検出したらホーム画面で自動的に表示します",
   "aboutDiagnosticsTitle": "テストと診断",
   "aboutDiagnosticsSubtitle": "「スーパーアイランドが表示されない」または開発者へのフィードバックが必要な場合のみ展開",
   "aboutRecordDiagnosticsTitle": "アプリログを記録",

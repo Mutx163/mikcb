@@ -4410,6 +4410,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, prereleases are also included in update checks. It is recommended to keep this off for normal use';
 
   @override
+  String get aboutUpdatePromptTitle => 'Update prompt';
+
+  @override
+  String get aboutUpdatePromptSubtitle =>
+      'Automatically show a dialog on the home screen when a new version is found';
+
+  @override
   String get aboutDiagnosticsTitle => 'Testing & diagnostics';
 
   @override

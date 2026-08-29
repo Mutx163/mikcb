@@ -2092,6 +2092,8 @@
   "aboutRecommended": "推薦",
   "aboutCheckPrereleaseTitle": "檢測測試版本",
   "aboutCheckPrereleaseSubtitle": "打開後會把測試版也纳入更新檢查；普通使用建議關閉",
+  "aboutUpdatePromptTitle": "彈窗提醒",
+  "aboutUpdatePromptSubtitle": "發現新版本時在首頁自動彈窗，關閉後僅顯示紅點角標",
   "aboutDiagnosticsTitle": "測試與診斷",
   "aboutDiagnosticsSubtitle": "只有遇到“超級島没彈出”或需要給開發者反饋時再展開",
   "aboutRecordDiagnosticsTitle": "記錄應用日誌",

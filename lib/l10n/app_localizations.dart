@@ -7635,6 +7635,18 @@ abstract class AppLocalizations {
   /// **'打开后会把测试版也纳入更新检查；普通使用建议关闭'**
   String get aboutCheckPrereleaseSubtitle;
 
+  /// No description provided for @aboutUpdatePromptTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'弹窗提醒'**
+  String get aboutUpdatePromptTitle;
+
+  /// No description provided for @aboutUpdatePromptSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'发现新版本时在首页自动弹窗，关闭后仅显示红点角标'**
+  String get aboutUpdatePromptSubtitle;
+
   /// No description provided for @aboutDiagnosticsTitle.
   ///
   /// In zh, this message translates to:

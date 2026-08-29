@@ -1547,6 +1547,18 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
           return HyperosListView(
             children: [
+              HyperosSectionLabel(text: l10n.aboutUpdatePromptTitle),
+              HyperosListGroup(
+                children: [
+                  HyperosSwitchTile(
+                    title: l10n.aboutUpdatePromptTitle,
+                    subtitle: l10n.aboutUpdatePromptSubtitle,
+                    value: settings.appUpdatePromptEnabled,
+                    onChanged: _updatePromptPreference,
+                  ),
+                ],
+              ),
+              const HyperosSectionGap(),
               _buildDownloadChannelGroup(settings),
               const HyperosSectionGap(),
               _buildDownloadMethodGroup(),
@@ -1808,6 +1820,17 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
       provider.settings.copyWith(appUpdateDownloadChannel: channel.value),
+    );
+    if (!mounted) return;
+    if (message != null) {
+      showAppToast(context, message: message);
+    }
+  }
+
+  Future<void> _updatePromptPreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(appUpdatePromptEnabled: value),
     );
     if (!mounted) return;
     if (message != null) {
