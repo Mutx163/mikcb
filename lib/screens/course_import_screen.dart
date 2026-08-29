@@ -4386,6 +4386,11 @@ $kWarehouseBridgeCompatShim  try {
       (_isMacroReplay && _playbackState == PlaybackUiState.executingImport);
 
   Future<void> _handleBridgeMessage(String rawMessage) async {
+    // 桥消息经平台通道异步派发，页面退出后仍可能到达；此时 State 已
+    // defunct，WebView 也随之销毁，任何分支都不应再取 context 或回包。
+    if (!mounted) {
+      return;
+    }
     Map<String, dynamic>? message;
     try {
       message = jsonDecode(rawMessage) as Map<String, dynamic>;
@@ -4508,6 +4513,9 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   Future<void> _showScriptConfirmDialog(Map<String, dynamic> message) async {
+    if (!mounted) {
+      return;
+    }
     final requestId = (message['requestId'] as String?) ?? '';
     // 回放模式：使用录制的响应或自动确认
     final macroRecord = widget.macroRecord;
@@ -4539,6 +4547,9 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   Future<void> _showScriptPromptDialog(Map<String, dynamic> message) async {
+    if (!mounted) {
+      return;
+    }
     final requestId = (message['requestId'] as String?) ?? '';
     // 回放模式：使用录制的响应或默认值
     final macroRecord = widget.macroRecord;
@@ -4591,6 +4602,9 @@ $kWarehouseBridgeCompatShim  try {
   Future<void> _showScriptSingleSelectionDialog(
     Map<String, dynamic> message,
   ) async {
+    if (!mounted) {
+      return;
+    }
     final requestId = (message['requestId'] as String?) ?? '';
     final macroRecord = widget.macroRecord;
     if (macroRecord != null) {
