@@ -33,6 +33,8 @@ class StorageService {
   static const String _hidePrefixDefaultMigrationKey =
       'did_migrate_live_hide_prefix_default';
   static const String _partnerTimetableBindingKey = 'partner_timetable_binding';
+  static const String _profilesSchemaVersionKey =
+      'timetable_profiles_schema_version';
 
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
@@ -654,6 +656,21 @@ class StorageService {
   Future<void> setActiveProfileId(String profileId) async {
     if (_prefs == null) await init();
     await _prefs?.setString(_activeProfileIdKey, profileId);
+  }
+
+  /// Profile 存储布局版本号（解耦阶段 2 引入）。
+  ///
+  /// 刻意存在独立 key 而不是塞进 profile 载荷：旧版本 App 不认识该 key，
+  /// 升级/降级双向兼容。0 表示「版本号引入之前」的历史数据；布局演进
+  /// （分片存储/信封格式）时递增版本并以它为迁移闸。
+  Future<int> getProfilesSchemaVersion() async {
+    if (_prefs == null) await init();
+    return _prefs?.getInt(_profilesSchemaVersionKey) ?? 0;
+  }
+
+  Future<void> setProfilesSchemaVersion(int version) async {
+    if (_prefs == null) await init();
+    await _prefs?.setInt(_profilesSchemaVersionKey, version);
   }
 
   Future<List<TimeScheme>> getTimeSchemes() async {

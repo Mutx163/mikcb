@@ -194,7 +194,7 @@ Future<String?> _timetableUpdateTimeScheme(
   }
 
   await host._persistTimeSchemes();
-  await host._storageService.saveProfiles(host._profiles);
+  await host._profileRepository.saveProfiles(host._profiles);
   host._currentLiveCourseId = null;
   host._notifyStateChanged();
   await host._updateLiveActivity();

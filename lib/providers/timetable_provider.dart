@@ -18,6 +18,7 @@ import '../models/time_scheme.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import '../data/timetable_repository.dart';
 import '../domain/week_calculator.dart';
 import '../domain/holiday_resolver.dart';
 import '../domain/course_domain.dart';
@@ -204,6 +205,12 @@ class TimetableProvider with ChangeNotifier {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
+
+  /// Profile 持久化收口（阶段 2）：所有 profile 读写统一走仓储，
+  /// 后续分片存储 / 脏标记批量提交只改仓储内部。
+  late final TimetableRepository _profileRepository = TimetableRepository(
+    _storageService,
+  );
   final IcsImportService _icsImportService;
   final MiuiLiveActivitiesService _liveActivitiesService;
   final DataTransferService _dataTransferService;
@@ -641,11 +648,11 @@ class TimetableProvider with ChangeNotifier {
     // Profiles and time schemes both run ensure* migrations that may write
     // under the same profiles write chain — load sequentially to avoid
     // re-entrant wait deadlocks under Future.wait.
-    final profiles = await _storageService.getProfiles();
+    final profiles = await _profileRepository.loadProfiles();
     final timeSchemes = await _storageService.getTimeSchemes();
     final locationTimeGroups = await _storageService.getLocationTimeGroups();
     final scheduleDateRules = await _storageService.getScheduleDateRules();
-    final activeProfileId = await _storageService.getActiveProfileId();
+    final activeProfileId = await _profileRepository.getActiveProfileId();
     final partnerBinding = await _storageService.getPartnerTimetableBinding();
     final lastAppliedSignature = await _storageService
         .getScheduleDateRuleLastAppliedSignature();
@@ -692,7 +699,7 @@ class TimetableProvider with ChangeNotifier {
 
     if (_activeProfileId != activeProfile.id) {
       _activeProfileId = activeProfile.id;
-      unawaited(_storageService.setActiveProfileId(activeProfile.id));
+      unawaited(_profileRepository.setActiveProfileId(activeProfile.id));
     }
     if (_settings.semesterStartDate != null) {
       unawaited(syncCurrentWeekWithSemesterStart());
@@ -1095,9 +1102,9 @@ class TimetableProvider with ChangeNotifier {
     if (activeProfile == null) {
       return;
     }
-    await _storageService.saveProfiles(_profiles);
+    await _profileRepository.saveProfiles(_profiles);
     if (_activeProfileId != null) {
-      await _storageService.setActiveProfileId(_activeProfileId!);
+      await _profileRepository.setActiveProfileId(_activeProfileId!);
     }
     if (notifySync) {
       notifyUserDataChangedForSync();
@@ -1133,7 +1140,7 @@ class TimetableProvider with ChangeNotifier {
       _settings = _profiles[activeIndex].settings;
     }
 
-    await _storageService.saveProfiles(_profiles);
+    await _profileRepository.saveProfiles(_profiles);
     notifyUserDataChangedForSync();
     _currentLiveCourseId = null;
     if (notify) {
@@ -1502,7 +1509,7 @@ class TimetableProvider with ChangeNotifier {
       );
     }
 
-    await _storageService.saveProfiles(_profiles);
+    await _profileRepository.saveProfiles(_profiles);
     _scheduleDateRuleLastAppliedSignature = signature;
     await _storageService.saveScheduleDateRuleLastAppliedSignature(signature);
     notifyUserDataChangedForSync();
@@ -2157,7 +2164,7 @@ class TimetableProvider with ChangeNotifier {
       }
 
       _profiles[index] = _profiles[index].copyWith(name: name.trim());
-      await _storageService.saveProfiles(_profiles);
+      await _profileRepository.saveProfiles(_profiles);
       notifyUserDataChangedForSync();
       notifyListeners();
     });
@@ -2199,9 +2206,9 @@ class TimetableProvider with ChangeNotifier {
         _applyProfileState(fallbackProfile);
         _currentLiveCourseId = null;
       }
-      await _storageService.saveProfiles(_profiles);
+      await _profileRepository.saveProfiles(_profiles);
       if (_activeProfileId != null) {
-        await _storageService.setActiveProfileId(_activeProfileId!);
+        await _profileRepository.setActiveProfileId(_activeProfileId!);
       }
       notifyUserDataChangedForSync();
       notifyListeners();
@@ -4277,7 +4284,7 @@ class TimetableProvider with ChangeNotifier {
         content,
         partnerName: partnerName,
       );
-      _profiles = await _storageService.getProfiles();
+      _profiles = await _profileRepository.loadProfiles();
       _partnerBinding = result.binding;
       notifyUserDataChangedForSync();
       notifyListeners();
@@ -4332,7 +4339,7 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(() async {
       await initialize();
       await _partnerTimetableService.unlink();
-      _profiles = await _storageService.getProfiles();
+      _profiles = await _profileRepository.loadProfiles();
       _partnerBinding = null;
       if (_activeProfileId == PartnerTimetableService.partnerProfileId) {
         final fallback = _profiles
@@ -4341,7 +4348,7 @@ class TimetableProvider with ChangeNotifier {
         if (fallback != null) {
           _activeProfileId = fallback.id;
           _applyProfileState(fallback);
-          await _storageService.setActiveProfileId(fallback.id);
+          await _profileRepository.setActiveProfileId(fallback.id);
           unawaited(_syncExamReminders());
         }
       }

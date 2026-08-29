@@ -351,9 +351,9 @@ Future<String?> _timetableImportFullAppDataBackup(
         host._locationTimeGroups,
       );
       await host._storageService.saveScheduleDateRules(host._scheduleDateRules);
-      await host._storageService.saveProfiles(host._profiles);
+      await host._profileRepository.saveProfiles(host._profiles);
       if (host._activeProfileId != null) {
-        await host._storageService.setActiveProfileId(host._activeProfileId!);
+        await host._profileRepository.setActiveProfileId(host._activeProfileId!);
       }
 
       host._applyProfileState(
