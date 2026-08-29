@@ -241,6 +241,51 @@ void main() {
     },
   );
 
+  test(
+    'full backups allow cross-profile repeated IDs on file and qr channels',
+    () {
+      // 「导入为新课表」/ 伙伴课表导入都会保留来源实体 ID，本地全量数据
+      // 可以合法地出现跨课表重复 ID；此前构造器直接抛
+      // transfer_course_id_duplicate，导致「二维码发送全部数据」静默失败。
+      final first = TimetableProfile(
+        id: 'profile-1',
+        name: '主课表',
+        courses: [_course(id: 'shared-course')],
+        settings: TimetableSettings.defaults(),
+        currentWeek: 1,
+        createdAt: DateTime(2026, 1, 1),
+        lastUsedAt: DateTime(2026, 1, 1),
+      );
+      final second = TimetableProfile(
+        id: 'profile-2',
+        name: 'TA的课表',
+        courses: [_course(id: 'shared-course')],
+        settings: TimetableSettings.defaults(),
+        currentWeek: 1,
+        createdAt: DateTime(2026, 1, 1),
+        lastUsedAt: DateTime(2026, 1, 1),
+      );
+
+      for (final channel in [TransferChannel.file, TransferChannel.qr]) {
+        final package = TransferPackage(
+          packageId: 'full-duplicate-$channel',
+          scope: TransferScope.allData,
+          channel: channel,
+          profiles: [first, second],
+          isFullBackup: true,
+        );
+        final restored = TransferPackage.decode(package.encode());
+        expect(restored.profiles, hasLength(2));
+        expect(
+          restored.profiles.every(
+            (profile) => profile.courses.single.id == 'shared-course',
+          ),
+          isTrue,
+        );
+      }
+    },
+  );
+
   test('diff scopes repeated profile entity IDs independently', () {
     final first = TimetableProfile(
       id: 'profile-1',

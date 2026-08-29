@@ -215,7 +215,13 @@ class TransferPackage {
     DateTime? exportedAt,
   }) : packageId = packageId.trim(),
        exportedAt = exportedAt ?? DateTime.now() {
-    if (channel == TransferChannel.cloud) {
+    // Full backups (file / QR / LAN) use the same contract as cloud: IDs must
+    // be unique within each profile but may repeat across profiles. Local data
+    // legitimately contains cross-profile repeats —「导入为新课表」and partner
+    // timetable import both keep the source entity IDs, and full backups are
+    // applied via a wholesale profile replace, never an ID-keyed cross-profile
+    // merge, so repeats cannot corrupt the merge.
+    if (channel == TransferChannel.cloud || isFullBackup) {
       _requireUniqueIdsAllowingCrossProfile(
         'course',
         courses.map((item) => item.id),
