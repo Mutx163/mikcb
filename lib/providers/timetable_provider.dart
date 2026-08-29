@@ -163,6 +163,39 @@ class ScheduleDateRuleSaveResult {
   bool get failedWhileDue => applyResult.failedWhileDue;
 }
 
+/// ⚠️ 上帝类过渡期导航注释（解耦方案：`docs/architecture/OPTIMIZATION.md`，本地文档未入库）。
+///
+/// 本类当前承载 20 个互不相干的关注点，共 4400+ 行、53 处 `notifyListeners()`、
+/// 被 70+ 文件依赖。行号随开发漂移，**以下沉梯队以方法名为准**（2026-08-29 基线）：
+///
+/// | # | 关注点 | 锚点成员 |
+/// |---|---|---|
+/// | 1 | 主题与外观 | `applyThemeWithUndo` / `saveTheme` / `renameTheme` |
+/// | 2 | 派生查询 | `courseGroups` / `uniqueTeachers` / `activeTimeScheme` |
+/// | 3 | 生命周期/初始化 | `initialize` / `handleAppResumed` / `_loadDeferredData` |
+/// | 4 | 时间方案解析 | `resolveCourseTimeScheme` / `matchLocationTime` |
+/// | 5 | 持久化 | `_persistActiveProfileState`（全量覆写，40 处调用） |
+/// | 6 | 地点时间分组 | `createLocationTimeGroup` / `replaceLocationTimeGroups` |
+/// | 7 | 日期规则 CRUD | `createScheduleDateRule` / `applyDueScheduleDateRules` |
+/// | 8 | 地点规则应用 | `applyLocationTimeRulesToActiveProfile` |
+/// | 9 | Profile 管理 | `createProfile` / `switchProfile` / `deleteProfile` |
+/// | 10 | 课程 CRUD | `addCourse` / `updateCourse` / `deleteCourse` |
+/// | 11 | 课程任务/作业 | `addTask` / `toggleTaskCompleted` |
+/// | 12 | 课程组/停课 | `updateCourseGroup` / `toggleCourseSuspension` |
+/// | 13 | 日程项 | `addScheduleItem` / `deleteScheduleItemOccurrence` |
+/// | 14 | 考试 | `addExam` / `_syncExamReminders` |
+/// | 15 | 上课提醒 | `setClassReminder` / `removeClassReminder` |
+/// | 16 | 节假日 | `refreshHolidayData` / `addCustomHoliday` |
+/// | 17 | 单次课程调整 | `deleteCourseOccurrence` / `rescheduleCourseOccurrence` |
+/// | 18 | 导入导出 | `importParsedCourses` / `importAppDataBackup` |
+/// | 19 | 超级岛/小部件 | `buildHomeWidgetSnapshot` / `getLiveActivityCourseSelection` |
+/// | 20 | 情侣课表 | `importPartnerTimetable` / `unlinkPartner` |
+///
+/// 维护纪律：
+/// - 修改必须落在对应关注点的区段内，禁止顺手改动其它区段；
+/// - 新增能力一律独立成文件/类，禁止继续向本类堆积；
+/// - 拆分按阶段 3 的顺序进行（Theme → Holiday → Partner → LiveSurface → …），
+///   完成一个从表中划掉一个；本类最终降级为纯 Facade。
 class TimetableProvider with ChangeNotifier {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
