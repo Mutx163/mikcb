@@ -15,6 +15,7 @@ class SemesterProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final hasDates = progress.semesterStartDate != null;
+    final isBeforeStart = progress.phase == SemesterProgressPhase.beforeStart;
 
     final startLabel = hasDates
         ? DateFormat.yMMMd(l10n.localeName).format(progress.semesterStartDate!)
@@ -75,19 +76,24 @@ class SemesterProgressCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _ProgressFact(
-                    label: l10n.statisticsSemesterProgressDetail(
-                      progress.sectionsDone,
-                      progress.sectionsTotal,
-                    ),
+                    label: isBeforeStart
+                        ? l10n.statisticsSemesterProgressNotStarted
+                        : l10n.statisticsSemesterProgressDetail(
+                            progress.weeksElapsed,
+                            progress.sectionsDone,
+                            progress.sectionsTotal,
+                          ),
                     value: '${(progress.percent * 100).round()}%',
                     alignEnd: false,
                   ),
                 ),
-                if (hasDates) ...[
+                if (!isBeforeStart) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ProgressFact(
-                      label: l10n.statisticsSemesterProgressAsOf(asOfLabel),
+                      label: hasDates
+                          ? l10n.statisticsSemesterProgressAsOf(asOfLabel)
+                          : l10n.statisticsSemesterProgressEstimated,
                       value: l10n.statisticsSemesterProgressRemaining(
                         progress.remainingSections,
                       ),

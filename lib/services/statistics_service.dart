@@ -393,44 +393,129 @@ class StatisticsService {
     });
   }
 
-  /// 计算学期进度（校历对齐）
+  /// 计算学期进度（校历对齐，按天精确）
+  ///
+  /// 有开学日期时以"今天"为基准：完整周整周计入，当前周只累计开学日及之后、
+  /// 今天及之前已发生的课时；开学前进度为 0，学期结束后收满 100%。
+  /// 未设置开学日期时无法锚定真实日期，退回按查看周整周估算的旧口径。
   static SemesterProgress calculateSemesterProgress({
     required List<Course> allCourses,
     required int currentWeek,
     required int semesterWeekCount,
     DateTime? semesterStartDate,
+    DateTime? now,
   }) {
-    int sectionsDone = 0;
-    int sectionsTotal = 0;
+    final reference = now ?? DateTime.now();
+    final totalWeeks = semesterWeekCount < 1 ? 0 : semesterWeekCount;
+    final hasCalendar = semesterStartDate != null && totalWeeks > 0;
+
+    var sectionsTotal = 0;
     for (final course in allCourses) {
-      sectionsDone +=
-          course.sectionCount * _countActiveWeeks(course, currentWeek);
       sectionsTotal += course.sectionCount * _countScheduledWeeks(course);
+    }
+
+    int sectionsDone;
+    var weeksElapsed = currentWeek < 1 ? 0 : currentWeek;
+    var phase = SemesterProgressPhase.estimated;
+
+    if (hasCalendar) {
+      final calendarWeek = _calendarWeekForDate(reference, semesterStartDate);
+      if (calendarWeek < 1) {
+        sectionsDone = 0;
+        weeksElapsed = 0;
+        phase = SemesterProgressPhase.beforeStart;
+      } else if (calendarWeek > totalWeeks) {
+        sectionsDone = sectionsTotal;
+        weeksElapsed = totalWeeks;
+        phase = SemesterProgressPhase.ended;
+      } else {
+        sectionsDone = _countSectionsDoneByDate(
+          allCourses,
+          calendarWeek: calendarWeek,
+          semesterStart: semesterStartDate,
+          today: reference,
+        );
+        weeksElapsed = calendarWeek;
+        phase = SemesterProgressPhase.inProgress;
+      }
+    } else {
+      sectionsDone = 0;
+      for (final course in allCourses) {
+        sectionsDone +=
+            course.sectionCount * _countActiveWeeks(course, currentWeek);
+      }
     }
 
     final remaining = sectionsTotal > sectionsDone
         ? sectionsTotal - sectionsDone
         : 0;
 
-    DateTime? currentDate;
-    DateTime? endDate;
-    if (semesterStartDate != null) {
-      currentDate = semesterStartDate
-          .add(Duration(days: currentWeek * 7 - 1));
-      endDate = semesterStartDate
-          .add(Duration(days: semesterWeekCount * 7 - 1));
-    }
-
     return SemesterProgress(
       semesterStartDate: semesterStartDate,
-      currentDate: currentDate,
-      semesterEndDate: endDate,
-      weeksElapsed: currentWeek < 1 ? 0 : currentWeek,
-      totalWeeks: semesterWeekCount < 1 ? 0 : semesterWeekCount,
+      currentDate: hasCalendar
+          ? DateTime(reference.year, reference.month, reference.day)
+          : null,
+      semesterEndDate: hasCalendar
+          ? semesterStartDate.add(Duration(days: totalWeeks * 7 - 1))
+          : null,
+      weeksElapsed: weeksElapsed,
+      totalWeeks: totalWeeks,
       sectionsDone: sectionsDone,
       sectionsTotal: sectionsTotal,
       remainingSections: remaining,
+      phase: phase,
     );
+  }
+
+  /// 真实日历周（周一为每周起始），开学前返回 0，不按总周数截断。
+  static int _calendarWeekForDate(DateTime date, DateTime semesterStart) {
+    final start = _weekStart(semesterStart);
+    final target = _weekStart(date);
+    final diffDays = DateTime.utc(target.year, target.month, target.day)
+        .difference(DateTime.utc(start.year, start.month, start.day))
+        .inDays;
+    if (diffDays < 0) return 0;
+    return diffDays ~/ 7 + 1;
+  }
+
+  static DateTime _weekStart(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    return normalized.subtract(Duration(days: normalized.weekday - 1));
+  }
+
+  /// 截至今天实际发生的课时：第 1..week-1 完整周整周计，
+  /// 当前周只累计开学日及之后、今天及之前的上课日。
+  static int _countSectionsDoneByDate(
+    List<Course> allCourses, {
+    required int calendarWeek,
+    required DateTime semesterStart,
+    required DateTime today,
+  }) {
+    final startDay = DateTime(
+      semesterStart.year,
+      semesterStart.month,
+      semesterStart.day,
+    );
+    final todayDay = DateTime(today.year, today.month, today.day);
+    final weekStart = _weekStart(semesterStart).add(
+      Duration(days: (calendarWeek - 1) * 7),
+    );
+
+    var done = 0;
+    for (final course in allCourses) {
+      if (course.sectionCount <= 0) continue;
+      done += course.sectionCount * _countActiveWeeks(course, calendarWeek - 1);
+      if (!course.isActiveInWeek(calendarWeek)) continue;
+      for (var offset = 0; offset < 7; offset++) {
+        final day = weekStart.add(Duration(days: offset));
+        if (day.isAfter(todayDay)) break;
+        if (day.isBefore(startDay)) continue;
+        if (course.dayOfWeek == offset + 1) {
+          done += course.sectionCount;
+        }
+      }
+    }
+    return done;
   }
 
   /// 计算学期热力图（周 × 天课时密度，计划口径；未来周由 UI 裁剪）

@@ -495,7 +495,7 @@ void main() {
     });
 
     group('Semester Progress', () {
-      test('should compute done/total/remaining', () {
+      test('should compute done/total/remaining by week without start date', () {
         final courses = [
           _course('1', '数学', 1, 1, 2, CourseNature.required),
         ];
@@ -509,10 +509,13 @@ void main() {
         expect(progress.remainingSections, 12);
         expect(progress.weeksElapsed, 10);
         expect((progress.percent * 100).round(), 63); // 20/32 = 62.5%
+        expect(progress.phase, SemesterProgressPhase.estimated);
+        expect(progress.currentDate, isNull);
       });
 
       test('should resolve calendar dates from semester start', () {
-        final start = DateTime(2026, 9, 1);
+        final start = DateTime(2026, 9, 7); // 周一
+        final now = DateTime(2026, 9, 16, 15, 30); // 第 2 周周三
         final progress = StatisticsService.calculateSemesterProgress(
           allCourses: [
             _course('1', '数学', 1, 1, 2, CourseNature.required),
@@ -520,10 +523,102 @@ void main() {
           currentWeek: 2,
           semesterWeekCount: 16,
           semesterStartDate: start,
+          now: now,
         );
         expect(progress.semesterStartDate, start);
-        expect(progress.currentDate, start.add(const Duration(days: 13)));
+        expect(progress.currentDate, DateTime(2026, 9, 16));
         expect(progress.semesterEndDate, start.add(const Duration(days: 111)));
+        expect(progress.phase, SemesterProgressPhase.inProgress);
+        expect(progress.weeksElapsed, 2);
+        // 完整第 1 周 2 节 + 第 2 周周一已上 2 节
+        expect(progress.sectionsDone, 4);
+      });
+
+      test('should count only elapsed days within the current week', () {
+        final start = DateTime(2026, 9, 7); // 周一
+        final courses = [
+          _course('1', '数学', 1, 1, 2, CourseNature.required),
+          _course('2', '语文', 3, 1, 2, CourseNature.required),
+          _course('3', '英语', 5, 1, 2, CourseNature.elective),
+        ];
+        final progress = StatisticsService.calculateSemesterProgress(
+          allCourses: courses,
+          currentWeek: 2,
+          semesterWeekCount: 16,
+          semesterStartDate: start,
+          now: DateTime(2026, 9, 16), // 第 2 周周三
+        );
+        // 第 1 周整周 6 节 + 第 2 周周一/周三各 2 节，周五还没到
+        expect(progress.sectionsDone, 10);
+        expect(progress.sectionsTotal, 96);
+        expect(progress.remainingSections, 86);
+      });
+
+      test('should report zero progress before semester start', () {
+        final start = DateTime(2026, 9, 7); // 周一
+        final progress = StatisticsService.calculateSemesterProgress(
+          allCourses: [
+            _course('1', '数学', 1, 1, 2, CourseNature.required),
+          ],
+          currentWeek: 1,
+          semesterWeekCount: 16,
+          semesterStartDate: start,
+          now: DateTime(2026, 9, 5), // 开学前一个周六
+        );
+        expect(progress.phase, SemesterProgressPhase.beforeStart);
+        expect(progress.sectionsDone, 0);
+        expect(progress.sectionsTotal, 32);
+        expect(progress.remainingSections, 32);
+        expect(progress.weeksElapsed, 0);
+        expect(progress.percent, 0);
+      });
+
+      test('should not count week-1 days earlier than the start date', () {
+        final start = DateTime(2026, 9, 9); // 周三开学
+        final courses = [
+          _course('1', '数学', 1, 1, 2, CourseNature.required),
+          _course('2', '语文', 3, 1, 2, CourseNature.required),
+        ];
+        final progress = StatisticsService.calculateSemesterProgress(
+          allCourses: courses,
+          currentWeek: 1,
+          semesterWeekCount: 16,
+          semesterStartDate: start,
+          now: DateTime(2026, 9, 11), // 开学周周五
+        );
+        // 周一（9/7）早于开学日不计，周三（9/9）当天已上
+        expect(progress.phase, SemesterProgressPhase.inProgress);
+        expect(progress.sectionsDone, 2);
+      });
+
+      test('should clamp to full progress after the semester ends', () {
+        final start = DateTime(2026, 9, 7); // 周一
+        final courses = [
+          _course('1', '数学', 1, 1, 2, CourseNature.required),
+        ];
+        final lastDay = StatisticsService.calculateSemesterProgress(
+          allCourses: courses,
+          currentWeek: 16,
+          semesterWeekCount: 16,
+          semesterStartDate: start,
+          now: start.add(const Duration(days: 16 * 7 - 1)), // 第 16 周周日
+        );
+        expect(lastDay.phase, SemesterProgressPhase.inProgress);
+        expect(lastDay.sectionsDone, 32);
+        expect((lastDay.percent * 100).round(), 100);
+
+        final afterEnd = StatisticsService.calculateSemesterProgress(
+          allCourses: courses,
+          currentWeek: 16,
+          semesterWeekCount: 16,
+          semesterStartDate: start,
+          now: start.add(const Duration(days: 16 * 7 + 1)),
+        );
+        expect(afterEnd.phase, SemesterProgressPhase.ended);
+        expect(afterEnd.weeksElapsed, 16);
+        expect(afterEnd.sectionsDone, 32);
+        expect(afterEnd.remainingSections, 0);
+        expect(afterEnd.percent, 1);
       });
 
       test('should handle empty courses', () {
@@ -536,6 +631,7 @@ void main() {
         expect(progress.sectionsTotal, 0);
         expect(progress.remainingSections, 0);
         expect(progress.percent, 0);
+        expect(progress.phase, SemesterProgressPhase.estimated);
       });
     });
 

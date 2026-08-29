@@ -230,16 +230,32 @@ class WeeklyTrendPoint {
   });
 }
 
-/// 学期进度（校历对齐）
+/// 学期进度阶段（决定进度卡的展示口径）
+enum SemesterProgressPhase {
+  /// 已设置开学日期，今天早于开学日
+  beforeStart,
+
+  /// 学期进行中（按天精确：当前周只累计今天及之前的课时）
+  inProgress,
+
+  /// 今天已过学期最后一周，进度收满
+  ended,
+
+  /// 未设置开学日期，无法锚定真实日期，按查看周整周估算
+  estimated,
+}
+
+/// 学期进度（校历对齐，按天精确）
 class SemesterProgress {
   final DateTime? semesterStartDate; // 开学日期（可为空）
-  final DateTime? currentDate; // 截至当前周的日期（周日起算）
+  final DateTime? currentDate; // 计算基准日（真实"今天"；估算口径下为空）
   final DateTime? semesterEndDate; // 学期结束日期
-  final int weeksElapsed; // 已过周数（当前周）
+  final int weeksElapsed; // 已过周数（开学前为 0；估算口径为当前查看周）
   final int totalWeeks; // 学期总周数
-  final int sectionsDone; // 已上课时（截至当前周）
+  final int sectionsDone; // 已上课时（今天及之前实际发生）
   final int sectionsTotal; // 学期计划总课时
   final int remainingSections; // 剩余课时
+  final SemesterProgressPhase phase; // 进度阶段
 
   const SemesterProgress({
     required this.semesterStartDate,
@@ -250,6 +266,7 @@ class SemesterProgress {
     required this.sectionsDone,
     required this.sectionsTotal,
     required this.remainingSections,
+    required this.phase,
   });
 
   double get percent => sectionsTotal > 0 ? sectionsDone / sectionsTotal : 0;
