@@ -4,7 +4,10 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
 
-/// 学期总览区域（大数字展示）
+/// 学期总览（单行四指标：数字在上、标签在下，细分隔线隔开）。
+///
+/// 与 [WeeklyComparisonCard] 的格子口径一致（24px 数字 + footnote2 标签），
+/// 首格用主题色强调。
 class OverviewSection extends StatelessWidget {
   final SemesterStats stats;
 
@@ -18,65 +21,34 @@ class OverviewSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final dividerColor = HyperosColors.dividerLine(context);
+    final divider = Container(
+      width: 1,
+      height: 28,
+      color: HyperosColors.dividerLine(context),
+    );
 
-    // 2×2 metrics with a continuous crosshair (not two broken segments).
     return HyperosControlCard(
-      child: Stack(
+      child: Row(
         children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.menu_book_rounded,
-                      accent: HyperosIconColors.blue,
-                      value: '${stats.totalCourses}',
-                      label: l10n.statisticsSemesterLabelCourses,
-                    ),
-                  ),
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.schedule_rounded,
-                      accent: HyperosIconColors.teal,
-                      value: '${stats.totalSections}',
-                      label: l10n.statisticsSemesterLabelSections,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.calendar_today_rounded,
-                      accent: HyperosIconColors.indigo,
-                      value: '${stats.totalWeeks}',
-                      label: l10n.statisticsSemesterLabelWeeks,
-                    ),
-                  ),
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.local_fire_department_rounded,
-                      accent: HyperosIconColors.orange,
-                      value: '${stats.longestStreak}',
-                      label: l10n.statisticsSemesterLabelDayStreak,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          _MetricCell(
+            value: '${stats.totalCourses}',
+            label: l10n.statisticsSemesterLabelCourses,
+            highlight: true,
           ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: _OverviewCrosshairPainter(color: dividerColor),
-              ),
-            ),
+          divider,
+          _MetricCell(
+            value: '${stats.totalSections}',
+            label: l10n.statisticsSemesterLabelSections,
+          ),
+          divider,
+          _MetricCell(
+            value: '${stats.totalWeeks}',
+            label: l10n.statisticsSemesterLabelWeeks,
+          ),
+          divider,
+          _MetricCell(
+            value: '${stats.longestStreak}',
+            label: l10n.statisticsSemesterLabelDayStreak,
           ),
         ],
       ),
@@ -84,78 +56,56 @@ class OverviewSection extends StatelessWidget {
   }
 }
 
-/// Draws a continuous cross through the card center (full height + full width).
-class _OverviewCrosshairPainter extends CustomPainter {
-  const _OverviewCrosshairPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) {
-      return;
-    }
-
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke
-      ..isAntiAlias = false;
-
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
-
-    canvas.drawLine(Offset(centerX, 0), Offset(centerX, size.height), paint);
-    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _OverviewCrosshairPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
 class _MetricCell extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
   final String value;
   final String label;
 
+  /// 首格数字用主题色（对齐下方本周小结卡的高亮口径）。
+  final bool highlight;
+
   const _MetricCell({
-    required this.icon,
-    required this.accent,
     required this.value,
     required this.label,
+    this.highlight = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosIconBadge(icon: icon, accent: accent),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: HyperosTypography.listTitle(context).copyWith(
-              fontSize: 28,
-              // T3 展示数字：字重低于旧 w800，靠字号对比建立层级
-              fontWeight: FontWeight.w700,
-              height: 1,
-              color: HyperosColors.primaryText(context),
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.listTitle(context).copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                height: 1,
+                color: highlight
+                    ? HyperosColors.primary(context)
+                    : HyperosColors.primaryText(context),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: HyperosTypography.listDetail(context),
-          ),
-        ],
+            const SizedBox(height: 5),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.listDetail(context).copyWith(
+                fontSize: HyperosMiuixTypography.footnote2,
+                color: highlight
+                    ? HyperosColors.primaryText(context)
+                    : HyperosColors.secondaryText(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
