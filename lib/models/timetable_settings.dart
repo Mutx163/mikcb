@@ -1917,6 +1917,25 @@ class TimetableSettings {
   }
 
   factory TimetableSettings.fromJson(Map<String, dynamic> json) {
+    // 联动开时详情字色回填为标题字色，规则与 copyWith 的联动回填一致：
+    // 旧版本数据 / 主题备份可能残留「联动开、详情色不同」的脏状态（白标题
+    // +黑简介混色卡的根源）；独立模式（联动关）保留用户显式选择。
+    final linkedCardTextColors =
+        json['linkCourseCardColors'] as bool? ?? true;
+    final parsedTitleColorLight =
+        json['courseCardTitleColorLight'] as String? ??
+        defaultCourseCardTitleColor;
+    final parsedTitleColorDark =
+        json['courseCardTitleColorDark'] as String? ??
+        defaultCourseCardTitleColor;
+    final parsedDetailColorLight = linkedCardTextColors
+        ? parsedTitleColorLight
+        : json['courseCardDetailColorLight'] as String? ??
+              defaultCourseCardDetailColor;
+    final parsedDetailColorDark = linkedCardTextColors
+        ? parsedTitleColorDark
+        : json['courseCardDetailColorDark'] as String? ??
+              defaultCourseCardDetailColor;
     final rawSections = json['sections'] is List
         ? json['sections'] as List<dynamic>
         : const <dynamic>[];
@@ -2267,18 +2286,10 @@ class TimetableSettings {
       classAlarmSkipUi: json['classAlarmSkipUi'] as bool? ?? false,
       // 脏条目在 listFromJson 内逐条校验丢弃，绝不让单个坏值炸掉整个设置。
       classReminders: ClassReminderEntry.listFromJson(json['classReminders']),
-      courseCardTitleColorLight:
-          json['courseCardTitleColorLight'] as String? ??
-          defaultCourseCardTitleColor,
-      courseCardTitleColorDark:
-          json['courseCardTitleColorDark'] as String? ??
-          defaultCourseCardTitleColor,
-      courseCardDetailColorLight:
-          json['courseCardDetailColorLight'] as String? ??
-          defaultCourseCardDetailColor,
-      courseCardDetailColorDark:
-          json['courseCardDetailColorDark'] as String? ??
-          defaultCourseCardDetailColor,
+      courseCardTitleColorLight: parsedTitleColorLight,
+      courseCardTitleColorDark: parsedTitleColorDark,
+      courseCardDetailColorLight: parsedDetailColorLight,
+      courseCardDetailColorDark: parsedDetailColorDark,
       weekdayBarFontColorLight:
           json['weekdayBarFontColorLight'] as String? ??
           defaultWeekdayBarFontColorLight,
@@ -2561,6 +2572,19 @@ class TimetableSettings {
     ThemeConfig? themeCheckpointConfig,
     bool clearThemeCheckpoint = false,
   }) {
+    // 联动开时详情字色必须与标题字色一致：设置页在联动下本就同步写入，
+    // 但旧版本数据 / 主题备份可能残留「联动开、详情色不同」的脏状态，渲染
+    // 端会据此画出白标题+黑简介的混色卡。copyWith 是设置的统一写入口，在
+    // 此顺手回填；独立模式（联动关）是用户显式选择，保留原值，由卡面渲染
+    // 端做同极性兜底。fromJson 直达构造函数，另有同等规则的回填。
+    final linkedCardTextColors =
+        linkCourseCardColors ?? this.linkCourseCardColors;
+    final healedDetailColorLight = linkedCardTextColors
+        ? (courseCardTitleColorLight ?? this.courseCardTitleColorLight)
+        : (courseCardDetailColorLight ?? this.courseCardDetailColorLight);
+    final healedDetailColorDark = linkedCardTextColors
+        ? (courseCardTitleColorDark ?? this.courseCardTitleColorDark)
+        : (courseCardDetailColorDark ?? this.courseCardDetailColorDark);
     return TimetableSettings(
       sections: sections ?? this.sections,
       activeTimeSchemeId: activeTimeSchemeId ?? this.activeTimeSchemeId,
@@ -2841,10 +2865,8 @@ class TimetableSettings {
           courseCardTitleColorLight ?? this.courseCardTitleColorLight,
       courseCardTitleColorDark:
           courseCardTitleColorDark ?? this.courseCardTitleColorDark,
-      courseCardDetailColorLight:
-          courseCardDetailColorLight ?? this.courseCardDetailColorLight,
-      courseCardDetailColorDark:
-          courseCardDetailColorDark ?? this.courseCardDetailColorDark,
+      courseCardDetailColorLight: healedDetailColorLight,
+      courseCardDetailColorDark: healedDetailColorDark,
       weekdayBarFontColorLight:
           weekdayBarFontColorLight ?? this.weekdayBarFontColorLight,
       weekdayBarFontColorDark:

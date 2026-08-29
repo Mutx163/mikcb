@@ -1054,4 +1054,93 @@ void main() {
       expect(restored3.glassDockShowAddButton, isFalse);
     });
   });
+
+  group('linked course-card text colors self-heal', () {
+    // 回归：联动开但详情色与标题色不同的脏状态（旧版本数据 / 主题备份）会
+    // 让卡面画出「白标题 + 黑简介」的混色卡；加载与写入路径都要回填。
+    Map<String, dynamic> dirtyJson({required bool? link}) => {
+      'sections': <dynamic>[],
+      'courseCardTitleColorLight': '#FFFFFF',
+      'courseCardTitleColorDark': '#EEEEEE',
+      'courseCardDetailColorLight': '#000000',
+      'courseCardDetailColorDark': '#111111',
+      'linkCourseCardColors': ?link,
+    };
+
+    test('fromJson heals divergent detail colors while linked', () {
+      final settings = TimetableSettings.fromJson(dirtyJson(link: true));
+      expect(settings.courseCardDetailColorLight, settings.courseCardTitleColorLight);
+      expect(settings.courseCardDetailColorDark, settings.courseCardTitleColorDark);
+    });
+
+    test('fromJson defaults to linked and heals legacy data without the key', () {
+      final settings = TimetableSettings.fromJson(dirtyJson(link: null));
+      expect(settings.linkCourseCardColors, isTrue);
+      expect(settings.courseCardDetailColorLight, settings.courseCardTitleColorLight);
+      expect(settings.courseCardDetailColorDark, settings.courseCardTitleColorDark);
+    });
+
+    test('fromJson keeps explicit detail colors in independent mode', () {
+      final settings = TimetableSettings.fromJson(dirtyJson(link: false));
+      expect(settings.courseCardTitleColorLight, '#FFFFFF');
+      expect(settings.courseCardDetailColorLight, '#000000');
+      expect(settings.courseCardDetailColorDark, '#111111');
+    });
+
+    test('healed state persists through a json round trip', () {
+      final settings = TimetableSettings.fromJson(dirtyJson(link: true));
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(
+        restored.courseCardDetailColorLight,
+        restored.courseCardTitleColorLight,
+      );
+      expect(
+        restored.courseCardDetailColorDark,
+        restored.courseCardTitleColorDark,
+      );
+    });
+
+    test('copyWith heals a divergent state even without changes', () {
+      // 直达构造函数注入的脏状态（绕过 copyWith）在下一次写入时被回填。
+      const dirty = TimetableSettings(
+        sections: [],
+        courseCardDetailColorLight: '#000000',
+        courseCardDetailColorDark: '#111111',
+      );
+      expect(dirty.linkCourseCardColors, isTrue);
+      final healed = dirty.copyWith();
+      expect(healed.courseCardDetailColorLight, healed.courseCardTitleColorLight);
+      expect(healed.courseCardDetailColorDark, healed.courseCardTitleColorDark);
+    });
+
+    test('copyWith syncs the detail color when the title changes while linked', () {
+      final changed = TimetableSettings.defaults().copyWith(
+        courseCardTitleColorLight: '#0D47A1',
+      );
+      expect(changed.courseCardTitleColorLight, '#0D47A1');
+      expect(changed.courseCardDetailColorLight, '#0D47A1');
+    });
+
+    test('copyWith keeps user-picked detail colors in independent mode', () {
+      final base = TimetableSettings.defaults().copyWith(
+        linkCourseCardColors: false,
+      );
+      final changed = base.copyWith(courseCardDetailColorLight: '#123456');
+      expect(changed.courseCardDetailColorLight, '#123456');
+      expect(changed.courseCardTitleColorLight, '#FFFFFF');
+    });
+
+    test('applyToSettings heals a corrupt linked theme config', () {
+      const config = ThemeConfig(
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardDetailColorLight: '#000000',
+        linkCourseCardColors: true,
+      );
+      final applied = config.applyToSettings(TimetableSettings.defaults());
+      expect(
+        applied.courseCardDetailColorLight,
+        applied.courseCardTitleColorLight,
+      );
+    });
+  });
 }
