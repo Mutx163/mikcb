@@ -1,3 +1,6 @@
+// foundation 例外说明：本文件需 @visibleForTesting 等基础注解，不涉及任何
+// UI 框架；领域层纯度守卫（test/architecture/dependency_guards_test.dart）
+// 只禁 widgets/material/cupertino。
 import 'package:flutter/foundation.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
