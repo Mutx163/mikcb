@@ -552,7 +552,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: theme.colors.secondary,
+          // 与表单文本框同底色（HyperosColors.card）；colors.secondary 是
+          // 兼容垫片上的深色 M3 强调色，浅色页面会整行发黑，不能用。
+          color: HyperosColors.card(context),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

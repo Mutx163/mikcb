@@ -607,8 +607,10 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         width: swatchSize,
         height: swatchSize,
         decoration: BoxDecoration(
+          // 占位井用浅灰；colors.secondary 是深色 M3 强调色（兼容垫片），
+          // 浅色表单里会像一颗黑块。
           color: colorHex == null
-              ? theme.colors.secondary
+              ? HyperosColors.secondaryVariant(context)
               : _colorFromHex(colorHex),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(

@@ -185,7 +185,8 @@ class _ColorPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
-    final color = tryParseHexColor(colorHex) ?? theme.colors.secondary;
+    final color =
+        tryParseHexColor(colorHex) ?? HyperosColors.secondaryVariant(context);
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -249,8 +250,10 @@ class _PaletteChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const size = 36.0;
-    final parsed =
-        tryParseHexColor(colorHex) ?? context.theme.colors.secondary;
+    // 占位井用浅灰 secondaryVariant；colors.secondary 是兼容垫片上的
+    // 深色 M3 强调色，浅色弹窗里会像一颗黑块。
+    final parsed = tryParseHexColor(colorHex) ??
+        HyperosColors.secondaryVariant(context);
     // 浅色阶上白色对勾不可见，按亮度切换勾色（与卡片墨色守卫同思路）。
     final checkColor = parsed.computeLuminance() > 0.5
         ? const Color(0xFF1A1A1A)
