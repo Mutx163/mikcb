@@ -202,6 +202,11 @@ class TimetableProvider with ChangeNotifier {
   String? _lastLiveSnapshotSignature;
   String? _lastHomeWidgetSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
+
+  /// 自检预设课覆盖层：只注入超级岛选课与原生快照路径，绝不写入真实课表
+  /// （内存态，重启即清）。管线内部状态，与 [_lastLiveSnapshotSignature]
+  /// 同类，变化不发 notify。
+  List<Course> _liveTestFixtureOverlayCourses = const [];
   Future<void>? _initializationFuture;
   Future<void>? _deferredDataFuture;
 
@@ -4330,6 +4335,45 @@ class TimetableProvider with ChangeNotifier {
   /// Clears a temporary live-sync pause (e.g. leftover from older test helpers).
   void clearLiveActivitySyncSuspend() {
     _liveActivitySuspendedUntil = null;
+  }
+
+  /// 超级岛选课实际使用的「今天日历周」，与 [getLiveActivityCourseSelection]
+  /// 同源（学期未设时回落 [_currentWeek]，学期开始前为 0）。供自检预设课
+  /// 按同一周次规则生成。
+  int get liveSelectionCalendarWeek => _resolveCurrentCalendarWeek();
+
+  bool get hasLiveTestFixtureCourses => _liveTestFixtureOverlayCourses.isNotEmpty;
+
+  /// 注入自检预设课（整体替换上一批）。只有超级岛管线可见，不进真实课表。
+  void armLiveTestFixtureCourses(List<Course> courses) {
+    if (courses.isEmpty) {
+      return;
+    }
+    _liveTestFixtureOverlayCourses = List.of(courses, growable: false);
+  }
+
+  void disarmLiveTestFixtureCourses() {
+    _liveTestFixtureOverlayCourses = const [];
+  }
+
+  /// 预设课全部结束（按其自由时钟）时摘除覆盖层，返回是否真的摘了。
+  /// 未结束（含节假日等选课为空的场景）时保持挂载，阶段空窗由岛自身停止。
+  bool disarmLiveTestFixtureCoursesIfFinished(DateTime now) {
+    if (_liveTestFixtureOverlayCourses.isEmpty) {
+      return false;
+    }
+    for (final course in _liveTestFixtureOverlayCourses) {
+      final endTime = _liveBuildCorrectedCourseDateTime(
+        this,
+        now,
+        _liveResolveRealTime(this, course, false),
+      );
+      if (endTime == null || !endTime.isBefore(now)) {
+        return false;
+      }
+    }
+    _liveTestFixtureOverlayCourses = const [];
+    return true;
   }
 
   Future<void> refreshLiveActivityNow({bool forceSnapshotSync = false}) =>

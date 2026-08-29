@@ -73,6 +73,9 @@ abstract final class AppLogMessages {
   static const liveUpdateTestStarting = 'log_live_update_test_starting';
   static const liveUpdateTestStarted = 'log_live_update_test_started';
   static const liveUpdateTestFailed = 'log_live_update_test_failed';
+  static const liveUpdateTestPresetArmed = 'log_live_update_test_preset_armed';
+  static const liveUpdateTestPresetSkipped =
+      'log_live_update_test_preset_skipped';
   static const logExportTitle = 'log_export_title';
   static const liveUpdateSettingsSyncedKey = 'log_live_update_settings_synced';
 

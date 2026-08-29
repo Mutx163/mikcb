@@ -1,9 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
+
+DateTime _atClock(DateTime day, String clock) {
+  final parts = clock.split(':');
+  return DateTime(
+    day.year,
+    day.month,
+    day.day,
+    int.parse(parts[0]),
+    int.parse(parts[1]),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -200,4 +212,221 @@ void main() {
       provider.dispose();
     },
   );
+
+  group('self-check preset courses', () {
+    test('buildPresetCourses creates two back-to-back courses for today', () {
+      final now = DateTime(2026, 3, 23, 10, 15);
+      final presets = LiveTestingFixtureService.buildPresetCourses(
+        now: now,
+        targetWeek: 1,
+        semesterWeekCount: 20,
+      );
+
+      expect(presets, hasLength(2));
+      expect(presets[0].id, LiveTestingFixtureService.presetCourseIdA);
+      expect(presets[1].id, LiveTestingFixtureService.presetCourseIdB);
+      expect(presets[0].startTime, '10:16');
+      expect(presets[0].endTime, '10:19');
+      expect(presets[1].startTime, '10:20');
+      expect(presets[1].endTime, '10:23');
+      expect(presets.every((c) => c.dayOfWeek == now.weekday), isTrue);
+      expect(
+        presets.every(LiveTestingFixtureService.isPresetCourse),
+        isTrue,
+      );
+      expect(
+        presets.every(LiveTestingFixtureService.isFixtureCourse),
+        isTrue,
+      );
+    });
+
+    test('preset week span covers pre-semester and post-semester weeks', () {
+      final now = DateTime(2026, 3, 23, 10, 15);
+      final preSemester = LiveTestingFixtureService.buildPresetCourses(
+        now: now,
+        targetWeek: 0,
+        semesterWeekCount: 20,
+      );
+      expect(preSemester.every((c) => c.isInWeek(0)), isTrue);
+      expect(preSemester.every((c) => c.isInWeek(1)), isTrue);
+
+      final afterTerm = LiveTestingFixtureService.buildPresetCourses(
+        now: now,
+        targetWeek: 25,
+        semesterWeekCount: 20,
+      );
+      expect(afterTerm.every((c) => c.isInWeek(25)), isTrue);
+      expect(afterTerm.every((c) => !c.isInWeek(26)), isTrue);
+    });
+
+    test('buildPresetCourses rejects ranges crossing midnight', () {
+      expect(
+        () => LiveTestingFixtureService.buildPresetCourses(
+          now: DateTime(2026, 3, 23, 23, 58),
+          targetWeek: 1,
+          semesterWeekCount: 20,
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test(
+      'presets feed live selection but never enter the real timetable',
+      () async {
+        final provider = TimetableProvider(
+          autoInitialize: false,
+          enableLiveActivitySync: false,
+        );
+        await provider.initialize();
+        final now = DateTime(2026, 3, 23, 10, 15);
+        final presets = LiveTestingFixtureService.buildPresetCourses(
+          now: now,
+          targetWeek: provider.liveSelectionCalendarWeek,
+          semesterWeekCount: provider.settings.semesterWeekCount,
+        );
+        provider.armLiveTestFixtureCourses(presets);
+        expect(provider.hasLiveTestFixtureCourses, isTrue);
+
+        // 真实课表与 UI/小组件用的课程路径都看不到预设课。
+        expect(
+          provider.courses.where(LiveTestingFixtureService.isPresetCourse),
+          isEmpty,
+        );
+        expect(
+          provider
+              .getActiveCoursesForDay(now.weekday, week: 1)
+              .where(LiveTestingFixtureService.isPresetCourse),
+          isEmpty,
+        );
+
+        // 超级岛选课路径能选中预设课 A（课前态），且下节课指向 B。
+        final selection = provider.getLiveActivityCourseSelection(
+          now: now.add(const Duration(seconds: 30)),
+          week: 1,
+        );
+        expect(
+          selection?.currentCourse.id,
+          LiveTestingFixtureService.presetCourseIdA,
+        );
+        expect(
+          selection?.nextCourse?.id,
+          LiveTestingFixtureService.presetCourseIdB,
+        );
+
+        // A 结束后 B 接棒。
+        final second = provider.getLiveActivityCourseSelection(
+          now: _atClock(now, '10:21'),
+          week: 1,
+        );
+        expect(
+          second?.currentCourse.id,
+          LiveTestingFixtureService.presetCourseIdB,
+        );
+        provider.dispose();
+      },
+    );
+
+    test('real course wins while active; preset takes over after it', () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+      final now = DateTime(2026, 3, 23, 10, 15);
+      final first = provider.settings.sections.first;
+      await provider.addCourse(
+        Course(
+          id: 'real_section_1',
+          name: '真实课',
+          teacher: '真实教师',
+          location: '真实教室',
+          dayOfWeek: now.weekday,
+          startSection: 1,
+          endSection: 1,
+          startTime: first.startTime,
+          endTime: first.endTime,
+          color: '#4C6FFF',
+          startWeek: 1,
+          endWeek: 20,
+        ),
+      );
+
+      // 预设课压在真实课最后一分钟到结束后几分钟。
+      final sectionEnd = _atClock(now, first.endTime);
+      final presets = LiveTestingFixtureService.buildPresetCourses(
+        now: sectionEnd.subtract(const Duration(minutes: 2)),
+        targetWeek: 1,
+        semesterWeekCount: 20,
+      );
+      provider.armLiveTestFixtureCourses(presets);
+
+      expect(
+        provider
+            .getLiveActivityCourseSelection(
+              now: sectionEnd.subtract(const Duration(minutes: 1)),
+              week: 1,
+            )
+            ?.currentCourse
+            .id,
+        'real_section_1',
+      );
+      expect(
+        provider
+            .getLiveActivityCourseSelection(
+              now: sectionEnd.add(const Duration(seconds: 30)),
+              week: 1,
+            )
+            ?.currentCourse
+            .id,
+        LiveTestingFixtureService.presetCourseIdA,
+      );
+      provider.dispose();
+    });
+
+    test('overlay disarms once every preset has finished', () async {
+      final provider = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      await provider.initialize();
+      final now = DateTime(2026, 3, 23, 10, 15);
+      final presets = LiveTestingFixtureService.buildPresetCourses(
+        now: now,
+        targetWeek: 1,
+        semesterWeekCount: 20,
+      );
+      provider.armLiveTestFixtureCourses(presets);
+
+      // B 结束前：保持挂载。
+      final lastEnd = _atClock(now, presets[1].endTime);
+      expect(
+        provider.disarmLiveTestFixtureCoursesIfFinished(
+          lastEnd.subtract(const Duration(seconds: 1)),
+        ),
+        isFalse,
+      );
+      expect(provider.hasLiveTestFixtureCourses, isTrue);
+
+      // 全部结束后：摘除，选课回到空。
+      expect(
+        provider.disarmLiveTestFixtureCoursesIfFinished(
+          lastEnd.add(const Duration(minutes: 1)),
+        ),
+        isTrue,
+      );
+      expect(provider.hasLiveTestFixtureCourses, isFalse);
+      expect(
+        provider.getLiveActivityCourseSelection(
+          now: lastEnd.add(const Duration(minutes: 1)),
+          week: 1,
+        ),
+        isNull,
+      );
+
+      // 空批次不改变挂载状态。
+      provider.armLiveTestFixtureCourses(const []);
+      expect(provider.hasLiveTestFixtureCourses, isFalse);
+      provider.dispose();
+    });
+  });
 }

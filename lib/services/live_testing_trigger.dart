@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../logging/app_log_messages.dart';
+import '../models/course.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
@@ -79,7 +80,29 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       );
     }
 
-    final selection = provider.getLiveActivityCourseSelection();
+    var selection = provider.getLiveActivityCourseSelection();
+    var usedPresetFallback = false;
+    if (selection == null) {
+      // 真实课表无课可测（如刚安装还没有课）：注入自检预设课，再走一遍同一条
+      // 正式路径。预设课只进超级岛内存覆盖层与原生快照，不写入真实课表。
+      final presetSelection = await _triggerWithPresetFixtureCourses(
+        context: context,
+        provider: provider,
+        liveService: liveService,
+        source: source,
+      );
+      if (!context.mounted) {
+        return const LiveTestingTriggerResult(
+          status: LiveTestingTriggerStatus.error,
+          message: null,
+        );
+      }
+      if (presetSelection != null) {
+        selection = presetSelection;
+        usedPresetFallback = true;
+      }
+    }
+
     if (selection == null) {
       await liveService.recordDiagnosticEvent(
         'live_update_test_no_selection',
@@ -112,10 +135,16 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
     final homeHint = locale.languageCode == 'zh'
         ? '已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）'
         : 'Used the production island selection path. Press Home to watch it; it usually will not pop while the app stays open.';
+    final presetNote = usedPresetFallback
+        ? (locale.languageCode == 'zh'
+              ? '（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）\n'
+              : '(No testable real course found; used self-check preset courses instead, nothing was written to your timetable.)\n')
+        : '';
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
       message:
           '${l10n.liveTestingNotificationSent}\n'
+          '$presetNote'
           '${selection.currentCourse.name} · ${selection.stage.name}\n'
           '$homeHint',
     );
@@ -184,4 +213,50 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({
     source: source,
     seededCourseId: timedCourse.id,
   );
+}
+
+/// Preset-course fallback: arms self-check preset courses in the provider's
+/// in-memory live overlay and reruns the same production refresh.
+///
+/// Presets never touch the real timetable — they only exist in the overlay
+/// consumed by live selection and the native schedule snapshot, and the
+/// overlay disarms itself once every preset has ended.
+Future<LiveActivityCourseSelection?> _triggerWithPresetFixtureCourses({
+  required BuildContext context,
+  required TimetableProvider provider,
+  required MiuiLiveActivitiesService liveService,
+  required String source,
+}) async {
+  final List<Course> presets;
+  try {
+    presets = LiveTestingFixtureService.buildPresetCourses(
+      now: DateTime.now(),
+      targetWeek: provider.liveSelectionCalendarWeek,
+      semesterWeekCount: provider.settings.semesterWeekCount,
+    );
+  } catch (error) {
+    // 午夜附近无法生成不跨日预设课：按无课处理，维持原有「无课」提示。
+    await liveService.recordDiagnosticEvent(
+      'live_update_test_preset_skipped',
+      AppLogMessages.liveUpdateTestPresetSkipped,
+      extras: {'from': source, 'reason': '$error'},
+    );
+    return null;
+  }
+
+  provider.armLiveTestFixtureCourses(presets);
+  await liveService.recordDiagnosticEvent(
+    'live_update_test_preset_armed',
+    AppLogMessages.liveUpdateTestPresetArmed,
+    extras: {
+      'from': source,
+      'courseIds': presets.map((course) => course.id).toList(),
+    },
+  );
+
+  await provider.refreshLiveActivityNow(forceSnapshotSync: true);
+  if (!context.mounted) {
+    return null;
+  }
+  return provider.getLiveActivityCourseSelection();
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../models/course.dart';
@@ -22,8 +24,17 @@ class LiveTestingFixtureService {
   static const Duration defaultCourseDuration = Duration(minutes: 3);
   static const List<int> supportedLeadMinutes = [1, 3, 5, 8];
 
+  static const String presetCourseIdA = '${courseIdPrefix}preset_a';
+  static const String presetCourseIdB = '${courseIdPrefix}preset_b';
+  static const Duration defaultPresetLead = Duration(minutes: 1);
+  static const Duration defaultPresetCourseDuration = Duration(minutes: 3);
+  static const Duration defaultPresetGap = Duration(minutes: 1);
+
   static bool isFixtureCourse(Course course) =>
       course.id.startsWith(courseIdPrefix);
+
+  static bool isPresetCourse(Course course) =>
+      course.id.startsWith('${courseIdPrefix}preset_');
 
   /// 1-based section number → stable fixture id (`live_test_01` …).
   static String fixtureIdForSection(int sectionNumber) {
@@ -224,6 +235,78 @@ class LiveTestingFixtureService {
       endTime: formatClock(end),
       note: note ?? template.note,
     );
+  }
+
+  /// 自检预设课：真实课表无课可测（如刚安装还没有课）时的兜底测试数据。
+  ///
+  /// 与正式课同规则：同一天、同周次跨度、走同一条选课/快照/原生校验管线；
+  /// 但只注入超级岛管线的内存覆盖层，绝不写入真实课表。时间用自由时钟
+  /// （与 [_isLiveTestingFixture] 的旁路约定一致），第一门从现在起 [lead]
+  /// 分钟后上课，第二门在 [gap] 后接棒，让岛的「下节课」位也有内容。
+  static List<Course> buildPresetCourses({
+    required DateTime now,
+    required int targetWeek,
+    required int semesterWeekCount,
+    Duration lead = defaultPresetLead,
+    Duration duration = defaultPresetCourseDuration,
+    Duration gap = defaultPresetGap,
+  }) {
+    if (duration <= Duration.zero) {
+      throw ArgumentError.value(duration, 'duration', 'must be positive');
+    }
+    if (gap < Duration.zero) {
+      throw ArgumentError.value(gap, 'gap', 'must not be negative');
+    }
+    final firstStart = now.add(lead);
+    final firstEnd = firstStart.add(duration);
+    final secondStart = firstEnd.add(gap);
+    final secondEnd = secondStart.add(duration);
+    // 与 buildTimedTestCourse 相同的不跨日约束：课表不支持隔夜课。
+    for (final time in [firstStart, firstEnd, secondStart, secondEnd]) {
+      if (time.year != now.year ||
+          time.month != now.month ||
+          time.day != now.day) {
+        throw StateError('当前时间距离午夜太近，无法生成不跨日预设测试课，请在午夜后重试');
+      }
+    }
+    // 覆盖选课路径实际使用的日历周：学期未开始是第 0 周，学期结束后会超过
+    // semesterWeekCount，两种情况都要让周次规则照常放行。
+    final startWeek = targetWeek < 1 ? targetWeek : 1;
+    final endWeek = [targetWeek, semesterWeekCount, 1].reduce(max);
+    return [
+      Course(
+        id: presetCourseIdA,
+        name: '自检预设课 A',
+        shortName: '自检A',
+        teacher: '自检教师',
+        location: '自检教室 A',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 1,
+        startTime: formatClock(firstStart),
+        endTime: formatClock(firstEnd),
+        color: colorForSection(11, 24),
+        startWeek: startWeek,
+        endWeek: endWeek,
+        note: '自检预设课程（仅超级岛测试用，不写入课表）',
+      ),
+      Course(
+        id: presetCourseIdB,
+        name: '自检预设课 B',
+        shortName: '自检B',
+        teacher: '自检教师',
+        location: '自检教室 B',
+        dayOfWeek: now.weekday,
+        startSection: 2,
+        endSection: 2,
+        startTime: formatClock(secondStart),
+        endTime: formatClock(secondEnd),
+        color: colorForSection(17, 24),
+        startWeek: startWeek,
+        endWeek: endWeek,
+        note: '自检预设课程（仅超级岛测试用，不写入课表）',
+      ),
+    ];
   }
 
   static String colorForSection(int sectionNumber, int totalSections) {

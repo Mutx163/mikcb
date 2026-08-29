@@ -169,6 +169,34 @@ Future<void> _liveUpdateActivityForTesting(
   bool syncScheduleSnapshot = true,
 }) => _liveUpdateActivity(host, syncScheduleSnapshot: syncScheduleSnapshot);
 
+/// Comparator that orders live candidates by their resolved (corrected) start
+/// time. Preset fixture courses carry free-form clocks, so section order alone
+/// is not chronological once the overlay is merged in.
+int _liveCompareByResolvedStart(
+  TimetableProvider host,
+  DateTime referenceDate,
+  Course a,
+  Course b,
+) {
+  final aStart = _liveBuildCorrectedCourseDateTime(
+    host,
+    referenceDate,
+    _liveResolveRealTime(host, a, true),
+  );
+  final bStart = _liveBuildCorrectedCourseDateTime(
+    host,
+    referenceDate,
+    _liveResolveRealTime(host, b, true),
+  );
+  if (aStart == null || bStart == null) {
+    if (aStart == null && bStart == null) {
+      return a.startSection.compareTo(b.startSection);
+    }
+    return aStart == null ? 1 : -1;
+  }
+  return aStart.compareTo(bStart);
+}
+
 LiveActivityCourseSelection? _liveGetActivityCourseSelection(
   TimetableProvider host, {
   DateTime? now,
@@ -182,10 +210,22 @@ LiveActivityCourseSelection? _liveGetActivityCourseSelection(
     return null;
   }
   final targetWeek = week ?? host._calculateCalendarWeekForDate(currentTime);
-  final todayCourses = host.getActiveCoursesForDay(
+  var todayCourses = host.getActiveCoursesForDay(
     currentTime.weekday,
     week: targetWeek,
   );
+  final fixtureCourses = host._liveTestFixtureOverlayCourses
+      .where(
+        (course) =>
+            course.dayOfWeek == currentTime.weekday &&
+            course.isActiveInWeek(targetWeek),
+      )
+      .toList(growable: false);
+  if (fixtureCourses.isNotEmpty) {
+    // 自检预设课与真实课同场竞争：按解析后的开始时间统一排序，真实课照常优先。
+    todayCourses = [...todayCourses, ...fixtureCourses]
+      ..sort((a, b) => _liveCompareByResolvedStart(host, currentTime, a, b));
+  }
   if (todayCourses.isEmpty) {
     return null;
   }
@@ -439,6 +479,8 @@ Future<void> _liveUpdateActivityBody(
   TimetableProvider host, {
   bool syncScheduleSnapshot = true,
 }) async {
+  // 自检预设课全部结束后立刻摘除覆盖层，让随后的快照同步与选课回到纯真实数据。
+  host.disarmLiveTestFixtureCoursesIfFinished(DateTime.now());
   await _liveSyncHomeWidgetSnapshot(host);
   if (!host._enableLiveActivitySync) {
     return;
@@ -565,6 +607,8 @@ Future<void> _liveUpdateActivityBody(
       miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
       beforeClassQuickAction: settings.liveBeforeClassQuickAction,
+      beforeClassQuickActionAutoMinutes:
+          settings.liveBeforeClassQuickActionAutoMinutes,
       progressBreakOffsetsMillis: progressBreakOffsetsMillis,
       progressMilestoneLabels: progressMilestones
           .map((milestone) => milestone['label'] as String)
@@ -582,7 +626,9 @@ Future<void> _liveUpdateActivityBody(
 
 Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
   final activeProfile = host.activeProfile;
-  if (activeProfile == null || host._courses.isEmpty) {
+  final overlayCourses = host._liveTestFixtureOverlayCourses;
+  if (activeProfile == null ||
+      (host._courses.isEmpty && overlayCourses.isEmpty)) {
     if (host._lastLiveSnapshotSignature != null) {
       final cleared = await host._liveActivitiesService.clearScheduleSnapshot();
       if (cleared) {
@@ -592,9 +638,11 @@ Future<void> _liveSyncScheduleSnapshot(TimetableProvider host) async {
     return;
   }
 
-  final displayCourses = host._courses
-      .map(host.resolveCourseDisplayName)
-      .toList(growable: false);
+  // 自检预设课随覆盖层一并进入原生快照：原生侧的校验与续排都以此为准。
+  final displayCourses = [
+    ...host._courses,
+    ...overlayCourses,
+  ].map(host.resolveCourseDisplayName).toList(growable: false);
   final now = DateTime.now();
   // Use calendar week (not UI browse week) so native schedule matches live
   // course selection even when the user has scrolled the timetable.
