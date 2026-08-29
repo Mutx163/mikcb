@@ -2139,6 +2139,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                               )
                             : homePageOverWallpaperMutedInk(weekdayColor);
                         final showsTodayMarker = isToday && !isSelected;
+                        final hasExamOnDay =
+                            date != null && provider.hasExamOnDate(date);
 
                         return Expanded(
                           child: Material(
@@ -2174,35 +2176,47 @@ class _TimetableScreenState extends State<TimetableScreen>
                                     ),
                                   ),
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                child: Stack(
+                                  fit: StackFit.expand,
                                   children: [
-                                    Text(
-                                      _weekdayLabel(context, dayOfWeek),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: isSelected || isToday
-                                            ? FontWeight.w800
-                                            : FontWeight.w600,
-                                        color: labelColor,
-                                      ),
+                                    // 固定 40dp 的星期栏扣掉 3+3 内边距和 0.5
+                                    // 分隔线后格子只剩 33.5dp，平铺考试红点会把
+                                    // 内容顶到 34dp 溢出；改悬浮层后基础内容恒
+                                    // 为 28dp，任何外观模式都有余量。
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          _weekdayLabel(context, dayOfWeek),
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: isSelected || isToday
+                                                ? FontWeight.w800
+                                                : FontWeight.w600,
+                                            color: labelColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          date == null
+                                              ? ''
+                                              : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                                          style: TextStyle(
+                                            fontSize: 8.5,
+                                            color: subLabelColor,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      date == null
-                                          ? ''
-                                          : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
-                                      style: TextStyle(
-                                        fontSize: 8.5,
-                                        color: subLabelColor,
-                                      ),
-                                    ),
-                                    if (date != null &&
-                                        provider.hasExamOnDate(date))
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
+                                    if (hasExamOnDay)
+                                      Align(
+                                        alignment: Alignment.bottomCenter,
                                         child: Container(
+                                          key: const ValueKey(
+                                            'weekday-exam-dot',
+                                          ),
                                           width: 4,
                                           height: 4,
                                           decoration: BoxDecoration(
