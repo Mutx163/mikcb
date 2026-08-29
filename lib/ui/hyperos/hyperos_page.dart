@@ -124,6 +124,32 @@ class HyperosSubpageNoBack extends InheritedWidget {
   bool updateShouldNotify(HyperosSubpageNoBack oldWidget) => false;
 }
 
+/// 底栏内嵌宿主注入的底部滚动余量：玻璃坞固定满屏悬浮后，任何内嵌
+/// 页的可滚动内容都要能整体滑到悬浮药丸上方（与日/周课表的滚动余量
+/// 同口径）。页面层无须逐页适配——[HyperosListView] 把列表底部内边距
+/// 提升到本值（不小于自身默认底距）；不在坞内嵌宿主中的页面取 0，
+/// 行为不变。新增内嵌页只要按惯例用 [HyperosListView] 即自动适配。
+class GlassDockScrollReliefScope extends InheritedWidget {
+  const GlassDockScrollReliefScope({
+    super.key,
+    required this.inset,
+    required super.child,
+  });
+
+  /// 底部滚动余量（逻辑像素）：药丸固定占用 + 底部安全区。
+  final double inset;
+
+  static double insetOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<GlassDockScrollReliefScope>()
+          ?.inset ??
+      0;
+
+  @override
+  bool updateShouldNotify(GlassDockScrollReliefScope oldWidget) =>
+      oldWidget.inset != inset;
+}
+
 class HyperosSubpage extends StatelessWidget {
   const HyperosSubpage({
     super.key,
@@ -790,20 +816,24 @@ class _HyperosListViewState extends State<HyperosListView> {
     final base = (widget.padding ?? HyperosTokens.listPadding).resolve(
       Directionality.of(context),
     );
+    // 玻璃坞内嵌宿主的底部滚动余量：列表末尾要能整体滑到悬浮药丸
+    // 上方，余量小于自身默认底距时不生效。
+    final dockRelief = GlassDockScrollReliefScope.insetOf(context);
+    final bottom = dockRelief > base.bottom ? dockRelief : base.bottom;
     // Initial content sits below the overlay header; scrolling still passes
     // rows under the frosted bar once this padding scrolls away.
     if (!widget.includeHeaderInset) {
-      return base;
+      return EdgeInsets.fromLTRB(base.left, base.top, base.right, bottom);
     }
     final headerInset = HyperosBlurredHeaderScope.insetOf(context);
     if (headerInset <= 0) {
-      return base;
+      return EdgeInsets.fromLTRB(base.left, base.top, base.right, bottom);
     }
     return EdgeInsets.fromLTRB(
       base.left,
       base.top + headerInset,
       base.right,
-      base.bottom,
+      bottom,
     );
   }
 

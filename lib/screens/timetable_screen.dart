@@ -797,7 +797,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                         backgroundColor:
                             Theme.of(context).scaffoldBackgroundColor,
                         body: HyperosSubpageNoBack(
-                          child: Builder(builder: inlineBuilder),
+                          // 玻璃坞满屏悬浮对所有内嵌页生效：注入底部滚动
+                          // 余量（与日/周课表同口径），列表末尾可整体滑到
+                          // 药丸上方；HyperosListView 自动消费，新增内嵌
+                          // 页无须逐页适配。
+                          child: GlassDockScrollReliefScope(
+                            inset: _glassDockContentScrollInset(settings),
+                            child: Builder(builder: inlineBuilder),
+                          ),
                         ),
                       ),
                     ),
