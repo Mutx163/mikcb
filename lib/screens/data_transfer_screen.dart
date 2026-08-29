@@ -235,6 +235,19 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     );
   }
 
+  /// 发送/导出链路兜底报错：打包与编码在 UI 线程同步执行，任何异常
+  /// 若不接住都会变成「点了没反应」（异步异常只进日志，无 UI 提示）。
+  void _showTransferSendError(AppLocalizations l10n, Object error) {
+    if (!mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: l10n.sendFailedWithError(localizeServiceError(l10n, error)),
+      kind: AppToastKind.error,
+    );
+  }
+
   Future<void> _exportCurrentProfile() async {
     final provider = context.read<TimetableProvider>();
     final l10n = AppLocalizations.of(context)!;
@@ -255,6 +268,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                 provider.activeProfile!.name,
               ),
       );
+    } catch (error) {
+      _showTransferSendError(l10n, error);
     } finally {
       if (mounted) {
         setState(() {
@@ -311,6 +326,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         shareText: l10n.dataTransferFullBackupShareText,
         shareSubject: l10n.dataTransferFullBackupShareSubject,
       );
+    } catch (error) {
+      _showTransferSendError(l10n, error);
     } finally {
       if (mounted) {
         setState(() {
@@ -389,29 +406,37 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       }
       selectedCourseIds = selected;
     }
-    final package = _transferService.buildCurrentPackage(
-      provider: provider,
-      channel: TransferChannel.qr,
-      scope: scope,
-      selectedCourseIds: selectedCourseIds,
-    );
-    final content = package.encode();
-    await _openQrSender(
-      Uint8List.fromList(utf8.encode(content)),
-      l10n.qrTransferSendCurrent,
-    );
+    try {
+      final package = _transferService.buildCurrentPackage(
+        provider: provider,
+        channel: TransferChannel.qr,
+        scope: scope,
+        selectedCourseIds: selectedCourseIds,
+      );
+      final content = package.encode();
+      await _openQrSender(
+        Uint8List.fromList(utf8.encode(content)),
+        l10n.qrTransferSendCurrent,
+      );
+    } catch (error) {
+      _showTransferSendError(l10n, error);
+    }
   }
 
   Future<void> _qrSendAll() async {
     final provider = context.read<TimetableProvider>();
     final l10n = AppLocalizations.of(context)!;
-    final content = _transferService
-        .buildFullPackage(provider: provider, channel: TransferChannel.qr)
-        .encode();
-    await _openQrSender(
-      Uint8List.fromList(utf8.encode(content)),
-      l10n.qrTransferSendAll,
-    );
+    try {
+      final content = _transferService
+          .buildFullPackage(provider: provider, channel: TransferChannel.qr)
+          .encode();
+      await _openQrSender(
+        Uint8List.fromList(utf8.encode(content)),
+        l10n.qrTransferSendAll,
+      );
+    } catch (error) {
+      _showTransferSendError(l10n, error);
+    }
   }
 
   Future<void> _openQrSender(Uint8List payloadBytes, String title) async {
@@ -592,7 +617,15 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     return showHyperosDialog<TransferScope>(
       context: context,
       title: l10n.qrTransferSendCurrent,
-      message: l10n.qrTransferSectionSubtitle,
+      // 说明文字用主文本墨色：默认 message 样式是次级灰，液态玻璃弹窗
+      // 通透材质上几乎不可见（用户反馈）。
+      body: Text(
+        l10n.qrTransferSectionSubtitle,
+        textAlign: TextAlign.center,
+        style: HyperosTypography.listDetail(context).copyWith(
+          color: HyperosColors.primaryText(context),
+        ),
+      ),
       actions: [
         HyperosDialogAction(
           label: l10n.cancelAction,
@@ -621,52 +654,96 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     );
   }
 
+  /// 多选课程弹窗。内容必须包在 [HyperosSheetFrame] 里：showHyperosSheet
+  /// 只提供压暗层与浮层定位，面板背景（磨砂/液态玻璃）由 Frame 绘制，
+  /// 裸列表会渲染成全透明浮层（无 Material、无背景）。课程按
+  /// courseGroups（科目）聚合勾选，避免同一科目多次出现逐条列出。
   Future<Set<String>?> _chooseCoursesForQr(TimetableProvider provider) {
     final selected = <String>{};
     final l10n = AppLocalizations.of(context)!;
+    final courseGroups = provider.courseGroups;
     return showHyperosSheet<Set<String>>(
       context: context,
+      // 列表可滚动时禁用下拉关闭，避免拖拽关闭手势与列表滚动竞争。
+      enableDrag: false,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return SafeArea(
-              child: SizedBox(
-                height: MediaQuery.sizeOf(context).height * 0.75,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          for (final course in provider.courses)
-                            CheckboxListTile(
-                              value: selected.contains(course.id),
-                              title: Text(course.name),
-                              subtitle: Text(course.location),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  if (value == true) {
-                                    selected.add(course.id);
-                                  } else {
-                                    selected.remove(course.id);
-                                  }
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
+            final maxListHeight = MediaQuery.sizeOf(context).height * 0.52;
+            return HyperosSheetFrame(
+              chrome: HyperosSheetChrome.floating,
+              frosted: true,
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.qrTransferShareSelectedCourses,
+                    textAlign: TextAlign.center,
+                    style: HyperosTypography.sheetTitle(context),
+                  ),
+                  const SizedBox(height: 12),
+                  if (courseGroups.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: HyperosButton(
-                        label: l10n.qrTransferSelectCoursesDone,
-                        onPressed: () => Navigator.pop(
-                          sheetContext,
-                          Set<String>.from(selected),
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Text(
+                        l10n.noCoursesInCurrentProfile,
+                        textAlign: TextAlign.center,
+                        style: HyperosTypography.sectionDescription(context),
+                      ),
+                    )
+                  else
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxListHeight),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final group in courseGroups)
+                              HyperosChoiceTile(
+                                variant: HyperosChoiceVariant.dialog,
+                                title: group.name,
+                                subtitle: group.teacher.isNotEmpty
+                                    ? Text(
+                                        group.teacher,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : null,
+                                selected: group.courses.any(
+                                  (course) => selected.contains(course.id),
+                                ),
+                                highlightSelectedText: true,
+                                onTap: () {
+                                  setModalState(() {
+                                    final groupIds = group.courses
+                                        .map((course) => course.id)
+                                        .toSet();
+                                    final allSelected = groupIds.every(
+                                      selected.contains,
+                                    );
+                                    if (allSelected) {
+                                      selected.removeAll(groupIds);
+                                    } else {
+                                      selected.addAll(groupIds);
+                                    }
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  HyperosButton(
+                    label: l10n.qrTransferSelectCoursesDone,
+                    expand: true,
+                    onPressed: () => Navigator.pop(
+                      sheetContext,
+                      Set<String>.from(selected),
+                    ),
+                  ),
+                ],
               ),
             );
           },
