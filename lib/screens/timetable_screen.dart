@@ -998,6 +998,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required int dayOfWeek,
     required TimetableSettings settings,
+    bool animate = true,
   }) async {
     final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
     final isSameSelection =
@@ -1005,15 +1006,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         _selectedWeekForDayView == normalizedWeek &&
         _selectedDayOfWeek == dayOfWeek;
     if (isSameSelection) {
-      await _closeDayView(settings);
+      await _closeDayView(settings, animate: animate);
       return;
     }
     if (_isDayView && _selectedWeekForDayView == normalizedWeek) {
       await _switchDayWithinWeek(settings, normalizedWeek, dayOfWeek);
       return;
     }
-    final shouldAnimateOpen = !_isDayView;
-    if (shouldAnimateOpen) {
+    final shouldAnimateOpen = animate && !_isDayView;
+    if (!_isDayView) {
       _recreateDayViewPageController(
         settings,
         week: normalizedWeek,
@@ -1023,9 +1024,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Collapse the expand controller *before* the overlay mounts so the first
     // painted frame is the small/transparent state. Otherwise a leftover value
     // of 1 (restore / interrupted close / hot reload) makes open look like a
-    // hard cut, while close still has a visible reverse animation.
-    if (shouldAnimateOpen) {
-      _dayViewExpandController.value = 0;
+    // hard cut, while close still has a visible reverse animation. The dock's
+    // flash path (shouldAnimateOpen=false) inverts this on purpose: land on 1
+    // so the first painted frame is the fully expanded day view.
+    if (!_isDayView) {
+      _dayViewExpandController.value = shouldAnimateOpen ? 0 : 1;
     }
     _dayHeaderPreview.value = null;
     setState(() {
@@ -1046,15 +1049,23 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  Future<void> _closeDayView(TimetableSettings settings) async {
+  Future<void> _closeDayView(
+    TimetableSettings settings, {
+    bool animate = true,
+  }) async {
     if (!_isDayView) {
       return;
     }
     _maybeSelectionClick(settings);
     if (_dayViewExpandController.value > 0) {
-      await _dayViewExpandController.reverse();
-      if (!mounted) {
-        return;
+      if (animate) {
+        await _dayViewExpandController.reverse();
+        if (!mounted) {
+          return;
+        }
+      } else {
+        // 底栏闪现直切：跳过收起动画直接归零，与下方清理同帧生效。
+        _dayViewExpandController.value = 0;
       }
     }
     _dayHeaderPreview.value = null;
@@ -6824,8 +6835,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     return index >= 0 ? index : 0;
   }
 
-  /// 底栏点击分发：'day'/'week' 复用锚点展开/收起动画并收回内嵌页；
-  /// 页面条目走内嵌宿主（坞常驻），未登记的流程页才推入新路由。
+  /// 底栏点击分发：'day'/'week' 闪现直切（animate:false，不播锚点展开/
+  /// 收起转场，对齐「点底栏直接就位」的手感，日期栏路径不受影响）并收回
+  /// 内嵌页；页面条目走内嵌宿主（坞常驻），未登记的流程页才推入新路由。
   void _handleDockTap(String id, TimetableSettings settings) {
     if (_dockInlinePageId != null &&
         (id == kGlassDockActionDay || id == kGlassDockActionWeek)) {
@@ -6845,6 +6857,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               settings.timetableLastViewedDayOfWeek,
             ),
             settings: settings,
+            animate: false,
           ),
         );
       case kGlassDockActionWeek:
@@ -6855,8 +6868,8 @@ class _TimetableScreenState extends State<TimetableScreen>
           );
           return;
         }
-        // 动画收起：_closeDayView 内部完成震动、状态清理与持久化。
-        unawaited(_closeDayView(settings));
+        // 闪现收起：_closeDayView 内部完成震动、状态清理与持久化。
+        unawaited(_closeDayView(settings, animate: false));
       default:
         // 内嵌优先：注册过的页面在首页栈内切换，玻璃坞保持悬浮；
         // 再次点击同一切换钮或系统返回则收回。未登记的走普通推入。

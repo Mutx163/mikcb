@@ -117,8 +117,8 @@ void main() {
     final weekTabX = tester.getCenter(find.text('周课表').first).dx;
     expect(dayTabX, lessThan(weekTabX), reason: '日课表应位于周课表左侧');
 
-    // 切日视图（玻璃坞：日↔周复用日期栏路径的锚点展开动画，
-    // 玻璃面板随锚点从小放大滑入）。
+    // 切日视图（玻璃坞：底栏闪现直切——animate:false，首帧即完整就位，
+    // 无锚点缩放槽；日期栏路径才保留锚点展开动画）。
     await tester.tap(find.text('日课表').first);
     await tester.pump();
     expect(tester.takeException(), isNull, reason: '切日视图（有壁纸）不应有异常');
@@ -127,24 +127,16 @@ void main() {
       findsOneWidget,
       reason: '日视图面板应显示',
     );
-    // 锚点展开进行中：面板处于 Align(widthFactor < 1) 的缩放槽里。
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
-      ),
-      findsWidgets,
-      reason: '玻璃坞切日视图应播放锚点展开动画（存在缩放中的 Align 槽）',
-    );
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
-    // 展开完成后铺满全宽（缩放槽消失）。
+    // 闪现直切：首帧即铺满全宽（不存在缩放中的 Align 槽）。
     expect(
       find.byWidgetPredicate(
         (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
       ),
       findsNothing,
-      reason: '锚点展开动画应最终铺满（缩放槽消失）',
+      reason: '玻璃坞切日视图应闪现直切（首帧无缩放中的 Align 槽）',
     );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
 
     // 日视图自带顶部信息栏：显示星期几（不是空白栏）
     expect(
