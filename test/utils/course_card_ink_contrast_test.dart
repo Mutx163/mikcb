@@ -155,8 +155,14 @@ void main() {
     test('is derived from the resolved title ink, softened', () {
       const card = Color(0xFF90CAF9);
       const ink = Color(0xFF0D47A1);
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: ink,
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+      );
       final detail = resolveReadableCourseCardDetailColor(
         preferred: ink,
+        resolvedTitleInk: title,
         cardColor: card,
         surfaceShowsWallpaper: true,
       );
@@ -164,6 +170,79 @@ void main() {
       expect(detail.g, closeTo(ink.g, 0.001));
       expect(detail.b, closeTo(ink.b, 0.001));
       expect(detail.a, lessThan(1.0));
+    });
+  });
+
+  group('detail color polarity (solid surfaces)', () {
+    // 回归：白标题（#FF9800 上对比度 2.16 ≥ 2.0 被保留）曾与同样达标的
+    // 黑简介（9.7:1）同卡混色——详情墨必须跟随标题墨的明暗极性。
+    test('opposite-polarity detail follows the kept white title', () {
+      const card = Color(0xFFFF9800);
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: const Color(0xFFFFFFFF),
+        cardColor: card,
+        surfaceShowsWallpaper: false,
+      );
+      expect(title, const Color(0xFFFFFFFF)); // advisory 区间内保留用户白墨
+      final detail = resolveReadableCourseCardDetailColor(
+        preferred: const Color(0xFF000000),
+        resolvedTitleInk: title,
+        cardColor: card,
+        surfaceShowsWallpaper: false,
+      );
+      expect(detail.r, closeTo(1.0, 0.001));
+      expect(detail.g, closeTo(1.0, 0.001));
+      expect(detail.b, closeTo(1.0, 0.001));
+      expect(detail.a, closeTo(0.7, 0.01));
+    });
+
+    test('reverse divergence also snaps to the title ink', () {
+      const card = Color(0xFFFF9800);
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: const Color(0xFF000000),
+        cardColor: card,
+        surfaceShowsWallpaper: false,
+      );
+      expect(title, const Color(0xFF000000)); // 9.7:1 保留
+      final detail = resolveReadableCourseCardDetailColor(
+        preferred: const Color(0xFFFFFFFF),
+        resolvedTitleInk: title,
+        cardColor: card,
+        surfaceShowsWallpaper: false,
+      );
+      expect(detail.r, closeTo(0.0, 0.001));
+      expect(detail.a, closeTo(0.7, 0.01));
+    });
+
+    test('same-polarity detail keeps its guarded ink (pastel flips both)', () {
+      const card = Color(0xFF90CAF9); // 白字 1.75 < 2.0 → 标题翻近黑
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: const Color(0xFFFFFFFF),
+        cardColor: card,
+        surfaceShowsWallpaper: false,
+      );
+      expect(title.computeLuminance(), lessThan(0.5));
+      final detail = resolveReadableCourseCardDetailColor(
+        preferred: const Color(0xFF000000),
+        resolvedTitleInk: title,
+        cardColor: card,
+        surfaceShowsWallpaper: false,
+      );
+      // 黑墨本就达标（12:1）且与标题同极性 → 保留纯黑，不并入标题墨。
+      expect(detail.r, closeTo(0.0, 0.001));
+      expect(detail.a, closeTo(0.7, 0.01));
+    });
+
+    test('wallpaper surfaces keep the divergent user choice', () {
+      const card = Color(0xFFFF9800);
+      final detail = resolveReadableCourseCardDetailColor(
+        preferred: const Color(0xFF000000),
+        resolvedTitleInk: const Color(0xFFFFFFFF),
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+      );
+      expect(detail.r, closeTo(0.0, 0.001));
+      expect(detail.a, closeTo(0.7, 0.01));
     });
   });
 }

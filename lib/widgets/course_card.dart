@@ -104,13 +104,15 @@ class CourseCard extends StatelessWidget {
       cardColor: color,
       surfaceShowsWallpaper: surfaceShowsWallpaper,
     );
-    final detailColor = resolveReadableCourseCardTitleColor(
+    // 详情墨在实心卡面上额外与标题墨同极性（白标题不再配黑简介）。
+    final detailColor = resolveReadableCourseCardDetailColor(
       preferred: detailColorHex != null
           ? _parseColor(detailColorHex!)
           : Colors.white,
+      resolvedTitleInk: titleColor,
       cardColor: color,
       surfaceShowsWallpaper: surfaceShowsWallpaper,
-    ).withValues(alpha: 0.7);
+    );
 
     if (isCompact) {
       return _buildCompactCard(context, color, titleColor, detailColor);

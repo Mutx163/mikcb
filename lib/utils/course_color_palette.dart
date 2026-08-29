@@ -162,18 +162,34 @@ Color resolveReadableCourseCardTitleColor({
   return _bestContrastInk(cardColor);
 }
 
-/// Detail ink derived from the resolved title ink, softened via alpha.
+/// Resolves the softened detail (subtitle) ink for a course card.
+///
+/// 先走与标题一致的对比度守卫；在不透明卡面上，再把结果约束到与
+/// [resolvedTitleInk] 相同的明暗极性：详情墨可能单独达标（黑字在中明度卡上
+/// 对比度 9+），却与被保留的白标题（对比度仅 2.2 左右、处于 advisory 区间）
+/// 极性相反，画出「白标题 + 黑简介」的半洗白混色卡。标题墨是卡面的锚，
+/// 详情跟随。高斯模糊档透出壁纸、卡色不是可靠背景，与标题守卫一致地
+/// 保留用户选择。
 Color resolveReadableCourseCardDetailColor({
   required Color preferred,
+  required Color resolvedTitleInk,
   required Color cardColor,
   required bool surfaceShowsWallpaper,
 }) {
-  final title = resolveReadableCourseCardTitleColor(
+  final guarded = resolveReadableCourseCardTitleColor(
     preferred: preferred,
     cardColor: cardColor,
     surfaceShowsWallpaper: surfaceShowsWallpaper,
   );
-  return title.withValues(alpha: 0.7);
+  if (surfaceShowsWallpaper) {
+    return guarded.withValues(alpha: 0.7);
+  }
+  const lightInkLuminance = 0.5;
+  final titleIsLight =
+      resolvedTitleInk.computeLuminance() >= lightInkLuminance;
+  final detailIsLight = guarded.computeLuminance() >= lightInkLuminance;
+  final ink = titleIsLight == detailIsLight ? guarded : resolvedTitleInk;
+  return ink.withValues(alpha: 0.7);
 }
 
 /// Preset card hexes on which [ink] is unreadable (below the AA-large bar) for
