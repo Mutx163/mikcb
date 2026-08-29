@@ -154,14 +154,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             HyperosListGroup(
               children: [
                 HyperosChoiceTile(
-                  prefix: const Icon(Icons.menu_book_outlined, size: 20),
                   title: course?.name ?? l10n.taskNoCourse,
                   subtitle: Text(l10n.taskCourseLabel),
                   trailing: const HyperosChevron(),
                   onTap: _pickCourse,
                 ),
                 HyperosSwitchTile(
-                  icon: Icons.event_outlined,
                   title: l10n.taskDueDateLabel,
                   value: _hasDueDate,
                   onChanged: (value) {
@@ -176,7 +174,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ),
                 if (_hasDueDate)
                   HyperosChoiceTile(
-                    prefix: const Icon(Icons.calendar_today_outlined, size: 20),
                     title: DateFormat.yMMMMd(l10n.localeName).format(_dueDate!),
                     trailing: const HyperosChevron(),
                     onTap: _pickDueDate,
