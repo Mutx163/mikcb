@@ -108,12 +108,18 @@ tool/audit_output.json
 tool/fix_audit_all.py
 tool/fix_colors.py
 
+# 本地架构分析草稿与规范笔记（暂不入库）
+docs/architecture/
+docs/reference/app-toast-spec.md
+docs/reference/hyperos-blurred-header.md
+
 # 工具本地配置
 .qoder/
 .workbuddy/
 .workbuddy-ai/
 .reasonix/
 .freebuff/
+.agents/
 
 # Python 缓存
 tool/__pycache__/
