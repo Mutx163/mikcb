@@ -517,11 +517,23 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   minLines: 2,
                   maxLines: 4,
                 ),
-                Text(
-                  l10n.courseColorTitle,
-                  style: typo.xs2.copyWith(color: colors.mutedForeground),
+                HyperosPickerField(
+                  label: l10n.courseColorTitle,
+                  value: _selectedColor.toUpperCase(),
+                  leading: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: _parseColor(_selectedColor),
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: HyperosColors.outline(context),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  onTap: _showFullColorPalette,
                 ),
-                _buildCourseColorEntry(l10n),
               ], spacing: 8),
             ),
           ),
@@ -540,44 +552,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           l10n.sharedInfoSheetItemShortName,
           l10n.sharedInfoSheetItemSharedSync,
         ],
-      ),
-    );
-  }
-
-  /// 课程颜色入口行：展示当前色块与 hex，点开专门的调色盘配置弹窗。
-  Widget _buildCourseColorEntry(AppLocalizations l10n) {
-    final theme = context.theme;
-    return GestureDetector(
-      onTap: _showFullColorPalette,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          // 与表单文本框同底色（HyperosColors.card）；colors.secondary 是
-          // 兼容垫片上的深色 M3 强调色，浅色页面会整行发黑，不能用。
-          color: HyperosColors.card(context),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _parseColor(_selectedColor),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: theme.colors.border),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _selectedColor.toUpperCase(),
-                style: HyperosTypography.listTitle(context),
-              ),
-            ),
-            const HyperosChevron(),
-          ],
-        ),
       ),
     );
   }

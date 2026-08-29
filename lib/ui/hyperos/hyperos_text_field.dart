@@ -97,6 +97,7 @@ class HyperosPickerField extends StatelessWidget {
     required this.value,
     required this.onTap,
     this.icon,
+    this.leading,
     this.enabled = true,
     this.isPlaceholder = false,
     this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
@@ -106,6 +107,9 @@ class HyperosPickerField extends StatelessWidget {
   final String value;
   final VoidCallback? onTap;
   final IconData? icon;
+
+  /// 行首自定义元素（如颜色块），先于 [icon] 渲染。
+  final Widget? leading;
   final bool enabled;
   final bool isPlaceholder;
   final double fontSize;
@@ -152,6 +156,10 @@ class HyperosPickerField extends StatelessWidget {
                 padding: HyperosMiuixTextField.insideMargin,
                 child: Row(
                   children: [
+                    if (leading != null) ...[
+                      leading!,
+                      const SizedBox(width: 10),
+                    ],
                     if (icon != null) ...[
                       Icon(icon, size: 20, color: canTap ? primary : disabled),
                       const SizedBox(width: 10),
