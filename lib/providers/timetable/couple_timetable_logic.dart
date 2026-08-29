@@ -1,3 +1,4 @@
+import '../../domain/course_domain.dart';
 import '../../models/course.dart';
 import '../../models/timetable_settings.dart';
 
@@ -63,43 +64,7 @@ class CoupleTimetableLogic {
   }
 
   static bool coursesOverlapInWeek(Course left, Course right, {int? week}) {
-    if (left.dayOfWeek != right.dayOfWeek) {
-      return false;
-    }
-    if (left.endSection < right.startSection ||
-        right.endSection < left.startSection) {
-      return false;
-    }
-
-    if (week != null) {
-      return left.isActiveInWeek(week) && right.isActiveInWeek(week);
-    }
-
-    final candidateWeeks = <int>{
-      ..._courseWeekCandidates(left),
-      ..._courseWeekCandidates(right),
-    };
-    for (final candidateWeek in candidateWeeks) {
-      if (left.isActiveInWeek(candidateWeek) &&
-          right.isActiveInWeek(candidateWeek)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  static Set<int> _courseWeekCandidates(Course course) {
-    final custom = course.normalizedCustomWeeks;
-    if (custom != null && custom.isNotEmpty) {
-      return custom.toSet();
-    }
-    final weeks = <int>{};
-    final start = course.startWeek < 1 ? 1 : course.startWeek;
-    final end = course.endWeek < start ? start : course.endWeek;
-    for (var week = start; week <= end; week++) {
-      weeks.add(week);
-    }
-    return weeks;
+    return CourseDomain.overlapInWeek(left, right, week: week);
   }
 
   static bool isTogetherClass(

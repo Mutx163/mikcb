@@ -20,6 +20,7 @@ import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../domain/week_calculator.dart';
 import '../domain/holiday_resolver.dart';
+import '../domain/course_domain.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
 import '../ui/hyperos/hyperos_overscroll.dart';
@@ -2228,12 +2229,16 @@ class TimetableProvider with ChangeNotifier {
       final existingSharedCourse = _courses.cast<Course?>().firstWhere(
         (item) =>
             item != null &&
-            _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
+            CourseDomain.sharedKey(item) ==
+                CourseDomain.sharedKey(normalizedCourse),
         orElse: () => null,
       );
       final preparedCourse = existingSharedCourse == null
           ? normalizedCourse
-          : _applySharedCourseFields(normalizedCourse, existingSharedCourse);
+          : CourseDomain.applySharedFields(
+              normalizedCourse,
+              existingSharedCourse,
+            );
 
       _courses.add(preparedCourse);
       await _syncHomeworkTasksWithCourses();
@@ -2273,10 +2278,10 @@ class TimetableProvider with ChangeNotifier {
             ? normalized
             : _syncCourseWithEffectiveTimeScheme(normalized);
         final originalCourse = _courses[index];
-        final previousKey = _sharedCourseKeyFromName(
+        final previousKey = buildSharedCourseNameKey(
           previousSharedName ?? originalCourse.name,
         );
-        final newKey = _sharedCourseKey(normalizedCourse);
+        final newKey = CourseDomain.sharedKey(normalizedCourse);
 
         _courses[index] = normalizedCourse;
         await _recordTeacherImpl(normalizedCourse.teacher);
@@ -2286,9 +2291,12 @@ class TimetableProvider with ChangeNotifier {
             continue;
           }
           final current = _courses[i];
-          final currentKey = _sharedCourseKey(current);
+          final currentKey = CourseDomain.sharedKey(current);
           if (currentKey == previousKey || currentKey == newKey) {
-            _courses[i] = _applySharedCourseFields(current, normalizedCourse);
+            _courses[i] = CourseDomain.applySharedFields(
+              current,
+              normalizedCourse,
+            );
           }
         }
 
@@ -2332,9 +2340,9 @@ class TimetableProvider with ChangeNotifier {
   /// Delete all schedule entries (courses) for a given course name.
   Future<void> deleteCourseGroup(String name) {
     return _runMutation(() async {
-      final key = _buildSharedCourseNameKey(name);
+      final key = buildSharedCourseNameKey(name);
       final deletedCourseIds = _courses
-          .where((c) => _buildSharedCourseNameKey(c.name) == key)
+          .where((c) => buildSharedCourseNameKey(c.name) == key)
           .map((c) => c.id)
           .toSet();
       _courses.removeWhere((c) => deletedCourseIds.contains(c.id));
@@ -2587,14 +2595,14 @@ class TimetableProvider with ChangeNotifier {
     List<Course> updatedCourses,
   ) {
     return _runMutation(() async {
-      final key = _buildSharedCourseNameKey(originalName);
+      final key = buildSharedCourseNameKey(originalName);
       // Remove old entries for this group.
-      _courses.removeWhere((c) => _buildSharedCourseNameKey(c.name) == key);
+      _courses.removeWhere((c) => buildSharedCourseNameKey(c.name) == key);
       // Add the updated entries, applying shared fields.
       final shared = updatedCourses.first;
       for (final course in updatedCourses) {
         final normalized = _normalizeCourse(
-          _applySharedCourseFields(course, shared),
+          CourseDomain.applySharedFields(course, shared),
         );
         _courses.add(normalized);
         await _recordTeacherImpl(normalized.teacher);
@@ -2642,7 +2650,7 @@ class TimetableProvider with ChangeNotifier {
           throw ArgumentError(validationMessage);
         }
         final normalized = _syncCourseWithEffectiveTimeScheme(
-          _normalizeCourse(_applySharedCourseFields(course, shared)),
+          _normalizeCourse(CourseDomain.applySharedFields(course, shared)),
         );
         normalizedCourses.add(normalized);
         if (normalized.teacher.isNotEmpty) teachers.add(normalized.teacher);
@@ -3793,68 +3801,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Map<String, List<Course>> _buildCourseConflictMap({int? week}) {
-    final conflictMap = <String, List<Course>>{};
-
-    for (var i = 0; i < _courses.length; i++) {
-      for (var j = i + 1; j < _courses.length; j++) {
-        final course = _courses[i];
-        final otherCourse = _courses[j];
-        if (!_coursesActuallyConflict(course, otherCourse, week: week)) {
-          continue;
-        }
-
-        conflictMap.putIfAbsent(course.id, () => []).add(otherCourse);
-        conflictMap.putIfAbsent(otherCourse.id, () => []).add(course);
-      }
-    }
-
-    return conflictMap;
-  }
-
-  bool _coursesActuallyConflict(Course left, Course right, {int? week}) {
-    if (left.id == right.id) {
-      return false;
-    }
-    if (left.dayOfWeek != right.dayOfWeek) {
-      return false;
-    }
-    if (left.endSection < right.startSection ||
-        right.endSection < left.startSection) {
-      return false;
-    }
-
-    // Use isInWeek (respects customWeeks), not startWeek/endWeek envelope alone.
-    // Warehouse imports often leave default 1–16 while customWeeks sits outside.
-    if (week != null) {
-      // Prefer isActiveInWeek so suspended weeks do not false-positive conflicts.
-      return left.isActiveInWeek(week) && right.isActiveInWeek(week);
-    }
-
-    final candidateWeeks = <int>{
-      ..._courseWeekCandidates(left),
-      ..._courseWeekCandidates(right),
-    };
-    for (final candidateWeek in candidateWeeks) {
-      if (left.isActiveInWeek(candidateWeek) &&
-          right.isActiveInWeek(candidateWeek)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  Set<int> _courseWeekCandidates(Course course) {
-    final custom = course.normalizedCustomWeeks;
-    if (custom != null && custom.isNotEmpty) {
-      return custom.toSet();
-    }
-    final weeks = <int>{};
-    final start = course.startWeek < 1 ? 1 : course.startWeek;
-    final end = course.endWeek < start ? start : course.endWeek;
-    for (var week = start; week <= end; week++) {
-      weeks.add(week);
-    }
-    return weeks;
+    return CourseDomain.buildConflictMap(_courses, week: week);
   }
 
   Course _normalizeCourse(Course course) {
@@ -4072,39 +4019,6 @@ class TimetableProvider with ChangeNotifier {
     });
     return source;
   }
-
-  Course _applySharedCourseFields(Course target, Course source) {
-    final sharedDescription = () {
-      final description = source.description?.trim();
-      if (description != null && description.isNotEmpty) {
-        return description;
-      }
-      final legacyNote = source.note?.trim();
-      if (legacyNote != null && legacyNote.isNotEmpty) {
-        return legacyNote;
-      }
-      return null;
-    }();
-    // teacher (and location) are per-schedule-entry values: when a course name
-    // is shared across multiple schedule times each slot keeps its own teacher.
-    // Only genuinely shared/course-level metadata propagates here.
-    return target.copyWith(
-      name: source.name,
-      shortName: source.shortName,
-      color: source.color,
-      textColor: source.textColor,
-      courseNature: source.courseNature,
-      description: sharedDescription,
-    );
-  }
-
-  String _buildSharedCourseNameKey(String name) => name.trim().toLowerCase();
-
-  String _sharedCourseKey(Course course) =>
-      _buildSharedCourseNameKey(course.name);
-
-  String _sharedCourseKeyFromName(String name) =>
-      _buildSharedCourseNameKey(name);
 
   int _calculateWeekForDate(DateTime date, {int? fallbackWeek}) {
     return WeekCalculator.weekForDate(
