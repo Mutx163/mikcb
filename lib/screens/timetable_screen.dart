@@ -6844,10 +6844,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       setState(() {
         _dockInlinePageId = (_dockInlinePageId == id) ? null : id;
       });
+      // 圆钮保留 toggle 收回（Tab 侧再点当前页已改无动作：圆钮无选中态
+      // 指示，按钮式「再点撤销」成立）；开/收/换页都是真实切换，给触觉。
+      _maybeSelectionClick(settings);
       return;
     }
     final entry = homeMenuEntryById(id);
     if (entry != null) {
+      _maybeSelectionClick(settings);
       unawaited(entry.open(context));
     }
   }
@@ -6867,15 +6871,26 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 底栏点击分发：'day'/'week' 闪现直切（animate:false，不播锚点展开/
   /// 收起转场，对齐「点底栏直接就位」的手感，日期栏路径不受影响）并收回
   /// 内嵌页；页面条目走内嵌宿主（坞常驻），未登记的流程页才推入新路由。
+  ///
+  /// 触觉口径（恢复 3e41ac20）：真实切换（切视图/开页/换页/收页/推路由）
+  /// 给一次触觉，重复点击当前 Tab 静音——日/周靠既有守卫；内嵌页再点
+  /// 当前页不再翻转收回（与 日/周 同口径，收页走切视图或系统返回）。
   void _handleDockTap(String id, TimetableSettings settings) {
-    if (_dockInlinePageId != null &&
-        (id == kGlassDockActionDay || id == kGlassDockActionWeek)) {
+    final leavingInlinePage =
+        _dockInlinePageId != null &&
+        (id == kGlassDockActionDay || id == kGlassDockActionWeek);
+    if (leavingInlinePage) {
       // 从内嵌页点视图切换：先收页再切视图，避免两层状态叠加。
       setState(() => _dockInlinePageId = null);
     }
     switch (id) {
       case kGlassDockActionDay:
         if (_isDayView) {
+          // 重复点日 Tab 无动作；从内嵌页收回落回日课表是一次真实切换
+          // （落回异视图的路径 _toggleDayView 内部已震，此处只补同视图）。
+          if (leavingInlinePage) {
+            _maybeSelectionClick(settings);
+          }
           return;
         }
         unawaited(
@@ -6895,21 +6910,29 @@ class _TimetableScreenState extends State<TimetableScreen>
             context.read<TimetableProvider>(),
             mode: TimetableHomeViewMode.week,
           );
+          // 重复点周 Tab 无动作；从内嵌页收回落回周课表是一次真实切换。
+          if (leavingInlinePage) {
+            _maybeSelectionClick(settings);
+          }
           return;
         }
         // 闪现收起：_closeDayView 内部完成震动、状态清理与持久化。
         unawaited(_closeDayView(settings, animate: false));
       default:
-        // 内嵌优先：注册过的页面在首页栈内切换，玻璃坞保持悬浮；
-        // 再次点击同一切换钮或系统返回则收回。未登记的走普通推入。
+        // 内嵌优先：注册过的页面在首页栈内切换，玻璃坞保持悬浮；未登记
+        // 的走普通推入。再点当前内嵌页与 日/周 Tab 同口径无动作，其余均
+        // 是真实切换（开页/换页/推路由），统一在此给触觉反馈。
         if (inlineDockPageFor(id) != null) {
-          setState(() {
-            _dockInlinePageId = (_dockInlinePageId == id) ? null : id;
-          });
+          if (_dockInlinePageId == id) {
+            return;
+          }
+          setState(() => _dockInlinePageId = id);
+          _maybeSelectionClick(settings);
           return;
         }
         final entry = homeMenuEntryById(id);
         if (entry != null) {
+          _maybeSelectionClick(settings);
           unawaited(entry.open(context));
         }
     }
