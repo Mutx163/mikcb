@@ -999,6 +999,7 @@
     }
   },
   "courseColorTitle": "Course Color",
+  "courseColorQuickSection": "Quick picks",
   "customPaletteAction": "Custom Palette Color",
   "colorPaletteTitle": "Color Palette",
   "colorHexLabel": "Color Hex",
@@ -3895,19 +3896,22 @@
       "end": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressAsOf": "As of {date}",
+  "statisticsSemesterProgressAsOf": "Today {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
       "date": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressDetail": "{done} of {total} sections taken",
+  "statisticsSemesterProgressDetail": "As of week {week}, {done} of {total} sections taken",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
+      "week": { "type": "int" },
       "done": { "type": "int" },
       "total": { "type": "int" }
     }
   },
+  "statisticsSemesterProgressNotStarted": "Semester hasn't started yet",
+  "statisticsSemesterProgressEstimated": "Estimated by week",
   "statisticsSemesterProgressRemaining": "{count} sections left",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {

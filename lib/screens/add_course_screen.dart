@@ -9,7 +9,6 @@ import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
-import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
 import '../widgets/about_info_sheet.dart';
 import '../widgets/course_palette_sheet.dart';
@@ -522,7 +521,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   l10n.courseColorTitle,
                   style: typo.xs2.copyWith(color: colors.mutedForeground),
                 ),
-                _buildCompactColorPalette(l10n),
+                _buildCourseColorEntry(l10n),
               ], spacing: 8),
             ),
           ),
@@ -545,96 +544,40 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildCompactColorPalette(AppLocalizations l10n) {
-    const swatchSize = 32.0;
-    const swatchSpacing = 8.0;
+  /// 课程颜色入口行：展示当前色块与 hex，点开专门的调色盘配置弹窗。
+  Widget _buildCourseColorEntry(AppLocalizations l10n) {
     final theme = context.theme;
-    final selectionBorder = theme.colors.foreground;
-    // 快捷行只放一族一色的精简色，全量 100+ 色走调色盘 sheet；
-    // 当前选中色不在快捷行（预设浅深阶或自定义色）时，行首补一个选中态色块。
-    final showCurrentChip =
-        !kCourseColorQuickPickHexes.contains(_selectedColor);
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          if (showCurrentChip) ...[
-            _buildColorSwatch(
-              colorHex: _selectedColor,
-              size: swatchSize,
-              isSelected: true,
-              selectionBorder: selectionBorder,
-              onTap: _showFullColorPalette,
-            ),
-            const SizedBox(width: swatchSpacing),
-          ],
-          for (final color in kCourseColorQuickPickHexes) ...[
-            _buildColorSwatch(
-              colorHex: color,
-              size: swatchSize,
-              isSelected: _selectedColor == color,
-              selectionBorder: selectionBorder,
-              onTap: () => setState(() => _selectedColor = color),
-            ),
-            const SizedBox(width: swatchSpacing),
-          ],
-          _buildColorSwatch(
-            colorHex: null,
-            size: swatchSize,
-            isSelected: false,
-            selectionBorder: selectionBorder,
-            onTap: _showFullColorPalette,
-            icon: Icon(
-              Icons.palette_outlined,
-              size: 16,
-              color: theme.colors.mutedForeground,
-            ),
-            tooltip: l10n.customPaletteAction,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildColorSwatch({
-    required double size,
-    required bool isSelected,
-    required Color selectionBorder,
-    required VoidCallback onTap,
-    String? colorHex,
-    Widget? icon,
-    String? tooltip,
-  }) {
-    final theme = context.theme;
-    final swatch = GestureDetector(
-      onTap: onTap,
+    return GestureDetector(
+      onTap: _showFullColorPalette,
       child: Container(
-        width: size,
-        height: size,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: colorHex == null
-              ? theme.colors.secondary
-              : _parseColor(colorHex),
-          borderRadius: BorderRadius.circular(
-            // Color chips are short squares — keep radius << size/2 so corners
-            // stay distinct (Miuix icon-badge proportion, not settings card 24).
-            size * HyperosTokens.iconBadgeRadius / HyperosTokens.iconBadgeSize,
-          ),
-          border: Border.all(
-            color: isSelected ? selectionBorder : theme.colors.border,
-            width: isSelected ? 2 : 1,
-          ),
+          color: theme.colors.secondary,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: icon == null && isSelected
-            ? const Icon(Icons.check, size: 16, color: Colors.white)
-            : Center(child: icon),
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: _parseColor(_selectedColor),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: theme.colors.border),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _selectedColor.toUpperCase(),
+                style: HyperosTypography.listTitle(context),
+              ),
+            ),
+            const HyperosChevron(),
+          ],
+        ),
       ),
     );
-    if (tooltip == null) {
-      return swatch;
-    }
-    return Tooltip(message: tooltip, child: swatch);
   }
 
   void _autofillShortNameFromCourseName() {
@@ -1482,9 +1425,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Future<void> _showFullColorPalette() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await showCoursePaletteSheet(
       context,
       initialColorHex: _selectedColor,
+      previewText: _nameController.text.trim(),
+      title: l10n.courseColorTitle,
     );
 
     if (result == null) {

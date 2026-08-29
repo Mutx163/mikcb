@@ -865,6 +865,7 @@
     }
   },
   "courseColorTitle": "課程顏色",
+  "courseColorQuickSection": "常用顏色",
   "customPaletteAction": "調色盤自定義顏色",
   "colorPaletteTitle": "調色盤",
   "colorHexLabel": "顏色 Hex",
@@ -3658,19 +3659,22 @@
       "end": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressAsOf": "截至 {date}",
+  "statisticsSemesterProgressAsOf": "今天 {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
       "date": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressDetail": "已上 {done} 節 / 共 {total} 節",
+  "statisticsSemesterProgressDetail": "截至第 {week} 週，已上 {done} 節 / 共 {total} 節",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
+      "week": { "type": "int" },
       "done": { "type": "int" },
       "total": { "type": "int" }
     }
   },
+  "statisticsSemesterProgressNotStarted": "還未開學，尚未上課",
+  "statisticsSemesterProgressEstimated": "按週估算",
   "statisticsSemesterProgressRemaining": "剩餘 {count} 節",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {

@@ -1750,6 +1750,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseColorTitle => '课程颜色';
 
   @override
+  String get courseColorQuickSection => '常用颜色';
+
+  @override
   String get customPaletteAction => '调色盘自定义颜色';
 
   @override
@@ -6644,18 +6647,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String statisticsSemesterProgressAsOf(String date) {
-    return '截至 $date';
+    return '今天 $date';
   }
 
   @override
-  String statisticsSemesterProgressDetail(int done, int total) {
-    return '已上 $done 节 / 共 $total 节';
+  String statisticsSemesterProgressDetail(int week, int done, int total) {
+    return '截至第 $week 周，已上 $done 节 / 共 $total 节';
   }
 
   @override
   String statisticsSemesterProgressRemaining(int count) {
     return '剩余 $count 节';
   }
+
+  @override
+  String get statisticsSemesterProgressNotStarted => '还未开学，尚未上课';
+
+  @override
+  String get statisticsSemesterProgressEstimated => '按周估算';
 
   @override
   String get statisticsTrendTitle => '每周课时趋势';
@@ -11925,6 +11934,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseColorTitle => '課程顏色';
 
   @override
+  String get courseColorQuickSection => '常用顏色';
+
+  @override
   String get customPaletteAction => '調色盤自定義顏色';
 
   @override
@@ -16818,18 +16830,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String statisticsSemesterProgressAsOf(String date) {
-    return '截至 $date';
+    return '今天 $date';
   }
 
   @override
-  String statisticsSemesterProgressDetail(int done, int total) {
-    return '已上 $done 節 / 共 $total 節';
+  String statisticsSemesterProgressDetail(int week, int done, int total) {
+    return '截至第 $week 週，已上 $done 節 / 共 $total 節';
   }
 
   @override
   String statisticsSemesterProgressRemaining(int count) {
     return '剩餘 $count 節';
   }
+
+  @override
+  String get statisticsSemesterProgressNotStarted => '還未開學，尚未上課';
+
+  @override
+  String get statisticsSemesterProgressEstimated => '按週估算';
 
   @override
   String get statisticsTrendTitle => '每週課時趨勢';
@@ -22143,6 +22161,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseColorTitle => '課程顏色';
 
   @override
+  String get courseColorQuickSection => '常用顏色';
+
+  @override
   String get customPaletteAction => '調色盤自定義顏色';
 
   @override
@@ -27036,18 +27057,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String statisticsSemesterProgressAsOf(String date) {
-    return '截至 $date';
+    return '今天 $date';
   }
 
   @override
-  String statisticsSemesterProgressDetail(int done, int total) {
-    return '已上 $done 節 / 共 $total 節';
+  String statisticsSemesterProgressDetail(int week, int done, int total) {
+    return '截至第 $week 週，已上 $done 節 / 共 $total 節';
   }
 
   @override
   String statisticsSemesterProgressRemaining(int count) {
     return '剩餘 $count 節';
   }
+
+  @override
+  String get statisticsSemesterProgressNotStarted => '還未開學，尚未上課';
+
+  @override
+  String get statisticsSemesterProgressEstimated => '按週估算';
 
   @override
   String get statisticsTrendTitle => '每週課時趨勢';

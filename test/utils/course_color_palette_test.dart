@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/utils/course_color_palette.dart';
 import 'package:university_timetable/utils/hex_color.dart';
@@ -87,6 +88,19 @@ void main() {
       for (final group in kCourseColorGroups) {
         expect(courseColorGroupPalette(group.id), same(group.hexes));
       }
+    });
+  });
+
+  group('bestContrastCourseCardInk', () {
+    test('浅色底回落近黑墨，深色底回落白墨（预览与实心卡隐身线回落同款）', () {
+      expect(
+        bestContrastCourseCardInk(const Color(0xFFFDE047)), // yellow-300
+        const Color(0xFF1A1A1A),
+      );
+      expect(
+        bestContrastCourseCardInk(const Color(0xFF1D4ED8)), // blue-700
+        const Color(0xFFFFFFFF),
+      );
     });
   });
 }

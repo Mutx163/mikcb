@@ -1857,6 +1857,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseColorTitle => 'Course Color';
 
   @override
+  String get courseColorQuickSection => 'Quick picks';
+
+  @override
   String get customPaletteAction => 'Custom Palette Color';
 
   @override
@@ -7017,18 +7020,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String statisticsSemesterProgressAsOf(String date) {
-    return 'As of $date';
+    return 'Today $date';
   }
 
   @override
-  String statisticsSemesterProgressDetail(int done, int total) {
-    return '$done of $total sections taken';
+  String statisticsSemesterProgressDetail(int week, int done, int total) {
+    return 'As of week $week, $done of $total sections taken';
   }
 
   @override
   String statisticsSemesterProgressRemaining(int count) {
     return '$count sections left';
   }
+
+  @override
+  String get statisticsSemesterProgressNotStarted =>
+      'Semester hasn\'t started yet';
+
+  @override
+  String get statisticsSemesterProgressEstimated => 'Estimated by week';
 
   @override
   String get statisticsTrendTitle => 'Weekly Sections Trend';

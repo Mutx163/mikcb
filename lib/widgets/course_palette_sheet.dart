@@ -6,37 +6,63 @@ import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
 import 'course_color_picker_sheet.dart';
 
-/// Bottom sheet presenting the full preset course palette as a chip grid.
+/// 课程颜色配置弹窗：实时预览卡 + 快捷色 + 全量色板 + 自定义（HSV）入口。
 ///
-/// Tapping a chip pops with its hex directly; the trailing palette chip
-/// chains into the HSV custom picker and pops with its result instead.
+/// 点色块先更新预览（弹窗保持打开），底部「使用这个颜色」确认后才带回
+/// 结果；自定义入口串联 HSV 取色 sheet，其结果同样先进入预览待确认。
 Future<String?> showCoursePaletteSheet(
   BuildContext context, {
   required String initialColorHex,
+  String? previewText,
+  String? title,
 }) {
   return showHyperosSheet<String>(
     context: context,
     enableDrag: false,
     builder: (sheetContext) => _CoursePaletteSheetBody(
       initialColorHex: initialColorHex.toUpperCase(),
+      previewText: previewText,
+      title: title,
     ),
   );
 }
 
-class _CoursePaletteSheetBody extends StatelessWidget {
-  const _CoursePaletteSheetBody({required this.initialColorHex});
+class _CoursePaletteSheetBody extends StatefulWidget {
+  const _CoursePaletteSheetBody({
+    required this.initialColorHex,
+    this.previewText,
+    this.title,
+  });
 
   final String initialColorHex;
+  final String? previewText;
+  final String? title;
 
-  Future<void> _openCustomPicker(BuildContext context) async {
+  @override
+  State<_CoursePaletteSheetBody> createState() =>
+      _CoursePaletteSheetBodyState();
+}
+
+class _CoursePaletteSheetBodyState extends State<_CoursePaletteSheetBody> {
+  late String _selectedHex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedHex = widget.initialColorHex;
+  }
+
+  Future<void> _openCustomPicker() async {
     final custom = await showCourseColorPickerSheet(
       context,
-      initialColorHex: initialColorHex,
+      initialColorHex: _selectedHex,
     );
-    if (custom == null || !context.mounted) {
+    if (custom == null || !mounted) {
       return;
     }
-    Navigator.of(context).pop(custom);
+    setState(() {
+      _selectedHex = custom.toUpperCase();
+    });
   }
 
   @override
@@ -45,42 +71,157 @@ class _CoursePaletteSheetBody extends StatelessWidget {
     final theme = context.theme;
 
     return HyperosSheet(
-      title: l10n.colorPaletteTitle,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.64,
-        ),
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 10,
+      title: widget.title ?? l10n.colorPaletteTitle,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ColorPreviewCard(
+            colorHex: _selectedHex,
+            label: widget.previewText?.trim().isNotEmpty == true
+                ? widget.previewText!.trim()
+                : l10n.weekdayMon,
+          ),
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+            ),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SectionLabel(text: l10n.courseColorQuickSection),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final colorHex in kCourseColorQuickPickHexes)
+                        _PaletteChip(
+                          colorHex: colorHex,
+                          isSelected: _selectedHex == colorHex,
+                          selectionBorder: theme.colors.foreground,
+                          borderColor: theme.colors.border,
+                          onTap: () =>
+                              setState(() => _selectedHex = colorHex),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _SectionLabel(text: l10n.colorGroupAll),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final colorHex in kPresetCourseColorHexes)
+                        _PaletteChip(
+                          colorHex: colorHex,
+                          isSelected: _selectedHex == colorHex,
+                          selectionBorder: theme.colors.foreground,
+                          borderColor: theme.colors.border,
+                          onTap: () =>
+                              setState(() => _selectedHex = colorHex),
+                        ),
+                      _PaletteChip(
+                        colorHex: kPresetCourseColorHexes
+                                .contains(_selectedHex)
+                            ? null
+                            : _selectedHex,
+                        isSelected: !kPresetCourseColorHexes
+                            .contains(_selectedHex),
+                        selectionBorder: theme.colors.foreground,
+                        borderColor: theme.colors.border,
+                        onTap: _openCustomPicker,
+                        icon: Icon(
+                          Icons.palette_outlined,
+                          size: 18,
+                          color: theme.colors.mutedForeground,
+                        ),
+                        tooltip: l10n.customPaletteAction,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
             children: [
-              for (final colorHex in kPresetCourseColorHexes)
-                _PaletteChip(
-                  colorHex: colorHex,
-                  isSelected: initialColorHex == colorHex.toUpperCase(),
-                  selectionBorder: theme.colors.foreground,
-                  borderColor: theme.colors.border,
-                  onTap: () => Navigator.of(context).pop(colorHex),
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.cancelAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-              _PaletteChip(
-                colorHex: kPresetCourseColorHexes.contains(initialColorHex)
-                    ? null
-                    : initialColorHex,
-                selectionBorder: theme.colors.foreground,
-                borderColor: theme.colors.border,
-                onTap: () => _openCustomPicker(context),
-                icon: Icon(
-                  Icons.palette_outlined,
-                  size: 18,
-                  color: theme.colors.mutedForeground,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.useThisColor,
+                  expand: true,
+                  onPressed: () =>
+                      Navigator.of(context).pop(_selectedHex),
                 ),
-                tooltip: l10n.customPaletteAction,
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 顶部实时预览：所选颜色铺底 + 自动最优墨色（与实心卡隐身线回落同款）。
+class _ColorPreviewCard extends StatelessWidget {
+  const _ColorPreviewCard({required this.colorHex, required this.label});
+
+  final String colorHex;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.theme;
+    final color = tryParseHexColor(colorHex) ?? theme.colors.secondary;
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colors.border),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: HyperosTypography.listTitle(context).copyWith(
+          color: bestContrastCourseCardInk(color),
+          fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.theme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: theme.typography.body.xs2
+            .copyWith(color: theme.colors.mutedForeground),
       ),
     );
   }

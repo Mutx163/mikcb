@@ -866,6 +866,7 @@
     }
   },
   "courseColorTitle": "수업 색상",
+  "courseColorQuickSection": "자주 쓰는 색",
   "customPaletteAction": "팔레트에서 사용자 정의",
   "colorPaletteTitle": "색상 팔레트",
   "colorHexLabel": "색상 Hex",
@@ -3658,19 +3659,22 @@
       "end": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressAsOf": "{date} 기준",
+  "statisticsSemesterProgressAsOf": "오늘 {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
       "date": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressDetail": "수강 {done}교시 / 총 {total}교시",
+  "statisticsSemesterProgressDetail": "{week}주차 기준, 수강 {done}교시 / 총 {total}교시",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
+      "week": { "type": "int" },
       "done": { "type": "int" },
       "total": { "type": "int" }
     }
   },
+  "statisticsSemesterProgressNotStarted": "학기가 아직 시작하지 않았어요",
+  "statisticsSemesterProgressEstimated": "주 단위 추정",
   "statisticsSemesterProgressRemaining": "남은 {count}교시",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {

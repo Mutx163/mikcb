@@ -1781,6 +1781,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseColorTitle => '授業カラー';
 
   @override
+  String get courseColorQuickSection => 'よく使う色';
+
+  @override
   String get customPaletteAction => 'カラーパレットでカスタム';
 
   @override
@@ -6742,18 +6745,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String statisticsSemesterProgressAsOf(String date) {
-    return '$date 現在';
+    return '今日 $date';
   }
 
   @override
-  String statisticsSemesterProgressDetail(int done, int total) {
-    return '受講済み $done コマ / 全 $total コマ';
+  String statisticsSemesterProgressDetail(int week, int done, int total) {
+    return '第 $week 週時点、受講済み $done コマ / 全 $total コマ';
   }
 
   @override
   String statisticsSemesterProgressRemaining(int count) {
     return '残り $count コマ';
   }
+
+  @override
+  String get statisticsSemesterProgressNotStarted => '学期はまだ始まっていません';
+
+  @override
+  String get statisticsSemesterProgressEstimated => '週単位の概算';
 
   @override
   String get statisticsTrendTitle => '週別授業数の推移';

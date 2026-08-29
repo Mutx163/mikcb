@@ -866,6 +866,7 @@
     }
   },
   "courseColorTitle": "授業カラー",
+  "courseColorQuickSection": "よく使う色",
   "customPaletteAction": "カラーパレットでカスタム",
   "colorPaletteTitle": "カラーパレット",
   "colorHexLabel": "カラーHex",
@@ -3658,19 +3659,22 @@
       "end": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressAsOf": "{date} 現在",
+  "statisticsSemesterProgressAsOf": "今日 {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
       "date": { "type": "String" }
     }
   },
-  "statisticsSemesterProgressDetail": "受講済み {done} コマ / 全 {total} コマ",
+  "statisticsSemesterProgressDetail": "第 {week} 週時点、受講済み {done} コマ / 全 {total} コマ",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
+      "week": { "type": "int" },
       "done": { "type": "int" },
       "total": { "type": "int" }
     }
   },
+  "statisticsSemesterProgressNotStarted": "学期はまだ始まっていません",
+  "statisticsSemesterProgressEstimated": "週単位の概算",
   "statisticsSemesterProgressRemaining": "残り {count} コマ",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {

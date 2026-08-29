@@ -307,6 +307,11 @@ Color _bestContrastInk(Color background) {
       : dark;
 }
 
+/// 公开给预览场景的自动墨色：白/近黑中对比度更高的一档。
+/// 与实心卡隐身线之下的自动回落（[_bestContrastInk]）同一结论。
+Color bestContrastCourseCardInk(Color background) =>
+    _bestContrastInk(background);
+
 /// Resolves a legible title ink.
 ///
 /// 实心卡面：保留用户墨色，仅在对比度低于隐身线（2.0）时替换为黑白最优墨。

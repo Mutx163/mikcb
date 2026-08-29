@@ -1788,6 +1788,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseColorTitle => '수업 색상';
 
   @override
+  String get courseColorQuickSection => '자주 쓰는 색';
+
+  @override
   String get customPaletteAction => '팔레트에서 사용자 정의';
 
   @override
@@ -6783,18 +6786,24 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String statisticsSemesterProgressAsOf(String date) {
-    return '$date 기준';
+    return '오늘 $date';
   }
 
   @override
-  String statisticsSemesterProgressDetail(int done, int total) {
-    return '수강 $done교시 / 총 $total교시';
+  String statisticsSemesterProgressDetail(int week, int done, int total) {
+    return '$week주차 기준, 수강 $done교시 / 총 $total교시';
   }
 
   @override
   String statisticsSemesterProgressRemaining(int count) {
     return '남은 $count교시';
   }
+
+  @override
+  String get statisticsSemesterProgressNotStarted => '학기가 아직 시작하지 않았어요';
+
+  @override
+  String get statisticsSemesterProgressEstimated => '주 단위 추정';
 
   @override
   String get statisticsTrendTitle => '주별 수업 시간 추이';

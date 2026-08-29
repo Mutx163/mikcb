@@ -631,6 +631,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     final result = await showCoursePaletteSheet(
       context,
       initialColorHex: _selectedColor,
+      previewText: _titleController.text.trim(),
     );
 
     if (result == null) {

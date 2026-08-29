@@ -3287,6 +3287,12 @@ abstract class AppLocalizations {
   /// **'课程颜色'**
   String get courseColorTitle;
 
+  /// No description provided for @courseColorQuickSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'常用颜色'**
+  String get courseColorQuickSection;
+
   /// No description provided for @customPaletteAction.
   ///
   /// In zh, this message translates to:
@@ -12119,20 +12125,32 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsSemesterProgressAsOf.
   ///
   /// In zh, this message translates to:
-  /// **'截至 {date}'**
+  /// **'今天 {date}'**
   String statisticsSemesterProgressAsOf(String date);
 
   /// No description provided for @statisticsSemesterProgressDetail.
   ///
   /// In zh, this message translates to:
-  /// **'已上 {done} 节 / 共 {total} 节'**
-  String statisticsSemesterProgressDetail(int done, int total);
+  /// **'截至第 {week} 周，已上 {done} 节 / 共 {total} 节'**
+  String statisticsSemesterProgressDetail(int week, int done, int total);
 
   /// No description provided for @statisticsSemesterProgressRemaining.
   ///
   /// In zh, this message translates to:
   /// **'剩余 {count} 节'**
   String statisticsSemesterProgressRemaining(int count);
+
+  /// No description provided for @statisticsSemesterProgressNotStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'还未开学，尚未上课'**
+  String get statisticsSemesterProgressNotStarted;
+
+  /// No description provided for @statisticsSemesterProgressEstimated.
+  ///
+  /// In zh, this message translates to:
+  /// **'按周估算'**
+  String get statisticsSemesterProgressEstimated;
 
   /// No description provided for @statisticsTrendTitle.
   ///
