@@ -18,6 +18,7 @@ import '../models/time_scheme.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import '../domain/week_calculator.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
 import '../ui/hyperos/hyperos_overscroll.dart';
@@ -2382,7 +2383,7 @@ class TimetableProvider with ChangeNotifier {
     if (semesterStart == null || week < 1) {
       return null;
     }
-    final startOfSemesterWeek = _startOfWeek(semesterStart);
+    final startOfSemesterWeek = WeekCalculator.startOfWeek(semesterStart);
     return startOfSemesterWeek.add(
       Duration(days: (week - 1) * 7 + course.dayOfWeek - 1),
     );
@@ -3106,22 +3107,8 @@ class TimetableProvider with ChangeNotifier {
 
   /// 计算 [date] 在学期中的周次（从 1 开始），周一为每周起始日。
   /// 返回 null 表示 [date] 早于学期开始日期。
-  int? getWeekIndex(DateTime date, DateTime semesterStart) {
-    final alignedStart = _startOfWeek(semesterStart);
-    final alignedTarget = _startOfWeek(date);
-    final diffDays =
-        DateTime.utc(alignedTarget.year, alignedTarget.month, alignedTarget.day)
-            .difference(
-              DateTime.utc(
-                alignedStart.year,
-                alignedStart.month,
-                alignedStart.day,
-              ),
-            )
-            .inDays;
-    if (diffDays < 0) return null;
-    return (diffDays ~/ 7) + 1;
-  }
+  int? getWeekIndex(DateTime date, DateTime semesterStart) =>
+      WeekCalculator.getWeekIndex(date, semesterStart);
 
   List<Exam> getExamsForCourse(String courseId) {
     return _exams.where((exam) => exam.courseId == courseId).toList()
@@ -3737,8 +3724,8 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final now = DateTime.now();
-    final normalizedNow = _startOfWeek(now);
-    final normalizedStart = _startOfWeek(semesterStart);
+    final normalizedNow = WeekCalculator.startOfWeek(now);
+    final normalizedStart = WeekCalculator.startOfWeek(semesterStart);
     final week = (normalizedNow.difference(normalizedStart).inDays ~/ 7) + 1;
     final targetWeek = week < 1 ? 1 : week;
     // Stay within the user-configured semester length. Do not auto-expand
@@ -4118,15 +4105,12 @@ class TimetableProvider with ChangeNotifier {
       _buildSharedCourseNameKey(name);
 
   int _calculateWeekForDate(DateTime date, {int? fallbackWeek}) {
-    final semesterStart = _settings.semesterStartDate;
-    if (semesterStart == null) {
-      return fallbackWeek ?? _currentWeek;
-    }
-
-    final week = getWeekIndex(date, semesterStart);
-    if (week == null) return 1;
-    if (week > _settings.semesterWeekCount) return _settings.semesterWeekCount;
-    return week;
+    return WeekCalculator.weekForDate(
+      date,
+      semesterStart: _settings.semesterStartDate,
+      semesterWeekCount: _settings.semesterWeekCount,
+      fallback: fallbackWeek ?? _currentWeek,
+    );
   }
 
   /// Real calendar week for [date] without clamping to [semesterWeekCount].
@@ -4136,14 +4120,11 @@ class TimetableProvider with ChangeNotifier {
   /// their [Course.endWeek] are not shown again (each school may use a
   /// different [semesterWeekCount]).
   int _calculateCalendarWeekForDate(DateTime date, {int? fallbackWeek}) {
-    final semesterStart = _settings.semesterStartDate;
-    if (semesterStart == null) {
-      return fallbackWeek ?? _currentWeek;
-    }
-
-    final week = getWeekIndex(date, semesterStart);
-    if (week == null) return 0; // 学期开始前返回 0，避免课程提前显示
-    return week;
+    return WeekCalculator.calendarWeekForDate(
+      date,
+      semesterStart: _settings.semesterStartDate,
+      fallback: fallbackWeek ?? _currentWeek,
+    );
   }
 
   int _resolveCurrentCalendarWeek() {
@@ -4158,11 +4139,6 @@ class TimetableProvider with ChangeNotifier {
 
   int _resolveCurrentDateWeek() {
     return clampCurrentWeekToSettings(_resolveCurrentCalendarWeek(), _settings);
-  }
-
-  DateTime _startOfWeek(DateTime date) {
-    final normalizedDate = DateTime(date.year, date.month, date.day);
-    return normalizedDate.subtract(Duration(days: normalizedDate.weekday - 1));
   }
 
   List<Course> getCoursesForDay(int dayOfWeek, {int? week}) {
