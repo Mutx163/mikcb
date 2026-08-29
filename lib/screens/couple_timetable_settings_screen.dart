@@ -14,6 +14,7 @@ import '../services/couple_webdav_service.dart';
 import '../services/partner_timetable_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
+import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
 import '../widgets/couple_webdav_connect_sheet.dart';
 
@@ -27,19 +28,9 @@ class CoupleTimetableSettingsScreen extends StatefulWidget {
 
 class _CoupleTimetableSettingsScreenState
     extends State<CoupleTimetableSettingsScreen> {
-  static const _coupleColorChoices = [
-    '#2196F3',
-    '#2563EB',
-    '#4CAF50',
-    '#FF9800',
-    '#E91E63',
-    '#9C27B0',
-    '#00BCD4',
-    '#FF5722',
-    '#795548',
-    '#607D8B',
-    '#F44336',
-  ];
+  // 双人课程色快选：沿用一族一色的快捷色（选中色不在列表时
+  // _paletteIncluding 会自动补到行首）。
+  static const _coupleColorChoices = kCourseColorQuickPickHexes;
 
   bool _isExporting = false;
   bool _isImporting = false;

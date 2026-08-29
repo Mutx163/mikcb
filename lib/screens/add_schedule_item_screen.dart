@@ -10,7 +10,9 @@ import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/app_toast.dart';
+import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
+import '../widgets/course_palette_sheet.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
 import '../widgets/miuix_time_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -41,17 +43,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   final _locationController = TextEditingController();
   final _noteController = TextEditingController();
 
-  static const List<String> _colors = <String>[
-    '#2196F3',
-    '#4CAF50',
-    '#FF9800',
-    '#E91E63',
-    '#9C27B0',
-    '#00BCD4',
-    '#FF5722',
-    '#795548',
-    '#607D8B',
-  ];
+  static const List<String> _colors = kCourseColorQuickPickHexes;
 
   late DateTime _selectedStartDate;
   late DateTime _selectedEndDate;
@@ -549,40 +541,105 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
   Widget _buildColorPalette() {
     final theme = context.theme;
+    final l10n = AppLocalizations.of(context)!;
     const swatchSize = 32.0;
     const swatchSpacing = 8.0;
     final selectionBorder = theme.colors.foreground;
+    // 快捷行只放一族一色的精简色，全量 100+ 色走调色盘 sheet；
+    // 当前选中色不在快捷行（预设浅深阶或自定义色）时，行首补一个选中态色块。
+    final showCurrentChip = !_colors.contains(_selectedColor);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final colorHex in _colors) ...[
-            GestureDetector(
-              onTap: () => setState(() => _selectedColor = colorHex),
-              child: Container(
-                width: swatchSize,
-                height: swatchSize,
-                decoration: BoxDecoration(
-                  color: _colorFromHex(colorHex),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _selectedColor == colorHex
-                        ? selectionBorder
-                        : theme.colors.border,
-                    width: _selectedColor == colorHex ? 2 : 1,
-                  ),
-                ),
-                child: _selectedColor == colorHex
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
-                    : null,
-              ),
+          if (showCurrentChip) ...[
+            _buildPaletteSwatch(
+              colorHex: _selectedColor,
+              swatchSize: swatchSize,
+              isSelected: true,
+              selectionBorder: selectionBorder,
+              onTap: _showFullColorPalette,
             ),
             const SizedBox(width: swatchSpacing),
           ],
+          for (final colorHex in _colors) ...[
+            _buildPaletteSwatch(
+              colorHex: colorHex,
+              swatchSize: swatchSize,
+              isSelected: _selectedColor == colorHex,
+              selectionBorder: selectionBorder,
+              onTap: () => setState(() => _selectedColor = colorHex),
+            ),
+            const SizedBox(width: swatchSpacing),
+          ],
+          _buildPaletteSwatch(
+            colorHex: null,
+            swatchSize: swatchSize,
+            isSelected: false,
+            selectionBorder: selectionBorder,
+            onTap: _showFullColorPalette,
+            icon: Icon(
+              Icons.palette_outlined,
+              size: 16,
+              color: theme.colors.mutedForeground,
+            ),
+            tooltip: l10n.customPaletteAction,
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildPaletteSwatch({
+    required String? colorHex,
+    required double swatchSize,
+    required bool isSelected,
+    required Color selectionBorder,
+    required VoidCallback onTap,
+    Widget? icon,
+    String? tooltip,
+  }) {
+    final theme = context.theme;
+    final swatch = GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: swatchSize,
+        height: swatchSize,
+        decoration: BoxDecoration(
+          color: colorHex == null
+              ? theme.colors.secondary
+              : _colorFromHex(colorHex),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? selectionBorder : theme.colors.border,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: icon == null && isSelected
+            ? const Icon(Icons.check, size: 16, color: Colors.white)
+            : Center(child: icon),
+      ),
+    );
+    if (tooltip == null) {
+      return swatch;
+    }
+    return Tooltip(message: tooltip, child: swatch);
+  }
+
+  Future<void> _showFullColorPalette() async {
+    final result = await showCoursePaletteSheet(
+      context,
+      initialColorHex: _selectedColor,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedColor = result;
+    });
   }
 
   String _formatCompactDateLabel(BuildContext context, DateTime value) {

@@ -12,7 +12,7 @@ import '../utils/app_toast.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
 import '../widgets/about_info_sheet.dart';
-import '../widgets/course_color_picker_sheet.dart';
+import '../widgets/course_palette_sheet.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_template_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -171,8 +171,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     l10n.weekdaySat,
     l10n.weekdaySun,
   ];
-
-  final List<String> _colors = kPresetCourseColorHexes;
 
   Color _parseColor(String colorHex) {
     return parseHexColorOrFallback(colorHex, fallback: const Color(0xFF2196F3));
@@ -552,13 +550,26 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     const swatchSpacing = 8.0;
     final theme = context.theme;
     final selectionBorder = theme.colors.foreground;
-    final isCustomSelected = !_colors.contains(_selectedColor);
+    // 快捷行只放一族一色的精简色，全量 100+ 色走调色盘 sheet；
+    // 当前选中色不在快捷行（预设浅深阶或自定义色）时，行首补一个选中态色块。
+    final showCurrentChip =
+        !kCourseColorQuickPickHexes.contains(_selectedColor);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final color in _colors) ...[
+          if (showCurrentChip) ...[
+            _buildColorSwatch(
+              colorHex: _selectedColor,
+              size: swatchSize,
+              isSelected: true,
+              selectionBorder: selectionBorder,
+              onTap: _showFullColorPalette,
+            ),
+            const SizedBox(width: swatchSpacing),
+          ],
+          for (final color in kCourseColorQuickPickHexes) ...[
             _buildColorSwatch(
               colorHex: color,
               size: swatchSize,
@@ -569,18 +580,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(width: swatchSpacing),
           ],
           _buildColorSwatch(
-            colorHex: isCustomSelected ? _selectedColor : null,
+            colorHex: null,
             size: swatchSize,
-            isSelected: isCustomSelected,
+            isSelected: false,
             selectionBorder: selectionBorder,
-            onTap: _showCustomColorPicker,
-            icon: isCustomSelected
-                ? const Icon(Icons.check, size: 16, color: Colors.white)
-                : Icon(
-                    Icons.palette_outlined,
-                    size: 16,
-                    color: theme.colors.mutedForeground,
-                  ),
+            onTap: _showFullColorPalette,
+            icon: Icon(
+              Icons.palette_outlined,
+              size: 16,
+              color: theme.colors.mutedForeground,
+            ),
             tooltip: l10n.customPaletteAction,
           ),
         ],
@@ -1472,8 +1481,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Future<void> _showCustomColorPicker() async {
-    final result = await showCourseColorPickerSheet(
+  Future<void> _showFullColorPalette() async {
+    final result = await showCoursePaletteSheet(
       context,
       initialColorHex: _selectedColor,
     );
