@@ -122,11 +122,41 @@ const List<String> kDeepCourseColorGroupHexes = [
   '#BE185D', '#BE123C', '#334155', '#44403C',
 ];
 
+/// 多巴胺系：整条彩虹的糖果 400 亮阶铺底 + 紫/品红/粉/玫四枚 500 深糖锚点，
+/// 高饱和撞色、零灰调零土调（亮阶白墨居多少黑墨点睛，深糖锚点白墨充裕）。
+const List<String> kDopamineCourseColorGroupHexes = [
+  '#F87171', '#FB923C', '#FBBF24', '#FACC15', '#A3E635',
+  '#4ADE80', '#34D399', '#2DD4BF', '#22D3EE', '#38BDF8',
+  '#60A5FA', '#818CF8', '#A78BFA', '#A855F7', '#D946EF',
+  '#EC4899', '#F43F5E',
+];
+
+/// 落日系：全暖域同温层配色，金黄→琥珀→橘→珊瑚红→玫粉→暮紫收尾；
+/// 只取暖族中高饱和阶位（不碰 600+ 土棕琥珀），任意两卡相邻不打架。
+const List<String> kSunsetCourseColorGroupHexes = [
+  '#FACC15', '#FBBF24', '#F59E0B', '#FF9800', '#FB923C',
+  '#F97316', '#EA580C', '#FF5722', '#F87171', '#EF4444',
+  '#FB7185', '#F43F5E', '#F472B6', '#EC4899', '#E91E63',
+  '#C084FC', '#A855F7',
+];
+
+/// 海洋系：全冷域同温层配色，翠绿浅滩→青绿→天蓝→靛蓝深海由浅入深；
+/// 600 深阶保白墨充裕，整周课表冷色统一有秩序感。
+const List<String> kOceanCourseColorGroupHexes = [
+  '#34D399', '#10B981', '#059669', '#2DD4BF', '#14B8A6',
+  '#0D9488', '#22D3EE', '#06B6D4', '#0891B2', '#38BDF8',
+  '#0EA5E9', '#0284C7', '#60A5FA', '#3B82F6', '#2563EB',
+  '#818CF8', '#6366F1',
+];
+
 /// 预设颜色组（「全部颜色」不入列，由 [kCourseColorGroupAllId] 单独表示）。
 const List<CourseColorGroup> kCourseColorGroups = [
   CourseColorGroup(id: 'pastel', hexes: kPastelCourseColorGroupHexes),
   CourseColorGroup(id: 'vibrant', hexes: kVibrantCourseColorGroupHexes),
   CourseColorGroup(id: 'deep', hexes: kDeepCourseColorGroupHexes),
+  CourseColorGroup(id: 'dopamine', hexes: kDopamineCourseColorGroupHexes),
+  CourseColorGroup(id: 'sunset', hexes: kSunsetCourseColorGroupHexes),
+  CourseColorGroup(id: 'ocean', hexes: kOceanCourseColorGroupHexes),
 ];
 
 /// 解析随机取色色板：'all' 与未知 id（历史残留值）都兜底回全量色板。

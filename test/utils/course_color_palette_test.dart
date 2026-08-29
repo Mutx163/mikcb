@@ -91,6 +91,45 @@ void main() {
     });
   });
 
+  group('鲜艳观感组（多巴胺/落日/海洋）', () {
+    const vividGroups = <String, List<String>>{
+      'dopamine': kDopamineCourseColorGroupHexes,
+      'sunset': kSunsetCourseColorGroupHexes,
+      'ocean': kOceanCourseColorGroupHexes,
+    };
+
+    /// 灰调（slate/stone 全阶）与土棕/橄榄调（琥珀黄青柠的 600-700 深阶）——
+    /// 用户明确反感「屎色」，鲜艳组一律不得掺入这些观感发脏的阶位。
+    const muddyHexes = <String>{
+      '#CBD5E1', '#94A3B8', '#607D8B', '#64748B', '#475569', '#334155',
+      '#D6D3D1', '#A8A29E', '#78716C', '#795548', '#57534E', '#44403C',
+      '#CA8A04', '#A16207', '#65A30D', '#4D7C0F', '#B45309', '#D97706',
+    };
+
+    test('不掺灰调/土棕/橄榄等发脏颜色', () {
+      vividGroups.forEach((id, hexes) {
+        for (final hex in hexes) {
+          expect(muddyHexes, isNot(contains(hex)),
+              reason: '$id 掺入发脏色: $hex');
+        }
+      });
+    });
+
+    test('每色按最佳黑白墨对比度 ≥ 3:1（随机导入后守卫必能配出可读墨色）', () {
+      vividGroups.forEach((id, hexes) {
+        for (final hex in hexes) {
+          final card = tryParseHexColor(hex)!;
+          final bestInk = bestContrastCourseCardInk(card);
+          expect(
+            courseCardContrastRatio(bestInk, card),
+            greaterThanOrEqualTo(3.0),
+            reason: '$id 的 $hex 黑白墨均不可读',
+          );
+        }
+      });
+    });
+  });
+
   group('bestContrastCourseCardInk', () {
     test('浅色底回落近黑墨，深色底回落白墨（预览与实心卡隐身线回落同款）', () {
       expect(

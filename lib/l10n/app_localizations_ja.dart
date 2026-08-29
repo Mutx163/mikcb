@@ -848,6 +848,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get colorGroupDeep => 'ダーク';
 
   @override
+  String get colorGroupDopamine => 'ドーパミン';
+
+  @override
+  String get colorGroupSunset => 'サンセット';
+
+  @override
+  String get colorGroupOcean => 'オーシャン';
+
+  @override
   String get courseImportTitle => '授業インポート';
 
   @override

@@ -108,6 +108,12 @@ class _ImportRandomColorToggleState extends State<ImportRandomColorToggle> {
         return l10n.colorGroupVibrant;
       case 'deep':
         return l10n.colorGroupDeep;
+      case 'dopamine':
+        return l10n.colorGroupDopamine;
+      case 'sunset':
+        return l10n.colorGroupSunset;
+      case 'ocean':
+        return l10n.colorGroupOcean;
     }
     return l10n.colorGroupAll;
   }

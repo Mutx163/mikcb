@@ -832,6 +832,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get colorGroupDeep => '深色系';
 
   @override
+  String get colorGroupDopamine => '多巴胺系';
+
+  @override
+  String get colorGroupSunset => '落日系';
+
+  @override
+  String get colorGroupOcean => '海洋系';
+
+  @override
   String get courseImportTitle => '导入课程';
 
   @override
@@ -11014,6 +11023,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get colorGroupDeep => '深色系';
+
+  @override
+  String get colorGroupDopamine => '多巴胺系';
+
+  @override
+  String get colorGroupSunset => '落日系';
+
+  @override
+  String get colorGroupOcean => '海洋系';
 
   @override
   String get courseImportTitle => '匯入課程';
@@ -21241,6 +21259,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get colorGroupDeep => '深色系';
+
+  @override
+  String get colorGroupDopamine => '多巴胺系';
+
+  @override
+  String get colorGroupSunset => '落日系';
+
+  @override
+  String get colorGroupOcean => '海洋系';
 
   @override
   String get courseImportTitle => '匯入課程';

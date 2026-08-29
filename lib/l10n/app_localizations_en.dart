@@ -888,6 +888,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get colorGroupDeep => 'Dark';
 
   @override
+  String get colorGroupDopamine => 'Dopamine';
+
+  @override
+  String get colorGroupSunset => 'Sunset';
+
+  @override
+  String get colorGroupOcean => 'Ocean';
+
+  @override
   String get courseImportTitle => 'Import Courses';
 
   @override

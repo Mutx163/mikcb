@@ -1640,6 +1640,24 @@ abstract class AppLocalizations {
   /// **'深色系'**
   String get colorGroupDeep;
 
+  /// No description provided for @colorGroupDopamine.
+  ///
+  /// In zh, this message translates to:
+  /// **'多巴胺系'**
+  String get colorGroupDopamine;
+
+  /// No description provided for @colorGroupSunset.
+  ///
+  /// In zh, this message translates to:
+  /// **'落日系'**
+  String get colorGroupSunset;
+
+  /// No description provided for @colorGroupOcean.
+  ///
+  /// In zh, this message translates to:
+  /// **'海洋系'**
+  String get colorGroupOcean;
+
   /// No description provided for @courseImportTitle.
   ///
   /// In zh, this message translates to:

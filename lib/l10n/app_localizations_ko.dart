@@ -845,6 +845,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get colorGroupDeep => '다크';
 
   @override
+  String get colorGroupDopamine => '도파민';
+
+  @override
+  String get colorGroupSunset => '선셋';
+
+  @override
+  String get colorGroupOcean => '오션';
+
+  @override
   String get courseImportTitle => '수업 가져오기';
 
   @override
