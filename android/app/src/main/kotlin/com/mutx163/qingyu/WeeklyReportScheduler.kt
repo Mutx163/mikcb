@@ -265,16 +265,21 @@ object WeeklyReportScheduler {
         }
     }
 
-    class WeeklyReportReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                ACTION_FIRE -> handleFire(context, intent)
-                Intent.ACTION_BOOT_COMPLETED,
-                Intent.ACTION_MY_PACKAGE_REPLACED,
-                Intent.ACTION_TIME_CHANGED,
-                Intent.ACTION_TIMEZONE_CHANGED,
-                -> handleBootReschedule(context)
-            }
+}
+
+// Manifest declares ".WeeklyReportReceiver": keep this a top-level class in this
+// package. A nested class compiles to "WeeklyReportScheduler$WeeklyReportReceiver"
+// and broadcast delivery crashes with ClassNotFoundException.
+class WeeklyReportReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            WeeklyReportScheduler.ACTION_FIRE ->
+                WeeklyReportScheduler.handleFire(context, intent)
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            -> WeeklyReportScheduler.handleBootReschedule(context)
         }
     }
 }
