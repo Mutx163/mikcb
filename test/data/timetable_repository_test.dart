@@ -50,13 +50,21 @@ void main() {
       expect((await repository.loadProfiles()).single.id, 'p2');
     });
 
-    test('未保存过时版本号为 0（兼容版本号引入前的历史数据）', () async {
-      // 模拟旧版本写入的 profiles：绕过仓储直接写 storage
-      await storage.saveProfiles([_profile('legacy')]);
+    test('未写过时版本号为 0（兼容版本号引入前的历史数据）', () async {
+      // 空库：任何 profiles 写入都未发生
       expect(await storage.getProfilesSchemaVersion(), 0);
-      // 仓储读路径不受影响
-      final loaded = await repository.loadProfiles();
-      expect(loaded.single.id, 'legacy');
+    });
+
+    test('直连 storage 的写路径也会盖章（saveProfiles / updateProfiles 同源）',
+        () async {
+      // 模拟旧数据场景：绕过仓储直写 storage（迁移路径同理）
+      await storage.saveProfiles([_profile('legacy')]);
+      expect(await storage.getProfilesSchemaVersion(), 1);
+      expect((await repository.loadProfiles()).single.id, 'legacy');
+
+      // RMW 路径（partner 服务使用的入口）同样盖章
+      await storage.updateProfiles((profiles) => profiles);
+      expect(await storage.getProfilesSchemaVersion(), 1);
     });
   });
 

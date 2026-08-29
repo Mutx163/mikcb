@@ -36,6 +36,11 @@ class StorageService {
   static const String _profilesSchemaVersionKey =
       'timetable_profiles_schema_version';
 
+  /// 当前 profiles 存储布局版本。v1 = `timetable_profiles` 单 key 全量
+  /// JSON 数组。所有写路径（含 updateProfiles RMW 与迁移写）经
+  /// [_stampProfilesSchemaVersion] 自动盖章，比对盘上值、幂等。
+  static const int profilesSchemaVersion = 1;
+
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
   StorageService._internal();
@@ -590,7 +595,17 @@ class StorageService {
       profiles.map((profile) => profile.toJson()).toList(),
     );
     await _prefs?.setString(_profilesKey, payload);
+    await _stampProfilesSchemaVersion();
     _profilesListCache = _snapshotProfiles(profiles);
+  }
+
+  /// 写后盖版本号（幂等）：只在盘上值落后时写，避免每次保存的写放大。
+  Future<void> _stampProfilesSchemaVersion() async {
+    final current = _prefs?.getInt(_profilesSchemaVersionKey);
+    if (current == profilesSchemaVersion) {
+      return;
+    }
+    await _prefs?.setInt(_profilesSchemaVersionKey, profilesSchemaVersion);
   }
 
   /// Serializes profile disk writes (full put and RMW) on one chain.

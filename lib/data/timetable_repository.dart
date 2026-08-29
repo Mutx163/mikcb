@@ -15,12 +15,10 @@ class TimetableRepository {
   final StorageService _storage;
 
   /// 当前存储布局版本。v1 = `timetable_profiles` 单 key 全量 JSON 数组，
-  /// 与历史格式完全一致。版本号记录在独立 key（见
-  /// [StorageService.getProfilesSchemaVersion]），布局演进（分片 / 信封）
-  /// 时递增并以它为迁移闸。
-  static const int storageSchemaVersion = 1;
-
-  int _stampedVersion = 0;
+  /// 与历史格式完全一致。版本号由 [StorageService] 的全部 profiles 写路径
+  /// 自动盖章（幂等，比对盘上值），记录在独立 key；布局演进（分片 /
+  /// 信封）时递增并以它为迁移闸。
+  static const int storageSchemaVersion = StorageService.profilesSchemaVersion;
 
   Future<List<TimetableProfile>> loadProfiles() => _storage.getProfiles();
 
@@ -39,14 +37,8 @@ class TimetableRepository {
     transform,
   ) => _storage.updateProfiles(transform);
 
-  /// 全量保存所有 profile，并确保版本号 key 已落盘。
-  ///
-  /// 版本号只在值变化时写入，避免每次保存的额外 prefs 写放大。
-  Future<void> saveProfiles(List<TimetableProfile> profiles) async {
-    await _storage.saveProfiles(profiles);
-    if (_stampedVersion != storageSchemaVersion) {
-      await _storage.setProfilesSchemaVersion(storageSchemaVersion);
-      _stampedVersion = storageSchemaVersion;
-    }
-  }
+  /// 全量保存所有 profile。版本号由 [StorageService] 写路径自动盖章
+  /// （幂等、比对盘上值），此处无需额外处理。
+  Future<void> saveProfiles(List<TimetableProfile> profiles) =>
+      _storage.saveProfiles(profiles);
 }
