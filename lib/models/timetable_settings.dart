@@ -93,7 +93,10 @@ abstract final class HomePageBackgroundScope {
   static const int weekdayBar = 2;
   static const int header = 4;
   static const int statusBar = 8;
-  static const int defaultValue = timetable;
+
+  /// 默认铺满状态栏、顶栏、信息栏与课表区域（无壁纸时无感知）。
+  static const int defaultValue =
+      timetable | weekdayBar | header | statusBar;
 
   static bool includes(int scope, int region) => (scope & region) != 0;
 
@@ -1326,6 +1329,9 @@ class TimetableSettings {
   final String appUpdateMirrorPreset;
   final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
+
+  /// 检测到新版本时是否在首页自动弹出更新提醒；关闭后仅显示红点角标。
+  final bool appUpdatePromptEnabled;
   final bool holidayOverrideEnabled;
 
   /// 上课闹钟：提前量与是否跳过系统时钟确认页。
@@ -1526,6 +1532,7 @@ class TimetableSettings {
     this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
+    this.appUpdatePromptEnabled = true,
     this.holidayOverrideEnabled = false,
     this.classAlarmLeadMinutes = 30,
     this.classAlarmSkipUi = false,
@@ -1559,8 +1566,8 @@ class TimetableSettings {
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,
     this.liquidGlassTuning,
-    this.homePageHeaderBlurEnabled = false,
-    this.homePageWeekdayBarBlurEnabled = false,
+    this.homePageHeaderBlurEnabled = true,
+    this.homePageWeekdayBarBlurEnabled = true,
     this.homePageTimeColumnBlurEnabled = false,
     this.homePageBackdropFollowsWeekPager = true,
     this.savedThemes = const [],
@@ -1702,6 +1709,7 @@ class TimetableSettings {
       appUpdateMirrorPreset: 'ghfast',
       appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
+      appUpdatePromptEnabled: true,
       holidayOverrideEnabled: false,
       classAlarmLeadMinutes: 30,
       classAlarmSkipUi: false,
@@ -1872,6 +1880,7 @@ class TimetableSettings {
       'appUpdateMirrorPreset': appUpdateMirrorPreset,
       'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
+      'appUpdatePromptEnabled': appUpdatePromptEnabled,
       'holidayOverrideEnabled': holidayOverrideEnabled,
       'classAlarmLeadMinutes': classAlarmLeadMinutes,
       'classAlarmSkipUi': classAlarmSkipUi,
@@ -2280,6 +2289,8 @@ class TimetableSettings {
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
+      appUpdatePromptEnabled:
+          json['appUpdatePromptEnabled'] as bool? ?? true,
       holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
       classAlarmLeadMinutes:
           (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
@@ -2353,9 +2364,9 @@ class TimetableSettings {
             )
           : null,
       homePageHeaderBlurEnabled:
-          json['homePageHeaderBlurEnabled'] as bool? ?? false,
+          json['homePageHeaderBlurEnabled'] as bool? ?? true,
       homePageWeekdayBarBlurEnabled:
-          json['homePageWeekdayBarBlurEnabled'] as bool? ?? false,
+          json['homePageWeekdayBarBlurEnabled'] as bool? ?? true,
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
       homePageBackdropFollowsWeekPager:
@@ -2534,6 +2545,7 @@ class TimetableSettings {
     String? appUpdateMirrorPreset,
     bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
+    bool? appUpdatePromptEnabled,
     bool? holidayOverrideEnabled,
     int? classAlarmLeadMinutes,
     bool? classAlarmSkipUi,
@@ -2854,6 +2866,8 @@ class TimetableSettings {
           appUpdateIncludePrerelease ?? this.appUpdateIncludePrerelease,
       appUpdateMirrorUrlPrefix:
           appUpdateMirrorUrlPrefix ?? this.appUpdateMirrorUrlPrefix,
+      appUpdatePromptEnabled:
+          appUpdatePromptEnabled ?? this.appUpdatePromptEnabled,
       holidayOverrideEnabled:
           holidayOverrideEnabled ?? this.holidayOverrideEnabled,
       // 提前量允许 0（下课即提醒的场景不存在，但保留合法输入区间）。

@@ -21,7 +21,10 @@ void main() {
       final weekdayOnly = TimetableSettings.defaults().copyWith(
         homePageWeekdayBarBlurEnabled: true,
       );
-      final neither = TimetableSettings.defaults();
+      final neither = TimetableSettings.defaults().copyWith(
+        homePageHeaderBlurEnabled: false,
+        homePageWeekdayBarBlurEnabled: false,
+      );
       expect(homePageHasAnyChromeBlur(headerOnly, hasBackdrop: true), isTrue);
       expect(homePageHasAnyChromeBlur(weekdayOnly, hasBackdrop: true), isTrue);
       // The time column never gets chrome blur; with both chrome toggles off
