@@ -27,7 +27,7 @@ import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
-import '../providers/timetable/couple_timetable_logic.dart';
+import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../services/support_creator_service.dart';

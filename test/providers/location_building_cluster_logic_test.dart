@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/location_time_group.dart';
-import 'package:university_timetable/providers/timetable/location_building_cluster_logic.dart';
+import 'package:university_timetable/domain/location_building_cluster_logic.dart';
 
 void main() {
   group('LocationBuildingClusterLogic.suggestKeywordFromLocation', () {

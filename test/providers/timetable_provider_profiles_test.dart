@@ -4,7 +4,7 @@ import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/holiday_entry.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/providers/timetable/live_activity_logic.dart';
+import 'package:university_timetable/domain/live_activity_logic.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/home_widget_snapshot_service.dart';
 import 'package:university_timetable/services/miui_live_activities_service.dart';

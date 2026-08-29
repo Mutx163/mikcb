@@ -1,10 +1,10 @@
-import '../../l10n/service_message_localizer.dart';
-import '../../models/course.dart';
-import '../../models/location_time_group.dart';
-import '../../models/schedule_date_rule.dart';
-import '../../models/time_scheme.dart';
-import '../../models/timetable_profile.dart';
-import '../../models/timetable_settings.dart';
+import '../l10n/service_message_localizer.dart';
+import '../models/course.dart';
+import '../models/location_time_group.dart';
+import '../models/schedule_date_rule.dart';
+import '../models/time_scheme.dart';
+import '../models/timetable_profile.dart';
+import '../models/timetable_settings.dart';
 import 'location_time_match_logic.dart';
 
 class TimeSchemeCourseUsageReference {

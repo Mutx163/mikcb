@@ -1,6 +1,6 @@
-import '../../domain/course_domain.dart';
-import '../../models/course.dart';
-import '../../models/timetable_settings.dart';
+import 'course_domain.dart';
+import '../models/course.dart';
+import '../models/timetable_settings.dart';
 
 /// Semantic category for a course in couple overlay view.
 enum CoupleCourseKind { mine, partner, together }

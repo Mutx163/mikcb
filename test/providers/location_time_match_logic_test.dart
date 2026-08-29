@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/location_time_group.dart';
-import 'package:university_timetable/providers/timetable/location_time_match_logic.dart';
+import 'package:university_timetable/domain/location_time_match_logic.dart';
 
 LocationTimeGroup _group({
   required String id,

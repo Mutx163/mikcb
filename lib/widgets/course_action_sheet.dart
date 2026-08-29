@@ -5,7 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
-import '../providers/timetable/couple_timetable_logic.dart';
+import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
 import '../ui/hyperos/hyperos.dart';

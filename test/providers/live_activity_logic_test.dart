@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/providers/timetable/live_activity_logic.dart';
+import 'package:university_timetable/domain/live_activity_logic.dart';
 
 Course buildCourse({
   String id = 'course-1',

@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
-import '../providers/timetable/couple_timetable_logic.dart';
+import '../domain/couple_timetable_logic.dart';
 import 'data_transfer_service.dart';
 import 'storage_service.dart';
 

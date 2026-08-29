@@ -5,7 +5,7 @@ import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/providers/timetable/time_scheme_logic.dart';
+import 'package:university_timetable/domain/time_scheme_logic.dart';
 
 Course _course({
   required String id,

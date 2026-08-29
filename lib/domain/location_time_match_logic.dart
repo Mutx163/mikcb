@@ -1,4 +1,4 @@
-import '../../models/location_time_group.dart';
+import '../models/location_time_group.dart';
 
 /// Result of matching a course location against configured place groups.
 class LocationTimeMatchResult {

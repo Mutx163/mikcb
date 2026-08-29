@@ -7,7 +7,7 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
 import '../models/partner_timetable_binding.dart';
-import '../providers/timetable/couple_timetable_logic.dart';
+import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/couple_webdav_config.dart';
 import '../services/couple_webdav_service.dart';

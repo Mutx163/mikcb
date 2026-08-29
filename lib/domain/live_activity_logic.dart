@@ -1,5 +1,5 @@
-import '../../models/course.dart';
-import '../../models/timetable_settings.dart';
+import '../models/course.dart';
+import '../models/timetable_settings.dart';
 
 /// Stable label key for the "most recent class ended" break milestone.
 const String milestoneRecentEndLabelKey = '最近下课';

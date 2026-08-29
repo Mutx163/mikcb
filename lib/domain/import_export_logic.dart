@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../../models/course.dart';
-import '../../models/timetable_settings.dart';
+import '../models/course.dart';
+import '../models/timetable_settings.dart';
 
 class ImportedCourseSyncResult {
   final List<Course> mergedCourses;

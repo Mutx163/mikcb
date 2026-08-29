@@ -1,4 +1,4 @@
-import '../../models/schedule_date_rule.dart';
+import '../models/schedule_date_rule.dart';
 
 /// Outcome of attempting a seasonal bulk-apply after a date rule save.
 ///

@@ -1,4 +1,4 @@
-import '../../models/location_time_group.dart';
+import '../models/location_time_group.dart';
 
 /// Confidence of an automatic building-cluster suggestion.
 enum BuildingClusterConfidence { high, medium, low }

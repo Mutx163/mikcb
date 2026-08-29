@@ -22,7 +22,7 @@ import '../domain/week_calculator.dart';
 import '../domain/holiday_resolver.dart';
 import '../domain/course_domain.dart';
 import '../domain/schedule_item_expander.dart';
-import '../providers/timetable/couple_timetable_logic.dart';
+import '../domain/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
 import '../ui/hyperos/hyperos_overscroll.dart';
 import '../services/app_analytics.dart';
@@ -43,23 +43,23 @@ import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/home_page_background.dart';
-import 'timetable/location_time_match_logic.dart';
-import 'timetable/schedule_date_rule_logic.dart';
-import 'timetable/time_scheme_logic.dart';
-import 'timetable/import_export_logic.dart';
-import 'timetable/live_activity_logic.dart';
+import '../domain/location_time_match_logic.dart';
+import '../domain/schedule_date_rule_logic.dart';
+import '../domain/time_scheme_logic.dart';
+import '../domain/import_export_logic.dart';
+import '../domain/live_activity_logic.dart';
 
-export 'timetable/location_time_match_logic.dart'
+export '../domain/location_time_match_logic.dart'
     show LocationTimeMatchResult, LocationTimeMatchLogic;
-export 'timetable/schedule_date_rule_logic.dart'
+export '../domain/schedule_date_rule_logic.dart'
     show
         ScheduleDateRuleLogic,
         ScheduleDateRuleApplyOutcome,
         ScheduleDateRuleApplyResult;
-export 'timetable/time_scheme_logic.dart' show TimeSchemeCourseUsageReference;
-export 'timetable/live_activity_logic.dart'
+export '../domain/time_scheme_logic.dart' show TimeSchemeCourseUsageReference;
+export '../domain/live_activity_logic.dart'
     show LiveActivityCourseSelection, LiveActivityStage;
-export 'timetable/import_export_logic.dart'
+export '../domain/import_export_logic.dart'
     show
         ImportedCourseSyncResult,
         buildImportedCourseDedupKey,

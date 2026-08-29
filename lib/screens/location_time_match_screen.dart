@@ -8,7 +8,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/location_time_group.dart';
 import '../models/time_scheme.dart';
-import '../providers/timetable/location_building_cluster_logic.dart';
+import '../domain/location_building_cluster_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../logging/app_debug_log.dart';
 import '../services/app_log_service.dart';
