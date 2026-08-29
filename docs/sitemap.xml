@@ -10,7 +10,7 @@
   </url>
   <url>
     <loc>https://163366.xyz/releases/</loc>
-    <lastmod>2026-08-28</lastmod>
+    <lastmod>2026-08-29</lastmod>
   </url>
   <url>
     <loc>https://163366.xyz/hyperos-timetable.html</loc>
@@ -41,6 +41,10 @@
     <lastmod>2026-08-19</lastmod>
   </url>
   <url>
+    <loc>https://163366.xyz/releases/v2.1.1.html</loc>
+    <lastmod>2026-08-29</lastmod>
+  </url>
+  <url>
     <loc>https://163366.xyz/releases/v2.1.0.html</loc>
     <lastmod>2026-08-28</lastmod>
   </url>
@@ -67,9 +71,5 @@
   <url>
     <loc>https://163366.xyz/releases/v2.0.4.html</loc>
     <lastmod>2026-07-08</lastmod>
-  </url>
-  <url>
-    <loc>https://163366.xyz/releases/v2.0.html</loc>
-    <lastmod>2026-07-06</lastmod>
   </url>
 </urlset>
