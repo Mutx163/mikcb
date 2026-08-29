@@ -21,6 +21,7 @@ import '../models/timetable_settings.dart';
 import '../domain/week_calculator.dart';
 import '../domain/holiday_resolver.dart';
 import '../domain/course_domain.dart';
+import '../domain/schedule_item_expander.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
 import '../ui/hyperos/hyperos_overscroll.dart';
@@ -2758,17 +2759,7 @@ class TimetableProvider with ChangeNotifier {
   /// The source item remains attached to each instance so callers can choose
   /// between editing the whole series and editing only this occurrence.
   List<ScheduleItemInstance> getScheduleItemInstancesForDate(DateTime date) {
-    final normalizedDate = ScheduleItem.dateOnly(date);
-    final instancesByDisplayDate = <String, ScheduleItemInstance>{};
-    for (final item in _scheduleItems) {
-      for (final instance in item.expandInstances(
-        fromDate: normalizedDate,
-        toDate: normalizedDate,
-      )) {
-        _putScheduleInstanceByDisplayDate(instancesByDisplayDate, instance);
-      }
-    }
-    return _sortScheduleItemInstances(instancesByDisplayDate.values.toList());
+    return ScheduleItemExpander.instancesForDate(_scheduleItems, date);
   }
 
   List<ScheduleItemInstance> getScheduleItemOccurrencesForDate(DateTime date) {
@@ -2780,16 +2771,11 @@ class TimetableProvider with ChangeNotifier {
     DateTime fromDate,
     DateTime toDate,
   ) {
-    final instancesByDisplayDate = <String, ScheduleItemInstance>{};
-    for (final item in _scheduleItems) {
-      for (final instance in item.expandInstances(
-        fromDate: fromDate,
-        toDate: toDate,
-      )) {
-        _putScheduleInstanceByDisplayDate(instancesByDisplayDate, instance);
-      }
-    }
-    return _sortScheduleItemInstances(instancesByDisplayDate.values.toList());
+    return ScheduleItemExpander.instancesForRange(
+      _scheduleItems,
+      fromDate,
+      toDate,
+    );
   }
 
   /// Backward-compatible source-item query used by existing screens.
@@ -3956,49 +3942,6 @@ class TimetableProvider with ChangeNotifier {
     return left.year == right.year &&
         left.month == right.month &&
         left.day == right.day;
-  }
-
-  void _putScheduleInstanceByDisplayDate(
-    Map<String, ScheduleItemInstance> instancesByDisplayDate,
-    ScheduleItemInstance instance,
-  ) {
-    final key =
-        '${instance.sourceItemId}@${ScheduleItem.formatCalendarDate(instance.date)}';
-    final existing = instancesByDisplayDate[key];
-    // The stable occurrence id keeps pointing at the original series date for
-    // persistence, but a moved override wins when both items display on the
-    // same actual date.
-    if (existing == null ||
-        (instance.isSeriesOverride && !existing.isSeriesOverride)) {
-      instancesByDisplayDate[key] = instance;
-    }
-  }
-
-  List<ScheduleItemInstance> _sortScheduleItemInstances(
-    List<ScheduleItemInstance> source,
-  ) {
-    source.sort((left, right) {
-      final dateCompare = left.date.compareTo(right.date);
-      if (dateCompare != 0) {
-        return dateCompare;
-      }
-      final sourceDateCompare = left.item.startDate.compareTo(
-        right.item.startDate,
-      );
-      if (sourceDateCompare != 0) {
-        return sourceDateCompare;
-      }
-      final startCompare = left.item.startTime.compareTo(right.item.startTime);
-      if (startCompare != 0) {
-        return startCompare;
-      }
-      final endCompare = left.item.endTime.compareTo(right.item.endTime);
-      if (endCompare != 0) {
-        return endCompare;
-      }
-      return left.occurrenceId.compareTo(right.occurrenceId);
-    });
-    return List.unmodifiable(source);
   }
 
   List<ScheduleItem> _sortScheduleItems(List<ScheduleItem> source) {
