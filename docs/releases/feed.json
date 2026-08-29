@@ -1,7 +1,52 @@
 {
-  "generatedAt": "2026-08-29T07:08:32.750Z",
-  "releaseCount": 93,
+  "generatedAt": "2026-08-29T13:59:55.027Z",
+  "releaseCount": 94,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.1.1.1",
+      "title": "v2.1.1.1",
+      "prerelease": true,
+      "publishedAt": "2026-08-29T13:59:19Z",
+      "description": "新增课程配色：预设色板从 9 色扩充至 104 色，选色改为快捷色行 + 全量调色盘，编辑页提供带实时预览的专用配置弹窗，确认后才生效。 · 新增随机配色：导入课程时可按组选择随机配色（马卡龙、活泼、深色系），并新增多巴胺、落日、海洋三套高颜值鲜艳配色组。 · 新增超级岛快捷操作：静音 / 免打扰按钮按当前真实状态一键切换，已开启时显示「取消」可直接关闭；上…",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增课程配色：预设色板从 9 色扩充至 104 色，选色改为快捷色行 + 全量调色盘，编辑页提供带实时预览的专用配置弹窗，确认后才生效。"
+        },
+        {
+          "type": "新增",
+          "text": "新增随机配色：导入课程时可按组选择随机配色（马卡龙、活泼、深色系），并新增多巴胺、落日、海洋三套高颜值鲜艳配色组。"
+        },
+        {
+          "type": "新增",
+          "text": "新增超级岛快捷操作：静音 / 免打扰按钮按当前真实状态一键切换，已开启时显示「取消」可直接关闭；上课前的快捷动作支持自动执行。"
+        },
+        {
+          "type": "新增",
+          "text": "新增超级岛自检：无课可测时自动注入自检预设课且不写入真实课表，测试课改为开始 / 取消开关，可一键取消、自动结束自动回弹。"
+        },
+        {
+          "type": "新增",
+          "text": "新增更新提醒：启动检测到新版本时首页自动弹出更新页，可在设置中通过「弹窗提醒」开关控制（默认开启）。"
+        },
+        {
+          "type": "新增",
+          "text": "新增鸣谢名单：添加 L*n。"
+        },
+        {
+          "type": "优化",
+          "text": "优化安装包体积：锁定 arm64 架构并剔除冗余 ABI，安装包减小约 10MB。"
+        },
+        {
+          "type": "优化",
+          "text": "优化二维码传输：「发送全部数据」可正常使用，发送 / 导出失败时明确提示而不是无反应，分享弹窗样式更统一。"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1.1",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.1/mikcb-2.1.1.1-arm64-v8a.apk",
+      "assetName": "mikcb-2.1.1.1-arm64-v8a.apk"
+    },
     {
       "channelLabel": "预发布",
       "version": "2.1.1",
@@ -264,51 +309,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5/mikcb-2.0.5-arm64-v8a.apk",
       "assetName": "mikcb-2.0.5-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "正式版",
-      "version": "2.0.4",
-      "title": "v2.0.4",
-      "prerelease": false,
-      "publishedAt": "2026-07-08T09:46:37Z",
-      "description": "新增超级岛课前快捷操作自动恢复：静音或免打扰会在下课后自动恢复，重启手机后也会恢复 · 优化课程统计界面：成就徽章配色、课程排名可展开查看时段详情，总览、每日分布、必修/选修比例与数据故事卡片统一 HyperOS 视觉 · 优化应用启动：老用户可更快进入主界面，版本信息异步加载不再阻塞首帧",
-      "highlights": [
-        {
-          "type": "新增",
-          "text": "新增超级岛课前快捷操作自动恢复：静音或免打扰会在下课后自动恢复，重启手机后也会恢复"
-        },
-        {
-          "type": "优化",
-          "text": "优化课程统计界面：成就徽章配色、课程排名可展开查看时段详情，总览、每日分布、必修/选修比例与数据故事卡片统一 HyperOS 视觉"
-        },
-        {
-          "type": "优化",
-          "text": "优化应用启动：老用户可更快进入主界面，版本信息异步加载不再阻塞首帧"
-        },
-        {
-          "type": "优化",
-          "text": "优化关于页更新检测：应用图标居中展示，当前版本与最新版本对比更清晰"
-        },
-        {
-          "type": "优化",
-          "text": "优化添加考试页表单布局与课程关联选择体验"
-        },
-        {
-          "type": "优化",
-          "text": "优化数据迁移页概览信息排版"
-        },
-        {
-          "type": "优化",
-          "text": "优化应用内更新日志与 Release 说明的阅读排版"
-        },
-        {
-          "type": "优化",
-          "text": "优化课表方案与时段方案读取性能"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.4",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.4/mikcb-2.0.4-arm64-v8a.apk",
-      "assetName": "mikcb-2.0.4-arm64-v8a.apk"
     }
   ]
 }
