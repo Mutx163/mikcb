@@ -2,8 +2,10 @@ part of '../timetable_settings_screen.dart';
 
 /// 诊断与日志。
 ///
-/// 排障入口此前散在三处：应用日志在「关于」，超级岛自检在「超级岛与通知」，
-/// 内存监测在设置页脚。出问题的人要在三个地方找线索。这里收成一个口子。
+/// 排障入口此前散在三处：应用日志在「关于」，内存监测在设置页脚。
+/// 出问题的人要在多处找线索，这里收成一个口子。超级岛自检有意不收——
+/// 它是超级岛的功能入口，放「超级岛与通知」的维护组用户才找得到；
+/// 收进诊断页曾收到用户反馈「太深、不知道功能去哪了」。
 class _DiagnosticsScreen extends StatefulWidget {
   const _DiagnosticsScreen();
 
@@ -36,19 +38,6 @@ class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
                     title: l10n.aboutAppLogsTitle,
                     details: l10n.aboutAppLogsSubtitle,
                     onTap: _openAppLogsPage,
-                  ),
-                  HyperosListTile(
-                    title: l10n.liveSelfCheckTitle,
-                    details: l10n.liveSelfCheckSubtitle,
-                    onTap: () {
-                      HyperosNavigation.push(
-                        context,
-                        settings: const RouteSettings(
-                          name: '/settings/live/self-check',
-                        ),
-                        builder: (_) => const _LiveTestingSettingsScreen(),
-                      );
-                    },
                   ),
                   if (showMemoryStats)
                     HyperosListTile(

@@ -124,6 +124,19 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 });
               },
             ),
+            HyperosListTile(
+              title: l10n.liveSelfCheckTitle,
+              details: l10n.liveTestingEntrySubtitle,
+              onTap: () {
+                HyperosNavigation.push(
+                  context,
+                  settings: const RouteSettings(
+                    name: '/settings/live/self-check',
+                  ),
+                  builder: (_) => const _LiveTestingSettingsScreen(),
+                );
+              },
+            ),
           ],
         ),
       ],
