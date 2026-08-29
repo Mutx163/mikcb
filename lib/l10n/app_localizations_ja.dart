@@ -3601,7 +3601,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingNotificationSubtitle => 'スーパーアイランド、通知バーと授業略称などの表示効果を検証';
 
   @override
-  String get liveTestingSendAction => 'テスト通知を送信';
+  String get liveTestingStartAction => 'テスト開始';
+
+  @override
+  String get liveTestingCancelAction => 'テスト停止';
+
+  @override
+  String get liveTestingSessionRunning => 'セルフチェック実行中';
+
+  @override
+  String get liveTestingSessionCanceled => 'セルフチェックを停止しました';
 
   @override
   String get liveTestingUmengHint =>

@@ -6549,11 +6549,29 @@ abstract class AppLocalizations {
   /// **'用于验证超级岛、通知栏和课程简称等显示效果'**
   String get liveTestingNotificationSubtitle;
 
-  /// No description provided for @liveTestingSendAction.
+  /// No description provided for @liveTestingStartAction.
   ///
   /// In zh, this message translates to:
-  /// **'发送测试通知'**
-  String get liveTestingSendAction;
+  /// **'开始测试'**
+  String get liveTestingStartAction;
+
+  /// No description provided for @liveTestingCancelAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消测试'**
+  String get liveTestingCancelAction;
+
+  /// No description provided for @liveTestingSessionRunning.
+  ///
+  /// In zh, this message translates to:
+  /// **'自检测试进行中'**
+  String get liveTestingSessionRunning;
+
+  /// No description provided for @liveTestingSessionCanceled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消自检测试'**
+  String get liveTestingSessionCanceled;
 
   /// No description provided for @liveTestingUmengHint.
   ///

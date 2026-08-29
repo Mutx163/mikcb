@@ -3760,7 +3760,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Used to verify the Island, notification bar, and course short-name display';
 
   @override
-  String get liveTestingSendAction => 'Send test notification';
+  String get liveTestingStartAction => 'Start test';
+
+  @override
+  String get liveTestingCancelAction => 'Cancel test';
+
+  @override
+  String get liveTestingSessionRunning => 'Self-check test running';
+
+  @override
+  String get liveTestingSessionCanceled => 'Self-check test cancelled';
 
   @override
   String get liveTestingUmengHint =>

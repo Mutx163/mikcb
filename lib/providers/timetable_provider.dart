@@ -204,8 +204,8 @@ class TimetableProvider with ChangeNotifier {
   DateTime? _liveActivitySuspendedUntil;
 
   /// 自检预设课覆盖层：只注入超级岛选课与原生快照路径，绝不写入真实课表
-  /// （内存态，重启即清）。管线内部状态，与 [_lastLiveSnapshotSignature]
-  /// 同类，变化不发 notify。
+  /// （内存态，重启即清）。挂载/摘除会 notifyListeners，供自检页显示
+  /// 「测试进行中」状态并驱动开始/取消开关。
   List<Course> _liveTestFixtureOverlayCourses = const [];
   Future<void>? _initializationFuture;
   Future<void>? _deferredDataFuture;
@@ -4350,14 +4350,22 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     _liveTestFixtureOverlayCourses = List.of(courses, growable: false);
+    notifyListeners();
   }
 
   void disarmLiveTestFixtureCourses() {
+    if (_liveTestFixtureOverlayCourses.isEmpty) {
+      return;
+    }
     _liveTestFixtureOverlayCourses = const [];
+    notifyListeners();
   }
 
   /// 预设课全部结束（按其自由时钟）时摘除覆盖层，返回是否真的摘了。
   /// 未结束（含节假日等选课为空的场景）时保持挂载，阶段空窗由岛自身停止。
+  /// 注意：这是管线路径（[_liveUpdateActivityBody] 顶部调用，fire-and-forget，
+  /// 可能跨越 provider 生命周期完成），刻意不发 notify——自检页通过 1s 轮询
+  /// 感知自动结束并翻转按钮；显式用户动作走 [disarmLiveTestFixtureCourses]。
   bool disarmLiveTestFixtureCoursesIfFinished(DateTime now) {
     if (_liveTestFixtureOverlayCourses.isEmpty) {
       return false;
@@ -4374,6 +4382,14 @@ class TimetableProvider with ChangeNotifier {
     }
     _liveTestFixtureOverlayCourses = const [];
     return true;
+  }
+
+  /// 立即取消自检测试：摘除预设课覆盖层并按正式路径重刷——预设课随本次
+  /// 快照同步从原生侧回收；若此刻有真实课在窗，岛直接切回真实课，否则停岛。
+  /// 供自检页「取消测试」按钮使用，不等下一个 30s tick。
+  Future<void> cancelLiveTestFixtureSession() async {
+    disarmLiveTestFixtureCourses();
+    await refreshLiveActivityNow(forceSnapshotSync: true);
   }
 
   Future<void> refreshLiveActivityNow({bool forceSnapshotSync = false}) =>

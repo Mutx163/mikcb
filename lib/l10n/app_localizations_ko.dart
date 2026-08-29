@@ -3621,7 +3621,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '슈퍼아일랜드, 알림바, 수업 약칭 등의 표시 효과를 검증합니다';
 
   @override
-  String get liveTestingSendAction => '테스트 알림 전송';
+  String get liveTestingStartAction => '테스트 시작';
+
+  @override
+  String get liveTestingCancelAction => '테스트 취소';
+
+  @override
+  String get liveTestingSessionRunning => '셀프 체크 진행 중';
+
+  @override
+  String get liveTestingSessionCanceled => '셀프 체크를 취소했습니다';
 
   @override
   String get liveTestingUmengHint =>

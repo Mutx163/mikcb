@@ -148,12 +148,14 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   bool _loadingDebugStatus = true;
   bool _exportingDiagnostics = false;
   bool _clearingDiagnostics = false;
+  bool _testToggling = false;
   Timer? _autoRefreshTimer;
   bool _refreshInFlight = false;
   bool _isAppResumed = true;
   bool _autoRefreshEnabled = true;
   DateTime? _lastDebugStatusUpdatedAt;
   bool _holidayOverrideEnabled = false;
+  bool? _lastKnownTestSessionActive;
 
   @override
   void initState() {
@@ -161,10 +163,17 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     WidgetsBinding.instance.addObserver(this);
     final provider = context.read<TimetableProvider>();
     _holidayOverrideEnabled = provider.settings.holidayOverrideEnabled;
+    _lastKnownTestSessionActive = provider.hasLiveTestFixtureCourses;
     unawaited(_refreshDebugStatus(showLoading: true));
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!mounted || !_isAppResumed) {
         return;
+      }
+      // 预设课自动结束不发 notify（管线路径可能跨越生命周期），靠这里轮询
+      // 翻转开始/取消按钮，且不受「自动刷新」开关影响。
+      final sessionActive = provider.hasLiveTestFixtureCourses;
+      if (_lastKnownTestSessionActive != sessionActive) {
+        setState(() => _lastKnownTestSessionActive = sessionActive);
       }
       if (!_autoRefreshEnabled) {
         return;
@@ -290,6 +299,39 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
       kind: cleared ? AppToastKind.success : AppToastKind.error,
     );
+  }
+
+  /// 自检测试会话开关：空闲态点击 = 开始测试（正式选课优先，无课可测时自动
+  /// 兜底预设课）；测试中点击 = 立即取消（摘除预设课、重刷快照、停岛）。
+  /// 预设课到点自动结束时覆盖层摘除并发 notify，按钮无需操作自动回到开始态。
+  Future<void> _toggleTestSession() async {
+    if (_testToggling) {
+      return;
+    }
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _testToggling = true);
+    try {
+      if (provider.hasLiveTestFixtureCourses) {
+        await provider.cancelLiveTestFixtureSession();
+        if (!mounted) return;
+        showAppToast(
+          context,
+          message: l10n.liveTestingSessionCanceled,
+          kind: AppToastKind.info,
+        );
+      } else {
+        await _showTestOptions(context);
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testToggling = false);
+      }
+    }
+    if (mounted) {
+      await _refreshDebugStatus(showLoading: true);
+    }
   }
 
   @override
@@ -422,57 +464,76 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           const HyperosSectionGap(),
         ],
       ),
-      _LiveTestingSection.notification => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosControlCard(
-            title: l10n.liveTestingNotificationTitle,
-            subtitle: l10n.liveTestingNotificationSubtitle,
-            child: HyperosControlCardInset(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  HyperosButton(
-                    label: l10n.liveTestingSendAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: () async {
-                      await _showTestOptions(context);
-                      await Future<void>.delayed(
-                        const Duration(milliseconds: 300),
-                      );
-                      await _refreshDebugStatus(showLoading: true);
-                    },
-                  ),
-                  if (!kReleaseMode) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.liveTestingUmengHint,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        HyperosButton(
-                          label: l10n.liveTestingCrashAction,
-                          variant: HyperosButtonVariant.secondary,
-                          onPressed: () => _triggerUmengTestCrash(context),
+      _LiveTestingSection.notification => Builder(
+        builder: (context) {
+          // 自检测试会话状态 = 预设课覆盖层挂载中。arm/disarm 都会
+          // notifyListeners：点「开始测试」进入测试态、点「取消测试」退出，
+          // 预设课到点自动结束时也自动回到开始态。
+          final sessionActive = context
+              .watch<TimetableProvider>()
+              .hasLiveTestFixtureCourses;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HyperosControlCard(
+                title: l10n.liveTestingNotificationTitle,
+                subtitle: l10n.liveTestingNotificationSubtitle,
+                child: HyperosControlCardInset(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (sessionActive) ...[
+                        _DebugStatusChip(
+                          icon: Icons.play_circle_outline_rounded,
+                          label: l10n.liveTestingSessionRunning,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                        HyperosButton(
-                          label: l10n.liveTestingAnrAction,
-                          variant: HyperosButtonVariant.secondary,
-                          onPressed: () => _triggerUmengTestAnr(context),
+                        const SizedBox(height: 12),
+                      ],
+                      HyperosButton(
+                        label: sessionActive
+                            ? l10n.liveTestingCancelAction
+                            : l10n.liveTestingStartAction,
+                        variant: sessionActive
+                            ? HyperosButtonVariant.destructive
+                            : HyperosButtonVariant.primary,
+                        loading: _testToggling,
+                        onPressed: _testToggling
+                            ? null
+                            : () => _toggleTestSession(),
+                      ),
+                      if (!kReleaseMode) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.liveTestingUmengHint,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            HyperosButton(
+                              label: l10n.liveTestingCrashAction,
+                              variant: HyperosButtonVariant.secondary,
+                              onPressed: () => _triggerUmengTestCrash(context),
+                            ),
+                            HyperosButton(
+                              label: l10n.liveTestingAnrAction,
+                              variant: HyperosButtonVariant.secondary,
+                              onPressed: () => _triggerUmengTestAnr(context),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          const HyperosSectionGap(),
-        ],
+              const HyperosSectionGap(),
+            ],
+          );
+        },
       ),
       _LiveTestingSection.islandStatus => Builder(
         builder: (context) {

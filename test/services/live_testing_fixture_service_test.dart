@@ -17,6 +17,18 @@ DateTime _atClock(DateTime day, String clock) {
   );
 }
 
+/// Provider 级用例的基准时间：用真实当前时间构建预设课。管线路径
+/// （[_liveUpdateActivityBody] 顶部）会按真实时钟判定预设课是否已结束，
+/// 过去日期的预设课会在任何一次刷新时被立即摘除；午夜前 10 分钟内无法
+/// 构建不跨日预设课，统一回拨保证可构建。
+DateTime _testBaseNow() {
+  final now = DateTime.now();
+  if (now.hour == 23 && now.minute >= 50) {
+    return now.subtract(const Duration(minutes: 10));
+  }
+  return now;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -278,7 +290,7 @@ void main() {
           enableLiveActivitySync: false,
         );
         await provider.initialize();
-        final now = DateTime(2026, 3, 23, 10, 15);
+        final now = _testBaseNow();
         final presets = LiveTestingFixtureService.buildPresetCourses(
           now: now,
           targetWeek: provider.liveSelectionCalendarWeek,
@@ -313,9 +325,9 @@ void main() {
           LiveTestingFixtureService.presetCourseIdB,
         );
 
-        // A 结束后 B 接棒。
+        // A 结束后 B 接棒（A: +1min..+4min，B: +5min..+8min）。
         final second = provider.getLiveActivityCourseSelection(
-          now: _atClock(now, '10:21'),
+          now: now.add(const Duration(minutes: 5, seconds: 30)),
           week: 1,
         );
         expect(
@@ -332,8 +344,18 @@ void main() {
         enableLiveActivitySync: false,
       );
       await provider.initialize();
-      final now = DateTime(2026, 3, 23, 10, 15);
-      final first = provider.settings.sections.first;
+      final now = _testBaseNow();
+      // 自建时间方案：真实课窗口完全可控 = [floor(now), floor(now+2min)]，
+      // 解析开始时间永远严格早于预设课 A（floor(now+1min)，必落在下一分钟）。
+      final schemeStart = LiveTestingFixtureService.formatClock(now);
+      final schemeEnd = LiveTestingFixtureService.formatClock(
+        now.add(const Duration(minutes: 2)),
+      );
+      await provider.createTimeScheme(
+        name: '自检排序测试方案',
+        sections: [SectionTime(startTime: schemeStart, endTime: schemeEnd)],
+        applyToActiveProfile: true,
+      );
       await provider.addCourse(
         Course(
           id: 'real_section_1',
@@ -343,37 +365,37 @@ void main() {
           dayOfWeek: now.weekday,
           startSection: 1,
           endSection: 1,
-          startTime: first.startTime,
-          endTime: first.endTime,
+          startTime: schemeStart,
+          endTime: schemeEnd,
           color: '#4C6FFF',
           startWeek: 1,
           endWeek: 20,
         ),
       );
 
-      // 预设课压在真实课最后一分钟到结束后几分钟。
-      final sectionEnd = _atClock(now, first.endTime);
       final presets = LiveTestingFixtureService.buildPresetCourses(
-        now: sectionEnd.subtract(const Duration(minutes: 2)),
+        now: now,
         targetWeek: 1,
         semesterWeekCount: 20,
       );
       provider.armLiveTestFixtureCourses(presets);
 
+      // 真实课窗口内（45s 处）：真实课排在预设课之前且阶段有效 → 胜出。
       expect(
         provider
             .getLiveActivityCourseSelection(
-              now: sectionEnd.subtract(const Duration(minutes: 1)),
+              now: now.add(const Duration(seconds: 45)),
               week: 1,
             )
             ?.currentCourse
             .id,
         'real_section_1',
       );
+      // 真实课结束后（2min5s 处，方案节次已结束）：预设课 A 接管。
       expect(
         provider
             .getLiveActivityCourseSelection(
-              now: sectionEnd.add(const Duration(seconds: 30)),
+              now: now.add(const Duration(minutes: 2, seconds: 5)),
               week: 1,
             )
             ?.currentCourse
@@ -389,7 +411,7 @@ void main() {
         enableLiveActivitySync: false,
       );
       await provider.initialize();
-      final now = DateTime(2026, 3, 23, 10, 15);
+      final now = _testBaseNow();
       final presets = LiveTestingFixtureService.buildPresetCourses(
         now: now,
         targetWeek: 1,

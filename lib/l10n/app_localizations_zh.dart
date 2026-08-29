@@ -3535,7 +3535,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingNotificationSubtitle => '用于验证超级岛、通知栏和课程简称等显示效果';
 
   @override
-  String get liveTestingSendAction => '发送测试通知';
+  String get liveTestingStartAction => '开始测试';
+
+  @override
+  String get liveTestingCancelAction => '取消测试';
+
+  @override
+  String get liveTestingSessionRunning => '自检测试进行中';
+
+  @override
+  String get liveTestingSessionCanceled => '已取消自检测试';
 
   @override
   String get liveTestingUmengHint => '下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报';
@@ -13728,7 +13737,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingNotificationSubtitle => '用于驗證超級島、通知欄和課程簡稱等顯示效果';
 
   @override
-  String get liveTestingSendAction => '發送測試通知';
+  String get liveTestingStartAction => '開始測試';
+
+  @override
+  String get liveTestingCancelAction => '取消測試';
+
+  @override
+  String get liveTestingSessionRunning => '自檢測試進行中';
+
+  @override
+  String get liveTestingSessionCanceled => '已取消自檢測試';
 
   @override
   String get liveTestingUmengHint => '下面兩個按鈕僅測試版顯示，用于驗證友盟 U-APM 崩溃和卡頓上報';
@@ -23964,7 +23982,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingNotificationSubtitle => '用于驗證超級島、通知栏和課程簡稱等顯示效果';
 
   @override
-  String get liveTestingSendAction => '發送測試通知';
+  String get liveTestingStartAction => '開始測試';
+
+  @override
+  String get liveTestingCancelAction => '取消測試';
+
+  @override
+  String get liveTestingSessionRunning => '自檢測試進行中';
+
+  @override
+  String get liveTestingSessionCanceled => '已取消自檢測試';
 
   @override
   String get liveTestingUmengHint => '下面兩個按鈕僅測試版顯示，用于驗證友盟 U-APM 崩溃和卡顿上報';
