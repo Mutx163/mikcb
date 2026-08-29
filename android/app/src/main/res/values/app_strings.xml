@@ -24,6 +24,8 @@
     <string name="notification_preparing_reminder">正在准备课程提醒</string>
     <string name="action_enable_silent">打开静音</string>
     <string name="action_enable_dnd">打开免打扰</string>
+    <string name="action_cancel_silent">取消静音</string>
+    <string name="action_cancel_dnd">取消免打扰</string>
     <string name="action_close">关闭</string>
 
     <string name="prefix_until_class_start">距上课</string>

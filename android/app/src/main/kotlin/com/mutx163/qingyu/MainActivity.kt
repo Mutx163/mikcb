@@ -1888,6 +1888,10 @@ class LiveUpdateService : Service() {
             "com.mutx163.qingyu.action.ENABLE_SILENT_MODE"
         private const val ACTION_ENABLE_DO_NOT_DISTURB =
             "com.mutx163.qingyu.action.ENABLE_DO_NOT_DISTURB"
+        private const val ACTION_CANCEL_SILENT_MODE =
+            "com.mutx163.qingyu.action.CANCEL_SILENT_MODE"
+        private const val ACTION_CANCEL_DO_NOT_DISTURB =
+            "com.mutx163.qingyu.action.CANCEL_DO_NOT_DISTURB"
         private const val ACTION_DISMISS_STATUS_BAR_STAGE =
             "com.mutx163.qingyu.action.DISMISS_STATUS_BAR_STAGE"
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
@@ -2115,6 +2119,7 @@ class LiveUpdateService : Service() {
     private var showNotificationDuringClass = true
     private var beforeClassQuickAction = "none"
     private var quickActionAutoLeadMillis = 0L
+    private var lastQuickActionState = ""
     private var progressBreakOffsetsMillis = longArrayOf()
     private var progressMilestoneLabels = emptyList<String>()
     private var progressMilestoneTimeTexts = emptyList<String>()
@@ -2142,6 +2147,14 @@ class LiveUpdateService : Service() {
                     handleBeforeClassQuickAction(
                         BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB
                     )
+                    START_NOT_STICKY
+                }
+                ACTION_CANCEL_SILENT_MODE -> {
+                    handleCancelQuickAction(BeforeClassQuickActionRestore.ACTION_SILENT)
+                    START_NOT_STICKY
+                }
+                ACTION_CANCEL_DO_NOT_DISTURB -> {
+                    handleCancelQuickAction(BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB)
                     START_NOT_STICKY
                 }
                 ACTION_DISMISS_STATUS_BAR_STAGE -> {
@@ -2464,30 +2477,36 @@ class LiveUpdateService : Service() {
     }
 
     private fun buildBeforeClassQuickActions(): List<Notification.Action> {
+        val buttons = currentQuickActionButtons()
         val actions = mutableListOf<Notification.Action>()
-        if (beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_SILENT ||
-            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_BOTH
-        ) {
+        if (buttons.silentEnable) {
             actions += buildQuickActionNotificationAction(
-                BeforeClassQuickActionRestore.ACTION_SILENT,
                 ACTION_ENABLE_SILENT_MODE,
                 getString(R.string.action_enable_silent),
             )
         }
-        if (beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB ||
-            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_BOTH
-        ) {
+        if (buttons.silentCancel) {
             actions += buildQuickActionNotificationAction(
-                BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB,
+                ACTION_CANCEL_SILENT_MODE,
+                getString(R.string.action_cancel_silent),
+            )
+        }
+        if (buttons.dndEnable) {
+            actions += buildQuickActionNotificationAction(
                 ACTION_ENABLE_DO_NOT_DISTURB,
                 getString(R.string.action_enable_dnd),
+            )
+        }
+        if (buttons.dndCancel) {
+            actions += buildQuickActionNotificationAction(
+                ACTION_CANCEL_DO_NOT_DISTURB,
+                getString(R.string.action_cancel_dnd),
             )
         }
         return actions
     }
 
     private fun buildQuickActionNotificationAction(
-        quickAction: String,
         intentAction: String,
         label: String,
     ): Notification.Action {
@@ -2505,6 +2524,58 @@ class LiveUpdateService : Service() {
             label,
             pendingIntent,
         ).build()
+    }
+
+    private fun currentQuickActionButtons(): BeforeClassQuickActionButtons {
+        if (beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_NONE) {
+            return BeforeClassQuickActionButtons()
+        }
+        return beforeClassQuickActionButtons(
+            action = beforeClassQuickAction,
+            silentCurrentlyActive =
+                BeforeClassQuickActionRestore.isSilentModeActive(applicationContext),
+            dndCurrentlyActive =
+                BeforeClassQuickActionRestore.isDoNotDisturbModeActive(applicationContext),
+        )
+    }
+
+    private fun handleCancelQuickAction(quickAction: String) {
+        val applied = if (quickAction == BeforeClassQuickActionRestore.ACTION_SILENT) {
+            BeforeClassQuickActionRestore.cancelSilentMode(applicationContext)
+        } else {
+            BeforeClassQuickActionRestore.cancelDoNotDisturbMode(applicationContext)
+        }
+        if (!applied) {
+            if (quickAction == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB) {
+                openNotificationPolicyAccessSettings()
+            } else {
+                openSoundSettings()
+            }
+        }
+        // 与手动打开一致：一次手动取消即代表本节课不再自动执行
+        BeforeClassQuickActionRestore.markTriggerHandled(applicationContext, startAtMillis)
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_before_class_quick_action",
+            message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
+            extras = mapOf(
+                "action" to "cancel_$quickAction",
+                "applied" to applied,
+                "courseName" to courseName,
+                "stage" to activityStage,
+            )
+        )
+        refreshQuickActionNotification()
+    }
+
+    /** 通知按钮跟随真实铃声/勿扰状态；状态翻转后立即重建通知并更新缓存签名。 */
+    private fun refreshQuickActionNotification() {
+        if (hasStartedForeground) {
+            updateForegroundNotification(
+                buildNotification(computeRemainingText(System.currentTimeMillis()))
+            )
+        }
+        lastQuickActionState = currentQuickActionButtons().toString()
     }
 
     private fun buildDismissStatusBarAction(): Notification.Action {
@@ -2557,9 +2628,7 @@ class LiveUpdateService : Service() {
                 "stage" to activityStage,
             )
         )
-        if (hasStartedForeground) {
-            updateForegroundNotification(buildNotification(computeRemainingText(System.currentTimeMillis())))
-        }
+        refreshQuickActionNotification()
     }
 
     private fun applyQuickActionMode(
@@ -2781,13 +2850,16 @@ class LiveUpdateService : Service() {
                     } else {
                         -1
                     }
+                val currentQuickActionState = currentQuickActionButtons().toString()
                 if (currentText != lastRemainingText ||
                     currentProgress != lastProgressUnits ||
-                    currentCriticalTimeText != lastCriticalTimeText
+                    currentCriticalTimeText != lastCriticalTimeText ||
+                    currentQuickActionState != lastQuickActionState
                 ) {
                     lastRemainingText = currentText
                     lastProgressUnits = currentProgress
                     lastCriticalTimeText = currentCriticalTimeText
+                    lastQuickActionState = currentQuickActionState
                     getSystemService(NotificationManager::class.java)
                         ?.notify(NOTIFICATION_ID, buildNotification(currentText))
                 }

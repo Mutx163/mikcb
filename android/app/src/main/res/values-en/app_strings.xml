@@ -22,6 +22,8 @@
     <string name="notification_preparing_reminder">Preparing class reminder</string>
     <string name="action_enable_silent">Mute</string>
     <string name="action_enable_dnd">Do not disturb</string>
+    <string name="action_cancel_silent">Unmute</string>
+    <string name="action_cancel_dnd">Turn off DND</string>
     <string name="action_close">Close</string>
 
     <string name="prefix_until_class_start">Starts in </string>

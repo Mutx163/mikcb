@@ -15,6 +15,8 @@ internal object BeforeClassQuickActionRestore {
     private const val KEY_RESTORE_AT_MILLIS = "restore_at_millis"
     private const val KEY_APPLIED_ACTION = "applied_action"
     private const val KEY_LAST_AUTO_TRIGGER_MILLIS = "last_auto_trigger_millis"
+    private const val KEY_APPLIED_SILENT = "applied_silent"
+    private const val KEY_APPLIED_DND = "applied_dnd"
 
     const val ACTION_NONE = "none"
     const val ACTION_SILENT = "silent"
@@ -106,6 +108,95 @@ internal object BeforeClassQuickActionRestore {
         prefs(context).edit()
             .putLong(KEY_LAST_AUTO_TRIGGER_MILLIS, triggerKeyMillis)
             .apply()
+    }
+
+    /** Whether the ringer is currently silent (regardless of who set it). */
+    fun isSilentModeActive(context: Context): Boolean {
+        val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
+        return audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
+    }
+
+    /** Whether Do Not Disturb is currently on at any level (regardless of who set it). */
+    fun isDoNotDisturbModeActive(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false
+        }
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        val filter = manager.currentInterruptionFilter
+        return filter != NotificationManager.INTERRUPTION_FILTER_ALL &&
+            filter != NotificationManager.INTERRUPTION_FILTER_UNKNOWN
+    }
+
+    /**
+     * Turn the ringer back off silent: restore the state captured before the
+     * app applied it when a pending restore exists, otherwise fall back to
+     * NORMAL (the user toggled it themselves outside the app). One cancel tap
+     * must not lose the restore window of the other applied mode, so the
+     * pending state survives while any applied flag remains.
+     */
+    fun cancelSilentMode(context: Context): Boolean {
+        val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
+        val prefs = prefs(context)
+        val target = if (prefs.getBoolean(KEY_PENDING, false) &&
+            prefs.contains(KEY_SAVED_RINGER_MODE)
+        ) {
+            prefs.getInt(KEY_SAVED_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL)
+        } else {
+            AudioManager.RINGER_MODE_NORMAL
+        }
+        return try {
+            audioManager.ringerMode = target
+            clearAppliedFlagAndMaybeClearPending(context, KEY_APPLIED_SILENT)
+            true
+        } catch (e: SecurityException) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_SILENT_MODE_FAILED, e)
+            false
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_SILENT_MODE_FAILED, e)
+            false
+        }
+    }
+
+    /** Turn Do Not Disturb back off; mirror of [cancelSilentMode]. */
+    fun cancelDoNotDisturbMode(context: Context): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !manager.isNotificationPolicyAccessGranted
+        ) {
+            return false
+        }
+        val prefs = prefs(context)
+        val target = if (prefs.getBoolean(KEY_PENDING, false) &&
+            prefs.contains(KEY_SAVED_DND_FILTER)
+        ) {
+            prefs.getInt(KEY_SAVED_DND_FILTER, NotificationManager.INTERRUPTION_FILTER_ALL)
+        } else {
+            NotificationManager.INTERRUPTION_FILTER_ALL
+        }
+        return try {
+            manager.setInterruptionFilter(target)
+            clearAppliedFlagAndMaybeClearPending(context, KEY_APPLIED_DND)
+            true
+        } catch (e: SecurityException) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_DND_FAILED, e)
+            false
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_DND_FAILED, e)
+            false
+        }
+    }
+
+    private fun clearAppliedFlagAndMaybeClearPending(context: Context, key: String) {
+        val prefs = prefs(context)
+        if (!prefs.getBoolean(KEY_PENDING, false)) {
+            return
+        }
+        prefs.edit().putBoolean(key, false).apply()
+        if (!prefs.getBoolean(KEY_APPLIED_SILENT, false) &&
+            !prefs.getBoolean(KEY_APPLIED_DND, false)
+        ) {
+            clearPending(context)
+        }
     }
 
     fun restoreOnBoot(context: Context): Boolean {        if (!isPending(context)) {
@@ -218,6 +309,16 @@ internal object BeforeClassQuickActionRestore {
             .putBoolean(KEY_PENDING, true)
             .putString(KEY_APPLIED_ACTION, appliedAction)
             .putLong(KEY_RESTORE_AT_MILLIS, effectiveRestoreAt)
+            .let { editor ->
+                when (appliedAction) {
+                    ACTION_SILENT -> editor.putBoolean(KEY_APPLIED_SILENT, true)
+                    ACTION_DO_NOT_DISTURB -> editor.putBoolean(KEY_APPLIED_DND, true)
+                    ACTION_BOTH -> editor
+                        .putBoolean(KEY_APPLIED_SILENT, true)
+                        .putBoolean(KEY_APPLIED_DND, true)
+                    else -> editor
+                }
+            }
             .apply()
     }
 
@@ -254,4 +355,39 @@ internal fun beforeClassQuickActionShouldRestoreAfterClassEnd(
     restoreAtMillis: Long,
 ): Boolean {
     return restoreAtMillis > 0L && nowMillis >= restoreAtMillis
+}
+
+/** Which quick-action buttons the before-class notification should show,
+ *  derived from the configured action and the live ringer/DND state: a mode
+ *  that is already on gets a cancel button so one tap toggles it back off. */
+internal data class BeforeClassQuickActionButtons(
+    val silentEnable: Boolean = false,
+    val silentCancel: Boolean = false,
+    val dndEnable: Boolean = false,
+    val dndCancel: Boolean = false,
+) {
+    override fun toString(): String {
+        return "${if (silentEnable) 1 else 0}${if (silentCancel) 1 else 0}" +
+            "${if (dndEnable) 1 else 0}${if (dndCancel) 1 else 0}"
+    }
+}
+
+internal fun beforeClassQuickActionButtons(
+    action: String,
+    silentCurrentlyActive: Boolean,
+    dndCurrentlyActive: Boolean,
+): BeforeClassQuickActionButtons {
+    if (action == BeforeClassQuickActionRestore.ACTION_NONE) {
+        return BeforeClassQuickActionButtons()
+    }
+    val showSilent = action == BeforeClassQuickActionRestore.ACTION_SILENT ||
+        action == BeforeClassQuickActionRestore.ACTION_BOTH
+    val showDnd = action == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB ||
+        action == BeforeClassQuickActionRestore.ACTION_BOTH
+    return BeforeClassQuickActionButtons(
+        silentEnable = showSilent && !silentCurrentlyActive,
+        silentCancel = showSilent && silentCurrentlyActive,
+        dndEnable = showDnd && !dndCurrentlyActive,
+        dndCancel = showDnd && dndCurrentlyActive,
+    )
 }

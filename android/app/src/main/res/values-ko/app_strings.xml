@@ -22,6 +22,8 @@
     <string name="notification_preparing_reminder">수업 알림 준비 중</string>
     <string name="action_enable_silent">무음</string>
     <string name="action_enable_dnd">방해 금지</string>
+    <string name="action_cancel_silent">무음 해제</string>
+    <string name="action_cancel_dnd">방해 금지 해제</string>
     <string name="action_close">닫기</string>
 
     <string name="prefix_until_class_start">수업 시작까지 </string>

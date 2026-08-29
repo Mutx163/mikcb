@@ -22,6 +22,8 @@
     <string name="notification_preparing_reminder">授業リマインダーを準備中</string>
     <string name="action_enable_silent">ミュート</string>
     <string name="action_enable_dnd">おやすみモード</string>
+    <string name="action_cancel_silent">ミュート解除</string>
+    <string name="action_cancel_dnd">おやすみモード解除</string>
     <string name="action_close">閉じる</string>
 
     <string name="prefix_until_class_start">授業開始まで</string>
