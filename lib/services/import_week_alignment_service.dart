@@ -1,3 +1,4 @@
+import '../domain/week_calculator.dart';
 import '../models/course.dart';
 
 class ImportWeekAlignmentService {
@@ -7,9 +8,9 @@ class ImportWeekAlignmentService {
     required DateTime semesterStartDate,
     required DateTime firstCourseDate,
   }) {
-    final days = _startOfWeek(
+    final days = WeekCalculator.startOfWeek(
       firstCourseDate,
-    ).difference(_startOfWeek(semesterStartDate)).inDays;
+    ).difference(WeekCalculator.startOfWeek(semesterStartDate)).inDays;
     if (days <= 0) {
       return 1;
     }
@@ -27,7 +28,7 @@ class ImportWeekAlignmentService {
     return courses.map((course) => _shiftCourse(course, weekOffset)).toList();
   }
 
-  DateTime startOfWeek(DateTime date) => _startOfWeek(date);
+  DateTime startOfWeek(DateTime date) => WeekCalculator.startOfWeek(date);
 
   Course _shiftCourse(Course course, int weekOffset) {
     final customWeeks = course.normalizedCustomWeeks;
@@ -50,10 +51,5 @@ class ImportWeekAlignmentService {
       isOddWeek: flipParity ? course.isEvenWeek : course.isOddWeek,
       isEvenWeek: flipParity ? course.isOddWeek : course.isEvenWeek,
     );
-  }
-
-  DateTime _startOfWeek(DateTime date) {
-    final normalizedDate = DateTime(date.year, date.month, date.day);
-    return normalizedDate.subtract(Duration(days: normalizedDate.weekday - 1));
   }
 }

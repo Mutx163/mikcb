@@ -1,3 +1,4 @@
+import '../domain/week_calculator.dart';
 import '../models/course.dart';
 
 class IcsImportResult {
@@ -25,7 +26,7 @@ class IcsImportService {
       return IcsImportResult(courses: const [], semesterStart: DateTime.now());
     }
 
-    final semesterStart = _startOfWeek(startDates.first);
+    final semesterStart = WeekCalculator.startOfWeek(startDates.first);
     final rawCourses = <Course>[];
 
     for (final event in events) {
@@ -420,18 +421,10 @@ class IcsImportService {
     return match == null ? 1 : int.tryParse(match.group(1)!) ?? 1;
   }
 
-  DateTime _startOfWeek(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).subtract(Duration(days: date.weekday - 1));
-  }
-
   int _weekIndex(DateTime date, DateTime semesterStart) {
-    final days = _startOfWeek(
+    final days = WeekCalculator.startOfWeek(
       date,
-    ).difference(_startOfWeek(semesterStart)).inDays;
+    ).difference(WeekCalculator.startOfWeek(semesterStart)).inDays;
     return days ~/ 7 + 1;
   }
 

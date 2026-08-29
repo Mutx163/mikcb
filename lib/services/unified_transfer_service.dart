@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'app_log_service.dart';
+import '../domain/week_calculator.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
 import '../models/exam.dart';
@@ -235,7 +236,7 @@ class UnifiedTransferService {
     required TransferScope scope,
     required List<Course> courses,
   }) {
-    final fallbackWeekStart = _startOfWeek(DateTime.now());
+    final fallbackWeekStart = WeekCalculator.startOfWeek(DateTime.now());
     final isSelectedScope =
         scope == TransferScope.selectedCourse ||
         scope == TransferScope.selectedCourses;
@@ -255,7 +256,7 @@ class UnifiedTransferService {
       weeks: weeks,
       semesterStartWeek: semesterStart == null
           ? null
-          : _startOfWeek(semesterStart),
+          : WeekCalculator.startOfWeek(semesterStart),
       fallbackWeekStart: fallbackWeekStart,
     );
   }
@@ -874,7 +875,7 @@ class _TransferScopeWindow {
       return !date.isBefore(fallbackWeekStart) && !date.isAfter(lastDate);
     }
 
-    final alignedDate = _startOfWeek(date);
+    final alignedDate = WeekCalculator.startOfWeek(date);
     final diffDays =
         DateTime.utc(alignedDate.year, alignedDate.month, alignedDate.day)
             .difference(
@@ -915,12 +916,4 @@ class _TransferScopeWindow {
     }
     return false;
   }
-}
-
-DateTime _startOfWeek(DateTime value) {
-  return DateTime(
-    value.year,
-    value.month,
-    value.day,
-  ).subtract(Duration(days: value.weekday - 1));
 }
