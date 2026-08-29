@@ -26,6 +26,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'utils/glass_debug_probe.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
@@ -199,6 +200,8 @@ Future<void> main() async {
       unawaited(MemoryStatsService.warmDiagnosticsBuildCache());
       FairMemoryService.instance.ensureInitialized();
       WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
+      // [临时诊断] 截图→玻璃回落实体的排查探针，定位后整体移除。
+      GlassDebugProbe.install();
 
       FlutterError.onError = (details) {
         // Debug 构建下 presentError 会把异常重新抛进 zone，中断当前帧导致
