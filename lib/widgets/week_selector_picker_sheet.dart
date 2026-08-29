@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 /// Bottom sheet for picking the visible timetable week using HyperOS styling.
@@ -37,6 +38,15 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.42;
     final showBackToCurrentWeek =
         currentSemesterWeek != null && visibleWeek != currentSemesterWeek;
+    // 材质判定须与 HyperosSheetFrame._buildFrostedBackground 的液态玻璃分支
+    // 一致（同一 appearance 字段 + 同一降级策略），保证格子样式跟实际面板
+    // 材质同步切换。
+    final appearance = FrostedAppearanceScope.of(context);
+    final onLiquidGlassPanel =
+        appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassSheetDialogEnabled &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+    final weekCountText = l10n.availableWeeksCount(availableWeeks.length);
 
     return HyperosSheetFrame(
       frosted: true,
@@ -50,9 +60,24 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
             style: HyperosTypography.sheetTitle(context),
           ),
           const SizedBox(height: 8),
-          HyperosSectionDescription(
-            text: l10n.availableWeeksCount(availableWeeks.length),
-          ),
+          if (onLiquidGlassPanel)
+            // 通透玻璃上 99 灰说明字几乎不可见，跟标题同用主墨色。
+            Padding(
+              padding: const EdgeInsets.only(
+                left: HyperosTokens.sectionLabelInset,
+                right: HyperosTokens.sectionLabelInset,
+                top: 8,
+              ),
+              child: Text(
+                weekCountText,
+                style: HyperosTypography.sectionDescription(context).copyWith(
+                  color: HyperosColors.primaryText(context),
+                ),
+                softWrap: true,
+              ),
+            )
+          else
+            HyperosSectionDescription(text: weekCountText),
           const SizedBox(height: 16),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxListHeight),
@@ -72,6 +97,7 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
                   return _WeekSelectorCell(
                     label: l10n.goToWeekLabel(week),
                     highlighted: week == currentSemesterWeek,
+                    onLiquidGlass: onLiquidGlassPanel,
                     onPressed: () => Navigator.of(context).pop(week),
                   );
                 },
@@ -98,11 +124,15 @@ class _WeekSelectorCell extends StatelessWidget {
   const _WeekSelectorCell({
     required this.label,
     required this.highlighted,
+    required this.onLiquidGlass,
     required this.onPressed,
   });
 
   final String label;
   final bool highlighted;
+
+  /// 面板为通透液态玻璃时切换玻璃专用墨色/描边（磨砂、实底维持 Miuix 平涂）。
+  final bool onLiquidGlass;
   final VoidCallback onPressed;
 
   /// Below [HyperosTypography.sheetTitle] (~preference title), above dense footnote.
@@ -118,14 +148,26 @@ class _WeekSelectorCell extends StatelessWidget {
     );
     final borderRadius = BorderRadius.circular(cornerRadius);
 
+    // 平涂 #E8E8E8 在通透玻璃上与底同亮度、无边框感（与 HyperosButton
+    // secondary 在磨砂玻璃上修过的同类失效）；改半透明白井 + 细描边，
+    // 墨色用 onSurface 纯黑保证任意壁纸折射下可读。
     final backgroundColor = highlighted
         ? HyperosColors.primary(context)
+        : onLiquidGlass
+        ? Colors.white.withValues(alpha: isDark ? 0.14 : 0.55)
         : (isDark
               ? Colors.white.withValues(alpha: 0.14)
               : const Color(0xFFE8E8E8));
     final foregroundColor = highlighted
         ? HyperosColors.onPrimary(context)
+        : onLiquidGlass
+        ? HyperosColors.onSurface(context)
         : HyperosColors.onSecondaryVariant(context);
+    final edgeColor = onLiquidGlass && !highlighted
+        ? (isDark
+              ? Colors.white.withValues(alpha: 0.18)
+              : Colors.black.withValues(alpha: 0.12))
+        : null;
 
     final labelWidget = FittedBox(
       fit: BoxFit.scaleDown,
@@ -153,9 +195,17 @@ class _WeekSelectorCell extends StatelessWidget {
           onPressed();
         },
         borderRadius: borderRadius,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Center(child: labelWidget),
+        child: Ink(
+          decoration: edgeColor == null
+              ? null
+              : BoxDecoration(
+                  borderRadius: borderRadius,
+                  border: Border.all(color: edgeColor),
+                ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+            child: Center(child: labelWidget),
+          ),
         ),
       ),
     );
