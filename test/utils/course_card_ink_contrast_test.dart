@@ -245,6 +245,114 @@ void main() {
       expect(detail.a, closeTo(0.7, 0.01));
     });
   });
+
+  group('courseCardInkIsNeutral', () {
+    test('white / black / greys and near-black deep inks are neutral', () {
+      for (final hex in [
+        '#FFFFFF', '#000000', '#1F1F1F', '#1A1A1A', '#808080', '#0D0D14',
+      ]) {
+        expect(courseCardInkIsNeutral(parseHex(hex)), isTrue, reason: hex);
+      }
+    });
+
+    test('hue-bearing inks are not neutral', () {
+      for (final hex in [
+        '#FF9800', '#B34700', '#0D47A1', '#F48FB1', '#90CAF9',
+      ]) {
+        expect(courseCardInkIsNeutral(parseHex(hex)), isFalse, reason: hex);
+      }
+    });
+  });
+
+  group('glass ink rule (gaussian over wallpaper)', () {
+    const card = Color(0xFFFF9800); // 课程橙，tint 亮度约 0.437
+
+    test('hue ink drops to auto black on a bright wallpaper', () {
+      // effective = 0.437*0.5 + 0.8*0.5 ≈ 0.62 → chrome 墨取近黑
+      final ink = resolveReadableCourseCardGlassInk(
+        preferred: parseHex('#B34700'),
+        cardColor: card,
+        wallpaperLuminance: 0.8,
+      );
+      expect(ink, const Color(0xFF1A1A1A));
+    });
+
+    test('hue ink drops to auto white on a dark wallpaper', () {
+      // effective ≈ 0.27 < 0.45 → 白墨
+      final ink = resolveReadableCourseCardGlassInk(
+        preferred: parseHex('#0D47A1'),
+        cardColor: card,
+        wallpaperLuminance: 0.1,
+      );
+      expect(ink, const Color(0xFFFFFFFF));
+    });
+
+    test('readable neutral ink keeps the user choice on bright wallpaper', () {
+      final ink = resolveReadableCourseCardGlassInk(
+        preferred: parseHex('#1F1F1F'),
+        cardColor: card,
+        wallpaperLuminance: 0.8,
+      );
+      expect(ink, parseHex('#1F1F1F'));
+    });
+
+    test('neutral ink that would wash out flips (white on bright glass)', () {
+      final ink = resolveReadableCourseCardGlassInk(
+        preferred: const Color(0xFFFFFFFF),
+        cardColor: card,
+        wallpaperLuminance: 0.8,
+      );
+      expect(ink, const Color(0xFF1A1A1A));
+    });
+
+    test('resolver routes glass with luminance through the glass rule', () {
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: const Color(0xFFFFFFFF),
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+        wallpaperLuminance: 0.8,
+      );
+      expect(title, const Color(0xFF1A1A1A));
+    });
+
+    test('glass without luminance keeps legacy behavior (user choice)', () {
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: parseHex('#B34700'),
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+        wallpaperLuminance: null,
+      );
+      expect(title, parseHex('#B34700'));
+      final detail = resolveReadableCourseCardDetailColor(
+        preferred: const Color(0xFF000000),
+        resolvedTitleInk: title,
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+        wallpaperLuminance: null,
+      );
+      expect(detail.r, closeTo(0.0, 0.001));
+      expect(detail.a, closeTo(0.7, 0.01));
+    });
+
+    test('detail ink follows the resolved title ink on glass', () {
+      final title = resolveReadableCourseCardTitleColor(
+        preferred: const Color(0xFFFFFFFF),
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+        wallpaperLuminance: 0.8,
+      );
+      expect(title, const Color(0xFF1A1A1A));
+      final detail = resolveReadableCourseCardDetailColor(
+        preferred: parseHex('#B34700'),
+        resolvedTitleInk: title,
+        cardColor: card,
+        surfaceShowsWallpaper: true,
+        wallpaperLuminance: 0.8,
+      );
+      expect(detail.r, closeTo(title.r, 0.001));
+      expect(detail.a, closeTo(0.7, 0.01));
+    });
+  });
 }
 
 Color parseHex(String hex) {

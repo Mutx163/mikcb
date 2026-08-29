@@ -74,4 +74,51 @@ void main() {
     expect(detailInk.b, closeTo(1.0, 0.001));
     expect(detailInk.a, closeTo(0.7, 0.01));
   });
+
+  testWidgets('gaussian card over bright wallpaper auto-flips to dark ink', (
+    tester,
+  ) async {
+    // 回归：玻璃档此前原样保留用户/导入墨色，亮壁纸上白字洗没、橙字突兀。
+    // 玻璃规则：彩色墨回落自动黑白，中性墨对比度不足同样回落，详情跟随标题。
+    final course = Course(
+      id: 'course-3',
+      name: '操作系统',
+      teacher: '',
+      location: '',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '09:40',
+      color: '#FF9800',
+      description: '进程与线程',
+    );
+
+    await tester.pumpWidget(
+      TestApp(
+        home: CourseCard(
+          course: course,
+          showTeacher: false,
+          showLocation: false,
+          showDescription: true,
+          surfaceStyle: CourseCardSurfaceStyle.gaussian,
+          wallpaperLuminance: 0.8,
+          titleColorHex: '#FFFFFF',
+          detailColorHex: '#B34700',
+        ),
+      ),
+    );
+
+    // effective ≈ 0.62：白字对比度 1.6 < 3 → 自动黑。
+    final title = tester.widget<Text>(find.text('操作系统'));
+    expect(title.style?.color, const Color(0xFF1A1A1A));
+
+    // 橙色详情（彩色墨）在玻璃档一律跟随标题墨。
+    final description = tester.widget<Text>(find.text('进程与线程'));
+    final detailInk = description.style!.color!;
+    expect(detailInk.r, closeTo(0x1A / 255, 0.002));
+    expect(detailInk.g, closeTo(0x1A / 255, 0.002));
+    expect(detailInk.b, closeTo(0x1A / 255, 0.002));
+    expect(detailInk.a, closeTo(0.7, 0.01));
+  });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
+import 'home_page_background.dart';
 
 /// Shared preset colors for course cards (manual add, import random, LAN edit).
 const List<String> kPresetCourseColorHexes = [
@@ -128,6 +129,43 @@ bool courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle style) {
   }
 }
 
+/// Whether [ink] is a neutral ink (white / black / grey family) rather than a
+/// hue-bearing colour.
+///
+/// 双重判定：绝对色程（max-min）≤0.04 放行近黑的深色墨（如 #0D0D14），
+/// 其余按 HSL 饱和度 ≤0.15 判定，白/黑/灰系全部中性。
+bool courseCardInkIsNeutral(Color ink) {
+  final channels = <double>[ink.r, ink.g, ink.b]..sort();
+  if (channels.last - channels.first <= 0.04) {
+    return true;
+  }
+  return HSLColor.fromColor(ink).saturation <= 0.15;
+}
+
+/// 玻璃（高斯模糊）卡面的墨色规则。
+///
+/// 玻璃卡的实际背景 = 壁纸磨砂 + 约 42% 课程色调染色，壁纸亮度不可控——
+/// - 彩色墨（含导入深墨、用户自选彩色）：为实体卡纯色底设计，玻璃上没有
+///   那个底，直接回落自动黑白；
+/// - 中性墨（黑白灰）：保留用户选择，但对混合背景对比度 < 3:1（与首页
+///   chrome 壁纸策略 [homePageInkHasSufficientContrast] 一致）时同样回落。
+///
+/// 自动黑白按课程 tint 与壁纸带亮度各 50% 混合判定，与日视图议程卡
+/// （`_dayAgendaAutoInk`）同一公式。
+Color resolveReadableCourseCardGlassInk({
+  required Color preferred,
+  required Color cardColor,
+  required double wallpaperLuminance,
+}) {
+  final effectiveLuminance =
+      cardColor.computeLuminance() * 0.5 + wallpaperLuminance * 0.5;
+  if (courseCardInkIsNeutral(preferred) &&
+      homePageInkHasSufficientContrast(preferred, effectiveLuminance)) {
+    return preferred;
+  }
+  return homePageChromeForegroundForLuminance(effectiveLuminance);
+}
+
 Color _parsePairColor(String hex) {
   final value = hex.replaceFirst('#', '').trim();
   final full = value.length == 6 ? 'FF$value' : value;
@@ -144,16 +182,27 @@ Color _bestContrastInk(Color background) {
       : dark;
 }
 
-/// Resolves a legible title ink: keeps the user's [preferred] color unless it
-/// is effectively invisible on [cardColor] (below the critical bar) on an
-/// opaque surface, in which case it is replaced with the best-contrast ink.
+/// Resolves a legible title ink.
+///
+/// 实心卡面：保留用户墨色，仅在对比度低于隐身线（2.0）时替换为黑白最优墨。
+/// 玻璃卡面（[surfaceShowsWallpaper]）：背景是壁纸 + tint，按玻璃规则处理
+/// （[resolveReadableCourseCardGlassInk]）；[wallpaperLuminance] 未知时背景
+/// 不可判定，维持旧行为保留用户墨色。
 Color resolveReadableCourseCardTitleColor({
   required Color preferred,
   required Color cardColor,
   required bool surfaceShowsWallpaper,
+  double? wallpaperLuminance,
 }) {
   if (surfaceShowsWallpaper) {
-    return preferred;
+    if (wallpaperLuminance == null) {
+      return preferred;
+    }
+    return resolveReadableCourseCardGlassInk(
+      preferred: preferred,
+      cardColor: cardColor,
+      wallpaperLuminance: wallpaperLuminance,
+    );
   }
   if (courseCardContrastRatio(preferred, cardColor) >=
       courseCardCriticalContrastRatio) {
@@ -164,25 +213,32 @@ Color resolveReadableCourseCardTitleColor({
 
 /// Resolves the softened detail (subtitle) ink for a course card.
 ///
-/// 先走与标题一致的对比度守卫；在不透明卡面上，再把结果约束到与
-/// [resolvedTitleInk] 相同的明暗极性：详情墨可能单独达标（黑字在中明度卡上
+/// 实心卡面：详情墨先走与标题一致的对比度守卫，再把结果约束到与
+/// [resolvedTitleInk] 相同的明暗极性——详情墨可能单独达标（黑字在中明度卡上
 /// 对比度 9+），却与被保留的白标题（对比度仅 2.2 左右、处于 advisory 区间）
-/// 极性相反，画出「白标题 + 黑简介」的半洗白混色卡。标题墨是卡面的锚，
-/// 详情跟随。高斯模糊档透出壁纸、卡色不是可靠背景，与标题守卫一致地
-/// 保留用户选择。
+/// 极性相反，画出「白标题 + 黑简介」的半洗白混色卡。
+///
+/// 玻璃卡面：壁纸亮度已知时详情一律跟随标题墨软化——背景是壁纸 + tint，
+/// 无法为详情单独配色，彩色详情/反向极性都不会再出现；壁纸亮度未知时
+/// 维持旧行为保留用户墨色。
 Color resolveReadableCourseCardDetailColor({
   required Color preferred,
   required Color resolvedTitleInk,
   required Color cardColor,
   required bool surfaceShowsWallpaper,
+  double? wallpaperLuminance,
 }) {
   final guarded = resolveReadableCourseCardTitleColor(
     preferred: preferred,
     cardColor: cardColor,
     surfaceShowsWallpaper: surfaceShowsWallpaper,
+    wallpaperLuminance: wallpaperLuminance,
   );
   if (surfaceShowsWallpaper) {
-    return guarded.withValues(alpha: 0.7);
+    if (wallpaperLuminance == null) {
+      return guarded.withValues(alpha: 0.7);
+    }
+    return resolvedTitleInk.withValues(alpha: 0.7);
   }
   const lightInkLuminance = 0.5;
   final titleIsLight =

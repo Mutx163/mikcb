@@ -937,6 +937,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
               compactOuterInset: cardInset,
               surfaceStyle: settings.courseCardSurfaceStyle,
+              // 玻璃档自动黑白判定的壁纸带亮度；实体卡忽略。
+              wallpaperLuminance:
+                  wallpaperBodyLuminance ?? wallpaperTopLuminance,
               surfaceOpacity: item.opacity,
               titleColorHex: resolveCourseCardTitleColorHex(
                 courseTextColorHex: item.course.textColor,

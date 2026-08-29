@@ -5826,20 +5826,21 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? null
         : _colorFromHex(foregroundHex, Colors.white);
     // 自定义字色（导入/LAN 同步携带）在实心卡面上做可读性兜底：与卡色
-    // 同色系时（如蓝字配蓝卡）替换为黑白最优墨色。高斯模糊档透出壁纸、
-    // 卡色不再是可靠背景，保持用户选择，与 CourseCard 行为一致。
+    // 同色系时（如蓝字配蓝卡）替换为黑白最优墨色。玻璃档按壁纸亮度走玻璃
+    // 规则（彩色墨回落自动黑白、中性墨对比度门槛），与 CourseCard 行为
+    // 一致；壁纸亮度未知时保留用户选择。
+    final showsWallpaper = settings != null &&
+        courseCardSurfaceShowsWallpaper(settings.courseCardSurfaceStyle);
     final foregroundColor = customInk == null
         ? _dayAgendaAutoInk(fillColor, settings: settings)
-        : (settings != null &&
-              !courseCardSurfaceShowsWallpaper(
-                settings.courseCardSurfaceStyle,
-              )
-        ? resolveReadableCourseCardTitleColor(
+        : resolveReadableCourseCardTitleColor(
             preferred: customInk,
             cardColor: fillColor,
-            surfaceShowsWallpaper: false,
-          )
-        : customInk);
+            surfaceShowsWallpaper: showsWallpaper,
+            wallpaperLuminance: showsWallpaper
+                ? (_wallpaperBodyLuminance ?? _wallpaperTopLuminance)
+                : null,
+          );
     return _DayAgendaPalette(
       baseColor: baseColor,
       fillColor: fillColor,
@@ -6017,6 +6018,9 @@ class _TimetableScreenState extends State<TimetableScreen>
               compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
               compactOuterInset: cardInset,
               surfaceStyle: settings.courseCardSurfaceStyle,
+              // 玻璃档自动黑白判定的壁纸带亮度；实体卡忽略。
+              wallpaperLuminance:
+                  _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
               // Dim conflict / non-current via fill alphas, keep frost working.
               surfaceOpacity: item.opacity,
               titleColorHex: resolveCourseCardTitleColorHex(

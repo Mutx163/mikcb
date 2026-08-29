@@ -33,6 +33,11 @@ class CourseCard extends StatelessWidget {
   /// gaussian).
   final CourseCardSurfaceStyle surfaceStyle;
 
+  /// 壁纸带亮度（0–1），仅玻璃（高斯模糊）档使用：与课程 tint 各 50% 混合
+  /// 判定自动黑白（彩色墨回落、中性墨对比度门槛）。实体卡忽略；为 null
+  /// （无壁纸 / 采样未完成）时玻璃档维持旧行为保留用户墨色。
+  final double? wallpaperLuminance;
+
   /// Dim factor for conflict / holiday / suspended states (0–1); scales the
   /// surface fill and tint alphas.
   final double surfaceOpacity;
@@ -71,6 +76,7 @@ class CourseCard extends StatelessWidget {
     this.titleColorHex,
     this.detailColorHex,
     this.surfaceStyle = CourseCardSurfaceStyle.solid,
+    this.wallpaperLuminance,
     this.surfaceOpacity = 1.0,
     this.compactOverlineText,
     this.topRightBadgeText,
@@ -91,9 +97,9 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _parseColor(overrideColorHex ?? course.color);
-    // 可读性兜底（仅实心卡面）：全局/单课自定义字色与卡色同色系时
-    // （如蓝字配蓝卡）替换为黑白最优墨色；高斯模糊档透出壁纸，卡色不
-    // 是可靠背景，保留用户选择。此前守卫函数一直存在但从未接入渲染。
+    // 可读性兜底：实心卡面上自定义字色与卡色同色系时（如蓝字配蓝卡）替换
+    // 为黑白最优墨；玻璃卡面上按壁纸亮度做玻璃规则（彩色墨回落自动黑白、
+    // 中性墨对比度门槛），壁纸亮度未知时保留用户选择。
     final surfaceShowsWallpaper = courseCardSurfaceShowsWallpaper(
       surfaceStyle,
     );
@@ -103,8 +109,10 @@ class CourseCard extends StatelessWidget {
           : Colors.white,
       cardColor: color,
       surfaceShowsWallpaper: surfaceShowsWallpaper,
+      wallpaperLuminance: wallpaperLuminance,
     );
-    // 详情墨在实心卡面上额外与标题墨同极性（白标题不再配黑简介）。
+    // 详情墨：实心卡面与标题墨同极性（白标题不再配黑简介）；玻璃卡面在
+    // 壁纸亮度已知时一律跟随标题墨软化。
     final detailColor = resolveReadableCourseCardDetailColor(
       preferred: detailColorHex != null
           ? _parseColor(detailColorHex!)
@@ -112,6 +120,7 @@ class CourseCard extends StatelessWidget {
       resolvedTitleInk: titleColor,
       cardColor: color,
       surfaceShowsWallpaper: surfaceShowsWallpaper,
+      wallpaperLuminance: wallpaperLuminance,
     );
 
     if (isCompact) {
