@@ -1822,6 +1822,7 @@
   "liveTestingCrashSoon": "Umeng U-APMテストクラッシュをトリガーします。アプリを再起動してバックグラウンドで上报を受信したか確認してください。",
   "liveTestingAnrSoon": "約30秒のメインスレッドフリーズをトリガーします。flutter runから離れてテストし、フリーズ後にアプリを再起動してUmengバックグラウンドを確認。",
   "liveTestingNoCourseAvailable": "現在テスト可能な授業がありません",
+  "liveTestingPresetArmedButHidden": "自己診断のプリセット授業は注入されましたが、今は島が表示されません。「授業前リマインダー」がオフの場合、島は授業が実際に始まった後（約1分後）に表示されます",
   "liveTestingTestCourseNote": "ここにメモを表示，授業編集ページで設定可能",
   "liveTestingNotificationSent": "授業リマインダーテスト通知を送信しました。約8秒以内に授業前リマインダーステージに移行",
   "sendFailedWithError": "送信失敗：{error}",

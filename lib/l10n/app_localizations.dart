@@ -6819,6 +6819,12 @@ abstract class AppLocalizations {
   /// **'当前没有可测试的课程'**
   String get liveTestingNoCourseAvailable;
 
+  /// No description provided for @liveTestingPresetArmedButHidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现'**
+  String get liveTestingPresetArmedButHidden;
+
   /// No description provided for @liveTestingTestCourseNote.
   ///
   /// In zh, this message translates to:

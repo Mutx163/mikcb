@@ -104,6 +104,8 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
     }
 
     if (selection == null) {
+      final overlayArmed = provider.hasLiveTestFixtureCourses;
+      final holidayNow = provider.isHoliday(DateTime.now());
       await liveService.recordDiagnosticEvent(
         'live_update_test_no_selection',
         AppLogMessages.liveUpdateTestNoSelection,
@@ -113,11 +115,20 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
           'weekday': DateTime.now().weekday,
           'currentWeek': provider.currentWeek,
           'seededCourseId': seededCourseId,
+          'isHoliday': holidayNow,
+          'liveEnableBeforeClass': provider.settings.liveEnableBeforeClass,
+          'liveShowBeforeClassMinutes':
+              provider.settings.liveShowBeforeClassMinutes,
+          'hasLiveTestFixtureCourses': overlayArmed,
         },
       );
+      // 预设课已注入却选不出阶段（课前显示被关/假日门拦截）时，与「真的没有
+      // 课」分开提示——前者岛会在课程真正开始后弹出，笼统的「无课」会误导用户。
       return LiveTestingTriggerResult(
         status: LiveTestingTriggerStatus.error,
-        message: l10n.liveTestingNoCourseAvailable,
+        message: overlayArmed
+            ? l10n.liveTestingPresetArmedButHidden
+            : l10n.liveTestingNoCourseAvailable,
       );
     }
 

@@ -1822,6 +1822,7 @@
   "liveTestingCrashSoon": "Umeng U-APM 테스트 충돌을 트리거합니다. 앱을 다시 열어 백그라운드에서 上报를 수신했는지 확인하세요.",
   "liveTestingAnrSoon": "약 30초간 메인 스레드 프리즈를 트리거합니다. flutter run에서 벗어나 테스트하고, 프리즈 후 앱을 다시 열어 Umeng 백그라운드를 확인하세요.",
   "liveTestingNoCourseAvailable": "현재 테스트 가능한 수업이 없습니다",
+  "liveTestingPresetArmedButHidden": "자가 점검 프리셋 수업이 주입되었지만 지금은 아일랜드가 표시되지 않습니다. '수업 전 알림'이 꺼져 있으면 수업이 실제로 시작된 후(약 1분 뒤) 표시됩니다",
   "liveTestingTestCourseNote": "여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다",
   "liveTestingNotificationSent": "수업 알림 테스트 알림을 전송했습니다. 약 8초 내에 수업 전 알림 단계로 진입합니다",
   "sendFailedWithError": "전송 실패: {error}",

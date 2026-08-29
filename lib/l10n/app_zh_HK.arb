@@ -1821,6 +1821,7 @@
   "liveTestingCrashSoon": "即將觸發友盟 U-APM 測試崩溃，請重新打開應用查看後台是否收到上報",
   "liveTestingAnrSoon": "即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新打開應用查看友盟後台",
   "liveTestingNoCourseAvailable": "目前没有可測試的課程",
+  "liveTestingPresetArmedButHidden": "已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現",
   "liveTestingTestCourseNote": "此處顯示備注，可以在課程編輯頁進行設定",
   "liveTestingNotificationSent": "已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段",
   "sendFailedWithError": "發送失敗: {error}",

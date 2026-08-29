@@ -3676,6 +3676,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingNoCourseAvailable => '当前没有可测试的课程';
 
   @override
+  String get liveTestingPresetArmedButHidden =>
+      '已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现';
+
+  @override
   String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页进行设置';
 
   @override
@@ -13876,6 +13880,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingNoCourseAvailable => '目前没有可測試的課程';
+
+  @override
+  String get liveTestingPresetArmedButHidden =>
+      '已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程編輯頁進行設定';
@@ -24121,6 +24129,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveTestingNoCourseAvailable => '目前没有可測試的課程';
+
+  @override
+  String get liveTestingPresetArmedButHidden =>
+      '已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程编辑頁進行設定';

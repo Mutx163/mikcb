@@ -3910,6 +3910,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'There is no course available for testing right now.';
 
   @override
+  String get liveTestingPresetArmedButHidden =>
+      'Preset self-check courses were armed, but the island will not pop right now — with the Before Class Reminder off, it only appears once the course actually starts (in about a minute).';
+
+  @override
   String get liveTestingTestCourseNote =>
       'This note is shown here. You can edit it on the course edit page';
 

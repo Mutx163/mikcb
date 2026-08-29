@@ -3767,6 +3767,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingNoCourseAvailable => '현재 테스트 가능한 수업이 없습니다';
 
   @override
+  String get liveTestingPresetArmedButHidden =>
+      '자가 점검 프리셋 수업이 주입되었지만 지금은 아일랜드가 표시되지 않습니다. \'수업 전 알림\'이 꺼져 있으면 수업이 실제로 시작된 후(약 1분 뒤) 표시됩니다';
+
+  @override
   String get liveTestingTestCourseNote =>
       '여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다';
 

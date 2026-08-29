@@ -2006,6 +2006,7 @@
   "liveTestingCrashSoon": "A Umeng U-APM test crash is about to be triggered. Reopen the app afterward to check whether it was reported.",
   "liveTestingAnrSoon": "A ~30-second main-thread freeze is about to be triggered. Test outside flutter run, then reopen the app afterward to check Umeng.",
   "liveTestingNoCourseAvailable": "There is no course available for testing right now.",
+  "liveTestingPresetArmedButHidden": "Preset self-check courses were armed, but the island will not pop right now — with the Before Class Reminder off, it only appears once the course actually starts (in about a minute).",
   "liveTestingTestCourseNote": "This note is shown here. You can edit it on the course edit page",
   "liveTestingNotificationSent": "A before-class test notification has been sent. It should enter the before-class reminder stage in about 8 seconds.",
   "sendFailedWithError": "Failed to send: {error}",

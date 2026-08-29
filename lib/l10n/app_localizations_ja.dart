@@ -3746,6 +3746,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingNoCourseAvailable => '現在テスト可能な授業がありません';
 
   @override
+  String get liveTestingPresetArmedButHidden =>
+      '自己診断のプリセット授業は注入されましたが、今は島が表示されません。「授業前リマインダー」がオフの場合、島は授業が実際に始まった後（約1分後）に表示されます';
+
+  @override
   String get liveTestingTestCourseNote => 'ここにメモを表示，授業編集ページで設定可能';
 
   @override
