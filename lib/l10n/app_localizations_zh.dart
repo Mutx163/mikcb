@@ -1250,6 +1250,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get qrTransferShareWeek => '分享本周课表';
+
+  @override
+  String get qrTransferShareSelectedCourses => '分享勾选的课程';
+
+  @override
+  String get qrTransferShareTimeTemplate => '分享时间模板';
+
+  @override
+  String get qrTransferSelectCoursesDone => '完成';
+
+  @override
+  String get dataTransferUndoSuccess => '已撤销本次导入';
+
+  @override
+  String get dataTransferUndoFailed => '撤销失败';
+
+  @override
+  String get selectImportModeMerge => '合并更改';
+
+  @override
   String get fullExportTitle => '完整导出';
 
   @override
@@ -11363,6 +11384,27 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String qrTransferFileDataDetail(String rawSize, String compressedSize) {
     return '原始 $rawSize · 壓縮 $compressedSize';
   }
+
+  @override
+  String get qrTransferShareWeek => '分享本週課表';
+
+  @override
+  String get qrTransferShareSelectedCourses => '分享勾選的課程';
+
+  @override
+  String get qrTransferShareTimeTemplate => '分享時間範本';
+
+  @override
+  String get qrTransferSelectCoursesDone => '完成';
+
+  @override
+  String get dataTransferUndoSuccess => '已撤銷本次匯入';
+
+  @override
+  String get dataTransferUndoFailed => '撤銷失敗';
+
+  @override
+  String get selectImportModeMerge => '合併變更';
 
   @override
   String get fullExportTitle => '完整匯出';
@@ -21521,6 +21563,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String qrTransferFileDataDetail(String rawSize, String compressedSize) {
     return '原始 $rawSize · 壓縮 $compressedSize';
   }
+
+  @override
+  String get qrTransferShareWeek => '分享本週課表';
+
+  @override
+  String get qrTransferShareSelectedCourses => '分享勾選的課程';
+
+  @override
+  String get qrTransferShareTimeTemplate => '分享時間範本';
+
+  @override
+  String get qrTransferSelectCoursesDone => '完成';
+
+  @override
+  String get dataTransferUndoSuccess => '已撤銷本次匯入';
+
+  @override
+  String get dataTransferUndoFailed => '撤銷失敗';
+
+  @override
+  String get selectImportModeMerge => '合併變更';
 
   @override
   String get fullExportTitle => '完整匯出';

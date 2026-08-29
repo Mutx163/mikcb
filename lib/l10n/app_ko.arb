@@ -526,6 +526,13 @@
       }
     }
   },
+  "qrTransferShareWeek": "이번 주 시간표 공유",
+  "qrTransferShareSelectedCourses": "선택한 과목 공유",
+  "qrTransferShareTimeTemplate": "시간 템플릿 공유",
+  "qrTransferSelectCoursesDone": "완료",
+  "dataTransferUndoSuccess": "가져오기를 실행 취소했습니다",
+  "dataTransferUndoFailed": "실행 취소 실패",
+  "selectImportModeMerge": "변경 사항 병합",
   "fullExportTitle": "전체 내보내기",
   "fullExportSubtitle": "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다",
   "exportCurrentTimetable": "현재 시간표 내보내기",

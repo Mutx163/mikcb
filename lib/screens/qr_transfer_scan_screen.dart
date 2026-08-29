@@ -421,7 +421,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
                   const SizedBox(height: 8),
                   Text(
                     _errorText(l10n),
-                    style: const TextStyle(color: Colors.orangeAccent),
+                    style: TextStyle(color: HyperosColors.error(context)),
                   ),
                   const SizedBox(height: 10),
                   HyperosButton(

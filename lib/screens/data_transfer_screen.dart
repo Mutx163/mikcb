@@ -112,7 +112,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                     l10n.qrTransferPlaintextWarning,
                     style: HyperosTypography.listDetail(
                       context,
-                    ).copyWith(color: Colors.orangeAccent),
+                    ).copyWith(color: HyperosColors.error(context)),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -573,13 +573,16 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   Future<void> _undoTransfer(TransferUndoToken token) async {
     final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
     final success = await _transferService.undoToken(provider, token.id);
     if (!mounted) {
       return;
     }
     showAppToast(
       context,
-      message: success ? 'Transfer undone' : 'Undo failed',
+      message: success
+          ? l10n.dataTransferUndoSuccess
+          : l10n.dataTransferUndoFailed,
       kind: success ? AppToastKind.success : AppToastKind.error,
     );
   }
@@ -596,16 +599,16 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         HyperosDialogAction(
-          label: 'Share this week',
+          label: l10n.qrTransferShareWeek,
           onPressed: () => Navigator.pop(context, TransferScope.weekTimetable),
         ),
         HyperosDialogAction(
-          label: 'Share selected courses',
+          label: l10n.qrTransferShareSelectedCourses,
           onPressed: () =>
               Navigator.pop(context, TransferScope.selectedCourses),
         ),
         HyperosDialogAction(
-          label: 'Share time template',
+          label: l10n.qrTransferShareTimeTemplate,
           onPressed: () => Navigator.pop(context, TransferScope.timeTemplate),
         ),
         HyperosDialogAction(
@@ -620,6 +623,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   Future<Set<String>?> _chooseCoursesForQr(TimetableProvider provider) {
     final selected = <String>{};
+    final l10n = AppLocalizations.of(context)!;
     return showHyperosSheet<Set<String>>(
       context: context,
       builder: (sheetContext) {
@@ -654,7 +658,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: HyperosButton(
-                        label: 'Done',
+                        label: l10n.qrTransferSelectCoursesDone,
                         onPressed: () => Navigator.pop(
                           sheetContext,
                           Set<String>.from(selected),

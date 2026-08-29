@@ -1335,6 +1335,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get qrTransferShareWeek => 'Share this week';
+
+  @override
+  String get qrTransferShareSelectedCourses => 'Share selected courses';
+
+  @override
+  String get qrTransferShareTimeTemplate => 'Share time template';
+
+  @override
+  String get qrTransferSelectCoursesDone => 'Done';
+
+  @override
+  String get dataTransferUndoSuccess => 'Transfer undone';
+
+  @override
+  String get dataTransferUndoFailed => 'Undo failed';
+
+  @override
+  String get selectImportModeMerge => 'Merge changes';
+
+  @override
   String get fullExportTitle => 'Export';
 
   @override

@@ -525,6 +525,13 @@
       }
     }
   },
+  "qrTransferShareWeek": "分享本週課表",
+  "qrTransferShareSelectedCourses": "分享勾選的課程",
+  "qrTransferShareTimeTemplate": "分享時間範本",
+  "qrTransferSelectCoursesDone": "完成",
+  "dataTransferUndoSuccess": "已撤銷本次匯入",
+  "dataTransferUndoFailed": "撤銷失敗",
+  "selectImportModeMerge": "合併變更",
   "fullExportTitle": "完整匯出",
   "fullExportSubtitle": "支持匯出目前課表，或一次匯出全部課表、時間範本和目前選中狀態",
   "exportCurrentTimetable": "匯出目前課表",

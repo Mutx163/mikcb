@@ -1277,6 +1277,27 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get qrTransferShareWeek => '今週の時間割を共有';
+
+  @override
+  String get qrTransferShareSelectedCourses => '選択した科目を共有';
+
+  @override
+  String get qrTransferShareTimeTemplate => '時間テンプレートを共有';
+
+  @override
+  String get qrTransferSelectCoursesDone => '完了';
+
+  @override
+  String get dataTransferUndoSuccess => '取り込みを取り消しました';
+
+  @override
+  String get dataTransferUndoFailed => '取り消しに失敗しました';
+
+  @override
+  String get selectImportModeMerge => '変更をマージ';
+
+  @override
   String get fullExportTitle => '完全エクスポート';
 
   @override

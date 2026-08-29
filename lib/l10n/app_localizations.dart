@@ -2402,6 +2402,48 @@ abstract class AppLocalizations {
   /// **'原始 {rawSize} · 压缩 {compressedSize}'**
   String qrTransferFileDataDetail(String rawSize, String compressedSize);
 
+  /// No description provided for @qrTransferShareWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享本周课表'**
+  String get qrTransferShareWeek;
+
+  /// No description provided for @qrTransferShareSelectedCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享勾选的课程'**
+  String get qrTransferShareSelectedCourses;
+
+  /// No description provided for @qrTransferShareTimeTemplate.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享时间模板'**
+  String get qrTransferShareTimeTemplate;
+
+  /// No description provided for @qrTransferSelectCoursesDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get qrTransferSelectCoursesDone;
+
+  /// No description provided for @dataTransferUndoSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已撤销本次导入'**
+  String get dataTransferUndoSuccess;
+
+  /// No description provided for @dataTransferUndoFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销失败'**
+  String get dataTransferUndoFailed;
+
+  /// No description provided for @selectImportModeMerge.
+  ///
+  /// In zh, this message translates to:
+  /// **'合并更改'**
+  String get selectImportModeMerge;
+
   /// No description provided for @fullExportTitle.
   ///
   /// In zh, this message translates to:

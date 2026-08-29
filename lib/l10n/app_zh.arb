@@ -659,6 +659,13 @@
       }
     }
   },
+  "qrTransferShareWeek": "分享本周课表",
+  "qrTransferShareSelectedCourses": "分享勾选的课程",
+  "qrTransferShareTimeTemplate": "分享时间模板",
+  "qrTransferSelectCoursesDone": "完成",
+  "dataTransferUndoSuccess": "已撤销本次导入",
+  "dataTransferUndoFailed": "撤销失败",
+  "selectImportModeMerge": "合并更改",
   "fullExportTitle": "完整导出",
   "fullExportSubtitle": "支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态",
   "exportCurrentTimetable": "导出当前课表",

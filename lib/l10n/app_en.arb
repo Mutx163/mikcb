@@ -659,6 +659,13 @@
       }
     }
   },
+  "qrTransferShareWeek": "Share this week",
+  "qrTransferShareSelectedCourses": "Share selected courses",
+  "qrTransferShareTimeTemplate": "Share time template",
+  "qrTransferSelectCoursesDone": "Done",
+  "dataTransferUndoSuccess": "Transfer undone",
+  "dataTransferUndoFailed": "Undo failed",
+  "selectImportModeMerge": "Merge changes",
   "fullExportTitle": "Export",
   "fullExportSubtitle": "Export the current timetable, or export all timetables, time schemes, and the current selection",
   "exportCurrentTimetable": "Export Current Timetable",

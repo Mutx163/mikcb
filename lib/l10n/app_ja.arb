@@ -526,6 +526,13 @@
       }
     }
   },
+  "qrTransferShareWeek": "今週の時間割を共有",
+  "qrTransferShareSelectedCourses": "選択した科目を共有",
+  "qrTransferShareTimeTemplate": "時間テンプレートを共有",
+  "qrTransferSelectCoursesDone": "完了",
+  "dataTransferUndoSuccess": "取り込みを取り消しました",
+  "dataTransferUndoFailed": "取り消しに失敗しました",
+  "selectImportModeMerge": "変更をマージ",
   "fullExportTitle": "完全エクスポート",
   "fullExportSubtitle": "現在の時間割、または全時間割・テンプレート・選択状態を一括エクスポート",
   "exportCurrentTimetable": "現在の時間割をエクスポート",

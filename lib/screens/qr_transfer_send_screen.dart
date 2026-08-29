@@ -381,7 +381,7 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
                   const SizedBox(height: 8),
                   Text(
                     l10n.qrTransferResourceLimit,
-                    style: const TextStyle(color: Colors.orangeAccent),
+                    style: TextStyle(color: HyperosColors.error(context)),
                   ),
                 ],
                 const SizedBox(height: 16),

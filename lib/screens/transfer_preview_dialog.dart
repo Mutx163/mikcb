@@ -43,7 +43,7 @@ Future<TransferApplyMode?> showTransferPreviewDialog({
         onPressed: () => Navigator.pop(context),
       ),
       HyperosDialogAction(
-        label: 'Merge changes',
+        label: l10n.selectImportModeMerge,
         onPressed: () => Navigator.pop(context, TransferApplyMode.merge),
       ),
       HyperosDialogAction(

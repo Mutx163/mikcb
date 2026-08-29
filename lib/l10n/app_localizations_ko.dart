@@ -1280,6 +1280,27 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get qrTransferShareWeek => '이번 주 시간표 공유';
+
+  @override
+  String get qrTransferShareSelectedCourses => '선택한 과목 공유';
+
+  @override
+  String get qrTransferShareTimeTemplate => '시간 템플릿 공유';
+
+  @override
+  String get qrTransferSelectCoursesDone => '완료';
+
+  @override
+  String get dataTransferUndoSuccess => '가져오기를 실행 취소했습니다';
+
+  @override
+  String get dataTransferUndoFailed => '실행 취소 실패';
+
+  @override
+  String get selectImportModeMerge => '변경 사항 병합';
+
+  @override
   String get fullExportTitle => '전체 내보내기';
 
   @override
