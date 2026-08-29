@@ -111,7 +111,9 @@ tool/fix_colors.py
 # 工具本地配置
 .qoder/
 .workbuddy/
+.workbuddy-ai/
 .reasonix/
+.freebuff/
 
 # Python 缓存
 tool/__pycache__/
