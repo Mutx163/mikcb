@@ -47,13 +47,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final task = widget.task;
     final initialCourse = widget.initialCourse;
     final initialWeek = widget.initialWeek;
-    final l10n = AppLocalizations.of(context);
-    _titleController.text = task?.title.isNotEmpty == true
-        ? task!.title
-        : (initialCourse?.sessionNoteForWeek(initialWeek ?? 0)?.trimmedText ??
-              (initialCourse != null
-                  ? l10n?.taskHomeworkDefaultTitle ?? 'Homework'
-                  : ''));
     _noteController.text = task?.note ?? '';
     _courseId = task?.courseId ?? initialCourse?.id;
     _sourceWeek = task?.sourceWeek ?? initialWeek;
@@ -65,6 +58,29 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       );
     }
     _hasDueDate = _dueDate != null;
+  }
+
+  /// initState 里不允许访问 InheritedWidget（Localizations），标题里
+  /// 需要 l10n 兜底文案的部分延后到首个 didChangeDependencies 一次性初始化。
+  bool _didInitTitle = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitTitle) {
+      return;
+    }
+    _didInitTitle = true;
+    final task = widget.task;
+    final initialCourse = widget.initialCourse;
+    final initialWeek = widget.initialWeek;
+    final l10n = AppLocalizations.of(context);
+    _titleController.text = task?.title.isNotEmpty == true
+        ? task!.title
+        : (initialCourse?.sessionNoteForWeek(initialWeek ?? 0)?.trimmedText ??
+              (initialCourse != null
+                  ? l10n?.taskHomeworkDefaultTitle ?? 'Homework'
+                  : ''));
   }
 
   @override
@@ -146,10 +162,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ),
                 HyperosSwitchTile(
                   icon: Icons.event_outlined,
-                  title: _hasDueDate
-                      ? DateFormat.yMMMd(l10n.localeName).format(_dueDate!)
-                      : l10n.taskNoDueDate,
-                  subtitle: l10n.taskDueDateLabel,
+                  title: l10n.taskDueDateLabel,
                   value: _hasDueDate,
                   onChanged: (value) {
                     setState(() {
@@ -165,7 +178,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   HyperosChoiceTile(
                     prefix: const Icon(Icons.calendar_today_outlined, size: 20),
                     title: DateFormat.yMMMMd(l10n.localeName).format(_dueDate!),
-                    subtitle: Text(l10n.taskDueDateLabel),
                     trailing: const HyperosChevron(),
                     onTap: _pickDueDate,
                   ),
@@ -185,27 +197,45 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   Future<void> _pickCourse() async {
     final provider = context.read<TimetableProvider>();
     final l10n = AppLocalizations.of(context)!;
-    final courses = <Course>[...provider.courses]
+    // 课表里同一门课的每个时段都是独立的 Course 对象，这里按课程名分组，
+    // 让绑定弹窗里一门课只出现一次（与任务清单页的课程筛选弹窗一致）。
+    final courseGroups = <CourseGroup>[...provider.courseGroups]
       ..sort((a, b) => a.name.compareTo(b.name));
-    final values = [_noneCourseValue, ...courses.map((course) => course.id)];
+    final boundCourse = _courseId == null
+        ? null
+        : provider.getCourseById(_courseId!);
+    final values = [
+      _noneCourseValue,
+      ...courseGroups.map((group) => group.name),
+    ];
     final selected = await showHyperosSheet<String>(
       context: context,
+      enableDrag: false,
       builder: (sheetContext) => HyperosSheet(
-        title: l10n.taskCourseFilter,
-        child: HyperosChoiceGroup(
-          children: [
-            for (var index = 0; index < values.length; index++)
-              HyperosChoiceTile(
-                title: values[index] == _noneCourseValue
-                    ? l10n.taskNoCourse
-                    : provider.getCourseById(values[index])?.name ??
-                          l10n.taskNoCourse,
-                selected: values[index] == (_courseId ?? _noneCourseValue),
-                variant: HyperosChoiceVariant.dialog,
-                showDivider: index < values.length - 1,
-                onTap: () => Navigator.pop(sheetContext, values[index]),
-              ),
-          ],
+        title: l10n.taskCourseLabel,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.64,
+          ),
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: HyperosChoiceGroup(
+              children: [
+                for (var index = 0; index < values.length; index++)
+                  HyperosChoiceTile(
+                    title: values[index] == _noneCourseValue
+                        ? l10n.taskNoCourse
+                        : values[index],
+                    selected: values[index] == _noneCourseValue
+                        ? boundCourse == null
+                        : boundCourse?.name == values[index],
+                    variant: HyperosChoiceVariant.dialog,
+                    showDivider: index < values.length - 1,
+                    onTap: () => Navigator.pop(sheetContext, values[index]),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -213,9 +243,20 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       return;
     }
     setState(() {
-      _courseId = selected == _noneCourseValue ? null : selected;
-      if (_courseId == null) {
+      if (selected == _noneCourseValue) {
+        _courseId = null;
         _sourceWeek = null;
+        return;
+      }
+      if (boundCourse?.name == selected) {
+        // 重新选择已绑定课程所在分组时，保留原来的具体课时绑定。
+        return;
+      }
+      final group = courseGroups
+          .where((group) => group.name == selected)
+          .firstOrNull;
+      if (group != null) {
+        _courseId = group.courses.first.id;
       }
     });
   }
