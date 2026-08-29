@@ -552,6 +552,7 @@ private data class NativeLiveSettings(
     val liveEndSecondsCountdownThreshold: Int,
     val liveTimeCorrectionSeconds: Int,
     val liveBeforeClassQuickAction: String,
+    val liveBeforeClassQuickActionAutoMinutes: Int,
 )
 
 private data class NativeScheduleSnapshot(
@@ -585,6 +586,48 @@ private data class FutureStageTrigger(
     val stage: String,
     val triggerAtMillis: Long,
 )
+
+/** Future alarm time for the auto before-class quick action, or null when
+ *  disabled / not strictly in the future. Honors [blockedUntilMillis] so the
+ *  trigger of a later course never fires while an earlier course still runs. */
+internal fun liveSchedulerQuickActionTriggerAt(
+    autoMinutes: Int,
+    action: String,
+    startAtMillis: Long,
+    blockedUntilMillis: Long?,
+    nowMillis: Long,
+): Long? {
+    val leadMillis = autoMinutes * 60_000L
+    if (leadMillis <= 0L || action == "none") {
+        return null
+    }
+    val triggerAt = maxOf(
+        startAtMillis - leadMillis,
+        blockedUntilMillis ?: Long.MIN_VALUE,
+    )
+    return triggerAt.takeIf { it > nowMillis && it < startAtMillis }
+}
+
+/** Whether the auto quick action window [startAt - lead, startAt) already
+ *  covers [nowMillis] (due to apply now, e.g. after an alarm or app open). */
+internal fun liveSchedulerQuickActionIsDue(
+    autoMinutes: Int,
+    action: String,
+    startAtMillis: Long,
+    blockedUntilMillis: Long?,
+    nowMillis: Long,
+): Boolean {
+    if (nowMillis >= startAtMillis) {
+        return false
+    }
+    return liveSchedulerQuickActionTriggerAt(
+        autoMinutes = autoMinutes,
+        action = action,
+        startAtMillis = startAtMillis,
+        blockedUntilMillis = blockedUntilMillis,
+        nowMillis = Long.MIN_VALUE,
+    )?.let { nowMillis >= it } ?: false
+}
 
 private data class LiveUpdatePayload(
     val currentCourse: NativeCourse,
@@ -623,6 +666,7 @@ private data class LiveUpdatePayload(
     val miuiIslandExpandedIconMode: String,
     val miuiIslandExpandedIconPath: String?,
     val beforeClassQuickAction: String,
+    val beforeClassQuickActionAutoLeadMillis: Long,
     val progressBreakOffsetsMillis: LongArray,
     val progressMilestoneLabels: List<String>,
     val progressMilestoneTimeTexts: List<String>,
@@ -876,6 +920,9 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandExpandedIconPath"] as? String,
             beforeClassQuickAction =
                 data["beforeClassQuickAction"] as? String ?: "none",
+            beforeClassQuickActionAutoLeadMillis =
+                ((data["beforeClassQuickActionAutoMinutes"] as? Number)?.toLong()
+                    ?: 0L) * 60_000L,
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
@@ -967,6 +1014,11 @@ object LiveUpdateScheduler {
             }
         }
 
+        // Restore overdue quick actions first so a new apply for the next
+        // course extends rather than swallows the pending restore window.
+        BeforeClassQuickActionRestore.restoreIfClassEnded(context)
+        applyDueAutoQuickAction(context, snapshot, now)
+
         val nextSelection = findNextSelection(context, snapshot, now) ?: return false
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
@@ -980,6 +1032,70 @@ object LiveUpdateScheduler {
         )
         scheduleAlarm(context, nextSelection.triggerAtMillis)
         return false
+    }
+
+    /**
+     * Apply the auto quick action for a course whose lead window already
+     * started ([startAt - lead, startAt)) but whose stage trigger has not
+     * fired yet — e.g. the exact alarm woke us at the quick-action time, or
+     * the app was opened mid-window. Dedup lives in
+     * [BeforeClassQuickActionRestore.applyAutoQuickAction].
+     */
+    private fun applyDueAutoQuickAction(
+        context: Context,
+        snapshot: NativeScheduleSnapshot,
+        nowMillis: Long,
+    ) {
+        val settings = snapshot.settings
+        val leadMillis = settings.liveBeforeClassQuickActionAutoMinutes * 60_000L
+        if (leadMillis <= 0L ||
+            settings.liveBeforeClassQuickAction == "none" ||
+            snapshot.semesterStartMillis == null
+        ) {
+            return
+        }
+        val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+        val targetWeek = calculateCalendarWeekForDate(snapshot, nowCalendar)
+        val todayCourses = snapshot.courses
+            .filter {
+                it.dayOfWeek == nowCalendar.get(Calendar.DAY_OF_WEEK).toWeekday() &&
+                    it.isInWeek(targetWeek)
+            }
+            .sortedBy { it.startSection }
+        if (todayCourses.isEmpty()) {
+            return
+        }
+        for ((index, course) in todayCourses.withIndex()) {
+            val startAtMillis =
+                buildCorrectedCourseDateTimeMillis(nowCalendar, course.startTime, settings)
+                    ?: continue
+            if (nowMillis >= startAtMillis) {
+                // Window closed; later courses may still be pending today.
+                continue
+            }
+            val endAtMillis =
+                buildCorrectedCourseDateTimeMillis(nowCalendar, course.endTime, settings)
+                    ?: continue
+            val blockedUntilMillis =
+                resolveBeforeClassBlockedUntil(todayCourses, index, nowCalendar, settings)
+            val isDue = liveSchedulerQuickActionIsDue(
+                autoMinutes = settings.liveBeforeClassQuickActionAutoMinutes,
+                action = settings.liveBeforeClassQuickAction,
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = blockedUntilMillis,
+                nowMillis = nowMillis,
+            )
+            if (!isDue) {
+                continue
+            }
+            BeforeClassQuickActionRestore.applyAutoQuickAction(
+                context = context.applicationContext,
+                action = settings.liveBeforeClassQuickAction,
+                triggerKeyMillis = startAtMillis,
+                restoreAtMillis = endAtMillis,
+            )
+            return
+        }
     }
 
     private fun loadSnapshot(context: Context): NativeScheduleSnapshot? {
@@ -1233,6 +1349,8 @@ object LiveUpdateScheduler {
                 settingsJson.optInt("liveTimeCorrectionSeconds", 0),
             liveBeforeClassQuickAction =
                 settingsJson.optString("liveBeforeClassQuickAction", "none"),
+            liveBeforeClassQuickActionAutoMinutes =
+                settingsJson.optInt("liveBeforeClassQuickActionAutoMinutes", 0),
         )
 
         val coursesJson = json.optJSONArray("courses") ?: JSONArray()
@@ -1355,6 +1473,10 @@ object LiveUpdateScheduler {
             putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
             putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
             putExtra("beforeClassQuickAction", payload.beforeClassQuickAction)
+            putExtra(
+                "quickActionAutoLeadMillis",
+                payload.beforeClassQuickActionAutoLeadMillis
+            )
             putExtra("validateAgainstSchedule", payload.validateAgainstSchedule)
         }
     }
@@ -1778,6 +1900,8 @@ object LiveUpdateScheduler {
             miuiIslandExpandedIconMode = miuiIslandExpandedIconMode,
             miuiIslandExpandedIconPath = miuiIslandExpandedIconPath,
             beforeClassQuickAction = snapshot.settings.liveBeforeClassQuickAction,
+            beforeClassQuickActionAutoLeadMillis =
+                snapshot.settings.liveBeforeClassQuickActionAutoMinutes * 60_000L,
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,
@@ -1808,6 +1932,15 @@ object LiveUpdateScheduler {
         if (settings.liveEnableBeforeClass && aheadTime > nowMillis && aheadTime < startAtMillis) {
             candidates += FutureStageTrigger("beforeClass", aheadTime)
         }
+        // Auto quick action: wake once before the before-class window so the
+        // selected mode (silent/DND) is applied without any user interaction.
+        liveSchedulerQuickActionTriggerAt(
+            autoMinutes = settings.liveBeforeClassQuickActionAutoMinutes,
+            action = settings.liveBeforeClassQuickAction,
+            startAtMillis = startAtMillis,
+            blockedUntilMillis = blockedUntilMillis,
+            nowMillis = nowMillis,
+        )?.let { candidates += FutureStageTrigger("quickAction", it) }
         if (settings.liveClassReminderStartMinutes == 0 &&
             canDisplayDuring(settings) &&
             startAtMillis > nowMillis

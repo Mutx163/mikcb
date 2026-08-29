@@ -873,6 +873,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Assign preset colors by course name and teacher';
 
   @override
+  String get importRandomColorGroupTitle => 'Random color group';
+
+  @override
+  String get colorGroupAll => 'All colors';
+
+  @override
+  String get colorGroupPastel => 'Pastel';
+
+  @override
+  String get colorGroupVibrant => 'Vivid';
+
+  @override
+  String get colorGroupDeep => 'Dark';
+
+  @override
   String get courseImportTitle => 'Import Courses';
 
   @override
@@ -2597,6 +2612,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get beforeClassQuickActionSubtitle =>
       'Only appears in the expanded before-class reminder. Silent/DND restores after class ends and on reboot. Do Not Disturb may open a system permission page on first use';
+
+  @override
+  String get liveBeforeClassQuickActionAutoTitle => 'Automatic';
+
+  @override
+  String get liveBeforeClassQuickActionAutoSubtitle =>
+      'Turns on the selected mode before class and restores it after class ends; Do Not Disturb requires system permission';
+
+  @override
+  String get liveBeforeClassQuickActionAutoOptionOff => 'Off';
+
+  @override
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes) {
+    return '$minutes min before class';
+  }
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -7402,6 +7432,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => 'Turn on Do Not Disturb';
+
+  @override
+  String get liveBeforeClassQuickActionBoth => 'Silent + Do Not Disturb';
 
   @override
   String get courseCardVerticalAlignTop => 'Top';

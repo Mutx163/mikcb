@@ -322,6 +322,7 @@ class MiuiLiveActivitiesService {
     String? miuiIslandExpandedIconPath,
     LiveBeforeClassQuickAction beforeClassQuickAction =
         LiveBeforeClassQuickAction.none,
+    int beforeClassQuickActionAutoMinutes = 0,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -368,6 +369,7 @@ class MiuiLiveActivitiesService {
         miuiIslandExpandedIconMode: miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: miuiIslandExpandedIconPath,
         beforeClassQuickAction: beforeClassQuickAction,
+        beforeClassQuickActionAutoMinutes: beforeClassQuickActionAutoMinutes,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestoneLabels,
         progressMilestoneTimeTexts: progressMilestoneTimeTexts,
@@ -465,6 +467,7 @@ class MiuiLiveActivitiesService {
     String? miuiIslandExpandedIconPath,
     LiveBeforeClassQuickAction beforeClassQuickAction =
         LiveBeforeClassQuickAction.none,
+    int beforeClassQuickActionAutoMinutes = 0,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -481,6 +484,7 @@ class MiuiLiveActivitiesService {
       'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'endSecondsCountdownThreshold': endSecondsCountdownThreshold,
       'beforeClassQuickAction': beforeClassQuickAction.value,
+      'beforeClassQuickActionAutoMinutes': beforeClassQuickActionAutoMinutes,
       'promoteDuringClass': promoteDuringClass,
       'showNotificationDuringClass': showNotificationDuringClass,
       'enableBeforeClass': enableBeforeClass,
@@ -685,6 +689,7 @@ class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
     String? miuiIslandExpandedIconPath,
     LiveBeforeClassQuickAction beforeClassQuickAction =
         LiveBeforeClassQuickAction.none,
+    int beforeClassQuickActionAutoMinutes = 0,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],

@@ -38,6 +38,7 @@ import '../services/warehouse_import_session_log.dart';
 import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
 import '../utils/app_toast.dart';
+import '../utils/course_color_palette.dart';
 import '../utils/import_random_course_colors.dart';
 import '../utils/import_result_message.dart';
 import '../widgets/app_dialogs.dart';
@@ -56,8 +57,10 @@ Future<List<Course>> _coursesWithOptionalRandomColors(
   }
   final assignMatchingTextColor =
       await ImportRandomColorPreferences.isTextColorEnabled();
+  final groupId = await ImportRandomColorPreferences.getGroupId();
   return applyRandomImportCourseColors(
     courses,
+    palette: courseColorGroupPalette(groupId),
     assignMatchingTextColor: assignMatchingTextColor,
   );
 }

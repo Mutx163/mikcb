@@ -830,6 +830,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importRandomCourseColorSubtitle => '수업명과 교수로 프리셋 색을 자동 배정';
 
   @override
+  String get importRandomColorGroupTitle => '랜덤 색상 그룹';
+
+  @override
+  String get colorGroupAll => '모든 색상';
+
+  @override
+  String get colorGroupPastel => '파스텔';
+
+  @override
+  String get colorGroupVibrant => '비비드';
+
+  @override
+  String get colorGroupDeep => '다크';
+
+  @override
   String get courseImportTitle => '수업 가져오기';
 
   @override
@@ -2501,6 +2516,21 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get beforeClassQuickActionSubtitle =>
       '수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다';
+
+  @override
+  String get liveBeforeClassQuickActionAutoTitle => '자동 실행';
+
+  @override
+  String get liveBeforeClassQuickActionAutoSubtitle =>
+      '수업 전에 선택한 모드를 자동으로 켜고 수업 종료 후 자동 복원됩니다. 방해 금지는 시스템 권한이 필요합니다';
+
+  @override
+  String get liveBeforeClassQuickActionAutoOptionOff => '끄기';
+
+  @override
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes) {
+    return '수업 $minutes분 전';
+  }
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -7166,6 +7196,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => 'Turn on Do Not Disturb';
+
+  @override
+  String get liveBeforeClassQuickActionBoth => '무음과 방해 금지';
 
   @override
   String get courseCardVerticalAlignTop => 'Top';

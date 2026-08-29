@@ -14,9 +14,12 @@ internal object BeforeClassQuickActionRestore {
     private const val KEY_SAVED_DND_FILTER = "saved_dnd_filter"
     private const val KEY_RESTORE_AT_MILLIS = "restore_at_millis"
     private const val KEY_APPLIED_ACTION = "applied_action"
+    private const val KEY_LAST_AUTO_TRIGGER_MILLIS = "last_auto_trigger_millis"
 
+    const val ACTION_NONE = "none"
     const val ACTION_SILENT = "silent"
     const val ACTION_DO_NOT_DISTURB = "do_not_disturb"
+    const val ACTION_BOTH = "both"
 
     fun enableSilentMode(context: Context, restoreAtMillis: Long): Boolean {
         val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
@@ -56,8 +59,56 @@ internal object BeforeClassQuickActionRestore {
         }
     }
 
-    fun restoreOnBoot(context: Context): Boolean {
-        if (!isPending(context)) {
+    /**
+     * Scheduler-driven auto apply, deduped per course session via
+     * [triggerKeyMillis] (the course start time). Runs entirely in the
+     * background: unlike the manual notification button it never opens
+     * system settings pages when a permission is missing.
+     */
+    fun applyAutoQuickAction(
+        context: Context,
+        action: String,
+        triggerKeyMillis: Long,
+        restoreAtMillis: Long,
+    ): Boolean {
+        val prefs = prefs(context)
+        if (prefs.getLong(KEY_LAST_AUTO_TRIGGER_MILLIS, 0L) == triggerKeyMillis) {
+            return false
+        }
+        prefs.edit()
+            .putLong(KEY_LAST_AUTO_TRIGGER_MILLIS, triggerKeyMillis)
+            .apply()
+        val applied = when (action) {
+            ACTION_SILENT -> enableSilentMode(context, restoreAtMillis)
+            ACTION_DO_NOT_DISTURB -> enableDoNotDisturbMode(context, restoreAtMillis)
+            ACTION_BOTH -> {
+                val silentApplied = enableSilentMode(context, restoreAtMillis)
+                val dndApplied = enableDoNotDisturbMode(context, restoreAtMillis)
+                silentApplied || dndApplied
+            }
+            else -> false
+        }
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_before_class_quick_action",
+            message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
+            extras = mapOf(
+                "action" to action,
+                "applied" to applied,
+                "source" to "auto",
+            ),
+        )
+        return applied
+    }
+
+    /** Record that a manual tap already handled the given course session. */
+    fun markTriggerHandled(context: Context, triggerKeyMillis: Long) {
+        prefs(context).edit()
+            .putLong(KEY_LAST_AUTO_TRIGGER_MILLIS, triggerKeyMillis)
+            .apply()
+    }
+
+    fun restoreOnBoot(context: Context): Boolean {        if (!isPending(context)) {
             return false
         }
         return restoreIfPending(context, reason = "boot")

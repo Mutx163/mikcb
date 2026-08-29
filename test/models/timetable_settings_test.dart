@@ -52,6 +52,7 @@ void main() {
       settings.liveBeforeClassQuickAction,
       LiveBeforeClassQuickAction.none,
     );
+    expect(settings.liveBeforeClassQuickActionAutoMinutes, 0);
     expect(settings.liveShowStageText, isTrue);
     expect(settings.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
@@ -225,6 +226,7 @@ void main() {
       liveDuringEndFollowBeforeClass: false,
       liveTimeCorrectionSeconds: -7,
       liveBeforeClassQuickAction: LiveBeforeClassQuickAction.doNotDisturb,
+      liveBeforeClassQuickActionAutoMinutes: 15,
       liveShowStageText: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseNameAndLocation,
@@ -288,6 +290,7 @@ void main() {
       restored.liveBeforeClassQuickAction,
       LiveBeforeClassQuickAction.doNotDisturb,
     );
+    expect(restored.liveBeforeClassQuickActionAutoMinutes, 15);
     expect(restored.liveShowStageText, isFalse);
     expect(restored.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.iconAndText);
     expect(
@@ -1140,6 +1143,27 @@ void main() {
       expect(
         applied.courseCardDetailColorLight,
         applied.courseCardTitleColorLight,
+      );
+    });
+
+    test('liveBeforeClassQuickAction both value round-trips', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        liveBeforeClassQuickAction: LiveBeforeClassQuickAction.both,
+        liveBeforeClassQuickActionAutoMinutes: 10,
+      );
+      expect(settings.liveBeforeClassQuickAction.value, 'both');
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(
+        restored.liveBeforeClassQuickAction,
+        LiveBeforeClassQuickAction.both,
+      );
+      expect(restored.liveBeforeClassQuickActionAutoMinutes, 10);
+      // 未知取值回落到 none，旧版本配置不受影响
+      expect(
+        TimetableSettings.fromJson(const {
+          'liveBeforeClassQuickAction': 'unknown_action',
+        }).liveBeforeClassQuickAction,
+        LiveBeforeClassQuickAction.none,
       );
     });
   });

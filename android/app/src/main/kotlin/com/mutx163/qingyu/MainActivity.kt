@@ -2114,6 +2114,7 @@ class LiveUpdateService : Service() {
     private var promoteDuringClass = true
     private var showNotificationDuringClass = true
     private var beforeClassQuickAction = "none"
+    private var quickActionAutoLeadMillis = 0L
     private var progressBreakOffsetsMillis = longArrayOf()
     private var progressMilestoneLabels = emptyList<String>()
     private var progressMilestoneTimeTexts = emptyList<String>()
@@ -2133,12 +2134,14 @@ class LiveUpdateService : Service() {
             val quickActionResult = when (intent?.action) {
                 ACTION_ENABLE_SILENT_MODE -> {
                     readQuickActionTimingExtra(intent)
-                    handleBeforeClassQuickAction(enableDoNotDisturb = false)
+                    handleBeforeClassQuickAction(BeforeClassQuickActionRestore.ACTION_SILENT)
                     START_NOT_STICKY
                 }
                 ACTION_ENABLE_DO_NOT_DISTURB -> {
                     readQuickActionTimingExtra(intent)
-                    handleBeforeClassQuickAction(enableDoNotDisturb = true)
+                    handleBeforeClassQuickAction(
+                        BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB
+                    )
                     START_NOT_STICKY
                 }
                 ACTION_DISMISS_STATUS_BAR_STAGE -> {
@@ -2242,6 +2245,8 @@ class LiveUpdateService : Service() {
                 intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
             beforeClassQuickAction =
                 intent?.getStringExtra("beforeClassQuickAction") ?: "none"
+            quickActionAutoLeadMillis =
+                intent?.getLongExtra("quickActionAutoLeadMillis", 0L) ?: 0L
             validateAgainstSchedule =
                 intent?.getBooleanExtra("validateAgainstSchedule", true) ?: true
             progressBreakOffsetsMillis =
@@ -2458,17 +2463,39 @@ class LiveUpdateService : Service() {
             ?: startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun buildBeforeClassQuickAction(): Notification.Action? {
-        val (action, label) = when (beforeClassQuickAction) {
-            "silent" -> ACTION_ENABLE_SILENT_MODE to getString(R.string.action_enable_silent)
-            "do_not_disturb" -> ACTION_ENABLE_DO_NOT_DISTURB to getString(R.string.action_enable_dnd)
-            else -> return null
+    private fun buildBeforeClassQuickActions(): List<Notification.Action> {
+        val actions = mutableListOf<Notification.Action>()
+        if (beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_SILENT ||
+            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_BOTH
+        ) {
+            actions += buildQuickActionNotificationAction(
+                BeforeClassQuickActionRestore.ACTION_SILENT,
+                ACTION_ENABLE_SILENT_MODE,
+                getString(R.string.action_enable_silent),
+            )
         }
+        if (beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB ||
+            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_BOTH
+        ) {
+            actions += buildQuickActionNotificationAction(
+                BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB,
+                ACTION_ENABLE_DO_NOT_DISTURB,
+                getString(R.string.action_enable_dnd),
+            )
+        }
+        return actions
+    }
+
+    private fun buildQuickActionNotificationAction(
+        quickAction: String,
+        intentAction: String,
+        label: String,
+    ): Notification.Action {
         val pendingIntent = PendingIntent.getService(
             this,
-            action.hashCode(),
+            intentAction.hashCode(),
             Intent(this, LiveUpdateService::class.java).apply {
-                this.action = action
+                this.action = intentAction
                 putExtra("endAtMillis", endAtMillis)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -2496,10 +2523,50 @@ class LiveUpdateService : Service() {
         ).build()
     }
 
-    private fun handleBeforeClassQuickAction(enableDoNotDisturb: Boolean) {
+    private fun handleBeforeClassQuickAction(action: String) {
         val restoreAtMillis = endAtMillis.takeIf { it > 0L }
             ?: (System.currentTimeMillis() + 2 * 60 * 60_000L)
-        val applied = if (enableDoNotDisturb) {
+        val applied = when (action) {
+            BeforeClassQuickActionRestore.ACTION_SILENT ->
+                applyQuickActionMode(enableDoNotDisturb = false, restoreAtMillis)
+            BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB ->
+                applyQuickActionMode(enableDoNotDisturb = true, restoreAtMillis)
+            BeforeClassQuickActionRestore.ACTION_BOTH -> {
+                val silentApplied =
+                    applyQuickActionMode(enableDoNotDisturb = false, restoreAtMillis)
+                val dndApplied =
+                    applyQuickActionMode(enableDoNotDisturb = true, restoreAtMillis)
+                silentApplied || dndApplied
+            }
+            else -> false
+        }
+        // A manual tap settles the whole quick action for this course session,
+        // so the scheduled auto run must not re-apply it mid-session.
+        BeforeClassQuickActionRestore.markTriggerHandled(
+            applicationContext,
+            startAtMillis,
+        )
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_before_class_quick_action",
+            message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
+            extras = mapOf(
+                "action" to action,
+                "applied" to applied,
+                "courseName" to courseName,
+                "stage" to activityStage,
+            )
+        )
+        if (hasStartedForeground) {
+            updateForegroundNotification(buildNotification(computeRemainingText(System.currentTimeMillis())))
+        }
+    }
+
+    private fun applyQuickActionMode(
+        enableDoNotDisturb: Boolean,
+        restoreAtMillis: Long,
+    ): Boolean {
+        return if (enableDoNotDisturb) {
             val enabled = BeforeClassQuickActionRestore.enableDoNotDisturbMode(
                 this,
                 restoreAtMillis,
@@ -2518,20 +2585,24 @@ class LiveUpdateService : Service() {
             }
             enabled
         }
-        UmengDiagnosticReporter.record(
-            context = applicationContext,
-            category = "live_update_before_class_quick_action",
-            message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
-            extras = mapOf(
-                "action" to if (enableDoNotDisturb) "do_not_disturb" else "silent",
-                "applied" to applied,
-                "courseName" to courseName,
-                "stage" to activityStage,
-            )
-        )
-        if (hasStartedForeground) {
-            updateForegroundNotification(buildNotification(computeRemainingText(System.currentTimeMillis())))
+    }
+
+    private fun maybeApplyAutoQuickAction(nowMillis: Long) {
+        if (quickActionAutoLeadMillis <= 0L ||
+            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_NONE
+        ) {
+            return
         }
+        val dueAtMillis = startAtMillis - quickActionAutoLeadMillis
+        if (nowMillis < dueAtMillis) {
+            return
+        }
+        BeforeClassQuickActionRestore.applyAutoQuickAction(
+            context = applicationContext,
+            action = beforeClassQuickAction,
+            triggerKeyMillis = startAtMillis,
+            restoreAtMillis = endAtMillis,
+        )
     }
 
     private fun dismissStatusBarStage() {
@@ -2626,6 +2697,7 @@ class LiveUpdateService : Service() {
             override fun run() {
                 val now = System.currentTimeMillis()
                 BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext, now)
+                maybeApplyAutoQuickAction(now)
                 if (validateAgainstSchedule &&
                     !LiveUpdateScheduler.hasActiveLiveSelection(applicationContext, now)
                 ) {
@@ -3652,7 +3724,7 @@ class LiveUpdateService : Service() {
         }
 
         if (isUpcoming) {
-            buildBeforeClassQuickAction()?.let(builder::addAction)
+            buildBeforeClassQuickActions().forEach(builder::addAction)
         }
         if (isDuringClassStatusBar) {
             builder.addAction(buildDismissStatusBarAction())
@@ -3819,6 +3891,7 @@ class LiveUpdateService : Service() {
                     "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                     "miuiIslandExpandedIconPath" to miuiIslandExpandedIconPath,
                     "beforeClassQuickAction" to beforeClassQuickAction,
+                    "quickActionAutoLeadMillis" to quickActionAutoLeadMillis,
                 ),
                 "notification" to linkedMapOf(
                     "shouldPromote" to shouldPromote,

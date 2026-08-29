@@ -166,6 +166,7 @@ String liveBeforeClassQuickActionLabel(
   LiveBeforeClassQuickAction.silent => l10n.liveBeforeClassQuickActionSilent,
   LiveBeforeClassQuickAction.doNotDisturb =>
     l10n.liveBeforeClassQuickActionDoNotDisturb,
+  LiveBeforeClassQuickAction.both => l10n.liveBeforeClassQuickActionBoth,
 };
 
 String courseCardVerticalAlignLabel(

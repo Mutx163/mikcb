@@ -67,6 +67,9 @@ String _buildLiveClassReminderLeadSummary(
   );
 }
 
+/// 上课前快捷操作「自动执行」的可选提前分钟数。
+const List<int> _quickActionAutoMinutesOptions = [5, 10, 15, 20, 30];
+
 class LiveReminderTimingScreen extends StatefulWidget {
   const LiveReminderTimingScreen({super.key});
 
@@ -421,6 +424,22 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 _draft.copyWith(liveBeforeClassQuickAction: value),
               ),
             ),
+            if (_draft.liveBeforeClassQuickAction !=
+                LiveBeforeClassQuickAction.none)
+              HyperosSelectTile<int>(
+                label: l10n.liveBeforeClassQuickActionAutoTitle,
+                subtitle: l10n.liveBeforeClassQuickActionAutoSubtitle,
+                items: {
+                  l10n.liveBeforeClassQuickActionAutoOptionOff: 0,
+                  for (final value in _quickActionAutoMinutesOptions)
+                    l10n.liveBeforeClassQuickActionAutoOptionMinutes(value):
+                        value,
+                },
+                value: _draft.liveBeforeClassQuickActionAutoMinutes,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveBeforeClassQuickActionAutoMinutes: value),
+                ),
+              ),
           ],
         ),
       ],

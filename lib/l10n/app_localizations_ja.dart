@@ -833,6 +833,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importRandomCourseColorSubtitle => '授業名と教員でプリセット色を自動割り当て';
 
   @override
+  String get importRandomColorGroupTitle => 'ランダム配色グループ';
+
+  @override
+  String get colorGroupAll => 'すべての色';
+
+  @override
+  String get colorGroupPastel => 'パステル';
+
+  @override
+  String get colorGroupVibrant => 'ビビッド';
+
+  @override
+  String get colorGroupDeep => 'ダーク';
+
+  @override
   String get courseImportTitle => '授業インポート';
 
   @override
@@ -2488,6 +2503,21 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get beforeClassQuickActionSubtitle =>
       '授業前リマインダーの展開通知にのみ表示，サイレント/おやすみモードは授業終了後と端末再起動後に自動復元，おやすみモード初回はシステム認証ページに飛ぶ場合あり';
+
+  @override
+  String get liveBeforeClassQuickActionAutoTitle => '自動実行';
+
+  @override
+  String get liveBeforeClassQuickActionAutoSubtitle =>
+      '授業前に選択したモードを自動的にオンにし，授業終了後に自動復元，おやすみモードはシステム認証が必要';
+
+  @override
+  String get liveBeforeClassQuickActionAutoOptionOff => 'オフ';
+
+  @override
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes) {
+    return '授業の $minutes 分前';
+  }
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -7123,6 +7153,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => 'Turn on Do Not Disturb';
+
+  @override
+  String get liveBeforeClassQuickActionBoth => 'サイレントとおやすみモード';
 
   @override
   String get courseCardVerticalAlignTop => 'Top';

@@ -531,4 +531,119 @@ class LiveUpdateSchedulerLogicTest {
             set(Calendar.MILLISECOND, 0)
         }
     }
+
+    @Test
+    fun quickActionTriggerAtFiresLeadMinutesBeforeClass() {
+        val startAtMillis = 1_000_000_000L
+        assertEquals(
+            startAtMillis - 15 * 60_000L,
+            liveSchedulerQuickActionTriggerAt(
+                autoMinutes = 15,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = startAtMillis - 20 * 60_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun quickActionTriggerAtDisabledForNoneOrZeroLead() {
+        val startAtMillis = 1_000_000_000L
+        assertNull(
+            liveSchedulerQuickActionTriggerAt(
+                autoMinutes = 0,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = startAtMillis - 20 * 60_000L,
+            ),
+        )
+        assertNull(
+            liveSchedulerQuickActionTriggerAt(
+                autoMinutes = 15,
+                action = "none",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = startAtMillis - 20 * 60_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun quickActionTriggerAtHonorsBlockedUntilOfPreviousClass() {
+        val startAtMillis = 1_000_000_000L
+        val previousEnd = startAtMillis - 5 * 60_000L
+        // 提前 15 分钟的触发点落进上一节课，必须被推到上一节课结束
+        assertEquals(
+            previousEnd,
+            liveSchedulerQuickActionTriggerAt(
+                autoMinutes = 15,
+                action = "both",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = previousEnd,
+                nowMillis = startAtMillis - 20 * 60_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun quickActionTriggerAtNullOnceWindowStarted() {
+        val startAtMillis = 1_000_000_000L
+        val triggerAt = startAtMillis - 10 * 60_000L
+        assertNull(
+            liveSchedulerQuickActionTriggerAt(
+                autoMinutes = 10,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = triggerAt,
+            ),
+        )
+    }
+
+    @Test
+    fun quickActionIsDueOnlyInsideLeadWindow() {
+        val startAtMillis = 1_000_000_000L
+        // 课前 15 分钟窗口：提前 20 分钟未到点
+        assertFalse(
+            liveSchedulerQuickActionIsDue(
+                autoMinutes = 15,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = startAtMillis - 20 * 60_000L,
+            ),
+        )
+        // 提前 10 分钟（窗口内）已到点
+        assertTrue(
+            liveSchedulerQuickActionIsDue(
+                autoMinutes = 15,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = startAtMillis - 10 * 60_000L,
+            ),
+        )
+        // 上课开始后不再补执行
+        assertFalse(
+            liveSchedulerQuickActionIsDue(
+                autoMinutes = 15,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = null,
+                nowMillis = startAtMillis + 60_000L,
+            ),
+        )
+        // 被上一节课挡住时未到点
+        assertFalse(
+            liveSchedulerQuickActionIsDue(
+                autoMinutes = 15,
+                action = "silent",
+                startAtMillis = startAtMillis,
+                blockedUntilMillis = startAtMillis - 5 * 60_000L,
+                nowMillis = startAtMillis - 10 * 60_000L,
+            ),
+        )
+    }
 }

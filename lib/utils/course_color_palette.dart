@@ -74,6 +74,73 @@ const List<String> kCourseColorQuickPickHexes = [
   '#78716C', // 棕灰
 ];
 
+// ---------------------------------------------------------------------------
+// 随机配色颜色组
+// ---------------------------------------------------------------------------
+
+/// 「全部颜色」颜色组的保留 id，对应 [kPresetCourseColorHexes]。
+const String kCourseColorGroupAllId = 'all';
+
+/// 一组可用于导入随机配色的预设颜色组。
+///
+/// 组名沿用配色站通行的风格标签（Color Hunt 的 Pastel / Dark 等主题词）与
+/// 设计圈对同类色系的通行叫法（马卡龙色系 / 活泼系 / 深色系）；显示名在
+/// l10n（colorGroup* 键）里定义，这里只存 id 与色值。色值全部取自
+/// [kPresetCourseColorHexes]（Tailwind v3 MIT + Material Apache 2.0），
+/// 无新增版权面。
+class CourseColorGroup {
+  const CourseColorGroup({required this.id, required this.hexes});
+
+  /// 持久化到 SharedPreferences 的稳定标识。
+  final String id;
+
+  /// 该组随机取色的色值（均为 [kPresetCourseColorHexes] 的子集）。
+  final List<String> hexes;
+}
+
+/// 马卡龙系：各族 300 浅阶，淡雅柔和（浅卡靠墨色守卫自动回落深字）。
+const List<String> kPastelCourseColorGroupHexes = [
+  '#FCA5A5', '#FDBA74', '#FCD34D', '#FDE047', '#BEF264',
+  '#86EFAC', '#6EE7B7', '#5EEAD4', '#67E8F9', '#7DD3FC',
+  '#93C5FD', '#A5B4FC', '#C4B5FD', '#D8B4FE', '#F0ABFC',
+  '#F9A8D4', '#FDA4AF', '#CBD5E1', '#D6D3D1',
+];
+
+/// 活泼系：各族 500 中阶，明快饱和，随机导入的默认观感区间。
+const List<String> kVibrantCourseColorGroupHexes = [
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16',
+  '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9',
+  '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
+  '#EC4899', '#F43F5E', '#64748B', '#78716C',
+];
+
+/// 深色系：各族 700 深阶，沉稳内敛（白字对比充裕）。
+const List<String> kDeepCourseColorGroupHexes = [
+  '#B91C1C', '#C2410C', '#B45309', '#A16207', '#4D7C0F',
+  '#15803D', '#047857', '#0F766E', '#0E7490', '#0369A1',
+  '#1D4ED8', '#4338CA', '#6D28D9', '#7E22CE', '#A21CAF',
+  '#BE185D', '#BE123C', '#334155', '#44403C',
+];
+
+/// 预设颜色组（「全部颜色」不入列，由 [kCourseColorGroupAllId] 单独表示）。
+const List<CourseColorGroup> kCourseColorGroups = [
+  CourseColorGroup(id: 'pastel', hexes: kPastelCourseColorGroupHexes),
+  CourseColorGroup(id: 'vibrant', hexes: kVibrantCourseColorGroupHexes),
+  CourseColorGroup(id: 'deep', hexes: kDeepCourseColorGroupHexes),
+];
+
+/// 解析随机取色色板：'all' 与未知 id（历史残留值）都兜底回全量色板。
+List<String> courseColorGroupPalette(String groupId) {
+  if (groupId != kCourseColorGroupAllId) {
+    for (final group in kCourseColorGroups) {
+      if (group.id == groupId) {
+        return group.hexes;
+      }
+    }
+  }
+  return kPresetCourseColorHexes;
+}
+
 String? _normalizeColorHex(String? hex) {
   if (hex == null) {
     return null;

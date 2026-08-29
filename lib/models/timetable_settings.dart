@@ -244,7 +244,7 @@ enum MiuiIslandLabelRenderQuality { standard, high, ultra }
 
 enum MiuiIslandExpandedIconMode { appIcon, customImage, hidden }
 
-enum LiveBeforeClassQuickAction { none, silent, doNotDisturb }
+enum LiveBeforeClassQuickAction { none, silent, doNotDisturb, both }
 
 const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
 const String ghproxyCnMirrorUrlPrefix = 'https://ghproxy.cn/';
@@ -529,6 +529,7 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
     LiveBeforeClassQuickAction.none => 'none',
     LiveBeforeClassQuickAction.silent => 'silent',
     LiveBeforeClassQuickAction.doNotDisturb => 'do_not_disturb',
+    LiveBeforeClassQuickAction.both => 'both',
   };
 
   static LiveBeforeClassQuickAction fromValue(String? value) {
@@ -1306,6 +1307,9 @@ class TimetableSettings {
   final int liveEndSecondsCountdownThreshold;
   final int liveTimeCorrectionSeconds;
   final LiveBeforeClassQuickAction liveBeforeClassQuickAction;
+
+  /// 上课前自动执行快捷操作的提前分钟数；0 表示不自动执行（仅保留通知按钮）。
+  final int liveBeforeClassQuickActionAutoMinutes;
   final String themeSeedColor;
   final ForuiTheme foruiTheme;
   final String timetablePageBackgroundColor;
@@ -1515,6 +1519,7 @@ class TimetableSettings {
     this.liveEndSecondsCountdownThreshold = 60,
     this.liveTimeCorrectionSeconds = 0,
     this.liveBeforeClassQuickAction = LiveBeforeClassQuickAction.none,
+    this.liveBeforeClassQuickActionAutoMinutes = 0,
     this.themeSeedColor = '#2563EB',
     this.foruiTheme = ForuiTheme.blue,
     this.timetablePageBackgroundColor = '#F8FAFC',
@@ -1694,6 +1699,7 @@ class TimetableSettings {
       liveEndSecondsCountdownThreshold: 60,
       liveTimeCorrectionSeconds: 0,
       liveBeforeClassQuickAction: LiveBeforeClassQuickAction.none,
+      liveBeforeClassQuickActionAutoMinutes: 0,
       themeSeedColor: '#2563EB',
       foruiTheme: ForuiTheme.blue,
       timetablePageBackgroundColor: '#F8FAFC',
@@ -1861,6 +1867,8 @@ class TimetableSettings {
       'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
       'liveTimeCorrectionSeconds': liveTimeCorrectionSeconds,
       'liveBeforeClassQuickAction': liveBeforeClassQuickAction.value,
+      'liveBeforeClassQuickActionAutoMinutes':
+          liveBeforeClassQuickActionAutoMinutes,
       'themeSeedColor': themeSeedColor,
       'foruiTheme': foruiTheme.value,
       'timetablePageBackgroundColor': timetablePageBackgroundColor,
@@ -2254,6 +2262,9 @@ class TimetableSettings {
       liveBeforeClassQuickAction: LiveBeforeClassQuickActionX.fromValue(
         json['liveBeforeClassQuickAction'] as String?,
       ),
+      liveBeforeClassQuickActionAutoMinutes:
+          (json['liveBeforeClassQuickActionAutoMinutes'] as num?)?.toInt() ??
+          0,
       themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
       foruiTheme: ForuiThemeX.fromValue(json['foruiTheme'] as String?),
       timetablePageBackgroundColor:
@@ -2526,6 +2537,7 @@ class TimetableSettings {
     int? liveEndSecondsCountdownThreshold,
     int? liveTimeCorrectionSeconds,
     LiveBeforeClassQuickAction? liveBeforeClassQuickAction,
+    int? liveBeforeClassQuickActionAutoMinutes,
     String? themeSeedColor,
     ForuiTheme? foruiTheme,
     String? timetablePageBackgroundColor,
@@ -2832,6 +2844,9 @@ class TimetableSettings {
           liveTimeCorrectionSeconds ?? this.liveTimeCorrectionSeconds,
       liveBeforeClassQuickAction:
           liveBeforeClassQuickAction ?? this.liveBeforeClassQuickAction,
+      liveBeforeClassQuickActionAutoMinutes:
+          liveBeforeClassQuickActionAutoMinutes ??
+          this.liveBeforeClassQuickActionAutoMinutes,
       themeSeedColor: themeSeedColor ?? this.themeSeedColor,
       foruiTheme: foruiTheme ?? this.foruiTheme,
       timetablePageBackgroundColor:

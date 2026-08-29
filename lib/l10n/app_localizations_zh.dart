@@ -817,6 +817,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importRandomCourseColorSubtitle => '按课程名与教师自动分配预设色';
 
   @override
+  String get importRandomColorGroupTitle => '随机配色组';
+
+  @override
+  String get colorGroupAll => '全部颜色';
+
+  @override
+  String get colorGroupPastel => '马卡龙系';
+
+  @override
+  String get colorGroupVibrant => '活泼系';
+
+  @override
+  String get colorGroupDeep => '深色系';
+
+  @override
   String get courseImportTitle => '导入课程';
 
   @override
@@ -2443,6 +2458,21 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get beforeClassQuickActionSubtitle =>
       '只在上课前提醒的展开通知里显示，静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页';
+
+  @override
+  String get liveBeforeClassQuickActionAutoTitle => '自动执行';
+
+  @override
+  String get liveBeforeClassQuickActionAutoSubtitle =>
+      '上课前自动打开所选模式，下课后自动恢复，重启手机也会恢复；免打扰需要先在系统设置中授权';
+
+  @override
+  String get liveBeforeClassQuickActionAutoOptionOff => '不自动执行';
+
+  @override
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes) {
+    return '上课前 $minutes 分钟';
+  }
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -7018,6 +7048,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveBeforeClassQuickActionDoNotDisturb => '打开免打扰';
 
   @override
+  String get liveBeforeClassQuickActionBoth => '静音和免打扰';
+
+  @override
   String get courseCardVerticalAlignTop => '顶部对齐';
 
   @override
@@ -10959,6 +10992,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importRandomCourseColorSubtitle => '依課程名與教師自動分配預設色';
 
   @override
+  String get importRandomColorGroupTitle => '隨機配色組';
+
+  @override
+  String get colorGroupAll => '全部顏色';
+
+  @override
+  String get colorGroupPastel => '馬卡龍系';
+
+  @override
+  String get colorGroupVibrant => '活潑系';
+
+  @override
+  String get colorGroupDeep => '深色系';
+
+  @override
   String get courseImportTitle => '匯入課程';
 
   @override
@@ -12586,6 +12634,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get beforeClassQuickActionSubtitle =>
       '只在上課前提醒的展開通知裡顯示，靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁';
+
+  @override
+  String get liveBeforeClassQuickActionAutoTitle => '自動執行';
+
+  @override
+  String get liveBeforeClassQuickActionAutoSubtitle =>
+      '在上課前自動打開所選模式，下課後自動恢復，重啟手機也會恢復；免打擾需要先在系統設定中授權';
+
+  @override
+  String get liveBeforeClassQuickActionAutoOptionOff => '不自動執行';
+
+  @override
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes) {
+    return '上課前 $minutes 分鐘';
+  }
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -17159,6 +17222,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveBeforeClassQuickActionDoNotDisturb => '打開免打擾';
 
   @override
+  String get liveBeforeClassQuickActionBoth => '靜音和免打擾';
+
+  @override
   String get courseCardVerticalAlignTop => '頂部對齊';
 
   @override
@@ -21144,6 +21210,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importRandomCourseColorSubtitle => '依課程名與教師自動分配預設色';
 
   @override
+  String get importRandomColorGroupTitle => '隨機配色組';
+
+  @override
+  String get colorGroupAll => '全部顏色';
+
+  @override
+  String get colorGroupPastel => '馬卡龍系';
+
+  @override
+  String get colorGroupVibrant => '活潑系';
+
+  @override
+  String get colorGroupDeep => '深色系';
+
+  @override
   String get courseImportTitle => '匯入課程';
 
   @override
@@ -22771,6 +22852,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get beforeClassQuickActionSubtitle =>
       '只在上課前提醒的展開通知裡顯示，靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁';
+
+  @override
+  String get liveBeforeClassQuickActionAutoTitle => '自動執行';
+
+  @override
+  String get liveBeforeClassQuickActionAutoSubtitle =>
+      '在上課前自動打開所選模式，下課後自動恢復，重啟手機也會恢復；免打擾需要先在系統設定中授權';
+
+  @override
+  String get liveBeforeClassQuickActionAutoOptionOff => '不自動執行';
+
+  @override
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes) {
+    return '上課前 $minutes 分鐘';
+  }
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -27342,6 +27438,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => '打开免打扰';
+
+  @override
+  String get liveBeforeClassQuickActionBoth => '靜音和免打擾';
 
   @override
   String get courseCardVerticalAlignTop => '顶部对齐';

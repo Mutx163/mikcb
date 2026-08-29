@@ -52,4 +52,41 @@ void main() {
       );
     });
   });
+
+  group('kCourseColorGroups', () {
+    test('组 id 唯一且不占用「全部颜色」保留 id', () {
+      final ids = kCourseColorGroups.map((group) => group.id).toSet();
+      expect(ids, hasLength(kCourseColorGroups.length));
+      expect(ids, isNot(contains(kCourseColorGroupAllId)));
+    });
+
+    test('每组色数足够随机取色、组内不重复、且全部 ⊆ 全量色板', () {
+      final fullPalette = kPresetCourseColorHexes
+          .map((hex) => hex.toUpperCase())
+          .toSet();
+      for (final group in kCourseColorGroups) {
+        expect(group.hexes.length, greaterThanOrEqualTo(15),
+            reason: '${group.id} 色数过少');
+        final seenInGroup = <String>{};
+        for (final hex in group.hexes) {
+          final key = hex.toUpperCase();
+          expect(fullPalette, contains(key),
+              reason: '${group.id} 的 $hex 不在全量色板中');
+          expect(seenInGroup.add(key), isTrue,
+              reason: '${group.id} 组内重复: $hex');
+        }
+      }
+    });
+
+    test('courseColorGroupPalette：all 与未知 id 兜底回全量，预设组原样返回', () {
+      expect(
+        courseColorGroupPalette(kCourseColorGroupAllId),
+        same(kPresetCourseColorHexes),
+      );
+      expect(courseColorGroupPalette('nonexistent'), same(kPresetCourseColorHexes));
+      for (final group in kCourseColorGroups) {
+        expect(courseColorGroupPalette(group.id), same(group.hexes));
+      }
+    });
+  });
 }

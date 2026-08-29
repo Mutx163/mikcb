@@ -1610,6 +1610,36 @@ abstract class AppLocalizations {
   /// **'按课程名与教师自动分配预设色'**
   String get importRandomCourseColorSubtitle;
 
+  /// No description provided for @importRandomColorGroupTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'随机配色组'**
+  String get importRandomColorGroupTitle;
+
+  /// No description provided for @colorGroupAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部颜色'**
+  String get colorGroupAll;
+
+  /// No description provided for @colorGroupPastel.
+  ///
+  /// In zh, this message translates to:
+  /// **'马卡龙系'**
+  String get colorGroupPastel;
+
+  /// No description provided for @colorGroupVibrant.
+  ///
+  /// In zh, this message translates to:
+  /// **'活泼系'**
+  String get colorGroupVibrant;
+
+  /// No description provided for @colorGroupDeep.
+  ///
+  /// In zh, this message translates to:
+  /// **'深色系'**
+  String get colorGroupDeep;
+
   /// No description provided for @courseImportTitle.
   ///
   /// In zh, this message translates to:
@@ -4557,6 +4587,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'只在上课前提醒的展开通知里显示，静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页'**
   String get beforeClassQuickActionSubtitle;
+
+  /// No description provided for @liveBeforeClassQuickActionAutoTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动执行'**
+  String get liveBeforeClassQuickActionAutoTitle;
+
+  /// No description provided for @liveBeforeClassQuickActionAutoSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前自动打开所选模式，下课后自动恢复，重启手机也会恢复；免打扰需要先在系统设置中授权'**
+  String get liveBeforeClassQuickActionAutoSubtitle;
+
+  /// No description provided for @liveBeforeClassQuickActionAutoOptionOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'不自动执行'**
+  String get liveBeforeClassQuickActionAutoOptionOff;
+
+  /// No description provided for @liveBeforeClassQuickActionAutoOptionMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前 {minutes} 分钟'**
+  String liveBeforeClassQuickActionAutoOptionMinutes(int minutes);
 
   /// No description provided for @liveMiuiLabelSizePreview.
   ///
@@ -12793,6 +12847,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'打开免打扰'**
   String get liveBeforeClassQuickActionDoNotDisturb;
+
+  /// No description provided for @liveBeforeClassQuickActionBoth.
+  ///
+  /// In zh, this message translates to:
+  /// **'静音和免打扰'**
+  String get liveBeforeClassQuickActionBoth;
 
   /// No description provided for @courseCardVerticalAlignTop.
   ///
