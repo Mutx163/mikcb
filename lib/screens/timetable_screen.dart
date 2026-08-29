@@ -3819,12 +3819,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           )
         : foruiTheme.colors.foreground;
     final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
-    final countBadgeColor = hasAgenda
-        ? colorScheme.primary.withValues(alpha: 0.14)
-        : summaryInk.withValues(alpha: 0.10);
-    final countBadgeTextColor = hasAgenda
-        ? colorScheme.primary
-        : summaryMutedInk;
+    // 课程计数胶囊与「X 节日程」胶囊同款中性墨：跟摘要卡其余文字一样走
+    // 壁纸自动黑白，有课与否不再切换主题蓝强调色。
+    final countBadgeColor = summaryInk.withValues(alpha: 0.10);
+    final countBadgeTextColor = summaryMutedInk;
     return _dayAgendaSurface(
       key: key,
       settings: useChromeGlass ||
