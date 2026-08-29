@@ -107,6 +107,24 @@ bool shouldPromptRememberedLoginAutofill({
       !isPromptShowing;
 }
 
+/// 登录尝试后是否应弹「记住密码？」。
+/// 只有「已记住且密码完整」的条目才抑制提示；用户名-only 的残缺条目
+/// （密码丢失的历史遗留）必须放行，否则凭据丢密码后就没有任何自动补录
+/// 途径——输入新密码登录也不会再被记住。
+bool shouldPromptRememberedLoginSave({
+  required WarehouseRememberedLogin? rememberedLogin,
+  required bool hasPromptedSave,
+  required bool isPromptShowing,
+  required String candidateUsername,
+  required String candidatePassword,
+}) {
+  return !hasPromptedSave &&
+      !isPromptShowing &&
+      candidateUsername.isNotEmpty &&
+      candidatePassword.isNotEmpty &&
+      (rememberedLogin == null || rememberedLogin.password.isEmpty);
+}
+
 /// Whether ordinary web-login import should start background path recording.
 ///
 /// Explicit "record import" always records. Automatic first-import recording
@@ -3396,6 +3414,7 @@ class _WarehouseAdapterWebLoginScreenState
   bool _hasPromptedAutofill = false;
   bool _hasPromptedSave = false;
   bool _isPromptShowing = false;
+  String? _lastLoginStateDecisionKey;
   bool _useDesktopMode = true;
 
   // --- 宏录制相关 ---
@@ -3546,6 +3565,7 @@ class _WarehouseAdapterWebLoginScreenState
             setState(() {
               _currentUrl = url;
               _hasPromptedAutofill = false;
+              _lastLoginStateDecisionKey = null;
               if (!_addressFocusNode.hasFocus) {
                 _addressController.text = url;
               }
@@ -5049,6 +5069,30 @@ $kWarehouseBridgeCompatShim  try {
     return courses;
   }
 
+  /// 诊断：登录页自动填充决策日志。loginState 消息在页面存活期内会高频
+  /// 到达（定时探针 + DOM 监听），因此同一状态组合只记一条，换页重置；
+  /// 只含布尔，不含凭据值。缺了它，「这次为什么没自动填密码」无法从
+  /// 日志定位——所有门禁分支此前都是静默 return。
+  void _logLoginStateAutofillDecision({
+    required bool gateAllows,
+    required bool hasPasswordField,
+    required bool rememberedExists,
+    required bool rememberedPasswordEmpty,
+    required bool candidatePasswordEmpty,
+    required bool hasPromptedAutofill,
+  }) {
+    final key = 'gateAllows=$gateAllows hasPasswordField=$hasPasswordField '
+        'remembered=$rememberedExists '
+        'rememberedPasswordEmpty=$rememberedPasswordEmpty '
+        'candidatePasswordEmpty=$candidatePasswordEmpty '
+        'hasPromptedAutofill=$hasPromptedAutofill';
+    if (key == _lastLoginStateDecisionKey) {
+      return;
+    }
+    _lastLoginStateDecisionKey = key;
+    _debugImportLog('loginState autofill decision $key');
+  }
+
   Future<void> _handleLoginStateMessage(Map<String, dynamic> message) async {
     final hasPasswordField = message['hasPasswordField'] == true;
     final candidate = WarehouseRememberedLogin(
@@ -5060,10 +5104,19 @@ $kWarehouseBridgeCompatShim  try {
     // W7 凭据绑定站点：自动填充只允许发生在凭据来源的同一 host。
     // 跨源页面（钓鱼页 / 换站）不提示也不回放填充；手动「填充」菜单
     // 属于用户看清当前页面后的显式动作，不受此门禁限制。
-    if (!rememberedLoginAllowsUrl(
+    final gateAllows = rememberedLoginAllowsUrl(
       _rememberedLogin,
       await _resolveCurrentUrl(),
-    )) {
+    );
+    _logLoginStateAutofillDecision(
+      gateAllows: gateAllows,
+      hasPasswordField: hasPasswordField,
+      rememberedExists: _rememberedLogin != null,
+      rememberedPasswordEmpty: _rememberedLogin?.password.isEmpty ?? true,
+      candidatePasswordEmpty: candidate.password.isEmpty,
+      hasPromptedAutofill: _hasPromptedAutofill,
+    );
+    if (!gateAllows) {
       return;
     }
     if (!mounted) {
@@ -5102,22 +5155,36 @@ $kWarehouseBridgeCompatShim  try {
 
   Future<void> _handleLoginAttempt() async {
     final candidate = _latestLoginCandidate;
-    if (candidate == null ||
-        _rememberedLogin != null ||
-        _hasPromptedSave ||
-        _isPromptShowing ||
-        candidate.username.isEmpty ||
-        candidate.password.isEmpty) {
+    if (candidate == null) {
+      return;
+    }
+    if (!shouldPromptRememberedLoginSave(
+      rememberedLogin: _rememberedLogin,
+      hasPromptedSave: _hasPromptedSave,
+      isPromptShowing: _isPromptShowing,
+      candidateUsername: candidate.username,
+      candidatePassword: candidate.password,
+    )) {
+      _debugImportLog(
+        'loginAttempt save prompt suppressed '
+        'remembered=${_rememberedLogin != null} '
+        'rememberedPasswordEmpty=${_rememberedLogin?.password.isEmpty ?? true} '
+        'hasPromptedSave=$_hasPromptedSave '
+        'isPromptShowing=$_isPromptShowing '
+        'candidateUsernameEmpty=${candidate.username.isEmpty} '
+        'candidatePasswordEmpty=${candidate.password.isEmpty}',
+      );
+      return;
+    }
+    // 后台回放不打断流程、不弹对话框（Offstage 里对话框会永远挂着）；
+    // 前台回放与普通网页登录都允许补录提示。
+    if (widget.runInBackground) {
       return;
     }
     _hasPromptedSave = true;
-    // 回放模式：跳过保存密码对话框
-    if (widget.macroRecord != null) {
-      return;
-    }
     _isPromptShowing = true;
     final l10n = AppLocalizations.of(context)!;
-    final shouldSave = await showAppConfirmDialog(
+    final shouldPersist = await showAppConfirmDialog(
       context,
       title: l10n.rememberPasswordTitle,
       message: l10n.rememberPasswordMessage(candidate.username),
@@ -5125,7 +5192,7 @@ $kWarehouseBridgeCompatShim  try {
       confirmLabel: l10n.rememberAndAutofillAction,
     );
     _isPromptShowing = false;
-    if (shouldSave == true) {
+    if (shouldPersist == true) {
       await _preferencesService.setRememberedLogin(
         widget.adapter.adapterId,
         await _bindCurrentHostToLogin(candidate),
@@ -5567,11 +5634,12 @@ $kWarehouseBridgeCompatShim  try {
         },
         onPauseForManualInput: (step, reason) async {
           if (!mounted) return false;
-          if (shouldUseRememberedPasswordForManualStep(
+          final passwordLike = shouldUseRememberedPasswordForManualStep(
             step,
             reason,
             AppLocalizations.of(context)!,
-          )) {
+          );
+          if (passwordLike) {
             final remembered =
                 _rememberedLogin ??
                 await _preferencesService.getRememberedLogin(
@@ -5583,6 +5651,11 @@ $kWarehouseBridgeCompatShim  try {
               remembered,
               await _resolveCurrentUrl(),
             )) {
+              _debugImportLog(
+                'playback password step autofill blocked by host gate '
+                'remembered=${remembered != null} '
+                'rememberedPasswordEmpty=${remembered?.password.isEmpty ?? true}',
+              );
               return false;
             }
             if (remembered != null && remembered.password.isNotEmpty) {
@@ -5602,6 +5675,13 @@ $kWarehouseBridgeCompatShim  try {
               return true;
             }
           }
+          _debugImportLog(
+            'playback paused for manual input reason="$reason" '
+            'fieldType=${step.fieldType ?? ''} passwordLike=$passwordLike '
+            'remembered=${_rememberedLogin != null} '
+            'rememberedPasswordEmpty=${_rememberedLogin?.password.isEmpty ?? true} '
+            'runInBackground=${widget.runInBackground}',
+          );
           if (widget.runInBackground) {
             _debugImportLog(
               'background playback needs manual input reason=$reason',

@@ -100,6 +100,104 @@ void main() {
     );
   });
 
+  group('shouldPromptRememberedLoginSave', () {
+    const completeRemembered = WarehouseRememberedLogin(
+      username: 'saved-user',
+      password: 'saved-password',
+    );
+    // 密码丢失后遗留的「只有用户名」残缺条目（僵尸条目）。
+    const usernameOnlyRemembered = WarehouseRememberedLogin(
+      username: 'saved-user',
+      password: '',
+    );
+
+    test('prompts when nothing is remembered yet', () {
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: null,
+          hasPromptedSave: false,
+          isPromptShowing: false,
+          candidateUsername: 'typed-user',
+          candidatePassword: 'typed-password',
+        ),
+        isTrue,
+      );
+    });
+
+    test('prompts again when remembered entry has empty password', () {
+      // 回归用例：残缺条目曾把保存提示永久堵死，凭据丢密码后无法补录。
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: usernameOnlyRemembered,
+          hasPromptedSave: false,
+          isPromptShowing: false,
+          candidateUsername: 'typed-user',
+          candidatePassword: 'typed-password',
+        ),
+        isTrue,
+      );
+    });
+
+    test('does not prompt when a complete login is already remembered', () {
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: completeRemembered,
+          hasPromptedSave: false,
+          isPromptShowing: false,
+          candidateUsername: 'typed-user',
+          candidatePassword: 'typed-password',
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not prompt without a full typed candidate', () {
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: null,
+          hasPromptedSave: false,
+          isPromptShowing: false,
+          candidateUsername: 'typed-user',
+          candidatePassword: '',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: null,
+          hasPromptedSave: false,
+          isPromptShowing: false,
+          candidateUsername: '',
+          candidatePassword: 'typed-password',
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not prompt twice or while a prompt is showing', () {
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: null,
+          hasPromptedSave: true,
+          isPromptShowing: false,
+          candidateUsername: 'typed-user',
+          candidatePassword: 'typed-password',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldPromptRememberedLoginSave(
+          rememberedLogin: null,
+          hasPromptedSave: false,
+          isPromptShowing: true,
+          candidateUsername: 'typed-user',
+          candidatePassword: 'typed-password',
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('shouldAutoRecordWarehouseImport', () {
     test('auto-records first ordinary import when no macro exists', () {
       expect(
