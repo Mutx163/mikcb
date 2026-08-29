@@ -19,6 +19,7 @@ import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../domain/week_calculator.dart';
+import '../domain/holiday_resolver.dart';
 import '../providers/timetable/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
 import '../ui/hyperos/hyperos_overscroll.dart';
@@ -3362,16 +3363,17 @@ class TimetableProvider with ChangeNotifier {
 
   /// 指定日期是否为假期（应隐藏课程）
   bool isHoliday(DateTime date) {
-    // 调休上班日优先级最高，即使是假期覆盖模式也要显示课程
-    if (_holidayData?.isAdjustedWorkday(date) ?? false) return false;
-    if (_settings.holidayOverrideEnabled) return true;
-    if (!_settings.enableHolidayMarking) return false;
-    return _holidayData?.isHoliday(date) ?? false;
+    return HolidayResolver.isHoliday(
+      date,
+      data: _holidayData,
+      overrideEnabled: _settings.holidayOverrideEnabled,
+      markingEnabled: _settings.enableHolidayMarking,
+    );
   }
 
   /// 指定日期是否为调休上班日
   bool isAdjustedWorkday(DateTime date) {
-    return _holidayData?.isAdjustedWorkday(date) ?? false;
+    return HolidayResolver.isAdjustedWorkday(date, data: _holidayData);
   }
 
   Future<bool> deleteCourseOccurrence({
