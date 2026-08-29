@@ -1,7 +1,44 @@
 {
-  "generatedAt": "2026-08-28T22:25:00.500Z",
-  "releaseCount": 92,
+  "generatedAt": "2026-08-29T07:08:32.750Z",
+  "releaseCount": 93,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.1.1",
+      "title": "v2.1.1",
+      "prerelease": true,
+      "publishedAt": "2026-08-29T04:21:17Z",
+      "description": "新增任务：添加与编辑任务页支持设置完成状态，可直接登记已完成的任务，也能把已完成任务改回未完成。 · 新增课程卡：毛玻璃卡面的文字颜色自动适配壁纸——彩色字自动转为黑白、黑白灰字对比度不足时同样自动调整，保证清晰可读，日程卡与周预览也同步支持自定义字色。 · 优化课程卡：实心卡面的简介字色自动跟随标题字色的明暗，历史遗留的字色错位也会自动纠正，不再出现白标题…",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增任务：添加与编辑任务页支持设置完成状态，可直接登记已完成的任务，也能把已完成任务改回未完成。"
+        },
+        {
+          "type": "新增",
+          "text": "新增课程卡：毛玻璃卡面的文字颜色自动适配壁纸——彩色字自动转为黑白、黑白灰字对比度不足时同样自动调整，保证清晰可读，日程卡与周预览也同步支持自定义字色。"
+        },
+        {
+          "type": "优化",
+          "text": "优化课程卡：实心卡面的简介字色自动跟随标题字色的明暗，历史遗留的字色错位也会自动纠正，不再出现白标题配黑简介的卡片。"
+        },
+        {
+          "type": "优化",
+          "text": "优化任务：添加任务页选择来源课程时同一门课只显示一次、课程较多时可上下滚动，截止日期只在日期行展示一次；任务清单行改用环形勾选钮，完成态带勾号更直观。"
+        },
+        {
+          "type": "优化",
+          "text": "优化周报提醒：重启手机、升级应用或调整系统时间后，周报通知仍能准时送达，不再漏发。"
+        },
+        {
+          "type": "优化",
+          "text": "优化界面细节：点底栏切换日/周视图立即到位、不再播放展开动画，超级岛预览的课程名与地点统一显示在摄像头右侧、与灵动岛实际显示一致，二维码传输的文字补齐多语言翻译并统一警示配色。"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1/mikcb-2.1.1-arm64-v8a.apk",
+      "assetName": "mikcb-2.1.1-arm64-v8a.apk"
+    },
     {
       "channelLabel": "预发布",
       "version": "2.1.0",
@@ -272,51 +309,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.4",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.4/mikcb-2.0.4-arm64-v8a.apk",
       "assetName": "mikcb-2.0.4-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "预发布",
-      "version": "2.0",
-      "title": "v2.0",
-      "prerelease": true,
-      "publishedAt": "2026-07-06T17:36:25Z",
-      "description": "新增 WEBDAV 云同步：支持坚果云及自定义 WEBDAV 服务，可在手机、平板之间同步课表、仓库账号与相关设置，支持手动/自动同步与冲突处理 · 新增 HyperOS 视觉体系：课表、设置、添加课程/考试/日程、导入、关于、统计、用户引导、Live 诊断、局域网编辑等界面统一小米 HyperOS 风格组件 · 新增课表首页背景与区域毛玻璃：支持自定义背景…",
-      "highlights": [
-        {
-          "type": "新增",
-          "text": "新增 WEBDAV 云同步：支持坚果云及自定义 WEBDAV 服务，可在手机、平板之间同步课表、仓库账号与相关设置，支持手动/自动同步与冲突处理"
-        },
-        {
-          "type": "新增",
-          "text": "新增 HyperOS 视觉体系：课表、设置、添加课程/考试/日程、导入、关于、统计、用户引导、Live 诊断、局域网编辑等界面统一小米 HyperOS 风格组件"
-        },
-        {
-          "type": "新增",
-          "text": "新增课表首页背景与区域毛玻璃：支持自定义背景图，顶栏与内容区按 HyperOS 规范分层模糊"
-        },
-        {
-          "type": "新增",
-          "text": "新增 Android 12+ 分层启动画面，减少冷启动闪屏"
-        },
-        {
-          "type": "新增",
-          "text": "新增关于页第三方免责声明：特此声明，本应用由第三方开发者独立开发，仅用于学习研究用途，不属于小米官方软件，与小米科技有限责任公司无任何隶属、合作或授权关系；如涉及内容侵权，请权利方联系作者，我们将第一时间下架并删除相关内容"
-        },
-        {
-          "type": "新增",
-          "text": "新增学期账单式课程统计：总览、成就徽章、数据故事、每日课时分布、必修/选修比例、课程排名，支持分享长图"
-        },
-        {
-          "type": "新增",
-          "text": "新增局域网浏览器编辑课表：手机开本地 Web 服务，电脑浏览器改课表；Android 前台保活维持连接"
-        },
-        {
-          "type": "新增",
-          "text": "新增表格导入课程：CSV 模板导入、周次表达式、教务系统快捷导入宏"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0/mikcb-2.0-arm64-v8a.apk",
-      "assetName": "mikcb-2.0-arm64-v8a.apk"
     }
   ]
 }
