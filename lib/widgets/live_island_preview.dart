@@ -12,29 +12,36 @@ import '../utils/hex_color.dart';
 
 /// Real-time HyperOS super-island capsule preview.
 ///
-/// 还原真实摘要态胶囊的单行左右分区：中间是摄像头开孔；左侧是实际会显示的
-/// 小图标位 + 信息文本；右侧是实际的状态文本。整条胶囊只有一行文本，与真机
-/// 一致。展开态不在此预览范围内。
+/// 还原真实摘要态胶囊的单行左右分区：中间是摄像头开孔；左侧只有通知小图标位，
+/// 右侧是整条 islandCriticalText（课程名 + 地点 + 状态）。也就是说——「显示
+/// 内容」那组开关（课程名 / 简称 / 地点 / 倒计时 / 阶段文字 / 前缀）控制的是
+/// **右侧文本**，左侧图标位只由下面的实验性图片开关（小米岛左侧文字图标）和
+/// 机型能力决定。展开态不在此预览范围内。
 ///
 /// 与原生 `MainActivity.kt` 的对应关系。真机摘要态胶囊的文本来自提升通知的
 /// shortCriticalText，即 islandCriticalText 的组合规则：
 ///
-/// * 左侧小图标位 = 通知 smallIcon：默认随阶段切换（ic_upcoming /
-///   ic_course / ic_countdown 白色模板图标）；仅小米设备允许开启自定义标签
-///   （enableMiuiIslandLabelImage），开启后按原生 buildIslandLabelBitmap()
-///   的规则绘制（图标/自定义 Logo + 标签文字，颜色、字号、字重、圆角均跟随
-///   设置）。
-/// * 左侧信息文本 = islandCourseName + islandLocation：分别受
-///   showCourseName / showLocation 门控，空白项过滤后以空格拼接；课程名跟随
-///   useShortName 并按原生规则截断 5 字。
-/// * 右侧状态文本 = islandCriticalStatusText：
-///   - 课中且显示倒计时时 = classProgress.criticalTimeText：裸倒计时（不带
-///     “距下课”前缀），样式由 countdownTextStyle 决定；原生 nearest 模式
-///     会优先最近课间节点的剩余时间，示例课为单节课、没有课间节点
-///     （buildLiveProgressMilestones 对单节课返回空），因此与 total 模式
-///     同为整节剩余时间；
-///   - 其余情况 = visibleStatusText：受 showCountdown → showStageText 控制，
-///     倒计时前缀（距上课/距下课）受 hidePrefixText 控制。
+/// * 左侧小图标位 = 通知 smallIcon（不承载文本）：
+///   - 开启自定义标签（enableMiuiIslandLabelImage）时 = 原生
+///     buildIslandLabelBitmap() 生成的位图（图标/自定义 Logo + 标签文字，
+///     颜色、字号、字重、圆角均跟随设置）；
+///   - 否则小米系机型 = 随阶段切换的白色模板图标（ic_upcoming / ic_course /
+///     ic_countdown）；
+///   - 否则（非小米系机型且未开自定义标签）= **空**：非小米机型没有超级岛，
+///     原生 resolveIslandLabelBitmap() 也会因 !isXiaomiFamilyDevice() 直接
+///     返回 null，设置只影响右侧文本。
+/// * 右侧文本 = islandCriticalText = [islandCourseName, islandLocation,
+///   islandCriticalStatusText] 过滤空白后以空格拼接（与原生同一行代码）：
+///   - islandCourseName 受 showCourseName 门控，课程名跟随 useShortName 并按
+///     原生规则截断 5 字；
+///   - islandLocation 受 showLocation 门控；
+///   - islandCriticalStatusText：课中且显示倒计时时 =
+///     classProgress.criticalTimeText 裸倒计时（不带“距下课”前缀），样式由
+///     countdownTextStyle 决定；原生 nearest 模式会优先最近课间节点的剩余
+///     时间，示例课为单节课、没有课间节点（buildLiveProgressMilestones 对
+///     单节课返回空），因此与 total 模式同为整节剩余时间；其余情况 =
+///     visibleStatusText，受 showCountdown → showStageText 控制，倒计时前缀
+///     （距上课/距下课）受 hidePrefixText 控制。
 ///
 /// 注意：原生参数里的 progressInfo（环形进度）/ progressTextInfo 服务于点开
 /// 后的展开态卡片（由系统渲染），摘要态胶囊没有它；本预览只模拟摘要态，
@@ -167,8 +174,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
             ),
           _IslandCapsule(
             iconSlot: _buildSmallIcon(l10n, d, stages[index]),
-            infoLine: _infoLine(l10n, d),
-            statusLine: _statusLine(l10n, stages[index], d),
+            criticalText: _criticalText(l10n, stages[index], d),
           ),
           if (index != stages.length - 1) const SizedBox(height: 12),
         ],
@@ -183,20 +189,26 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     LiveDisplaySettings d,
     _PreviewStage stage,
   ) {
-    final labelEnabled = _isXiaomiFamily && d.enableMiuiIslandLabelImage;
-    if (!labelEnabled) {
-      // 原生 setSmallIcon：beforeClass=ic_upcoming（时钟）、
-      // duringClass=ic_course（书）、beforeEnd=ic_countdown（对勾圆环），
-      // 都是白色模板图标而不是应用图标。
-      return SizedBox.square(
-        dimension: 28,
-        child: Icon(
-          _stageSmallIconData(stage),
-          size: 24,
-          color: Colors.white,
-        ),
-      );
+    // 实验性左图（小米岛左侧文字图标）优先：开关打开就按配置预览左图；
+    // 非小米真机上原生 resolveIslandLabelBitmap() 会因 !isXiaomiFamilyDevice()
+    // 放弃下发，预览里仍按开关展示，方便先调样式。
+    if (d.enableMiuiIslandLabelImage) {
+      return _buildIslandLabel(l10n, d);
     }
+    // 非小米机型没有超级岛：左侧图标位为空，设置只影响右侧文本。
+    if (!_isXiaomiFamily) {
+      return const SizedBox.shrink();
+    }
+    // 原生 setSmallIcon：beforeClass=ic_upcoming（时钟）、
+    // duringClass=ic_course（书）、beforeEnd=ic_countdown（对勾圆环），
+    // 都是白色模板图标而不是应用图标。
+    return SizedBox.square(
+      dimension: 28,
+      child: Icon(_stageSmallIconData(stage), size: 24, color: Colors.white),
+    );
+  }
+
+  Widget _buildIslandLabel(AppLocalizations l10n, LiveDisplaySettings d) {
     // 原生 buildIslandLabelBitmap：可选图标部分 + 自动缩放的标签文字。
     final includeIcon =
         d.miuiIslandLabelStyle == MiuiIslandLabelStyle.iconAndText;
@@ -278,14 +290,20 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         ),
       );
 
-  // --- Left info line (islandCourseName + islandLocation) -----------------
+  // --- Right critical text (islandCriticalText) ---------------------------
 
-  /// 原生把 islandCourseName 与 islandLocation 过滤空白后以空格拼进
-  /// islandCriticalText；本预览把它们作为摄像头左侧的信息块渲染。
-  String _infoLine(AppLocalizations l10n, LiveDisplaySettings d) {
+  /// 与原生同一行规则：`listOf(islandCourseName, islandLocation,
+  /// islandCriticalStatusText).filter { isNotBlank }.joinToString(" ")`。
+  /// 三者都渲染在摄像头右侧——「显示内容」那组开关影响的正是这里。
+  String _criticalText(
+    AppLocalizations l10n,
+    _PreviewStage stage,
+    LiveDisplaySettings d,
+  ) {
     final name = _islandCourseName(l10n, d);
     final location = d.showLocation ? l10n.liveIslandPreviewSampleLocation : '';
-    return [name, location].where((part) => part.isNotEmpty).join(' ');
+    final status = _statusLine(l10n, stage, d);
+    return [name, location, status].where((part) => part.isNotEmpty).join(' ');
   }
 
   /// islandCourseName：showCourseName / useShortName + 原生 5 字截断。
@@ -478,21 +496,16 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
 // --- Mock widgets（HyperOS 超级岛观感，深色、与主题无关） --------------------
 
-/// 摘要态胶囊（单行）：中间摄像头，左侧图标位+信息文本，右侧状态文本。
+/// 摘要态胶囊（单行）：中间摄像头，左侧只有小图标位，右侧是整条
+/// islandCriticalText（课程名 + 地点 + 状态）。
 class _IslandCapsule extends StatelessWidget {
-  const _IslandCapsule({
-    required this.iconSlot,
-    required this.infoLine,
-    required this.statusLine,
-  });
+  const _IslandCapsule({required this.iconSlot, required this.criticalText});
 
+  /// 摄像头左侧的图标位（通知 smallIcon）。非小米机型且未开自定义标签时为空。
   final Widget iconSlot;
 
-  /// 摄像头左侧的信息文本（islandCourseName + islandLocation）。
-  final String infoLine;
-
-  /// 摄像头右侧的状态文本（islandCriticalStatusText）。
-  final String statusLine;
+  /// 摄像头右侧的文本（islandCriticalText）。
+  final String criticalText;
 
   @override
   Widget build(BuildContext context) {
@@ -508,28 +521,9 @@ class _IslandCapsule extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(13, 0, 4, 0),
-              child: Row(
-                children: [
-                  iconSlot,
-                  if (infoLine.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          infoLine,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: iconSlot,
               ),
             ),
           ),
@@ -539,16 +533,19 @@ class _IslandCapsule extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(6, 0, 13, 0),
               child: Align(
                 alignment: Alignment.centerRight,
-                child: statusLine.isEmpty
+                child: criticalText.isEmpty
                     ? const SizedBox.shrink()
-                    : Text(
-                        statusLine,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          criticalText,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
               ),
