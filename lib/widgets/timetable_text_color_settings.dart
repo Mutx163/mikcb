@@ -8,7 +8,11 @@ import '../utils/hex_color.dart';
 
 /// Scope identifier for text color settings.
 ///
-/// Determines which text color section is being configured.
+/// The scope decides which color rows render on which settings page:
+/// course-card rows (title / detail + the independent-detail switch) go to the
+/// course-card page; page rows (weekday bar / accent / time axis) go to the
+/// timetable-page page. Ownership mirrors the reset scopes in
+/// settings_reset.dart — a color field is editable on exactly one page.
 class TextColorScope {
   const TextColorScope._(this.name);
 
@@ -22,21 +26,27 @@ class TextColorScope {
   static const page = TextColorScope._('page');
 }
 
+/// 文字颜色设置区块，按 scope 决定渲染哪些颜色行。
+///
+/// 「课程卡片」页渲染课卡标题/详情与「详情字色独立」开关；「课表页面」页
+/// 渲染星期栏/强调/时间轴。同一字段只在一页出现，与 settings_reset.dart
+/// 的重置作用域字段划分一一对应。
 class TimetableTextColorSettings extends StatelessWidget {
   const TimetableTextColorSettings({
     super.key,
     required this.settings,
     required this.onChanged,
-    this.scope,
+    required this.scope,
   });
 
   final TimetableSettings settings;
   final ValueChanged<TimetableSettings> onChanged;
-  final TextColorScope? scope;
+  final TextColorScope scope;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final showCourseCardRows = scope == TextColorScope.courseCard;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -44,40 +54,43 @@ class TimetableTextColorSettings extends StatelessWidget {
         const HyperosSectionGap(),
         HyperosSectionLabel(text: l10n.appearanceTextColorsSectionTitle),
 
-        // 卡片 1：链接课程卡片颜色（开关）
-        HyperosControlCard(
-          edgeToEdge: true,
-          child: HyperosControlCardRowScope(
-            isFirst: true,
-            isLast: true,
-            child: HyperosSwitchTile(
-              title: l10n.textColorIndependentDetail,
-              value: !settings.linkCourseCardColors,
-              onChanged: (value) {
-                if (!value) {
-                  onChanged(
-                    settings.copyWith(
-                      linkCourseCardColors: true,
-                      courseCardDetailColorLight:
-                          settings.courseCardTitleColorLight,
-                      courseCardDetailColorDark:
-                          settings.courseCardTitleColorDark,
-                    ),
-                  );
-                } else {
-                  onChanged(settings.copyWith(linkCourseCardColors: false));
-                }
-              },
+        // 卡片 1：链接课程卡片颜色（开关）——课卡专属，只在课程卡片页出现。
+        if (showCourseCardRows) ...[
+          HyperosControlCard(
+            edgeToEdge: true,
+            child: HyperosControlCardRowScope(
+              isFirst: true,
+              isLast: true,
+              child: HyperosSwitchTile(
+                title: l10n.textColorIndependentDetail,
+                value: !settings.linkCourseCardColors,
+                onChanged: (value) {
+                  if (!value) {
+                    onChanged(
+                      settings.copyWith(
+                        linkCourseCardColors: true,
+                        courseCardDetailColorLight:
+                            settings.courseCardTitleColorLight,
+                        courseCardDetailColorDark:
+                            settings.courseCardTitleColorDark,
+                      ),
+                    );
+                  } else {
+                    onChanged(settings.copyWith(linkCourseCardColors: false));
+                  }
+                },
+              ),
             ),
           ),
-        ),
 
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
 
         // 卡片 2：浅色模式颜色设置
         const HyperosSectionGap(),
         HyperosSectionLabel(text: l10n.themeModeLight),
         _ModeColorSettings(
+          scope: scope,
           settings: settings,
           onChanged: onChanged,
           titleColor: settings.courseCardTitleColorLight,
@@ -94,30 +107,22 @@ class TimetableTextColorSettings extends StatelessWidget {
                 ),
               );
             } else {
-              onChanged(
-                settings.copyWith(courseCardTitleColorLight: color),
-              );
+              onChanged(settings.copyWith(courseCardTitleColorLight: color));
             }
           },
-          onDetailColorChanged: (color) => onChanged(
-            settings.copyWith(courseCardDetailColorLight: color),
-          ),
-          onWeekdayColorChanged: (color) => onChanged(
-            settings.copyWith(weekdayBarFontColorLight: color),
-          ),
+          onDetailColorChanged: (color) =>
+              onChanged(settings.copyWith(courseCardDetailColorLight: color)),
+          onWeekdayColorChanged: (color) =>
+              onChanged(settings.copyWith(weekdayBarFontColorLight: color)),
           onTimeAxisColorChanged: (color) =>
               onChanged(settings.copyWith(timeAxisFontColorLight: color)),
-          onAccentColorChanged: (color) => onChanged(
-            settings.copyWith(weekdayBarAccentColorLight: color),
-          ),
-          defaultTitleColor:
-              TimetableSettings.defaultCourseCardTitleColor,
-          defaultDetailColor:
-              TimetableSettings.defaultCourseCardDetailColor,
+          onAccentColorChanged: (color) =>
+              onChanged(settings.copyWith(weekdayBarAccentColorLight: color)),
+          defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
+          defaultDetailColor: TimetableSettings.defaultCourseCardDetailColor,
           defaultWeekdayColor:
               TimetableSettings.defaultWeekdayBarFontColorLight,
-          defaultTimeAxisColor:
-              TimetableSettings.defaultTimeAxisFontColorLight,
+          defaultTimeAxisColor: TimetableSettings.defaultTimeAxisFontColorLight,
           defaultAccentColor:
               TimetableSettings.defaultWeekdayBarAccentColorLight,
         ),
@@ -128,6 +133,7 @@ class TimetableTextColorSettings extends StatelessWidget {
         const HyperosSectionGap(),
         HyperosSectionLabel(text: l10n.themeModeDark),
         _ModeColorSettings(
+          scope: scope,
           settings: settings,
           onChanged: onChanged,
           titleColor: settings.courseCardTitleColorDark,
@@ -144,30 +150,21 @@ class TimetableTextColorSettings extends StatelessWidget {
                 ),
               );
             } else {
-              onChanged(
-                settings.copyWith(courseCardTitleColorDark: color),
-              );
+              onChanged(settings.copyWith(courseCardTitleColorDark: color));
             }
           },
-          onDetailColorChanged: (color) => onChanged(
-            settings.copyWith(courseCardDetailColorDark: color),
-          ),
-          onWeekdayColorChanged: (color) => onChanged(
-            settings.copyWith(weekdayBarFontColorDark: color),
-          ),
+          onDetailColorChanged: (color) =>
+              onChanged(settings.copyWith(courseCardDetailColorDark: color)),
+          onWeekdayColorChanged: (color) =>
+              onChanged(settings.copyWith(weekdayBarFontColorDark: color)),
           onTimeAxisColorChanged: (color) =>
               onChanged(settings.copyWith(timeAxisFontColorDark: color)),
-          onAccentColorChanged: (color) => onChanged(
-            settings.copyWith(weekdayBarAccentColorDark: color),
-          ),
-          defaultTitleColor:
-              TimetableSettings.defaultCourseCardTitleColor,
-          defaultDetailColor:
-              TimetableSettings.defaultCourseCardDetailColor,
-          defaultWeekdayColor:
-              TimetableSettings.defaultWeekdayBarFontColorDark,
-          defaultTimeAxisColor:
-              TimetableSettings.defaultTimeAxisFontColorDark,
+          onAccentColorChanged: (color) =>
+              onChanged(settings.copyWith(weekdayBarAccentColorDark: color)),
+          defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
+          defaultDetailColor: TimetableSettings.defaultCourseCardDetailColor,
+          defaultWeekdayColor: TimetableSettings.defaultWeekdayBarFontColorDark,
+          defaultTimeAxisColor: TimetableSettings.defaultTimeAxisFontColorDark,
           defaultAccentColor:
               TimetableSettings.defaultWeekdayBarAccentColorDark,
         ),
@@ -178,6 +175,7 @@ class TimetableTextColorSettings extends StatelessWidget {
 
 class _ModeColorSettings extends StatelessWidget {
   const _ModeColorSettings({
+    required this.scope,
     required this.settings,
     required this.onChanged,
     required this.titleColor,
@@ -197,6 +195,7 @@ class _ModeColorSettings extends StatelessWidget {
     required this.defaultAccentColor,
   });
 
+  final TextColorScope scope;
   final TimetableSettings settings;
   final ValueChanged<TimetableSettings> onChanged;
   final String titleColor;
@@ -218,52 +217,58 @@ class _ModeColorSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final showCourseCardRows = scope == TextColorScope.courseCard;
+    final rows = <Widget>[
+      // 课卡标题/详情与页面字色分属两页，同一字段只在一页可编辑。
+      if (showCourseCardRows) ...[
+        _ColorSettingRow(
+          label: l10n.textColorCourseCardTitle,
+          currentColor: titleColor,
+          defaultValue: defaultTitleColor,
+          onColorSelected: onTitleColorChanged,
+          bgColorForContrast: settings.timetableUseUnifiedCardColor
+              ? settings.timetableUnifiedCardColor
+              : settings.themeSeedColor,
+        ),
+        _ColorSettingRow(
+          label: l10n.textColorCourseCardDetail,
+          currentColor: detailColor,
+          defaultValue: defaultDetailColor,
+          enabled: !settings.linkCourseCardColors,
+          onColorSelected: onDetailColorChanged,
+          bgColorForContrast: settings.timetableUseUnifiedCardColor
+              ? settings.timetableUnifiedCardColor
+              : settings.themeSeedColor,
+        ),
+      ] else ...[
+        _ColorSettingRow(
+          label: l10n.textColorWeekdayBar,
+          currentColor: weekdayColor,
+          defaultValue: defaultWeekdayColor,
+          onColorSelected: onWeekdayColorChanged,
+          bgColorForContrast: settings.timetablePageBackgroundColor,
+        ),
+        _ColorSettingRow(
+          label: l10n.textColorWeekdayBarAccent,
+          currentColor: accentColor,
+          defaultValue: defaultAccentColor,
+          onColorSelected: onAccentColorChanged,
+          bgColorForContrast: settings.timetablePageBackgroundColor,
+        ),
+        _ColorSettingRow(
+          label: l10n.textColorTimeAxis,
+          currentColor: timeAxisColor,
+          defaultValue: defaultTimeAxisColor,
+          onColorSelected: onTimeAxisColorChanged,
+          bgColorForContrast: settings.timetablePageBackgroundColor,
+        ),
+      ],
+    ];
     return HyperosControlCard(
       edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ColorSettingRow(
-            label: l10n.textColorCourseCardTitle,
-            currentColor: titleColor,
-            defaultValue: defaultTitleColor,
-            onColorSelected: onTitleColorChanged,
-            bgColorForContrast: settings.timetableUseUnifiedCardColor
-                ? settings.timetableUnifiedCardColor
-                : settings.themeSeedColor,
-          ),
-          _ColorSettingRow(
-            label: l10n.textColorCourseCardDetail,
-            currentColor: detailColor,
-            defaultValue: defaultDetailColor,
-            enabled: !settings.linkCourseCardColors,
-            onColorSelected: onDetailColorChanged,
-            bgColorForContrast: settings.timetableUseUnifiedCardColor
-                ? settings.timetableUnifiedCardColor
-                : settings.themeSeedColor,
-          ),
-          _ColorSettingRow(
-            label: l10n.textColorWeekdayBar,
-            currentColor: weekdayColor,
-            defaultValue: defaultWeekdayColor,
-            onColorSelected: onWeekdayColorChanged,
-            bgColorForContrast: settings.timetablePageBackgroundColor,
-          ),
-          _ColorSettingRow(
-            label: l10n.textColorWeekdayBarAccent,
-            currentColor: accentColor,
-            defaultValue: defaultAccentColor,
-            onColorSelected: onAccentColorChanged,
-            bgColorForContrast: settings.timetablePageBackgroundColor,
-          ),
-          _ColorSettingRow(
-            label: l10n.textColorTimeAxis,
-            currentColor: timeAxisColor,
-            defaultValue: defaultTimeAxisColor,
-            onColorSelected: onTimeAxisColorChanged,
-            bgColorForContrast: settings.timetablePageBackgroundColor,
-          ),
-        ],
+        children: rows,
       ),
     );
   }
