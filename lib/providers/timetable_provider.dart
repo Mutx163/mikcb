@@ -435,7 +435,7 @@ class TimetableProvider with ChangeNotifier {
     if (_teacherRecords.contains(teacher)) return;
     _teacherRecords.add(teacher);
     _teacherRecords.sort();
-    await _storageService.saveTeacherRecords(_teacherRecords);
+    await _profileRepository.saveTeacherRecords(_teacherRecords);
     notifyUserDataChangedForSync();
   }
 
@@ -449,7 +449,7 @@ class TimetableProvider with ChangeNotifier {
     if (_locationRecords.contains(location)) return;
     _locationRecords.add(location);
     _locationRecords.sort();
-    await _storageService.saveLocationRecords(_locationRecords);
+    await _profileRepository.saveLocationRecords(_locationRecords);
     notifyUserDataChangedForSync();
   }
 
@@ -649,11 +649,11 @@ class TimetableProvider with ChangeNotifier {
     // under the same profiles write chain — load sequentially to avoid
     // re-entrant wait deadlocks under Future.wait.
     final profiles = await _profileRepository.loadProfiles();
-    final timeSchemes = await _storageService.getTimeSchemes();
-    final locationTimeGroups = await _storageService.getLocationTimeGroups();
-    final scheduleDateRules = await _storageService.getScheduleDateRules();
+    final timeSchemes = await _profileRepository.getTimeSchemes();
+    final locationTimeGroups = await _profileRepository.getLocationTimeGroups();
+    final scheduleDateRules = await _profileRepository.getScheduleDateRules();
     final activeProfileId = await _profileRepository.getActiveProfileId();
-    final partnerBinding = await _storageService.getPartnerTimetableBinding();
+    final partnerBinding = await _profileRepository.getPartnerTimetableBinding();
     final lastAppliedSignature = await _storageService
         .getScheduleDateRuleLastAppliedSignature();
 
@@ -751,8 +751,8 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _loadDeferredDataImpl() async {
-    final teacherFuture = _storageService.getTeacherRecords();
-    final locationFuture = _storageService.getLocationRecords();
+    final teacherFuture = _profileRepository.getTeacherRecords();
+    final locationFuture = _profileRepository.getLocationRecords();
     final results = await Future.wait<List<String>>([
       teacherFuture,
       locationFuture,
@@ -1112,12 +1112,12 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _persistTimeSchemes() async {
-    await _storageService.saveTimeSchemes(_timeSchemes);
+    await _profileRepository.saveTimeSchemes(_timeSchemes);
     notifyUserDataChangedForSync();
   }
 
   Future<void> _persistLocationTimeGroups() async {
-    await _storageService.saveLocationTimeGroups(_locationTimeGroups);
+    await _profileRepository.saveLocationTimeGroups(_locationTimeGroups);
     notifyUserDataChangedForSync();
   }
 
@@ -1236,7 +1236,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _persistScheduleDateRules() async {
-    await _storageService.saveScheduleDateRules(_scheduleDateRules);
+    await _profileRepository.saveScheduleDateRules(_scheduleDateRules);
     notifyUserDataChangedForSync();
   }
 
@@ -1511,7 +1511,7 @@ class TimetableProvider with ChangeNotifier {
 
     await _profileRepository.saveProfiles(_profiles);
     _scheduleDateRuleLastAppliedSignature = signature;
-    await _storageService.saveScheduleDateRuleLastAppliedSignature(signature);
+    await _profileRepository.saveScheduleDateRuleLastAppliedSignature(signature);
     notifyUserDataChangedForSync();
     _currentLiveCourseId = null;
     _notifyStateChanged();
@@ -4306,7 +4306,7 @@ class TimetableProvider with ChangeNotifier {
         return;
       }
       _partnerBinding = binding.copyWith(weekOffset: clamped);
-      await _storageService.savePartnerTimetableBinding(_partnerBinding);
+      await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
       notifyUserDataChangedForSync();
       notifyListeners();
     });
@@ -4329,7 +4329,7 @@ class TimetableProvider with ChangeNotifier {
         partnerColorHex: partnerColorHex,
         togetherColorHex: togetherColorHex,
       );
-      await _storageService.savePartnerTimetableBinding(_partnerBinding);
+      await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
       notifyUserDataChangedForSync();
       notifyListeners();
     });

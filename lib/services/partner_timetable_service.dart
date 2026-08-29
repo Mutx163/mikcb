@@ -58,7 +58,7 @@ class PartnerTimetableService {
 
     final backup = _dataTransferService.parseBackupJson(content);
     final now = DateTime.now();
-    final existingBinding = await _storageService.getPartnerTimetableBinding();
+    final existingBinding = await _profileRepository.getPartnerTimetableBinding();
     final contentHash = computeContentHash(content);
 
     final displayName = partnerName?.trim().isNotEmpty == true
@@ -113,7 +113,7 @@ class PartnerTimetableService {
           CoupleTimetableLogic.togetherColorHexDefault,
     );
 
-    await _storageService.savePartnerTimetableBinding(binding);
+    await _profileRepository.savePartnerTimetableBinding(binding);
 
     return PartnerImportResult(
       kind: isUpdate
@@ -130,6 +130,6 @@ class PartnerTimetableService {
           .where((profile) => profile.id != partnerProfileId)
           .toList();
     });
-    await _storageService.savePartnerTimetableBinding(null);
+    await _profileRepository.savePartnerTimetableBinding(null);
   }
 }

@@ -346,11 +346,11 @@ Future<String?> _timetableImportFullAppDataBackup(
           ? backup.activeProfileId
           : host._profiles.first.id;
 
-      await host._storageService.saveTimeSchemes(host._timeSchemes);
-      await host._storageService.saveLocationTimeGroups(
+      await host._profileRepository.saveTimeSchemes(host._timeSchemes);
+      await host._profileRepository.saveLocationTimeGroups(
         host._locationTimeGroups,
       );
-      await host._storageService.saveScheduleDateRules(host._scheduleDateRules);
+      await host._profileRepository.saveScheduleDateRules(host._scheduleDateRules);
       await host._profileRepository.saveProfiles(host._profiles);
       if (host._activeProfileId != null) {
         await host._profileRepository.setActiveProfileId(host._activeProfileId!);
@@ -369,7 +369,7 @@ Future<String?> _timetableImportFullAppDataBackup(
       );
       if (!hasPartnerProfile && host._partnerBinding != null) {
         host._partnerBinding = null;
-        await host._storageService.savePartnerTimetableBinding(null);
+        await host._profileRepository.savePartnerTimetableBinding(null);
       }
 
       host._currentLiveCourseId = null;
