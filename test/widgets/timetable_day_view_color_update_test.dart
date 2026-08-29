@@ -12,6 +12,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/course_surface.dart';
 
 import '../helpers_test_app.dart';
@@ -164,8 +165,19 @@ void main() {
     await _pumpUntilSettled(tester);
     expect(find.byType(AddCourseScreen), findsOneWidget);
 
-    // Pick a different preset colour (#4CAF50 green).
+    // Pick a different preset colour (#4CAF50 green) through the palette
+    // sheet: editor entry row -> sheet chip (preview-only tap) -> confirm.
     const targetHex = '#4CAF50';
+    final colorEntry = find.widgetWithText(HyperosPickerField, '课程颜色');
+    expect(colorEntry, findsOneWidget);
+    await tester.ensureVisible(colorEntry.last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(colorEntry.last);
+    await tester.pump();
+    await _pumpUntilSettled(tester);
+    expect(find.text('使用这个颜色'), findsOneWidget);
+
     final swatchFinder = find.byWidgetPredicate(
       (w) =>
           w is Container &&
@@ -174,9 +186,15 @@ void main() {
     );
     await tester.ensureVisible(swatchFinder.last);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(swatchFinder.last);
     await tester.pump();
+
+    // Confirm-based sheet: the tap above only moves the preview; the button
+    // below commits the selection back to the editor.
+    await tester.tap(find.text('使用这个颜色'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Save via the checkmark action. The save flow starts with a short fake
     //-timer delay, so advance fake time first to let it get going.
