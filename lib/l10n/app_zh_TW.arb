@@ -6001,7 +6001,7 @@
       "max": { "type": "int" }
     }
   },
-  "homeGridEditorHintBody": "八宮格最多放置 {max} 個按鈕；按住項目拖動即可排序。",
+  "homeGridEditorHintBody": "最多放置 {max} 個按鈕；按住項目拖動即可排序。",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": { "type": "int" }

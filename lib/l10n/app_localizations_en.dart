@@ -10564,7 +10564,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeGridEditorHintBody(int max) {
-    return 'The grid holds up to $max buttons; drag an item to reorder.';
+    return 'Up to $max buttons can be added; drag an item to reorder.';
   }
 
   @override

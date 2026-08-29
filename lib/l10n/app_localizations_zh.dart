@@ -9983,7 +9983,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String homeGridEditorHintBody(int max) {
-    return '八宫格最多放置 $max 个按钮；按住条目拖动即可排序。';
+    return '最多放置 $max 个按钮；按住条目拖动即可排序。';
   }
 
   @override
@@ -20168,7 +20168,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String homeGridEditorHintBody(int max) {
-    return '八宮格最多放置 $max 個按鈕；按住項目拖動即可排序。';
+    return '最多放置 $max 個按鈕；按住項目拖動即可排序。';
   }
 
   @override
@@ -30353,7 +30353,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String homeGridEditorHintBody(int max) {
-    return '八宮格最多放置 $max 個按鈕；按住項目拖動即可排序。';
+    return '最多放置 $max 個按鈕；按住項目拖動即可排序。';
   }
 
   @override

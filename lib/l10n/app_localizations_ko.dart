@@ -10306,7 +10306,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String homeGridEditorHintBody(int max) {
-    return '격자에는 최대 $max개의 버튼을 배치할 수 있으며, 항목을 길게 눌러 드래그하면 순서가 바뀝니다.';
+    return '최대 $max개의 버튼을 배치할 수 있으며, 항목을 길게 눌러 드래그하면 순서가 바뀝니다.';
   }
 
   @override

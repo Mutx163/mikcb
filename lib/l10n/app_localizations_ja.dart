@@ -10262,7 +10262,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String homeGridEditorHintBody(int max) {
-    return 'グリッドには最大 $max 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。';
+    return '最大 $max 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。';
   }
 
   @override

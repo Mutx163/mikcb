@@ -6001,7 +6001,7 @@
       "max": { "type": "int" }
     }
   },
-  "homeGridEditorHintBody": "グリッドには最大 {max} 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。",
+  "homeGridEditorHintBody": "最大 {max} 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": { "type": "int" }

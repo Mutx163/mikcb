@@ -6004,7 +6004,7 @@
       "max": { "type": "int" }
     }
   },
-  "homeGridEditorHintBody": "The grid holds up to {max} buttons; drag an item to reorder.",
+  "homeGridEditorHintBody": "Up to {max} buttons can be added; drag an item to reorder.",
   "@homeGridEditorHintBody": {
     "placeholders": {
       "max": { "type": "int" }

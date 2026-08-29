@@ -18154,7 +18154,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeGridEditorHintBody.
   ///
   /// In zh, this message translates to:
-  /// **'八宫格最多放置 {max} 个按钮；按住条目拖动即可排序。'**
+  /// **'最多放置 {max} 个按钮；按住条目拖动即可排序。'**
   String homeGridEditorHintBody(int max);
 
   /// No description provided for @homeGridEditorEnabledTitle.
