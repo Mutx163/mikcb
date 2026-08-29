@@ -37,6 +37,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   int? _sourceWeek;
   DateTime? _dueDate;
   bool _hasDueDate = false;
+  bool _isCompleted = false;
   bool _isSaving = false;
 
   bool get _isEditing => widget.task != null;
@@ -51,6 +52,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     _courseId = task?.courseId ?? initialCourse?.id;
     _sourceWeek = task?.sourceWeek ?? initialWeek;
     _dueDate = task?.dueDate;
+    _isCompleted = task?.isCompleted ?? false;
     if (_dueDate == null && initialCourse != null && initialWeek != null) {
       _dueDate = context.read<TimetableProvider>().dateForCourseOccurrence(
         initialCourse,
@@ -178,6 +180,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     trailing: const HyperosChevron(),
                     onTap: _pickDueDate,
                   ),
+                HyperosSwitchTile(
+                  title: l10n.taskCompletedSection,
+                  value: _isCompleted,
+                  onChanged: (value) {
+                    setState(() => _isCompleted = value);
+                  },
+                ),
               ],
             ),
           ],
@@ -298,6 +307,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               courseId: _courseId,
               sourceWeek: _courseId == null ? null : _sourceWeek,
               dueDate: _hasDueDate ? _dueDate : null,
+              isCompleted: _isCompleted,
               note: _noteController.text.trim().isEmpty
                   ? null
                   : _noteController.text.trim(),

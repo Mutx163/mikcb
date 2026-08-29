@@ -97,4 +97,133 @@ void main() {
     ).format(CourseTask.dateOnly(DateTime.now()));
     expect(find.text(expectedDate), findsOneWidget);
   });
+
+  testWidgets('new task saves completion toggle state', (tester) async {
+    final provider = await createInitializedTestProvider(tester);
+
+    // Provider 必须包在 MaterialApp 之上：push 出来的新路由看不到 home 内部的 provider。
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: _TaskEditorLauncher()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open-task-editor'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '写读书笔记');
+    await tester.tap(find.text('已完成'));
+    await tester.pumpAndSettle();
+    expect(_switchValue(tester, '已完成'), isTrue);
+
+    await tester.tap(find.byIcon(Icons.check_rounded));
+    await tester.pump(const Duration(milliseconds: 120));
+
+    // 持久化要跨插件消息通道：用 runAsync 驱动真实时间等待落库，
+    // 再等关页过渡动画结束（repo 通用模式）。
+    var landed = false;
+    for (var i = 0; i < 60 && !landed; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      landed = provider.tasks.isNotEmpty;
+    }
+    expect(landed, isTrue);
+    await _pumpUntilClosed(tester);
+
+    expect(provider.tasks, hasLength(1));
+    expect(provider.tasks.first.title, '写读书笔记');
+    expect(provider.tasks.first.isCompleted, isTrue);
+    expect(provider.tasks.first.courseId, isNull);
+  });
+
+  testWidgets('edit task reflects completion state and can uncomplete', (
+    tester,
+  ) async {
+    final provider = await createInitializedTestProvider(tester);
+    final task = CourseTask(
+      id: 'task-1',
+      title: '完成作业',
+      isCompleted: true,
+      createdAt: DateTime(2026, 8, 1),
+      updatedAt: DateTime(2026, 8, 1),
+    );
+    await runRealAsync(tester, () => provider.addTask(task));
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(home: _TaskEditorLauncher(task: task)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open-task-editor'));
+    await tester.pumpAndSettle();
+
+    // 已完成任务的编辑页应回显完成状态。
+    expect(_switchValue(tester, '已完成'), isTrue);
+
+    await tester.tap(find.text('已完成'));
+    await tester.pumpAndSettle();
+    expect(_switchValue(tester, '已完成'), isFalse);
+
+    await tester.tap(find.byIcon(Icons.check_rounded));
+    await tester.pump(const Duration(milliseconds: 120));
+
+    var landed = false;
+    for (var i = 0; i < 60 && !landed; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      landed = provider.tasks.firstOrNull?.isCompleted == false;
+    }
+    expect(landed, isTrue);
+    await _pumpUntilClosed(tester);
+
+    expect(provider.tasks, hasLength(1));
+    expect(provider.tasks.first.isCompleted, isFalse);
+    expect(provider.tasks.first.title, '完成作业');
+  });
+}
+
+/// 通过真实导航推入任务编辑页，让保存后的 Navigator.pop 有可回退的路由。
+class _TaskEditorLauncher extends StatelessWidget {
+  const _TaskEditorLauncher({this.task});
+
+  final CourseTask? task;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: FilledButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => AddTaskScreen(task: task)),
+          ),
+          child: const Text('open-task-editor'),
+        ),
+      ),
+    );
+  }
+}
+
+bool _switchValue(WidgetTester tester, String label) {
+  return tester
+      .widget<HyperosSwitch>(
+        find.descendant(
+          of: find.widgetWithText(HyperosSwitchTile, label),
+          matching: find.byType(HyperosSwitch),
+        ),
+      )
+      .value;
+}
+
+Future<void> _pumpUntilClosed(WidgetTester tester) async {
+  for (var i = 0; i < 40; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (find.byType(AddTaskScreen).evaluate().isEmpty) {
+      break;
+    }
+  }
 }
