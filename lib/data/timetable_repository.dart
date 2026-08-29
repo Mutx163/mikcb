@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../models/timetable_profile.dart';
 import '../services/storage_service.dart';
 
@@ -26,6 +28,16 @@ class TimetableRepository {
 
   Future<void> setActiveProfileId(String profileId) =>
       _storage.setActiveProfileId(profileId);
+
+  /// 在写链上原子地读改写 profiles 列表。
+  ///
+  /// Partner 导入 / 解绑等服务层流程经此入口变更 profiles；仓储因此成为
+  /// 唯一写入口——后续脏标记批量提交 / 分片存储只需协调本类内部，避免
+  /// 「provider 延迟 flush 撞上外部 RMW」的双写丢失。
+  Future<List<TimetableProfile>> updateProfiles(
+    FutureOr<List<TimetableProfile>> Function(List<TimetableProfile> current)
+    transform,
+  ) => _storage.updateProfiles(transform);
 
   /// 全量保存所有 profile，并确保版本号 key 已落盘。
   ///
