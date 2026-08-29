@@ -61,10 +61,15 @@ void main() {
   });
 
   group('TimetableRepository activeProfileId', () {
-    test('透传 StorageService', () async {
-      expect(await repository.getActiveProfileId(), isNull);
+    test('透传 StorageService（空库播种默认档后语义一致）', () async {
+      // StorageService 空库时 getActiveProfileId 会自动建默认 profile
+      final seeded = await repository.getActiveProfileId();
+      expect(seeded, isNotNull);
+      expect(seeded, await storage.getActiveProfileId());
+
       await repository.setActiveProfileId('p1');
       expect(await repository.getActiveProfileId(), 'p1');
+      expect(await storage.getActiveProfileId(), 'p1');
     });
   });
 }
