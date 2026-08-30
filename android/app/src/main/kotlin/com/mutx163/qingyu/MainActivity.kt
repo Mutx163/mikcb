@@ -129,6 +129,11 @@ class MainActivity : FlutterActivity() {
                     Intent.FLAG_ACTIVITY_SINGLE_TOP,
                 )
             }
+            // super.onCreate() must run before onCreate returns on EVERY path:
+            // finish() does not exempt this branch, and skipping it throws
+            // SuperNotCalledException — crashing "open with" launches from
+            // apps like QQ (VIEW intent without FLAG_ACTIVITY_NEW_TASK).
+            super.onCreate(savedInstanceState)
             startActivity(relaunch)
             finish()
             return
