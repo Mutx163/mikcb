@@ -18,6 +18,10 @@ internal object BeforeClassQuickActionRestore {
     private const val KEY_APPLIED_SILENT = "applied_silent"
     private const val KEY_APPLIED_DND = "applied_dnd"
 
+    /** 已按课上报过失败的 triggerKey（进程内存）：自动执行失败会随 ticker
+     *  每拍重试，上报必须去重，避免诊断日志被同一节课刷爆。 */
+    private val autoFailureReportedKeys = mutableSetOf<Long>()
+
     const val ACTION_NONE = "none"
     const val ACTION_SILENT = "silent"
     const val ACTION_DO_NOT_DISTURB = "do_not_disturb"
@@ -77,9 +81,6 @@ internal object BeforeClassQuickActionRestore {
         if (prefs.getLong(KEY_LAST_AUTO_TRIGGER_MILLIS, 0L) == triggerKeyMillis) {
             return false
         }
-        prefs.edit()
-            .putLong(KEY_LAST_AUTO_TRIGGER_MILLIS, triggerKeyMillis)
-            .apply()
         val applied = when (action) {
             ACTION_SILENT -> enableSilentMode(context, restoreAtMillis)
             ACTION_DO_NOT_DISTURB -> enableDoNotDisturbMode(context, restoreAtMillis)
@@ -90,16 +91,26 @@ internal object BeforeClassQuickActionRestore {
             }
             else -> false
         }
-        UmengDiagnosticReporter.record(
-            context = context.applicationContext,
-            category = "live_update_before_class_quick_action",
-            message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
-            extras = mapOf(
-                "action" to action,
-                "applied" to applied,
-                "source" to "auto",
-            ),
-        )
+        // 去重键只在成功后落盘：瞬时失败（如 AudioManager 暂不可用）下一拍自动
+        // 重试，而不是让整节课错过自动执行。持久失败（如未授权 DND）会随 ticker
+        // 每拍重试，故诊断上报按课去重（进程内存），避免刷爆诊断日志。
+        if (applied) {
+            prefs.edit()
+                .putLong(KEY_LAST_AUTO_TRIGGER_MILLIS, triggerKeyMillis)
+                .apply()
+        }
+        if (applied || autoFailureReportedKeys.add(triggerKeyMillis)) {
+            UmengDiagnosticReporter.record(
+                context = context.applicationContext,
+                category = "live_update_before_class_quick_action",
+                message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
+                extras = mapOf(
+                    "action" to action,
+                    "applied" to applied,
+                    "source" to "auto",
+                ),
+            )
+        }
         return applied
     }
 
@@ -199,7 +210,8 @@ internal object BeforeClassQuickActionRestore {
         }
     }
 
-    fun restoreOnBoot(context: Context): Boolean {        if (!isPending(context)) {
+    fun restoreOnBoot(context: Context): Boolean {
+        if (!isPending(context)) {
             return false
         }
         return restoreIfPending(context, reason = "boot")
