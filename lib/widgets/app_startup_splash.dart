@@ -2,6 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../ui/hyperos/hyperos_radius.dart';
 
+/// 自绘启动画面最短展示时长：保证品牌画面可感知。对齐 2114 时代系统启动
+/// 画面的自然可见时长（引擎启动 + 初始化期）；初始化更慢时按实际时长
+/// 展示，不加额外等待。
+const Duration kMinSplashDuration = Duration(milliseconds: 650);
+
+/// 距最短展示时长还差的滞留时间；已超过则为 0。
+Duration splashHoldRemaining(Duration elapsed) {
+  final remaining = kMinSplashDuration - elapsed;
+  return remaining.isNegative ? Duration.zero : remaining;
+}
+
 /// 应用自绘启动画面：2114 发布版同款全出血 launcher 图标 + 常规字重品牌字。
 ///
 /// Android 12+ 的系统启动画面窗口本身无法删除，原生侧已剥到纯色底

@@ -466,6 +466,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   bool _fairMemoryRecoveryHandled = false;
   bool _allowFirstFrameCalled = false;
   bool _homeRevealed = false;
+  bool _revealScheduled = false;
+  final Stopwatch _splashClock = Stopwatch()..start();
 
   void _allowFirstFrameOnce() {
     if (_allowFirstFrameCalled) return;
@@ -474,13 +476,32 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   }
 
   /// 启动流程完成，自绘启动画面退场、换入首页。
+  ///
+  /// 持有最短展示时长（kMinSplashDuration）：deferFirstFrame 期间首帧只
+  /// 构建不投递，放行后的第一个投递帧取投递时刻的树——初始化在帧间隙内
+  /// 跑完时（release 热缓存可 <16ms）首页会先于任何投递帧就位，启动画面
+  /// 一帧都上不了屏。按启动计时器剩余时间延迟换入，快设备强制可感知、
+  /// 慢设备零额外等待。
   void _revealHomeOnce() {
-    if (!mounted || _homeRevealed) {
+    if (_revealScheduled || !mounted) {
       return;
     }
-    setState(() {
-      _homeRevealed = true;
-    });
+    _revealScheduled = true;
+    void reveal() {
+      if (!mounted || _homeRevealed) {
+        return;
+      }
+      setState(() {
+        _homeRevealed = true;
+      });
+    }
+
+    final hold = splashHoldRemaining(_splashClock.elapsed);
+    if (hold == Duration.zero) {
+      reveal();
+    } else {
+      Future.delayed(hold, reveal);
+    }
   }
 
   @override
