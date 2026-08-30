@@ -860,7 +860,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseRecolorTileTitle => '時間割の配色を更新';
 
   @override
-  String get courseRecolorTileSubtitle => 'インポート後でもワンタップで全授業の色を組み替え';
+  String get courseRecolorTileSubtitle => '再インポート不要、いつでもワンタップで全授業の色を組み替え';
 
   @override
   String get courseRecolorSheetTitle => '時間割の配色を更新';

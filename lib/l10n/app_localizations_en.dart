@@ -901,7 +901,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courseRecolorTileSubtitle =>
-      'Shuffle all course colors anytime after importing';
+      'Shuffle all course colors anytime — no re-import needed';
 
   @override
   String get courseRecolorSheetTitle => 'Recolor Timetable';

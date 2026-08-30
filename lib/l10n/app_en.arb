@@ -416,7 +416,7 @@
   "colorGroupSunset": "Sunset",
   "colorGroupOcean": "Ocean",
   "courseRecolorTileTitle": "Recolor Timetable",
-  "courseRecolorTileSubtitle": "Shuffle all course colors anytime after importing",
+  "courseRecolorTileSubtitle": "Shuffle all course colors anytime — no re-import needed",
   "courseRecolorSheetTitle": "Recolor Timetable",
   "courseRecolorSheetDescription": "Each shuffle assigns a fresh random color to every course. Not happy? Go back to the previous set, or restore the original imported colors.",
   "courseRecolorNewBatchButton": "Shuffle Colors",

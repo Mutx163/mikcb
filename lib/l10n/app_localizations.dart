@@ -1667,7 +1667,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseRecolorTileSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'导入后随时一键给全部课程换套颜色'**
+  /// **'不用重新导入，随时一键给全部课程换套颜色'**
   String get courseRecolorTileSubtitle;
 
   /// No description provided for @courseRecolorSheetTitle.

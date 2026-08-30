@@ -32,6 +32,7 @@ import 'package:university_timetable/screens/timetable_profiles_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
 import 'package:university_timetable/services/memory_stats_service.dart';
+import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 export 'home_top_menu.dart'
@@ -99,6 +100,15 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.file_upload_outlined,
     category: HomeMenuEntryCategory.features,
     open: (context) => pushHomeMenuPage(context, const CourseImportScreen()),
+  ),
+  HomeMenuEntry(
+    id: 'courseRecolor',
+    title: (l10n) => l10n.courseRecolorTileTitle,
+    icon: Icons.style_rounded,
+    category: HomeMenuEntryCategory.features,
+    // 直接弹「课表重新配色」弹层（非页面）：八宫格/底栏圆钮/坞 Tab 的
+    // 分发都走 entry.open，弹层在当前页上方浮现，空课表时内部 toast 提示。
+    open: showCourseRecolorSheet,
   ),
   HomeMenuEntry(
     id: 'tasks',

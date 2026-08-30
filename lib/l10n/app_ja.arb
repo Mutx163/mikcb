@@ -283,7 +283,7 @@
   "colorGroupSunset": "サンセット",
   "colorGroupOcean": "オーシャン",
   "courseRecolorTileTitle": "時間割の配色を更新",
-  "courseRecolorTileSubtitle": "インポート後でもワンタップで全授業の色を組み替え",
+  "courseRecolorTileSubtitle": "再インポート不要、いつでもワンタップで全授業の色を組み替え",
   "courseRecolorSheetTitle": "時間割の配色を更新",
   "courseRecolorSheetDescription": "「シャッフル」を押すたびに全授業に新しいランダム色を割り当てます。気に入らなければ前のセットに戻すことも、インポート時の元の色に戻すこともできます。",
   "courseRecolorNewBatchButton": "色をシャッフル",

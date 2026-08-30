@@ -857,7 +857,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseRecolorTileTitle => '시간표 색상 다시 칠하기';
 
   @override
-  String get courseRecolorTileSubtitle => '가져온 후 언제든 한 번에 전체 수업 색상 바꾸기';
+  String get courseRecolorTileSubtitle => '다시 가져올 필요 없이 언제든 한 번에 전체 수업 색상 바꾸기';
 
   @override
   String get courseRecolorSheetTitle => '시간표 색상 다시 칠하기';

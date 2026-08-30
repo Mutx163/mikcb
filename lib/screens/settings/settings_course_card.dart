@@ -275,6 +275,12 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                     },
                   ),
                 ),
+              // 一键重刷全部课程随机配色（同名同色）；上方实时预览立即反映。
+              HyperosNavTile(
+                title: l10n.courseRecolorTileTitle,
+                subtitle: l10n.courseRecolorTileSubtitle,
+                onTap: () => showCourseRecolorSheet(context),
+              ),
               HyperosSwitchTile(
                 title: l10n.layoutShowConflictBadgeTitle,
                 value: _draft.showConflictBadgeOnTimetable,

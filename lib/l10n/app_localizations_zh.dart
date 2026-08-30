@@ -844,7 +844,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseRecolorTileTitle => '课表重新配色';
 
   @override
-  String get courseRecolorTileSubtitle => '导入后随时一键给全部课程换套颜色';
+  String get courseRecolorTileSubtitle => '不用重新导入，随时一键给全部课程换套颜色';
 
   @override
   String get courseRecolorSheetTitle => '课表重新配色';
@@ -11124,7 +11124,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseRecolorTileTitle => '課表重新配色';
 
   @override
-  String get courseRecolorTileSubtitle => '匯入後隨時一鍵為全部課程換一套顏色';
+  String get courseRecolorTileSubtitle => '不用重新匯入，隨時一鍵為全部課程換一套顏色';
 
   @override
   String get courseRecolorSheetTitle => '課表重新配色';
@@ -21447,7 +21447,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseRecolorTileTitle => '課表重新配色';
 
   @override
-  String get courseRecolorTileSubtitle => '匯入後隨時一鍵為全部課程換一套顏色';
+  String get courseRecolorTileSubtitle => '不用重新匯入，隨時一鍵為全部課程換一套顏色';
 
   @override
   String get courseRecolorSheetTitle => '課表重新配色';

@@ -416,7 +416,7 @@
   "colorGroupSunset": "落日系",
   "colorGroupOcean": "海洋系",
   "courseRecolorTileTitle": "课表重新配色",
-  "courseRecolorTileSubtitle": "导入后随时一键给全部课程换套颜色",
+  "courseRecolorTileSubtitle": "不用重新导入，随时一键给全部课程换套颜色",
   "courseRecolorSheetTitle": "课表重新配色",
   "courseRecolorSheetDescription": "每次「换一批」都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。",
   "courseRecolorNewBatchButton": "换一批颜色",
