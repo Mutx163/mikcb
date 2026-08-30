@@ -237,6 +237,47 @@ void main() {
     });
   });
 
+  group('shouldOverrideLocalColorsOnImport', () {
+    // 回归锁定：颜色更新只允许发生在覆盖导入。更新/下拉快捷导入必须保留
+    // 本地颜色，否则每次同步都会把整张课表的颜色重新洗一遍。
+    test('overrides only when overwriting with random colors enabled', () {
+      expect(
+        shouldOverrideLocalColorsOnImport(
+          replaceExisting: true,
+          randomColorsEnabled: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('never overrides on update paths regardless of random colors', () {
+      expect(
+        shouldOverrideLocalColorsOnImport(
+          replaceExisting: false,
+          randomColorsEnabled: true,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldOverrideLocalColorsOnImport(
+          replaceExisting: false,
+          randomColorsEnabled: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('keeps local colors when overwriting without random colors', () {
+      expect(
+        shouldOverrideLocalColorsOnImport(
+          replaceExisting: true,
+          randomColorsEnabled: false,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   testWidgets('ai import screen keeps keyboard-aware resizing enabled', (
     tester,
   ) async {

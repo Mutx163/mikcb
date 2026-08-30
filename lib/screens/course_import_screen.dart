@@ -65,10 +65,25 @@ Future<List<Course>> _coursesWithOptionalRandomColors(
   );
 }
 
-/// When random colors are on, import must apply the new palette (and optional
-/// text colors) even for courses that match existing local rows.
-Future<bool> _shouldPreserveLocalColorsOnImport() async {
-  return !(await ImportRandomColorPreferences.isEnabled());
+/// 颜色更新只在覆盖导入时生效：覆盖 + 随机色开启才让导入色盖掉本地色。
+/// 更新/下拉快捷导入一律保留本地颜色——随机色此时只落到本地没有的新课上。
+bool shouldOverrideLocalColorsOnImport({
+  required bool replaceExisting,
+  required bool randomColorsEnabled,
+}) {
+  return replaceExisting && randomColorsEnabled;
+}
+
+/// Whether the import should keep the color of courses that match existing
+/// local rows. Overwrite + random colors re-colors the whole timetable; any
+/// update path never touches existing colors.
+Future<bool> _shouldPreserveLocalColorsOnImport({
+  required bool replaceExisting,
+}) async {
+  return !shouldOverrideLocalColorsOnImport(
+    replaceExisting: replaceExisting,
+    randomColorsEnabled: await ImportRandomColorPreferences.isEnabled(),
+  );
 }
 
 enum _WarehouseImportMenuAction { feedback, customDebug, executionLog }
@@ -478,7 +493,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       replaceExisting: replaceExisting,
       semesterStart: semesterConfig.semesterStartDate,
       source: 'ics',
-      preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
+      preserveLocalColors: await _shouldPreserveLocalColorsOnImport(
+        replaceExisting: replaceExisting,
+      ),
     );
     if (!mounted) return;
     showAppToast(
@@ -817,7 +834,9 @@ Future<void> _completeParsedCourseImport({
     replaceExisting: replaceExisting,
     semesterStart: semesterStart,
     source: source,
-    preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
+    preserveLocalColors: await _shouldPreserveLocalColorsOnImport(
+      replaceExisting: replaceExisting,
+    ),
   );
   if (!context.mounted) return;
 
@@ -1439,7 +1458,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         replaceExisting: replaceExisting,
         semesterStart: semesterConfig.semesterStartDate,
         source: 'ai',
-        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
+        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(
+          replaceExisting: replaceExisting,
+        ),
       );
       if (!mounted) {
         return;
@@ -4937,7 +4958,9 @@ $kWarehouseBridgeCompatShim  try {
         replaceExisting: replaceExisting,
         semesterStart: semesterConfig.semesterStartDate,
         source: 'warehouse',
-        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(),
+        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(
+          replaceExisting: replaceExisting,
+        ),
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
       if (!mounted) {
