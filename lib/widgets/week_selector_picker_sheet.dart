@@ -85,6 +85,10 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
+                // 显式清零：ScrollView 会自动消费 MediaQuery.padding，而弹窗
+                // 路由挂在根 Navigator 上能看到未消费的状态栏 inset，曾变成
+                // 格子顶上 ~50dp 的透明内边距（「共N周」与格子间大空隙）。
+                padding: EdgeInsets.zero,
                 itemCount: availableWeeks.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
@@ -96,7 +100,11 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
                   final week = availableWeeks[index];
                   return _WeekSelectorCell(
                     label: l10n.goToWeekLabel(week),
-                    highlighted: week == currentSemesterWeek,
+                    style: week == visibleWeek
+                        ? _WeekCellStyle.selected
+                        : week == currentSemesterWeek
+                        ? _WeekCellStyle.current
+                        : _WeekCellStyle.normal,
                     onLiquidGlass: onLiquidGlassPanel,
                     onPressed: () => Navigator.of(context).pop(week),
                   );
@@ -119,17 +127,21 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
   }
 }
 
+/// 格子状态：selected=当前正在查看的周（实底主题色，最强）；
+/// current=学期实际所在周（主题色浅井，弱一档）；normal=其余。
+enum _WeekCellStyle { normal, selected, current }
+
 /// Compact week tile: single-line label, smaller than sheet title, fills the grid cell.
 class _WeekSelectorCell extends StatelessWidget {
   const _WeekSelectorCell({
     required this.label,
-    required this.highlighted,
+    required this.style,
     required this.onLiquidGlass,
     required this.onPressed,
   });
 
   final String label;
-  final bool highlighted;
+  final _WeekCellStyle style;
 
   /// 面板为通透液态玻璃时切换玻璃专用墨色/描边（磨砂、实底维持 Miuix 平涂）。
   final bool onLiquidGlass;
@@ -151,19 +163,30 @@ class _WeekSelectorCell extends StatelessWidget {
     // 平涂 #E8E8E8 在通透玻璃上与底同亮度、无边框感（与 HyperosButton
     // secondary 在磨砂玻璃上修过的同类失效）；改半透明白井 + 细描边，
     // 墨色用 onSurface 纯黑保证任意壁纸折射下可读。
-    final backgroundColor = highlighted
+    final isSelected = style == _WeekCellStyle.selected;
+    final isCurrent = style == _WeekCellStyle.current;
+    final backgroundColor = isSelected
         ? HyperosColors.primary(context)
+        : isCurrent
+        ? HyperosColors.primary(context).withValues(alpha: 0.12)
         : onLiquidGlass
         ? Colors.white.withValues(alpha: isDark ? 0.14 : 0.55)
         : (isDark
               ? Colors.white.withValues(alpha: 0.14)
               : const Color(0xFFE8E8E8));
-    final foregroundColor = highlighted
+    final foregroundColor = isSelected
         ? HyperosColors.onPrimary(context)
+        : isCurrent
+        ? HyperosColors.primary(context)
         : onLiquidGlass
         ? HyperosColors.onSurface(context)
         : HyperosColors.onSecondaryVariant(context);
-    final edgeColor = onLiquidGlass && !highlighted
+    final edgeColor = isSelected
+        ? null
+        : isCurrent
+        // 当前周浅色井在通透玻璃上会融底，加主题色细描边保持轮廓。
+        ? HyperosColors.primary(context).withValues(alpha: isDark ? 0.55 : 0.38)
+        : onLiquidGlass
         ? (isDark
               ? Colors.white.withValues(alpha: 0.18)
               : Colors.black.withValues(alpha: 0.12))
