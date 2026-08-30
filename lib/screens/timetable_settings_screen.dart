@@ -18,6 +18,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
+import '../services/home_widget_binding_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/about_screen.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_exam_screen.dart';
@@ -34,6 +36,7 @@ import 'package:university_timetable/screens/user_guide_screen.dart';
 import 'package:university_timetable/services/memory_stats_service.dart';
 import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
+import 'package:university_timetable/widgets/profile_quick_switch_sheet.dart';
 
 export 'home_top_menu.dart'
     show HomeMenuEntry, HomeMenuEntryCategory, homeMenuEntryCategoryLabel;
@@ -43,7 +46,7 @@ export 'home_top_menu.dart'
 /// 原则：
 /// - 只收「点进去就有用」的完整页面；中间态流程页（如扫码发送需要先
 ///   携带 payload）与调试/演示页不收；
-/// - 内置九项沿用旧的 id（= HomeTopMenuAction.name），老用户已保存的
+/// - 内置九项沿用旧的 id（旧列表菜单的动作名），老用户已保存的
 ///   排列无需迁移；addCourse 与 update 的实际导航仍由首页宿主处理，
 ///   以保留日视图选中日期、更新检查等上下文；
 /// - 新增入口只要在 [kHomeMenuCatalog] 追加一条即可进入编辑器候选。
@@ -184,6 +187,35 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     category: HomeMenuEntryCategory.features,
     open: (context) =>
         pushHomeMenuPage(context, const TimetableProfilesScreen()),
+  ),
+  HomeMenuEntry(
+    id: 'quickSwitchTimetable',
+    title: (l10n) => l10n.switchTimetableTitle,
+    icon: Icons.swap_horiz_rounded,
+    category: HomeMenuEntryCategory.features,
+    // 直接弹「切换课表」弹层（非页面）：与点首页标题同一条弹层路径。
+    // TA 课表靠情侣覆盖层叠加显示，不是切换对象，不出现在列表里。
+    open: (context) async {
+      final provider = context.read<TimetableProvider>();
+      final selected = await showProfileQuickSwitchSheet(
+        context,
+        profiles: provider.profiles
+            .where((profile) => !profile.isPartnerImported)
+            .toList(growable: false),
+        activeProfileId: provider.activeProfileId,
+        onManageTimetables: (buttonContext) async {
+          Navigator.of(buttonContext).pop();
+          await pushHomeMenuPage(
+            buttonContext,
+            const TimetableProfilesScreen(),
+          );
+        },
+      );
+      if (selected == null || selected == provider.activeProfileId) {
+        return;
+      }
+      await provider.switchProfile(selected);
+    },
   ),
 
   // ── 数据与同步 ────────────────────────────────────────────

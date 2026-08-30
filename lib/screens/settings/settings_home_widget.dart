@@ -32,8 +32,11 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   static const double _defaultWidgetCornerRadius = 22;
 
   final HomeWidgetService _homeWidgetService = HomeWidgetService();
+  final HomeWidgetBindingService _homeWidgetBindingService =
+      HomeWidgetBindingService();
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
+  List<HomeWidgetInstance> _widgetInstances = const <HomeWidgetInstance>[];
   Timer? _autoSaveTimer;
   bool _isPersisting = false;
   bool _isCheckingPinSupport = true;
@@ -47,6 +50,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _loadPinWidgetSupport();
+    _loadWidgetInstances();
   }
 
   @override
@@ -74,7 +78,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   }
 
   int get _homeWidgetSectionCount =>
-      (_draft.widgetShowCountdown ? 4 : 3) + 1;
+      (_draft.widgetShowCountdown ? 4 : 3) + 2;
 
   Widget _buildHomeWidgetSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
@@ -309,6 +313,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
         ],
       ),
+      4 => _buildWidgetBindingSection(l10n),
       _ => _SettingsResetTile(
         scope: SettingsResetScope.homeWidget,
         onReset: _updateDraft,
@@ -324,8 +329,110 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     );
   }
 
-  String _widgetHeightAdjustmentLabel(AppLocalizations l10n) {
-    if (_draft.widgetHeightAdjustment == _defaultWidgetHeightAdjustment) {
+  /// 「各卡片绑定管理」：列出桌面上真实存在的今日课程卡片，
+  /// 逐张选择显示哪个课表（跟随当前课表 / 我的课表 / TA的课表）。
+  Widget _buildWidgetBindingSection(AppLocalizations l10n) {
+    if (_widgetInstances.isEmpty) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.homeWidgetBindingSectionTitle),
+          HyperosListGroup(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Text(
+                  l10n.homeWidgetBindingEmpty,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    final normalProfiles = _timetableProvider.profiles
+        .where((profile) => !profile.isPartnerImported)
+        .toList(growable: false);
+    final partnerProfile = _timetableProvider.partnerProfile;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosSectionLabel(text: l10n.homeWidgetBindingSectionTitle),
+        HyperosListGroup(
+          children: [
+            for (final instance in _widgetInstances)
+              HyperosSelectTile<String?>(
+                label: _homeWidgetTargetLabel(
+                  context,
+                  _pinTargetForType(instance.widgetType),
+                ),
+                items: {
+                  l10n.homeWidgetBindingFollowActive: null,
+                  for (final profile in normalProfiles) profile.name: profile.id,
+                  if (partnerProfile != null)
+                    partnerProfile.name: partnerProfile.id,
+                },
+                value: instance.boundProfileId,
+                onChanged: (profileId) =>
+                    _setWidgetBinding(instance.appWidgetId, profileId),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  HomeWidgetPinTarget _pinTargetForType(HomeWidgetType? type) {
+    return switch (type) {
+      HomeWidgetType.compact => HomeWidgetPinTarget.compact22,
+      HomeWidgetType.miniList => HomeWidgetPinTarget.miniList22,
+      HomeWidgetType.medium => HomeWidgetPinTarget.medium24,
+      HomeWidgetType.large => HomeWidgetPinTarget.large44,
+      HomeWidgetType.todayStrip => HomeWidgetPinTarget.todayStrip41,
+      HomeWidgetType.todayWide => HomeWidgetPinTarget.todayWide42,
+      null => HomeWidgetPinTarget.compact22,
+    };
+  }
+
+  Future<void> _loadWidgetInstances() async {
+    final instances = await _homeWidgetBindingService.listTodayWidgetInstances();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _widgetInstances = instances;
+    });
+  }
+
+  Future<void> _setWidgetBinding(int appWidgetId, String? profileId) async {
+    final ok = await _homeWidgetBindingService.setWidgetBinding(
+      appWidgetId,
+      profileId,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _loadWidgetInstances();
+    if (!mounted) {
+      return;
+    }
+    if (!ok) {
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.homeWidgetBindingSaveFailed,
+      );
+    }
+  }
+
+  String _widgetHeightAdjustmentLabel(AppLocalizations l10n) {    if (_draft.widgetHeightAdjustment == _defaultWidgetHeightAdjustment) {
       return l10n.defaultLabel;
     }
     if (_draft.widgetHeightAdjustment > _defaultWidgetHeightAdjustment) {
