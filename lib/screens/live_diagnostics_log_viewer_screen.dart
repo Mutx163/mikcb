@@ -85,6 +85,12 @@ class _LiveDiagnosticsLogViewerScreenState
   bool _hasEarlierEntries = false;
   int _currentStartIndex = 0;
 
+  /// 读历史时冻结的窗口末端（时间正序下标）：离开「贴最新」端记录当时
+  /// 的窗口末端，读历史期间流式新增不进窗口。仅倒序渲染需要——正序时
+  /// 新增追加在视口底部天然不位移，倒序时新增渲染在视口顶部会把正在
+  /// 阅读的内容往下推。回贴最新端/切换排序或等级筛选时解除。
+  int? _windowEndPin;
+
   @override
   void initState() {
     super.initState();
@@ -129,6 +135,7 @@ class _LiveDiagnosticsLogViewerScreenState
     setState(() {
       _timeSort = sort;
       _pinnedStartIndex = null;
+      _windowEndPin = null;
     });
     unawaited(
       DiagnosticsLogViewerPreferences.saveTimeSort(
@@ -308,9 +315,19 @@ class _LiveDiagnosticsLogViewerScreenState
     } else if (_pinnedStartIndex != null && _pinnedStartIndex! >= total) {
       _pinnedStartIndex = null;
     }
-    final start = _pinnedStartIndex ?? (total > _pageSize ? total - _pageSize : 0);
+    // 读历史时冻结窗口末端（仅倒序渲染需要）：新增日志排在正序窗口末端，
+    // 倒序把它渲染在视口顶部，流式到达会把正在阅读的内容往下推；正序
+    // 追加在底部天然不位移。冻结末端越界（日志被截断/重写）时放弃冻结。
+    var end = total;
+    if (!_latestAtBottom && !_stickToLatest && _windowEndPin != null) {
+      final frozen = _windowEndPin!.clamp(0, total);
+      if (frozen > (_pinnedStartIndex ?? 0)) {
+        end = frozen;
+      }
+    }
+    final start = _pinnedStartIndex ?? (end > _pageSize ? end - _pageSize : 0);
     _currentStartIndex = start;
-    _visibleEntries = chronological.sublist(start);
+    _visibleEntries = chronological.sublist(start, end);
     _hasEarlierEntries = start > 0;
   }
 
@@ -366,9 +383,13 @@ class _LiveDiagnosticsLogViewerScreenState
     if (nowStick && !_stickToLatest) {
       _stickToLatest = true;
       _pinnedStartIndex = null;
+      _windowEndPin = null;
       setState(_rebuildVisibleEntries);
       _scheduleAutoScroll();
       return;
+    }
+    if (!nowStick && _stickToLatest) {
+      _windowEndPin = _currentStartIndex + _visibleEntries.length;
     }
     _stickToLatest = nowStick;
   }
@@ -575,6 +596,7 @@ class _LiveDiagnosticsLogViewerScreenState
                       setState(() {
                         _selectedLevel = DiagnosticsLogLevel.values[i];
                         _pinnedStartIndex = null;
+                        _windowEndPin = null;
                         _rebuildVisibleEntries();
                       });
                       if (_stickToLatest) {
@@ -863,6 +885,7 @@ class _LiveDiagnosticsLogViewerScreenState
 
     setState(() {
       _stickToLatest = false;
+      _windowEndPin ??= _currentStartIndex + _visibleEntries.length;
       _pinnedStartIndex =
           _currentStartIndex > _pageSize ? _currentStartIndex - _pageSize : 0;
       _rebuildVisibleEntries();

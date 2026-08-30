@@ -232,6 +232,67 @@ extras=
     expect(find.textContaining('加载更早日志'), findsNothing);
   });
 
+  testWidgets('descending sort freezes window end while reading history', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = StreamController<String>();
+    addTearDown(controller.close);
+
+    await tester.pumpWidget(
+      TestApp(
+        home: LiveDiagnosticsLogViewerScreen(
+          title: '日志中心',
+          watchRawLog: () => controller.stream,
+        ),
+      ),
+    );
+    await tester.pump();
+    controller.add(buildPagedLog(450));
+    await tester.pumpAndSettle();
+
+    // 切倒序：最新条目 449 在视口顶部。
+    await tester.tap(find.bySemanticsLabel('查看与排序'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('倒序'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+
+    // 点「加载更早」进入读历史（起点钉 50），再把挂在末尾的加载行拖入
+    // 视口，以它为位移参照物。
+    await dragDownListTarget(tester, find.textContaining('加载更早日志'));
+    await tester.tap(find.textContaining('加载更早日志'));
+    await tester.pumpAndSettle();
+    await dragDownListTarget(tester, find.textContaining('加载更早日志'));
+    expect(find.textContaining('日志条目 50'), findsOneWidget);
+    final rowBefore = tester.getTopLeft(find.textContaining('加载更早日志'));
+
+    // 读历史期间新日志到达：窗口末端冻结，参照行与正在阅读的条目原地
+    // 不动，新条目不进窗口（回归锚点：倒序曾把新日志渲染在视口顶部，
+    // 流式到达把正在阅读的内容往下推）。append 走 250ms 刷新计时器，
+    // 需显式冲刷。
+    controller.add(buildPagedLog(453));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+    expect(find.text('全部 453'), findsOneWidget);
+    expect(find.textContaining('日志条目 451'), findsNothing);
+    expect(find.textContaining('日志条目 50'), findsOneWidget);
+    expect(tester.getTopLeft(find.textContaining('加载更早日志')), rowBefore);
+
+    // 滚回顶部重新贴最新：冻结解除，最新条目出现在视口顶部。
+    for (var i = 0;
+        i < 60 && find.textContaining('日志条目 451').evaluate().isEmpty;
+        i++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, 800));
+      await tester.pumpAndSettle();
+    }
+    expect(find.textContaining('日志条目 451'), findsOneWidget);
+  });
+
   testWidgets('viewer updates when watchRawLog emits new content', (
     tester,
   ) async {
