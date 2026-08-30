@@ -27,6 +27,7 @@ import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
 import 'utils/home_startup_visual_primer.dart';
+import 'widgets/app_startup_splash.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
@@ -128,8 +129,9 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
   return l10n.appTitle;
 }
 
-/// 首帧放行门：正常路径由 _AppEntryScreenState._allowFirstFrameOnce 触发；
-/// main() 中的看门狗超时后强制放行，避免启动管线挂死时永久停在系统启动画面。
+/// 首帧放行门：正常路径由 _AppEntryScreenState 在自绘启动画面首帧渲染后
+/// 触发；main() 中的看门狗超时后强制放行，避免启动管线挂死时永久停在
+/// 纯色底上不触发 ANR。
 final Completer<void> _firstFrameReleased = Completer<void>();
 
 void _releaseFirstFrame({required bool forced}) {
@@ -178,9 +180,9 @@ Future<void> main() async {
           ),
         );
       }
-      // Single-stage boot: keep the Android system splash (@drawable/splash_icon)
-      // as the only branding until locally persisted timetable is ready.
-      // This avoids the 2-3 flickers: splash -> spinner -> timetable.
+      // 启动品牌由应用自绘启动画面（AppStartupSplash）接管：系统启动画面
+      // 已在原生侧剥为纯色底。首帧扣住到启动画面首帧可绘制即放行，让它
+      // 覆盖存储/课表初始化期，完成后换入首页——避免多段闪切。
       WidgetsBinding.instance.deferFirstFrame();
       // 看门狗保险丝：若启动管线在任何放行点之前挂死（如存储 init 卡住）
       // 或 widget 构建阶段抛异常，首帧将永不放行——表现为永远停在系统
@@ -462,11 +464,22 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   bool _startupHandled = false;
   bool _fairMemoryRecoveryHandled = false;
   bool _allowFirstFrameCalled = false;
+  bool _homeRevealed = false;
 
   void _allowFirstFrameOnce() {
     if (_allowFirstFrameCalled) return;
     _allowFirstFrameCalled = true;
     _releaseFirstFrame(forced: false);
+  }
+
+  /// 启动流程完成，自绘启动画面退场、换入首页。
+  void _revealHomeOnce() {
+    if (!mounted || _homeRevealed) {
+      return;
+    }
+    setState(() {
+      _homeRevealed = true;
+    });
   }
 
   @override
@@ -495,6 +508,11 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         unawaited(DebugDeepLinkService.drainPending());
       });
     }
+    // 首帧 = 自绘启动画面：其首帧渲染后立即放行，让品牌画面覆盖初始化期；
+    // 首页在启动流程完成时经 _revealHomeOnce 换入。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _allowFirstFrameOnce();
+    });
     unawaited(_handleStartupFlows());
   }
 
@@ -572,7 +590,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         // 就绪：放行后的第一帧必须是完整界面，不允许露出主题兜底的半成品
         // 底色。prime 内部有预算与异常兜底，不会拖死启动管线。
         await HomeStartupVisualPrimer.prime(provider.settings);
-        _allowFirstFrameOnce();
+        _revealHomeOnce();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
         unawaited(_checkPendingExternalImport());
@@ -608,9 +626,10 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
       await Future.wait([providerInitFuture, legacyPackageFuture]);
       _cloudSyncCoordinator.bindProvider(provider);
-      // 与老用户快速路径同一保证：首帧即完整界面（无壁纸时 prime 立即返回）。
+      // 与老用户快速路径同一保证：首页换入前视觉资产已就绪（无壁纸时
+      // prime 立即返回）。
       await HomeStartupVisualPrimer.prime(provider.settings);
-      _allowFirstFrameOnce();
+      _revealHomeOnce();
       unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;
       final shouldShowMigrationGuide =
@@ -680,8 +699,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       );
       await _revealMainContent();
     } catch (e, stackTrace) {
-      // 初始化失败时降级进入主界面，避免白屏 hang
-      _allowFirstFrameOnce();
+      // 初始化失败时降级换入主界面，避免白屏 hang
+      _revealHomeOnce();
       unawaited(
         AppLogService.instance.error(
           'startup_flow_failed',
@@ -741,7 +760,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
   }
 
-  /// Android's mandatory system splash owns startup branding.
+  /// 自绘启动画面已让位（_revealHomeOnce 换入首页），恢复记忆场景。
   Future<void> _revealMainContent() async {
     if (!mounted) {
       return;
@@ -1071,9 +1090,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Android's mandatory system splash is the only launch branding.
-    // The normal timetable interface is mounted immediately after it.
-    return const TimetableScreen();
+    // 启动品牌 = 自绘启动画面（图标/文字全走应用自己的渲染）；存储与课表
+    // 初始化完成后由 _revealHomeOnce 换入正常界面。
+    return _homeRevealed ? const TimetableScreen() : const AppStartupSplash();
   }
 }
 

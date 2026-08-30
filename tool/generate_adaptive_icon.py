@@ -4,12 +4,20 @@ Source of truth: assets/branding/launcher_icon.png (pixel-identical to the
 mipmap ic_launcher.png set). Produces background (edge-color continuation)
 and foreground (artwork centered with safe-zone margin) layers for all
 densities, plus preview composites for human review before committing.
+
+Startup branding is NOT generated here anymore: the Android 12+ system
+splash is stripped to a bare background color (values-v31 styles) and the
+startup branding is drawn by the app's own Flutter splash
+(lib/widgets/app_startup_splash.dart) using the source image directly.
+System-side splash icon/branding resources were removed after three device
+failures traced to the OS icon mask/scale pipeline (double-plate ghost,
+cropped-artwork blur).
 """
 
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "assets" / "branding" / "launcher_icon.png"
@@ -20,15 +28,6 @@ BASE = 1024
 # 72/108 = 0.667 maps the full artwork exactly onto the visible area,
 # matching how the legacy full-bleed bitmap filled the launcher mask.
 FG_SCALE = 0.67
-# Splash icon artwork. HyperOS renders the splash icon's central 72/108 safe
-# zone into the visible squircle, so on-screen fractions = canvas fraction x
-# 1.5. The source is fully opaque, so its own square rim shows at any partial
-# scale — the feather below dissolves it (source edge colors ~= plate colors).
-# 0.52 tile -> 78% of the visible zone; artwork (0.69 of source) ~54% of it.
-SPLASH_FG_SCALE = 0.52
-SPLASH_FEATHER_RADIUS = 0.20  # of the inset rounded rect
-SPLASH_FEATHER_INSET = 0.03   # of the tile — room for the fade to live inside
-SPLASH_FEATHER_BLUR = 0.04    # of the tile — fade reaches 0 near the tile rim
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
 
 
@@ -85,140 +84,6 @@ ADAPTIVE_XML = (
     "</adaptive-icon>" + chr(10)
 )
 
-ADAPTIVE_SPLASH_XML = (
-    "<?xml version=" + Q + "1.0" + Q + " encoding=" + Q + "utf-8" + Q + "?>" + chr(10) +
-    "<adaptive-icon xmlns:android=" + D + "http://schemas.android.com/apk/res/android" + D + ">" + chr(10) +
-    "    <background android:drawable=" + D + "@mipmap/splash_icon_background" + D + "/>" + chr(10) +
-    "    <foreground android:drawable=" + D + "@mipmap/splash_icon_foreground" + D + "/>" + chr(10) +
-    "</adaptive-icon>" + chr(10)
-)
-
-
-# --- Bottom branding image (windowSplashScreenBrandingImage, 200x80dp) ---
-BRAND_TEXT = "轻屿课表"
-BRAND_COLOR_LIGHT = (0, 0, 0, 255)  # black ink on the white light-mode well
-BRAND_COLOR_NIGHT = (255, 255, 255, 255)  # white ink on the #121212 night well
-# Regular weight only — msyhbd read heavy at splash size (user feedback).
-FONT_CANDIDATES = [
-    Path("C:/Windows/Fonts/msyh.ttc"),
-    Path("C:/Windows/Fonts/simhei.ttf"),
-]
-
-
-def find_font() -> Path:
-    for p in FONT_CANDIDATES:
-        if p.exists():
-            return p
-    raise SystemExit("no CJK font found for branding text")
-
-
-def build_branding(text_color: tuple) -> Image.Image:
-    """Render BRAND_TEXT on a transparent 200x80dp canvas (5x supersampled).
-
-    Text is enlarged (50% of canvas height vs 30%) and top-anchored (vertical
-    center at 24% — the lowest-ink floor before clipping): the system pins the
-    branding strip near the screen bottom, so within-image top anchoring is
-    the only lever against the text hugging the bottom edge. Emitted in both
-    inks: black for the white light well, white for the #121212 night well
-    (drawable-night-*).
-    """
-    from PIL import ImageFont
-    w, h = 1000, 400
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(str(find_font()), int(h * 0.50))
-    draw.text((w / 2, h * 0.24), BRAND_TEXT, font=font, fill=text_color, anchor="mm")
-    return img
-
-
-def emit_branding() -> None:
-    buckets = {
-        "mdpi": (200, 80),
-        "hdpi": (300, 120),
-        "xhdpi": (400, 160),
-        "xxhdpi": (600, 240),
-        "xxxhdpi": (800, 320),
-    }
-    for ink, qualifier in (
-        (BRAND_COLOR_LIGHT, "drawable-"),
-        (BRAND_COLOR_NIGHT, "drawable-night-"),
-    ):
-        branding = build_branding(ink)
-        for density, (w, h) in buckets.items():
-            d = RES / (qualifier + density)
-            d.mkdir(parents=True, exist_ok=True)
-            branding.resize((w, h), Image.Resampling.LANCZOS).save(d / "splash_branding.png")
-
-
-def build_plate() -> Image.Image:
-    """Soft gradient plate sampled from artwork edges (no artwork pixels)."""
-    src = Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS)
-    arr = np.asarray(src.convert("RGB"), dtype=np.float64)
-    mid = BASE // 2
-    top_mid = arr[0, mid]
-    bottom_mid = arr[-1, mid]
-    left_mid = arr[mid, 0]
-    right_mid = arr[mid, -1]
-    s = np.linspace(0.0, 1.0, BASE)[:, None, None]
-    t = np.linspace(0.0, 1.0, BASE)[None, :, None]
-    vert = top_mid[None, None, :] * (1.0 - s) + bottom_mid[None, None, :] * s
-    horz = left_mid[None, None, :] * (1.0 - t) + right_mid[None, None, :] * t
-    out = 0.5 * vert + 0.5 * horz
-    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
-
-
-def build_splash_foreground() -> Image.Image:
-    """Source artwork centered at SPLASH_FG_SCALE with a feathered rim.
-
-    The source is a fully opaque square, so a plain partial-scale placement
-    shows a hard square rim against the background layer (the inner-square
-    ghost on device). The source's own edge colors nearly equal the plate
-    gradient, so a rounded-rect alpha feather dissolves the rim into the
-    plate while the artwork in the middle stays untouched.
-    """
-    size = int(BASE * SPLASH_FG_SCALE)
-    off = (BASE - size) // 2
-    tile = Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS).crop(
-        (off, off, off + size, off + size)
-    )
-    # Inset the rounded rect so the blur's fade band lives INSIDE the tile:
-    # a shape drawn flush to the mask boundary gets edge-clamped by the blur
-    # and stays a hard line (the bug this replaces).
-    inset = int(size * SPLASH_FEATHER_INSET)
-    mask = Image.new("L", (size, size), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(
-        (inset, inset, size - 1 - inset, size - 1 - inset),
-        radius=int((size - 2 * inset) * SPLASH_FEATHER_RADIUS),
-        fill=255,
-    )
-    mask = mask.filter(ImageFilter.GaussianBlur(size * SPLASH_FEATHER_BLUR))
-    tile.putalpha(mask)
-    canvas = Image.new("RGBA", (BASE, BASE), (0, 0, 0, 0))
-    canvas.alpha_composite(tile, (off, off))
-    return canvas
-
-
-def emit_splash_adaptive() -> None:
-    """Emit the dedicated splash icon as an adaptive icon (XML + layers).
-
-    The system mask shapes the composite exactly like the launcher icon, so
-    the splash silhouette matches the app icon on every ROM. A flat PNG here
-    instead gets scaled UNMASKED over the ROM's own icon plate (288dp vs
-    240dp), which is how the "square plate + circle" double-shape ghost
-    happened.
-    """
-    background = build_plate()
-    foreground = build_splash_foreground()
-    for density, factor in DENSITIES.items():
-        layer = int(round(108 * factor))
-        d = RES / ("mipmap-" + density)
-        d.mkdir(parents=True, exist_ok=True)
-        background.resize((layer, layer), Image.Resampling.LANCZOS).save(d / "splash_icon_background.png")
-        foreground.resize((layer, layer), Image.Resampling.LANCZOS).save(d / "splash_icon_foreground.png")
-    d = RES / "drawable"
-    d.mkdir(parents=True, exist_ok=True)
-    (d / "splash_icon.xml").write_text(ADAPTIVE_SPLASH_XML, encoding="utf-8")
-
 
 def main() -> None:
     src = Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS)
@@ -235,9 +100,6 @@ def main() -> None:
     xml_dir = RES / "mipmap-anydpi-v26"
     xml_dir.mkdir(parents=True, exist_ok=True)
     (xml_dir / "ic_launcher.xml").write_text(ADAPTIVE_XML, encoding="utf-8")
-
-    emit_branding()
-    emit_splash_adaptive()
 
     # Previews for human review BEFORE trusting the result on device.
     PREVIEW.mkdir(parents=True, exist_ok=True)
@@ -264,21 +126,6 @@ def main() -> None:
     side.paste(old_tile, (10, 10))
     side.paste(new_tile, (size + 20, 10))
     side.save(PREVIEW / "preview_old_vs_new.png")
-
-    # Splash icon under a HyperOS-like squircle mask + branding text on both
-    # wells, so ink/weight/plate can be reviewed without installing.
-    splash = Image.alpha_composite(background, foreground)
-    save_masked(splash.resize((size, size), Image.Resampling.LANCZOS), squircle, "preview_splash_icon.png")
-    brand_light = build_branding(BRAND_COLOR_LIGHT)
-    for name, well in (
-        ("preview_splash_branding_light.png", (255, 255, 255, 255)),
-        ("preview_splash_branding_night.png", (18, 18, 18, 255)),
-    ):
-        tile = Image.new("RGBA", brand_light.size, well)
-        tile.alpha_composite(brand_light)
-        tile.resize(
-            (brand_light.size[0] // 2, brand_light.size[1] // 2), Image.Resampling.LANCZOS
-        ).save(PREVIEW / name)
     print("layers written; previews in .tmp_adaptive_preview/")
 
 
