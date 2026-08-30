@@ -390,9 +390,14 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       if (result.status == LiveTestingTriggerStatus.success) {
         _courseTestEndTimer?.cancel();
         setState(() => _courseTestLabel = course.name);
-        // 会话最长约 4 分钟 + 20 秒暂停缓冲；到点强制摘芯片，即便岛被
-        // 真实课接管或原生侧提前收掉。
-        _courseTestEndTimer = Timer(const Duration(minutes: 6), () {
+        // 会话长度随阶段变体不同（课前 6:20 / 课中 4:20），由 trigger 返回
+        // 的会话终点（= 原生暂停终点）驱动；兜底取最长变体，到点强制摘芯片。
+        final sessionEnd =
+            result.sessionEnd ??
+            DateTime.now().add(
+              const Duration(minutes: 6, seconds: 20),
+            );
+        _courseTestEndTimer = Timer(sessionEnd.difference(DateTime.now()), () {
           if (mounted) {
             setState(() => _courseTestLabel = null);
           }

@@ -2052,6 +2052,9 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "Course test stopped; normal scheduling restored.",
+  "liveTestingInFlight": "Test in progress. Please wait before tapping again.",
+  "liveTestingProductionHomeHint": "Used the production island selection path. Press Home to watch it; it usually will not pop while the app stays open.",
+  "liveTestingPresetFallbackNote": "(No testable real course found; used self-check preset courses instead, nothing was written to your timetable.)",
   "liveTestingTestCourseNote": "This note is shown here. You can edit it on the course edit page",
   "liveTestingNotificationSent": "A before-class test notification has been sent. It should enter the before-class reminder stage in about 8 seconds.",
   "sendFailedWithError": "Failed to send: {error}",

@@ -2066,6 +2066,9 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "已停止选课测试，正式调度已恢复",
+  "liveTestingInFlight": "测试进行中，请勿重复点击，请稍后再试",
+  "liveTestingProductionHomeHint": "已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）",
+  "liveTestingPresetFallbackNote": "（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）",
   "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页进行设置",
   "liveTestingNotificationSent": "已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段",
   "sendFailedWithError": "发送失败: {error}",

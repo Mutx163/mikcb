@@ -6951,6 +6951,24 @@ abstract class AppLocalizations {
   /// **'已停止选课测试，正式调度已恢复'**
   String get liveTestingCourseTestStoppedToast;
 
+  /// No description provided for @liveTestingInFlight.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试进行中，请勿重复点击，请稍后再试'**
+  String get liveTestingInFlight;
+
+  /// No description provided for @liveTestingProductionHomeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）'**
+  String get liveTestingProductionHomeHint;
+
+  /// No description provided for @liveTestingPresetFallbackNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）'**
+  String get liveTestingPresetFallbackNote;
+
   /// No description provided for @liveTestingTestCourseNote.
   ///
   /// In zh, this message translates to:

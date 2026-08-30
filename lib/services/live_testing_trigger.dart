@@ -23,7 +23,15 @@ class LiveTestingTriggerResult {
   final LiveTestingTriggerStatus status;
   final String? message;
 
-  const LiveTestingTriggerResult({required this.status, this.message});
+  /// 选课测试会话的强制摘除终点（原生暂停终点 = 会话结束 + 20 秒缓冲），
+  /// 供 UI 在此刻摘除测试芯片。仅 [triggerLiveUpdateCourseTest] 成功时填充。
+  final DateTime? sessionEnd;
+
+  const LiveTestingTriggerResult({
+    required this.status,
+    this.message,
+    this.sessionEnd,
+  });
 }
 
 bool liveTestingTriggerInFlight = false;
@@ -40,17 +48,13 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
   String? seededCourseId,
 }) async {
   if (liveTestingTriggerInFlight) {
-    final locale = Localizations.localeOf(context);
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.inFlight,
-      message: locale.languageCode == 'zh'
-          ? '测试进行中，请勿重复点击，请稍后再试'
-          : 'Test in progress. Please wait before tapping again.',
+      message: AppLocalizations.of(context)!.liveTestingInFlight,
     );
   }
   liveTestingTriggerInFlight = true;
 
-  final locale = Localizations.localeOf(context);
   final l10n = AppLocalizations.of(context)!;
   final liveService = MiuiLiveActivitiesService();
 
@@ -155,13 +159,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       },
     );
 
-    final homeHint = locale.languageCode == 'zh'
-        ? '已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）'
-        : 'Used the production island selection path. Press Home to watch it; it usually will not pop while the app stays open.';
+    final homeHint = l10n.liveTestingProductionHomeHint;
     final presetNote = usedPresetFallback
-        ? (locale.languageCode == 'zh'
-              ? '（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）\n'
-              : '(No testable real course found; used self-check preset courses instead, nothing was written to your timetable.)\n')
+        ? '${l10n.liveTestingPresetFallbackNote}\n'
         : '';
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
@@ -223,12 +223,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
   String source = 'settings_screen',
 }) async {
   if (liveTestingTriggerInFlight) {
-    final locale = Localizations.localeOf(context);
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.inFlight,
-      message: locale.languageCode == 'zh'
-          ? '测试进行中，请勿重复点击，请稍后再试'
-          : 'Test in progress. Please wait before tapping again.',
+      message: AppLocalizations.of(context)!.liveTestingInFlight,
     );
   }
   liveTestingTriggerInFlight = true;
@@ -361,6 +358,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
+      // 芯片摘除终点与原生暂停终点对齐（end + 20 秒缓冲）：岛最迟在暂停
+      // 到点时被收尾，UI 此刻强制摘芯片，两者不再各写各的时间。
+      sessionEnd: end.add(const Duration(seconds: 20)),
       message: l10n.liveTestingCourseTestStartedToast(
         displayCourse.name,
         isBeforeClass

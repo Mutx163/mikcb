@@ -3993,6 +3993,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Course test stopped; normal scheduling restored.';
 
   @override
+  String get liveTestingInFlight =>
+      'Test in progress. Please wait before tapping again.';
+
+  @override
+  String get liveTestingProductionHomeHint =>
+      'Used the production island selection path. Press Home to watch it; it usually will not pop while the app stays open.';
+
+  @override
+  String get liveTestingPresetFallbackNote =>
+      '(No testable real course found; used self-check preset courses instead, nothing was written to your timetable.)';
+
+  @override
   String get liveTestingTestCourseNote =>
       'This note is shown here. You can edit it on the course edit page';
 

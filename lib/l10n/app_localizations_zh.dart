@@ -3754,6 +3754,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingCourseTestStoppedToast => '已停止选课测试，正式调度已恢复';
 
   @override
+  String get liveTestingInFlight => '测试进行中，请勿重复点击，请稍后再试';
+
+  @override
+  String get liveTestingProductionHomeHint =>
+      '已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）';
+
+  @override
+  String get liveTestingPresetFallbackNote => '（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）';
+
+  @override
   String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页进行设置';
 
   @override
@@ -14032,6 +14042,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
+
+  @override
+  String get liveTestingInFlight => '測試進行中，請勿重複點擊，請稍後再試';
+
+  @override
+  String get liveTestingProductionHomeHint =>
+      '已走正式超級島選課路徑。請按 Home 鍵回到桌面查看（停留在應用內時系統通常不會彈出）';
+
+  @override
+  String get liveTestingPresetFallbackNote => '（未檢測到可測試的真實課程，已改用自檢預設課程，不會寫入課表）';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程編輯頁進行設定';
@@ -24355,6 +24375,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
+
+  @override
+  String get liveTestingInFlight => '測試進行中，請勿重複點擊，請稍後再試';
+
+  @override
+  String get liveTestingProductionHomeHint =>
+      '已走正式超級島選課路徑。請按 Home 鍵回到桌面查看（停留在應用內時系統通常不會彈出）';
+
+  @override
+  String get liveTestingPresetFallbackNote => '（未檢測到可測試的真實課程，已改用自檢預設課程，不會寫入課表）';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程编辑頁進行設定';

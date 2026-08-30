@@ -3825,6 +3825,17 @@ class AppLocalizationsJa extends AppLocalizations {
       '授業テストを停止しました。通常のスケジュールに戻りました';
 
   @override
+  String get liveTestingInFlight => 'テスト実行中です。連続タップせず、しばらく待ってからもう一度お試しください';
+
+  @override
+  String get liveTestingProductionHomeHint =>
+      '正規のスーパーアイランド選択パスを使用しました。Home キーでホーム画面に戻って確認してください（アプリを開いたままにしていると通常は表示されません）';
+
+  @override
+  String get liveTestingPresetFallbackNote =>
+      '（テスト可能な実際の授業が見つからなかったため、自己診断のプリセット授業を使用しました。時間割には書き込まれません）';
+
+  @override
   String get liveTestingTestCourseNote => 'ここにメモを表示，授業編集ページで設定可能';
 
   @override

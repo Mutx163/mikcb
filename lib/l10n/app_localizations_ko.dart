@@ -3846,6 +3846,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '과목 테스트를 중지했습니다. 일정 예약이 복구되었습니다';
 
   @override
+  String get liveTestingInFlight => '테스트가 진행 중입니다. 중복으로 탭하지 말고 잠시 후 다시 시도해 주세요';
+
+  @override
+  String get liveTestingProductionHomeHint =>
+      '정식 슈퍼아일랜드 선택 경로를 사용했습니다. Home 키로 홈 화면에 나가서 확인하세요(앱을 열어 둔 상태에서는 보통 표시되지 않습니다)';
+
+  @override
+  String get liveTestingPresetFallbackNote =>
+      '(테스트 가능한 실제 수업이 없어 자가 점검 프리셋 수업을 대신 사용했습니다. 시간표에는 기록되지 않습니다)';
+
+  @override
   String get liveTestingTestCourseNote =>
       '여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다';
 

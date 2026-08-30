@@ -1867,6 +1867,9 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "已停止選課測試，正式調度已恢復",
+  "liveTestingInFlight": "測試進行中，請勿重複點擊，請稍後再試",
+  "liveTestingProductionHomeHint": "已走正式超級島選課路徑。請按 Home 鍵回到桌面查看（停留在應用內時系統通常不會彈出）",
+  "liveTestingPresetFallbackNote": "（未檢測到可測試的真實課程，已改用自檢預設課程，不會寫入課表）",
   "liveTestingTestCourseNote": "此處顯示備注，可以在課程編輯頁進行設定",
   "liveTestingNotificationSent": "已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段",
   "sendFailedWithError": "發送失敗: {error}",
