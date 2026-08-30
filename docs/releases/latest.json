@@ -1,5 +1,5 @@
 {
-  "releaseCount": 95,
+  "releaseCount": 96,
   "stable": {
     "channelLabel": "正式版",
     "version": "2.1.1.1",
@@ -14,13 +14,13 @@
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "2.1.1.2",
-    "title": "v2.1.1.2",
-    "publishedAt": "2026-08-30T03:00:37Z",
-    "body": "# v2.1.1.2\n\n- 新增超级岛自检提示：因关闭「上课前提醒」导致测试通知暂不出现时，自检会说明岛将在课程真正开始后出现并指引打开该开关，与真的无课区分开。\n- 优化玻璃效果：MIUI/HyperOS 截图预览悬浮窗显示期间课程卡与顶栏不再退回实体外观，截图全程保持玻璃质感。\n- 优化超级岛自检入口：从「诊断」页迁回「超级岛与通知」维护组，更容易找到；入口行只留「自检」一行，与同组其他开关样式一致。\n- 优化玻璃坞内嵌页：考试安排、课程统计、设置等底栏内嵌页的列表可以滚动到底，最后一行内容不再被悬浮药丸挡住。\n- 优化学期总览卡：2×2 宫格压缩为单行四项指标，高度约缩小三分之二，数字回归常规字重更清爽，分享导出长图同步变紧凑。\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1.2",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.2/mikcb-2.1.1.2-arm64-v8a.apk",
-    "assetName": "mikcb-2.1.1.2-arm64-v8a.apk",
+    "version": "2.1.1.3",
+    "title": "v2.1.1.3",
+    "publishedAt": "2026-08-30T04:34:52Z",
+    "body": "# v2.1.1.3\n\n- 优化周次选择：弹窗顶部不再出现一段多余空隙；正在查看的周以实底色块强标识，实际所在周用浅色块加描边区分，两态并存时不再混淆。\n- 优化课程统计：周概览卡与学期总览卡统一为单行四项指标，更紧凑清爽；暂无最忙日数据时以「—」占位。\n- 优化课程导入：更新导入与下拉快捷导入不再覆盖手动调整过的课程颜色，只有覆盖导入才会更新颜色。\n- 优化备份打开：从 QQ 等应用直接打开备份文件不再闪退，HyperOS 不再弹出「软件因未适配该安卓系统出现问题」。\n- 优化输入框：地点组、时间方案等带提示语的输入框，开始输入后提示语不再与正文叠加显示。\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1.3",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.3/mikcb-2.1.1.3-arm64-v8a.apk",
+    "assetName": "mikcb-2.1.1.3-arm64-v8a.apk",
     "assetCount": 1,
     "assetDownloadCount": 0
   }
