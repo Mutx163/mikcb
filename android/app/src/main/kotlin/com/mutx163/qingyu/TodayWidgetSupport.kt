@@ -131,6 +131,9 @@ object TodayWidgetSupport {
     const val DEFAULT_CORNER_RADIUS_DP = 22
     const val DEFAULT_HEIGHT_ADJUSTMENT_DP = -11
 
+    const val EXTRA_WIDGET_LAUNCH = "widget_launch"
+    const val EXTRA_WIDGET_LAUNCH_APP_WIDGET_ID = "widget_launch_app_widget_id"
+
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
         // Prefer real-time computed snapshot (state reflects current time).
         // The stored snapshot from Flutter has a stale `state` that doesn't
@@ -152,6 +155,36 @@ object TodayWidgetSupport {
         return null
     }
 
+    /**
+     * 按卡片读取快照：先看该卡片的绑定档案——绑定的课表按它自己的数据实时计算
+     * （回退 Flutter 为它同步的专属快照）；未登记或绑定的课表已不存在
+     * （删除/TA 解绑）时回落「跟随当前课表」。统计/考试卡片不走这里，恒跟当前课表。
+     */
+    fun readSnapshotForWidget(context: Context, appWidgetId: Int): TodayWidgetSnapshotInfo? {
+        val boundProfileId = WidgetBindingStore.getBoundProfileId(context, appWidgetId)
+        if (boundProfileId != null) {
+            val profileJson = readProfileJsonById(context, boundProfileId)
+            if (profileJson != null) {
+                val computed = buildSnapshotFromFlutterState(context, profileJson = profileJson)
+                if (computed != null) {
+                    return computed
+                }
+                // 实时计算失败时用 Flutter 为该卡片同步的专属快照兜底。
+                val payload = HomeWidgetStorage.getWidgetSnapshotJson(context, appWidgetId)
+                if (payload != null) {
+                    try {
+                        return parseSnapshot(context, JSONObject(payload))
+                    } catch (_: Exception) {
+                        // fall through
+                    }
+                }
+            }
+            // 绑定的课表已不存在：继续走跟随当前课表，绑定记录保留
+            // （重新导入 TA / 同 id 课表重现时自动恢复）。
+        }
+        return readSnapshot(context)
+    }
+
     fun updateAll(context: Context) {
         TodayCompactWidgetProvider.updateAll(context)
         TodayMiniListWidgetProvider.updateAll(context)
@@ -165,9 +198,10 @@ object TodayWidgetSupport {
     fun buildSnapshotFromFlutterState(
         context: Context,
         nowMillis: Long = System.currentTimeMillis(),
+        profileJson: JSONObject? = null,
     ): TodayWidgetSnapshotInfo? {
-        val profileJson = readActiveProfileJson(context) ?: return null
-        val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
+        val profile = profileJson ?: readActiveProfileJson(context) ?: return null
+        val settingsJson = profile.optJSONObject("settings") ?: JSONObject()
         val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
         val todayDateStr = widgetFormatDate(
             year = nowCalendar.get(Calendar.YEAR),
@@ -185,8 +219,8 @@ object TodayWidgetSupport {
             enableHolidayMarking = enableHolidayMarking,
             holidayOverrideEnabled = holidayOverrideEnabled,
         ) || liveSchedulerIsLegacyHolidayFlagActive(
-            isHoliday = profileJson.optBoolean("isHoliday", false),
-            isHolidayDate = profileJson.optString("isHolidayDate").takeIf { it.isNotBlank() },
+            isHoliday = profile.optBoolean("isHoliday", false),
+            isHolidayDate = profile.optString("isHolidayDate").takeIf { it.isNotBlank() },
             year = nowCalendar.get(Calendar.YEAR),
             month = nowCalendar.get(Calendar.MONTH) + 1,
             dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
@@ -203,7 +237,7 @@ object TodayWidgetSupport {
         // endWeek=N courses on every matching weekday forever.
         val scheduleWeek = liveSchedulerCalculateCalendarWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
-            currentWeek = profileJson.optInt("currentWeek", 1).coerceAtLeast(1),
+            currentWeek = profile.optInt("currentWeek", 1).coerceAtLeast(1),
             dateMillis = nowMillis,
         )
         // Label can stay UI-clamped for browsing consistency; filtering uses scheduleWeek.
@@ -213,7 +247,7 @@ object TodayWidgetSupport {
             scheduleWeek.coerceIn(1, semesterWeekCount)
         }
         val todayWeekday = nowCalendar.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
-        val allCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
+        val allCourses = parseSourceCourses(profile.optJSONArray("courses"))
         // 含停课的原始课程数（用于区分"没课"和"课都停了"）
         val originalTodayCourseCount = if (isHoliday) 0 else {
             allCourses.count { it.dayOfWeek == todayWeekday && it.isInWeekIgnoringSuspension(scheduleWeek) }
@@ -278,7 +312,7 @@ object TodayWidgetSupport {
             else -> false
         }
         // Find next upcoming exam
-        val examsArray = profileJson.optJSONArray("exams")
+        val examsArray = profile.optJSONArray("exams")
         var nextExamName: String? = null
         var nextExamDate: String? = null
         var nextExamDaysUntil: Int? = null
@@ -399,7 +433,7 @@ object TodayWidgetSupport {
         }
 
         return TodayWidgetSnapshotInfo(
-            profileName = profileJson.optString("name", context.getString(R.string.widget_app_name)),
+            profileName = profile.optString("name", context.getString(R.string.widget_app_name)),
             currentWeek = currentWeek,
             state = state,
             backgroundStyle = settingsJson.optString("widgetBackgroundStyle", "solid"),
@@ -436,9 +470,10 @@ object TodayWidgetSupport {
     fun findNextRefreshAtMillis(
         context: Context,
         nowMillis: Long = System.currentTimeMillis(),
+        profileJson: JSONObject? = null,
     ): Long? {
-        val profileJson = readActiveProfileJson(context) ?: return null
-        val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
+        val profile = profileJson ?: readActiveProfileJson(context) ?: return null
+        val settingsJson = profile.optJSONObject("settings") ?: JSONObject()
         val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
         val todayDateStr = widgetFormatDate(
             year = nowCalendar.get(Calendar.YEAR),
@@ -451,8 +486,8 @@ object TodayWidgetSupport {
             enableHolidayMarking = settingsJson.optBoolean("enableHolidayMarking", true),
             holidayOverrideEnabled = settingsJson.optBoolean("holidayOverrideEnabled", false),
         ) || liveSchedulerIsLegacyHolidayFlagActive(
-            isHoliday = profileJson.optBoolean("isHoliday", false),
-            isHolidayDate = profileJson.optString("isHolidayDate").takeIf { it.isNotBlank() },
+            isHoliday = profile.optBoolean("isHoliday", false),
+            isHolidayDate = profile.optString("isHolidayDate").takeIf { it.isNotBlank() },
             year = nowCalendar.get(Calendar.YEAR),
             month = nowCalendar.get(Calendar.MONTH) + 1,
             dayOfMonth = nowCalendar.get(Calendar.DAY_OF_MONTH),
@@ -473,14 +508,14 @@ object TodayWidgetSupport {
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
         val currentWeek = calculateWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
-            fallbackWeek = profileJson.optInt("currentWeek", 1).coerceAtLeast(1),
+            fallbackWeek = profile.optInt("currentWeek", 1).coerceAtLeast(1),
             semesterWeekCount = semesterWeekCount,
             nowMillis = nowMillis,
         )
         val weekday = Calendar.getInstance().apply {
             timeInMillis = nowMillis
         }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
-        val todayCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
+        val todayCourses = parseSourceCourses(profile.optJSONArray("courses"))
             .filter { it.dayOfWeek == weekday && it.isInWeek(currentWeek) }
             .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
 
@@ -503,7 +538,7 @@ object TodayWidgetSupport {
             }
         }
         // Refresh at next exam start/end so "今天考试" flips to "考试中" on time.
-        val snapshotForExam = buildSnapshotFromFlutterState(context, nowMillis)
+        val snapshotForExam = buildSnapshotFromFlutterState(context, nowMillis, profileJson = profile)
         val examStart = snapshotForExam?.nextExamStartTime
             ?.takeIf { it.isNotBlank() }
             ?.let { buildCourseDateTimeMillis(nowMillis, it) }
@@ -1027,11 +1062,20 @@ object TodayWidgetSupport {
         return courses.take(limit)
     }
 
-    fun buildLaunchPendingIntent(context: Context, requestCode: Int): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java)
+    /**
+     * 卡片点击的启动 Intent：必须携带 appWidgetId，Flutter 收到后按该卡片的
+     * 绑定档案分流（切普通课表 / 开情侣覆盖层 / 未绑定=普通打开）。
+     * requestCode 恒等于 appWidgetId：它跨全部卡型全局唯一，可避免不同卡型
+     * 间 requestCode 撞车导致 PendingIntent 被 extras 互相覆盖。
+     */
+    fun buildLaunchPendingIntent(context: Context, appWidgetId: Int): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra(EXTRA_WIDGET_LAUNCH, true)
+            putExtra(EXTRA_WIDGET_LAUNCH_APP_WIDGET_ID, appWidgetId)
+        }
         return PendingIntent.getActivity(
             context,
-            requestCode,
+            appWidgetId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -1121,6 +1165,25 @@ object TodayWidgetSupport {
                 }
             }
             fallbackProfile
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** 按 id 找任意课表（含 TA 课表）；找不到 = 课表已被删除/解绑。 */
+    fun readProfileJsonById(context: Context, profileId: String): JSONObject? {
+        if (profileId.isBlank()) return null
+        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+        val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
+        return try {
+            val profiles = JSONArray(profilesPayload)
+            for (index in 0 until profiles.length()) {
+                val profile = profiles.optJSONObject(index) ?: continue
+                if (profile.optString("id") == profileId) {
+                    return profile
+                }
+            }
+            null
         } catch (_: Exception) {
             null
         }

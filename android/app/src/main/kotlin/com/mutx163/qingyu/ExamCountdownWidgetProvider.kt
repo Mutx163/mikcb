@@ -176,7 +176,7 @@ class ExamCountdownWidgetProvider : AppWidgetProvider() {
 
             views.setOnClickPendingIntent(
                 R.id.widget_root,
-                TodayWidgetSupport.buildLaunchPendingIntent(context, 50000 + appWidgetId),
+                TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
             )
 
             appWidgetManager.updateAppWidget(appWidgetId, views)

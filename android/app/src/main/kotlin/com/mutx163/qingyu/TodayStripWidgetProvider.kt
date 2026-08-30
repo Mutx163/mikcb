@@ -44,6 +44,16 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
         }
     }
 
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        // 卡片被移除时清掉绑定档案与专属快照，防止孤儿数据越积越多。
+        appWidgetIds.forEach { appWidgetId ->
+            WidgetBindingStore.remove(context, appWidgetId)
+            HomeWidgetStorage.clearWidgetSnapshot(context, appWidgetId)
+        }
+    }
+
     companion object {
         fun updateAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
@@ -61,7 +71,7 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today_strip)
-            val snapshot = TodayWidgetSupport.readSnapshot(context)
+            val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
             val style = snapshot?.backgroundStyle ?: "solid"
             val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
             val primaryColor = TodayWidgetSupport.primaryTextColor(style)
@@ -258,7 +268,7 @@ class TodayStripWidgetProvider : AppWidgetProvider() {
 
             views.setOnClickPendingIntent(
                 R.id.widget_root,
-                TodayWidgetSupport.buildLaunchPendingIntent(context, 30000 + appWidgetId),
+                TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
             )
 
             appWidgetManager.updateAppWidget(appWidgetId, views)

@@ -178,7 +178,7 @@ class StatsCompactWidgetProvider : AppWidgetProvider() {
 
             views.setOnClickPendingIntent(
                 R.id.widget_root,
-                TodayWidgetSupport.buildLaunchPendingIntent(context, 20000 + appWidgetId),
+                TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
             )
 
             appWidgetManager.updateAppWidget(appWidgetId, views)

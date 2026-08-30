@@ -103,6 +103,9 @@ class MainActivity : FlutterActivity() {
     private var pendingExternalImport: PendingExternalImport? = null
     private var pendingOpenLanEdit = false
     private var pendingDebugRoute: Map<String, Any?>? = null
+
+    /** 桌面卡片点击带进的 appWidgetId，Flutter 侧按绑定档案分流后消费。 */
+    private var pendingWidgetLaunchAppWidgetId: Int? = null
     private var flutterChannel: MethodChannel? = null
     private var lanEditChannel: MethodChannel? = null
 
@@ -148,6 +151,7 @@ class MainActivity : FlutterActivity() {
         handleDebugDeepLinkIntent(intent)
         handleExternalImportIntent(intent)
         handleLanEditIntent(intent)
+        handleWidgetLaunchIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -156,6 +160,7 @@ class MainActivity : FlutterActivity() {
         handleDebugDeepLinkIntent(intent)
         handleExternalImportIntent(intent)
         handleLanEditIntent(intent)
+        handleWidgetLaunchIntent(intent)
     }
 
     override fun onResume() {
@@ -652,6 +657,59 @@ class MainActivity : FlutterActivity() {
                         StatsWidgetSupport.clearSnapshot(applicationContext)
                         result.success(true)
                     }
+                    "listTodayWidgetInstances" -> {
+                        result.success(listTodayWidgetInstances())
+                    }
+                    "getWidgetBinding" -> {
+                        val appWidgetId = (call.arguments as? Map<*, *>)
+                            ?.get("appWidgetId") as? Int
+                        if (appWidgetId == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing appWidgetId", null)
+                        } else {
+                            result.success(
+                                WidgetBindingStore.getBoundProfileId(applicationContext, appWidgetId)
+                            )
+                        }
+                    }
+                    "setWidgetBinding" -> {
+                        val payload = call.arguments as? Map<*, *>
+                        val appWidgetId = payload?.get("appWidgetId") as? Int
+                        val profileId = payload?.get("profileId") as? String
+                        if (appWidgetId == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing appWidgetId", null)
+                        } else {
+                            WidgetBindingStore.setBoundProfileId(applicationContext, appWidgetId, profileId)
+                            TodayWidgetSupport.updateAll(applicationContext)
+                            HomeWidgetStorage.rescheduleRefresh(applicationContext)
+                            result.success(true)
+                        }
+                    }
+                    "syncWidgetSnapshot" -> {
+                        val payload = call.arguments as? Map<*, *>
+                        val appWidgetId = payload?.get("appWidgetId") as? Int
+                        val snapshot = payload?.get("snapshot") as? Map<String, Any?>
+                        if (appWidgetId == null || snapshot == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing appWidgetId/snapshot", null)
+                        } else {
+                            HomeWidgetStorage.syncWidgetSnapshot(applicationContext, appWidgetId, snapshot)
+                            result.success(true)
+                        }
+                    }
+                    "clearWidgetSnapshot" -> {
+                        val appWidgetId = (call.arguments as? Map<*, *>)
+                            ?.get("appWidgetId") as? Int
+                        if (appWidgetId == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing appWidgetId", null)
+                        } else {
+                            HomeWidgetStorage.clearWidgetSnapshot(applicationContext, appWidgetId)
+                            result.success(true)
+                        }
+                    }
+                    "getPendingWidgetLaunch" -> {
+                        val appWidgetId = pendingWidgetLaunchAppWidgetId
+                        pendingWidgetLaunchAppWidgetId = null
+                        result.success(appWidgetId)
+                    }
                     "scheduleRefresh" -> {
                         val payload = call.arguments as? Map<String, Any?>
                         val triggerAtMillis = payload
@@ -1090,6 +1148,57 @@ class MainActivity : FlutterActivity() {
             flutterChannel?.invokeMethod("onExternalImportReceived", null)
         } catch (_: Exception) {
         }
+    }
+
+    private fun handleWidgetLaunchIntent(intent: Intent?) {
+        if (intent == null) return
+        if (!intent.getBooleanExtra(TodayWidgetSupport.EXTRA_WIDGET_LAUNCH, false)) return
+        val appWidgetId = intent.getIntExtra(
+            TodayWidgetSupport.EXTRA_WIDGET_LAUNCH_APP_WIDGET_ID,
+            Integer.MIN_VALUE,
+        )
+        if (appWidgetId == Integer.MIN_VALUE) return
+        pendingWidgetLaunchAppWidgetId = appWidgetId
+        notifyWidgetLaunchReceived()
+    }
+
+    private fun notifyWidgetLaunchReceived() {
+        try {
+            flutterChannel?.invokeMethod("onWidgetLaunchReceived", null)
+        } catch (_: Exception) {
+            // 冷启动时 Flutter 侧监听器尚未就绪：pending 已存，
+            // 启动流程稍后会主动 drain getPendingWidgetLaunch。
+        }
+    }
+
+    /** 今日课程类卡型的 widgetType → Provider 映射（与 resolveWidgetProvider 对齐）。 */
+    private fun todayWidgetProviders(): List<Pair<String, Class<*>>> = listOf(
+        "compact" to TodayCompactWidgetProvider::class.java,
+        "mini_list" to TodayMiniListWidgetProvider::class.java,
+        "medium" to TodayMediumWidgetProvider::class.java,
+        "large" to TodayLargeWidgetProvider::class.java,
+        "today_strip" to TodayStripWidgetProvider::class.java,
+        "today_wide" to TodayWideWidgetProvider::class.java,
+    )
+
+    private fun listTodayWidgetInstances(): List<Map<String, Any?>> {
+        val appWidgetManager = getSystemService(AppWidgetManager::class.java)
+            ?: return emptyList()
+        val bindings = WidgetBindingStore.allBindings(this)
+        val instances = mutableListOf<Map<String, Any?>>()
+        for ((widgetType, providerClass) in todayWidgetProviders()) {
+            val ids = appWidgetManager.getAppWidgetIds(ComponentName(this, providerClass))
+            for (appWidgetId in ids) {
+                instances.add(
+                    mapOf(
+                        "appWidgetId" to appWidgetId,
+                        "widgetType" to widgetType,
+                        "boundProfileId" to bindings[appWidgetId],
+                    )
+                )
+            }
+        }
+        return instances
     }
 
     private fun canRequestPinWidget(): Boolean {

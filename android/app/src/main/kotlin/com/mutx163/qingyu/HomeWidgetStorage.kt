@@ -14,6 +14,7 @@ object HomeWidgetStorage {
     private const val PREFS_NAME = "home_widget_prefs"
     private const val KEY_SNAPSHOT_JSON = "snapshot_json"
     private const val KEY_REFRESH_TIMES_JSON = "refresh_times_json"
+    private const val KEY_WIDGET_SNAPSHOT_PREFIX = "widget_snapshot_"
     private const val REQUEST_CODE_REFRESH = 4201
 
     fun syncSnapshot(context: Context, snapshot: Map<String, Any?>) {
@@ -54,6 +55,34 @@ object HomeWidgetStorage {
             .getString(KEY_SNAPSHOT_JSON, null)
     }
 
+    /**
+     * 按 appWidgetId 存一张绑定卡片的专属快照（Flutter 为绑定课表单独生成）。
+     * 未绑定的卡片不写这份，渲染继续走全局快照/实时计算。
+     */
+    fun syncWidgetSnapshot(context: Context, appWidgetId: Int, snapshot: Map<String, Any?>) {
+        val payload = JSONObject(snapshot).toString()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(widgetSnapshotKey(appWidgetId), payload)
+            .apply()
+        TodayWidgetSupport.updateAll(context)
+        rescheduleRefresh(context)
+    }
+
+    fun getWidgetSnapshotJson(context: Context, appWidgetId: Int): String? {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(widgetSnapshotKey(appWidgetId), null)
+    }
+
+    /** 绑定被移除或绑定的课表已消失时，清掉该卡片的专属快照。 */
+    fun clearWidgetSnapshot(context: Context, appWidgetId: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(widgetSnapshotKey(appWidgetId))
+            .apply()
+        TodayWidgetSupport.updateAll(context)
+    }
+
     fun getRefreshTimesJson(context: Context): String? {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_REFRESH_TIMES_JSON, null)
@@ -62,12 +91,23 @@ object HomeWidgetStorage {
     fun rescheduleRefresh(context: Context) {
         cancelRefreshAlarm(context)
         val nowMillis = System.currentTimeMillis()
-        val nextTriggerAtMillis =
-            TodayWidgetSupport.findNextRefreshAtMillis(context, nowMillis)
-                ?: loadRefreshTimes(context)
-                    .filter { it > nowMillis }
-                    .minOrNull()
-                ?: return
+        // 刷新点 = 当前课表 + 所有已绑定课表的并集：TA 第三节课开始时
+        // 闹钟也必须响，不能只按当前课表的时间调度。
+        val nextTriggerAtMillis = buildList {
+            add(TodayWidgetSupport.findNextRefreshAtMillis(context, nowMillis))
+            for ((_, profileId) in WidgetBindingStore.allBindings(context)) {
+                val profileJson =
+                    TodayWidgetSupport.readProfileJsonById(context, profileId) ?: continue
+                add(TodayWidgetSupport.findNextRefreshAtMillis(context, nowMillis, profileJson))
+            }
+        }
+            .filterNotNull()
+            .filter { it > nowMillis }
+            .minOrNull()
+            ?: loadRefreshTimes(context)
+                .filter { it > nowMillis }
+                .minOrNull()
+            ?: return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = buildRefreshPendingIntent(context)
@@ -153,6 +193,8 @@ object HomeWidgetStorage {
             put("endTime", course.endTime)
         }
     }
+
+    private fun widgetSnapshotKey(appWidgetId: Int) = "$KEY_WIDGET_SNAPSHOT_PREFIX$appWidgetId"
 
     private fun loadRefreshTimes(context: Context): List<Long> {
         val payload = getRefreshTimesJson(context) ?: return emptyList()
