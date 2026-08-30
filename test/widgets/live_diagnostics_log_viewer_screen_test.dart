@@ -192,4 +192,59 @@ extras=
       expect(find.textContaining('记录已关闭'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'scrolled content sits flush under the level filter bar (no dead strip)',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // 长列表是复现关键：内容过短会走「短页弹回补偿」分支，掩盖死区。
+      final longLog = StringBuffer(
+        '轻屿课表 - 应用日志\nexportedAt=1744166400000\nbrand=Xiaomi\n----\n',
+      );
+      for (var i = 0; i < 40; i++) {
+        longLog.write(
+          'time=${1744166400000 + i * 1000}\n'
+          'level=info\nsource=app\ncategory=nav\nmessage=导航路由已变更 $i\n\n',
+        );
+      }
+
+      await tester.pumpWidget(
+        MediaQuery(
+          // 注入真机状态栏 inset（34110c5e 同款教训）。
+          data: const MediaQueryData(padding: EdgeInsets.only(top: 51)),
+          child: TestApp(
+            home: LiveDiagnosticsLogViewerScreen(
+              title: '日志中心',
+              rawLog: longLog.toString(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      double listViewportTop() =>
+          tester.getTopLeft(find.byType(ListView).first).dy;
+      double chipsBottom() =>
+          tester.getBottomLeft(find.textContaining('全部').first).dy;
+
+      // 静止：列表视口顶贴着筛选条（仅扩展区底距 + 列表顶距的余量）。
+      final restGap = listViewportTop() - chipsBottom();
+      expect(restGap, greaterThanOrEqualTo(0));
+      expect(restGap, lessThan(24), reason: '静止时筛选条下不应有大片空白');
+
+      // 滚动后：折叠大标题曾让 inset 保持展开态高度，收起的标题区变成
+      // 裁切死区；关闭折叠后视口必须仍贴着筛选条。
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      final scrolledGap = listViewportTop() - chipsBottom();
+      expect(scrolledGap, greaterThanOrEqualTo(0));
+      expect(
+        scrolledGap,
+        lessThan(24),
+        reason: '滚动收起后筛选条下不得留出大标题高度的空白死区',
+      );
+    },
+  );
 }

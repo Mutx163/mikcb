@@ -409,6 +409,11 @@ class _LiveDiagnosticsLogViewerScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.title),
+      // 折叠大标题对本页是个陷阱：滚动收起大标题后，body 顶部 inset 仍按
+      // 展开态高度保持（收起中不重测、长列表 delta=0），大标题区变成一条
+      // 永久死区——chips 筛选条下方跟着一条空白，滚动内容到那里就被裁掉。
+      // 工具页不需要大标题，固定小标题栏让 inset 恒定，内容贴着筛选条滚动。
+      collapsibleLargeTitle: false,
       suffixes: _buildHeaderActions(l10n),
       headerExtension: showControls
           ? HyperosBlurredHeaderExtension(
