@@ -2710,7 +2710,15 @@ class TimetableProvider with ChangeNotifier {
           nextCourses.add(course);
           continue;
         }
-        nextCourses.add(replacement);
+        // 只覆盖颜色字段：recoloredCourses 可能来自 mutation 排队前的过期
+        // 快照（弹层先算副本、这里才执行），整对象替换会把其余字段的旧值
+        // 回写，覆盖掉排队期间别的路径（云同步/伙伴课表等）刚做的改动。
+        nextCourses.add(
+          course.copyWith(
+            color: replacement.color,
+            textColor: replacement.textColor,
+          ),
+        );
         updatedCount++;
       }
       if (updatedCount == 0) {

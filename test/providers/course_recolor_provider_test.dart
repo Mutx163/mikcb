@@ -95,6 +95,24 @@ void main() {
     expect(notified, 0);
   });
 
+  test('过期快照只覆盖颜色字段：排队期间的其他改动不被回写', () async {
+    final provider = await seededProvider();
+    await provider.addCourse(mathEntry(id: 'c1', dayOfWeek: 1));
+    // 模拟弹层基于当前课表算出重刷副本（mutation 排队前的快照）。
+    final recolored = provider.courses
+        .map((c) => c.copyWith(color: '#4CAF50'))
+        .toList();
+    // 快照之后、apply 执行之前，课程又被别的路径改动（停课周）。
+    await provider.toggleCourseSuspension('c1', 3);
+
+    final updatedCount = await provider.applyCourseRecolors(recolored);
+
+    // 颜色正常覆盖；停课周不能被过期快照回写丢掉。
+    expect(updatedCount, 1);
+    expect(provider.courses.single.color, '#4CAF50');
+    expect(provider.courses.single.suspendedWeeks, [3]);
+  });
+
   test('空课表 / 空输入返回 0', () async {
     final provider = await seededProvider();
     expect(await provider.applyCourseRecolors(const []), 0);

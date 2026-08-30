@@ -19,7 +19,9 @@ void main() {
   }
 
   test('timetable_provider.dart 行数棘轮：只减不增', () {
-    const baselineLines = 4401;
+    // 4401→4409: applyCourseRecolors 整对象替换改为按字段 copyWith（+9，
+    // 防过期快照回写非颜色字段），拆分归阶段 3 重构，按测试约定同步基线。
+    const baselineLines = 4409;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
