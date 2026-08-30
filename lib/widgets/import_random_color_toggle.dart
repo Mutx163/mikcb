@@ -5,6 +5,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import '../services/import_random_color_preferences.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
+import 'course_recolor_sheet.dart';
 
 /// Master switch + color-group picker for random course colors on the
 /// course import hub page.
@@ -101,21 +102,7 @@ class _ImportRandomColorToggleState extends State<ImportRandomColorToggle> {
   }
 
   String _groupLabel(String groupId, AppLocalizations l10n) {
-    switch (groupId) {
-      case 'pastel':
-        return l10n.colorGroupPastel;
-      case 'vibrant':
-        return l10n.colorGroupVibrant;
-      case 'deep':
-        return l10n.colorGroupDeep;
-      case 'dopamine':
-        return l10n.colorGroupDopamine;
-      case 'sunset':
-        return l10n.colorGroupSunset;
-      case 'ocean':
-        return l10n.colorGroupOcean;
-    }
-    return l10n.colorGroupAll;
+    return colorGroupDisplayName(groupId, l10n);
   }
 
   @override

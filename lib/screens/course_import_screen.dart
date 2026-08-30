@@ -42,6 +42,7 @@ import '../utils/course_color_palette.dart';
 import '../utils/import_random_course_colors.dart';
 import '../utils/import_result_message.dart';
 import '../widgets/app_dialogs.dart';
+import '../widgets/course_recolor_sheet.dart';
 import '../widgets/import_random_color_toggle.dart';
 import '../widgets/warehouse_macro_recorder.dart';
 import '../widgets/warehouse_macro_replayer.dart';
@@ -207,6 +208,18 @@ class CourseImportScreen extends StatelessWidget {
       child: HyperosListView(
         children: [
           const ImportRandomColorToggle(),
+          const HyperosSectionGap(),
+          HyperosListGroup(
+            children: [
+              HyperosNavTile(
+                icon: Icons.style_rounded,
+                iconAccent: HyperosIconColors.teal,
+                title: l10n.courseRecolorTileTitle,
+                subtitle: l10n.courseRecolorTileSubtitle,
+                onTap: () => showCourseRecolorSheet(context),
+              ),
+            ],
+          ),
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
           const HyperosSectionGap(),
