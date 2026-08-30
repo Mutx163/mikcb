@@ -7,6 +7,33 @@ import 'package:university_timetable/screens/live_diagnostics_log_viewer_screen.
 import '../helpers_test_app.dart';
 
 void main() {
+  // 分页窗口测试用：450 条日志，初始窗口只应渲染最新 200 条。
+  String buildPagedLog(int count) {
+    final buffer = StringBuffer(
+      '轻屿课表 - 应用日志\nexportedAt=1744166400000\nbrand=Xiaomi\n----\n',
+    );
+    for (var i = 0; i < count; i++) {
+      buffer.write(
+        'time=${1744166400000 + i * 1000}\n'
+        'level=info\nsource=app\ncategory=nav\nmessage=日志条目 $i\n\n',
+      );
+    }
+    return buffer.toString();
+  }
+
+  // 头部筛选条是横向 Scrollable，scrollUntilVisible 的 Scrollable.first 会
+  // 命中它；这里直拖日志列表滚动，直到目标进入构建范围。
+  Future<void> dragToListTarget(WidgetTester tester, Finder finder) async {
+    for (var i = 0; i < 40; i++) {
+      if (finder.evaluate().isNotEmpty) {
+        return;
+      }
+      await tester.drag(find.byType(ListView).first, const Offset(0, 800));
+      await tester.pumpAndSettle();
+    }
+    fail('未能滚动到目标：$finder');
+  }
+
   const sampleLog = '''轻屿课表 - 应用日志
 exportedAt=1744166400000
 brand=Xiaomi
@@ -247,4 +274,110 @@ extras=
       );
     },
   );
+
+  testWidgets('log list pages: renders the latest window, loads earlier on demand', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      TestApp(
+        home: LiveDiagnosticsLogViewerScreen(
+          title: '日志中心',
+          rawLog: buildPagedLog(450),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 初始只渲染最新一页（直传 rawLog 不自动贴底，视口停在列表顶）：
+    // 顶部是加载行+窗口最早条目 250，最旧条目不进列表；
+    // 等级计数仍按全量 450 统计。
+    expect(find.textContaining('日志条目 250'), findsOneWidget);
+    expect(find.textContaining('日志条目 0'), findsNothing);
+    expect(find.text('全部 450'), findsOneWidget);
+
+    // 点「加载更早」：窗口起点前移一页（450-200-200=50），
+    // 视口锚在原条目 250 上不跳动。
+    await tester.tap(find.textContaining('加载更早日志'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('日志条目 250'), findsOneWidget);
+    await dragToListTarget(tester, find.textContaining('日志条目 50'));
+    expect(find.textContaining('还有 50 条'), findsOneWidget);
+    expect(find.textContaining('日志条目 49'), findsNothing);
+
+    // 再次加载把最早一段全部载入，加载行随之消失。
+    await tester.tap(find.textContaining('加载更早日志'));
+    await tester.pumpAndSettle();
+    await dragToListTarget(tester, find.textContaining('日志条目 0'));
+    expect(find.textContaining('加载更早日志'), findsNothing);
+  });
+
+  testWidgets('export receives the full log while the list stays paged', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    String? exportedText;
+    await tester.pumpWidget(
+      TestApp(
+        home: LiveDiagnosticsLogViewerScreen(
+          title: '日志中心',
+          rawLog: buildPagedLog(450),
+          onExport: (text) async {
+            exportedText = text;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 列表按分页只渲染最新一页，但导出拿到的必须是从最早到最新的全量日志。
+    expect(find.textContaining('日志条目 0'), findsNothing);
+    await tester.tap(find.bySemanticsLabel('导出日志'));
+    await tester.pumpAndSettle();
+    expect(exportedText, isNotNull);
+    expect(exportedText!, contains('日志条目 0'));
+    expect(exportedText!, contains('日志条目 449'));
+  });
+
+  testWidgets('new arrivals do not shift the list while reading earlier pages', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = StreamController<String>();
+    addTearDown(controller.close);
+
+    await tester.pumpWidget(
+      TestApp(
+        home: LiveDiagnosticsLogViewerScreen(
+          title: '日志中心',
+          watchRawLog: () => controller.stream,
+        ),
+      ),
+    );
+    await tester.pump();
+    controller.add(buildPagedLog(250));
+    await tester.pumpAndSettle();
+
+    // 流式首帧自动贴最新（底部），滚到顶部点「加载更早」：
+    // 250 条的窗口起点 50，一次加载后起点钉在 0。
+    await dragToListTarget(tester, find.textContaining('加载更早日志'));
+    await tester.tap(find.textContaining('加载更早日志'));
+    await tester.pumpAndSettle();
+
+    // 读历史期间有新日志写入：钉住的起点不得移动，视口内容原地不动。
+    // append 分支只挂 250ms 刷新计时器、不同步排帧，需显式冲刷计时器。
+    controller.add(buildPagedLog(253));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('日志条目 50'), findsOneWidget);
+    expect(find.textContaining('加载更早日志'), findsNothing);
+    expect(find.text('全部 253'), findsOneWidget);
+  });
 }

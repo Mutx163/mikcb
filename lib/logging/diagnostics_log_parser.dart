@@ -2,6 +2,25 @@ import 'package:flutter/foundation.dart';
 
 enum DiagnosticsLogLevel { all, error, warn, info, debug, verbose }
 
+// 解析热路径的正则一律提为常量：日志文件动辄几千行/几千条，若在循环里
+// 每次 new RegExp，一次全量解析就要构造上万次正则（debug/JIT 下是秒级开销，
+// 且 watchMergedLogsText 的轮询会反复触发），这是日志页打开卡死的元凶之一。
+final RegExp diagnosticsBodySeparatorRegex = RegExp(
+  r'\n----\n|\r\n----\r\n|\n----\r\n|\r\n----\n',
+);
+final RegExp _logLineSplitRegex = RegExp(r'\r?\n');
+final RegExp _logKvLineRegex = RegExp(r'^([A-Za-z0-9_.-]+)=(.*)$');
+final RegExp _logErrorHintRegex = RegExp(
+  r'\b(error|exception|crash|fatal|failed|failure)\b',
+);
+final RegExp _logWarnHintRegex = RegExp(
+  r'\b(warn|warning|denied|blocked|invalid|missing)\b',
+);
+final RegExp _logVerboseHintRegex = RegExp(r'\b(verbose|trace)\b');
+final RegExp _logDebugHintRegex = RegExp(
+  r'\b(debug|diagnostic|snapshot|payload|test)\b',
+);
+
 @immutable
 class DiagnosticsLogEntry {
   final String rawBlock;
@@ -110,7 +129,7 @@ DiagnosticsLogSnapshot parseDiagnosticsLog(
     );
   }
 
-  final lines = normalizedText.split(RegExp(r'\r?\n'));
+  final lines = normalizedText.split(_logLineSplitRegex);
   final separatorIndex = lines.indexWhere((line) => line.trim() == '----');
   final headerLines = separatorIndex >= 0
       ? lines.take(separatorIndex).toList(growable: false)
@@ -147,9 +166,7 @@ String extractDiagnosticsLogBody(String text) {
   if (normalized.isEmpty) {
     return '';
   }
-  final parts = normalized.split(
-    RegExp(r'\n----\n|\r\n----\r\n|\n----\r\n|\r\n----\n'),
-  );
+  final parts = normalized.split(diagnosticsBodySeparatorRegex);
   if (parts.length <= 1) {
     return normalized;
   }
@@ -161,11 +178,11 @@ List<DiagnosticsLogEntry> parseDiagnosticsLogSections(String bodyText) {
   if (normalized.isEmpty) {
     return const <DiagnosticsLogEntry>[];
   }
-  final lines = normalized.split(RegExp(r'\r?\n'));
+  final lines = normalized.split(_logLineSplitRegex);
   return _splitDiagnosticSections(lines)
-      .map(_parseDiagnosticsLogEntry)
-      .whereType<DiagnosticsLogEntry>()
-      .toList(growable: false);
+    .map(_parseDiagnosticsLogEntry)
+    .whereType<DiagnosticsLogEntry>()
+    .toList(growable: false);
 }
 
 DiagnosticsLogSnapshot appendDiagnosticsLogBody(
@@ -314,7 +331,7 @@ Map<String, String> _parseIndentedKeyValueBlock(List<String> lines) {
   }
 
   for (final line in lines) {
-    final match = RegExp(r'^([A-Za-z0-9_.-]+)=(.*)$').firstMatch(line);
+    final match = _logKvLineRegex.firstMatch(line);
     if (match != null && !line.startsWith('  ')) {
       commit();
       currentKey = match.group(1);
@@ -376,22 +393,16 @@ DiagnosticsLogLevel _inferDiagnosticsLogLevel(
 
   if (fields.containsKey('throwable') ||
       fields.containsKey('stackTrace') ||
-      RegExp(
-        r'\b(error|exception|crash|fatal|failed|failure)\b',
-      ).hasMatch(haystack)) {
+      _logErrorHintRegex.hasMatch(haystack)) {
     return DiagnosticsLogLevel.error;
   }
-  if (RegExp(
-    r'\b(warn|warning|denied|blocked|invalid|missing)\b',
-  ).hasMatch(haystack)) {
+  if (_logWarnHintRegex.hasMatch(haystack)) {
     return DiagnosticsLogLevel.warn;
   }
-  if (RegExp(r'\b(verbose|trace)\b').hasMatch(haystack)) {
+  if (_logVerboseHintRegex.hasMatch(haystack)) {
     return DiagnosticsLogLevel.verbose;
   }
-  if (RegExp(
-    r'\b(debug|diagnostic|snapshot|payload|test)\b',
-  ).hasMatch(haystack)) {
+  if (_logDebugHintRegex.hasMatch(haystack)) {
     return DiagnosticsLogLevel.debug;
   }
   return DiagnosticsLogLevel.info;

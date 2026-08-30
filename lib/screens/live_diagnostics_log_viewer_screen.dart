@@ -76,6 +76,15 @@ class _LiveDiagnosticsLogViewerScreenState
   int _parseGeneration = 0;
   static const int _isolateParseThresholdBytes = 128 * 1024;
 
+  /// 分页窗口：列表只渲染从起始下标到末尾的条目，默认只显示最新 [_pageSize]
+  /// 条，在列表边缘点「加载更早」时把起点前移一页。解析、计数、复制/导出
+  /// 仍走全量数据，窗口只约束「渲染多少条」——全量一次进列表会让每帧的
+  /// 排序/重建/拼接都跟着膨胀，日志页因此被拖到无响应。
+  static const int _pageSize = 200;
+  int? _pinnedStartIndex;
+  bool _hasEarlierEntries = false;
+  int _currentStartIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -119,6 +128,7 @@ class _LiveDiagnosticsLogViewerScreenState
     }
     setState(() {
       _timeSort = sort;
+      _pinnedStartIndex = null;
     });
     unawaited(
       DiagnosticsLogViewerPreferences.saveTimeSort(
@@ -282,10 +292,22 @@ class _LiveDiagnosticsLogViewerScreenState
 
   void _rebuildVisibleEntries() {
     _levelCounts = countDiagnosticsLevels(_parsed.entries);
-    _visibleEntries = sortDiagnosticsEntries(
+    final sorted = sortDiagnosticsEntries(
       filterDiagnosticsEntries(_parsed.entries, _selectedLevel),
       ascending: _timeSort == DiagnosticsLogTimeSort.ascending,
     );
+    final total = sorted.length;
+    // 回到「贴最新」端时窗口收拢回最新一页；钉住的起点越界（日志被
+    // 截断/清空重写）时同样回落到最新一页。
+    if (_stickToLatest) {
+      _pinnedStartIndex = null;
+    } else if (_pinnedStartIndex != null && _pinnedStartIndex! >= total) {
+      _pinnedStartIndex = null;
+    }
+    final start = _pinnedStartIndex ?? (total > _pageSize ? total - _pageSize : 0);
+    _currentStartIndex = start;
+    _visibleEntries = sorted.sublist(start);
+    _hasEarlierEntries = start > 0;
   }
 
   void _scheduleUiRefresh() {
@@ -315,11 +337,11 @@ class _LiveDiagnosticsLogViewerScreenState
       return;
     }
     final position = _structuredScrollController.position;
-    if (_latestAtBottom) {
-      _stickToLatest = position.pixels >= position.maxScrollExtent - 48;
-    } else {
-      _stickToLatest = position.pixels <= 48;
-    }
+    _syncStickToLatest(
+      _latestAtBottom
+          ? position.pixels >= position.maxScrollExtent - 48
+          : position.pixels <= 48,
+    );
   }
 
   void _onRawScroll() {
@@ -327,11 +349,24 @@ class _LiveDiagnosticsLogViewerScreenState
       return;
     }
     final position = _rawScrollController.position;
-    if (_latestAtBottom) {
-      _stickToLatest = position.pixels >= position.maxScrollExtent - 48;
-    } else {
-      _stickToLatest = position.pixels <= 48;
+    _syncStickToLatest(
+      _latestAtBottom
+          ? position.pixels >= position.maxScrollExtent - 48
+          : position.pixels <= 48,
+    );
+  }
+
+  /// 滚回「最新」端时把分页窗口收拢回最新一页——否则加载过的更早条目会
+  /// 一直占着渲染窗口；离开最新端只更新贴边标记，不打扰正在读历史的用户。
+  void _syncStickToLatest(bool nowStick) {
+    if (nowStick && !_stickToLatest) {
+      _stickToLatest = true;
+      _pinnedStartIndex = null;
+      setState(_rebuildVisibleEntries);
+      _scheduleAutoScroll();
+      return;
     }
+    _stickToLatest = nowStick;
   }
 
   void _scheduleAutoScroll() {
@@ -437,11 +472,6 @@ class _LiveDiagnosticsLogViewerScreenState
       return const [];
     }
 
-    final filteredRawText = buildFilteredDiagnosticsRawText(
-      _parsed,
-      _visibleEntries,
-    );
-
     return [
       FHeaderAction(
         icon: const Icon(Icons.tune_rounded),
@@ -451,9 +481,7 @@ class _LiveDiagnosticsLogViewerScreenState
       FHeaderAction(
         icon: const Icon(Icons.copy_all_rounded),
         semanticsLabel: l10n.appLogsCopyAction,
-        onPress: _parsed.entries.isEmpty
-            ? null
-            : () => _copyLogs(filteredRawText),
+        onPress: _parsed.entries.isEmpty ? null : _copyLogs,
       ),
       FHeaderAction(
         icon: _exporting
@@ -463,7 +491,7 @@ class _LiveDiagnosticsLogViewerScreenState
         onPress:
             widget.onExport == null || _exporting || _parsed.entries.isEmpty
             ? null
-            : () => _exportLogs(filteredRawText),
+            : _exportLogs,
       ),
       FHeaderAction(
         icon: _clearing
@@ -542,6 +570,7 @@ class _LiveDiagnosticsLogViewerScreenState
                     onPress: () {
                       setState(() {
                         _selectedLevel = DiagnosticsLogLevel.values[i];
+                        _pinnedStartIndex = null;
                         _rebuildVisibleEntries();
                       });
                       if (_stickToLatest) {
@@ -625,8 +654,12 @@ class _LiveDiagnosticsLogViewerScreenState
     final hasHeader = _parsed.headerEntries.isNotEmpty;
     final showPausedHint =
         widget.isRecordingEnabled == false && _parsed.entries.isNotEmpty;
+    final hasLoadEarlier = _hasEarlierEntries;
     final itemCount =
-        _visibleEntries.length + (hasHeader ? 1 : 0) + (showPausedHint ? 1 : 0);
+        _visibleEntries.length +
+        (hasHeader ? 1 : 0) +
+        (showPausedHint ? 1 : 0) +
+        (hasLoadEarlier ? 1 : 0);
 
     return ListView.builder(
       controller: _structuredScrollController,
@@ -679,11 +712,24 @@ class _LiveDiagnosticsLogViewerScreenState
         }
 
         final entryIndex = adjustedIndex - (hasHeader ? 1 : 0);
-        final entry = _visibleEntries[entryIndex];
+        // 正序时更早日志在列表上方，「加载更早」行放在条目之前；倒序时
+        // 更早日志在下方，加载行挂在末尾。
+        if (_latestAtBottom && hasLoadEarlier && entryIndex == 0) {
+          return _buildLoadEarlierRow(context, l10n);
+        }
+        final visibleIndex =
+            entryIndex - (_latestAtBottom && hasLoadEarlier ? 1 : 0);
+        if (!_latestAtBottom &&
+            hasLoadEarlier &&
+            visibleIndex == _visibleEntries.length) {
+          return _buildLoadEarlierRow(context, l10n);
+        }
+
+        final entry = _visibleEntries[visibleIndex];
         return RepaintBoundary(
           child: Padding(
             padding: EdgeInsets.only(
-              bottom: entryIndex == _visibleEntries.length - 1 ? 0 : 8,
+              bottom: visibleIndex == _visibleEntries.length - 1 ? 0 : 8,
             ),
             child: HyperosListGroup(
               children: [
@@ -744,6 +790,7 @@ class _LiveDiagnosticsLogViewerScreenState
       return _buildNoMatchingState(context, l10n);
     }
 
+    final hasLoadEarlier = _hasEarlierEntries;
     return ListView.builder(
       controller: _rawScrollController,
       physics: const HyperosOverscrollPhysics(
@@ -756,13 +803,22 @@ class _LiveDiagnosticsLogViewerScreenState
         HyperosTokens.listPadding.bottom,
       ),
       scrollCacheExtent: const ScrollCacheExtent.pixels(480),
-      itemCount: _visibleEntries.length,
+      itemCount: _visibleEntries.length + (hasLoadEarlier ? 1 : 0),
       itemBuilder: (context, index) {
-        final entry = _visibleEntries[index];
+        if (_latestAtBottom && hasLoadEarlier && index == 0) {
+          return _buildLoadEarlierRow(context, l10n);
+        }
+        final entryIndex = index - (_latestAtBottom && hasLoadEarlier ? 1 : 0);
+        if (!_latestAtBottom &&
+            hasLoadEarlier &&
+            entryIndex == _visibleEntries.length) {
+          return _buildLoadEarlierRow(context, l10n);
+        }
+        final entry = _visibleEntries[entryIndex];
         return RepaintBoundary(
           child: Padding(
             padding: EdgeInsets.only(
-              bottom: index == _visibleEntries.length - 1 ? 0 : 8,
+              bottom: entryIndex == _visibleEntries.length - 1 ? 0 : 8,
             ),
             child: HyperosControlCard(
               child: Text(
@@ -778,9 +834,111 @@ class _LiveDiagnosticsLogViewerScreenState
     );
   }
 
-  Future<void> _copyLogs(String text) async {
+  /// 分页加载：把窗口起点前移一页，露出更早的日志。
+  ///
+  /// 正序时更早条目插在视口上方，用 maxScrollExtent 增量把视口锚回原先
+  /// 看到的条目，避免整页跳动（行高相近时锚定误差很小）；倒序是往视口
+  /// 下方追加，无需补偿。
+  void _loadEarlierEntriesWithAnchor() {
+    if (_currentStartIndex <= 0) {
+      return;
+    }
+    final ascending = _timeSort == DiagnosticsLogTimeSort.ascending;
+    final controller = _viewMode == DiagnosticsLogViewMode.raw
+        ? _rawScrollController
+        : _structuredScrollController;
+    final canAnchor = ascending && controller.hasClients;
+    final double pixelsBefore = canAnchor ? controller.position.pixels : 0;
+    final double maxBefore = canAnchor ? controller.position.maxScrollExtent : 0;
+
+    setState(() {
+      _stickToLatest = false;
+      _pinnedStartIndex =
+          _currentStartIndex > _pageSize ? _currentStartIndex - _pageSize : 0;
+      _rebuildVisibleEntries();
+    });
+
+    if (!canAnchor) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !controller.hasClients) {
+        return;
+      }
+      final position = controller.position;
+      if (!position.hasContentDimensions || !position.hasViewportDimension) {
+        return;
+      }
+      final delta = position.maxScrollExtent - maxBefore;
+      if (delta <= 0) {
+        return;
+      }
+      controller.jumpTo(
+        (pixelsBefore + delta).clamp(0.0, position.maxScrollExtent),
+      );
+    });
+  }
+
+  Widget _buildLoadEarlierRow(BuildContext context, AppLocalizations l10n) {
+    return RepaintBoundary(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: HyperosTokens.listPadding.left,
+          right: HyperosTokens.listPadding.right,
+          bottom: 8,
+        ),
+        child: HyperosListGroup(
+          children: [
+            HyperosPressableRow(
+              onTap: _loadEarlierEntriesWithAnchor,
+              backgroundColor: HyperosColors.card(context),
+              highlightColor: HyperosColors.rowHighlight(context),
+              child: Padding(
+                padding: _diagnosticsListRowPadding(context),
+                child: Row(
+                  children: [
+                    Icon(
+                      _latestAtBottom
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 18,
+                      color: HyperosColors.secondaryText(context),
+                    ),
+                    const SizedBox(width: HyperosTokens.rowContentGap),
+                    Expanded(
+                      child: Text(
+                        l10n.diagnosticsLoadEarlierLabel(_currentStartIndex),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.listDetail(context).copyWith(
+                          color: HyperosColors.secondaryText(context),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: HyperosTokens.titleChevronGap),
+                    const HyperosChevron(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 复制/导出用的全量文本：按当前等级筛选拼回全部已解析条目的原文，
+  /// 不经过分页窗口——导出拿到的必须是完整日志，而不是当前显示的一页。
+  String _buildFullLogText() {
+    return buildFilteredDiagnosticsRawText(
+      _parsed,
+      filterDiagnosticsEntries(_parsed.entries, _selectedLevel),
+    );
+  }
+
+  Future<void> _copyLogs() async {
     final l10n = AppLocalizations.of(context)!;
-    await Clipboard.setData(ClipboardData(text: text));
+    await Clipboard.setData(ClipboardData(text: _buildFullLogText()));
     if (!mounted) {
       return;
     }
@@ -791,7 +949,7 @@ class _LiveDiagnosticsLogViewerScreenState
     );
   }
 
-  Future<void> _exportLogs(String text) async {
+  Future<void> _exportLogs() async {
     if (widget.onExport == null) {
       return;
     }
@@ -799,7 +957,7 @@ class _LiveDiagnosticsLogViewerScreenState
       _exporting = true;
     });
     try {
-      await widget.onExport!(text);
+      await widget.onExport!(_buildFullLogText());
     } finally {
       if (mounted) {
         setState(() {

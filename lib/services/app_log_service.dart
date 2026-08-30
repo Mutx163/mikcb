@@ -11,6 +11,12 @@ import '../logging/app_log_messages.dart';
 import '../logging/diagnostics_log_parser.dart';
 import '../models/timetable_settings.dart';
 
+// 合并热路径的正则提为常量：watchMergedLogsText 的轮询/写入触发会对全量
+// 日志文本反复跑这些正则，几千条日志时在循环里 new RegExp 是秒级开销。
+final RegExp _logSectionSplitRegex = RegExp(r'\r?\n\r?\n');
+final RegExp _logSourceMarkerRegex = RegExp(r'(^|\n)source=');
+final RegExp _logLineSplitRegex = RegExp(r'\r?\n');
+
 class AppLogService {
   AppLogService._internal();
 
@@ -247,6 +253,11 @@ class AppLogService {
     StreamSubscription<void>? logChangeSub;
     var closed = false;
     String? lastEmittedBody;
+    // 轮询去重指纹：日志文件（size+mtime）和原生日志文本都没变时跳过整条
+    // 重读+重合并管线。没有它，每秒一次的轮询即便日志零新增也会在主
+    // isolate 上全量跑一遍读取/切分/注入，日志页因此被自己拖死。
+    String? lastAppLogFingerprint = '';
+    String? lastNativeRawLog;
 
     Future<void> emit() async {
       if (closed) {
@@ -256,6 +267,13 @@ class AppLogService {
         final nativeRaw = loadNativeRawLog != null
             ? await loadNativeRawLog()
             : null;
+        final appFingerprint = await _logFileFingerprint();
+        if (appFingerprint == lastAppLogFingerprint &&
+            nativeRaw == lastNativeRawLog) {
+          return;
+        }
+        lastAppLogFingerprint = appFingerprint;
+        lastNativeRawLog = nativeRaw;
         final text = await readMergedLogsText(nativeRawLog: nativeRaw);
         final body = extractDiagnosticsLogBody(text);
         if (closed || body == lastEmittedBody) {
@@ -411,6 +429,18 @@ class AppLogService {
     return File('${directory.path}/logs/$_logFileName');
   }
 
+  /// 日志文件的轻量变更指纹（size+mtime 毫秒），文件不存在返回 null。
+  /// 只做一次 stat，不读内容，供轮询判断「是否有新东西可合并」。
+  Future<String?> _logFileFingerprint() async {
+    try {
+      final file = await _resolveLogFile();
+      final stat = await file.stat();
+      return '${stat.size}:${stat.modified.millisecondsSinceEpoch}';
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _trimIfNeeded(File file) async {
     if (!await file.exists()) {
       return;
@@ -491,9 +521,7 @@ class AppLogService {
     if (normalized.isEmpty) {
       return '';
     }
-    final parts = normalized.split(
-      RegExp(r'\n----\n|\r\n----\r\n|\n----\r\n|\r\n----\n'),
-    );
+    final parts = normalized.split(diagnosticsBodySeparatorRegex);
     if (parts.length <= 1) {
       return normalized;
     }
@@ -502,14 +530,14 @@ class AppLogService {
 
   String _injectSourceIntoSections(String body, {required String source}) {
     final sections = body
-        .split(RegExp(r'\r?\n\r?\n'))
+        .split(_logSectionSplitRegex)
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .map((section) {
-          if (RegExp(r'(^|\n)source=').hasMatch(section)) {
+          if (_logSourceMarkerRegex.hasMatch(section)) {
             return section;
           }
-          final lines = section.split(RegExp(r'\r?\n'));
+          final lines = section.split(_logLineSplitRegex);
           final insertIndex = lines.indexWhere(
             (line) => line.startsWith('time='),
           );
