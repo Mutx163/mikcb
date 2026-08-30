@@ -9,7 +9,7 @@ densities, plus preview composites for human review before committing.
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "assets" / "branding" / "launcher_icon.png"
@@ -20,9 +20,15 @@ BASE = 1024
 # 72/108 = 0.667 maps the full artwork exactly onto the visible area,
 # matching how the legacy full-bleed bitmap filled the launcher mask.
 FG_SCALE = 0.67
-# Splash icon artwork: 0.40 x 108dp canvas -> ~60% of the 72dp visible zone
-# (the launcher's 0.67 maps artwork onto the full visible area and read huge).
-SPLASH_FG_SCALE = 0.40
+# Splash icon artwork. HyperOS renders the splash icon's central 72/108 safe
+# zone into the visible squircle, so on-screen fractions = canvas fraction x
+# 1.5. The source is fully opaque, so its own square rim shows at any partial
+# scale — the feather below dissolves it (source edge colors ~= plate colors).
+# 0.52 tile -> 78% of the visible zone; artwork (0.69 of source) ~54% of it.
+SPLASH_FG_SCALE = 0.52
+SPLASH_FEATHER_RADIUS = 0.20  # of the inset rounded rect
+SPLASH_FEATHER_INSET = 0.03   # of the tile — room for the fade to live inside
+SPLASH_FEATHER_BLUR = 0.04    # of the tile — fade reaches 0 near the tile rim
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
 
 
@@ -109,18 +115,19 @@ def find_font() -> Path:
 def build_branding(text_color: tuple) -> Image.Image:
     """Render BRAND_TEXT on a transparent 200x80dp canvas (5x supersampled).
 
-    Text is enlarged (50% of canvas height vs 30%) and shifted upward
-    (vertical center at 38% vs 50%) so the system splash branding reads
-    larger and sits higher instead of hugging the bottom edge. Emitted in
-    both inks: black for the white light well, white for the #121212 night
-    well (drawable-night-*).
+    Text is enlarged (50% of canvas height vs 30%) and top-anchored (vertical
+    center at 24% — the lowest-ink floor before clipping): the system pins the
+    branding strip near the screen bottom, so within-image top anchoring is
+    the only lever against the text hugging the bottom edge. Emitted in both
+    inks: black for the white light well, white for the #121212 night well
+    (drawable-night-*).
     """
     from PIL import ImageFont
     w, h = 1000, 400
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype(str(find_font()), int(h * 0.50))
-    draw.text((w / 2, h * 0.38), BRAND_TEXT, font=font, fill=text_color, anchor="mm")
+    draw.text((w / 2, h * 0.24), BRAND_TEXT, font=font, fill=text_color, anchor="mm")
     return img
 
 
@@ -160,6 +167,37 @@ def build_plate() -> Image.Image:
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
 
 
+def build_splash_foreground() -> Image.Image:
+    """Source artwork centered at SPLASH_FG_SCALE with a feathered rim.
+
+    The source is a fully opaque square, so a plain partial-scale placement
+    shows a hard square rim against the background layer (the inner-square
+    ghost on device). The source's own edge colors nearly equal the plate
+    gradient, so a rounded-rect alpha feather dissolves the rim into the
+    plate while the artwork in the middle stays untouched.
+    """
+    size = int(BASE * SPLASH_FG_SCALE)
+    off = (BASE - size) // 2
+    tile = Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS).crop(
+        (off, off, off + size, off + size)
+    )
+    # Inset the rounded rect so the blur's fade band lives INSIDE the tile:
+    # a shape drawn flush to the mask boundary gets edge-clamped by the blur
+    # and stays a hard line (the bug this replaces).
+    inset = int(size * SPLASH_FEATHER_INSET)
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (inset, inset, size - 1 - inset, size - 1 - inset),
+        radius=int((size - 2 * inset) * SPLASH_FEATHER_RADIUS),
+        fill=255,
+    )
+    mask = mask.filter(ImageFilter.GaussianBlur(size * SPLASH_FEATHER_BLUR))
+    tile.putalpha(mask)
+    canvas = Image.new("RGBA", (BASE, BASE), (0, 0, 0, 0))
+    canvas.alpha_composite(tile, (off, off))
+    return canvas
+
+
 def emit_splash_adaptive() -> None:
     """Emit the dedicated splash icon as an adaptive icon (XML + layers).
 
@@ -170,10 +208,7 @@ def emit_splash_adaptive() -> None:
     happened.
     """
     background = build_plate()
-    foreground = scale_centered(
-        Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS),
-        SPLASH_FG_SCALE,
-    )
+    foreground = build_splash_foreground()
     for density, factor in DENSITIES.items():
         layer = int(round(108 * factor))
         d = RES / ("mipmap-" + density)
