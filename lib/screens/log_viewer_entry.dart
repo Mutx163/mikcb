@@ -32,7 +32,8 @@ enum AppLogSource {
 /// The viewer widget was always shared, but each of its five call sites built
 /// its own config — including two byte-for-byte copies in the about screen that
 /// had already started to drift (one of them double-toasted on clear). Route
-/// names, share text, and the recording toggle all live here now.
+/// names and share text live here now; the recording toggle lives in the
+/// diagnostics settings page, so the viewer stays a pure reader.
 Future<void> openLogViewer(BuildContext context, AppLogSource source) async {
   if (_opening) {
     return;
@@ -80,8 +81,6 @@ Widget _buildMergedViewer(BuildContext context, AppLocalizations l10n) {
       loadNativeRawLog: liveService.readLiveDiagnosticsText,
     ),
     isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-    onRecordingChanged: (value) =>
-        _updateRecordingPreference(context, l10n, value),
     onExport: (_) async {
       final nativeRawLog = await liveService.readLiveDiagnosticsText();
       final path = await AppLogService.instance.exportMergedLogsFile(
@@ -198,30 +197,5 @@ Widget _buildWarehouseImportViewer(
       sessionLog.clear();
       return true;
     },
-  );
-}
-
-Future<void> _updateRecordingPreference(
-  BuildContext context,
-  AppLocalizations l10n,
-  bool value,
-) async {
-  final provider = context.read<TimetableProvider>();
-  final message = await provider.updateTimetableSettings(
-    provider.settings.copyWith(liveEnableLocalDiagnostics: value),
-  );
-  if (!context.mounted) {
-    return;
-  }
-  if (message != null) {
-    showAppToast(context, message: message);
-    return;
-  }
-  showAppToast(
-    context,
-    message: value
-        ? l10n.aboutLiveDiagnosticsEnabled
-        : l10n.aboutLiveDiagnosticsDisabled,
-    kind: AppToastKind.success,
   );
 }

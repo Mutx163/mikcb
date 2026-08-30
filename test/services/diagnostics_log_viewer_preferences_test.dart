@@ -38,16 +38,4 @@ void main() {
       DiagnosticsLogViewerPreferences.ascending,
     );
   });
-
-  test('persists display options expanded state', () async {
-    expect(
-      await DiagnosticsLogViewerPreferences.loadDisplayOptionsExpanded(),
-      isFalse,
-    );
-    await DiagnosticsLogViewerPreferences.saveDisplayOptionsExpanded(true);
-    expect(
-      await DiagnosticsLogViewerPreferences.loadDisplayOptionsExpanded(),
-      isTrue,
-    );
-  });
 }

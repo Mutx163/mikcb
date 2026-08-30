@@ -53,8 +53,7 @@ extras=
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('查看与排序'), findsOneWidget);
-    expect(find.textContaining('结构化 · 正序'), findsOneWidget);
+    expect(find.bySemanticsLabel('查看与排序'), findsOneWidget);
     expect(find.textContaining('渲染失败'), findsWidgets);
     await tester.scrollUntilVisible(
       find.textContaining('已捕获快照负载'),
@@ -82,9 +81,12 @@ extras=
     expect(find.textContaining('渲染失败'), findsWidgets);
     expect(find.textContaining('已捕获快照负载'), findsNothing);
 
-    await tester.tap(find.text('查看与排序'));
+    await tester.tap(find.bySemanticsLabel('查看与排序'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('原文'));
+    await tester.pumpAndSettle();
+    // 点遮罩关掉弹层，回到正文验证视图确实切到了原文。
+    await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('渲染失败'), findsOneWidget);
@@ -117,9 +119,11 @@ extras=
 
     expect(find.textContaining('渲染失败'), findsWidgets);
 
-    await tester.tap(find.text('查看与排序'));
+    await tester.tap(find.bySemanticsLabel('查看与排序'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('倒序'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
 
     final descending = find.textContaining('已捕获快照负载');
@@ -130,7 +134,11 @@ extras=
       isTrue,
     );
 
+    await tester.tap(find.bySemanticsLabel('查看与排序'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('正序'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
 
     expect(
@@ -161,4 +169,27 @@ extras=
 
     expect(find.textContaining('渲染失败'), findsWidgets);
   });
+
+  testWidgets(
+    'recording toggle lives outside the viewer; paused state shows a hint row',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        TestApp(
+          home: LiveDiagnosticsLogViewerScreen(
+            title: '日志中心',
+            rawLog: sampleLog,
+            isRecordingEnabled: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 开关不得回到本页（页面只留只读状态提示），防止回归。
+      expect(find.byType(Switch), findsNothing);
+      expect(find.textContaining('记录已关闭'), findsOneWidget);
+    },
+  );
 }

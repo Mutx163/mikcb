@@ -5,20 +5,8 @@ class DiagnosticsLogViewerPreferences {
   DiagnosticsLogViewerPreferences._();
 
   static const _timeSortKey = 'diagnostics_log_time_sort';
-  static const _displayOptionsExpandedKey =
-      'diagnostics_log_display_options_expanded';
   static const ascending = 'ascending';
   static const descending = 'descending';
-
-  static Future<bool> loadDisplayOptionsExpanded() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_displayOptionsExpandedKey) ?? false;
-  }
-
-  static Future<void> saveDisplayOptionsExpanded(bool expanded) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_displayOptionsExpandedKey, expanded);
-  }
 
   static Future<String> loadTimeSort() async {
     final prefs = await SharedPreferences.getInstance();

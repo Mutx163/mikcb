@@ -25,8 +25,10 @@ class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
   final Future<String> Function()? loadRawLog;
   final Stream<String> Function()? watchRawLog;
   final VoidCallback? onLoadEmpty;
+
+  /// 只读的记录状态，仅用于在列表顶部提示「记录已关闭」；开关本体在
+  /// 「设置 → 诊断与日志」，本页保持纯查看。
   final bool? isRecordingEnabled;
-  final ValueChanged<bool>? onRecordingChanged;
   final Future<void> Function(String text)? onExport;
   final Future<bool> Function()? onClear;
 
@@ -38,7 +40,6 @@ class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
     this.watchRawLog,
     this.onLoadEmpty,
     this.isRecordingEnabled,
-    this.onRecordingChanged,
     this.onExport,
     this.onClear,
   });
@@ -55,7 +56,6 @@ class _LiveDiagnosticsLogViewerScreenState
   DiagnosticsLogTimeSort _timeSort = DiagnosticsLogTimeSort.ascending;
   late String _rawLog;
   String _lastBody = '';
-  bool? _recordingEnabled;
   bool _initializing = false;
   bool _parsing = false;
   String? _loadError;
@@ -70,7 +70,6 @@ class _LiveDiagnosticsLogViewerScreenState
   bool _stickToLatest = true;
   bool _isStreaming = false;
   bool _autoScrollPending = false;
-  bool _displayOptionsExpanded = false;
   final Map<String, bool> _expandedEntryIds = <String, bool>{};
   bool _deviceInfoExpanded = false;
   Timer? _uiRefreshTimer;
@@ -81,7 +80,6 @@ class _LiveDiagnosticsLogViewerScreenState
   void initState() {
     super.initState();
     _rawLog = widget.rawLog;
-    _recordingEnabled = widget.isRecordingEnabled;
     _structuredScrollController.addListener(_onStructuredScroll);
     _rawScrollController.addListener(_onRawScroll);
     unawaited(_loadViewerPreferences());
@@ -103,43 +101,16 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   Future<void> _loadViewerPreferences() async {
-    final results = await Future.wait([
-      DiagnosticsLogViewerPreferences.loadTimeSort(),
-      DiagnosticsLogViewerPreferences.loadDisplayOptionsExpanded(),
-    ]);
+    final sort = await DiagnosticsLogViewerPreferences.loadTimeSort();
     if (!mounted) {
       return;
     }
-    final sort = results[0] as String;
-    final displayExpanded = results[1] as bool;
     setState(() {
       _timeSort = sort == DiagnosticsLogViewerPreferences.descending
           ? DiagnosticsLogTimeSort.descending
           : DiagnosticsLogTimeSort.ascending;
-      _displayOptionsExpanded = displayExpanded;
     });
     _rebuildVisibleEntries();
-  }
-
-  void _toggleDisplayOptionsExpanded() {
-    setState(() {
-      _displayOptionsExpanded = !_displayOptionsExpanded;
-    });
-    unawaited(
-      DiagnosticsLogViewerPreferences.saveDisplayOptionsExpanded(
-        _displayOptionsExpanded,
-      ),
-    );
-  }
-
-  String _displayOptionsSummary(AppLocalizations l10n) {
-    final mode = _viewMode == DiagnosticsLogViewMode.structured
-        ? l10n.diagnosticsStructuredTab
-        : l10n.diagnosticsRawTab;
-    final sort = _timeSort == DiagnosticsLogTimeSort.ascending
-        ? l10n.diagnosticsTimeSortAscending
-        : l10n.diagnosticsTimeSortDescending;
-    return '$mode · $sort';
   }
 
   void _setTimeSort(DiagnosticsLogTimeSort sort) {
@@ -441,7 +412,11 @@ class _LiveDiagnosticsLogViewerScreenState
       suffixes: _buildHeaderActions(l10n),
       headerExtension: showControls
           ? HyperosBlurredHeaderExtension(
-              child: _buildControlsSection(context, l10n),
+              // 头部扩展区只放固定高度的等级筛选条：曾经这里住着记录开关和
+              // 可折叠的「查看与排序」卡，高度一变，body 顶部的测量缓存
+              // inset 跟不上就留出一大片空白；现在扩展区高度恒定，页面
+              // 主体整页让给日志列表。
+              child: _buildLevelFilterBar(context, l10n),
             )
           : null,
       child: HyperosBlurredBodyInset(
@@ -463,6 +438,11 @@ class _LiveDiagnosticsLogViewerScreenState
     );
 
     return [
+      FHeaderAction(
+        icon: const Icon(Icons.tune_rounded),
+        semanticsLabel: l10n.diagnosticsDisplayOptionsTitle,
+        onPress: () => _showDisplayOptionsSheet(context),
+      ),
       FHeaderAction(
         icon: const Icon(Icons.copy_all_rounded),
         semanticsLabel: l10n.appLogsCopyAction,
@@ -539,186 +519,64 @@ class _LiveDiagnosticsLogViewerScreenState
     return _buildStructuredView(context, l10n);
   }
 
-  Widget _buildRecordingSection(BuildContext context, AppLocalizations l10n) {
-    if (_recordingEnabled == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildLevelFilterBar(BuildContext context, AppLocalizations l10n) {
+    return Row(
       children: [
-        HyperosListGroup(
-          children: [
-            HyperosSwitchTile(
-              title: l10n.aboutRecordDiagnosticsTitle,
-              subtitle: l10n.aboutRecordDiagnosticsSubtitle,
-              value: _recordingEnabled!,
-              onChanged: widget.onRecordingChanged == null
-                  ? null
-                  : (value) {
-                      widget.onRecordingChanged!(value);
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: [
+                for (var i = 0; i < DiagnosticsLogLevel.values.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _LevelFilterChip(
+                    label:
+                        '${_levelLabel(l10n, DiagnosticsLogLevel.values[i])} ${_levelCounts[DiagnosticsLogLevel.values[i]] ?? 0}',
+                    selected: _selectedLevel == DiagnosticsLogLevel.values[i],
+                    onPress: () {
                       setState(() {
-                        _recordingEnabled = value;
+                        _selectedLevel = DiagnosticsLogLevel.values[i];
+                        _rebuildVisibleEntries();
                       });
+                      if (_stickToLatest) {
+                        _scheduleAutoScroll();
+                      }
                     },
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
-        if (!_recordingEnabled! && _parsed.entries.isNotEmpty)
-          HyperosSectionDescription(text: l10n.appLogsRecordingPausedHint),
+        if (_parsing) ...[
+          const SizedBox(width: 8),
+          const HyperosCircularProgress(size: 14, strokeWidth: 2),
+        ],
       ],
     );
   }
 
-  Widget _buildControlsSection(BuildContext context, AppLocalizations l10n) {
-    final cardColor = HyperosColors.card(context);
-    final highlightColor = HyperosColors.rowHighlight(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildRecordingSection(context, l10n),
-        if (_recordingEnabled != null) const HyperosSectionGap(),
-        HyperosListGroup(
-          children: [
-            HyperosPressableRow(
-              onTap: _toggleDisplayOptionsExpanded,
-              backgroundColor: cardColor,
-              highlightColor: highlightColor,
-              child: Padding(
-                padding: HyperosTokens.rowPadding(),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.diagnosticsDisplayOptionsTitle,
-                            style: HyperosTypography.listTitle(context),
-                          ),
-                          if (!_displayOptionsExpanded) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              _displayOptionsSummary(l10n),
-                              style: HyperosTypography.listDetail(context)
-                                  .copyWith(
-                                    color: HyperosColors.secondaryText(context),
-                                  ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const HyperosUpDownChevron(),
-                  ],
-                ),
-              ),
-            ),
-            if (_displayOptionsExpanded)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.diagnosticsLogIntro,
-                      style: HyperosTypography.sectionDescription(context),
-                    ),
-                    const SizedBox(height: 10),
-                    HyperosSegmentedControl(
-                      tabs: [
-                        l10n.diagnosticsStructuredTab,
-                        l10n.diagnosticsRawTab,
-                      ],
-                      selectedIndex:
-                          _viewMode == DiagnosticsLogViewMode.structured
-                          ? 0
-                          : 1,
-                      onChanged: (index) {
-                        setState(() {
-                          _viewMode = index == 0
-                              ? DiagnosticsLogViewMode.structured
-                              : DiagnosticsLogViewMode.raw;
-                        });
-                        if (_stickToLatest) {
-                          _scheduleAutoScroll();
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    HyperosSegmentedControl(
-                      tabs: [
-                        l10n.diagnosticsTimeSortAscending,
-                        l10n.diagnosticsTimeSortDescending,
-                      ],
-                      selectedIndex:
-                          _timeSort == DiagnosticsLogTimeSort.ascending ? 0 : 1,
-                      onChanged: (index) {
-                        _setTimeSort(
-                          index == 0
-                              ? DiagnosticsLogTimeSort.ascending
-                              : DiagnosticsLogTimeSort.descending,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        const HyperosSectionGap(),
-        Row(
-          children: [
-            Expanded(
-              child: HyperosSectionLabel(text: l10n.diagnosticsLevelLabel),
-            ),
-            if (_parsing)
-              const Padding(
-                padding: EdgeInsets.only(right: 4),
-                child: HyperosCircularProgress(size: 14, strokeWidth: 2),
-              ),
-          ],
-        ),
-        if (_parsed.entries.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              l10n.diagnosticsShowingCount(
-                _visibleEntries.length,
-                _parsed.entries.length,
-              ),
-              style: HyperosTypography.listDetail(
-                context,
-              ).copyWith(color: HyperosColors.secondaryText(context)),
-            ),
-          ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: Row(
-            children: [
-              for (var i = 0; i < DiagnosticsLogLevel.values.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                _LevelFilterChip(
-                  label:
-                      '${_levelLabel(l10n, DiagnosticsLogLevel.values[i])} ${_levelCounts[DiagnosticsLogLevel.values[i]] ?? 0}',
-                  selected: _selectedLevel == DiagnosticsLogLevel.values[i],
-                  onPress: () {
-                    setState(() {
-                      _selectedLevel = DiagnosticsLogLevel.values[i];
-                      _rebuildVisibleEntries();
-                    });
-                    if (_stickToLatest) {
-                      _scheduleAutoScroll();
-                    }
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
+  Future<void> _showDisplayOptionsSheet(BuildContext context) async {
+    await showHyperosSheet<void>(
+      context: context,
+      enableDrag: false,
+      builder: (sheetContext) => _DisplayOptionsSheet(
+        viewMode: _viewMode,
+        timeSort: _timeSort,
+        onViewModeChanged: (mode) {
+          if (mode == _viewMode) {
+            return;
+          }
+          setState(() {
+            _viewMode = mode;
+          });
+          if (_stickToLatest) {
+            _scheduleAutoScroll();
+          }
+        },
+        onTimeSortChanged: _setTimeSort,
+      ),
     );
   }
 
@@ -760,7 +618,10 @@ class _LiveDiagnosticsLogViewerScreenState
     }
 
     final hasHeader = _parsed.headerEntries.isNotEmpty;
-    final itemCount = _visibleEntries.length + (hasHeader ? 1 : 0);
+    final showPausedHint =
+        widget.isRecordingEnabled == false && _parsed.entries.isNotEmpty;
+    final itemCount =
+        _visibleEntries.length + (hasHeader ? 1 : 0) + (showPausedHint ? 1 : 0);
 
     return ListView.builder(
       controller: _structuredScrollController,
@@ -776,7 +637,21 @@ class _LiveDiagnosticsLogViewerScreenState
       scrollCacheExtent: const ScrollCacheExtent.pixels(640),
       itemCount: itemCount,
       itemBuilder: (context, index) {
-        if (hasHeader && index == 0) {
+        if (showPausedHint && index == 0) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: HyperosTokens.listPadding.left,
+              right: HyperosTokens.listPadding.right,
+              bottom: 8,
+            ),
+            child: Text(
+              l10n.appLogsRecordingPausedHint,
+              style: HyperosTypography.sectionDescription(context),
+            ),
+          );
+        }
+        final adjustedIndex = index - (showPausedHint ? 1 : 0);
+        if (hasHeader && adjustedIndex == 0) {
           return RepaintBoundary(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -798,7 +673,7 @@ class _LiveDiagnosticsLogViewerScreenState
           );
         }
 
-        final entryIndex = index - (hasHeader ? 1 : 0);
+        final entryIndex = adjustedIndex - (hasHeader ? 1 : 0);
         final entry = _visibleEntries[entryIndex];
         return RepaintBoundary(
           child: Padding(
@@ -964,6 +839,95 @@ class _LiveDiagnosticsLogViewerScreenState
       context,
       message: cleared ? l10n.appLogsCleared : l10n.appLogsClearFailed,
       kind: cleared ? AppToastKind.success : AppToastKind.error,
+    );
+  }
+}
+
+/// 「查看与排序」弹层：结构化/原文 + 时间排序。
+///
+/// 弹层自持一份选中态用于即时高亮，变更经回调同步给页面（页面负责
+/// 持久化与重排）；不直接复用页面状态，避免弹层内每次点击都整页重建。
+class _DisplayOptionsSheet extends StatefulWidget {
+  const _DisplayOptionsSheet({
+    required this.viewMode,
+    required this.timeSort,
+    required this.onViewModeChanged,
+    required this.onTimeSortChanged,
+  });
+
+  final DiagnosticsLogViewMode viewMode;
+  final DiagnosticsLogTimeSort timeSort;
+  final ValueChanged<DiagnosticsLogViewMode> onViewModeChanged;
+  final ValueChanged<DiagnosticsLogTimeSort> onTimeSortChanged;
+
+  @override
+  State<_DisplayOptionsSheet> createState() => _DisplayOptionsSheetState();
+}
+
+class _DisplayOptionsSheetState extends State<_DisplayOptionsSheet> {
+  late DiagnosticsLogViewMode _viewMode = widget.viewMode;
+  late DiagnosticsLogTimeSort _timeSort = widget.timeSort;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return HyperosSheet(
+      title: l10n.diagnosticsDisplayOptionsTitle,
+      description: l10n.diagnosticsLogIntro,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+        ),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HyperosSegmentedControl(
+                tabs: [
+                  l10n.diagnosticsStructuredTab,
+                  l10n.diagnosticsRawTab,
+                ],
+                selectedIndex:
+                    _viewMode == DiagnosticsLogViewMode.structured ? 0 : 1,
+                onChanged: (index) {
+                  final mode = index == 0
+                      ? DiagnosticsLogViewMode.structured
+                      : DiagnosticsLogViewMode.raw;
+                  if (mode == _viewMode) {
+                    return;
+                  }
+                  setState(() {
+                    _viewMode = mode;
+                  });
+                  widget.onViewModeChanged(mode);
+                },
+              ),
+              const SizedBox(height: 12),
+              HyperosSegmentedControl(
+                tabs: [
+                  l10n.diagnosticsTimeSortAscending,
+                  l10n.diagnosticsTimeSortDescending,
+                ],
+                selectedIndex:
+                    _timeSort == DiagnosticsLogTimeSort.ascending ? 0 : 1,
+                onChanged: (index) {
+                  final sort = index == 0
+                      ? DiagnosticsLogTimeSort.ascending
+                      : DiagnosticsLogTimeSort.descending;
+                  if (sort == _timeSort) {
+                    return;
+                  }
+                  setState(() {
+                    _timeSort = sort;
+                  });
+                  widget.onTimeSortChanged(sort);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
