@@ -287,11 +287,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "8d72a94a72ca4580b43ef2b5872ded3021815ccd"
-      resolved-ref: "8d72a94a72ca4580b43ef2b5872ded3021815ccd"
+      ref: "241bbea65291e2a2f7b36d77946f7f1d16654b0a"
+      resolved-ref: "241bbea65291e2a2f7b36d77946f7f1d16654b0a"
       url: "https://github.com/Mutx163/flutter_miuix.git"
     source: git
-    version: "1.0.10"
+    version: "1.0.11"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:

@@ -45,7 +45,7 @@ dependencies:
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: 8d72a94a72ca4580b43ef2b5872ded3021815ccd
+      ref: 241bbea65291e2a2f7b36d77946f7f1d16654b0a
   liquid_glass_widgets: ^0.30.2
   flutter_blackbox: ^0.7.0
   fountain_codes: ^1.0.0
