@@ -216,5 +216,25 @@ void main() {
       expect(CourseRecolorScheme.fromJson({'createdAt': 'not-a-date'}), isNull);
       expect(CourseRecolorScheme.fromJson({'createdAt': '2026-08-30'}), isNull);
     });
+
+    test('快照条目坏数据（color 缺失/为空/非字符串）丢弃该条', () {
+      // 回归锚点：color 曾兜底默认蓝（损坏记录渲染成错误颜色），类型垃圾
+      // 曾抛 TypeError 导致整份历史被服务层 catch 清空。
+      expect(
+        CourseRecolorSnapshotEntry.fromJson({'color': '#4CAF50'}),
+        isNotNull,
+      );
+      expect(CourseRecolorSnapshotEntry.fromJson({}), isNull);
+      expect(CourseRecolorSnapshotEntry.fromJson({'color': null}), isNull);
+      expect(CourseRecolorSnapshotEntry.fromJson({'color': ''}), isNull);
+      expect(CourseRecolorSnapshotEntry.fromJson({'color': 123}), isNull);
+      // 文字色垃圾只丢文字色，颜色本体保留。
+      final entry = CourseRecolorSnapshotEntry.fromJson({
+        'color': '#4CAF50',
+        'text': 42,
+      });
+      expect(entry!.color, '#4CAF50');
+      expect(entry.textColor, isNull);
+    });
   });
 }

@@ -35,10 +35,19 @@ List<Course> applySeedCourseRecolor(
 class CourseRecolorSnapshotEntry {
   const CourseRecolorSnapshotEntry({required this.color, this.textColor});
 
-  factory CourseRecolorSnapshotEntry.fromJson(Map<String, dynamic> json) {
+  /// 坏数据（color 缺失/为空/非字符串）返回 null，由调用方丢弃该条，与
+  /// [CourseRecolorScheme.fromJson] 的「坏数据丢弃」口径一致。曾兜底默认
+  /// 蓝——损坏记录会被渲染成错误颜色；而 color 类型垃圾会抛 TypeError，
+  /// 被历史服务整体 catch 后静默清空全部历史。
+  static CourseRecolorSnapshotEntry? fromJson(Map<String, dynamic> json) {
+    final color = json['color'];
+    if (color is! String || color.isEmpty) {
+      return null;
+    }
+    final text = json['text'];
     return CourseRecolorSnapshotEntry(
-      color: json['color'] as String? ?? '#2196F3',
-      textColor: json['text'] as String?,
+      color: color,
+      textColor: text is String ? text : null,
     );
   }
 
@@ -117,9 +126,12 @@ class CourseRecolorScheme {
       final entries = <String, CourseRecolorSnapshotEntry>{};
       snapshotJson.forEach((key, value) {
         if (key is String && value is Map) {
-          entries[key] = CourseRecolorSnapshotEntry.fromJson(
+          final entry = CourseRecolorSnapshotEntry.fromJson(
             Map<String, dynamic>.from(value),
           );
+          if (entry != null) {
+            entries[key] = entry;
+          }
         }
       });
       return CourseRecolorScheme.snapshot(

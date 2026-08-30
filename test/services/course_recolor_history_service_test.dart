@@ -151,4 +151,41 @@ void main() {
     expect(state.schemes.single.seed, 7);
     expect(state.index, 0);
   });
+
+  test('快照内坏 color 条目丢弃该条，不再连带清空整份历史', () async {
+    // 回归锚点：color 类型垃圾曾抛 TypeError，被 _loadSchemes 整体 catch
+    // 后 return const []——一条坏数据静默清空全部配色历史。
+    final snapshot = captureCourseRecolorSnapshot(
+      [_course(id: '1', name: 'A', color: '#E91E63')],
+      now: DateTime(2026, 8, 30, 9, 0),
+    );
+    final seed = CourseRecolorScheme.seed(
+      seed: 9,
+      colorGroupId: kCourseColorGroupAllId,
+      assignMatchingTextColor: false,
+      createdAt: DateTime(2026, 8, 30, 9, 5),
+    );
+    final corruptedSnapshot = {
+      'createdAt': snapshot.createdAt.toIso8601String(),
+      'snapshot': {
+        'name\u0000a': {'color': 123},
+        'name\u0000good': {'color': '#4CAF50', 'text': null},
+      },
+    };
+    SharedPreferences.setMockInitialValues({
+      CourseRecolorHistoryService.schemesPreferenceKey(
+        'p1',
+      ): jsonEncode([corruptedSnapshot, seed.toJson()]),
+    });
+
+    final state = await CourseRecolorHistoryService.load('p1');
+
+    // 历史整体存活：坏条目被丢弃，好条目与种子记录保留。
+    expect(state.schemes.length, 2);
+    expect(state.schemes[0].isSnapshot, isTrue);
+    expect(state.schemes[0].snapshotEntries!.keys, ['name\u0000good']);
+    expect(state.schemes[0].snapshotEntries!['name\u0000good']!.color,
+        '#4CAF50');
+    expect(state.schemes[1].seed, 9);
+  });
 }
