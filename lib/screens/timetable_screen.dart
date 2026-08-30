@@ -31,6 +31,7 @@ import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../services/support_creator_service.dart';
+import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
@@ -355,6 +356,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetLaunchRouter.coupleOverlayRequestTick.addListener(
+      _onExternalCoupleOverlayRequest,
+    );
     final provider = context.read<TimetableProvider>();
     final initialWeek = provider.currentWeek;
     _visibleWeek = initialWeek;
@@ -402,6 +406,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    WidgetLaunchRouter.coupleOverlayRequestTick.removeListener(
+      _onExternalCoupleOverlayRequest,
+    );
     _homePullQuickImportCancel?.call();
     _homeDownloadController?.cancel();
     _systemDownloadSubscription?.cancel();
@@ -978,6 +985,27 @@ class _TimetableScreenState extends State<TimetableScreen>
         provider.settings.copyWith(coupleTimetableOverlayEnabled: enabled),
       ),
     );
+  }
+
+  /// 外部入口（TA 课表的桌面卡片点击）请求显示情侣覆盖层：路由器先持久化
+  /// 打开覆盖层（覆盖冷启动），再 bump 请求计数；本页只在「本地状态与持久化
+  /// 值发散」时单向跟随持久化值，与页内爱心开关（先 setState 后异步持久化）
+  /// 不竞态。
+  void _onExternalCoupleOverlayRequest() {
+    if (!mounted) {
+      return;
+    }
+    final provider = context.read<TimetableProvider>();
+    if (!provider.hasPartnerBinding) {
+      return;
+    }
+    final persisted = provider.settings.coupleTimetableOverlayEnabled;
+    if (persisted == _coupleOverlayEnabled) {
+      return;
+    }
+    setState(() {
+      _coupleOverlayEnabled = persisted;
+    });
   }
 
   bool _isSelectedDay(int week, int dayOfWeek) {
@@ -7929,7 +7957,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     final provider = context.read<TimetableProvider>();
     final selected = await showProfileQuickSwitchSheet(
       context,
-      profiles: provider.profiles,
+      // TA 课表是覆盖层叠加，不是切换对象；switchProfile 对它静默守卫，
+      // 列出来只会造成「点了没反应」。
+      profiles: provider.profiles
+          .where((profile) => !profile.isPartnerImported)
+          .toList(growable: false),
       activeProfileId: provider.activeProfileId,
       onManageTimetables: (buttonContext) {
         _openPopupActionPage(

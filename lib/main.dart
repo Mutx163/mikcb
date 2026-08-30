@@ -43,6 +43,7 @@ import 'services/webdav_sync_coordinator.dart';
 import 'services/android_animation_scale_service.dart';
 import 'services/umeng_analytics_service.dart';
 import 'services/frosted_blur_service.dart';
+import 'services/widget_launch_router.dart';
 import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
@@ -522,6 +523,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (call.method == 'onExternalImportReceived') {
         await Future.delayed(const Duration(milliseconds: 300));
         await _checkPendingExternalImport();
+      } else if (call.method == 'onWidgetLaunchReceived') {
+        await _checkPendingWidgetLaunch();
       } else if (call.method == 'onDebugRouteReceived' && !kReleaseMode) {
         await DebugDeepLinkService.onNativeRouteReceived();
       }
@@ -594,6 +597,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
         unawaited(_checkPendingExternalImport());
+        unawaited(_checkPendingWidgetLaunch());
         unawaited(_installLanEditNotificationHandler());
         unawaited(
           AppLogService.instance.info(
@@ -1048,6 +1052,33 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       }
     } catch (e) {
       // Silently ignore - this is a non-critical feature
+    }
+  }
+
+  Future<void> _checkPendingWidgetLaunch() async {
+    if (!mounted) {
+      return;
+    }
+    try {
+      final outcome = await WidgetLaunchRouter.handle(context);
+      if (!mounted ||
+          outcome != WidgetLaunchOutcome.bindingMissing) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.homeWidgetBindingMissingToast,
+        kind: AppToastKind.error,
+      );
+    } catch (e) {
+      // 非关键功能：分流失败按普通打开处理。
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_launch_route_failed',
+          AppLogMessages.homeWidgetSyncFailed,
+          extras: {'error': '$e'},
+        ),
+      );
     }
   }
 

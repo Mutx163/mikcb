@@ -33,6 +33,7 @@ import '../services/app_log_service.dart';
 import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
 import '../services/home_widget_service.dart';
+import '../services/home_widget_binding_service.dart';
 import '../services/home_widget_snapshot_service.dart';
 import '../services/class_reminder_service.dart';
 import '../services/exam_reminder_service.dart';
@@ -217,6 +218,7 @@ class TimetableProvider with ChangeNotifier {
   final PartnerTimetableService _partnerTimetableService;
   final HomeWidgetService _homeWidgetService;
   final HomeWidgetSnapshotService _homeWidgetSnapshotService;
+  final HomeWidgetBindingService _homeWidgetBindingService;
   final ExamReminderService _examReminderService;
   final HolidayService _holidayService;
   final AppAnalytics _analytics;
@@ -245,6 +247,9 @@ class TimetableProvider with ChangeNotifier {
   String? _lastLiveActivityStageKey;
   String? _lastLiveSnapshotSignature;
   String? _lastHomeWidgetSnapshotSignature;
+
+  /// 绑定卡片（appWidgetId → 专属快照内容签名）的推送去重，语义同上。
+  final Map<int, String> _lastWidgetSnapshotSignatures = <int, String>{};
   DateTime? _liveActivitySuspendedUntil;
 
   /// 自检预设课覆盖层：只注入超级岛选课与原生快照路径，绝不写入真实课表
@@ -506,6 +511,7 @@ class TimetableProvider with ChangeNotifier {
     PartnerTimetableService? partnerTimetableService,
     HomeWidgetService? homeWidgetService,
     HomeWidgetSnapshotService? homeWidgetSnapshotService,
+    HomeWidgetBindingService? homeWidgetBindingService,
     ExamReminderService? examReminderService,
     HolidayService? holidayService,
     AppAnalytics? analytics,
@@ -521,6 +527,8 @@ class TimetableProvider with ChangeNotifier {
        _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
        _homeWidgetSnapshotService =
            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
+       _homeWidgetBindingService =
+           homeWidgetBindingService ?? HomeWidgetBindingService(),
        _examReminderService = examReminderService ?? ExamReminderService(),
        _holidayService = holidayService ?? HolidayService(),
        _analytics = analytics ?? AppAnalytics.instance,
@@ -4252,6 +4260,11 @@ class TimetableProvider with ChangeNotifier {
 
   HomeWidgetSnapshot? buildHomeWidgetSnapshot({DateTime? now}) =>
       _liveBuildHomeWidgetSnapshot(this, now: now);
+
+  HomeWidgetSnapshot? buildHomeWidgetSnapshotForProfile(
+    TimetableProfile profile, {
+    DateTime? now,
+  }) => _liveBuildHomeWidgetSnapshotForProfile(this, profile, now: now);
 
   void suspendLiveActivitySyncFor(Duration duration) {
     _liveActivitySuspendedUntil = DateTime.now().add(duration);

@@ -463,6 +463,150 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
   );
 }
 
+/// 按任意课表（含 TA 课表）构建桌面卡片快照，与上面的 active 路径平行：
+/// 周次/课程/节假日开关/外观设置全部取自 [profile] 自身，而非当前课表。
+/// active 路径不能直接委托这里——active 的内存态课程可能尚未 flush 回
+/// profile 列表，两者的数据源语义不同。
+HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshotForProfile(
+  TimetableProvider host,
+  TimetableProfile profile, {
+  DateTime? now,
+}) {
+  final currentTime = now ?? DateTime.now();
+  final settings = profile.settings;
+  // Must use calendar week (no semesterWeekCount clamp), same as active path.
+  final targetWeek = WeekCalculator.calendarWeekForDate(
+    currentTime,
+    semesterStart: settings.semesterStartDate,
+    fallback: profile.currentWeek,
+  );
+  List<Course> coursesForDay(int dayOfWeek, int week, {required bool activeOnly}) {
+    return profile.courses
+        .where(
+          (course) =>
+              course.dayOfWeek == dayOfWeek &&
+              (activeOnly ? course.isActiveInWeek(week) : course.isInWeek(week)),
+        )
+        .toList()
+      ..sort((a, b) => a.startSection.compareTo(b.startSection));
+  }
+
+  final originalTodayCount =
+      coursesForDay(currentTime.weekday, targetWeek, activeOnly: false).length;
+  final todayIsHoliday = HolidayResolver.isHoliday(
+    currentTime,
+    data: host._holidayData,
+    overrideEnabled: settings.holidayOverrideEnabled,
+    markingEnabled: settings.enableHolidayMarking,
+  );
+  final todayCourses = todayIsHoliday
+      ? const <Course>[]
+      : coursesForDay(currentTime.weekday, targetWeek, activeOnly: true);
+
+  final tomorrow = currentTime.add(const Duration(days: 1));
+  final tomorrowWeek = WeekCalculator.calendarWeekForDate(
+    tomorrow,
+    semesterStart: settings.semesterStartDate,
+    fallback: profile.currentWeek,
+  );
+  final tomorrowIsHoliday = HolidayResolver.isHoliday(
+    tomorrow,
+    data: host._holidayData,
+    overrideEnabled: settings.holidayOverrideEnabled,
+    markingEnabled: settings.enableHolidayMarking,
+  );
+  final tomorrowCourses = tomorrowIsHoliday
+      ? const <Course>[]
+      : coursesForDay(tomorrow.weekday, tomorrowWeek, activeOnly: true);
+
+  final holidayEntry = host.getHolidayForDate(currentTime);
+  final upcomingExams = profile.exams.where((exam) => !exam.isExpired).toList()
+    ..sort(Exam.compareByStart);
+  final nextExam = upcomingExams.isEmpty ? null : upcomingExams.first;
+
+  return host._homeWidgetSnapshotService.build(
+    profileId: profile.id,
+    profileName: profile.name,
+    currentWeek: targetWeek,
+    settings: settings,
+    todayCourses: todayCourses,
+    now: currentTime,
+    countdownLeadMinutes: settings.widgetCountdownLeadMinutes,
+    countdownTextStyle: settings.widgetCountdownTextStyle.value,
+    nextExam: nextExam,
+    isHoliday: todayIsHoliday,
+    holidayName: todayIsHoliday ? holidayEntry?.name : null,
+    tomorrowCourses: tomorrowCourses,
+    tomorrowWeek: tomorrowWeek,
+    tomorrowDayOfWeek: tomorrow.weekday,
+    showTomorrowCourses: settings.widgetShowTomorrowCourses,
+    originalTodayCourseCount: todayIsHoliday ? 0 : originalTodayCount,
+  );
+}
+
+/// 为所有绑定了非当前课表的卡片同步专属快照，返回这些卡片的刷新触发点
+/// （与当前课表的触发点取并集用）。绑定课表已消失时清掉专属快照，
+/// 渲染侧会回落「跟随当前课表」。
+Future<Set<int>> _liveSyncBoundWidgetSnapshots(
+  TimetableProvider host,
+  DateTime now,
+) async {
+  final instances = await host._homeWidgetBindingService.listTodayWidgetInstances();
+  final boundInstances = instances
+      .where((instance) => instance.boundProfileId != null)
+      .toList(growable: false);
+  if (boundInstances.isEmpty) {
+    return const <int>{};
+  }
+
+  final triggers = <int>{};
+  for (final instance in boundInstances) {
+    final appWidgetId = instance.appWidgetId;
+    final profile = host._profiles
+        .where((candidate) => candidate.id == instance.boundProfileId)
+        .firstOrNull;
+    if (profile == null) {
+      await host._homeWidgetBindingService.clearWidgetSnapshot(appWidgetId);
+      host._lastWidgetSnapshotSignatures.remove(appWidgetId);
+      continue;
+    }
+    final snapshot = host.buildHomeWidgetSnapshotForProfile(profile, now: now);
+    if (snapshot == null) {
+      await host._homeWidgetBindingService.clearWidgetSnapshot(appWidgetId);
+      host._lastWidgetSnapshotSignatures.remove(appWidgetId);
+      continue;
+    }
+    final signature = jsonEncode(snapshot.toDedupJson());
+    if (host._lastWidgetSnapshotSignatures[appWidgetId] != signature) {
+      final synced = await host._homeWidgetBindingService.syncWidgetSnapshot(
+        appWidgetId,
+        snapshot,
+      );
+      if (synced) {
+        host._lastWidgetSnapshotSignatures[appWidgetId] = signature;
+      }
+    }
+    if (snapshot.state != HomeWidgetSnapshotState.holiday) {
+      triggers.addAll(
+        host._homeWidgetSnapshotService.buildRefreshTriggers(
+          todayCourses: profile.courses
+              .where(
+                (course) =>
+                    course.dayOfWeek == now.weekday &&
+                    course.isActiveInWeek(snapshot.currentWeek),
+              )
+              .toList(growable: false),
+          now: now,
+          showCountdown: snapshot.showCountdown,
+          state: snapshot.state.value,
+          countdownLeadMinutes: profile.settings.widgetCountdownLeadMinutes,
+        ),
+      );
+    }
+  }
+  return triggers;
+}
+
 Future<void> _liveUpdateActivity(
   TimetableProvider host, {
   bool syncScheduleSnapshot = true,
@@ -724,7 +868,13 @@ Future<void> _liveSyncHomeWidgetSnapshot(TimetableProvider host) async {
           state: snapshot.state.value,
           countdownLeadMinutes: host._settings.widgetCountdownLeadMinutes,
         );
-  await host._homeWidgetService.scheduleRefresh(triggerAtMillis);
+  // 绑定卡片：各自课表的专属快照 + 刷新触发点并入并集，
+  // 否则 TA 第三节课开始时闹钟仍按当前课表的时间没响。
+  final boundTriggers = await _liveSyncBoundWidgetSnapshots(host, now);
+  await host._homeWidgetService.scheduleRefresh([
+    ...triggerAtMillis,
+    ...boundTriggers,
+  ]);
 }
 
 Future<void> _liveSyncStatsWidgetSnapshot(TimetableProvider host) async {
