@@ -207,7 +207,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               label: l10n.themePreset,
               subtitle: l10n.themeSeedSectionSubtitle,
               items: {
-                for (final v in ForuiTheme.values) _foruiThemeLabel(v): v,
+                for (final v in ForuiTheme.values) foruiThemeLabel(l10n, v): v,
               },
               value: _draft.foruiTheme,
               onChanged: (value) {
@@ -445,11 +445,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   }
 }
 
-String _foruiThemeLabel(ForuiTheme theme) {
-  final name = theme.name;
-  return name[0].toUpperCase() + name.substring(1);
-}
-
 Map<String, String> buildLocaleMenuMap(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   final seen = <String>{''};
@@ -584,7 +579,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                       prefix: HyperosColorDot(
                         color: _colorFromHex(themes[i].seedHex),
                       ),
-                      title: _foruiThemeLabel(themes[i]),
+                      title: foruiThemeLabel(l10n, themes[i]),
                       selected: current == themes[i],
                       showDivider: i < themes.length - 1,
                       onTap: () => _applyForuiTheme(context, themes[i]),
@@ -719,7 +714,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
   void _applyForuiTheme(BuildContext context, ForuiTheme theme) {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
-    final name = _foruiThemeLabel(theme);
+    final name = foruiThemeLabel(l10n, theme);
     provider.applyThemeWithUndo(
       provider.settings.copyWith(
         foruiTheme: theme,

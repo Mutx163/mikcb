@@ -281,3 +281,17 @@ String courseCardSurfaceStyleLabel(
   CourseCardSurfaceStyle.solid => l10n.courseCardSurfaceStyleSolid,
   CourseCardSurfaceStyle.gaussian => l10n.courseCardSurfaceStyleGaussian,
 };
+
+String foruiThemeLabel(AppLocalizations l10n, ForuiTheme theme) =>
+    switch (theme) {
+      ForuiTheme.neutral => l10n.foruiThemeNeutral,
+      ForuiTheme.zinc => l10n.foruiThemeZinc,
+      ForuiTheme.slate => l10n.foruiThemeSlate,
+      ForuiTheme.blue => l10n.foruiThemeBlue,
+      ForuiTheme.green => l10n.foruiThemeGreen,
+      ForuiTheme.orange => l10n.foruiThemeOrange,
+      ForuiTheme.red => l10n.foruiThemeRed,
+      ForuiTheme.rose => l10n.foruiThemeRose,
+      ForuiTheme.violet => l10n.foruiThemeViolet,
+      ForuiTheme.yellow => l10n.foruiThemeYellow,
+    };

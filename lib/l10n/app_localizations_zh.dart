@@ -6388,6 +6388,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themePresetDarkMinimal => '深色极简';
 
   @override
+  String get foruiThemeNeutral => '中性灰';
+
+  @override
+  String get foruiThemeZinc => '锌灰';
+
+  @override
+  String get foruiThemeSlate => '石板灰';
+
+  @override
+  String get foruiThemeBlue => '蓝';
+
+  @override
+  String get foruiThemeGreen => '绿';
+
+  @override
+  String get foruiThemeOrange => '橙';
+
+  @override
+  String get foruiThemeRed => '红';
+
+  @override
+  String get foruiThemeRose => '玫红';
+
+  @override
+  String get foruiThemeViolet => '紫';
+
+  @override
+  String get foruiThemeYellow => '黄';
+
+  @override
   String get themeUndo => '撤销';
 
   @override
@@ -16690,6 +16720,36 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themePresetDarkMinimal => '深色極簡';
+
+  @override
+  String get foruiThemeNeutral => '中性灰';
+
+  @override
+  String get foruiThemeZinc => '鋅灰';
+
+  @override
+  String get foruiThemeSlate => '石板灰';
+
+  @override
+  String get foruiThemeBlue => '藍';
+
+  @override
+  String get foruiThemeGreen => '綠';
+
+  @override
+  String get foruiThemeOrange => '橙';
+
+  @override
+  String get foruiThemeRed => '紅';
+
+  @override
+  String get foruiThemeRose => '玫紅';
+
+  @override
+  String get foruiThemeViolet => '紫';
+
+  @override
+  String get foruiThemeYellow => '黃';
 
   @override
   String get themeUndo => '撤銷';
@@ -27038,6 +27098,36 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themePresetDarkMinimal => '深色極簡';
+
+  @override
+  String get foruiThemeNeutral => '中性灰';
+
+  @override
+  String get foruiThemeZinc => '鋅灰';
+
+  @override
+  String get foruiThemeSlate => '石板灰';
+
+  @override
+  String get foruiThemeBlue => '藍';
+
+  @override
+  String get foruiThemeGreen => '綠';
+
+  @override
+  String get foruiThemeOrange => '橙';
+
+  @override
+  String get foruiThemeRed => '紅';
+
+  @override
+  String get foruiThemeRose => '玫紅';
+
+  @override
+  String get foruiThemeViolet => '紫';
+
+  @override
+  String get foruiThemeYellow => '黃';
 
   @override
   String get themeUndo => '撤銷';

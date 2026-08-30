@@ -7,10 +7,16 @@ part of '../timetable_settings_screen.dart';
 class _HomeGridMenuEditorScreen extends StatefulWidget {
   const _HomeGridMenuEditorScreen({
     required this.initialIds,
+    required this.themeSeedHex,
     required this.onChanged,
   });
 
   final List<String> initialIds;
+
+  /// 外观页草稿当前的主题 seed（`themeSeedColor`）：预览瓷贴用它跟随
+  /// 主题色，与首页八宫格实际渲染同一条取色路径。
+  final String? themeSeedHex;
+
   final ValueChanged<List<String>> onChanged;
 
   @override
@@ -137,6 +143,7 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
 
   Widget _buildPreviewCard(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final accent = resolveHomeGridMenuAccent(context, widget.themeSeedHex);
     return HyperosCard(
       padding: const EdgeInsets.all(16),
       child: Wrap(
@@ -159,14 +166,14 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
                     height: 46,
                     decoration: BoxDecoration(
                       color: HyperosBlurredHeader.accentSurfaceTintColor(
-                        Theme.of(context).colorScheme.primary,
+                        accent,
                       ),
                       borderRadius: const BorderRadius.all(Radius.circular(14)),
                     ),
                     child: Center(
                       child: Icon(
                         homeMenuEntryById(id)?.icon ?? Icons.help_outline,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: accent,
                         size: 24,
                       ),
                     ),

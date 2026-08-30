@@ -7982,6 +7982,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         context,
         hasAvailableUpdate: _hasAvailableUpdate,
         entries: resolveHomeGridMenuEntries(settings),
+        themeSeedHex: settings.themeSeedColor,
       );
     } else {
       selectedId = await showHomeTopMenuSheet(

@@ -323,4 +323,92 @@ void main() {
 
     expect(await menuResult, 'tasks');
   });
+
+  testWidgets('grid menu tile icons follow the theme seed color', (
+    tester,
+  ) async {
+    final anchorKey = GlobalKey();
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return Center(
+              child: ElevatedButton(
+                key: anchorKey,
+                onPressed: () {
+                  showHomeTopGridMenuSheet(
+                    context,
+                    hasAvailableUpdate: false,
+                    entries: resolveHomeGridMenuEntries(
+                      TimetableSettings.defaults(),
+                    ),
+                    themeSeedHex: '#1447E6',
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    // 可读的主题 seed 直接作为瓷贴图标色（默认蓝）。
+    expect(
+      tester
+          .widget<Icon>(find.byIcon(Icons.system_update_alt_rounded))
+          .color,
+      const Color(0xFF1447E6),
+    );
+  });
+
+  testWidgets(
+    'grid menu tile icons fall back to chrome ink for unreadable seeds',
+    (tester) async {
+      final anchorKey = GlobalKey();
+
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) {
+              return Center(
+                child: ElevatedButton(
+                  key: anchorKey,
+                  onPressed: () {
+                    showHomeTopGridMenuSheet(
+                      context,
+                      hasAvailableUpdate: false,
+                      entries: resolveHomeGridMenuEntries(
+                        TimetableSettings.defaults(),
+                      ),
+                      // 亮黄在浅色磨砂瓷贴上不可读，回落玻璃墨色。
+                      themeSeedHex: '#FCC800',
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final iconContext = tester.element(
+        find.byIcon(Icons.system_update_alt_rounded),
+      );
+      expect(
+        tester
+            .widget<Icon>(find.byIcon(Icons.system_update_alt_rounded))
+            .color,
+        Theme.of(iconContext).colorScheme.onSurface,
+      );
+    },
+  );
 }

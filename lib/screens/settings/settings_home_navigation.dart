@@ -244,6 +244,8 @@ class _HomeNavigationSettingsScreenState
                           ))
                             entry.id,
                         ],
+                        // 预览瓷贴跟随草稿当前的主题 seed，与实机八宫格同色。
+                        themeSeedHex: _draft.themeSeedColor,
                         onChanged: (ids) {
                           _updateDraft(
                             _draft.copyWith(homeGridMenuActions: ids),

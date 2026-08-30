@@ -26,6 +26,7 @@ import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
 import '../widgets/home_menu_catalog.dart';
+import '../widgets/home_top_menu.dart';
 import '../widgets/wallpaper_position_picker_sheet.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';

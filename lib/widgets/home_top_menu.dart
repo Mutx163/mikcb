@@ -5,6 +5,7 @@ import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/utils/hex_color.dart';
 
 /// 八宫格候选入口的分类（编辑器分组展示用；也是列表弹窗的分组依据）。
 enum HomeMenuEntryCategory { features, data, preferences, about }
@@ -121,9 +122,26 @@ double _maxMenuTitleHeight({
   return maxHeight;
 }
 
+/// 八宫格瓷贴的主题强调色：跟随用户主题 seed（`themeSeedColor`），
+/// 让图标与井底色随预设主题/自定义主题色一起换色。磨砂瓷贴上不可读的
+/// seed（深色模式的近黑灰、浅色模式的亮黄）回落为玻璃墨色（自动黑白），
+/// 与课表玻璃卡「彩色墨回落自动黑白」口径一致。
+Color resolveHomeGridMenuAccent(BuildContext context, String? themeSeedHex) {
+  final accent = parseHexColorOrFallback(
+    themeSeedHex,
+    fallback: Theme.of(context).colorScheme.primary,
+  );
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final luminance = accent.computeLuminance();
+  final readable = isDark ? luminance >= 0.08 : luminance <= 0.60;
+  return readable ? accent : context.theme.colors.foreground;
+}
+
 /// 首页右上角「更多」菜单的八宫格形态——v2.0.5.5 已发布版本的底部弹层：
 /// 4 列图标瓷贴、磨砂卡面、更新入口带角标。[entries] 是用户自定义后的
 /// 排列（最多 [HomeGridMenu.maxSlots] 个），不足一行的尾行按同样宽度排布。
+/// [themeSeedHex] 是当前主题 seed（`TimetableSettings.themeSeedColor`），
+/// 决定瓷贴图标颜色。
 ///
 /// 返回被点条目的 [HomeMenuEntry.id]，由调用方经目录分发导航；
 /// 点遮罩关闭返回 null。
@@ -131,11 +149,15 @@ Future<String?> showHomeTopGridMenuSheet(
   BuildContext context, {
   required bool hasAvailableUpdate,
   required List<HomeMenuEntry> entries,
+  String? themeSeedHex,
 }) {
   return showHomeHyperosSheet<String>(
     context: context,
-    builder: (sheetContext) =>
-        _HomeTopGridMenuSheet(entries: entries, hasAvailableUpdate: hasAvailableUpdate),
+    builder: (sheetContext) => _HomeTopGridMenuSheet(
+      entries: entries,
+      hasAvailableUpdate: hasAvailableUpdate,
+      themeSeedHex: themeSeedHex,
+    ),
   );
 }
 
@@ -143,15 +165,16 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
   const _HomeTopGridMenuSheet({
     required this.entries,
     required this.hasAvailableUpdate,
+    required this.themeSeedHex,
   });
 
   final List<HomeMenuEntry> entries;
   final bool hasAvailableUpdate;
+  final String? themeSeedHex;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
     final colors = context.theme.colors;
     final typo = context.theme.typography;
     const tileSpacing = 10.0;
@@ -210,7 +233,7 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
                 title: entry.title(l10n),
                 titleStyle: titleStyle,
                 titleAreaHeight: titleAreaHeight,
-                accentColor: isUpdateSlot ? colorScheme.primary : null,
+                accentColor: resolveHomeGridMenuAccent(context, themeSeedHex),
                 badgeText: isUpdateSlot ? l10n.updateLabel : null,
                 onTap: () => Navigator.of(context).pop(entry.id),
               ),

@@ -6491,6 +6491,36 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themePresetDarkMinimal => 'ダークミニマル';
 
   @override
+  String get foruiThemeNeutral => 'ニュートラル';
+
+  @override
+  String get foruiThemeZinc => 'ジンク';
+
+  @override
+  String get foruiThemeSlate => 'スレート';
+
+  @override
+  String get foruiThemeBlue => 'ブルー';
+
+  @override
+  String get foruiThemeGreen => 'グリーン';
+
+  @override
+  String get foruiThemeOrange => 'オレンジ';
+
+  @override
+  String get foruiThemeRed => 'レッド';
+
+  @override
+  String get foruiThemeRose => 'ローズ';
+
+  @override
+  String get foruiThemeViolet => 'バイオレット';
+
+  @override
+  String get foruiThemeYellow => 'イエロー';
+
+  @override
   String get themeUndo => '元に戻す';
 
   @override

@@ -11668,6 +11668,66 @@ abstract class AppLocalizations {
   /// **'深色极简'**
   String get themePresetDarkMinimal;
 
+  /// No description provided for @foruiThemeNeutral.
+  ///
+  /// In zh, this message translates to:
+  /// **'中性灰'**
+  String get foruiThemeNeutral;
+
+  /// No description provided for @foruiThemeZinc.
+  ///
+  /// In zh, this message translates to:
+  /// **'锌灰'**
+  String get foruiThemeZinc;
+
+  /// No description provided for @foruiThemeSlate.
+  ///
+  /// In zh, this message translates to:
+  /// **'石板灰'**
+  String get foruiThemeSlate;
+
+  /// No description provided for @foruiThemeBlue.
+  ///
+  /// In zh, this message translates to:
+  /// **'蓝'**
+  String get foruiThemeBlue;
+
+  /// No description provided for @foruiThemeGreen.
+  ///
+  /// In zh, this message translates to:
+  /// **'绿'**
+  String get foruiThemeGreen;
+
+  /// No description provided for @foruiThemeOrange.
+  ///
+  /// In zh, this message translates to:
+  /// **'橙'**
+  String get foruiThemeOrange;
+
+  /// No description provided for @foruiThemeRed.
+  ///
+  /// In zh, this message translates to:
+  /// **'红'**
+  String get foruiThemeRed;
+
+  /// No description provided for @foruiThemeRose.
+  ///
+  /// In zh, this message translates to:
+  /// **'玫红'**
+  String get foruiThemeRose;
+
+  /// No description provided for @foruiThemeViolet.
+  ///
+  /// In zh, this message translates to:
+  /// **'紫'**
+  String get foruiThemeViolet;
+
+  /// No description provided for @foruiThemeYellow.
+  ///
+  /// In zh, this message translates to:
+  /// **'黄'**
+  String get foruiThemeYellow;
+
   /// No description provided for @themeUndo.
   ///
   /// In zh, this message translates to:

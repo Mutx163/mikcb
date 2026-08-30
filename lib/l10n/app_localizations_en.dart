@@ -6756,6 +6756,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themePresetDarkMinimal => 'Dark Minimal';
 
   @override
+  String get foruiThemeNeutral => 'Neutral';
+
+  @override
+  String get foruiThemeZinc => 'Zinc';
+
+  @override
+  String get foruiThemeSlate => 'Slate';
+
+  @override
+  String get foruiThemeBlue => 'Blue';
+
+  @override
+  String get foruiThemeGreen => 'Green';
+
+  @override
+  String get foruiThemeOrange => 'Orange';
+
+  @override
+  String get foruiThemeRed => 'Red';
+
+  @override
+  String get foruiThemeRose => 'Rose';
+
+  @override
+  String get foruiThemeViolet => 'Violet';
+
+  @override
+  String get foruiThemeYellow => 'Yellow';
+
+  @override
   String get themeUndo => 'Undo';
 
   @override

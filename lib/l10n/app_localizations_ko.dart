@@ -6526,6 +6526,36 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themePresetDarkMinimal => '다크 미니멀';
 
   @override
+  String get foruiThemeNeutral => '뉴트럴';
+
+  @override
+  String get foruiThemeZinc => '징크';
+
+  @override
+  String get foruiThemeSlate => '슬레이트';
+
+  @override
+  String get foruiThemeBlue => '블루';
+
+  @override
+  String get foruiThemeGreen => '그린';
+
+  @override
+  String get foruiThemeOrange => '오렌지';
+
+  @override
+  String get foruiThemeRed => '레드';
+
+  @override
+  String get foruiThemeRose => '로즈';
+
+  @override
+  String get foruiThemeViolet => '바이올렛';
+
+  @override
+  String get foruiThemeYellow => '옐로';
+
+  @override
   String get themeUndo => '실행 취소';
 
   @override
