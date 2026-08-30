@@ -70,7 +70,13 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Warm Gradle caches (prod debug build, no signing needed)
-        # debug 构建不触发 release 签名（build.gradle 的 hasReleaseSigning 守卫），
-        # 依赖解析图与 release 一致，足以填满 ~/.gradle/caches
+      - name: Warm Gradle caches (prod debug build)
+        # build.gradle 在配置阶段评估所有 buildType，release 块缺签名四件套会直接 throw
+        # （debug 构建也躲不开），故提供占位环境变量。debug buildType 不引用 release
+        # 签名，占位 keystore 文件不会被真正读取
+        env:
+          ANDROID_KEYSTORE_PATH: app/dummy-keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: dummy
+          ANDROID_KEY_ALIAS: dummy
+          ANDROID_KEY_PASSWORD: dummy
         run: flutter build apk --debug --flavor prod --target-platform android-arm64
