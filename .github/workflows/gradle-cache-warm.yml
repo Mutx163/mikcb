@@ -28,6 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # 与 android-build.yml 的 FLUTTER_STABLE_VERSION 保持一致，预热出的缓存才与发版构建同环境
   FLUTTER_STABLE_VERSION: '3.44.8'
 
 jobs:
