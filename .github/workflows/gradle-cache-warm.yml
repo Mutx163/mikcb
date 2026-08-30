@@ -1,0 +1,76 @@
+name: Gradle Cache Warm
+
+# 为什么需要这个工作流：发版构建（android-build.yml）只在 tag ref 上运行，而 GitHub
+# Actions 缓存按 ref 隔离，tag 之间的缓存互相不可见，restore-keys 回退也跨不过 ref；
+# tag 构建唯一能读到的是默认分支（main）的缓存。因此 Gradle 依赖缓存必须在 main 上
+# 预热，发版构建才能命中，省去每次发版约 2-4 分钟的依赖全量下载。
+# 历史教训：2026-08 底 gradle 缓存 4 次写入（每份 1.85 GB）全部写在 tag 作用域，
+# 0 次命中，纯占配额。
+# 本工作流任何失败都不影响其他流程：job 级 continue-on-error，且没有任何 job 依赖它。
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'android/**/*.gradle*'
+      - 'android/gradle/wrapper/gradle-wrapper.properties'
+      - 'android/gradle.properties'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+  schedule:
+    # 每周一 03:17 UTC 兜底刷新：缓存 7 天未被访问会被 LRU 驱逐，发版间隔拉长时靠它保温
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: gradle-cache-warm
+  cancel-in-progress: true
+
+env:
+  FLUTTER_STABLE_VERSION: '3.44.8'
+
+jobs:
+  warm:
+    name: Warm Gradle cache on main
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    # workflow_dispatch 可在任意 ref 上手动触发，缓存只有写在 main 作用域才有价值
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Gradle cache
+        # key/restore-keys 必须与 android-build.yml 的 Restore Gradle cache 完全一致，
+        # 发版构建才能精确命中；此处写在 main 作用域，tag 构建按「默认分支可见」规则读取
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Warm Gradle caches (prod debug build, no signing needed)
+        # debug 构建不触发 release 签名（build.gradle 的 hasReleaseSigning 守卫），
+        # 依赖解析图与 release 一致，足以填满 ~/.gradle/caches
+        run: flutter build apk --debug --flavor prod --target-platform android-arm64

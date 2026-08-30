@@ -128,8 +128,11 @@ jobs:
           mkdir -p android/app
           echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Cache Gradle
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      - name: Restore Gradle cache
+        # 只读不写：tag ref 写入的缓存对后续所有 tag 不可见（缓存按 ref 隔离），
+        # 历史上 4 次写入 0 次命中；写入由 main 分支的 gradle-cache-warm.yml 负责，
+        # 本步骤经「默认分支缓存对所有 ref 可见」规则命中预热结果
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.gradle/caches
