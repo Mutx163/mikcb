@@ -6,16 +6,24 @@ import 'course_color_palette.dart';
 /// Assigns preset colors to imported courses, grouping by name + teacher.
 ///
 /// Same name+teacher share one color. Distinct groups cycle a shuffled palette.
+/// [groupKeyBuilder] overrides the grouping key (e.g. name-only for the
+/// post-import recolor, where the app invariant is "same name, same color").
 List<Course> applyRandomImportCourseColors(
   List<Course> courses, {
   Random? random,
   List<String> palette = kPresetCourseColorHexes,
   bool assignMatchingTextColor = false,
+  String Function(Course course)? groupKeyBuilder,
 }) {
   if (courses.isEmpty || palette.isEmpty) {
     return List<Course>.from(courses);
   }
 
+  final resolveGroupKey = groupKeyBuilder ??
+      (course) => buildImportCourseColorGroupKey(
+            name: course.name,
+            teacher: course.teacher,
+          );
   final randomSource = random ?? Random();
   final shuffledPalette = List<String>.from(palette)..shuffle(randomSource);
 
@@ -24,10 +32,7 @@ List<Course> applyRandomImportCourseColors(
 
   return courses
       .map((course) {
-        final groupKey = buildImportCourseColorGroupKey(
-          name: course.name,
-          teacher: course.teacher,
-        );
+        final groupKey = resolveGroupKey(course);
         final assignedColor = groupColorByKey.putIfAbsent(groupKey, () {
           final colorHex =
               shuffledPalette[nextGroupIndex % shuffledPalette.length];

@@ -2687,6 +2687,48 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 一键重刷整份课表颜色（导入后随时可用，无需重新导入）。
+  ///
+  /// [recoloredCourses] 是调用方基于当前 [courses] 算出的重刷副本
+  /// （见 `applyCourseRecolorScheme`），这里只按 id 对位覆盖并持久化，
+  /// 不触碰其余字段。返回实际改色的课程条数；无变化时不通知。
+  Future<int> applyCourseRecolors(List<Course> recoloredCourses) {
+    return _runMutation(() async {
+      if (recoloredCourses.isEmpty || _courses.isEmpty) {
+        return 0;
+      }
+      final recoloredById = {
+        for (final course in recoloredCourses) course.id: course,
+      };
+      final nextCourses = <Course>[];
+      var updatedCount = 0;
+      for (final course in _courses) {
+        final replacement = recoloredById[course.id];
+        if (replacement == null ||
+            (replacement.color == course.color &&
+                replacement.textColor == course.textColor)) {
+          nextCourses.add(course);
+          continue;
+        }
+        nextCourses.add(replacement);
+        updatedCount++;
+      }
+      if (updatedCount == 0) {
+        return 0;
+      }
+      _courses = nextCourses;
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'course_colors_refreshed',
+        parameters: {'course_count': updatedCount},
+      );
+      _updateLiveActivity();
+      return updatedCount;
+    });
+  }
+
   /// 切换课程在指定周次的停课状态
   Future<void> toggleCourseSuspension(String courseId, int week) {
     return _runMutation(() => _toggleCourseSuspensionImpl(courseId, week));
