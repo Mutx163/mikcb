@@ -38,6 +38,8 @@ class _MiuixTimePickerSheetBody extends StatefulWidget {
 class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
   late int _hour;
   late int _minute;
+  final _hourPickerController = MiuixFlingNumberPickerController();
+  final _minutePickerController = MiuixFlingNumberPickerController();
 
   /// 滚轮可见行数（奇数，至少 3）；5 行更接近系统数字选择器手感。
   static const int _visibleItemCount = 5;
@@ -53,6 +55,16 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
   }
 
   String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+  void _confirm() {
+    // 确认可能在滚轮惯性衰减途中按下：先同步结算投影落点，
+    // 避免回传上一格的旧值（与日期/数字滚轮弹层同一模式）。
+    final settledHour = _hourPickerController.settle() ?? _hour;
+    final settledMinute = _minutePickerController.settle() ?? _minute;
+    Navigator.of(
+      context,
+    ).pop(TimeOfDay(hour: settledHour, minute: settledMinute));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +86,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
               children: [
                 Expanded(
                   child: MiuixFlingNumberPicker(
+                    controller: _hourPickerController,
                     value: _hour,
                     min: 0,
                     max: 23,
@@ -86,6 +99,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
                 ),
                 Expanded(
                   child: MiuixFlingNumberPicker(
+                    controller: _minutePickerController,
                     value: _minute,
                     min: 0,
                     max: 59,
@@ -118,9 +132,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
                   variant: HyperosButtonVariant.primary,
                   expand: true,
                   fitLabel: true,
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pop(TimeOfDay(hour: _hour, minute: _minute)),
+                  onPressed: _confirm,
                 ),
               ),
             ],
