@@ -35,12 +35,16 @@ class SupportDonorEntry {
 class SupportDonorData {
   final String? title;
   final String? subtitle;
+
+  /// 留言格式说明，独立于 [subtitle] 展示为提示条；旧 JSON 无此字段时为 null。
+  final String? subtitleNote;
   final String? updatedAt;
   final List<SupportDonorEntry> donors;
 
   const SupportDonorData({
     this.title,
     this.subtitle,
+    this.subtitleNote,
     this.updatedAt,
     required this.donors,
   });
@@ -59,6 +63,7 @@ class SupportDonorData {
     return SupportDonorData(
       title: (json['title'] as String?)?.trim(),
       subtitle: (json['subtitle'] as String?)?.trim(),
+      subtitleNote: (json['subtitleNote'] as String?)?.trim(),
       updatedAt: (json['updatedAt'] as String?)?.trim(),
       donors: donorItems,
     );

@@ -95,4 +95,28 @@ void main() {
       ['Newest Donor', 'Middle Donor', 'Old Donor', 'No Date Donor'],
     );
   });
+
+  test('SupportDonorData.fromJson 解析 subtitleNote 留言格式说明', () {
+    final data = SupportDonorData.fromJson({
+      'subtitle': '感谢各位朋友的支持！',
+      'subtitleNote': '留言请以（昵称：留言）格式填写。',
+      'donors': [
+        {'name': 'A'},
+      ],
+    });
+
+    expect(data.subtitle, '感谢各位朋友的支持！');
+    expect(data.subtitleNote, '留言请以（昵称：留言）格式填写。');
+  });
+
+  test('SupportDonorData.fromJson 兼容无 subtitleNote 的旧 JSON（字段为 null，UI 隐藏提示条）', () {
+    final data = SupportDonorData.fromJson({
+      'subtitle': '旧版文案',
+      'donors': [
+        {'name': 'A'},
+      ],
+    });
+
+    expect(data.subtitleNote, isNull);
+  });
 }

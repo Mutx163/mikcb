@@ -494,34 +494,89 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         : l10n.donorListTitle;
 
     Widget buildHeader() {
-      return Row(
+      final updatedAt = data.updatedAt?.isNotEmpty == true
+          ? l10n.updatedAtLabel(data.updatedAt!)
+          : null;
+
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: _sectionTitleStyle(typo, colors)),
-                if (data.subtitle?.isNotEmpty == true) ...[
-                  const SizedBox(height: 4),
-                  Text(data.subtitle!, style: _mutedStyle(typo, colors)),
-                ],
-                if (data.updatedAt?.isNotEmpty == true) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.updatedAtLabel(data.updatedAt!),
-                    style: _mutedStyle(typo, colors),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _sectionTitleStyle(typo, colors),
+                ),
+              ),
+              if (updatedAt != null) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    updatedAt,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    // xs2 弱化为元数据级，与正文段落拉开层级；紧贴刷新钮
+                    // 把「数据新旧」和「刷新」归为一组。
+                    style: typo.body.xs2.copyWith(
+                      color: colors.mutedForeground,
+                      height: 1.2,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ],
+              HyperosIconButton(
+                icon: Icons.refresh_rounded,
+                iconSize: 20,
+                tooltip: l10n.reloadAction,
+                onPressed: _reloadDonors,
+              ),
+            ],
+          ),
+          if (data.subtitle?.isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            Text(
+              data.subtitle!,
+              style: typo.body.xs.copyWith(
+                color: colors.mutedForeground,
+                height: 1.5,
+              ),
+            ),
+          ],
+          if (data.subtitleNote?.isNotEmpty == true) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              // 提示条用页面二维码井同款主题化不透明底：玻璃卡上半透明
+              // 水洗会透出壁纸发黑；井上灰墨会发灰，墨色用前景色。
+              decoration: BoxDecoration(
+                color: HyperosColors.secondaryVariant(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 16, color: colors.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      data.subtitleNote!,
+                      style: typo.body.xs.copyWith(
+                        color: colors.foreground,
+                        height: 1.45,
+                      ),
+                    ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          HyperosIconButton(
-            icon: Icons.refresh_rounded,
-            iconSize: 20,
-            tooltip: l10n.reloadAction,
-            onPressed: _reloadDonors,
-          ),
+          ],
         ],
       );
     }
