@@ -115,14 +115,18 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
         createdAt: DateTime.now(),
       );
       schemes.add(scheme);
-      await provider.applyCourseRecolors(
-        applyCourseRecolorScheme(courses, scheme),
-      );
       final index = schemes.length - 1;
+      // 先落历史再应用：apply 内部会把课程颜色持久化，若先应用后存历史，
+      // 两步之间进程被杀会留下「颜色已变、历史未存」——首次换色时导入原
+      // 色快照就此永久丢失。反过来最坏只是多存一条尚未应用的方案，用户
+      // 下一拍导航/重刷即可自愈。
       await CourseRecolorHistoryService.save(
         _historyScope(provider),
         schemes,
         index,
+      );
+      await provider.applyCourseRecolors(
+        applyCourseRecolorScheme(courses, scheme),
       );
       if (!mounted) {
         return;
@@ -153,13 +157,14 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
     setState(() => _busy = true);
     try {
       final scheme = _history.schemes[target];
-      await provider.applyCourseRecolors(
-        applyCourseRecolorScheme(courses, scheme),
-      );
+      // 与 _applyNewBatch 同口径：先落历史再应用，避免中间态丢历史。
       await CourseRecolorHistoryService.save(
         _historyScope(provider),
         _history.schemes,
         target,
+      );
+      await provider.applyCourseRecolors(
+        applyCourseRecolorScheme(courses, scheme),
       );
       if (!mounted) {
         return;

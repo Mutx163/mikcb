@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/course_recolor_history_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_menu_catalog.dart';
@@ -55,6 +57,36 @@ Course _entry({
     endTime: '09:40',
     color: color,
   );
+}
+
+/// apply 执行瞬间探测磁盘：历史（原色快照+新方案）必须已经落盘。
+/// 用于锁定「先存历史再应用」的顺序——曾为先应用后存历史，两步之间
+/// 进程被杀会丢掉尚未落盘的导入原色快照（首次换色不可恢复）。
+class _ProbeOnDiskProvider extends TimetableProvider {
+  _ProbeOnDiskProvider()
+    : super(autoInitialize: false, enableLiveActivitySync: false);
+
+  @override
+  List<Course> get courses => [
+    _entry(id: 'c1', name: '高等数学', dayOfWeek: 1, color: '#E91E63'),
+  ];
+
+  bool historyOnDiskAtApplyTime = false;
+
+  @override
+  Future<int> applyCourseRecolors(List<Course> recoloredCourses) async {
+    final state = await CourseRecolorHistoryService.load(
+      activeProfileId ?? 'default',
+    );
+    final snapshot = state.schemes.isEmpty ? null : state.schemes.first;
+    historyOnDiskAtApplyTime =
+        state.schemes.length == 2 &&
+        state.index == 1 &&
+        snapshot != null &&
+        snapshot.seed == null &&
+        snapshot.snapshotEntries!.values.any((e) => e.color == '#E91E63');
+    return 0;
+  }
 }
 
 void main() {
@@ -290,5 +322,45 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('课表重新配色'), findsOneWidget);
+  });
+
+  testWidgets('换一批先落历史再应用：apply 执行时快照+方案必须已在盘上', (tester) async {
+    final provider = _ProbeOnDiskProvider();
+
+    await tester.pumpWidget(
+      // 显式标注 TimetableProvider：子类实例默认按子类类型注册，
+      // 弹层里 context.read<TimetableProvider>() 会找不到。
+      ChangeNotifierProvider<TimetableProvider>.value(
+        value: provider,
+        child: TestApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () => showCourseRecolorSheet(context),
+                  child: const Text('open-recolor'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('open-recolor'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('换一批颜色'));
+    for (var i = 0; i < 60 && !provider.historyOnDiskAtApplyTime; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+    }
+    expect(
+      provider.historyOnDiskAtApplyTime,
+      true,
+      reason: 'apply 执行时历史（原色快照+新方案）必须已经落盘',
+    );
   });
 }
