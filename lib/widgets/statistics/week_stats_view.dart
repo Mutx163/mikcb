@@ -186,7 +186,10 @@ class _WeekSelector extends StatelessWidget {
   }
 }
 
-/// 周概览卡（大数字 + 必修/选修 + 最忙日）
+/// 周概览（单行四指标：数字在上、标签在下，细分隔线隔开）。
+///
+/// 与 [OverviewSection]（学期总览）同口径：24px 常规字重数字 + footnote2 小标签，
+/// 首格用主题色强调。
 class _WeekOverviewCard extends StatelessWidget {
   final WeeklyStats stats;
 
@@ -195,69 +198,38 @@ class _WeekOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final dividerColor = HyperosColors.dividerLine(context);
+    final divider = Container(
+      width: 1,
+      height: 28,
+      color: HyperosColors.dividerLine(context),
+    );
 
     final busiestDay = stats.busiestDay;
-    final busiestDayLabel = busiestDay != null
-        ? _weekdayFullLabel(l10n, busiestDay)
-        : l10n.statisticsNoData;
 
     return HyperosControlCard(
-      child: Stack(
+      child: Row(
         children: [
-          Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _WeekMetricCell(
-                      icon: Icons.schedule_rounded,
-                      accent: HyperosIconColors.teal,
-                      value: '${stats.totalSections}',
-                      label: l10n.statisticsSectionCount,
-                    ),
-                  ),
-                  Expanded(
-                    child: _WeekMetricCell(
-                      icon: Icons.menu_book_rounded,
-                      accent: HyperosIconColors.blue,
-                      value: '${stats.totalCourses}',
-                      label: l10n.statisticsCourseCount,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _WeekMetricCell(
-                      icon: Icons.local_fire_department_rounded,
-                      accent: HyperosIconColors.orange,
-                      value: busiestDayLabel,
-                      label: l10n.statisticsWeekBusiestDay,
-                    ),
-                  ),
-                  Expanded(
-                    child: _WeekMetricCell(
-                      icon: Icons.balance_rounded,
-                      accent: HyperosIconColors.purple,
-                      value:
-                          '${stats.natureStats.requiredCount}:${stats.natureStats.electiveCount}',
-                      label: l10n.statisticsNatureRatio,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          _WeekMetricCell(
+            value: '${stats.totalSections}',
+            label: l10n.statisticsSectionCount,
+            highlight: true,
           ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: _WeekOverviewCrosshairPainter(color: dividerColor),
-              ),
-            ),
+          divider,
+          _WeekMetricCell(
+            value: '${stats.totalCourses}',
+            label: l10n.statisticsCourseCount,
+          ),
+          divider,
+          _WeekMetricCell(
+            // 紧凑格里放不下完整空态文案，用 — 占位（对齐本周小结卡口径）。
+            value: busiestDay != null ? _weekdayFullLabel(l10n, busiestDay) : '—',
+            label: l10n.statisticsWeekBusiestDay,
+          ),
+          divider,
+          _WeekMetricCell(
+            value:
+                '${stats.natureStats.requiredCount}:${stats.natureStats.electiveCount}',
+            label: l10n.statisticsNatureRatio,
           ),
         ],
       ),
@@ -278,77 +250,56 @@ class _WeekOverviewCard extends StatelessWidget {
   }
 }
 
-class _WeekOverviewCrosshairPainter extends CustomPainter {
-  const _WeekOverviewCrosshairPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) {
-      return;
-    }
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke
-      ..isAntiAlias = false;
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
-    canvas.drawLine(Offset(centerX, 0), Offset(centerX, size.height), paint);
-    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WeekOverviewCrosshairPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
 class _WeekMetricCell extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
   final String value;
   final String label;
 
+  /// 首格数字用主题色（与学期总览卡的高亮口径一致）。
+  final bool highlight;
+
   const _WeekMetricCell({
-    required this.icon,
-    required this.accent,
     required this.value,
     required this.label,
+    this.highlight = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosIconBadge(icon: icon, accent: accent),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: HyperosTypography.listTitle(context).copyWith(
-              fontSize: 22,
-              // T3 展示数字：字重低于旧 w800，靠字号对比建立层级
-              fontWeight: FontWeight.w700,
-              height: 1,
-              color: HyperosColors.primaryText(context),
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              // 展示数字保持常规字重，层级只靠字号对比（用户明确不要加粗）。
+              style: HyperosTypography.listTitle(context).copyWith(
+                fontSize: 24,
+                height: 1,
+                color: highlight
+                    ? HyperosColors.primary(context)
+                    : HyperosColors.primaryText(context),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: HyperosTypography.listDetail(context),
-          ),
-        ],
+            const SizedBox(height: 5),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.listDetail(context).copyWith(
+                fontSize: HyperosMiuixTypography.footnote2,
+                color: highlight
+                    ? HyperosColors.primaryText(context)
+                    : HyperosColors.secondaryText(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
