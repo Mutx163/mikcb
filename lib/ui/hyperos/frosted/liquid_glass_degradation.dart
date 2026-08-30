@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../utils/glass_debug_probe.dart';
-
 /// System conditions that warrant downgrading glass to an opaque solid surface.
 ///
 /// Mirrors the Windows 11 Mica/Acrylic degradation matrix and the Android 12+
@@ -28,27 +26,11 @@ import '../../../utils/glass_debug_probe.dart';
 /// - Android cross-window blur runtime disablement:
 ///   https://source.android.com/docs/core/display/window-blurs
 abstract final class LiquidGlassDegradation {
-  /// [临时诊断] 最近一次记录的降级结果（静态共享，仅记翻转减少刷屏）。
-  static bool? _lastLoggedDegrade;
-
   /// Whether glass surfaces should downgrade to an opaque solid right now.
   static bool shouldDegrade(BuildContext context) =>
       shouldDegradeFor(MediaQuery.of(context));
 
   /// Pure core that does not depend on [BuildContext], for unit tests.
-  static bool shouldDegradeFor(MediaQueryData mq) {
-    final degrade =
-        mq.accessibleNavigation || mq.disableAnimations || mq.highContrast;
-    // [临时诊断] 截图时玻璃回落实体的嫌疑输入之一：三个无障碍信号翻转。
-    if (degrade != _lastLoggedDegrade) {
-      _lastLoggedDegrade = degrade;
-      GlassDebugProbe.log(
-        'degrade.flip -> $degrade '
-        '(accessibleNavigation=${mq.accessibleNavigation} '
-        'disableAnimations=${mq.disableAnimations} '
-        'highContrast=${mq.highContrast})',
-      );
-    }
-    return degrade;
-  }
+  static bool shouldDegradeFor(MediaQueryData mq) =>
+      mq.accessibleNavigation || mq.disableAnimations || mq.highContrast;
 }

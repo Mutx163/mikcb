@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
-import '../utils/glass_debug_probe.dart';
 import 'preblurred_wallpaper_glass.dart';
 
 /// Paints one of the two supported [CourseCardSurfaceStyle] looks behind
@@ -64,9 +63,6 @@ class CourseSurface extends StatelessWidget {
   final List<BoxShadow>? outerShadow;
 
   static const double frostedFillAlpha = 0.42;
-
-  /// [临时诊断] 最近记录的玻璃表面分支（全卡片共享一个静态位，只记翻转）。
-  static String? _lastLoggedSurfaceBranch;
 
   /// Second stop of the default [CourseCardSurfaceStyle.solid] gradient.
   static Color secondaryFillColor(Color color) {
@@ -139,20 +135,6 @@ class CourseSurface extends StatelessWidget {
         preblur == null &&
         blurEnabled &&
         PreblurredWallpaperScope.isWaitingForBitmap(context);
-
-    // [临时诊断] 截图时玻璃回落实体的嫌疑分支：blur 闸门关 / 位图未就绪
-    // （纯 tint 观感接近实体）/ 回落实时 BackdropFilter 采样。
-    final debugBranch = !blurEnabled
-        ? 'solid(blur-gate-off)'
-        : preblur != null
-            ? 'preblur-bitmap'
-            : preblurPending
-                ? 'tint-only(preblur-pending)'
-                : 'live-backdrop';
-    if (debugBranch != _lastLoggedSurfaceBranch) {
-      _lastLoggedSurfaceBranch = debugBranch;
-      GlassDebugProbe.log('courseSurface.branch -> $debugBranch');
-    }
 
     return ClipRRect(
       borderRadius: radius,

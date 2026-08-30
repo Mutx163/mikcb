@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-import '../utils/glass_debug_probe.dart';
 import '../utils/home_page_background.dart';
 
 /// Identity of a cached pre-blurred wallpaper.
@@ -97,7 +96,6 @@ class PreblurredWallpaperCache {
       devicePixelRatio: devicePixelRatio,
     );
     if (_key == request && _image != null) {
-      GlassDebugProbe.log('preblur.cache.hit sigma=${request.logicalSigma}');
       // Hand out a clone: the caller owns its handle, so a later evict() can
       // dispose the cache's copy without invalidating a widget that is still
       // painting. `clone()` is refcounted and shares the same GPU buffer.
@@ -106,14 +104,8 @@ class PreblurredWallpaperCache {
     final pending = _inFlight[request];
     Future<void> settled;
     if (pending != null) {
-      GlassDebugProbe.log('preblur.cache.wait (in-flight)');
       settled = pending;
     } else {
-      GlassDebugProbe.log(
-        'preblur.cache.build '
-        'path=${request.path.length > 36 ? request.path.substring(request.path.length - 36) : request.path} '
-        'sigma=${request.logicalSigma} dpr=${request.devicePixelRatio}',
-      );
       final built = _build(request);
       _inFlight[request] = built;
       settled = built.whenComplete(() {
@@ -143,7 +135,6 @@ class PreblurredWallpaperCache {
   /// any number of waiters and never leaks or double-disposes a texture.
   Future<void> _build(_PreblurRequest request) async {
     final generation = _generation;
-    final probeStopwatch = Stopwatch()..start();
     ui.Image? source;
     ui.Image? blurred;
     try {
@@ -184,12 +175,6 @@ class PreblurredWallpaperCache {
       _image?.dispose();
       _image = blurred;
       _key = request;
-      // [临时诊断] 记录位图就绪耗时：若截图后出现长时间缺席，可据此量化。
-      GlassDebugProbe.log(
-        'preblur.cache.published '
-        '${_image!.width}x${_image!.height} '
-        '${probeStopwatch.elapsedMilliseconds}ms',
-      );
       blurred = null; // Ownership moved to the cache.
     } catch (error, stackTrace) {
       debugPrint('PreblurredWallpaperCache failed: $error\n$stackTrace');
@@ -256,11 +241,6 @@ class PreblurredWallpaperCache {
   }
 
   void evict([String? path]) {
-    // [临时诊断] 逐出即玻璃缺席源头之一，带调用方栈帧便于对责。
-    GlassDebugProbe.log(
-      'preblur.cache.evict path=$path '
-      'caller=${StackTrace.current.toString().split('\n').take(3).join(' | ')}',
-    );
     if (path != null && path.isNotEmpty && _key?.path != path) {
       return;
     }
@@ -430,7 +410,6 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
       // A build always follows didChangeDependencies / didUpdateWidget, so the
       // field assignment is enough — setState here would be called during build.
       _replaceImage(null);
-      GlassDebugProbe.log('preblur.scope.clear (path/sigma/enabled empty)');
       return;
     }
     if (_loadedPath == path &&
@@ -441,15 +420,6 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
     _loadedPath = path;
     _loadedSigma = sigma;
     _loadedDevicePixelRatio = devicePixelRatio;
-
-    // [临时诊断] 截图时玻璃回落实体的嫌疑输入：请求键（路径/模糊度/dpr）
-    // 任意翻变都会让位图缺席几个百毫秒级帧，卡片回落纯 tint。
-    final probeStopwatch = Stopwatch()..start();
-    GlassDebugProbe.log(
-      'preblur.scope.request '
-      'path=${path.length > 36 ? path.substring(path.length - 36) : path} '
-      'sigma=$sigma dpr=$devicePixelRatio',
-    );
 
     final token = Object();
     _pending = token;
@@ -462,21 +432,12 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
       if (!mounted || _pending != token) {
         // Superseded or unmounted: nobody will own this clone, so release it.
         image?.dispose();
-        GlassDebugProbe.log(
-          'preblur.scope.arrive skip '
-          '(mounted=$mounted superseded=${_pending != token} '
-          '${probeStopwatch.elapsedMilliseconds}ms)',
-        );
         return;
       }
       setState(() {
         _replaceImage(image);
         _revision++;
       });
-      GlassDebugProbe.log(
-        'preblur.scope.arrive ok=${image != null} '
-        '${probeStopwatch.elapsedMilliseconds}ms',
-      );
     }());
   }
 
