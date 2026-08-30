@@ -95,13 +95,18 @@ def find_font() -> Path:
 
 
 def build_branding() -> Image.Image:
-    """Render BRAND_TEXT centered on a transparent 200x80dp canvas (5x supersampled)."""
+    """Render BRAND_TEXT on a transparent 200x80dp canvas (5x supersampled).
+
+    Text is enlarged (50% of canvas height vs 30%) and shifted upward
+    (vertical center at 38% vs 50%) so the system splash branding reads
+    larger and sits higher instead of hugging the bottom edge.
+    """
     from PIL import ImageFont
     w, h = 1000, 400
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(str(find_font()), int(h * 0.30))
-    draw.text((w / 2, h / 2), BRAND_TEXT, font=font, fill=BRAND_COLOR, anchor="mm")
+    font = ImageFont.truetype(str(find_font()), int(h * 0.50))
+    draw.text((w / 2, h * 0.38), BRAND_TEXT, font=font, fill=BRAND_COLOR, anchor="mm")
     return img
 
 
@@ -118,6 +123,51 @@ def emit_branding() -> None:
         d = RES / ("drawable-" + density)
         d.mkdir(parents=True, exist_ok=True)
         branding.resize((w, h), Image.Resampling.LANCZOS).save(d / "splash_branding.png")
+
+
+def build_plate() -> Image.Image:
+    """Soft gradient plate sampled from artwork edges (no artwork pixels)."""
+    src = Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS)
+    arr = np.asarray(src.convert("RGB"), dtype=np.float64)
+    mid = BASE // 2
+    top_mid = arr[0, mid]
+    bottom_mid = arr[-1, mid]
+    left_mid = arr[mid, 0]
+    right_mid = arr[mid, -1]
+    s = np.linspace(0.0, 1.0, BASE)[:, None, None]
+    t = np.linspace(0.0, 1.0, BASE)[None, :, None]
+    vert = top_mid[None, None, :] * (1.0 - s) + bottom_mid[None, None, :] * s
+    horz = left_mid[None, None, :] * (1.0 - t) + right_mid[None, None, :] * t
+    out = 0.5 * vert + 0.5 * horz
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+
+
+def build_splash_icon() -> Image.Image:
+    """Dedicated system-splash icon: transparent canvas, a soft circular
+    plate (~62% canvas), and the logo artwork scaled smaller (~46%) inside.
+    Reads much smaller than the full-bleed adaptive icon used on Android 12+.
+    """
+    plate = build_plate()
+    w, h = plate.size
+    # Center circle with diameter 62% of the canvas, leaving transparent margin.
+    mask = Image.new("L", (BASE, BASE), 0)
+    d = int(BASE * 0.62)
+    off = (BASE - d) // 2
+    ImageDraw.Draw(mask).ellipse((off, off, off + d - 1, off + d - 1), fill=255)
+    disc = Image.new("RGBA", (BASE, BASE), (0, 0, 0, 0))
+    disc.paste(plate, (0, 0), mask)
+    fg = scale_centered(
+        Image.open(SRC).convert("RGBA").resize((BASE, BASE), Image.Resampling.LANCZOS),
+        0.46,
+    )
+    return Image.alpha_composite(disc, fg)
+
+
+def emit_splash_icon() -> None:
+    """Emit the dedicated splash icon as a single nodpi PNG (1024)."""
+    d = RES / "drawable-nodpi"
+    d.mkdir(parents=True, exist_ok=True)
+    build_splash_icon().save(d / "splash_icon.png")
 
 
 def main() -> None:
@@ -137,6 +187,7 @@ def main() -> None:
     (xml_dir / "ic_launcher.xml").write_text(ADAPTIVE_XML, encoding="utf-8")
 
     emit_branding()
+    emit_splash_icon()
 
     # Previews for human review BEFORE trusting the result on device.
     PREVIEW.mkdir(parents=True, exist_ok=True)
