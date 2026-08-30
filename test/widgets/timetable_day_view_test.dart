@@ -2150,10 +2150,22 @@ void main() {
         find.byKey(const ValueKey('day-view-swipe-area')),
       );
       final gesture = await tester.startGesture(swipeArea.center);
-      for (var i = 0; i < 7; i++) {
+      // Drag left without lifting until the pager truly crosses into week 2
+      // (page 7). Bounded instead of a fixed step count: pointer events land
+      // one frame behind the pump and the first drag step can be swallowed
+      // by the gesture arena, so counting steps makes the final position
+      // land a few pixels short of the boundary on some runs.
+      var crossedToWeek2 = false;
+      for (var i = 0; i < 12 && !crossedToWeek2; i++) {
         await gesture.moveBy(const Offset(-130, 0));
         await tester.pump(const Duration(milliseconds: 16));
+        final page = tester
+            .widget<PageView>(find.byKey(const ValueKey('day-view-swipe-area')))
+            .controller
+            ?.page;
+        crossedToWeek2 = page != null && page >= 7.0;
       }
+      expect(crossedToWeek2, isTrue);
 
       // The header day row has already switched to week 2 (weekday-header-2
       // keys are live while the finger is still held), and there is no
