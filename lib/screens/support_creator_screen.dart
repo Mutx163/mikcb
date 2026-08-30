@@ -514,27 +514,39 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
               ),
               if (updatedAt != null) ...[
                 const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    updatedAt,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    // xs2 弱化为元数据级，与正文段落拉开层级；紧贴刷新钮
-                    // 把「数据新旧」和「刷新」归为一组。
-                    style: typo.body.xs2.copyWith(
-                      color: colors.mutedForeground,
-                      height: 1.2,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                // 非 flex 定宽子项：与 Expanded 并存时剩余空间会被对半
+                // 分掉，时间+刷新钮会被顶到行中间、右端留空。
+                Text(
+                  updatedAt,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  // xs2 弱化为元数据级，与正文段落拉开层级；紧贴刷新钮
+                  // 把「数据新旧」和「刷新」归为一组。
+                  style: typo.body.xs2.copyWith(
+                    color: colors.mutedForeground,
+                    height: 1.2,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
-              HyperosIconButton(
-                icon: Icons.refresh_rounded,
-                iconSize: 20,
-                tooltip: l10n.reloadAction,
-                onPressed: _reloadDonors,
+              // MiuixIconButton 有 40dp 最小边，直接进标题行会把行撑高，
+              // 文字居中后整体下沉，观感即「标题离卡片顶部变远」；
+              // OverflowBox 压成 24 高槽位：按钮仍是 40×40 可点，视觉
+              // 中心与标题文字对齐。
+              SizedBox(
+                width: 40,
+                height: 24,
+                child: OverflowBox(
+                  maxWidth: 40,
+                  maxHeight: 40,
+                  alignment: Alignment.center,
+                  child: HyperosIconButton(
+                    icon: Icons.refresh_rounded,
+                    iconSize: 20,
+                    tooltip: l10n.reloadAction,
+                    onPressed: _reloadDonors,
+                  ),
+                ),
               ),
             ],
           ),
