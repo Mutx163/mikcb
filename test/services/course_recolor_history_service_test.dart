@@ -188,4 +188,31 @@ void main() {
         '#4CAF50');
     expect(state.schemes[1].seed, 9);
   });
+
+  test('种子记录类型垃圾只丢该条，不再连带清空整份历史', () async {
+    // 回归锚点：seed 分支的 colorGroupId/开关是裸 cast，类型垃圾抛
+    // TypeError 被 _loadSchemes 整体 catch，一条坏种子记录清空全部历史。
+    final good = CourseRecolorScheme.seed(
+      seed: 7,
+      colorGroupId: kCourseColorGroupAllId,
+      assignMatchingTextColor: false,
+      createdAt: DateTime(2026, 8, 30),
+    );
+    SharedPreferences.setMockInitialValues({
+      CourseRecolorHistoryService.schemesPreferenceKey('p1'): jsonEncode([
+        {
+          'createdAt': DateTime(2026, 8, 30).toIso8601String(),
+          'seed': 3,
+          'colorGroupId': 123,
+        },
+        good.toJson(),
+      ]),
+    });
+
+    final state = await CourseRecolorHistoryService.load('p1');
+
+    expect(state.schemes.length, 1);
+    expect(state.schemes.single.seed, 7);
+    expect(state.index, 0);
+  });
 }

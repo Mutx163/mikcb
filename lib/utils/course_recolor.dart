@@ -143,10 +143,18 @@ class CourseRecolorScheme {
     if (seed is! int) {
       return null;
     }
+    // colorGroupId/assignMatchingTextColor 与 snapshot 条目同口径：类型
+    // 垃圾返回 null 丢弃该条（曾用裸 cast，TypeError 会穿透到 _loadSchemes
+    // 的整体 catch，一条坏种子记录就静默清空全部历史）；字段缺失仍兜底默认值。
+    final colorGroupId = json['colorGroupId'];
+    final assignMatchingTextColor = json['assignMatchingTextColor'];
+    if (colorGroupId is! String? || assignMatchingTextColor is! bool?) {
+      return null;
+    }
     return CourseRecolorScheme.seed(
       seed: seed,
-      colorGroupId: json['colorGroupId'] as String? ?? kCourseColorGroupAllId,
-      assignMatchingTextColor: json['assignMatchingTextColor'] as bool? ?? false,
+      colorGroupId: colorGroupId ?? kCourseColorGroupAllId,
+      assignMatchingTextColor: assignMatchingTextColor ?? false,
       createdAt: createdAt,
     );
   }

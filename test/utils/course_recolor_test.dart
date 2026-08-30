@@ -236,5 +236,33 @@ void main() {
       expect(entry!.color, '#4CAF50');
       expect(entry.textColor, isNull);
     });
+
+    test('种子记录类型垃圾丢弃该条；字段缺失仍兜底默认值', () {
+      // 回归锚点：seed 分支的 colorGroupId/开关曾是裸 cast，类型垃圾抛
+      // TypeError 被 _loadSchemes 整体 catch，一条坏种子记录清空全部历史。
+      expect(
+        CourseRecolorScheme.fromJson({
+          'createdAt': '2026-08-30T09:00:00',
+          'seed': 7,
+          'colorGroupId': 123,
+        }),
+        isNull,
+      );
+      expect(
+        CourseRecolorScheme.fromJson({
+          'createdAt': '2026-08-30T09:00:00',
+          'seed': 7,
+          'assignMatchingTextColor': 'yes',
+        }),
+        isNull,
+      );
+      final scheme = CourseRecolorScheme.fromJson({
+        'createdAt': '2026-08-30T09:00:00',
+        'seed': 7,
+      });
+      expect(scheme!.seed, 7);
+      expect(scheme.colorGroupId, kCourseColorGroupAllId);
+      expect(scheme.assignMatchingTextColor, false);
+    });
   });
 }
