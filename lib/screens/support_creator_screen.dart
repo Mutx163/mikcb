@@ -533,13 +533,15 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
               // 文字居中后整体下沉，观感即「标题离卡片顶部变远」；
               // OverflowBox 压成 24 高槽位：按钮仍是 40×40 可点，视觉
               // 中心与标题文字对齐。
+              // 槽宽 30 + centerLeft：40 宽的按钮盒右探 10dp 进内边距，
+              // 20dp 图标右缘正好落在 16dp 内容右界上，与下方金额对齐。
               SizedBox(
-                width: 40,
+                width: 30,
                 height: 24,
                 child: OverflowBox(
                   maxWidth: 40,
                   maxHeight: 40,
-                  alignment: Alignment.center,
+                  alignment: Alignment.centerLeft,
                   child: HyperosIconButton(
                     icon: Icons.refresh_rounded,
                     iconSize: 20,
