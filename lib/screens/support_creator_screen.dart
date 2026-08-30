@@ -9,6 +9,7 @@ import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/bundled_asset_image.dart';
+import '../widgets/support_donor_tile.dart';
 
 enum _SupportMethod { wechat, alipay }
 
@@ -533,56 +534,19 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         );
       }
 
-      return HyperosControlCardRows(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          for (final donor in donors)
-            HyperosChoiceTile(
-              prefix: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.favorite_rounded,
-                  size: 16,
-                  color: colors.primary,
-                ),
-              ),
-              title: donor.name,
-              subtitle: Text(
-                [
-                  if ((donor.date ?? '').isNotEmpty) donor.date!,
-                  if ((donor.message ?? '').isNotEmpty) donor.message!,
-                ].join('\n'),
-                style: _mutedStyle(typo, colors),
-              ),
-              trailing: (donor.amount ?? '').isNotEmpty
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      // M3 `secondary` 是深色强调色（亮色 #625B71），配
-                      // onSurface 文字会变成深底深字；改用与上方爱心图标井
-                      // 同款 primary@12% 水洗 + primary 文字，玻璃半透明卡
-                      // 上也保持可读。
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        donor.amount!,
-                        style: _emphasisBodyStyle(typo, colors).copyWith(
-                          color: colors.primary,
-                        ),
-                      ),
-                    )
-                  : null,
-              onTap: null,
+          for (var i = 0; i < donors.length; i++) ...[
+            if (i > 0)
+              HyperosInsetDivider(indent: SupportDonorTile.dividerIndent),
+            SupportDonorTile(
+              donor: donors[i],
+              isFirst: i == 0,
+              isLast: i == donors.length - 1,
             ),
+          ],
         ],
       );
     }
