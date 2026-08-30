@@ -214,6 +214,9 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
     if (selected == null || selected == _groupId) {
       return;
     }
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _groupId = selected;
     });
