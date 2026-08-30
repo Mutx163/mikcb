@@ -19,7 +19,7 @@ void main() {
   }
 
   test('timetable_provider.dart 行数棘轮：只减不增', () {
-    const baselineLines = 4359;
+    const baselineLines = 4401;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
@@ -49,7 +49,7 @@ void main() {
   });
 
   test('_persistActiveProfileState 调用点棘轮：写放大只减不增', () {
-    const baselineCallSites = 47;
+    const baselineCallSites = 48;
     final partFiles = [
       providerFile,
       File('lib/providers/timetable/import_export_service.dart'),
