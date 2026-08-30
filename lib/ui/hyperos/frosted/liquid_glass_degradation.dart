@@ -11,9 +11,18 @@ import 'package:flutter/material.dart';
 /// chrome band and course cards all downgrade in one place.
 ///
 /// The signals are the Flutter-accessible ones (no platform channel required):
-/// - [MediaQueryData.accessibleNavigation] — TalkBack / VoiceOver active.
 /// - [MediaQueryData.disableAnimations] — system "remove animations".
 /// - [MediaQueryData.highContrast] — high-contrast accessibility.
+///
+/// [MediaQueryData.accessibleNavigation] is deliberately NOT part of the
+/// matrix: on MIUI/HyperOS the screenshot overlay session turns on system
+/// touch exploration, which the Flutter Android engine reports as
+/// `accessibleNavigation=true` while the floating preview exists — degrading
+/// on it made every glass surface flip to solid during screenshots
+/// (upstream: https://github.com/flutter/flutter/issues/128409). The two
+/// signals above already cover the visually-driven cases that benefit most
+/// from disabling blur, and they are pure-Dart so the whole policy is
+/// unit-testable.
 ///
 /// Power-saver mode would need a platform channel and is intentionally left as
 /// a future hook (TODO: power-saver); the three signals above already cover the
@@ -32,5 +41,5 @@ abstract final class LiquidGlassDegradation {
 
   /// Pure core that does not depend on [BuildContext], for unit tests.
   static bool shouldDegradeFor(MediaQueryData mq) =>
-      mq.accessibleNavigation || mq.disableAnimations || mq.highContrast;
+      mq.disableAnimations || mq.highContrast;
 }

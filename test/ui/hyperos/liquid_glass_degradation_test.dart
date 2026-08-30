@@ -15,12 +15,15 @@ void main() {
       expect(LiquidGlassDegradation.shouldDegradeFor(base), isFalse);
     });
 
-    test('true under accessibleNavigation (TalkBack / VoiceOver)', () {
+    test('false under accessibleNavigation (MIUI screenshot false positive)', () {
+      // MIUI/HyperOS 截图悬浮窗会打开系统 touch exploration，引擎误报
+      // accessibleNavigation=true（flutter/flutter#128409），玻璃不随该信号
+      // 降级，否则截图预览悬浮窗存在期间全部玻璃回落实体。
       expect(
         LiquidGlassDegradation.shouldDegradeFor(
           base.copyWith(accessibleNavigation: true),
         ),
-        isTrue,
+        isFalse,
       );
     });
 
