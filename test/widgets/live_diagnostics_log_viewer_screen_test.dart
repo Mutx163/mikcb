@@ -34,6 +34,18 @@ void main() {
     fail('未能滚动到目标：$finder');
   }
 
+  // 同上，但向列表底部方向滚动（倒序模式的「加载更早」行挂在末尾）。
+  Future<void> dragDownListTarget(WidgetTester tester, Finder finder) async {
+    for (var i = 0; i < 60; i++) {
+      if (finder.evaluate().isNotEmpty) {
+        return;
+      }
+      await tester.drag(find.byType(ListView).first, const Offset(0, -800));
+      await tester.pumpAndSettle();
+    }
+    fail('未能滚动到目标：$finder');
+  }
+
   const sampleLog = '''轻屿课表 - 应用日志
 exportedAt=1744166400000
 brand=Xiaomi
@@ -173,6 +185,51 @@ extras=
           tester.getTopLeft(find.textContaining('已捕获快照负载').first).dy,
       isTrue,
     );
+  });
+
+  testWidgets('descending sort shows newest page and loads earlier below', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      TestApp(
+        home: LiveDiagnosticsLogViewerScreen(
+          title: '日志中心',
+          rawLog: buildPagedLog(450),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 切倒序：默认窗口必须是最新一页（250..449），最新条目 449 在视口顶部；
+    // 窗口外的最旧一页（..249）不进树。回归锚点：倒序曾复用正序的后缀窗口
+    // 取最旧一页，最新日志永远进不了窗口。
+    await tester.tap(find.bySemanticsLabel('查看与排序'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('倒序'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('日志条目 449'), findsOneWidget);
+    expect(find.textContaining('日志条目 249'), findsNothing);
+
+    // 「加载更早」挂在列表末尾，点击后更早条目向视口下方追加：原先在窗口
+    // 外的条目 249 应出现在旧底部（条目 250）之后，条目 49 仍在窗口外。
+    await dragDownListTarget(tester, find.textContaining('加载更早日志'));
+    await tester.tap(find.textContaining('加载更早日志'));
+    await tester.pumpAndSettle();
+    await dragDownListTarget(tester, find.textContaining('日志条目 249'));
+    expect(find.textContaining('日志条目 49'), findsNothing);
+
+    // 再次加载耗尽更早条目，最旧的条目 0 出现在底部，加载行消失。
+    await dragDownListTarget(tester, find.textContaining('加载更早日志'));
+    await tester.tap(find.textContaining('加载更早日志'));
+    await tester.pumpAndSettle();
+    await dragDownListTarget(tester, find.textContaining('日志条目 0'));
+    expect(find.textContaining('加载更早日志'), findsNothing);
   });
 
   testWidgets('viewer updates when watchRawLog emits new content', (

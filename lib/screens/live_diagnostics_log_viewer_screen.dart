@@ -292,11 +292,15 @@ class _LiveDiagnosticsLogViewerScreenState
 
   void _rebuildVisibleEntries() {
     _levelCounts = countDiagnosticsLevels(_parsed.entries);
-    final sorted = sortDiagnosticsEntries(
+    // 窗口恒按时间正序建模（下标 0 = 最旧，贴最新端 = 列表末端），倒序只在
+    // 渲染层反转条目顺序。若按显示方向排序（倒序时最新在下标 0），后缀窗口
+    // 会取到最旧一页、最新日志永远进不了窗口，「加载更早」语义也随之颠倒；
+    // 恒正序建模则两种方向的窗口/分页/贴最新/新增不位移语义完全一致。
+    final chronological = sortDiagnosticsEntries(
       filterDiagnosticsEntries(_parsed.entries, _selectedLevel),
-      ascending: _timeSort == DiagnosticsLogTimeSort.ascending,
+      ascending: true,
     );
-    final total = sorted.length;
+    final total = chronological.length;
     // 回到「贴最新」端时窗口收拢回最新一页；钉住的起点越界（日志被
     // 截断/清空重写）时同样回落到最新一页。
     if (_stickToLatest) {
@@ -306,7 +310,7 @@ class _LiveDiagnosticsLogViewerScreenState
     }
     final start = _pinnedStartIndex ?? (total > _pageSize ? total - _pageSize : 0);
     _currentStartIndex = start;
-    _visibleEntries = sorted.sublist(start);
+    _visibleEntries = chronological.sublist(start);
     _hasEarlierEntries = start > 0;
   }
 
@@ -725,7 +729,10 @@ class _LiveDiagnosticsLogViewerScreenState
           return _buildLoadEarlierRow(context, l10n);
         }
 
-        final entry = _visibleEntries[visibleIndex];
+        // 倒序渲染：正序窗口反转显示（最新条目 = 窗口末端 = 视口顶部）。
+        final entry = _latestAtBottom
+            ? _visibleEntries[visibleIndex]
+            : _visibleEntries[_visibleEntries.length - 1 - visibleIndex];
         return RepaintBoundary(
           child: Padding(
             padding: EdgeInsets.only(
@@ -814,7 +821,10 @@ class _LiveDiagnosticsLogViewerScreenState
             entryIndex == _visibleEntries.length) {
           return _buildLoadEarlierRow(context, l10n);
         }
-        final entry = _visibleEntries[entryIndex];
+        // 倒序渲染：正序窗口反转显示（最新条目 = 窗口末端 = 视口顶部）。
+        final entry = _latestAtBottom
+            ? _visibleEntries[entryIndex]
+            : _visibleEntries[_visibleEntries.length - 1 - entryIndex];
         return RepaintBoundary(
           child: Padding(
             padding: EdgeInsets.only(
