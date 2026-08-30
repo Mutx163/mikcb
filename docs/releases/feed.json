@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-30T05:29:01.865Z",
+  "generatedAt": "2026-08-30T05:44:37.575Z",
   "releaseCount": 96,
   "releases": [
     {
-      "channelLabel": "预发布",
+      "channelLabel": "正式版",
       "version": "2.1.1.3",
       "title": "v2.1.1.3",
-      "prerelease": true,
+      "prerelease": false,
       "publishedAt": "2026-08-30T04:34:52Z",
       "description": "优化周次选择：弹窗顶部不再出现一段多余空隙；正在查看的周以实底色块强标识，实际所在周用浅色块加描边区分，两态并存时不再混淆。 · 优化课程统计：周概览卡与学期总览卡统一为单行四项指标，更紧凑清爽；暂无最忙日数据时以「—」占位。 · 优化课程导入：更新导入与下拉快捷导入不再覆盖手动调整过的课程颜色，只有覆盖导入才会更新颜色。",
       "highlights": [
