@@ -1,7 +1,40 @@
 {
-  "generatedAt": "2026-08-30T01:26:36.931Z",
-  "releaseCount": 94,
+  "generatedAt": "2026-08-30T03:01:06.739Z",
+  "releaseCount": 95,
   "releases": [
+    {
+      "channelLabel": "预发布",
+      "version": "2.1.1.2",
+      "title": "v2.1.1.2",
+      "prerelease": true,
+      "publishedAt": "2026-08-30T03:00:37Z",
+      "description": "新增超级岛自检提示：因关闭「上课前提醒」导致测试通知暂不出现时，自检会说明岛将在课程真正开始后出现并指引打开该开关，与真的无课区分开。 · 优化玻璃效果：MIUI/HyperOS 截图预览悬浮窗显示期间课程卡与顶栏不再退回实体外观，截图全程保持玻璃质感。 · 优化超级岛自检入口：从「诊断」页迁回「超级岛与通知」维护组，更容易找到；入口行只留「自检」一行，与同…",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增超级岛自检提示：因关闭「上课前提醒」导致测试通知暂不出现时，自检会说明岛将在课程真正开始后出现并指引打开该开关，与真的无课区分开。"
+        },
+        {
+          "type": "优化",
+          "text": "优化玻璃效果：MIUI/HyperOS 截图预览悬浮窗显示期间课程卡与顶栏不再退回实体外观，截图全程保持玻璃质感。"
+        },
+        {
+          "type": "优化",
+          "text": "优化超级岛自检入口：从「诊断」页迁回「超级岛与通知」维护组，更容易找到；入口行只留「自检」一行，与同组其他开关样式一致。"
+        },
+        {
+          "type": "优化",
+          "text": "优化玻璃坞内嵌页：考试安排、课程统计、设置等底栏内嵌页的列表可以滚动到底，最后一行内容不再被悬浮药丸挡住。"
+        },
+        {
+          "type": "优化",
+          "text": "优化学期总览卡：2×2 宫格压缩为单行四项指标，高度约缩小三分之二，数字回归常规字重更清爽，分享导出长图同步变紧凑。"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1.2",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.2/mikcb-2.1.1.2-arm64-v8a.apk",
+      "assetName": "mikcb-2.1.1.2-arm64-v8a.apk"
+    },
     {
       "channelLabel": "正式版",
       "version": "2.1.1.1",
@@ -264,51 +297,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.1",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.1/mikcb-2.0.5.1-arm64-v8a.apk",
       "assetName": "mikcb-2.0.5.1-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "正式版",
-      "version": "2.0.5",
-      "title": "v2.0.5",
-      "prerelease": false,
-      "publishedAt": "2026-07-19T04:52:00Z",
-      "description": "局域网编辑：支持「离开后保持开启」——回到设置页可选择继续运行，不必每次重新开服务 · 局域网编辑：控制台支持浅色 / 深色主题切换，并记住本机偏好 · 局域网编辑：浏览器端支持切换课表档案",
-      "highlights": [
-        {
-          "type": "新增",
-          "text": "局域网编辑：支持「离开后保持开启」——回到设置页可选择继续运行，不必每次重新开服务"
-        },
-        {
-          "type": "新增",
-          "text": "局域网编辑：控制台支持浅色 / 深色主题切换，并记住本机偏好"
-        },
-        {
-          "type": "新增",
-          "text": "局域网编辑：浏览器端支持切换课表档案"
-        },
-        {
-          "type": "新增",
-          "text": "关于页：新增「开源许可证」列表（本应用 GPL 说明 + 第三方组件许可证检索）"
-        },
-        {
-          "type": "新增",
-          "text": "课程总览：冲突详情页（互撞组合、时段，可跳转对应排课编辑）"
-        },
-        {
-          "type": "新增",
-          "text": "导入课程：首页增加「随机预设色」总开关（各导入子页统一）"
-        },
-        {
-          "type": "新增",
-          "text": "运行日志：独立解析能力，大文件更顺畅，支持单条展开详情"
-        },
-        {
-          "type": "新增",
-          "text": "HyperOS：胶囊滑块轨道样式、控件无障碍语义，界面组件与语义色更完整"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5/mikcb-2.0.5-arm64-v8a.apk",
-      "assetName": "mikcb-2.0.5-arm64-v8a.apk"
     }
   ]
 }

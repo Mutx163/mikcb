@@ -1,5 +1,5 @@
 {
-  "releaseCount": 94,
+  "releaseCount": 95,
   "stable": {
     "channelLabel": "正式版",
     "version": "2.1.1.1",
@@ -10,18 +10,18 @@
     "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.1/mikcb-2.1.1.1-arm64-v8a.apk",
     "assetName": "mikcb-2.1.1.1-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 2
+    "assetDownloadCount": 4
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "2.1.1",
-    "title": "v2.1.1",
-    "publishedAt": "2026-08-29T04:21:17Z",
-    "body": "# v2.1.1\n\n- 新增任务：添加与编辑任务页支持设置完成状态，可直接登记已完成的任务，也能把已完成任务改回未完成。\n- 新增课程卡：毛玻璃卡面的文字颜色自动适配壁纸——彩色字自动转为黑白、黑白灰字对比度不足时同样自动调整，保证清晰可读，日程卡与周预览也同步支持自定义字色。\n- 优化课程卡：实心卡面的简介字色自动跟随标题字色的明暗，历史遗留的字色错位也会自动纠正，不再出现白标题配黑简介的卡片。\n- 优化任务：添加任务页选择来源课程时同一门课只显示一次、课程较多时可上下滚动，截止日期只在日期行展示一次；任务清单行改用环形勾选钮，完成态带勾号更直观。\n- 优化周报提醒：重启手机、升级应用或调整系统时间后，周报通知仍能准时送达，不再漏发。\n- 优化界面细节：点底栏切换日/周视图立即到位、不再播放展开动画，超级岛预览的课程名与地点统一显示在摄像头右侧、与灵动岛实际显示一致，二维码传输的文字补齐多语言翻译并统一警示配色。\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1/mikcb-2.1.1-arm64-v8a.apk",
-    "assetName": "mikcb-2.1.1-arm64-v8a.apk",
+    "version": "2.1.1.2",
+    "title": "v2.1.1.2",
+    "publishedAt": "2026-08-30T03:00:37Z",
+    "body": "# v2.1.1.2\n\n- 新增超级岛自检提示：因关闭「上课前提醒」导致测试通知暂不出现时，自检会说明岛将在课程真正开始后出现并指引打开该开关，与真的无课区分开。\n- 优化玻璃效果：MIUI/HyperOS 截图预览悬浮窗显示期间课程卡与顶栏不再退回实体外观，截图全程保持玻璃质感。\n- 优化超级岛自检入口：从「诊断」页迁回「超级岛与通知」维护组，更容易找到；入口行只留「自检」一行，与同组其他开关样式一致。\n- 优化玻璃坞内嵌页：考试安排、课程统计、设置等底栏内嵌页的列表可以滚动到底，最后一行内容不再被悬浮药丸挡住。\n- 优化学期总览卡：2×2 宫格压缩为单行四项指标，高度约缩小三分之二，数字回归常规字重更清爽，分享导出长图同步变紧凑。\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1.2",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.2/mikcb-2.1.1.2-arm64-v8a.apk",
+    "assetName": "mikcb-2.1.1.2-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 4
+    "assetDownloadCount": 0
   }
 }
