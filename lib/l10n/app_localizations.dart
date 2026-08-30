@@ -1658,6 +1658,60 @@ abstract class AppLocalizations {
   /// **'海洋系'**
   String get colorGroupOcean;
 
+  /// No description provided for @courseRecolorTileTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表重新配色'**
+  String get courseRecolorTileTitle;
+
+  /// No description provided for @courseRecolorTileSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入后随时一键给全部课程换套颜色'**
+  String get courseRecolorTileSubtitle;
+
+  /// No description provided for @courseRecolorSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表重新配色'**
+  String get courseRecolorSheetTitle;
+
+  /// No description provided for @courseRecolorSheetDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'每次「换一批」都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。'**
+  String get courseRecolorSheetDescription;
+
+  /// No description provided for @courseRecolorNewBatchButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'换一批颜色'**
+  String get courseRecolorNewBatchButton;
+
+  /// No description provided for @courseRecolorPrevious.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一套'**
+  String get courseRecolorPrevious;
+
+  /// No description provided for @courseRecolorNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一套'**
+  String get courseRecolorNext;
+
+  /// No description provided for @courseRecolorSchemePosition.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {index}/{total} 套'**
+  String courseRecolorSchemePosition(int index, int total);
+
+  /// No description provided for @courseRecolorNoCoursesToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无课程，先导入或添加课程再换颜色'**
+  String get courseRecolorNoCoursesToast;
+
   /// No description provided for @courseImportTitle.
   ///
   /// In zh, this message translates to:
@@ -5020,6 +5074,12 @@ abstract class AppLocalizations {
   /// **'可以切换到“全部”，或改看原文继续排查'**
   String get diagnosticsNoMatchingSubtitle;
 
+  /// 日志查看器分页加载：在列表边缘加载更早日志的入口行文案，count 为尚未显示的更早日志条数
+  ///
+  /// In zh, this message translates to:
+  /// **'加载更早日志（还有 {count} 条）'**
+  String diagnosticsLoadEarlierLabel(int count);
+
   /// No description provided for @diagnosticsLevelInferred.
   ///
   /// In zh, this message translates to:
@@ -6824,6 +6884,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现'**
   String get liveTestingPresetArmedButHidden;
+
+  /// No description provided for @liveTestingHolidayBlocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在「课表设置 → 节假日标记」中移除覆盖今天的假期'**
+  String get liveTestingHolidayBlocked;
+
+  /// No description provided for @liveTestingNotIslandHoliday.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期'**
+  String get liveTestingNotIslandHoliday;
 
   /// No description provided for @liveTestingTestCourseNote.
   ///

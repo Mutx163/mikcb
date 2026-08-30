@@ -415,6 +415,21 @@
   "colorGroupDopamine": "多巴胺系",
   "colorGroupSunset": "落日系",
   "colorGroupOcean": "海洋系",
+  "courseRecolorTileTitle": "课表重新配色",
+  "courseRecolorTileSubtitle": "导入后随时一键给全部课程换套颜色",
+  "courseRecolorSheetTitle": "课表重新配色",
+  "courseRecolorSheetDescription": "每次「换一批」都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。",
+  "courseRecolorNewBatchButton": "换一批颜色",
+  "courseRecolorPrevious": "上一套",
+  "courseRecolorNext": "下一套",
+  "courseRecolorSchemePosition": "第 {index}/{total} 套",
+  "@courseRecolorSchemePosition": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "courseRecolorNoCoursesToast": "暂无课程，先导入或添加课程再换颜色",
   "courseImportTitle": "导入课程",
   "chooseImportMethodTitle": "选择导入方式",
   "chooseImportMethodSubtitle": "现在支持传统 .ics 日历导入、识图导入，以及从仓库读取适配器的教务系统导入",
@@ -1543,6 +1558,15 @@
   },
   "diagnosticsNoMatchingTitle": "当前筛选下没有日志",
   "diagnosticsNoMatchingSubtitle": "可以切换到“全部”，或改看原文继续排查",
+  "diagnosticsLoadEarlierLabel": "加载更早日志（还有 {count} 条）",
+  "@diagnosticsLoadEarlierLabel": {
+    "description": "日志查看器分页加载：在列表边缘加载更早日志的入口行文案，count 为尚未显示的更早日志条数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diagnosticsLevelInferred": "推断等级",
   "diagnosticsRawFilteredHint": "原文视图会跟随当前等级筛选，只显示对应日志块",
   "diagnosticsTimeSortAscending": "正序",
@@ -2014,6 +2038,8 @@
   "liveTestingAnrSoon": "即将触发约 30 秒主线程卡死，请脱离 flutter run 测试，并在卡死后重新打开应用查看友盟后台",
   "liveTestingNoCourseAvailable": "当前没有可测试的课程",
   "liveTestingPresetArmedButHidden": "已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现",
+  "liveTestingHolidayBlocked": "当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在「课表设置 → 节假日标记」中移除覆盖今天的假期",
+  "liveTestingNotIslandHoliday": "当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期",
   "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页进行设置",
   "liveTestingNotificationSent": "已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段",
   "sendFailedWithError": "发送失败: {error}",

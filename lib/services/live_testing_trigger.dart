@@ -124,11 +124,16 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       );
       // 预设课已注入却选不出阶段（课前显示被关/假日门拦截）时，与「真的没有
       // 课」分开提示——前者岛会在课程真正开始后弹出，笼统的「无课」会误导用户。
+      // 假日门在选课最上游（预设课也一并被拦）且无时限：必须最先分流，否则
+      // 「约 1 分钟后出现」的承诺在假期里永远不会兑现（2026-08-30 OPPO 案例：
+      // 用户自添加假期覆盖当天，课前提醒全程开着，岛依旧永远不弹）。
       return LiveTestingTriggerResult(
         status: LiveTestingTriggerStatus.error,
-        message: overlayArmed
-            ? l10n.liveTestingPresetArmedButHidden
-            : l10n.liveTestingNoCourseAvailable,
+        message: holidayNow
+            ? l10n.liveTestingHolidayBlocked
+            : overlayArmed
+                ? l10n.liveTestingPresetArmedButHidden
+                : l10n.liveTestingNoCourseAvailable,
       );
     }
 

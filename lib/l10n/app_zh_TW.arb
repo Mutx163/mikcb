@@ -282,6 +282,15 @@
   "colorGroupDopamine": "多巴胺系",
   "colorGroupSunset": "落日系",
   "colorGroupOcean": "海洋系",
+  "courseRecolorTileTitle": "課表重新配色",
+  "courseRecolorTileSubtitle": "匯入後隨時一鍵為全部課程換一套顏色",
+  "courseRecolorSheetTitle": "課表重新配色",
+  "courseRecolorSheetDescription": "每次「換一批」都會為全部課程刷一套隨機顏色；不滿意可以切回上一套，或回到匯入時的原色。",
+  "courseRecolorNewBatchButton": "換一批顏色",
+  "courseRecolorPrevious": "上一套",
+  "courseRecolorNext": "下一套",
+  "courseRecolorSchemePosition": "第 {index}/{total} 套",
+  "courseRecolorNoCoursesToast": "尚無課程，請先匯入或新增課程再換顏色",
   "courseImportTitle": "匯入課程",
   "chooseImportMethodTitle": "選擇匯入方式",
   "chooseImportMethodSubtitle": "現在支持傳統 .ics 日歷匯入、識圖匯入，以及從倉庫讀取適配器的教務系統匯入",
@@ -1394,6 +1403,14 @@
   },
   "diagnosticsNoMatchingTitle": "目前篩選下沒有日誌",
   "diagnosticsNoMatchingSubtitle": "可切換回「全部」，或改看原文繼續排查",
+  "diagnosticsLoadEarlierLabel": "載入更早日誌（還有 {count} 筆）",
+  "@diagnosticsLoadEarlierLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diagnosticsLevelInferred": "推斷等級",
   "diagnosticsRawFilteredHint": "原文視圖會跟隨目前等級篩選，只顯示對應日誌區塊",
   "diagnosticsTimeSortAscending": "正序",
@@ -1822,6 +1839,8 @@
   "liveTestingAnrSoon": "即将触發约 30 秒主線程卡死，请脱离 flutter run 測試，並在卡死後重新打開應用查看友盟後台",
   "liveTestingNoCourseAvailable": "目前没有可測試的課程",
   "liveTestingPresetArmedButHidden": "已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現",
+  "liveTestingHolidayBlocked": "目前在假期範圍內，超級島在假期期間不會顯示；如需測試，請先在「課表設定 → 假日標記」中移除涵蓋今天的假期",
+  "liveTestingNotIslandHoliday": "目前在假期範圍內——超級島在假期期間不會顯示，可在「課表設定 → 假日標記」中管理假期",
   "liveTestingTestCourseNote": "此處顯示備注，可以在課程编辑頁進行設定",
   "liveTestingNotificationSent": "已發送上課提醒測試通知，约 8 秒內会進入上課前提醒階段",
   "sendFailedWithError": "發送失败: {error}",

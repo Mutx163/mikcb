@@ -282,6 +282,15 @@
   "colorGroupDopamine": "ドーパミン",
   "colorGroupSunset": "サンセット",
   "colorGroupOcean": "オーシャン",
+  "courseRecolorTileTitle": "時間割の配色を更新",
+  "courseRecolorTileSubtitle": "インポート後でもワンタップで全授業の色を組み替え",
+  "courseRecolorSheetTitle": "時間割の配色を更新",
+  "courseRecolorSheetDescription": "「シャッフル」を押すたびに全授業に新しいランダム色を割り当てます。気に入らなければ前のセットに戻すことも、インポート時の元の色に戻すこともできます。",
+  "courseRecolorNewBatchButton": "色をシャッフル",
+  "courseRecolorPrevious": "前のセット",
+  "courseRecolorNext": "次のセット",
+  "courseRecolorSchemePosition": "第 {index}/{total} セット",
+  "courseRecolorNoCoursesToast": "授業がありません。先にインポートまたは追加してください",
   "courseImportTitle": "授業インポート",
   "chooseImportMethodTitle": "インポート方法を選択",
   "chooseImportMethodSubtitle": "従来の.icsカレンダーインポート、画像認識インポート、リポジトリからアダプタを読み込む教務システムインポートに対応",
@@ -1395,6 +1404,14 @@
   },
   "diagnosticsNoMatchingTitle": "現在のフィルターに一致するログなし",
   "diagnosticsNoMatchingSubtitle": "「全て」に切替えるか、原文でトラブルシュートを続行",
+  "diagnosticsLoadEarlierLabel": "より前のログを読み込む（残り {count} 件）",
+  "@diagnosticsLoadEarlierLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diagnosticsLevelInferred": "推定レベル",
   "diagnosticsRawFilteredHint": "原文ビューは現在のレベルフィルターに連携し、対応するログブロックのみ表示",
   "diagnosticsTimeSortAscending": "昇順",
@@ -1823,6 +1840,8 @@
   "liveTestingAnrSoon": "約30秒のメインスレッドフリーズをトリガーします。flutter runから離れてテストし、フリーズ後にアプリを再起動してUmengバックグラウンドを確認。",
   "liveTestingNoCourseAvailable": "現在テスト可能な授業がありません",
   "liveTestingPresetArmedButHidden": "自己診断のプリセット授業は注入されましたが、今は島が表示されません。「授業前リマインダー」がオフの場合、島は授業が実際に始まった後（約1分後）に表示されます",
+  "liveTestingHolidayBlocked": "現在は休暇期間中のため、島は表示されません。テストするには、「時間割設定 → 休日マーク」で本日を含む休暇を先に削除してください",
+  "liveTestingNotIslandHoliday": "現在は休暇期間中です——休暇中は島が表示されません。休暇は「時間割設定 → 休日マーク」で管理できます",
   "liveTestingTestCourseNote": "ここにメモを表示，授業編集ページで設定可能",
   "liveTestingNotificationSent": "授業リマインダーテスト通知を送信しました。約8秒以内に授業前リマインダーステージに移行",
   "sendFailedWithError": "送信失敗：{error}",

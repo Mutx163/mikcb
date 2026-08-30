@@ -854,6 +854,36 @@ class AppLocalizationsKo extends AppLocalizations {
   String get colorGroupOcean => '오션';
 
   @override
+  String get courseRecolorTileTitle => '시간표 색상 다시 칠하기';
+
+  @override
+  String get courseRecolorTileSubtitle => '가져온 후 언제든 한 번에 전체 수업 색상 바꾸기';
+
+  @override
+  String get courseRecolorSheetTitle => '시간표 색상 다시 칠하기';
+
+  @override
+  String get courseRecolorSheetDescription =>
+      '셔플을 누를 때마다 모든 수업에 새로운 랜덤 색상이 배정됩니다. 마음에 들지 않으면 이전 세트로 돌아가거나 가져오기 당시 원래 색상으로 되돌릴 수 있습니다.';
+
+  @override
+  String get courseRecolorNewBatchButton => '색상 셔플';
+
+  @override
+  String get courseRecolorPrevious => '이전 세트';
+
+  @override
+  String get courseRecolorNext => '다음 세트';
+
+  @override
+  String courseRecolorSchemePosition(int index, int total) {
+    return '$index/$total 세트';
+  }
+
+  @override
+  String get courseRecolorNoCoursesToast => '수업이 없습니다. 먼저 수업을 가져오거나 추가하세요';
+
+  @override
   String get courseImportTitle => '수업 가져오기';
 
   @override
@@ -2766,6 +2796,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get diagnosticsNoMatchingSubtitle => '\'전체\'로 전환하거나 원본으로 트러블슈팅을 계속하세요';
 
   @override
+  String diagnosticsLoadEarlierLabel(int count) {
+    return '이전 로그 불러오기 ($count개 남음)';
+  }
+
+  @override
   String get diagnosticsLevelInferred => '추정 레벨';
 
   @override
@@ -3769,6 +3804,14 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get liveTestingPresetArmedButHidden =>
       '자가 점검 프리셋 수업이 주입되었지만 지금은 아일랜드가 표시되지 않습니다. \'수업 전 알림\'이 꺼져 있으면 수업이 실제로 시작된 후(약 1분 뒤) 표시됩니다';
+
+  @override
+  String get liveTestingHolidayBlocked =>
+      '현재 휴가 기간에 포함되어 있어 아일랜드가 표시되지 않습니다. 테스트하려면 먼저 \'시간표 설정 → 공휴일 표시\'에서 오늘을 포함하는 휴가를 삭제하세요';
+
+  @override
+  String get liveTestingNotIslandHoliday =>
+      '현재 휴가 기간에 포함되어 있습니다——휴가 기간에는 아일랜드가 표시되지 않습니다. 휴가는 \'시간표 설정 → 공휴일 표시\'에서 관리할 수 있습니다';
 
   @override
   String get liveTestingTestCourseNote =>

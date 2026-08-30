@@ -549,9 +549,15 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       ),
       _LiveTestingSection.islandStatus => Builder(
         builder: (context) {
+          final provider = context.watch<TimetableProvider>();
           final semesterUnset =
-              context.watch<TimetableProvider>().settings.semesterStartDate ==
-              null;
+              provider.settings.semesterStartDate == null;
+          // 假日门在 Dart 选课最上游，原生服务快照感知不到它：服务未运行时
+          // 原生只会兜底报「原生实时服务未运行」，把真正的假期原因藏在下游
+          // 诊断里（2026-08-30 OPPO 反馈：用户自添加假期后自检永远查不出
+          // 原因）。假期且服务未运行时，不上岛原因直接改判为假期。
+          final holidayNow = provider.isHoliday(DateTime.now());
+          final holidayBlocksIsland = holidayNow && !serviceRunning;
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -613,7 +619,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            notIslandReason.isEmpty
+                            holidayBlocksIsland
+                                ? l10n.liveTestingNotIslandHoliday
+                                : notIslandReason.isEmpty
                                 ? l10n.liveTestingNoIslandReasonEmpty
                                 : notIslandReason,
                             style: Theme.of(context).textTheme.bodyMedium,

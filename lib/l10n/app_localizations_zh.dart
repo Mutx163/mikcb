@@ -841,6 +841,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get colorGroupOcean => '海洋系';
 
   @override
+  String get courseRecolorTileTitle => '课表重新配色';
+
+  @override
+  String get courseRecolorTileSubtitle => '导入后随时一键给全部课程换套颜色';
+
+  @override
+  String get courseRecolorSheetTitle => '课表重新配色';
+
+  @override
+  String get courseRecolorSheetDescription =>
+      '每次「换一批」都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。';
+
+  @override
+  String get courseRecolorNewBatchButton => '换一批颜色';
+
+  @override
+  String get courseRecolorPrevious => '上一套';
+
+  @override
+  String get courseRecolorNext => '下一套';
+
+  @override
+  String courseRecolorSchemePosition(int index, int total) {
+    return '第 $index/$total 套';
+  }
+
+  @override
+  String get courseRecolorNoCoursesToast => '暂无课程，先导入或添加课程再换颜色';
+
+  @override
   String get courseImportTitle => '导入课程';
 
   @override
@@ -2703,6 +2733,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsNoMatchingSubtitle => '可以切换到“全部”，或改看原文继续排查';
 
   @override
+  String diagnosticsLoadEarlierLabel(int count) {
+    return '加载更早日志（还有 $count 条）';
+  }
+
+  @override
   String get diagnosticsLevelInferred => '推断等级';
 
   @override
@@ -3678,6 +3713,14 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get liveTestingPresetArmedButHidden =>
       '已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现';
+
+  @override
+  String get liveTestingHolidayBlocked =>
+      '当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在「课表设置 → 节假日标记」中移除覆盖今天的假期';
+
+  @override
+  String get liveTestingNotIslandHoliday =>
+      '当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期';
 
   @override
   String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页进行设置';
@@ -11047,6 +11090,36 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get colorGroupOcean => '海洋系';
 
   @override
+  String get courseRecolorTileTitle => '課表重新配色';
+
+  @override
+  String get courseRecolorTileSubtitle => '匯入後隨時一鍵為全部課程換一套顏色';
+
+  @override
+  String get courseRecolorSheetTitle => '課表重新配色';
+
+  @override
+  String get courseRecolorSheetDescription =>
+      '每次「換一批」都會為全部課程刷一套隨機顏色；不滿意可以切回上一套，或回到匯入時的原色。';
+
+  @override
+  String get courseRecolorNewBatchButton => '換一批顏色';
+
+  @override
+  String get courseRecolorPrevious => '上一套';
+
+  @override
+  String get courseRecolorNext => '下一套';
+
+  @override
+  String courseRecolorSchemePosition(int index, int total) {
+    return '第 $index/$total 套';
+  }
+
+  @override
+  String get courseRecolorNoCoursesToast => '尚無課程，請先匯入或新增課程再換顏色';
+
+  @override
   String get courseImportTitle => '匯入課程';
 
   @override
@@ -12910,6 +12983,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get diagnosticsNoMatchingSubtitle => '可切換回「全部」，或改看原文繼續排查';
 
   @override
+  String diagnosticsLoadEarlierLabel(int count) {
+    return '載入更早日誌（還有 $count 條）';
+  }
+
+  @override
   String get diagnosticsLevelInferred => '推斷等級';
 
   @override
@@ -13884,6 +13962,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get liveTestingPresetArmedButHidden =>
       '已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現';
+
+  @override
+  String get liveTestingHolidayBlocked =>
+      '目前在假期範圍內，超級島在假期期間不會顯示；如需測試，請先在「課表設定 → 假日標記」中移除涵蓋今天的假期';
+
+  @override
+  String get liveTestingNotIslandHoliday =>
+      '目前在假期範圍內——超級島在假期期間不會顯示，可在「課表設定 → 假日標記」中管理假期';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程編輯頁進行設定';
@@ -21296,6 +21382,36 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get colorGroupOcean => '海洋系';
 
   @override
+  String get courseRecolorTileTitle => '課表重新配色';
+
+  @override
+  String get courseRecolorTileSubtitle => '匯入後隨時一鍵為全部課程換一套顏色';
+
+  @override
+  String get courseRecolorSheetTitle => '課表重新配色';
+
+  @override
+  String get courseRecolorSheetDescription =>
+      '每次「換一批」都會為全部課程刷一套隨機顏色；不滿意可以切回上一套，或回到匯入時的原色。';
+
+  @override
+  String get courseRecolorNewBatchButton => '換一批顏色';
+
+  @override
+  String get courseRecolorPrevious => '上一套';
+
+  @override
+  String get courseRecolorNext => '下一套';
+
+  @override
+  String courseRecolorSchemePosition(int index, int total) {
+    return '第 $index/$total 套';
+  }
+
+  @override
+  String get courseRecolorNoCoursesToast => '尚無課程，請先匯入或新增課程再換顏色';
+
+  @override
   String get courseImportTitle => '匯入課程';
 
   @override
@@ -23159,6 +23275,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get diagnosticsNoMatchingSubtitle => '可切換回「全部」，或改看原文繼續排查';
 
   @override
+  String diagnosticsLoadEarlierLabel(int count) {
+    return '載入更早日誌（還有 $count 筆）';
+  }
+
+  @override
   String get diagnosticsLevelInferred => '推斷等級';
 
   @override
@@ -24133,6 +24254,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get liveTestingPresetArmedButHidden =>
       '已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現';
+
+  @override
+  String get liveTestingHolidayBlocked =>
+      '目前在假期範圍內，超級島在假期期間不會顯示；如需測試，請先在「課表設定 → 假日標記」中移除涵蓋今天的假期';
+
+  @override
+  String get liveTestingNotIslandHoliday =>
+      '目前在假期範圍內——超級島在假期期間不會顯示，可在「課表設定 → 假日標記」中管理假期';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程编辑頁進行設定';

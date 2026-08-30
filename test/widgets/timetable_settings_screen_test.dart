@@ -5,9 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/services/live_testing_trigger.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import '../helpers_test_app.dart';
@@ -209,5 +211,83 @@ void main() {
         .position
         .pixels;
     expect(pixelsAfter, closeTo(pixelsBefore, 1));
+  });
+
+  // 2026-08-30 OPPO 反馈回归锚点：用户自添加假期覆盖当天后，自检永远查不出
+  // 真正原因——状态卡兜底报「原生实时服务未运行」、测试 toast 只解释「上课前
+  // 提醒」。假日门在选课最上游（预设课也一并被拦），必须在两处显式点名假期。
+  testWidgets('island status card blames holiday when holiday blocks the island', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () {
+      return provider.updateTimetableSettings(
+        provider.settings.copyWith(holidayOverrideEnabled: true),
+      );
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(home: createLiveTestingSettingsScreen()),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    final diagnosticsList = find.byType(HyperosListView).last;
+    await tester.scrollUntilVisible(
+      find.textContaining('超级岛在假期期间不显示'),
+      200,
+      scrollable: _scrollableUnder(diagnosticsList),
+    );
+    expect(find.textContaining('超级岛在假期期间不显示'), findsOneWidget);
+  });
+
+  testWidgets('live testing trigger reports holiday gate before hidden-preset hint', (
+    tester,
+  ) async {
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () {
+      return provider.updateTimetableSettings(
+        provider.settings.copyWith(holidayOverrideEnabled: true),
+      );
+    });
+    // 触发器的「在飞」标记由 unawaited 定时器重置，FakeAsync 测试结束后该
+    // 定时器被丢弃；直接复位，避免同进程后续用例误判测试进行中。
+    liveTestingTriggerInFlight = false;
+
+    BuildContext? probeContext;
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: Builder(
+            builder: (context) {
+              probeContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    LiveTestingTriggerResult? result;
+    await runRealAsync(tester, () async {
+      result = await triggerLiveUpdateTest(
+        context: probeContext!,
+        provider: provider,
+      );
+    });
+
+    expect(result?.status, LiveTestingTriggerStatus.error);
+    expect(
+      result?.message,
+      AppLocalizations.of(probeContext!)!.liveTestingHolidayBlocked,
+    );
+    // 核心回归锚点：假期时提示必须指向假期（旧代码此时报「已注入但此刻不会
+    // 弹出」或「无课」）；两种旧文案都不等于假期文案，任一回归都会在此失败。
   });
 }

@@ -857,6 +857,36 @@ class AppLocalizationsJa extends AppLocalizations {
   String get colorGroupOcean => 'オーシャン';
 
   @override
+  String get courseRecolorTileTitle => '時間割の配色を更新';
+
+  @override
+  String get courseRecolorTileSubtitle => 'インポート後でもワンタップで全授業の色を組み替え';
+
+  @override
+  String get courseRecolorSheetTitle => '時間割の配色を更新';
+
+  @override
+  String get courseRecolorSheetDescription =>
+      '「シャッフル」を押すたびに全授業に新しいランダム色を割り当てます。気に入らなければ前のセットに戻すことも、インポート時の元の色に戻すこともできます。';
+
+  @override
+  String get courseRecolorNewBatchButton => '色をシャッフル';
+
+  @override
+  String get courseRecolorPrevious => '前のセット';
+
+  @override
+  String get courseRecolorNext => '次のセット';
+
+  @override
+  String courseRecolorSchemePosition(int index, int total) {
+    return '第 $index/$total セット';
+  }
+
+  @override
+  String get courseRecolorNoCoursesToast => '授業がありません。先にインポートまたは追加してください';
+
+  @override
   String get courseImportTitle => '授業インポート';
 
   @override
@@ -2752,6 +2782,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsNoMatchingSubtitle => '「全て」に切替えるか、原文でトラブルシュートを続行';
 
   @override
+  String diagnosticsLoadEarlierLabel(int count) {
+    return 'より前のログを読み込む（残り $count 件）';
+  }
+
+  @override
   String get diagnosticsLevelInferred => '推定レベル';
 
   @override
@@ -3748,6 +3783,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get liveTestingPresetArmedButHidden =>
       '自己診断のプリセット授業は注入されましたが、今は島が表示されません。「授業前リマインダー」がオフの場合、島は授業が実際に始まった後（約1分後）に表示されます';
+
+  @override
+  String get liveTestingHolidayBlocked =>
+      '現在は休暇期間中のため、島は表示されません。テストするには、「時間割設定 → 休日マーク」で本日を含む休暇を先に削除してください';
+
+  @override
+  String get liveTestingNotIslandHoliday =>
+      '現在は休暇期間中です——休暇中は島が表示されません。休暇は「時間割設定 → 休日マーク」で管理できます';
 
   @override
   String get liveTestingTestCourseNote => 'ここにメモを表示，授業編集ページで設定可能';

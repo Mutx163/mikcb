@@ -897,6 +897,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get colorGroupOcean => 'Ocean';
 
   @override
+  String get courseRecolorTileTitle => 'Recolor Timetable';
+
+  @override
+  String get courseRecolorTileSubtitle =>
+      'Shuffle all course colors anytime after importing';
+
+  @override
+  String get courseRecolorSheetTitle => 'Recolor Timetable';
+
+  @override
+  String get courseRecolorSheetDescription =>
+      'Each shuffle assigns a fresh random color to every course. Not happy? Go back to the previous set, or restore the original imported colors.';
+
+  @override
+  String get courseRecolorNewBatchButton => 'Shuffle Colors';
+
+  @override
+  String get courseRecolorPrevious => 'Previous';
+
+  @override
+  String get courseRecolorNext => 'Next';
+
+  @override
+  String courseRecolorSchemePosition(int index, int total) {
+    return 'Set $index/$total';
+  }
+
+  @override
+  String get courseRecolorNoCoursesToast =>
+      'No courses yet. Import or add courses first.';
+
+  @override
   String get courseImportTitle => 'Import Courses';
 
   @override
@@ -2870,6 +2902,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Switch back to \"All\" or check the raw view to continue debugging';
 
   @override
+  String diagnosticsLoadEarlierLabel(int count) {
+    return 'Load earlier logs ($count more)';
+  }
+
+  @override
   String get diagnosticsLevelInferred => 'Inferred level';
 
   @override
@@ -3912,6 +3949,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get liveTestingPresetArmedButHidden =>
       'Preset self-check courses were armed, but the island will not pop right now — with the Before Class Reminder off, it only appears once the course actually starts (in about a minute).';
+
+  @override
+  String get liveTestingHolidayBlocked =>
+      'You are currently within a holiday period, so the island stays hidden. To test, first remove the holiday that covers today in Timetable Settings → Holiday Marking.';
+
+  @override
+  String get liveTestingNotIslandHoliday =>
+      'Currently within a holiday period — the island is hidden during holidays. Manage holidays in Timetable Settings → Holiday Marking.';
 
   @override
   String get liveTestingTestCourseNote =>

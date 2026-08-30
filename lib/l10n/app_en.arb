@@ -415,6 +415,15 @@
   "colorGroupDopamine": "Dopamine",
   "colorGroupSunset": "Sunset",
   "colorGroupOcean": "Ocean",
+  "courseRecolorTileTitle": "Recolor Timetable",
+  "courseRecolorTileSubtitle": "Shuffle all course colors anytime after importing",
+  "courseRecolorSheetTitle": "Recolor Timetable",
+  "courseRecolorSheetDescription": "Each shuffle assigns a fresh random color to every course. Not happy? Go back to the previous set, or restore the original imported colors.",
+  "courseRecolorNewBatchButton": "Shuffle Colors",
+  "courseRecolorPrevious": "Previous",
+  "courseRecolorNext": "Next",
+  "courseRecolorSchemePosition": "Set {index}/{total}",
+  "courseRecolorNoCoursesToast": "No courses yet. Import or add courses first.",
   "courseImportTitle": "Import Courses",
   "chooseImportMethodTitle": "Choose Import Method",
   "chooseImportMethodSubtitle": "Supports traditional .ics calendar import, AI image import, and warehouse-based academic system import",
@@ -1505,6 +1514,14 @@
   },
   "diagnosticsNoMatchingTitle": "No logs match this filter",
   "diagnosticsNoMatchingSubtitle": "Switch back to \"All\" or check the raw view to continue debugging",
+  "diagnosticsLoadEarlierLabel": "Load earlier logs ({count} more)",
+  "@diagnosticsLoadEarlierLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diagnosticsLevelInferred": "Inferred level",
   "diagnosticsRawFilteredHint": "The raw view follows the current level filter and only shows matching log blocks",
   "diagnosticsTimeSortAscending": "Oldest first",
@@ -2007,6 +2024,8 @@
   "liveTestingAnrSoon": "A ~30-second main-thread freeze is about to be triggered. Test outside flutter run, then reopen the app afterward to check Umeng.",
   "liveTestingNoCourseAvailable": "There is no course available for testing right now.",
   "liveTestingPresetArmedButHidden": "Preset self-check courses were armed, but the island will not pop right now — with the Before Class Reminder off, it only appears once the course actually starts (in about a minute).",
+  "liveTestingHolidayBlocked": "You are currently within a holiday period, so the island stays hidden. To test, first remove the holiday that covers today in Timetable Settings → Holiday Marking.",
+  "liveTestingNotIslandHoliday": "Currently within a holiday period — the island is hidden during holidays. Manage holidays in Timetable Settings → Holiday Marking.",
   "liveTestingTestCourseNote": "This note is shown here. You can edit it on the course edit page",
   "liveTestingNotificationSent": "A before-class test notification has been sent. It should enter the before-class reminder stage in about 8 seconds.",
   "sendFailedWithError": "Failed to send: {error}",
