@@ -85,7 +85,13 @@ for workflow in "${workflow_files[@]}"; do
       failed=1
       continue
     fi
-    if ! check_sha "${action}" "${sha}" "${workflow}:${line_number} ${action}"; then
+    # Subdirectory actions (owner/repo/path@sha) live in the owner/repo commit history;
+    # only the first two path segments form the repository slug.
+    repo_slug="${action}"
+    if [[ "${repo_slug}" =~ ^([^/]+/[^/]+)/ ]]; then
+      repo_slug="${BASH_REMATCH[1]}"
+    fi
+    if ! check_sha "${repo_slug}" "${sha}" "${workflow}:${line_number} ${action}"; then
       failed=1
     fi
   done < "${workflow}"
