@@ -3959,6 +3959,40 @@ class AppLocalizationsEn extends AppLocalizations {
       'Currently within a holiday period — the island is hidden during holidays. Manage holidays in Timetable Settings → Holiday Marking.';
 
   @override
+  String get liveTestingCourseTestAction => 'Course Test';
+
+  @override
+  String get liveTestingCourseTestPickerTitle => 'Pick a course to test';
+
+  @override
+  String get liveTestingCourseTestStageTitle => 'Choose a stage to preview';
+
+  @override
+  String get liveTestingCourseTestStageBeforeClass =>
+      'Before-class countdown (island stays for about 3 minutes)';
+
+  @override
+  String get liveTestingCourseTestStageDuringClass =>
+      'During class (island stays for about 4 minutes)';
+
+  @override
+  String liveTestingCourseTestActiveChip(String course) {
+    return 'Course test running · $course';
+  }
+
+  @override
+  String get liveTestingCourseTestStopAction => 'Stop Test';
+
+  @override
+  String liveTestingCourseTestStartedToast(String course, String stage) {
+    return 'Force-started the island test for \"$course\" ($stage). Press Home to watch it; the island dismisses itself when the test window ends and normal scheduling resumes.';
+  }
+
+  @override
+  String get liveTestingCourseTestStoppedToast =>
+      'Course test stopped; normal scheduling restored.';
+
+  @override
   String get liveTestingTestCourseNote =>
       'This note is shown here. You can edit it on the course edit page';
 

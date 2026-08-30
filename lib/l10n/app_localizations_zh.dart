@@ -3723,6 +3723,37 @@ class AppLocalizationsZh extends AppLocalizations {
       '当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期';
 
   @override
+  String get liveTestingCourseTestAction => '选课测试';
+
+  @override
+  String get liveTestingCourseTestPickerTitle => '选择要测试的课程';
+
+  @override
+  String get liveTestingCourseTestStageTitle => '选择要预览的阶段';
+
+  @override
+  String get liveTestingCourseTestStageBeforeClass => '课前倒计时（岛保持约 3 分钟）';
+
+  @override
+  String get liveTestingCourseTestStageDuringClass => '上课中（岛保持约 4 分钟）';
+
+  @override
+  String liveTestingCourseTestActiveChip(String course) {
+    return '选课测试中 · $course';
+  }
+
+  @override
+  String get liveTestingCourseTestStopAction => '停止测试';
+
+  @override
+  String liveTestingCourseTestStartedToast(String course, String stage) {
+    return '已强制启动「$course」的超级岛测试（$stage）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度';
+  }
+
+  @override
+  String get liveTestingCourseTestStoppedToast => '已停止选课测试，正式调度已恢复';
+
+  @override
   String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页进行设置';
 
   @override
@@ -13970,6 +14001,37 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get liveTestingNotIslandHoliday =>
       '目前在假期範圍內——超級島在假期期間不會顯示，可在「課表設定 → 假日標記」中管理假期';
+
+  @override
+  String get liveTestingCourseTestAction => '選課測試';
+
+  @override
+  String get liveTestingCourseTestPickerTitle => '選擇要測試的課程';
+
+  @override
+  String get liveTestingCourseTestStageTitle => '選擇要預覽的階段';
+
+  @override
+  String get liveTestingCourseTestStageBeforeClass => '課前倒數（島保持約 3 分鐘）';
+
+  @override
+  String get liveTestingCourseTestStageDuringClass => '上課中（島保持約 4 分鐘）';
+
+  @override
+  String liveTestingCourseTestActiveChip(String course) {
+    return '選課測試中 · $course';
+  }
+
+  @override
+  String get liveTestingCourseTestStopAction => '停止測試';
+
+  @override
+  String liveTestingCourseTestStartedToast(String course, String stage) {
+    return '已強制啟動「$course」的超級島測試（$stage）。請按 Home 鍵回桌面查看；島會在測試視窗結束後自動收島並恢復正式調度';
+  }
+
+  @override
+  String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程編輯頁進行設定';
@@ -24262,6 +24324,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get liveTestingNotIslandHoliday =>
       '目前在假期範圍內——超級島在假期期間不會顯示，可在「課表設定 → 假日標記」中管理假期';
+
+  @override
+  String get liveTestingCourseTestAction => '選課測試';
+
+  @override
+  String get liveTestingCourseTestPickerTitle => '選擇要測試的課程';
+
+  @override
+  String get liveTestingCourseTestStageTitle => '選擇要預覽的階段';
+
+  @override
+  String get liveTestingCourseTestStageBeforeClass => '課前倒數（島保持約 3 分鐘）';
+
+  @override
+  String get liveTestingCourseTestStageDuringClass => '上課中（島保持約 4 分鐘）';
+
+  @override
+  String liveTestingCourseTestActiveChip(String course) {
+    return '選課測試中 · $course';
+  }
+
+  @override
+  String get liveTestingCourseTestStopAction => '停止測試';
+
+  @override
+  String liveTestingCourseTestStartedToast(String course, String stage) {
+    return '已強制啟動「$course」的超級島測試（$stage）。請按 Home 鍵回桌面查看；島會在測試視窗結束後自動收島並恢復正式調度';
+  }
+
+  @override
+  String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
 
   @override
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程编辑頁進行設定';

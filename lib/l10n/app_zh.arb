@@ -2040,6 +2040,32 @@
   "liveTestingPresetArmedButHidden": "已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现",
   "liveTestingHolidayBlocked": "当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在「课表设置 → 节假日标记」中移除覆盖今天的假期",
   "liveTestingNotIslandHoliday": "当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期",
+  "liveTestingCourseTestAction": "选课测试",
+  "liveTestingCourseTestPickerTitle": "选择要测试的课程",
+  "liveTestingCourseTestStageTitle": "选择要预览的阶段",
+  "liveTestingCourseTestStageBeforeClass": "课前倒计时（岛保持约 3 分钟）",
+  "liveTestingCourseTestStageDuringClass": "上课中（岛保持约 4 分钟）",
+  "liveTestingCourseTestActiveChip": "选课测试中 · {course}",
+  "@liveTestingCourseTestActiveChip": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStopAction": "停止测试",
+  "liveTestingCourseTestStartedToast": "已强制启动「{course}」的超级岛测试（{stage}）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度",
+  "@liveTestingCourseTestStartedToast": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStoppedToast": "已停止选课测试，正式调度已恢复",
   "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页进行设置",
   "liveTestingNotificationSent": "已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段",
   "sendFailedWithError": "发送失败: {error}",

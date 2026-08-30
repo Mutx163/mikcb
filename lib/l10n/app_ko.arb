@@ -1842,6 +1842,32 @@
   "liveTestingPresetArmedButHidden": "자가 점검 프리셋 수업이 주입되었지만 지금은 아일랜드가 표시되지 않습니다. '수업 전 알림'이 꺼져 있으면 수업이 실제로 시작된 후(약 1분 뒤) 표시됩니다",
   "liveTestingHolidayBlocked": "현재 휴가 기간에 포함되어 있어 아일랜드가 표시되지 않습니다. 테스트하려면 먼저 '시간표 설정 → 공휴일 표시'에서 오늘을 포함하는 휴가를 삭제하세요",
   "liveTestingNotIslandHoliday": "현재 휴가 기간에 포함되어 있습니다——휴가 기간에는 아일랜드가 표시되지 않습니다. 휴가는 '시간표 설정 → 공휴일 표시'에서 관리할 수 있습니다",
+  "liveTestingCourseTestAction": "과목 테스트",
+  "liveTestingCourseTestPickerTitle": "테스트할 과목 선택",
+  "liveTestingCourseTestStageTitle": "미리 볼 단계 선택",
+  "liveTestingCourseTestStageBeforeClass": "수업 전 카운트다운(약 3분 표시)",
+  "liveTestingCourseTestStageDuringClass": "수업 중(약 4분 표시)",
+  "liveTestingCourseTestActiveChip": "과목 테스트 중 · {course}",
+  "@liveTestingCourseTestActiveChip": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStopAction": "테스트 중지",
+  "liveTestingCourseTestStartedToast": "'{course}' 슈퍼 아일랜드 테스트를 강제 시작했습니다({stage}). Home 키로 홈 화면에서 확인하세요. 테스트 시간이 끝나면 아일랜드가 자동으로 사라지고 일정 예약이 복구됩니다",
+  "@liveTestingCourseTestStartedToast": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStoppedToast": "과목 테스트를 중지했습니다. 일정 예약이 복구되었습니다",
   "liveTestingTestCourseNote": "여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다",
   "liveTestingNotificationSent": "수업 알림 테스트 알림을 전송했습니다. 약 8초 내에 수업 전 알림 단계로 진입합니다",
   "sendFailedWithError": "전송 실패: {error}",

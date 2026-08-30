@@ -1841,6 +1841,32 @@
   "liveTestingPresetArmedButHidden": "已注入自檢預設課程，但超級島此刻不會彈出——若「上課前提醒」已關閉，島會在課程真正開始後（約 1 分鐘後）才出現",
   "liveTestingHolidayBlocked": "目前在假期範圍內，超級島在假期期間不會顯示；如需測試，請先在「課表設定 → 假日標記」中移除涵蓋今天的假期",
   "liveTestingNotIslandHoliday": "目前在假期範圍內——超級島在假期期間不會顯示，可在「課表設定 → 假日標記」中管理假期",
+  "liveTestingCourseTestAction": "選課測試",
+  "liveTestingCourseTestPickerTitle": "選擇要測試的課程",
+  "liveTestingCourseTestStageTitle": "選擇要預覽的階段",
+  "liveTestingCourseTestStageBeforeClass": "課前倒數（島保持約 3 分鐘）",
+  "liveTestingCourseTestStageDuringClass": "上課中（島保持約 4 分鐘）",
+  "liveTestingCourseTestActiveChip": "選課測試中 · {course}",
+  "@liveTestingCourseTestActiveChip": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStopAction": "停止測試",
+  "liveTestingCourseTestStartedToast": "已強制啟動「{course}」的超級島測試（{stage}）。請按 Home 鍵回桌面查看；島會在測試視窗結束後自動收島並恢復正式調度",
+  "@liveTestingCourseTestStartedToast": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStoppedToast": "已停止選課測試，正式調度已恢復",
   "liveTestingTestCourseNote": "此處顯示備注，可以在課程編輯頁進行設定",
   "liveTestingNotificationSent": "已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段",
   "sendFailedWithError": "發送失敗: {error}",

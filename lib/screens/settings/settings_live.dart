@@ -168,6 +168,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   DateTime? _lastDebugStatusUpdatedAt;
   bool _holidayOverrideEnabled = false;
   bool? _lastKnownTestSessionActive;
+  // 选课测试（强制起岛）会话：芯片文案 + 到点自动摘除的定时器。
+  String? _courseTestLabel;
+  Timer? _courseTestEndTimer;
+  bool _courseTestBusy = false;
 
   @override
   void initState() {
@@ -202,6 +206,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   @override
   void dispose() {
     _autoRefreshTimer?.cancel();
+    _courseTestEndTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -333,6 +338,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           kind: AppToastKind.info,
         );
       } else {
+        // 正式路径触发器会解除双路暂停并重刷快照，选课测试会话随之失效，
+        // 芯片同步摘除。
+        _courseTestEndTimer?.cancel();
+        setState(() => _courseTestLabel = null);
         await _showTestOptions(context);
         await Future<void>.delayed(const Duration(milliseconds: 300));
       }
@@ -343,6 +352,132 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     }
     if (mounted) {
       await _refreshDebugStatus(showLoading: true);
+    }
+  }
+
+  /// 选课测试：任选一门已有课程强制起岛预览显示，与时间无关（不查假日/
+  /// 周次/课表窗口）。流程 = 选课单 → 选阶段 → 强制起岛。
+  Future<void> _startCourseIslandTest() async {
+    if (_courseTestBusy) return;
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    if (provider.courseGroups.isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.liveTestingNoCourseAvailable,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    final course = await showCourseTemplatePickerSheet(
+      context,
+      title: l10n.liveTestingCourseTestPickerTitle,
+      courseGroups: provider.courseGroups,
+    );
+    if (!mounted || course == null) return;
+    final stage = await _pickCourseTestStage(course.name);
+    if (!mounted || stage == null) return;
+    setState(() => _courseTestBusy = true);
+    try {
+      final result = await triggerLiveUpdateCourseTest(
+        context: context,
+        provider: provider,
+        course: course,
+        stage: stage,
+      );
+      if (!mounted) return;
+      _showLiveTestingTriggerResult(context, result);
+      if (result.status == LiveTestingTriggerStatus.success) {
+        _courseTestEndTimer?.cancel();
+        setState(() => _courseTestLabel = course.name);
+        // 会话最长约 4 分钟 + 20 秒暂停缓冲；到点强制摘芯片，即便岛被
+        // 真实课接管或原生侧提前收掉。
+        _courseTestEndTimer = Timer(const Duration(minutes: 6), () {
+          if (mounted) {
+            setState(() => _courseTestLabel = null);
+          }
+        });
+        await _refreshDebugStatus(showLoading: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _courseTestBusy = false);
+      }
+    }
+  }
+
+  Future<LiveCourseTestStage?> _pickCourseTestStage(String courseName) {
+    final l10n = AppLocalizations.of(context)!;
+    return showHyperosSheet<LiveCourseTestStage>(
+      context: context,
+      builder: (sheetContext) => HyperosSheetFrame(
+        chrome: HyperosSheetChrome.floating,
+        frosted: true,
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.liveTestingCourseTestStageTitle,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.sheetTitle(context),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              courseName,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.sectionDescription(context),
+            ),
+            const SizedBox(height: 16),
+            HyperosButton(
+              label: l10n.liveTestingCourseTestStageBeforeClass,
+              variant: HyperosButtonVariant.primary,
+              expand: true,
+              onPressed: () =>
+                  Navigator.pop(sheetContext, LiveCourseTestStage.beforeClass),
+            ),
+            const SizedBox(height: 12),
+            HyperosButton(
+              label: l10n.liveTestingCourseTestStageDuringClass,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: () =>
+                  Navigator.pop(sheetContext, LiveCourseTestStage.duringClass),
+            ),
+            const SizedBox(height: 12),
+            HyperosButton(
+              label: l10n.cancelAction,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.pop(sheetContext),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _stopCourseIslandTest() async {
+    if (_courseTestBusy) return;
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _courseTestBusy = true);
+    try {
+      await cancelLiveUpdateCourseTest(provider);
+      _courseTestEndTimer?.cancel();
+      if (!mounted) return;
+      setState(() => _courseTestLabel = null);
+      showAppToast(
+        context,
+        message: l10n.liveTestingCourseTestStoppedToast,
+        kind: AppToastKind.success,
+      );
+      await _refreshDebugStatus(showLoading: true);
+    } finally {
+      if (mounted) {
+        setState(() => _courseTestBusy = false);
+      }
     }
   }
 
@@ -513,6 +648,34 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                         onPressed: _testToggling
                             ? null
                             : () => _toggleTestSession(),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_courseTestLabel != null) ...[
+                        _DebugStatusChip(
+                          icon: Icons.play_circle_outline_rounded,
+                          label: l10n.liveTestingCourseTestActiveChip(
+                            _courseTestLabel!,
+                          ),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(height: 12),
+                        HyperosButton(
+                          label: l10n.liveTestingCourseTestStopAction,
+                          variant: HyperosButtonVariant.destructive,
+                          loading: _courseTestBusy,
+                          onPressed: _courseTestBusy
+                              ? null
+                              : () => _stopCourseIslandTest(),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      HyperosButton(
+                        label: l10n.liveTestingCourseTestAction,
+                        variant: HyperosButtonVariant.secondary,
+                        loading: _courseTestBusy,
+                        onPressed: _courseTestBusy
+                            ? null
+                            : () => _startCourseIslandTest(),
                       ),
                       if (!kReleaseMode) ...[
                         const SizedBox(height: 12),

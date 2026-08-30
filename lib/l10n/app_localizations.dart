@@ -6897,6 +6897,60 @@ abstract class AppLocalizations {
   /// **'当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期'**
   String get liveTestingNotIslandHoliday;
 
+  /// No description provided for @liveTestingCourseTestAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'选课测试'**
+  String get liveTestingCourseTestAction;
+
+  /// No description provided for @liveTestingCourseTestPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择要测试的课程'**
+  String get liveTestingCourseTestPickerTitle;
+
+  /// No description provided for @liveTestingCourseTestStageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择要预览的阶段'**
+  String get liveTestingCourseTestStageTitle;
+
+  /// No description provided for @liveTestingCourseTestStageBeforeClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'课前倒计时（岛保持约 3 分钟）'**
+  String get liveTestingCourseTestStageBeforeClass;
+
+  /// No description provided for @liveTestingCourseTestStageDuringClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课中（岛保持约 4 分钟）'**
+  String get liveTestingCourseTestStageDuringClass;
+
+  /// No description provided for @liveTestingCourseTestActiveChip.
+  ///
+  /// In zh, this message translates to:
+  /// **'选课测试中 · {course}'**
+  String liveTestingCourseTestActiveChip(String course);
+
+  /// No description provided for @liveTestingCourseTestStopAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止测试'**
+  String get liveTestingCourseTestStopAction;
+
+  /// No description provided for @liveTestingCourseTestStartedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已强制启动「{course}」的超级岛测试（{stage}）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度'**
+  String liveTestingCourseTestStartedToast(String course, String stage);
+
+  /// No description provided for @liveTestingCourseTestStoppedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已停止选课测试，正式调度已恢复'**
+  String get liveTestingCourseTestStoppedToast;
+
   /// No description provided for @liveTestingTestCourseNote.
   ///
   /// In zh, this message translates to:

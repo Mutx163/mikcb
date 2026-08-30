@@ -3793,6 +3793,38 @@ class AppLocalizationsJa extends AppLocalizations {
       '現在は休暇期間中です——休暇中は島が表示されません。休暇は「時間割設定 → 休日マーク」で管理できます';
 
   @override
+  String get liveTestingCourseTestAction => '授業テスト';
+
+  @override
+  String get liveTestingCourseTestPickerTitle => 'テストする授業を選択';
+
+  @override
+  String get liveTestingCourseTestStageTitle => 'プレビューする段階を選択';
+
+  @override
+  String get liveTestingCourseTestStageBeforeClass => '授業前カウントダウン（島は約3分表示）';
+
+  @override
+  String get liveTestingCourseTestStageDuringClass => '授業中（島は約4分表示）';
+
+  @override
+  String liveTestingCourseTestActiveChip(String course) {
+    return '授業テスト中 · $course';
+  }
+
+  @override
+  String get liveTestingCourseTestStopAction => 'テストを停止';
+
+  @override
+  String liveTestingCourseTestStartedToast(String course, String stage) {
+    return '「$course」のスーパー島テストを強制開始しました（$stage）。Homeキーでホーム画面に戻って確認してください。テスト時間が終わると島は自動で消え、通常のスケジュールに戻ります';
+  }
+
+  @override
+  String get liveTestingCourseTestStoppedToast =>
+      '授業テストを停止しました。通常のスケジュールに戻りました';
+
+  @override
   String get liveTestingTestCourseNote => 'ここにメモを表示，授業編集ページで設定可能';
 
   @override

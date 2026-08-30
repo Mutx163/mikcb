@@ -38,6 +38,7 @@ import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../widgets/course_field_picker_sheet.dart';
+import '../widgets/course_template_picker_sheet.dart';
 import '../services/bundled_assets.dart';
 import '../services/live_testing_trigger.dart';
 import '../widgets/bundled_asset_image.dart';

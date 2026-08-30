@@ -1842,6 +1842,32 @@
   "liveTestingPresetArmedButHidden": "自己診断のプリセット授業は注入されましたが、今は島が表示されません。「授業前リマインダー」がオフの場合、島は授業が実際に始まった後（約1分後）に表示されます",
   "liveTestingHolidayBlocked": "現在は休暇期間中のため、島は表示されません。テストするには、「時間割設定 → 休日マーク」で本日を含む休暇を先に削除してください",
   "liveTestingNotIslandHoliday": "現在は休暇期間中です——休暇中は島が表示されません。休暇は「時間割設定 → 休日マーク」で管理できます",
+  "liveTestingCourseTestAction": "授業テスト",
+  "liveTestingCourseTestPickerTitle": "テストする授業を選択",
+  "liveTestingCourseTestStageTitle": "プレビューする段階を選択",
+  "liveTestingCourseTestStageBeforeClass": "授業前カウントダウン（島は約3分表示）",
+  "liveTestingCourseTestStageDuringClass": "授業中（島は約4分表示）",
+  "liveTestingCourseTestActiveChip": "授業テスト中 · {course}",
+  "@liveTestingCourseTestActiveChip": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStopAction": "テストを停止",
+  "liveTestingCourseTestStartedToast": "「{course}」のスーパー島テストを強制開始しました（{stage}）。Homeキーでホーム画面に戻って確認してください。テスト時間が終わると島は自動で消え、通常のスケジュールに戻ります",
+  "@liveTestingCourseTestStartedToast": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStoppedToast": "授業テストを停止しました。通常のスケジュールに戻りました",
   "liveTestingTestCourseNote": "ここにメモを表示，授業編集ページで設定可能",
   "liveTestingNotificationSent": "授業リマインダーテスト通知を送信しました。約8秒以内に授業前リマインダーステージに移行",
   "sendFailedWithError": "送信失敗：{error}",

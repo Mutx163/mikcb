@@ -2026,6 +2026,32 @@
   "liveTestingPresetArmedButHidden": "Preset self-check courses were armed, but the island will not pop right now — with the Before Class Reminder off, it only appears once the course actually starts (in about a minute).",
   "liveTestingHolidayBlocked": "You are currently within a holiday period, so the island stays hidden. To test, first remove the holiday that covers today in Timetable Settings → Holiday Marking.",
   "liveTestingNotIslandHoliday": "Currently within a holiday period — the island is hidden during holidays. Manage holidays in Timetable Settings → Holiday Marking.",
+  "liveTestingCourseTestAction": "Course Test",
+  "liveTestingCourseTestPickerTitle": "Pick a course to test",
+  "liveTestingCourseTestStageTitle": "Choose a stage to preview",
+  "liveTestingCourseTestStageBeforeClass": "Before-class countdown (island stays for about 3 minutes)",
+  "liveTestingCourseTestStageDuringClass": "During class (island stays for about 4 minutes)",
+  "liveTestingCourseTestActiveChip": "Course test running · {course}",
+  "@liveTestingCourseTestActiveChip": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStopAction": "Stop Test",
+  "liveTestingCourseTestStartedToast": "Force-started the island test for \"{course}\" ({stage}). Press Home to watch it; the island dismisses itself when the test window ends and normal scheduling resumes.",
+  "@liveTestingCourseTestStartedToast": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingCourseTestStoppedToast": "Course test stopped; normal scheduling restored.",
   "liveTestingTestCourseNote": "This note is shown here. You can edit it on the course edit page",
   "liveTestingNotificationSent": "A before-class test notification has been sent. It should enter the before-class reminder stage in about 8 seconds.",
   "sendFailedWithError": "Failed to send: {error}",

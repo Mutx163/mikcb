@@ -3814,6 +3814,38 @@ class AppLocalizationsKo extends AppLocalizations {
       '현재 휴가 기간에 포함되어 있습니다——휴가 기간에는 아일랜드가 표시되지 않습니다. 휴가는 \'시간표 설정 → 공휴일 표시\'에서 관리할 수 있습니다';
 
   @override
+  String get liveTestingCourseTestAction => '과목 테스트';
+
+  @override
+  String get liveTestingCourseTestPickerTitle => '테스트할 과목 선택';
+
+  @override
+  String get liveTestingCourseTestStageTitle => '미리 볼 단계 선택';
+
+  @override
+  String get liveTestingCourseTestStageBeforeClass => '수업 전 카운트다운(약 3분 표시)';
+
+  @override
+  String get liveTestingCourseTestStageDuringClass => '수업 중(약 4분 표시)';
+
+  @override
+  String liveTestingCourseTestActiveChip(String course) {
+    return '과목 테스트 중 · $course';
+  }
+
+  @override
+  String get liveTestingCourseTestStopAction => '테스트 중지';
+
+  @override
+  String liveTestingCourseTestStartedToast(String course, String stage) {
+    return '\'$course\' 슈퍼 아일랜드 테스트를 강제 시작했습니다($stage). Home 키로 홈 화면에서 확인하세요. 테스트 시간이 끝나면 아일랜드가 자동으로 사라지고 일정 예약이 복구됩니다';
+  }
+
+  @override
+  String get liveTestingCourseTestStoppedToast =>
+      '과목 테스트를 중지했습니다. 일정 예약이 복구되었습니다';
+
+  @override
   String get liveTestingTestCourseNote =>
       '여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다';
 
