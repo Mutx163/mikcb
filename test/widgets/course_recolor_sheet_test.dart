@@ -10,6 +10,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/widgets/course_recolor_sheet.dart';
+import 'package:university_timetable/widgets/home_menu_catalog.dart';
 
 import '../helpers_test_app.dart';
 
@@ -241,12 +242,53 @@ void main() {
     expect(find.text('第 3/3 套'), findsOneWidget);
 
     // 连按两次上一套：第二批 → 第一批 → 导入原色。
-    expect(await tapUntil('上一套', () => colors().toString() == firstBatch.toString()), true);
     expect(
-      await tapUntil('上一套', () => colors().toString() == originalColors.toString()),
+      await tapUntil('上一套', () => colors().toString() == firstBatch.toString()),
+      true,
+    );
+    expect(
+      await tapUntil(
+        '上一套',
+        () => colors().toString() == originalColors.toString(),
+      ),
       true,
       reason: '快照层必须能一路切回导入原色',
     );
     expect(find.text('第 1/3 套'), findsOneWidget);
+  });
+
+  testWidgets('目录条目 courseRecolor 的 open 直接拉起弹层（八宫格/圆钮/坞共用分发）', (
+    tester,
+  ) async {
+    final provider = await createInitializedTestProvider(tester);
+    await tester.runAsync(() async {
+      await provider.addCourse(
+        _entry(id: 'c1', name: '高等数学', dayOfWeek: 1, color: '#E91E63'),
+      );
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () =>
+                      homeMenuEntryById('courseRecolor')!.open(context),
+                  child: const Text('open-catalog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('open-catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('课表重新配色'), findsOneWidget);
   });
 }
