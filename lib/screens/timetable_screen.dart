@@ -7973,8 +7973,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
 
     // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层，
-    // 「列表」是当前的锚定弹窗；排列只在八宫格下生效。两种形态统一以
-    // 入口 id 回传，再经目录分发到全应用任意二级页面/功能。
+    // 「列表」是当前的锚定弹窗。两种形态共享同一份自定义排列
+    // （homeGridMenuActions），统一以入口 id 回传，再经目录分发到
+    // 全应用任意二级页面/功能。
     final String? selectedId;
     if (settings.homeMenuStyle == HomeMenuStyle.grid) {
       selectedId = await showHomeTopGridMenuSheet(
@@ -7983,13 +7984,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         entries: resolveHomeGridMenuEntries(settings),
       );
     } else {
-      selectedId = (await showHomeTopMenuSheet(
+      selectedId = await showHomeTopMenuSheet(
         context,
         hasAvailableUpdate: _hasAvailableUpdate,
+        entries: resolveHomeGridMenuEntries(settings),
         anchorKey: _topMenuButtonKey,
         foregroundColor: menuForeground,
-      ))
-          ?.name;
+      );
     }
 
     if (!mounted || selectedId == null) {

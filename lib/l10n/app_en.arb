@@ -2139,6 +2139,11 @@
       }
     }
   },
+  "homeWidgetBindingSectionTitle": "Widget bindings",
+  "homeWidgetBindingFollowActive": "Follow current timetable",
+  "homeWidgetBindingEmpty": "No today-course widget on your home screen yet. Add one first, then come back to bind it.",
+  "homeWidgetBindingSaveFailed": "Failed to save the widget binding. Please try again.",
+  "homeWidgetBindingMissingToast": "The timetable bound to this widget is no longer available. Opened normally instead.",
   "layoutSettingsTitle": "Layout & sections",
   "layoutDensityTitle": "Timetable density",
   "layoutAutoFitHeightTitle": "Auto fill screen height",
@@ -6063,9 +6068,9 @@
   "homeMenuStyleLabel": "Top-right menu style",
   "homeMenuStyleList": "List menu",
   "homeMenuStyleGrid": "Eight-tile grid menu",
-  "homeMenuStyleListSubtitle": "Anchored list",
+  "homeMenuStyleListSubtitle": "Anchored list, customizable",
   "homeMenuStyleGridSubtitle": "Icon grid, customizable",
-  "homeGridCustomizeTitle": "Customize grid buttons",
+  "homeMenuCustomizeTitle": "Customize menu buttons",
   "homeGridCustomizeDetails": "{count}/{max} enabled",
   "@homeGridCustomizeDetails": {
     "placeholders": {

@@ -223,40 +223,40 @@ class _HomeNavigationSettingsScreenState
                     _updateDraft(_draft.copyWith(homeMenuStyle: value));
                   },
                 ),
-                // 排列自定义只在八宫格形态下生效，列表形态时隐藏入口。
-                if (_draft.homeMenuStyle == HomeMenuStyle.grid)
-                  HyperosListTile(
-                    title: l10n.homeGridCustomizeTitle,
-                    details: l10n.homeGridCustomizeDetails(
-                      resolveHomeGridMenuEntries(_draft).length,
-                      HomeGridMenu.maxSlots,
-                    ),
-                    onTap: () async {
-                      await HyperosNavigation.push(
-                        context,
-                        settings: const RouteSettings(
-                          name: '/settings/home-menu',
-                        ),
-                        builder: (_) => _HomeGridMenuEditorScreen(
-                          initialIds: [
-                            for (final entry in resolveHomeGridMenuEntries(
-                              _draft,
-                            ))
-                              entry.id,
-                          ],
-                          onChanged: (ids) {
-                            _updateDraft(
-                              _draft.copyWith(homeGridMenuActions: ids),
-                            );
-                          },
-                        ),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
+                // 菜单内容自定义：列表与八宫格两种形态共享同一份排列
+                // （homeGridMenuActions），编辑器与持久化无需区分形态。
+                HyperosListTile(
+                  title: l10n.homeMenuCustomizeTitle,
+                  details: l10n.homeGridCustomizeDetails(
+                    resolveHomeGridMenuEntries(_draft).length,
+                    HomeGridMenu.maxSlots,
                   ),
+                  onTap: () async {
+                    await HyperosNavigation.push(
+                      context,
+                      settings: const RouteSettings(
+                        name: '/settings/home-menu',
+                      ),
+                      builder: (_) => _HomeGridMenuEditorScreen(
+                        initialIds: [
+                          for (final entry in resolveHomeGridMenuEntries(
+                            _draft,
+                          ))
+                            entry.id,
+                        ],
+                        onChanged: (ids) {
+                          _updateDraft(
+                            _draft.copyWith(homeGridMenuActions: ids),
+                          );
+                        },
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
               ],
             ),
           ),

@@ -7179,6 +7179,36 @@ abstract class AppLocalizations {
   /// **'发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”'**
   String homeWidgetPinFailedManual(String label);
 
+  /// No description provided for @homeWidgetBindingSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'各卡片绑定管理'**
+  String get homeWidgetBindingSectionTitle;
+
+  /// No description provided for @homeWidgetBindingFollowActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随当前课表'**
+  String get homeWidgetBindingFollowActive;
+
+  /// No description provided for @homeWidgetBindingEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面上还没有今日课程卡片，先添加一张再回来绑定'**
+  String get homeWidgetBindingEmpty;
+
+  /// No description provided for @homeWidgetBindingSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存卡片绑定失败，请稍后重试'**
+  String get homeWidgetBindingSaveFailed;
+
+  /// No description provided for @homeWidgetBindingMissingToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'这张卡片绑定的课表已失效，已按普通方式打开'**
+  String get homeWidgetBindingMissingToast;
+
   /// No description provided for @layoutSettingsTitle.
   ///
   /// In zh, this message translates to:
@@ -18394,7 +18424,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeMenuStyleListSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'锚定列表，一屏展示'**
+  /// **'锚定列表，可自定义'**
   String get homeMenuStyleListSubtitle;
 
   /// No description provided for @homeMenuStyleGridSubtitle.
@@ -18403,11 +18433,11 @@ abstract class AppLocalizations {
   /// **'图标瓷贴，可自定义'**
   String get homeMenuStyleGridSubtitle;
 
-  /// No description provided for @homeGridCustomizeTitle.
+  /// No description provided for @homeMenuCustomizeTitle.
   ///
   /// In zh, this message translates to:
-  /// **'自定义八宫格按钮'**
-  String get homeGridCustomizeTitle;
+  /// **'自定义菜单按钮'**
+  String get homeMenuCustomizeTitle;
 
   /// No description provided for @homeGridCustomizeDetails.
   ///

@@ -4137,6 +4137,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get homeWidgetBindingSectionTitle => 'Widget bindings';
+
+  @override
+  String get homeWidgetBindingFollowActive => 'Follow current timetable';
+
+  @override
+  String get homeWidgetBindingEmpty =>
+      'No today-course widget on your home screen yet. Add one first, then come back to bind it.';
+
+  @override
+  String get homeWidgetBindingSaveFailed =>
+      'Failed to save the widget binding. Please try again.';
+
+  @override
+  String get homeWidgetBindingMissingToast =>
+      'The timetable bound to this widget is no longer available. Opened normally instead.';
+
+  @override
   String get layoutSettingsTitle => 'Layout & sections';
 
   @override
@@ -10705,13 +10723,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuStyleGrid => 'Eight-tile grid menu';
 
   @override
-  String get homeMenuStyleListSubtitle => 'Anchored list';
+  String get homeMenuStyleListSubtitle => 'Anchored list, customizable';
 
   @override
   String get homeMenuStyleGridSubtitle => 'Icon grid, customizable';
 
   @override
-  String get homeGridCustomizeTitle => 'Customize grid buttons';
+  String get homeMenuCustomizeTitle => 'Customize menu buttons';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {

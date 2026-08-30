@@ -3886,6 +3886,21 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get homeWidgetBindingSectionTitle => '各卡片绑定管理';
+
+  @override
+  String get homeWidgetBindingFollowActive => '跟随当前课表';
+
+  @override
+  String get homeWidgetBindingEmpty => '桌面上还没有今日课程卡片，先添加一张再回来绑定';
+
+  @override
+  String get homeWidgetBindingSaveFailed => '保存卡片绑定失败，请稍后重试';
+
+  @override
+  String get homeWidgetBindingMissingToast => '这张卡片绑定的课表已失效，已按普通方式打开';
+
+  @override
   String get layoutSettingsTitle => '布局与节次';
 
   @override
@@ -10116,13 +10131,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuStyleGrid => '八宫格菜单';
 
   @override
-  String get homeMenuStyleListSubtitle => '锚定列表，一屏展示';
+  String get homeMenuStyleListSubtitle => '锚定列表，可自定义';
 
   @override
   String get homeMenuStyleGridSubtitle => '图标瓷贴，可自定义';
 
   @override
-  String get homeGridCustomizeTitle => '自定义八宫格按钮';
+  String get homeMenuCustomizeTitle => '自定义菜单按钮';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {
@@ -14174,6 +14189,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String homeWidgetPinFailedManual(String label) {
     return '發起添加失敗，請長按桌面 → 小組件 → 輕嶼課表，再手動添加“$label”';
   }
+
+  @override
+  String get homeWidgetBindingSectionTitle => '各卡片綁定管理';
+
+  @override
+  String get homeWidgetBindingFollowActive => '跟隨目前課表';
+
+  @override
+  String get homeWidgetBindingEmpty => '桌面上還沒有今日課程卡片，先新增一張再返嚟綁定';
+
+  @override
+  String get homeWidgetBindingSaveFailed => '儲存卡片綁定失敗，請稍後重試';
+
+  @override
+  String get homeWidgetBindingMissingToast => '這張卡片綁定的課表已失效，已按普通方式打開';
 
   @override
   String get layoutSettingsTitle => '布局與節次';
@@ -20449,13 +20479,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuStyleGrid => '八宮格選單';
 
   @override
-  String get homeMenuStyleListSubtitle => '錨定清單，一屏呈現';
+  String get homeMenuStyleListSubtitle => '錨定清單，可自訂';
 
   @override
   String get homeMenuStyleGridSubtitle => '圖示瓷貼，可自訂';
 
   @override
-  String get homeGridCustomizeTitle => '自訂八宮格按鈕';
+  String get homeMenuCustomizeTitle => '自訂選單按鈕';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {
@@ -24507,6 +24537,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String homeWidgetPinFailedManual(String label) {
     return '發起添加失败，请长按桌面 → 小工具 → 輕嶼課表，再手動添加“$label”';
   }
+
+  @override
+  String get homeWidgetBindingSectionTitle => '各卡片綁定管理';
+
+  @override
+  String get homeWidgetBindingFollowActive => '跟隨目前課表';
+
+  @override
+  String get homeWidgetBindingEmpty => '桌面上還沒有今日課程卡片，先新增一張再回來綁定';
+
+  @override
+  String get homeWidgetBindingSaveFailed => '儲存卡片綁定失敗，請稍後重試';
+
+  @override
+  String get homeWidgetBindingMissingToast => '這張卡片綁定的課表已失效，已按普通方式開啟';
 
   @override
   String get layoutSettingsTitle => '布局與節次';
@@ -30782,13 +30827,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuStyleGrid => '八宮格選單';
 
   @override
-  String get homeMenuStyleListSubtitle => '錨定清單，一屏呈現';
+  String get homeMenuStyleListSubtitle => '錨定清單，可自訂';
 
   @override
   String get homeMenuStyleGridSubtitle => '圖示瓷貼，可自訂';
 
   @override
-  String get homeGridCustomizeTitle => '自訂八宮格按鈕';
+  String get homeMenuCustomizeTitle => '自訂選單按鈕';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {

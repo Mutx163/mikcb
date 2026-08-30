@@ -3983,6 +3983,24 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get homeWidgetBindingSectionTitle => '위젯 바인딩 관리';
+
+  @override
+  String get homeWidgetBindingFollowActive => '현재 시간표 따르기';
+
+  @override
+  String get homeWidgetBindingEmpty =>
+      '홈 화면에 오늘 수업 위젯이 아직 없어요. 먼저 추가한 뒤 바인딩해 주세요.';
+
+  @override
+  String get homeWidgetBindingSaveFailed =>
+      '위젯 바인딩 저장에 실패했어요. 잠시 후 다시 시도해 주세요.';
+
+  @override
+  String get homeWidgetBindingMissingToast =>
+      '이 위젯에 바인딩된 시간표가 더 이상 없어요. 일반 방식으로 열었어요.';
+
+  @override
   String get layoutSettingsTitle => '레이아웃 및 교시';
 
   @override
@@ -10441,13 +10459,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuStyleGrid => '여덟 칸 격자 메뉴';
 
   @override
-  String get homeMenuStyleListSubtitle => '앵커 텍스트 목록';
+  String get homeMenuStyleListSubtitle => '앵커 텍스트 목록, 맞춤 설정';
 
   @override
   String get homeMenuStyleGridSubtitle => '아이콘 타일, 맞춤 설정';
 
   @override
-  String get homeGridCustomizeTitle => '격자 버튼 사용자 지정';
+  String get homeMenuCustomizeTitle => '메뉴 버튼 사용자 지정';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {

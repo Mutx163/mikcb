@@ -1955,6 +1955,11 @@
       }
     }
   },
+  "homeWidgetBindingSectionTitle": "위젯 바인딩 관리",
+  "homeWidgetBindingFollowActive": "현재 시간표 따르기",
+  "homeWidgetBindingEmpty": "홈 화면에 오늘 수업 위젯이 아직 없어요. 먼저 추가한 뒤 바인딩해 주세요.",
+  "homeWidgetBindingSaveFailed": "위젯 바인딩 저장에 실패했어요. 잠시 후 다시 시도해 주세요.",
+  "homeWidgetBindingMissingToast": "이 위젯에 바인딩된 시간표가 더 이상 없어요. 일반 방식으로 열었어요.",
   "layoutSettingsTitle": "레이아웃 및 교시",
   "layoutDensityTitle": "시간표 밀도",
   "layoutAutoFitHeightTitle": "화면 높이에 자동 맞춤",
@@ -6060,9 +6065,9 @@
   "homeMenuStyleLabel": "오른쪽 위 메뉴 스타일",
   "homeMenuStyleList": "리스트 메뉴",
   "homeMenuStyleGrid": "여덟 칸 격자 메뉴",
-  "homeMenuStyleListSubtitle": "앵커 텍스트 목록",
+  "homeMenuStyleListSubtitle": "앵커 텍스트 목록, 맞춤 설정",
   "homeMenuStyleGridSubtitle": "아이콘 타일, 맞춤 설정",
-  "homeGridCustomizeTitle": "격자 버튼 사용자 지정",
+  "homeMenuCustomizeTitle": "메뉴 버튼 사용자 지정",
   "homeGridCustomizeDetails": "{count}/{max}개 사용 중",
   "@homeGridCustomizeDetails": {
     "placeholders": {

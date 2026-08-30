@@ -2153,6 +2153,11 @@
       }
     }
   },
+  "homeWidgetBindingSectionTitle": "各卡片绑定管理",
+  "homeWidgetBindingFollowActive": "跟随当前课表",
+  "homeWidgetBindingEmpty": "桌面上还没有今日课程卡片，先添加一张再回来绑定",
+  "homeWidgetBindingSaveFailed": "保存卡片绑定失败，请稍后重试",
+  "homeWidgetBindingMissingToast": "这张卡片绑定的课表已失效，已按普通方式打开",
   "layoutSettingsTitle": "布局与节次",
   "layoutDensityTitle": "课表密度",
   "layoutAutoFitHeightTitle": "自动充满屏幕高度",
@@ -6079,9 +6084,9 @@
   "homeMenuStyleLabel": "右上角菜单样式",
   "homeMenuStyleList": "列表菜单",
   "homeMenuStyleGrid": "八宫格菜单",
-  "homeMenuStyleListSubtitle": "锚定列表，一屏展示",
+  "homeMenuStyleListSubtitle": "锚定列表，可自定义",
   "homeMenuStyleGridSubtitle": "图标瓷贴，可自定义",
-  "homeGridCustomizeTitle": "自定义八宫格按钮",
+  "homeMenuCustomizeTitle": "自定义菜单按钮",
   "homeGridCustomizeDetails": "已启用 {count}/{max} 个",
   "@homeGridCustomizeDetails": {
     "placeholders": {

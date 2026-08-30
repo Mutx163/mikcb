@@ -3960,6 +3960,24 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get homeWidgetBindingSectionTitle => 'ウィジェットの割り当て管理';
+
+  @override
+  String get homeWidgetBindingFollowActive => '現在の時間割に従う';
+
+  @override
+  String get homeWidgetBindingEmpty =>
+      'ホーム画面に今日の授業ウィジェットがまだありません。追加してから戻って割り当ててください。';
+
+  @override
+  String get homeWidgetBindingSaveFailed =>
+      'ウィジェットの割り当ての保存に失敗しました。しばらくしてからもう一度お試しください。';
+
+  @override
+  String get homeWidgetBindingMissingToast =>
+      'このウィジェットに割り当てた時間割は無効になりました。通常どおり開きました。';
+
+  @override
   String get layoutSettingsTitle => 'レイアウトと時限';
 
   @override
@@ -10397,13 +10415,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuStyleGrid => '八宮格メニュー';
 
   @override
-  String get homeMenuStyleListSubtitle => 'アンカーのリスト表示';
+  String get homeMenuStyleListSubtitle => 'アンカーのリスト表示、カスタマイズ可';
 
   @override
   String get homeMenuStyleGridSubtitle => 'アイコンタイル、カスタマイズ可';
 
   @override
-  String get homeGridCustomizeTitle => 'グリッドボタンのカスタマイズ';
+  String get homeMenuCustomizeTitle => 'メニューボタンのカスタマイズ';
 
   @override
   String homeGridCustomizeDetails(int count, int max) {

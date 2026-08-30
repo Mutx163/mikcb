@@ -72,7 +72,7 @@ class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
     final l10n = AppLocalizations.of(context)!;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
-      title: Text(l10n.homeGridCustomizeTitle),
+      title: Text(l10n.homeMenuCustomizeTitle),
       child: HyperosListView(
         children: [
           _buildPreviewCard(context),

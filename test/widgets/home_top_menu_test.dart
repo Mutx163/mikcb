@@ -13,9 +13,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'home action menu keeps nine Miuix list rows without per-row blur',
+    'home action menu renders resolved entries as Miuix list rows '
+    'without per-row blur',
     (tester) async {
       final anchorKey = GlobalKey();
+      final entries = resolveHomeGridMenuEntries(
+        TimetableSettings.defaults(),
+      );
 
       await tester.pumpWidget(
         TestApp(
@@ -28,6 +32,7 @@ void main() {
                     showHomeTopMenuSheet(
                       context,
                       hasAvailableUpdate: true,
+                      entries: entries,
                       anchorKey: anchorKey,
                     );
                   },
@@ -42,10 +47,10 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      // Nine Miuix menu rows, one per action; the update row carries the
-      // trailing dot badge. The anchored popup owns exactly one glass
-      // surface — no row adds its own blur while the list moves.
-      expect(find.byType(HyperosPressableRow), findsNWidgets(9));
+      // 与八宫格共享同一份自定义排列（默认 8 项，任务清单不在其中）。
+      // The anchored popup owns exactly one glass surface — no row adds its
+      // own blur while the list moves.
+      expect(find.byType(HyperosPressableRow), findsNWidgets(8));
       expect(find.byType(MiuixBadge), findsOneWidget);
       expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
 
@@ -56,18 +61,21 @@ void main() {
         '添加课程',
         '考试安排',
         '导入课程',
-        '任务清单',
         '课表设置',
         '请喝咖啡',
       ]) {
         expect(find.text(title), findsOneWidget);
       }
+      expect(find.text('任务清单'), findsNothing);
     },
   );
 
   testWidgets('home action menu rows remain tappable', (tester) async {
     final anchorKey = GlobalKey();
-    late Future<HomeTopMenuAction?> menuResult;
+    late Future<String?> menuResult;
+    final entries = resolveHomeGridMenuEntries(
+      TimetableSettings.defaults(),
+    );
 
     await tester.pumpWidget(
       TestApp(
@@ -80,6 +88,7 @@ void main() {
                   menuResult = showHomeTopMenuSheet(
                     context,
                     hasAvailableUpdate: false,
+                    entries: entries,
                     anchorKey: anchorKey,
                   );
                 },
@@ -97,8 +106,61 @@ void main() {
     await tester.tap(find.text('软件更新'));
     await tester.pumpAndSettle();
 
-    expect(await menuResult, HomeTopMenuAction.update);
+    expect(await menuResult, 'update');
   });
+
+  testWidgets(
+    'home action menu honors custom order and groups rows by category',
+    (tester) async {
+      final anchorKey = GlobalKey();
+      late Future<String?> menuResult;
+      final entries = resolveHomeGridMenuEntries(
+        TimetableSettings.defaults().copyWith(
+          // copyWith 会钉住 settings，这里断言的是自定义排列顺序本身；
+          // tasks(features) → support(about) → settings(preferences)
+          // 的分类交界处应各插一个分组间隔。
+          homeGridMenuActions: ['tasks', 'support', 'settings'],
+        ),
+      );
+
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) {
+              return Center(
+                child: ElevatedButton(
+                  key: anchorKey,
+                  onPressed: () {
+                    menuResult = showHomeTopMenuSheet(
+                      context,
+                      hasAvailableUpdate: false,
+                      entries: entries,
+                      anchorKey: anchorKey,
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // 只渲染用户选择的入口，顺序与持久化一致。
+      expect(find.text('任务清单'), findsOneWidget);
+      expect(find.text('请喝咖啡'), findsOneWidget);
+      expect(find.text('课表设置'), findsOneWidget);
+      expect(find.text('软件更新'), findsNothing);
+
+      await tester.tap(find.text('任务清单'));
+      await tester.pumpAndSettle();
+
+      expect(await menuResult, 'tasks');
+    },
+  );
 
   testWidgets(
     'liquid menu anchors its single popup with legibility fill',
@@ -128,6 +190,9 @@ void main() {
                       showHomeTopMenuSheet(
                         context,
                         hasAvailableUpdate: false,
+                        entries: resolveHomeGridMenuEntries(
+                          TimetableSettings.defaults(),
+                        ),
                         anchorKey: anchorKey,
                       );
                     },

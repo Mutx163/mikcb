@@ -1955,6 +1955,11 @@
       }
     }
   },
+  "homeWidgetBindingSectionTitle": "ウィジェットの割り当て管理",
+  "homeWidgetBindingFollowActive": "現在の時間割に従う",
+  "homeWidgetBindingEmpty": "ホーム画面に今日の授業ウィジェットがまだありません。追加してから戻って割り当ててください。",
+  "homeWidgetBindingSaveFailed": "ウィジェットの割り当ての保存に失敗しました。しばらくしてからもう一度お試しください。",
+  "homeWidgetBindingMissingToast": "このウィジェットに割り当てた時間割は無効になりました。通常どおり開きました。",
   "layoutSettingsTitle": "レイアウトと時限",
   "layoutDensityTitle": "時間割密度",
   "layoutAutoFitHeightTitle": "画面高さに自動フィット",
@@ -6060,9 +6065,9 @@
   "homeMenuStyleLabel": "右上メニューのスタイル",
   "homeMenuStyleList": "リストメニュー",
   "homeMenuStyleGrid": "八宮格メニュー",
-  "homeMenuStyleListSubtitle": "アンカーのリスト表示",
+  "homeMenuStyleListSubtitle": "アンカーのリスト表示、カスタマイズ可",
   "homeMenuStyleGridSubtitle": "アイコンタイル、カスタマイズ可",
-  "homeGridCustomizeTitle": "グリッドボタンのカスタマイズ",
+  "homeMenuCustomizeTitle": "メニューボタンのカスタマイズ",
   "homeGridCustomizeDetails": "{count}/{max} 個表示中",
   "@homeGridCustomizeDetails": {
     "placeholders": {

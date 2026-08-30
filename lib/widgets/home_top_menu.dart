@@ -6,19 +6,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
-enum HomeTopMenuAction {
-  update,
-  overview,
-  statistics,
-  addCourse,
-  exams,
-  importCourses,
-  tasks,
-  settings,
-  support,
-}
-
-/// 八宫格候选入口的分类（编辑器分组展示用）。
+/// 八宫格候选入口的分类（编辑器分组展示用；也是列表弹窗的分组依据）。
 enum HomeMenuEntryCategory { features, data, preferences, about }
 
 String homeMenuEntryCategoryLabel(
@@ -34,7 +22,7 @@ String homeMenuEntryCategoryLabel(
 /// 一个可放入首页右上角八宫格的入口：应用内任意二级页面或功能。
 ///
 /// [id] 是持久化主键（设置里的 homeGridMenuActions 存的就是它），
-/// 内置九项沿用 HomeTopMenuAction.name 以兼容旧数据；[open] 负责从
+/// 内置九项沿用旧列表菜单的动作名以兼容旧数据；[open] 负责从
 /// 当前 context 导航，由目录统一提供实现。
 /// [visible] 是构建模式等环境可见性门控：返回 false 的条目不进八宫格、
 /// 不进编辑器候选，已持久化的 id 也会在解析时被丢弃——调试/性能版
@@ -73,73 +61,42 @@ Future<void> pushHomeMenuPage(BuildContext context, Widget page) {
 /// Rows are plain text only, matching the MIUI/HyperOS top-right menu
 /// convention (icons are reserved for in-page actions, not overflow menus).
 ///
+/// [entries] 与八宫格共享同一份自定义排列（`resolveHomeGridMenuEntries`
+/// 的结果）；相邻条目分类变化时插入 8dp 分组间隔，自定义排列后分组
+/// 仍然自然。返回被点条目的 [HomeMenuEntry.id]，由调用方经目录分发
+/// 导航（与八宫格形态同一条回传路径）。
+///
 /// [anchorKey] must be the key of the top-right "more" button; the popup is
 /// positioned just below it via [hyperosPopupPositionBelow].
-Future<HomeTopMenuAction?> showHomeTopMenuSheet(
+Future<String?> showHomeTopMenuSheet(
   BuildContext context, {
   required bool hasAvailableUpdate,
+  required List<HomeMenuEntry> entries,
   required GlobalKey anchorKey,
   Color? foregroundColor,
 }) {
   final l10n = AppLocalizations.of(context)!;
   final position = hyperosPopupPositionBelow(context, anchorKey);
 
-  HyperosPopupMenuItem<HomeTopMenuAction> item({
-    required String title,
-    required HomeTopMenuAction action,
-    Widget? trailing,
-    bool gapBefore = false,
-  }) {
-    return HyperosPopupMenuItem<HomeTopMenuAction>(
-      label: title,
-      value: action,
-      trailing: trailing,
-      gapBefore: gapBefore,
-    );
-  }
-
-  return showHyperosListPopup<HomeTopMenuAction>(
+  return showHyperosListPopup<String>(
     context: context,
     position: position,
     foregroundColor: foregroundColor,
     items: [
-      item(
-        title: l10n.homeMenuUpdateTitle,
-        action: HomeTopMenuAction.update,
-        // The trailing dot badge marks the pending update; rows stay text
-        // only so the wallpaper-aware ink keeps the menu uniform.
-        trailing: hasAvailableUpdate ? const MiuixBadge() : null,
-      ),
-      item(
-        title: l10n.homeMenuOverviewTitle,
-        action: HomeTopMenuAction.overview,
-      ),
-      item(
-        title: l10n.homeMenuStatisticsTitle,
-        action: HomeTopMenuAction.statistics,
-      ),
-      item(
-        title: l10n.homeMenuAddCourseTitle,
-        action: HomeTopMenuAction.addCourse,
-      ),
-      item(title: l10n.examListTitle, action: HomeTopMenuAction.exams),
-      item(
-        title: l10n.homeMenuImportTitle,
-        action: HomeTopMenuAction.importCourses,
-      ),
-      item(
-        title: l10n.homeMenuTasksTitle,
-        action: HomeTopMenuAction.tasks,
-        gapBefore: true,
-      ),
-      item(
-        title: l10n.homeMenuSettingsTitle,
-        action: HomeTopMenuAction.settings,
-      ),
-      item(
-        title: l10n.homeMenuCoffeeTitle,
-        action: HomeTopMenuAction.support,
-      ),
+      for (var index = 0; index < entries.length; index++)
+        HyperosPopupMenuItem<String>(
+          label: entries[index].title(l10n),
+          value: entries[index].id,
+          // The trailing dot badge marks the pending update; rows stay text
+          // only so the wallpaper-aware ink keeps the menu uniform.
+          trailing:
+              entries[index].id == 'update' && hasAvailableUpdate
+                  ? const MiuixBadge()
+                  : null,
+          gapBefore:
+              index > 0 &&
+              entries[index].category != entries[index - 1].category,
+        ),
     ],
   );
 }

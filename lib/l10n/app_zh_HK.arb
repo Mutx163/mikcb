@@ -1952,6 +1952,11 @@
       }
     }
   },
+  "homeWidgetBindingSectionTitle": "各卡片綁定管理",
+  "homeWidgetBindingFollowActive": "跟隨目前課表",
+  "homeWidgetBindingEmpty": "桌面上還沒有今日課程卡片，先新增一張再返嚟綁定",
+  "homeWidgetBindingSaveFailed": "儲存卡片綁定失敗，請稍後重試",
+  "homeWidgetBindingMissingToast": "這張卡片綁定的課表已失效，已按普通方式打開",
   "layoutSettingsTitle": "布局與節次",
   "layoutDensityTitle": "課表密度",
   "layoutAutoFitHeightTitle": "自動充滿屏幕高度",
@@ -6060,9 +6065,9 @@
   "homeMenuStyleLabel": "右上角選單樣式",
   "homeMenuStyleList": "列表選單",
   "homeMenuStyleGrid": "八宮格選單",
-  "homeMenuStyleListSubtitle": "錨定清單，一屏呈現",
+  "homeMenuStyleListSubtitle": "錨定清單，可自訂",
   "homeMenuStyleGridSubtitle": "圖示瓷貼，可自訂",
-  "homeGridCustomizeTitle": "自訂八宮格按鈕",
+  "homeMenuCustomizeTitle": "自訂選單按鈕",
   "homeGridCustomizeDetails": "已啟用 {count}/{max} 個",
   "@homeGridCustomizeDetails": {
     "placeholders": {
