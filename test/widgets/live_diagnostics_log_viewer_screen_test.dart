@@ -147,7 +147,7 @@ extras=
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      TestApp(
+      const TestApp(
         home: LiveDiagnosticsLogViewerScreen(
           title: '日志中心',
           rawLog: sampleLog,
@@ -373,7 +373,7 @@ extras=
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
-        TestApp(
+        const TestApp(
           home: LiveDiagnosticsLogViewerScreen(
             title: '日志中心',
             rawLog: sampleLog,
@@ -508,8 +508,8 @@ extras=
     await tester.tap(find.bySemanticsLabel('导出日志'));
     await tester.pumpAndSettle();
     expect(exportedText, isNotNull);
-    expect(exportedText!, contains('日志条目 0'));
-    expect(exportedText!, contains('日志条目 449'));
+    expect(exportedText, contains('日志条目 0'));
+    expect(exportedText, contains('日志条目 449'));
   });
 
   testWidgets('new arrivals do not shift the list while reading earlier pages', (

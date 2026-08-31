@@ -155,7 +155,7 @@ abstract final class HyperosNavigation {
     ).animate(enterCurve);
     final parallaxSlide = Tween<Offset>(
       begin: Offset.zero,
-      end: Offset(-HyperosMiuixNavigation.exitSlideFraction, 0),
+      end: const Offset(-HyperosMiuixNavigation.exitSlideFraction, 0),
     ).animate(parallaxCurve);
 
     return SlideTransition(
@@ -268,7 +268,6 @@ class _HyperosTransitionPageShell extends StatelessWidget {
         if (effectiveRadius > 0.5) {
           page = ClipRRect(
             borderRadius: clipRadius,
-            clipBehavior: Clip.antiAlias,
             child: page,
           );
         }
@@ -287,7 +286,7 @@ class _HyperosTransitionPageShell extends StatelessWidget {
                             shadowStrength,
                       ),
                       blurRadius: HyperosMiuixNavigation.pageShadowBlur,
-                      offset: Offset(
+                      offset: const Offset(
                         HyperosMiuixNavigation.pageShadowOffsetX,
                         HyperosMiuixNavigation.pageShadowOffsetY,
                       ),

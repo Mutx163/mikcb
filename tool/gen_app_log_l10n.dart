@@ -23,7 +23,7 @@ void main() {
   }
 
   final fieldMapPattern = RegExp(
-    r"const Map<String, String> appLogFieldLabels = \{([\s\S]*?)\};",
+    r'const Map<String, String> appLogFieldLabels = \{([\s\S]*?)\};',
   );
   final fieldMapMatch = fieldMapPattern.firstMatch(content);
   if (fieldMapMatch != null) {
@@ -34,7 +34,7 @@ void main() {
   }
 
   final categoryMapPattern = RegExp(
-    r"const Map<String, String> appLogCategoryLabels = \{([\s\S]*?)\};",
+    r'const Map<String, String> appLogCategoryLabels = \{([\s\S]*?)\};',
   );
   final categoryMapMatch = categoryMapPattern.firstMatch(content);
   if (categoryMapMatch != null) {
@@ -202,7 +202,7 @@ abstract final class AppLogMessageLocalizer {
     final arbKeyName = arbKey('log', entry.key);
     loc.writeln("      '$logKey' => l10n.$arbKeyName,");
   }
-  loc.writeln("      _ => message,");
+  loc.writeln('      _ => message,');
   loc.writeln('''    };
   }
 
@@ -217,7 +217,7 @@ abstract final class AppLogMessageLocalizer {
     final fieldKey = 'log_field_${entry.key.replaceAllMapped(RegExp(r'([A-Z])'), (m) => '_${m[1]!.toLowerCase()}')}';
     loc.writeln("      '$fieldKey' => l10n.$arbKeyName,");
   }
-  loc.writeln("      _ => key,");
+  loc.writeln('      _ => key,');
   loc.writeln('''    };
   }
 
@@ -231,7 +231,7 @@ abstract final class AppLogMessageLocalizer {
     final arbKeyName = 'logCat${_pascalize(entry.key)}';
     loc.writeln("      'log_cat_${entry.key}' => l10n.$arbKeyName,");
   }
-  loc.writeln("      _ => category,");
+  loc.writeln('      _ => category,');
   loc.writeln('''    };
   }
 

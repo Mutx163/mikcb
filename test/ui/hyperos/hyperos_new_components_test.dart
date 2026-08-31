@@ -482,10 +482,10 @@ void main() {
   group('HyperosAccordion', () {
     testWidgets('expands section on tap', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: HyperosAccordion(
-              items: const [
+              items: [
                 HyperosAccordionItem(
                   title: Text('Section'),
                   child: Text('Body'),

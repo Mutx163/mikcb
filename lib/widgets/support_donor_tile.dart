@@ -48,7 +48,6 @@ class SupportDonorTile extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(16, isFirst ? 12 : 10, 16, isLast ? 14 : 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: _avatarSize,

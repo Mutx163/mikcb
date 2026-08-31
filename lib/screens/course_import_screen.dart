@@ -199,7 +199,6 @@ class CourseImportScreen extends StatelessWidget {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseImportTitle),
-      childPad: false,
       // Standard list path (header inset inside the scrollable + notification
       // bubbling) so the large title collapses with scroll; the old
       // BodyInset + includeHeaderInset:false combo swallowed vertical scroll
@@ -306,7 +305,6 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.icsImportTitle),
-      childPad: false,
       // Standard list path (header inset inside the scrollable + notification
       // bubbling) so the large title collapses; the old BodyInset +
       // includeHeaderInset:false combo swallowed vertical scroll notifications
@@ -551,7 +549,6 @@ class _SpreadsheetCourseImportScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.spreadsheetImportTitle),
-      childPad: false,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
       child: Column(
@@ -1041,7 +1038,6 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.aiImportTitle),
-      childPad: false,
       resizeToAvoidBottomInset: true,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
@@ -1942,7 +1938,6 @@ class _WarehouseCourseImportScreenState
           ],
         ),
       ),
-      childPad: false,
       // Standard scroll path so the large title collapses with scroll (see the
       // ICS import screen above); centered states inset manually below.
       child: Column(
@@ -2285,10 +2280,9 @@ class _WarehouseCustomDebugRecordsScreenState
         FHeaderAction(
           icon: const Icon(Icons.add_rounded),
           semanticsLabel: l10n.addDebugRecordTooltip,
-          onPress: () => _openEditor(),
+          onPress: _openEditor,
         ),
       ],
-      childPad: false,
       child: _isLoading
           // Non-scroll centered view: inset below the bar manually.
           ? HyperosBlurredBodyInset(child: _importLoadingCenter())
@@ -2300,7 +2294,7 @@ class _WarehouseCustomDebugRecordsScreenState
                       child: HyperosControlCardInset(
                         child: HyperosButton(
                           label: l10n.addDebugRecordAction,
-                          onPressed: () => _openEditor(),
+                          onPressed: _openEditor,
                         ),
                       ),
                     ),
@@ -2524,7 +2518,6 @@ class _WarehouseCustomDebugEditScreenState
           onPress: _isSaving ? null : _saveRecord,
         ),
       ],
-      childPad: false,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
       child: HyperosListView(
@@ -2634,7 +2627,6 @@ class _WarehouseSchoolAdaptersScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.school.name),
-      childPad: false,
       // Standard scroll path so the large title collapses with scroll (see the
       // ICS import screen above); the loading state insets manually.
       child: FutureBuilder<WarehouseAdaptersIndex>(
@@ -3063,7 +3055,6 @@ class _WarehouseAdapterDetailScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(adapter.adapterName),
-      childPad: false,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
       child: HyperosListView(
@@ -3159,7 +3150,7 @@ class _WarehouseAdapterDetailScreenState
                     ? l10n.fillUrlThenImport
                     : l10n.openLoginInAppAction,
                 expand: true,
-                onPressed: () => _openInAppLogin(),
+                onPressed: _openInAppLogin,
               ),
               const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.moreActionsTooltip),
@@ -3453,7 +3444,7 @@ class _WarehouseAdapterWebLoginScreenState
   ReplayProgress _playbackProgress = const ReplayProgress(
     currentStepIndex: 0,
     totalSteps: 0,
-    currentStep: MacroStep(type: MacroStepType.delay, waitMs: 0),
+    currentStep: MacroStep(type: MacroStepType.delay),
     status: ReplayStepStatus.pending,
   );
   WarehouseMacroReplayer? _replayer;
@@ -3659,7 +3650,7 @@ class _WarehouseAdapterWebLoginScreenState
       );
     }
     final sections = decoded
-        .whereType<Map>()
+        .whereType<Map<String, dynamic>>()
         .map(
           (item) => SectionTime(
             startTime: item['startTime']?.toString() ?? '',
@@ -3834,7 +3825,6 @@ class _WarehouseAdapterWebLoginScreenState
       // Keep the platform WebView attached (size > 0) but fully off-screen so
       // JS / cookies / navigation still work without showing any UI chrome.
       return Offstage(
-        offstage: true,
         child: SizedBox(
           width: 1,
           height: 1,
@@ -3887,7 +3877,6 @@ class _WarehouseAdapterWebLoginScreenState
           ),
         ),
       ],
-      childPad: false,
       child: Material(
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
@@ -4673,7 +4662,7 @@ $kWarehouseBridgeCompatShim  try {
             .toList(growable: false);
       }
     } catch (_) {}
-    var currentSelection = selectedIndex.clamp(
+    final currentSelection = selectedIndex.clamp(
       0,
       options.isEmpty ? 0 : options.length - 1,
     );
@@ -4759,9 +4748,9 @@ $kWarehouseBridgeCompatShim  try {
     final encodedValue = jsonEncode(value);
     final encodedRequestId = jsonEncode(requestId);
     await _controller.runJavaScript(
-      "window.__qingyuResolvers = window.__qingyuResolvers || {}; "
-      "window.__qingyuResolvers[$encodedRequestId]?.($encodedValue); "
-      "delete window.__qingyuResolvers[$encodedRequestId];",
+      'window.__qingyuResolvers = window.__qingyuResolvers || {}; '
+      'window.__qingyuResolvers[$encodedRequestId]?.($encodedValue); '
+      'delete window.__qingyuResolvers[$encodedRequestId];',
     );
   }
 
@@ -5434,7 +5423,7 @@ $kWarehouseBridgeCompatShim  try {
         final decoded = jsonDecode(normalized);
         if (decoded is List) {
           _macroRawEvents.addAll(
-            decoded.map((e) => Map<String, dynamic>.from(e)),
+            decoded.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)),
           );
         }
       }
@@ -5539,7 +5528,7 @@ $kWarehouseBridgeCompatShim  try {
         if (decoded is List) {
           setState(() {
             _macroRawEvents.addAll(
-              decoded.map((e) => Map<String, dynamic>.from(e)),
+              decoded.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)),
             );
           });
         }
@@ -5597,7 +5586,6 @@ $kWarehouseBridgeCompatShim  try {
       dialogResponses: Map<String, dynamic>.from(_macroDialogResponses),
       createdAt: now,
       updatedAt: now,
-      successfulImportCount: 0,
       useDesktopMode: _useDesktopMode,
     );
 
@@ -5636,10 +5624,10 @@ $kWarehouseBridgeCompatShim  try {
     );
     setState(() {
       _playbackState = PlaybackUiState.playing;
-      _playbackProgress = ReplayProgress(
+      _playbackProgress = const ReplayProgress(
         currentStepIndex: 0,
         totalSteps: 0,
-        currentStep: const MacroStep(type: MacroStepType.delay, waitMs: 0),
+        currentStep: MacroStep(type: MacroStepType.delay),
         status: ReplayStepStatus.pending,
       );
       _isExecutingImport = false;
@@ -6319,7 +6307,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
   required String subtitle,
   DateTime? inferredFirstCourseDate,
 }) {
-  final alignmentService = const ImportWeekAlignmentService();
+  const alignmentService = ImportWeekAlignmentService();
   return showHyperosSheet<_ImportSemesterConfig>(
     context: context,
     builder: (sheetContext) {

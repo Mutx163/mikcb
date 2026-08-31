@@ -450,7 +450,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       _syncing = true;
     });
     try {
-      final result = await _coordinator.syncNow(allowConflictPrompt: true);
+      final result = await _coordinator.syncNow();
       if (!mounted) {
         return;
       }
@@ -568,7 +568,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
               children: [
                 const HyperosIconBadge(
                   icon: Icons.tune_outlined,
-                  accent: HyperosIconColors.blue,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -614,7 +613,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         children: [
           HyperosSectionLabel(text: l10n.cloudSyncAccountSectionTitle),
           HyperosSummaryCard(
-            leading: SizedBox(
+            leading: const SizedBox(
               width: HyperosSummaryCard.leadingSize,
               height: HyperosSummaryCard.leadingSize,
               child: Center(

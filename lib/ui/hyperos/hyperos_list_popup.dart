@@ -69,7 +69,6 @@ Future<T?> showHyperosListPopup<T>({
 
   return showGeneralDialog<T>(
     context: context,
-    barrierDismissible: false,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
@@ -109,7 +108,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     with TickerProviderStateMixin {
   late final AnimationController _fraction = AnimationController.unbounded(
     vsync: this,
-    value: 0,
   );
   late final AnimationController _alpha = AnimationController(
     vsync: this,
@@ -238,7 +236,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => _dismiss(),
+              onTap: _dismiss,
               child: AnimatedBuilder(
                 animation: _alpha,
                 builder: (context, _) {
@@ -361,7 +359,7 @@ class _ListPopupTile extends StatelessWidget {
       child: SizedBox(
         height: HyperosMiuixBasicComponent.minHeight,
         child: Padding(
-          padding: EdgeInsetsDirectional.only(
+          padding: const EdgeInsetsDirectional.only(
             start: HyperosMiuixDropdown.insideHorizontalPadding,
             end: HyperosMiuixDropdown.insideHorizontalPadding,
           ),

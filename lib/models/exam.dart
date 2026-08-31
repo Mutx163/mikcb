@@ -136,7 +136,6 @@ class Exam {
       dateTime: DateTime.tryParse(json['dateTime'] as String? ?? '') ?? now,
       startTime: normalizeTimeOfDay(
         json['startTime'] as String?,
-        fallback: '08:30',
       ),
       endTime: normalizeTimeOfDay(
         json['endTime'] as String?,

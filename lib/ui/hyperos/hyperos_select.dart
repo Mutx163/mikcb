@@ -46,7 +46,7 @@ hyperosSelectRowLayout(BuildContext context, {bool twoLine = false}) {
   final padding =
       (listScope != null || cardRowScope != null || cardScope != null)
       ? HyperosTokens.chevronRowPadding(isFirst: isFirst, isLast: isLast)
-      : HyperosTokens.chevronRowPadding(isFirst: true, isLast: true);
+      : HyperosTokens.chevronRowPadding();
 
   final bodyBottomBleed = (cardScope != null && isLast)
       ? cardScope.bodyBottomInset
@@ -116,7 +116,6 @@ Future<T?> showHyperosSelectPopup<T>({
 
   return showGeneralDialog<T>(
     context: context,
-    barrierDismissible: false,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.transparent,
     // No route-level transition: the popup runs its own spring + alpha
@@ -171,7 +170,6 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
   /// Spring-driven fraction (0→1) for scale + reveal clip.
   late final AnimationController _fraction = AnimationController.unbounded(
     vsync: this,
-    value: 0,
   );
 
   /// Tween-driven alpha for content fade-in.
@@ -377,7 +375,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
                 // clip reveal carry the entrance while the glass stays live.
                 return Transform.scale(
                   scale: scale,
-                  alignment: Alignment(1.0, localOriginY * 2 - 1),
+                  alignment: Alignment(1, localOriginY * 2 - 1),
                   child: ClipPath(
                     clipper: SelectPopupRevealClipper(
                       progress: fraction,
@@ -482,9 +480,6 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.modal,
         borderRadius: cornerRadius,
-        // 与首页标题/星期栏玻璃同材质：不再叠加可读性衬底，保持通透
-        // 观感统一（对应 9de96b8 标题带去衬底）。
-        contentLegibilityFill: false,
         // Sample the same undimmed modal capture as every other popup.
         useAncestorBackdropGroup: true,
         instantUnderlay: true,
@@ -537,8 +532,6 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     BoxShadow(
       color: Color(0x24000000),
       blurRadius: 20,
-      spreadRadius: 0,
-      offset: Offset.zero,
     ),
   ];
 }
@@ -563,7 +556,6 @@ Future<T?> showHyperosSelectSheet<T>({
 
       return HyperosSheetFrame(
         chrome: HyperosSheetChrome.floating,
-        frosted: true,
         // 对话式选择面板走「液态玻璃作用范围 → 全屏选择面板」开关
         //（默认关）：预设主题/字体等长列表弹窗默认保持磨砂材质。
         liquidGlassGroup: HyperosSheetLiquidGlassGroup.selectSheet,
@@ -597,7 +589,6 @@ Future<T?> showHyperosSelectSheet<T>({
                 entries: entries,
                 currentValue: currentValue,
                 itemTitleStyleBuilder: itemTitleStyleBuilder,
-                variant: HyperosChoiceVariant.dialog,
                 onSelected: (value) => Navigator.of(sheetContext).pop(value),
               ),
             ),
@@ -891,7 +882,6 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
       padding: rowLayout.padding,
       minHeight: rowLayout.minHeight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(

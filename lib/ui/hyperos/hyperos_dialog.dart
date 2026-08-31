@@ -54,8 +54,6 @@ class HyperosDialog extends StatelessWidget {
 
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
-      frosted: true,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       // Cap the whole card so title + scroll body + actions never overflow when
       // the IME shrinks the bottom sheet (e.g. multi-field date-rule forms).
       child: LayoutBuilder(
@@ -92,13 +90,12 @@ class HyperosDialog extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: HyperosTypography.sheetTitle(context),
                   ),
-                  SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
+                  const SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
                 ],
                 if (content != null) ...[
                   // Loose flex: shrink-wrap short content; cap + scroll when the
                   // remaining height after title/actions is tight (keyboard up).
                   Flexible(
-                    fit: FlexFit.loose,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxHeight: maxBodyHeight),
                       child: SingleChildScrollView(
@@ -111,7 +108,7 @@ class HyperosDialog extends StatelessWidget {
                     ),
                   ),
                   if (actions.isNotEmpty)
-                    SizedBox(
+                    const SizedBox(
                       height: HyperosMiuixDialog.summaryBottomPadding + 8,
                     ),
                 ],

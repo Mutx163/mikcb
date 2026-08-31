@@ -22,8 +22,6 @@ Course _sampleCourse({
     startTime: '08:00',
     endTime: '09:40',
     color: color,
-    startWeek: 1,
-    endWeek: 16,
   );
 }
 

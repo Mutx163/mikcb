@@ -258,7 +258,7 @@ void main() {
       final uncovered = LocationBuildingClusterLogic.uncoveredClusters(
         locations: const ['A1062', 'A主201', 'A6106'],
         existingKeywords: const [
-          LocationKeyword(pattern: 'A1', mode: LocationKeywordMatchMode.prefix),
+          LocationKeyword(pattern: 'A1'),
         ],
       );
       final keys = uncovered.map((cluster) => cluster.buildingKey).toSet();

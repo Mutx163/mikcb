@@ -8,8 +8,8 @@ import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 abstract final class AndroidAnimationScaleService {
   static const _channel = MethodChannel('com.mutx163.qingyu/system_ui');
 
-  static double _transitionScale = 1.0;
-  static double _userTransitionSpeed = 1.0;
+  static double _transitionScale = 1;
+  static double _userTransitionSpeed = 1;
   static double _displayCornerRadiusDp =
       HyperosMiuixNavigation.pageCornerRadiusFallback;
   static bool _initialized = false;

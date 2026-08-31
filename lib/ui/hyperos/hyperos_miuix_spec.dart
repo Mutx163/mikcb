@@ -544,8 +544,8 @@ abstract final class HyperosMiuixDialog {
 /// Do **not** invent a third horizontal value (12 / 20 / 10) on sheet shells;
 /// use this token (or omit `padding` to take the default).
 abstract final class HyperosSheetContentInsets {
-  static const double horizontal = 16.0;
-  static const double vertical = 16.0;
+  static const double horizontal = 16;
+  static const double vertical = 16;
 
   /// Default sheet body padding: 16 on all sides.
   static const EdgeInsets content = EdgeInsets.all(horizontal);
@@ -694,7 +694,7 @@ abstract final class HyperosMiuixNavigation {
   static const exitSlideFraction = 0.25;
 
   /// Android [R.interpolator.fast_out_extra_slow_in]
-  static const transitionCurve = Cubic(0.05, 0.0, 0.133333, 1.0);
+  static const transitionCurve = Cubic(0.05, 0, 0.133333, 1);
 
   /// Fallback when [RoundedCorner] is unavailable (typical Xiaomi display).
   static const pageCornerRadiusFallback = 28.0;

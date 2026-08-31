@@ -75,7 +75,6 @@ class _PickersShowcaseState extends State<PickersShowcase> {
                           Expanded(
                             child: MiuixNumberPicker(
                               value: _hour,
-                              min: 0,
                               max: 23,
                               wrapAround: true,
                               label: _two,
@@ -86,7 +85,6 @@ class _PickersShowcaseState extends State<PickersShowcase> {
                           Expanded(
                             child: MiuixNumberPicker(
                               value: _minute,
-                              min: 0,
                               max: 59,
                               wrapAround: true,
                               label: _two,
@@ -122,8 +120,6 @@ class _PickersShowcaseState extends State<PickersShowcase> {
                       height: 132,
                       child: MiuixNumberPicker(
                         value: _brightness,
-                        min: 0,
-                        max: 10,
                         visibleItemCount: 3,
                         label: (v) => '$v 档',
                         onValueChanged: (v) => setState(() => _brightness = v),
@@ -254,9 +250,8 @@ class _PickersShowcaseState extends State<PickersShowcase> {
                 const SizedBox(height: 16),
                 MiuixDatePicker(
                   initialDate: _selectedDate,
-                  firstDate: DateTime(2020, 1, 1),
+                  firstDate: DateTime(2020),
                   lastDate: DateTime(2030, 12, 31),
-                  weekStart: MiuixWeekStart.monday,
                   onDateChanged: (d) => setState(() => _selectedDate = d),
                   onHeaderTap: _openDatePickerDialog,
                 ),

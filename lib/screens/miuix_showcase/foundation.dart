@@ -61,7 +61,6 @@ class _FoundationShowcaseState extends State<FoundationShowcase> {
                   Expanded(
                     child: MiuixSlider(
                       value: _radius,
-                      min: 0,
                       max: 48,
                       onValueChanged: (v) => setState(() => _radius = v),
                     ),
@@ -91,7 +90,6 @@ class _FoundationShowcaseState extends State<FoundationShowcase> {
               SizedBox(
                 height: 220,
                 child: MiuixCard(
-                  insideMargin: EdgeInsets.zero,
                   child: ClipRect(
                     // key 让切换触觉类型时重建，应用新的反馈类型。
                     child: MiuixScrollEndHaptic(

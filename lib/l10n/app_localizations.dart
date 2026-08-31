@@ -4894,6 +4894,24 @@ abstract class AppLocalizations {
   /// **'去开启'**
   String get goEnableAction;
 
+  /// No description provided for @keepAliveConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后台保活服务'**
+  String get keepAliveConfirmTitle;
+
+  /// No description provided for @keepAliveConfirmBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'该服务仅用于在后台刷新桌面小组件与重排课程提醒，不会读取屏幕内容，也不会代替你执行任何点击操作。开启需要在系统设置中授予「无障碍」权限，可随时关闭。'**
+  String get keepAliveConfirmBody;
+
+  /// No description provided for @keepAliveConfirmGoAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'去开启'**
+  String get keepAliveConfirmGoAction;
+
   /// No description provided for @layoutEntryTitle.
   ///
   /// In zh, this message translates to:

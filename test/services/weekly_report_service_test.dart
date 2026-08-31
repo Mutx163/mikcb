@@ -17,7 +17,7 @@ void main() {
 
     test('nextFireAt on Sunday morning should fire the same day', () {
       // 找到 2026-09 里最近的一个周日
-      final base = DateTime(2026, 9, 1);
+      final base = DateTime(2026, 9);
       final daysUntilSunday = (DateTime.sunday - base.weekday + 7) % 7;
       final sunday = base.add(Duration(days: daysUntilSunday));
       final morning = DateTime(sunday.year, sunday.month, sunday.day, 8);
@@ -28,7 +28,7 @@ void main() {
     });
 
     test('nextFireAt after Sunday 21:00 should roll to next Sunday', () {
-      final base = DateTime(2026, 9, 1);
+      final base = DateTime(2026, 9);
       final daysUntilSunday = (DateTime.sunday - base.weekday + 7) % 7;
       final sunday = base.add(Duration(days: daysUntilSunday));
       final late = DateTime(sunday.year, sunday.month, sunday.day, 22);
@@ -52,7 +52,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          courseNature: CourseNature.required,
         ),
         Course(
           id: '2',

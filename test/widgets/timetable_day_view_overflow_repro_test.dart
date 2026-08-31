@@ -39,8 +39,6 @@ Widget buildAgendaColumn(
 
   Widget infoRow(IconData icon, String text) {
     return Row(
-      mainAxisSize: MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon, size: 14, color: ink.withValues(alpha: 0.82)),
         const SizedBox(width: 6),
@@ -281,13 +279,13 @@ void main() {
         final errors = <FlutterErrorDetails>[];
         final natural = await measureNaturalHeight(
           tester,
-          (ctx) => buildAgendaColumn(ctx, variant: variant, fix: 0, ink: ink),
+          (ctx) => buildAgendaColumn(ctx, variant: variant, ink: ink),
         );
 
         final messages = await pumpWithTightHeight(
           tester,
           buildColumn: (ctx) =>
-              buildAgendaColumn(ctx, variant: variant, fix: 0, ink: ink),
+              buildAgendaColumn(ctx, variant: variant, ink: ink),
           height: natural - 0.5,
           errors: errors,
         );
@@ -317,7 +315,7 @@ void main() {
         // 真机可用高度 = 原始自然高度 - 0.5（Material clip 后的有界高度）。
         final originalNatural = await measureNaturalHeight(
           tester,
-          (ctx) => buildAgendaColumn(ctx, variant: variant, fix: 0, ink: ink),
+          (ctx) => buildAgendaColumn(ctx, variant: variant, ink: ink),
         );
         final available = originalNatural - 0.5;
         // fix=1 把最后一个固定间距 6 -> 5.5，自然高度恰好降到 available。
@@ -365,7 +363,7 @@ void main() {
         // 真机可用高度 = 原始自然高度 - 0.5。
         final originalNatural = await measureNaturalHeight(
           tester,
-          (ctx) => buildAgendaColumn(ctx, variant: variant, fix: 0, ink: ink),
+          (ctx) => buildAgendaColumn(ctx, variant: variant, ink: ink),
         );
         final available = originalNatural - 0.5;
         // fix=2 用 Flexible 包最后一个子项；在有界约束下 Flexible 子项可被压缩，

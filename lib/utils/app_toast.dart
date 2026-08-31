@@ -39,7 +39,6 @@ void showAppLightTip(
     context,
     message: message,
     kind: kind,
-    duration: const Duration(seconds: 2),
   );
 }
 

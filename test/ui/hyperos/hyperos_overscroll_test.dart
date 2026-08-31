@@ -36,19 +36,19 @@ void main() {
         parent: AlwaysScrollableScrollPhysics(),
         topInset: headerInset,
       );
-      final maxOverscroll =
+      const maxOverscroll =
           (viewport - headerInset) * HyperosMiuixAnim.maxOverscrollFraction;
 
       expect(
         withHeader.applyBoundaryConditions(
-          metrics(pixels: 0, viewportDimension: viewport),
+          metrics(pixels: 0),
           -maxOverscroll - 1,
         ),
         -1,
       );
       expect(
         withHeader.applyBoundaryConditions(
-          metrics(pixels: 0, viewportDimension: viewport),
+          metrics(pixels: 0),
           -maxOverscroll,
         ),
         0,
@@ -57,7 +57,7 @@ void main() {
 
     test('hard-caps overscroll at half viewport via boundary conditions', () {
       const viewport = 400.0;
-      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+      const maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
 
       expect(
         physics.applyBoundaryConditions(metrics(pixels: 0), -maxOverscroll - 50),
@@ -69,7 +69,7 @@ void main() {
       );
       expect(
         physics.applyBoundaryConditions(
-          metrics(pixels: -maxOverscroll, viewportDimension: viewport),
+          metrics(pixels: -maxOverscroll),
           -maxOverscroll + 40,
         ),
         0,
@@ -83,34 +83,32 @@ void main() {
         // beyond the overscroll boundary.  The framework asserts
         // |applyBoundaryConditions()| <= |delta|; verify we stay within.
         const viewport = 400.0;
-        final maxOverscroll =
+        const maxOverscroll =
             viewport * HyperosMiuixAnim.maxOverscrollFraction;
-        final minBound = -maxOverscroll;
+        const minBound = -maxOverscroll;
 
         // pixels slightly past minBound due to FP drift
-        final driftedPixels = minBound - 0.0000001;
-        final value = minBound - 5.0;
+        const driftedPixels = minBound - 0.0000001;
+        const value = minBound - 5.0;
 
         final result = physics.applyBoundaryConditions(
-          metrics(pixels: driftedPixels, viewportDimension: viewport),
+          metrics(pixels: driftedPixels),
           value,
         );
-        final delta = value - driftedPixels;
+        const delta = value - driftedPixels;
         expect(result.abs(), lessThanOrEqualTo(delta.abs()));
 
         // Same for the max-bound direction
-        final maxBound = 100.0 + maxOverscroll;
-        final maxDrifted = maxBound + 0.0000001;
-        final maxValue = maxBound + 5.0;
+        const maxBound = 100.0 + maxOverscroll;
+        const maxDrifted = maxBound + 0.0000001;
+        const maxValue = maxBound + 5.0;
         final maxResult = physics.applyBoundaryConditions(
           metrics(
             pixels: maxDrifted,
-            maxScrollExtent: 100,
-            viewportDimension: viewport,
           ),
           maxValue,
         );
-        final maxDelta = maxValue - maxDrifted;
+        const maxDelta = maxValue - maxDrifted;
         expect(maxResult.abs(), lessThanOrEqualTo(maxDelta.abs()));
       },
     );
@@ -144,14 +142,14 @@ void main() {
         parent: AlwaysScrollableScrollPhysics(),
       );
       const viewport = 400.0;
-      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+      const maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
 
       final nearStart = pull.applyPhysicsToUserOffset(
-        metrics(pixels: -20, viewportDimension: viewport),
+        metrics(pixels: -20),
         40,
       );
       final nearCap = pull.applyPhysicsToUserOffset(
-        metrics(pixels: -maxOverscroll + 20, viewportDimension: viewport),
+        metrics(pixels: -maxOverscroll + 20),
         40,
       );
 
@@ -174,13 +172,12 @@ void main() {
         parent: AlwaysScrollableScrollPhysics(),
       );
       const viewport = 400.0;
-      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+      const maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
 
       var pixels = 0.0;
       for (var i = 0; i < 500; i++) {
         final metricsAt = metrics(
           pixels: pixels,
-          viewportDimension: viewport,
         );
         final delta = pull.applyPhysicsToUserOffset(metricsAt, 120);
         if (delta == 0) {
@@ -204,14 +201,13 @@ void main() {
         parent: AlwaysScrollableScrollPhysics(),
       );
       const viewport = 400.0;
-      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+      const maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
 
       var pixels = 0.0;
       for (var round = 0; round < 12; round++) {
         for (var i = 0; i < 50; i++) {
           final metricsAt = metrics(
             pixels: pixels,
-            viewportDimension: viewport,
           );
           final delta = pull.applyPhysicsToUserOffset(metricsAt, 200);
           if (delta == 0) {
@@ -252,11 +248,11 @@ void main() {
         parent: AlwaysScrollableScrollPhysics(),
       );
       const viewport = 400.0;
-      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+      const maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
       const finger = 80.0;
 
       final applied = pull.applyPhysicsToUserOffset(
-        metrics(pixels: -maxOverscroll * 0.55, viewportDimension: viewport),
+        metrics(pixels: -maxOverscroll * 0.55),
         finger,
       );
 
@@ -302,16 +298,12 @@ void main() {
       const pull = HyperosOverscrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       );
-      const viewport = 400.0;
       const finger = 60.0;
 
       var pixels = 0.0;
       final ratios = <double>[];
       for (var i = 0; i < 10; i++) {
-        final metricsAt = metrics(
-          pixels: pixels,
-          viewportDimension: viewport,
-        );
+        final metricsAt = metrics(pixels: pixels);
         final applied = pull.applyPhysicsToUserOffset(metricsAt, finger);
         if (applied == 0) {
           break;
@@ -328,11 +320,11 @@ void main() {
 
     test('returns zero delta when already at max overscroll', () {
       const viewport = 400.0;
-      final maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
+      const maxOverscroll = viewport * HyperosMiuixAnim.maxOverscrollFraction;
 
       expect(
         physics.applyPhysicsToUserOffset(
-          metrics(pixels: -maxOverscroll, viewportDimension: viewport),
+          metrics(pixels: -maxOverscroll),
           40,
         ),
         0,
@@ -341,8 +333,6 @@ void main() {
         physics.applyPhysicsToUserOffset(
           metrics(
             pixels: 100 + maxOverscroll,
-            maxScrollExtent: 100,
-            viewportDimension: viewport,
           ),
           -40,
         ),
@@ -357,7 +347,7 @@ void main() {
       );
       expect(simulation, isNotNull);
       expect(simulation!.x(0), -30);
-      expect(simulation.x(1.0), greaterThan(-30));
+      expect(simulation.x(1), greaterThan(-30));
     });
 
     test('returns bouncing simulation for fast in-range fling', () {
@@ -376,7 +366,7 @@ void main() {
         );
 
         final applied = pull.applyPhysicsToUserOffset(
-          metrics(pixels: 350, maxScrollExtent: 100),
+          metrics(pixels: 350),
           280,
         );
 
@@ -476,7 +466,7 @@ void main() {
 
       for (var i = 0; i < pattern.length; i++) {
         final finger = pattern[i];
-        final metricsAt = metrics(pixels: pixels, maxScrollExtent: 100);
+        final metricsAt = metrics(pixels: pixels);
         final applied = physics.applyPhysicsToUserOffset(metricsAt, finger);
 
         final unwindingBottomOverscroll =

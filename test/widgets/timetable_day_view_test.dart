@@ -427,7 +427,7 @@ void main() {
     await tester.tap(find.text('添加课程'));
     // The anchored menu plays its 150ms exit animation before popping; wait
     // for it plus the add-content sheet slide-in before tapping its entries.
-    await _pumpFiniteFrames(tester, count: 8);
+    await _pumpFiniteFrames(tester);
     tester.takeException();
     tester.takeException();
 
@@ -887,7 +887,7 @@ void main() {
         await provider.setCurrentWeek(1);
       });
       final timeScheme = await runRealAsync(tester, () async {
-        return await provider.createTimeScheme(
+        return provider.createTimeScheme(
           name: '测试非进行中课程',
           sections: outOfProgressSections,
         );
@@ -2506,7 +2506,7 @@ void main() {
         await provider.setCurrentWeek(1);
       });
       final timeScheme = await runRealAsync(tester, () async {
-        return await provider.createTimeScheme(
+        return provider.createTimeScheme(
           name: '冲突进行中课程',
           sections: _inProgressSections(now),
         );
@@ -2637,7 +2637,7 @@ void main() {
     await tester.tap(find.text('添加课程'));
     // The anchored menu plays its 150ms exit animation before popping; wait
     // for it plus the add-content sheet slide-in before tapping its entries.
-    await _pumpFiniteFrames(tester, count: 8);
+    await _pumpFiniteFrames(tester);
 
     expect(find.text('添加内容'), findsOneWidget);
 

@@ -12,7 +12,7 @@ class SyncOperationGate {
   Future<T> runExclusive<T>(Future<T> Function() action) async {
     // Nested call from the holder of this gate — re-enter without deadlocking.
     if (identical(Zone.current[_zoneTokenKey], this)) {
-      return await action();
+      return action();
     }
 
     final previous = _tail;

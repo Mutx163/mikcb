@@ -153,7 +153,7 @@ class MemoryStatsService {
       return const <Map<String, dynamic>>[];
     }
     return value
-        .whereType<Map>()
+        .whereType<Map<String, dynamic>>()
         .map(
           (item) => Map<String, dynamic>.from(
             item.map((key, nested) => MapEntry(key.toString(), nested)),

@@ -144,9 +144,9 @@ void main() {
           endTime: '11:40',
         ),
       );
-      await provider.addExam(buildExam(id: 'e1', courseId: 'course-1'));
+      await provider.addExam(buildExam(id: 'e1'));
       await provider.addExam(buildExam(id: 'e2', courseId: 'course-2'));
-      await provider.addExam(buildExam(id: 'e3', courseId: 'course-1'));
+      await provider.addExam(buildExam(id: 'e3'));
 
       expect(provider.getExamsForCourse('course-1'), hasLength(2));
       expect(provider.getExamsForCourse('course-2'), hasLength(1));

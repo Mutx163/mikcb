@@ -88,7 +88,6 @@ class HyperosRootPage extends StatelessWidget {
       // killed tap targets like the home profile switcher.
       header: overlayHeader
           ? HyperosOverlayNestedHeader(
-              prefixes: const [],
               suffixes: suffixes ?? const [],
               title: title,
             )
@@ -349,7 +348,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     _headerFrost = HyperosHeaderFrostFromScroll(
       useOverlayLayout: () => widget.overlayHeader,
       onChanged: _deferredSetState,
-      scrollFrostThreshold: scrollFrostThreshold,
       frostThresholdOverride: _collapsibleFrostThreshold,
     );
     _overlayMetrics = HyperosOverlayHeaderMetrics(
@@ -719,7 +717,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           headerBackgroundColor: pageBackground,
           child: Stack(
             fit: StackFit.expand,
-            clipBehavior: Clip.hardEdge,
             children: [
               Positioned.fill(
                 child: ValueListenableBuilder<double>(
@@ -869,7 +866,7 @@ class _HyperosListViewState extends State<HyperosListView> {
         key: listKey,
         physics: scrollPhysics,
         padding: listPadding,
-        itemCount: widget.itemCount!,
+        itemCount: widget.itemCount,
         itemBuilder: widget.itemBuilder!,
       );
     }

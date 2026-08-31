@@ -24,8 +24,6 @@ Course _course({
     startTime: '08:00',
     endTime: '09:40',
     color: color,
-    startWeek: 1,
-    endWeek: 16,
   );
 }
 
@@ -46,7 +44,7 @@ void main() {
   test('保存/加载往返：种子记录+快照记录+导航指向', () async {
     final snapshot = captureCourseRecolorSnapshot(
       [_course(id: '1', name: 'A', color: '#E91E63')],
-      now: DateTime(2026, 8, 30, 9, 0),
+      now: DateTime(2026, 8, 30, 9),
     );
     final seed = CourseRecolorScheme.seed(
       seed: 4242,
@@ -157,7 +155,7 @@ void main() {
     // 后 return const []——一条坏数据静默清空全部配色历史。
     final snapshot = captureCourseRecolorSnapshot(
       [_course(id: '1', name: 'A', color: '#E91E63')],
-      now: DateTime(2026, 8, 30, 9, 0),
+      now: DateTime(2026, 8, 30, 9),
     );
     final seed = CourseRecolorScheme.seed(
       seed: 9,

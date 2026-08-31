@@ -128,9 +128,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
     return HyperosSheetFrame(
-      frosted: true,
       maxHeight: maxHeight,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return ConstrainedBox(
@@ -792,7 +790,6 @@ class _CourseActionSheetContent extends StatelessWidget {
                 child: HyperosFrostedSheetButton(
                   key: ValueKey('course-action-reschedule-${course.id}'),
                   label: l10n.courseActionRescheduleSecondary,
-                  bordered: false,
                   expand: true,
                   onPressed: canReschedule
                       ? () =>
@@ -807,7 +804,6 @@ class _CourseActionSheetContent extends StatelessWidget {
                   label: isSuspended
                       ? l10n.courseActionUnsuspend
                       : l10n.courseActionSuspendSecondary,
-                  bordered: false,
                   expand: true,
                   onPressed: () =>
                       _closeSheetThen(context, () => onSuspend(course)),
@@ -896,8 +892,6 @@ class _CourseDetailTile extends StatelessWidget {
     final content = Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Row(
-        // Center icon / text / trailing so chevrons sit mid-height on multi-line tiles.
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 18, color: colors.mutedForeground),
           const SizedBox(width: 10),

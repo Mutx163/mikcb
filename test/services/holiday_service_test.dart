@@ -232,7 +232,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026)), isTrue);
       expect(client.requestedUrls, contains(_remoteUrl2026));
       expect(client.requestedUrls, isNot(contains(_fallbackUrl2026)));
     });
@@ -249,7 +249,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026)), isTrue);
       expect(
         service.logs.any(
           (e) => e.message.contains(
@@ -279,7 +279,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 5, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 5)), isTrue);
     });
 
     test('falls back to builtin when both APIs fail', () async {
@@ -315,7 +315,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
     });
 
     test('falls back when primary returns code != 0', () async {
@@ -335,7 +335,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
     });
 
     test('falls back when primary returns empty data', () async {
@@ -352,7 +352,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
     });
   });
 
@@ -489,7 +489,7 @@ void main() {
 
       // Should fetch from remote again
       final data2 = await service.getDataForYear(2026);
-      expect(data2.isHoliday(DateTime(2026, 5, 1)), isTrue);
+      expect(data2.isHoliday(DateTime(2026, 5)), isTrue);
     });
   });
 
@@ -532,7 +532,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
       expect(
         service.logs.any(
           (e) => e.message.contains(
@@ -562,7 +562,7 @@ void main() {
 
       // 所有结果应该一致
       for (final data in results) {
-        expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
+        expect(data.isHoliday(DateTime(2026)), isTrue);
       }
 
       // 并发请求可能发起多次 API 调用（因为缓存未命中）
@@ -742,7 +742,7 @@ void main() {
       final data = await service.getDataForYear(2026);
 
       // 应该 fallback 到远程数据
-      expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026)), isTrue);
       expect(
         service.logs.any(
           (e) => e.message.contains('holiday_log_local_cache_hit'),
@@ -785,7 +785,7 @@ void main() {
         version: 1,
         entries: [
           HolidayEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: '国庆节',
             type: HolidayType.vacation,
             groupId: 'g1',
@@ -794,7 +794,7 @@ void main() {
       );
 
       expect(data.isHoliday(DateTime(2026, 10, 1, 23, 59, 59)), isTrue);
-      expect(data.isHoliday(DateTime(2026, 10, 2, 0, 0, 0)), isFalse);
+      expect(data.isHoliday(DateTime(2026, 10, 2)), isFalse);
     });
 
     test('00:00:00 应匹配当天假期', () {
@@ -803,7 +803,7 @@ void main() {
         version: 1,
         entries: [
           HolidayEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: '国庆节',
             type: HolidayType.vacation,
             groupId: 'g1',
@@ -811,7 +811,7 @@ void main() {
         ],
       );
 
-      expect(data.isHoliday(DateTime(2026, 10, 1, 0, 0, 0)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
     });
 
     test('闰年 2月29日 应正确处理', () {
@@ -830,7 +830,7 @@ void main() {
   group('HolidayEntry 边界', () {
     test('adjustedRestday 应隐藏课程', () {
       final entry = HolidayEntry(
-        date: DateTime(2026, 10, 1),
+        date: DateTime(2026, 10),
         name: '调休放假',
         type: HolidayType.adjustedRestday,
         groupId: 'g1',
@@ -842,7 +842,7 @@ void main() {
 
     test('vacation 应隐藏课程', () {
       final entry = HolidayEntry(
-        date: DateTime(2026, 10, 1),
+        date: DateTime(2026, 10),
         name: '国庆节',
         type: HolidayType.vacation,
         groupId: 'g1',
@@ -881,7 +881,7 @@ void main() {
       // 添加自定义假期
       await service.addCustomHoliday(
         HolidayEntry(
-          date: DateTime(2026, 10, 1),
+          date: DateTime(2026, 10),
           name: '自定义假期',
           type: HolidayType.vacation,
           groupId: 'custom-1',
@@ -892,7 +892,7 @@ void main() {
       final data = await service.getDataForYear(2026);
 
       // 系统假期应该不受影响
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
 
       // 注意：自定义假期和系统假期是分开存储的
       // 这个测试验证它们不会互相干扰
@@ -938,7 +938,7 @@ void main() {
 
       expect(entries, isNotEmpty);
       final dates = entries.map((e) => e.date).toSet();
-      expect(dates.contains(DateTime(2026, 10, 1)), isTrue,
+      expect(dates.contains(DateTime(2026, 10)), isTrue,
           reason: '合法条目必须与畸形条目共存时保留');
     });
 
@@ -1070,7 +1070,7 @@ void main() {
 
       expect(data.year, 2026);
       expect(data.entries, isNotEmpty);
-      expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026)), isTrue);
       expect(data.isAdjustedWorkday(DateTime(2026, 1, 4)), isTrue);
     });
 
@@ -1085,7 +1085,7 @@ void main() {
       final data = await service.getDataForYear(2026);
 
       expect(data.entries, isNotEmpty);
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
     });
 
     test('falls back to builtin asset when request throws exception', () async {
@@ -1094,7 +1094,7 @@ void main() {
       final data = await service.getDataForYear(2026);
 
       expect(data.entries, isNotEmpty);
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
     });
 
     test('uses local cache before hitting remote', () async {
@@ -1140,7 +1140,7 @@ void main() {
 
       final data = await service.getDataForYear(2026);
 
-      expect(data.isHoliday(DateTime(2026, 5, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 5)), isTrue);
     });
   });
 
@@ -1153,17 +1153,17 @@ void main() {
 
       await service.addCustomHoliday(
         HolidayEntry(
-          date: DateTime(2026, 7, 1),
+          date: DateTime(2026, 7),
           name: '暑假',
           type: HolidayType.vacation,
           groupId: 'custom-summer',
         ),
       );
-      expect((await service.loadCustomHolidays()), hasLength(1));
+      expect(await service.loadCustomHolidays(), hasLength(1));
 
       await service.updateCustomHoliday('custom-summer', [
         HolidayEntry(
-          date: DateTime(2026, 7, 1),
+          date: DateTime(2026, 7),
           name: '暑假',
           type: HolidayType.vacation,
           groupId: 'custom-summer',
@@ -1175,7 +1175,7 @@ void main() {
           groupId: 'custom-summer',
         ),
       ]);
-      expect((await service.loadCustomHolidays()), hasLength(2));
+      expect(await service.loadCustomHolidays(), hasLength(2));
 
       await service.removeCustomHoliday('custom-summer');
       expect(await service.loadCustomHolidays(), isEmpty);
@@ -1186,7 +1186,7 @@ void main() {
 
       await service.addCustomHoliday(
         HolidayEntry(
-          date: DateTime(2026, 7, 1),
+          date: DateTime(2026, 7),
           name: '暑假',
           type: HolidayType.vacation,
           groupId: 'custom-summer',
@@ -1217,7 +1217,7 @@ void main() {
 
         await service.addCustomHoliday(
           HolidayEntry(
-            date: DateTime(2026, 7, 1),
+            date: DateTime(2026, 7),
             name: '暑假',
             type: HolidayType.vacation,
             groupId: 'custom-summer',
@@ -1253,7 +1253,7 @@ void main() {
         version: 1,
         entries: [
           HolidayEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: '国庆节',
             type: HolidayType.vacation,
             groupId: 'holiday-2026-0',
@@ -1285,7 +1285,7 @@ void main() {
         version: 1,
         entries: [
           HolidayEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: '国庆节',
             type: HolidayType.vacation,
             groupId: 'g1',
@@ -1293,7 +1293,7 @@ void main() {
         ],
       );
 
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
       expect(data.isHoliday(DateTime(2026, 10, 2)), isFalse);
     });
 
@@ -1321,7 +1321,7 @@ void main() {
         version: 1,
         entries: [
           HolidayEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: '国庆节',
             type: HolidayType.vacation,
             groupId: 'g1',
@@ -1330,12 +1330,12 @@ void main() {
       );
 
       expect(data.entryForDate(DateTime(2026, 10, 1, 15, 30))?.name, '国庆节');
-      expect(data.entryForDate(DateTime(2026, 10, 2, 0, 0)), isNull);
+      expect(data.entryForDate(DateTime(2026, 10, 2)), isNull);
     });
 
     test('shouldHideCourses returns true for vacation entries', () {
       final entry = HolidayEntry(
-        date: DateTime(2026, 10, 1),
+        date: DateTime(2026, 10),
         name: '国庆节',
         type: HolidayType.vacation,
         groupId: 'g1',
@@ -1346,7 +1346,7 @@ void main() {
 
     test('adjustedRestday entries have correct properties', () {
       final entry = HolidayEntry(
-        date: DateTime(2026, 10, 1),
+        date: DateTime(2026, 10),
         name: '国庆节',
         type: HolidayType.adjustedRestday,
         groupId: 'g1',

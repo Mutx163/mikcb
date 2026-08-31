@@ -153,7 +153,7 @@ class _WallpaperPositionPickerPageState
   Future<void> _resolveImageSize() async {
     try {
       final file = File(_imagePath);
-      if (!await file.exists()) {
+      if (!file.existsSync()) {
         if (mounted) {
           setState(() {
             _imageLoadFailed = true;
@@ -382,7 +382,6 @@ class _WallpaperPositionPickerPageState
       child: _HyperosHeaderTextButton(
         label: l10n.wallpaperPositionPickerSwitchWallpaper,
         onPressed: _switching ? null : _switchWallpaper,
-        isCompact: false,
         foregroundColor: inkColor,
         surfaceLuminance: _topLuminance,
       ),
@@ -557,7 +556,6 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.nestedTile,
         borderRadius: cornerRadius,
-        clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.passthrough,
           children: [

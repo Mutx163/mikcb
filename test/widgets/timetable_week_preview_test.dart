@@ -166,7 +166,7 @@ void main() {
       // 40dp 窄带按 height*0.28 封顶 ~11，仍是液体玻璃材质，只是不会
       // 让边缘光占满整个条带。
       expect(fill.maxThickness, isNotNull);
-      expect(fill.maxThickness!, inInclusiveRange(8.0, 14.0));
+      expect(fill.maxThickness, inInclusiveRange(8.0, 14.0));
       // 底边仍与可见带同边界（首页同款细窄包边），顶部/左右仍越界以
       // 藏掉上缘发丝缝与角落倒三角。
       final glassRect = tester.getRect(find.byType(HomePageChromeGlassFill));

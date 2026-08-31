@@ -41,8 +41,8 @@ void main() {
       seatNumber: seatNumber,
       reminderPreset: preset,
       customReminderMinutes: customMinutes,
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
   }
 
@@ -66,8 +66,8 @@ void main() {
       exceptionDates: exceptionDates,
       reminderMinutesBefore: reminderMinutesBefore,
       enabled: enabled,
-      createdAt: DateTime(2026, 7, 1),
-      updatedAt: DateTime(2026, 7, 1),
+      createdAt: DateTime(2026, 7),
+      updatedAt: DateTime(2026, 7),
     );
   }
 
@@ -115,21 +115,21 @@ void main() {
       final fires = ExamReminderService.buildFires(
         exams: [
           buildExam(
-            dateTime: DateTime(2026, 8, 1),
+            dateTime: DateTime(2026, 8),
             preset: ExamReminderPreset.none,
           ),
         ],
         resolveCourse: (_) => null,
-        now: DateTime(2026, 7, 1),
+        now: DateTime(2026, 7),
       );
       expect(fires, isEmpty);
     });
 
     test('body includes time, location and seat', () {
       final fires = ExamReminderService.buildFires(
-        exams: [buildExam(dateTime: DateTime(2026, 8, 1))],
+        exams: [buildExam(dateTime: DateTime(2026, 8))],
         resolveCourse: (_) => buildCourse(),
-        now: DateTime(2026, 7, 1),
+        now: DateTime(2026, 7),
       );
       expect(fires.first.body, contains('08:30-10:30'));
       expect(fires.first.body, contains('A-301'));
@@ -140,13 +140,13 @@ void main() {
       final fires = ExamReminderService.buildFires(
         exams: [
           buildExam(
-            dateTime: DateTime(2026, 8, 1),
+            dateTime: DateTime(2026, 8),
             location: null,
             seatNumber: null,
           ),
         ],
         resolveCourse: (_) => buildCourse(),
-        now: DateTime(2026, 7, 1),
+        now: DateTime(2026, 7),
       );
       expect(fires.first.body, '08:30-10:30 · A101');
     });
@@ -155,16 +155,16 @@ void main() {
       'uses exam name as title and leaves blank for native i18n fallback',
       () {
         final named = ExamReminderService.buildFires(
-          exams: [buildExam(dateTime: DateTime(2026, 8, 1), name: ' 高等数学 ')],
+          exams: [buildExam(dateTime: DateTime(2026, 8), name: ' 高等数学 ')],
           resolveCourse: (_) => null,
-          now: DateTime(2026, 7, 1),
+          now: DateTime(2026, 7),
         );
         expect(named.first.title, '高等数学');
 
         final blank = ExamReminderService.buildFires(
-          exams: [buildExam(dateTime: DateTime(2026, 8, 1), name: '   ')],
+          exams: [buildExam(dateTime: DateTime(2026, 8), name: '   ')],
           resolveCourse: (_) => null,
-          now: DateTime(2026, 7, 1),
+          now: DateTime(2026, 7),
         );
         // Empty title is intentional: native uses localized default title.
         expect(blank.first.title, isEmpty);
@@ -187,12 +187,12 @@ void main() {
       final fires = ExamReminderService.buildFires(
         exams: [
           buildExam(
-            dateTime: DateTime(2026, 8, 1),
+            dateTime: DateTime(2026, 8),
             preset: ExamReminderPreset.hour1AndMin30,
           ),
         ],
         resolveCourse: (_) => null,
-        now: DateTime(2026, 7, 1),
+        now: DateTime(2026, 7),
       );
 
       expect(ExamReminderService.buildActiveFireKeys(fires), {

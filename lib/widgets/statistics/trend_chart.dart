@@ -39,7 +39,6 @@ class TrendChart extends StatelessWidget {
               minY: 0,
               maxY: (maxY + 1).toDouble(),
               lineTouchData: LineTouchData(
-                enabled: true,
                 touchTooltipData: LineTouchTooltipData(
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {
@@ -59,12 +58,11 @@ class TrendChart extends StatelessWidget {
                 ),
               ),
               titlesData: FlTitlesData(
-                show: true,
                 topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
@@ -110,7 +108,6 @@ class TrendChart extends StatelessWidget {
                 ),
               ),
               gridData: FlGridData(
-                show: true,
                 drawVerticalLine: false,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
@@ -161,7 +158,6 @@ class TrendChart extends StatelessWidget {
                     color: HyperosColors.secondaryText(context).withValues(
                       alpha: 0.45,
                     ),
-                    barWidth: 2,
                     dashArray: [6, 4],
                     dotData: const FlDotData(show: false),
                   ),

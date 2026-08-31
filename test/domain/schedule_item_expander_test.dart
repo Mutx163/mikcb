@@ -14,7 +14,7 @@ ScheduleItem _item({
   String? seriesId,
   DateTime? occurrenceDate,
 }) {
-  final start = startDate ?? DateTime(2026, 9, 1);
+  final start = startDate ?? DateTime(2026, 9);
   return ScheduleItem(
     id: id,
     title: title,
@@ -22,8 +22,8 @@ ScheduleItem _item({
     endDate: endDate ?? start,
     startTime: startTime,
     endTime: endTime,
-    createdAt: DateTime(2026, 8, 1),
-    updatedAt: DateTime(2026, 8, 1),
+    createdAt: DateTime(2026, 8),
+    updatedAt: DateTime(2026, 8),
     recurrence: recurrence,
     exceptionDates: exceptionDates,
     seriesId: seriesId,
@@ -35,7 +35,7 @@ ScheduleItem _item({
 void main() {
   group('ScheduleItemExpander.instancesForDate', () {
     test('单次日程命中当天', () {
-      final items = [_item(id: 'a', startDate: DateTime(2026, 9, 1))];
+      final items = [_item(id: 'a', startDate: DateTime(2026, 9))];
       final result = ScheduleItemExpander.instancesForDate(
         items,
         DateTime(2026, 9, 1, 14, 30), // 带时间成分也应命中
@@ -45,7 +45,7 @@ void main() {
     });
 
     test('其它日期不命中', () {
-      final items = [_item(id: 'a', startDate: DateTime(2026, 9, 1))];
+      final items = [_item(id: 'a', startDate: DateTime(2026, 9))];
       expect(
         ScheduleItemExpander.instancesForDate(
           items,
@@ -59,7 +59,7 @@ void main() {
       final items = [
         _item(
           id: 'w',
-          startDate: DateTime(2026, 9, 1), // 周二
+          startDate: DateTime(2026, 9), // 周二
           endDate: DateTime(2026, 9, 30),
           recurrence: ScheduleRecurrence.weekly,
         ),
@@ -85,7 +85,7 @@ void main() {
       final items = [
         _item(
           id: 'w',
-          startDate: DateTime(2026, 9, 1),
+          startDate: DateTime(2026, 9),
           endDate: DateTime(2026, 9, 30),
           recurrence: ScheduleRecurrence.weekly,
           exceptionDates: [DateTime(2026, 9, 8)],
@@ -107,22 +107,22 @@ void main() {
       // 两者 key 相同（sourceItemId@2026-09-01），覆盖项胜出。
       final series = _item(
         id: 'series',
-        startDate: DateTime(2026, 9, 1),
+        startDate: DateTime(2026, 9),
         endDate: DateTime(2026, 9, 30),
         recurrence: ScheduleRecurrence.weekly,
       );
       final override = _item(
         id: 'override-1',
         title: '移动后的日程',
-        startDate: DateTime(2026, 9, 1),
-        endDate: DateTime(2026, 9, 1),
+        startDate: DateTime(2026, 9),
+        endDate: DateTime(2026, 9),
         seriesId: 'series',
-        occurrenceDate: DateTime(2026, 9, 1),
+        occurrenceDate: DateTime(2026, 9),
       );
       final result = ScheduleItemExpander.instancesForRange(
         [series, override],
-        DateTime(2026, 9, 1),
-        DateTime(2026, 9, 1),
+        DateTime(2026, 9),
+        DateTime(2026, 9),
       );
       expect(result, hasLength(1));
       expect(result.single.item.id, 'override-1');
@@ -134,9 +134,7 @@ void main() {
     test('多键排序：日期 → 开始时间 → occurrenceId', () {
       final early = _item(
         id: 'b',
-        startDate: DateTime(2026, 9, 1),
-        startTime: '08:00',
-        endTime: '09:00',
+        startDate: DateTime(2026, 9),
       );
       final late = _item(
         id: 'a',
@@ -146,19 +144,19 @@ void main() {
       );
       final result = ScheduleItemExpander.instancesForRange(
         [late, early],
-        DateTime(2026, 9, 1),
+        DateTime(2026, 9),
         DateTime(2026, 9, 2),
       );
       expect(result.map((r) => r.item.id).toList(), ['b', 'a']);
 
       final sameTime = [
-        _item(id: 'z', startDate: DateTime(2026, 9, 1)),
-        _item(id: 'y', startDate: DateTime(2026, 9, 1)),
+        _item(id: 'z', startDate: DateTime(2026, 9)),
+        _item(id: 'y', startDate: DateTime(2026, 9)),
       ];
       final tied = ScheduleItemExpander.instancesForRange(
         sameTime,
-        DateTime(2026, 9, 1),
-        DateTime(2026, 9, 1),
+        DateTime(2026, 9),
+        DateTime(2026, 9),
       );
       expect(tied.map((r) => r.item.id).toList(), ['y', 'z']);
     });
@@ -166,12 +164,12 @@ void main() {
     test('结果不可变', () {
       final result = ScheduleItemExpander.instancesForRange(
         [_item(id: 'a')],
-        DateTime(2026, 9, 1),
-        DateTime(2026, 9, 1),
+        DateTime(2026, 9),
+        DateTime(2026, 9),
       );
       expect(
         () => result.add(
-          ScheduleItemInstance(item: _item(id: 'x'), date: DateTime(2026, 9, 1)),
+          ScheduleItemInstance(item: _item(id: 'x'), date: DateTime(2026, 9)),
         ),
         throwsUnsupportedError,
       );
@@ -182,18 +180,18 @@ void main() {
     test('普通实例先入，例外覆盖后入可以顶掉', () {
       final map = <String, ScheduleItemInstance>{};
       final normal = ScheduleItemInstance(
-        item: _item(id: 's', startDate: DateTime(2026, 9, 1)),
-        date: DateTime(2026, 9, 1),
+        item: _item(id: 's', startDate: DateTime(2026, 9)),
+        date: DateTime(2026, 9),
       );
       ScheduleItemExpander.putByDisplayDate(map, normal);
       final override = ScheduleItemInstance(
         item: _item(
           id: 'o',
-          startDate: DateTime(2026, 9, 1),
+          startDate: DateTime(2026, 9),
           seriesId: 's',
-          occurrenceDate: DateTime(2026, 9, 1),
+          occurrenceDate: DateTime(2026, 9),
         ),
-        date: DateTime(2026, 9, 1),
+        date: DateTime(2026, 9),
       );
       ScheduleItemExpander.putByDisplayDate(map, override);
       expect(map.values.single.item.id, 'o');

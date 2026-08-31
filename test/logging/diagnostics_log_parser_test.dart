@@ -132,7 +132,7 @@ message=something failed badly
 
     test('appendDiagnosticsLogBody merges new entries', () {
       final current = parseDiagnosticsLog(sampleLog);
-      final appended = '''
+      const appended = '''
 time=4000
 level=debug
 category=Demo

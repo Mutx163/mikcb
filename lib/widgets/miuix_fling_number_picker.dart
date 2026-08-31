@@ -100,7 +100,7 @@ class _MiuixFlingNumberPickerState extends State<MiuixFlingNumberPicker>
   @override
   void initState() {
     super.initState();
-    _offset = AnimationController.unbounded(vsync: this, value: 0.0);
+    _offset = AnimationController.unbounded(vsync: this);
     _offset.addListener(_onOffsetChanged);
     _lastHapticIndex = _currentIndex;
     widget.controller?._attach(this);

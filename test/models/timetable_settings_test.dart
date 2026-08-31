@@ -493,7 +493,6 @@ void main() {
   group('ThemeConfig', () {
     test('roundtrip preserves all fields', () {
       const original = ThemeConfig(
-        version: 2,
         seedColor: '#FF0000',
         backgroundColor: '#FFFFFF',
         unifiedCardColor: '#00FF00',
@@ -653,7 +652,7 @@ void main() {
           seedColor: '#FF0000',
           weekdayBarAccentColorLight: '#2563EB',
         ),
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024),
       );
 
       final restored = SavedTheme.fromJson(original.toJson());
@@ -785,7 +784,7 @@ void main() {
         themeCheckpointConfig: const ThemeConfig(seedColor: '#FF0000'),
       );
 
-      final preserved = settings.copyWith(clearThemeCheckpoint: false);
+      final preserved = settings.copyWith();
 
       expect(preserved.themeCheckpointName, 'Test Theme');
       expect(preserved.themeCheckpointConfig?.seedColor, '#FF0000');

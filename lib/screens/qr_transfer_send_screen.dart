@@ -367,7 +367,7 @@ class _QrTransferSendScreenState extends State<QrTransferSendScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                HyperosLinearProgress(value: progress, minHeight: 4),
+                HyperosLinearProgress(value: progress),
                 const SizedBox(height: 12),
                 Text(
                   l10n.qrTransferSendHint,
@@ -443,13 +443,13 @@ class _DarkGradientBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return const DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          center: const Alignment(0, -0.7),
+          center: Alignment(0, -0.7),
           radius: 1.4,
-          colors: const [Color(0xFF232C3A), Color(0xFF14171D), Colors.black],
-          stops: const [0.0, 0.55, 1.0],
+          colors: [Color(0xFF232C3A), Color(0xFF14171D), Colors.black],
+          stops: [0.0, 0.55, 1.0],
         ),
       ),
     );

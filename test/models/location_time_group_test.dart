@@ -39,7 +39,6 @@ void main() {
     test('copyWith and equality', () {
       const original = LocationKeyword(
         pattern: 'A1',
-        mode: LocationKeywordMatchMode.prefix,
       );
       final updated = original.copyWith(
         pattern: 'A6',
@@ -52,7 +51,6 @@ void main() {
         original,
         const LocationKeyword(
           pattern: 'A1',
-          mode: LocationKeywordMatchMode.prefix,
         ),
       );
       expect(original == updated, isFalse);
@@ -61,14 +59,14 @@ void main() {
 
   group('LocationTimeGroup', () {
     test('round-trips json and drops empty keyword patterns', () {
-      final original = LocationTimeGroup(
+      const original = LocationTimeGroup(
         id: 'group-1',
         name: '  主教学楼  ',
         timeSchemeId: 'scheme-main',
         enabled: false,
         priority: 3,
-        keywords: const [
-          LocationKeyword(pattern: 'A主', mode: LocationKeywordMatchMode.prefix),
+        keywords: [
+          LocationKeyword(pattern: 'A主'),
           LocationKeyword(
             pattern: '主教',
             mode: LocationKeywordMatchMode.contains,

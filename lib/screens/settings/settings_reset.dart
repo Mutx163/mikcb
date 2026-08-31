@@ -195,7 +195,7 @@ class _SettingsResetTile extends StatelessWidget {
         staleBackdropPath,
         directoryName: 'home_page_wallpaper',
         filePrefix: 'wallpaper',
-      ),
+      ).then((_) => invalidateHomePageBackdropFileExists(staleBackdropPath)),
     );
     if (!context.mounted) {
       return;

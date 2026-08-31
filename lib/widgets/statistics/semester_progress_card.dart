@@ -35,9 +35,8 @@ class SemesterProgressCard extends StatelessWidget {
             // 标题行：标题居左，周数右上角
             Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.trending_up_rounded,
-                  accent: HyperosIconColors.blue,
                 ),
                 const SizedBox(width: HyperosTokens.rowContentGap),
                 Expanded(
@@ -84,7 +83,6 @@ class SemesterProgressCard extends StatelessWidget {
                             progress.sectionsTotal,
                           ),
                     value: '${(progress.percent * 100).round()}%',
-                    alignEnd: false,
                   ),
                 ),
                 if (!isBeforeStart) ...[

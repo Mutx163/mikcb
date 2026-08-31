@@ -87,7 +87,7 @@ class _DynamicThemePageState extends State<_DynamicThemePage> {
       title: '动态取色',
       subtitle: 'MiuixThemeController',
       children: [
-        MiuixSmallTitle('种子色'),
+        const MiuixSmallTitle('种子色'),
         _Pad(
           child: Wrap(
             spacing: 12,
@@ -114,7 +114,7 @@ class _DynamicThemePageState extends State<_DynamicThemePage> {
             ],
           ),
         ),
-        MiuixSmallTitle('调色风格'),
+        const MiuixSmallTitle('调色风格'),
         _Pad(
           child: MiuixTabRow(
             tabs: _styleNames,
@@ -122,7 +122,7 @@ class _DynamicThemePageState extends State<_DynamicThemePage> {
             onTabSelected: (i) => setState(() => _style = _styles[i]),
           ),
         ),
-        MiuixSmallTitle('明暗'),
+        const MiuixSmallTitle('明暗'),
         _Pad(
           child: Row(
             children: [
@@ -135,7 +135,7 @@ class _DynamicThemePageState extends State<_DynamicThemePage> {
             ],
           ),
         ),
-        MiuixSmallTitle('实时预览'),
+        const MiuixSmallTitle('实时预览'),
         _Pad(
           // 用生成的配色包裹预览区，展示动态取色对整个子树的影响。
           child: MiuixTheme(
@@ -244,7 +244,7 @@ class _TextStylesPage extends StatelessWidget {
       title: '文本样式',
       subtitle: 'MiuixTextStyles',
       children: [
-        MiuixSmallTitle('预设'),
+        const MiuixSmallTitle('预设'),
         _Pad(
           child: GroupCard(
             padding: EdgeInsets.zero,
@@ -311,7 +311,7 @@ class _ColorRolesPage extends StatelessWidget {
       title: '配色角色',
       subtitle: 'MiuixColors',
       children: [
-        MiuixSmallTitle('语义角色'),
+        const MiuixSmallTitle('语义角色'),
         _Pad(
           child: Wrap(
             spacing: 12,
@@ -388,7 +388,7 @@ class _IconBrowserPageState extends State<_IconBrowserPage> {
       title: '图标浏览',
       subtitle: '${names.length} 个扩展图标 · 5 字重',
       children: [
-        MiuixSmallTitle('字重'),
+        const MiuixSmallTitle('字重'),
         _Pad(
           child: MiuixTabRow(
             tabs: _weightNames,
@@ -396,7 +396,7 @@ class _IconBrowserPageState extends State<_IconBrowserPage> {
             onTabSelected: (i) => setState(() => _weight = _weights[i]),
           ),
         ),
-        MiuixSmallTitle('全部图标'),
+        const MiuixSmallTitle('全部图标'),
         _Pad(
           child: Wrap(
             spacing: 16,
@@ -408,7 +408,7 @@ class _IconBrowserPageState extends State<_IconBrowserPage> {
                   child: Column(
                     children: [
                       MiuixIcon(
-                        vector: MiuixIcons.extended.byName(name, _weight)!,
+                        vector: MiuixIcons.extended.byName(name, _weight),
                         size: 28,
                         tint: c.onBackground,
                       ),

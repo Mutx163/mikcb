@@ -109,7 +109,6 @@ class LiveTestingFixtureService {
     return provider.createTimeScheme(
       name: timeSchemeName,
       sections: sections,
-      applyToActiveProfile: false,
     );
   }
 
@@ -199,7 +198,6 @@ class LiveTestingFixtureService {
       startTime: section.startTime,
       endTime: section.endTime,
       color: color,
-      startWeek: 1,
       endWeek: semesterWeekCount,
       note: '超级岛快捷测试课（可安全删除）',
     );
@@ -217,8 +215,8 @@ class LiveTestingFixtureService {
     if (duration <= Duration.zero) {
       throw ArgumentError.value(duration, 'duration', 'must be positive');
     }
-    var start = now.add(lead);
-    var end = start.add(duration);
+    final start = now.add(lead);
+    final end = start.add(duration);
     // Course clocks are date-less and the timetable does not support
     // overnight lessons. Near midnight, a normal lead+duration pair can
     // otherwise become e.g. 23:59 -> 00:02, which is rejected by the live

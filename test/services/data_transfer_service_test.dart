@@ -15,8 +15,8 @@ void main() {
       id: 'task-1',
       title: '完成作业',
       dueDate: DateTime(2026, 4, 7),
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
     final schedule = ScheduleItem(
       id: 'schedule-1',
@@ -29,8 +29,8 @@ void main() {
       exceptionDates: [DateTime(2026, 4, 14)],
       reminderMinutesBefore: 15,
       enabled: false,
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
     final json = service.buildBackupJson(
       profileName: '大二下',

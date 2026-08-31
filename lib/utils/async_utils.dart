@@ -53,7 +53,7 @@ Future<RaceResult<T>> raceFutures<S, T>(
             completer.complete(RaceResult(winner: winner, errors: errors));
           }
         })
-        .catchError((error) {
+        .catchError((Object error) {
           errors.add(error);
           completedCount++;
           if (completedCount >= total && !completer.isCompleted) {
