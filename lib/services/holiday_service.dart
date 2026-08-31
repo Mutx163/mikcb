@@ -604,13 +604,16 @@ class HolidayService {
   }
 
   /// 保存整个自定义假期列表
+  ///
+  /// 写失败必须向上抛：调用方（自定义假期编辑、云快照应用）据此感知
+  /// 「保存没成功」，而不是把失败当成功吞掉后继续用内存里的旧数据——
+  /// 进程结束后用户新增/导入的假期会凭空消失。此前的整体 catch {} 正是
+  /// 「整体吞数据」模式：静默丢失用户显式创建的数据。
   Future<void> saveCustomHolidays(List<HolidayEntry> entries) async {
-    try {
-      final prefs = await _ensurePrefs();
-      final json = jsonEncode(entries.map((e) => e.toJson()).toList());
-      await prefs.setString(_customHolidaysKey, json);
-      notifyUserDataChangedForSync();
-    } catch (_) {}
+    final prefs = await _ensurePrefs();
+    final json = jsonEncode(entries.map((e) => e.toJson()).toList());
+    await prefs.setString(_customHolidaysKey, json);
+    notifyUserDataChangedForSync();
   }
 
   /// 新增一条自定义假期

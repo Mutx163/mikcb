@@ -199,12 +199,29 @@ class StorageService {
   Future<List<Course>> _readCoursesWithoutLock() async {
     if (_prefs == null) await init();
     final coursesJson = _prefs?.getStringList(_coursesKey) ?? [];
-    try {
-      return coursesJson.map((json) => Course.fromJsonString(json)).toList();
-    } catch (_) {
-      await _backupAndRemoveCorruptStringList(_coursesKey, coursesJson);
-      return const [];
+    // 条目级容错：只丢解析失败的条目，好条目全部保留。此前整体 try-catch
+    // 下一条坏 JSON 就把整份课表清空（返回空列表），下一次写路径再把空
+    // 列表落盘——坏一条丢全部。零条目可解析时仍备份原始数据并清 key，
+    // 与 profiles/timeSchemes 的「全坏才清」口径一致。
+    final courses = <Course>[];
+    var dropped = 0;
+    for (final json in coursesJson) {
+      try {
+        courses.add(Course.fromJsonString(json));
+      } catch (_) {
+        dropped++;
+      }
     }
+    if (courses.isEmpty && coursesJson.isNotEmpty) {
+      await _backupAndRemoveCorruptStringList(_coursesKey, coursesJson);
+    }
+    if (kDebugMode && dropped > 0) {
+      debugPrint(
+        'StorageService: dropped $dropped corrupt course entries '
+        '(kept ${courses.length})',
+      );
+    }
+    return courses;
   }
 
   Future<void> saveCourses(List<Course> courses) {

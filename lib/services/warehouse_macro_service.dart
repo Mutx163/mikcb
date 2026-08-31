@@ -157,18 +157,42 @@ class WarehouseMacroService {
 
   Future<void> importAllMacros(List<WarehouseMacroRecord> records) async {
     final prefs = await _prefs;
+    // 先序列化全部记录再动本地数据：逐条「先删后写」在写路径中途抛出
+    // （磁盘满 / 进程被杀）时会留下本地宏被清空、远端记录只落一半的
+    // 两头丢状态。字符串全部就绪后，删除+写入阶段只剩纯 key-value 落盘，
+    // 失败窗口收窄到单条写入，不再有「整库已清、数据未落」的中间态。
+    final serialized = <String, String>{
+      for (final record in records)
+        WarehouseMacroRecord.storageKey(
+          record.schoolId,
+          record.adapterId,
+        ): jsonEncode(record.toJson()),
+    };
+    final indexJson = jsonEncode([
+      for (final record in records)
+        WarehouseMacroIndexEntry(
+          schoolId: record.schoolId,
+          adapterId: record.adapterId,
+          updatedAt: record.updatedAt,
+        ).toJson(),
+    ]);
+
     final existingKeys = prefs
         .getKeys()
-        .where((key) => key.startsWith('warehouse_macro_record_'))
+        .where(
+          (key) =>
+              key.startsWith('warehouse_macro_record_') &&
+              !serialized.containsKey(key),
+        )
         .toList();
     for (final key in existingKeys) {
       await prefs.remove(key);
     }
-    await prefs.remove(WarehouseMacroRecord.indexKey);
-
-    for (final record in records) {
-      await saveMacro(record);
+    for (final entry in serialized.entries) {
+      await prefs.setString(entry.key, entry.value);
     }
+    await prefs.setString(WarehouseMacroRecord.indexKey, indexJson);
+    notifyUserDataChangedForSync();
   }
 }
 

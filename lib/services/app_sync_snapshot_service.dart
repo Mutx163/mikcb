@@ -237,6 +237,16 @@ class AppSyncSnapshotService {
   AppSyncSnapshot? _lastRollbackSnapshot;
   String? _lastRollbackId;
 
+  /// 注入的云同步基线清理钩子（WebdavSyncService.clearSyncBaselines）。
+  ///
+  /// 服务层不反向依赖 WebDAV 模块；回滚成功后置空基线哈希必须由协调层
+  /// 注册。null（测试/未接入云同步）时跳过清理。
+  void setCloudSyncBaselineReset(void Function()? reset) {
+    _webdavBaselineReset = reset;
+  }
+
+  void Function()? _webdavBaselineReset;
+
   Future<AppSyncSnapshot> collectSnapshot({
     required TimetableProvider provider,
     required String deviceId,
@@ -675,12 +685,14 @@ class AppSyncSnapshotService {
         );
         return null;
       } catch (error, stackTrace) {
+        var rolledBack = false;
         if (rollbackSnapshot != null) {
           try {
             await _applySnapshotData(
               provider: provider,
               snapshot: rollbackSnapshot,
             );
+            rolledBack = true;
           } catch (rollbackError, rollbackStackTrace) {
             await AppLogService.instance.error(
               'cloud_transfer_rollback_failed',
@@ -690,6 +702,14 @@ class AppSyncSnapshotService {
               extras: {'contentSha256': snapshot.contentSha256},
             );
           }
+        }
+        if (rolledBack) {
+          // 本地已回到应用前状态，但 lastAppliedRemoteHash 仍指向刚拉取
+          // 失败的远端快照；下一拍 scheduleUpload 的自动上传会被
+          // requireUnchangedRemote 放行（远端 == 基线），把「半应用后回滚」
+          // 的本地状态当成正常改动推上去，覆盖掉云端最后一份好数据。
+          // 这里清掉两个基线哈希，强制下次同步重新走完整 pull 决策。
+          await _webdavBaselineReset?.call();
         }
         await AppLogService.instance.error(
           'cloud_transfer_restore_failed',
@@ -787,8 +807,10 @@ class AppSyncSnapshotService {
         );
         return null;
       } catch (error, stackTrace) {
+        var rolledBack = false;
         try {
           await _applySnapshotData(provider: provider, snapshot: rollback);
+          rolledBack = true;
         } catch (rollbackError, rollbackStackTrace) {
           await AppLogService.instance.error(
             'cloud_transfer_rollback_failed',
@@ -797,6 +819,11 @@ class AppSyncSnapshotService {
             stackTrace: rollbackStackTrace,
             extras: {'transferId': package.packageId, 'undoId': undoId},
           );
+        }
+        if (rolledBack) {
+          // 与 applySnapshot 的回滚分支同口径：回滚后清基线，防自动上传
+          // 把回滚后的本地状态按旧基线推上云端。
+          await _webdavBaselineReset?.call();
         }
         await AppLogService.instance.error(
           'cloud_transfer_restore_failed',
@@ -838,6 +865,10 @@ class AppSyncSnapshotService {
       final undoId = _lastRollbackId;
       _lastRollbackSnapshot = null;
       _lastRollbackId = null;
+      // 撤销改变了本地数据（回到应用前状态），旧的远端基线不再成立；
+      // 清基线强制下次同步重走完整 pull 决策，防止把撤销后的本地状态
+      // 当作基线内改动自动推上云端。
+      await _webdavBaselineReset?.call();
       await AppLogService.instance.info(
         'cloud_transfer_restore_undone',
         'cloud transfer restore undone',
