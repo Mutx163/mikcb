@@ -71,8 +71,8 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
             val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
             val state = snapshot?.state ?: "no_course"
             val backgroundStyle = snapshot?.backgroundStyle ?: "solid"
-            val primaryTextColor = TodayWidgetSupport.primaryTextColor(backgroundStyle)
-            val secondaryTextColor = TodayWidgetSupport.secondaryTextColor(backgroundStyle)
+            val primaryTextColor = TodayWidgetSupport.primaryTextColor(backgroundStyle, context)
+            val secondaryTextColor = TodayWidgetSupport.secondaryTextColor(backgroundStyle, context)
 
             views.setInt(
                 R.id.widget_card,
