@@ -1,9 +1,31 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'about_screen.dart';
+
+/// 按语义版本号倒序排列（最新在前），如 v2.1.1.4 > v2.1.1 > v2.0.5.6。
+@visibleForTesting
+int compareReleaseVersionsDesc(String a, String b) {
+  final va = parseReleaseVersion(a);
+  final vb = parseReleaseVersion(b);
+  for (var i = 0; i < va.length || i < vb.length; i++) {
+    final na = i < va.length ? va[i] : 0;
+    final nb = i < vb.length ? vb[i] : 0;
+    if (na != nb) return nb.compareTo(na);
+  }
+  return b.compareTo(a);
+}
+
+/// 解析版本字符串中的数字段，如 v2.1.1.4 → [2, 1, 1, 4]。
+@visibleForTesting
+List<int> parseReleaseVersion(String version) {
+  final match = RegExp(r'v?(\d+(?:\.\d+)*)').firstMatch(version);
+  if (match == null) return const [0];
+  return match.group(1)!.split('.').map(int.parse).toList();
+}
 
 class ChangelogScreen extends StatefulWidget {
   const ChangelogScreen({super.key});
@@ -23,17 +45,44 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   }
 
   Future<void> _loadChangelog() async {
-    // 简单方式：直接加载已知的 release notes 文件
-    // 由于 AssetManifest 解析较复杂，我们直接遍历已知版本
-    final versions = _getKnownVersions();
+    // 自动扫描资源中的 docs/releases/*.md 文件，按版本号倒序展示。
+    // 新增版本只需放入对应 md 文件即可，无需再维护硬编码版本列表。
     final entries = <_ChangelogEntry>[];
 
-    for (final version in versions) {
-      try {
-        final data = await rootBundle.loadString('docs/releases/$version.md');
-        entries.add(_ChangelogEntry(version: version, content: data));
-      } catch (_) {
-        // 文件不存在，跳过
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      // asset key 形如 docs/releases/v2.1.1.4.md，从中提取版本号 v2.1.1.4
+      final versions = <String>[];
+      final versionPattern = RegExp(r'^docs/releases/(v[^/]+)\.md$');
+      for (final key in manifest.listAssets()) {
+        final match = versionPattern.firstMatch(key);
+        if (match != null) {
+          versions.add(match.group(1)!);
+        }
+      }
+      versions.sort(compareReleaseVersionsDesc);
+
+      if (versions.isEmpty) {
+        throw StateError('AssetManifest contains no release notes');
+      }
+
+      for (final version in versions) {
+        try {
+          final data = await rootBundle.loadString('docs/releases/$version.md');
+          entries.add(_ChangelogEntry(version: version, content: data));
+        } catch (_) {
+          // 文件读取失败，跳过
+        }
+      }
+    } catch (_) {
+      // AssetManifest 解析失败时回退到硬编码列表，保证页面仍可用
+      for (final version in _getKnownVersions()) {
+        try {
+          final data = await rootBundle.loadString('docs/releases/$version.md');
+          entries.add(_ChangelogEntry(version: version, content: data));
+        } catch (_) {
+          // 文件不存在，跳过
+        }
       }
     }
 
@@ -46,8 +95,14 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   }
 
   List<String> _getKnownVersions() {
-    // 返回所有已知版本，按倒序排列（最新在前）
+    // AssetManifest 解析失败时的回退版本列表，按倒序排列（最新在前）
     return [
+      'v2.1.1.4',
+      'v2.1.1.3',
+      'v2.1.1.2',
+      'v2.1.1.1',
+      'v2.1.1',
+      'v2.1.0',
       'v2.0.5.6',
       'v2.0.5.5',
       'v2.0.5.4',
@@ -65,7 +120,9 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       'v2.0.2',
       'v2.0.1',
       'v2.0',
-      'v1.2.1.16',
+      'v1.3.2',
+      'v1.3.1',
+      'v1.3',
       'v1.2.1.15',
       'v1.2.1.14',
       'v1.2.1.13',
@@ -115,6 +172,7 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       'v1.1.10.17',
       'v1.1.10.16',
       'v1.1.10.15',
+      'v1.1.10.14',
       'v1.1.10.13',
       'v1.1.10.12',
       'v1.1.10.11',
