@@ -7,11 +7,17 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── Flutter 构建环境（YAML 锚点复用）────────────────────────
+# 使用仓库内 Dockerfile 构建自定义镜像：基于 cirruslabs/flutter:3.44.0
+# 将 Flutter 升级到 .fvmrc 指定的 3.44.8（Dart 3.12.8），
+# 满足 pubspec.yaml 的 sdk >=3.12.2 约束。
 .flutter-env: &flutter-env
   runner:
     cpus: 8                        # 默认 8 核 16G，Android 构建足够
   docker:
-    image: ghcr.io/cirruslabs/flutter:3.44.8
+    build:
+      dockerfile: ./Dockerfile
+      by: [Dockerfile]
+      versionBy: [Dockerfile]
 
 # ── 质量门禁公共步骤（推送 / PR 共用）───────────────────────
 .quality-stages: &quality-stages
