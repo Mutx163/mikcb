@@ -293,6 +293,57 @@ extras=
     expect(find.textContaining('日志条目 451'), findsOneWidget);
   });
 
+  testWidgets('ascending sort keeps read position stable without load more', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = StreamController<String>();
+    addTearDown(controller.close);
+
+    await tester.pumpWidget(
+      TestApp(
+        home: LiveDiagnosticsLogViewerScreen(
+          title: '日志中心',
+          watchRawLog: () => controller.stream,
+        ),
+      ),
+    );
+    await tester.pump();
+    controller.add(buildPagedLog(450));
+    await tester.pumpAndSettle();
+
+    // 正序（默认方向）下最新条目在列表末端，初始贴在最新端。
+    expect(find.text('全部 450'), findsOneWidget);
+
+    // 只滚动、不点「加载更早」就离开最新端——修补前唯一的漏网路径：
+    // _pinnedStartIndex 仍为 null，起点由 end 反推出滑动窗口，新日志每批
+    // 把 start 整体前移、正在读的内容被顶掉；倒序侧早已靠冻结末端解决，
+    // 正序缺这一半。
+    await dragToListTarget(tester, find.textContaining('日志条目 300'));
+    expect(find.textContaining('日志条目 300'), findsOneWidget);
+    final rowBefore = tester.getTopLeft(find.textContaining('日志条目 300'));
+
+    controller.add(buildPagedLog(453));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // 计数跟上，但参照行原地不动、新条目不进窗口。
+    expect(find.text('全部 453'), findsOneWidget);
+    expect(find.textContaining('日志条目 451'), findsNothing);
+    expect(
+      tester.getTopLeft(find.textContaining('日志条目 300')),
+      rowBefore,
+      reason: '正序读历史时新日志不得顶掉正在阅读的内容',
+    );
+
+    // 滚回底部重新贴最新：冻结解除，最新条目出现。
+    await dragDownListTarget(tester, find.textContaining('日志条目 451'));
+    expect(find.textContaining('日志条目 451'), findsOneWidget);
+  });
+
   testWidgets('viewer updates when watchRawLog emits new content', (
     tester,
   ) async {

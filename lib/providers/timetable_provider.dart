@@ -735,7 +735,7 @@ class TimetableProvider with ChangeNotifier {
     }
     unawaited(_syncExamReminders());
     if (_enableLiveActivitySync) {
-      _startLiveActivityTick();
+      _liveStartActivityTick(this);
     }
   }
 
@@ -778,15 +778,42 @@ class TimetableProvider with ChangeNotifier {
     }
   }
 
-  /// 后台执行 app logs 迁移，不阻塞首帧
+  /// 后台执行 app logs 迁移，不阻塞首帧。
+  ///
+  /// 迁移期间的异步 await 存在与 switchProfile 的竞态窗口：若用户在迁移
+  /// 持久化前切走课表，旧课表的设置会随全量覆写混入新课表。因此在拿到
+  /// 迁移结果回写内存/磁盘前校验活跃课表未变；已切换则放弃迁移写回
+  /// （didMigrated 标记仍会落盘，下次冷启动自然完成迁移）。
   Future<void> _runAppLogsMigrationIfNeeded(
     TimetableProfile activeProfile,
   ) async {
     final didMigrateAppLogsDefault = await _storageService
         .hasMigratedAppLogsDefault();
-    if (!didMigrateAppLogsDefault && !_settings.liveEnableLocalDiagnostics) {
-      _settings = _settings.copyWith(liveEnableLocalDiagnostics: true);
-      await _persistActiveProfileState();
+    if (didMigrateAppLogsDefault) {
+      return;
+    }
+    final settingsSnapshot = _settings;
+    if (!settingsSnapshot.liveEnableLocalDiagnostics) {
+      // 写回段过 mutation gate 并在 gate 内校验活跃课表 id：迁移是启动后
+      // 台协程，若无保护，用户在 await 期间切课表会把旧课表设置随全量
+      // 覆写混进新课表（issue#11 R1）。gate 内若已切换则放弃本轮写回且
+      // 不落 didMigrated 标记，下次冷启动重新尝试迁移。
+      var migrated = false;
+      await _runMutation(() async {
+        if (_activeProfileId != activeProfile.id) {
+          return;
+        }
+        // 不用快照：gate 排队期间设置可能已被改，基于 gate 内最新值写入，
+        // 只补 diagnostics 字段，不回滚其他设置。
+        if (!_settings.liveEnableLocalDiagnostics) {
+          _settings = _settings.copyWith(liveEnableLocalDiagnostics: true);
+        }
+        await _persistActiveProfileState();
+        migrated = true;
+      });
+      if (!migrated) {
+        return;
+      }
       await _storageService.setMigratedAppLogsDefault(true);
       await AppLogService.instance.updateLoggingEnabled(true);
       unawaited(
@@ -796,12 +823,10 @@ class TimetableProvider with ChangeNotifier {
           extras: {'profileId': activeProfile.id},
         ),
       );
-    } else if (!didMigrateAppLogsDefault) {
+    } else {
       await _storageService.setMigratedAppLogsDefault(true);
     }
   }
-
-  void _startLiveActivityTick() => _liveStartActivityTick(this);
 
   @visibleForTesting
   void seedLiveActivityTrackingForTesting({
@@ -867,10 +892,17 @@ class TimetableProvider with ChangeNotifier {
     );
     _tasks = _sortTasks(List<CourseTask>.from(profile.tasks));
     _exams = List<Exam>.from(profile.exams);
-    _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
-    _currentCalendarWeek = _resolveCurrentCalendarWeek();
+    // 「当前周」口径（2026-08-31 用户拍板）：有开学时间的课表，激活/切换时
+    // 一律按它自己的开学时间对齐到日历周，而不是恢复上次浏览停留的周次——
+    // 否则两份课表开学时间不同时，切过去会带着上一份课表的周数。
+    // 无开学时间无从推导，保留持久化值（v2.0 行为，见 live 选课回退）。
+    final calendarWeek = _resolveCurrentCalendarWeek();
+    _currentWeek = _settings.semesterStartDate == null
+        ? clampCurrentWeekToSettings(profile.currentWeek, _settings)
+        : clampCurrentWeekToSettings(calendarWeek, _settings);
+    _currentCalendarWeek = calendarWeek;
     _currentDateWeek = clampCurrentWeekToSettings(
-      _currentCalendarWeek,
+      calendarWeek,
       _settings,
     );
     unawaited(_syncNativeRuntimePreferences());
@@ -912,12 +944,14 @@ class TimetableProvider with ChangeNotifier {
     List<Course> source, {
     TimetableSettings? settings,
   }) {
-    return source
-        .map(
-          (course) =>
-              _syncCourseWithEffectiveTimeScheme(course, settings: settings),
-        )
-        .toList();
+    return TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+      source,
+      schemes: _timeSchemes,
+      settings: _settings,
+      locationTimeGroups: _locationTimeGroups,
+      scheduleDateRules: _scheduleDateRules,
+      settingsOverride: settings,
+    );
   }
 
   Course _syncCourseWithEffectiveTimeScheme(
@@ -927,60 +961,16 @@ class TimetableProvider with ChangeNotifier {
     bool debugTrace = false,
     String debugTag = 'LocationTimeApply',
   }) {
-    final resolvedScheme = debugTrace
-        ? resolveCourseTimeScheme(course, settings: settings, onDate: onDate)
-        : null;
-    final sections = _resolveSectionsForCourse(
+    return TimeSchemeLogic.syncCourseWithEffectiveTimeScheme(
       course,
-      settings: settings,
+      schemes: _timeSchemes,
+      settings: _settings,
+      locationTimeGroups: _locationTimeGroups,
+      scheduleDateRules: _scheduleDateRules,
+      settingsOverride: settings,
       onDate: onDate,
-    );
-    final startIndex = course.startSection - 1;
-    final endIndex = course.endSection - 1;
-    if (sections == null || startIndex < 0 || endIndex >= sections.length) {
-      if (debugTrace) {
-        appDebugLog(
-          debugTag,
-          '跳过改写(节次越界/无sections): course=${course.name} '
-          'loc=${course.location} sections=${course.startSection}-${course.endSection} '
-          'scheme=${resolvedScheme?.name ?? "null"} '
-          'schemeSectionCount=${resolvedScheme?.sections.length ?? sections?.length ?? 0} '
-          'override=${course.timeSchemeIdOverride ?? "null"} '
-          'currentClock=${course.startTime}-${course.endTime}',
-        );
-      }
-      return course.copyWith(timeSchemeIdOverride: course.timeSchemeIdOverride);
-    }
-
-    final startTime = sections[startIndex].startTime;
-    final endTime = sections[endIndex].endTime;
-    if (course.startTime == startTime && course.endTime == endTime) {
-      if (debugTrace) {
-        appDebugLog(
-          debugTag,
-          '钟点已相同(不改写): course=${course.name} '
-          'loc=${course.location} sections=${course.startSection}-${course.endSection} '
-          'scheme=${resolvedScheme?.name ?? "null"}(${resolvedScheme?.id ?? "-"}) '
-          'clock=$startTime-$endTime override=${course.timeSchemeIdOverride ?? "null"}',
-        );
-      }
-      return course;
-    }
-
-    if (debugTrace) {
-      appDebugLog(
-        debugTag,
-        '改写钟点: course=${course.name} loc=${course.location} '
-        'sections=${course.startSection}-${course.endSection} '
-        'scheme=${resolvedScheme?.name ?? "null"}(${resolvedScheme?.id ?? "-"}) '
-        '${course.startTime}-${course.endTime} -> $startTime-$endTime '
-        'override=${course.timeSchemeIdOverride ?? "null"}',
-      );
-    }
-    return course.copyWith(
-      startTime: startTime,
-      endTime: endTime,
-      timeSchemeIdOverride: course.timeSchemeIdOverride,
+      debugTrace: debugTrace,
+      debugTag: debugTag,
     );
   }
 
@@ -1937,74 +1927,14 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  Future<void> loadSettings() async {
-    try {
-      final profile = activeProfile;
-      if (profile != null) {
-        _settings = _normalizeSettingsWithTimeScheme(profile.settings);
-      }
-      notifyListeners();
-    } catch (e) {
-      unawaited(
-        AppLogService.instance.warn(
-          'timetable_load_settings_failed',
-          AppLogMessages.timetableLoadSettingsFailed,
-          extras: {'error': '$e'},
-        ),
-      );
-      appDebugLog('TimetableProvider', '加载课表设置失败：$e');
-    }
-  }
+  Future<void> setCurrentWeek(int week, {bool notify = true}) =>
+      _runMutation(() => _setCurrentWeekImpl(week, notify: notify));
 
-  Future<void> loadCourses() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final profile = activeProfile;
-      if (profile != null) {
-        _courses = _syncCoursesWithEffectiveTimeSchemes(
-          List<Course>.from(profile.courses),
-          settings: _settings,
-        );
-      }
-    } catch (e) {
-      unawaited(
-        AppLogService.instance.warn(
-          'timetable_load_courses_failed',
-          AppLogMessages.timetableLoadCoursesFailed,
-          extras: {'error': '$e'},
-        ),
-      );
-      appDebugLog('TimetableProvider', '加载课程数据失败：$e');
-    }
-
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> loadCurrentWeek() async {
-    try {
-      _currentWeek = activeProfile?.currentWeek ?? 1;
-      _currentCalendarWeek = _resolveCurrentCalendarWeek();
-      _currentDateWeek = clampCurrentWeekToSettings(
-        _currentCalendarWeek,
-        _settings,
-      );
-      notifyListeners();
-    } catch (e) {
-      unawaited(
-        AppLogService.instance.warn(
-          'timetable_load_current_week_failed',
-          AppLogMessages.timetableLoadCurrentWeekFailed,
-          extras: {'error': '$e'},
-        ),
-      );
-      appDebugLog('TimetableProvider', '加载当前周次失败：$e');
-    }
-  }
-
-  Future<void> setCurrentWeek(int week, {bool notify = true}) async {
+  /// 写当前周前先过 mutation gate：避免外部调用（首页跳转 / LAN / 传输）
+  /// 与 switchProfile 等串行化写操作交错时把周次写到错误的课表上。
+  /// gate 同 Zone 重入语义保证 syncCurrentWeekWithSemesterStart 等内部
+  /// 调用不会死锁；notify 先于持久化完成的时序保持不变（有测试锚定）。
+  Future<void> _setCurrentWeekImpl(int week, {bool notify = true}) async {
     _currentWeek = clampCurrentWeekToSettings(week, _settings);
     if (_settings.semesterStartDate == null) {
       _currentDateWeek = _currentWeek;
@@ -2475,7 +2405,19 @@ class TimetableProvider with ChangeNotifier {
       if (task.source == CourseTaskSource.homeworkMark &&
           task.courseId != null &&
           task.sourceWeek != null) {
-        _clearHomeworkMark(task.courseId!, task.sourceWeek!);
+        final courseIndex = _courses.indexWhere((c) => c.id == task.courseId);
+        if (courseIndex != -1) {
+          final course = _courses[courseIndex];
+          final note = course.sessionNoteForWeek(task.sourceWeek!);
+          if (note != null) {
+            _courses[courseIndex] = course.copyWith(
+              sessionNotes: course.withSessionNote(
+                task.sourceWeek!,
+                note.copyWith(hasHomework: false),
+              ),
+            );
+          }
+        }
       }
       _tasks.removeAt(index);
       await _persistActiveProfileState();
@@ -2581,24 +2523,6 @@ class TimetableProvider with ChangeNotifier {
       await _persistActiveProfileState();
     }
     return changed;
-  }
-
-  void _clearHomeworkMark(String courseId, int week) {
-    final index = _courses.indexWhere((course) => course.id == courseId);
-    if (index == -1) {
-      return;
-    }
-    final course = _courses[index];
-    final note = course.sessionNoteForWeek(week);
-    if (note == null) {
-      return;
-    }
-    _courses[index] = course.copyWith(
-      sessionNotes: course.withSessionNote(
-        week,
-        note.copyWith(hasHomework: false),
-      ),
-    );
   }
 
   /// Replace all schedule entries for a course group.  [updatedCourses] is
@@ -3259,8 +3183,50 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 每次考试/课程/单节课提醒 CRUD 后都会全量 reconcile 原生提醒
+  /// （25+ 个 `unawaited(_syncExamReminders())` 点火点），批量导入时
+  /// 会形成 reconcile 风暴。收敛为单飞 + 脏标记：首轮立即执行（与原
+  /// fire-and-forget 时序一致），在飞期间的后续点火只置脏，由在飞收尾
+  /// 按最新数据补跑一轮，N 次点火合并为最多 2 次 reconcile。
+  Future<void>? _examReminderSyncInFlight;
+  bool _examReminderDirty = false;
+
   /// Reconcile native exam-reminder alarms with the active profile exam list.
-  Future<void> _syncExamReminders() async {
+  Future<void> _syncExamReminders() {
+    final inFlight = _examReminderSyncInFlight;
+    if (inFlight != null) {
+      // 在飞：标记脏即可，收尾的 while 循环会按最新数据补跑一轮
+      // （不另起新周期，保持单飞语义）。
+      _examReminderDirty = true;
+      return inFlight;
+    }
+    _examReminderDirty = false;
+    final completer = Completer<void>();
+    _examReminderSyncInFlight = completer.future;
+    unawaited(
+      () async {
+        try {
+          await _syncExamRemindersImpl();
+          // 在飞期间的点火：补跑一轮拿最新数据，直到安静。
+          while (_examReminderDirty) {
+            _examReminderDirty = false;
+            await _syncExamRemindersImpl();
+          }
+          completer.complete();
+        } catch (error) {
+          appDebugLog('ExamReminder', 'sync failed: $error');
+          completer.complete();
+        } finally {
+          if (identical(_examReminderSyncInFlight, completer.future)) {
+            _examReminderSyncInFlight = null;
+          }
+        }
+      }(),
+    );
+    return completer.future;
+  }
+
+  Future<void> _syncExamRemindersImpl() async {
     try {
       final coursesById = <String, Course>{
         for (final course in courses) course.id: course,
@@ -3330,7 +3296,13 @@ class TimetableProvider with ChangeNotifier {
 
   // ---- 节假日相关 ----
 
-  Future<void> _loadHolidayData() async {
+  /// 节假日加载后要重置快照签名并强推桌面卡片/超级岛，与 switchProfile
+  /// 的 [_syncLiveScheduleSnapshot] 共用 live surface gate 串行化，
+  /// 避免交错时用旧课表推送一次小组件。
+  Future<void> _loadHolidayData() =>
+      _runLiveSurfaceExclusive(_loadHolidayDataImpl);
+
+  Future<void> _loadHolidayDataImpl() async {
     try {
       final now = DateTime.now();
       final data = await _holidayService.getDataForYear(now.year);
@@ -3351,7 +3323,12 @@ class TimetableProvider with ChangeNotifier {
       notifyListeners();
       // Holiday data is not stored in timetable profiles; force home widget /
       // live schedule resync so desktop widgets pick up vacation days.
-      await _syncSurfacesAfterHolidayDataChanged();
+      _lastHomeWidgetSnapshotSignature = null;
+      _lastLiveSnapshotSignature = null;
+      _currentLiveCourseId = null;
+      _lastLiveActivityStageKey = null;
+      // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
+      await _updateLiveActivity();
     } catch (e, stackTrace) {
       // Holiday data is non-critical; keep going but leave a trace so a
       // "vacation days missing on widget" report is diagnosable.
@@ -3362,18 +3339,6 @@ class TimetableProvider with ChangeNotifier {
         stackTrace: stackTrace,
       );
     }
-  }
-
-  /// Invalidate cached native surfaces and fully refresh live gate (stop island
-  /// on holiday). Must not only sync schedule snapshot — that path leaves a
-  /// running island session until the next resume/tick that happens to stop.
-  Future<void> _syncSurfacesAfterHolidayDataChanged() async {
-    _lastHomeWidgetSnapshotSignature = null;
-    _lastLiveSnapshotSignature = null;
-    _currentLiveCourseId = null;
-    _lastLiveActivityStageKey = null;
-    // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
-    await _updateLiveActivity();
   }
 
   /// 获取指定日期的节假日条目
@@ -3706,6 +3671,8 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);
+    final semesterStartChanged =
+        settings.semesterStartDate != _settings.semesterStartDate;
     _settings = _normalizeSettingsWithTimeScheme(settings);
     hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _currentCalendarWeek = _resolveCurrentCalendarWeek();
@@ -3713,6 +3680,11 @@ class TimetableProvider with ChangeNotifier {
       _currentCalendarWeek,
       _settings,
     );
+    // 开学时间被改动（设置页 / 云同步 / 导入合并）时，「当前周」立即按新
+    // 日期对齐——与 _applyProfileState 同一口径，避免「日期已改、周次仍旧」。
+    if (semesterStartChanged && _settings.semesterStartDate != null) {
+      _currentWeek = _currentDateWeek;
+    }
     await _persistActiveProfileState();
     unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
@@ -3785,7 +3757,13 @@ class TimetableProvider with ChangeNotifier {
   Future<String?> importFullAppDataBackup(String content) =>
       _timetableImportFullAppDataBackup(this, content);
 
-  Future<void> syncCurrentWeekWithSemesterStart() async {
+  Future<void> syncCurrentWeekWithSemesterStart() =>
+      _runMutation(_syncCurrentWeekWithSemesterStartImpl);
+
+  /// 与 [switchProfile] 共用 mutation gate：否则并发切换课表时，周次会按
+  /// 旧课表的开学时间算出并覆写进新课表（周次口径 eec42680 的并发版）。
+  /// gate 同 Zone 重入语义使 [setCurrentWeek] 内层调用不会死锁。
+  Future<void> _syncCurrentWeekWithSemesterStartImpl() async {
     final semesterStart = _settings.semesterStartDate;
     if (semesterStart == null) {
       return;

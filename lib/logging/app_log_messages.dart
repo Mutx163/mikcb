@@ -17,11 +17,6 @@ abstract final class AppLogMessages {
   static const navigatorRouteReplaced = 'log_navigator_route_replaced';
   static const navigatorRouteChanged = 'log_navigator_route_changed';
   static const appLogsDefaultMigrated = 'log_app_logs_default_migrated';
-  static const timetableLoadSettingsFailed =
-      'log_timetable_load_settings_failed';
-  static const timetableLoadCoursesFailed = 'log_timetable_load_courses_failed';
-  static const timetableLoadCurrentWeekFailed =
-      'log_timetable_load_current_week_failed';
   static const homeWidgetPinSupportFailed =
       'log_home_widget_pin_support_failed';
   static const homeWidgetPinRequestFailed =

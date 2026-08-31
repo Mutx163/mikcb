@@ -315,11 +315,13 @@ class _LiveDiagnosticsLogViewerScreenState
     } else if (_pinnedStartIndex != null && _pinnedStartIndex! >= total) {
       _pinnedStartIndex = null;
     }
-    // 读历史时冻结窗口末端（仅倒序渲染需要）：新增日志排在正序窗口末端，
-    // 倒序把它渲染在视口顶部，流式到达会把正在阅读的内容往下推；正序
-    // 追加在底部天然不位移。冻结末端越界（日志被截断/重写）时放弃冻结。
+    // 读历史时冻结窗口末端：新增日志排在正序窗口末端，倒序把它渲染在视口
+    // 顶部，流式到达会把正在阅读的内容往下推。正序下若只钉起点而不冻结末
+    // 端，end 恒为 total，新日志进来会把 start 整体前移、正在读的内容同样
+    // 每批上漂——所以两个方向都要冻结（起点由离开最新端时一并钉住）。冻结
+    // 末端越界（日志被截断/重写）时放弃冻结。
     var end = total;
-    if (!_latestAtBottom && !_stickToLatest && _windowEndPin != null) {
+    if (!_stickToLatest && _windowEndPin != null) {
       final frozen = _windowEndPin!.clamp(0, total);
       if (frozen > (_pinnedStartIndex ?? 0)) {
         end = frozen;
@@ -389,6 +391,11 @@ class _LiveDiagnosticsLogViewerScreenState
       return;
     }
     if (!nowStick && _stickToLatest) {
+      // 起点与末端一起钉住。只钉末端的话，起点仍可能为 null（纯滚动离开
+      // 最新端、没点过「加载更早」），start 会由 end 反推出滑动窗口，新日
+      // 志每批把正在读的内容顶掉一点；两端都钉住后窗口长度恒定，既不受新
+      // 增扰动，也不会随新日志无限增长（否则会退回全量渲染的 ANR）。
+      _pinnedStartIndex ??= _currentStartIndex;
       _windowEndPin = _currentStartIndex + _visibleEntries.length;
     }
     _stickToLatest = nowStick;
