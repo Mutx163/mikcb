@@ -26,6 +26,9 @@ RUN set -eux; \
     tar -xJf /tmp/flutter-sdk/flutter.tar.xz -C /; \
     mv /flutter "${FLUTTER_HOME}"; \
     rm -rf /tmp/flutter-sdk; \
+    # tarball 解压出的 SDK 文件属主非 root，需将 FLUTTER_HOME 加入
+    # git safe.directory，否则 flutter 内置 git 操作会报 dubious ownership
+    git config --global --add safe.directory "${FLUTTER_HOME}"; \
     flutter --version; \
     dart --version; \
     flutter precache --android
