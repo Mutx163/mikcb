@@ -26,7 +26,11 @@ void main() {
     // 在 live_activity_controller，属正当增长；拆分归阶段 3 重构。
     // 4422→4426: eec42680 周次口径修复 +19（当时未同步基线），同批自 CNB
     // PR#6 内联三个单调用点私有方法（-15）瘦身，净 +4，按测试约定同步基线。
-    const baselineLines = 4426;
+    // 4426→4398: issue#11 竞态修复（R1 迁移写回包 mutation gate+一致性校验/
+    // R2 周次同步与 setCurrentWeek 包 gate/N5 考试提醒单飞收敛，+55）+
+    // 死代码删除（loadSettings/loadCourses -78）+ 钟点同步逻辑下沉 domain
+    // 薄转发（-70）净 -33，顺手收紧基线到当前真实行数。
+    const baselineLines = 4400;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
