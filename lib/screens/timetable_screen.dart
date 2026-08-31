@@ -2826,10 +2826,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     if (crossedUp && _homePullHapticArmed) {
       _homePullHapticArmed = false;
-      try {
+      // 同步读取 provider：Element 已卸载时 context.read 会抛异常，
+      // 前置 mounted 守卫替代吞异常，避免掩盖真实的 unmounted-read bug。
+      if (mounted) {
         final settings = context.read<TimetableProvider>().settings;
         if (settings.enableHaptics) HapticFeedback.selectionClick();
-      } catch (_) {}
+      }
     }
     setState(() {
       _homePullDragDistance = nextVisual;
@@ -2968,11 +2970,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       _homePullDragDistance = 0;
       _homePullQuickImportCancel = null;
     });
-    try {
+    // 同步读取 provider：前置 mounted 守卫替代吞异常，避免掩盖
+    // unmounted-read 类 bug。
+    if (mounted) {
       if (context.read<TimetableProvider>().settings.enableHaptics) {
         HapticFeedback.mediumImpact();
       }
-    } catch (_) {}
+    }
     try {
       await runHomePullWarehouseQuickImport(
         context,

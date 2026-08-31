@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logging/app_debug_log.dart';
+import 'app_log_service.dart';
 import '../services/app_http_client.dart';
 import '../models/holiday_entry.dart';
 import 'user_data_sync_hooks.dart';
@@ -44,6 +45,9 @@ class HolidayService {
   final Map<int, HolidayData> _memoryCache = {};
 
   SharedPreferences? _prefs;
+
+  @visibleForTesting
+  SharedPreferences? prefsForTesting;
 
   HolidayService({http.Client? client})
     : this._internal(client ?? createAppHttpClient(), client == null);
@@ -173,6 +177,20 @@ class HolidayService {
         } else {
           _logKey('holiday_log_background_no_data', params: {'year': year});
         }
+      }).catchError((Object e, StackTrace stackTrace) {
+        // .then 回调链无兜底时的防线：远程刷新失败不外抛为 unhandled
+        // zone 异常（顶层兜底虽有，但这里补齐让失败可归因到后台刷新）。
+        // warn 自兜底：日志通道不可用时不外抛，与本文件其余失败路径一致。
+        unawaited(
+          AppLogService.instance
+              .warn(
+                'holiday_background_refresh_failed',
+                '节假日后台刷新异常',
+                error: e,
+                stackTrace: stackTrace,
+              )
+              .catchError((Object _) {}),
+        );
       }),
     );
   }
@@ -566,7 +584,7 @@ class HolidayService {
   }
 
   Future<SharedPreferences> _ensurePrefs() async {
-    return _prefs ??= await SharedPreferences.getInstance();
+    return _prefs ??= prefsForTesting ?? await SharedPreferences.getInstance();
   }
 
   /// Clear all cached data for a year so next getDataForYear reloads from remote
@@ -575,14 +593,32 @@ class HolidayService {
     try {
       final prefs = await _ensurePrefs();
       await prefs.remove('$_cacheKeyPrefix$year');
-    } catch (_) {}
+    } catch (e) {
+      // 清除失败只影响下次是否读到旧缓存，不阻塞调用方；落 AppLogService
+      // 而非 appDebugLog，保证 release 包可观测。warn 自身失败也不能外抛，
+      // 否则一次无害的清缓存失败会把 refreshHolidayData 整体带崩。
+      try {
+        await AppLogService.instance.warn(
+          'holiday_cache_clear_failed',
+          '清除 $year 年节假日缓存失败',
+          error: e,
+        );
+      } catch (_) {
+        // 日志通道不可用：忽略，避免二次异常外泄。
+      }
+    }
     _log('$year年：缓存已清除');
   }
 
   // ---- 自定义假期 ----
 
   /// 加载用户自定义假期列表
-  Future<List<HolidayEntry>> loadCustomHolidays() async {
+  ///
+  /// 返回 null 表示本地持久化数据损坏（JSON 解析失败）：调用方必须把它与
+  /// 「合法的空列表」区分开，绝不能把 null 当作空数据继续走 add/save 链，
+  /// 否则损坏态会被一次保存写回、把真实数据覆盖清零（数据丢失）。
+  /// 单条 entry 损坏仍按容错粒度跳过（见内层 catch）。
+  Future<List<HolidayEntry>?> loadCustomHolidays() async {
     try {
       final prefs = await _ensurePrefs();
       final raw = prefs.getString(_customHolidaysKey);
@@ -594,35 +630,68 @@ class HolidayService {
           if (e is! Map) continue;
           out.add(HolidayEntry.fromJson(Map<String, dynamic>.from(e)));
         } catch (_) {
+          // 单条记录损坏：跳过该条，不影响其余条目。
           continue;
         }
       }
       return out;
-    } catch (_) {
-      return <HolidayEntry>[];
+    } catch (e, stackTrace) {
+      // 整体解析失败 = 数据损坏，不是「没有数据」。返回 null 让调用方
+      // 显式决定如何处理，并落日志（release 包可见）。
+      await AppLogService.instance.error(
+        'holiday_custom_load_corrupted',
+        '自定义假期持久化数据解析失败，已阻止后续写回以防覆盖丢失',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _log('custom_holidays_corrupted|error=${e.toString()}');
+      return null;
     }
   }
 
   /// 保存整个自定义假期列表
+  ///
+  /// 写入失败时抛出 [HolidayCustomSaveException]：调用方（UI/同步链路）需要
+  /// 感知失败并提示用户，静默吞掉会导致用户编辑「看似成功、重启即丢」。
+  /// 注意同步钩子必须在写入成功后才触发。
   Future<void> saveCustomHolidays(List<HolidayEntry> entries) async {
     try {
       final prefs = await _ensurePrefs();
       final json = jsonEncode(entries.map((e) => e.toJson()).toList());
       await prefs.setString(_customHolidaysKey, json);
-      notifyUserDataChangedForSync();
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      // error() 自身失败（如磁盘满）不能掩盖真正的写盘异常，
+      // 故单独兜底，确保 HolidayCustomSaveException 必然抛出。
+      try {
+        await AppLogService.instance.error(
+          'holiday_custom_save_failed',
+          '自定义假期写入本地存储失败',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } catch (_) {
+        // 日志通道不可用：忽略，继续抛出写盘异常。
+      }
+      throw HolidayCustomSaveException(
+        'custom holiday persist failed',
+        cause: e,
+        stackTrace: stackTrace,
+      );
+    }
+    // 仅在确认写盘成功后通知同步链路，失败路径不得触发。
+    notifyUserDataChangedForSync();
   }
 
   /// 新增一条自定义假期
   Future<void> addCustomHoliday(HolidayEntry entry) async {
-    final existing = await loadCustomHolidays();
+    final existing = await _loadExistingForMutation();
     existing.add(entry);
     await saveCustomHolidays(existing);
   }
 
   /// 按 groupId 删除自定义假期
   Future<void> removeCustomHoliday(String groupId) async {
-    final existing = await loadCustomHolidays();
+    final existing = await _loadExistingForMutation();
     existing.removeWhere((e) => e.groupId == groupId);
     await saveCustomHolidays(existing);
   }
@@ -632,9 +701,43 @@ class HolidayService {
     String groupId,
     List<HolidayEntry> newEntries,
   ) async {
-    final existing = await loadCustomHolidays();
+    final existing = await _loadExistingForMutation();
     existing.removeWhere((e) => e.groupId == groupId);
     existing.addAll(newEntries);
     await saveCustomHolidays(existing);
   }
+
+  /// 批量新增自定义假期（单次 load → append → save，避免逐条写入的竞态问题）
+  Future<void> addCustomHolidays(List<HolidayEntry> entries) async {
+    final existing = await _loadExistingForMutation();
+    existing.addAll(entries);
+    await saveCustomHolidays(existing);
+  }
+
+  /// 变更（增/删/改）前的读取：数据损坏时抛出而不是当空列表处理，
+  /// 否则 load → mutate → save 链会把空列表写回、覆盖清零真实数据。
+  Future<List<HolidayEntry>> _loadExistingForMutation() async {
+    final existing = await loadCustomHolidays();
+    if (existing == null) {
+      throw const HolidayCustomSaveException(
+        'custom holiday storage corrupted; refusing to overwrite',
+      );
+    }
+    return existing;
+  }
+}
+
+/// 自定义假期持久化失败/数据损坏异常。
+///
+/// 携带 cause 便于上层归因；错误信息不含用户数据，可直接展示或上报。
+class HolidayCustomSaveException implements Exception {
+  const HolidayCustomSaveException(this.message, {this.cause, this.stackTrace});
+
+  final String message;
+  final Object? cause;
+  final StackTrace? stackTrace;
+
+  @override
+  String toString() =>
+      'HolidayCustomSaveException: $message${cause == null ? '' : ' ($cause)'}';
 }

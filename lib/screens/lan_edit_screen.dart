@@ -161,7 +161,14 @@ class _LanEditScreenState extends State<LanEditScreen>
   void _startStatusTimer() {
     _statusTimer?.cancel();
     _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (!mounted || !_server.isRunning) {
+      if (!mounted) {
+        return;
+      }
+      if (!_server.isRunning) {
+        // 服务已停：空转的周期器在页面存活期间会每 2s 醒一次，直接
+        // 自停。之后由服务器重启路径重新 _startStatusTimer。
+        _statusTimer?.cancel();
+        _statusTimer = null;
         return;
       }
       setState(() {
