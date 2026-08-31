@@ -6,6 +6,12 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'about_screen.dart';
 
+/// `docs/releases/<version>.md` 的 asset key 匹配规则。
+/// 目录同时打包了 html / json 等文件，正则只接受数字版本号（允许 -a 等后缀）。
+final RegExp releaseAssetKeyPattern = RegExp(
+  r'^docs/releases/(v\d+(?:\.\d+)*(?:-[\w.]+)?)\.md\$',
+);
+
 /// 按语义版本号倒序排列（最新在前），如 v2.1.1.4 > v2.1.1 > v2.0.5.6。
 @visibleForTesting
 int compareReleaseVersionsDesc(String a, String b) {
@@ -16,7 +22,15 @@ int compareReleaseVersionsDesc(String a, String b) {
     final nb = i < vb.length ? vb[i] : 0;
     if (na != nb) return nb.compareTo(na);
   }
-  return b.compareTo(a);
+  return 0;
+}
+
+/// 匹配 asset key 中的版本号，如 docs/releases/v2.1.1.4.md → v2.1.1.4。
+/// 严格限定数字段（可选 - 后缀），避免误配同目录的 .html 等非版本文件。
+@visibleForTesting
+String? matchReleaseAssetKey(String assetKey) {
+  final match = releaseAssetKeyPattern.firstMatch(assetKey);
+  return match?.group(1);
 }
 
 /// 解析版本字符串中的数字段，如 v2.1.1.4 → [2, 1, 1, 4]。
@@ -47,50 +61,52 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   Future<void> _loadChangelog() async {
     // 自动扫描资源中的 docs/releases/*.md 文件，按版本号倒序展示。
     // 新增版本只需放入对应 md 文件即可，无需再维护硬编码版本列表。
-    final entries = <_ChangelogEntry>[];
-
+    List<String> versions;
     try {
       final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      // asset key 形如 docs/releases/v2.1.1.4.md，从中提取版本号 v2.1.1.4
-      final versions = <String>[];
-      final versionPattern = RegExp(r'^docs/releases/(v[^/]+)\.md$');
-      for (final key in manifest.listAssets()) {
-        final match = versionPattern.firstMatch(key);
-        if (match != null) {
-          versions.add(match.group(1)!);
-        }
-      }
+      versions = manifest
+          .listAssets()
+          .map(matchReleaseAssetKey)
+          .whereType<String>()
+          .toSet()
+          .toList();
       versions.sort(compareReleaseVersionsDesc);
-
-      if (versions.isEmpty) {
-        throw StateError('AssetManifest contains no release notes');
-      }
-
-      for (final version in versions) {
-        try {
-          final data = await rootBundle.loadString('docs/releases/$version.md');
-          entries.add(_ChangelogEntry(version: version, content: data));
-        } catch (_) {
-          // 文件读取失败，跳过
-        }
-      }
-    } catch (_) {
+    } catch (e) {
       // AssetManifest 解析失败时回退到硬编码列表，保证页面仍可用
-      for (final version in _getKnownVersions()) {
-        try {
-          final data = await rootBundle.loadString('docs/releases/$version.md');
-          entries.add(_ChangelogEntry(version: version, content: data));
-        } catch (_) {
-          // 文件不存在，跳过
-        }
-      }
+      debugPrint('ChangelogScreen: AssetManifest scan failed, fallback: $e');
+      versions = _getKnownVersions();
     }
+
+    if (versions.isEmpty) {
+      // 无 release notes 时直接展示空列表，不再回退扫描硬编码列表
+      if (mounted) {
+        setState(() {
+          _entries = [];
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    // 并发加载所有 md 文件，结果顺序与倒序列表一致
+    final results = await Future.wait(versions.map(_loadEntry));
+    final entries = results.whereType<_ChangelogEntry>().toList();
 
     if (mounted) {
       setState(() {
         _entries = entries;
         _loading = false;
       });
+    }
+  }
+
+  Future<_ChangelogEntry?> _loadEntry(String version) async {
+    try {
+      final data = await rootBundle.loadString('docs/releases/$version.md');
+      return _ChangelogEntry(version: version, content: data);
+    } catch (_) {
+      // 文件读取失败，跳过
+      return null;
     }
   }
 
@@ -275,23 +291,9 @@ class _ChangelogCardState extends State<_ChangelogCard> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          widget.entry.version,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.onSurfaceContainer,
-                          ),
-                        ),
+                      HyperosTag(
+                        label: widget.entry.version,
+                        backgroundColor: colors.surfaceContainerHigh,
                       ),
                       const Spacer(),
                       Icon(
