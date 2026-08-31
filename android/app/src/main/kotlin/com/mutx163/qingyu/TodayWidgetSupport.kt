@@ -62,7 +62,7 @@ data class TodayWidgetSizeProfile(
     val isWide: Boolean get() = widthDp > heightDp + 36
 }
 
-private data class WidgetSourceCourse(
+internal data class WidgetSourceCourse(
     val id: String,
     val name: String,
     val shortName: String?,
@@ -78,7 +78,11 @@ private data class WidgetSourceCourse(
     val isEvenWeek: Boolean,
     val customWeeks: List<Int>?,
     val suspendedWeeks: List<Int>?,
+    val courseNature: String = "required",
 ) {
+    /** 节数 = 结束节 - 开始节 + 1（对齐 Course.sectionCount）。 */
+    val sectionCount: Int get() = endSection - startSection + 1
+
     fun isInWeek(week: Int): Boolean {
         // 停课周次检查
         if (suspendedWeeks?.contains(week) == true) {
@@ -1218,7 +1222,7 @@ object TodayWidgetSupport {
         return entries
     }
 
-    private fun parseSourceCourses(json: JSONArray?): List<WidgetSourceCourse> {
+    internal fun parseSourceCourses(json: JSONArray?): List<WidgetSourceCourse> {
         if (json == null) {
             return emptyList()
         }
@@ -1260,6 +1264,7 @@ object TodayWidgetSupport {
                                 }
                             }
                         },
+                        courseNature = item.optString("courseNature", "required"),
                     )
                 )
             }

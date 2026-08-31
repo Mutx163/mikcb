@@ -71,6 +71,20 @@ object StatsWidgetSupport {
     }
 
     fun readSnapshot(context: Context): StatsWidgetSnapshot? {
+        // Prefer real-time computation from Flutter prefs (same source as Today
+        // widgets) so stats stay fresh without opening the app. The static
+        // snapshot synced from Flutter is only a fallback.
+        val profile = TodayWidgetSupport.readActiveProfileJson(context)
+        if (profile != null) {
+            val computed = try {
+                WidgetStatsLogic.buildSnapshot(profile)
+            } catch (_: Exception) {
+                null
+            }
+            if (computed != null) {
+                return computed
+            }
+        }
         val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_SNAPSHOT_JSON, null) ?: return null
         return try {
