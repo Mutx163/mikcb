@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -959,13 +960,22 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       }
     }
     if (failed > 0) {
-      assert(() {
-        debugPrint(
-          '[LiveIslandPreview] artifact cleanup: deleted=$deleted '
-          'failed=$failed dir=$directoryName prefix=$filePrefix',
+      // 走 AppLogService 而非 debugPrint：包在 assert 里的输出 release 包
+      // 会被整体剥离，清理失败恰恰最需要 release 可观测。warn 失败不外抛。
+      try {
+        await AppLogService.instance.warn(
+          'live_island_artifact_cleanup_failed',
+          'Live island preview artifact cleanup had failures',
+          extras: {
+            'deleted': deleted,
+            'failed': failed,
+            'dir': directoryName,
+            'prefix': filePrefix,
+          },
         );
-        return true;
-      }());
+      } catch (_) {
+        // 日志通道不可用时静默，不影响清理主流程。
+      }
     }
   }
 }

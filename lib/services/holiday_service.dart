@@ -180,13 +180,16 @@ class HolidayService {
       }).catchError((Object e, StackTrace stackTrace) {
         // .then 回调链无兜底时的防线：远程刷新失败不外抛为 unhandled
         // zone 异常（顶层兜底虽有，但这里补齐让失败可归因到后台刷新）。
+        // warn 自兜底：日志通道不可用时不外抛，与本文件其余失败路径一致。
         unawaited(
-          AppLogService.instance.warn(
-            'holiday_background_refresh_failed',
-            '节假日后台刷新异常',
-            error: e,
-            stackTrace: stackTrace,
-          ),
+          AppLogService.instance
+              .warn(
+                'holiday_background_refresh_failed',
+                '节假日后台刷新异常',
+                error: e,
+                stackTrace: stackTrace,
+              )
+              .catchError((Object _) {}),
         );
       }),
     );
