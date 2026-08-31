@@ -166,19 +166,19 @@ void main() {
         startTime: '18:00',
         endTime: '19:00',
         recurrence: ScheduleRecurrence.daily,
-        createdAt: DateTime(2026, 4, 1),
-        updatedAt: DateTime(2026, 4, 1),
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
       );
       final weekly = ScheduleItem(
         id: 'schedule-weekly',
         title: '每周例会',
         startDate: DateTime(2026, 4, 16),
-        endDate: DateTime(2026, 5, 1),
+        endDate: DateTime(2026, 5),
         startTime: '10:00',
         endTime: '11:00',
         recurrence: ScheduleRecurrence.weekly,
-        createdAt: DateTime(2026, 4, 1),
-        updatedAt: DateTime(2026, 4, 1),
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
       );
 
       await provider.addScheduleItem(daily);
@@ -221,8 +221,8 @@ void main() {
         endTime: '10:00',
         recurrence: ScheduleRecurrence.daily,
         exceptionDates: [DateTime(2026, 4, 17)],
-        createdAt: DateTime(2026, 4, 1),
-        updatedAt: DateTime(2026, 4, 1),
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
       );
 
       await provider.addScheduleItem(item);
@@ -260,8 +260,8 @@ void main() {
         startTime: '09:00',
         endTime: '10:00',
         recurrence: ScheduleRecurrence.daily,
-        createdAt: DateTime(2026, 4, 1),
-        updatedAt: DateTime(2026, 4, 1),
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
       );
       await provider.addScheduleItem(item);
 
@@ -327,8 +327,8 @@ void main() {
         startTime: '09:00',
         endTime: '10:00',
         recurrence: ScheduleRecurrence.daily,
-        createdAt: DateTime(2026, 4, 1),
-        updatedAt: DateTime(2026, 4, 1),
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
       );
       await provider.addScheduleItem(item);
 
@@ -370,8 +370,8 @@ void main() {
         startTime: '09:00',
         endTime: '10:00',
         recurrence: ScheduleRecurrence.daily,
-        createdAt: DateTime(2026, 4, 1),
-        updatedAt: DateTime(2026, 4, 1),
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
       );
       await provider.addScheduleItem(item);
 
@@ -410,8 +410,8 @@ void main() {
       startTime: '08:00',
       endTime: '08:30',
       recurrence: ScheduleRecurrence.daily,
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
     await provider.addScheduleItem(item);
 

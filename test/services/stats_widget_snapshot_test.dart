@@ -117,7 +117,7 @@ void main() {
   });
 
   test('重复同步同一份快照只推送一次', () async {
-    final snapshot = StatsWidgetSnapshot(
+    const snapshot = StatsWidgetSnapshot(
       profileName: '默认课表',
       currentWeek: 3,
       weekSections: 4,

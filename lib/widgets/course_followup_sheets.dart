@@ -723,7 +723,6 @@ class _RescheduleSheetScaffold extends StatelessWidget {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
     return HyperosSheetFrame(
-      frosted: true,
       maxHeight: maxHeight,
       padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
       child: LayoutBuilder(
@@ -832,7 +831,6 @@ class _FollowupSheetContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return HyperosSheetFrame(
-      frosted: true,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: child,
     );

@@ -100,7 +100,7 @@ class _UtilityShowcaseState extends State<UtilityShowcase> {
                       startAction: Padding(
                         padding: const EdgeInsets.only(right: 12),
                         child: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('search')!,
+                          vector: MiuixIcons.extended.byName('search'),
                           size: 20,
                         ),
                       ),
@@ -125,7 +125,6 @@ class _UtilityShowcaseState extends State<UtilityShowcase> {
             child: SizedBox(
               height: 200,
               child: MiuixCard(
-                insideMargin: EdgeInsets.zero,
                 child: Stack(
                   children: [
                     ListView.builder(
@@ -155,7 +154,6 @@ class _UtilityShowcaseState extends State<UtilityShowcase> {
             child: SizedBox(
               height: 140,
               child: MiuixCard(
-                insideMargin: EdgeInsets.zero,
                 child: Stack(
                   children: [
                     ListView.builder(
@@ -213,7 +211,6 @@ class _UtilityShowcaseState extends State<UtilityShowcase> {
             child: SizedBox(
               height: 260,
               child: MiuixCard(
-                insideMargin: EdgeInsets.zero,
                 child: ClipRect(
                   child: MiuixPullToRefresh(
                     isRefreshing: _isRefreshing,

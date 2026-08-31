@@ -213,7 +213,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           FHeaderAction(
             icon: const Icon(Icons.refresh),
             semanticsLabel: l10n.refreshStatusTooltip,
-            onPress: () => _refreshStatus(),
+            onPress: _refreshStatus,
           ),
         ],
         title: Text(
@@ -430,7 +430,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               padding: HyperosTokens.rowPaddingUniform,
               child: Row(
                 children: [
-                  _GuideIconBadge(icon: Icons.school_rounded),
+                  const _GuideIconBadge(icon: Icons.school_rounded),
                   const SizedBox(width: HyperosTokens.rowContentGap),
                   Expanded(
                     child: Text(
@@ -1061,7 +1061,6 @@ class _GuideActionTile extends StatelessWidget {
       child: Padding(
         padding: _guideChevronRowPadding(context),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _GuideIconBadge(icon: icon),
             const SizedBox(width: HyperosTokens.rowContentGap),
@@ -1076,7 +1075,7 @@ class _GuideActionTile extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
             const HyperosChevron(),
           ],
         ),

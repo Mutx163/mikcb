@@ -87,7 +87,6 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
     if (!context.mounted) {
       return const LiveTestingTriggerResult(
         status: LiveTestingTriggerStatus.error,
-        message: null,
       );
     }
 
@@ -105,7 +104,6 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       if (!context.mounted) {
         return const LiveTestingTriggerResult(
           status: LiveTestingTriggerStatus.error,
-          message: null,
         );
       }
       if (presetSelection != null) {
@@ -286,16 +284,12 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
       displayCourse,
       null,
       stage: stage.name,
-      // 强制 payload 与课表快照必然不一致（课程此刻并未在窗），必须跳过
-      // 原生校验，否则 ticker 第一拍就会按快照判死本会话。
-      validateAgainstSchedule: false,
       beforeClassLeadMillis: isBeforeClass
           ? start.difference(now).inMilliseconds
           : 0,
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
       endReminderLeadMillis: 0,
-      liveClassReminderStartMinutes: 0,
       endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
       // 展示开关按阶段强制放开：测试的目的是「看到岛的显示」，不能被用户
       // 关掉的课上/课下开关吞掉；显示样式仍取用户自己的阶段显示设置。
@@ -423,7 +417,6 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({
   if (!context.mounted) {
     return const LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.error,
-      message: null,
     );
   }
   return triggerLiveUpdateProductionRefresh(

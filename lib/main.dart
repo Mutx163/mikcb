@@ -1100,8 +1100,18 @@ class _AppEntryScreenState extends State<AppEntryScreen>
             );
           }
       }
-    } catch (e) {
-      // Silently ignore - this is a non-critical feature
+    } catch (e, stackTrace) {
+      // 非关键功能不中断启动流程，但失败要留痕：否则用户反馈
+      // 「分享导入没反应」时没有任何线索可查。
+      debugPrint('checkPendingExternalImport failed: $e');
+      unawaited(
+        AppLogService.instance.warn(
+          'external_import_check_failed',
+          e.toString(),
+          error: e,
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 

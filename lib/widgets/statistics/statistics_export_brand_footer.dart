@@ -80,7 +80,7 @@ class StatisticsExportBrandBar extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(11),
-                child: BundledAssetImage(
+                child: const BundledAssetImage(
                   assetPath: BundledAssets.launcherIcon,
                   width: _logoSize,
                   height: _logoSize,
@@ -149,10 +149,7 @@ class _WebsiteQrCode extends StatelessWidget {
 
     return QrImageView(
       data: StatisticsExportBrand.websiteUrl,
-      version: QrVersions.auto,
-      gapless: true,
       padding: EdgeInsets.zero,
-      backgroundColor: Colors.transparent,
       eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: ink),
       dataModuleStyle: QrDataModuleStyle(
         dataModuleShape: QrDataModuleShape.square,

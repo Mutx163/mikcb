@@ -33,7 +33,7 @@ void main() {
     );
 
     expect(log.entryCount, 1);
-    final text = log.readText(title: 'Warehouse import execution log');
+    final text = log.readText();
     expect(text, contains('Warehouse import execution log'));
     expect(text, contains('entryCount=1'));
     expect(text, contains('level=error'));
@@ -58,7 +58,7 @@ void main() {
   });
 
   test('ring buffer drops oldest entries beyond maxEntries', () {
-    final overflow = WarehouseImportSessionLog.maxEntries + 5;
+    const overflow = WarehouseImportSessionLog.maxEntries + 5;
     for (var index = 0; index < overflow; index++) {
       log.append(message: 'entry-$index');
     }

@@ -344,9 +344,7 @@ class _LiveDiagnosticsLogViewerScreenState
       if (!mounted) {
         return;
       }
-      setState(() {
-        _rebuildVisibleEntries();
-      });
+      setState(_rebuildVisibleEntries);
       if (_stickToLatest) {
         _scheduleAutoScroll();
       }
@@ -955,7 +953,7 @@ class _LiveDiagnosticsLogViewerScreenState
                         ),
                       ),
                     ),
-                    SizedBox(width: HyperosTokens.titleChevronGap),
+                    const SizedBox(width: HyperosTokens.titleChevronGap),
                     const HyperosChevron(),
                   ],
                 ),
@@ -1315,7 +1313,7 @@ class _DiagnosticsLogEntryTile extends StatelessWidget {
             style: HyperosTypography.listDetail(context).copyWith(height: 1.25),
           ),
         ),
-        SizedBox(width: HyperosTokens.titleChevronGap),
+        const SizedBox(width: HyperosTokens.titleChevronGap),
         const HyperosChevron(),
       ],
     );

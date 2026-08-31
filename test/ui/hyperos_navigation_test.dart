@@ -17,7 +17,7 @@ void main() {
   });
 
   test('user transition speed scales page transition duration', () {
-    AndroidAnimationScaleService.setUserTransitionSpeed(2.0);
+    AndroidAnimationScaleService.setUserTransitionSpeed(2);
     expect(
       AndroidAnimationScaleService.scaledDuration(300).inMilliseconds,
       150,

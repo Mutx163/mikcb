@@ -444,10 +444,10 @@ class HolidayService {
         if (date == null) continue;
         final rawHoliday = map['holiday'];
         final bool? isHoliday = switch (rawHoliday) {
-          bool value => value,
-          num value when value == 1 => true,
-          num value when value == 0 => false,
-          String value => switch (value.trim().toLowerCase()) {
+          final bool value => value,
+          final num value when value == 1 => true,
+          final num value when value == 0 => false,
+          final String value => switch (value.trim().toLowerCase()) {
               'true' || '1' || 'yes' => true,
               'false' || '0' || 'no' => false,
               _ => null,

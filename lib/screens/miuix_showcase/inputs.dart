@@ -92,7 +92,7 @@ class _InputsShowcaseState extends State<InputsShowcase> {
                 leadingIcon: Padding(
                   padding: const EdgeInsets.only(left: 16, right: 8),
                   child: MiuixIcon(
-                    vector: MiuixIcons.extended.byName('lock')!,
+                    vector: MiuixIcons.extended.byName('lock'),
                     size: 22,
                   ),
                 ),
@@ -103,14 +103,14 @@ class _InputsShowcaseState extends State<InputsShowcase> {
                 leadingIcon: Padding(
                   padding: const EdgeInsets.only(left: 16, right: 8),
                   child: MiuixIcon(
-                    vector: MiuixIcons.extended.byName('search')!,
+                    vector: MiuixIcons.extended.byName('search'),
                     size: 22,
                   ),
                 ),
                 trailingIcon: Padding(
                   padding: const EdgeInsets.only(right: 16, left: 8),
                   child: MiuixIcon(
-                    vector: MiuixIcons.extended.byName('clear')!,
+                    vector: MiuixIcons.extended.byName('clear'),
                     size: 22,
                   ),
                 ),
@@ -216,7 +216,7 @@ class _InputsShowcaseState extends State<InputsShowcase> {
           enabled: false,
           startAction: Padding(
             padding: EdgeInsets.only(right: 12),
-            child: MiuixCheckbox(value: false, onChanged: null, enabled: false),
+            child: MiuixCheckbox(value: false, enabled: false),
           ),
         ),
       ],
@@ -271,7 +271,6 @@ class _InputsShowcaseState extends State<InputsShowcase> {
           insideMargin: _itemMargin,
           bottomAction: MiuixSlider(
             value: _steppedSliderValue,
-            min: 0,
             max: 10,
             steps: 4,
             onValueChanged: (v) => setState(() => _steppedSliderValue = v),
@@ -335,7 +334,6 @@ class _InputsShowcaseState extends State<InputsShowcase> {
           bottomAction: MiuixRangeSlider(
             startValue: _steppedRangeStart,
             endValue: _steppedRangeEnd,
-            min: 0,
             max: 10,
             steps: 9,
             showKeyPoints: true,

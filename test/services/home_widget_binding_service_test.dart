@@ -60,7 +60,7 @@ void main() {
         },
         {'appWidgetId': 12, 'widgetType': 'today_wide', 'boundProfileId': null},
       ];
-      final service = HomeWidgetBindingService();
+      const service = HomeWidgetBindingService();
       final instances = await service.listTodayWidgetInstances();
 
       expect(instances, hasLength(2));
@@ -73,7 +73,7 @@ void main() {
 
     test('listTodayWidgetInstances 通道不可用时返回空列表不抛出', () async {
       handlerRegistry.clear(); // 触发 MissingPluginException
-      final service = HomeWidgetBindingService();
+      const service = HomeWidgetBindingService();
       final instances = await service.listTodayWidgetInstances();
       expect(instances, isEmpty);
     });
@@ -88,7 +88,7 @@ void main() {
       handlerRegistry['getWidgetBinding'] =
           (call) => stored[(call.arguments as Map)['appWidgetId'] as int];
 
-      final service = HomeWidgetBindingService();
+      const service = HomeWidgetBindingService();
       expect(await service.setWidgetBinding(7, 'profile-a'), isTrue);
       expect(await service.getWidgetBinding(7), 'profile-a');
 
@@ -99,7 +99,7 @@ void main() {
 
     test('consumePendingWidgetLaunch 返回原生 pending 的 appWidgetId', () async {
       handlerRegistry['getPendingWidgetLaunch'] = (_) => 42;
-      final service = HomeWidgetBindingService();
+      const service = HomeWidgetBindingService();
       expect(await service.consumePendingWidgetLaunch(), 42);
 
       handlerRegistry['getPendingWidgetLaunch'] = (_) => null;
@@ -107,12 +107,12 @@ void main() {
     });
 
     test('syncWidgetSnapshot 透传快照 JSON；失败不抛出', () async {
-      final payloads = <Map>[];
+      final payloads = <Map<String, dynamic>>[];
       handlerRegistry['syncWidgetSnapshot'] = (call) {
-        payloads.add(call.arguments as Map);
+        payloads.add(Map<String, dynamic>.from(call.arguments as Map));
         return true;
       };
-      final service = HomeWidgetBindingService();
+      const service = HomeWidgetBindingService();
       final ok = await service.syncWidgetSnapshot(9, minimalSnapshot());
       expect(ok, isTrue);
       expect(payloads.single['appWidgetId'], 9);

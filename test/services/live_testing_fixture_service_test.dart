@@ -129,7 +129,7 @@ void main() {
     );
     expect(
       LiveTestingFixtureService.sectionNumberForTime(
-        DateTime(2026, 3, 23, 22, 0),
+        DateTime(2026, 3, 23, 22),
         sampleSections,
       ),
       5,
@@ -166,7 +166,6 @@ void main() {
       template: template,
       now: now,
       lead: const Duration(minutes: 3),
-      duration: const Duration(minutes: 3),
     );
 
     expect(timed.startTime, '10:18');
@@ -368,7 +367,6 @@ void main() {
           startTime: schemeStart,
           endTime: schemeEnd,
           color: '#4C6FFF',
-          startWeek: 1,
           endWeek: 20,
         ),
       );

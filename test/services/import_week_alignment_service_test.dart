@@ -26,7 +26,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
         endWeek: 3,
         customWeeks: const [1, 3, 5],
       ),
@@ -49,8 +48,6 @@ void main() {
         endSection: 4,
         startTime: '10:00',
         endTime: '11:40',
-        startWeek: 1,
-        endWeek: 16,
         isOddWeek: true,
       ),
     ], firstCourseWeek: 2);

@@ -84,7 +84,6 @@ class _BlurShowcaseState extends State<BlurShowcase> {
             label: '模糊半径',
             child: MiuixSlider(
               value: _radius,
-              min: 0,
               max: 60,
               onValueChanged: (v) => setState(() => _radius = v),
             ),
@@ -93,7 +92,6 @@ class _BlurShowcaseState extends State<BlurShowcase> {
             label: '饱和度',
             child: MiuixSlider(
               value: _saturation,
-              min: 0,
               max: 2,
               onValueChanged: (v) => setState(() => _saturation = v),
             ),
@@ -120,7 +118,6 @@ class _BlurShowcaseState extends State<BlurShowcase> {
                           height: 120,
                           // 模糊面板 + bloom 高光边框叠加。
                           child: MiuixHighlight(
-                            highlight: Highlight.glassStrokeMiddleLight,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(28),
                             ),
@@ -133,7 +130,7 @@ class _BlurShowcaseState extends State<BlurShowcase> {
                               colors: MiuixBlurDefaults.blurColors(
                                 saturation: 1.5,
                               ),
-                              child: Center(
+                              child: const Center(
                                 child: MiuixText(
                                   '玻璃卡片 + 高光',
                                   color: Colors.white,

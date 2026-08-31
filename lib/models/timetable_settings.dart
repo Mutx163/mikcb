@@ -1020,7 +1020,6 @@ class ThemeConfig {
     }
     // v2: 完整主题
     return ThemeConfig(
-      version: 2,
       seedColor: json['seed'] as String?,
       backgroundColor: json['bg'] as String?,
       unifiedCardColor: json['uc'] as String?,
@@ -1045,7 +1044,6 @@ class ThemeConfig {
 
   /// 从当前设置创建 ThemeConfig
   factory ThemeConfig.fromSettings(TimetableSettings settings) => ThemeConfig(
-    version: 2,
     seedColor: settings.themeSeedColor,
     backgroundColor: settings.timetablePageBackgroundColor,
     unifiedCardColor: settings.timetableUnifiedCardColor,
@@ -1147,7 +1145,7 @@ class TimetableSettings {
   static const String defaultTimeAxisFontColorLight = '#757575';
   static const String defaultTimeAxisFontColorDark = '#FFFFFF';
 
-  static const double defaultFrostedSheetBlurSigma = 15.0;
+  static const double defaultFrostedSheetBlurSigma = 15;
   static const double defaultFrostedSheetTintAlpha = 0.70;
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
@@ -1160,7 +1158,7 @@ class TimetableSettings {
   static const bool defaultLiquidGlassHomeChromeEnabled = true;
   static const bool defaultLiquidGlassDockEnabled = true;
   static const bool defaultLiquidGlassPickerButtonsEnabled = true;
-  static const double defaultPageTransitionSpeed = 1.0;
+  static const double defaultPageTransitionSpeed = 1;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
 
@@ -1446,7 +1444,7 @@ class TimetableSettings {
     this.glassDockShowSettingsTab = true,
     this.glassDockShowWeekTab = true,
     this.glassDockButtonEntryId = 'addCourse',
-  this.glassDockButtonIconName = null,
+  this.glassDockButtonIconName,
     this.glassDockShowAddButton = false,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
@@ -1594,143 +1592,6 @@ class TimetableSettings {
         SectionTime(startTime: '19:00', endTime: '19:45'),
         SectionTime(startTime: '19:55', endTime: '20:40'),
       ],
-      activeTimeSchemeId: null,
-      sectionHeight: 68,
-      compactFontSize: 9,
-      timetableAutoFitSectionHeight: false,
-      semesterWeekCount: 20,
-      semesterStartDate: null,
-      weeklyReportEnabled: false,
-      enableHolidayMarking: true,
-      timetableShowCurrentWeekCourses: true,
-      timetableShowNonCurrentWeekCourses: false,
-      showConflictBadgeOnTimetable: true,
-      timetableConflictCourseOpacity: 0.70,
-      courseCardShowName: true,
-      courseCardShowTeacher: true,
-      courseCardShowLocation: true,
-      courseCardShowTime: false,
-      courseCardShowTimeLabels: true,
-      courseCardShowWeeks: false,
-      courseCardShowDescription: false,
-      courseCardVerticalAlign: CourseCardVerticalAlign.center,
-      courseCardHorizontalAlign: CourseCardHorizontalAlign.center,
-      courseCardFontSize: 9,
-      timetableTimeColumnWidthMode: TimetableTimeColumnWidthMode.narrow,
-      timetableCourseCardGap: 1.25,
-      timetableCourseSpacingMode: TimetableCourseSpacingMode.narrow,
-      widgetBackgroundStyle: WidgetBackgroundStyle.solid,
-      widgetShowLocation: true,
-      widgetShowCountdown: true,
-      widgetHideCompletedCourses: false,
-      widgetShowTomorrowCourses: true,
-      widgetHeightAdjustment: -11,
-      widgetCornerRadius: 22,
-      appThemeMode: AppThemeMode.system,
-      appFontMode: AppFontMode.system,
-      appLocaleTag: '',
-      homeTitleStyle: HomeTitleStyle.classic,
-      timetableHomeViewMode: TimetableHomeViewMode.week,
-      homeNavigationForm: HomeNavigationForm.classic,
-      timetableBackToCurrentWeekButtonStyle:
-          BackToCurrentWeekButtonStyle.floating,
-      timetableFloatingBackToCurrentWeekButtonOpacity: 0.96,
-      timetableLastViewedDayOfWeek: 1,
-      coupleTimetableOverlayEnabled: false,
-      timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
-      timetableHideWeekends: false,
-      enableHaptics: true,
-      pageTransitionSpeed: defaultPageTransitionSpeed,
-      homePullQuickImportEnabled: false,
-      liveShowCourseName: true,
-      liveShowLocation: true,
-      liveShowCountdown: true,
-      liveCountdownTextStyle: LiveCountdownTextStyle.smart,
-      liveShowStageText: true,
-      liveEnableBeforeClass: true,
-      liveEnableDuringClass: true,
-      liveEnableBeforeEnd: true,
-      livePromoteDuringClass: true,
-      liveShowDuringClassNotification: true,
-      liveUseShortName: true,
-      liveHidePrefixText: true,
-      liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
-      liveEnableMiuiIslandLabelImage: false,
-      liveDuringEndShowCourseName: true,
-      liveDuringEndShowLocation: true,
-      liveDuringEndShowCountdown: true,
-      liveDuringEndCountdownTextStyle: LiveCountdownTextStyle.smart,
-      liveDuringEndShowStageText: true,
-      liveDuringEndUseShortName: true,
-      liveDuringEndHidePrefixText: true,
-      liveDuringEndFollowBeforeClass: true,
-      liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
-      liveDuringEndEnableMiuiIslandLabelImage: false,
-      liveHideFromRecents: false,
-      liveEnableLocalDiagnostics: false,
-      liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
-      liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
-      liveMiuiIslandLabelFontColor: '#FFFFFF',
-      liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.bold,
-      liveMiuiIslandLabelRenderQuality: MiuiIslandLabelRenderQuality.standard,
-      liveMiuiIslandLabelFontSize: 14,
-      liveMiuiIslandLabelOffsetX: 0,
-      liveMiuiIslandLabelOffsetY: 0,
-      liveMiuiIslandLabelLogoPath: null,
-      liveMiuiIslandLabelLogoCornerRadius: 8,
-      liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
-      liveMiuiIslandExpandedIconPath: null,
-      liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
-      liveDuringEndMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
-      liveDuringEndMiuiIslandLabelFontColor: '#FFFFFF',
-      liveDuringEndMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.bold,
-      liveDuringEndMiuiIslandLabelRenderQuality:
-          MiuiIslandLabelRenderQuality.standard,
-      liveDuringEndMiuiIslandLabelFontSize: 14,
-      liveDuringEndMiuiIslandLabelOffsetX: 0,
-      liveDuringEndMiuiIslandLabelOffsetY: 0,
-      liveDuringEndMiuiIslandLabelLogoPath: null,
-      liveDuringEndMiuiIslandLabelLogoCornerRadius: 8,
-      liveDuringEndMiuiIslandExpandedIconMode:
-          MiuiIslandExpandedIconMode.appIcon,
-      liveDuringEndMiuiIslandExpandedIconPath: null,
-      liveShowBeforeClassMinutes: 20,
-      liveClassReminderStartMinutes: 0,
-      liveEndSecondsCountdownThreshold: 60,
-      liveTimeCorrectionSeconds: 0,
-      liveBeforeClassQuickAction: LiveBeforeClassQuickAction.none,
-      liveBeforeClassQuickActionAutoMinutes: 0,
-      themeSeedColor: '#2563EB',
-      foruiTheme: ForuiTheme.blue,
-      timetablePageBackgroundColor: '#F8FAFC',
-      homePageBackgroundFill: HomePageBackgroundFill.color,
-      homePageBackgroundImagePath: null,
-      homePageWallpaperPath: null,
-      homePageWallpaperAlignX: 0,
-      homePageWallpaperAlignY: 0,
-      homePageBackgroundScope: HomePageBackgroundScope.defaultValue,
-      timetableUseUnifiedCardColor: false,
-      timetableUnifiedCardColor: '#2563EB',
-      appUpdateDownloadSource: 'mirror',
-      appUpdateMirrorPreset: 'ghfast',
-      appUpdateIncludePrerelease: false,
-      appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
-      appUpdatePromptEnabled: true,
-      holidayOverrideEnabled: false,
-      classAlarmLeadMinutes: 30,
-      classAlarmSkipUi: false,
-      classReminders: [],
-      courseCardTitleColorLight: defaultCourseCardTitleColor,
-      courseCardTitleColorDark: defaultCourseCardTitleColor,
-      courseCardDetailColorLight: defaultCourseCardDetailColor,
-      courseCardDetailColorDark: defaultCourseCardDetailColor,
-      weekdayBarFontColorLight: defaultWeekdayBarFontColorLight,
-      weekdayBarFontColorDark: defaultWeekdayBarFontColorDark,
-      weekdayBarAccentColorLight: defaultWeekdayBarAccentColorLight,
-      weekdayBarAccentColorDark: defaultWeekdayBarAccentColorDark,
-      timeAxisFontColorLight: defaultTimeAxisFontColorLight,
-      timeAxisFontColorDark: defaultTimeAxisFontColorDark,
-      linkCourseCardColors: true,
     );
   }
 
@@ -1998,7 +1859,6 @@ class TimetableSettings {
           : null,
       weeklyReportEnabled: json['weeklyReportEnabled'] as bool? ?? false,
       enableHolidayMarking: json['enableHolidayMarking'] as bool? ?? true,
-      timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses:
           json['timetableShowNonCurrentWeekCourses'] as bool? ?? false,
       showConflictBadgeOnTimetable:
@@ -2072,8 +1932,8 @@ class TimetableSettings {
         (json['glassDockActions'] as List<Object?>?) ??
             [
               // 迁移：旧档无此键时由日/周 Tab 开关推导（旧默认均 true）。
-              if ((json['glassDockShowDayTab'] as bool? ?? true)) 'day',
-              if ((json['glassDockShowWeekTab'] as bool? ?? true)) 'week',
+              if (json['glassDockShowDayTab'] as bool? ?? true) 'day',
+              if (json['glassDockShowWeekTab'] as bool? ?? true) 'week',
             ],
       ),
       homeGridMenuActions: HomeGridMenu.normalize(
@@ -2620,7 +2480,6 @@ class TimetableSettings {
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
       weeklyReportEnabled: weeklyReportEnabled ?? this.weeklyReportEnabled,
       enableHolidayMarking: enableHolidayMarking ?? this.enableHolidayMarking,
-      timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses:
           timetableShowNonCurrentWeekCourses ??
           this.timetableShowNonCurrentWeekCourses,

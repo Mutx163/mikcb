@@ -91,7 +91,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       startAction: Padding(
                         padding: const EdgeInsets.only(right: 12),
                         child: MiuixIcon(
-                          vector: MiuixIcons.extended.byName(action.$2)!,
+                          vector: MiuixIcons.extended.byName(action.$2),
                           size: 24,
                         ),
                       ),
@@ -159,7 +159,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       MiuixDropdownItem(
                         text: '分享',
                         icon: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('share')!,
+                          vector: MiuixIcons.extended.byName('share'),
                           size: 24,
                           tint: colors.onBackground,
                         ),
@@ -168,7 +168,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       MiuixDropdownItem(
                         text: '编辑',
                         icon: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('edit')!,
+                          vector: MiuixIcons.extended.byName('edit'),
                           size: 24,
                           tint: colors.onBackground,
                         ),
@@ -181,7 +181,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       MiuixDropdownItem(
                         text: '删除',
                         icon: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('delete')!,
+                          vector: MiuixIcons.extended.byName('delete'),
                           size: 24,
                           tint: colors.error,
                         ),
@@ -208,7 +208,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       MiuixDropdownItem(
                         text: '复制',
                         icon: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('copy')!,
+                          vector: MiuixIcons.extended.byName('copy'),
                           size: 24,
                           tint: colors.onBackground,
                         ),
@@ -217,7 +217,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       MiuixDropdownItem(
                         text: '粘贴',
                         icon: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('paste')!,
+                          vector: MiuixIcons.extended.byName('paste'),
                           size: 24,
                           tint: colors.onBackground,
                         ),
@@ -226,7 +226,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                       MiuixDropdownItem(
                         text: '剪切',
                         icon: MiuixIcon(
-                          vector: MiuixIcons.extended.byName('cut')!,
+                          vector: MiuixIcons.extended.byName('cut'),
                           size: 24,
                           tint: colors.onBackground,
                         ),
@@ -235,7 +235,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                     ],
                   ),
                   child: MiuixIcon(
-                    vector: MiuixIcons.extended.byName('more')!,
+                    vector: MiuixIcons.extended.byName('more'),
                     size: 24,
                     tint: colors.onBackground,
                   ),
@@ -267,7 +267,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                             ? colors.tertiaryContainer
                             : null,
                         child: MiuixIcon(
-                          vector: MiuixIcons.extended.byName(name)!,
+                          vector: MiuixIcons.extended.byName(name),
                           size: 24,
                         ),
                       ),
@@ -284,7 +284,6 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   MiuixFloatingToolbar(
                     cornerRadius: 24,
@@ -295,7 +294,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                         MiuixIconButton(
                           onPressed: () => setState(() => _counter++),
                           child: MiuixIcon(
-                            vector: MiuixIcons.extended.byName('add')!,
+                            vector: MiuixIcons.extended.byName('add'),
                             size: 24,
                           ),
                         ),
@@ -303,7 +302,7 @@ class _OverlaysShowcaseState extends State<OverlaysShowcase> {
                         MiuixIconButton(
                           onPressed: () => setState(() => _counter--),
                           child: MiuixIcon(
-                            vector: MiuixIcons.extended.byName('remove')!,
+                            vector: MiuixIcons.extended.byName('remove'),
                             size: 24,
                           ),
                         ),

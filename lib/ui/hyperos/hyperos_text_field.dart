@@ -60,7 +60,6 @@ class HyperosTextField extends StatelessWidget {
           label: effectiveLabel,
           useLabelAsPlaceholder: useLabelAsPlaceholder,
           enabled: enabled,
-          readOnly: false,
           textStyle: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w400),
           singleLine: maxLines == 1,
           maxLines: maxLines,
@@ -150,7 +149,7 @@ class HyperosPickerField extends StatelessWidget {
             child: Ink(
               decoration: BoxDecoration(
                 borderRadius: radius,
-                border: Border.all(color: outline, width: 1),
+                border: Border.all(color: outline),
               ),
               child: Padding(
                 padding: HyperosMiuixTextField.insideMargin,

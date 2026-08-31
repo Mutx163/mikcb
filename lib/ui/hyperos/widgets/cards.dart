@@ -123,7 +123,7 @@ class HyperosSummaryCard extends StatelessWidget {
               // Same affordance as [HyperosListTile]: only tappable summary
               // cards show a right chevron so the entry is not a dead-end look.
               if (onTap != null) ...[
-                SizedBox(width: HyperosTokens.titleChevronGap),
+                const SizedBox(width: HyperosTokens.titleChevronGap),
                 const HyperosChevron(),
               ],
             ],

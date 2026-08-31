@@ -213,7 +213,7 @@ adapters:
   test('fetchAdapterScript skips verification for legacy indexes without sha256',
       () async {
     const scriptBody = 'console.log("legacy");';
-    final adapter = WarehouseAdapterEntry(
+    const adapter = WarehouseAdapterEntry(
       adapterId: 'CQU_01',
       adapterName: '重庆大学教务',
       category: 'BACHELOR_AND_ASSOCIATE',

@@ -91,22 +91,22 @@ class TimetableProfile {
       name: json['name'] as String? ?? '未命名课表',
       courses: _parseListLenient(
         json['courses'],
-        (map) => Course.fromJson(map),
+        Course.fromJson,
         onDropped: () {},
       ),
       tasks: _parseListLenient(
         json['tasks'],
-        (map) => CourseTask.fromJson(map),
+        CourseTask.fromJson,
         onDropped: () {},
       ),
       scheduleItems: _parseListLenient(
         json['scheduleItems'],
-        (map) => ScheduleItem.fromJson(map),
+        ScheduleItem.fromJson,
         onDropped: () {},
       ),
       exams: _parseListLenient(
         json['exams'],
-        (map) => Exam.fromJson(map),
+        Exam.fromJson,
         onDropped: () {},
       ),
       settings: settings,
@@ -152,22 +152,22 @@ class TimetableProfile {
       name: json['name']?.toString() ?? '未命名课表',
       courses: _parseListLenient<Course>(
         json['courses'],
-        (map) => Course.fromJson(map),
+        Course.fromJson,
         onDropped: () => stats?.droppedCourses += 1,
       ),
       tasks: _parseListLenient<CourseTask>(
         json['tasks'],
-        (map) => CourseTask.fromJson(map),
+        CourseTask.fromJson,
         onDropped: () => stats?.droppedTasks += 1,
       ),
       scheduleItems: _parseListLenient<ScheduleItem>(
         json['scheduleItems'],
-        (map) => ScheduleItem.fromJson(map),
+        ScheduleItem.fromJson,
         onDropped: () => stats?.droppedScheduleItems += 1,
       ),
       exams: _parseListLenient<Exam>(
         json['exams'],
-        (map) => Exam.fromJson(map),
+        Exam.fromJson,
         onDropped: () => stats?.droppedExams += 1,
       ),
       settings: settings,

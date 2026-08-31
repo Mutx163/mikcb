@@ -126,7 +126,7 @@ void _applyTranslations(List<String> args) {
 
   for (final locale in _targetFiles.keys) {
     final localeTranslations = translations[locale];
-    if (localeTranslations is! Map) continue;
+    if (localeTranslations is! Map<String, dynamic>) continue;
 
     final targetPath = _targetFiles[locale]!;
     final target = _readArb(targetPath);

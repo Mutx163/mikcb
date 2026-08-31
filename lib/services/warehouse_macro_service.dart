@@ -69,7 +69,7 @@ class WarehouseMacroService {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return const [];
       final entries = decoded
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .map(
             (m) =>
                 WarehouseMacroIndexEntry.fromJson(Map<String, dynamic>.from(m)),
@@ -132,7 +132,7 @@ class WarehouseMacroService {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return const [];
       return decoded
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .map(
             (m) =>
                 WarehouseMacroIndexEntry.fromJson(Map<String, dynamic>.from(m)),

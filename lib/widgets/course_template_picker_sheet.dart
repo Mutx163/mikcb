@@ -15,7 +15,7 @@ Future<Course?> showCourseTemplatePickerSheet(
   String? selectedCourseId,
 }) {
   if (courseGroups.isEmpty) {
-    return Future.value(null);
+    return Future.value();
   }
 
   return showHyperosSheet<Course>(
@@ -49,7 +49,6 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
 
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
-      frosted: true,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,

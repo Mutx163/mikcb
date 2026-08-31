@@ -47,7 +47,7 @@ void main() {
   }) {
     return service.build(
       profile: profile,
-      fromDate: fromDate ?? DateTime(2026, 3, 1),
+      fromDate: fromDate ?? DateTime(2026, 3),
       toDate: toDate ?? DateTime(2026, 4, 30),
       eventTypes: eventTypes,
       generatedAt: generatedAt ?? DateTime.utc(2026, 4, 1, 12, 34, 56),
@@ -60,15 +60,12 @@ void main() {
         _course(
           id: 'continuous',
           name: '连续课',
-          dayOfWeek: DateTime.monday,
-          startWeek: 1,
           endWeek: 4,
         ),
         _course(
           id: 'odd',
           name: '单周课',
           dayOfWeek: DateTime.tuesday,
-          startWeek: 1,
           endWeek: 4,
           isOddWeek: true,
         ),
@@ -76,7 +73,6 @@ void main() {
           id: 'even',
           name: '双周课',
           dayOfWeek: DateTime.wednesday,
-          startWeek: 1,
           endWeek: 4,
           isEvenWeek: true,
         ),
@@ -84,7 +80,6 @@ void main() {
           id: 'custom',
           name: '自定义周课',
           dayOfWeek: DateTime.thursday,
-          startWeek: 1,
           endWeek: 8,
           customWeeks: [2, 4],
         ),
@@ -146,8 +141,6 @@ void main() {
         _course(
           id: 'course-in-range',
           name: '范围内课程',
-          dayOfWeek: DateTime.monday,
-          startWeek: 1,
           endWeek: 3,
         ),
       ],
@@ -178,11 +171,8 @@ void main() {
     final profile = profileWith(
       exams: [
         _exam(
-          id: 'exam-1',
           name: '期末考试',
           date: DateTime(2026, 3, 20),
-          startTime: '09:00',
-          endTime: '11:00',
           location: '考场,北区;A101',
           seatNumber: '12号',
           note: '带证件\n提前十五分钟',
@@ -380,7 +370,7 @@ Exam _exam({
     location: location,
     seatNumber: seatNumber,
     note: note,
-    createdAt: DateTime(2026, 2, 1),
+    createdAt: DateTime(2026, 2),
     updatedAt: DateTime(2026, 2, 2),
   );
 }
@@ -404,7 +394,7 @@ ScheduleItem _scheduleItem({
     endTime: endTime,
     location: location,
     note: note,
-    createdAt: DateTime(2026, 2, 1),
+    createdAt: DateTime(2026, 2),
     updatedAt: DateTime(2026, 2, 2),
   );
 }

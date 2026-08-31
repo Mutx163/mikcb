@@ -217,7 +217,7 @@ class StatisticsShareService {
 
       const pixelRatio = _preferredPixelRatio;
       final fullPixelHeight = measuredSize.height * pixelRatio;
-      final maxSlicePixelHeight = _maxTextureEdge - 16;
+      const maxSlicePixelHeight = _maxTextureEdge - 16;
 
       appDebugLog(
         'StatisticsShare',
@@ -240,7 +240,7 @@ class StatisticsShareService {
       }
 
       // Tall content: reuse one host, only change slice window.
-      final sliceLogicalHeight = maxSlicePixelHeight / pixelRatio;
+      const sliceLogicalHeight = maxSlicePixelHeight / pixelRatio;
       final sliceCount = (measuredSize.height / sliceLogicalHeight).ceil();
       appDebugLog(
         'StatisticsShare',
@@ -340,7 +340,7 @@ class StatisticsShareService {
     try {
       composited = await _compositeOntoOpaque(snapshot, opaqueFill);
       final byteData = await composited.toByteData(
-        format: ui.ImageByteFormat.rawRgba,
+        
       );
       if (byteData == null) {
         return null;
@@ -390,7 +390,7 @@ class StatisticsShareService {
         bytes: rgbaBytes.buffer,
         order: img.ChannelOrder.rgba,
       );
-      return Uint8List.fromList(img.encodePng(copy, level: 6));
+      return Uint8List.fromList(img.encodePng(copy));
     });
   }
 

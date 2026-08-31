@@ -58,7 +58,7 @@ class SemesterHeatmapCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.grid_view_rounded,
                   accent: HyperosIconColors.indigo,
                 ),

@@ -8,7 +8,6 @@ void main() {
         hyperosIsRouteTransitioning(
           animationValue: 1,
           secondaryAnimationValue: 0.5,
-          isRouteCurrent: true,
         ),
         isFalse,
       );
@@ -16,7 +15,6 @@ void main() {
         hyperosIsRouteTransitioning(
           animationValue: 0.42,
           secondaryAnimationValue: 0,
-          isRouteCurrent: true,
         ),
         isTrue,
       );
@@ -46,7 +44,6 @@ void main() {
         hyperosIsRouteTransitioning(
           animationValue: 1,
           secondaryAnimationValue: 0,
-          isRouteCurrent: true,
         ),
         isFalse,
       );
@@ -54,7 +51,6 @@ void main() {
         hyperosIsRouteTransitioning(
           animationValue: 0.9995,
           secondaryAnimationValue: 0.0005,
-          isRouteCurrent: true,
         ),
         isFalse,
       );

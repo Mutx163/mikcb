@@ -24,10 +24,10 @@ class TeacherStatsCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: HyperosTokens.rowPadding(isFirst: true, isLast: false),
+            padding: HyperosTokens.rowPadding(isLast: false),
             child: Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.school_outlined,
                   accent: HyperosIconColors.green,
                 ),

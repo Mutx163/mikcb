@@ -112,7 +112,6 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
                 week: week,
                 maxVisibleSections: 2,
                 includeAppHeader: true,
-                applyHomePageBackdrop: true,
                 heightBudget: _previewHeight,
               ),
             ),
@@ -169,7 +168,6 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
     }
 
     return HyperosSheetFrame(
-      frosted: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +213,6 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
               // settings cards; keeping them out of this layer prevents a
               // Gaussian/classic preview from rendering as liquid glass.
               return HyperosLiquidGlassLayer(
-                role: HyperosLiquidGlassRole.nestedTile,
                 // Sample the modal group's undimmed backdrop (matches home menu).
                 useBackdropGroup: true,
                 child: tiles,
@@ -266,7 +263,7 @@ class _DemoMenuTile extends StatelessWidget {
     final content = Material(
       type: MaterialType.transparency,
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: horizontalPadding,
           vertical: verticalPadding,
         ),
@@ -285,7 +282,7 @@ class _DemoMenuTile extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: 7),
+            const SizedBox(height: 7),
             Text(
               title,
               maxLines: 2,

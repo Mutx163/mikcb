@@ -12,8 +12,8 @@ TimetableProfile _profile(String id, {String name = '默认课表'}) {
     courses: const [],
     settings: TimetableSettings.defaults(),
     currentWeek: 1,
-    createdAt: DateTime(2026, 8, 1),
-    lastUsedAt: DateTime(2026, 8, 1),
+    createdAt: DateTime(2026, 8),
+    lastUsedAt: DateTime(2026, 8),
   );
 }
 

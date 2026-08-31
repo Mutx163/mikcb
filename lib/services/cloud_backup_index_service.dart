@@ -112,7 +112,7 @@ class CloudBackupIndex {
     }
     return CloudBackupIndex(
       entries: rawEntries
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .map(
             (item) => CloudBackupEntry.fromJson(
               Map<String, dynamic>.from(item),

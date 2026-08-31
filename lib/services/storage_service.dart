@@ -200,7 +200,7 @@ class StorageService {
     if (_prefs == null) await init();
     final coursesJson = _prefs?.getStringList(_coursesKey) ?? [];
     try {
-      return coursesJson.map((json) => Course.fromJsonString(json)).toList();
+      return coursesJson.map(Course.fromJsonString).toList();
     } catch (_) {
       await _backupAndRemoveCorruptStringList(_coursesKey, coursesJson);
       return const [];
@@ -470,7 +470,7 @@ class StorageService {
   bool _isSettingsEffectivelyDefault(TimetableSettings settings) {
     final defaults = TimetableSettings.defaults();
     final normalizedSettings = settings
-        .copyWith(activeTimeSchemeId: null)
+        .copyWith()
         .toJson();
     final normalizedDefaults = defaults.toJson();
     return jsonEncode(normalizedSettings) == jsonEncode(normalizedDefaults);

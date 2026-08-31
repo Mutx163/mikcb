@@ -203,7 +203,6 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
             : _inAppProgressLabel(l10n, progress);
 
         return HyperosSheetFrame(
-          frosted: true,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,

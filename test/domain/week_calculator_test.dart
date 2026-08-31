@@ -16,7 +16,7 @@ void main() {
     });
 
     test('周日归到本周周一而非下周', () {
-      final result = WeekCalculator.startOfWeek(DateTime(2026, 8, 30, 23, 0));
+      final result = WeekCalculator.startOfWeek(DateTime(2026, 8, 30, 23));
       expect(result, DateTime(2026, 8, 24));
     });
   });
@@ -94,7 +94,7 @@ void main() {
     test('学期中返回真实教学周', () {
       expect(
         WeekCalculator.weekForDate(
-          DateTime(2026, 9, 1),
+          DateTime(2026, 9),
           semesterStart: semesterStart,
           semesterWeekCount: 18,
           fallback: 5,
@@ -144,7 +144,7 @@ void main() {
     test('学期中返回真实周次', () {
       expect(
         WeekCalculator.calendarWeekForDate(
-          DateTime(2026, 9, 1),
+          DateTime(2026, 9),
           semesterStart: semesterStart,
           fallback: 7,
         ),

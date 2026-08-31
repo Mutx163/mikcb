@@ -28,7 +28,6 @@ void main() {
       endDate: endDate,
       startTime: startTime,
       endTime: endTime,
-      color: '#5B9CF6',
       createdAt: createdAt,
       updatedAt: updatedAt,
       recurrence: recurrence,
@@ -63,16 +62,16 @@ void main() {
     });
 
     test('defaults endDate to startDate when omitted', () {
-      final item = buildItem(startDate: DateTime(2026, 5, 1));
+      final item = buildItem(startDate: DateTime(2026, 5));
 
-      expect(item.endDate, DateTime(2026, 5, 1));
+      expect(item.endDate, DateTime(2026, 5));
     });
 
     test('legacy date constructor argument fills start and end', () {
       final item = buildItem(date: DateTime(2026, 6, 1, 12));
 
-      expect(item.startDate, DateTime(2026, 6, 1));
-      expect(item.endDate, DateTime(2026, 6, 1));
+      expect(item.startDate, DateTime(2026, 6));
+      expect(item.endDate, DateTime(2026, 6));
     });
   });
 
@@ -129,12 +128,12 @@ void main() {
       expect(restored.startTime, '08:00');
       expect(restored.endTime, '09:00');
       expect(restored.color, '#5B9CF6');
-      expect(restored.startDate, DateTime(2026, 7, 1));
-      expect(restored.endDate, DateTime(2026, 7, 1));
+      expect(restored.startDate, DateTime(2026, 7));
+      expect(restored.endDate, DateTime(2026, 7));
     });
 
     test('json string helpers round-trip', () {
-      final original = buildItem(startDate: DateTime(2026, 8, 1));
+      final original = buildItem(startDate: DateTime(2026, 8));
       final restored = ScheduleItem.fromJsonString(original.toJsonString());
 
       expect(restored.id, original.id);
@@ -187,7 +186,7 @@ void main() {
 
     test('round-trips reminder and enabled pause state', () {
       final original = buildItem(
-        startDate: DateTime(2026, 8, 1),
+        startDate: DateTime(2026, 8),
         reminderMinutesBefore: 15,
         enabled: false,
       );
@@ -256,14 +255,14 @@ void main() {
     test('weekly recurrence uses the start date weekday', () {
       final item = buildItem(
         startDate: DateTime(2026, 4, 16),
-        endDate: DateTime(2026, 5, 1),
+        endDate: DateTime(2026, 5),
         recurrence: ScheduleRecurrence.weekly,
       );
 
       expect(
         item.occurrenceDates(
           fromDate: DateTime(2026, 4, 15),
-          toDate: DateTime(2026, 5, 1),
+          toDate: DateTime(2026, 5),
         ),
         [DateTime(2026, 4, 16), DateTime(2026, 4, 23), DateTime(2026, 4, 30)],
       );

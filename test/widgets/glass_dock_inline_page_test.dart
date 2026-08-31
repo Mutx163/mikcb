@@ -84,14 +84,14 @@ void main() {
         providers: [
           ChangeNotifierProvider<TimetableProvider>.value(value: provider),
         ],
-        child: MaterialApp(
-          localizationsDelegates: const [
+        child: const MaterialApp(
+          localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('zh'),
+          locale: Locale('zh'),
           home: FrostedAppearanceScope(
             appearance: FrostedAppearance.defaults,
             child: TimetableScreen(

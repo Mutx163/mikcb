@@ -36,8 +36,8 @@ void main() {
       exceptionDates: [DateTime(2026, 4, 13)],
       reminderMinutesBefore: 15,
       enabled: false,
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
     await provider.addScheduleItem(schedule);
 

@@ -2679,6 +2679,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get goEnableAction => '有効にする';
 
   @override
+  String get keepAliveConfirmTitle => 'バックグラウンド保持サービスを有効にする';
+
+  @override
+  String get keepAliveConfirmBody => 'このサービスはバックグラウンドでのウィジェット更新と授業リマインダーの再スケジュールにのみ使用され、画面の内容を読み取ったり、ユーザーに代わって操作を行ったりすることはありません。有効にするにはシステム設定で「ユーザー補助」権限を許可する必要があります。いつでもオフにできます。';
+
+  @override
+  String get keepAliveConfirmGoAction => '有効にする';
+
+  @override
   String get layoutEntryTitle => 'レイアウトと時限';
 
   @override

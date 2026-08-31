@@ -30,14 +30,14 @@ void main() {
         providers: [
           ChangeNotifierProvider<TimetableProvider>.value(value: provider),
         ],
-        child: MaterialApp(
-          localizationsDelegates: const [
+        child: const MaterialApp(
+          localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('zh'),
+          locale: Locale('zh'),
           home: FrostedAppearanceScope(
             appearance: FrostedAppearance.defaults,
             child: TimetableScreen(
@@ -63,7 +63,7 @@ void main() {
   }
 
   /// 玻璃坞药丸固定占用高度（与屏幕源码 _glassDockPillOccupancy 一致）。
-  const double kGlassDockPillOccupancy = 62.0;
+  const double kGlassDockPillOccupancy = 62;
 
   testWidgets('glass dock overlay layout: timetable reaches screen bottom',
       (tester) async {
@@ -119,7 +119,7 @@ void main() {
           ),
         )
         .toList(growable: false);
-    final expectedBottom = noWallpaperInnerPadding + kGlassDockPillOccupancy;
+    const expectedBottom = noWallpaperInnerPadding + kGlassDockPillOccupancy;
     expect(
       columnPads.any(
         (p) =>

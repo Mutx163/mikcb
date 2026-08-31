@@ -51,7 +51,7 @@ class SupportDonorData {
 
   factory SupportDonorData.fromJson(Map<String, dynamic> json) {
     final donorItems = (json['donors'] as List<dynamic>? ?? const [])
-        .whereType<Map>()
+        .whereType<Map<String, dynamic>>()
         .map(
           (item) => SupportDonorEntry.fromJson(Map<String, dynamic>.from(item)),
         )

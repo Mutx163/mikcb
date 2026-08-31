@@ -54,7 +54,7 @@ class FeedbackScreen extends StatelessWidget {
       'mqqopensdkapi://bizAgent/qm/qr?url='
       '${Uri.encodeComponent('http://qm.qq.com/cgi-bin/qm/qr?from=app&p=android&jump_from=webapi&k=$_qqGroupJoinKey')}';
 
-  static final String _qqGroupJoinWebUrl =
+  static const String _qqGroupJoinWebUrl =
       'https://qm.qq.com/cgi-bin/qm/qr?from=app&p=android&jump_from=webapi&k=$_qqGroupJoinKey';
 
   @override
@@ -181,7 +181,6 @@ Future<void> _openWechatOfficialAccount(BuildContext context) async {
     urls: const [FeedbackScreen._wechatOpenUrl],
     fallbackCopyValue: FeedbackScreen._wechatOaName,
     openingMessage: l10n.feedbackWechatOaOpenHint,
-    openingDuration: const Duration(seconds: 2),
   );
 }
 
@@ -207,7 +206,6 @@ Future<void> _openChannel({
   showAppToast(
     context,
     message: openingMessage ?? l10n.feedbackOpeningChannel,
-    kind: AppToastKind.info,
     duration: openingDuration,
   );
 
@@ -247,7 +245,6 @@ Future<void> _openChannel({
     context,
     message: l10n.feedbackOpenChannelFailed,
     kind: AppToastKind.warning,
-    duration: const Duration(seconds: 2),
   );
 }
 
@@ -298,7 +295,6 @@ class _FeedbackChannelTile extends StatelessWidget {
       child: Padding(
         padding: _feedbackRowPadding(context),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             brandBadge,
             const SizedBox(width: HyperosTokens.rowContentGap),

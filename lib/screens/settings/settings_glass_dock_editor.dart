@@ -313,7 +313,7 @@ class _DockSlotRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            HyperosIconBadge(icon: icon, accent: HyperosIconColors.blue),
+            HyperosIconBadge(icon: icon),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

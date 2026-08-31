@@ -95,7 +95,6 @@ class LiquidGlassTuning {
   /// Light frost — only thickness / blur / tint vary.
   static const presetLight = LiquidGlassTuning(
     thickness: 26,
-    blur: 3,
     tintAlpha: 0.16,
   );
 
@@ -131,7 +130,7 @@ class LiquidGlassTuning {
   static const double defaultSaturation = 0.7;
   static const double defaultChromaticAberration = 0.3;
   static const double defaultLightAngleDegrees = 135; // 0.75 * pi rad（官方默认，左上光源）
-  static const double defaultVisibility = 1.0;
+  static const double defaultVisibility = 1;
 
   // --- Slider ranges ---
   static const double minThickness = 0;
@@ -141,13 +140,13 @@ class LiquidGlassTuning {
   static const double minTintAlpha = 0;
   static const double maxTintAlpha = 0.55;
   static const double minLightIntensity = 0;
-  static const double maxLightIntensity = 2.0;
+  static const double maxLightIntensity = 2;
   static const double minAmbientStrength = 0;
-  static const double maxAmbientStrength = 1.0;
-  static const double minRefractiveIndex = 1.0;
+  static const double maxAmbientStrength = 1;
+  static const double minRefractiveIndex = 1;
   static const double maxRefractiveIndex = 1.5;
   static const double minSaturation = 0.5;
-  static const double maxSaturation = 2.0;
+  static const double maxSaturation = 2;
   static const double minChromaticAberration = 0;
   static const double maxChromaticAberration = 0.12;
   static const double minLightAngleDegrees = 0;

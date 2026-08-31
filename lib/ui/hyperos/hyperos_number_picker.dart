@@ -126,7 +126,7 @@ class _HyperosNumberPickerState extends State<HyperosNumberPicker> {
     final summary = HyperosColors.onSurfaceVariantSummary(context);
     final divider = HyperosColors.dividerLine(context);
 
-    final itemHeight = HyperosMiuixNumberPicker.itemHeight;
+    const itemHeight = HyperosMiuixNumberPicker.itemHeight;
     final height = itemHeight * widget.visibleItemCount;
     final selectedIndex = _indexForValue(widget.value);
 

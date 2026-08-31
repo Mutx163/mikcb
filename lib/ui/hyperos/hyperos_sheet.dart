@@ -156,7 +156,7 @@ class HyperosSheetFrame extends StatelessWidget {
   }
 
   Widget _buildFloatingPanel(BuildContext context) {
-    final outerInset = HyperosMiuixDialog.outsideMarginHorizontal;
+    const outerInset = HyperosMiuixDialog.outsideMarginHorizontal;
     final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
     final borderRadius = BorderRadius.circular(HyperosTokens.cardRadius);
     final content = Padding(padding: padding, child: child);
@@ -187,13 +187,12 @@ class HyperosSheetFrame extends StatelessWidget {
         outerInset + bottomSafeInset,
       ),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           boxShadow: [
             BoxShadow(
               // 与 anchored popup 气泡同级：轻投影，不再形成明显暗环。
-              color: const Color(0x24000000),
+              color: Color(0x24000000),
               blurRadius: 20,
-              offset: Offset.zero,
             ),
           ],
         ),
@@ -203,7 +202,7 @@ class HyperosSheetFrame extends StatelessWidget {
   }
 
   Widget _buildEdgePanel(BuildContext context) {
-    final borderRadius = BorderRadius.vertical(
+    const borderRadius = BorderRadius.vertical(
       top: Radius.circular(HyperosTokens.cardRadius),
     );
     final content = SafeArea(
@@ -218,7 +217,6 @@ class HyperosSheetFrame extends StatelessWidget {
           width: double.infinity,
           child: HyperosFrostedPanelScope(
             child: Stack(
-              clipBehavior: Clip.hardEdge,
               children: [
                 // Paint the glass a few pixels below the visible panel so the
                 // liquid-glass specular fringe on its straight bottom edge
@@ -306,7 +304,6 @@ class HyperosSheetFrame extends StatelessWidget {
     return ClipRRect(
       borderRadius: borderRadius,
       child: FrostedHeaderBackground(
-        blurEnabled: true,
         blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
         tint: tint,
         child: const SizedBox.expand(),
@@ -363,7 +360,6 @@ class HyperosSheetFrame extends StatelessWidget {
       child: ClipRRect(
         borderRadius: borderRadius,
         child: FrostedHeaderBackground(
-          blurEnabled: true,
           blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           tint: tint,
           child: content,
@@ -418,7 +414,7 @@ class HyperosSheet extends StatelessWidget {
 }
 
 /// Bottom velocity threshold to dismiss (pixels/second).
-const double _kDismissVelocity = 600.0;
+const double _kDismissVelocity = 600;
 
 /// Bottom distance threshold to dismiss (fraction of sheet height).
 const double _kDismissFraction = 0.3;
@@ -451,7 +447,7 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
   /// notifier only rebuilds the [Transform.translate] layer while the sheet
   /// subtree stays mounted untouched (same pattern as [HyperosPage]).
   final _dragOffset = ValueNotifier<double>(0);
-  double _sheetHeight = 0.0;
+  double _sheetHeight = 0;
 
   late AnimationController _resetController;
   late final CurvedAnimation _resetCurve;
@@ -516,7 +512,7 @@ class _DragDismissableSheetState extends State<_DragDismissableSheet>
           );
       _resetController
         ..duration = Duration(milliseconds: durationMs.toInt())
-        ..forward(from: 1.0);
+        ..forward(from: 1);
     }
   }
 

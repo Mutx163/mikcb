@@ -56,7 +56,7 @@ abstract final class FrostedBlurService {
     if (Platform.isAndroid &&
         (_nativeSupportedCache ?? false) &&
         !_nativeBlurUnavailable) {
-      final rgba = await source.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final rgba = await source.toByteData();
       if (rgba != null) {
         try {
           final result = await _channel.invokeMethod<Uint8List>('blurRgba', {

@@ -567,7 +567,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     0.0,
                     12.0,
                   ),
-                  min: 0,
                   max: 12,
                   divisions: 12,
                   onChanged: (value) => _updateDisplay(
@@ -792,7 +791,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           const HyperosSectionGap(),
           if (_followBeforeClass)
             IgnorePointer(
-              ignoring: true,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 180),
                 opacity: 0.5,
@@ -904,7 +902,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetDir = Directory(
       '${dir.path}${Platform.pathSeparator}$directoryName',
     );
-    if (!await targetDir.exists()) {
+    if (!targetDir.existsSync()) {
       await targetDir.create(recursive: true);
     }
     final targetPath =
@@ -927,7 +925,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetDir = Directory(
       '${dir.path}${Platform.pathSeparator}$directoryName',
     );
-    if (!await targetDir.exists()) {
+    if (!targetDir.existsSync()) {
       return;
     }
     final preservedAbsolutePath = preservePath == null
@@ -948,7 +946,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         continue;
       }
       try {
-        if (await entity.exists()) {
+        if (entity.existsSync()) {
           await entity.delete();
         }
       } catch (_) {}
@@ -1031,6 +1029,18 @@ class _LiveKeepAliveSettingsScreenState
   }
 
   Future<void> _openSettings() async {
+    // 无障碍保活属于敏感权限：跳系统设置前先弹窗说明用途与边界（不读屏、
+    // 不代点），用户确认后再进入系统设置，降低误开与投诉风险。
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showHyperosConfirmDialog(
+      context: context,
+      title: l10n.keepAliveConfirmTitle,
+      message: l10n.keepAliveConfirmBody,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.keepAliveConfirmGoAction,
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
     await _liveService.openAccessibilitySettings();
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
@@ -1078,7 +1088,6 @@ class _LiveKeepAliveServiceTile extends StatelessWidget {
       child: Padding(
         padding: HyperosTokens.rowPaddingUniform,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             HyperosIconBadge(
               icon: enabled

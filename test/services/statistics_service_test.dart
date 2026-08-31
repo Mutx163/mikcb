@@ -33,10 +33,7 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            startWeek: 1,
-            endWeek: 16,
             isOddWeek: true,
-            courseNature: CourseNature.required,
           ),
         ];
 
@@ -121,10 +118,7 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            startWeek: 1,
-            endWeek: 16,
             isOddWeek: true,
-            courseNature: CourseNature.required,
           ),
         ];
 
@@ -151,10 +145,7 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            startWeek: 1,
-            endWeek: 16,
             suspendedWeeks: [3, 5],
-            courseNature: CourseNature.required,
           ),
         ];
 
@@ -243,7 +234,6 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            courseNature: CourseNature.required,
           ),
         ];
 
@@ -307,10 +297,8 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
           endWeek: 4,
           suspendedWeeks: [2],
-          courseNature: CourseNature.required,
         );
 
         final achievements = StatisticsService.calculateAchievements(
@@ -338,8 +326,6 @@ void main() {
             startTime: '08:00',
             endTime: '09:40',
             startWeek: 3,
-            endWeek: 16,
-            courseNature: CourseNature.required,
           ),
         ];
 
@@ -393,7 +379,6 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            courseNature: CourseNature.required,
           ),
           Course(
             id: '2',
@@ -405,7 +390,6 @@ void main() {
             endSection: 4,
             startTime: '10:00',
             endTime: '11:40',
-            courseNature: CourseNature.required,
           ),
         ];
 
@@ -423,7 +407,7 @@ void main() {
 
     group('CourseNatureStats', () {
       test('should calculate ratio correctly', () {
-        final stats = CourseNatureStats(
+        const stats = CourseNatureStats(
           requiredCount: 3,
           electiveCount: 1,
           requiredSections: 6,
@@ -437,7 +421,7 @@ void main() {
       });
 
       test('should handle zero total', () {
-        final stats = CourseNatureStats(
+        const stats = CourseNatureStats(
           requiredCount: 0,
           electiveCount: 0,
           requiredSections: 0,
@@ -478,10 +462,8 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            startWeek: 1,
             endWeek: 4,
             isOddWeek: true,
-            courseNature: CourseNature.required,
           ),
         ];
         final trend = StatisticsService.calculateWeeklyTrend(
@@ -682,7 +664,6 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            courseNature: CourseNature.required,
           ),
           Course(
             id: '2',
@@ -837,7 +818,6 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            courseNature: CourseNature.required,
           ),
           Course(
             id: '2',
@@ -915,7 +895,6 @@ void main() {
             endSection: 2,
             startTime: '08:00',
             endTime: '09:40',
-            courseNature: CourseNature.required,
           ),
           Course(
             id: '2',
@@ -927,7 +906,6 @@ void main() {
             endSection: 4,
             startTime: '10:00',
             endTime: '11:40',
-            courseNature: CourseNature.required,
           ),
           Course(
             id: '3',

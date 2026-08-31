@@ -168,7 +168,7 @@ class DisplayShowcase extends StatelessWidget {
                       ? const MiuixBadge()
                       : MiuixBadge(child: MiuixText(label)),
                   child: MiuixIcon(
-                    vector: MiuixIcons.extended.byName(name)!,
+                    vector: MiuixIcons.extended.byName(name),
                     size: 28,
                     tint: colors.onBackground,
                   ),
@@ -227,7 +227,7 @@ class DisplayShowcase extends StatelessWidget {
     return ShowcaseBlock(
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 12),
       children: [
-        MiuixSmallTitle('分组小标题（默认）'),
+        const MiuixSmallTitle('分组小标题（默认）'),
         GroupCard(
           children: [
             MiuixBasicComponent(
@@ -281,7 +281,7 @@ class DisplayShowcase extends StatelessWidget {
           startAction: Padding(
             padding: const EdgeInsets.only(right: 12),
             child: MiuixIcon(
-              vector: MiuixIcons.extended.byName('contacts')!,
+              vector: MiuixIcons.extended.byName('contacts'),
               size: 24,
               tint: colors.onBackground,
             ),

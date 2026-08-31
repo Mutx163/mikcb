@@ -144,8 +144,8 @@ Future<void> _pumpDarkHome(
           ),
         ),
         themeMode: ThemeMode.dark,
-        home: RepaintBoundary(
-          key: const ValueKey('dark-home-shot'),
+        home: const RepaintBoundary(
+          key: ValueKey('dark-home-shot'),
           child: TimetableScreen(
             enableUpdateCheck: false,
             enableProgressTimer: false,
@@ -172,10 +172,10 @@ Future<void> _expectNoBrightSeamRow(WidgetTester tester) async {
     find.byKey(const ValueKey('dark-home-shot')),
   );
   final image = await tester.runAsync(
-    () => boundary.toImage(pixelRatio: 1.0),
+    boundary.toImage,
   );
   final byteData = await tester.runAsync(
-    () => image!.toByteData(format: ui.ImageByteFormat.rawRgba),
+    () => image!.toByteData(),
   );
   image!.dispose();
   final width = image.width;
@@ -257,7 +257,7 @@ void main() {
         }
       });
       final wallpaper = await tester.runAsync(
-        () => _writeWallpaper(dir, topLightFraction: 0.0),
+        () => _writeWallpaper(dir),
       );
       final provider = await createInitializedTestProvider(tester);
       await _pumpDarkHome(tester, provider, wallpaper!.path);
@@ -292,7 +292,7 @@ void main() {
         }
       });
       final wallpaper = await tester.runAsync(
-        () => _writeWallpaper(dir, topLightFraction: 1.0),
+        () => _writeWallpaper(dir, topLightFraction: 1),
       );
       final provider = await createInitializedTestProvider(tester);
       await _pumpDarkHome(tester, provider, wallpaper!.path);

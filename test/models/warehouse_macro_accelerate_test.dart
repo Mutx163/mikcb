@@ -83,7 +83,6 @@ void main() {
       ];
       final accelerated = buildAcceleratedMacroSteps(
         originalSteps,
-        scriptPageUrl: null,
       );
       expect(identical(accelerated, originalSteps), isTrue);
     });
@@ -111,7 +110,6 @@ void main() {
 
         final accelerated = buildAcceleratedMacroSteps(
           originalSteps,
-          scriptPageUrl: null,
           importUrl: 'https://jw.example.edu/jsxsd/',
         );
 
@@ -140,7 +138,7 @@ void main() {
         MacroStep.click('#extra-menu'),
         MacroStep.delay(800),
       ];
-      final sameUrl = 'https://jw.example.edu/jsxsd/';
+      const sameUrl = 'https://jw.example.edu/jsxsd/';
       final accelerated = buildAcceleratedMacroSteps(
         originalSteps,
         scriptPageUrl: sameUrl,

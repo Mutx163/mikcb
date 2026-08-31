@@ -197,7 +197,6 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
       mergeDiff: _transferService.preview(
         current: current,
         incoming: incoming,
-        mode: TransferApplyMode.merge,
       ),
       overwriteDiff: _transferService.preview(
         current: current,

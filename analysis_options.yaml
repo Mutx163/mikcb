@@ -9,11 +9,18 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  language:
+    # 禁止隐式 cast / 动态调用，尽早暴露类型问题。
+    strict-casts: true
+    # 禁止隐式 raw 类型（如使用 List 而非 List<String>）。
+    strict-raw-types: true
+
 linter:
   # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
+  # section below to disable a lint rule included above or to enable
+  # additional rules. A list of all available lints and their documentation
+  # is published at https://dart.dev/lints.
   #
   # Instead of disabling a lint rule for the entire project in the
   # section below, it can also be suppressed for a single line of code
@@ -21,8 +28,68 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # ── 正确性 / 常见 Bug ────────────────────────────────────────────
+    - avoid_print                     # 生产代码禁用 print（当前 lib/ 零调用，验证过）
+    - avoid_unnecessary_containers
+    - avoid_web_libraries_in_flutter
+    - no_logic_in_create_state
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_declarations
+    - prefer_const_literals_to_create_immutables
+    - sized_box_for_whitespace
+    - sort_child_properties_last
+    - use_build_context_synchronously # 异步后使用 BuildContext 须检查 mounted
+    - use_full_hex_values_for_flutter_colors
+
+    # ── 风格一致性 ──────────────────────────────────────────────────
+    - always_declare_return_types
+    - annotate_overrides
+    - avoid_dynamic_calls             # 动态调用易掩盖类型错误
+    - avoid_function_literals_in_foreach_calls
+    - avoid_redundant_argument_values
+    - avoid_slow_async_io
+    - avoid_type_to_string
+    - cancel_subscriptions            # 订阅不取消会泄漏
+    # TODO(体检⑧ 第二批): 现存 127 处，多涉及 UI builder 链式赋值，需人工逐处改写。
+    # - cascade_invocations
+    - conditional_uri_does_not_exist
+    # TODO(体检⑧ 第二批): 现存 195 处，多为 UI 回调 fire-and-forget 语义，
+    # 需逐处判断 unawaited() 包裹或 await，机械修改风险大。
+    # - discarded_futures
+    - join_return_with_assignment
+    - literal_only_boolean_expressions
+    - no_adjacent_strings_in_list
+    - only_throw_errors
+    - prefer_final_in_for_each
+    - prefer_final_locals
+    - prefer_if_null_operators
+    - prefer_initializing_formals
+    - prefer_int_literals
+    - prefer_is_empty
+    - prefer_is_not_empty
+    - prefer_is_not_operator
+    - prefer_null_aware_method_calls
+    - prefer_single_quotes
+    - prefer_spread_collections
+    - prefer_typing_uninitialized_variables
+    - provide_deprecation_message
+    - test_types_in_equals
+    - throw_in_finally
+    - type_literal_in_constant_pattern
+    - unnecessary_await_in_return
+    - unnecessary_lambdas
+    - unnecessary_late
+    - unnecessary_null_aware_assignments
+    - unnecessary_null_checks
+    - unnecessary_overrides
+    - unnecessary_parenthesis
+    - unnecessary_statements
+    - unnecessary_string_interpolations
+    - unnecessary_this
+    - unrelated_type_equality_checks
+    - use_string_in_part_of_directives
+    - valid_regexps
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

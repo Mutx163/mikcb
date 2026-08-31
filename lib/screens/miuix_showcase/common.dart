@@ -129,7 +129,6 @@ class ShowcaseItem extends StatelessWidget {
     return Padding(
       padding: padding,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 88,

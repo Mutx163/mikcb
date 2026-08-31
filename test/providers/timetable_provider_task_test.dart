@@ -27,8 +27,8 @@ void main() {
       id: id,
       title: '完成作业',
       dueDate: DateTime(2026, 4, 7),
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
   }
 

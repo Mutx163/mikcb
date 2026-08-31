@@ -36,7 +36,7 @@ Future<String?> pickAndStoreManagedImage({
   final targetDir = Directory(
     '${dir.path}${Platform.pathSeparator}$directoryName',
   );
-  if (!await targetDir.exists()) {
+  if (!targetDir.existsSync()) {
     await targetDir.create(recursive: true);
   }
   final stamp = DateTime.now().millisecondsSinceEpoch;
@@ -80,7 +80,7 @@ Future<void> deleteManagedImage(
       return;
     }
     final file = File(absolute);
-    if (await file.exists()) {
+    if (file.existsSync()) {
       await file.delete();
     }
   } on Exception {
@@ -115,7 +115,7 @@ Future<void> _deleteManagedImageArtifacts({
   final targetDir = Directory(
     '${dir.path}${Platform.pathSeparator}$directoryName',
   );
-  if (!await targetDir.exists()) {
+  if (!targetDir.existsSync()) {
     return;
   }
   final preservedAbsolutePath = preservePath == null

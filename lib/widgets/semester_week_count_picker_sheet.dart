@@ -19,6 +19,6 @@ Future<int?> showSemesterWeekCountPickerSheet(
     currentValue: currentValue,
     minValue: minValue,
     maxValue: maxValue,
-    label: (weekCount) => l10n.semesterWeekCountAction(weekCount),
+    label: l10n.semesterWeekCountAction,
   );
 }

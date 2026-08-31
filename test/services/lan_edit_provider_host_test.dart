@@ -39,9 +39,6 @@ Course buildScheduleSlot({
     endSection: 2,
     startTime: '08:00',
     endTime: '09:40',
-    color: '#2196F3',
-    startWeek: 1,
-    endWeek: 16,
   );
 }
 
@@ -127,7 +124,6 @@ void main() {
           id: 'lan-a',
           name: '高等数学',
           teacher: '张老师',
-          dayOfWeek: 1,
         ),
         buildScheduleSlot(
           id: 'lan-b',
@@ -164,7 +160,6 @@ void main() {
           id: 'replaced-a',
           name: '离散数学',
           teacher: '张老师',
-          dayOfWeek: 1,
         ),
         buildScheduleSlot(
           id: 'replaced-b',

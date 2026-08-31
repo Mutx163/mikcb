@@ -361,7 +361,7 @@ void main() {
       );
       expect(list.statusCode, 200);
       final courses =
-          (jsonDecode(list.body) as Map<String, dynamic>)['courses'] as List;
+          (jsonDecode(list.body) as Map<String, dynamic>)['courses'] as List<dynamic>;
       expect(courses, hasLength(1));
 
       final patch = await _request(
@@ -412,9 +412,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
       Course(
         id: 'slot-b',
@@ -426,9 +423,6 @@ void main() {
         endSection: 4,
         startTime: '10:00',
         endTime: '11:40',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
     ]);
     final session = LanEditSession.create(
@@ -518,8 +512,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
         isOddWeek: true,
       ),
     );
@@ -834,9 +826,6 @@ void main() {
         endSection: 1,
         startTime: '08:00',
         endTime: '08:45',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
     final session = LanEditSession.create(
@@ -905,9 +894,6 @@ void main() {
         endSection: 1,
         startTime: '08:00',
         endTime: '08:45',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
       Course(
         id: 'b',
@@ -919,9 +905,6 @@ void main() {
         endSection: 1,
         startTime: '08:00',
         endTime: '08:45',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
     ]);
     final session = LanEditSession.create(
@@ -1003,8 +986,6 @@ void main() {
         startTime: '14:00',
         endTime: '15:30',
         color: '#FF5722',
-        startWeek: 1,
-        endWeek: 16,
       ),
     ]);
     final session = LanEditSession.create(
@@ -1034,8 +1015,8 @@ void main() {
       expect(body['app'], 'mikcb');
       expect(body['schemaVersion'], 1);
       expect(body['courses'], hasLength(1));
-      expect(body['courses'][0]['name'], '备份课程');
-      expect(body['settings'], isA<Map>());
+      expect((body['courses'] as List<dynamic>).cast<Map<String, Object?>>()[0]['name'], '备份课程');
+      expect(body['settings'], isA<Map<String, dynamic>>());
       expect(body['currentWeek'], 3);
     } finally {
       await server.stop();
@@ -1055,9 +1036,6 @@ void main() {
         endSection: 1,
         startTime: '08:00',
         endTime: '08:45',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
     final session = LanEditSession.create(
@@ -1116,9 +1094,9 @@ void main() {
         token: token,
       );
       final courses =
-          (jsonDecode(list.body) as Map<String, dynamic>)['courses'] as List;
+          (jsonDecode(list.body) as Map<String, dynamic>)['courses'] as List<dynamic>;
       expect(courses, hasLength(1));
-      expect(courses[0]['name'], '新课程');
+      expect((courses[0] as Map<String, dynamic>)['name'], '新课程');
       expect(host.courses.any((c) => c.name == '旧课程'), isFalse);
     } finally {
       await server.stop();
@@ -1138,9 +1116,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        color: '#2196F3',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
     final session = LanEditSession.create(

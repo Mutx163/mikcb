@@ -115,8 +115,8 @@ void main() {
           SectionTime(startTime: '10:55', endTime: '11:40'),
           SectionTime(startTime: '11:50', endTime: '12:35'),
         ],
-        createdAt: DateTime(2026, 8, 1),
-        updatedAt: DateTime(2026, 8, 1),
+        createdAt: DateTime(2026, 8),
+        updatedAt: DateTime(2026, 8),
       );
 
       final incoming = TransferPackage(
@@ -155,8 +155,8 @@ void main() {
         SectionTime(startTime: '14:00', endTime: '14:45'),
         SectionTime(startTime: '14:55', endTime: '15:40'),
       ],
-      createdAt: DateTime(2026, 8, 1),
-      updatedAt: DateTime(2026, 8, 1),
+      createdAt: DateTime(2026, 8),
+      updatedAt: DateTime(2026, 8),
     );
     final incoming = TransferPackage(
       packageId: 'cross-device-overwrite',
@@ -233,8 +233,8 @@ void main() {
         endDate: DateTime(2026, 9, 15),
         startTime: '10:00',
         endTime: '11:00',
-        createdAt: DateTime(2026, 9, 1),
-        updatedAt: DateTime(2026, 9, 1),
+        createdAt: DateTime(2026, 9),
+        updatedAt: DateTime(2026, 9),
       );
       final outOfWeekItem = inWeekItem.copyWith(
         id: 'out-of-week-item',

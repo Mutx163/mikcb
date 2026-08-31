@@ -15,7 +15,6 @@ class HyperosCircularProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MiuixCircularProgressIndicator(
-      progress: null,
       strokeWidth: strokeWidth,
       size: size,
     );
