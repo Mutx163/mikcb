@@ -247,15 +247,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     _updateDraft(_draft.copyWith(frostedBlurEnabled: value));
                   },
                 ),
-                HyperosSwitchTile(
-                  title: l10n.glassReducedTransparencyTitle,
-                  value: _draft.glassReducedTransparency,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(glassReducedTransparency: value),
-                    );
-                  },
-                ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: FrostedSheetSettingsPreview(

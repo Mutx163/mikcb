@@ -1148,10 +1148,6 @@ class TimetableSettings {
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
 
-  /// 用户手动「减弱玻璃效果」默认关闭：默认外观与既有版本完全一致，
-  /// 打开后所有液态玻璃/模糊表面统一降级为不透明实体材质（低端机
-  /// 省电、可读性优先），见 LiquidGlassDegradation。
-  static const bool defaultGlassReducedTransparency = false;
 
   /// 液态玻璃作用范围默认值：下拉选择小弹窗开；对话式全屏选择面板关
   /// （大面积折射长列表默认保持磨砂）；其余家族维持既有行为（开）。
@@ -1364,7 +1360,6 @@ class TimetableSettings {
     sheetBarrierAlpha: frostedSheetBarrierAlpha,
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
-    reducedTransparency: glassReducedTransparency,
     liquidGlassTuning: liquidGlassTuning,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
@@ -1380,8 +1375,6 @@ class TimetableSettings {
   final double frostedSheetBarrierAlpha;
   final bool frostedBlurEnabled;
 
-  /// 用户手动「减弱玻璃效果」总开关（默认关）。
-  final bool glassReducedTransparency;
   final FrostedGlassMode frostedGlassMode;
 
   /// 液态玻璃作用范围开关（见 [FrostedAppearance] 同名字段）。
@@ -1562,7 +1555,6 @@ class TimetableSettings {
     this.frostedSheetTintAlpha = defaultFrostedSheetTintAlpha,
     this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
-    this.glassReducedTransparency = defaultGlassReducedTransparency,
     this.frostedGlassMode = FrostedGlassMode.frosted,
     this.liquidGlassPopupEnabled = defaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = defaultLiquidGlassSelectSheetEnabled,
@@ -1774,7 +1766,6 @@ class TimetableSettings {
       'frostedSheetTintAlpha': frostedSheetTintAlpha,
       'frostedSheetBarrierAlpha': frostedSheetBarrierAlpha,
       'frostedBlurEnabled': frostedBlurEnabled,
-      'glassReducedTransparency': glassReducedTransparency,
       'frostedGlassMode': frostedGlassMode.value,
       'liquidGlassPopupEnabled': liquidGlassPopupEnabled,
       'liquidGlassSelectSheetEnabled': liquidGlassSelectSheetEnabled,
@@ -2199,9 +2190,6 @@ class TimetableSettings {
           defaultFrostedSheetBarrierAlpha,
       frostedBlurEnabled:
           json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
-      glassReducedTransparency:
-          json['glassReducedTransparency'] as bool? ??
-          defaultGlassReducedTransparency,
       frostedGlassMode: FrostedGlassModeX.fromValue(
         json['frostedGlassMode'] as String?,
       ),
@@ -2437,7 +2425,6 @@ class TimetableSettings {
     double? frostedSheetTintAlpha,
     double? frostedSheetBarrierAlpha,
     bool? frostedBlurEnabled,
-    bool? glassReducedTransparency,
     FrostedGlassMode? frostedGlassMode,
     bool? liquidGlassPopupEnabled,
     bool? liquidGlassSelectSheetEnabled,
@@ -2774,8 +2761,6 @@ class TimetableSettings {
       frostedSheetBarrierAlpha:
           frostedSheetBarrierAlpha ?? this.frostedSheetBarrierAlpha,
       frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
-      glassReducedTransparency:
-          glassReducedTransparency ?? this.glassReducedTransparency,
       frostedGlassMode: frostedGlassMode ?? this.frostedGlassMode,
       liquidGlassPopupEnabled:
           liquidGlassPopupEnabled ?? this.liquidGlassPopupEnabled,

@@ -54,7 +54,6 @@ class FrostedAppearance {
     required this.sheetTintAlpha,
     required this.sheetBarrierAlpha,
     this.blurEnabled = kDefaultFrostedBlurEnabled,
-    this.reducedTransparency = false,
     this.glassMode = FrostedGlassMode.frosted,
     this.liquidGlassTuning,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
@@ -84,8 +83,6 @@ class FrostedAppearance {
   /// Global backdrop blur master switch.
   final bool blurEnabled;
 
-  /// 用户手动「减弱玻璃效果」：开启后 LiquidGlassDegradation 无条件降级。
-  final bool reducedTransparency;
 
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;
@@ -116,7 +113,6 @@ class FrostedAppearance {
       identical(this, other) ||
       other is FrostedAppearance &&
           blurEnabled == other.blurEnabled &&
-          reducedTransparency == other.reducedTransparency &&
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
@@ -135,7 +131,6 @@ class FrostedAppearance {
   @override
   int get hashCode => Object.hash(
     blurEnabled,
-    reducedTransparency,
     sheetBlurSigma,
     sheetTintAlpha,
     sheetBarrierAlpha,

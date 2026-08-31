@@ -2696,7 +2696,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keepAliveConfirmTitle => '백그라운드 유지 서비스 사용';
 
   @override
-  String get keepAliveConfirmBody => '이 서비스는 백그라운드에서 홈 화면 위젯을 새로 고치고 수업 알림을 다시 예약하는 용도로만 사용되며, 화면 내용을 읽거나 사용자를 대신하여 어떤 작업도 수행하지 않습니다. 사용하려면 시스템 설정에서 \'접근성\' 권한을 허용해야 하며, 언제든지 끌 수 있습니다.';
+  String get keepAliveConfirmBody =>
+      '이 서비스는 백그라운드에서 홈 화면 위젯을 새로 고치고 수업 알림을 다시 예약하는 용도로만 사용되며, 화면 내용을 읽거나 사용자를 대신하여 어떤 작업도 수행하지 않습니다. 사용하려면 시스템 설정에서 \'접근성\' 권한을 허용해야 하며, 언제든지 끌 수 있습니다.';
 
   @override
   String get keepAliveConfirmGoAction => '활성화';
@@ -3236,9 +3237,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledTitle => '블러 활성화';
-
-  @override
-  String get glassReducedTransparencyTitle => '유리 효과 줄이기';
 
   @override
   String get frostedBlurEnabledSubtitle =>

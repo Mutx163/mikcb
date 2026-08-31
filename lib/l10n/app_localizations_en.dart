@@ -2797,7 +2797,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keepAliveConfirmTitle => 'Enable keep-alive service';
 
   @override
-  String get keepAliveConfirmBody => 'This service only refreshes home-screen widgets and reschedules course reminders in the background. It does not read screen content or perform any actions on your behalf. Enabling it requires the Accessibility permission in system settings, and you can turn it off at any time.';
+  String get keepAliveConfirmBody =>
+      'This service only refreshes home-screen widgets and reschedules course reminders in the background. It does not read screen content or perform any actions on your behalf. Enabling it requires the Accessibility permission in system settings, and you can turn it off at any time.';
 
   @override
   String get keepAliveConfirmGoAction => 'Enable';
@@ -3361,9 +3362,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledTitle => 'Enable Blur';
-
-  @override
-  String get glassReducedTransparencyTitle => 'Reduce glass effects';
 
   @override
   String get frostedBlurEnabledSubtitle =>

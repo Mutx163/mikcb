@@ -2682,7 +2682,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keepAliveConfirmTitle => 'バックグラウンド保持サービスを有効にする';
 
   @override
-  String get keepAliveConfirmBody => 'このサービスはバックグラウンドでのウィジェット更新と授業リマインダーの再スケジュールにのみ使用され、画面の内容を読み取ったり、ユーザーに代わって操作を行ったりすることはありません。有効にするにはシステム設定で「ユーザー補助」権限を許可する必要があります。いつでもオフにできます。';
+  String get keepAliveConfirmBody =>
+      'このサービスはバックグラウンドでのウィジェット更新と授業リマインダーの再スケジュールにのみ使用され、画面の内容を読み取ったり、ユーザーに代わって操作を行ったりすることはありません。有効にするにはシステム設定で「ユーザー補助」権限を許可する必要があります。いつでもオフにできます。';
 
   @override
   String get keepAliveConfirmGoAction => '有効にする';
@@ -3221,9 +3222,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledTitle => 'ぼかしを有効にする';
-
-  @override
-  String get glassReducedTransparencyTitle => 'ガラス効果を弱める';
 
   @override
   String get frostedBlurEnabledSubtitle =>
