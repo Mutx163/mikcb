@@ -11,7 +11,7 @@
   runner:
     cpus: 8                        # 默认 8 核 16G，Android 构建足够
   docker:
-    image: cirruslabs/flutter:3.44.0
+    image: ghcr.io/cirruslabs/flutter:3.44.0
 
 # ── 质量门禁公共步骤（推送 / PR 共用）───────────────────────
 .quality-stages: &quality-stages
