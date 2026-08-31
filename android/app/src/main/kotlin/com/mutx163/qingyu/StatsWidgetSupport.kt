@@ -1,6 +1,7 @@
 package com.mutx163.qingyu
 
 import android.content.Context
+import android.util.Log
 import org.json.JSONObject
 
 data class StatsWidgetSnapshot(
@@ -70,12 +71,61 @@ object StatsWidgetSupport {
         updateAll(context)
     }
 
+    private const val TAG = "StatsWidgetSupport"
+
+    /**
+     * 同一次批量刷新内的轻量缓存：三个 Stats Provider 的 onUpdate 会被
+     * ACTION_APPWIDGET_UPDATE 一次性全部触发，各自调 readSnapshot + readChrome，
+     * 不缓存的话同一份 profiles JSON 在一轮刷新里要被解析 6 次。
+     * key 用 profiles 原始字符串 + 计算日期，快照跨天必然失配，不会返回过期数据。
+     */
+    @Volatile
+    private var cachedProfileJson: String? = null
+
+    @Volatile
+    private var cachedSnapshot: StatsWidgetSnapshot? = null
+
+    @Volatile
+    private var cachedSnapshotDayStart: Long = Long.MIN_VALUE
+
     fun readSnapshot(context: Context): StatsWidgetSnapshot? {
+        // Prefer real-time computation from Flutter prefs (same source as Today
+        // widgets) so stats stay fresh without opening the app. The static
+        // snapshot synced from Flutter is only a fallback.
+        val rawProfile = TodayWidgetSupport.readActiveProfileRawJson(context)
+        if (rawProfile != null) {
+            val todayStart = TodayWidgetSupport.dayStartMillis()
+            synchronized(this) {
+                if (rawProfile == cachedProfileJson && todayStart == cachedSnapshotDayStart) {
+                    return cachedSnapshot ?: readStaticSnapshot(context)
+                }
+            }
+            val computed = try {
+                WidgetStatsLogic.buildSnapshot(JSONObject(rawProfile))
+            } catch (error: Exception) {
+                // 实时计算失败不再静默：至少留 debug 日志，否则桌面数值陈旧无从排查。
+                Log.d(TAG, "stats live compute failed, fall back to static snapshot", error)
+                null
+            }
+            if (computed != null) {
+                synchronized(this) {
+                    cachedProfileJson = rawProfile
+                    cachedSnapshot = computed
+                    cachedSnapshotDayStart = todayStart
+                }
+                return computed
+            }
+        }
+        return readStaticSnapshot(context)
+    }
+
+    private fun readStaticSnapshot(context: Context): StatsWidgetSnapshot? {
         val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_SNAPSHOT_JSON, null) ?: return null
         return try {
             StatsWidgetSnapshot.fromJson(JSONObject(raw))
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.d(TAG, "stats static snapshot parse failed", error)
             null
         }
     }
@@ -85,8 +135,14 @@ object StatsWidgetSupport {
      * 无需 Dart 侧扩协议；无档案时回退到默认值。
      */
     fun readChrome(context: Context): StatsWidgetChrome {
-        val settings = TodayWidgetSupport.readActiveProfileJson(context)
-            ?.optJSONObject("settings") ?: JSONObject()
+        val settings = TodayWidgetSupport.readActiveProfileRawJson(context)
+            ?.let { raw ->
+                try {
+                    JSONObject(raw).optJSONObject("settings")
+                } catch (_: Exception) {
+                    null
+                }
+            } ?: JSONObject()
         return StatsWidgetChrome(
             backgroundStyle = settings.optString("widgetBackgroundStyle", DEFAULT_CHROME.backgroundStyle),
             cornerRadius = settings.optDouble("widgetCornerRadius", DEFAULT_CHROME.cornerRadius.toDouble()).toInt(),

@@ -93,3 +93,12 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      # JVM 单测（android/app/src/test）：WidgetStatsLogicTest 等。
+      # 这些测试不依赖 org.json stub（见 WidgetHolidayLogicTest 注释），
+      # 但 Gradle 要先跑 flutter 的 gradle 脚本生成任务图，耗时较长，与
+      # flutter test 并行意义不大，放最后串行执行。
+      - name: Android JVM unit tests
+        run: |
+          cd android
+          ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
