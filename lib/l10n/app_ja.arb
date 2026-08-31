@@ -1963,6 +1963,7 @@
   "homeWidgetExactAlarmBannerTitle": "正確なアラーム権限が未許可",
   "homeWidgetExactAlarmBannerText": "「アラームとリマインダー」権限が未許可の場合、授業境界の更新は不正確なアラームにフォールバックし、ウィジェットが遅れて更新されることがあります。正確な更新のため許可をおすすめします",
   "homeWidgetExactAlarmGrantAction": "許可する",
+  "homeWidgetExactAlarmOpenFailed": "権限ページを開けませんでした。システム設定で「アラームとリマインダー」を手動で有効にしてください",
   "layoutSettingsTitle": "レイアウトと時限",
   "layoutDensityTitle": "時間割密度",
   "layoutAutoFitHeightTitle": "画面高さに自動フィット",

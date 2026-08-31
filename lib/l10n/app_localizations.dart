@@ -7226,6 +7226,12 @@ abstract class AppLocalizations {
   /// **'去授权'**
   String get homeWidgetExactAlarmGrantAction;
 
+  /// No description provided for @homeWidgetExactAlarmOpenFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限'**
+  String get homeWidgetExactAlarmOpenFailed;
+
 
   /// No description provided for @layoutSettingsTitle.
   ///

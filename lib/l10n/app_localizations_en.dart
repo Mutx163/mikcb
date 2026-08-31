@@ -4167,6 +4167,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Grant';
 
   @override
+  String get homeWidgetExactAlarmOpenFailed =>
+      'Could not open the permission page. Enable "Alarms & reminders" manually in system settings';
+
+
+  @override
   String get layoutSettingsTitle => 'Layout & sections';
 
   @override

@@ -59,7 +59,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _loadPinWidgetSupport();
-    _loadExactAlarmPermission();
+    unawaited(_loadExactAlarmPermission());
     _loadWidgetInstances();
   }
 
@@ -71,7 +71,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     // 从桌面/系统弹窗回到前台：桌面小组件集合可能已变化（用户去桌面加了
     // 或删了卡片，系统不会通知 App 界面），稍候重查——pin 确认后启动器
     // 需要一拍才完成绑定，立即查可能拿到旧集合。
-    _loadExactAlarmPermission();
+    unawaited(_loadExactAlarmPermission());
     Future<void>.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         _loadWidgetInstances();
@@ -112,17 +112,17 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
 
   Widget _buildHomeWidgetSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
-    var section = index;
+    final hasBanner = _exactAlarmBannerSections > 0;
     // 权限引导横幅固定在第 1 位，未展示时跳过；未展示倒计时分区时再偏移。
-    if (section >= _exactAlarmBannerSections) {
-      section -= _exactAlarmBannerSections;
+    if (hasBanner && index == 0) {
+      return _buildExactAlarmBannerSection(l10n);
     }
+    var section = hasBanner ? index - 1 : index;
     if (!_draft.widgetShowCountdown && section >= 2) {
       section += 1;
     }
 
     final Widget content = switch (section) {
-      -1 => _buildExactAlarmBannerSection(l10n),
       0 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -546,7 +546,14 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   }
 
   Future<void> _requestExactAlarmPermission() async {
-    await _homeWidgetService.requestScheduleExactAlarm();
+    final launched = await _homeWidgetService.requestScheduleExactAlarm();
+    if (!launched && mounted) {
+      // 个别 ROM 未响应授权页跳转，提示手动前往系统设置。
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.homeWidgetExactAlarmOpenFailed,
+      );
+    }
     // 回到前台时 didChangeAppLifecycleState 会重查授权状态。
   }
 

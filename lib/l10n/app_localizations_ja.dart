@@ -3990,6 +3990,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '許可する';
 
   @override
+  String get homeWidgetExactAlarmOpenFailed => '権限ページを開けませんでした。システム設定で「アラームとリマインダー」を手動で有効にしてください';
+
+
+  @override
   String get layoutSettingsTitle => 'レイアウトと時限';
 
   @override

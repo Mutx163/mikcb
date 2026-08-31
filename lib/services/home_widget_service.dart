@@ -115,6 +115,13 @@ class HomeWidgetService {
       if (kDebugMode) {
         return true;
       }
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_exact_alarm_check_failed',
+          AppLogMessages.homeWidgetExactAlarmCheckFailed,
+          extras: {'error': 'MissingPluginException'},
+        ),
+      );
     } catch (e) {
       unawaited(
         AppLogService.instance.warn(
@@ -129,16 +136,30 @@ class HomeWidgetService {
   }
 
   /// 跳转系统「闹钟和提醒」授权页（ACTION_REQUEST_SCHEDULE_EXACT_ALARM）。
-  Future<void> requestScheduleExactAlarm() async {
+  ///
+  /// 返回是否成功发起跳转；ROM 回退应用详情页或跳转失败时为 false，
+  /// 调用方可据此提示用户手动前往系统设置。
+  Future<bool> requestScheduleExactAlarm() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
-      return;
+      return true;
     }
     try {
-      await _channel.invokeMethod('requestScheduleExactAlarm');
+      final ok = await _channel.invokeMethod<bool>(
+        'requestScheduleExactAlarm',
+      );
+      return ok ?? false;
     } on MissingPluginException {
       if (kDebugMode) {
-        return;
+        return true;
       }
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_exact_alarm_request_failed',
+          AppLogMessages.homeWidgetExactAlarmRequestFailed,
+          extras: {'error': 'MissingPluginException'},
+        ),
+      );
+      return false;
     } catch (e) {
       unawaited(
         AppLogService.instance.warn(
@@ -148,6 +169,7 @@ class HomeWidgetService {
         ),
       );
       appDebugLog('HomeWidget', '请求精确闹钟权限失败：$e');
+      return false;
     }
   }
 

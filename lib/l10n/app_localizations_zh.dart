@@ -3910,6 +3910,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetExactAlarmGrantAction => '去授权';
 
   @override
+  String get homeWidgetExactAlarmOpenFailed => '打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限';
+
+
+
+
+  @override
   String get layoutSettingsTitle => '布局与节次';
 
   @override
@@ -14258,6 +14264,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授權';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+
+
+
 
   @override
   String get layoutSettingsTitle => '布局與節次';
@@ -24651,6 +24663,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授權';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+
+
+
 
   @override
   String get layoutSettingsTitle => '布局與節次';

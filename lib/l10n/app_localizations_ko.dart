@@ -4013,6 +4013,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '권한 허용';
 
   @override
+  String get homeWidgetExactAlarmOpenFailed => '권한 페이지를 열 수 없습니다. 시스템 설정에서 "알람 및 리마인더"를 직접 허용해 주세요';
+
+
+  @override
   String get layoutSettingsTitle => '레이아웃 및 교시';
 
   @override

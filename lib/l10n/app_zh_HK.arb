@@ -1960,6 +1960,7 @@
   "homeWidgetExactAlarmBannerTitle": "精確鬧鐘權限未授予",
   "homeWidgetExactAlarmBannerText": "未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新",
   "homeWidgetExactAlarmGrantAction": "去授權",
+  "homeWidgetExactAlarmOpenFailed": "無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限",
   "layoutSettingsTitle": "布局與節次",
   "layoutDensityTitle": "課表密度",
   "layoutAutoFitHeightTitle": "自動充滿屏幕高度",
