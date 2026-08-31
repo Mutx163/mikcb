@@ -7630,6 +7630,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceMsgUpdateCheckNetworkFailed => '网络异常，暂时无法检查更新';
 
   @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '安装包校验失败，为防止安装被篡改的文件已取消本次更新';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted => '更新下载地址未通过安全校验';
 
   @override
@@ -17994,6 +17998,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get serviceMsgUpdateCheckNetworkFailed =>
       'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '安裝包校驗失敗，為防止安裝被篡改的文件已取消本次更新';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
@@ -28372,6 +28380,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get serviceMsgUpdateCheckNetworkFailed =>
       'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '安裝包校驗失敗，為防止安裝被篡改的檔案已取消本次更新';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

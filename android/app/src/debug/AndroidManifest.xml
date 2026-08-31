@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug only: allow cleartext globally for campus HTTP portals, LAN
+         edit, local WebDAV and mirror probing during development. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

@@ -8301,6 +8301,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       },
       controller,
       mirrorUrlPrefix: mirrorPrefix,
+      expectedApkSha256: release.expectedApkSha256,
     );
     if (!mounted) {
       return true;

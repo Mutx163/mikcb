@@ -13809,6 +13809,12 @@ abstract class AppLocalizations {
   /// **'网络异常，暂时无法检查更新'**
   String get serviceMsgUpdateCheckNetworkFailed;
 
+  /// No description provided for @serviceMsgUpdateDownloadHashMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'安装包校验失败，为防止安装被篡改的文件已取消本次更新'**
+  String get serviceMsgUpdateDownloadHashMismatch;
+
   /// No description provided for @serviceMsgUpdateDownloadUrlUntrusted.
   ///
   /// In zh, this message translates to:

@@ -934,7 +934,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                             version: release?.version,
                           );
                         } else {
-                          _downloadAndInstall(effectiveDownloadUrl);
+                          _downloadAndInstall(
+                            effectiveDownloadUrl,
+                            expectedApkSha256:
+                                release?.expectedApkSha256,
+                          );
                         }
                       }
                     }
@@ -1234,7 +1238,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     showAppToast(context, message: localizedError, kind: AppToastKind.error);
   }
 
-  Future<void> _downloadAndInstall(String url) async {
+  Future<void> _downloadAndInstall(
+    String url, {
+    String? expectedApkSha256,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     final settings = context.read<TimetableProvider>().settings;
     final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
@@ -1266,6 +1273,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       },
       controller,
       mirrorUrlPrefix: effectiveMirrorUrlPrefix,
+      expectedApkSha256: expectedApkSha256,
     );
 
     if (!mounted) {

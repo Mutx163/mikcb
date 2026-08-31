@@ -8060,6 +8060,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Network error. Unable to check for updates right now.';
 
   @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      'Package verification failed. The update was cancelled to prevent installing a tampered file.';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
       'Update download URL failed security validation.';
 

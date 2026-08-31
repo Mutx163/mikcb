@@ -344,6 +344,8 @@ String localizeServiceMessage(
       return l10n.serviceMsgUpdateDownloadHttpFailed(
         _intArg(resolvedArgs, 'statusCode') ?? 0,
       );
+    case 'update_download_hash_mismatch':
+      return l10n.serviceMsgUpdateDownloadHashMismatch;
     case 'update_open_installer_failed':
       return l10n.serviceMsgUpdateOpenInstallerFailed(
         resolvedArgs['detail']?.toString() ?? '',

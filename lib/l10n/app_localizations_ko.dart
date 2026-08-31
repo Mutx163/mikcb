@@ -7818,6 +7818,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Network error. Unable to check for updates right now.';
 
   @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '패키지 검증에 실패했습니다. 변조된 파일 설치를 방지하기 위해 이번 업데이트를 취소했습니다';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
       'Update download URL failed security validation.';
 
