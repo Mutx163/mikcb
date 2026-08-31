@@ -29,7 +29,7 @@
     script: flutter pub get
   - name: pubspec-encoding-check
     script: |
-      set -euo pipefail
+      set -eu
       if head -c 3 pubspec.yaml | od -An -tx1 | grep -q 'ef bb bf'; then
         echo "ERROR: pubspec.yaml has UTF-8 BOM"; exit 1
       fi
@@ -99,8 +99,8 @@
             # ── 签名密钥检查：缺签名四件套时给出明确指引 ──
             # 在 CNB 密钥仓库配置 ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD /
             # ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD 后，在下方 imports 引用即可全自动签名。
-            if [[ -z "${ANDROID_KEYSTORE_PATH:-}" || -z "${ANDROID_KEYSTORE_PASSWORD:-}" \
-               || -z "${ANDROID_KEY_ALIAS:-}" || -z "${ANDROID_KEY_PASSWORD:-}" ]]; then
+            if [ -z "${ANDROID_KEYSTORE_PATH:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] \
+               || [ -z "${ANDROID_KEY_ALIAS:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
               echo "ERROR: 缺少 Android release 签名密钥" >&2
               echo "请配置 CNB 密钥仓库并导入以下变量:" >&2
               echo "  ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD" >&2
@@ -115,12 +115,12 @@
             for candidate in \
               "build/app/outputs/flutter-apk/app-prod-release.apk" \
               "build/app/outputs/apk/prod/release/app-prod-release.apk"; do
-              if [[ -f "${candidate}" ]]; then
+              if [ -f "${candidate}" ]; then
                 APK_PATH="${candidate}"
                 break
               fi
             done
-            if [[ -z "${APK_PATH}" ]]; then
+            if [ -z "${APK_PATH}" ]; then
               echo "ERROR: could not find release APK under build/app/outputs" >&2
               exit 1
             fi
