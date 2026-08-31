@@ -47,8 +47,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   bool _isPersisting = false;
   bool _isCheckingPinSupport = true;
   bool _canRequestPinWidget = false;
-  /// Android 12+ 未授予「闹钟和提醒」权限时为 true，顶部展示引导横幅。
-  bool _canScheduleExactAlarms = true;
+  /// 「闹钟和提醒」权限检测状态：null 表示尚未查到，避免未授权用户
+  /// 首帧横幅闪烁；false 才展示引导横幅。
+  bool? _canScheduleExactAlarms;
   TimetableSettings? _pendingPersist;
   final Set<HomeWidgetPinTarget> _pinningTargets = <HomeWidgetPinTarget>{};
 
@@ -104,8 +105,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     );
   }
 
-  /// 未授权时多一个「精确闹钟权限」引导分区。
-  int get _exactAlarmBannerSections => _canScheduleExactAlarms ? 0 : 1;
+  /// 未授权（已查到且为 false）时多一个「精确闹钟权限」引导分区。
+  int get _exactAlarmBannerSections =>
+      _canScheduleExactAlarms == false ? 1 : 0;
 
   int get _homeWidgetSectionCount =>
       (_draft.widgetShowCountdown ? 4 : 3) + 2 + _exactAlarmBannerSections;
@@ -536,23 +538,44 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   }
 
   Future<void> _loadExactAlarmPermission() async {
+    final wasDetected = _canScheduleExactAlarms != null;
+    final wasGranted = _canScheduleExactAlarms == true;
     final granted = await _homeWidgetService.canScheduleExactAlarms();
     if (!mounted) {
       return;
     }
-    setState(() {
-      _canScheduleExactAlarms = granted;
-    });
+    if (_canScheduleExactAlarms != granted) {
+      setState(() {
+        _canScheduleExactAlarms = granted;
+      });
+    }
+    // 从未授权升级为已授权时，原刷新闹钟仍是非精确档，主动重排一次。
+    if (granted && wasDetected && !wasGranted) {
+      await _homeWidgetService.rescheduleRefresh();
+    }
   }
 
   Future<void> _requestExactAlarmPermission() async {
-    final launched = await _homeWidgetService.requestScheduleExactAlarm();
-    if (!launched && mounted) {
-      // 个别 ROM 未响应授权页跳转，提示手动前往系统设置。
-      showAppToast(
-        context,
-        message: AppLocalizations.of(context)!.homeWidgetExactAlarmOpenFailed,
-      );
+    final result = await _homeWidgetService.requestScheduleExactAlarm();
+    if (!mounted) {
+      return;
+    }
+    switch (result) {
+      case HomeWidgetExactAlarmRequestResult.launched:
+      case HomeWidgetExactAlarmRequestResult.notRequired:
+        break;
+      case HomeWidgetExactAlarmRequestResult.fallback:
+        // 已回退到应用详情页，提示用户在其中开启权限即可。
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.homeWidgetExactAlarmFallbackHint,
+        );
+      case HomeWidgetExactAlarmRequestResult.failed:
+        // 未能打开任何设置页，引导用户手动前往系统设置。
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.homeWidgetExactAlarmOpenFailed,
+        );
     }
     // 回到前台时 didChangeAppLifecycleState 会重查授权状态。
   }

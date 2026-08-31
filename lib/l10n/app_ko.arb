@@ -1964,6 +1964,7 @@
   "homeWidgetExactAlarmBannerText": "\"알람 및 리마인더\" 권한이 없으면 수업 경계 갱신이 부정확한 알람으로 대체되어 위젯이 늦게 갱신될 수 있어요. 정확한 갱신을 위해 권한을 허용해 주세요",
   "homeWidgetExactAlarmGrantAction": "권한 허용",
   "homeWidgetExactAlarmOpenFailed": "권한 페이지를 열 수 없습니다. 시스템 설정에서 \"알람 및 리마인더\"를 직접 허용해 주세요",
+  "homeWidgetExactAlarmFallbackHint": "앱 정보 페이지를 열었습니다. 해당 페이지에서 \"알람 및 리마인더\"를 허용해 주세요",
   "layoutSettingsTitle": "레이아웃 및 교시",
   "layoutDensityTitle": "시간표 밀도",
   "layoutAutoFitHeightTitle": "화면 높이에 자동 맞춤",

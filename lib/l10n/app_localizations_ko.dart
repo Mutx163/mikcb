@@ -4014,6 +4014,8 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '권한 페이지를 열 수 없습니다. 시스템 설정에서 "알람 및 리마인더"를 직접 허용해 주세요';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '앱 정보 페이지를 열었습니다. 해당 페이지에서 "알람 및 리마인더"를 허용해 주세요';
 
 
   @override

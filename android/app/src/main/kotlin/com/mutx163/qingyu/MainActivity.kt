@@ -721,6 +721,11 @@ class MainActivity : FlutterActivity() {
                         pendingWidgetLaunchAppWidgetId = null
                         result.success(appWidgetId)
                     }
+                    "rescheduleRefresh" -> {
+                        // 授权状态变化后按最新权限档位重排小组件刷新闹钟。
+                        HomeWidgetStorage.rescheduleRefresh(applicationContext)
+                        result.success(true)
+                    }
                     "scheduleRefresh" -> {
                         val payload = call.arguments as? Map<String, Any?>
                         val triggerAtMillis = payload
@@ -1276,9 +1281,15 @@ class MainActivity : FlutterActivity() {
         return alarmManager.canScheduleExactAlarms()
     }
 
-    private fun requestScheduleExactAlarm(): Boolean {
+    /**
+     * 跳转系统「闹钟和提醒」授权页。
+     *
+     * 返回状态字符串：launched 已跳授权页；fallback ROM 未处理该 action，
+     * 已回退应用详情页（含闹钟和提醒开关）；not_required S 以下无需授权。
+     */
+    private fun requestScheduleExactAlarm(): String {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return false
+            return "not_required"
         }
         val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
             data = Uri.parse("package:$packageName")
@@ -1286,11 +1297,11 @@ class MainActivity : FlutterActivity() {
         }
         return try {
             startActivity(intent)
-            true
-        } catch (_: Exception) {
+            "launched"
+        } catch (_: ActivityNotFoundException) {
             // 个别 ROM 未处理该 action 时退回应用详情页（含闹钟和提醒开关）。
             openAppDetailsSettings()
-            false
+            "fallback"
         }
     }
 

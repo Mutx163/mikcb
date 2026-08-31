@@ -7232,6 +7232,12 @@ abstract class AppLocalizations {
   /// **'打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限'**
   String get homeWidgetExactAlarmOpenFailed;
 
+  /// No description provided for @homeWidgetExactAlarmFallbackHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限'**
+  String get homeWidgetExactAlarmFallbackHint;
+
 
   /// No description provided for @layoutSettingsTitle.
   ///

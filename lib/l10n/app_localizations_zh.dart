@@ -3911,6 +3911,8 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限';
 
 
 
@@ -14267,6 +14269,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
 
 
 
@@ -24666,6 +24670,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
 
 
 

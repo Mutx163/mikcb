@@ -2162,6 +2162,7 @@
   "homeWidgetExactAlarmBannerText": "未授予「闹钟和提醒」权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新",
   "homeWidgetExactAlarmGrantAction": "去授权",
   "homeWidgetExactAlarmOpenFailed": "打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限",
+  "homeWidgetExactAlarmFallbackHint": "已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限",
   "layoutSettingsTitle": "布局与节次",
   "layoutDensityTitle": "课表密度",
   "layoutAutoFitHeightTitle": "自动充满屏幕高度",

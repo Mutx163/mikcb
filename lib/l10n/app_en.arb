@@ -2148,6 +2148,7 @@
   "homeWidgetExactAlarmBannerText": "Without the \"Alarms & reminders\" permission, refreshes at course boundaries fall back to inexact alarms and widgets may update late. Grant it for precise on-schedule refreshes",
   "homeWidgetExactAlarmGrantAction": "Grant",
   "homeWidgetExactAlarmOpenFailed": "Could not open the permission page. Enable \"Alarms & reminders\" manually in system settings",
+  "homeWidgetExactAlarmFallbackHint": "Opened the app info page. Enable \"Alarms & reminders\" there",
   "layoutSettingsTitle": "Layout & sections",
   "layoutDensityTitle": "Timetable density",
   "layoutAutoFitHeightTitle": "Auto fill screen height",

@@ -32,6 +32,21 @@ enum HomeWidgetPinRequestResult {
   failed,
 }
 
+/// 「闹钟和提醒」授权页跳转结果。
+enum HomeWidgetExactAlarmRequestResult {
+  /// 已跳转系统授权页。
+  launched,
+
+  /// ROM 未处理授权 action，已回退应用详情页（含闹钟和提醒开关）。
+  fallback,
+
+  /// Android 12 以下无需授权。
+  notRequired,
+
+  /// 跳转失败（如平台通道不可用）。
+  failed,
+}
+
 class HomeWidgetService {
   static const MethodChannel _channel = MethodChannel(
     'com.mutx163.qingyu/home_widget',
@@ -137,20 +152,25 @@ class HomeWidgetService {
 
   /// 跳转系统「闹钟和提醒」授权页（ACTION_REQUEST_SCHEDULE_EXACT_ALARM）。
   ///
-  /// 返回是否成功发起跳转；ROM 回退应用详情页或跳转失败时为 false，
-  /// 调用方可据此提示用户手动前往系统设置。
-  Future<bool> requestScheduleExactAlarm() async {
+  /// 返回跳转结果；ROM 回退应用详情页时为 [HomeWidgetExactAlarmRequestResult.fallback]，
+  /// 调用方可据此给出与实际画面一致的提示。
+  Future<HomeWidgetExactAlarmRequestResult> requestScheduleExactAlarm() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
-      return true;
+      return HomeWidgetExactAlarmRequestResult.notRequired;
     }
     try {
-      final ok = await _channel.invokeMethod<bool>(
+      final status = await _channel.invokeMethod<String>(
         'requestScheduleExactAlarm',
       );
-      return ok ?? false;
+      return switch (status) {
+        'launched' => HomeWidgetExactAlarmRequestResult.launched,
+        'fallback' => HomeWidgetExactAlarmRequestResult.fallback,
+        'not_required' => HomeWidgetExactAlarmRequestResult.notRequired,
+        _ => HomeWidgetExactAlarmRequestResult.failed,
+      };
     } on MissingPluginException {
       if (kDebugMode) {
-        return true;
+        return HomeWidgetExactAlarmRequestResult.failed;
       }
       unawaited(
         AppLogService.instance.warn(
@@ -159,7 +179,7 @@ class HomeWidgetService {
           extras: {'error': 'MissingPluginException'},
         ),
       );
-      return false;
+      return HomeWidgetExactAlarmRequestResult.failed;
     } catch (e) {
       unawaited(
         AppLogService.instance.warn(
@@ -169,8 +189,42 @@ class HomeWidgetService {
         ),
       );
       appDebugLog('HomeWidget', '请求精确闹钟权限失败：$e');
+      return HomeWidgetExactAlarmRequestResult.failed;
+    }
+  }
+
+  /// 按最新「闹钟和提醒」权限档位重排小组件刷新闹钟。
+  ///
+  /// 用户授权返回后调用，使非精确刷新立即升级为精确刷新。
+  Future<bool> rescheduleRefresh() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
       return false;
     }
+    try {
+      final ok = await _channel.invokeMethod<bool>('rescheduleRefresh');
+      return ok ?? false;
+    } on MissingPluginException {
+      if (kDebugMode) {
+        return false;
+      }
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_schedule_failed',
+          AppLogMessages.homeWidgetScheduleFailed,
+          extras: {'error': 'MissingPluginException'},
+        ),
+      );
+    } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_schedule_failed',
+          AppLogMessages.homeWidgetScheduleFailed,
+          extras: {'error': '$e'},
+        ),
+      );
+      appDebugLog('HomeWidget', 'reschedule refresh failed: $e');
+    }
+    return false;
   }
 
   Future<bool> syncSnapshot(HomeWidgetSnapshot snapshot) async {

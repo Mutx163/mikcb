@@ -4169,6 +4169,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeWidgetExactAlarmOpenFailed =>
       'Could not open the permission page. Enable "Alarms & reminders" manually in system settings';
+  @override
+  String get homeWidgetExactAlarmFallbackHint =>
+      'Opened the app info page. Enable "Alarms & reminders" there';
 
 
   @override
