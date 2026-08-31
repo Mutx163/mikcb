@@ -34,3 +34,13 @@ RUN set -eux; \
     flutter precache --android
 
 ENV PATH="${PATH}:${FLUTTER_HOME}/bin:${FLUTTER_HOME}/bin/cache/dart-sdk/bin"
+
+# ── HyperOS 审计依赖 ─────────────────────────────────────────
+# 基础镜像未预装 pip，PyYAML 直接预装进构建镜像，
+# 避免每次构建都执行 pip install（GitHub Actions 每次跑，
+# CNB 流水线在镜像层固化，更快更稳）。
+RUN set -eux; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip; \
+    python3 -m pip install --no-cache-dir pyyaml; \
+    rm -rf /var/lib/apt/lists/*

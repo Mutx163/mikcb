@@ -49,8 +49,7 @@
       PY
   - name: hyperos-audit
     script: |
-      pip install pyyaml -q
-      python tool/hyperos_audit.py --strict
+      python3 tool/hyperos_audit.py --strict
   - name: cjk-hardcode-audit
     script: python3 tool/audit_cjk_hardcode.py --baseline tool/cjk_hardcode_baseline.txt
   - name: analyze
