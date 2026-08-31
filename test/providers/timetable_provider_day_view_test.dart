@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/domain/week_calculator.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -136,9 +138,23 @@ void main() {
         ),
       );
 
+      // 「当前周」口径（2026-08-31）：激活（含改开学时间）即按真实今天
+      // 对齐到该课表的日历周（钳制在学期周数内）。syncTemporalContext(now:)
+      // 模拟历史时刻时只刷新"今天"相关状态，不回写 currentWeek——
+      // 它必须继续保住浏览位置，不能把翻页器拽走。
+      final alignedAtActivation = clampCurrentWeekToSettings(
+        WeekCalculator.calendarWeekForDate(
+          DateTime.now(),
+          semesterStart: DateTime(2026, 4, 13),
+          fallback: 1,
+        ),
+        provider.settings,
+      );
+      expect(provider.currentWeek, alignedAtActivation);
+
       final monday = DateTime(2026, 4, 13, 8, 30);
       await provider.syncTemporalContext(now: monday);
-      expect(provider.currentWeek, 1);
+      expect(provider.currentWeek, alignedAtActivation);
       expect(provider.currentDateWeek, 1);
       expect(provider.currentDayOfWeek, 1);
       expect(

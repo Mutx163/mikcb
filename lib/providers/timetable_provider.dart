@@ -867,10 +867,17 @@ class TimetableProvider with ChangeNotifier {
     );
     _tasks = _sortTasks(List<CourseTask>.from(profile.tasks));
     _exams = List<Exam>.from(profile.exams);
-    _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
-    _currentCalendarWeek = _resolveCurrentCalendarWeek();
+    // 「当前周」口径（2026-08-31 用户拍板）：有开学时间的课表，激活/切换时
+    // 一律按它自己的开学时间对齐到日历周，而不是恢复上次浏览停留的周次——
+    // 否则两份课表开学时间不同时，切过去会带着上一份课表的周数。
+    // 无开学时间无从推导，保留持久化值（v2.0 行为，见 live 选课回退）。
+    final calendarWeek = _resolveCurrentCalendarWeek();
+    _currentWeek = _settings.semesterStartDate == null
+        ? clampCurrentWeekToSettings(profile.currentWeek, _settings)
+        : clampCurrentWeekToSettings(calendarWeek, _settings);
+    _currentCalendarWeek = calendarWeek;
     _currentDateWeek = clampCurrentWeekToSettings(
-      _currentCalendarWeek,
+      calendarWeek,
       _settings,
     );
     unawaited(_syncNativeRuntimePreferences());
@@ -1985,10 +1992,15 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> loadCurrentWeek() async {
     try {
-      _currentWeek = activeProfile?.currentWeek ?? 1;
-      _currentCalendarWeek = _resolveCurrentCalendarWeek();
+      // 与 _applyProfileState 同口径：有开学时间按日历周对齐，
+      // 无开学时间保留持久化值。
+      final calendarWeek = _resolveCurrentCalendarWeek();
+      _currentWeek = _settings.semesterStartDate == null
+          ? clampCurrentWeekToSettings(activeProfile?.currentWeek ?? 1, _settings)
+          : clampCurrentWeekToSettings(calendarWeek, _settings);
+      _currentCalendarWeek = calendarWeek;
       _currentDateWeek = clampCurrentWeekToSettings(
-        _currentCalendarWeek,
+        calendarWeek,
         _settings,
       );
       notifyListeners();
@@ -3699,6 +3711,8 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);
+    final semesterStartChanged =
+        settings.semesterStartDate != _settings.semesterStartDate;
     _settings = _normalizeSettingsWithTimeScheme(settings);
     hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _currentCalendarWeek = _resolveCurrentCalendarWeek();
@@ -3706,6 +3720,11 @@ class TimetableProvider with ChangeNotifier {
       _currentCalendarWeek,
       _settings,
     );
+    // 开学时间被改动（设置页 / 云同步 / 导入合并）时，「当前周」立即按新
+    // 日期对齐——与 _applyProfileState 同一口径，避免「日期已改、周次仍旧」。
+    if (semesterStartChanged && _settings.semesterStartDate != null) {
+      _currentWeek = _currentDateWeek;
+    }
     await _persistActiveProfileState();
     unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
