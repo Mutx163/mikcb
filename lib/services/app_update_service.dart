@@ -372,7 +372,8 @@ class AppUpdateService {
       if (expectedApkSha256 != null && expectedApkSha256.isNotEmpty) {
         final actual = await _computeFileSha256(file);
         if (actual == null) {
-          _log('无法计算安装包哈希，拒绝安装');
+          _log('无法计算安装包哈希，拒绝安装，已删除残留文件');
+          await _deleteFileIfExists(file);
           return 'update_download_hash_mismatch';
         }
         if (!_constantTimeEquals(actual, expectedApkSha256)) {
