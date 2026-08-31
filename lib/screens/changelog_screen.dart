@@ -1,9 +1,45 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'about_screen.dart';
+
+/// `docs/releases/<version>.md` 的 asset key 匹配规则。
+/// 目录同时打包了 html / json 等文件，正则只接受数字版本号（允许 -a 等后缀）。
+final RegExp releaseAssetKeyPattern = RegExp(
+  r'^docs/releases/(v\d+(?:\.\d+)*(?:-[\w.]+)?)\.md$',
+);
+
+/// 按语义版本号倒序排列（最新在前），如 v2.1.1.4 > v2.1.1 > v2.0.5.6。
+@visibleForTesting
+int compareReleaseVersionsDesc(String a, String b) {
+  final va = parseReleaseVersion(a);
+  final vb = parseReleaseVersion(b);
+  for (var i = 0; i < va.length || i < vb.length; i++) {
+    final na = i < va.length ? va[i] : 0;
+    final nb = i < vb.length ? vb[i] : 0;
+    if (na != nb) return nb.compareTo(na);
+  }
+  return 0;
+}
+
+/// 匹配 asset key 中的版本号，如 docs/releases/v2.1.1.4.md → v2.1.1.4。
+/// 严格限定数字段（可选 - 后缀），避免误配同目录的 .html 等非版本文件。
+@visibleForTesting
+String? matchReleaseAssetKey(String assetKey) {
+  final match = releaseAssetKeyPattern.firstMatch(assetKey);
+  return match?.group(1);
+}
+
+/// 解析版本字符串中的数字段，如 v2.1.1.4 → [2, 1, 1, 4]。
+@visibleForTesting
+List<int> parseReleaseVersion(String version) {
+  final match = RegExp(r'v?(\d+(?:\.\d+)*)').firstMatch(version);
+  if (match == null) return const [0];
+  return match.group(1)!.split('.').map(int.parse).toList();
+}
 
 class ChangelogScreen extends StatefulWidget {
   const ChangelogScreen({super.key});
@@ -23,19 +59,38 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   }
 
   Future<void> _loadChangelog() async {
-    // 简单方式：直接加载已知的 release notes 文件
-    // 由于 AssetManifest 解析较复杂，我们直接遍历已知版本
-    final versions = _getKnownVersions();
-    final entries = <_ChangelogEntry>[];
-
-    for (final version in versions) {
-      try {
-        final data = await rootBundle.loadString('docs/releases/$version.md');
-        entries.add(_ChangelogEntry(version: version, content: data));
-      } catch (_) {
-        // 文件不存在，跳过
-      }
+    // 自动扫描资源中的 docs/releases/*.md 文件，按版本号倒序展示。
+    // 新增版本只需放入对应 md 文件即可，无需再维护硬编码版本列表。
+    List<String> versions;
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      versions = manifest
+          .listAssets()
+          .map(matchReleaseAssetKey)
+          .whereType<String>()
+          .toSet()
+          .toList();
+      versions.sort(compareReleaseVersionsDesc);
+    } catch (e) {
+      // AssetManifest 解析失败时回退到硬编码列表，保证页面仍可用
+      debugPrint('ChangelogScreen: AssetManifest scan failed, fallback: $e');
+      versions = _getKnownVersions();
     }
+
+    if (versions.isEmpty) {
+      // 无 release notes 时直接展示空列表，不再回退扫描硬编码列表
+      if (mounted) {
+        setState(() {
+          _entries = [];
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    // 并发加载所有 md 文件，结果顺序与倒序列表一致
+    final results = await Future.wait(versions.map(_loadEntry));
+    final entries = results.whereType<_ChangelogEntry>().toList();
 
     if (mounted) {
       setState(() {
@@ -45,9 +100,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
     }
   }
 
+  Future<_ChangelogEntry?> _loadEntry(String version) async {
+    try {
+      final data = await rootBundle.loadString('docs/releases/$version.md');
+      return _ChangelogEntry(version: version, content: data);
+    } catch (_) {
+      // 文件读取失败，跳过
+      return null;
+    }
+  }
+
   List<String> _getKnownVersions() {
-    // 返回所有已知版本，按倒序排列（最新在前）
+    // AssetManifest 解析失败时的回退版本列表，按倒序排列（最新在前）
     return [
+      'v2.1.1.4',
+      'v2.1.1.3',
+      'v2.1.1.2',
+      'v2.1.1.1',
+      'v2.1.1',
+      'v2.1.0',
       'v2.0.5.6',
       'v2.0.5.5',
       'v2.0.5.4',
@@ -65,7 +136,9 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       'v2.0.2',
       'v2.0.1',
       'v2.0',
-      'v1.2.1.16',
+      'v1.3.2',
+      'v1.3.1',
+      'v1.3',
       'v1.2.1.15',
       'v1.2.1.14',
       'v1.2.1.13',
@@ -115,6 +188,7 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       'v1.1.10.17',
       'v1.1.10.16',
       'v1.1.10.15',
+      'v1.1.10.14',
       'v1.1.10.13',
       'v1.1.10.12',
       'v1.1.10.11',
@@ -216,23 +290,9 @@ class _ChangelogCardState extends State<_ChangelogCard> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          widget.entry.version,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.onSurfaceContainer,
-                          ),
-                        ),
+                      HyperosTag(
+                        label: widget.entry.version,
+                        backgroundColor: colors.surfaceContainerHigh,
                       ),
                       const Spacer(),
                       Icon(
