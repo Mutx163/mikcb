@@ -1,5 +1,6 @@
 lib/domain/live_activity_logic.dart:2
 lib/domain/location_building_cluster_logic.dart:67
+lib/domain/time_scheme_logic.dart:3
 lib/l10n/holiday_name_localizer.dart:1
 lib/logging/app_log_messages.dart:2
 lib/main.dart:3
@@ -14,7 +15,7 @@ lib/models/timetable_settings.dart:5
 lib/models/warehouse_macro_models.dart:3
 lib/providers/timetable/import_export_service.dart:4
 lib/providers/timetable/time_scheme_repository.dart:1
-lib/providers/timetable_provider.dart:27
+lib/providers/timetable_provider.dart:21
 lib/screens/course_import_screen.dart:15
 lib/screens/feedback_screen.dart:1
 lib/screens/hyperos_showcase_screen.dart:21
