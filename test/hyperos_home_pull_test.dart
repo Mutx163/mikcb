@@ -84,8 +84,8 @@ void main() {
   group('spring spec', () {
     test('uses spec period 0.4s and critical damping', () {
       final s = hyperosHomePullSpring();
-      final expectedOmega = 2 * math.pi / HyperosMiuixAnim.standardSpringPeriod;
-      final expectedStiffness = expectedOmega * expectedOmega;
+      const expectedOmega = 2 * math.pi / HyperosMiuixAnim.standardSpringPeriod;
+      const expectedStiffness = expectedOmega * expectedOmega;
       expect(s.stiffness, closeTo(expectedStiffness, 1e-6));
       expect(s.mass, closeTo(1, 1e-9));
       // ratio 1 => damping = 2*sqrt(m*k) ; SpringDescription stores damping via ratio

@@ -194,11 +194,10 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
     );
 
     return HyperosSheetFrame(
-      frosted: true,
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Width is already after floating outer inset + frame padding.
-          final gapCount = columnsPerRow - 1;
+          const gapCount = columnsPerRow - 1;
           final availableWidth = constraints.maxWidth;
           final hasBoundedWidth = availableWidth.isFinite && availableWidth > 0;
           final rawItemWidth = hasBoundedWidth

@@ -100,7 +100,7 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
     try {
       final assignMatchingTextColor =
           await ImportRandomColorPreferences.isTextColorEnabled();
-      var schemes = [..._history.schemes];
+      final schemes = [..._history.schemes];
       if (schemes.isEmpty) {
         // 首次换色：先把当前（导入原）颜色存成快照，永远有路可回。
         schemes.add(captureCourseRecolorSnapshot(courses));
@@ -257,9 +257,9 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(context).height * 0.32,
             ),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: const _CourseColorPreview(),
+            child: const SingleChildScrollView(
+              physics: ClampingScrollPhysics(),
+              child: _CourseColorPreview(),
             ),
           ),
           const SizedBox(height: 16),

@@ -41,7 +41,6 @@ class BundledAssetImage extends StatelessWidget {
         cacheWidth: _sanitizeCacheDimension(cacheWidth),
         cacheHeight: _sanitizeCacheDimension(cacheHeight),
         gaplessPlayback: true,
-        filterQuality: FilterQuality.medium,
       );
     }
 
@@ -118,7 +117,6 @@ class _BundledAssetImageLoaderState extends State<_BundledAssetImageLoader> {
       cacheWidth: _sanitizeCacheDimension(widget.cacheWidth),
       cacheHeight: _sanitizeCacheDimension(widget.cacheHeight),
       gaplessPlayback: true,
-      filterQuality: FilterQuality.medium,
     );
   }
 }

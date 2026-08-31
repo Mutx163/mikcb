@@ -130,7 +130,7 @@ HomePageBackgroundVisual homePageRegionChromeVisual({
   }
   // Weekday-only glass: sit on the weekday row. Grid clearance is layout
   // padding under the weekday header, not a shorter glass band.
-  return (top: titleBandBottom, height: math.max(0.0, weekdayBarHeight));
+  return (top: titleBandBottom, height: math.max(0, weekdayBarHeight));
 }
 
 /// One continuous frosted / liquid-glass chrome mask for the home timetable.
@@ -176,9 +176,8 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
       left: 0,
       right: 0,
       height: layout.height,
-      child: IgnorePointer(
+      child: const IgnorePointer(
         child: ClipRect(
-          clipBehavior: Clip.hardEdge,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -194,7 +193,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
                 bottom: 0,
-                child: const HomePageChromeGlassFill(),
+                child: HomePageChromeGlassFill(),
               ),
             ],
           ),
@@ -301,13 +300,8 @@ class HomePageChromeGlassFill extends StatelessWidget {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.header,
         borderRadius: borderRadius,
-        instantUnderlay: false,
         useAncestorBackdropGroup: useAncestorBackdropGroup,
         maxThickness: maxThickness,
-        // 与弹窗/菜单等其他液态玻璃表面同材质：不再为可读性叠加 scrim，
-        // chrome 文字对比度由墨色极性（homePageChromeForegroundForLuminance）
-        // 保证。
-        contentLegibilityFill: false,
         child: fill,
       );
     }

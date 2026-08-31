@@ -395,7 +395,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (hasSession) ...[
-                  HyperosLinearProgress(value: fraction, minHeight: 4),
+                  HyperosLinearProgress(value: fraction),
                   const SizedBox(height: 12),
                   Text(
                     l10n.qrTransferReceiveProgress(
@@ -657,7 +657,7 @@ class _QrViewfinderPainter extends CustomPainter {
 
     final w = size.width;
     final h = size.height;
-    final half = _cornerThickness / 2;
+    const half = _cornerThickness / 2;
 
     // 细边框
     canvas.drawRRect(

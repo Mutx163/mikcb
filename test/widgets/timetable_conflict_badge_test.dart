@@ -277,7 +277,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
           endWeek: 1,
         ),
       );
@@ -346,7 +345,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
           endWeek: 1,
         ),
       );

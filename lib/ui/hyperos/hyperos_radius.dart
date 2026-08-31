@@ -43,7 +43,7 @@ abstract final class HyperosRadius {
   /// [preferred] (defaults to [HyperosTokens.cardRadius]).
   static double surfaceRadiusForHeight(double height, {double? preferred}) {
     final tallPreferred = preferred ?? HyperosTokens.cardRadius;
-    final shortPreferred = HyperosTokens.controlRadius;
+    const shortPreferred = HyperosTokens.controlRadius;
     final chosen = height > 0 && height < shortSurfaceThreshold
         ? shortPreferred
         : tallPreferred;

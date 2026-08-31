@@ -205,8 +205,6 @@ class HyperosSlider extends StatelessWidget {
         steps: divisions ?? 0,
         enabled: enabled,
         colors: colors,
-        height: HyperosMiuixSlider.minHeight,
-        showKeyPoints: false,
         hapticEffect: (divisions ?? 0) > 0
             ? MiuixSliderHapticEffect.step
             : MiuixSliderHapticEffect.edge,
@@ -425,7 +423,6 @@ class _HyperosSliderValueSheetBodyState
   Widget build(BuildContext context) {
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
-      frosted: true,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -578,11 +575,11 @@ class HyperosSliderTile extends StatelessWidget {
               ),
               child: Opacity(
                 opacity: enabled ? 1 : 0.45,
-                child: HyperosChevron(),
+                child: const HyperosChevron(),
               ),
             ),
         ] else if (rowEnabled)
-          HyperosChevron(),
+          const HyperosChevron(),
       ],
     );
 

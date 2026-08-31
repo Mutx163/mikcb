@@ -120,13 +120,13 @@ class _TimeSchemeManagementScreenState
     final profiles = provider.profiles;
     final locationTimeGroups = provider.locationTimeGroups;
     final signature = Object.hash(
-      Object.hashAll(profiles.map((profile) => identityHashCode(profile))),
+      Object.hashAll(profiles.map(identityHashCode)),
       Object.hashAll(
         locationTimeGroups.map(
-          (locationTimeGroup) => identityHashCode(locationTimeGroup),
+          identityHashCode,
         ),
       ),
-      Object.hashAll(schemes.map((scheme) => identityHashCode(scheme))),
+      Object.hashAll(schemes.map(identityHashCode)),
     );
     if (identical(_usageSnapshotProvider, provider) &&
         _usageSnapshotSignature == signature) {

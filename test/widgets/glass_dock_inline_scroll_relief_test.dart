@@ -7,6 +7,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -20,12 +21,19 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 /// HyperosListView 自动把底部内边距提升到余量（不小于默认底距）——
 /// 新增内嵌页按惯例用 HyperosListView 即自动适配，无须逐页处理。
 void main() {
+  // 拆分后设置页由库侧登记（生产在 main() 启动时完成）；测试环境直接
+  // 调用一次，保证玻璃坞「课表设置」内嵌入口可解析。
+  registerSettingsPages(
+    settingsScreen: () => const TimetableSettingsScreen(),
+    subpageById: settingsSubpageById,
+  );
+
   /// 玻璃坞药丸固定占用高度（与屏幕源码 _glassDockPillOccupancy 一致；
   /// 测试环境无系统底部安全区，余量即 62）。
-  const double kGlassDockPillOccupancy = 62.0;
+  const double kGlassDockPillOccupancy = 62;
 
   /// HyperosListView 默认底距（HyperosMiuixSpec.listPadding.bottom）。
-  const double kDefaultListBottom = 24.0;
+  const double kDefaultListBottom = 24;
 
   Future<TimetableProvider> pumpDockApp(
     WidgetTester tester, {
@@ -43,14 +51,14 @@ void main() {
         providers: [
           ChangeNotifierProvider<TimetableProvider>.value(value: provider),
         ],
-        child: MaterialApp(
-          localizationsDelegates: const [
+        child: const MaterialApp(
+          localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('zh'),
+          locale: Locale('zh'),
           home: FrostedAppearanceScope(
             appearance: FrostedAppearance.defaults,
             child: TimetableScreen(

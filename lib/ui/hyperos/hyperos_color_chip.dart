@@ -242,7 +242,6 @@ Widget _hyperosColorChipWrap({
     alignment: distributeHorizontally
         ? WrapAlignment.spaceBetween
         : WrapAlignment.start,
-    runAlignment: WrapAlignment.start,
     spacing: spacing,
     runSpacing: runSpacing,
     children: children,

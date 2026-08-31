@@ -80,10 +80,6 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                     settings: _draft,
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
-                    // 预览从星期栏开始，不再模拟软件名标题行（用户反馈：
-                    // 预览里出现「轻屿课表」造成误导）；标题样式的预览由
-                    // 「首页与导航 → 首页标题」的专用预览承担。
-                    includeAppHeader: false,
                   ),
                 ),
               ),
@@ -97,7 +93,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                 'course-card-settings-editor',
               ),
               itemCount: _sectionCount,
-              itemBuilder: (context, index) => _buildSection(context, index),
+              itemBuilder: _buildSection,
             ),
           ),
         ],
@@ -294,7 +290,6 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                 title: l10n.layoutConflictOpacityTitle,
                 value: _draft.timetableConflictCourseOpacity,
                 min: 0.2,
-                max: 1.0,
                 divisions: 16,
                 valueLabel:
                     '${(_draft.timetableConflictCourseOpacity * 100).round()}%',
@@ -310,7 +305,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
       6 => TimetableTextColorSettings(
         settings: _draft,
         scope: TextColorScope.courseCard,
-        onChanged: (next) => _updateDraft(next),
+        onChanged: _updateDraft,
       ),
       7 => _SettingsResetTile(
         scope: SettingsResetScope.courseCard,

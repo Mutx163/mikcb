@@ -297,7 +297,6 @@ void main() {
           configuredHex: '#2563EB',
           themeFallback: const Color(0xFF111111),
           hasBackdrop: true,
-          wallpaperLuminance: null,
         ),
         const Color(0xFF2563EB),
       );
@@ -327,8 +326,8 @@ void main() {
 
   group('homePageInkHasSufficientContrast', () {
     test('black/white inks are readable on the opposite band', () {
-      expect(homePageInkHasSufficientContrast(Colors.black, 1.0), isTrue);
-      expect(homePageInkHasSufficientContrast(Colors.white, 0.0), isTrue);
+      expect(homePageInkHasSufficientContrast(Colors.black, 1), isTrue);
+      expect(homePageInkHasSufficientContrast(Colors.white, 0), isTrue);
     });
 
     test('same-polarity inks are unreadable', () {
@@ -343,7 +342,7 @@ void main() {
         homePageInkHasSufficientContrast(
           Colors.black,
           0.35,
-          minContrastRatio: 9.0,
+          minContrastRatio: 9,
         ),
         isFalse,
       );

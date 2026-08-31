@@ -18,7 +18,7 @@ class _FeedbackShowcaseState extends State<FeedbackShowcase> {
   // Rich Tooltip 使用持久状态，点击按钮时手动弹出。
   final _richTooltipState = MiuixTooltipState(isPersistent: true);
   // 线性进度：自动播放模拟下载，比手动 +20% 更直观。
-  double _linearProgress = 0.0;
+  double _linearProgress = 0;
   bool _autoPlaying = false;
   Timer? _progressTimer;
   bool _showBasicDialog = false;
@@ -85,7 +85,6 @@ class _FeedbackShowcaseState extends State<FeedbackShowcase> {
       snackbarHost: MiuixSnackbarHost(
         state: _snackbarHost,
         blurSigma: 30,
-        blurBackgroundAlpha: 0.55,
       ),
       overlay: Stack(
         children: [
@@ -277,7 +276,6 @@ class _FeedbackShowcaseState extends State<FeedbackShowcase> {
                           '适合用于引导或展示较复杂的信息。',
                       actionText: '知道了',
                       onActionPressed: () => _snackbarHost.showSnackbar('已确认'),
-                      positioning: MiuixTooltipAnchorPosition.below,
                       showCaret: true,
                       child: MiuixButton(
                         onPressed: _richTooltipState.show,

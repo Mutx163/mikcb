@@ -49,7 +49,7 @@ void main() {
     });
 
     test('frostedAppearance 映射六个开关', () {
-      final a = liquidAppearance(selectSheet: false, dock: false);
+      final a = liquidAppearance(dock: false);
       expect(a.glassMode, FrostedGlassMode.liquidGlass);
       expect(a.liquidGlassPopupEnabled, isTrue);
       expect(a.liquidGlassSelectSheetEnabled, isFalse);

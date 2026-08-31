@@ -27,7 +27,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   String _radioValue = 'a';
   int _choiceIndex = 0;
   String? _selectValue = 'medium';
-  DateTime? _pickedDate = DateTime(2026, 3, 1);
+  DateTime? _pickedDate = DateTime(2026, 3);
   double _sliderValue = 0.6;
   int _tabIndex = 0;
   int _segmentIndex = 0;
@@ -113,14 +113,14 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           const HyperosSectionGap(),
 
           _section(l10n.hyperosShowcaseSectionTags),
-          HyperosCard(
+          const HyperosCard(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: const [
+                children: [
                   HyperosTag(label: 'HyperosTag'),
                   HyperosTag(label: 'Outlined', outlined: true),
                 ],
@@ -382,7 +382,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
               child: HyperosSearchBar(
                 controller: _searchController,
                 hint: 'HyperosSearchBar',
-                onClear: () => _searchController.clear(),
+                onClear: _searchController.clear,
               ),
             ),
           ),
@@ -480,7 +480,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                       tooltip: 'HyperosIconButton',
                       onPressed: () {},
                     ),
-                    HyperosIconButton(icon: Icons.more_vert, onPressed: null),
+                    const HyperosIconButton(icon: Icons.more_vert),
                     HyperosFab(
                       mini: true,
                       icon: Icons.add,
@@ -666,23 +666,23 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const SizedBox(height: 8),
           const HyperosDivider(),
-          HyperosCard(
+          const HyperosCard(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const HyperosIconBadge(
+                  HyperosIconBadge(
                     icon: Icons.star_outline,
                     accent: HyperosIconColors.yellow,
                   ),
-                  const SizedBox(width: 12),
-                  const HyperosChevron(),
-                  const SizedBox(width: 12),
-                  const HyperosUpDownChevron(),
-                  const Spacer(),
-                  const HyperosSelectedCheckmark(),
-                  const SizedBox(width: 12),
-                  const HyperosColorDot(color: HyperosIconColors.teal),
+                  SizedBox(width: 12),
+                  HyperosChevron(),
+                  SizedBox(width: 12),
+                  HyperosUpDownChevron(),
+                  Spacer(),
+                  HyperosSelectedCheckmark(),
+                  SizedBox(width: 12),
+                  HyperosColorDot(color: HyperosIconColors.teal),
                 ],
               ),
             ),
@@ -1039,7 +1039,6 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
     await showHomeHyperosSheet<void>(
       context: context,
       builder: (sheetContext) => HyperosSheet(
-        frosted: true,
         title: 'showHomeHyperosSheet · edge',
         description: '贴边、仅上圆角（首页菜单同款）',
         child: HyperosButton(
@@ -1143,7 +1142,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   Future<bool> _playFakeDownload(HomeUpdatePromptController controller) {
     const totalBytes = 96 * 1024 * 1024;
     const ticks = 60; // 约 6 秒播完（100ms 一帧）。
-    final step = totalBytes ~/ ticks;
+    const step = totalBytes ~/ ticks;
     var downloaded = 0;
     controller.beginInAppDownload();
     _demoUpdateProgressTimer = Timer.periodic(

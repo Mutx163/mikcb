@@ -24,8 +24,8 @@ TimeScheme _timeScheme(String id) {
     id: id,
     name: 'Scheme $id',
     sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
-    createdAt: DateTime(2026, 1, 1),
-    updatedAt: DateTime(2026, 1, 1),
+    createdAt: DateTime(2026),
+    updatedAt: DateTime(2026),
   );
 }
 

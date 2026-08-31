@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 守卫值只许下降不许上涨；确需放宽时，把基线改成新值并在提交信息说明
 /// 理由。下降后欢迎顺手收紧基线。
 void main() {
-  final providerPath = 'lib/providers/timetable_provider.dart';
+  const providerPath = 'lib/providers/timetable_provider.dart';
   final providerFile = File(providerPath);
 
   List<File> libDartFiles() {
@@ -19,6 +19,9 @@ void main() {
   }
 
   test('timetable_provider.dart 行数棘轮：只减不增', () {
+    // 4400→4407: 合并 PR#20——_loadHolidayDataImpl 的 catch 原为静默吞异常，
+    // 补 AppLogService.warn 留痕（+7，error/stackTrace 参数透传所需的 warn
+    // 签名早已存在，全部为日志行），按测试约定记真实值。
     // 4401→4409: applyCourseRecolors 整对象替换改为按字段 copyWith（+9，
     // 防过期快照回写非颜色字段），拆分归阶段 3 重构，按测试约定同步基线。
     // 4409→4422: 桌面卡片按课表绑定快照（e7f77af4）+13——Provider 侧只新增
@@ -26,7 +29,11 @@ void main() {
     // 在 live_activity_controller，属正当增长；拆分归阶段 3 重构。
     // 4422→4426: eec42680 周次口径修复 +19（当时未同步基线），同批自 CNB
     // PR#6 内联三个单调用点私有方法（-15）瘦身，净 +4，按测试约定同步基线。
-    const baselineLines = 4426;
+    // 4426→4398: issue#11 竞态修复（R1 迁移写回包 mutation gate+一致性校验/
+    // R2 周次同步与 setCurrentWeek 包 gate/N5 考试提醒单飞收敛，+55）+
+    // 死代码删除（loadSettings/loadCourses -78）+ 钟点同步逻辑下沉 domain
+    // 薄转发（-70）净 -33，顺手收紧基线到当前真实行数。
+    const baselineLines = 4407;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

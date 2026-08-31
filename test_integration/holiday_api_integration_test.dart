@@ -43,7 +43,7 @@ void main() {
       expect(json.containsKey('code'), isTrue);
       expect(json.containsKey('data'), isTrue);
       expect(json['code'], 0);
-      expect(json['data'], isA<List>());
+      expect(json['data'], isA<List<Object>>());
     }, skip: skipInCI);
 
     test('数据包含 2026 年元旦', () async {
@@ -63,7 +63,7 @@ void main() {
           .toList();
 
       expect(newYear, isNotEmpty);
-      expect(newYear.first['daytype'], 1); // 假期
+      expect((newYear.first as Map)['daytype'], 1); // 假期
     }, skip: skipInCI);
 
     test('数据包含 2026 年国庆节', () async {
@@ -83,7 +83,7 @@ void main() {
           .toList();
 
       expect(nationalDay, isNotEmpty);
-      expect(nationalDay.first['daytype'], 1); // 假期
+      expect((nationalDay.first as Map)['daytype'], 1); // 假期
     }, skip: skipInCI);
 
     test('HolidayService 能正确解析 xiaoai 数据', () async {
@@ -95,10 +95,10 @@ void main() {
       expect(data.entries, isNotEmpty);
 
       // 验证元旦
-      expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026)), isTrue);
 
       // 验证国庆
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
 
       // 输出日志供人工检查
       debugPrint('xiaoai API 返回 ${data.entries.length} 条节假日数据');
@@ -127,7 +127,7 @@ void main() {
       expect(json.containsKey('code'), isTrue);
       expect(json.containsKey('holiday'), isTrue);
       expect(json['code'], 0);
-      expect(json['holiday'], isA<Map>());
+      expect(json['holiday'], isA<Map<String, dynamic>>());
     }, skip: skipInCI);
 
     test('数据包含 2026 年元旦', () async {
@@ -208,8 +208,8 @@ void main() {
 
       // 验证数据完整性
       expect(data.entries, isNotEmpty);
-      expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue); // 元旦
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue); // 国庆
+      expect(data.isHoliday(DateTime(2026)), isTrue); // 元旦
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue); // 国庆
 
       // 验证日志显示使用了哪个 API
       final usedPrimary = service.logs.any(
@@ -236,9 +236,9 @@ void main() {
 
       // 验证关键节假日存在
       final criticalHolidays = [
-        DateTime(2026, 1, 1), // 元旦
-        DateTime(2026, 5, 1), // 劳动节
-        DateTime(2026, 10, 1), // 国庆节
+        DateTime(2026), // 元旦
+        DateTime(2026, 5), // 劳动节
+        DateTime(2026, 10), // 国庆节
       ];
 
       for (final date in criticalHolidays) {

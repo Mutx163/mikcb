@@ -196,12 +196,12 @@ class AppUpdateService {
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
-    Duration releaseApiRequestTimeout = _releaseRequestTimeout,
+    Duration? releaseApiRequestTimeout,
   }) : _client = client ?? createAppHttpClient(),
+       _releaseApiRequestTimeout = releaseApiRequestTimeout ?? _releaseRequestTimeout,
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
-       _openInstaller = openInstaller ?? OpenFilex.open,
-       _releaseApiRequestTimeout = releaseApiRequestTimeout;
+       _openInstaller = openInstaller ?? OpenFilex.open;
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
@@ -380,7 +380,10 @@ class AppUpdateService {
       controller?._setCancelHandler(null);
       try {
         await sink?.close();
-      } catch (_) {}
+      } catch (_) {
+        // 正常路径已提前关闭并把 sink 置空；此处仅在异常收尾时兜底，
+        // 关闭失败无后续影响，吞掉合理。
+      }
       client?.close(force: true);
       if (controller?.isCancelled == true && file != null) {
         await _deleteFileIfExists(file);
@@ -389,7 +392,7 @@ class AppUpdateService {
   }
 
   Future<void> _cleanupManagedInstallerFiles(Directory tempDir) async {
-    if (!await tempDir.exists()) {
+    if (!tempDir.existsSync()) {
       return;
     }
     await for (final entity in tempDir.list()) {
@@ -784,8 +787,8 @@ class AppUpdateService {
 
   String? _pickDownloadUrl(List<dynamic> assets) {
     final normalizedAssets = assets
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
+        .whereType<Map<String, dynamic>>()
+        .map(Map<String, dynamic>.from)
         .toList();
 
     for (final asset in normalizedAssets) {
@@ -968,7 +971,7 @@ class AppUpdateService {
   }
 
   Future<void> _deleteFileIfExists(File file) async {
-    if (await file.exists()) {
+    if (file.existsSync()) {
       await file.delete();
     }
   }

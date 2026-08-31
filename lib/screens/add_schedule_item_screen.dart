@@ -662,7 +662,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     final picked = await showMiuixDatePickerSheet(
       context,
       initialDate: current,
-      firstDate: DateTime(2020, 1, 1),
+      firstDate: DateTime(2020),
       lastDate: DateTime(2100, 12, 31),
     );
     if (picked == null) {

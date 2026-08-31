@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -567,7 +568,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     0.0,
                     12.0,
                   ),
-                  min: 0,
                   max: 12,
                   divisions: 12,
                   onChanged: (value) => _updateDisplay(
@@ -792,7 +792,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           const HyperosSectionGap(),
           if (_followBeforeClass)
             IgnorePointer(
-              ignoring: true,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 180),
                 opacity: 0.5,
@@ -904,7 +903,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetDir = Directory(
       '${dir.path}${Platform.pathSeparator}$directoryName',
     );
-    if (!await targetDir.exists()) {
+    if (!targetDir.existsSync()) {
       await targetDir.create(recursive: true);
     }
     final targetPath =
@@ -927,12 +926,14 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetDir = Directory(
       '${dir.path}${Platform.pathSeparator}$directoryName',
     );
-    if (!await targetDir.exists()) {
+    if (!targetDir.existsSync()) {
       return;
     }
     final preservedAbsolutePath = preservePath == null
         ? null
         : File(preservePath).absolute.path;
+    var deleted = 0;
+    var failed = 0;
     await for (final entity in targetDir.list()) {
       if (entity is! File) {
         continue;
@@ -948,10 +949,33 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         continue;
       }
       try {
-        if (await entity.exists()) {
+        if (entity.existsSync()) {
           await entity.delete();
+          deleted++;
         }
-      } catch (_) {}
+      } catch (_) {
+        // 单文件删除失败不中断清理循环；汇总计数后统一留一条 debug
+        // 痕迹，避免历史生成图片静默累积且无观测手段。
+        failed++;
+      }
+    }
+    if (failed > 0) {
+      // 走 AppLogService 而非 debugPrint：包在 assert 里的输出 release 包
+      // 会被整体剥离，清理失败恰恰最需要 release 可观测。warn 失败不外抛。
+      try {
+        await AppLogService.instance.warn(
+          'live_island_artifact_cleanup_failed',
+          'Live island preview artifact cleanup had failures',
+          extras: {
+            'deleted': deleted,
+            'failed': failed,
+            'dir': directoryName,
+            'prefix': filePrefix,
+          },
+        );
+      } catch (_) {
+        // 日志通道不可用时静默，不影响清理主流程。
+      }
     }
   }
 }
@@ -1031,6 +1055,18 @@ class _LiveKeepAliveSettingsScreenState
   }
 
   Future<void> _openSettings() async {
+    // 无障碍保活属于敏感权限：跳系统设置前先弹窗说明用途与边界（不读屏、
+    // 不代点），用户确认后再进入系统设置，降低误开与投诉风险。
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showHyperosConfirmDialog(
+      context: context,
+      title: l10n.keepAliveConfirmTitle,
+      message: l10n.keepAliveConfirmBody,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.keepAliveConfirmGoAction,
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
     await _liveService.openAccessibilitySettings();
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
@@ -1078,7 +1114,6 @@ class _LiveKeepAliveServiceTile extends StatelessWidget {
       child: Padding(
         padding: HyperosTokens.rowPaddingUniform,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             HyperosIconBadge(
               icon: enabled

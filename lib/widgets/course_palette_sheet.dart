@@ -279,6 +279,6 @@ class _PaletteChip extends StatelessWidget {
     if (tooltip == null) {
       return chip;
     }
-    return Tooltip(message: tooltip!, child: chip);
+    return Tooltip(message: tooltip, child: chip);
   }
 }

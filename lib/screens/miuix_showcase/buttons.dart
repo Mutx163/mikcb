@@ -65,7 +65,7 @@ class ButtonsShowcase extends StatelessWidget {
                 child: const Text('Error'),
               ),
               // 禁用态：onPressed 为 null
-              MiuixButton(onPressed: null, child: const Text('Disabled')),
+              const MiuixButton(onPressed: null, child: Text('Disabled')),
             ],
           ),
         ),
@@ -92,7 +92,7 @@ class ButtonsShowcase extends StatelessWidget {
                 onPressed: () {},
                 colors: MiuixButtonDefaults.buttonColorsPrimary(context),
               ),
-              MiuixTextButton('禁用', onPressed: null, enabled: false),
+              const MiuixTextButton('禁用', onPressed: null, enabled: false),
             ],
           ),
         ),
@@ -116,17 +116,17 @@ class ButtonsShowcase extends StatelessWidget {
               MiuixIconButton(
                 onPressed: () {},
                 child: MiuixIcon(
-                  vector: MiuixIcons.extended.byName('favoritesFill')!,
+                  vector: MiuixIcons.extended.byName('favoritesFill'),
                 ),
               ),
               MiuixIconButton(
                 onPressed: () {},
-                child: MiuixIcon(vector: MiuixIcons.extended.byName('share')!),
+                child: MiuixIcon(vector: MiuixIcons.extended.byName('share')),
               ),
               MiuixIconButton(
                 onPressed: () {},
                 child: MiuixIcon(
-                  vector: MiuixIcons.extended.byName('settings')!,
+                  vector: MiuixIcons.extended.byName('settings'),
                 ),
               ),
               // 主色背景：custom backgroundColor + onPrimary tint
@@ -134,7 +134,7 @@ class ButtonsShowcase extends StatelessWidget {
                 onPressed: () {},
                 backgroundColor: colors.primary,
                 child: MiuixIcon(
-                  vector: MiuixIcons.extended.byName('add')!,
+                  vector: MiuixIcons.extended.byName('add'),
                   tint: colors.onPrimary,
                 ),
               ),
@@ -142,12 +142,12 @@ class ButtonsShowcase extends StatelessWidget {
               MiuixIconButton(
                 onPressed: () {},
                 holdDownState: true,
-                child: MiuixIcon(vector: MiuixIcons.extended.byName('more')!),
+                child: MiuixIcon(vector: MiuixIcons.extended.byName('more')),
               ),
               // Disabled
               MiuixIconButton(
                 onPressed: null,
-                child: MiuixIcon(vector: MiuixIcons.extended.byName('delete')!),
+                child: MiuixIcon(vector: MiuixIcons.extended.byName('delete')),
               ),
             ],
           ),
@@ -169,7 +169,7 @@ class ButtonsShowcase extends StatelessWidget {
             MiuixFloatingActionButton(
               onPressed: () {},
               child: MiuixIcon(
-                vector: MiuixIcons.extended.byName('add')!,
+                vector: MiuixIcons.extended.byName('add'),
                 tint: colors.onPrimary,
               ),
             ),
@@ -178,7 +178,7 @@ class ButtonsShowcase extends StatelessWidget {
               onPressed: () {},
               containerColor: colors.secondary,
               child: MiuixIcon(
-                vector: MiuixIcons.extended.byName('edit')!,
+                vector: MiuixIcons.extended.byName('edit'),
                 tint: colors.onSecondary,
               ),
             ),
@@ -187,7 +187,7 @@ class ButtonsShowcase extends StatelessWidget {
               onPressed: () {},
               containerColor: colors.error,
               child: MiuixIcon(
-                vector: MiuixIcons.extended.byName('delete')!,
+                vector: MiuixIcons.extended.byName('delete'),
                 tint: colors.onError,
               ),
             ),

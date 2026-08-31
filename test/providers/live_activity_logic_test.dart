@@ -88,7 +88,7 @@ void main() {
     ];
 
     test('uses section table when indexes are in range', () {
-      final course = buildCourse(startSection: 1, endSection: 2);
+      final course = buildCourse();
       expect(
         LiveActivityLogic.resolveRealTime(course, true, sections),
         '08:00',
@@ -113,7 +113,7 @@ void main() {
     ];
 
     test('returns empty when course spans fewer than 2 sections', () {
-      final single = buildCourse(startSection: 1, endSection: 1);
+      final single = buildCourse(endSection: 1);
       expect(
         LiveActivityLogic.buildLiveProgressMilestones(
           single,
@@ -126,7 +126,7 @@ void main() {
     });
 
     test('returns empty when endAt is not after startAt', () {
-      final course = buildCourse(startSection: 1, endSection: 2);
+      final course = buildCourse();
       expect(
         LiveActivityLogic.buildLiveProgressMilestones(
           course,
@@ -139,7 +139,7 @@ void main() {
     });
 
     test('builds break milestones with stable label keys', () {
-      final course = buildCourse(startSection: 1, endSection: 2);
+      final course = buildCourse();
       final milestones = LiveActivityLogic.buildLiveProgressMilestones(
         course,
         sections,
@@ -190,10 +190,8 @@ void main() {
     test('canDisplayStage respects live toggles', () {
       final settings = settingsWithLive(
         beforeClass: false,
-        duringClass: true,
         beforeEnd: false,
         showDuringNotification: false,
-        promoteDuringClass: true,
       );
 
       expect(
@@ -230,13 +228,13 @@ void main() {
     test('preferredTestStage picks first enabled stage', () {
       expect(
         LiveActivityLogic.preferredTestStage(
-          settingsWithLive(beforeClass: true),
+          settingsWithLive(),
         ),
         LiveActivityStage.beforeClass,
       );
       expect(
         LiveActivityLogic.preferredTestStage(
-          settingsWithLive(beforeClass: false, duringClass: true),
+          settingsWithLive(beforeClass: false),
         ),
         LiveActivityStage.duringClass,
       );
@@ -245,7 +243,6 @@ void main() {
           settingsWithLive(
             beforeClass: false,
             duringClass: false,
-            beforeEnd: true,
           ),
         ),
         LiveActivityStage.beforeEnd,

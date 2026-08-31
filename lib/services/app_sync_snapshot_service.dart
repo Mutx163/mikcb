@@ -255,7 +255,18 @@ class AppSyncSnapshotService {
     await provider.initialize();
     final warehouse = await _warehousePreferencesService.exportSyncBundle();
     final macros = await _warehouseMacroService.exportAllMacros();
+    // 本地自定义假期损坏时中止快照收集：null 表示「读不出可信数据」而非
+    // 「没有数据」。若兜底成空列表继续上传，会用坏本地数据覆盖云端好数据。
     final customHolidays = await _holidayService.loadCustomHolidays();
+    if (customHolidays == null) {
+      await AppLogService.instance.error(
+        'sync_snapshot_local_holidays_corrupted',
+        '本地自定义假期数据损坏，已中止同步快照收集以防覆盖云端数据',
+      );
+      throw const HolidayCustomSaveException(
+        'custom holiday storage corrupted; refusing to build sync snapshot',
+      );
+    }
     final teacherRecords = await _storageService.getTeacherRecords();
     final locationRecords = await _storageService.getLocationRecords();
     final partnerTimetableBinding = await _storageService
@@ -364,7 +375,7 @@ class AppSyncSnapshotService {
       throw const FormatException('unrecognized_sync_snapshot');
     }
     final app = rawApp;
-    final version = rawVersion is int ? rawVersion : rawVersion.toInt();
+    final version = rawVersion is int ? rawVersion : (rawVersion as num).toInt();
     final type = rawType;
 
     if (app != 'mikcb' || version != schemaVersion || type != backupType) {
@@ -495,11 +506,11 @@ class AppSyncSnapshotService {
       warehouse: warehouse,
       macros: _parseOptionalList(
         _selectSnapshotMacros(json),
-        (item) => WarehouseMacroRecord.fromJson(item),
+        WarehouseMacroRecord.fromJson,
       ),
       customHolidays: _parseOptionalList(
         json['customHolidays'],
-        (item) => HolidayEntry.fromJson(item),
+        HolidayEntry.fromJson,
       ),
       exportedAt:
           DateTime.tryParse(_optionalString(json['exportedAt']) ?? '') ??

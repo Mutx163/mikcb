@@ -368,7 +368,6 @@ class CourseCard extends StatelessWidget {
                                   CourseCardVerticalAlign.spaceEvenly) {
                                 return FittedBox(
                                   fit: BoxFit.scaleDown,
-                                  alignment: Alignment.center,
                                   child: SizedBox(
                                     width: constraints.maxWidth,
                                     child: Column(

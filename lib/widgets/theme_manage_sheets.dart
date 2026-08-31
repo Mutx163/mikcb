@@ -273,7 +273,6 @@ class _ThemePreviewInfoRow extends StatelessWidget {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(label, style: typo.xs2.copyWith(color: colors.mutedForeground)),
         const SizedBox(width: 8),

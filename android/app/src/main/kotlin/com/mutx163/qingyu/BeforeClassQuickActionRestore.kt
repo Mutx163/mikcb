@@ -22,6 +22,11 @@ internal object BeforeClassQuickActionRestore {
      *  每拍重试，上报必须去重，避免诊断日志被同一节课刷爆。 */
     private val autoFailureReportedKeys = mutableSetOf<Long>()
 
+    /** 静音铃声在 Android 13+/HyperOS 并入勿扰体系：无策略访问权限时每次
+     *  setRingerMode(SILENT) 都抛 SecurityException，而自动执行随 ticker 每拍
+     *  重试，异常日志只在进程内告警一次（带栈保留可诊断性）。 */
+    private var silentAccessDeniedWarnedOnce = false
+
     const val ACTION_NONE = "none"
     const val ACTION_SILENT = "silent"
     const val ACTION_DO_NOT_DISTURB = "do_not_disturb"
@@ -36,7 +41,10 @@ internal object BeforeClassQuickActionRestore {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
             true
         } catch (e: SecurityException) {
-            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
+            if (!silentAccessDeniedWarnedOnce) {
+                silentAccessDeniedWarnedOnce = true
+                Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
+            }
             false
         } catch (e: Exception) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_FAILED, e)

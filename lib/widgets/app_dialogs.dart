@@ -154,8 +154,6 @@ class _AppTextInputSheetState extends State<_AppTextInputSheet> {
   Widget build(BuildContext context) {
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
-      frosted: true,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

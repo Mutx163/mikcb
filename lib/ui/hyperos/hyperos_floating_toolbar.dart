@@ -27,7 +27,7 @@ class HyperosFloatingToolbar extends StatelessWidget {
           children: [
             for (var i = 0; i < children.length; i++) ...[
               if (i > 0)
-                VerticalDivider(
+                const VerticalDivider(
                   width: HyperosMiuixFloatingToolbar.dividerWidth,
                   thickness: HyperosMiuixFloatingToolbar.dividerWidth,
                 ),

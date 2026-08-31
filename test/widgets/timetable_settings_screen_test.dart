@@ -357,7 +357,7 @@ void main() {
     expect(startAt, greaterThan(DateTime.now().millisecondsSinceEpoch - 5000));
     expect(endAt, greaterThan(startAt));
     expect(
-      ((payloads.single['currentCourse'] as Map)['name'] as String),
+      (payloads.single['currentCourse'] as Map)['name'] as String,
       '高等数学',
     );
 
@@ -378,7 +378,7 @@ void main() {
     expect(payloads.last['enableBeforeClass'], false);
     expect(payloads.last['enableDuringClass'], true);
     expect(
-      (payloads.last['startAtMillis'] as int),
+      payloads.last['startAtMillis'] as int,
       lessThan(DateTime.now().millisecondsSinceEpoch),
     );
   });
@@ -403,5 +403,75 @@ void main() {
       scrollable: _scrollableUnder(diagnosticsList),
     );
     expect(find.text('选课测试'), findsOneWidget);
+  });
+
+  testWidgets('widget binding section reloads when returning to foreground', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final provider = await createInitializedTestProvider(tester);
+
+    // 桌面卡片集合可变：进页时为空（对应「还没加卡片」），模拟用户去桌面
+    // 添加后在 resumed 重查时返回一张卡。
+    var installedWidgets = <Object?>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(homeWidgetChannel, (call) async {
+      if (call.method == 'listTodayWidgetInstances') {
+        return installedWidgets;
+      }
+      return null;
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableSettingsScreen()),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    final homeList = find.byType(HyperosListView).first;
+    await tester.scrollUntilVisible(
+      find.text('桌面小组件'),
+      200,
+      scrollable: _scrollableUnder(homeList),
+    );
+    await tester.tap(find.text('桌面小组件'));
+    await tester.pumpAndSettle();
+
+    final widgetList = find.byType(HyperosListView).last;
+    await tester.scrollUntilVisible(
+      find.text('各卡片绑定管理'),
+      200,
+      scrollable: _scrollableUnder(widgetList),
+    );
+    expect(
+      find.text('桌面上还没有今日课程卡片，先添加一张再回来绑定'),
+      findsOneWidget,
+    );
+
+    // 系统在用户往桌面加卡片时不会通知 App 界面：回到前台靠 resumed
+    // 兜底重查，列表从空态变为可绑定卡片。
+    installedWidgets = [
+      {'appWidgetId': 21, 'widgetType': 'compact', 'boundProfileId': null},
+    ];
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.text('跟随当前课表'),
+      200,
+      scrollable: _scrollableUnder(widgetList),
+    );
+    expect(find.text('跟随当前课表'), findsOneWidget);
+    expect(
+      find.text('桌面上还没有今日课程卡片，先添加一张再回来绑定'),
+      findsNothing,
+    );
   });
 }

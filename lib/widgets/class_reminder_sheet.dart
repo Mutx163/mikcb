@@ -228,7 +228,6 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
       if (startMinutes != null) _formatMinuteOfDay(startMinutes),
     ];
     return HyperosSheet(
-      frosted: true,
       title: l10n.classAlarmActionLabel,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -266,7 +265,6 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
           ],
           HyperosFrostedSheetButton(
             label: l10n.classAlarmQuickOption(lead),
-            bordered: false,
             expand: true,
             onPressed: startMinutes == null
                 ? null
@@ -275,7 +273,6 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
           const SizedBox(height: 8),
           HyperosFrostedSheetButton(
             label: l10n.classAlarmCustomOption,
-            bordered: false,
             expand: true,
             onPressed: startMinutes == null
                 ? null
@@ -295,7 +292,6 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
           const SizedBox(height: 8),
           HyperosFrostedSheetButton(
             label: l10n.classAlarmOpenClock,
-            bordered: false,
             expand: true,
             onPressed: () async {
               if (_working) return;
@@ -318,7 +314,6 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
             const SizedBox(height: 8),
             HyperosFrostedSheetButton(
               label: l10n.cancelAction,
-              bordered: false,
               expand: true,
               variant: HyperosFrostedSheetButtonVariant.destructive,
               onPressed: _removeLegacyReminder,

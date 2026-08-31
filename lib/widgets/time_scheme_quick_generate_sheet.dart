@@ -144,7 +144,6 @@ class _TimeSchemeQuickGenerateSheetState
 
     return HyperosSheetFrame(
       chrome: HyperosSheetChrome.floating,
-      frosted: true,
       maxHeight: maxSheetHeight,
       child: Column(
         mainAxisSize: MainAxisSize.min,

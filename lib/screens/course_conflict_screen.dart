@@ -188,7 +188,7 @@ class _ConflictCourseRow extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
             const HyperosChevron(),
           ],
         ),

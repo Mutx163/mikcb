@@ -251,22 +251,28 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       d = d.add(const Duration(days: 1));
     }
 
-    // saveCustomHolidays 写失败会向上抛（不再被整体 catch 吞掉）。此处
-    // 兜底给用户明确反馈：失败不是成功——旧实现吞掉异常后内存里看似
-    // 保存成功，进程结束数据凭空消失。
     try {
       if (existing != null) {
         await provider.updateCustomHoliday(groupId, entries);
       } else {
         await provider.addCustomHolidays(entries);
       }
-    } catch (error) {
+    } catch (e) {
+      // 写入失败必须让用户感知：否则「看似保存成功、重启即丢」。
+      // 放宽到 Object：任何保存路径异常都不得伪装成保存成功；
+      // 技术详情落日志，用户只看本地化通用文案。
+      unawaited(
+        AppLogService.instance.warn(
+          'holiday_custom_save_failed',
+          'custom holiday save failed',
+          error: e,
+        ),
+      );
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       showAppToast(
         context,
-        message: AppLocalizations.of(
-          context,
-        )!.saveFailedWithError('$error'),
+        message: l10n.saveFailed,
         kind: AppToastKind.error,
       );
       return;
@@ -281,7 +287,6 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       context: context,
       builder: (sheetContext) {
         return HyperosSheetFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -329,14 +334,22 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     final confirmed = await _showCustomHolidayDeleteConfirmSheet();
     if (confirmed && mounted) {
       final provider = context.read<TimetableProvider>();
-      final l10n = AppLocalizations.of(context)!;
       try {
         await provider.removeCustomHoliday(groupId);
-      } catch (error) {
+      } catch (e) {
+        // 删除失败同样不得伪装成成功；放宽到 Object 理由同上。
+        unawaited(
+          AppLogService.instance.warn(
+            'holiday_custom_delete_failed',
+            'custom holiday delete failed',
+            error: e,
+          ),
+        );
         if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
         showAppToast(
           context,
-          message: l10n.saveFailedWithError('$error'),
+          message: l10n.saveFailed,
           kind: AppToastKind.error,
         );
         return;
@@ -526,7 +539,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                 label: l10n.customHolidayAdd,
                 variant: HyperosButtonVariant.secondary,
                 expand: true,
-                onPressed: () => _showCustomHolidayDialog(),
+                onPressed: _showCustomHolidayDialog,
               ),
             ),
           ),

@@ -267,7 +267,7 @@ void main() {
     expect(edgeHapticCount(hapticLog), 1);
     notifyAt(24);
     notifyAt(0);
-    notifyAt(math.min(40.0, rearmDistance * 0.25));
+    notifyAt(math.min(40, rearmDistance * 0.25));
     notifyAt(0);
     expect(edgeHapticCount(hapticLog), 1);
     notifyAt(math.min(rearmDistance * 0.5, position.maxScrollExtent * 0.4));

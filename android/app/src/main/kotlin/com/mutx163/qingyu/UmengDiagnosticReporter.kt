@@ -3,11 +3,9 @@ package com.mutx163.qingyu
 import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.Context
-import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
-import android.provider.Settings
 import android.util.Log
 import org.json.JSONObject
 import java.io.File

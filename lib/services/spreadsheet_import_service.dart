@@ -221,7 +221,10 @@ class SpreadsheetImportService {
       if (gbkRows != null && _detectFormat(gbkRows) != null) {
         return gbkRows;
       }
-    } catch (_) {}
+    } catch (_) {
+      // GBK 解码/兜底解析失败均继续走 UTF-8 兜底，最终统一抛
+      // 「无法识别」错误。此分支属编码探测的正常路径，无需区分异常类型。
+    }
 
     if (utf8Rows != null) {
       return utf8Rows;

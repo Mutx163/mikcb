@@ -34,6 +34,11 @@ class AppLogService {
   bool _initialized = false;
   bool _privacyAccepted = false;
   bool _loggingEnabled = false;
+  // 连续写失败计数：日志写失败本身被本类的 catch 吞掉（日志不能破坏
+  // 业务流），若磁盘满等故障持续，所有下游静默失败将同时失去观测手段。
+  // 连续失败达到阈值时用 debugPrint 突破自吞兜底打一条，提示排查。
+  int _consecutiveWriteFailures = 0;
+  static const int _writeFailureAlertThreshold = 5;
   PackageInfo? _packageInfo;
   Future<void> _writeQueue = Future<void>.value();
   final StreamController<void> _logChangeController =
@@ -135,12 +140,16 @@ class AppLogService {
   Future<void> warn(
     String category,
     String message, {
+    Object? error,
+    StackTrace? stackTrace,
     Map<String, Object?> extras = const {},
     bool force = false,
   }) => log(
     level: 'warn',
     category: category,
     message: message,
+    error: error,
+    stackTrace: stackTrace,
     extras: extras,
     force: force,
   );
@@ -193,9 +202,22 @@ class AppLogService {
         );
         await file.parent.create(recursive: true);
         await file.writeAsString(payload, mode: FileMode.append, flush: true);
+        _consecutiveWriteFailures = 0;
         _notifyLogChanged();
-      } catch (_) {
+      } catch (e) {
         // Logging must never break app flow.
+        _consecutiveWriteFailures++;
+        // 取模节流：长磁盘满故障下每 N 次告警一次，而非只在第 5 次打一条
+        // 后永久静默。不清零、不递归调用 log()。debugPrint 必须放在 assert
+        // 之外：连续写失败往往意味着磁盘满，release 包恰恰最需要这条可见
+        // 痕迹，包在 assert 里会被整体剥离，只剩 debug 可见，与本类兜底
+        // 目标相反。
+        if (_consecutiveWriteFailures % _writeFailureAlertThreshold == 0) {
+          debugPrint(
+            '[AppLogService] log write failed $_consecutiveWriteFailures '
+            'times in a row: $e',
+          );
+        }
       }
     });
     await _writeQueue;
@@ -206,7 +228,7 @@ class AppLogService {
       await initialize();
     }
     final file = await _resolveLogFile();
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       return _buildHeader(includeExportTime: forExport);
     }
     final body = (await file.readAsString()).trim();
@@ -333,7 +355,7 @@ class AppLogService {
     _writeQueue = _writeQueue.then((_) async {
       try {
         final file = await _resolveLogFile();
-        if (await file.exists()) {
+        if (file.existsSync()) {
           await file.delete();
         }
         cleared = true;
@@ -359,6 +381,7 @@ class AppLogService {
     _loggingEnabled = false;
     _packageInfo = null;
     _writeQueue = Future<void>.value();
+    _consecutiveWriteFailures = 0;
   }
 
   @visibleForTesting
@@ -434,7 +457,7 @@ class AppLogService {
   Future<String?> _logFileFingerprint() async {
     try {
       final file = await _resolveLogFile();
-      final stat = await file.stat();
+      final stat = file.statSync();
       return '${stat.size}:${stat.modified.millisecondsSinceEpoch}';
     } catch (_) {
       return null;
@@ -442,7 +465,7 @@ class AppLogService {
   }
 
   Future<void> _trimIfNeeded(File file) async {
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       return;
     }
     final length = await file.length();
@@ -450,7 +473,7 @@ class AppLogService {
       return;
     }
     final text = await file.readAsString();
-    final retainLength = _maxLogBytes ~/ 2;
+    const retainLength = _maxLogBytes ~/ 2;
     final retained = text.length <= retainLength
         ? text
         : text.substring(text.length - retainLength);

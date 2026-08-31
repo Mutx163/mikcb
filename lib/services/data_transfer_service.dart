@@ -183,15 +183,15 @@ class DataTransferService {
 
     final rawCourses = _parseOptionalList(
       json['courses'],
-      (item) => Course.fromJson(item),
+      Course.fromJson,
     );
     final rawTasks = _parseOptionalList(
       json['tasks'],
-      (item) => CourseTask.fromJson(item),
+      CourseTask.fromJson,
     );
     final rawScheduleItems = _parseOptionalList(
       json['scheduleItems'],
-      (item) => ScheduleItem.fromJson(item),
+      ScheduleItem.fromJson,
     );
     final rawSettings = json['settings'];
     if (rawSettings is! Map) {
@@ -208,18 +208,18 @@ class DataTransferService {
       courses: rawCourses,
       tasks: rawTasks,
       scheduleItems: rawScheduleItems,
-      exams: _parseOptionalList(json['exams'], (item) => Exam.fromJson(item)),
+      exams: _parseOptionalList(json['exams'], Exam.fromJson),
       timeSchemes: _parseOptionalList(
         json['timeSchemes'],
-        (item) => TimeScheme.fromJson(item),
+        TimeScheme.fromJson,
       ),
       scheduleDateRules: _parseOptionalList(
         json['scheduleDateRules'],
-        (item) => ScheduleDateRule.fromJson(item),
+        ScheduleDateRule.fromJson,
       ),
       locationTimeGroups: _parseOptionalList(
         json['locationTimeGroups'],
-        (item) => LocationTimeGroup.fromJson(item),
+        LocationTimeGroup.fromJson,
       ),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
@@ -284,11 +284,11 @@ class DataTransferService {
     }
     final profiles = _parseOptionalList(
       rawProfiles,
-      (item) => TimetableProfile.fromJson(item),
+      TimetableProfile.fromJson,
     );
     final timeSchemes = _parseOptionalList(
       rawTimeSchemes,
-      (item) => TimeScheme.fromJson(item),
+      TimeScheme.fromJson,
     );
     if ((rawProfiles.isNotEmpty && profiles.isEmpty) ||
         (rawTimeSchemes.isNotEmpty && timeSchemes.isEmpty)) {
@@ -301,11 +301,11 @@ class DataTransferService {
       timeSchemes: timeSchemes,
       scheduleDateRules: _parseOptionalList(
         json['scheduleDateRules'],
-        (item) => ScheduleDateRule.fromJson(item),
+        ScheduleDateRule.fromJson,
       ),
       locationTimeGroups: _parseOptionalList(
         json['locationTimeGroups'],
-        (item) => LocationTimeGroup.fromJson(item),
+        LocationTimeGroup.fromJson,
       ),
       exportedAt:
           DateTime.tryParse((json['exportedAt'] as String?) ?? '') ??

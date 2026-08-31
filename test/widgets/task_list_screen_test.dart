@@ -48,8 +48,8 @@ void main() {
           id: 'task-1',
           title: '完成作业',
           courseId: first.id,
-          createdAt: DateTime(2026, 8, 1),
-          updatedAt: DateTime(2026, 8, 1),
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8),
         ),
       );
     });

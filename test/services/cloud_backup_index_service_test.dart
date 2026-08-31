@@ -110,7 +110,7 @@ void main() {
         CloudBackupEntry(
           id: 'manual',
           fileName: 'manual.mikcb',
-          exportedAt: DateTime.utc(2026, 1, 1),
+          exportedAt: DateTime.utc(2026),
           contentSha256: 'manual',
           deviceId: 'device',
           deviceLabel: 'Phone',
@@ -119,7 +119,7 @@ void main() {
         CloudBackupEntry(
           id: 'old-auto',
           fileName: 'old-auto.mikcb',
-          exportedAt: DateTime.utc(2026, 1, 1),
+          exportedAt: DateTime.utc(2026),
           contentSha256: 'old-auto',
           deviceId: 'device',
           deviceLabel: 'Phone',

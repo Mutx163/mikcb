@@ -17,7 +17,7 @@ void main() {
     startTime: '18:00',
     endTime: '19:30',
     color: '#123456',
-    createdAt: DateTime(2026, 4, 1),
+    createdAt: DateTime(2026, 4),
     updatedAt: DateTime(2026, 4, 2),
     recurrence: ScheduleRecurrence.weekly,
     exceptionDates: [DateTime(2026, 4, 23)],
@@ -33,7 +33,7 @@ void main() {
       scheduleItems: [item],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
-      createdAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
       lastUsedAt: DateTime(2026, 4, 2),
     );
   }

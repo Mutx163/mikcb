@@ -31,7 +31,7 @@ class VenueStatsCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.location_city_rounded,
                   accent: HyperosIconColors.purple,
                 ),

@@ -161,7 +161,14 @@ class _LanEditScreenState extends State<LanEditScreen>
   void _startStatusTimer() {
     _statusTimer?.cancel();
     _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (!mounted || !_server.isRunning) {
+      if (!mounted) {
+        return;
+      }
+      if (!_server.isRunning) {
+        // 服务已停：空转的周期器在页面存活期间会每 2s 醒一次，直接
+        // 自停。之后由服务器重启路径重新 _startStatusTimer。
+        _statusTimer?.cancel();
+        _statusTimer = null;
         return;
       }
       setState(() {
@@ -225,7 +232,7 @@ class _LanEditScreenState extends State<LanEditScreen>
     setState(() {
       _isStopping = true;
     });
-    await _server.stop(reason: 'manual');
+    await _server.stop();
     if (mounted) {
       setState(() {
         _session = null;
@@ -317,18 +324,8 @@ class _LanEditScreenState extends State<LanEditScreen>
                           ),
                           child: QrImageView(
                             data: _lanAddress!,
-                            version: QrVersions.auto,
                             size: MediaQuery.of(context).size.width * 0.5,
-                            gapless: true,
                             backgroundColor: Colors.white,
-                            eyeStyle: const QrEyeStyle(
-                              eyeShape: QrEyeShape.square,
-                              color: Colors.black,
-                            ),
-                            dataModuleStyle: const QrDataModuleStyle(
-                              dataModuleShape: QrDataModuleShape.square,
-                              color: Colors.black,
-                            ),
                           ),
                         ),
                       ),

@@ -5,7 +5,7 @@ void main() {
   group('HolidayEntry', () {
     test('serializes and restores json', () {
       final entry = HolidayEntry(
-        date: DateTime(2026, 10, 1),
+        date: DateTime(2026, 10),
         name: '国庆节',
         type: HolidayType.vacation,
         groupId: 'national-day-2026',
@@ -16,7 +16,7 @@ void main() {
       expect(restored.name, '国庆节');
       expect(restored.type, HolidayType.vacation);
       expect(restored.groupId, 'national-day-2026');
-      expect(restored.date, DateTime(2026, 10, 1));
+      expect(restored.date, DateTime(2026, 10));
       expect(restored.shouldHideCourses, isTrue);
       expect(restored.isAdjustedWorkday, isFalse);
     });
@@ -25,7 +25,7 @@ void main() {
       'type helpers distinguish vacation, makeup workday, and adjusted restday',
       () {
         final vacation = HolidayEntry(
-          date: DateTime(2026, 10, 1),
+          date: DateTime(2026, 10),
           name: '国庆节',
           type: HolidayType.vacation,
         );
@@ -57,7 +57,7 @@ void main() {
         version: 1,
         entries: [
           HolidayEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: '国庆节',
             type: HolidayType.vacation,
             groupId: 'national-day-2026',
@@ -88,13 +88,13 @@ void main() {
       final data = buildSampleData();
 
       expect(data.entryForDate(DateTime(2026, 10, 1, 15, 30))?.name, '国庆节');
-      expect(data.entryForDate(DateTime(2026, 3, 1)), isNull);
+      expect(data.entryForDate(DateTime(2026, 3)), isNull);
     });
 
     test('isHoliday treats vacation days as holidays', () {
       final data = buildSampleData();
 
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(data.isHoliday(DateTime(2026, 10)), isTrue);
       expect(data.isHoliday(DateTime(2026, 10, 2)), isTrue);
     });
 
@@ -142,7 +142,7 @@ void main() {
           version: 1,
           entries: [
             HolidayEntry(
-              date: DateTime(2026, 10, 1),
+              date: DateTime(2026, 10),
               name: '国庆节',
               type: HolidayType.vacation,
               groupId: 'national-day-2026',
@@ -154,7 +154,7 @@ void main() {
               groupId: 'national-day-2026',
             ),
             HolidayEntry(
-              date: DateTime(2026, 10, 1),
+              date: DateTime(2026, 10),
               name: '学校补班',
               type: HolidayType.adjustedWorkday,
               groupId: 'custom-school-makeup',
@@ -162,8 +162,8 @@ void main() {
           ],
         );
 
-        expect(data.isHoliday(DateTime(2026, 10, 1)), isFalse);
-        expect(data.isAdjustedWorkday(DateTime(2026, 10, 1)), isTrue);
+        expect(data.isHoliday(DateTime(2026, 10)), isFalse);
+        expect(data.isAdjustedWorkday(DateTime(2026, 10)), isTrue);
         expect(data.isHoliday(DateTime(2026, 10, 2)), isTrue);
         expect(data.holidayDateKeysForSnapshot(), ['2026-10-02']);
         expect(data.adjustedWorkdayDateKeysForSnapshot(), ['2026-10-01']);
@@ -205,7 +205,7 @@ void main() {
       final group = data.entriesForGroup('national-day-2026');
 
       expect(group, hasLength(3));
-      expect(group.first.date, DateTime(2026, 10, 1));
+      expect(group.first.date, DateTime(2026, 10));
       expect(group.last.date, DateTime(2026, 10, 10));
     });
 
@@ -217,7 +217,7 @@ void main() {
       expect(restored.year, 2026);
       expect(restored.version, 1);
       expect(restored.entries, hasLength(4));
-      expect(restored.isHoliday(DateTime(2026, 10, 1)), isTrue);
+      expect(restored.isHoliday(DateTime(2026, 10)), isTrue);
     });
   });
 }

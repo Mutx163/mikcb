@@ -108,12 +108,10 @@ class WarehouseMacroReplayer {
   Timer? _timeoutTimer;
 
   WarehouseMacroReplayer({
-    required WebViewController controller,
-    required ReplayCallbacks callbacks,
-    required AppLocalizations l10n,
-  }) : _controller = controller,
-       _callbacks = callbacks,
-       _l10n = l10n;
+    required this._controller,
+    required this._callbacks,
+    required this._l10n,
+  });
 
   /// 取消回放
   void cancel() {

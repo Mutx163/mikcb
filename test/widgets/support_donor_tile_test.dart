@@ -76,7 +76,7 @@ void main() {
   });
 
   testWidgets('右栏日期截到 yyyy-MM-dd，不渲染时间部分', (tester) async {
-    await pumpTile(tester, entry(date: '2026-08-30 14:42:22'));
+    await pumpTile(tester, entry());
     expect(find.text('2026-08-30'), findsOneWidget);
     expect(find.textContaining('14:42'), findsNothing);
 

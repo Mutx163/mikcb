@@ -69,7 +69,7 @@ void main() {
 
     testWidgets('disabled tile does not toggle', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: HyperosSwitchTile(
               title: 'Locked',
@@ -116,7 +116,6 @@ void main() {
           home: Scaffold(
             body: HyperosSlider(
               value: 0.5,
-              min: 0,
               max: 10,
               divisions: 10,
               onChanged: (_) {},
@@ -162,12 +161,12 @@ void main() {
             matching: find.byWidgetPredicate(
               (widget) =>
                   widget is Padding &&
-                  widget.padding == _sliderTilePaddingForTest(bottom: 0),
+                  widget.padding == _sliderTilePaddingForTest(),
             ),
           ),
         );
         // edgeToEdge zeros [bodyBottomInset]; bare full-bleed uses top 12.
-        expect(padding.padding, _sliderTilePaddingForTest(bottom: 0));
+        expect(padding.padding, _sliderTilePaddingForTest());
       },
     );
 
@@ -221,11 +220,11 @@ void main() {
         expect(paddings, hasLength(2));
         expect(
           paddings.first.padding,
-          HyperosTokens.rowPadding(isFirst: true, isLast: false),
+          HyperosTokens.rowPadding(isLast: false),
         );
         expect(
           paddings.last.padding,
-          HyperosTokens.rowPadding(isFirst: false, isLast: true),
+          HyperosTokens.rowPadding(isFirst: false),
         );
       },
     );
@@ -271,7 +270,6 @@ void main() {
                       title: 'Conflict opacity',
                       value: 0.7,
                       min: 0.2,
-                      max: 1.0,
                       divisions: 16,
                       valueLabel: '70%',
                       onChanged: (_) {},
@@ -371,7 +369,6 @@ void main() {
                   title: 'Conflict opacity',
                   value: value,
                   min: 0.2,
-                  max: 1.0,
                   divisions: 16,
                   onChanged: (next) => setState(() => value = next),
                 ),
@@ -401,12 +398,12 @@ void main() {
   group('HyperosControlCard', () {
     testWidgets('shows title and child', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: HyperosControlCard(
               title: 'Layout',
               subtitle: 'Adjust spacing',
-              child: const HyperosControlCardInset(child: Text('body')),
+              child: HyperosControlCardInset(child: Text('body')),
             ),
           ),
         ),
@@ -503,7 +500,7 @@ void main() {
                         onSelectedHex: (_) {},
                       ),
                       const SizedBox(height: 8),
-                      Text(footnote),
+                      const Text(footnote),
                     ],
                   ),
                 ),

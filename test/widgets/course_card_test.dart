@@ -57,7 +57,6 @@ void main() {
           showTeacher: false,
           showLocation: false,
           showDescription: true,
-          surfaceStyle: CourseCardSurfaceStyle.solid,
           titleColorHex: '#FFFFFF',
           detailColorHex: '#000000',
         ),

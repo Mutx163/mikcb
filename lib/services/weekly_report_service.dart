@@ -19,7 +19,7 @@ class WeeklyReportService {
   static DateTime nextFireAt({DateTime? now}) {
     final current = now ?? DateTime.now();
     final today = DateTime(current.year, current.month, current.day);
-    var daysUntilSunday = (DateTime.sunday - current.weekday + 7) % 7;
+    final daysUntilSunday = (DateTime.sunday - current.weekday + 7) % 7;
     var fire = today
         .add(Duration(days: daysUntilSunday))
         .add(const Duration(hours: _fireHour));

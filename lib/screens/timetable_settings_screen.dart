@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +21,7 @@ import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_binding_service.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/app_log_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
@@ -301,10 +303,6 @@ class TimetableSettingsScreen extends StatelessWidget {
         // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
         // opaque background OVER its frost layer, so blur never showed.)
         final settingsList = HyperosListView(
-          // 内嵌形态与全屏一致：内容避开浮动大标题（否则首屏内容会被展开的
-          // 大标题遮住），并且滚动通知必须上浮给大标题折叠机制
-          // （blockVerticalScrollBubbling=false），标题才能随滚动折叠。
-          includeHeaderInset: true,
           blockVerticalScrollBubbling: false,
           // 玻璃坞内嵌时底部避让作为「滚动内容 padding」而不是列表外部
           // 压缩视口：内容可以滚到悬浮玻璃坞后面（透过玻璃可见），到底时
@@ -409,7 +407,7 @@ class TimetableSettingsScreen extends StatelessWidget {
       0 => HyperosSummaryCard(
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(HyperosSummaryCard.leadingRadius),
-          child: BundledAssetImage(
+          child: const BundledAssetImage(
             assetPath: BundledAssets.launcherIcon,
             width: HyperosSummaryCard.leadingSize,
             height: HyperosSummaryCard.leadingSize,
@@ -1153,8 +1151,6 @@ class _MiuixSettingsSwitchPreference extends StatelessWidget {
         startAction: startAction,
         endActions: [MiuixSwitch(value: value, onChanged: onChanged)],
         role: MiuixBasicComponentRole.switchControl,
-        // The outer row owns tap semantics and press feedback.
-        onClick: null,
       ),
     );
   }
@@ -1212,8 +1208,6 @@ class _MiuixSettingsPreference extends StatelessWidget {
         // 里面的 Text 拿到的是无界宽度，值过长时会溢出而不是省略。
         // 逐个包 Flexible 让它们服从右侧受限宽度，并默认单行省略。
         endActions: _constrainEndActions(endActions),
-        // 禁用内层点击和按压，由外层 HyperosPressableRow 处理
-        onClick: null,
         enabled: onClick != null,
       ),
     );
@@ -1228,7 +1222,6 @@ class _MiuixSettingsPreference extends StatelessWidget {
     return [
       for (final action in actions)
         Flexible(
-          fit: FlexFit.loose,
           child: DefaultTextStyle.merge(
             softWrap: false,
             overflow: TextOverflow.ellipsis,

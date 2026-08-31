@@ -120,20 +120,20 @@ class _HomePageState extends State<_HomePage>
 
   // 所有组件入口（缓存，不在 build 中重复构建）
   late final List<_DemoEntry> _allEntries = [
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'create',
       title: '按钮 Button',
       summary:
           'MiuixButton / MiuixTextButton / MiuixIconButton / MiuixFloatingActionButton',
-      page: const ButtonsShowcase(),
+      page: ButtonsShowcase(),
       keywords: ['按钮', '文字按钮', '图标按钮', '悬浮按钮', 'FAB', 'button', 'text', 'icon'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'edit',
       title: '输入 Input',
       summary:
           'MiuixTextField / MiuixSwitch / MiuixCheckbox / MiuixRadioButton / MiuixSlider',
-      page: const InputsShowcase(),
+      page: InputsShowcase(),
       keywords: [
         '输入',
         '开关',
@@ -149,35 +149,35 @@ class _HomePageState extends State<_HomePage>
         'textfield',
       ],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'listView',
       title: '菜单选择 Menus',
       summary: 'MiuixDropdownPreference / SpinnerPreference / CascadingMenu',
-      page: const MenusShowcase(),
+      page: MenusShowcase(),
       keywords: ['菜单', '下拉', '级联', 'dropdown', 'spinner', 'cascading'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'gridView',
       title: '显示 Display',
       summary:
           'MiuixText / MiuixCard / MiuixBadge / MiuixDivider / MiuixSmallTitle / MiuixBasicComponent',
-      page: const DisplayShowcase(),
+      page: DisplayShowcase(),
       keywords: ['显示', '卡片', '徽章', '分割线', '标题', 'card', 'badge', 'divider'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'listView',
       title: '列表项 Item',
       summary:
           'MiuixBasicComponent / Arrow / Switch / Checkbox / RadioButton / Slider Preference',
-      page: const PreferencesShowcase(),
+      page: PreferencesShowcase(),
       keywords: ['列表', '列表项', '设置项', '偏好', 'preference', 'item', '箭头'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'edit',
       title: '选择器 Pickers',
       summary:
           'MiuixNumberPicker / MiuixColorPicker / MiuixColorPalette / MiuixDatePicker',
-      page: const PickersShowcase(),
+      page: PickersShowcase(),
       keywords: [
         '选择器',
         '数字选择',
@@ -192,12 +192,12 @@ class _HomePageState extends State<_HomePage>
         'calendar',
       ],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'info',
       title: '反馈 Feedback',
       summary:
           'MiuixSnackbar / MiuixTooltip / MiuixOverlayDialog / MiuixProgressIndicator',
-      page: const FeedbackShowcase(),
+      page: FeedbackShowcase(),
       keywords: [
         '反馈',
         '提示',
@@ -210,26 +210,26 @@ class _HomePageState extends State<_HomePage>
         'progress',
       ],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'info',
       title: '浮层 Overlays',
       summary: 'MiuixOverlayBottomSheet / MiuixFloatingToolbar',
-      page: const OverlaysShowcase(),
+      page: OverlaysShowcase(),
       keywords: ['浮层', '底部弹窗', '工具栏', 'bottomsheet', 'toolbar'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'sidebar',
       title: '导航 Navigation',
       summary:
           'MiuixTabRow / MiuixTabRowWithContour / MiuixNavigationBar / MiuixBreadcrumbBar',
-      page: const NavigationShowcase(),
+      page: NavigationShowcase(),
       keywords: ['导航', '标签', '底部导航', '面包屑', 'tab', 'breadcrumb'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'search',
       title: '实用 Utility',
       summary: 'MiuixSearchBar / ScrollBar / PullToRefresh / Surface',
-      page: const UtilityShowcase(),
+      page: UtilityShowcase(),
       keywords: [
         '实用',
         '搜索',
@@ -242,25 +242,25 @@ class _HomePageState extends State<_HomePage>
         'surface',
       ],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'create',
       title: '主题 Theming',
       summary: '动态取色 / 文本样式 / 配色角色 / 图标浏览',
-      page: const ThemingShowcase(),
+      page: ThemingShowcase(),
       keywords: ['主题', '动态取色', '文本样式', '配色', '图标', 'theme', 'color', 'style'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'image',
       title: '模糊 Blur',
       summary: 'MiuixTextureBlur / 液态玻璃（背景捕获 + 高斯模糊 + 颜色控制）',
-      page: const BlurShowcase(),
+      page: BlurShowcase(),
       keywords: ['模糊', '液态玻璃', '高斯模糊', '毛玻璃', 'glass', 'gaussian', 'texture'],
     ),
-    _DemoEntry(
+    const _DemoEntry(
       icon: 'gridView',
       title: '基础 Foundation',
       summary: 'MiuixSquircleBorder / MiuixScrollEndHaptic',
-      page: const FoundationShowcase(),
+      page: FoundationShowcase(),
       keywords: ['基础', '圆角', '触感', 'squircle', 'haptic', 'border'],
     ),
   ];
@@ -560,7 +560,7 @@ class _HomePageState extends State<_HomePage>
                       icon: MiuixIcon(
                         vector: MiuixIcons.extended.byName(
                           _allEntries[i].icon,
-                        )!,
+                        ),
                         size: 22,
                       ),
                       label: _allEntries[i].title,
@@ -953,7 +953,6 @@ class _SearchHistoryView extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             MiuixIcon(
               vector: MiuixIcons.basic.search,
@@ -1086,7 +1085,7 @@ class _SearchResultItem extends StatelessWidget {
       startAction: Padding(
         padding: const EdgeInsets.only(right: 12),
         child: MiuixIcon(
-          vector: MiuixIcons.extended.byName(entry.icon)!,
+          vector: MiuixIcons.extended.byName(entry.icon),
           size: 24,
         ),
       ),
@@ -1136,7 +1135,7 @@ class _EntryTile extends StatelessWidget {
       startAction: Padding(
         padding: const EdgeInsets.only(right: 12),
         child: MiuixIcon(
-          vector: MiuixIcons.extended.byName(entry.icon)!,
+          vector: MiuixIcons.extended.byName(entry.icon),
           size: 24,
         ),
       ),

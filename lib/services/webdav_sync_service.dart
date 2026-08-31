@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:webdav_plus/webdav_plus.dart';
 
 import '../providers/timetable_provider.dart';
+import 'app_log_service.dart';
 import 'app_sync_snapshot_service.dart';
 import 'cloud_backup_index_service.dart';
 import 'webdav_client_service.dart';
@@ -225,7 +226,10 @@ class WebdavSyncService {
       if (hostname.isNotEmpty) {
         return hostname;
       }
-    } catch (_) {}
+    } catch (_) {
+      // 部分平台读取 hostname 会抛异常；返回空串由调用方回退到
+      // 默认设备命名，属预期分支非错误。
+    }
     return '';
   }
 
@@ -625,11 +629,9 @@ class WebdavSyncService {
     final snapshot = _snapshotService.parseSnapshotJson(utf8.decode(bytes));
     final mergePackage = _snapshotService.buildMergeTransferPackageFromSnapshot(
       snapshot: snapshot,
-      channel: TransferChannel.cloud,
     );
     final overwritePackage = _snapshotService.buildTransferPackageFromSnapshot(
       snapshot: snapshot,
-      channel: TransferChannel.cloud,
     );
     final mergeDiff = _snapshotService.previewSnapshot(
       provider: provider,
@@ -639,7 +641,6 @@ class WebdavSyncService {
     final overwriteDiff = _snapshotService.previewSnapshot(
       provider: provider,
       snapshot: snapshot,
-      mode: TransferApplyMode.overwrite,
     );
     final incoming = mode == TransferApplyMode.merge
         ? mergePackage
@@ -687,7 +688,6 @@ class WebdavSyncService {
           lastAppliedRemoteHash: preview.snapshot.contentSha256,
           lastUploadedLocalHash: preview.snapshot.contentSha256,
         ),
-        backupSource: CloudBackupSource.auto,
         writeHistory: false,
       );
       if (uploadResult.kind == WebdavSyncResultKind.failed) {
@@ -768,7 +768,6 @@ class WebdavSyncService {
             lastAppliedRemoteHash: entry.contentSha256,
             lastUploadedLocalHash: entry.contentSha256,
           ),
-          backupSource: CloudBackupSource.auto,
           writeHistory: false,
         );
         if (uploadResult.kind == WebdavSyncResultKind.failed) {
@@ -1096,7 +1095,20 @@ class WebdavSyncService {
           client: client,
           remotePath: config.historyBackupRemotePath(removed.fileName),
         );
-      } catch (_) {}
+      } catch (e) {
+        // 索引已 prune 但远端删除失败会留下孤儿备份文件（与
+        // maxBackupCount 语义不符）。不影响同步主流程，落 AppLogService.warn
+        // 保证 release 可观测；warn 失败不外抛。
+        try {
+          await AppLogService.instance.warn(
+            'webdav_history_backup_delete_failed',
+            '历史备份远端删除失败，留下孤儿文件: ${removed.fileName}',
+            error: e,
+          );
+        } catch (_) {
+          // 日志通道不可用：忽略，不影响同步主流程。
+        }
+      }
     }
 
     await _saveRemoteBackupIndex(
@@ -1210,7 +1222,6 @@ class WebdavSyncService {
             contentSha256: parsed.contentSha256,
             deviceId: parsed.deviceId,
             deviceLabel: '',
-            source: CloudBackupSource.auto,
             profileCount: CloudBackupIndexService.countProfilesInSnapshotJson(
               content,
             ),

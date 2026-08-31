@@ -487,7 +487,7 @@ class StorageService {
   bool _isSettingsEffectivelyDefault(TimetableSettings settings) {
     final defaults = TimetableSettings.defaults();
     final normalizedSettings = settings
-        .copyWith(activeTimeSchemeId: null)
+        .copyWith()
         .toJson();
     final normalizedDefaults = defaults.toJson();
     return jsonEncode(normalizedSettings) == jsonEncode(normalizedDefaults);

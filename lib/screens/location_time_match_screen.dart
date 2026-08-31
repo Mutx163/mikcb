@@ -161,7 +161,6 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
       showAppToast(
         context,
         message: l10n.locationTimeMatchApplyNoneMatched,
-        kind: AppToastKind.info,
       );
       return;
     }
@@ -488,7 +487,6 @@ class _LocationTimeGroupEditorScreenState
         showAppToast(
           context,
           message: l10n.locationTimeMatchKeywordAlreadyExists,
-          kind: AppToastKind.info,
         );
       }
       return;
@@ -551,7 +549,6 @@ class _LocationTimeGroupEditorScreenState
       showAppToast(
         context,
         message: l10n.locationTimeMatchKeywordAlreadyExists,
-        kind: AppToastKind.info,
       );
       return;
     }
@@ -603,7 +600,6 @@ class _LocationTimeGroupEditorScreenState
             LocationBuildingClusterLogic.suggestKeywordFromLocation(raw) ??
             LocationKeyword(
               pattern: raw,
-              mode: LocationKeywordMatchMode.prefix,
             );
         _addKeyword(suggested);
       },
@@ -971,7 +967,6 @@ class _LocationTimeGroupEditorScreenState
         showAppToast(
           context,
           message: l10n.locationTimeMatchKeywordAlreadyExists,
-          kind: AppToastKind.info,
         );
         return;
       }

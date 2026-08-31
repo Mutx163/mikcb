@@ -111,7 +111,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                               ),
                               Text(
                                 appFontModeLabel(l10n, _draft.appFontMode),
-                                style: TextStyle(color: Colors.white70),
+                                style: const TextStyle(color: Colors.white70),
                               ),
                             ],
                           ),
@@ -284,7 +284,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   HyperosSliderTile(
                     title: l10n.frostedSheetBlurLabel,
                     value: _draft.frostedSheetBlurSigma,
-                    min: 0,
                     max: 24,
                     divisions: 24,
                     valueLabel: _draft.frostedSheetBlurSigma.toStringAsFixed(0),
@@ -298,7 +297,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   HyperosSliderTile(
                     title: l10n.frostedSheetTintLabel,
                     value: _draft.frostedSheetTintAlpha,
-                    min: 0,
                     max: 0.75,
                     divisions: 75,
                     valueLabel: '${(_draft.frostedSheetTintAlpha * 100).round()}%',
@@ -566,7 +564,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       2 => Consumer<TimetableProvider>(
         builder: (context, provider, child) {
           final current = provider.settings.foruiTheme;
-          final themes = ForuiTheme.values;
+          const themes = ForuiTheme.values;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -796,7 +794,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       if (config.version == 2 &&
           (config.seedColor == null ||
               config.courseCardTitleColorLight == null)) {
-        throw FormatException('missing required fields');
+        throw const FormatException('missing required fields');
       }
 
       _applyThemeWithUndo(context, config, themeName: l10n.themeImport);
@@ -834,13 +832,12 @@ class _HomeTitleStylePreview extends StatelessWidget {
       case HomeTitleStyle.brand:
         child = Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               AppLocalizations.of(context)!.appTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w400,
-                height: 1.0,
+                height: 1,
               ),
             ),
             Text(
@@ -861,7 +858,7 @@ class _HomeTitleStylePreview extends StatelessWidget {
         color: HyperosColors.surfaceContainer(context).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Align(alignment: Alignment.center, child: child),
+      child: Align(child: child),
     );
   }
 }

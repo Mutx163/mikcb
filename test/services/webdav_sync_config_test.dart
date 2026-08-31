@@ -16,7 +16,7 @@ void main() {
         WebdavSyncConfig.defaultRemoteFolder,
       );
 
-      const already = WebdavSyncConfig(remoteFolder: '/Apps/qingyu-sync/');
+      const already = WebdavSyncConfig();
       expect(already.normalizedRemoteFolder, '/Apps/qingyu-sync/');
     });
 
@@ -112,7 +112,7 @@ void main() {
 
     test('copyWith can clear nullable sync markers', () {
       final original = WebdavSyncConfig(
-        lastSyncedAt: DateTime.utc(2026, 7, 1),
+        lastSyncedAt: DateTime.utc(2026, 7),
         lastAppliedRemoteHash: 'a',
         lastUploadedLocalHash: 'b',
       );
@@ -145,7 +145,7 @@ void main() {
 
     test('save and load round-trip', () async {
       const store = WebdavSyncConfigStore();
-      final original = WebdavSyncConfig(
+      const original = WebdavSyncConfig(
         enabled: true,
         username: 'demo',
         provider: WebdavSyncProvider.custom,

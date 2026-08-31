@@ -32,13 +32,13 @@ void main() {
     final task = CourseTask(
       id: 'task-2',
       title: '整理资料',
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
 
-    expect(task.isDueOn(DateTime(2026, 4, 1)), isFalse);
+    expect(task.isDueOn(DateTime(2026, 4)), isFalse);
     expect(
-      task.isDueBetween(DateTime(2026, 4, 1), DateTime(2026, 4, 7)),
+      task.isDueBetween(DateTime(2026, 4), DateTime(2026, 4, 7)),
       isFalse,
     );
     expect(task.isOverdue(now: DateTime(2026, 4, 30)), isFalse);
@@ -49,8 +49,8 @@ void main() {
       id: 'task-3',
       title: '复习',
       dueDate: DateTime(2026, 4, 7, 23),
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
 
     expect(task.isOverdue(now: DateTime(2026, 4, 8, 0, 1)), isTrue);

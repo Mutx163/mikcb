@@ -199,7 +199,6 @@ class CourseImportScreen extends StatelessWidget {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseImportTitle),
-      childPad: false,
       // Standard list path (header inset inside the scrollable + notification
       // bubbling) so the large title collapses with scroll; the old
       // BodyInset + includeHeaderInset:false combo swallowed vertical scroll
@@ -306,7 +305,6 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.icsImportTitle),
-      childPad: false,
       // Standard list path (header inset inside the scrollable + notification
       // bubbling) so the large title collapses; the old BodyInset +
       // includeHeaderInset:false combo swallowed vertical scroll notifications
@@ -551,7 +549,6 @@ class _SpreadsheetCourseImportScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.spreadsheetImportTitle),
-      childPad: false,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
       child: Column(
@@ -1041,7 +1038,6 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.aiImportTitle),
-      childPad: false,
       resizeToAvoidBottomInset: true,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
@@ -1942,7 +1938,6 @@ class _WarehouseCourseImportScreenState
           ],
         ),
       ),
-      childPad: false,
       // Standard scroll path so the large title collapses with scroll (see the
       // ICS import screen above); centered states inset manually below.
       child: Column(
@@ -2285,10 +2280,9 @@ class _WarehouseCustomDebugRecordsScreenState
         FHeaderAction(
           icon: const Icon(Icons.add_rounded),
           semanticsLabel: l10n.addDebugRecordTooltip,
-          onPress: () => _openEditor(),
+          onPress: _openEditor,
         ),
       ],
-      childPad: false,
       child: _isLoading
           // Non-scroll centered view: inset below the bar manually.
           ? HyperosBlurredBodyInset(child: _importLoadingCenter())
@@ -2300,7 +2294,7 @@ class _WarehouseCustomDebugRecordsScreenState
                       child: HyperosControlCardInset(
                         child: HyperosButton(
                           label: l10n.addDebugRecordAction,
-                          onPressed: () => _openEditor(),
+                          onPressed: _openEditor,
                         ),
                       ),
                     ),
@@ -2524,7 +2518,6 @@ class _WarehouseCustomDebugEditScreenState
           onPress: _isSaving ? null : _saveRecord,
         ),
       ],
-      childPad: false,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
       child: HyperosListView(
@@ -2634,7 +2627,6 @@ class _WarehouseSchoolAdaptersScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.school.name),
-      childPad: false,
       // Standard scroll path so the large title collapses with scroll (see the
       // ICS import screen above); the loading state insets manually.
       child: FutureBuilder<WarehouseAdaptersIndex>(
@@ -3063,7 +3055,6 @@ class _WarehouseAdapterDetailScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(adapter.adapterName),
-      childPad: false,
       // Standard list path so the large title collapses with scroll (see the
       // ICS import screen above).
       child: HyperosListView(
@@ -3159,7 +3150,7 @@ class _WarehouseAdapterDetailScreenState
                     ? l10n.fillUrlThenImport
                     : l10n.openLoginInAppAction,
                 expand: true,
-                onPressed: () => _openInAppLogin(),
+                onPressed: _openInAppLogin,
               ),
               const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.moreActionsTooltip),
@@ -3453,7 +3444,7 @@ class _WarehouseAdapterWebLoginScreenState
   ReplayProgress _playbackProgress = const ReplayProgress(
     currentStepIndex: 0,
     totalSteps: 0,
-    currentStep: MacroStep(type: MacroStepType.delay, waitMs: 0),
+    currentStep: MacroStep(type: MacroStepType.delay),
     status: ReplayStepStatus.pending,
   );
   WarehouseMacroReplayer? _replayer;
@@ -3659,7 +3650,7 @@ class _WarehouseAdapterWebLoginScreenState
       );
     }
     final sections = decoded
-        .whereType<Map>()
+        .whereType<Map<String, dynamic>>()
         .map(
           (item) => SectionTime(
             startTime: item['startTime']?.toString() ?? '',
@@ -3834,7 +3825,6 @@ class _WarehouseAdapterWebLoginScreenState
       // Keep the platform WebView attached (size > 0) but fully off-screen so
       // JS / cookies / navigation still work without showing any UI chrome.
       return Offstage(
-        offstage: true,
         child: SizedBox(
           width: 1,
           height: 1,
@@ -3887,7 +3877,6 @@ class _WarehouseAdapterWebLoginScreenState
           ),
         ),
       ],
-      childPad: false,
       child: Material(
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
@@ -4114,14 +4103,21 @@ class _WarehouseAdapterWebLoginScreenState
   window.setTimeout(collect, 2000);
 })();
 ''');
-    } catch (_) {}
+    } catch (e) {
+      // WebView 已销毁或桥不可用：登录探测整条链路失效，但导入主流程
+      // 会按超时兜底。留痕便于排查「登录探测不工作」类反馈。
+      _debugImportLog('login watcher inject failed: $e', level: 'warn');
+    }
   }
 
   Future<void> _requestLoginStateProbe() async {
     await _installLoginWatcher();
     try {
       await _controller.runJavaScript('window.__qingyuCollectLoginState?.();');
-    } catch (_) {}
+    } catch (e) {
+      // 同上：探测脚本执行失败不影响导入主流程，留痕即可。
+      _debugImportLog('login state probe failed: $e', level: 'warn');
+    }
   }
 
   void _startImportTimeout() {
@@ -4672,8 +4668,11 @@ $kWarehouseBridgeCompatShim  try {
             .map((item) => item.toString())
             .toList(growable: false);
       }
-    } catch (_) {}
-    var currentSelection = selectedIndex.clamp(
+    } catch (_) {
+      // 解析失败按空选项兜底（下方对话框以空列表呈现），此处属脚本侧
+      // 数据异常而非关键路径，留兜底不中断导入。
+    }
+    final currentSelection = selectedIndex.clamp(
       0,
       options.isEmpty ? 0 : options.length - 1,
     );
@@ -4759,9 +4758,9 @@ $kWarehouseBridgeCompatShim  try {
     final encodedValue = jsonEncode(value);
     final encodedRequestId = jsonEncode(requestId);
     await _controller.runJavaScript(
-      "window.__qingyuResolvers = window.__qingyuResolvers || {}; "
-      "window.__qingyuResolvers[$encodedRequestId]?.($encodedValue); "
-      "delete window.__qingyuResolvers[$encodedRequestId];",
+      'window.__qingyuResolvers = window.__qingyuResolvers || {}; '
+      'window.__qingyuResolvers[$encodedRequestId]?.($encodedValue); '
+      'delete window.__qingyuResolvers[$encodedRequestId];',
     );
   }
 
@@ -5377,7 +5376,11 @@ $kWarehouseBridgeCompatShim  try {
   Future<void> _injectMacroRecorderJs() async {
     try {
       await _controller.runJavaScript(MacroRecorderJs.injectScript);
-    } catch (_) {}
+    } catch (e) {
+      // 注入失败意味着本次录制收不到任何事件（Dart 侧表现为 0 步骤），
+      // 不中断流程但必须留痕，否则用户「录完是空的」无从归因。
+      _debugImportLog('macro recorder inject failed: $e', level: 'warn');
+    }
   }
 
   void _handleMacroEvent(Map<String, dynamic> message) {
@@ -5390,7 +5393,10 @@ $kWarehouseBridgeCompatShim  try {
       setState(() {
         _macroRawEvents.add(Map<String, dynamic>.from(decoded));
       });
-    } catch (_) {}
+    } catch (e) {
+      // 单条事件损坏只丢这一条，不中断录制；留痕便于核对事件数差异。
+      _debugImportLog('macro event decode failed: $e', level: 'warn');
+    }
   }
 
   Future<void> _toggleMacroRecording() async {
@@ -5434,11 +5440,15 @@ $kWarehouseBridgeCompatShim  try {
         final decoded = jsonDecode(normalized);
         if (decoded is List) {
           _macroRawEvents.addAll(
-            decoded.map((e) => Map<String, dynamic>.from(e)),
+            decoded.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)),
           );
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // dump 失败 = 用户刚录制的尾部事件静默丢失，导入流程不中断
+      //（已通过事件通道收到的步骤仍有效），但必须留痕便于核对步骤缺失。
+      _debugImportLog('macro dump on complete failed: $e', level: 'warn');
+    }
 
     final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
     final steps = MacroRecordingConverter.convert(capturedEvents);
@@ -5539,12 +5549,16 @@ $kWarehouseBridgeCompatShim  try {
         if (decoded is List) {
           setState(() {
             _macroRawEvents.addAll(
-              decoded.map((e) => Map<String, dynamic>.from(e)),
+              decoded.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)),
             );
           });
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // dump 失败 = 录制尾部事件丢失，用户保存的宏可能缺步骤且无感知；
+      // 不中断停止流程，留痕便于排查「宏步骤缺失」类反馈。
+      _debugImportLog('macro dump on stop failed: $e', level: 'warn');
+    }
 
     // 转换为 MacroStep 列表
     final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
@@ -5597,7 +5611,6 @@ $kWarehouseBridgeCompatShim  try {
       dialogResponses: Map<String, dynamic>.from(_macroDialogResponses),
       createdAt: now,
       updatedAt: now,
-      successfulImportCount: 0,
       useDesktopMode: _useDesktopMode,
     );
 
@@ -5636,10 +5649,10 @@ $kWarehouseBridgeCompatShim  try {
     );
     setState(() {
       _playbackState = PlaybackUiState.playing;
-      _playbackProgress = ReplayProgress(
+      _playbackProgress = const ReplayProgress(
         currentStepIndex: 0,
         totalSteps: 0,
-        currentStep: const MacroStep(type: MacroStepType.delay, waitMs: 0),
+        currentStep: MacroStep(type: MacroStepType.delay),
         status: ReplayStepStatus.pending,
       );
       _isExecutingImport = false;
@@ -6319,7 +6332,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
   required String subtitle,
   DateTime? inferredFirstCourseDate,
 }) {
-  final alignmentService = const ImportWeekAlignmentService();
+  const alignmentService = ImportWeekAlignmentService();
   return showHyperosSheet<_ImportSemesterConfig>(
     context: context,
     builder: (sheetContext) {
@@ -6545,7 +6558,10 @@ String _normalizeJavaScriptResult(Object? raw) {
     if (decoded is String) {
       return decoded;
     }
-  } catch (_) {}
+  } catch (_) {
+    // WebView 返回的字符串可能带外层引号；解码失败说明本就是裸文本，
+    // 原样返回属预期分支，不是错误。
+  }
   return text;
 }
 

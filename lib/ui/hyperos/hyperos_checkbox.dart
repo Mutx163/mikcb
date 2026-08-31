@@ -68,7 +68,7 @@ class HyperosCheckboxTile extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
 
   void _toggle() {
-    if (onChanged != null) onChanged!(!value);
+    onChanged?.call(!value);
   }
 
   @override
@@ -92,7 +92,6 @@ class HyperosCheckboxTile extends StatelessWidget {
       child: Padding(
         padding: HyperosTokens.rowPaddingUniform,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -107,7 +106,7 @@ class HyperosCheckboxTile extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
+            const SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
             HyperosCheckbox(value: value, onChanged: onChanged),
           ],
         ),
@@ -161,7 +160,6 @@ class HyperosRadioTile<T> extends StatelessWidget {
       child: Padding(
         padding: HyperosTokens.rowPaddingUniform,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -176,7 +174,7 @@ class HyperosRadioTile<T> extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
+            const SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
             HyperosRadio<T>(
               value: value,
               groupValue: groupValue,

@@ -352,7 +352,6 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
         showAppToast(
           context,
           message: l10n.icsExportNoEvents,
-          kind: AppToastKind.info,
         );
         return;
       }
@@ -384,7 +383,6 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
         showAppToast(
           context,
           message: l10n.icsExportCancelled,
-          kind: AppToastKind.info,
         );
       } else if (shareResult.status == ShareResultStatus.unavailable) {
         showAppToast(

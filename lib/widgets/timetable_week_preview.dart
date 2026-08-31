@@ -227,7 +227,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         height: height,
         child: IgnorePointer(
           child: ClipRect(
-            clipBehavior: Clip.hardEdge,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -280,7 +279,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
           color: foruiColors.border.withValues(
             alpha: foruiColors.border.a * contentOpacity,
           ),
-          width: 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -355,7 +353,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
             fallback: colorScheme.surface,
           );
     // 回本周收敛为浮钮单一入口后恒显示（仅非当前周）。
-    final showsFloatingButton = true;
+    const showsFloatingButton = true;
     final visibleSectionCount = _resolveVisibleSectionCount();
     final appHeaderHeight = includeAppHeader ? _appHeaderHeight : 0.0;
     final weekdayChromeBlurEnabled =
@@ -436,7 +434,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               height: totalHeight,
               child: BackdropGroup(
                 child: Stack(
-                  clipBehavior: Clip.hardEdge,
                   children: [
                     if (hasBackdrop) homePageBackdropLayer(settings: settings),
                     // First filter inside the group: caches the full-size
@@ -559,7 +556,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: foruiTheme.typography.display.xl.copyWith(
                 fontWeight: FontWeight.w900,
-                height: 1.0,
+                height: 1,
                 color: chromeForeground,
               ),
             ),
@@ -968,7 +965,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     return Container(
       height: visibleSectionCount * sectionHeight,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-      child: Stack(clipBehavior: Clip.hardEdge, children: courseCards),
+      child: Stack(children: courseCards),
     );
   }
 
@@ -1005,7 +1002,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final compactTextStyle = TextStyle(
       fontSize: (settings.compactFontSize - 2).clamp(6.0, 10.0),
       color: timeAxisMutedColor,
-      height: 1.0,
+      height: 1,
     );
 
     return SizedBox(
@@ -1013,7 +1010,6 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       width: double.infinity,
       child: FittedBox(
         fit: BoxFit.scaleDown,
-        alignment: Alignment.center,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -1023,7 +1019,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               style: TextStyle(
                 fontSize: settings.compactFontSize.clamp(8.0, 11.0),
                 fontWeight: FontWeight.bold,
-                height: 1.0,
+                height: 1,
                 color: timeAxisColor,
               ),
             ),

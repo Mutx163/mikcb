@@ -27,12 +27,18 @@ class _HomeWidgetSettingsScreen extends StatefulWidget {
       _HomeWidgetSettingsScreenState();
 }
 
-class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
+class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
+    with WidgetsBindingObserver {
   static const double _defaultWidgetHeightAdjustment = -11;
   static const double _defaultWidgetCornerRadius = 22;
 
+  /// 「跟随当前课表」的哨兵值：绑定语义是 null（未登记），但
+  /// HyperosSelectTile 对 null 值不渲染值标签（hyperosSelectLabelFor 对
+  /// null 直接返回空），用空串占位才能把「跟随当前课表」显示出来。
+  static const String _followActiveValue = '';
+
   final HomeWidgetService _homeWidgetService = HomeWidgetService();
-  final HomeWidgetBindingService _homeWidgetBindingService =
+  static const HomeWidgetBindingService _homeWidgetBindingService =
       HomeWidgetBindingService();
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
@@ -47,6 +53,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _loadPinWidgetSupport();
@@ -54,7 +61,23 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+    // 从桌面/系统弹窗回到前台：桌面小组件集合可能已变化（用户去桌面加了
+    // 或删了卡片，系统不会通知 App 界面），稍候重查——pin 确认后启动器
+    // 需要一拍才完成绑定，立即查可能拿到旧集合。
+    Future<void>.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _loadWidgetInstances();
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (_autoSaveTimer?.isActive ?? false) {
       _autoSaveTimer?.cancel();
       _enqueuePersist(_draft);
@@ -369,20 +392,22 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
         HyperosListGroup(
           children: [
             for (final instance in _widgetInstances)
-              HyperosSelectTile<String?>(
+              HyperosSelectTile<String>(
                 label: _homeWidgetTargetLabel(
                   context,
                   _pinTargetForType(instance.widgetType),
                 ),
                 items: {
-                  l10n.homeWidgetBindingFollowActive: null,
+                  l10n.homeWidgetBindingFollowActive: _followActiveValue,
                   for (final profile in normalProfiles) profile.name: profile.id,
                   if (partnerProfile != null)
                     partnerProfile.name: partnerProfile.id,
                 },
-                value: instance.boundProfileId,
-                onChanged: (profileId) =>
-                    _setWidgetBinding(instance.appWidgetId, profileId),
+                value: instance.boundProfileId ?? _followActiveValue,
+                onChanged: (profileId) => _setWidgetBinding(
+                  instance.appWidgetId,
+                  profileId == _followActiveValue ? null : profileId,
+                ),
               ),
           ],
         ),
@@ -552,5 +577,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       )!.homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
     };
     showAppToast(context, message: message);
+    // 请求未受理（unsupported/failed）时集合不变、重查无害；真正「已确认
+    // 添加」发生在系统弹窗之后，由 resumed 刷新兜底，这里即时重查一次。
+    unawaited(_loadWidgetInstances());
   }
 }
