@@ -45,6 +45,15 @@ class StatsMediumWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        // 卡片被移除时清掉绑定档案与专属快照，防止孤儿数据越积越多。
+        appWidgetIds.forEach { appWidgetId ->
+            WidgetBindingStore.remove(context, appWidgetId)
+            HomeWidgetStorage.clearWidgetSnapshot(context, appWidgetId)
+        }
+    }
+
     companion object {
         fun updateAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
