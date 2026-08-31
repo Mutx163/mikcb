@@ -41,10 +41,7 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
   final _hourPickerController = MiuixFlingNumberPickerController();
   final _minutePickerController = MiuixFlingNumberPickerController();
 
-  /// 滚轮可见行数（奇数，至少 3）；5 行更接近系统数字选择器手感。
-  static const int _visibleItemCount = 5;
-
-  /// 约 5 × itemHeight，给滚轮足够的滑动高度。
+  /// 约 5 × itemHeight（滚轮可见 5 行，接近系统数字选择器手感）。
   static const double _pickerHeight = 220;
 
   @override
@@ -88,10 +85,8 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
                   child: MiuixFlingNumberPicker(
                     controller: _hourPickerController,
                     value: _hour,
-                    min: 0,
                     max: 23,
                     wrapAround: true,
-                    visibleItemCount: _visibleItemCount,
                     textStyle: pickerStyle,
                     label: _twoDigits,
                     onValueChanged: (value) => setState(() => _hour = value),
@@ -101,10 +96,8 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
                   child: MiuixFlingNumberPicker(
                     controller: _minutePickerController,
                     value: _minute,
-                    min: 0,
                     max: 59,
                     wrapAround: true,
-                    visibleItemCount: _visibleItemCount,
                     textStyle: pickerStyle,
                     label: _twoDigits,
                     onValueChanged: (value) => setState(() => _minute = value),
@@ -129,7 +122,6 @@ class _MiuixTimePickerSheetBodyState extends State<_MiuixTimePickerSheetBody> {
               Expanded(
                 child: HyperosButton(
                   label: l10n.confirmAction,
-                  variant: HyperosButtonVariant.primary,
                   expand: true,
                   fitLabel: true,
                   onPressed: _confirm,

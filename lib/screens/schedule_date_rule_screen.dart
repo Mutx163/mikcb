@@ -226,7 +226,6 @@ Future<void> _openScheduleDateRuleEditor(
   final saved = await showHyperosDialog<bool>(
     context: context,
     enableDrag: false,
-    maxBodyHeightFactor: 0.55,
     title: existing == null
         ? l10n.scheduleDateRuleAdd
         : l10n.scheduleDateRuleEdit,
@@ -523,7 +522,7 @@ class _DateRuleSwitchField extends StatelessWidget {
       decoration: BoxDecoration(
         color: fill,
         borderRadius: radius,
-        border: Border.all(color: outline, width: 1),
+        border: Border.all(color: outline),
       ),
       clipBehavior: Clip.antiAlias,
       child: MiuixPressable(

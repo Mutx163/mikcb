@@ -32,7 +32,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   static const double _defaultWidgetCornerRadius = 22;
 
   final HomeWidgetService _homeWidgetService = HomeWidgetService();
-  final HomeWidgetBindingService _homeWidgetBindingService =
+  static const HomeWidgetBindingService _homeWidgetBindingService =
       HomeWidgetBindingService();
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;

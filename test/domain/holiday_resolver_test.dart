@@ -6,7 +6,7 @@ HolidayData _data(List<HolidayEntry> entries) =>
     HolidayData(year: 2026, version: 1, entries: entries);
 
 final _vacation = HolidayEntry(
-  date: DateTime(2026, 10, 1),
+  date: DateTime(2026, 10),
   name: '国庆节',
   type: HolidayType.vacation,
   groupId: 'national-day-2026',
@@ -31,7 +31,7 @@ void main() {
     test('无数据时视为无假期（开关全开）', () {
       expect(
         HolidayResolver.isHoliday(
-          DateTime(2026, 10, 1),
+          DateTime(2026, 10),
           data: null,
           overrideEnabled: false,
           markingEnabled: true,
@@ -43,7 +43,7 @@ void main() {
     test('假期标记关闭时假期日不隐藏', () {
       expect(
         HolidayResolver.isHoliday(
-          DateTime(2026, 10, 1),
+          DateTime(2026, 10),
           data: _data([_vacation]),
           overrideEnabled: false,
           markingEnabled: false,
@@ -55,7 +55,7 @@ void main() {
     test('覆盖模式开启时法定假期隐藏', () {
       expect(
         HolidayResolver.isHoliday(
-          DateTime(2026, 10, 1),
+          DateTime(2026, 10),
           data: _data([_vacation]),
           overrideEnabled: true,
           markingEnabled: true,
@@ -79,7 +79,7 @@ void main() {
     test('普通开关下法定假期隐藏', () {
       expect(
         HolidayResolver.isHoliday(
-          DateTime(2026, 10, 1),
+          DateTime(2026, 10),
           data: _data([_vacation]),
           overrideEnabled: false,
           markingEnabled: true,
@@ -127,7 +127,7 @@ void main() {
     test('法定假期不是调休上班日', () {
       expect(
         HolidayResolver.isAdjustedWorkday(
-          DateTime(2026, 10, 1),
+          DateTime(2026, 10),
           data: _data([_vacation]),
         ),
         isFalse,

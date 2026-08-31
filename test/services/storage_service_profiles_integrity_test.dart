@@ -59,8 +59,8 @@ void main() {
           ],
           'settings': TimetableSettings.defaults().toJson(),
           'currentWeek': 1,
-          'createdAt': DateTime(2026, 3, 1).toIso8601String(),
-          'lastUsedAt': DateTime(2026, 3, 1).toIso8601String(),
+          'createdAt': DateTime(2026, 3).toIso8601String(),
+          'lastUsedAt': DateTime(2026, 3).toIso8601String(),
         },
       ];
       SharedPreferences.setMockInitialValues({

@@ -137,8 +137,7 @@ class HyperosSearchBar extends StatelessWidget {
             child: Icon(Icons.search_rounded, color: actions, size: 22),
           ),
           prefixIconConstraints: const BoxConstraints(
-            minWidth: 0,
-            minHeight: 0,
+            
           ),
           suffixIcon: showClear
               ? IconButton(
@@ -151,7 +150,6 @@ class HyperosSearchBar extends StatelessWidget {
               : null,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: HyperosMiuixSearchBar.insideMarginHorizontal,
-            vertical: HyperosMiuixSearchBar.insideMarginVertical,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(

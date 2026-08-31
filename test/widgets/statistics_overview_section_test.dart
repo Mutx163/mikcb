@@ -74,16 +74,16 @@ void main() {
 
   testWidgets('long english labels ellipsize without overflow', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        localizationsDelegates: const [
+      const MaterialApp(
+        locale: Locale('en'),
+        localizationsDelegates: [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
+        home: Scaffold(
           body: Center(child: OverviewSection(stats: _testStats)),
         ),
       ),

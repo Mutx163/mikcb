@@ -152,7 +152,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<TimetableProvider>.value(
         value: provider,
-        child: TestApp(
+        child: const TestApp(
           home: StatisticsAnalysisScreen(
             module: StatisticsAnalysisModule.trend,
           ),

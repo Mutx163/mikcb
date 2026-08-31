@@ -24,8 +24,6 @@ Course _course({
     endTime: '09:40',
     color: color,
     textColor: textColor,
-    startWeek: 1,
-    endWeek: 16,
   );
 }
 
@@ -141,7 +139,7 @@ void main() {
 
       final snapshot = captureCourseRecolorSnapshot(
         courses,
-        now: DateTime(2026, 8, 30, 10, 0),
+        now: DateTime(2026, 8, 30, 10),
       );
       final recolored = applySeedCourseRecolor(
         courses,

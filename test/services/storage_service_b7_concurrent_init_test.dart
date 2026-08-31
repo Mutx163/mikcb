@@ -29,14 +29,14 @@ void main() {
       ]);
 
       // All profile lists must have same single id
-      final firstId = (results[0] as List).first.id as String;
+      final firstId = ((results[0] as List<dynamic>).first as dynamic).id as String;
       for (final r in results) {
         // ignore: dead_code, unnecessary_type_check
         final list = r is List ? (r as List) : <dynamic>[];
         // getActiveProfileId branch returns List too
         if (list.isNotEmpty) {
           expect(list, hasLength(1));
-          expect(list.first.id, firstId);
+          expect((list.first as dynamic).id, firstId);
         }
       }
 
@@ -65,7 +65,7 @@ void main() {
       final schemesB = results[1] as List;
       expect(schemesA.length, schemesB.length);
       // No duplicate schemes with same signature
-      final ids = (schemesA).map((e) => (e as dynamic).id as String).toSet();
+      final ids = schemesA.map((e) => (e as dynamic).id as String).toSet();
       expect(ids.length, schemesA.length);
     });
 

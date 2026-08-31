@@ -34,10 +34,10 @@ void main() {
   group('HyperosSelectTile', () {
     testWidgets('shows label and current value', (tester) async {
       await tester.pumpWidget(
-        TestApp(
+        const TestApp(
           home: HyperosSelectTile<String>(
             label: 'Theme mode',
-            items: const {'Light': 'light', 'Dark': 'dark'},
+            items: {'Light': 'light', 'Dark': 'dark'},
             value: 'light',
             onChanged: _noop,
           ),
@@ -56,13 +56,13 @@ void main() {
           'Follow system light/dark mode and apply detected theme automatically.';
 
       await tester.pumpWidget(
-        TestApp(
+        const TestApp(
           home: SizedBox(
             width: 280,
             child: HyperosSelectTile<String>(
               label: 'Theme mode',
               subtitle: subtitle,
-              items: const {'Light': 'light', 'Dark': 'dark'},
+              items: {'Light': 'light', 'Dark': 'dark'},
               value: 'light',
               onChanged: _noop,
             ),
@@ -77,12 +77,12 @@ void main() {
 
     testWidgets('aligns current value next to chevron', (tester) async {
       await tester.pumpWidget(
-        TestApp(
+        const TestApp(
           home: SizedBox(
             width: 320,
             child: HyperosSelectTile<String>(
               label: 'Theme mode',
-              items: const {'Light': 'light', 'Dark': 'dark'},
+              items: {'Light': 'light', 'Dark': 'dark'},
               value: 'light',
               onChanged: _noop,
             ),
@@ -133,12 +133,12 @@ void main() {
         await tester.pumpWidget(
           TestApp(
             home: ListView(
-              children: [
+              children: const [
                 HyperosControlCard(
                   title: 'Display mode',
                   child: HyperosSelectTile<String>(
                     label: 'Theme mode',
-                    items: const {'Light': 'light', 'Dark': 'dark'},
+                    items: {'Light': 'light', 'Dark': 'dark'},
                     value: 'light',
                     onChanged: _noop,
                   ),
@@ -168,12 +168,12 @@ void main() {
       await tester.pumpWidget(
         TestApp(
           home: ListView(
-            children: [
+            children: const [
               HyperosControlCard(
                 title: 'Display mode',
                 child: HyperosSelectTile<String>(
                   label: 'Theme mode',
-                  items: const {'Light': 'light', 'Dark': 'dark'},
+                  items: {'Light': 'light', 'Dark': 'dark'},
                   value: 'light',
                   onChanged: _noop,
                 ),
@@ -203,12 +203,12 @@ void main() {
       await tester.pumpWidget(
         TestApp(
           home: ListView(
-            children: [
+            children: const [
               HyperosControlCard(
                 title: 'Display mode',
                 child: HyperosSelectTile<String>(
                   label: 'Theme mode',
-                  items: const {'Light': 'light', 'Dark': 'dark'},
+                  items: {'Light': 'light', 'Dark': 'dark'},
                   value: 'light',
                   onChanged: _noop,
                 ),
@@ -362,7 +362,6 @@ void main() {
                 ),
                 HyperosChoiceTile(
                   title: 'Domestic',
-                  selected: false,
                   onTap: () {},
                 ),
               ],
@@ -494,20 +493,16 @@ void main() {
                   title: 'First',
                   variant: HyperosChoiceVariant.popup,
                   isFirstInPopup: true,
-                  isLastInPopup: false,
                   onTap: () {},
                 ),
                 HyperosChoiceTile(
                   title: 'Middle',
                   variant: HyperosChoiceVariant.popup,
-                  isFirstInPopup: false,
-                  isLastInPopup: false,
                   onTap: () {},
                 ),
                 HyperosChoiceTile(
                   title: 'Last',
                   variant: HyperosChoiceVariant.popup,
-                  isFirstInPopup: false,
                   isLastInPopup: true,
                   onTap: () {},
                 ),
@@ -528,9 +523,9 @@ void main() {
       const firstLast = HyperosMiuixDropdown.firstLastVerticalPadding;
       const middle = HyperosMiuixDropdown.middleVerticalPadding;
       // First: firstLast top + middle bottom; last: middle top + firstLast bottom.
-      final expectedFirst = content + firstLast + middle;
-      final expectedMiddle = content + middle + middle;
-      final expectedLast = content + middle + firstLast;
+      const expectedFirst = content + firstLast + middle;
+      const expectedMiddle = content + middle + middle;
+      const expectedLast = content + middle + firstLast;
 
       expect(firstTileHeight, closeTo(expectedFirst, 1.0));
       expect(middleTileHeight, closeTo(expectedMiddle, 1.0));

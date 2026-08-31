@@ -26,7 +26,6 @@ abstract final class MikcbLiquidGlassTokens {
     refractiveIndex: 1.59,
     saturation: 0.7,
     ambientStrength: 1,
-    lightAngle: 0.75 * 3.14159265358979,
     glassColor: Color(0x3DFFFFFF),
   );
 
@@ -39,7 +38,6 @@ abstract final class MikcbLiquidGlassTokens {
     refractiveIndex: 1.59,
     saturation: 0.7,
     ambientStrength: 1,
-    lightAngle: 0.75 * 3.14159265358979,
     glassColor: Color(0x3DFFFFFF),
   );
 
@@ -61,7 +59,6 @@ abstract final class MikcbLiquidGlassTokens {
     refractiveIndex: 1.59,
     saturation: 0.7,
     ambientStrength: 1,
-    lightAngle: 0.75 * 3.14159265358979,
     glassColor: Color(0x3DFFFFFF),
   );
 

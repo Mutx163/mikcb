@@ -157,7 +157,6 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.aboutChangelogTitle),
-      childPad: false,
       // Standard list path (header inset inside the scrollable + notification
       // bubbling) so the large title collapses; the old BodyInset +
       // includeHeaderInset:false combo swallowed vertical scroll notifications

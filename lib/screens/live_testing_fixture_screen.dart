@@ -47,7 +47,7 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
     final hasFixtures = fixtureCount > 0;
     final canTrigger = sectionCount > 0;
     final activeSchemeName = provider.activeTimeScheme?.name ?? l10n.unsetLabel;
-    final leadOptions = LiveTestingFixtureService.supportedLeadMinutes;
+    const leadOptions = LiveTestingFixtureService.supportedLeadMinutes;
     final leadIndex = leadOptions
         .indexOf(_fixtureLeadMinutes)
         .clamp(0, leadOptions.length - 1);
@@ -59,7 +59,6 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
         : '--:--';
 
     return HyperosSubpage(
-      overlayHeader: true,
       onBack: () => Navigator.pop(context),
       title: const Text('临时测试课程'),
       child: HyperosListView(
@@ -371,7 +370,7 @@ class _QuickFixtureSectionCell extends StatelessWidget {
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                   color: captionColor,
-                  height: 1.0,
+                  height: 1,
                 ),
               ),
             ],

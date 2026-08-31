@@ -44,10 +44,10 @@ class ProfileCompareCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: HyperosTokens.rowPadding(isFirst: true, isLast: false),
+            padding: HyperosTokens.rowPadding(isLast: false),
             child: Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.compare_arrows_rounded,
                   accent: HyperosIconColors.indigo,
                 ),

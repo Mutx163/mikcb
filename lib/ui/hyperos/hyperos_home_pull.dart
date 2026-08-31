@@ -13,8 +13,8 @@ import 'hyperos_miuix_spec.dart';
 class HyperosHomePullPhysics {
   HyperosHomePullPhysics._();
 
-  static const double triggerDistance = 120.0;
-  static const double maxVisualDistance = 180.0;
+  static const double triggerDistance = 120;
+  static const double maxVisualDistance = 180;
   static const double dampingRange = maxVisualDistance * 3; // 540
 
   @visibleForTesting
@@ -45,7 +45,6 @@ class HyperosHomePullPhysics {
   static SpringDescription get spring => SpringDescription.withDampingRatio(
         mass: 1,
         stiffness: math.pow(2 * math.pi / HyperosMiuixAnim.standardSpringPeriod, 2).toDouble(),
-        ratio: HyperosMiuixAnim.criticalDampingRatio,
       );
 }
 

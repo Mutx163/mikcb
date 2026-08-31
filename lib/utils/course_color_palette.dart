@@ -257,12 +257,12 @@ const List<CourseColorPair> kPresetCourseColorPairs = [
 ];
 
 /// WCAG AA-large threshold: below this an ink is auto-adjusted for legibility.
-const double courseCardMinContrastRatio = 3.0;
+const double courseCardMinContrastRatio = 3;
 
 /// Invisibility bar: below this an ink is effectively unreadable and always
 /// overridden; between this and [courseCardMinContrastRatio] the user's choice
 /// is kept but flagged as advisory.
-const double courseCardCriticalContrastRatio = 2.0;
+const double courseCardCriticalContrastRatio = 2;
 
 /// WCAG relative-contrast ratio between two colors (1.0–21.0, symmetric).
 double courseCardContrastRatio(Color a, Color b) {

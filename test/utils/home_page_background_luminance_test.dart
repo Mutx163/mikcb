@@ -96,7 +96,7 @@ void main() {
   });
 
   test('all-black wallpaper: all three bands read dark', () async {
-    final file = await _writeStripedWallpaper(dir, topLightFraction: 0.0);
+    final file = await _writeStripedWallpaper(dir);
     final bands = await sampleHomePageWallpaperLuminanceBands(file.path);
     expect(bands, isNotNull);
     expect(bands!.top, 0.0);
@@ -105,7 +105,7 @@ void main() {
   });
 
   test('all-white wallpaper: all three bands read light', () async {
-    final file = await _writeStripedWallpaper(dir, topLightFraction: 1.0);
+    final file = await _writeStripedWallpaper(dir, topLightFraction: 1);
     final bands = await sampleHomePageWallpaperLuminanceBands(file.path);
     expect(bands, isNotNull);
     expect(bands!.top, 1.0);
@@ -180,7 +180,7 @@ void main() {
       hasBackdrop: true,
       isDark: false,
       usesFrostedChrome: true,
-      wallpaperTopLuminance: 1.0,
+      wallpaperTopLuminance: 1,
     );
 
     final style = SystemUiOverlayStyle(

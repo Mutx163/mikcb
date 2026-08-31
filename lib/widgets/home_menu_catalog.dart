@@ -427,7 +427,7 @@ final Map<String, WidgetBuilder> kInlineDockPages = {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          return AboutUpdateScreen(packageInfo: snapshot.data!);
+          return AboutUpdateScreen(packageInfo: snapshot.data);
         },
       ),
 };

@@ -245,7 +245,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
-                      child: BundledAssetImage(
+                      child: const BundledAssetImage(
                         assetPath: BundledAssets.launcherIcon,
                         fit: BoxFit.cover,
                         cacheWidth: 168,
@@ -786,7 +786,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             overflow: TextOverflow.ellipsis,
             style: foruiTheme.typography.display.lg.copyWith(
               fontWeight: FontWeight.w600,
-              height: 1.0,
+              height: 1,
               letterSpacing: 0.1,
               color: foruiTheme.colors.foreground,
             ),
@@ -871,7 +871,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               children: [
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         l10n.aboutCurrentVersionLabel,
@@ -891,7 +890,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 ),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         l10n.aboutLatestVersionLabel,
@@ -974,7 +972,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(Icons.update_rounded, size: 18, color: colorScheme.primary),
             const SizedBox(width: 8),
@@ -1667,7 +1664,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     required String? originalDownloadUrl,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final presets = AppUpdateMirrorPreset.values;
+    const presets = AppUpdateMirrorPreset.values;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -1993,7 +1990,6 @@ class ReleaseNotesMarkdown extends StatelessWidget {
     final bulletStyle = styleSheet.listBullet;
     return MarkdownBody(
       data: normalized,
-      selectable: false,
       styleSheet: styleSheet,
       listItemCrossAxisAlignment: plainTypography
           ? MarkdownListItemCrossAxisAlignment.start
@@ -2186,7 +2182,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
         return const [];
       }
       return decoded
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .map(
             (item) => _WarehouseMaintainerGroup(
               name: item['name'] as String? ?? '',
@@ -2425,7 +2421,6 @@ class _AboutEntryTile extends StatelessWidget {
       child: Padding(
         padding: _aboutRowPadding(context),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             HyperosIconBadge(icon: icon, accent: iconAccent),
             const SizedBox(width: HyperosTokens.rowContentGap),
@@ -2444,7 +2439,7 @@ class _AboutEntryTile extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
             const HyperosChevron(),
           ],
         ),

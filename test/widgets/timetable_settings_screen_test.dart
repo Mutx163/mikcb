@@ -357,7 +357,7 @@ void main() {
     expect(startAt, greaterThan(DateTime.now().millisecondsSinceEpoch - 5000));
     expect(endAt, greaterThan(startAt));
     expect(
-      ((payloads.single['currentCourse'] as Map)['name'] as String),
+      (payloads.single['currentCourse'] as Map)['name'] as String,
       '高等数学',
     );
 
@@ -378,7 +378,7 @@ void main() {
     expect(payloads.last['enableBeforeClass'], false);
     expect(payloads.last['enableDuringClass'], true);
     expect(
-      (payloads.last['startAtMillis'] as int),
+      payloads.last['startAtMillis'] as int,
       lessThan(DateTime.now().millisecondsSinceEpoch),
     );
   });

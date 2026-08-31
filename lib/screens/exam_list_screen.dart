@@ -306,7 +306,6 @@ class _ExamOverviewCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     width: 6,
@@ -598,7 +597,7 @@ class _ExamListRow extends StatelessWidget {
                                   )
                                 : null,
                             textStyle: livePhase == _ExamLivePhase.ongoing
-                                ? TextStyle(
+                                ? const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     color: HyperosIconColors.orange,
@@ -652,7 +651,7 @@ class _ExamListRow extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Opacity(

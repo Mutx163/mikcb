@@ -218,7 +218,7 @@ void main() {
       addTearDown(() async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(pathProviderChannel, null);
-        if (await documentsDirectory.exists()) {
+        if (documentsDirectory.existsSync()) {
           await documentsDirectory.delete(recursive: true);
         }
       });

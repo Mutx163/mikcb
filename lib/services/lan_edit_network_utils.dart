@@ -5,7 +5,6 @@ Future<String?> findPreferredLanIPv4() async {
   try {
     final interfaces = await NetworkInterface.list(
       type: InternetAddressType.IPv4,
-      includeLinkLocal: false,
     );
     final candidates = <String>[];
     for (final interface in interfaces) {

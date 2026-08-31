@@ -22,10 +22,10 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 void main() {
   /// 玻璃坞药丸固定占用高度（与屏幕源码 _glassDockPillOccupancy 一致；
   /// 测试环境无系统底部安全区，余量即 62）。
-  const double kGlassDockPillOccupancy = 62.0;
+  const double kGlassDockPillOccupancy = 62;
 
   /// HyperosListView 默认底距（HyperosMiuixSpec.listPadding.bottom）。
-  const double kDefaultListBottom = 24.0;
+  const double kDefaultListBottom = 24;
 
   Future<TimetableProvider> pumpDockApp(
     WidgetTester tester, {
@@ -43,14 +43,14 @@ void main() {
         providers: [
           ChangeNotifierProvider<TimetableProvider>.value(value: provider),
         ],
-        child: MaterialApp(
-          localizationsDelegates: const [
+        child: const MaterialApp(
+          localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('zh'),
+          locale: Locale('zh'),
           home: FrostedAppearanceScope(
             appearance: FrostedAppearance.defaults,
             child: TimetableScreen(

@@ -111,8 +111,8 @@ abstract class WarehouseSecureStorage {
 
 class FlutterWarehouseSecureStorage extends WarehouseSecureStorage {
   const FlutterWarehouseSecureStorage({
-    FlutterSecureStorage storage = _defaultStorage,
-  }) : _storage = storage;
+    this._storage = _defaultStorage,
+  });
 
   static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage();
 
@@ -211,7 +211,7 @@ class WarehouseSyncBundle {
 
     return WarehouseSyncBundle(
       rememberedLogins: (json['rememberedLogins'] as List<dynamic>? ?? const [])
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .map(
             (item) => WarehouseRememberedLoginEntry.fromJson(
               Map<String, dynamic>.from(item),
@@ -226,7 +226,7 @@ class WarehouseSyncBundle {
           .toList(),
       customDebugRecords:
           (json['customDebugRecords'] as List<dynamic>? ?? const [])
-              .whereType<Map>()
+              .whereType<Map<String, dynamic>>()
               .map(
                 (item) => WarehouseCustomDebugRecord.fromJson(
                   Map<String, dynamic>.from(item),
@@ -249,9 +249,9 @@ class WarehouseImportPreferencesService {
   final WarehouseSecureStorage _secureStorage;
 
   WarehouseImportPreferencesService({
-    WarehouseSecureStorage secureStorage =
+    this._secureStorage =
         const FlutterWarehouseSecureStorage(),
-  }) : _secureStorage = secureStorage;
+  });
 
   Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
 
@@ -365,7 +365,7 @@ class WarehouseImportPreferencesService {
       return const [];
     }
     final records = decoded
-        .whereType<Map>()
+        .whereType<Map<String, dynamic>>()
         .map(
           (item) => WarehouseCustomDebugRecord.fromJson(
             Map<String, dynamic>.from(item.cast<String, dynamic>()),

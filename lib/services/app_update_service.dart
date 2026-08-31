@@ -196,12 +196,11 @@ class AppUpdateService {
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
-    Duration releaseApiRequestTimeout = _releaseRequestTimeout,
+    this._releaseApiRequestTimeout = _releaseRequestTimeout,
   }) : _client = client ?? createAppHttpClient(),
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
-       _openInstaller = openInstaller ?? OpenFilex.open,
-       _releaseApiRequestTimeout = releaseApiRequestTimeout;
+       _openInstaller = openInstaller ?? OpenFilex.open;
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
@@ -389,7 +388,7 @@ class AppUpdateService {
   }
 
   Future<void> _cleanupManagedInstallerFiles(Directory tempDir) async {
-    if (!await tempDir.exists()) {
+    if (!tempDir.existsSync()) {
       return;
     }
     await for (final entity in tempDir.list()) {
@@ -784,8 +783,8 @@ class AppUpdateService {
 
   String? _pickDownloadUrl(List<dynamic> assets) {
     final normalizedAssets = assets
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
+        .whereType<Map<String, dynamic>>()
+        .map(Map<String, dynamic>.from)
         .toList();
 
     for (final asset in normalizedAssets) {
@@ -968,7 +967,7 @@ class AppUpdateService {
   }
 
   Future<void> _deleteFileIfExists(File file) async {
-    if (await file.exists()) {
+    if (file.existsSync()) {
       await file.delete();
     }
   }

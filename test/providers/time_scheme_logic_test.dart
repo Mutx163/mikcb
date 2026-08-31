@@ -23,15 +23,13 @@ Course _course({
     endSection: endSection,
     startTime: '08:00',
     endTime: '09:40',
-    startWeek: 1,
-    endWeek: 16,
     color: '#FF0000',
     timeSchemeIdOverride: timeSchemeIdOverride,
   );
 }
 
 TimeScheme _scheme(String id, {String name = 'Scheme'}) {
-  final now = DateTime(2026, 1, 1);
+  final now = DateTime(2026);
   return TimeScheme(
     id: id,
     name: name,
@@ -47,7 +45,7 @@ TimetableProfile _profile({
   required String activeSchemeId,
   List<Course> courses = const [],
 }) {
-  final now = DateTime(2026, 1, 1);
+  final now = DateTime(2026);
   return TimetableProfile(
     id: id,
     name: name,
@@ -121,8 +119,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
         color: '#FF0000',
       );
       final groups = [
@@ -133,7 +129,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'A1',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -169,7 +164,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'A1',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -209,7 +203,7 @@ void main() {
           settings,
           course,
           scheduleDateRules: rules,
-          onDate: DateTime(2026, 7, 1),
+          onDate: DateTime(2026, 7),
         ),
         defaultScheme,
       );
@@ -259,7 +253,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'A1',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -281,7 +274,7 @@ void main() {
           course,
           locationTimeGroups: groups,
           scheduleDateRules: rules,
-          onDate: DateTime(2026, 7, 1),
+          onDate: DateTime(2026, 7),
         ),
         buildingScheme,
       );
@@ -306,7 +299,7 @@ void main() {
           id: 'p2',
           name: 'Other',
           activeSchemeId: schemeB.id,
-          courses: [_course(id: 'c3', endSection: 4)],
+          courses: [_course(id: 'c3')],
         ),
       ];
 
@@ -351,8 +344,8 @@ void main() {
         id: 'a',
         name: 'Short',
         sections: shortSections,
-        createdAt: DateTime(2026, 1, 1),
-        updatedAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
       );
       final settings = TimetableSettings.defaults().copyWith(
         activeTimeSchemeId: scheme.id,

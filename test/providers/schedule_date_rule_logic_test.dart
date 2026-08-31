@@ -15,7 +15,7 @@ void main() {
     });
 
     test('match returns rule for inclusive date range', () {
-      final rule = ScheduleDateRule(
+      const rule = ScheduleDateRule(
         id: 'summer',
         name: '夏令时',
         timeSchemeId: 'scheme-summer',
@@ -24,7 +24,7 @@ void main() {
       );
 
       expect(
-        ScheduleDateRuleLogic.match(DateTime(2026, 5, 1), [rule])?.id,
+        ScheduleDateRuleLogic.match(DateTime(2026, 5), [rule])?.id,
         'summer',
       );
       expect(
@@ -38,13 +38,12 @@ void main() {
     });
 
     test('enabled single-day rule matches that day', () {
-      final rule = ScheduleDateRule(
+      const rule = ScheduleDateRule(
         id: 'single-day',
         name: '临时作息',
         timeSchemeId: 'scheme-special',
         startDate: '2026-07-23',
         endDate: '2026-07-23',
-        enabled: true,
       );
 
       final matched = ScheduleDateRuleLogic.match(DateTime(2026, 7, 23), [
@@ -56,21 +55,21 @@ void main() {
     });
 
     test('validateRules rejects overlap and over cap', () {
-      final first = ScheduleDateRule(
+      const first = ScheduleDateRule(
         id: 'a',
         name: 'A',
         timeSchemeId: 's1',
         startDate: '2026-05-01',
         endDate: '2026-08-31',
       );
-      final second = ScheduleDateRule(
+      const second = ScheduleDateRule(
         id: 'b',
         name: 'B',
         timeSchemeId: 's2',
         startDate: '2026-08-01',
         endDate: '2026-10-01',
       );
-      final third = ScheduleDateRule(
+      const third = ScheduleDateRule(
         id: 'c',
         name: 'C',
         timeSchemeId: 's3',
@@ -89,7 +88,7 @@ void main() {
     });
 
     test('disabled rules are ignored by match', () {
-      final rule = ScheduleDateRule(
+      const rule = ScheduleDateRule(
         id: 'summer',
         name: '夏令时',
         timeSchemeId: 'scheme-summer',
@@ -97,11 +96,11 @@ void main() {
         endDate: '2026-09-30',
         enabled: false,
       );
-      expect(ScheduleDateRuleLogic.match(DateTime(2026, 6, 1), [rule]), isNull);
+      expect(ScheduleDateRuleLogic.match(DateTime(2026, 6), [rule]), isNull);
     });
 
     test('shouldBulkApply only when signature differs', () {
-      final rule = ScheduleDateRule(
+      const rule = ScheduleDateRule(
         id: 'summer',
         name: '夏令时',
         timeSchemeId: 'scheme-summer',

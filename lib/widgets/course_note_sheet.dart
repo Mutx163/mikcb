@@ -20,7 +20,6 @@ Future<bool> showCourseNoteSheet(
 }) async {
   final result = await showHomeHyperosSheet<bool>(
     context: context,
-    padForKeyboard: true,
     builder: (sheetContext) =>
         CourseNoteSheetBody(course: course, week: week, readOnly: readOnly),
   );
@@ -202,7 +201,6 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
         '${l10n.sectionRangeLabel(widget.course.startSection, widget.course.endSection)}';
 
     return HyperosSheetFrame(
-      frosted: true,
       maxHeight: maxHeight,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: SingleChildScrollView(

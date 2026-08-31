@@ -113,7 +113,7 @@ class _HyperosUpDownChevronPainter extends CustomPainter {
 
     final w = size.width;
     final midY = size.height / 2;
-    final halfGap = HyperosMiuixDropdown.arrowChevronGap / 2;
+    const halfGap = HyperosMiuixDropdown.arrowChevronGap / 2;
     final chevronHalfHeight =
         (size.height - HyperosMiuixDropdown.arrowChevronGap) / 2 - strokeWidth;
 

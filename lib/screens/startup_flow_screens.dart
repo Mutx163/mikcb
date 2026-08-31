@@ -34,7 +34,6 @@ class _PackageMigrationGuideScreenState
     return HyperosSubpage(
       prefixes: const [],
       title: Text(l10n.migrationTitle),
-      childPad: false,
       child: Material(
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
@@ -161,7 +160,6 @@ class _PackageMigrationGuideScreenState
                     ),
                     const SizedBox(height: 12),
                     Align(
-                      alignment: Alignment.center,
                       child: HyperosButton(
                         label: l10n.startFreshWithoutMigration,
                         variant: HyperosButtonVariant.secondary,

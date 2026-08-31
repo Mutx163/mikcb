@@ -50,7 +50,7 @@ class TimeUtilizationCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.schedule_rounded,
                   accent: HyperosIconColors.cyan,
                 ),

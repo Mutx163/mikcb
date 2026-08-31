@@ -207,7 +207,6 @@ class _CourseGroupTile extends StatelessWidget {
       padding: hyperosChevronRowPadding(context),
       minHeight: HyperosTokens.listRowTwoLineMinHeight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -259,7 +258,7 @@ class _CourseGroupTile extends StatelessWidget {
             courseNatureLabel(l10n, group.courseNature),
             style: HyperosTypography.listDetail(context),
           ),
-          SizedBox(width: HyperosTokens.titleChevronGap),
+          const SizedBox(width: HyperosTokens.titleChevronGap),
           const HyperosChevron(),
         ],
       ),

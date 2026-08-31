@@ -77,10 +77,6 @@ class _TimetablePageSettingsScreenState
                     settings: _draft,
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
-                    // 预览从星期栏开始，不再模拟软件名标题行（用户反馈：
-                    // 预览里出现「轻屿课表」造成误导）；标题样式的预览由
-                    // 「首页与导航 → 首页标题」的专用预览承担。
-                    includeAppHeader: false,
                   ),
                 ),
               ),
@@ -94,7 +90,7 @@ class _TimetablePageSettingsScreenState
                 'timetable-page-settings-editor',
               ),
               itemCount: _sectionCount,
-              itemBuilder: (context, index) => _buildSection(context, index),
+              itemBuilder: _buildSection,
             ),
           ),
         ],
@@ -181,7 +177,6 @@ class _TimetablePageSettingsScreenState
           HyperosSliderTile(
             title: l10n.layoutCourseCardGapTitle,
             value: _draft.timetableCourseCardGap,
-            min: 0,
             max: 3,
             divisions: 12,
             valueLabel: _draft.timetableCourseCardGap.toStringAsFixed(1),
@@ -207,7 +202,6 @@ class _TimetablePageSettingsScreenState
                   title: l10n.layoutBackToCurrentWeekButtonOpacityTitle,
                   value: _draft.timetableFloatingBackToCurrentWeekButtonOpacity,
                   min: 0.55,
-                  max: 1.0,
                   divisions: 9,
                   valueLabel:
                       '${(_draft.timetableFloatingBackToCurrentWeekButtonOpacity * 100).round()}%',
@@ -360,7 +354,7 @@ class _TimetablePageSettingsScreenState
       6 => TimetableTextColorSettings(
         settings: _draft,
         scope: TextColorScope.page,
-        onChanged: (next) => _updateDraft(next),
+        onChanged: _updateDraft,
       ),
       7 => _SettingsResetTile(
         scope: SettingsResetScope.timetablePage,
@@ -463,7 +457,7 @@ class _TimetablePageSettingsScreenState
     // 壁纸文件可能已丢失（重装/清除数据后设置被备份恢复、跨设备同步只带回
     // JSON 不带文件等）：此时进入位置编辑页会在读取图片时抛
     // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
-    if (!await File(existingPath).exists()) {
+    if (!File(existingPath).existsSync()) {
       evictHomePageImageCache(existingPath);
       PreblurredWallpaperCache.instance.evict(existingPath);
       if (!mounted) {
@@ -500,7 +494,7 @@ class _TimetablePageSettingsScreenState
       // 用户取消：若在编辑页里换了图，清理那张未被采用的新文件。
       if (result.path != existingPath) {
         final newFile = File(result.path);
-        if (await newFile.exists()) {
+        if (newFile.existsSync()) {
           await newFile.delete();
         }
       }
@@ -524,7 +518,7 @@ class _TimetablePageSettingsScreenState
     if (pathChanged) {
       // 旧壁纸文件已不再使用，删除释放空间。
       final oldFile = File(existingPath);
-      if (await oldFile.exists()) {
+      if (oldFile.existsSync()) {
         await oldFile.delete();
       }
     }

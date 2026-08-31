@@ -83,8 +83,13 @@ jobs:
       - name: HyperOS page compliance audit
         run: python tool/hyperos_audit.py --strict
 
+      - name: CJK hardcode audit
+        run: python3 tool/audit_cjk_hardcode.py --baseline tool/cjk_hardcode_baseline.txt
+
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        # --fatal-infos：info 级问题也视为失败（analysis_options.yaml 已启用
+        # strict-casts/strict-raw-types 与扩展 lint 集，需严格门禁防劣化）。
+        run: flutter analyze --fatal-infos
 
       - name: Test
         run: flutter test

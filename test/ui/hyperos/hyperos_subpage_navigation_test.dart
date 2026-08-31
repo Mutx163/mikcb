@@ -35,7 +35,6 @@ void main() {
         home: Builder(
           builder: (context) {
             return HyperosSubpage(
-              overlayHeader: true,
               onBack: () {},
               title: const Text('Settings'),
               child: HyperosListView(
@@ -90,7 +89,6 @@ void main() {
         home: Builder(
           builder: (context) {
             return HyperosSubpage(
-              overlayHeader: true,
               onBack: () {},
               title: const Text('Settings'),
               child: HyperosListView(
@@ -211,7 +209,7 @@ void main() {
           home: HyperosSubpage(
             onBack: () {},
             title: const Text('Scroll'),
-            child: SingleChildScrollView(
+            child: const SingleChildScrollView(
               primary: false,
               child: SizedBox(height: 2000),
             ),
@@ -237,7 +235,6 @@ void main() {
         home: Builder(
           builder: (context) {
             return HyperosSubpage(
-              overlayHeader: true,
               onBack: () {},
               title: const Text('Settings'),
               child: HyperosListView(
@@ -255,8 +252,8 @@ void main() {
                             builder: (_) => HyperosSubpage(
                               onBack: () => Navigator.pop(context),
                               title: const Text('Sub settings'),
-                              child: HyperosListView(
-                                children: const [
+                              child: const HyperosListView(
+                                children: [
                                   HyperosListTile(
                                     icon: Icons.dark_mode_outlined,
                                     title: 'Sub item',
@@ -317,7 +314,6 @@ void main() {
         home: Builder(
           builder: (context) {
             return HyperosSubpage(
-              overlayHeader: true,
               onBack: () {},
               title: const Text('Settings'),
               child: HyperosListView(
@@ -364,7 +360,6 @@ void main() {
     await tester.pumpWidget(
       TestApp(
         home: HyperosSubpage(
-          overlayHeader: true,
           onBack: () {},
           title: const Text('Appearance'),
           child: HyperosListView(
@@ -419,7 +414,6 @@ void main() {
         home: Builder(
           builder: (context) {
             return HyperosSubpage(
-              overlayHeader: true,
               onBack: () {},
               title: const Text('Settings'),
               child: HyperosListView(
@@ -479,7 +473,6 @@ void main() {
     await tester.pumpWidget(
       TestApp(
         home: HyperosSubpage(
-          overlayHeader: true,
           onBack: () {},
           title: const Text('Settings'),
           child: HyperosListView(
@@ -548,8 +541,8 @@ void main() {
           headerExtension: const HyperosBlurredHeaderExtension(
             child: SizedBox(height: 48, child: Text('Search')),
           ),
-          child: HyperosListView(
-            children: const [
+          child: const HyperosListView(
+            children: [
               HyperosListTile(
                 icon: Icons.school_outlined,
                 title: 'Example school',

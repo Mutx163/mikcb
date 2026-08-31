@@ -219,7 +219,7 @@ class _CoupleTimetableSettingsScreenState
                     ? '${l10n.coupleWebdavPullNow}...'
                     : l10n.coupleWebdavPullNow,
                 loading: _isPullingWebdav,
-                onPressed: _isPullingWebdav ? null : () => _pullPartnerWebdav(),
+                onPressed: _isPullingWebdav ? null : _pullPartnerWebdav,
               ),
               HyperosButton(
                 label: _isUploadingWebdav
@@ -319,7 +319,6 @@ class _CoupleTimetableSettingsScreenState
           showAppToast(
             context,
             message: l10n.coupleWebdavPullUnchanged,
-            kind: AppToastKind.info,
           );
         case CoupleWebdavPullStatus.failed:
           showAppToast(

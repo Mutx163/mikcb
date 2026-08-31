@@ -27,7 +27,7 @@ void main() {
       name: '主教学楼',
       schemeId: 'scheme-main',
       keywords: const [
-        LocationKeyword(pattern: 'A主', mode: LocationKeywordMatchMode.prefix),
+        LocationKeyword(pattern: 'A主'),
         LocationKeyword(pattern: '主教', mode: LocationKeywordMatchMode.contains),
       ],
     );
@@ -36,8 +36,8 @@ void main() {
       name: '其他教学楼',
       schemeId: 'scheme-other',
       keywords: const [
-        LocationKeyword(pattern: 'A1', mode: LocationKeywordMatchMode.prefix),
-        LocationKeyword(pattern: 'A6', mode: LocationKeywordMatchMode.prefix),
+        LocationKeyword(pattern: 'A1'),
+        LocationKeyword(pattern: 'A6'),
         LocationKeyword(pattern: '一教', mode: LocationKeywordMatchMode.contains),
         LocationKeyword(pattern: '六教', mode: LocationKeywordMatchMode.contains),
       ],
@@ -77,7 +77,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'A1',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -88,7 +87,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'A10',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -109,7 +107,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'AB',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -121,7 +118,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'AB',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -170,7 +166,6 @@ void main() {
           keywords: const [
             LocationKeyword(
               pattern: 'A主',
-              mode: LocationKeywordMatchMode.prefix,
             ),
           ],
         ),
@@ -178,9 +173,9 @@ void main() {
 
       // Use explicit code points so the test is independent of editor glyph
       // substitution (U+00B7 middle dot, U+2014 em dash).
-      final withMiddleDot = 'A\u00B7\u4e3b201';
-      final withEmDash = 'A\u2014\u4e3b201';
-      final withParen = 'A\u4e3b\uff08\u4e1c\uff09201';
+      const withMiddleDot = 'A\u00B7\u4e3b201';
+      const withEmDash = 'A\u2014\u4e3b201';
+      const withParen = 'A\u4e3b\uff08\u4e1c\uff09201';
 
       expect(
         LocationTimeMatchLogic.normalizeLocation(withMiddleDot),
@@ -247,7 +242,7 @@ void main() {
       name: '主教学楼',
       schemeId: 'scheme-main',
       keywords: const [
-        LocationKeyword(pattern: 'A主', mode: LocationKeywordMatchMode.prefix),
+        LocationKeyword(pattern: 'A主'),
       ],
     );
     final otherBuilding = _group(
@@ -255,7 +250,7 @@ void main() {
       name: '其他教学楼',
       schemeId: 'scheme-other',
       keywords: const [
-        LocationKeyword(pattern: 'A1', mode: LocationKeywordMatchMode.prefix),
+        LocationKeyword(pattern: 'A1'),
       ],
     );
     final groups = [mainBuilding, otherBuilding];
@@ -318,14 +313,13 @@ void main() {
 
   group('LocationTimeGroup serialization', () {
     test('round-trips json', () {
-      final group = LocationTimeGroup(
+      const group = LocationTimeGroup(
         id: 'g1',
         name: '其他教学楼',
         timeSchemeId: 'scheme-other',
-        enabled: true,
         priority: 2,
-        keywords: const [
-          LocationKeyword(pattern: 'A1', mode: LocationKeywordMatchMode.prefix),
+        keywords: [
+          LocationKeyword(pattern: 'A1'),
           LocationKeyword(
             pattern: '六教',
             mode: LocationKeywordMatchMode.contains,

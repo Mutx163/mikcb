@@ -168,7 +168,7 @@ void main() {
         currentWeek: 6,
         settings: settings,
         todayCourses: courses,
-        now: DateTime(2026, 3, 27, 8, 0),
+        now: DateTime(2026, 3, 27, 8),
       );
       final second = service.build(
         profileId: 'profile-1',

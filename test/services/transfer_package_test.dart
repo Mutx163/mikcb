@@ -29,7 +29,7 @@ Course _course({String id = 'course-1', String name = '线性代数'}) {
 }
 
 Exam _exam({String id = 'exam-1', String courseId = 'course-1'}) {
-  final now = DateTime(2026, 4, 1);
+  final now = DateTime(2026, 4);
   return Exam(
     id: id,
     courseId: courseId,
@@ -47,8 +47,8 @@ TimeScheme _scheme({String id = 'scheme-1', String name = '工作日作息'}) {
     id: id,
     name: name,
     sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
-    createdAt: DateTime(2026, 1, 1),
-    updatedAt: DateTime(2026, 1, 1),
+    createdAt: DateTime(2026),
+    updatedAt: DateTime(2026),
   );
 }
 
@@ -57,7 +57,7 @@ CourseTask _task({
   String title = '提交作业',
   String? courseId = 'course-1',
 }) {
-  final now = DateTime(2026, 4, 1);
+  final now = DateTime(2026, 4);
   return CourseTask(
     id: id,
     title: title,
@@ -68,7 +68,7 @@ CourseTask _task({
 }
 
 ScheduleItem _scheduleItem({String id = 'schedule-1', String title = '社团活动'}) {
-  final now = DateTime(2026, 4, 1);
+  final now = DateTime(2026, 4);
   return ScheduleItem(
     id: id,
     title: title,
@@ -185,8 +185,8 @@ void main() {
       courses: [_course(), _course()],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
-      createdAt: DateTime(2026, 1, 1),
-      lastUsedAt: DateTime(2026, 1, 1),
+      createdAt: DateTime(2026),
+      lastUsedAt: DateTime(2026),
     );
 
     expect(
@@ -215,8 +215,8 @@ void main() {
         courses: [_course(id: 'shared-course')],
         settings: TimetableSettings.defaults(),
         currentWeek: 1,
-        createdAt: DateTime(2026, 1, 1),
-        lastUsedAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
+        lastUsedAt: DateTime(2026),
       );
       final second = TimetableProfile(
         id: 'profile-2',
@@ -224,8 +224,8 @@ void main() {
         courses: [_course(id: 'shared-course')],
         settings: TimetableSettings.defaults(),
         currentWeek: 1,
-        createdAt: DateTime(2026, 1, 1),
-        lastUsedAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
+        lastUsedAt: DateTime(2026),
       );
 
       expect(
@@ -253,8 +253,8 @@ void main() {
         courses: [_course(id: 'shared-course')],
         settings: TimetableSettings.defaults(),
         currentWeek: 1,
-        createdAt: DateTime(2026, 1, 1),
-        lastUsedAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
+        lastUsedAt: DateTime(2026),
       );
       final second = TimetableProfile(
         id: 'profile-2',
@@ -262,8 +262,8 @@ void main() {
         courses: [_course(id: 'shared-course')],
         settings: TimetableSettings.defaults(),
         currentWeek: 1,
-        createdAt: DateTime(2026, 1, 1),
-        lastUsedAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
+        lastUsedAt: DateTime(2026),
       );
 
       for (final channel in [TransferChannel.file, TransferChannel.qr]) {
@@ -293,8 +293,8 @@ void main() {
       courses: [_course(id: 'shared-course', name: '数学')],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
-      createdAt: DateTime(2026, 1, 1),
-      lastUsedAt: DateTime(2026, 1, 1),
+      createdAt: DateTime(2026),
+      lastUsedAt: DateTime(2026),
     );
     final second = TimetableProfile(
       id: 'profile-2',
@@ -302,8 +302,8 @@ void main() {
       courses: [_course(id: 'shared-course', name: '物理')],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
-      createdAt: DateTime(2026, 1, 1),
-      lastUsedAt: DateTime(2026, 1, 1),
+      createdAt: DateTime(2026),
+      lastUsedAt: DateTime(2026),
     );
     final current = TransferPackage(
       packageId: 'current',
@@ -346,8 +346,8 @@ void main() {
         courses: [_course(id: 'shared-course', name: '档案旧')],
         settings: TimetableSettings.defaults(),
         currentWeek: 1,
-        createdAt: DateTime(2026, 1, 1),
-        lastUsedAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
+        lastUsedAt: DateTime(2026),
       );
       final current = TransferPackage(
         packageId: 'namespace-current',
@@ -411,7 +411,7 @@ void main() {
         packageId: 'current',
         scope: TransferScope.currentTimetable,
         courses: [
-          _course(id: 'course-1', name: '旧名称'),
+          _course(name: '旧名称'),
           _course(id: 'course-2'),
         ],
         exams: [_exam()],
@@ -436,7 +436,7 @@ void main() {
         packageId: 'incoming',
         scope: TransferScope.currentTimetable,
         courses: [
-          _course(id: 'course-1', name: '新名称'),
+          _course(name: '新名称'),
           _course(id: 'course-3'),
         ],
         exams: [_exam(id: 'exam-2')],

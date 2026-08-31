@@ -685,7 +685,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     int selectedWeek = initialWeek;
     // 已选日期有值时默认选中对应星期，否则不选中
-    int? selectedDayOfWeek = _hasSelectedDate ? currentDate?.weekday : null;
+    final int? selectedDayOfWeek = _hasSelectedDate ? currentDate?.weekday : null;
 
     // 滚动控制器，初始偏移指向已选周次
     final initialOffset = ((initialWeek - 1) * 56.0 - 100.0).clamp(
@@ -1069,7 +1069,7 @@ class _CustomReminderOffsetRow extends StatelessWidget {
             Expanded(
               child: Text(title, style: HyperosTypography.listTitle(context)),
             ),
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
             const HyperosChevron(),
             IconButton(
               onPressed: onRemove,

@@ -79,8 +79,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        TestApp(
-          home: const FrostedAppearanceScope(
+        const TestApp(
+          home: FrostedAppearanceScope(
             appearance: liquidAppearance,
             child: HyperosSheetFrame(
               child: SizedBox(width: 120, height: 120),

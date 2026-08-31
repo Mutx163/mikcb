@@ -206,7 +206,7 @@ class AppLogService {
       await initialize();
     }
     final file = await _resolveLogFile();
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       return _buildHeader(includeExportTime: forExport);
     }
     final body = (await file.readAsString()).trim();
@@ -333,7 +333,7 @@ class AppLogService {
     _writeQueue = _writeQueue.then((_) async {
       try {
         final file = await _resolveLogFile();
-        if (await file.exists()) {
+        if (file.existsSync()) {
           await file.delete();
         }
         cleared = true;
@@ -434,7 +434,7 @@ class AppLogService {
   Future<String?> _logFileFingerprint() async {
     try {
       final file = await _resolveLogFile();
-      final stat = await file.stat();
+      final stat = file.statSync();
       return '${stat.size}:${stat.modified.millisecondsSinceEpoch}';
     } catch (_) {
       return null;
@@ -442,7 +442,7 @@ class AppLogService {
   }
 
   Future<void> _trimIfNeeded(File file) async {
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       return;
     }
     final length = await file.length();
@@ -450,7 +450,7 @@ class AppLogService {
       return;
     }
     final text = await file.readAsString();
-    final retainLength = _maxLogBytes ~/ 2;
+    const retainLength = _maxLogBytes ~/ 2;
     final retained = text.length <= retainLength
         ? text
         : text.substring(text.length - retainLength);

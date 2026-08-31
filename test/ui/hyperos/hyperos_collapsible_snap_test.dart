@@ -44,7 +44,7 @@ void main() {
     expect(measuredFrameHeight, closeTo(firstFrameHeight, 0.1));
   });
 
-  const double expansion = 46.0; // measured large-title block height
+  const double expansion = 46; // measured large-title block height
   const double textHeight = 38.4; // large title glyph height (32sp * 1.2)
 
   test(
@@ -115,7 +115,7 @@ void main() {
         context: notificationContext,
         dragDetails: DragUpdateDetails(
           globalPosition: Offset.zero,
-          delta: Offset(0, -40),
+          delta: const Offset(0, -40),
           primaryDelta: -40,
         ),
       ),
@@ -339,7 +339,7 @@ void main() {
         context: notificationContext,
         dragDetails: DragUpdateDetails(
           globalPosition: Offset.zero,
-          delta: Offset(0, -40),
+          delta: const Offset(0, -40),
           primaryDelta: -40,
         ),
       ),
@@ -356,7 +356,7 @@ void main() {
       ScrollStartNotification(
         metrics: metrics(30),
         context: notificationContext,
-        dragDetails: DragStartDetails(globalPosition: Offset.zero),
+        dragDetails: DragStartDetails(),
       ),
     );
     expect(behavior.shortPageSpringReleasePixels, isNull);
@@ -367,7 +367,7 @@ void main() {
         context: notificationContext,
         dragDetails: DragUpdateDetails(
           globalPosition: Offset.zero,
-          delta: Offset(0, -20),
+          delta: const Offset(0, -20),
           primaryDelta: -20,
         ),
       ),

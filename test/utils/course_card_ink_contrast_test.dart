@@ -320,7 +320,6 @@ void main() {
         preferred: parseHex('#B34700'),
         cardColor: card,
         surfaceShowsWallpaper: true,
-        wallpaperLuminance: null,
       );
       expect(title, parseHex('#B34700'));
       final detail = resolveReadableCourseCardDetailColor(
@@ -328,7 +327,6 @@ void main() {
         resolvedTitleInk: title,
         cardColor: card,
         surfaceShowsWallpaper: true,
-        wallpaperLuminance: null,
       );
       expect(detail.r, closeTo(0.0, 0.001));
       expect(detail.a, closeTo(0.7, 0.01));

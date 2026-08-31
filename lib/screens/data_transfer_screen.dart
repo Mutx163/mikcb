@@ -257,7 +257,6 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     try {
       final package = _transferService.buildCurrentPackage(
         provider: provider,
-        channel: TransferChannel.file,
       );
       await _shareTransferPackage(
         package,
@@ -319,7 +318,6 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     try {
       final package = _transferService.buildFullPackage(
         provider: provider,
-        channel: TransferChannel.file,
       );
       await _shareTransferPackage(
         package,
@@ -542,7 +540,6 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     final mergePreview = _transferService.preview(
       current: current,
       incoming: incoming,
-      mode: TransferApplyMode.merge,
     );
     final overwritePreview = _transferService.preview(
       current: current,
@@ -672,7 +669,6 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
             final maxListHeight = MediaQuery.sizeOf(context).height * 0.52;
             return HyperosSheetFrame(
               chrome: HyperosSheetChrome.floating,
-              frosted: true,
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

@@ -13,9 +13,6 @@ import '../widgets/app_dialogs.dart';
 /// shifting the more-actions button when the active profile changes.
 const double _profileTrailingIndicatorSlot = 22;
 
-/// Readable check size (matches [HyperosSelectedCheckmark] default / ChoiceTile).
-const double _profileTrailingCheckSize = 22;
-
 class TimetableProfilesScreen extends StatelessWidget {
   const TimetableProfilesScreen({super.key});
 
@@ -377,7 +374,6 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
       padding: hyperosChevronRowPadding(context),
       minHeight: HyperosTokens.listRowTwoLineMinHeight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -411,7 +407,7 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
               color: HyperosColors.actionIcon(context),
               onPressed: _openMoreMenu,
             ),
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
             // Fixed slot for check / chevron so the more button never shifts
             // and both glyphs share the same geometric center.
             SizedBox(
@@ -424,7 +420,7 @@ class _TimetableProfileTileState extends State<_TimetableProfileTile> {
                         // nudge back onto the chevron centerline.
                         offset: const Offset(-0.5, -1),
                         child: const HyperosSelectedCheckmark(
-                          size: _profileTrailingCheckSize,
+                          
                         ),
                       )
                     : const HyperosChevron(),

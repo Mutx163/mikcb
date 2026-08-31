@@ -319,9 +319,9 @@ class HyperosListTile extends StatelessWidget {
           if (details != null) ...[
             const SizedBox(width: 6),
             _hyperosTrailingDetails(context, details!),
-            SizedBox(width: HyperosTokens.detailChevronGap),
+            const SizedBox(width: HyperosTokens.detailChevronGap),
           ] else
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
           Opacity(opacity: enabled ? 1 : 0.45, child: const HyperosChevron()),
         ],
       ),
@@ -359,7 +359,7 @@ class HyperosSwitchTile extends StatelessWidget {
   final Color? iconAccent;
 
   void _toggle() {
-    if (onChanged != null) onChanged!(!value);
+    onChanged?.call(!value);
   }
 
   @override
@@ -384,7 +384,6 @@ class HyperosSwitchTile extends StatelessWidget {
       padding: hyperosRowPadding(context),
       minHeight: rowHeight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
             HyperosIconBadge(
@@ -412,7 +411,7 @@ class HyperosSwitchTile extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
+          const SizedBox(width: HyperosMiuixBasicComponent.startEndSpacer),
           // Keep the row as the single toggle target. Without this guard the
           // row and switch can compete for one tap on some touch surfaces.
           AbsorbPointer(
@@ -463,7 +462,7 @@ class HyperosActionTile extends StatelessWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  HyperosIconBadge(icon: icon!, accent: HyperosIconColors.blue),
+                  HyperosIconBadge(icon: icon!),
                   const SizedBox(width: HyperosTokens.rowContentGap),
                 ],
                 Expanded(
@@ -579,7 +578,6 @@ class HyperosChoiceTile extends StatelessWidget {
         : (subtitle != null ? HyperosTokens.listRowTwoLineMinHeight : null);
 
     final rowChild = Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (prefix != null &&
             variant != HyperosChoiceVariant.popup &&
@@ -780,9 +778,9 @@ class HyperosNavTile extends StatelessWidget {
           if (details != null) ...[
             const SizedBox(width: 6),
             _hyperosTrailingDetails(context, details!),
-            if (showChevron) SizedBox(width: HyperosTokens.detailChevronGap),
+            if (showChevron) const SizedBox(width: HyperosTokens.detailChevronGap),
           ] else if (showChevron)
-            SizedBox(width: HyperosTokens.titleChevronGap),
+            const SizedBox(width: HyperosTokens.titleChevronGap),
           if (showChevron)
             Opacity(
               opacity: interactive ? 1 : 0.45,

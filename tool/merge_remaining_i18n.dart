@@ -7,7 +7,7 @@ void main() {
     File('tool/.gen_remaining_i18n_zh.json').readAsStringSync(),
   ) as Map<String, dynamic>;
 
-  final enPath = 'tool/.gen_remaining_i18n_en.json';
+  const enPath = 'tool/.gen_remaining_i18n_en.json';
   if (!File(enPath).existsSync()) {
     print('Missing $enPath — copy zh as fallback');
     File(enPath).writeAsStringSync(jsonEncode(zh));

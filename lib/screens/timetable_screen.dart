@@ -585,7 +585,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
         // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
         // 景，折射位移在带边被钳制，观感与预览（组内全尺寸采样）不一致。
-        Widget homeStack = BackdropGroup(
+        final Widget homeStack = BackdropGroup(
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -615,7 +615,6 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
             HyperosRootPage(
               overlayHeader: false,
-              resizeToAvoidBottomInset: false,
               backgroundColor: scaffoldBackgroundColor,
               headerDecoration: BoxDecoration(color: headerBarColor),
               headerPadding: EdgeInsets.fromLTRB(
@@ -690,7 +689,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   ),
                 ),
               ],
-              childPad: false,
               child: Padding(
                 padding: EdgeInsets.only(
                   // 日课表的列表视口保持全屏：避让改为列表自身的滚动
@@ -773,7 +771,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                 // 屏幕固定：fill 必须每帧重采样，否则纹理停在旧屏幕位置
                 // （卡片半边模糊半边透明）。合并两个动画统一驱动重采样。
                 repaint: _glassDockCardRepaint,
-                enabled: true,
                 child: homeStack,
               )
             : homeStack;
@@ -790,7 +787,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 优先收回内嵌页而不是退出应用。
         final inlineId = _dockInlinePageId;
         final inlineBuilder = inlineId == null ? null : inlineDockPageFor(inlineId);
-        Widget hostedContent = inlineBuilder == null
+        final Widget hostedContent = inlineBuilder == null
             ? dockContent
             : Stack(
                 fit: StackFit.expand,
@@ -1753,7 +1750,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     _wallpaperLuminanceRequestedKey = key;
-    final fileExists = await File(path).exists();
+    final fileExists = File(path).existsSync();
     if (!mounted || _wallpaperLuminanceRequestedKey != key) {
       return;
     }
@@ -2017,7 +2014,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             overflow: TextOverflow.ellipsis,
             style: foruiTheme.typography.display.lg.copyWith(
               fontWeight: FontWeight.w600,
-              height: 1.0,
+              height: 1,
               letterSpacing: 0.1,
               color: foreground,
             ),
@@ -2447,7 +2444,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 betweenDaysCurve * 0.55,
                 edgeCurve,
               );
-              final baseWidth = math.min(22.0, slotWidth * 0.34);
+              final baseWidth = math.min(22, slotWidth * 0.34);
               final indicatorWidth =
                   baseWidth + (slotWidth * 0.24 * morphProgress);
               final edgeDirection = rawDayPosition < 0
@@ -2459,7 +2456,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               final centeredLeft =
                   slotWidth * clampedDayPosition +
                   ((slotWidth - indicatorWidth) / 2);
-              final maxLeft = math.max(0.0, totalWidth - indicatorWidth);
+              final maxLeft = math.max(0, totalWidth - indicatorWidth);
               final indicatorLeft = (centeredLeft + edgePull)
                   .clamp(0.0, maxLeft)
                   .toDouble();
@@ -2687,8 +2684,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             width: 16,
             height: 16,
             child: _isHomePullQuickImportRunning
-                ? MiuixCircularProgressIndicator(
-                    progress: null,
+                ? const MiuixCircularProgressIndicator(
                     size: 16,
                     strokeWidth: 1.9,
                   )
@@ -2783,7 +2779,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Finger takes over from any in-flight settle spring.
     if (_homePullSettleSpring?.isAnimating ?? false) {
       _homePullSettleGeneration++;
-      _homePullSettleSpring?.stop(canceled: true);
+      _homePullSettleSpring?.stop();
     }
     if (deltaDy > 0) {
       _homePullTouchDistance = (_homePullTouchDistance + deltaDy).clamp(
@@ -2801,7 +2797,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       _homePullTouchDistance,
       _homePullDampingRange,
     ).clamp(0.0, _homePullQuickImportMaxDistance);
-    final threshold = _homePullQuickImportTriggerDistance;
+    const threshold = _homePullQuickImportTriggerDistance;
     final crossedUp =
         _homePullDragDistance < threshold && nextVisual >= threshold;
     final reArmed =
@@ -2947,7 +2943,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     final l10n = AppLocalizations.of(context)!;
     _homePullSettleGeneration++;
-    _homePullSettleSpring?.stop(canceled: true);
+    _homePullSettleSpring?.stop();
     _homePullHapticArmed = true;
     _homePullTouchDistance = 0;
     setState(() {
@@ -3041,9 +3037,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned.fill(
-            // 日视图是独立页面：从顶部开始，自带星期信息栏，面板在信息栏
-            // 之下。玻璃坞点 Tab 与日期栏路径都直接就位（闪现，无横向位移）。
-            top: 0,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -3910,11 +3903,9 @@ class _TimetableScreenState extends State<TimetableScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (isToday)
                         Text(
@@ -4268,7 +4259,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
@@ -5041,7 +5031,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   // retargeted before it settles and day view animates every
                   // frame forever (see _quantizeDayAgendaProgress).
                   duration: const Duration(milliseconds: 600),
-                  curve: Curves.linear,
                   builder: (context, animatedProgress, child) {
                     return FractionallySizedBox(
                       alignment: Alignment.centerLeft,
@@ -5594,7 +5583,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   // Below the 1 s tick so the tween settles between steps
                   // (see _quantizeDayAgendaProgress).
                   duration: const Duration(milliseconds: 600),
-                  curve: Curves.linear,
                   builder: (context, animatedProgress, child) {
                     return FractionallySizedBox(
                       alignment: Alignment.centerLeft,
@@ -5716,8 +5704,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final theme = Theme.of(context);
     return Row(
-      mainAxisSize: MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon, size: 14, color: ink.withValues(alpha: 0.82)),
         const SizedBox(width: 6),
@@ -5956,7 +5942,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           color: textColor,
           fontWeight: FontWeight.w400,
           fontSize: 10.5,
-          height: 1.0,
+          height: 1,
         ),
       ),
     );
@@ -6663,7 +6649,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                 return Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 272),
@@ -6746,21 +6731,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 独立圆钮改由坞层「水滴合并槽」渲染（见 _wrapWithGlassDock）：
       // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
       barHeight: 56,
-      // —— 玻璃材质实验（[_kStockDockGlass]）：true = 全部取包原版默认，
-      // false = 旧的 mikcb 自定义调校。原版各值：
-      // - 底栏本体显式传 stockBottomBarGlass（包内 kBottomBarGlassDefaults
-      //   的镜像：thickness 30 / blur 3 / 折射率 1.59 / 色散 0.3 / 24% 白，
-      //   iOS 26 Apple News/Safari tab bar 校准）。与不传参数等价，但能
-      //   同时给到右侧浮钮，消除两者内部默认不同导致的材质断层；
-      // - 拖拽透镜 indicatorSettings 不传 → baseIndicatorSettings
-      //   （thickness 20 / 折射率 1.10 / 无色散）：轻微透镜弯曲，不会出
-      //   现自定义拉满档那种「四周强折射、中间全透明」的甜甜圈观感；
-      // - pinch 0.4、expansion 水平12/垂直8、quality 自适应均为构造
-      //   默认值（与不传参数完全等价）。
-      // 不覆盖官方默认圆角（32）：barBorderRadius 一旦偏离默认值，库会把
-      // 独立按钮的形状从原生 LiquidOval 正圆降级成圆角矩形——这正是此前
-      // 「添加按钮不圆」的根因。指示器圆角官方默认即 barRadius-4=28。
-      indicatorBorderRadius: _kStockDockGlass ? null : 28,
       settings: _kStockDockGlass
           ? MikcbLiquidGlassTokens.stockBottomBarGlass
           : (useLiquidGlass
@@ -6778,9 +6748,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       indicatorSettings: _kStockDockGlass
           ? null
           : (useLiquidGlass ? MikcbLiquidGlassTokens.dragLensSettings : null),
-      indicatorExpansion: _kStockDockGlass
-          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-          : const EdgeInsets.symmetric(vertical: 8),
       indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
       quality: _kStockDockGlass
           ? null
@@ -6827,8 +6794,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           context.read<TimetableProvider>().settings,
         ),
         label: l10n.glassDockExtraButtonSemanticLabel,
-        width: 56,
-        height: 56,
         iconSize: 22,
         iconColor: ink,
         settings: settings,
@@ -7031,7 +6996,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                 color: foruiColors.border.withValues(
                   alpha: foruiColors.border.a * contentOpacity,
                 ),
-                width: 1,
               ),
               boxShadow: [
                 BoxShadow(
@@ -7408,7 +7372,6 @@ class _TimetableScreenState extends State<TimetableScreen>
             );
 
         return HyperosSheet(
-          frosted: true,
           title: l10n.addCourseSheetTitle,
           child: Wrap(
             spacing: 12,
@@ -7808,7 +7771,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       showAppToast(
         context,
         message: error.message != null
-            ? localizeServiceMessage(l10n, error.message!)
+            ? localizeServiceMessage(l10n, error.message! as String)
             : AppLocalizations.of(context)!.deleteFailed,
         kind: AppToastKind.error,
       );
@@ -7872,7 +7835,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       showAppToast(
         context,
         message: error.message != null
-            ? localizeServiceMessage(l10n, error.message!)
+            ? localizeServiceMessage(l10n, error.message! as String)
             : AppLocalizations.of(context)!.rescheduleFailed,
         kind: AppToastKind.error,
       );
@@ -8287,12 +8250,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
     final error = await _updateService.downloadAndInstallUpdate(
       downloadUrl,
-      (downloadedBytes, totalBytes) {
-        _updatePromptController.updateInAppProgress(
-          downloadedBytes,
-          totalBytes,
-        );
-      },
+      _updatePromptController.updateInAppProgress,
       controller,
       mirrorUrlPrefix: mirrorPrefix,
     );
@@ -8459,7 +8417,6 @@ class _HomeActionPageButton extends StatelessWidget {
         return _HomeActionButtonBody(
           icon: icon,
           title: title,
-          enabled: true,
           onTap: () => _openPopupActionPage(
             buttonContext,
             pageBuilder: pageBuilder,
@@ -8481,8 +8438,7 @@ class _HomeActionButtonBody extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.onTap,
-    this.enabled = true,
-  });
+  }) : enabled = true;
 
   @override
   Widget build(BuildContext context) {

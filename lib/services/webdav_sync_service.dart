@@ -605,11 +605,9 @@ class WebdavSyncService {
     final snapshot = _snapshotService.parseSnapshotJson(utf8.decode(bytes));
     final mergePackage = _snapshotService.buildMergeTransferPackageFromSnapshot(
       snapshot: snapshot,
-      channel: TransferChannel.cloud,
     );
     final overwritePackage = _snapshotService.buildTransferPackageFromSnapshot(
       snapshot: snapshot,
-      channel: TransferChannel.cloud,
     );
     final mergeDiff = _snapshotService.previewSnapshot(
       provider: provider,
@@ -619,7 +617,6 @@ class WebdavSyncService {
     final overwriteDiff = _snapshotService.previewSnapshot(
       provider: provider,
       snapshot: snapshot,
-      mode: TransferApplyMode.overwrite,
     );
     final incoming = mode == TransferApplyMode.merge
         ? mergePackage
@@ -667,7 +664,6 @@ class WebdavSyncService {
           lastAppliedRemoteHash: preview.snapshot.contentSha256,
           lastUploadedLocalHash: preview.snapshot.contentSha256,
         ),
-        backupSource: CloudBackupSource.auto,
         writeHistory: false,
       );
       if (uploadResult.kind == WebdavSyncResultKind.failed) {
@@ -748,7 +744,6 @@ class WebdavSyncService {
             lastAppliedRemoteHash: entry.contentSha256,
             lastUploadedLocalHash: entry.contentSha256,
           ),
-          backupSource: CloudBackupSource.auto,
           writeHistory: false,
         );
         if (uploadResult.kind == WebdavSyncResultKind.failed) {
@@ -1173,7 +1168,6 @@ class WebdavSyncService {
             contentSha256: parsed.contentSha256,
             deviceId: parsed.deviceId,
             deviceLabel: '',
-            source: CloudBackupSource.auto,
             profileCount: CloudBackupIndexService.countProfilesInSnapshotJson(
               content,
             ),

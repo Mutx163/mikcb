@@ -29,11 +29,10 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
   final double topInset;
 
   static SpringDescription get _spring {
-    final omega = (2 * math.pi) / HyperosMiuixAnim.standardSpringPeriod;
+    const omega = (2 * math.pi) / HyperosMiuixAnim.standardSpringPeriod;
     return SpringDescription.withDampingRatio(
       mass: 1,
       stiffness: omega * omega,
-      ratio: HyperosMiuixAnim.criticalDampingRatio,
     );
   }
 
@@ -50,7 +49,7 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
     final viewport = position.viewportDimension;
     final scale = viewport > 0 ? viewport : 400.0;
     final inset = topInset.clamp(0.0, scale);
-    return math.max(scale - inset, 0.0);
+    return math.max(scale - inset, 0);
   }
 
   double _maxOverscrollDistance(ScrollMetrics position) {
@@ -104,18 +103,18 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
   @visibleForTesting
   static double dragTransferRatio(double overscrollPast, double maxOverscroll) {
     if (maxOverscroll <= 0) {
-      return 1.0;
+      return 1;
     }
-    final freeZone = HyperosMiuixAnim.overscrollDragFreeZonePx;
+    const freeZone = HyperosMiuixAnim.overscrollDragFreeZonePx;
     if (overscrollPast <= freeZone) {
-      return 1.0;
+      return 1;
     }
-    final range = math.max(maxOverscroll - freeZone, 1.0);
+    final range = math.max(maxOverscroll - freeZone, 1);
     final depth = ((overscrollPast - freeZone) / range).clamp(0.0, 1.0);
     final falloff = math
         .pow(1 - depth, HyperosMiuixAnim.overscrollDragFalloffExponent)
         .toDouble();
-    final minTransfer = HyperosMiuixAnim.overscrollDragMinTransfer;
+    const minTransfer = HyperosMiuixAnim.overscrollDragMinTransfer;
     return minTransfer + (1.0 - minTransfer) * falloff;
   }
 
@@ -390,12 +389,12 @@ void hyperosResetOverscrollEdgeHaptics() {
 double hyperosOverscrollEdgeHapticRearmDistance(ScrollMetrics position) {
   final viewport = position.viewportDimension;
   if (viewport <= 0) {
-    return 200.0;
+    return 200;
   }
   // Half viewport, never below 160px.
   return math.max(
     viewport * hyperosOverscrollEdgeHapticRearmViewportFraction,
-    160.0,
+    160,
   );
 }
 

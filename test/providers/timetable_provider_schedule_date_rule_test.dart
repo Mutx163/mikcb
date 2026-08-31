@@ -44,7 +44,6 @@ void main() {
       timeSchemeId: provider.activeTimeScheme!.id,
       startDate: today,
       endDate: today,
-      enabled: true,
     );
     final rule = saveResult.rule;
     await provider.updateScheduleDateRule(rule.copyWith(enabled: false));
@@ -82,7 +81,6 @@ void main() {
       timeSchemeId: scheme.id,
       startDate: today,
       endDate: today,
-      enabled: true,
     );
 
     expect(
@@ -115,7 +113,6 @@ void main() {
           timeSchemeId: 'scheme-does-not-exist',
           startDate: today,
           endDate: today,
-          enabled: true,
         ),
       ], resync: false);
 
@@ -136,7 +133,7 @@ void main() {
       final provider = await createProvider();
       final shortScheme = await provider.createTimeScheme(
         name: '仅两节',
-        sections: shortSections(count: 2),
+        sections: shortSections(),
       );
 
       await provider.addCourse(
@@ -150,8 +147,6 @@ void main() {
           endSection: 4,
           startTime: '08:00',
           endTime: '11:30',
-          startWeek: 1,
-          endWeek: 16,
         ),
       );
 
@@ -161,7 +156,6 @@ void main() {
         timeSchemeId: shortScheme.id,
         startDate: today,
         endDate: today,
-        enabled: true,
       );
 
       expect(
@@ -196,7 +190,6 @@ void main() {
       timeSchemeId: provider.activeTimeScheme!.id,
       startDate: tomorrow,
       endDate: dayAfter,
-      enabled: true,
     );
 
     expect(saveResult.applyResult.outcome, ScheduleDateRuleApplyOutcome.notDue);

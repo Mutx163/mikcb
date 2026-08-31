@@ -37,7 +37,6 @@ void main() {
       final barrier = await barrierOf(
         tester,
         glassMode: FrostedGlassMode.gaussian,
-        sheetBarrierAlpha: 0.20,
       );
       expect(barrier, Colors.black.withValues(alpha: 0.20));
     });

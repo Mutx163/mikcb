@@ -65,7 +65,7 @@ void main() {
     test('节次错开不冲突（前后相邻也算不冲突）', () {
       expect(
         CourseDomain.conflict(
-          _course(id: 'a', endSection: 2),
+          _course(id: 'a'),
           _course(id: 'b', startSection: 3, endSection: 4),
         ),
         isFalse,
@@ -86,7 +86,7 @@ void main() {
     test('customWeeks 在外壳之外时不误报（仓库导入常见形态）', () {
       // 外壳 1–16，但实际只在第 10 周上课
       final a = _course(id: 'a', customWeeks: [10]);
-      final b = _course(id: 'b', startWeek: 1, endWeek: 9);
+      final b = _course(id: 'b', endWeek: 9);
       expect(CourseDomain.conflict(a, b), isFalse);
 
       // 候选周并集中存在共同激活周（第 10 周）→ 冲突
@@ -178,7 +178,6 @@ void main() {
       final target = _course(id: 'a');
       final source = _course(
         id: 'b',
-        name: '高数',
       ).copyWith(
         shortName: '数',
         color: '#FF5722',

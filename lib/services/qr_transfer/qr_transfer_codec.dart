@@ -196,8 +196,7 @@ class QrTransferEncoder {
   final LTCodec _codec;
   int _seed = -1;
 
-  QrTransferEncoder._({required this.info, required LTCodec codec})
-    : _codec = codec;
+  QrTransferEncoder._({required this.info, required this._codec});
 
   /// Validate the complete transfer before a QR screen is opened.
   static QrTransferCapacity preflight(Uint8List rawBytes) {
