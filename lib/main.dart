@@ -135,6 +135,12 @@ String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
 /// 纯色底上不触发 ANR。
 final Completer<void> _firstFrameReleased = Completer<void>();
 
+/// 玻璃 shader 预热 Future：runApp 后才启动（首帧是自绘启动画面、无玻璃
+/// 组件，不必挡在首帧前——低配机上多 pass shader 预热可达数百毫秒，是
+/// 启动白屏的大头）。首页换入前由启动流程 await 收口，保证首页玻璃首帧
+/// 依旧无占位闪烁；失败已被 catchError 吞掉，await 恒完成。
+Future<void> _glassShadersWarm = Future.value();
+
 void _releaseFirstFrame({required bool forced}) {
   if (_firstFrameReleased.isCompleted) return;
   _firstFrameReleased.complete();
@@ -193,9 +199,6 @@ Future<void> main() async {
           _releaseFirstFrame(forced: true);
         }
       });
-      // Pre-warm the liquid_glass_widgets fragment/indicator shaders so the
-      // first glass bar frame does not stall on shader compilation.
-      await LiquidGlassWidgets.initialize();
       unawaited(AppLogService.instance.initialize());
       // 预热诊断包名判定缓存：八宫格目录用它同步过滤调试/性能版专属
       // 入口（内存监控），不 await，晚到前该入口按不可见处理（保守）。
@@ -283,6 +286,17 @@ Future<void> main() async {
           brightnessResolver: Theme.maybeBrightnessOf,
         ),
       );
+      // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
+      // 玻璃按未预热降级，绝不能因此卡死换页）。
+      _glassShadersWarm = LiquidGlassWidgets.initialize()
+          .catchError((Object error, StackTrace stackTrace) {
+        unawaited(AppLogService.instance.error(
+          'liquid_glass_warmup_failed',
+          '玻璃 shader 预热失败：$error',
+          error: error,
+          stackTrace: stackTrace,
+        ));
+      });
       unawaited(_warmUpAfterFirstFrame(packageInfo));
     },
     (error, stackTrace) {
@@ -530,10 +544,13 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         unawaited(DebugDeepLinkService.drainPending());
       });
     }
-    // 首帧 = 自绘启动画面：其首帧渲染后立即放行，让品牌画面覆盖初始化期；
-    // 首页在启动流程完成时经 _revealHomeOnce 换入。
+    // 首帧 = 自绘启动画面：预解码启动图标后再放行——第一个投递帧就带
+    // 完整图标，不留图标晚一帧弹入的破绽；解码失败也照常放行。
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _allowFirstFrameOnce();
+      precacheImage(
+        const AssetImage('assets/branding/launcher_icon.png'),
+        context,
+      ).whenComplete(_allowFirstFrameOnce);
     });
     unawaited(_handleStartupFlows());
   }
@@ -614,6 +631,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         // 就绪：放行后的第一帧必须是完整界面，不允许露出主题兜底的半成品
         // 底色。prime 内部有预算与异常兜底，不会拖死启动管线。
         await HomeStartupVisualPrimer.prime(provider.settings);
+        // 收口玻璃预热：启动画面期间并行，首页换入前必须完成。
+        await _glassShadersWarm;
         _revealHomeOnce();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
@@ -654,6 +673,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       // 与老用户快速路径同一保证：首页换入前视觉资产已就绪（无壁纸时
       // prime 立即返回）。
       await HomeStartupVisualPrimer.prime(provider.settings);
+      // 收口玻璃预热：启动画面期间并行，首页换入前必须完成。
+      await _glassShadersWarm;
       _revealHomeOnce();
       unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;
