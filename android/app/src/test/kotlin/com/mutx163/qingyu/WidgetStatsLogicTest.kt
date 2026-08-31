@@ -1,9 +1,25 @@
 package com.mutx163.qingyu
 
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Test
+import java.util.TimeZone
 
 class WidgetStatsLogicTest {
+
+    companion object {
+        // 日期运算全部基于 Calendar（本地时区），固定 UTC 保证任意机器上结果一致。
+        @BeforeClass
+        @JvmStatic
+        fun setUpTimeZone() {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        }
+    }
+
+    // 1970-01-01 是周四；第一个周一 = 1970-01-05 = epoch day 4。
+    // DAY 的倍数在 UTC 下即当天零点，与 calculateSectionsDone 的日界一致。
+    private val day = 86_400_000L
+    private val monday = 4L * day // 第 1 周周一（epoch day 4）
 
     private fun course(
         name: String = "数学",
@@ -86,22 +102,46 @@ class WidgetStatsLogicTest {
 
     @Test
     fun sectionsDoneByDateAccumulatesCurrentWeekUpToToday() {
-        // 开学日 = 第 1 周周一 = day 0；今天 = 第 3 周周二 = day 15
-        val startMillis = 0L
-        val todayMillis = 15L * 86_400_000L
-        val monday = course(dayOfWeek = 1)   // 2 节/周
-        val wednesday = course(name = "英语", dayOfWeek = 3)
-        val courses = listOf(monday, wednesday)
-
+        // 开学日 = 第 1 周周一（epoch day 4）；今天 = 第 3 周周一（day 4 + 14）。
+        // 周一课 + 周三课：完整周 1-2 共 8 节；第 3 周周一已上 2 节（周三未到）→ 10。
+        val courses = listOf(course(dayOfWeek = 1), course(name = "英语", dayOfWeek = 3))
         val done = WidgetStatsLogic.calculateSectionsDone(
             courses = courses,
             calendarWeek = 3,
-            semesterStartDayStartMillis = startMillis,
-            todayDayStartMillis = todayMillis,
+            semesterStartDayStartMillis = monday,
+            todayDayStartMillis = monday + 14 * day,
             viewWeek = 3,
         )
-        // 完整周 1-2：2 门 × 2 节 × 2 周 = 8；第 3 周周二截止只含周一课 2 节 → 10
         assertEquals(10, done)
+    }
+
+    @Test
+    fun sectionsDoneAnchorsToMondayWhenSemesterStartsMidWeek() {
+        // 开学日 = 第 1 周周三（day 4+2）；今天 = 第 2 周周一（day 4+7）。
+        // 正确口径：完整周 1..1 = 2 节 + 当前周周一（day 11）已上 2 节 = 4。
+        // 旧实现直接锚定周三（week2 = day 13..19），今天 day 11 落在窗口外 → 只算 2。
+        val done = WidgetStatsLogic.calculateSectionsDone(
+            courses = listOf(course(dayOfWeek = 1)),
+            calendarWeek = 2,
+            semesterStartDayStartMillis = monday + 2 * day,
+            todayDayStartMillis = monday + 7 * day,
+            viewWeek = 2,
+        )
+        assertEquals(4, done)
+    }
+
+    @Test
+    fun sectionsDoneWednesdayCourseCountsOnItsActualDayMidWeekStart() {
+        // 开学日 = 周三（day 4+2），周三课当天（day 4+3 已过周三）就该累计。
+        // 旧实现锚定周三，第 1 周的"周三"被算到 day 4+9（下周三）→ 漏计。
+        val done = WidgetStatsLogic.calculateSectionsDone(
+            courses = listOf(course(dayOfWeek = 3)),
+            calendarWeek = 1,
+            semesterStartDayStartMillis = monday + 2 * day,
+            todayDayStartMillis = monday + 3 * day,
+            viewWeek = 1,
+        )
+        assertEquals(2, done)
     }
 
     @Test
@@ -109,10 +149,34 @@ class WidgetStatsLogicTest {
         val done = WidgetStatsLogic.calculateSectionsDone(
             courses = listOf(course()),
             calendarWeek = 0,
-            semesterStartDayStartMillis = 100L,
-            todayDayStartMillis = 50L,
+            semesterStartDayStartMillis = monday,
+            todayDayStartMillis = monday - day,
             viewWeek = 1,
         )
         assertEquals(0, done)
+    }
+
+    @Test
+    fun semesterStartMondayMillisNormalizesMidWeekStart() {
+        // 周一 → 本身；周三/周日 → 所在周周一；下周一 → 自身
+        assertEquals(monday, WidgetStatsLogic.semesterStartMondayMillis(monday))
+        assertEquals(monday, WidgetStatsLogic.semesterStartMondayMillis(monday + 2 * day))
+        assertEquals(monday, WidgetStatsLogic.semesterStartMondayMillis(monday + 6 * day))
+        assertEquals(monday + 7 * day, WidgetStatsLogic.semesterStartMondayMillis(monday + 7 * day))
+    }
+
+    @Test
+    fun sectionsDoneEndedSemesterClampsToTotal() {
+        // calendarWeek 被 clamp 到学期末（如 16），done 不得超过 sectionsTotal。
+        val courses = listOf(course(endWeek = 16))
+        val total = WidgetStatsLogic.calculateSectionsTotal(courses)
+        val done = WidgetStatsLogic.calculateSectionsDone(
+            courses = courses,
+            calendarWeek = 16,
+            semesterStartDayStartMillis = 0L,
+            todayDayStartMillis = monday + 200 * day,
+            viewWeek = 16,
+        )
+        assertEquals(total, done)
     }
 }

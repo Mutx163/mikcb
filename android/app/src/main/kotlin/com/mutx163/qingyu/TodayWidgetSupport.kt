@@ -135,6 +135,16 @@ object TodayWidgetSupport {
     const val DEFAULT_CORNER_RADIUS_DP = 22
     const val DEFAULT_HEIGHT_ADJUSTMENT_DP = -11
 
+    /** 当天本地零点 millis：缓存 key 的一部分，保证快照跨天必然失配。 */
+    fun dayStartMillis(): Long = Calendar.getInstance().apply {
+        timeInMillis = System.currentTimeMillis()
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+
     const val EXTRA_WIDGET_LAUNCH = "widget_launch"
     const val EXTRA_WIDGET_LAUNCH_APP_WIDGET_ID = "widget_launch_app_widget_id"
 
@@ -1148,6 +1158,35 @@ object TodayWidgetSupport {
             startTime = json.optString("startTime"),
             endTime = json.optString("endTime"),
         )
+    }
+
+    /**
+     * 读取活动档案的原始 JSON 字符串（仍处于 JSONArray 包裹结构内，未解析）。
+     * 供 StatsWidgetSupport 做同轮刷新缓存——key 用原始字符串，解析与否由调用方决定。
+     */
+    fun readActiveProfileRawJson(context: Context): String? {
+        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+        val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
+        val activeProfileId = flutterPrefs.getString(KEY_ACTIVE_PROFILE_ID, null)
+        return try {
+            val profiles = JSONArray(profilesPayload)
+            var fallbackRaw: String? = null
+            for (index in 0 until profiles.length()) {
+                val profile = profiles.optJSONObject(index) ?: continue
+                val raw = profile.toString()
+                if (fallbackRaw == null) {
+                    fallbackRaw = raw
+                }
+                if (!activeProfileId.isNullOrBlank() &&
+                    profile.optString("id") == activeProfileId
+                ) {
+                    return raw
+                }
+            }
+            fallbackRaw
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun readActiveProfileJson(context: Context): JSONObject? {
