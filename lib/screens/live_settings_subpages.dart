@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -931,6 +932,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final preservedAbsolutePath = preservePath == null
         ? null
         : File(preservePath).absolute.path;
+    var deleted = 0;
+    var failed = 0;
     await for (final entity in targetDir.list()) {
       if (entity is! File) {
         continue;
@@ -948,8 +951,31 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       try {
         if (entity.existsSync()) {
           await entity.delete();
+          deleted++;
         }
-      } catch (_) {}
+      } catch (_) {
+        // 单文件删除失败不中断清理循环；汇总计数后统一留一条 debug
+        // 痕迹，避免历史生成图片静默累积且无观测手段。
+        failed++;
+      }
+    }
+    if (failed > 0) {
+      // 走 AppLogService 而非 debugPrint：包在 assert 里的输出 release 包
+      // 会被整体剥离，清理失败恰恰最需要 release 可观测。warn 失败不外抛。
+      try {
+        await AppLogService.instance.warn(
+          'live_island_artifact_cleanup_failed',
+          'Live island preview artifact cleanup had failures',
+          extras: {
+            'deleted': deleted,
+            'failed': failed,
+            'dir': directoryName,
+            'prefix': filePrefix,
+          },
+        );
+      } catch (_) {
+        // 日志通道不可用时静默，不影响清理主流程。
+      }
     }
   }
 }

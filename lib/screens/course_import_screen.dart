@@ -4103,14 +4103,21 @@ class _WarehouseAdapterWebLoginScreenState
   window.setTimeout(collect, 2000);
 })();
 ''');
-    } catch (_) {}
+    } catch (e) {
+      // WebView 已销毁或桥不可用：登录探测整条链路失效，但导入主流程
+      // 会按超时兜底。留痕便于排查「登录探测不工作」类反馈。
+      _debugImportLog('login watcher inject failed: $e', level: 'warn');
+    }
   }
 
   Future<void> _requestLoginStateProbe() async {
     await _installLoginWatcher();
     try {
       await _controller.runJavaScript('window.__qingyuCollectLoginState?.();');
-    } catch (_) {}
+    } catch (e) {
+      // 同上：探测脚本执行失败不影响导入主流程，留痕即可。
+      _debugImportLog('login state probe failed: $e', level: 'warn');
+    }
   }
 
   void _startImportTimeout() {
@@ -4661,7 +4668,10 @@ $kWarehouseBridgeCompatShim  try {
             .map((item) => item.toString())
             .toList(growable: false);
       }
-    } catch (_) {}
+    } catch (_) {
+      // 解析失败按空选项兜底（下方对话框以空列表呈现），此处属脚本侧
+      // 数据异常而非关键路径，留兜底不中断导入。
+    }
     final currentSelection = selectedIndex.clamp(
       0,
       options.isEmpty ? 0 : options.length - 1,
@@ -5366,7 +5376,11 @@ $kWarehouseBridgeCompatShim  try {
   Future<void> _injectMacroRecorderJs() async {
     try {
       await _controller.runJavaScript(MacroRecorderJs.injectScript);
-    } catch (_) {}
+    } catch (e) {
+      // 注入失败意味着本次录制收不到任何事件（Dart 侧表现为 0 步骤），
+      // 不中断流程但必须留痕，否则用户「录完是空的」无从归因。
+      _debugImportLog('macro recorder inject failed: $e', level: 'warn');
+    }
   }
 
   void _handleMacroEvent(Map<String, dynamic> message) {
@@ -5379,7 +5393,10 @@ $kWarehouseBridgeCompatShim  try {
       setState(() {
         _macroRawEvents.add(Map<String, dynamic>.from(decoded));
       });
-    } catch (_) {}
+    } catch (e) {
+      // 单条事件损坏只丢这一条，不中断录制；留痕便于核对事件数差异。
+      _debugImportLog('macro event decode failed: $e', level: 'warn');
+    }
   }
 
   Future<void> _toggleMacroRecording() async {
@@ -5427,7 +5444,11 @@ $kWarehouseBridgeCompatShim  try {
           );
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // dump 失败 = 用户刚录制的尾部事件静默丢失，导入流程不中断
+      //（已通过事件通道收到的步骤仍有效），但必须留痕便于核对步骤缺失。
+      _debugImportLog('macro dump on complete failed: $e', level: 'warn');
+    }
 
     final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
     final steps = MacroRecordingConverter.convert(capturedEvents);
@@ -5533,7 +5554,11 @@ $kWarehouseBridgeCompatShim  try {
           });
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // dump 失败 = 录制尾部事件丢失，用户保存的宏可能缺步骤且无感知；
+      // 不中断停止流程，留痕便于排查「宏步骤缺失」类反馈。
+      _debugImportLog('macro dump on stop failed: $e', level: 'warn');
+    }
 
     // 转换为 MacroStep 列表
     final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
@@ -6533,7 +6558,10 @@ String _normalizeJavaScriptResult(Object? raw) {
     if (decoded is String) {
       return decoded;
     }
-  } catch (_) {}
+  } catch (_) {
+    // WebView 返回的字符串可能带外层引号；解码失败说明本就是裸文本，
+    // 原样返回属预期分支，不是错误。
+  }
   return text;
 }
 

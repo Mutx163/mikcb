@@ -32,6 +32,7 @@ import '../logging/app_log_messages.dart';
 import '../services/app_log_service.dart';
 import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
+export '../services/holiday_service.dart' show HolidayCustomSaveException;
 import '../services/home_widget_service.dart';
 import '../services/home_widget_binding_service.dart';
 import '../services/home_widget_snapshot_service.dart';
@@ -3311,9 +3312,13 @@ class TimetableProvider with ChangeNotifier {
         final nextYearData = await _holidayService.getDataForYear(now.year + 1);
         allEntries.addAll(nextYearData.entries);
       }
-      // Merge user-defined custom holidays
+      // Merge user-defined custom holidays. Null means the persisted data is
+      // corrupted (logged inside the service): skip merging instead of
+      // treating it as "no data" so a later save cannot wipe real entries.
       final customEntries = await _holidayService.loadCustomHolidays();
-      allEntries.addAll(customEntries);
+      if (customEntries != null) {
+        allEntries.addAll(customEntries);
+      }
       _holidayData = HolidayData(
         year: data.year,
         version: data.version,
@@ -3358,8 +3363,11 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// 用户自定义假期列表（不含远程/内置数据）
+  ///
+  /// 本地数据损坏时返回空列表兜底（损坏详情由 service 落日志），只读
+  /// 展示场景无法修复损坏，也没有写回风险。
   Future<List<HolidayEntry>> getCustomHolidays() async {
-    return _holidayService.loadCustomHolidays();
+    return await _holidayService.loadCustomHolidays() ?? const [];
   }
 
   /// 新增一条自定义假期
@@ -3371,6 +3379,12 @@ class TimetableProvider with ChangeNotifier {
   /// 批量新增自定义假期（单次 load → append → save，避免逐条写入的竞态问题）
   Future<void> addCustomHolidays(List<HolidayEntry> entries) async {
     final existing = await _holidayService.loadCustomHolidays();
+    if (existing == null) {
+      // 本地数据损坏：禁止把空列表 append 后写回（会覆盖清零真实数据）。
+      throw const HolidayCustomSaveException(
+        'custom holiday storage corrupted; refusing to overwrite',
+      );
+    }
     existing.addAll(entries);
     await _holidayService.saveCustomHolidays(existing);
     await _loadHolidayData();

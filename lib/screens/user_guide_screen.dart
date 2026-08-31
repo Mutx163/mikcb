@@ -91,6 +91,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   void _startSettingsStatusPoll({required String baselineKey}) {
     _settingsPollTimer?.cancel();
     var ticks = 0;
+    var refreshInFlight = false;
     _settingsPollTimer = Timer.periodic(const Duration(milliseconds: 450), (
       timer,
     ) async {
@@ -99,7 +100,17 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         timer.cancel();
         return;
       }
-      await _refreshStatus(showLoading: false);
+      // 回调是 async：_refreshStatus 超过 450ms 时跳过本轮，避免轮询
+      // 重叠造成状态抖动。
+      if (refreshInFlight) {
+        return;
+      }
+      refreshInFlight = true;
+      try {
+        await _refreshStatus(showLoading: false);
+      } finally {
+        refreshInFlight = false;
+      }
       if (!mounted) {
         timer.cancel();
         return;
