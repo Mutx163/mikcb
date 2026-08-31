@@ -1,38 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
-import 'package:university_timetable/screens/about_screen.dart';
-import 'package:university_timetable/screens/add_course_screen.dart';
-import 'package:university_timetable/screens/add_exam_screen.dart';
-import 'package:university_timetable/screens/add_schedule_item_screen.dart';
-import 'package:university_timetable/screens/add_task_screen.dart';
-import 'package:university_timetable/screens/advanced_material_settings_screen.dart';
-import 'package:university_timetable/screens/changelog_screen.dart';
-import 'package:university_timetable/screens/cloud_sync_screen.dart';
-import 'package:university_timetable/screens/couple_timetable_settings_screen.dart';
-import 'package:university_timetable/screens/course_conflict_screen.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
-import 'package:university_timetable/screens/course_overview_screen.dart';
-import 'package:university_timetable/screens/course_statistics_screen.dart';
-import 'package:university_timetable/screens/data_transfer_screen.dart';
-import 'package:university_timetable/screens/exam_list_screen.dart';
-import 'package:university_timetable/screens/feedback_screen.dart';
-import 'package:university_timetable/screens/ics_export_screen.dart';
-import 'package:university_timetable/screens/lan_edit_screen.dart';
-import 'package:university_timetable/screens/location_time_match_screen.dart';
-import 'package:university_timetable/screens/memory_stats_screen.dart';
-import 'package:university_timetable/screens/open_source_licenses_screen.dart';
-import 'package:university_timetable/screens/schedule_date_rule_screen.dart';
-import 'package:university_timetable/screens/statistics_settings_screen.dart';
-import 'package:university_timetable/screens/support_creator_screen.dart';
-import 'package:university_timetable/screens/task_list_screen.dart';
-import 'package:university_timetable/screens/time_scheme_management_screen.dart';
-import 'package:university_timetable/screens/timetable_profiles_screen.dart';
-import 'package:university_timetable/screens/timetable_settings_screen.dart';
-import 'package:university_timetable/screens/user_guide_screen.dart';
 import 'package:university_timetable/services/memory_stats_service.dart';
 import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
@@ -40,6 +11,18 @@ import 'package:university_timetable/widgets/profile_quick_switch_sheet.dart';
 
 export 'home_top_menu.dart'
     show HomeMenuEntry, HomeMenuEntryCategory, homeMenuEntryCategoryLabel;
+
+// 拆分迁移的内嵌页注册表与导航壳：原样再导出，所有既有 import
+// home_menu_catalog.dart 的调用方（timetable_screen 等）无须改动。
+export 'home_menu_route_catalog.dart'
+    show
+        kInlineDockPages,
+        inlineDockPageFor,
+        pushHomeMenuUpdateEntry,
+        kHomeCatalogPages,
+        homePage,
+        registerSettingsPages,
+        resolveSettingsSubpage;
 
 /// 八宫格候选目录：应用内所有适合作为独立入口的二级页面与功能。
 ///
@@ -58,29 +41,21 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.system_update_alt_rounded,
     category: HomeMenuEntryCategory.features,
     // 宿主拦截后才会走这里；兜底直开更新详情页。
-    open: (context) async {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (!context.mounted) return;
-      await pushHomeMenuPage(
-        context,
-        AboutUpdateScreen(packageInfo: packageInfo),
-      );
-    },
+    open: pushHomeMenuUpdateEntry,
   ),
   HomeMenuEntry(
     id: 'overview',
     title: (l10n) => l10n.homeMenuOverviewTitle,
     icon: Icons.dashboard_customize_rounded,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const CourseOverviewScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('overviewPage')),
   ),
   HomeMenuEntry(
     id: 'statistics',
     title: (l10n) => l10n.homeMenuStatisticsTitle,
     icon: Icons.bar_chart_rounded,
     category: HomeMenuEntryCategory.features,
-    open: (context) =>
-        pushHomeMenuPage(context, const CourseStatisticsScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('statisticsPage')),
   ),
   HomeMenuEntry(
     id: 'addCourse',
@@ -88,21 +63,21 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.add_circle_outline_rounded,
     category: HomeMenuEntryCategory.features,
     // 首页宿主优先处理（弹出带日期上下文的添加弹层）；此处兜底直开表单。
-    open: (context) => pushHomeMenuPage(context, const AddCourseScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('addCoursePage')),
   ),
   HomeMenuEntry(
     id: 'exams',
     title: (l10n) => l10n.examListTitle,
     icon: Icons.school_outlined,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const ExamListScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('examListPage')),
   ),
   HomeMenuEntry(
     id: 'importCourses',
     title: (l10n) => l10n.homeMenuImportTitle,
     icon: Icons.file_upload_outlined,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const CourseImportScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('courseImportPage')),
   ),
   HomeMenuEntry(
     id: 'courseRecolor',
@@ -118,21 +93,21 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     title: (l10n) => l10n.homeMenuTasksTitle,
     icon: Icons.checklist_rounded,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const TaskListScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('taskListPage')),
   ),
   HomeMenuEntry(
     id: 'addExam',
     title: (l10n) => l10n.addExam,
     icon: Icons.event_note_outlined,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const AddExamScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('addExamPage')),
   ),
   HomeMenuEntry(
     id: 'addTask',
     title: (l10n) => l10n.addTask,
     icon: Icons.add_task_outlined,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const AddTaskScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('addTaskPage')),
   ),
   HomeMenuEntry(
     id: 'addScheduleItem',
@@ -140,14 +115,15 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.event_available_outlined,
     category: HomeMenuEntryCategory.features,
     open: (context) =>
-        pushHomeMenuPage(context, const AddScheduleItemScreen()),
+        pushHomeMenuPage(context, homePage('addScheduleItemPage')),
   ),
   HomeMenuEntry(
     id: 'courseConflict',
     title: (l10n) => l10n.courseConflictDetailTitle,
     icon: Icons.rule_rounded,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const CourseConflictScreen()),
+    open: (context) =>
+        pushHomeMenuPage(context, homePage('courseConflictPage')),
   ),
   HomeMenuEntry(
     id: 'locationTimeMatch',
@@ -155,7 +131,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.location_on_outlined,
     category: HomeMenuEntryCategory.features,
     open: (context) =>
-        pushHomeMenuPage(context, const LocationTimeMatchScreen()),
+        pushHomeMenuPage(context, homePage('locationTimeMatchPage')),
   ),
   HomeMenuEntry(
     id: 'scheduleDateRule',
@@ -163,22 +139,21 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.event_repeat_outlined,
     category: HomeMenuEntryCategory.features,
     open: (context) =>
-        pushHomeMenuPage(context, const ScheduleDateRuleScreen()),
+        pushHomeMenuPage(context, homePage('scheduleDateRulePage')),
   ),
   HomeMenuEntry(
     id: 'icsExport',
     title: (l10n) => l10n.icsExportTitle,
     icon: Icons.calendar_month_outlined,
     category: HomeMenuEntryCategory.features,
-    open: (context) => pushHomeMenuPage(context, const IcsExportScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('icsExportPage')),
   ),
   HomeMenuEntry(
     id: 'timeSchemes',
     title: (l10n) => l10n.timeSchemeTitle,
     icon: Icons.schedule_outlined,
     category: HomeMenuEntryCategory.features,
-    open: (context) =>
-        pushHomeMenuPage(context, const TimeSchemeManagementScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('timeSchemesPage')),
   ),
   HomeMenuEntry(
     id: 'profiles',
@@ -186,7 +161,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.collections_bookmark_outlined,
     category: HomeMenuEntryCategory.features,
     open: (context) =>
-        pushHomeMenuPage(context, const TimetableProfilesScreen()),
+        pushHomeMenuPage(context, homePage('timetableProfilesPage')),
   ),
   HomeMenuEntry(
     id: 'quickSwitchTimetable',
@@ -207,7 +182,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
           Navigator.of(buttonContext).pop();
           await pushHomeMenuPage(
             buttonContext,
-            const TimetableProfilesScreen(),
+            homePage('timetableProfilesPage'),
           );
         },
       );
@@ -224,21 +199,21 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     title: (l10n) => l10n.dataTransferEntryTitle,
     icon: Icons.backup_outlined,
     category: HomeMenuEntryCategory.data,
-    open: (context) => pushHomeMenuPage(context, const DataTransferScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('dataTransferPage')),
   ),
   HomeMenuEntry(
     id: 'cloudSync',
     title: (l10n) => l10n.cloudSyncTitle,
     icon: Icons.cloud_sync_outlined,
     category: HomeMenuEntryCategory.data,
-    open: (context) => pushHomeMenuPage(context, const CloudSyncScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('cloudSyncPage')),
   ),
   HomeMenuEntry(
     id: 'lanEdit',
     title: (l10n) => l10n.lanEditTitle,
     icon: Icons.lan_outlined,
     category: HomeMenuEntryCategory.data,
-    open: (context) => pushHomeMenuPage(context, const LanEditScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('lanEditPage')),
   ),
   HomeMenuEntry(
     id: 'coupleTimetable',
@@ -246,7 +221,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.favorite_outline_rounded,
     category: HomeMenuEntryCategory.data,
     open: (context) =>
-        pushHomeMenuPage(context, const CoupleTimetableSettingsScreen()),
+        pushHomeMenuPage(context, homePage('coupleTimetablePage')),
   ),
 
   // ── 偏好设置 ──────────────────────────────────────────────
@@ -255,8 +230,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     title: (l10n) => l10n.homeMenuSettingsTitle,
     icon: Icons.tune_rounded,
     category: HomeMenuEntryCategory.preferences,
-    open: (context) =>
-        pushHomeMenuPage(context, const TimetableSettingsScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('settingsPage')),
   ),
   _settingsSubpageEntry(
     id: 'generalSettings',
@@ -304,7 +278,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.query_stats_rounded,
     category: HomeMenuEntryCategory.preferences,
     open: (context) =>
-        pushHomeMenuPage(context, const StatisticsSettingsScreen()),
+        pushHomeMenuPage(context, homePage('statisticsSettingsPage')),
   ),
   HomeMenuEntry(
     id: 'advancedMaterialSettings',
@@ -312,7 +286,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.auto_awesome_outlined,
     category: HomeMenuEntryCategory.preferences,
     open: (context) =>
-        pushHomeMenuPage(context, const AdvancedMaterialSettingsScreen()),
+        pushHomeMenuPage(context, homePage('advancedMaterialSettingsPage')),
   ),
 
   // ── 关于与支持 ────────────────────────────────────────────
@@ -322,35 +296,35 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.favorite_border_rounded,
     category: HomeMenuEntryCategory.about,
     open: (context) =>
-        pushHomeMenuPage(context, const SupportCreatorScreen()),
+        pushHomeMenuPage(context, homePage('supportCreatorPage')),
   ),
   HomeMenuEntry(
     id: 'aboutApp',
     title: (l10n) => l10n.aboutTitle,
     icon: Icons.info_outline_rounded,
     category: HomeMenuEntryCategory.about,
-    open: (context) => pushHomeMenuPage(context, const AboutScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('aboutPage')),
   ),
   HomeMenuEntry(
     id: 'changelog',
     title: (l10n) => l10n.aboutChangelogTitle,
     icon: Icons.history_rounded,
     category: HomeMenuEntryCategory.about,
-    open: (context) => pushHomeMenuPage(context, const ChangelogScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('changelogPage')),
   ),
   HomeMenuEntry(
     id: 'userGuide',
     title: (l10n) => l10n.userGuideEntryTitle,
     icon: Icons.menu_book_outlined,
     category: HomeMenuEntryCategory.about,
-    open: (context) => pushHomeMenuPage(context, const UserGuideScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('userGuidePage')),
   ),
   HomeMenuEntry(
     id: 'feedback',
     title: (l10n) => l10n.feedbackTitle,
     icon: Icons.mail_outline_rounded,
     category: HomeMenuEntryCategory.about,
-    open: (context) => pushHomeMenuPage(context, const FeedbackScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('feedbackPage')),
   ),
   HomeMenuEntry(
     id: 'openSourceLicenses',
@@ -358,7 +332,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.code_rounded,
     category: HomeMenuEntryCategory.about,
     open: (context) =>
-        pushHomeMenuPage(context, const OpenSourceLicensesScreen()),
+        pushHomeMenuPage(context, homePage('openSourceLicensesPage')),
   ),
   // 内存监控与设置页开发者组同源门控：仅 .debug/.profile 包名（调试版、
   // 性能版）可见，正式版用户不得经八宫格绕过该限制。
@@ -367,7 +341,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     title: (l10n) => l10n.memoryStatsEntryTitle,
     icon: Icons.memory_outlined,
     category: HomeMenuEntryCategory.about,
-    open: (context) => pushHomeMenuPage(context, const MemoryStatsScreen()),
+    open: (context) => pushHomeMenuPage(context, homePage('memoryStatsPage')),
     visible: () => MemoryStatsService.isDiagnosticsBuildCached,
   ),
 ];
@@ -385,7 +359,7 @@ HomeMenuEntry _settingsSubpageEntry({
     icon: icon,
     category: HomeMenuEntryCategory.preferences,
     open: (context) {
-      final page = settingsSubpageById(id);
+      final page = resolveSettingsSubpage(id);
       if (page == null) {
         return Future<void>.value();
       }
@@ -395,46 +369,6 @@ HomeMenuEntry _settingsSubpageEntry({
 }
 
 /// 按 id 查目录条目；未知 id（旧版本残留、拼写变化）返回 null 由调用方丢弃。
-/// 底栏内嵌页注册表：这些 id 点选时不再推入新路由，而是在首页栈内
-/// 切换内容区，玻璃坞保持悬浮（对齐旧「设置 Tab」的常驻体验）。
-/// 未登记的 id（表单类/需要上下文的流程页）仍走普通推入。
-final Map<String, WidgetBuilder> kInlineDockPages = {
-  'settings': (context) => const TimetableSettingsScreen(),
-  'overview': (context) => const CourseOverviewScreen(),
-  'statistics': (context) => const CourseStatisticsScreen(),
-  'exams': (context) => const ExamListScreen(),
-  'tasks': (context) => const TaskListScreen(),
-  'dataTransfer': (context) => const DataTransferScreen(),
-  'cloudSync': (context) => const CloudSyncScreen(),
-  'lanEdit': (context) => const LanEditScreen(),
-  'coupleTimetable': (context) => const CoupleTimetableSettingsScreen(),
-  'timeSchemes': (context) => const TimeSchemeManagementScreen(),
-  'icsExport': (context) => const IcsExportScreen(),
-  'profiles': (context) => const TimetableProfilesScreen(),
-  'feedback': (context) => const FeedbackScreen(),
-  'changelog': (context) => const ChangelogScreen(),
-  'openSourceLicenses': (context) => const OpenSourceLicensesScreen(),
-  'userGuide': (context) => const UserGuideScreen(),
-  'support': (context) => const SupportCreatorScreen(),
-  'statisticsSettings': (context) => const StatisticsSettingsScreen(),
-  'locationTimeMatch': (context) => const LocationTimeMatchScreen(),
-  'scheduleDateRule': (context) => const ScheduleDateRuleScreen(),
-  'memoryStats': (context) => const MemoryStatsScreen(),
-  // 软件更新页构造需要 PackageInfo：用 FutureBuilder 在内嵌壳内自取。
-  'update': (context) => FutureBuilder(
-        future: PackageInfo.fromPlatform(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return AboutUpdateScreen(packageInfo: snapshot.data!);
-        },
-      ),
-};
-
-/// id 对应的内嵌页构建器；未登记返回 null（调用方回退为推入路由）。
-WidgetBuilder? inlineDockPageFor(String id) => kInlineDockPages[id];
-
 HomeMenuEntry? homeMenuEntryById(String? id) {
   if (id == null || id.isEmpty) {
     return null;
@@ -462,12 +396,10 @@ List<HomeMenuEntry> resolveHomeGridMenuEntries(TimetableSettings settings) {
   // 自愈：历史版本对「空排列」执行 normalize 时会钉入 'settings'，把
   // 从未配置过的档位固化成单入口；叠加八宫格编辑器入口一度缺失，用户
   // 无法自行恢复。这种「只剩钉住项」的档位视作未配置，回退默认八项。
-  final degenerate = resolved.length == 1 &&
-      resolved.single.id == HomeGridMenu.pinnedActionId;
+  final degenerate =
+      resolved.length == 1 && resolved.single.id == HomeGridMenu.pinnedActionId;
   if (resolved.isEmpty || degenerate) {
-    return [
-      for (final id in HomeGridMenu.defaultActions) homeMenuEntryById(id),
-    ]
+    return [for (final id in HomeGridMenu.defaultActions) homeMenuEntryById(id)]
         .whereType<HomeMenuEntry>()
         .where((entry) => entry.visible())
         .toList(growable: false);
@@ -513,7 +445,7 @@ String glassDockActionLabel(AppLocalizations l10n, String id) {
 }
 
 /// 底栏按钮的展示图标（特殊动作用视图图标，其余取目录图标）。
- IconData glassDockActionIcon(String id) {
+IconData glassDockActionIcon(String id) {
   switch (id) {
     case kGlassDockActionDay:
       return Icons.today_rounded;
@@ -522,4 +454,3 @@ String glassDockActionLabel(AppLocalizations l10n, String id) {
   }
   return homeMenuEntryById(id)?.icon ?? Icons.circle_outlined;
 }
-

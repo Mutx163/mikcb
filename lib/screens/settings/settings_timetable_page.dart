@@ -271,7 +271,7 @@ class _TimetablePageSettingsScreenState
                       stalePath,
                       directoryName: 'home_page_wallpaper',
                       filePrefix: 'wallpaper',
-                    ),
+                    ).then((_) => invalidateHomePageBackdropFileExists(stalePath)),
                   );
                   _updateDraft(
                     _draft.copyWith(
@@ -441,10 +441,12 @@ class _TimetablePageSettingsScreenState
     if (!mounted || targetPath == null) {
       return;
     }
-    evictHomePageImageCache(resolveHomePageBackdropImagePath(_draft));
-    PreblurredWallpaperCache.instance.evict(
-      resolveHomePageBackdropImagePath(_draft),
-    );
+    final draftPath = resolveHomePageBackdropImagePath(_draft);
+    evictHomePageImageCache(draftPath);
+    // 新壁纸文件刚落地：刷新存在性 memo，避免首页沿用旧路径的缓存结果。
+    invalidateHomePageBackdropFileExists(draftPath);
+    invalidateHomePageBackdropFileExists(targetPath);
+    PreblurredWallpaperCache.instance.evict(draftPath);
     _updateDraft(
       _draft.copyWith(
         homePageWallpaperPath: targetPath,
@@ -465,6 +467,7 @@ class _TimetablePageSettingsScreenState
     // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
     if (!await File(existingPath).exists()) {
       evictHomePageImageCache(existingPath);
+      invalidateHomePageBackdropFileExists(existingPath);
       PreblurredWallpaperCache.instance.evict(existingPath);
       if (!mounted) {
         return;
@@ -503,6 +506,7 @@ class _TimetablePageSettingsScreenState
         if (await newFile.exists()) {
           await newFile.delete();
         }
+        invalidateHomePageBackdropFileExists(result.path);
       }
       return;
     }
@@ -527,6 +531,7 @@ class _TimetablePageSettingsScreenState
       if (await oldFile.exists()) {
         await oldFile.delete();
       }
+      invalidateHomePageBackdropFileExists(existingPath);
     }
   }
 

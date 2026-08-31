@@ -135,12 +135,16 @@ class AppLogService {
   Future<void> warn(
     String category,
     String message, {
+    Object? error,
+    StackTrace? stackTrace,
     Map<String, Object?> extras = const {},
     bool force = false,
   }) => log(
     level: 'warn',
     category: category,
     message: message,
+    error: error,
+    stackTrace: stackTrace,
     extras: extras,
     force: force,
   );

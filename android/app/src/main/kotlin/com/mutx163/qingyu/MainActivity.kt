@@ -80,6 +80,10 @@ class MainActivity : FlutterActivity() {
     )
 
     private var pendingExternalImport: PendingExternalImport? = null
+
+    /** 外部导入读取请求序号：仅主线程读写；后台读取回填时校验仍是最新请求，
+     *  防止前一个慢读取（如网盘 provider）回来覆盖更新的导入意图。 */
+    private var externalImportRequestSeq = 0
     private var pendingOpenLanEdit = false
     private var pendingDebugRoute: Map<String, Any?>? = null
 
@@ -964,36 +968,65 @@ class MainActivity : FlutterActivity() {
         if (uri.scheme == "mikcb-debug") {
             return
         }
-        val mimeType = intent.type?.takeIf { it.isNotBlank() }
+        // 跨进程 ContentResolver I/O（getType/query/全量读文件）不能在主线程做：
+        // 外部「打开方式」导入会先走重定向重建 Activity 并新建 FlutterEngine，
+        // 同一主线程还要跑引擎冷启动，这里同步读大文件/慢 provider 必然 ANR。
+        // 全部阻塞调用挪到后台线程，完成后回主线程落 pending 并通知 Dart。
+        val requestSeq = ++externalImportRequestSeq
+        val sharedType = intent.type
+        Thread {
+            val pending = try {
+                loadExternalImportFromUri(uri, sharedType)
+            } catch (e: Exception) {
+                Log.w(
+                    "MainActivity",
+                    "${DiagnosticLogMessages.LOG_LOAD_EXTERNAL_IMPORT_FAILED}：$uri",
+                    e,
+                )
+                null
+            } ?: return@Thread
+            runOnUiThread {
+                if (requestSeq == externalImportRequestSeq) {
+                    pendingExternalImport = pending
+                    notifyExternalImportReceived()
+                }
+            }
+        }.start()
+    }
+
+    /** [handleExternalImportIntent] 的后台线程部分：所有阻塞调用集中在这里，
+     *  返回 null 表示该 URI 不是可导入内容（原有判定逻辑原样搬移）。 */
+    private fun loadExternalImportFromUri(
+        uri: Uri,
+        sharedType: String?,
+    ): PendingExternalImport? {
+        val mimeType = sharedType?.takeIf { it.isNotBlank() }
             ?: contentResolver.getType(uri)
         val fileName = resolveImportDisplayName(uri)
-        val bytes = readImportBytes(uri) ?: return
-        val kind = detectImportKind(fileName, mimeType, bytes) ?: return
+        val bytes = readImportBytes(uri) ?: return null
+        val kind = detectImportKind(fileName, mimeType, bytes) ?: return null
 
-        val pending = when (kind) {
+        return when (kind) {
             "ics", "backup" -> {
                 val text = bytes.toString(Charsets.UTF_8)
                 if (kind == "ics" && !text.contains("VCALENDAR", ignoreCase = true)) {
-                    return
+                    return null
                 }
                 if (kind == "backup" && !text.contains("\"mikcb\"")) {
-                    return
+                    return null
                 }
                 PendingExternalImport(kind = kind, fileName = fileName, textContent = text)
             }
             "spreadsheet" -> {
-                val cachedFile = copyBytesToImportCache(bytes, fileName) ?: return
+                val cachedFile = copyBytesToImportCache(bytes, fileName) ?: return null
                 PendingExternalImport(
                     kind = kind,
                     fileName = fileName,
                     filePath = cachedFile.absolutePath,
                 )
             }
-            else -> return
+            else -> null
         }
-
-        pendingExternalImport = pending
-        notifyExternalImportReceived()
     }
 
     private fun resolveImportUri(intent: Intent): Uri? {
