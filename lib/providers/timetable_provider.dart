@@ -516,8 +516,9 @@ class TimetableProvider with ChangeNotifier {
     HolidayService? holidayService,
     AppAnalytics? analytics,
     bool autoInitialize = true,
-    this._enableLiveActivitySync = true,
+    bool? enableLiveActivitySync,
   }) : _storageService = storageService ?? StorageService(),
+       _enableLiveActivitySync = enableLiveActivitySync ?? true,
        _icsImportService = icsImportService ?? IcsImportService(),
        _liveActivitiesService =
            liveActivitiesService ?? MiuiLiveActivitiesService(),

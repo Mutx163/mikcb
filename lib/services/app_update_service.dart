@@ -196,8 +196,9 @@ class AppUpdateService {
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
-    this._releaseApiRequestTimeout = _releaseRequestTimeout,
+    Duration? releaseApiRequestTimeout,
   }) : _client = client ?? createAppHttpClient(),
+       _releaseApiRequestTimeout = releaseApiRequestTimeout ?? _releaseRequestTimeout,
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
        _openInstaller = openInstaller ?? OpenFilex.open;

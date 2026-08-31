@@ -6,8 +6,8 @@ class CoupleWebdavCredentialsStore {
   static const String _passwordKey = 'couple_webdav_password';
 
   const CoupleWebdavCredentialsStore({
-    this._storage = _defaultStorage,
-  });
+    FlutterSecureStorage? storage,
+  }) : _storage = storage ?? _defaultStorage;
 
   static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage();
 

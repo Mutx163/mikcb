@@ -111,8 +111,8 @@ abstract class WarehouseSecureStorage {
 
 class FlutterWarehouseSecureStorage extends WarehouseSecureStorage {
   const FlutterWarehouseSecureStorage({
-    this._storage = _defaultStorage,
-  });
+    FlutterSecureStorage? storage,
+  }) : _storage = storage ?? _defaultStorage;
 
   static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage();
 
@@ -249,9 +249,8 @@ class WarehouseImportPreferencesService {
   final WarehouseSecureStorage _secureStorage;
 
   WarehouseImportPreferencesService({
-    this._secureStorage =
-        const FlutterWarehouseSecureStorage(),
-  });
+    WarehouseSecureStorage? secureStorage,
+  }) : _secureStorage = secureStorage ?? const FlutterWarehouseSecureStorage();
 
   Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
 

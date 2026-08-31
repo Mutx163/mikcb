@@ -8,8 +8,8 @@ class WebdavSyncCredentialsStore {
   static const String _deviceLabelKey = 'webdav_sync_device_label';
 
   const WebdavSyncCredentialsStore({
-    this._storage = _defaultStorage,
-  });
+    FlutterSecureStorage? storage,
+  }) : _storage = storage ?? _defaultStorage;
 
   static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage();
 
