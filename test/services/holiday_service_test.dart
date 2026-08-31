@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/holiday_entry.dart';
 import 'package:university_timetable/services/holiday_service.dart';
+import 'package:university_timetable/services/user_data_sync_hooks.dart';
 
 class _FakeClient extends http.BaseClient {
   final Map<String, http.Response> responses;
@@ -33,6 +34,14 @@ class _FakeClient extends http.BaseClient {
       request: request,
     );
   }
+}
+
+/// 任何调用都抛异常的 prefs，用于模拟持久化失败（磁盘满等）。
+/// SharedPreferences 接口宽，用 noSuchMethod 兜底所有成员。
+class _ThrowingPrefs implements SharedPreferences {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnsupportedError('disk full');
 }
 
 class _ThrowingClient extends http.BaseClient {
@@ -1239,6 +1248,86 @@ void main() {
         final holidays = await service.loadCustomHolidays();
 
         expect(holidays, isEmpty);
+      },
+    );
+
+    test(
+      'loadCustomHolidays returns null and mutation refuses to overwrite '
+      'when persisted JSON is corrupted',
+      () async {
+        SharedPreferences.setMockInitialValues({'custom_holidays': '{broken'});
+        final service = HolidayService(client: _FakeClient({}));
+
+        expect(await service.loadCustomHolidays(), isNull);
+
+        // 损坏态下增/删/改必须抛出，而不是把空列表写回覆盖真实数据。
+        await expectLater(
+          service.addCustomHoliday(
+            HolidayEntry(
+              date: DateTime(2026, 7),
+              name: '暑假',
+              type: HolidayType.vacation,
+              groupId: 'custom-summer',
+            ),
+          ),
+          throwsA(isA<HolidayCustomSaveException>()),
+        );
+        await expectLater(
+          service.removeCustomHoliday('custom-summer'),
+          throwsA(isA<HolidayCustomSaveException>()),
+        );
+        // 损坏态保持原样，没有被空列表写回。
+        expect(
+          SharedPreferences.getInstance()
+              .then((p) => p.getString('custom_holidays')),
+          completion('{broken'),
+        );
+      },
+    );
+
+    test(
+      'saveCustomHolidays throws and skips sync notification when persist '
+      'fails; corrupted add path also skips sync hook',
+      () async {
+        // 同步钩子注入点在 user_data_sync_hooks：写入失败路径必须在
+        // 触发钩子之前抛出，否则 WebDAV 同步会误判「数据已更新」。
+        var notified = 0;
+        final original = scheduleCloudSyncUpload;
+        scheduleCloudSyncUpload = () => notified++;
+        addTearDown(() => scheduleCloudSyncUpload = original);
+
+        final entry = HolidayEntry(
+          date: DateTime(2026, 7),
+          name: '暑假',
+          type: HolidayType.vacation,
+          groupId: 'custom-summer',
+        );
+
+        // 1) 成功路径：钩子恰好在写入成功后触发一次。
+        final okService = HolidayService(client: _FakeClient({}));
+        await okService.saveCustomHolidays([entry]);
+        expect(notified, 1);
+
+        // 2) 写入失败路径：prefs 抛异常 → 抛 HolidayCustomSaveException
+        //    且不触发同步钩子。
+        final failingService = HolidayService(client: _FakeClient({}));
+        failingService.prefsForTesting = _ThrowingPrefs();
+        await expectLater(
+          failingService.saveCustomHolidays([entry]),
+          throwsA(isA<HolidayCustomSaveException>()),
+        );
+        expect(notified, 1);
+
+        // 3) 损坏态读取路径：addCustomHoliday 抛异常且不写回空列表。
+        SharedPreferences.setMockInitialValues({'custom_holidays': '{broken'});
+        final corruptService = HolidayService(client: _FakeClient({}));
+        await expectLater(
+          corruptService.addCustomHoliday(entry),
+          throwsA(isA<HolidayCustomSaveException>()),
+        );
+        expect(notified, 1);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('custom_holidays'), '{broken');
       },
     );
   });

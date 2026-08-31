@@ -380,7 +380,10 @@ class AppUpdateService {
       controller?._setCancelHandler(null);
       try {
         await sink?.close();
-      } catch (_) {}
+      } catch (_) {
+        // 正常路径已提前关闭并把 sink 置空；此处仅在异常收尾时兜底，
+        // 关闭失败无后续影响，吞掉合理。
+      }
       client?.close(force: true);
       if (controller?.isCancelled == true && file != null) {
         await _deleteFileIfExists(file);

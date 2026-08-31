@@ -251,10 +251,22 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       d = d.add(const Duration(days: 1));
     }
 
-    if (existing != null) {
-      await provider.updateCustomHoliday(groupId, entries);
-    } else {
-      await provider.addCustomHolidays(entries);
+    try {
+      if (existing != null) {
+        await provider.updateCustomHoliday(groupId, entries);
+      } else {
+        await provider.addCustomHolidays(entries);
+      }
+    } on HolidayCustomSaveException catch (e) {
+      // 写入失败必须让用户感知：否则「看似保存成功、重启即丢」。
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      showAppToast(
+        context,
+        message: l10n.saveFailedWithError(e.message),
+        kind: AppToastKind.error,
+      );
+      return;
     }
     await _loadCustomHolidays();
   }
@@ -313,7 +325,18 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     final confirmed = await _showCustomHolidayDeleteConfirmSheet();
     if (confirmed && mounted) {
       final provider = context.read<TimetableProvider>();
-      await provider.removeCustomHoliday(groupId);
+      try {
+        await provider.removeCustomHoliday(groupId);
+      } on HolidayCustomSaveException catch (e) {
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        showAppToast(
+          context,
+          message: l10n.saveFailedWithError(e.message),
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       await _loadCustomHolidays();
     }
   }

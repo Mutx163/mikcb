@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:webdav_plus/webdav_plus.dart';
 
@@ -205,7 +206,10 @@ class WebdavSyncService {
       if (hostname.isNotEmpty) {
         return hostname;
       }
-    } catch (_) {}
+    } catch (_) {
+      // 部分平台读取 hostname 会抛异常；返回空串由调用方回退到
+      // 默认设备命名，属预期分支非错误。
+    }
     return '';
   }
 
@@ -1054,7 +1058,17 @@ class WebdavSyncService {
           client: client,
           remotePath: config.historyBackupRemotePath(removed.fileName),
         );
-      } catch (_) {}
+      } catch (e) {
+        // 索引已 prune 但远端删除失败会留下孤儿备份文件（与
+        // maxBackupCount 语义不符）。不影响同步主流程，留 debug 痕迹。
+        assert(() {
+          debugPrint(
+            '[WebdavSync] history backup delete failed: '
+            '${removed.fileName} ($e)',
+          );
+          return true;
+        }());
+      }
     }
 
     await _saveRemoteBackupIndex(

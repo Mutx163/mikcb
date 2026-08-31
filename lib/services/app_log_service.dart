@@ -34,6 +34,11 @@ class AppLogService {
   bool _initialized = false;
   bool _privacyAccepted = false;
   bool _loggingEnabled = false;
+  // 连续写失败计数：日志写失败本身被本类的 catch 吞掉（日志不能破坏
+  // 业务流），若磁盘满等故障持续，所有下游静默失败将同时失去观测手段。
+  // 连续失败达到阈值时用 debugPrint 突破自吞兜底打一条，提示排查。
+  int _consecutiveWriteFailures = 0;
+  static const int _writeFailureAlertThreshold = 5;
   PackageInfo? _packageInfo;
   Future<void> _writeQueue = Future<void>.value();
   final StreamController<void> _logChangeController =
@@ -197,9 +202,21 @@ class AppLogService {
         );
         await file.parent.create(recursive: true);
         await file.writeAsString(payload, mode: FileMode.append, flush: true);
+        _consecutiveWriteFailures = 0;
         _notifyLogChanged();
-      } catch (_) {
+      } catch (e) {
         // Logging must never break app flow.
+        _consecutiveWriteFailures++;
+        if (_consecutiveWriteFailures == _writeFailureAlertThreshold) {
+          // 不清零、不递归调用 log()：本次仅在 debug 控制台留痕。
+          assert(() {
+            debugPrint(
+              '[AppLogService] log write failed $_consecutiveWriteFailures '
+              'times in a row: $e',
+            );
+            return true;
+          }());
+        }
       }
     });
     await _writeQueue;
@@ -363,6 +380,7 @@ class AppLogService {
     _loggingEnabled = false;
     _packageInfo = null;
     _writeQueue = Future<void>.value();
+    _consecutiveWriteFailures = 0;
   }
 
   @visibleForTesting

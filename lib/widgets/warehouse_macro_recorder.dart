@@ -56,7 +56,11 @@ class MacroRecorderJs {
         type: 'macro:event',
         payload: JSON.stringify(entry)
       }));
-    } catch(e) {}
+    } catch(e) {
+      // bridge 不可用时事件仍留在 window 缓冲，停止录制时的 dumpScript
+      // 会补收；console.warn 留痕便于排查「录完是空的」类反馈。
+      console.warn('[qingyu-macro] bridge postMessage failed:', e);
+    }
   }
 
   document.addEventListener('input', function(e) {

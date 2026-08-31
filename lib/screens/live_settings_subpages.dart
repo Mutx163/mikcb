@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
@@ -931,6 +932,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final preservedAbsolutePath = preservePath == null
         ? null
         : File(preservePath).absolute.path;
+    var deleted = 0;
+    var failed = 0;
     await for (final entity in targetDir.list()) {
       if (entity is! File) {
         continue;
@@ -948,8 +951,22 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       try {
         if (entity.existsSync()) {
           await entity.delete();
+          deleted++;
         }
-      } catch (_) {}
+      } catch (_) {
+        // 单文件删除失败不中断清理循环；汇总计数后统一留一条 debug
+        // 痕迹，避免历史生成图片静默累积且无观测手段。
+        failed++;
+      }
+    }
+    if (failed > 0) {
+      assert(() {
+        debugPrint(
+          '[LiveIslandPreview] artifact cleanup: deleted=$deleted '
+          'failed=$failed dir=$directoryName prefix=$filePrefix',
+        );
+        return true;
+      }());
     }
   }
 }
