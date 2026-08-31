@@ -3223,6 +3223,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedBlurEnabledTitle => 'ぼかしを有効にする';
 
   @override
+  String get glassReducedTransparencyTitle => 'ガラス効果を弱める';
+
+  @override
   String get frostedBlurEnabledSubtitle =>
       'オフにすると、ポップアップ、ホームのぼかし領域、「今週に戻る」ボタンは半透明の背景のみとなり、ぼかしサンプリングをしなくなります';
 

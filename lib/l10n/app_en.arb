@@ -1801,6 +1801,7 @@
   "frostedSheetSectionTitle": "Frosted Glass",
   "frostedSheetSectionSubtitle": "Adjust home popup blur and milky frosted brightness. Further right = brighter white glass",
   "frostedBlurEnabledTitle": "Enable Blur",
+  "glassReducedTransparencyTitle": "Reduce glass effects",
   "frostedBlurEnabledSubtitle": "When off, sheets and home frosted areas keep tint only, without backdrop blur",
   "frostedSheetPreviewOpenAction": "Open Preview Panel",
   "frostedSheetPreviewDemoTitle": "Preview",

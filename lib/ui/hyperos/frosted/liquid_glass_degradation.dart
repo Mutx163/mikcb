@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'frosted_appearance.dart';
+
 /// System conditions that warrant downgrading glass to an opaque solid surface.
 ///
 /// Mirrors the Windows 11 Mica/Acrylic degradation matrix and the Android 12+
@@ -36,8 +38,17 @@ import 'package:flutter/material.dart';
 ///   https://source.android.com/docs/core/display/window-blurs
 abstract final class LiquidGlassDegradation {
   /// Whether glass surfaces should downgrade to an opaque solid right now.
-  static bool shouldDegrade(BuildContext context) =>
-      shouldDegradeFor(MediaQuery.of(context));
+  ///
+  /// 用户手动开关（减弱玻璃效果）与系统无障碍信号取并集：任一命中即
+  /// 降级。开关经全局 [FrostedAppearanceScope] 下发，未挂 Scope 时按
+  /// 关闭处理，保持与旧行为一致。
+  static bool shouldDegrade(BuildContext context) {
+    final scope = FrostedAppearanceScope.maybeOf(context);
+    if (scope != null && scope.appearance.reducedTransparency) {
+      return true;
+    }
+    return shouldDegradeFor(MediaQuery.of(context));
+  }
 
   /// Pure core that does not depend on [BuildContext], for unit tests.
   static bool shouldDegradeFor(MediaQueryData mq) =>

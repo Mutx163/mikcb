@@ -3168,6 +3168,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedBlurEnabledTitle => '启用模糊';
 
   @override
+  String get glassReducedTransparencyTitle => '减弱玻璃效果';
+
+  @override
   String get frostedBlurEnabledSubtitle =>
       '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊';
 
@@ -13511,6 +13514,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedBlurEnabledTitle => '啟用模糊';
+
+  @override
+  String get glassReducedTransparencyTitle => '減弱玻璃效果';
 
   @override
   String get frostedBlurEnabledSubtitle =>
@@ -23898,6 +23904,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedBlurEnabledTitle => '啟用模糊';
+
+  @override
+  String get glassReducedTransparencyTitle => '減弱玻璃效果';
 
   @override
   String get frostedBlurEnabledSubtitle =>

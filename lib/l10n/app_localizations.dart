@@ -5859,6 +5859,12 @@ abstract class AppLocalizations {
   /// **'启用模糊'**
   String get frostedBlurEnabledTitle;
 
+  /// No description provided for @glassReducedTransparencyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'减弱玻璃效果'**
+  String get glassReducedTransparencyTitle;
+
   /// No description provided for @frostedBlurEnabledSubtitle.
   ///
   /// In zh, this message translates to:

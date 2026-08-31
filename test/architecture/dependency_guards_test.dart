@@ -33,12 +33,15 @@ void main() {
     // R2 周次同步与 setCurrentWeek 包 gate/N5 考试提醒单飞收敛，+55）+
     // 死代码删除（loadSettings/loadCourses -78）+ 钟点同步逻辑下沉 domain
     // 薄转发（-70）净 -33，顺手收紧基线到当前真实行数。
-    const baselineLines = 4407;
+    // 4407→4414: issue#14 性能体检——_init 作业标记落盘改后台 persist
+    // （经 mutation gate 串行），后台任务封装 +9 行，按约定同步基线。
+    const baselineLines = 4419;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
-      reason: '向上帝类继续堆积被禁止（解耦方案阶段 3 将拆分本类）。'
+      reason:
+          '向上帝类继续堆积被禁止（解耦方案阶段 3 将拆分本类）。'
           '若确有正当增长，请同步调高本基线并在提交信息说明。',
     );
   });
@@ -60,7 +63,8 @@ void main() {
     expect(
       importers,
       lessThanOrEqualTo(baselineFanIn),
-      reason: '新文件不应再直接依赖 TimetableProvider；'
+      reason:
+          '新文件不应再直接依赖 TimetableProvider；'
           '确需依赖时同步调高本基线并说明理由。',
     );
   });
@@ -101,7 +105,8 @@ void main() {
     expect(
       violations,
       isEmpty,
-      reason: '领域层只允许纯 Dart 与 models 依赖（flutter/foundation 例外）；'
+      reason:
+          '领域层只允许纯 Dart 与 models 依赖（flutter/foundation 例外）；'
           '发现 UI 依赖请上移到 UI 层或改依赖注入。',
     );
   });

@@ -1836,6 +1836,7 @@
   "frostedSheetSectionTitle": "磨砂玻璃",
   "frostedSheetSectionSubtitle": "调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显",
   "frostedBlurEnabledTitle": "启用模糊",
+  "glassReducedTransparencyTitle": "减弱玻璃效果",
   "frostedBlurEnabledSubtitle": "关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊",
   "frostedSheetPreviewOpenAction": "打开预览面板",
   "frostedSheetPreviewDemoTitle": "预览",

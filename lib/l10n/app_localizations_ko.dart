@@ -3238,6 +3238,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedBlurEnabledTitle => '블러 활성화';
 
   @override
+  String get glassReducedTransparencyTitle => '유리 효과 줄이기';
+
+  @override
   String get frostedBlurEnabledSubtitle =>
       '끄면 팝업, 홈 블러 영역, \'이번 주로\' 버튼이 반투명 배경만 남고 블러 샘플링을 하지 않습니다';
 

@@ -661,7 +661,8 @@ class TimetableProvider with ChangeNotifier {
     final locationTimeGroups = await _profileRepository.getLocationTimeGroups();
     final scheduleDateRules = await _profileRepository.getScheduleDateRules();
     final activeProfileId = await _profileRepository.getActiveProfileId();
-    final partnerBinding = await _profileRepository.getPartnerTimetableBinding();
+    final partnerBinding = await _profileRepository
+        .getPartnerTimetableBinding();
     final lastAppliedSignature = await _storageService
         .getScheduleDateRuleLastAppliedSignature();
 
@@ -697,7 +698,13 @@ class TimetableProvider with ChangeNotifier {
 
     // Existing per-session homework marks become actionable once, while the
     // original course note remains the source of truth for the badge.
-    await _syncHomeworkTasksWithCourses(persist: true);
+    // 首帧只要求内存一致：同步在 await 内完成，落盘则交给后台任务，
+    // 经同一 mutation gate 串行执行（与课程编辑等写路径互斥），不再把
+    // 磁盘 I/O 挡在 notifyListeners() 首帧通知之前。
+    final homeworkSyncChanged = await _syncHomeworkTasksWithCourses();
+    if (homeworkSyncChanged) {
+      unawaited(_runMutation(_persistActiveProfileState));
+    }
 
     // 壁纸预加载不阻塞首帧；无壁纸时此调用会立即返回。
     unawaited(precacheHomePageBackdropImage(_settings));
@@ -767,8 +774,14 @@ class TimetableProvider with ChangeNotifier {
     ]);
     final loadedTeachers = List<String>.from(results[0]);
     final loadedLocations = List<String>.from(results[1]);
-    final nextTeachers = <String>{...loadedTeachers, ..._teacherRecords}.toList()..sort();
-    final nextLocations = <String>{...loadedLocations, ..._locationRecords}.toList()..sort();
+    final nextTeachers = <String>{
+      ...loadedTeachers,
+      ..._teacherRecords,
+    }.toList()..sort();
+    final nextLocations = <String>{
+      ...loadedLocations,
+      ..._locationRecords,
+    }.toList()..sort();
     final teachersChanged = !listEquals(_teacherRecords, nextTeachers);
     final locationsChanged = !listEquals(_locationRecords, nextLocations);
     _teacherRecords = nextTeachers;
@@ -901,10 +914,7 @@ class TimetableProvider with ChangeNotifier {
         ? clampCurrentWeekToSettings(profile.currentWeek, _settings)
         : clampCurrentWeekToSettings(calendarWeek, _settings);
     _currentCalendarWeek = calendarWeek;
-    _currentDateWeek = clampCurrentWeekToSettings(
-      calendarWeek,
-      _settings,
-    );
+    _currentDateWeek = clampCurrentWeekToSettings(calendarWeek, _settings);
     unawaited(_syncNativeRuntimePreferences());
   }
 
@@ -1509,7 +1519,9 @@ class TimetableProvider with ChangeNotifier {
 
     await _profileRepository.saveProfiles(_profiles);
     _scheduleDateRuleLastAppliedSignature = signature;
-    await _profileRepository.saveScheduleDateRuleLastAppliedSignature(signature);
+    await _profileRepository.saveScheduleDateRuleLastAppliedSignature(
+      signature,
+    );
     notifyUserDataChangedForSync();
     _currentLiveCourseId = null;
     _notifyStateChanged();
@@ -3202,26 +3214,24 @@ class TimetableProvider with ChangeNotifier {
     _examReminderDirty = false;
     final completer = Completer<void>();
     _examReminderSyncInFlight = completer.future;
-    unawaited(
-      () async {
-        try {
+    unawaited(() async {
+      try {
+        await _syncExamRemindersImpl();
+        // 在飞期间的点火：补跑一轮拿最新数据，直到安静。
+        while (_examReminderDirty) {
+          _examReminderDirty = false;
           await _syncExamRemindersImpl();
-          // 在飞期间的点火：补跑一轮拿最新数据，直到安静。
-          while (_examReminderDirty) {
-            _examReminderDirty = false;
-            await _syncExamRemindersImpl();
-          }
-          completer.complete();
-        } catch (error) {
-          appDebugLog('ExamReminder', 'sync failed: $error');
-          completer.complete();
-        } finally {
-          if (identical(_examReminderSyncInFlight, completer.future)) {
-            _examReminderSyncInFlight = null;
-          }
         }
-      }(),
-    );
+        completer.complete();
+      } catch (error) {
+        appDebugLog('ExamReminder', 'sync failed: $error');
+        completer.complete();
+      } finally {
+        if (identical(_examReminderSyncInFlight, completer.future)) {
+          _examReminderSyncInFlight = null;
+        }
+      }
+    }());
     return completer.future;
   }
 
@@ -3259,21 +3269,22 @@ class TimetableProvider with ChangeNotifier {
   /// 设置（或覆盖）某节课某天的提醒；同课同日只保留一条。
   Future<void> setClassReminder(ClassReminderEntry entry) async {
     final current = settings;
-    final rest = current.classReminders
-        .where(
-          (existing) =>
-              !(existing.courseId == entry.courseId &&
-                  existing.date == entry.date),
-        )
-        .toList()
-      ..add(entry)
-      ..sort((a, b) {
-        final byDate = a.date.compareTo(b.date);
-        if (byDate != 0) {
-          return byDate;
-        }
-        return a.minuteOfDay.compareTo(b.minuteOfDay);
-      });
+    final rest =
+        current.classReminders
+            .where(
+              (existing) =>
+                  !(existing.courseId == entry.courseId &&
+                      existing.date == entry.date),
+            )
+            .toList()
+          ..add(entry)
+          ..sort((a, b) {
+            final byDate = a.date.compareTo(b.date);
+            if (byDate != 0) {
+              return byDate;
+            }
+            return a.minuteOfDay.compareTo(b.minuteOfDay);
+          });
     await updateSettings(current.copyWith(classReminders: rest));
     unawaited(_syncExamReminders());
   }
@@ -3283,7 +3294,8 @@ class TimetableProvider with ChangeNotifier {
     final current = settings;
     final rest = current.classReminders
         .where(
-          (existing) => !(existing.courseId == courseId && existing.date == date),
+          (existing) =>
+              !(existing.courseId == courseId && existing.date == date),
         )
         .toList();
     if (rest.length == current.classReminders.length) {
@@ -4264,7 +4276,8 @@ class TimetableProvider with ChangeNotifier {
   /// 按同一周次规则生成。
   int get liveSelectionCalendarWeek => _resolveCurrentCalendarWeek();
 
-  bool get hasLiveTestFixtureCourses => _liveTestFixtureOverlayCourses.isNotEmpty;
+  bool get hasLiveTestFixtureCourses =>
+      _liveTestFixtureOverlayCourses.isNotEmpty;
 
   /// 注入自检预设课（整体替换上一批）。只有超级岛管线可见，不进真实课表。
   void armLiveTestFixtureCourses(List<Course> courses) {

@@ -3363,6 +3363,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedBlurEnabledTitle => 'Enable Blur';
 
   @override
+  String get glassReducedTransparencyTitle => 'Reduce glass effects';
+
+  @override
   String get frostedBlurEnabledSubtitle =>
       'When off, sheets and home frosted areas keep tint only, without backdrop blur';
 
