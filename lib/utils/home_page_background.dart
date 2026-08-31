@@ -502,6 +502,31 @@ Color homePageOverWallpaperMutedInk(
   );
 }
 
+/// 卡面内强调色文字（如情侣课表「共同空闲」绿 `#4CAF50`）的可读变体。
+///
+/// 卡面玻璃透壁纸，#4CAF50 这类中明度强调色在浅色卡面上文字对比仅
+/// ~2.8:1（亮粉壁纸上更低），小字号几乎不可读。按母卡墨色 [cardInk]
+/// 判断卡面明暗极性后只调明度、不换色相——浅色卡面向黑压暗（亮度压到
+/// ≤0.12，对白底 ≥ ~6:1），深色卡面向白提亮（亮度抬到 ≥0.50，对深色
+/// 玻璃 ≥ ~3:1），保住强调色语义（绿色=空闲），区别于 chrome 强调色
+/// 对比不足时整体回落黑白墨。本就可读的强调色原样返回。
+Color readableAccentOnCardInk(Color accent, Color cardInk) {
+  final cardIsLight = cardInk.computeLuminance() <= 0.5;
+  bool readable(double luminance) =>
+      cardIsLight ? luminance <= 0.12 : luminance >= 0.50;
+  if (readable(accent.computeLuminance())) {
+    return accent;
+  }
+  final target = cardIsLight ? Colors.black : Colors.white;
+  for (var i = 1; i <= 20; i++) {
+    final candidate = Color.lerp(accent, target, i / 20)!;
+    if (readable(candidate.computeLuminance())) {
+      return candidate;
+    }
+  }
+  return target;
+}
+
 /// Average luminance of the top band of a wallpaper file (for chrome contrast).
 ///
 /// [viewportSize] and alignment must match the widget that displays the image

@@ -4205,9 +4205,15 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final foruiTheme = context.theme;
-    final freeAccent = _colorFromHex(
-      CoupleTimetableLogic.freeSlotColorHex,
-      foruiTheme.colors.primary,
+    // #4CAF50 是中明度绿，直接当文字色在透壁纸的浅色卡面上对比不足
+    // 2.8:1（亮粉壁纸上更低）。「共 N 段」徽标、时间胶囊与展开按钮的
+    // 文字和底洗统一走按母卡墨色极性调出的可读变体（浅卡压暗/深卡提亮）。
+    final freeAccent = readableAccentOnCardInk(
+      _colorFromHex(
+        CoupleTimetableLogic.freeSlotColorHex,
+        foruiTheme.colors.primary,
+      ),
+      ink,
     );
     final isStale = _isPartnerScheduleStale(provider);
     final title = isToday
