@@ -51,6 +51,10 @@ abstract final class AppLogMessageLocalizer {
       'log_home_widget_sync_failed' => l10n.logHomeWidgetSyncFailed,
       'log_home_widget_clear_failed' => l10n.logHomeWidgetClearFailed,
       'log_home_widget_schedule_failed' => l10n.logHomeWidgetScheduleFailed,
+      'log_home_widget_exact_alarm_check_failed' =>
+        l10n.logHomeWidgetExactAlarmCheckFailed,
+      'log_home_widget_exact_alarm_request_failed' =>
+        l10n.logHomeWidgetExactAlarmRequestFailed,
       'log_miui_live_initialize_failed' => l10n.logMiuiLiveInitializeFailed,
       'log_miui_live_open_promoted_settings_failed' =>
         l10n.logMiuiLiveOpenPromotedSettingsFailed,

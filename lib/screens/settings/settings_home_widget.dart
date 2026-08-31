@@ -47,6 +47,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   bool _isPersisting = false;
   bool _isCheckingPinSupport = true;
   bool _canRequestPinWidget = false;
+  /// Android 12+ 未授予「闹钟和提醒」权限时为 true，顶部展示引导横幅。
+  bool _canScheduleExactAlarms = true;
   TimetableSettings? _pendingPersist;
   final Set<HomeWidgetPinTarget> _pinningTargets = <HomeWidgetPinTarget>{};
 
@@ -57,6 +59,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _loadPinWidgetSupport();
+    _loadExactAlarmPermission();
     _loadWidgetInstances();
   }
 
@@ -68,6 +71,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     // 从桌面/系统弹窗回到前台：桌面小组件集合可能已变化（用户去桌面加了
     // 或删了卡片，系统不会通知 App 界面），稍候重查——pin 确认后启动器
     // 需要一拍才完成绑定，立即查可能拿到旧集合。
+    _loadExactAlarmPermission();
     Future<void>.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         _loadWidgetInstances();
@@ -100,17 +104,25 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     );
   }
 
+  /// 未授权时多一个「精确闹钟权限」引导分区。
+  int get _exactAlarmBannerSections => _canScheduleExactAlarms ? 0 : 1;
+
   int get _homeWidgetSectionCount =>
-      (_draft.widgetShowCountdown ? 4 : 3) + 2;
+      (_draft.widgetShowCountdown ? 4 : 3) + 2 + _exactAlarmBannerSections;
 
   Widget _buildHomeWidgetSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
     var section = index;
+    // 权限引导横幅固定在第 1 位，未展示时跳过；未展示倒计时分区时再偏移。
+    if (section >= _exactAlarmBannerSections) {
+      section -= _exactAlarmBannerSections;
+    }
     if (!_draft.widgetShowCountdown && section >= 2) {
       section += 1;
     }
 
     final Widget content = switch (section) {
+      -1 => _buildExactAlarmBannerSection(l10n),
       0 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -521,6 +533,59 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
       });
       return;
     }
+  }
+
+  Future<void> _loadExactAlarmPermission() async {
+    final granted = await _homeWidgetService.canScheduleExactAlarms();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _canScheduleExactAlarms = granted;
+    });
+  }
+
+  Future<void> _requestExactAlarmPermission() async {
+    await _homeWidgetService.requestScheduleExactAlarm();
+    // 回到前台时 didChangeAppLifecycleState 会重查授权状态。
+  }
+
+  /// 「精确闹钟权限」引导分区：Android 12+ 未授予时提示并一键跳系统授权页。
+  Widget _buildExactAlarmBannerSection(AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosHintBanner(
+          icon: Icon(
+            Icons.alarm_rounded,
+            size: 18,
+            color: HyperosColors.primary(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.homeWidgetExactAlarmBannerTitle,
+                style: HyperosTypography.listTitle(context),
+              ),
+              const SizedBox(height: 4),
+              Text(l10n.homeWidgetExactAlarmBannerText),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: HyperosButton(
+                  label: l10n.homeWidgetExactAlarmGrantAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: _requestExactAlarmPermission,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _loadPinWidgetSupport() async {

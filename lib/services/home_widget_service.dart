@@ -100,6 +100,57 @@ class HomeWidgetService {
     return HomeWidgetPinRequestResult.failed;
   }
 
+  /// Android 12+（S）需要「闹钟和提醒」权限才能用精确闹钟按课程边界
+  /// 刷新小组件；低于 S 或无法读取时视为已授权。
+  Future<bool> canScheduleExactAlarms() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true;
+    }
+    try {
+      final granted = await _channel.invokeMethod<bool>(
+        'canScheduleExactAlarms',
+      );
+      return granted ?? true;
+    } on MissingPluginException {
+      if (kDebugMode) {
+        return true;
+      }
+    } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_exact_alarm_check_failed',
+          AppLogMessages.homeWidgetExactAlarmCheckFailed,
+          extras: {'error': '$e'},
+        ),
+      );
+      appDebugLog('HomeWidget', '检查精确闹钟权限失败：$e');
+    }
+    return true;
+  }
+
+  /// 跳转系统「闹钟和提醒」授权页（ACTION_REQUEST_SCHEDULE_EXACT_ALARM）。
+  Future<void> requestScheduleExactAlarm() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    try {
+      await _channel.invokeMethod('requestScheduleExactAlarm');
+    } on MissingPluginException {
+      if (kDebugMode) {
+        return;
+      }
+    } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_exact_alarm_request_failed',
+          AppLogMessages.homeWidgetExactAlarmRequestFailed,
+          extras: {'error': '$e'},
+        ),
+      );
+      appDebugLog('HomeWidget', '请求精确闹钟权限失败：$e');
+    }
+  }
+
   Future<bool> syncSnapshot(HomeWidgetSnapshot snapshot) async {
     try {
       await _channel.invokeMethod('syncSnapshot', snapshot.toJson());

@@ -7,6 +7,7 @@ import android.view.HapticFeedbackConstants
 import android.Manifest
 import android.app.ActivityManager
 import android.app.AppOpsManager
+import android.app.AlarmManager
 import android.app.DownloadManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -625,6 +626,12 @@ class MainActivity : FlutterActivity() {
                 when (call.method) {
                     "canRequestPinWidget" -> {
                         result.success(canRequestPinWidget())
+                    }
+                    "canScheduleExactAlarms" -> {
+                        result.success(canScheduleExactAlarms())
+                    }
+                    "requestScheduleExactAlarm" -> {
+                        result.success(requestScheduleExactAlarm())
                     }
                     "requestPinWidget" -> {
                         val arguments = call.arguments as? Map<*, *>
@@ -1256,6 +1263,34 @@ class MainActivity : FlutterActivity() {
             "requested"
         } else {
             "failed"
+        }
+    }
+
+    /** Android 12+ 需要用户在系统里授予「闹钟和提醒」权限才能精确闹钟。 */
+    private fun canScheduleExactAlarms(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return true
+        }
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+            ?: return true
+        return alarmManager.canScheduleExactAlarms()
+    }
+
+    private fun requestScheduleExactAlarm(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return false
+        }
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        return try {
+            startActivity(intent)
+            true
+        } catch (_: Exception) {
+            // 个别 ROM 未处理该 action 时退回应用详情页（含闹钟和提醒开关）。
+            openAppDetailsSettings()
+            false
         }
     }
 

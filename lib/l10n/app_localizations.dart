@@ -7208,6 +7208,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'这张卡片绑定的课表已失效，已按普通方式打开'**
   String get homeWidgetBindingMissingToast;
+  /// No description provided for @homeWidgetExactAlarmBannerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'精确闹钟权限未授予'**
+  String get homeWidgetExactAlarmBannerTitle;
+
+  /// No description provided for @homeWidgetExactAlarmBannerText.
+  ///
+  /// In zh, this message translates to:
+  /// **'未授予「闹钟和提醒」权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新'**
+  String get homeWidgetExactAlarmBannerText;
+
+  /// No description provided for @homeWidgetExactAlarmGrantAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'去授权'**
+  String get homeWidgetExactAlarmGrantAction;
+
 
   /// No description provided for @layoutSettingsTitle.
   ///
@@ -15272,6 +15290,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'调度桌面小组件刷新失败'**
   String get logHomeWidgetScheduleFailed;
+  /// No description provided for @logHomeWidgetExactAlarmCheckFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'检查精确闹钟权限失败'**
+  String get logHomeWidgetExactAlarmCheckFailed;
+
+  /// No description provided for @logHomeWidgetExactAlarmRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求精确闹钟授权失败'**
+  String get logHomeWidgetExactAlarmRequestFailed;
+
 
   /// No description provided for @logMiuiLiveInitializeFailed.
   ///
