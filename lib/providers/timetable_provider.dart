@@ -3329,8 +3329,15 @@ class TimetableProvider with ChangeNotifier {
       _lastLiveActivityStageKey = null;
       // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
       await _updateLiveActivity();
-    } catch (_) {
-      // Holiday data is non-critical; silently ignore failures
+    } catch (e, stackTrace) {
+      // Holiday data is non-critical; keep going but leave a trace so a
+      // "vacation days missing on widget" report is diagnosable.
+      await AppLogService.instance.warn(
+        'holiday_data_refresh_failed',
+        e.toString(),
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
