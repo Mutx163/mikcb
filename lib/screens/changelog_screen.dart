@@ -9,7 +9,7 @@ import 'about_screen.dart';
 /// `docs/releases/<version>.md` 的 asset key 匹配规则。
 /// 目录同时打包了 html / json 等文件，正则只接受数字版本号（允许 -a 等后缀）。
 final RegExp releaseAssetKeyPattern = RegExp(
-  r'^docs/releases/(v\d+(?:\.\d+)*(?:-[\w.]+)?)\.md\$',
+  r'^docs/releases/(v\d+(?:\.\d+)*(?:-[\w.]+)?)\.md$',
 );
 
 /// 按语义版本号倒序排列（最新在前），如 v2.1.1.4 > v2.1.1 > v2.0.5.6。
