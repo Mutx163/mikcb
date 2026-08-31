@@ -21,7 +21,10 @@ void main() {
   test('timetable_provider.dart 行数棘轮：只减不增', () {
     // 4401→4409: applyCourseRecolors 整对象替换改为按字段 copyWith（+9，
     // 防过期快照回写非颜色字段），拆分归阶段 3 重构，按测试约定同步基线。
-    const baselineLines = 4409;
+    // 4409→4422: 桌面卡片按课表绑定快照（e7f77af4）+13——Provider 侧只新增
+    // buildHomeWidgetSnapshotForProfile 转发入口与逐卡签名去重表，快照构建本体
+    // 在 live_activity_controller，属正当增长；拆分归阶段 3 重构。
+    const baselineLines = 4422;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
