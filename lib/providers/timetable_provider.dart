@@ -3352,8 +3352,15 @@ class TimetableProvider with ChangeNotifier {
       // Holiday data is not stored in timetable profiles; force home widget /
       // live schedule resync so desktop widgets pick up vacation days.
       await _syncSurfacesAfterHolidayDataChanged();
-    } catch (_) {
-      // Holiday data is non-critical; silently ignore failures
+    } catch (e, stackTrace) {
+      // Holiday data is non-critical; keep going but leave a trace so a
+      // "vacation days missing on widget" report is diagnosable.
+      await AppLogService.instance.warn(
+        'holiday_data_refresh_failed',
+        e.toString(),
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 

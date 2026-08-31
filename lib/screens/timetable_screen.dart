@@ -29,6 +29,7 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
+import '../services/app_log_service.dart';
 import '../services/app_update_service.dart';
 import '../services/support_creator_service.dart';
 import '../services/widget_launch_router.dart';
@@ -218,7 +219,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   AppUpdateDownloadController? _homeDownloadController;
   StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
   bool? _lastUpdateCheckIncludePrerelease;
-  bool _isCheckingForUpdate = false;
+
+  /// In-flight update check, used for de-duplication.
+  ///
+  /// A shared [Future] (instead of a boolean flag) cannot leak: every early
+  /// exit still completes the future, so a forgotten manual reset is
+  /// impossible no matter how many new early-return branches are added.
+  Future<void>? _inflightUpdateCheck;
   TimetableProvider? _lastSyncedProvider;
   String? _lastSyncedProfileId;
   Timer? _dayAgendaProgressTimer;
@@ -1730,6 +1737,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  /// 采样缓存 key：`路径|视口宽x高|alignX|alignY`。
+  ///
+  /// 组成字段均为可枚举的有限来源（壁纸路径来自 managed storage、视口来自
+  /// MediaQuery、对齐值来自 -1.0~1.0 的滑杆），调用方不会注入意外分隔符。
+  /// 用 `|` 分隔足以避免歧义，无需哈希或结构化 key。
   String _wallpaperLuminanceKey({
     required String path,
     required Size viewportSize,
@@ -1752,6 +1764,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         _wallpaperTopLuminance != null) {
       return;
     }
+    // 下面的字段赋值统一收敛到 setState 内：本方法在异步回调中运行，
+    // 风格混用（部分在 setState 外、部分在内）会让后续维护者难以判断
+    // 哪些赋值会触发重绘，容易漏包导致 UI 与状态脱节。
     _wallpaperLuminanceRequestedKey = key;
     final fileExists = await File(path).exists();
     if (!mounted || _wallpaperLuminanceRequestedKey != key) {
@@ -1773,8 +1788,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
       return;
     }
-    _wallpaperLuminanceFileExists = true;
-    _wallpaperLuminanceSampleKey = key;
+    setState(() {
+      _wallpaperLuminanceFileExists = true;
+      _wallpaperLuminanceSampleKey = key;
+    });
     await _loadWallpaperLuminance(
       path,
       viewportSize: viewportSize,
@@ -7238,6 +7255,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     return CourseGridSurfaceHost(settings: settings, child: child);
   }
 
+  /// 将 provider 的当前周次同步到周视图 pager。
+  ///
+  /// 该方法在 build 中调用（外部周次来源可能在一帧内多次到达），副作用
+  /// 通过 post-frame 回调收敛且带三重防重入（[_pendingSyncedWeek]、
+  /// [_isSyncingWeekPage]、[_hasPendingLocalWeekTransition]）：同一目标页
+  /// 不会重复 jump，本地手势进行中绝不抢页。这是「build 中带副作用」的
+  /// 受控例外——迁到 didChangeDependencies 需要区分周次来源并改动
+  /// 同步时序，当前实现的行为与守卫已在测试中锚定，保持现状。
   void _syncWeekPageWithProvider(int week, TimetableSettings settings) {
     final maxWeek = settings.semesterWeekCount;
     if (_isSyncingWeekPage || _hasPendingLocalWeekTransition) {
@@ -8080,20 +8105,35 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _checkForAppUpdate({required bool includePrerelease}) async {
-    if (_isCheckingForUpdate) {
+    // De-dupe by sharing the in-flight future; concurrent callers await the
+    // same check instead of racing past a boolean flag.
+    final inflight = _inflightUpdateCheck;
+    if (inflight != null) {
+      await inflight;
       return;
     }
-    _isCheckingForUpdate = true;
     _lastUpdateCheckIncludePrerelease = includePrerelease;
+    final Future<void> check = _runUpdateCheck(
+      includePrerelease: includePrerelease,
+    );
+    _inflightUpdateCheck = check;
+    try {
+      await check;
+    } finally {
+      if (identical(_inflightUpdateCheck, check)) {
+        _inflightUpdateCheck = null;
+      }
+    }
+  }
+
+  Future<void> _runUpdateCheck({required bool includePrerelease}) async {
     if (!kReleaseMode) {
       if (!mounted) {
-        _isCheckingForUpdate = false;
         return;
       }
       setState(() {
         _hasAvailableUpdate = true;
       });
-      _isCheckingForUpdate = false;
       return;
     }
 
@@ -8117,17 +8157,24 @@ class _TimetableScreenState extends State<TimetableScreen>
         mirrorUrlPrefix: effectiveMirrorUrlPrefix,
       );
       if (!mounted) {
-        _isCheckingForUpdate = false;
         return;
       }
       setState(() {
         _hasAvailableUpdate = result.hasUpdate;
       });
       _scheduleHomeUpdatePrompt(result);
-    } catch (_) {
-      // Ignore update check failures on home screen; About page provides details.
-    } finally {
-      _isCheckingForUpdate = false;
+    } catch (e, stackTrace) {
+      // Ignore update check failures on home screen; About page provides
+      // details. Log a warning so a "no update prompt" report has a trace.
+      debugPrint('checkForAppUpdate failed: $e');
+      unawaited(
+        AppLogService.instance.warn(
+          'home_update_check_failed',
+          e.toString(),
+          error: e,
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 

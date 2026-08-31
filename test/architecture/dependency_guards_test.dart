@@ -19,9 +19,10 @@ void main() {
   }
 
   test('timetable_provider.dart 行数棘轮：只减不增', () {
-    // 4401→4409: applyCourseRecolors 整对象替换改为按字段 copyWith（+9，
-    // 防过期快照回写非颜色字段），拆分归阶段 3 重构，按测试约定同步基线。
-    const baselineLines = 4409;
+    // 4409→4429: _refreshHolidayDataIfStale 的 catch 原为静默吞异常，
+    // 补 AppLogService.warn 留痕（+20，含 error/stackTrace 参数透传所需的
+    // warn 签名早已存在，全部为日志行），拆分归阶段 3 重构，按约定记真实值。
+    const baselineLines = 4429;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
