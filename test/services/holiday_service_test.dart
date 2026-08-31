@@ -1216,7 +1216,7 @@ void main() {
       await service.removeCustomHoliday('custom-summer');
       final remaining = await service.loadCustomHolidays();
       expect(remaining, hasLength(1));
-      expect(remaining.first.name, '圣诞节');
+      expect(remaining?.first.name, '圣诞节');
     });
 
     test(

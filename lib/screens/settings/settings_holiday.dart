@@ -257,13 +257,13 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       } else {
         await provider.addCustomHolidays(entries);
       }
-    } on HolidayCustomSaveException catch (e) {
+    } on HolidayCustomSaveException {
       // 写入失败必须让用户感知：否则「看似保存成功、重启即丢」。
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       showAppToast(
         context,
-        message: l10n.saveFailedWithError(e.message),
+        message: l10n.saveFailed,
         kind: AppToastKind.error,
       );
       return;
@@ -327,12 +327,12 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       final provider = context.read<TimetableProvider>();
       try {
         await provider.removeCustomHoliday(groupId);
-      } on HolidayCustomSaveException catch (e) {
+      } on HolidayCustomSaveException {
         if (!mounted) return;
         final l10n = AppLocalizations.of(context)!;
         showAppToast(
           context,
-          message: l10n.saveFailedWithError(e.message),
+          message: l10n.saveFailed,
           kind: AppToastKind.error,
         );
         return;

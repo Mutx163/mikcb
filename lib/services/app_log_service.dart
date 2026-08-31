@@ -208,14 +208,13 @@ class AppLogService {
         // Logging must never break app flow.
         _consecutiveWriteFailures++;
         if (_consecutiveWriteFailures == _writeFailureAlertThreshold) {
-          // 不清零、不递归调用 log()：本次仅在 debug 控制台留痕。
-          assert(() {
-            debugPrint(
-              '[AppLogService] log write failed $_consecutiveWriteFailures '
-              'times in a row: $e',
-            );
-            return true;
-          }());
+          // 不清零、不递归调用 log()。debugPrint 必须放在 assert 之外：
+          // 连续写失败往往意味着磁盘满，release 包恰恰最需要这条可见痕迹，
+          // 包在 assert 里会被整体剥离，只剩 debug 可见，与本类兜底目标相反。
+          debugPrint(
+            '[AppLogService] log write failed $_consecutiveWriteFailures '
+            'times in a row: $e',
+          );
         }
       }
     });

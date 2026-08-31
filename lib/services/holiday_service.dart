@@ -44,6 +44,8 @@ class HolidayService {
   /// 内存缓存
   final Map<int, HolidayData> _memoryCache = {};
 
+  SharedPreferences? _prefs;
+
   @visibleForTesting
   SharedPreferences? prefsForTesting;
 
@@ -590,12 +592,17 @@ class HolidayService {
       await prefs.remove('$_cacheKeyPrefix$year');
     } catch (e) {
       // 清除失败只影响下次是否读到旧缓存，不阻塞调用方；落 AppLogService
-      // 而非 appDebugLog，保证 release 包可观测。
-      await AppLogService.instance.warn(
-        'holiday_cache_clear_failed',
-        '清除 $year 年节假日缓存失败',
-        error: e,
-      );
+      // 而非 appDebugLog，保证 release 包可观测。warn 自身失败也不能外抛，
+      // 否则一次无害的清缓存失败会把 refreshHolidayData 整体带崩。
+      try {
+        await AppLogService.instance.warn(
+          'holiday_cache_clear_failed',
+          '清除 $year 年节假日缓存失败',
+          error: e,
+        );
+      } catch (_) {
+        // 日志通道不可用：忽略，避免二次异常外泄。
+      }
     }
     _log('$year年：缓存已清除');
   }
@@ -650,12 +657,18 @@ class HolidayService {
       final json = jsonEncode(entries.map((e) => e.toJson()).toList());
       await prefs.setString(_customHolidaysKey, json);
     } catch (e, stackTrace) {
-      await AppLogService.instance.error(
-        'holiday_custom_save_failed',
-        '自定义假期写入本地存储失败',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      // error() 自身失败（如磁盘满）不能掩盖真正的写盘异常，
+      // 故单独兜底，确保 HolidayCustomSaveException 必然抛出。
+      try {
+        await AppLogService.instance.error(
+          'holiday_custom_save_failed',
+          '自定义假期写入本地存储失败',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      } catch (_) {
+        // 日志通道不可用：忽略，继续抛出写盘异常。
+      }
       throw HolidayCustomSaveException(
         'custom holiday persist failed',
         cause: e,
