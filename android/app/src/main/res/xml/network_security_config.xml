@@ -11,7 +11,11 @@
   Campus academic portals that only serve HTTP are enumerated below
   (all http:// import_url hosts from the qingyu_warehouse adapter
   repository, plus localhost/127.0.0.1 for local adapters during
-  development). Keep this list in sync with the adapter repository.
+  development). Keep this list in sync with the adapter repository. IP
+  literals are fine here too: NSC domain matching is a plain string compare
+  (exact or includeSubdomains suffix) in ApplicationConfig, so exact-match IP
+  entries do work - but ONLY with includeSubdomains="false" (an IP can never
+  be a dot-suffix of another hostname).
 
   Debug builds use src/debug/res/xml/network_security_config.xml,
   which still permits cleartext globally.
@@ -30,16 +34,17 @@
         <domain includeSubdomains="false">localhost</domain>
         <domain includeSubdomains="false">127.0.0.1</domain>
         <domain includeSubdomains="false">::1</domain>
-        <domain includeSubdomains="false">10.0.0.2</domain>
         <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
 
-    <!-- Umeng analytics endpoints (native SDK, plaintext fallback). -->
+    <!-- Umeng analytics endpoints (native SDK, plaintext fallback). Keep the
+         scope tight: umeng.com/uc.cn/ucweb.com are Umeng-owned hosts. Do NOT
+         add broad CDNs (e.g. *.aliyuncs.com) here - those are shared by third
+         parties and would open a plaintext exfiltration channel. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">umeng.com</domain>
         <domain includeSubdomains="true">uc.cn</domain>
         <domain includeSubdomains="true">ucweb.com</domain>
-        <domain includeSubdomains="true">aliyuncs.com</domain>
     </domain-config>
 
     <!-- HTTP-only campus portals (course import WebView). -->

@@ -779,6 +779,10 @@ class AppUpdateService {
           (releaseJson['name'] as String?) ??
           '',
     );
+    // 下载地址与官方摘要必须同源（同一个 asset），见 _pickApkDownload。
+    final apkDownload = _pickApkDownload(
+      releaseJson['assets'] as List<dynamic>? ?? const [],
+    );
     return AppReleaseInfo(
       version: latestVersion,
       title: (releaseJson['name'] as String?)?.trim().isNotEmpty == true
@@ -786,12 +790,8 @@ class AppUpdateService {
           : latestVersion,
       body: (releaseJson['body'] as String?)?.trim() ?? '',
       releaseUrl: (releaseJson['html_url'] as String?) ?? repositoryUrl,
-      downloadUrl: _pickDownloadUrl(
-        releaseJson['assets'] as List<dynamic>? ?? const [],
-      ),
-      expectedApkSha256: _pickApkAssetDigest(
-        releaseJson['assets'] as List<dynamic>? ?? const [],
-      ),
+      downloadUrl: apkDownload.downloadUrl,
+      expectedApkSha256: apkDownload.expectedApkSha256,
       updatedAt: DateTime.tryParse(
         (releaseJson['updated_at'] as String?) ??
             (releaseJson['published_at'] as String?) ??
@@ -813,8 +813,13 @@ class AppUpdateService {
     return candidate;
   }
 
-  /// 取 APK 资产的官方 SHA-256 摘要（GitHub API `digest` 字段，形如 `sha256:...`）。
-  String? _pickApkAssetDigest(List<dynamic> assets) {
+  /// 取下载地址与官方 SHA-256 摘要（GitHub API `digest` 字段，形如 `sha256:...`）。
+  /// URL 和 digest 必须来自同一个 asset：多 APK 资产时若各自独立挑选
+  /// （digest 会跳过缺失项继续找），可能下载 A、拿 B 的哈希校验，导致必然
+  /// mismatch 而拒绝安装。digest 缺失时保持旧行为（跳过校验）。
+  ({String? downloadUrl, String? expectedApkSha256}) _pickApkDownload(
+    List<dynamic> assets,
+  ) {
     final normalizedAssets = assets
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
@@ -829,46 +834,42 @@ class AppUpdateService {
       return value.startsWith('sha256:') ? value.substring('sha256:'.length) : null;
     }
 
+    String? urlOf(Map<String, dynamic> asset) =>
+        asset['browser_download_url'] as String?;
+
+    // 优先：非 debug 的 APK，且带官方摘要（可校验完整性）。
+    for (final asset in normalizedAssets) {
+      final name = (asset['name'] as String?)?.toLowerCase() ?? '';
+      if (name.endsWith('.apk') &&
+          !name.contains('debug') &&
+          digestOf(asset) != null) {
+        return (downloadUrl: urlOf(asset), expectedApkSha256: digestOf(asset));
+      }
+    }
+    // 其次：非 debug 的 APK（无摘要，跳过校验）。
     for (final asset in normalizedAssets) {
       final name = (asset['name'] as String?)?.toLowerCase() ?? '';
       if (name.endsWith('.apk') && !name.contains('debug')) {
-        final digest = digestOf(asset);
-        if (digest != null) return digest;
+        return (downloadUrl: urlOf(asset), expectedApkSha256: null);
       }
     }
+    // 再次：任意 APK。
     for (final asset in normalizedAssets) {
       final name = (asset['name'] as String?)?.toLowerCase() ?? '';
       if (name.endsWith('.apk')) {
-        final digest = digestOf(asset);
-        if (digest != null) return digest;
+        return (downloadUrl: urlOf(asset), expectedApkSha256: digestOf(asset));
       }
     }
-    return null;
-  }
-
-  String? _pickDownloadUrl(List<dynamic> assets) {
-    final normalizedAssets = assets
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList();
-
-    for (final asset in normalizedAssets) {
-      final name = (asset['name'] as String?)?.toLowerCase() ?? '';
-      if (name.endsWith('.apk') && !name.contains('debug')) {
-        return asset['browser_download_url'] as String?;
-      }
-    }
-
-    for (final asset in normalizedAssets) {
-      final name = (asset['name'] as String?)?.toLowerCase() ?? '';
-      if (name.endsWith('.apk')) {
-        return asset['browser_download_url'] as String?;
-      }
-    }
-
+    // 兜底：首个资产（与旧 `_pickDownloadUrl` 行为一致）。
     final firstAsset = normalizedAssets.isEmpty ? null : normalizedAssets.first;
-    return firstAsset?['browser_download_url'] as String?;
+    return (
+      downloadUrl: firstAsset == null ? null : urlOf(firstAsset),
+      expectedApkSha256: null,
+    );
   }
+
+  String? _pickDownloadUrl(List<dynamic> assets) =>
+      _pickApkDownload(assets).downloadUrl;
 
   bool _hasUsableDownloadUrl(Map<String, dynamic> releaseJson) {
     return _pickDownloadUrl(

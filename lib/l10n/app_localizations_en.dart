@@ -4744,6 +4744,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFileReadFailed => 'Unable to read the selected file';
 
   @override
+  String get importCleartextBlockedHint => 'This site does not support HTTPS and is not on the cleartext allowlist, so it cannot be opened here';
+
+  @override
   String get importReplaceExistingTitle => 'Import courses';
 
   @override

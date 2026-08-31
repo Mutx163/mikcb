@@ -4542,6 +4542,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importFileReadFailed => '選択したファイルを読み込めません';
 
   @override
+  String get importCleartextBlockedHint => 'このサイトは HTTPS に対応しておらず、平文通信の許可リストにも含まれていないため、ここでは開けません';
+
+  @override
   String get importReplaceExistingTitle => '授業インポート';
 
   @override
@@ -7776,7 +7779,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceMsgUpdateDownloadHashMismatch =>
-      'パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、本次の更新を中止しました';
+      'パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、今回の更新を中止しました';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

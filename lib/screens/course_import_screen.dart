@@ -3609,6 +3609,38 @@ class _WarehouseAdapterWebLoginScreenState
             }
             _requestLoginStateProbe();
           },
+          onWebResourceError: (error) {
+            // 安全配置收紧后（release 仅放行 NSC 白名单内的 HTTP 域），
+            // 白名单外的明文站点会被拦成 ERR_CLEARTEXT_NOT_PERMITTED。
+            // 不提示的话 WebView 只会白屏，用户会以为教务导入坏了。
+            if (!mounted) {
+              return;
+            }
+            WarehouseImportSessionLog.instance.append(
+              message:
+                  'webview.error: ${error.errorCode} ${error.description} '
+                  '(url: ${error.url ?? _currentUrl ?? widget.initialUrl})',
+              level: 'error',
+              extras: {
+                'schoolId': widget.school.id,
+                'adapterId': widget.adapter.adapterId,
+                'url': error.url ?? _currentUrl ?? widget.initialUrl,
+              },
+            );
+            final isCleartextBlocked = error.description.contains(
+              'ERR_CLEARTEXT_NOT_PERMITTED',
+            );
+            if (isCleartextBlocked) {
+              final errorL10n = AppLocalizations.of(context);
+              if (errorL10n != null) {
+                showAppToast(
+                  context,
+                  message: errorL10n.importCleartextBlockedHint,
+                  kind: AppToastKind.error,
+                );
+              }
+            }
+          },
         ),
       )
       ..loadRequest(Uri.parse(widget.initialUrl));

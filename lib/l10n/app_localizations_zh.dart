@@ -4448,6 +4448,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFileReadFailed => '无法读取所选文件';
 
   @override
+  String get importCleartextBlockedHint => '该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开';
+
+  @override
   String get importReplaceExistingTitle => '导入课程';
 
   @override
@@ -14784,6 +14787,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importFileReadFailed => '無法讀取所選文件';
+
+  @override
+  String get importCleartextBlockedHint => '該站點暫不支持 HTTPS 訪問且未在明文白名單內，無法在此打開';
 
   @override
   String get importReplaceExistingTitle => '匯入課程';
@@ -25166,6 +25172,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get importFileReadFailed => '無法讀取所选文件';
+
+  @override
+  String get importCleartextBlockedHint => '該站點暫不支援 HTTPS 存取且未在明文白名單內，無法在此開啟';
 
   @override
   String get importReplaceExistingTitle => '匯入課程';

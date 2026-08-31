@@ -2270,6 +2270,7 @@
   "aboutParticipateWarehouseTitle": "教務適応に参加",
   "aboutParticipateWarehouseSubtitle": "パケットキャプチャ、Webデバッグ、JavaScriptができる場合、または自分の学校の教務システムを長期メンテナンスしたい場合は、qingyu_warehouseで新しい学校適応と修正の提出歓迎",
   "importFileReadFailed": "選択したファイルを読み込めません",
+  "importCleartextBlockedHint": "このサイトは HTTPS に対応しておらず、平文通信の許可リストにも含まれていないため、ここでは開けません",
   "importReplaceExistingTitle": "授業インポート",
   "importReplaceExistingMessage": "{name}をインポートする際、既存の授業を置換しますか？この操作では、現在の時間割上の独立した予定（自習・会議など）も削除されます。",
   "@importReplaceExistingMessage": {
@@ -4400,7 +4401,7 @@
     }
   },
   "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
-  "serviceMsgUpdateDownloadHashMismatch": "パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、本次の更新を中止しました",
+  "serviceMsgUpdateDownloadHashMismatch": "パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、今回の更新を中止しました",
   "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
   "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
   "@serviceMsgUpdateDownloadHttpFailed": {

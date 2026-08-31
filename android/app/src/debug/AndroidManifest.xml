@@ -5,7 +5,9 @@
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <!-- Debug only: allow cleartext globally for campus HTTP portals, LAN
-         edit, local WebDAV and mirror probing during development. -->
-    <application android:usesCleartextTraffic="true" />
+    <!-- Debug builds relax cleartext via src/debug/res/xml/network_security_config.xml
+         (base-config cleartextTrafficPermitted=true). Do NOT set
+         android:usesCleartextTraffic here: when it coexists with
+         android:networkSecurityConfig the manifest attribute wins and would
+         override the NSC allowlist in release merges. -->
 </manifest>

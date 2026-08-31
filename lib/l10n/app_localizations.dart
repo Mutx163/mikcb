@@ -8187,6 +8187,12 @@ abstract class AppLocalizations {
   /// **'无法读取所选文件'**
   String get importFileReadFailed;
 
+  /// No description provided for @importCleartextBlockedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开'**
+  String get importCleartextBlockedHint;
+
   /// No description provided for @importReplaceExistingTitle.
   ///
   /// In zh, this message translates to:

@@ -2460,6 +2460,7 @@
   "aboutParticipateWarehouseTitle": "Contribute adapters",
   "aboutParticipateWarehouseSubtitle": "If you know packet capture, web debugging, JavaScript, or are willing to maintain your school's academic system long-term, you are welcome to submit new school adapters and fixes to qingyu_warehouse",
   "importFileReadFailed": "Unable to read the selected file",
+  "importCleartextBlockedHint": "This site does not support HTTPS and is not on the cleartext allowlist, so it cannot be opened here",
   "importReplaceExistingTitle": "Import courses",
   "importReplaceExistingMessage": "When importing {name}, replace existing courses? This also clears independent agenda items on the current timetable (such as study sessions or meetings).",
   "@importReplaceExistingMessage": {

@@ -2270,6 +2270,7 @@
   "aboutParticipateWarehouseTitle": "교무 적응에 참여",
   "aboutParticipateWarehouseSubtitle": "패킷 캡처, 웹 디버깅, JavaScript를 할 수 있거나 자신의 학교 교무 시스템을 장기 유지보수하고 싶다면, qingyu_warehouse에서 새 학교 적응과 수정을 제출해 주세요",
   "importFileReadFailed": "선택한 파일을 읽을 수 없습니다",
+  "importCleartextBlockedHint": "이 사이트는 HTTPS를 지원하지 않고 평문 통신 허용 목록에도 없어서 여기서 열 수 없습니다",
   "importReplaceExistingTitle": "수업 가져오기",
   "importReplaceExistingMessage": "{name}을(를) 가져올 때 기존 수업을 대체하시겠습니까? 이 작업은 현재 시간표의 독립 일정(자습, 회의 등)도 함께 비웁니다.",
   "@importReplaceExistingMessage": {

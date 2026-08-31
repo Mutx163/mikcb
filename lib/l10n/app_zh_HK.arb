@@ -2267,6 +2267,7 @@
   "aboutParticipateWarehouseTitle": "參與教務適配",
   "aboutParticipateWarehouseSubtitle": "如果你會抓包、網頁偵錯、JavaScript，或者願意長期維護自己學校的教務系統，歡迎去 qingyu_warehouse 提交新的學校適配與修複",
   "importFileReadFailed": "無法讀取所選文件",
+  "importCleartextBlockedHint": "該站點暫不支持 HTTPS 訪問且未在明文白名單內，無法在此打開",
   "importReplaceExistingTitle": "匯入課程",
   "importReplaceExistingMessage": "匯入 {name} 時，是否替換現有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。",
   "@importReplaceExistingMessage": {
