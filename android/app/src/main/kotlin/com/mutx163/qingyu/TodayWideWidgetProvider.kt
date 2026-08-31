@@ -204,5 +204,25 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         )
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+    private fun bindRow(
+        views: RemoteViews,
+        rowId: Int,
+        timeId: Int,
+        titleId: Int,
+        course: TodayWidgetCourseInfo?,
+        secondaryColor: Int,
+        primaryColor: Int,
+    ) {
+        if (course == null) {
+            views.setViewVisibility(rowId, View.GONE)
+            return
+        }
+        views.setViewVisibility(rowId, View.VISIBLE)
+        views.setTextViewText(timeId, course.startTime + " - " + course.endTime)
+        views.setTextViewText(titleId, course.name)
+        views.setTextColor(timeId, secondaryColor)
+        views.setTextColor(titleId, primaryColor)
     }
 }

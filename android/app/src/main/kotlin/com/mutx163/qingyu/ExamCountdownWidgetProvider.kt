@@ -144,5 +144,15 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
         )
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+    private fun examMeta(snapshot: com.mutx163.qingyu.TodayWidgetSnapshotInfo): String {
+        // yyyy-MM-dd → MM-dd；拼接地点（有则显示）。
+        val date = snapshot.nextExamDate.orEmpty()
+        val shortDate = if (date.length >= 10) date.substring(5) else date
+        val location = snapshot.nextExamLocation.orEmpty()
+        return listOf(shortDate, location)
+            .filter { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
+            .joinToString(" · ")
     }
 }

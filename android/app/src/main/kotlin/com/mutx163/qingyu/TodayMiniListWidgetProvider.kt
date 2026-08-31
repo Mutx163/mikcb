@@ -181,5 +181,53 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
         appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+    private fun bindRow(
+        views: RemoteViews,
+        index: Int,
+        course: TodayWidgetCourseInfo?,
+        primaryColor: Int,
+        secondaryColor: Int,
+        isHighlighted: Boolean,
+        style: String,
+        countdown: String? = null,
+    ) {
+        val rowIds = arrayOf(
+            Triple(R.id.widget_mini_row_1, R.id.widget_mini_row_1_time, R.id.widget_mini_row_1_title),
+            Triple(R.id.widget_mini_row_2, R.id.widget_mini_row_2_time, R.id.widget_mini_row_2_title),
+            Triple(R.id.widget_mini_row_3, R.id.widget_mini_row_3_time, R.id.widget_mini_row_3_title),
+        )
+        val (rowId, timeId, titleId) = rowIds[index]
+        if (course == null) {
+            views.setViewVisibility(rowId, View.GONE)
+            return
+        }
+        views.setViewVisibility(rowId, View.VISIBLE)
+        views.setInt(
+            rowId,
+            "setBackgroundResource",
+            when {
+                !isHighlighted -> android.R.color.transparent
+                style == "gradient" -> R.drawable.widget_row_highlight_light
+                else -> R.drawable.widget_row_highlight
+            }
+        )
+        views.setTextColor(timeId, if (isHighlighted) primaryColor else secondaryColor)
+        views.setTextColor(titleId, primaryColor)
+        TodayWidgetSupport.setTextSizeSp(views, timeId, 9f)
+        TodayWidgetSupport.setTextSizeSp(views, titleId, 11f)
+        views.setTextViewText(
+            timeId,
+            when {
+                countdown != null && course.location.isNotBlank() ->
+                    "$countdown · ${course.location}"
+                countdown != null -> countdown
+                course.location.isNotBlank() ->
+                    "${course.startTime} · ${course.location}"
+                else -> course.startTime
+            }
+        )
+        views.setTextViewText(titleId, course.name)
     }
 }

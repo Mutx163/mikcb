@@ -174,5 +174,38 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
         appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+    private fun setCourseRows(
+        views: RemoteViews,
+        courses: List<TodayWidgetCourseInfo>,
+        primaryColor: Int,
+        secondaryColor: Int,
+    ) {
+        val rowIds = arrayOf(
+            Triple(R.id.widget_large_row_1, R.id.widget_large_row_1_time, R.id.widget_large_row_1_title),
+            Triple(R.id.widget_large_row_2, R.id.widget_large_row_2_time, R.id.widget_large_row_2_title),
+            Triple(R.id.widget_large_row_3, R.id.widget_large_row_3_time, R.id.widget_large_row_3_title),
+            Triple(R.id.widget_large_row_4, R.id.widget_large_row_4_time, R.id.widget_large_row_4_title),
+            Triple(R.id.widget_large_row_5, R.id.widget_large_row_5_time, R.id.widget_large_row_5_title),
+        )
+        rowIds.forEachIndexed { index, triple ->
+            val (rowId, timeId, titleId) = triple
+            val course = courses.getOrNull(index)
+            if (course == null) {
+                views.setViewVisibility(rowId, View.GONE)
+            } else {
+                views.setViewVisibility(rowId, View.VISIBLE)
+                views.setTextColor(timeId, secondaryColor)
+                views.setTextColor(titleId, primaryColor)
+                views.setTextViewText(timeId, "${course.startTime} - ${course.endTime}")
+                val title = if (course.location.isNotBlank()) {
+                    "${course.name} · ${course.location}"
+                } else {
+                    course.name
+                }
+                views.setTextViewText(titleId, title)
+            }
+        }
     }
 }

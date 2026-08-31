@@ -166,5 +166,40 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
         appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+    private fun bindRow(
+        views: RemoteViews,
+        index: Int,
+        course: TodayWidgetCourseInfo?,
+        primaryColor: Int,
+        secondaryColor: Int,
+    ) {
+        val rowIds = arrayOf(
+            Triple(R.id.widget_medium_row_1, R.id.widget_medium_row_1_time, R.id.widget_medium_row_1_title),
+            Triple(R.id.widget_medium_row_2, R.id.widget_medium_row_2_time, R.id.widget_medium_row_2_title),
+            Triple(R.id.widget_medium_row_3, R.id.widget_medium_row_3_time, R.id.widget_medium_row_3_title),
+        )
+        val (rowId, timeId, titleId) = rowIds[index]
+        if (course == null) {
+            views.setViewVisibility(rowId, View.GONE)
+            return
+        }
+        views.setViewVisibility(rowId, View.VISIBLE)
+        views.setTextColor(timeId, secondaryColor)
+        views.setTextColor(titleId, primaryColor)
+        views.setTextViewText(timeId, "${course.startTime} - ${course.endTime}")
+        views.setTextViewText(titleId, course.name)
+    }
+
+    private fun setRowVisibility(
+        views: RemoteViews,
+        row1: Boolean,
+        row2: Boolean,
+        row3: Boolean,
+    ) {
+        views.setViewVisibility(R.id.widget_medium_row_1, if (row1) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_medium_row_2, if (row2) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_medium_row_3, if (row3) View.VISIBLE else View.GONE)
     }
 }
