@@ -282,7 +282,7 @@ Future<void> main() async {
       }
       // 依赖倒置登记：八宫格目录（widgets 层）经此回调取设置库私有子页，
       // 拆分后 home_menu_catalog 不再直接 import 设置页（消除 widgets →
-      // screens 循环依赖）。库加载即登记，早于任何菜单渲染。
+      // screens 循环依赖）。登记唯一的显式入口，早于任何菜单渲染。
       registerSettingsPages(
         settingsScreen: () => const TimetableSettingsScreen(),
         subpageById: settingsSubpageById,

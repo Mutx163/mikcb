@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/screens/about_screen.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart'
     show pushHomeMenuPage;
@@ -49,9 +47,9 @@ import 'package:university_timetable/screens/user_guide_screen.dart';
 /// 「设置 Tab」的常驻体验）。未登记的 id（表单类/需要上下文的流程页）
 /// 仍走普通推入。
 final Map<String, WidgetBuilder> kInlineDockPages = {
-  // 「设置」由设置库启动时登记（见 _settingsScreenBuilder），避免本文件
+  // 「设置」由设置库启动时登记（见 _buildSettingsScreen），避免本文件
   // 反向 import 设置页构成循环。
-  'settings': (context) => _settingsScreenBuilder(),
+  'settings': (context) => _buildSettingsScreen(),
   'overview': (context) => const CourseOverviewScreen(),
   'statistics': (context) => const CourseStatisticsScreen(),
   'exams': (context) => const ExamListScreen(),
@@ -109,7 +107,7 @@ final Map<String, Widget Function()> kHomeCatalogPages = {
   'cloudSyncPage': () => const CloudSyncScreen(),
   'lanEditPage': () => const LanEditScreen(),
   'coupleTimetablePage': () => const CoupleTimetableSettingsScreen(),
-  'settingsPage': () => _settingsScreenBuilder(),
+  'settingsPage': () => _buildSettingsScreen(),
   'statisticsSettingsPage': () => const StatisticsSettingsScreen(),
   'advancedMaterialSettingsPage': () => const AdvancedMaterialSettingsScreen(),
   'supportCreatorPage': () => const SupportCreatorScreen(),
@@ -143,14 +141,14 @@ Future<void> pushHomeMenuUpdateEntry(BuildContext context) async {
 /// 登记设置首页构造器与私有子页工厂，八宫格/玻璃坞目录经此回调取页，
 /// 避免本文件反向 import 设置页构成目录 ↔ 设置页的循环依赖。
 Widget? Function(String id)? _settingsSubpageResolver;
-Widget Function()? _settingsScreenBuilder;
+Widget Function()? _settingsScreenBuilderOverride;
 
 /// 由 timetable_settings_screen.dart 调用：登记设置首页构造器与子页工厂。
 void registerSettingsPages({
   required Widget Function() settingsScreen,
   required Widget? Function(String id) subpageById,
 }) {
-  _settingsScreenBuilder = settingsScreen;
+  _settingsScreenBuilderOverride = settingsScreen;
   _settingsSubpageResolver = subpageById;
 }
 
@@ -159,8 +157,8 @@ void registerSettingsPages({
 Widget? resolveSettingsSubpage(String id) => _settingsSubpageResolver?.call(id);
 
 /// 取设置首页；未登记视为编程错误（main 未完成启动登记）。
-Widget _settingsScreenBuilder() {
-  final builder = _settingsScreenBuilder;
+Widget _buildSettingsScreen() {
+  final builder = _settingsScreenBuilderOverride;
   if (builder == null) {
     throw StateError(
       'home_menu_route_catalog: settings screen not registered; '
