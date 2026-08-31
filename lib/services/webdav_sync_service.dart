@@ -6,7 +6,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:webdav_plus/webdav_plus.dart';
 
 import '../providers/timetable_provider.dart';
-import 'app_log_service.dart';
 import 'app_sync_snapshot_service.dart';
 import 'cloud_backup_index_service.dart';
 import 'webdav_client_service.dart';
@@ -149,8 +148,23 @@ class WebdavSyncService {
   final WebdavSyncCredentialsStore _credentialsStore;
   final WebdavClientService _clientService;
   final CloudBackupIndexService _backupIndexService;
+  bool _disposed = false;
 
   WebdavSyncConflictHandler? conflictHandler;
+
+  /// Unregisters the baseline-reset hook from the shared snapshot service.
+  ///
+  /// AppSyncSnapshotService 的钩子槽位只有一个。多实例 WebdavSyncService
+  /// （测试间连建、或将来其他 WebDAV 衍生服务）不注销会互相覆盖钩子，
+  /// 回滚时可能清错实例的基线。实例生命周期结束时调用本方法注销，之后
+  /// 回滚分支的钩子调用静默跳过。
+  void dispose() {
+    if (_disposed) {
+      return;
+    }
+    _disposed = true;
+    _snapshotService.setCloudSyncBaselineReset(null);
+  }
 
   Future<WebdavSyncConfig> loadConfig() => _configStore.load();
 
@@ -316,37 +330,23 @@ class WebdavSyncService {
         final skipHistory =
             backupSource == CloudBackupSource.auto &&
             config.lastUploadedLocalHash == snapshot.contentSha256;
-        try {
-          if (!skipHistory) {
-            await _writeBackupHistory(
-              client: client,
-              config: config,
-              snapshotBytes: snapshotBytes,
-              snapshot: snapshot,
-              deviceId: deviceId,
-              deviceLabel: deviceLabel,
-              appVersion: packageInfo.version,
-              source: backupSource,
-              allowDuplicateHash: backupSource == CloudBackupSource.manual,
-            );
-          } else {
-            await _refreshBackupCurrentMarker(
-              client: client,
-              config: config,
-              currentContentSha256: snapshot.contentSha256,
-            );
-          }
-        } catch (historyError) {
-          // 快照正文+元数据已成功发布且可读回校验通过，历史索引/修剪只是
-          // 附属步骤。此前的写法让历史失败随整体 catch 把本次同步报成
-          // failed：调用方把成功发布的同步当失败重试（写放大），且历史
-          // 修剪失败会连续污染后续每一次同步的结果。记录后按成功收口，
-          // 历史索引下次同步自动补齐（重建逻辑已兜底）。
-          await AppLogService.instance.warn(
-            'webdav_backup_history_write_failed',
-            'webdav backup history write failed after successful publish',
-            error: historyError,
-            extras: {'contentSha256': snapshot.contentSha256},
+        if (!skipHistory) {
+          await _writeBackupHistory(
+            client: client,
+            config: config,
+            snapshotBytes: snapshotBytes,
+            snapshot: snapshot,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+            appVersion: packageInfo.version,
+            source: backupSource,
+            allowDuplicateHash: backupSource == CloudBackupSource.manual,
+          );
+        } else {
+          await _refreshBackupCurrentMarker(
+            client: client,
+            config: config,
+            currentContentSha256: snapshot.contentSha256,
           );
         }
       }
@@ -796,6 +796,9 @@ class WebdavSyncService {
   /// upload against a stale remote baseline. Used after a restore failed and
   /// the local data was rolled back (the remote is still the last good copy).
   Future<void> clearSyncBaselines() async {
+    if (_disposed) {
+      return;
+    }
     final config = await _configStore.load();
     await _configStore.save(
       config.copyWith(
@@ -1217,11 +1220,14 @@ class WebdavSyncService {
             isCurrent: parsed.contentSha256 == currentHash,
           ),
         );
-      } on FormatException {
-        // 单个备份体损坏（传输截断/旧版本 schema）：跳过该条，其余备份
-        // 仍然可见可选。此前任何一条坏数据都抛 StateError('sync_failed')
-        // 让整个索引重建失败——一个坏文件把全部历史备份从列表里藏掉，
-        // 恢复入口被一条坏数据绑架。坏文件仍留在远端，可被后续清理。
+      } catch (_) {
+        // 单个备份体损坏（传输截断/坏 UTF-8 字节/旧版本 schema/字段类型
+        // 异常抛 TypeError 等）：一律跳过该条，其余备份仍然可见可选。
+        // 此前任何一条坏数据都抛 StateError('sync_failed') 让整个索引
+        // 重建失败——一个坏文件把全部历史备份从列表里藏掉，恢复入口被
+        // 一条坏数据绑架。parseSnapshotJson 的子解析路径分散，异常并不
+        // 总被归一化为 FormatException（如 TypeError），故放宽为 catch
+        // 全部后跳过。坏文件仍留在远端，可被后续清理。
         continue;
       }
     }

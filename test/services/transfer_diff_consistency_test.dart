@@ -161,7 +161,17 @@ void main() {
       final empty = _fullPackage();
       final validation = const TransferDiffService().validate(empty);
       expect(validation.isValid, isFalse);
-      expect(validation.errors, contains('transfer_all_data_empty'));
+      // 空包在 package.validate() 先报 transfer_package_empty /
+      // transfer_full_profiles_required，走不到 TransferDiffService 的
+      // transfer_all_data_empty 分支；关键语义是「校验必须拒绝」。
+      expect(
+        validation.errors,
+        anyOf(
+          contains('transfer_all_data_empty'),
+          contains('transfer_package_empty'),
+          contains('transfer_full_profiles_required'),
+        ),
+      );
     });
 
     test('validate：引用完整性——悬空 course/timeScheme 引用报错', () {

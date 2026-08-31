@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/services/webdav_sync_coordinator.dart';
+import 'package:university_timetable/services/webdav_sync_service.dart'
+    show WebdavSyncResultKind;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

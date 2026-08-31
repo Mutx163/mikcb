@@ -251,10 +251,25 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       d = d.add(const Duration(days: 1));
     }
 
-    if (existing != null) {
-      await provider.updateCustomHoliday(groupId, entries);
-    } else {
-      await provider.addCustomHolidays(entries);
+    // saveCustomHolidays 写失败会向上抛（不再被整体 catch 吞掉）。此处
+    // 兜底给用户明确反馈：失败不是成功——旧实现吞掉异常后内存里看似
+    // 保存成功，进程结束数据凭空消失。
+    try {
+      if (existing != null) {
+        await provider.updateCustomHoliday(groupId, entries);
+      } else {
+        await provider.addCustomHolidays(entries);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(
+          context,
+        )!.saveFailedWithError('$error'),
+        kind: AppToastKind.error,
+      );
+      return;
     }
     await _loadCustomHolidays();
   }
@@ -314,7 +329,18 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     final confirmed = await _showCustomHolidayDeleteConfirmSheet();
     if (confirmed && mounted) {
       final provider = context.read<TimetableProvider>();
-      await provider.removeCustomHoliday(groupId);
+      final l10n = AppLocalizations.of(context)!;
+      try {
+        await provider.removeCustomHoliday(groupId);
+      } catch (error) {
+        if (!mounted) return;
+        showAppToast(
+          context,
+          message: l10n.saveFailedWithError('$error'),
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       await _loadCustomHolidays();
     }
   }

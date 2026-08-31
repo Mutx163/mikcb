@@ -46,7 +46,11 @@ void main() {
     expect(courses.single.id, 'good-1');
     // 原始数据仍有好条目，不应被备份清除。
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('courses'), isNotNull);
+    // courses 存的是 StringList， getStringList 读取（getString 会因类型
+    // 不匹配抛 cast 错误，无法用来探测存在性）。有一个好条目时 key 不被
+    // 清除，通过 getStringList 断言原始列表仍在。
+    expect(prefs.getStringList('courses'), isNotNull);
+    expect(prefs.getStringList('courses'), contains(goodJson));
   });
 
   test('全部条目都坏时备份原始数据并清 key（与 profiles 口径一致）', () async {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/holiday_entry.dart';
 import 'package:university_timetable/models/warehouse_macro_models.dart';
 import 'package:university_timetable/services/holiday_service.dart';
 import 'package:university_timetable/services/warehouse_macro_service.dart';
@@ -30,28 +31,23 @@ void main() {
     });
 
     test('底层写失败时异常向上抛，调用方可感知保存未成功', () async {
-      // SharedPreferences mock 无法直接注入失败；通过把 entries 编码成不可
-      // 序列化对象验证序列化段失败向上抛（toJson 对任意对象都会走
-      // jsonEncode，非基本类型抛 JsonUnsupportedObjectError）。
+      // SharedPreferences mock 无法直接注入写失败；通过自定义HolidayEntry
+      // 子类的 toJson 返回不可 JSON 序列化对象，让 jsonEncode 在序列化段
+      // 必抛 JsonUnsupportedObjectError，验证异常经 async 封装为 failed
+      // Future 后仍向上传播（此前 returnsNormally 断言对 async 函数无效）。
       SharedPreferences.setMockInitialValues({});
       final service = HolidayService();
 
-      expect(
-        () => service.saveCustomHolidays([
-          HolidayEntry(
+      await expectLater(
+        service.saveCustomHolidays([
+          _UnserializableEntry(
             date: DateTime(2026, 10, 1),
             name: 'x',
             type: HolidayType.vacation,
             groupId: 'g',
           ),
-          HolidayEntry(
-            date: DateTime(2026, 10, 2),
-            name: 'y',
-            type: HolidayType.vacation,
-            groupId: 'g',
-          ),
         ]),
-        returnsNormally,
+        throwsA(isA<JsonUnsupportedObjectError>()),
       );
     });
   });
@@ -63,6 +59,11 @@ void main() {
           WarehouseMacroRecord(
             schoolId: 'old-school',
             adapterId: 'old-adapter',
+            schoolName: '',
+            adapterName: '',
+            importUrl: '',
+            schoolResourceFolder: '',
+            adapterAssetJsPath: '',
             steps: const [],
             createdAt: DateTime(2026, 1, 1),
             updatedAt: DateTime(2026, 1, 1),
@@ -118,4 +119,26 @@ void main() {
       expect(prefs.getString(WarehouseMacroRecord.indexKey), '[]');
     });
   });
+}
+
+/// toJson 返回不可 JSON 序列化对象的自定义假期条目。
+///
+/// saveCustomHolidays 对 entries 走 jsonEncode；普通 HolidayEntry 的
+/// toJson 全是基本类型，无法在 mock SharedPreferences 上注入写失败，
+/// 用该子类让序列化段确定性抛 JsonUnsupportedObjectError。
+class _UnserializableEntry extends HolidayEntry {
+  const _UnserializableEntry({
+    required super.date,
+    required super.name,
+    required super.type,
+    super.groupId,
+  });
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'date': DateTime(2026, 10, 1), // DateTime 不可被 jsonEncode 直接序列化
+    'name': 'x',
+    'type': HolidayType.vacation.value,
+    'groupId': 'g',
+  };
 }
