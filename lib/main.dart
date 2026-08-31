@@ -28,6 +28,7 @@ import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'widgets/app_startup_splash.dart';
+import 'widgets/home_menu_route_catalog.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
@@ -279,6 +280,13 @@ Future<void> main() async {
           buildNumber: '',
         );
       }
+      // 依赖倒置登记：八宫格目录（widgets 层）经此回调取设置库私有子页，
+      // 拆分后 home_menu_catalog 不再直接 import 设置页（消除 widgets →
+      // screens 循环依赖）。登记唯一的显式入口，早于任何菜单渲染。
+      registerSettingsPages(
+        settingsScreen: () => const TimetableSettingsScreen(),
+        subpageById: settingsSubpageById,
+      );
       runApp(
         LiquidGlassWidgets.wrap(
           child: MyApp(packageInfo: packageInfo),
@@ -1092,8 +1100,18 @@ class _AppEntryScreenState extends State<AppEntryScreen>
             );
           }
       }
-    } catch (e) {
-      // Silently ignore - this is a non-critical feature
+    } catch (e, stackTrace) {
+      // 非关键功能不中断启动流程，但失败要留痕：否则用户反馈
+      // 「分享导入没反应」时没有任何线索可查。
+      debugPrint('checkPendingExternalImport failed: $e');
+      unawaited(
+        AppLogService.instance.warn(
+          'external_import_check_failed',
+          e.toString(),
+          error: e,
+          stackTrace: stackTrace,
+        ),
+      );
     }
   }
 

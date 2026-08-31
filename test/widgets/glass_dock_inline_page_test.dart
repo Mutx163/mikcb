@@ -9,6 +9,7 @@ import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/course_statistics_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -24,6 +25,12 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 /// - 圆钮保留 toggle 收回（无选中态指示，按钮式「再点撤销」成立），
 ///   开/收各震一次。
 void main() {
+  // 拆分后设置页由库侧登记（生产在 main() 启动时完成）；测试环境直接
+  // 调用一次，保证玻璃坞「课表设置」内嵌入口可解析。
+  registerSettingsPages(
+    settingsScreen: () => const TimetableSettingsScreen(),
+    subpageById: settingsSubpageById,
+  );
   TestWidgetsFlutterBinding.ensureInitialized();
 
   List<MethodCall> installHapticLog() {

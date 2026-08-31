@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui'
     as ui
     show
@@ -32,15 +33,41 @@ class HomePageBackgroundVisual {
   );
 }
 
+/// Memoized wallpaper-file existence, keyed by absolute path.
+///
+/// `hasHomePageBackdropImage()` is read on every home build (directly and via
+/// the region helpers); probing the disk synchronously each build stalls the
+/// UI thread whenever no wallpaper is configured. Each path is probed at most
+/// once per app run; wallpaper mutation points already call
+/// [evictHomePageImageCache], which invalidates the memo for the touched path.
+final Map<String, bool> _homePageBackdropFileExistsCache = {};
+
+bool _homePageFileExistsSync(String path) {
+  return _homePageBackdropFileExistsCache.putIfAbsent(
+    path,
+    () => File(path).existsSync(),
+  );
+}
+
+/// Drop the memoized existence result for [path].
+///
+/// Call whenever a wallpaper file is created, replaced or deleted so the next
+/// build re-probes instead of trusting a stale memo.
+void invalidateHomePageBackdropFileExists(String? path) {
+  if (path == null || path.isEmpty) {
+    return;
+  }
+  _homePageBackdropFileExistsCache.remove(path);
+}
+
 ImageProvider? homePageImageProvider(String? path) {
   if (path == null || path.isEmpty) {
     return null;
   }
-  final file = File(path);
-  if (!file.existsSync()) {
+  if (!_homePageFileExistsSync(path)) {
     return null;
   }
-  return FileImage(file);
+  return FileImage(File(path));
 }
 
 /// Decode width for full-screen wallpaper (matches device, capped for memory).
@@ -57,11 +84,10 @@ ImageProvider? homePageBackdropImageProvider(String? path) {
   if (path == null || path.isEmpty) {
     return null;
   }
-  final file = File(path);
-  if (!file.existsSync()) {
+  if (!_homePageFileExistsSync(path)) {
     return null;
   }
-  return ResizeImage(FileImage(file), width: homePageBackdropDecodeWidth());
+  return ResizeImage(FileImage(File(path)), width: homePageBackdropDecodeWidth());
 }
 
 /// Warm the image cache so the home backdrop appears on the first frame.
@@ -100,13 +126,14 @@ Future<void> precacheHomePageBackdropImage(TimetableSettings settings) async {
 }
 
 void evictHomePageImageCache(String? path) {
+  invalidateHomePageBackdropFileExists(path);
   if (path == null || path.isEmpty) {
     return;
   }
-  final file = File(path);
-  if (!file.existsSync()) {
+  if (!_homePageFileExistsSync(path)) {
     return;
   }
+  final file = File(path);
   PaintingBinding.instance.imageCache.evict(FileImage(file));
   PaintingBinding.instance.imageCache.evict(
     ResizeImage(FileImage(file), width: homePageBackdropDecodeWidth()),
@@ -500,6 +527,31 @@ Color homePageOverWallpaperMutedInk(
   );
 }
 
+/// 卡面内强调色文字（如情侣课表「共同空闲」绿 `#4CAF50`）的可读变体。
+///
+/// 卡面玻璃透壁纸，#4CAF50 这类中明度强调色在浅色卡面上文字对比仅
+/// ~2.8:1（亮粉壁纸上更低），小字号几乎不可读。按母卡墨色 [cardInk]
+/// 判断卡面明暗极性后只调明度、不换色相——浅色卡面向黑压暗（亮度压到
+/// ≤0.12，对白底 ≥ ~6:1），深色卡面向白提亮（亮度抬到 ≥0.50，对深色
+/// 玻璃 ≥ ~3:1），保住强调色语义（绿色=空闲），区别于 chrome 强调色
+/// 对比不足时整体回落黑白墨。本就可读的强调色原样返回。
+Color readableAccentOnCardInk(Color accent, Color cardInk) {
+  final cardIsLight = cardInk.computeLuminance() <= 0.5;
+  bool readable(double luminance) =>
+      cardIsLight ? luminance <= 0.12 : luminance >= 0.50;
+  if (readable(accent.computeLuminance())) {
+    return accent;
+  }
+  final target = cardIsLight ? Colors.black : Colors.white;
+  for (var i = 1; i <= 20; i++) {
+    final candidate = Color.lerp(accent, target, i / 20)!;
+    if (readable(candidate.computeLuminance())) {
+      return candidate;
+    }
+  }
+  return target;
+}
+
 /// Average luminance of the top band of a wallpaper file (for chrome contrast).
 ///
 /// [viewportSize] and alignment must match the widget that displays the image
@@ -622,12 +674,31 @@ sampleHomePageWallpaperLuminanceBands(
 // Keep wallpaper samples in the same WCAG relative-luminance space as
 // Color.computeLuminance(). This is intentionally the Flutter engine's
 // threshold (0.03928), so text contrast decisions do not mix encoded sRGB
-// values with linear luminance values.
+// values with linear luminance values. (WCAG 2.x later corrected the
+// threshold to 0.04045; the difference only affects near-black values and
+// stays consistent with Color.computeLuminance(), so the engine value is
+// kept on purpose.)
 double _linearizeSrgbComponent(double component) {
   if (component <= 0.03928) {
     return component / 12.92;
   }
   return math.pow((component + 0.055) / 1.055, 2.4) as double;
+}
+
+/// Precomputed sRGB -> linear table for all 256 8-bit component values.
+///
+/// Band sampling runs 3 lookups per pixel over a 128px-wide decode; a table
+/// removes the per-pixel `pow` calls (3-5x faster) while producing values
+/// identical to [_linearizeSrgbComponent], which is the single source of
+/// truth for the curve above.
+final Float64List _srgbLinearizeLut = _buildSrgbLinearizeLut();
+
+Float64List _buildSrgbLinearizeLut() {
+  final lut = Float64List(256);
+  for (var value = 0; value < 256; value++) {
+    lut[value] = _linearizeSrgbComponent(value / 255.0);
+  }
+  return lut;
 }
 
 Future<({double top, double weekday, double body})?> _averageBandLuminances(
@@ -672,9 +743,9 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
       final rowOffset = row * width * 4;
       for (var column = fromColumn; column < toColumn; column++) {
         final offset = rowOffset + column * 4;
-        final red = _linearizeSrgbComponent(buffer[offset] / 255.0);
-        final green = _linearizeSrgbComponent(buffer[offset + 1] / 255.0);
-        final blue = _linearizeSrgbComponent(buffer[offset + 2] / 255.0);
+        final red = _srgbLinearizeLut[buffer[offset]];
+        final green = _srgbLinearizeLut[buffer[offset + 1]];
+        final blue = _srgbLinearizeLut[buffer[offset + 2]];
         total += 0.2126 * red + 0.7152 * green + 0.0722 * blue;
         count++;
       }

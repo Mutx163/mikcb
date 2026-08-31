@@ -1,4 +1,5 @@
 import '../l10n/service_message_localizer.dart';
+import '../logging/app_debug_log.dart';
 import '../models/course.dart';
 import '../models/location_time_group.dart';
 import '../models/schedule_date_rule.dart';
@@ -278,5 +279,106 @@ class TimeSchemeLogic {
       }
       return false;
     });
+  }
+
+  /// 按课程生效时间模板改写全部课程的钟点（迁移自 timetable_provider，
+  /// 纯映射：读 [schemes]/[settings]/[locationTimeGroups]/[scheduleDateRules]，
+  /// 不触碰任何 Provider 状态）。
+  static List<Course> syncCoursesWithEffectiveTimeSchemes(
+    List<Course> source, {
+    required List<TimeScheme> schemes,
+    required TimetableSettings settings,
+    List<LocationTimeGroup> locationTimeGroups = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
+    TimetableSettings? settingsOverride,
+  }) {
+    return source
+        .map(
+          (course) => syncCourseWithEffectiveTimeScheme(
+            course,
+            schemes: schemes,
+            settings: settings,
+            locationTimeGroups: locationTimeGroups,
+            scheduleDateRules: scheduleDateRules,
+            settingsOverride: settingsOverride,
+          ),
+        )
+        .toList();
+  }
+
+  /// 单节课钟点同步：课程无生效模板或节次越界时原样返回（带覆盖字段
+  /// 的 copyWith 以保持引用语义），钟点已一致时原样返回，否则改写
+  /// startTime/endTime。[onDate] 仅限运行时预览路径，持久化路径禁止传。
+  static Course syncCourseWithEffectiveTimeScheme(
+    Course course, {
+    required List<TimeScheme> schemes,
+    required TimetableSettings settings,
+    List<LocationTimeGroup> locationTimeGroups = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
+    TimetableSettings? settingsOverride,
+    DateTime? onDate,
+    bool debugTrace = false,
+    String debugTag = 'LocationTimeApply',
+  }) {
+    // 与 provider 原实现同口径：debugTrace 时解析出的 scheme 用于日志，
+    // 但 sections 仍按「scheme 优先，缺省回退 settings.sections」解析。
+    final resolvedScheme = resolveCourseTimeScheme(
+      schemes,
+      settings,
+      course,
+      settingsOverride: settingsOverride,
+      locationTimeGroups: locationTimeGroups,
+      scheduleDateRules: scheduleDateRules,
+      onDate: onDate,
+    );
+    final sections =
+        resolvedScheme?.sections ?? (settingsOverride ?? settings).sections;
+    final startIndex = course.startSection - 1;
+    final endIndex = course.endSection - 1;
+    if (sections.isEmpty || startIndex < 0 || endIndex >= sections.length) {
+      if (debugTrace) {
+        appDebugLog(
+          debugTag,
+          '跳过改写(节次越界/无sections): course=${course.name} '
+          'loc=${course.location} sections=${course.startSection}-${course.endSection} '
+          'scheme=${resolvedScheme?.name ?? "null"} '
+          'schemeSectionCount=${resolvedScheme?.sections.length ?? sections.length} '
+          'override=${course.timeSchemeIdOverride ?? "null"} '
+          'currentClock=${course.startTime}-${course.endTime}',
+        );
+      }
+      return course.copyWith(timeSchemeIdOverride: course.timeSchemeIdOverride);
+    }
+
+    final startTime = sections[startIndex].startTime;
+    final endTime = sections[endIndex].endTime;
+    if (course.startTime == startTime && course.endTime == endTime) {
+      if (debugTrace) {
+        appDebugLog(
+          debugTag,
+          '钟点已相同(不改写): course=${course.name} '
+          'loc=${course.location} sections=${course.startSection}-${course.endSection} '
+          'scheme=${resolvedScheme?.name ?? "null"}(${resolvedScheme?.id ?? "-"}) '
+          'clock=$startTime-$endTime override=${course.timeSchemeIdOverride ?? "null"}',
+        );
+      }
+      return course;
+    }
+
+    if (debugTrace) {
+      appDebugLog(
+        debugTag,
+        '改写钟点: course=${course.name} loc=${course.location} '
+        'sections=${course.startSection}-${course.endSection} '
+        'scheme=${resolvedScheme?.name ?? "null"}(${resolvedScheme?.id ?? "-"}) '
+        '${course.startTime}-${course.endTime} -> $startTime-$endTime '
+        'override=${course.timeSchemeIdOverride ?? "null"}',
+      );
+    }
+    return course.copyWith(
+      startTime: startTime,
+      endTime: endTime,
+      timeSchemeIdOverride: course.timeSchemeIdOverride,
+    );
   }
 }
