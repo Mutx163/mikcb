@@ -54,6 +54,7 @@ object DiagnosticLogMessages {
     const val LOG_RESOLVE_IMPORT_DISPLAY_NAME_FAILED = "解析导入显示名失败"
     const val LOG_READ_IMPORT_BYTES_FAILED = "读取导入 URI 字节失败"
     const val LOG_CACHE_EXTERNAL_IMPORT_FAILED = "缓存外部导入文件失败"
+    const val LOG_LOAD_EXTERNAL_IMPORT_FAILED = "后台加载外部导入内容失败"
     const val LOG_OPEN_NOTIFICATION_SETTINGS_FAILED = "打开通知设置失败"
     const val LOG_OPEN_APP_DETAILS_FAILED = "打开应用详情设置失败"
     const val LOG_INSPECT_PROMOTED_PERMISSION_FAILED = "检查提升通知权限失败"
