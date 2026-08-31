@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-08-30T07:12:55+00:00",
+  "updatedAt": "2026-08-31T07:26:58+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 155,
-    "schools": 150,
+    "total": 162,
+    "schools": 157,
     "generic": 5
   },
   "schools": [
@@ -48,6 +48,13 @@
       "name": "安徽中医药高等专科学校",
       "initial": "A",
       "resourceFolder": "AHZYYGZ",
+      "category": "school"
+    },
+    {
+      "id": "AUFE",
+      "name": "安徽财经大学",
+      "initial": "A",
+      "resourceFolder": "AUFE",
       "category": "school"
     },
     {
@@ -132,6 +139,13 @@
       "name": "重庆大学",
       "initial": "C",
       "resourceFolder": "CQU",
+      "category": "school"
+    },
+    {
+      "id": "CQIE",
+      "name": "重庆工程学院",
+      "initial": "C",
+      "resourceFolder": "CQIE",
       "category": "school"
     },
     {
@@ -233,6 +247,13 @@
       "category": "school"
     },
     {
+      "id": "FAFU",
+      "name": "福建农林大学",
+      "initial": "F",
+      "resourceFolder": "FAFU",
+      "category": "school"
+    },
+    {
       "id": "FJCPC",
       "name": "福建船政交通职业学院",
       "initial": "F",
@@ -279,6 +300,13 @@
       "name": "广州松田职业学院",
       "initial": "G",
       "resourceFolder": "GZST",
+      "category": "school"
+    },
+    {
+      "id": "GZMTU",
+      "name": "广州航海学院",
+      "initial": "G",
+      "resourceFolder": "GZMTU",
       "category": "school"
     },
     {
@@ -653,6 +681,13 @@
       "category": "school"
     },
     {
+      "id": "NJUPT",
+      "name": "南京邮电大学",
+      "initial": "N",
+      "resourceFolder": "NJUPT",
+      "category": "school"
+    },
+    {
       "id": "STCNCHU",
       "name": "南昌航空大学科技学院",
       "initial": "N",
@@ -842,6 +877,13 @@
       "category": "school"
     },
     {
+      "id": "TUST",
+      "name": "天津科技大学",
+      "initial": "T",
+      "resourceFolder": "TUST",
+      "category": "school"
+    },
+    {
       "id": "TSU",
       "name": "泰山学院",
       "initial": "T",
@@ -937,6 +979,13 @@
       "name": "西南交通大学",
       "initial": "X",
       "resourceFolder": "SWJTU",
+      "category": "school"
+    },
+    {
+      "id": "SWU",
+      "name": "西南大学",
+      "initial": "X",
+      "resourceFolder": "SWU",
       "category": "school"
     },
     {
