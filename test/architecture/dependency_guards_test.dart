@@ -24,7 +24,9 @@ void main() {
     // 4409→4422: 桌面卡片按课表绑定快照（e7f77af4）+13——Provider 侧只新增
     // buildHomeWidgetSnapshotForProfile 转发入口与逐卡签名去重表，快照构建本体
     // 在 live_activity_controller，属正当增长；拆分归阶段 3 重构。
-    const baselineLines = 4422;
+    // 4422→4426: eec42680 周次口径修复 +19（当时未同步基线），同批自 CNB
+    // PR#6 内联三个单调用点私有方法（-15）瘦身，净 +4，按测试约定同步基线。
+    const baselineLines = 4426;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
@@ -35,14 +37,17 @@ void main() {
   });
 
   test('timetable_provider 的 lib 扇入棘轮：只减不增', () {
-    const baselineFanIn = 48;
+    // 48→51：扇入检测原先只匹配相对路径 import，package:university_timetable/
+    // 与 lib 根相对路径可绕过守卫（实际漏网 3 处：main.dart、class_reminder_sheet.dart、
+    // home_menu_catalog.dart）。补漏后按真实扇入 51 设基线，后续只许下降。
+    const baselineFanIn = 51;
     final importers = libDartFiles()
         .where(
           (file) =>
               !file.path.replaceAll('\\', '/').endsWith(providerPath) &&
-              file.readAsStringSync().contains(
-                "import '../providers/timetable_provider.dart'",
-              ),
+              RegExp(
+                "import\\s+['\"][^'\"]*providers/timetable_provider\\.dart['\"]",
+              ).hasMatch(file.readAsStringSync()),
         )
         .length;
     expect(

@@ -735,7 +735,7 @@ class TimetableProvider with ChangeNotifier {
     }
     unawaited(_syncExamReminders());
     if (_enableLiveActivitySync) {
-      _startLiveActivityTick();
+      _liveStartActivityTick(this);
     }
   }
 
@@ -800,8 +800,6 @@ class TimetableProvider with ChangeNotifier {
       await _storageService.setMigratedAppLogsDefault(true);
     }
   }
-
-  void _startLiveActivityTick() => _liveStartActivityTick(this);
 
   @visibleForTesting
   void seedLiveActivityTrackingForTesting({
@@ -2487,7 +2485,19 @@ class TimetableProvider with ChangeNotifier {
       if (task.source == CourseTaskSource.homeworkMark &&
           task.courseId != null &&
           task.sourceWeek != null) {
-        _clearHomeworkMark(task.courseId!, task.sourceWeek!);
+        final courseIndex = _courses.indexWhere((c) => c.id == task.courseId);
+        if (courseIndex != -1) {
+          final course = _courses[courseIndex];
+          final note = course.sessionNoteForWeek(task.sourceWeek!);
+          if (note != null) {
+            _courses[courseIndex] = course.copyWith(
+              sessionNotes: course.withSessionNote(
+                task.sourceWeek!,
+                note.copyWith(hasHomework: false),
+              ),
+            );
+          }
+        }
       }
       _tasks.removeAt(index);
       await _persistActiveProfileState();
@@ -2593,24 +2603,6 @@ class TimetableProvider with ChangeNotifier {
       await _persistActiveProfileState();
     }
     return changed;
-  }
-
-  void _clearHomeworkMark(String courseId, int week) {
-    final index = _courses.indexWhere((course) => course.id == courseId);
-    if (index == -1) {
-      return;
-    }
-    final course = _courses[index];
-    final note = course.sessionNoteForWeek(week);
-    if (note == null) {
-      return;
-    }
-    _courses[index] = course.copyWith(
-      sessionNotes: course.withSessionNote(
-        week,
-        note.copyWith(hasHomework: false),
-      ),
-    );
   }
 
   /// Replace all schedule entries for a course group.  [updatedCourses] is
@@ -3363,22 +3355,15 @@ class TimetableProvider with ChangeNotifier {
       notifyListeners();
       // Holiday data is not stored in timetable profiles; force home widget /
       // live schedule resync so desktop widgets pick up vacation days.
-      await _syncSurfacesAfterHolidayDataChanged();
+      _lastHomeWidgetSnapshotSignature = null;
+      _lastLiveSnapshotSignature = null;
+      _currentLiveCourseId = null;
+      _lastLiveActivityStageKey = null;
+      // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
+      await _updateLiveActivity();
     } catch (_) {
       // Holiday data is non-critical; silently ignore failures
     }
-  }
-
-  /// Invalidate cached native surfaces and fully refresh live gate (stop island
-  /// on holiday). Must not only sync schedule snapshot — that path leaves a
-  /// running island session until the next resume/tick that happens to stop.
-  Future<void> _syncSurfacesAfterHolidayDataChanged() async {
-    _lastHomeWidgetSnapshotSignature = null;
-    _lastLiveSnapshotSignature = null;
-    _currentLiveCourseId = null;
-    _lastLiveActivityStageKey = null;
-    // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
-    await _updateLiveActivity();
   }
 
   /// 获取指定日期的节假日条目
