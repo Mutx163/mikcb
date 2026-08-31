@@ -1031,6 +1031,18 @@ class _LiveKeepAliveSettingsScreenState
   }
 
   Future<void> _openSettings() async {
+    // 无障碍保活属于敏感权限：跳系统设置前先弹窗说明用途与边界（不读屏、
+    // 不代点），用户确认后再进入系统设置，降低误开与投诉风险。
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showHyperosConfirmDialog(
+      context: context,
+      title: l10n.keepAliveConfirmTitle,
+      message: l10n.keepAliveConfirmBody,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.keepAliveConfirmGoAction,
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
     await _liveService.openAccessibilitySettings();
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
