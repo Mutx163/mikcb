@@ -79,7 +79,6 @@ class _CourseColorPickerSheetBodyState
             onColorChanged: (color) => setState(() => _pickerColor = color),
             showPreview: false,
             hapticEffect: MiuixSliderHapticEffect.step,
-            colorSpace: MiuixColorSpace.hsv,
           ),
           const SizedBox(height: 24),
           // 底部操作按钮

@@ -40,7 +40,6 @@ class _ProfileQuickSwitchSheet extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return HyperosSheet(
-      frosted: true,
       title: l10n.switchTimetableTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

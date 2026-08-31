@@ -41,7 +41,7 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
   /// `alpha = 1 - (collapsedFraction * 3)` — greying/fading starts on the very
   /// first collapse pixel and the large title is fully gone at 1/3 collapse,
   /// before the small title appears.
-  static const double largeTitleFadeRate = 3.0;
+  static const double largeTitleFadeRate = 3;
 
   /// Collapse fraction at which the small title toggles visible. Upstream:
   /// `collapsedFraction * 3 >= 1`.
@@ -49,7 +49,7 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
 
   /// Rise distance of the small title during its show transition (upstream
   /// moves `translationY` from 20 to 0 with a folme spring).
-  static const double smallTitleRisePx = 20.0;
+  static const double smallTitleRisePx = 20;
 
   /// Resolves the small-title opacity from the same collapse progress that
   /// moves the large title.
@@ -62,7 +62,7 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
   static double smallTitleOpacityForCollapse(double collapseFraction) {
     final normalizedFraction = collapseFraction.clamp(0.0, 1.0);
     if (normalizedFraction <= smallTitleRevealFraction) {
-      return 0.0;
+      return 0;
     }
     final revealProgress =
         ((normalizedFraction - smallTitleRevealFraction) /
@@ -91,7 +91,7 @@ class _HyperosCriticalSpringCurve extends Curve {
 
   static const double _springPeriodSeconds =
       HyperosMiuixAnim.standardSpringPeriod;
-  static final double _springOmega = (2 * math.pi) / _springPeriodSeconds;
+  static const double _springOmega = (2 * math.pi) / _springPeriodSeconds;
   static final double _settledProgress = _criticalProgress(
     _springPeriodSeconds,
   );
@@ -325,7 +325,7 @@ class HyperosExitUntilCollapsedScrollBehavior
     }
     final totalDistance = releasePixels - targetPixels;
     if (totalDistance.abs() <= 0.01) {
-      return 1.0;
+      return 1;
     }
     final remainingFraction = ((pixels - targetPixels) / totalDistance).clamp(
       0.0,
@@ -1069,7 +1069,7 @@ class _HyperosCollapsibleTopAppBarState
         text: TextSpan(text: widget.title, style: largeTitleStyle),
         textDirection: TextDirection.ltr,
         maxLines: 1,
-      )..layout(maxWidth: double.infinity);
+      )..layout();
       _largeTitleTextHeight = largePainter.height;
       largePainter.dispose();
 
@@ -1077,7 +1077,7 @@ class _HyperosCollapsibleTopAppBarState
         text: TextSpan(text: widget.title, style: smallTitleStyle),
         textDirection: TextDirection.ltr,
         maxLines: 1,
-      )..layout(maxWidth: double.infinity);
+      )..layout();
       _smallTitleTextHeight = smallPainter.height;
       _smallTitleTextWidth = smallPainter.width;
       smallPainter.dispose();
@@ -1092,7 +1092,7 @@ class _HyperosCollapsibleTopAppBarState
     final largeTitleHeight = _largeTitleSize?.height ?? _largeTitleTextHeight;
     final expansion = largeTitleHeight.clamp(0.0, double.infinity);
 
-    final verticalCenter = collapsedHeight / 2;
+    const verticalCenter = collapsedHeight / 2;
     final smallSubtitleHeight = hasSubtitle
         ? (_subtitleSize?.height ?? 0.0)
         : 0.0;
@@ -1114,7 +1114,7 @@ class _HyperosCollapsibleTopAppBarState
     final actionsHeight = _actionsSize?.height ?? 0.0;
     final contentWidth = mediaQuery.size.width - horizontalPadding * 2;
 
-    Widget animatedBody = AnimatedBuilder(
+    final Widget animatedBody = AnimatedBuilder(
       animation: behavior?.state ?? _HyperosNoopListenable.instance,
       builder: (context, _) {
         final collapseFraction = behavior?.state.collapsedFraction ?? 0.0;
@@ -1131,7 +1131,7 @@ class _HyperosCollapsibleTopAppBarState
 
         final largeLeft = widget.titlePadding;
         final smallAvailableWidth = math.max(
-          0.0,
+          0,
           contentWidth - navigationWidth - actionsWidth,
         );
         final smallTitleWidth = math.min(
@@ -1146,9 +1146,9 @@ class _HyperosCollapsibleTopAppBarState
         }
         smallLeft = smallLeft.clamp(
           0.0,
-          math.max(0.0, contentWidth - smallTitleWidth),
+          math.max(0, contentWidth - smallTitleWidth),
         );
-        final smallCenterY = verticalCenter;
+        const smallCenterY = verticalCenter;
         // Large title rides up with the collapse offset. Its layer starts at
         // the band's bottom edge (top = collapsedHeight), so moving up clips
         // the glyph at that edge: it is occluded by the band boundary itself
@@ -1177,24 +1177,20 @@ class _HyperosCollapsibleTopAppBarState
           HyperosColors.secondaryText(context),
           largeFadeT,
         )!;
-        final largeTitleMaxWidth = math.max(
-          0.0,
-          contentWidth - largeLeft - widget.titlePadding,
-        );
-        final smallTitleMaxWidth = math.max(
-          0.0,
-          contentWidth - smallLeft - actionsWidth,
-        );
+        final largeTitleMaxWidth =
+            math.max(0, contentWidth - largeLeft - widget.titlePadding)
+                .toDouble();
+        final smallTitleMaxWidth =
+            math.max(0, contentWidth - smallLeft - actionsWidth).toDouble();
 
         // Subtitle rides with the large title (same layer, same clipping).
         final currentSubtitleTop = hasSubtitle
             ? _largeTitleTextHeight + 2.0 + effectiveOffset
             : 0.0;
         final currentSubtitleLeft = largeLeft;
-        final currentSubtitleMaxWidth = math.max(
-          0.0,
-          contentWidth - currentSubtitleLeft - widget.titlePadding,
-        );
+        final currentSubtitleMaxWidth =
+            math.max(0, contentWidth - currentSubtitleLeft - widget.titlePadding)
+                .toDouble();
 
         final smallTitleBottomForLayout =
             verticalCenter + _smallTitleTextHeight / 2;
@@ -1210,7 +1206,6 @@ class _HyperosCollapsibleTopAppBarState
           width: contentWidth,
           height: layoutHeight,
           child: Stack(
-            clipBehavior: Clip.hardEdge,
             children: [
               // === Lower layer: large title, strictly below the band ===
               // Starts at the band's bottom edge so the rising glyph is
@@ -1336,15 +1331,13 @@ class _HyperosCollapsibleTopAppBarState
 
     // Offstage measurer for expansion / leading / trailing sizes.
     final measurer = Offstage(
-      offstage: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           ConstrainedBox(
             constraints: const BoxConstraints(
-              maxWidth: double.infinity,
-              maxHeight: double.infinity,
+              
             ),
             child: Padding(
               key: _largeTitleKey,
@@ -1408,7 +1401,6 @@ class _HyperosCollapsibleTopAppBarState
     // AnnotatedRegion 决定状态栏样式。
     final deriveOverlayFromBar = backgroundColor.a == 1.0;
     final barContent = SafeArea(
-      top: true,
       bottom: false,
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),

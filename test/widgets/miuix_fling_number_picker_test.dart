@@ -63,7 +63,6 @@ void main() {
       app(
         (v) => value = v,
         value: value,
-        min: 1,
         max: 13,
         controller: controller,
       ),

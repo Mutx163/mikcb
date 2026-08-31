@@ -516,8 +516,9 @@ class TimetableProvider with ChangeNotifier {
     HolidayService? holidayService,
     AppAnalytics? analytics,
     bool autoInitialize = true,
-    bool enableLiveActivitySync = true,
+    bool? enableLiveActivitySync,
   }) : _storageService = storageService ?? StorageService(),
+       _enableLiveActivitySync = enableLiveActivitySync ?? true,
        _icsImportService = icsImportService ?? IcsImportService(),
        _liveActivitiesService =
            liveActivitiesService ?? MiuiLiveActivitiesService(),
@@ -528,11 +529,10 @@ class TimetableProvider with ChangeNotifier {
        _homeWidgetSnapshotService =
            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
        _homeWidgetBindingService =
-           homeWidgetBindingService ?? HomeWidgetBindingService(),
+           homeWidgetBindingService ?? const HomeWidgetBindingService(),
        _examReminderService = examReminderService ?? ExamReminderService(),
        _holidayService = holidayService ?? HolidayService(),
-       _analytics = analytics ?? AppAnalytics.instance,
-       _enableLiveActivitySync = enableLiveActivitySync {
+       _analytics = analytics ?? AppAnalytics.instance {
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
     };
@@ -1539,7 +1539,7 @@ class TimetableProvider with ChangeNotifier {
   ///
   /// Returns match/update counts for toast feedback.
   Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() {
-    return _runMutation(() => _applyLocationTimeRulesToActiveProfileImpl());
+    return _runMutation(_applyLocationTimeRulesToActiveProfileImpl);
   }
 
   Future<LocationTimeApplyStats>
@@ -1742,7 +1742,6 @@ class TimetableProvider with ChangeNotifier {
         courseToSync,
         settings: _settings,
         debugTrace: true,
-        debugTag: debugTag,
       );
       synced.add(next);
 
@@ -3306,7 +3305,7 @@ class TimetableProvider with ChangeNotifier {
     try {
       final now = DateTime.now();
       final data = await _holidayService.getDataForYear(now.year);
-      var allEntries = <HolidayEntry>[...data.entries];
+      final allEntries = <HolidayEntry>[...data.entries];
       // If semester spans two years, also load next year
       if (now.month >= 11) {
         final nextYearData = await _holidayService.getDataForYear(now.year + 1);
@@ -3612,7 +3611,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<bool> clearActiveProfileCourses() {
-    return _runMutation(() => _clearActiveProfileCoursesImpl());
+    return _runMutation(_clearActiveProfileCoursesImpl);
   }
 
   Future<bool> _clearActiveProfileCoursesImpl() async {

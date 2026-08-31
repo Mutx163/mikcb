@@ -172,7 +172,7 @@ class LanEditApiHandlers {
         request,
         500,
         'internal_error',
-        error is ArgumentError ? error.message ?? '$error' : '$error',
+        error is ArgumentError ? (error.message as Object?)?.toString() ?? '$error' : '$error',
       );
     }
   }
@@ -250,7 +250,7 @@ class LanEditApiHandlers {
         request,
         400,
         'invalid_request',
-        error.message ?? '$error',
+        (error.message as Object?)?.toString() ?? '$error',
       );
     } on FormatException catch (error) {
       await _writeError(request, 400, 'invalid_request', error.message);
@@ -307,7 +307,7 @@ class LanEditApiHandlers {
         request,
         400,
         'invalid_request',
-        error.message ?? '$error',
+        (error.message as Object?)?.toString() ?? '$error',
       );
     } on FormatException catch (error) {
       await _writeError(request, 400, 'invalid_request', error.message);
@@ -337,7 +337,7 @@ class LanEditApiHandlers {
         request,
         400,
         'invalid_request',
-        error.message ?? '$error',
+        (error.message as Object?)?.toString() ?? '$error',
       );
     } on FormatException catch (error) {
       await _writeError(request, 400, 'invalid_request', error.message);
@@ -426,7 +426,7 @@ class LanEditApiHandlers {
         request,
         400,
         'invalid_request',
-        error.message ?? '$error',
+        (error.message as Object?)?.toString() ?? '$error',
       );
     } on FormatException catch (error) {
       await _writeError(request, 400, 'invalid_request', error.message);
@@ -612,7 +612,7 @@ class LanEditApiHandlers {
         request,
         400,
         'invalid_request',
-        error.message ?? '$error',
+        (error.message as Object?)?.toString() ?? '$error',
       );
     }
   }

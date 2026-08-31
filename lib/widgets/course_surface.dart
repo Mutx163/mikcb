@@ -100,8 +100,8 @@ class CourseSurface extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withValues(alpha: _scaledAlpha(1.0)),
-            secondaryFillColor(color).withValues(alpha: _scaledAlpha(1.0)),
+            color.withValues(alpha: _scaledAlpha(1)),
+            secondaryFillColor(color).withValues(alpha: _scaledAlpha(1)),
           ],
         );
     return DecoratedBox(

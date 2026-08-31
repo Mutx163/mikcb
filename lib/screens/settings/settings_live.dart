@@ -335,7 +335,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         showAppToast(
           context,
           message: l10n.liveTestingSessionCanceled,
-          kind: AppToastKind.info,
         );
       } else {
         // 正式路径触发器会解除双路暂停并重刷快照，选课测试会话随之失效，
@@ -417,7 +416,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       context: context,
       builder: (sheetContext) => HyperosSheetFrame(
         chrome: HyperosSheetChrome.floating,
-        frosted: true,
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -437,7 +435,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
             const SizedBox(height: 16),
             HyperosButton(
               label: l10n.liveTestingCourseTestStageBeforeClass,
-              variant: HyperosButtonVariant.primary,
               expand: true,
               onPressed: () =>
                   Navigator.pop(sheetContext, LiveCourseTestStage.beforeClass),
@@ -508,7 +505,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final notIslandReason = _debugValueText(summary['notIslandReason']);
     final rawDebugJson = _debugStatus == null
         ? ''
-        : JsonEncoder.withIndent('  ').convert(_debugStatus);
+        : const JsonEncoder.withIndent('  ').convert(_debugStatus);
     final refreshedAt = _lastDebugStatusUpdatedAt;
     final refreshedAtText = refreshedAt == null
         ? l10n.liveTestingNotRefreshed
@@ -652,7 +649,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                         loading: _testToggling,
                         onPressed: _testToggling
                             ? null
-                            : () => _toggleTestSession(),
+                            : _toggleTestSession,
                       ),
                       const SizedBox(height: 12),
                       if (_courseTestLabel != null) ...[
@@ -670,7 +667,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           loading: _courseTestBusy,
                           onPressed: _courseTestBusy
                               ? null
-                              : () => _stopCourseIslandTest(),
+                              : _stopCourseIslandTest,
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -680,7 +677,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                         loading: _courseTestBusy,
                         onPressed: _courseTestBusy
                             ? null
-                            : () => _startCourseIslandTest(),
+                            : _startCourseIslandTest,
                       ),
                       if (!kReleaseMode) ...[
                         const SizedBox(height: 12),
@@ -1236,7 +1233,6 @@ Future<void> _showTestOptions(BuildContext context) async {
   final result = await triggerLiveUpdateTest(
     context: context,
     provider: provider,
-    source: 'settings_screen',
   );
   if (!context.mounted) return;
   _showLiveTestingTriggerResult(context, result);

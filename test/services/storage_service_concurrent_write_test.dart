@@ -134,8 +134,8 @@ void main() {
           courses: const [],
           settings: TimetableSettings.defaults(),
           currentWeek: 2,
-          createdAt: DateTime.utc(2026, 8, 1),
-          lastUsedAt: DateTime.utc(2026, 8, 1),
+          createdAt: DateTime.utc(2026, 8),
+          lastUsedAt: DateTime.utc(2026, 8),
         ),
       ];
     });
@@ -152,7 +152,7 @@ void main() {
 }
 
 TimeScheme _scheme(String id, String name) {
-  final now = DateTime.utc(2026, 8, 1);
+  final now = DateTime.utc(2026, 8);
   return TimeScheme(
     id: id,
     name: name,
@@ -172,7 +172,7 @@ LocationTimeGroup _group(String id, String name) {
 }
 
 Map<String, dynamic> _profilePayload() {
-  final now = DateTime.utc(2026, 8, 1);
+  final now = DateTime.utc(2026, 8);
   return {
     'id': 'profile-test',
     'name': '测试课表',

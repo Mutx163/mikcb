@@ -208,15 +208,15 @@ class _MemoryStatsScreenState extends State<MemoryStatsScreen>
           ),
           const HyperosSectionGap(),
           if (_loading && snapshot == null) ...[
-            HyperosHintBanner(
-              icon: const HyperosCircularProgress(size: 18, strokeWidth: 2),
-              title: const Text('正在读取当前内存快照…'),
+            const HyperosHintBanner(
+              icon: HyperosCircularProgress(size: 18, strokeWidth: 2),
+              title: Text('正在读取当前内存快照…'),
             ),
             const HyperosSectionGap(),
           ],
           if (_errorText != null) ...[
             HyperosHintBanner(
-              icon: Icon(
+              icon: const Icon(
                 Icons.error_outline_rounded,
                 color: HyperosIconColors.red,
               ),
@@ -409,7 +409,7 @@ class _MemoryStatsScreenState extends State<MemoryStatsScreen>
               ),
             ],
           ),
-          HyperosSectionDescription(text: 'PSS 详情按需展开，避免常驻技术字段干扰当前状态。'),
+          const HyperosSectionDescription(text: 'PSS 详情按需展开，避免常驻技术字段干扰当前状态。'),
           const HyperosSectionGap(),
           const HyperosSectionLabel(text: '运行环境'),
           HyperosListGroup(

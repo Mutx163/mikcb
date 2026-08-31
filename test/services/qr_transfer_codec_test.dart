@@ -315,7 +315,7 @@ void main() {
     expect(decoder.isComplete, isTrue);
     expect(lengthError, isNull);
     expect(
-      () => decoder.decodeRawPayload(),
+      decoder.decodeRawPayload,
       throwsA(
         isA<StateError>().having(
           (error) => error.message,
@@ -409,7 +409,7 @@ void main() {
     final decoder = QrTransferDecoder();
 
     expect(
-      () => decoder.decodeRawPayload(),
+      decoder.decodeRawPayload,
       throwsA(
         isA<StateError>().having(
           (error) => error.message,
@@ -487,7 +487,7 @@ void main() {
   test('接收端限制单帧 degree 与累计邻接边，避免图结构无限增长', () {
     final decoder = QrTransferDecoder();
     final hash = base64Url.encode(List<int>.filled(32, 0));
-    final degree = QrTransferLimits.maxDegree;
+    const degree = QrTransferLimits.maxDegree;
     const sourceSymbolCount = 100;
 
     String frameFor(int seed) {

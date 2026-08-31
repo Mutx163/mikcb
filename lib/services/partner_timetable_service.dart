@@ -78,8 +78,6 @@ class PartnerTimetableService {
         id: partnerProfileId,
         name: displayName,
         courses: backup.courses,
-        scheduleItems: const [],
-        exams: const [],
         settings: backup.settings,
         currentWeek: backup.currentWeek,
         createdAt: isUpdate

@@ -360,9 +360,7 @@ class _ColorSettingRow extends StatelessWidget {
         onColorChanged: (Color c) {
           pickerColor = c;
         },
-        showPreview: true,
         hapticEffect: MiuixSliderHapticEffect.step,
-        colorSpace: MiuixColorSpace.hsv,
       ),
       actions: [
         if (defaultValue != null &&

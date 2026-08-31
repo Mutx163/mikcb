@@ -78,10 +78,6 @@ void main() {
       _course(
         id: 'mine',
         name: '高数',
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
       ),
     ];
     final partnerCourses = [
@@ -163,7 +159,6 @@ void main() {
       _course(
         id: 'mine',
         name: '夜班实验',
-        startSection: 1,
         endSection: 1,
         startTime: '00:00',
         endTime: '02:00',
@@ -199,10 +194,6 @@ void main() {
       _course(
         id: 'mine',
         name: '高数',
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
         startWeek: 5,
         endWeek: 5,
       ),
@@ -242,7 +233,6 @@ void main() {
       partnerCourses: partnerCourses,
       dayOfWeek: 1,
       week: 5,
-      partnerWeekOffset: 0,
       sections: _sections,
     );
     // Partner has no week-5 class → only my busy; free after 09:40 and before 08:00.
@@ -269,10 +259,6 @@ void main() {
       _course(
         id: 'mine',
         name: '高数',
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
         isOddWeek: true,
       ),
     ];
@@ -280,10 +266,6 @@ void main() {
       _course(
         id: 'partner',
         name: '英语',
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
         isEvenWeek: true,
       ),
     ];
@@ -409,15 +391,11 @@ void main() {
     final mine = _course(
       id: 'mine',
       name: '高等数学',
-      startTime: '08:00',
-      endTime: '09:40',
       suspendedWeeks: [3],
     );
     final partner = _course(
       id: 'partner',
       name: '高等数学',
-      startTime: '08:00',
-      endTime: '09:40',
     );
 
     expect(

@@ -658,20 +658,14 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
 
 class _RenderPreblurredFill extends RenderBox {
   _RenderPreblurredFill({
-    required ui.Image? image,
-    required Size screenSize,
-    required PageController? pageController,
-    required bool followsPager,
-    required int? pageIndex,
-    Listenable? repaint,
-    ScrollPosition? verticalScrollPosition,
-  }) : _image = image,
-       _screenSize = screenSize,
-       _pageController = pageController,
-       _followsPager = followsPager,
-       _pageIndex = pageIndex,
-       _repaint = repaint,
-       _verticalScrollPosition = verticalScrollPosition;
+    required this._image,
+    required this._screenSize,
+    required this._pageController,
+    required this._followsPager,
+    required this._pageIndex,
+    this._repaint,
+    this._verticalScrollPosition,
+  });
 
   ui.Image? _image;
   set image(ui.Image? value) {

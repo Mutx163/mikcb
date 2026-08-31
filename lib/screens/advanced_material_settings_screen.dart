@@ -119,7 +119,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassThicknessLabel,
                     value: _draft.liquidGlassTuning!.thickness,
-                    min: LiquidGlassTuning.minThickness,
                     max: LiquidGlassTuning.maxThickness,
                     divisions: 40,
                     valueLabel: _draft.liquidGlassTuning!.thickness
@@ -139,7 +138,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassBlurLabel,
                     value: _draft.liquidGlassTuning!.blur,
-                    min: LiquidGlassTuning.minBlur,
                     max: LiquidGlassTuning.maxBlur,
                     divisions: 24,
                     valueLabel: _draft.liquidGlassTuning!.blur.toStringAsFixed(
@@ -160,7 +158,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassTintLabel,
                     value: _draft.liquidGlassTuning!.tintAlpha,
-                    min: LiquidGlassTuning.minTintAlpha,
                     max: LiquidGlassTuning.maxTintAlpha,
                     divisions: 55,
                     valueLabel:
@@ -180,7 +177,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassLightIntensityLabel,
                     value: _draft.liquidGlassTuning!.lightIntensity,
-                    min: LiquidGlassTuning.minLightIntensity,
                     max: LiquidGlassTuning.maxLightIntensity,
                     divisions: 40,
                     valueLabel: _draft.liquidGlassTuning!.lightIntensity
@@ -200,8 +196,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassAmbientStrengthLabel,
                     value: _draft.liquidGlassTuning!.ambientStrength,
-                    min: LiquidGlassTuning.minAmbientStrength,
-                    max: LiquidGlassTuning.maxAmbientStrength,
                     divisions: 20,
                     valueLabel: _draft.liquidGlassTuning!.ambientStrength
                         .toStringAsFixed(2),
@@ -260,7 +254,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassChromaticAberrationLabel,
                     value: _draft.liquidGlassTuning!.chromaticAberration,
-                    min: LiquidGlassTuning.minChromaticAberration,
                     max: LiquidGlassTuning.maxChromaticAberration,
                     divisions: 24,
                     valueLabel: _draft.liquidGlassTuning!.chromaticAberration
@@ -280,7 +273,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassLightAngleLabel,
                     value: _draft.liquidGlassTuning!.lightAngleDegrees,
-                    min: LiquidGlassTuning.minLightAngleDegrees,
                     max: LiquidGlassTuning.maxLightAngleDegrees,
                     divisions: 72,
                     valueLabel:
@@ -300,8 +292,6 @@ if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
                   HyperosSliderTile(
                     title: l10n.liquidGlassVisibilityLabel,
                     value: _draft.liquidGlassTuning!.visibility,
-                    min: LiquidGlassTuning.minVisibility,
-                    max: LiquidGlassTuning.maxVisibility,
                     divisions: 20,
                     valueLabel:
                         '${(_draft.liquidGlassTuning!.visibility * 100).round()}%',

@@ -48,8 +48,6 @@ void main() {
       endSection: 4,
       startTime: '10:00',
       endTime: '11:40',
-      startWeek: 1,
-      endWeek: 16,
       customWeeks: [6, 2, 4, 4],
     );
 

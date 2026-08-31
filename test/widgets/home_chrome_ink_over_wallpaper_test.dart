@@ -150,7 +150,7 @@ void main() {
       }
     });
     final wallpaper = await tester.runAsync(
-      () => _writeWallpaper(dir, topLightFraction: 0.0),
+      () => _writeWallpaper(dir, topLightFraction: 0),
     );
     final provider = await createInitializedTestProvider(tester);
     await _pumpHome(tester, provider, wallpaper!.path, _scopeAll);
@@ -184,7 +184,7 @@ void main() {
       // the weekday chrome must flip white while the logo keeps dark ink on
       // the light strip.
       final wallpaper = await tester.runAsync(
-        () => _writeWallpaper(dir, topLightFraction: 0.12),
+        () => _writeWallpaper(dir),
       );
       final provider = await createInitializedTestProvider(tester);
       await _pumpHome(tester, provider, wallpaper!.path, _scopeAll);
@@ -255,7 +255,7 @@ void main() {
     // opaque light page background, so the logo must fall back to the theme
     // foreground (dark) instead of flipping white over the wallpaper.
     final wallpaper = await tester.runAsync(
-      () => _writeWallpaper(dir, topLightFraction: 0.0),
+      () => _writeWallpaper(dir, topLightFraction: 0),
     );
     final provider = await createInitializedTestProvider(tester);
     await _pumpHome(tester, provider, wallpaper!.path, _scopeNoChromeBars);
@@ -288,7 +288,7 @@ void main() {
       // fallback must flip it to auto white instead of showing the ugly
       // dark-on-dark the user complained about.
       final wallpaper = await tester.runAsync(
-        () => _writeWallpaper(dir, topLightFraction: 0.0),
+        () => _writeWallpaper(dir, topLightFraction: 0),
       );
       final provider = await createInitializedTestProvider(tester);
       await _pumpHome(

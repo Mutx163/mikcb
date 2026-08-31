@@ -130,9 +130,8 @@ class _WeekSelector extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.calendar_view_week_rounded,
-                  accent: HyperosIconColors.blue,
                 ),
                 const SizedBox(width: HyperosTokens.rowContentGap),
                 Expanded(
@@ -362,12 +361,11 @@ class _WeekDailyChart extends StatelessWidget {
                 ),
               ),
               titlesData: FlTitlesData(
-                show: true,
                 topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
@@ -417,7 +415,6 @@ class _WeekDailyChart extends StatelessWidget {
                 ),
               ),
               gridData: FlGridData(
-                show: true,
                 drawVerticalLine: false,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(

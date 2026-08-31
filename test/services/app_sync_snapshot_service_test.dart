@@ -97,11 +97,11 @@ void main() {
       expect(
         emptyAuthoredSnapshot(
           locationTimeGroups: [
-            LocationTimeGroup(
+            const LocationTimeGroup(
               id: 'group-1',
               name: '主教学楼',
               timeSchemeId: 'scheme-1',
-              keywords: const [LocationKeyword(pattern: 'A主')],
+              keywords: [LocationKeyword(pattern: 'A主')],
             ),
           ],
         ).hasUserAuthoredData,
@@ -198,8 +198,6 @@ void main() {
                   endSection: 2,
                   startTime: '08:00',
                   endTime: '09:40',
-                  startWeek: 1,
-                  endWeek: 16,
                 ),
               ],
             ),
@@ -526,21 +524,21 @@ void main() {
     final service = AppSyncSnapshotService();
     final exportedAt = DateTime.utc(2026, 7, 9, 12);
     final groups = [
-      LocationTimeGroup(
+      const LocationTimeGroup(
         id: 'group-main',
         name: '主教学楼',
         timeSchemeId: 'scheme-1',
-        keywords: const [
-          LocationKeyword(pattern: 'A主', mode: LocationKeywordMatchMode.prefix),
+        keywords: [
+          LocationKeyword(pattern: 'A主'),
         ],
       ),
-      LocationTimeGroup(
+      const LocationTimeGroup(
         id: 'group-other',
         name: '其他教学楼',
         timeSchemeId: 'scheme-2',
-        keywords: const [
-          LocationKeyword(pattern: 'A1', mode: LocationKeywordMatchMode.prefix),
-          LocationKeyword(pattern: 'A6', mode: LocationKeywordMatchMode.prefix),
+        keywords: [
+          LocationKeyword(pattern: 'A1'),
+          LocationKeyword(pattern: 'A6'),
         ],
       ),
     ];
@@ -645,7 +643,6 @@ void main() {
       weekOffset: 1,
       mineColorHex: '#FF5722',
       partnerColorHex: '#4CAF50',
-      togetherColorHex: '#9C27B0',
     );
     final snapshot = AppSyncSnapshot(
       profiles: [

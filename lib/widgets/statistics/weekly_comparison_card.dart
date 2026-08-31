@@ -20,8 +20,8 @@ class WeeklyComparisonCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final isFirstWeek = currentWeek <= 1;
     final primary = HyperosColors.primary(context);
-    final up = HyperosIconColors.red;
-    final down = HyperosIconColors.green;
+    const up = HyperosIconColors.red;
+    const down = HyperosIconColors.green;
 
     final vsLast = comparison.deltaVsLastWeek;
 
@@ -37,7 +37,7 @@ class WeeklyComparisonCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                HyperosIconBadge(
+                const HyperosIconBadge(
                   icon: Icons.summarize_rounded,
                   accent: HyperosIconColors.orange,
                 ),

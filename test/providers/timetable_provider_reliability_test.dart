@@ -76,7 +76,6 @@ void main() {
       endSection: 2,
       startTime: '08:00',
       endTime: '09:40',
-      startWeek: 1,
       endWeek: 30,
     );
     SharedPreferences.setMockInitialValues({
@@ -88,7 +87,6 @@ void main() {
     final provider = TimetableProvider(
       storageService: StorageService.forTesting(),
       autoInitialize: false,
-      enableLiveActivitySync: true,
       liveActivitiesService: liveService,
     );
     await provider.initialize();

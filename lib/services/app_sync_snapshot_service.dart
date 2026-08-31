@@ -354,7 +354,7 @@ class AppSyncSnapshotService {
       throw const FormatException('unrecognized_sync_snapshot');
     }
     final app = rawApp;
-    final version = rawVersion is int ? rawVersion : rawVersion.toInt();
+    final version = rawVersion is int ? rawVersion : (rawVersion as num).toInt();
     final type = rawType;
 
     if (app != 'mikcb' || version != schemaVersion || type != backupType) {
@@ -485,11 +485,11 @@ class AppSyncSnapshotService {
       warehouse: warehouse,
       macros: _parseOptionalList(
         _selectSnapshotMacros(json),
-        (item) => WarehouseMacroRecord.fromJson(item),
+        WarehouseMacroRecord.fromJson,
       ),
       customHolidays: _parseOptionalList(
         json['customHolidays'],
-        (item) => HolidayEntry.fromJson(item),
+        HolidayEntry.fromJson,
       ),
       exportedAt:
           DateTime.tryParse(_optionalString(json['exportedAt']) ?? '') ??

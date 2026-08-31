@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 守卫值只许下降不许上涨；确需放宽时，把基线改成新值并在提交信息说明
 /// 理由。下降后欢迎顺手收紧基线。
 void main() {
-  final providerPath = 'lib/providers/timetable_provider.dart';
+  const providerPath = 'lib/providers/timetable_provider.dart';
   final providerFile = File(providerPath);
 
   List<File> libDartFiles() {

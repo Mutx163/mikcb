@@ -6,7 +6,6 @@ import 'dart:ui'
     as ui
     show
         Image,
-        ImageByteFormat,
         ImmutableBuffer,
         PlatformDispatcher,
         instantiateImageCodecFromBuffer;
@@ -360,7 +359,6 @@ class HomePageSlidingBackdropLayer extends StatelessWidget {
           final first = math.max(0, rawPage.floor() - 1);
           final last = math.min(pageCount - 1, rawPage.ceil() + 1);
           return Stack(
-            clipBehavior: Clip.hardEdge,
             children: [
               for (var index = first; index <= last; index++)
                 Positioned(
@@ -651,7 +649,7 @@ sampleHomePageWallpaperLuminanceBands(
     return null;
   }
   final file = File(path);
-  if (!await file.exists()) {
+  if (!file.existsSync()) {
     return null;
   }
   try {
@@ -709,7 +707,7 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
   double alignX = 0,
   double alignY = 0,
 }) async {
-  final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  final byteData = await image.toByteData();
   if (byteData == null) {
     image.dispose();
     return null;
@@ -760,7 +758,7 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
   // ink). Weekday: the band the weekday/date chrome bar sits over — its ink
   // must not follow the header's band, they can differ on the same photo.
   // Body: the band the day-view summary/agenda cards sit over.
-  final top = band(0.0, 0.09);
+  final top = band(0, 0.09);
   final weekday = band(0.07, 0.20);
   final body = band(0.22, 0.72);
   if (top == null || weekday == null || body == null) {

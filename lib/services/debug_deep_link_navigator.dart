@@ -94,7 +94,6 @@ class DebugDeepLinkNavigator {
             showAppToast(
               context,
               message: '未知调试深链：${command.path}',
-              kind: AppToastKind.info,
             );
           }
       }

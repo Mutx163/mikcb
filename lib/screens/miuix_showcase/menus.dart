@@ -166,10 +166,10 @@ class _MenusShowcaseState extends State<MenusShowcase> {
             onSelectedIndexChange: (i) => setState(() => _dialogSpinner = i),
           ),
           const IndentDivider(),
-          MiuixOverlaySpinnerPreference(
+          const MiuixOverlaySpinnerPreference(
             title: '禁用微调偏好',
             summary: 'enabled = false',
-            items: const [MiuixDropdownItem(text: '选项')],
+            items: [MiuixDropdownItem(text: '选项')],
             selectedIndex: 0,
             enabled: false,
             insideMargin: _itemMargin,
@@ -182,19 +182,19 @@ class _MenusShowcaseState extends State<MenusShowcase> {
   /// 图标触发的下拉 / 级联菜单。
   ShowcaseSection _menuSection() {
     // 级联菜单：末级带子菜单。
-    final cascadingEntry = MiuixDropdownEntry(
+    const cascadingEntry = MiuixDropdownEntry(
       items: [
-        const MiuixDropdownItem(text: '新建'),
-        const MiuixDropdownItem(text: '打开'),
+        MiuixDropdownItem(text: '新建'),
+        MiuixDropdownItem(text: '打开'),
         MiuixDropdownItem(
           text: '分享到',
-          children: const [
+          children: [
             MiuixDropdownItem(text: '微信'),
             MiuixDropdownItem(text: '邮件'),
             MiuixDropdownItem(text: '复制链接'),
           ],
         ),
-        const MiuixDropdownItem(text: '删除'),
+        MiuixDropdownItem(text: '删除'),
       ],
     );
 
@@ -207,15 +207,15 @@ class _MenusShowcaseState extends State<MenusShowcase> {
             insideMargin: _itemMargin,
             endActions: [
               MiuixOverlayIconDropdownMenu(
-                entry: MiuixDropdownEntry(
+                entry: const MiuixDropdownEntry(
                   items: [
-                    const MiuixDropdownItem(text: '编辑'),
-                    const MiuixDropdownItem(text: '复制'),
-                    const MiuixDropdownItem(text: '重命名'),
-                    const MiuixDropdownItem(text: '删除'),
+                    MiuixDropdownItem(text: '编辑'),
+                    MiuixDropdownItem(text: '复制'),
+                    MiuixDropdownItem(text: '重命名'),
+                    MiuixDropdownItem(text: '删除'),
                   ],
                 ),
-                child: MiuixIcon(vector: MiuixIcons.extended.byName('more')!),
+                child: MiuixIcon(vector: MiuixIcons.extended.byName('more')),
               ),
             ],
           ),
@@ -227,7 +227,7 @@ class _MenusShowcaseState extends State<MenusShowcase> {
             endActions: [
               MiuixOverlayIconCascadingDropdownMenu(
                 entry: cascadingEntry,
-                child: MiuixIcon(vector: MiuixIcons.extended.byName('more')!),
+                child: MiuixIcon(vector: MiuixIcons.extended.byName('more')),
               ),
             ],
           ),

@@ -31,7 +31,7 @@ class HyperosIconButton extends StatelessWidget {
     );
 
     if (tooltip != null && tooltip!.isNotEmpty) {
-      return Tooltip(message: tooltip!, child: button);
+      return Tooltip(message: tooltip, child: button);
     }
     return button;
   }

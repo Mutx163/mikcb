@@ -567,7 +567,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     0.0,
                     12.0,
                   ),
-                  min: 0,
                   max: 12,
                   divisions: 12,
                   onChanged: (value) => _updateDisplay(
@@ -792,7 +791,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           const HyperosSectionGap(),
           if (_followBeforeClass)
             IgnorePointer(
-              ignoring: true,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 180),
                 opacity: 0.5,
@@ -904,7 +902,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetDir = Directory(
       '${dir.path}${Platform.pathSeparator}$directoryName',
     );
-    if (!await targetDir.exists()) {
+    if (!targetDir.existsSync()) {
       await targetDir.create(recursive: true);
     }
     final targetPath =
@@ -927,7 +925,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetDir = Directory(
       '${dir.path}${Platform.pathSeparator}$directoryName',
     );
-    if (!await targetDir.exists()) {
+    if (!targetDir.existsSync()) {
       return;
     }
     final preservedAbsolutePath = preservePath == null
@@ -948,7 +946,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         continue;
       }
       try {
-        if (await entity.exists()) {
+        if (entity.existsSync()) {
           await entity.delete();
         }
       } catch (_) {}
@@ -1090,7 +1088,6 @@ class _LiveKeepAliveServiceTile extends StatelessWidget {
       child: Padding(
         padding: HyperosTokens.rowPaddingUniform,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             HyperosIconBadge(
               icon: enabled

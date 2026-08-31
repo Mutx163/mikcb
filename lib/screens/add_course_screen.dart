@@ -197,7 +197,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         _selectedColor = first.color;
         // Build per-schedule entries from all courses.
         _scheduleEntries = ordered
-            .map((c) => _ScheduleEntryData.fromCourse(c))
+            .map(_ScheduleEntryData.fromCourse)
             .toList();
       } else if (widget.course != null) {
         // Editing a single existing course in group mode: wrap as one entry.
@@ -211,10 +211,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             dayOfWeek: widget.initialDayOfWeek ?? 1,
             startSection: widget.initialStartSection ?? 1,
             endSection: (widget.initialStartSection ?? 1) + 1,
-            startWeek: 1,
-            endWeek: 16, // default; will be clamped in build
-            teacher: '',
-            location: '',
           ),
         ];
       }
@@ -528,7 +524,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       borderRadius: BorderRadius.circular(5),
                       border: Border.all(
                         color: HyperosColors.outline(context),
-                        width: 1,
                       ),
                     ),
                   ),
@@ -595,7 +590,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
             const SizedBox(height: 8),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: HyperosTextField(
@@ -649,7 +643,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         ),
         const SizedBox(height: 8),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: HyperosTextField(
@@ -1599,7 +1592,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               child: HyperosSubpage(
                 onBack: () => Navigator.pop(context, false),
                 title: Text(l10n.weekPickerTitle),
-                childPad: false,
                 child: Material(
                   type: MaterialType.transparency,
                   child: HyperosBlurredBodyInset(
@@ -1969,7 +1961,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       showAppToast(
         context,
         message: error.message != null
-            ? localizeServiceMessage(l10n, error.message!)
+            ? localizeServiceMessage(l10n, error.message! as String)
             : l10n.saveFailed,
         kind: AppToastKind.error,
       );
@@ -2054,7 +2046,6 @@ class _ScheduleConflictPartnerRow extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Column(
@@ -2095,7 +2086,7 @@ class _ScheduleConflictPartnerRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(width: HyperosTokens.titleChevronGap),
+                const SizedBox(width: HyperosTokens.titleChevronGap),
                 const HyperosChevron(),
               ],
             ),

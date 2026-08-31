@@ -266,7 +266,6 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       context: context,
       builder: (sheetContext) {
         return HyperosSheetFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -500,7 +499,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                 label: l10n.customHolidayAdd,
                 variant: HyperosButtonVariant.secondary,
                 expand: true,
-                onPressed: () => _showCustomHolidayDialog(),
+                onPressed: _showCustomHolidayDialog,
               ),
             ),
           ),

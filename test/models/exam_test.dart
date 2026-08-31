@@ -50,14 +50,13 @@ void main() {
       id: 'exam-1',
       courseId: 'course-1',
       name: '高等数学期末考试',
-      dateTime: DateTime(2026, 7, 1),
+      dateTime: DateTime(2026, 7),
       startTime: '08:30',
       endTime: '10:30',
       location: 'A-301',
       seatNumber: '12',
-      reminderPreset: ExamReminderPreset.day1AndHour1,
-      createdAt: DateTime(2026, 4, 1),
-      updatedAt: DateTime(2026, 4, 1),
+      createdAt: DateTime(2026, 4),
+      updatedAt: DateTime(2026, 4),
     );
 
     test('toJson/fromJson roundtrips', () {
@@ -119,7 +118,7 @@ void main() {
 
     test('isExpired returns true for past exam', () {
       final past = baseExam.copyWith(
-        dateTime: DateTime(2020, 1, 1),
+        dateTime: DateTime(2020),
         startTime: '08:00',
         endTime: '10:00',
       );
@@ -165,11 +164,11 @@ void main() {
         id: 'exam-2',
         courseId: 'course-1',
         name: '期中',
-        dateTime: DateTime(2020, 1, 1),
+        dateTime: DateTime(2020),
         startTime: '08:00',
         endTime: '',
-        createdAt: DateTime(2020, 1, 1),
-        updatedAt: DateTime(2020, 1, 1),
+        createdAt: DateTime(2020),
+        updatedAt: DateTime(2020),
       );
 
       expect(exam.isExpired, isTrue);

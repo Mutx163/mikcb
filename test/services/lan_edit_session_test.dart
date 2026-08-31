@@ -4,7 +4,7 @@ import 'package:university_timetable/services/lan_edit_session.dart';
 void main() {
   group('LanEditSession expiry', () {
     test('expires after idle timeout', () {
-      final base = DateTime(2026, 6, 27, 12, 0);
+      final base = DateTime(2026, 6, 27, 12);
       final session = LanEditSession.forTest(
         pin: '123456',
         token: 'token',
@@ -25,7 +25,7 @@ void main() {
     });
 
     test('expires after hard cap even with recent activity', () {
-      final base = DateTime(2026, 6, 27, 12, 0);
+      final base = DateTime(2026, 6, 27, 12);
       final session = LanEditSession.forTest(
         pin: '123456',
         token: 'token',

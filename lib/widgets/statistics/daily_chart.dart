@@ -67,12 +67,11 @@ class DailyChart extends StatelessWidget {
                 ),
               ),
               titlesData: FlTitlesData(
-                show: true,
                 topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
@@ -126,7 +125,6 @@ class DailyChart extends StatelessWidget {
                 ),
               ),
               gridData: FlGridData(
-                show: true,
                 drawVerticalLine: false,
                 horizontalInterval: maxAverage > 4 ? null : 1,
                 getDrawingHorizontalLine: (value) {

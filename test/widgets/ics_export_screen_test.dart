@@ -155,7 +155,7 @@ void main() {
 }
 
 TimetableProvider _testProvider() {
-  final now = DateTime(2026, 2, 1);
+  final now = DateTime(2026, 2);
   final profile = TimetableProfile(
     id: 'ics-widget-profile',
     name: '测试课表',
@@ -170,7 +170,6 @@ TimetableProvider _testProvider() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
         endWeek: 1,
       ),
     ],

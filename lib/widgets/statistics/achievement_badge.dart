@@ -35,7 +35,7 @@ class _AchievementBadgeState extends State<AchievementBadge>
     _scale = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutBack,
-    ).drive(Tween<double>(begin: 0.5, end: 1.0));
+    ).drive(Tween<double>(begin: 0.5, end: 1));
     _fade = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOut,

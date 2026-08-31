@@ -117,7 +117,6 @@ class HyperosToastCapsule extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             message,
@@ -144,7 +143,6 @@ class HyperosToastCapsule extends StatelessWidget {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (icon != null) ...[
           Icon(

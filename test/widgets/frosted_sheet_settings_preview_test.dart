@@ -77,7 +77,7 @@ void main() {
           tintAlpha: 0.5,
           lightIntensity: 1.8,
           ambientStrength: 0.6,
-          saturation: 2.0,
+          saturation: 2,
           refractiveIndex: 1.4,
         ),
       )!;
@@ -182,10 +182,10 @@ void main() {
           home: FrostedAppearanceScope(
             appearance: _liquidAppearance,
             child: BackdropGroup(
-              child: Stack(
+              child: const Stack(
                 children: [
-                  const Positioned.fill(child: UndimmedBackdropCapture()),
-                  const HyperosLiquidGlassSurface(
+                  Positioned.fill(child: UndimmedBackdropCapture()),
+                  HyperosLiquidGlassSurface(
                     role: HyperosLiquidGlassRole.header,
                     useAncestorBackdropGroup: true,
                     child: SizedBox(width: 100, height: 50),
@@ -238,7 +238,6 @@ void main() {
             SectionTime(startTime: '14:00', endTime: '14:45'),
           ],
           homePageWallpaperPath: wallpaper.path,
-          homePageHeaderBlurEnabled: true,
         );
         final provider = await createInitializedTestProvider(tester);
 

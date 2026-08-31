@@ -55,10 +55,7 @@ class _MiuixNumberPickerSheetBodyState
   late int _selectedValue;
   final _pickerController = MiuixFlingNumberPickerController();
 
-  /// 滚轮可见行数（奇数，至少 3）；5 行更接近系统数字选择器手感。
-  static const int _visibleItemCount = 5;
-
-  /// 约 5 × itemHeight，给滚轮足够的滑动高度。
+  /// 约 5 × itemHeight（滚轮可见 5 行，接近系统数字选择器手感）。
   static const double _pickerHeight = 220;
 
   @override
@@ -85,7 +82,6 @@ class _MiuixNumberPickerSheetBodyState
               value: _selectedValue,
               min: widget.minValue,
               max: widget.maxValue,
-              visibleItemCount: _visibleItemCount,
               textStyle: textStyles.title3.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -111,7 +107,6 @@ class _MiuixNumberPickerSheetBodyState
               Expanded(
                 child: HyperosButton(
                   label: l10n.confirmAction,
-                  variant: HyperosButtonVariant.primary,
                   expand: true,
                   fitLabel: true,
                   onPressed: () {

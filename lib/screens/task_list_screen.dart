@@ -58,7 +58,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 _dateFilter = _TaskDateFilter.values[index];
               });
             },
-            style: HyperosTabRowStyle.contour,
           ),
           const SizedBox(height: 10),
           _buildCourseFilter(context, provider),
@@ -343,7 +342,6 @@ class _TaskRow extends StatelessWidget {
         padding: hyperosRowPadding(context),
         minHeight: HyperosTokens.listRowTwoLineMinHeight,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _TaskCheckbox(value: task.isCompleted, onChanged: onToggle),
             const SizedBox(width: 4),

@@ -194,7 +194,6 @@ class _MiuixDatePickerSheetBodyState extends State<_MiuixDatePickerSheetBody> {
                   Expanded(
                     child: HyperosButton(
                       label: l10n.confirmAction,
-                      variant: HyperosButtonVariant.primary,
                       expand: true,
                       fitLabel: true,
                       onPressed: () => Navigator.of(context).pop(_selectedDate),
@@ -382,7 +381,6 @@ class _YearMonthWheelDialog extends StatelessWidget {
                             Expanded(
                               child: HyperosButton(
                                 label: confirmLabel,
-                                variant: HyperosButtonVariant.primary,
                                 expand: true,
                                 fitLabel: true,
                                 onPressed: onConfirm,

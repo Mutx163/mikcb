@@ -146,7 +146,7 @@ void main() {
           ),
         ],
         resolveCourse: (_) => _course(),
-        now: DateTime(2099, 9, 1),
+        now: DateTime(2099, 9),
       );
       expect(fires.length, 1);
       expect(fires.single.examId, 'classreminder:c1@2099-09-07');
@@ -154,7 +154,7 @@ void main() {
       expect(fires.single.body, '教一 101');
       expect(
         DateTime.fromMillisecondsSinceEpoch(fires.single.fireAtMillis),
-        DateTime(2099, 9, 7, 8, 0),
+        DateTime(2099, 9, 7, 8),
       );
     });
 
@@ -171,7 +171,7 @@ void main() {
           ClassReminderEntry(courseId: 'c1', date: '2099-09-08', minuteOfDay: 490),
         ],
         resolveCourse: (id) => id == 'c1' ? _course() : null,
-        now: DateTime(2099, 9, 7, 12, 0),
+        now: DateTime(2099, 9, 7, 12),
       );
       expect(fires.length, 1);
       expect(fires.single.examId, 'classreminder:c1@2099-09-08');

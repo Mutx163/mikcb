@@ -221,8 +221,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
 
@@ -272,8 +270,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
         isOddWeek: true,
       ),
     );
@@ -288,8 +284,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
         isEvenWeek: true,
       ),
     );
@@ -304,8 +298,6 @@ void main() {
         endSection: 3,
         startTime: '08:55',
         endTime: '10:35',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
 
@@ -360,8 +352,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
         suspendedWeeks: [1],
       ),
     );
@@ -376,8 +366,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
 
@@ -421,7 +409,6 @@ void main() {
           endSection: 6,
           startTime: '14:00',
           endTime: '15:40',
-          startWeek: 1,
           endWeek: 8,
         ),
       );
@@ -437,7 +424,6 @@ void main() {
           startTime: '14:00',
           endTime: '15:40',
           startWeek: 9,
-          endWeek: 16,
         ),
       );
 
@@ -1287,7 +1273,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
           endWeek: 20,
           description: '带计算器',
         ),
@@ -1630,7 +1615,6 @@ void main() {
         Course(
           id: 'course-a',
           name: '离散数学',
-          shortName: null,
           teacher: '张老师',
           location: 'A101',
           dayOfWeek: day.weekday,
@@ -1720,7 +1704,7 @@ void main() {
     );
 
     final snapshot = provider.buildHomeWidgetSnapshot(
-      now: DateTime(2026, 3, 24, 10, 00),
+      now: DateTime(2026, 3, 24, 10),
     );
 
     expect(snapshot, isNotNull);
@@ -1743,7 +1727,7 @@ void main() {
       );
 
       final snapshot = provider.buildHomeWidgetSnapshot(
-        now: DateTime(2026, 3, 30, 8, 00),
+        now: DateTime(2026, 3, 30, 8),
       );
 
       expect(snapshot, isNotNull);
@@ -1770,7 +1754,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
           endWeek: 4,
         ),
       );
@@ -1827,7 +1810,6 @@ void main() {
           endSection: 4,
           startTime: '10:10',
           endTime: '11:50',
-          startWeek: 1,
           endWeek: 4,
         ),
       );
@@ -2023,8 +2005,6 @@ void main() {
         endSection: 2,
         startTime: '08:00',
         endTime: '09:40',
-        startWeek: 1,
-        endWeek: 16,
       ),
     );
 
@@ -2073,8 +2053,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
-          endWeek: 16,
         ),
       );
 
@@ -2115,8 +2093,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
-          endWeek: 16,
         ),
       );
 
@@ -2146,7 +2122,6 @@ void main() {
       final liveService = TestMiuiLiveActivitiesService();
       final provider = TimetableProvider(
         autoInitialize: false,
-        enableLiveActivitySync: true,
         liveActivitiesService: liveService,
       );
       await provider.initialize();
@@ -2172,8 +2147,6 @@ void main() {
           endSection: 2,
           startTime: '08:00',
           endTime: '09:40',
-          startWeek: 1,
-          endWeek: 16,
         ),
       );
       await pumpEventQueue();
@@ -2198,7 +2171,6 @@ void main() {
       final liveService = TestMiuiLiveActivitiesService();
       final provider = TimetableProvider(
         autoInitialize: false,
-        enableLiveActivitySync: true,
         liveActivitiesService: liveService,
       );
       await provider.initialize();
@@ -2222,7 +2194,6 @@ void main() {
       final liveService = TestMiuiLiveActivitiesService();
       final provider = TimetableProvider(
         autoInitialize: false,
-        enableLiveActivitySync: true,
         liveActivitiesService: liveService,
       );
       await provider.initialize();
@@ -2240,7 +2211,6 @@ void main() {
     final liveService = TestMiuiLiveActivitiesService();
     final provider = TimetableProvider(
       autoInitialize: false,
-      enableLiveActivitySync: true,
       liveActivitiesService: liveService,
     );
     await provider.initialize();
@@ -2521,7 +2491,7 @@ void main() {
       );
       await pumpEventQueue();
 
-      final afterClass = DateTime(2026, 3, 23, 10, 0);
+      final afterClass = DateTime(2026, 3, 23, 10);
       expect(provider.getLiveActivityCourseSelection(now: afterClass), isNull);
 
       liveService.stopLiveUpdateCallCount = 0;
@@ -2544,7 +2514,7 @@ void main() {
     final inactiveWeekNow = DateTime(2026, 3, 30, 8, 30);
     final afterEndWeekNow = DateTime(2026, 6, 15, 8, 30);
     final beforeWindowNow = DateTime(2026, 3, 23, 7, 30);
-    final afterClassNow = DateTime(2026, 3, 23, 10, 0);
+    final afterClassNow = DateTime(2026, 3, 23, 10);
 
     expect(
       provider.getLiveActivityCourseSelection(now: activeNow)?.currentCourse.id,

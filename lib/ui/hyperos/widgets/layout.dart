@@ -226,7 +226,7 @@ class HyperosSectionLabel extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: EdgeInsets.only(
+        padding: const EdgeInsets.only(
           left: HyperosTokens.sectionLabelInset,
           right: HyperosTokens.sectionLabelInset,
           bottom: 8,
@@ -250,7 +250,7 @@ class HyperosSectionDescription extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: EdgeInsets.only(
+        padding: const EdgeInsets.only(
           left: HyperosTokens.sectionLabelInset,
           right: HyperosTokens.sectionLabelInset,
           top: 8,

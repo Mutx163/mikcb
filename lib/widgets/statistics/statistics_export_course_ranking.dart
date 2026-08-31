@@ -94,7 +94,6 @@ class _ExportRankingTile extends StatelessWidget {
           isLast: scope?.isLast ?? true,
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _ExportRankBadge(rank: rank),
             const SizedBox(width: HyperosTokens.rowContentGap),

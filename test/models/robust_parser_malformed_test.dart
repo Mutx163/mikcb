@@ -93,7 +93,7 @@ void main() {
       });
       // custom makeup on same date as vacation => isHoliday false due to adjustedWorkday precedence
       expect(data.entries.length, 2);
-      expect(data.isHoliday(DateTime(2026, 10, 1)), isFalse);
+      expect(data.isHoliday(DateTime(2026, 10)), isFalse);
       expect(data.adjustedWorkdayDateKeysForSnapshot(), ['2026-10-01']);
     });
   });

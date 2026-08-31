@@ -21,7 +21,7 @@ class _CountingProbeClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (request.method == 'HEAD') {
       return http.StreamedResponse(
-        Stream<List<int>>.empty(),
+        const Stream<List<int>>.empty(),
         405,
         request: request,
       );
@@ -492,7 +492,7 @@ void main() {
 
     expect(result, AppUpdateService.downloadCancelledMessage);
     expect(progressEvents, isNotEmpty);
-    expect(await apkFile.exists(), isFalse);
+    expect(apkFile.existsSync(), isFalse);
 
     await server.close(force: true);
     await tempDir.delete(recursive: true);
@@ -544,7 +544,7 @@ void main() {
 
         expect(result, AppUpdateService.downloadCancelledMessage);
         expect(
-          await File('${tempDir.path}/mikcb_update.apk').exists(),
+          File('${tempDir.path}/mikcb_update.apk').existsSync(),
           isFalse,
         );
       } finally {
@@ -580,7 +580,7 @@ void main() {
         temporaryDirectoryProvider: () async => tempDir,
         openInstaller: (path) async {
           openedPath = path;
-          return OpenResult(type: ResultType.done);
+          return OpenResult();
         },
       );
 
@@ -592,8 +592,8 @@ void main() {
 
       expect(result, isNull);
       expect(openedPath, '${tempDir.path}/mikcb_update.apk');
-      expect(await staleApk.exists(), isFalse);
-      expect(await staleCurrentApk.exists(), isTrue);
+      expect(staleApk.existsSync(), isFalse);
+      expect(staleCurrentApk.existsSync(), isTrue);
       expect(await staleCurrentApk.length(), 6);
 
       await server.close(force: true);
@@ -646,8 +646,8 @@ void main() {
     'github api falls back to mirrored api when direct api is unavailable',
     () async {
       final requests = <String>[];
-      final selectedMirror = 'https://mirror.example/';
-      final mirroredApiUrl =
+      const selectedMirror = 'https://mirror.example/';
+      const mirroredApiUrl =
           '$selectedMirror${AppUpdateService.releasesApiUrl}';
       final client = MockClient((request) async {
         requests.add(request.url.toString());
@@ -696,8 +696,8 @@ void main() {
     'github api keeps falling back when preferred mirror returns 404',
     () async {
       final requests = <String>[];
-      final selectedMirror = 'https://mirror.example/';
-      final mirroredApiUrl =
+      const selectedMirror = 'https://mirror.example/';
+      const mirroredApiUrl =
           '$selectedMirror${AppUpdateService.releasesApiUrl}';
       final client = MockClient((request) async {
         requests.add(request.url.toString());
@@ -745,8 +745,8 @@ void main() {
 
   test('github api does not wait for a stalled preferred mirror', () async {
     final requests = <String>[];
-    final selectedMirror = 'https://mirror.example/';
-    final mirroredApiUrl = '$selectedMirror${AppUpdateService.releasesApiUrl}';
+    const selectedMirror = 'https://mirror.example/';
+    const mirroredApiUrl = '$selectedMirror${AppUpdateService.releasesApiUrl}';
     final stalledMirror = Completer<http.Response>();
     final client = MockClient((request) {
       requests.add(request.url.toString());

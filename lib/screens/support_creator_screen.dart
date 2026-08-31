@@ -63,7 +63,6 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.supportHeroTitle),
-      childPad: false,
       child: Material(
         type: MaterialType.transparency,
         child: HyperosListView(
@@ -146,7 +145,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: BundledAssetImage(
+                  child: const BundledAssetImage(
                     assetPath: BundledAssets.launcherIcon,
                     fit: BoxFit.cover,
                     cacheWidth: 96,
@@ -324,7 +323,6 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                                     padding: const EdgeInsets.all(4),
                                     child: BundledAssetImage(
                                       assetPath: assetPath,
-                                      fit: BoxFit.contain,
                                     ),
                                   ),
                                 ),
@@ -502,7 +500,6 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
@@ -609,7 +606,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         children: [
           for (var i = 0; i < donors.length; i++) ...[
             if (i > 0)
-              HyperosInsetDivider(indent: SupportDonorTile.dividerIndent),
+              const HyperosInsetDivider(indent: SupportDonorTile.dividerIndent),
             SupportDonorTile(
               donor: donors[i],
               isFirst: i == 0,
@@ -703,7 +700,6 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   padding: const EdgeInsets.all(8),
                   child: BundledAssetImage(
                     assetPath: assetPath,
-                    fit: BoxFit.contain,
                   ),
                 ),
               ),

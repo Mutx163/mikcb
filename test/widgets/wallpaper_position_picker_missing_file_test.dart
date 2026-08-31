@@ -68,7 +68,7 @@ void main() {
     });
     addTearDown(() {
       return tester.runAsync(() async {
-        if (await dir.exists()) {
+        if (dir.existsSync()) {
           await dir.delete(recursive: true);
         }
       });

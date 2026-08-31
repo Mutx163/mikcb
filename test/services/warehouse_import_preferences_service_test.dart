@@ -52,7 +52,7 @@ void main() {
 
     test('returns null when both URLs are empty', () {
       expect(
-        resolveWarehouseImportUrl(customImportUrl: null, defaultUrl: ' '),
+        resolveWarehouseImportUrl(defaultUrl: ' '),
         isNull,
       );
     });
@@ -102,7 +102,6 @@ void main() {
         resolveRememberedLoginPasswordForImport(
           incomingPassword: '',
           incomingUsername: 'student',
-          localLogin: null,
         ),
         isEmpty,
       );

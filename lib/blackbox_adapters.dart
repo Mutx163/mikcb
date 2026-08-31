@@ -117,7 +117,6 @@ class HttpBlackBoxAdapter extends BlackBoxHttpAdapter {
       onResponse(
         NetworkResponse(
           requestId: id,
-          statusCode: 0,
           headers: const {},
           durationMs: durationMs,
           failureType: NetworkFailureType.connection,
