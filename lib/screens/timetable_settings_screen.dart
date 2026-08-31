@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,6 +87,20 @@ String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
   return l10n.liveTimeCorrectionAdvance(seconds.abs());
 }
 
+/// 设置页自注册（库级一次性）：向 widgets 层路由目录登记设置首页构造器
+/// 与私有子页工厂。拆分后 home_menu_route_catalog 不再反向 import 本库，
+/// 由本库加载即登记，生产入口（main）与测试环境均自动生效，时序早于
+/// 任何菜单渲染（目录条目只在用户交互时才真正取页）。
+// ignore: unused_element
+final bool _settingsPagesRegistered = _doRegisterSettingsPages();
+bool _doRegisterSettingsPages() {
+  registerSettingsPages(
+    settingsScreen: () => const TimetableSettingsScreen(),
+    subpageById: settingsSubpageById,
+  );
+  return true;
+}
+
 /// 八宫格等外部入口直达设置子页的工厂。
 ///
 /// 各子页类保持库内私有，这里按稳定 id 暴露；未知 id 返回 null，
@@ -121,6 +136,9 @@ class TimetableSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 触发库级自注册（lazy top-level 初始化）：保证八宫格/玻璃坞在渲染
+    // 设置页入口前完成登记。幂等，重复调用无副作用。
+    _settingsPagesRegistered;
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
         final l10n = AppLocalizations.of(context)!;
