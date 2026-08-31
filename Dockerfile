@@ -36,11 +36,12 @@ RUN set -eux; \
 ENV PATH="${PATH}:${FLUTTER_HOME}/bin:${FLUTTER_HOME}/bin/cache/dart-sdk/bin"
 
 # ── HyperOS 审计依赖 ─────────────────────────────────────────
-# 基础镜像未预装 pip，PyYAML 直接预装进构建镜像，
-# 避免每次构建都执行 pip install（GitHub Actions 每次跑，
+# 基础镜像未预装 PyYAML。Ubuntu noble 启用 PEP 668（externally-managed-environment），
+# pip 直接装包会失败，故改用 apt 安装发行版自带的 python3-yaml（提供 import yaml）。
+# 直接预装进构建镜像，避免每次构建都执行安装（GitHub Actions 每次跑，
 # CNB 流水线在镜像层固化，更快更稳）。
 RUN set -eux; \
     apt-get update; \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip; \
-    python3 -m pip install --no-cache-dir pyyaml; \
-    rm -rf /var/lib/apt/lists/*
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-yaml; \
+    rm -rf /var/lib/apt/lists/*; \
+    python3 -c "import yaml; print('PyYAML via python3-yaml OK')"
