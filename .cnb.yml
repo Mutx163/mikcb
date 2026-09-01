@@ -57,17 +57,24 @@
   - name: unit-test
     script: flutter test
 
-# ── Gradle/Flutter 镜像注入（规避 Maven Central 429 & services.gradle.org 不可达）──
-# 1) includeBuild 的 flutter_tools/gradle 有自己的 settings.gradle.kts（仓库仅
+# ── Android JVM 单测（Gradle）────────────────────────────────
+# 注意：flutter_tools included build 镜像注入必须与 gradle 调用同 stage
+# 内联执行——CNB 各 stage 是独立容器，跨 stage 改镜像内文件会丢失。
+# GitHub Actions 不执行本文件，不受任何影响。
+#
+# 注入内容：
+# 1) includeBuild 的 flutter_tools/gradle 自带 settings.gradle.kts（仓库仅
 #    google+mavenCentral），主构建 settings 的镜像覆盖不到它；CNB 出口对
 #    Maven Central 限流（HTTP 429）。在 gradle 构建前为其注入国内镜像。
-# 2) Gradle wrapper distribution 从 services.gradle.org 下载时会因 SSL 握手失败，
-#    需替换为腾讯云镜像。
-# （幂等：已注入则跳过）。GitHub Actions 不执行本段，不受影响。
-.ftg-mirror-steps: &ftg-mirror-steps
-  - name: inject-ftg-mirror
+# 2) Gradle wrapper distribution 从 services.gradle.org 下载时会因 SSL 握手
+#    失败，需替换为腾讯云镜像。
+# （幂等：已注入则跳过）。
+.jvm-test-stages: &jvm-test-stages
+  - name: gradle-jvm-tests
     script: |
       set -eu
+
+      # flutter_tools included build 镜像注入（同 stage 内联，规避 429）
       FTG_SETTINGS="$(cd "$(dirname "$(command -v flutter)")/.." && pwd)/packages/flutter_tools/gradle/settings.gradle.kts"
       if [ -f "$FTG_SETTINGS" ] && ! grep -q 'mirrors.cloud.tencent.com' "$FTG_SETTINGS"; then
         sed -i '1i pluginManagement {\n    repositories {\n        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        maven { url = uri("https://maven.aliyun.com/repository/public") }\n        gradlePluginPortal()\n    }\n}' "$FTG_SETTINGS"
@@ -86,11 +93,6 @@
         echo "Gradle distribution 镜像已存在或文件缺失，跳过替换"
       fi
 
-# ── Android JVM 单测（Gradle）────────────────────────────────
-.jvm-test-stages: &jvm-test-stages
-  - *ftg-mirror-steps
-  - name: gradle-jvm-tests
-    script: |
       cd android
       echo "Using Gradle distribution: $(grep '^distributionUrl' gradle/wrapper/gradle-wrapper.properties)"
       ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
@@ -127,7 +129,6 @@
       stages:
         - name: pub-get
           script: flutter pub get
-        - *ftg-mirror-steps
         - name: build-release-apk
           script: |
             set -ex
@@ -147,6 +148,27 @@
             mkdir -p android/app
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r\t' | base64 -d > android/app/upload-keystore.jks
             export ANDROID_KEYSTORE_PATH="app/upload-keystore.jks"
+
+            # ── flutter_tools included build 镜像注入（同 stage 内联，规避 429）──
+            # includeBuild 的 flutter_tools/gradle 自带 settings.gradle.kts（仓库仅
+            # google+mavenCentral），主构建 settings 的镜像覆盖不到它；CNB 出口对
+            # Maven Central 限流（HTTP 429）。必须在同 stage 内、flutter build 前
+            # 就地注入（跨 stage 容器隔离，单独 stage 改镜像文件会丢失）。
+            FTG_SETTINGS="$(cd "$(dirname "$(command -v flutter)")/.." && pwd)/packages/flutter_tools/gradle/settings.gradle.kts"
+            if [ -f "$FTG_SETTINGS" ] && ! grep -q 'mirrors.cloud.tencent.com' "$FTG_SETTINGS"; then
+              sed -i '1i pluginManagement {\n    repositories {\n        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        maven { url = uri("https://maven.aliyun.com/repository/public") }\n        gradlePluginPortal()\n    }\n}' "$FTG_SETTINGS"
+              sed -i 's|^        mavenCentral()$|        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        mavenCentral()|' "$FTG_SETTINGS"
+              echo "flutter_tools gradle 镜像已注入: $FTG_SETTINGS"
+            fi
+
+            # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
+            WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
+            if [ -f "$WRAPPER_PROP" ] && ! grep -q 'mirrors.cloud.tencent.com/gradle' "$WRAPPER_PROP"; then
+              sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-8.14-all.zip|' "$WRAPPER_PROP"
+              echo "Gradle distribution 镜像已替换: $WRAPPER_PROP"
+            else
+              echo "Gradle distribution 镜像已存在或文件缺失，跳过替换"
+            fi
 
             VERSION_NAME="${CNB_BRANCH#v}"
             flutter build apk --release --flavor prod --target-platform android-arm64
