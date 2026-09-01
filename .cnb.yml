@@ -69,7 +69,7 @@
       FTG_SETTINGS="$(cd "$(dirname "$(command -v flutter)")/.." && pwd)/packages/flutter_tools/gradle/settings.gradle.kts"
       if [ -f "$FTG_SETTINGS" ] && ! grep -q 'mirrors.cloud.tencent.com' "$FTG_SETTINGS"; then
         sed -i '1i pluginManagement {\n    repositories {\n        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        maven { url = uri("https://maven.aliyun.com/repository/public") }\n        gradlePluginPortal()\n    }\n}' "$FTG_SETTINGS"
-        sed -i 's/^        mavenCentral()$/        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        mavenCentral()/' "$FTG_SETTINGS"
+        sed -i 's|^        mavenCentral()$|        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }\n        mavenCentral()|' "$FTG_SETTINGS"
         echo "flutter_tools gradle 镜像已注入: $FTG_SETTINGS"
       else
         echo "flutter_tools gradle 镜像已存在或文件缺失，跳过注入"
