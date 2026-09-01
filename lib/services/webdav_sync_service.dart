@@ -137,15 +137,35 @@ class WebdavSyncService {
            credentialsStore ?? const WebdavSyncCredentialsStore(),
        _clientService = clientService ?? const WebdavClientService(),
        _backupIndexService =
-           backupIndexService ?? const CloudBackupIndexService();
+           backupIndexService ?? const CloudBackupIndexService() {
+    // 云快照应用失败并成功回滚后，清掉 pull/upload 基线哈希，防止自动
+    // 上传把「半应用后回滚」的本地状态当成基线内改动推上云端（覆盖云端
+    // 最后一份好数据）。
+    _snapshotService.setCloudSyncBaselineReset(clearSyncBaselines);
+  }
 
   final AppSyncSnapshotService _snapshotService;
   final WebdavSyncConfigStore _configStore;
   final WebdavSyncCredentialsStore _credentialsStore;
   final WebdavClientService _clientService;
   final CloudBackupIndexService _backupIndexService;
+  bool _disposed = false;
 
   WebdavSyncConflictHandler? conflictHandler;
+
+  /// Unregisters the baseline-reset hook from the shared snapshot service.
+  ///
+  /// AppSyncSnapshotService 的钩子槽位只有一个。多实例 WebdavSyncService
+  /// （测试间连建、或将来其他 WebDAV 衍生服务）不注销会互相覆盖钩子，
+  /// 回滚时可能清错实例的基线。实例生命周期结束时调用本方法注销，之后
+  /// 回滚分支的钩子调用静默跳过。
+  void dispose() {
+    if (_disposed) {
+      return;
+    }
+    _disposed = true;
+    _snapshotService.setCloudSyncBaselineReset(null);
+  }
 
   Future<WebdavSyncConfig> loadConfig() => _configStore.load();
 
@@ -770,6 +790,23 @@ class WebdavSyncService {
     return _snapshotService.undoLastApply(provider: provider);
   }
 
+  /// Clears the pull/upload baseline hashes so the next sync re-runs the full
+  /// conflict decision instead of treating the post-rollback local state as an
+  /// upload against a stale remote baseline. Used after a restore failed and
+  /// the local data was rolled back (the remote is still the last good copy).
+  Future<void> clearSyncBaselines() async {
+    if (_disposed) {
+      return;
+    }
+    final config = await _configStore.load();
+    await _configStore.save(
+      config.copyWith(
+        clearLastAppliedRemoteHash: true,
+        clearLastUploadedLocalHash: true,
+      ),
+    );
+  }
+
   Future<WebdavSyncResult> deleteBackup({required String entryId}) async {
     final config = await _configStore.load();
     final params = await buildConnectionParams(config);
@@ -1194,8 +1231,15 @@ class WebdavSyncService {
             isCurrent: parsed.contentSha256 == currentHash,
           ),
         );
-      } catch (error) {
-        throw StateError('sync_failed');
+      } catch (_) {
+        // 单个备份体损坏（传输截断/坏 UTF-8 字节/旧版本 schema/字段类型
+        // 异常抛 TypeError 等）：一律跳过该条，其余备份仍然可见可选。
+        // 此前任何一条坏数据都抛 StateError('sync_failed') 让整个索引
+        // 重建失败——一个坏文件把全部历史备份从列表里藏掉，恢复入口被
+        // 一条坏数据绑架。parseSnapshotJson 的子解析路径分散，异常并不
+        // 总被归一化为 FormatException（如 TypeError），故放宽为 catch
+        // 全部后跳过。坏文件仍留在远端，可被后续清理。
+        continue;
       }
     }
 

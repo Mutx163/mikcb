@@ -237,6 +237,16 @@ class AppSyncSnapshotService {
   AppSyncSnapshot? _lastRollbackSnapshot;
   String? _lastRollbackId;
 
+  /// 注入的云同步基线清理钩子（WebdavSyncService.clearSyncBaselines）。
+  ///
+  /// 服务层不反向依赖 WebDAV 模块；回滚成功后置空基线哈希必须由协调层
+  /// 注册。null（测试/未接入云同步）时跳过清理。
+  void setCloudSyncBaselineReset(void Function()? reset) {
+    _webdavBaselineReset = reset;
+  }
+
+  void Function()? _webdavBaselineReset;
+
   Future<AppSyncSnapshot> collectSnapshot({
     required TimetableProvider provider,
     required String deviceId,
@@ -686,12 +696,14 @@ class AppSyncSnapshotService {
         );
         return null;
       } catch (error, stackTrace) {
+        var rolledBack = false;
         if (rollbackSnapshot != null) {
           try {
             await _applySnapshotData(
               provider: provider,
               snapshot: rollbackSnapshot,
             );
+            rolledBack = true;
           } catch (rollbackError, rollbackStackTrace) {
             await AppLogService.instance.error(
               'cloud_transfer_rollback_failed',
@@ -701,6 +713,14 @@ class AppSyncSnapshotService {
               extras: {'contentSha256': snapshot.contentSha256},
             );
           }
+        }
+        if (rolledBack) {
+          // 本地已回到应用前状态，但 lastAppliedRemoteHash 仍指向刚拉取
+          // 失败的远端快照；下一拍 scheduleUpload 的自动上传会被
+          // requireUnchangedRemote 放行（远端 == 基线），把「半应用后回滚」
+          // 的本地状态当成正常改动推上去，覆盖掉云端最后一份好数据。
+          // 这里清掉两个基线哈希，强制下次同步重新走完整 pull 决策。
+          _webdavBaselineReset?.call();
         }
         await AppLogService.instance.error(
           'cloud_transfer_restore_failed',
@@ -798,8 +818,10 @@ class AppSyncSnapshotService {
         );
         return null;
       } catch (error, stackTrace) {
+        var rolledBack = false;
         try {
           await _applySnapshotData(provider: provider, snapshot: rollback);
+          rolledBack = true;
         } catch (rollbackError, rollbackStackTrace) {
           await AppLogService.instance.error(
             'cloud_transfer_rollback_failed',
@@ -808,6 +830,11 @@ class AppSyncSnapshotService {
             stackTrace: rollbackStackTrace,
             extras: {'transferId': package.packageId, 'undoId': undoId},
           );
+        }
+        if (rolledBack) {
+          // 与 applySnapshot 的回滚分支同口径：回滚后清基线，防自动上传
+          // 把回滚后的本地状态按旧基线推上云端。
+          _webdavBaselineReset?.call();
         }
         await AppLogService.instance.error(
           'cloud_transfer_restore_failed',
@@ -849,6 +876,10 @@ class AppSyncSnapshotService {
       final undoId = _lastRollbackId;
       _lastRollbackSnapshot = null;
       _lastRollbackId = null;
+      // 撤销改变了本地数据（回到应用前状态），旧的远端基线不再成立；
+      // 清基线强制下次同步重走完整 pull 决策，防止把撤销后的本地状态
+      // 当作基线内改动自动推上云端。
+      _webdavBaselineReset?.call();
       await AppLogService.instance.info(
         'cloud_transfer_restore_undone',
         'cloud transfer restore undone',
@@ -907,7 +938,22 @@ class AppSyncSnapshotService {
     );
     await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
     await _warehouseMacroService.importAllMacros(snapshot.macros);
-    await _holidayService.saveCustomHolidays(snapshot.customHolidays);
+    // 假期是附属云数据（课表主体已在上面 importFullAppDataBackup 成功落
+    // 盘）。单项写失败若随异常上抛，会把已成功的整体云恢复升级成回滚：
+    // 本地状态被抖动一次，且远端快照仍可重拉。改为记 warn 后继续——
+    // 下一次成功同步的快照会重新带上 customHolidays 自愈。用户显式操作
+    // 的写失败感知由设置页 UI 层（settings_holiday）的 try-catch 兜底，
+    // 云快照批量路径不适用「失败即整体回滚」的高代价语义。
+    try {
+      await _holidayService.saveCustomHolidays(snapshot.customHolidays);
+    } catch (error, stackTrace) {
+      await AppLogService.instance.warn(
+        'cloud_snapshot_holiday_write_failed',
+        'cloud snapshot custom holidays write failed '
+            '(count=${snapshot.customHolidays.length}): $error\n$stackTrace',
+        extras: {'count': snapshot.customHolidays.length},
+      );
+    }
 
     if (snapshot.includesPartnerTimetableBinding) {
       await _storageService.savePartnerTimetableBinding(
