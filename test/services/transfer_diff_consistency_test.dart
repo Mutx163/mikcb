@@ -25,8 +25,8 @@ TimeScheme _scheme(String id) => TimeScheme(
   id: id,
   name: '作息$id',
   sections: TimetableSettings.defaults().sections,
-  createdAt: DateTime(2026, 8, 1),
-  updatedAt: DateTime(2026, 8, 1),
+  createdAt: DateTime(2026, 8),
+  updatedAt: DateTime(2026, 8),
 );
 
 TimetableProfile _profile(
@@ -39,8 +39,8 @@ TimetableProfile _profile(
     courses: courses,
     settings: TimetableSettings.defaults(),
     currentWeek: 1,
-    createdAt: DateTime(2026, 8, 1),
-    lastUsedAt: DateTime(2026, 8, 1),
+    createdAt: DateTime(2026, 8),
+    lastUsedAt: DateTime(2026, 8),
   );
 }
 
@@ -119,10 +119,10 @@ void main() {
         ],
       );
 
+      // merge 是 compare 的默认 mode（lint 收敛后省略显式实参，语义不变）。
       final diff = const TransferDiffService().compare(
         current: current,
         incoming: incoming,
-        mode: TransferApplyMode.merge,
       );
 
       expect(diff.forKind(TransferEntityKind.courses).removedCount, 0);

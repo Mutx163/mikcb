@@ -953,7 +953,7 @@ void main() {
       temporaryDirectoryProvider: () async => tempDir,
       openInstaller: (path) async {
         openedPath = path;
-        return OpenResult(type: ResultType.done);
+        return OpenResult();
       },
     );
 
@@ -1000,7 +1000,7 @@ void main() {
     );
 
     expect(result, 'update_download_hash_mismatch');
-    expect(await File('${tempDir.path}/mikcb_update.apk').exists(), isFalse);
+    expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
 
     await server.close(force: true);
     await tempDir.delete(recursive: true);
@@ -1023,7 +1023,7 @@ void main() {
       temporaryDirectoryProvider: () async => tempDir,
       openInstaller: (path) async {
         openedPath = path;
-        return OpenResult(type: ResultType.done);
+        return OpenResult();
       },
     );
 
