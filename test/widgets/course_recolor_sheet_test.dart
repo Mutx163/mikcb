@@ -245,14 +245,25 @@ void main() {
       bool Function() condition,
     ) async {
       await tester.tap(find.text(label));
-      for (var i = 0; i < 60 && !condition(); i++) {
+      // 轮询要同时驱动两个事件循环：pump 排空 FakeAsync 微任务（mutation
+      // gate 空闲快路径会同步改内存、条件可能当场为真），runAsync 放行真实
+      // 异步（历史保存/持久化走 plugin channel）。换批收尾（含 _busy 复位，
+      // loading 态会把按钮 label 换成 spinner）可能仍挂在任一循环上，因此
+      // 即便条件已为真也保底轮询数轮，等下一批可点后再返回。
+      var settled = false;
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
+        if (i >= 5 && condition()) {
+          settled = true;
+          break;
+        }
       }
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
-      return condition();
+      return condition() || settled;
     }
 
     List<String> colors() => provider.courses.map((c) => c.color).toList();
