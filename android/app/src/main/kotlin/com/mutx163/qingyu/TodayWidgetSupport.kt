@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
@@ -674,16 +675,21 @@ object TodayWidgetSupport {
         }
     }
 
-    fun primaryTextColor(style: String): Int {
-        return if (style == "gradient") Color.WHITE else Color.parseColor("#0F172A")
+    fun isDarkMode(context: Context): Boolean {
+        val uiMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return uiMode == Configuration.UI_MODE_NIGHT_YES
     }
 
-    fun secondaryTextColor(style: String): Int {
-        return if (style == "gradient") {
-            Color.parseColor("#DDE7FF")
-        } else {
-            Color.parseColor("#64748B")
-        }
+    fun primaryTextColor(style: String, context: Context? = null): Int {
+        if (style == "gradient") return Color.WHITE
+        if (context != null && isDarkMode(context)) return Color.parseColor("#E2E8F0")
+        return Color.parseColor("#0F172A")
+    }
+
+    fun secondaryTextColor(style: String, context: Context? = null): Int {
+        if (style == "gradient") return Color.parseColor("#DDE7FF")
+        if (context != null && isDarkMode(context)) return Color.parseColor("#94A3B8")
+        return Color.parseColor("#64748B")
     }
 
     fun statusText(context: Context, state: String): String {

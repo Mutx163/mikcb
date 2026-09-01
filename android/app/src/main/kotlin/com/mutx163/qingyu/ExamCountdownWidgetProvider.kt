@@ -37,8 +37,8 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
         val snapshot = TodayWidgetSupport.readSnapshot(context)
         val style = snapshot?.backgroundStyle ?: "solid"
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
-        val primaryColor = TodayWidgetSupport.primaryTextColor(style)
-        val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
+        val primaryColor = TodayWidgetSupport.primaryTextColor(style, context)
+        val secondaryColor = TodayWidgetSupport.secondaryTextColor(style, context)
 
         views.setInt(
             R.id.widget_card,

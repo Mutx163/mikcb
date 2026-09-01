@@ -40,8 +40,8 @@ class StatsMediumWidgetProvider : BaseQingyuWidgetProvider() {
         val chrome = StatsWidgetSupport.readChrome(context)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
         val heightDp = profile.heightDp
-        val primaryColor = TodayWidgetSupport.primaryTextColor(chrome.backgroundStyle)
-        val secondaryColor = TodayWidgetSupport.secondaryTextColor(chrome.backgroundStyle)
+        val primaryColor = TodayWidgetSupport.primaryTextColor(chrome.backgroundStyle, context)
+        val secondaryColor = TodayWidgetSupport.secondaryTextColor(chrome.backgroundStyle, context)
 
         views.setInt(
             R.id.widget_card,

@@ -24,8 +24,8 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
         val style = snapshot?.backgroundStyle ?: "solid"
-        val primaryColor = TodayWidgetSupport.primaryTextColor(style)
-        val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
+        val primaryColor = TodayWidgetSupport.primaryTextColor(style, context)
+        val secondaryColor = TodayWidgetSupport.secondaryTextColor(style, context)
 
         views.setInt(
             R.id.widget_medium_card,

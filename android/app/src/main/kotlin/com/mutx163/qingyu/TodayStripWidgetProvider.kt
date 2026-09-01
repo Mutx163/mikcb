@@ -28,8 +28,8 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val style = snapshot?.backgroundStyle ?: "solid"
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
-        val primaryColor = TodayWidgetSupport.primaryTextColor(style)
-        val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
+        val primaryColor = TodayWidgetSupport.primaryTextColor(style, context)
+        val secondaryColor = TodayWidgetSupport.secondaryTextColor(style, context)
 
         views.setInt(
             R.id.widget_card,

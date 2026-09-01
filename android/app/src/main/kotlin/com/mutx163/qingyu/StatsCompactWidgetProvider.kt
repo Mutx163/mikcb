@@ -38,8 +38,8 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
         // 与今日系列同源的外观设置：背景风格 / 圆角 / 高度微调。
         val chrome = StatsWidgetSupport.readChrome(context)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
-        val primaryColor = TodayWidgetSupport.primaryTextColor(chrome.backgroundStyle)
-        val secondaryColor = TodayWidgetSupport.secondaryTextColor(chrome.backgroundStyle)
+        val primaryColor = TodayWidgetSupport.primaryTextColor(chrome.backgroundStyle, context)
+        val secondaryColor = TodayWidgetSupport.secondaryTextColor(chrome.backgroundStyle, context)
 
         views.setInt(
             R.id.widget_card,
