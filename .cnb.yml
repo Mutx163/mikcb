@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────
+# 轻屿课表 · CNB 云原生构建流水线
+# 覆盖三类场景：
+#   1. 任意分支推送  → 质量门禁（analyze + test + 静态审计）
+#   2. PR            → 预合并质量门禁（与推送保持一致）
+#   3. v* 标签       → 构建发布签名 APK 并挂到 Release
+# ─────────────────────────────────────────────────────────────
+
+# ── Flutter 构建环境（YAML 锚点复用）────────────────────────
+# 使用仓库内 Dockerfile 构建自定义镜像：基于 cirruslabs/flutter:3.44.0
+# 将 Flutter 升级到 .fvmrc 指定的 3.44.8（Dart 3.12.8），
+# 满足 pubspec.yaml 的 sdk >=3.12.2 约束。
+.flutter-env: &flutter-env
+  runner:
+    cpus: 8                        # 默认 8 核 16G，Android 构建足够
+  docker:
+    build:
+      dockerfile: ./Dockerfile
+      by: [Dockerfile]
+      versionBy: [Dockerfile]
+
+# ── 质量门禁公共步骤（推送 / PR 共用）───────────────────────
+.quality-stages: &quality-stages
+  - name: flutter-version
+    script: |
+      flutter --version
+      dart --version
+  - name: pub-get
+    script: flutter pub get
+  - name: pubspec-encoding-check
+    script: |
+      set -eu
+      if head -c 3 pubspec.yaml | od -An -tx1 | grep -q 'ef bb bf'; then
+        echo "ERROR: pubspec.yaml has UTF-8 BOM"; exit 1
+      fi
+      python3 - <<'PY'
+      import sys
+      text = open("pubspec.yaml", encoding="utf-8").read()
+      for key in ("version:", "description:"):
+          line = next((l for l in text.splitlines() if l.startswith(key) and not l[0:1].isspace()), None)
+          if line is None:
+              print(f"ERROR: missing {key} line in pubspec.yaml", file=sys.stderr)
+              sys.exit(1)
+          value = line.split(":", 1)[1].strip()
+          if not value:
+              print(f"ERROR: empty value for {key} in pubspec.yaml", file=sys.stderr)
+              sys.exit(1)
+      print("pubspec.yaml encoding OK")
+      PY
+  - name: hyperos-audit
+    script: |
+      python3 tool/hyperos_audit.py --strict
+  - name: cjk-hardcode-audit
+    script: python3 tool/audit_cjk_hardcode.py --baseline tool/cjk_hardcode_baseline.txt
+  - name: analyze
+    script: flutter analyze --fatal-infos
+  - name: unit-test
+    script: flutter test
+
+# ── Android JVM 单测（Gradle）────────────────────────────────
+.jvm-test-stages: &jvm-test-stages
+  - name: gradle-jvm-tests
+    script: |
+      cd android
+      ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
+
+# ═════════════════════════════════════════════════════════════
+# 1. 任意分支推送 → 质量门禁
+# 2. PR → 预合并质量门禁
+# ═════════════════════════════════════════════════════════════
+"**":
+  push:
+    - name: ci
+      <<: *flutter-env
+      stages:
+        - *quality-stages
+        - *jvm-test-stages
+  pull_request:
+    - name: pr-check
+      <<: *flutter-env
+      stages:
+        - *quality-stages
+        - *jvm-test-stages
+
+# ═════════════════════════════════════════════════════════════
+# 3. v* 标签 → 构建发布 APK 并挂到 Release
+# ═════════════════════════════════════════════════════════════
+"$":
+  tag_push:
+    - name: release-apk
+      <<: *flutter-env
+      stages:
+        - name: pub-get
+          script: flutter pub get
+        - name: build-release-apk
+          script: |
+            set -ex
+            # ── 签名密钥检查：缺签名四件套时给出明确指引 ──
+            # 在 CNB 密钥仓库配置 ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD /
+            # ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD 后，在下方 imports 引用即可全自动签名。
+            if [ -z "${ANDROID_KEYSTORE_PATH:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] \
+               || [ -z "${ANDROID_KEY_ALIAS:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
+              echo "ERROR: 缺少 Android release 签名密钥" >&2
+              echo "请配置 CNB 密钥仓库并导入以下变量:" >&2
+              echo "  ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD" >&2
+              exit 1
+            fi
+
+            VERSION_NAME="${CNB_BRANCH#v}"
+            flutter build apk --release --flavor prod --target-platform android-arm64
+
+            mkdir -p dist
+            APK_PATH=""
+            for candidate in \
+              "build/app/outputs/flutter-apk/app-prod-release.apk" \
+              "build/app/outputs/apk/prod/release/app-prod-release.apk"; do
+              if [ -f "${candidate}" ]; then
+                APK_PATH="${candidate}"
+                break
+              fi
+            done
+            if [ -z "${APK_PATH}" ]; then
+              echo "ERROR: could not find release APK under build/app/outputs" >&2
+              exit 1
+            fi
+            cp "${APK_PATH}" "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
+            ls -lh dist/
+        - name: create-release
+          type: git:release
+          options:
+            title: "$CNB_BRANCH"
+            description: "轻屿课表自动构建发布（CNB 流水线）"
+        - name: upload-apk-to-release
+          image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - "dist/*.apk"
+      failStages:
+        - name: notify-release-failure
+          script: |
+            echo "Release APK 构建失败: $CNB_BRANCH"
+            echo "失败信息: $CNB_BUILD_FAILED_MSG"
+      endStages:
+        - name: cleanup-artifacts
+          script: rm -rf dist build
