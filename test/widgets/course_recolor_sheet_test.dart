@@ -157,6 +157,10 @@ void main() {
     await tester.tap(find.text('换一批颜色'));
     var applied = false;
     for (var i = 0; i < 60 && !applied; i++) {
+      // pump 排空 FakeAsync 微任务（mutation gate 空闲快路径同步落色后的
+      // 收尾链），runAsync 放行真实异步（配色落库走 plugin channel）——
+      // 两条事件循环都要喂，缺一条在部分时序/版本组合下会永远等不到。
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
@@ -180,6 +184,7 @@ void main() {
     await tester.tap(find.text('上一套'));
     var restored = false;
     for (var i = 0; i < 60 && !restored; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
@@ -194,6 +199,7 @@ void main() {
     await tester.tap(find.text('下一套'));
     var forwarded = false;
     for (var i = 0; i < 60 && !forwarded; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );

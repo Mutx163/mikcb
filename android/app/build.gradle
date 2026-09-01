@@ -116,12 +116,12 @@ android {
         }
         release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // 签名缺失不再于配置期抛错——配置期对所有 gradle 调用生效，会连带
+            // CI 的 testProdDebugUnitTest 等纯 JVM 任务一起失败（CI 无
+            // key.properties）。有签名则挂上；没有时改由文件尾 taskGraph
+            // 校验，真正请求 release 打包任务时才报同样的错。
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.release
-            } else {
-                throw new GradleException(
-                        "Missing release signing config. Provide android/key.properties or ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD."
-                )
             }
         }
     }
@@ -136,6 +136,24 @@ flutter {
 tasks.configureEach { task ->
     if (task.name.startsWith("merge") && task.name.endsWith("JniLibFolders")) {
         task.outputs.upToDateWhen { false }
+    }
+}
+
+// 无签名配置时，仅当任务图真的包含 release 打包任务（assemble/bundle 前缀
+// + release 名）才报错；纯 JVM 测试/分析任务不被连坐。报错文案与原配置期
+// 校验一致，指引不变。CNB/GitHub 发布流水线均注入真实签名，不受影响。
+gradle.taskGraph.whenReady { graph ->
+    if (hasReleaseSigning) {
+        return
+    }
+    def needsSigning = graph.allTasks.any { task ->
+        def name = task.name.toLowerCase()
+        (name.startsWith("assemble") || name.startsWith("bundle")) && name.contains("release")
+    }
+    if (needsSigning) {
+        throw new GradleException(
+                "Missing release signing config. Provide android/key.properties or ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD."
+        )
     }
 }
 
