@@ -115,6 +115,7 @@
       stages:
         - name: pub-get
           script: flutter pub get
+        - *ftg-mirror-steps
         - name: build-release-apk
           script: |
             set -ex
