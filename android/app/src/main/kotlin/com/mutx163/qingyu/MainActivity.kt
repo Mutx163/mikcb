@@ -7,6 +7,7 @@ import android.view.HapticFeedbackConstants
 import android.Manifest
 import android.app.ActivityManager
 import android.app.AppOpsManager
+import android.app.AlarmManager
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -605,6 +606,12 @@ class MainActivity : FlutterActivity() {
                     "canRequestPinWidget" -> {
                         result.success(canRequestPinWidget())
                     }
+                    "canScheduleExactAlarms" -> {
+                        result.success(canScheduleExactAlarms())
+                    }
+                    "requestScheduleExactAlarm" -> {
+                        result.success(requestScheduleExactAlarm())
+                    }
                     "requestPinWidget" -> {
                         val arguments = call.arguments as? Map<*, *>
                         val widgetType = arguments?.get("widgetType") as? String
@@ -692,6 +699,11 @@ class MainActivity : FlutterActivity() {
                         val appWidgetId = pendingWidgetLaunchAppWidgetId
                         pendingWidgetLaunchAppWidgetId = null
                         result.success(appWidgetId)
+                    }
+                    "rescheduleRefresh" -> {
+                        // 授权状态变化后按最新权限档位重排小组件刷新闹钟。
+                        HomeWidgetStorage.rescheduleRefresh(applicationContext)
+                        result.success(true)
                     }
                     "scheduleRefresh" -> {
                         val payload = call.arguments as? Map<String, Any?>
@@ -1235,6 +1247,40 @@ class MainActivity : FlutterActivity() {
             "requested"
         } else {
             "failed"
+        }
+    }
+
+    /** Android 12+ 需要用户在系统里授予「闹钟和提醒」权限才能精确闹钟。 */
+    private fun canScheduleExactAlarms(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return true
+        }
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+            ?: return true
+        return alarmManager.canScheduleExactAlarms()
+    }
+
+    /**
+     * 跳转系统「闹钟和提醒」授权页。
+     *
+     * 返回状态字符串：launched 已跳授权页；fallback ROM 未处理该 action，
+     * 已回退应用详情页（含闹钟和提醒开关）；not_required S 以下无需授权。
+     */
+    private fun requestScheduleExactAlarm(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return "not_required"
+        }
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        return try {
+            startActivity(intent)
+            "launched"
+        } catch (_: ActivityNotFoundException) {
+            // 个别 ROM 未处理该 action 时退回应用详情页（含闹钟和提醒开关）。
+            openAppDetailsSettings()
+            "fallback"
         }
     }
 

@@ -4011,6 +4011,24 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 위젯에 바인딩된 시간표가 더 이상 없어요. 일반 방식으로 열었어요.';
 
   @override
+  String get homeWidgetExactAlarmBannerTitle =>
+      '정확한 알람 권한 미허용';
+
+  @override
+  String get homeWidgetExactAlarmBannerText =>
+      '"알람 및 리마인더" 권한이 없으면 수업 경계 갱신이 부정확한 알람으로 대체되어 위젯이 늦게 갱신될 수 있어요. 정확한 갱신을 위해 권한을 허용해 주세요';
+
+  @override
+  String get homeWidgetExactAlarmGrantAction =>
+      '권한 허용';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed => '권한 페이지를 열 수 없습니다. 시스템 설정에서 "알람 및 리마인더"를 직접 허용해 주세요';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '앱 정보 페이지를 열었습니다. 해당 페이지에서 "알람 및 리마인더"를 허용해 주세요';
+
+
+  @override
   String get layoutSettingsTitle => '레이아웃 및 교시';
 
   @override
@@ -8722,6 +8740,14 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get logHomeWidgetScheduleFailed =>
       'Failed to schedule home widget refresh';
+
+  @override
+  String get logHomeWidgetExactAlarmCheckFailed =>
+      '정확한 알람 권한 확인 실패';
+
+  @override
+  String get logHomeWidgetExactAlarmRequestFailed =>
+      '정확한 알람 권한 요청 실패';
 
   @override
   String get logMiuiLiveInitializeFailed =>

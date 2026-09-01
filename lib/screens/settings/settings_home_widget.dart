@@ -47,6 +47,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   bool _isPersisting = false;
   bool _isCheckingPinSupport = true;
   bool _canRequestPinWidget = false;
+  /// 「闹钟和提醒」权限检测状态：null 表示尚未查到，避免未授权用户
+  /// 首帧横幅闪烁；false 才展示引导横幅。
+  bool? _canScheduleExactAlarms;
   TimetableSettings? _pendingPersist;
   final Set<HomeWidgetPinTarget> _pinningTargets = <HomeWidgetPinTarget>{};
 
@@ -57,6 +60,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _loadPinWidgetSupport();
+    unawaited(_loadExactAlarmPermission());
     _loadWidgetInstances();
   }
 
@@ -68,6 +72,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     // 从桌面/系统弹窗回到前台：桌面小组件集合可能已变化（用户去桌面加了
     // 或删了卡片，系统不会通知 App 界面），稍候重查——pin 确认后启动器
     // 需要一拍才完成绑定，立即查可能拿到旧集合。
+    unawaited(_loadExactAlarmPermission());
     Future<void>.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         _loadWidgetInstances();
@@ -100,12 +105,21 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     );
   }
 
+  /// 未授权（已查到且为 false）时多一个「精确闹钟权限」引导分区。
+  int get _exactAlarmBannerSections =>
+      _canScheduleExactAlarms == false ? 1 : 0;
+
   int get _homeWidgetSectionCount =>
-      (_draft.widgetShowCountdown ? 4 : 3) + 2;
+      (_draft.widgetShowCountdown ? 4 : 3) + 2 + _exactAlarmBannerSections;
 
   Widget _buildHomeWidgetSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
-    var section = index;
+    final hasBanner = _exactAlarmBannerSections > 0;
+    // 权限引导横幅固定在第 1 位，未展示时跳过；未展示倒计时分区时再偏移。
+    if (hasBanner && index == 0) {
+      return _buildExactAlarmBannerSection(l10n);
+    }
+    var section = hasBanner ? index - 1 : index;
     if (!_draft.widgetShowCountdown && section >= 2) {
       section += 1;
     }
@@ -521,6 +535,87 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
       });
       return;
     }
+  }
+
+  Future<void> _loadExactAlarmPermission() async {
+    final wasDetected = _canScheduleExactAlarms != null;
+    final wasGranted = _canScheduleExactAlarms == true;
+    final granted = await _homeWidgetService.canScheduleExactAlarms();
+    if (!mounted) {
+      return;
+    }
+    if (_canScheduleExactAlarms != granted) {
+      setState(() {
+        _canScheduleExactAlarms = granted;
+      });
+    }
+    // 从未授权升级为已授权时，原刷新闹钟仍是非精确档，主动重排一次。
+    if (granted && wasDetected && !wasGranted) {
+      await _homeWidgetService.rescheduleRefresh();
+    }
+  }
+
+  Future<void> _requestExactAlarmPermission() async {
+    final result = await _homeWidgetService.requestScheduleExactAlarm();
+    if (!mounted) {
+      return;
+    }
+    switch (result) {
+      case HomeWidgetExactAlarmRequestResult.launched:
+      case HomeWidgetExactAlarmRequestResult.notRequired:
+        break;
+      case HomeWidgetExactAlarmRequestResult.fallback:
+        // 已回退到应用详情页，提示用户在其中开启权限即可。
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.homeWidgetExactAlarmFallbackHint,
+        );
+      case HomeWidgetExactAlarmRequestResult.failed:
+        // 未能打开任何设置页，引导用户手动前往系统设置。
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.homeWidgetExactAlarmOpenFailed,
+        );
+    }
+    // 回到前台时 didChangeAppLifecycleState 会重查授权状态。
+  }
+
+  /// 「精确闹钟权限」引导分区：Android 12+ 未授予时提示并一键跳系统授权页。
+  Widget _buildExactAlarmBannerSection(AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosHintBanner(
+          icon: Icon(
+            Icons.alarm_rounded,
+            size: 18,
+            color: HyperosColors.primary(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.homeWidgetExactAlarmBannerTitle,
+                style: HyperosTypography.listTitle(context),
+              ),
+              const SizedBox(height: 4),
+              Text(l10n.homeWidgetExactAlarmBannerText),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: HyperosButton(
+                  label: l10n.homeWidgetExactAlarmGrantAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: _requestExactAlarmPermission,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _loadPinWidgetSupport() async {

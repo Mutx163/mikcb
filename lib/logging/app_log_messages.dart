@@ -24,6 +24,10 @@ abstract final class AppLogMessages {
   static const homeWidgetSyncFailed = 'log_home_widget_sync_failed';
   static const homeWidgetClearFailed = 'log_home_widget_clear_failed';
   static const homeWidgetScheduleFailed = 'log_home_widget_schedule_failed';
+  static const homeWidgetExactAlarmCheckFailed =
+      'log_home_widget_exact_alarm_check_failed';
+  static const homeWidgetExactAlarmRequestFailed =
+      'log_home_widget_exact_alarm_request_failed';
   static const miuiLiveInitializeFailed = 'log_miui_live_initialize_failed';
   static const miuiLiveOpenPromotedSettingsFailed =
       'log_miui_live_open_promoted_settings_failed';

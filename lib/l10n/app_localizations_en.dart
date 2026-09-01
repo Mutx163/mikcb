@@ -4165,6 +4165,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'The timetable bound to this widget is no longer available. Opened normally instead.';
 
   @override
+  String get homeWidgetExactAlarmBannerTitle =>
+      'Exact alarm permission not granted';
+
+  @override
+  String get homeWidgetExactAlarmBannerText =>
+      'Without the "Alarms & reminders" permission, refreshes at course boundaries fall back to inexact alarms and widgets may update late. Grant it for precise on-schedule refreshes';
+
+  @override
+  String get homeWidgetExactAlarmGrantAction =>
+      'Grant';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed =>
+      'Could not open the permission page. Enable "Alarms & reminders" manually in system settings';
+  @override
+  String get homeWidgetExactAlarmFallbackHint =>
+      'Opened the app info page. Enable "Alarms & reminders" there';
+
+
+  @override
   String get layoutSettingsTitle => 'Layout & sections';
 
   @override
@@ -8964,6 +8984,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get logHomeWidgetScheduleFailed =>
       'Failed to schedule home widget refresh';
+
+  @override
+  String get logHomeWidgetExactAlarmCheckFailed =>
+      'Failed to check exact alarm permission';
+
+  @override
+  String get logHomeWidgetExactAlarmRequestFailed =>
+      'Failed to request exact alarm permission';
 
   @override
   String get logMiuiLiveInitializeFailed =>

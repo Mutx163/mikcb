@@ -3911,6 +3911,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetBindingMissingToast => '这张卡片绑定的课表已失效，已按普通方式打开';
 
   @override
+  String get homeWidgetExactAlarmBannerTitle => '精确闹钟权限未授予';
+
+  @override
+  String get homeWidgetExactAlarmBannerText => '未授予「闹钟和提醒」权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新';
+
+  @override
+  String get homeWidgetExactAlarmGrantAction => '去授权';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed => '打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限';
+
+
+
+
+  @override
   String get layoutSettingsTitle => '布局与节次';
 
   @override
@@ -8492,6 +8509,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
+
+  @override
+  String get logHomeWidgetExactAlarmCheckFailed => '检查精确闹钟权限失败';
+
+  @override
+  String get logHomeWidgetExactAlarmRequestFailed => '请求精确闹钟授权失败';
 
   @override
   String get logMiuiLiveInitializeFailed => '初始化 MIUI 超级岛通道失败';
@@ -14256,6 +14279,23 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetBindingMissingToast => '這張卡片綁定的課表已失效，已按普通方式打開';
 
   @override
+  String get homeWidgetExactAlarmBannerTitle => '精確鬧鐘權限未授予';
+
+  @override
+  String get homeWidgetExactAlarmBannerText => '未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新';
+
+  @override
+  String get homeWidgetExactAlarmGrantAction => '去授權';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
+
+
+
+
+  @override
   String get layoutSettingsTitle => '布局與節次';
 
   @override
@@ -18880,6 +18920,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get logHomeWidgetScheduleFailed => '調度桌面小組件刷新失敗';
+
+  @override
+  String get logHomeWidgetExactAlarmCheckFailed => '檢查精確鬧鐘權限失敗';
+
+  @override
+  String get logHomeWidgetExactAlarmRequestFailed => '請求精確鬧鐘授權失敗';
 
   @override
   String get logMiuiLiveInitializeFailed => '初始化 MIUI 超級島通道失敗';
@@ -24644,6 +24690,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetBindingMissingToast => '這張卡片綁定的課表已失效，已按普通方式開啟';
 
   @override
+  String get homeWidgetExactAlarmBannerTitle => '精確鬧鐘權限未授予';
+
+  @override
+  String get homeWidgetExactAlarmBannerText => '未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新';
+
+  @override
+  String get homeWidgetExactAlarmGrantAction => '去授權';
+
+  @override
+  String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+  @override
+  String get homeWidgetExactAlarmFallbackHint => '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
+
+
+
+
+  @override
   String get layoutSettingsTitle => '布局與節次';
 
   @override
@@ -29268,6 +29331,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
+
+  @override
+  String get logHomeWidgetExactAlarmCheckFailed => '檢查精確鬧鐘權限失敗';
+
+  @override
+  String get logHomeWidgetExactAlarmRequestFailed => '請求精確鬧鐘授權失敗';
 
   @override
   String get logMiuiLiveInitializeFailed => '初始化 MIUI 超级岛通道失败';

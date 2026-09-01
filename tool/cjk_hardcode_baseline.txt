@@ -45,7 +45,7 @@ lib/services/bundled_assets.dart:2
 lib/services/debug_deep_link_navigator.dart:12
 lib/services/holiday_service.dart:8
 lib/services/home_widget_binding_service.dart:6
-lib/services/home_widget_service.dart:5
+lib/services/home_widget_service.dart:7
 lib/services/ics_import_service.dart:1
 lib/services/lan_edit_api_handlers.dart:9
 lib/services/lan_edit_provider_host.dart:2
