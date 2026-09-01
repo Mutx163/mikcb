@@ -28,6 +28,17 @@ import '../helpers_test_app.dart';
 /// Scope bits: timetable(1) | weekdayBar(2) | header(4) | statusBar(8).
 const _scopeAll = 1 | 2 | 4 | 8;
 
+/// 开学锚固定取「下周一」：开学前对齐第 1 周（2026-08-31 周次口径），无论
+/// 测试在哪天跑，周次芯片恒为「1周」、周一列永远不会命中「今天」的
+/// accent 高亮，壁纸墨水断言与运行日期彻底解耦（旧硬编码 2026-07-27 在
+/// 日历周对齐合入后，跨过第 1 周的任何一天都会让「1周」消失）。
+DateTime _nextWeekMonday() {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+  return currentMonday.add(const Duration(days: 7));
+}
+
 void _seedInitializedPrefs() {
   final now = DateTime(2026, 4, 12);
   final settings = TimetableSettings.defaults();
@@ -117,7 +128,9 @@ Future<void> _pumpDarkHome(
         homePageBackgroundScope: _scopeAll,
         homePageHeaderBlurEnabled: headerBlur,
         homePageWeekdayBarBlurEnabled: weekdayBlur,
-        semesterStartDate: DateTime(2026, 7, 27),
+        // 开学锚取「下周一」：开学前对齐第 1 周，'1周' 芯片在任何运行
+        // 日期都存在，周一列永不命中今天的 accent（详见 ink 测试同款注释）。
+        semesterStartDate: _nextWeekMonday(),
       ),
     );
   });

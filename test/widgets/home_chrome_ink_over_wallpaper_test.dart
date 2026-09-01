@@ -18,6 +18,20 @@ import '../helpers_test_app.dart';
 /// Scope bits: timetable(1) | weekdayBar(2) | header(4) | statusBar(8).
 const _scopeAll = 1 | 2 | 4 | 8;
 
+/// 开学锚固定取「下周一」：开学前对齐第 1 周（2026-08-31 周次口径），无论
+/// 测试在哪天跑，周次芯片恒为「1周」、周一列永远不会命中「今天」的
+/// accent 高亮，壁纸墨水断言与运行日期彻底解耦（旧硬编码 2026-07-27 在
+/// 日历周对齐合入后，跨过第 1 周的任何一天都会让「1周」消失）。
+DateTime _nextWeekMonday() {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+  return currentMonday.add(const Duration(days: 7));
+}
+
+String _mmdd(DateTime d) =>
+    '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+
 /// 课表 + 状态栏 only — 顶栏/信息栏 display toggles turned off.
 const _scopeNoChromeBars = 1 | 8;
 
@@ -110,7 +124,7 @@ Future<void> _pumpHome(
         homePageHeaderBlurEnabled: headerBlur,
         homePageWeekdayBarBlurEnabled: weekdayBlur,
         weekdayBarFontColorLight: weekdayHex,
-        semesterStartDate: DateTime(2026, 7, 27),
+        semesterStartDate: _nextWeekMonday(),
       ),
     );
   });
@@ -159,7 +173,7 @@ void main() {
     expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
     expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
     expect(
-      _textColor(tester, '07/27'),
+      _textColor(tester, _mmdd(_nextWeekMonday())),
       homePageChromeForegroundOnDark.withValues(alpha: 0.72),
     );
   });
@@ -193,7 +207,7 @@ void main() {
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
       expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
       expect(
-        _textColor(tester, '07/27'),
+        _textColor(tester, _mmdd(_nextWeekMonday())),
         homePageChromeForegroundOnDark.withValues(alpha: 0.72),
       );
     },
@@ -234,7 +248,7 @@ void main() {
     expect(_textColor(tester, '周一'), homePageChromeForegroundOnLight);
     expect(_textColor(tester, '1周'), homePageChromeForegroundOnLight);
     expect(
-      _textColor(tester, '07/27'),
+      _textColor(tester, _mmdd(_nextWeekMonday())),
       homePageChromeForegroundOnLight.withValues(alpha: 0.70),
     );
   });
@@ -309,7 +323,7 @@ void main() {
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
       expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
       expect(
-        _textColor(tester, '07/27'),
+        _textColor(tester, _mmdd(_nextWeekMonday())),
         homePageChromeForegroundOnDark.withValues(alpha: 0.72),
       );
 
