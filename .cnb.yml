@@ -89,22 +89,30 @@
   tag_push:
     - name: release-apk
       <<: *flutter-env
+      imports:
+        # 签名密钥存放在独立密钥仓库（CNB Web 界面维护，禁止 clone/push），
+        # 仅为 tag_push 发布流水线注入；push/PR 门禁不接触任何密钥
+        - https://cnb.cool/Mutx163/qingyukb-keys/-/blob/main/android-release.yml
       stages:
         - name: pub-get
           script: flutter pub get
         - name: build-release-apk
           script: |
             set -ex
-            # ── 签名密钥检查：缺签名四件套时给出明确指引 ──
-            # 在 CNB 密钥仓库配置 ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD /
-            # ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD 后，在下方 imports 引用即可全自动签名。
-            if [ -z "${ANDROID_KEYSTORE_PATH:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] \
+            # ── 签名密钥：由密钥仓库 android-release.yml 经 imports 注入 ──
+            # 四件套与 GitHub Actions secrets 同名同源：
+            #   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD
+            if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] \
                || [ -z "${ANDROID_KEY_ALIAS:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ]; then
               echo "ERROR: 缺少 Android release 签名密钥" >&2
-              echo "请配置 CNB 密钥仓库并导入以下变量:" >&2
-              echo "  ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD" >&2
+              echo "请在 CNB 密钥仓库 Mutx163/qingyukb-keys 维护 android-release.yml（经 imports 注入）:" >&2
+              echo "  ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD" >&2
               exit 1
             fi
+            # 解码 keystore（对齐 GitHub Actions android-build.yml 的 Prepare signing files）
+            mkdir -p android/app
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+            export ANDROID_KEYSTORE_PATH="app/upload-keystore.jks"
 
             VERSION_NAME="${CNB_BRANCH#v}"
             flutter build apk --release --flavor prod --target-platform android-arm64
