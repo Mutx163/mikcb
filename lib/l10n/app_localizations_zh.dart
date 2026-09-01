@@ -2634,7 +2634,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keepAliveConfirmTitle => '开启后台保活服务';
 
   @override
-  String get keepAliveConfirmBody => '该服务仅用于在后台刷新桌面小组件与重排课程提醒，不会读取屏幕内容，也不会代替你执行任何点击操作。开启需要在系统设置中授予「无障碍」权限，可随时关闭。';
+  String get keepAliveConfirmBody =>
+      '该服务仅用于在后台刷新桌面小组件与重排课程提醒，不会读取屏幕内容，也不会代替你执行任何点击操作。开启需要在系统设置中授予「无障碍」权限，可随时关闭。';
 
   @override
   String get keepAliveConfirmGoAction => '去开启';
@@ -12979,7 +12980,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keepAliveConfirmTitle => '開啟後台保活服務';
 
   @override
-  String get keepAliveConfirmBody => '該服務僅用於在後台刷新桌面小組件與重排課程提醒，不會讀取屏幕內容，也不會代替你執行任何點擊操作。開啟需要在系統設定中授予「無障礙」權限，可隨時關閉。';
+  String get keepAliveConfirmBody =>
+      '該服務僅用於在後台刷新桌面小組件與重排課程提醒，不會讀取屏幕內容，也不會代替你執行任何點擊操作。開啟需要在系統設定中授予「無障礙」權限，可隨時關閉。';
 
   @override
   String get keepAliveConfirmGoAction => '去開啟';
@@ -23366,7 +23368,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keepAliveConfirmTitle => '開啟後台保活服務';
 
   @override
-  String get keepAliveConfirmBody => '該服務僅用於在後台重新整理桌面小工具與重排課程提醒，不會讀取螢幕內容，也不會代替你執行任何點選操作。開啟需要在系統設定中授予「無障礙」權限，可隨時關閉。';
+  String get keepAliveConfirmBody =>
+      '該服務僅用於在後台重新整理桌面小工具與重排課程提醒，不會讀取螢幕內容，也不會代替你執行任何點選操作。開啟需要在系統設定中授予「無障礙」權限，可隨時關閉。';
 
   @override
   String get keepAliveConfirmGoAction => '去開啟';

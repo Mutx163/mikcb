@@ -259,7 +259,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     blurEnabled: _draft.frostedBlurEnabled,
                     glassMode: _draft.frostedGlassMode,
                     liquidGlassTuning: _draft.liquidGlassTuning,
-                    onOpenDemoSheet: () => showFrostedSheetSettingsDemo(context),
+                    onOpenDemoSheet: () =>
+                        showFrostedSheetSettingsDemo(context),
                   ),
                 ),
                 if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass)
@@ -299,7 +300,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     value: _draft.frostedSheetTintAlpha,
                     max: 0.75,
                     divisions: 75,
-                    valueLabel: '${(_draft.frostedSheetTintAlpha * 100).round()}%',
+                    valueLabel:
+                        '${(_draft.frostedSheetTintAlpha * 100).round()}%',
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(frostedSheetTintAlpha: value),

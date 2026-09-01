@@ -95,8 +95,7 @@ abstract final class HomePageBackgroundScope {
   static const int statusBar = 8;
 
   /// 默认铺满状态栏、顶栏、信息栏与课表区域（无壁纸时无感知）。
-  static const int defaultValue =
-      timetable | weekdayBar | header | statusBar;
+  static const int defaultValue = timetable | weekdayBar | header | statusBar;
 
   static bool includes(int scope, int region) => (scope & region) != 0;
 
@@ -382,7 +381,6 @@ extension HomeNavigationFormX on HomeNavigationForm {
     );
   }
 }
-
 
 extension BackToCurrentWeekButtonStyleX on BackToCurrentWeekButtonStyle {
   String get value => switch (this) {
@@ -1150,6 +1148,7 @@ class TimetableSettings {
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
 
+
   /// 液态玻璃作用范围默认值：下拉选择小弹窗开；对话式全屏选择面板关
   /// （大面积折射长列表默认保持磨砂）；其余家族维持既有行为（开）。
   static const bool defaultLiquidGlassPopupEnabled = true;
@@ -1367,7 +1366,7 @@ class TimetableSettings {
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
     liquidGlassHomeChromeEnabled: liquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
-  liquidGlassPickerButtonsEnabled: liquidGlassPickerButtonsEnabled,
+    liquidGlassPickerButtonsEnabled: liquidGlassPickerButtonsEnabled,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1375,6 +1374,7 @@ class TimetableSettings {
   final double frostedSheetTintAlpha;
   final double frostedSheetBarrierAlpha;
   final bool frostedBlurEnabled;
+
   final FrostedGlassMode frostedGlassMode;
 
   /// 液态玻璃作用范围开关（见 [FrostedAppearance] 同名字段）。
@@ -1439,12 +1439,12 @@ class TimetableSettings {
     this.homeNavigationForm = HomeNavigationForm.classic,
     this.homeMenuStyle = HomeMenuStyle.list,
     this.homeGridMenuActions = const <String>[],
-  this.glassDockActions = HomeDockMenu.defaultActions,
+    this.glassDockActions = HomeDockMenu.defaultActions,
     this.glassDockShowDayTab = true,
     this.glassDockShowSettingsTab = true,
     this.glassDockShowWeekTab = true,
     this.glassDockButtonEntryId = 'addCourse',
-  this.glassDockButtonIconName,
+    this.glassDockButtonIconName,
     this.glassDockShowAddButton = false,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.floating,
@@ -1557,12 +1557,9 @@ class TimetableSettings {
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
     this.frostedGlassMode = FrostedGlassMode.frosted,
     this.liquidGlassPopupEnabled = defaultLiquidGlassPopupEnabled,
-    this.liquidGlassSelectSheetEnabled =
-        defaultLiquidGlassSelectSheetEnabled,
-    this.liquidGlassSheetDialogEnabled =
-        defaultLiquidGlassSheetDialogEnabled,
-    this.liquidGlassHomeChromeEnabled =
-        defaultLiquidGlassHomeChromeEnabled,
+    this.liquidGlassSelectSheetEnabled = defaultLiquidGlassSelectSheetEnabled,
+    this.liquidGlassSheetDialogEnabled = defaultLiquidGlassSheetDialogEnabled,
+    this.liquidGlassHomeChromeEnabled = defaultLiquidGlassHomeChromeEnabled,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
     this.liquidGlassPickerButtonsEnabled =
         defaultLiquidGlassPickerButtonsEnabled,
@@ -1753,9 +1750,7 @@ class TimetableSettings {
       'holidayOverrideEnabled': holidayOverrideEnabled,
       'classAlarmLeadMinutes': classAlarmLeadMinutes,
       'classAlarmSkipUi': classAlarmSkipUi,
-      'classReminders': [
-        for (final entry in classReminders) entry.toJson(),
-      ],
+      'classReminders': [for (final entry in classReminders) entry.toJson()],
       'courseCardTitleColorLight': courseCardTitleColorLight,
       'courseCardTitleColorDark': courseCardTitleColorDark,
       'courseCardDetailColorLight': courseCardDetailColorLight,
@@ -1798,8 +1793,7 @@ class TimetableSettings {
     // 联动开时详情字色回填为标题字色，规则与 copyWith 的联动回填一致：
     // 旧版本数据 / 主题备份可能残留「联动开、详情色不同」的脏状态（白标题
     // +黑简介混色卡的根源）；独立模式（联动关）保留用户显式选择。
-    final linkedCardTextColors =
-        json['linkCourseCardColors'] as bool? ?? true;
+    final linkedCardTextColors = json['linkCourseCardColors'] as bool? ?? true;
     final parsedTitleColorLight =
         json['courseCardTitleColorLight'] as String? ??
         defaultCourseCardTitleColor;
@@ -1828,9 +1822,7 @@ class TimetableSettings {
       for (final item in rawSections) {
         try {
           if (item is! Map) continue;
-          parsed.add(
-            SectionTime.fromJson(Map<String, dynamic>.from(item)),
-          );
+          parsed.add(SectionTime.fromJson(Map<String, dynamic>.from(item)));
         } catch (_) {
           continue;
         }
@@ -1925,9 +1917,7 @@ class TimetableSettings {
       homeNavigationForm: HomeNavigationFormX.fromValue(
         json['homeNavigationForm'] as String?,
       ),
-      homeMenuStyle: HomeMenuStyleX.fromValue(
-        json['homeMenuStyle'] as String?,
-      ),
+      homeMenuStyle: HomeMenuStyleX.fromValue(json['homeMenuStyle'] as String?),
       glassDockActions: HomeDockMenu.normalize(
         (json['glassDockActions'] as List<Object?>?) ??
             [
@@ -2123,8 +2113,7 @@ class TimetableSettings {
         json['liveBeforeClassQuickAction'] as String?,
       ),
       liveBeforeClassQuickActionAutoMinutes:
-          (json['liveBeforeClassQuickActionAutoMinutes'] as num?)?.toInt() ??
-          0,
+          (json['liveBeforeClassQuickActionAutoMinutes'] as num?)?.toInt() ?? 0,
       themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
       foruiTheme: ForuiThemeX.fromValue(json['foruiTheme'] as String?),
       timetablePageBackgroundColor:
@@ -2160,8 +2149,7 @@ class TimetableSettings {
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
-      appUpdatePromptEnabled:
-          json['appUpdatePromptEnabled'] as bool? ?? true,
+      appUpdatePromptEnabled: json['appUpdatePromptEnabled'] as bool? ?? true,
       holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
       classAlarmLeadMinutes:
           (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
@@ -2321,12 +2309,12 @@ class TimetableSettings {
     HomeNavigationForm? homeNavigationForm,
     HomeMenuStyle? homeMenuStyle,
     List<String>? homeGridMenuActions,
-  List<String>? glassDockActions,
+    List<String>? glassDockActions,
     bool? glassDockShowDayTab,
     bool? glassDockShowSettingsTab,
     bool? glassDockShowWeekTab,
     String? glassDockButtonEntryId,
-  String? glassDockButtonIconName,
+    String? glassDockButtonIconName,
     bool clearGlassDockButtonIconName = false,
     bool? glassDockShowAddButton,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
@@ -2535,14 +2523,12 @@ class TimetableSettings {
       homeNavigationForm: homeNavigationForm ?? this.homeNavigationForm,
       homeMenuStyle: homeMenuStyle ?? this.homeMenuStyle,
       // 写入也过一遍归一：钉住项不因调用方疏漏而丢失（解析路径同）。
-      homeGridMenuActions:
-          homeGridMenuActions == null
-              ? this.homeGridMenuActions
-              : HomeGridMenu.normalize(homeGridMenuActions),
-      glassDockActions:
-          glassDockActions == null
-              ? this.glassDockActions
-              : HomeDockMenu.normalize(glassDockActions),
+      homeGridMenuActions: homeGridMenuActions == null
+          ? this.homeGridMenuActions
+          : HomeGridMenu.normalize(homeGridMenuActions),
+      glassDockActions: glassDockActions == null
+          ? this.glassDockActions
+          : HomeDockMenu.normalize(glassDockActions),
       glassDockShowDayTab: glassDockShowDayTab ?? this.glassDockShowDayTab,
       glassDockShowSettingsTab:
           glassDockShowSettingsTab ?? this.glassDockShowSettingsTab,

@@ -57,10 +57,8 @@ class FrostedAppearance {
     this.glassMode = FrostedGlassMode.frosted,
     this.liquidGlassTuning,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
-    this.liquidGlassSelectSheetEnabled =
-        kDefaultLiquidGlassSelectSheetEnabled,
-    this.liquidGlassSheetDialogEnabled =
-        kDefaultLiquidGlassSheetDialogEnabled,
+    this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
+    this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
     this.liquidGlassHomeChromeEnabled = kDefaultLiquidGlassHomeChromeEnabled,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
     this.liquidGlassPickerButtonsEnabled =
@@ -84,6 +82,7 @@ class FrostedAppearance {
 
   /// Global backdrop blur master switch.
   final bool blurEnabled;
+
 
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;
@@ -120,11 +119,14 @@ class FrostedAppearance {
           glassMode == other.glassMode &&
           liquidGlassTuning == other.liquidGlassTuning &&
           liquidGlassPopupEnabled == other.liquidGlassPopupEnabled &&
-          liquidGlassSelectSheetEnabled == other.liquidGlassSelectSheetEnabled &&
-          liquidGlassSheetDialogEnabled == other.liquidGlassSheetDialogEnabled &&
+          liquidGlassSelectSheetEnabled ==
+              other.liquidGlassSelectSheetEnabled &&
+          liquidGlassSheetDialogEnabled ==
+              other.liquidGlassSheetDialogEnabled &&
           liquidGlassHomeChromeEnabled == other.liquidGlassHomeChromeEnabled &&
           liquidGlassDockEnabled == other.liquidGlassDockEnabled &&
-          liquidGlassPickerButtonsEnabled == other.liquidGlassPickerButtonsEnabled;
+          liquidGlassPickerButtonsEnabled ==
+              other.liquidGlassPickerButtonsEnabled;
 
   @override
   int get hashCode => Object.hash(
