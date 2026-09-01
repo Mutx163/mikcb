@@ -3988,22 +3988,22 @@ class AppLocalizationsJa extends AppLocalizations {
       'このウィジェットに割り当てた時間割は無効になりました。通常どおり開きました。';
 
   @override
-  String get homeWidgetExactAlarmBannerTitle =>
-      '正確なアラーム権限が未許可';
+  String get homeWidgetExactAlarmBannerTitle => '正確なアラーム権限が未許可';
 
   @override
   String get homeWidgetExactAlarmBannerText =>
       '「アラームとリマインダー」権限が未許可の場合、授業境界の更新は不正確なアラームにフォールバックし、ウィジェットが遅れて更新されることがあります。正確な更新のため許可をおすすめします';
 
   @override
-  String get homeWidgetExactAlarmGrantAction =>
-      '許可する';
+  String get homeWidgetExactAlarmGrantAction => '許可する';
 
   @override
-  String get homeWidgetExactAlarmOpenFailed => '権限ページを開けませんでした。システム設定で「アラームとリマインダー」を手動で有効にしてください';
-  @override
-  String get homeWidgetExactAlarmFallbackHint => 'アプリ情報ページを開きました。そこで「アラームとリマインダー」を有効にしてください';
+  String get homeWidgetExactAlarmOpenFailed =>
+      '権限ページを開けませんでした。システム設定で「アラームとリマインダー」を手動で有効にしてください';
 
+  @override
+  String get homeWidgetExactAlarmFallbackHint =>
+      'アプリ情報ページを開きました。そこで「アラームとリマインダー」を有効にしてください';
 
   @override
   String get layoutSettingsTitle => 'レイアウトと時限';
@@ -4570,7 +4570,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importFileReadFailed => '選択したファイルを読み込めません';
 
   @override
-  String get importCleartextBlockedHint => 'このサイトは HTTPS に対応しておらず、平文通信の許可リストにも含まれていないため、ここでは開けません';
+  String get importCleartextBlockedHint =>
+      'このサイトは HTTPS に対応しておらず、平文通信の許可リストにも含まれていないため、ここでは開けません';
 
   @override
   String get importReplaceExistingTitle => '授業インポート';
@@ -8706,12 +8707,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Failed to schedule home widget refresh';
 
   @override
-  String get logHomeWidgetExactAlarmCheckFailed =>
-      '正確なアラーム権限の確認に失敗しました';
+  String get logHomeWidgetExactAlarmCheckFailed => '正確なアラーム権限の確認に失敗しました';
 
   @override
-  String get logHomeWidgetExactAlarmRequestFailed =>
-      '正確なアラーム権限のリクエストに失敗しました';
+  String get logHomeWidgetExactAlarmRequestFailed => '正確なアラーム権限のリクエストに失敗しました';
 
   @override
   String get logMiuiLiveInitializeFailed =>

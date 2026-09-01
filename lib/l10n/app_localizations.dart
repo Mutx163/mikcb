@@ -7226,6 +7226,7 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'这张卡片绑定的课表已失效，已按普通方式打开'**
   String get homeWidgetBindingMissingToast;
+
   /// No description provided for @homeWidgetExactAlarmBannerTitle.
   ///
   /// In zh, this message translates to:
@@ -7255,7 +7256,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限'**
   String get homeWidgetExactAlarmFallbackHint;
-
 
   /// No description provided for @layoutSettingsTitle.
   ///
@@ -15332,6 +15332,7 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'调度桌面小组件刷新失败'**
   String get logHomeWidgetScheduleFailed;
+
   /// No description provided for @logHomeWidgetExactAlarmCheckFailed.
   ///
   /// In zh, this message translates to:
@@ -15343,7 +15344,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'请求精确闹钟授权失败'**
   String get logHomeWidgetExactAlarmRequestFailed;
-
 
   /// No description provided for @logMiuiLiveInitializeFailed.
   ///

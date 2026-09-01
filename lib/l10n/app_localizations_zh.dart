@@ -3914,18 +3914,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetExactAlarmBannerTitle => '精确闹钟权限未授予';
 
   @override
-  String get homeWidgetExactAlarmBannerText => '未授予「闹钟和提醒」权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新';
+  String get homeWidgetExactAlarmBannerText =>
+      '未授予「闹钟和提醒」权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授权';
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限';
+
   @override
-  String get homeWidgetExactAlarmFallbackHint => '已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限';
-
-
-
+  String get homeWidgetExactAlarmFallbackHint =>
+      '已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限';
 
   @override
   String get layoutSettingsTitle => '布局与节次';
@@ -14289,18 +14289,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetExactAlarmBannerTitle => '精確鬧鐘權限未授予';
 
   @override
-  String get homeWidgetExactAlarmBannerText => '未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新';
+  String get homeWidgetExactAlarmBannerText =>
+      '未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授權';
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+
   @override
-  String get homeWidgetExactAlarmFallbackHint => '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
-
-
-
+  String get homeWidgetExactAlarmFallbackHint =>
+      '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
 
   @override
   String get layoutSettingsTitle => '布局與節次';
@@ -24707,18 +24707,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetExactAlarmBannerTitle => '精確鬧鐘權限未授予';
 
   @override
-  String get homeWidgetExactAlarmBannerText => '未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新';
+  String get homeWidgetExactAlarmBannerText =>
+      '未授予「鬧鐘和提醒」權限時，課程邊界只能非精確刷新，桌面卡片可能延遲更新，建議授權以保證按課程時間精確刷新';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授權';
 
   @override
   String get homeWidgetExactAlarmOpenFailed => '無法開啟授權頁，請到系統設定中手動開啟「鬧鐘和提醒」權限';
+
   @override
-  String get homeWidgetExactAlarmFallbackHint => '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
-
-
-
+  String get homeWidgetExactAlarmFallbackHint =>
+      '已在系統設定中開啟應用程式資訊，請在其中開啟「鬧鐘和提醒」權限';
 
   @override
   String get layoutSettingsTitle => '布局與節次';

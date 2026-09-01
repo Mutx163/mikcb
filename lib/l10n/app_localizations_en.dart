@@ -4170,19 +4170,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetExactAlarmBannerText =>
-      'Without the "Alarms & reminders" permission, refreshes at course boundaries fall back to inexact alarms and widgets may update late. Grant it for precise on-schedule refreshes';
+      'Without the \"Alarms & reminders\" permission, refreshes at course boundaries fall back to inexact alarms and widgets may update late. Grant it for precise on-schedule refreshes';
 
   @override
-  String get homeWidgetExactAlarmGrantAction =>
-      'Grant';
+  String get homeWidgetExactAlarmGrantAction => 'Grant';
 
   @override
   String get homeWidgetExactAlarmOpenFailed =>
-      'Could not open the permission page. Enable "Alarms & reminders" manually in system settings';
+      'Could not open the permission page. Enable \"Alarms & reminders\" manually in system settings';
+
   @override
   String get homeWidgetExactAlarmFallbackHint =>
-      'Opened the app info page. Enable "Alarms & reminders" there';
-
+      'Opened the app info page. Enable \"Alarms & reminders\" there';
 
   @override
   String get layoutSettingsTitle => 'Layout & sections';
@@ -4774,7 +4773,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFileReadFailed => 'Unable to read the selected file';
 
   @override
-  String get importCleartextBlockedHint => 'This site does not support HTTPS and is not on the cleartext allowlist, so it cannot be opened here';
+  String get importCleartextBlockedHint =>
+      'This site does not support HTTPS and is not on the cleartext allowlist, so it cannot be opened here';
 
   @override
   String get importReplaceExistingTitle => 'Import courses';
