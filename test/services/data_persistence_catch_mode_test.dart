@@ -18,7 +18,8 @@ void main() {
 
       await service.saveCustomHolidays([
         HolidayEntry(
-          date: DateTime(2026, 10, 1),
+          // 十一假期（10 月 1 日）；day=1 是 DateTime 默认值故省略。
+          date: DateTime(2026, 10),
           name: '自定义假期',
           type: HolidayType.vacation,
           groupId: 'g-1',
@@ -26,28 +27,36 @@ void main() {
       ]);
 
       final loaded = await service.loadCustomHolidays();
+      expect(loaded, isNotNull);
       expect(loaded, hasLength(1));
-      expect(loaded.single.name, '自定义假期');
+      expect(loaded!.single.name, '自定义假期');
     });
 
     test('底层写失败时异常向上抛，调用方可感知保存未成功', () async {
       // SharedPreferences mock 无法直接注入写失败；通过自定义HolidayEntry
       // 子类的 toJson 返回不可 JSON 序列化对象，让 jsonEncode 在序列化段
-      // 必抛 JsonUnsupportedObjectError，验证异常经 async 封装为 failed
-      // Future 后仍向上传播（此前 returnsNormally 断言对 async 函数无效）。
+      // 必抛 JsonUnsupportedObjectError。写失败经 PR#19 的类型化包装
+      // HolidayCustomSaveException 向上传播（cause 保留原始错误供归因），
+      // 断言锚定「不吞 + 归因链完整」两个语义。
       SharedPreferences.setMockInitialValues({});
       final service = HolidayService();
 
       await expectLater(
         service.saveCustomHolidays([
           _UnserializableEntry(
-            date: DateTime(2026, 10, 1),
+            date: DateTime(2026, 10),
             name: 'x',
             type: HolidayType.vacation,
             groupId: 'g',
           ),
         ]),
-        throwsA(isA<JsonUnsupportedObjectError>()),
+        throwsA(
+          isA<HolidayCustomSaveException>().having(
+            (e) => e.cause,
+            'cause',
+            isA<JsonUnsupportedObjectError>(),
+          ),
+        ),
       );
     });
   });
@@ -65,8 +74,8 @@ void main() {
             schoolResourceFolder: '',
             adapterAssetJsPath: '',
             steps: const [],
-            createdAt: DateTime(2026, 1, 1),
-            updatedAt: DateTime(2026, 1, 1),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
           ).toJson(),
         ),
       });
@@ -102,7 +111,8 @@ void main() {
       expect(index, isNotNull);
       final decoded = jsonDecode(index!) as List<dynamic>;
       expect(decoded, hasLength(1));
-      expect(decoded.first['schoolId'], 'school-a');
+      final firstEntry = decoded.first as Map<String, dynamic>;
+      expect(firstEntry['schoolId'], 'school-a');
     });
 
     test('空导入列表仍清空本地记录并落空索引', () async {
@@ -136,7 +146,8 @@ class _UnserializableEntry extends HolidayEntry {
 
   @override
   Map<String, dynamic> toJson() => {
-    'date': DateTime(2026, 10, 1), // DateTime 不可被 jsonEncode 直接序列化
+    // DateTime 实例本身不可被 jsonEncode 直接序列化（day=1 默认值省略）。
+    'date': DateTime(2026, 10),
     'name': 'x',
     'type': HolidayType.vacation.value,
     'groupId': 'g',

@@ -35,7 +35,11 @@ void main() {
     // 薄转发（-70）净 -33，顺手收紧基线到当前真实行数。
     // 4407→4414: issue#14 性能体检——_init 作业标记落盘改后台 persist
     // （经 mutation gate 串行），后台任务封装 +9 行，按约定同步基线。
-    const baselineLines = 4419;
+    // 4419→4433: PR#45 error-handling 的 setCurrentWeek mutation gate /
+    // 一致性校验 / 考试提醒单飞收敛属正当修复增长但未同步基线
+    // （PR#39 的 4419 基于尚未含 #45 的旧 main），合并后实测 4433，
+    // 按测试约定同步真实值。
+    const baselineLines = 4433;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

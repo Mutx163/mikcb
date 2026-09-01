@@ -12,9 +12,7 @@ void main() {
     WebdavSyncCoordinator.resetInstanceForTesting();
   });
 
-  tearDown(() {
-    WebdavSyncCoordinator.resetInstanceForTesting();
-  });
+  tearDown(WebdavSyncCoordinator.resetInstanceForTesting);
 
   group('WebdavSyncCoordinator 并发同步门控', () {
     test('provider 未绑定时 syncNow 返回 provider_not_ready 且不抛', () async {
