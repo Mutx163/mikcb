@@ -251,10 +251,31 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       d = d.add(const Duration(days: 1));
     }
 
-    if (existing != null) {
-      await provider.updateCustomHoliday(groupId, entries);
-    } else {
-      await provider.addCustomHolidays(entries);
+    try {
+      if (existing != null) {
+        await provider.updateCustomHoliday(groupId, entries);
+      } else {
+        await provider.addCustomHolidays(entries);
+      }
+    } catch (e) {
+      // 写入失败必须让用户感知：否则「看似保存成功、重启即丢」。
+      // 放宽到 Object：任何保存路径异常都不得伪装成保存成功；
+      // 技术详情落日志，用户只看本地化通用文案。
+      unawaited(
+        AppLogService.instance.warn(
+          'holiday_custom_save_failed',
+          'custom holiday save failed',
+          error: e,
+        ),
+      );
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
     }
     await _loadCustomHolidays();
   }
@@ -313,7 +334,26 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     final confirmed = await _showCustomHolidayDeleteConfirmSheet();
     if (confirmed && mounted) {
       final provider = context.read<TimetableProvider>();
-      await provider.removeCustomHoliday(groupId);
+      try {
+        await provider.removeCustomHoliday(groupId);
+      } catch (e) {
+        // 删除失败同样不得伪装成成功；放宽到 Object 理由同上。
+        unawaited(
+          AppLogService.instance.warn(
+            'holiday_custom_delete_failed',
+            'custom holiday delete failed',
+            error: e,
+          ),
+        );
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        showAppToast(
+          context,
+          message: l10n.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       await _loadCustomHolidays();
     }
   }

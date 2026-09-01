@@ -39,11 +39,11 @@ lib/screens/miuix_showcase_screen.dart:56
 lib/screens/settings/settings_holiday.dart:1
 lib/screens/timetable_screen.dart:3
 lib/services/ai_course_import_service.dart:38
-lib/services/app_sync_snapshot_service.dart:1
+lib/services/app_sync_snapshot_service.dart:2
 lib/services/app_update_service.dart:36
 lib/services/bundled_assets.dart:2
 lib/services/debug_deep_link_navigator.dart:12
-lib/services/holiday_service.dart:4
+lib/services/holiday_service.dart:8
 lib/services/home_widget_binding_service.dart:6
 lib/services/home_widget_service.dart:5
 lib/services/ics_import_service.dart:1
@@ -58,6 +58,7 @@ lib/services/stats_widget_service.dart:8
 lib/services/storage_service.dart:2
 lib/services/support_creator_service.dart:7
 lib/services/warehouse_repository_service.dart:4
+lib/services/webdav_sync_service.dart:1
 lib/utils/course_color_palette.dart:19
 lib/utils/locale_utils.dart:4
 lib/widgets/app_startup_splash.dart:1
