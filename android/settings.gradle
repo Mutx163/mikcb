@@ -53,3 +53,20 @@ if (System.getenv("CNB_BUILD_ID") != null || System.getenv("CNB_BRANCH") != null
 }
 
 include ":app"
+
+// CNB 专用：为所有子项目 buildscript.repositories 注入国内镜像。
+// Flutter 插件（device_info_plus 等）的 build.gradle 中 buildscript.repositories
+// 仅声明 google()+mavenCentral()，不受 dependencyResolutionManagement 管理，
+// 导致 kotlin-gradle-plugin 等 classpath 依赖直连 Maven Central 被限流（HTTP 429）。
+// beforeProject 钩子在子项目评估前执行，向 buildscript 仓库列表前端插入国内镜像。
+if (System.getenv("CNB_BUILD_ID") != null || System.getenv("CNB_BRANCH") != null) {
+    gradle.beforeProject { project ->
+        project.buildscript {
+            repositories {
+                maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+                maven { url 'https://maven.aliyun.com/repository/public' }
+                maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            }
+        }
+    }
+}
