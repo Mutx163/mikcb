@@ -92,6 +92,7 @@
   - name: gradle-jvm-tests
     script: |
       cd android
+      echo "Using Gradle distribution: $(grep '^distributionUrl' gradle/wrapper/gradle-wrapper.properties)"
       ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
 
 # ═════════════════════════════════════════════════════════════
