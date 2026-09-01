@@ -144,6 +144,11 @@ void main() {
       );
       await provider.initialize();
 
+      // 排空 mutation gate：initialize 会 unawaited 后台加载教师/地点记录
+      // （占用同一把门），不先排空的话下面的 setCurrentWeek 会排队等待，
+      // 「同步改内存状态并 notify」的锚定语义就不会走到空闲快路径。
+      await provider.runMutationExclusive(() async {});
+
       var notificationCount = 0;
       provider.addListener(() {
         notificationCount += 1;
