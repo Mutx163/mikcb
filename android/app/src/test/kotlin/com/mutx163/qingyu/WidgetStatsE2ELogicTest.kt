@@ -102,7 +102,14 @@ class WidgetStatsE2ELogicTest {
     fun buildSnapshotWithSemesterMidTermMondayStart() {
         // 开学 = 第 1 周周一；今天 = 第 3 周周二（day 15 当天零点起）。
         // 周一课 2 节 + 周三课 2 节：完整周 1-2 共 8 节，第 3 周周一已上 2 节 → 10。
-        val mondayStart = WidgetStatsLogic.dayStartOf(System.currentTimeMillis())
+        // 必须显式取「本周真实周一」：dayStartOf(now) 是今天零点，今天未必是
+        // 周一。若学期锚在非周一，current-week 按天循环会把「今天」当上课日
+        // 计入（如周三开学、今天恰为周三），done 会多算一天，语义与星期耦合。
+        val todayStart = WidgetStatsLogic.dayStartOf(System.currentTimeMillis())
+        val todayCal = java.util.Calendar.getInstance().apply { timeInMillis = todayStart }
+        val backToMonday = (todayCal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7
+        todayCal.add(java.util.Calendar.DAY_OF_YEAR, -backToMonday)
+        val mondayStart = WidgetStatsLogic.dayStartOf(todayCal.timeInMillis)
         val today = mondayStart + 15L * 86_400_000L
         val snap = WidgetStatsLogic.buildSnapshot(
             courses = listOf(
