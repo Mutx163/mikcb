@@ -1723,14 +1723,26 @@ class _TimetableScreenState extends State<TimetableScreen>
             !_wallpaperLuminanceFileExists)) {
       return;
     }
+    // 本方法在 build 期间被调用，而 _ensureWallpaperLuminanceForPath 首段
+    // （existsSync 结果分流）含同步 setState：直接调用会在 build 期把本组件
+    // 标脏，触发 "setState() called during build" 异常并中断壁纸亮度采样
+    // 链，导致墨色极性停在主题默认色。统一推迟到帧后首跑，天然规避
+    // build 期限制，重复进入也由 requestedKey 幂等去重。
     unawaited(
-      _ensureWallpaperLuminanceForPath(
-        path,
-        viewportSize: viewportSize,
-        alignX: settings.homePageWallpaperAlignX,
-        alignY: settings.homePageWallpaperAlignY,
-        key: key,
-      ),
+      Future<void>.sync(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          _ensureWallpaperLuminanceForPath(
+            path,
+            viewportSize: viewportSize,
+            alignX: settings.homePageWallpaperAlignX,
+            alignY: settings.homePageWallpaperAlignY,
+            key: key,
+          );
+        });
+      }),
     );
   }
 
