@@ -110,8 +110,10 @@
               exit 1
             fi
             # 解码 keystore（对齐 GitHub Actions android-build.yml 的 Prepare signing files）
+            # tr -d 先剥掉粘贴时可能混入的空白字符，避免 base64 -d 对长串中途的
+            # 空格/换行报 invalid input。
             mkdir -p android/app
-            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r\t' | base64 -d > android/app/upload-keystore.jks
             export ANDROID_KEYSTORE_PATH="app/upload-keystore.jks"
 
             VERSION_NAME="${CNB_BRANCH#v}"
