@@ -2482,6 +2482,7 @@
   "aboutParticipateWarehouseTitle": "参与教务适配",
   "aboutParticipateWarehouseSubtitle": "如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复",
   "importFileReadFailed": "无法读取所选文件",
+  "importCleartextBlockedHint": "该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开",
   "importReplaceExistingTitle": "导入课程",
   "importReplaceExistingMessage": "导入 {name} 时，是否替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。",
   "@importReplaceExistingMessage": {
@@ -4661,6 +4662,7 @@
     }
   },
   "serviceMsgUpdateCheckNetworkFailed": "网络异常，暂时无法检查更新",
+  "serviceMsgUpdateDownloadHashMismatch": "安装包校验失败，为防止安装被篡改的文件已取消本次更新",
   "serviceMsgUpdateDownloadUrlUntrusted": "更新下载地址未通过安全校验",
   "serviceMsgUpdateDownloadHttpFailed": "下载失败（HTTP {statusCode}）",
   "@serviceMsgUpdateDownloadHttpFailed": {

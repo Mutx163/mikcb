@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -933,4 +935,216 @@ void main() {
       );
     },
   );
+
+  test('download installs apk when sha256 matches expected digest', () async {
+    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    unawaited(() async {
+      await for (final request in server) {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.binary;
+        request.response.add(List<int>.filled(6, 7));
+        await request.response.close();
+      }
+    }());
+
+    String? openedPath;
+    final service = AppUpdateService(
+      temporaryDirectoryProvider: () async => tempDir,
+      openInstaller: (path) async {
+        openedPath = path;
+        return OpenResult(type: ResultType.done);
+      },
+    );
+
+    final result = await service.downloadAndInstallUpdate(
+      'http://${server.address.host}:${server.port}/app.apk',
+      (_, _) {},
+      null,
+      expectedApkSha256: sha256.convert(List<int>.filled(6, 7)).toString(),
+    );
+
+    expect(result, isNull);
+    expect(openedPath, '${tempDir.path}/mikcb_update.apk');
+
+    await server.close(force: true);
+    await tempDir.delete(recursive: true);
+  });
+
+  test('download rejects apk when sha256 mismatch and deletes the file', () async {
+    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    unawaited(() async {
+      await for (final request in server) {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.binary;
+        request.response.add(List<int>.filled(6, 7));
+        await request.response.close();
+      }
+    }());
+
+    final service = AppUpdateService(
+      temporaryDirectoryProvider: () async => tempDir,
+      openInstaller: (path) async {
+        fail('tampered apk must not reach the installer');
+      },
+    );
+
+    final wrongSha =
+        sha256.convert(<int>[1, 2, 3]).toString();
+    final result = await service.downloadAndInstallUpdate(
+      'http://${server.address.host}:${server.port}/app.apk',
+      (_, _) {},
+      null,
+      expectedApkSha256: wrongSha,
+    );
+
+    expect(result, 'update_download_hash_mismatch');
+    expect(await File('${tempDir.path}/mikcb_update.apk').exists(), isFalse);
+
+    await server.close(force: true);
+    await tempDir.delete(recursive: true);
+  });
+
+  test('download skips hash verification when no expected digest', () async {
+    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    unawaited(() async {
+      await for (final request in server) {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.binary;
+        request.response.add(List<int>.filled(6, 7));
+        await request.response.close();
+      }
+    }());
+
+    String? openedPath;
+    final service = AppUpdateService(
+      temporaryDirectoryProvider: () async => tempDir,
+      openInstaller: (path) async {
+        openedPath = path;
+        return OpenResult(type: ResultType.done);
+      },
+    );
+
+    final result = await service.downloadAndInstallUpdate(
+      'http://${server.address.host}:${server.port}/app.apk',
+      (_, _) {},
+      null,
+    );
+
+    expect(result, isNull);
+    expect(openedPath, isNotNull);
+
+    await server.close(force: true);
+    await tempDir.delete(recursive: true);
+  });
+
+  test('release info carries apk sha256 digest from github api', () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.4.0',
+              'name': 'v1.4.0',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.4.0',
+              'assets': const [
+                {
+                  'name': 'mikcb-1.4.0-arm64-v8a.apk',
+                  'browser_download_url': 'https://example.com/1.4.0.apk',
+                  'digest': 'sha256:abc123',
+                },
+              ],
+              'updated_at': '2026-04-20T09:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      return http.Response('', 404);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(currentVersion: '1.3.0');
+
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.expectedApkSha256, 'abc123');
+  });
+
+  test('download url and digest come from the same apk asset', () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.4.0',
+              'name': 'v1.4.0',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.4.0',
+              'assets': const [
+                {
+                  // 首个无 digest 的 APK：不应被跳过后拿后续 asset 的 digest。
+                  'name': 'mikcb-1.4.0-armeabi-v7a.apk',
+                  'browser_download_url': 'https://example.com/1.4.0-arm.apk',
+                },
+                {
+                  'name': 'mikcb-1.4.0-arm64-v8a.apk',
+                  'browser_download_url': 'https://example.com/1.4.0-arm64.apk',
+                  'digest': 'sha256:def456',
+                },
+              ],
+              'updated_at': '2026-04-20T09:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      return http.Response('', 404);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(currentVersion: '1.3.0');
+
+    // URL 与 digest 必须同源：要么都来自 arm64（带 digest 的优先），
+    // 要么都来自 arm（无 digest 时跳过校验），绝不允许交叉错配。
+    final release = result.latestRelease;
+    expect(release?.downloadUrl, 'https://example.com/1.4.0-arm64.apk');
+    expect(release?.expectedApkSha256, 'def456');
+  });
+
+  test('release info has null digest when api omits it', () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.4.0',
+              'name': 'v1.4.0',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.4.0',
+              'assets': const [
+                {
+                  'name': 'mikcb-1.4.0-arm64-v8a.apk',
+                  'browser_download_url': 'https://example.com/1.4.0.apk',
+                },
+              ],
+              'updated_at': '2026-04-20T09:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      return http.Response('', 404);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(currentVersion: '1.3.0');
+
+    expect(result.latestRelease?.expectedApkSha256, isNull);
+  });
 }

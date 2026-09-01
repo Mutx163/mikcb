@@ -4774,6 +4774,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFileReadFailed => 'Unable to read the selected file';
 
   @override
+  String get importCleartextBlockedHint => 'This site does not support HTTPS and is not on the cleartext allowlist, so it cannot be opened here';
+
+  @override
   String get importReplaceExistingTitle => 'Import courses';
 
   @override
@@ -8088,6 +8091,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get serviceMsgUpdateCheckNetworkFailed =>
       'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      'Package verification failed. The update was cancelled to prevent installing a tampered file.';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

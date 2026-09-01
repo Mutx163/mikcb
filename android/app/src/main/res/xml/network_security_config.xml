@@ -1,11 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Allow cleartext (HTTP) for all builds.
 
-  Most campus academic portals only support HTTP (no HTTPS); blocking
-  cleartext would break school course import (WebView login) on release
-  packages. LAN edit and self-hosted WebDAV also rely on HTTP.
+<!--
+  Cleartext (HTTP) allowlist instead of a global switch.
+
+  Most cleartext traffic in this app never reaches this policy: WebDAV
+  sync, LAN edit and mirror downloads run on the Dart network stack
+  (dart:io), which is not governed by Android's network security config.
+  The WebView stack (campus portal login for course import) IS governed.
+
+  Campus academic portals that only serve HTTP are enumerated below
+  (all http:// import_url hosts from the qingyu_warehouse adapter
+  repository, plus localhost/127.0.0.1 for local adapters during
+  development). Keep this list in sync with the adapter repository. IP
+  literals are fine here too: NSC domain matching is a plain string compare
+  (exact or includeSubdomains suffix) in ApplicationConfig, so exact-match IP
+  entries do work - but ONLY with includeSubdomains="false" (an IP can never
+  be a dot-suffix of another hostname).
+
+  Debug builds use src/debug/res/xml/network_security_config.xml,
+  which still permits cleartext globally.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+
+    <!-- Default for everything not listed: HTTPS only. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Local loopback: LAN edit host page, local WebDAV servers, dev adapters. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">::1</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+
+    <!-- Umeng analytics endpoints (native SDK, plaintext fallback). Keep the
+         scope tight: umeng.com/uc.cn/ucweb.com are Umeng-owned hosts. Do NOT
+         add broad CDNs (e.g. *.aliyuncs.com) here - those are shared by third
+         parties and would open a plaintext exfiltration channel. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">umeng.com</domain>
+        <domain includeSubdomains="true">uc.cn</domain>
+        <domain includeSubdomains="true">ucweb.com</domain>
+    </domain-config>
+
+    <!-- HTTP-only campus portals (course import WebView). -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">211.86.128.194</domain>
+        <domain includeSubdomains="false">jwmis.cfec.edu.cn</domain>
+        <domain includeSubdomains="false">dc.cqcivc.cn</domain>
+        <domain includeSubdomains="false">jw.cqcst.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.ctgu.edu.cn</domain>
+        <domain includeSubdomains="false">jw.xpaas.dlmu.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.fafu.edu.cn</domain>
+        <domain includeSubdomains="false">jwx.gzmtu.edu.cn</domain>
+        <domain includeSubdomains="false">61.182.88.214</domain>
+        <domain includeSubdomains="false">39.164.230.243</domain>
+        <domain includeSubdomains="false">jwcmis.hnie.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.hnvcc.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.huayu.edu.cn</domain>
+        <domain includeSubdomains="false">mhub.hust.edu.cn</domain>
+        <domain includeSubdomains="false">211.82.176.48</domain>
+        <domain includeSubdomains="false">jw.imut.edu.cn</domain>
+        <domain includeSubdomains="false">jwstudent.lnu.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.nbut.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.neu.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.qau.edu.cn</domain>
+        <domain includeSubdomains="false">tysf.qqhrit.com</domain>
+        <domain includeSubdomains="false">jxgl.qut.edu.cn</domain>
+        <domain includeSubdomains="false">xsjw2018.jw.scut.edu.cn</domain>
+        <domain includeSubdomains="false">cas.sddfvc.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.sdnu.edu.cn</domain>
+        <domain includeSubdomains="false">202.115.194.60</domain>
+        <domain includeSubdomains="false">qzjwxt.stcnchu.edu.cn</domain>
+        <domain includeSubdomains="false">xk.suda.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.syist.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.tjau.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.tsu.edu.cn</domain>
+        <domain includeSubdomains="false">jw.wspc.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl2018.xatu.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.xaut.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.xawl.edu.cn</domain>
+        <domain includeSubdomains="false">jwsso.xust.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.xzit.edu.cn</domain>
+        <domain includeSubdomains="false">zfjw.gingkoc.edu.cn</domain>
+        <domain includeSubdomains="false">www.gdjw.zjut.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.zua.edu.cn</domain>
+    </domain-config>
+
 </network-security-config>

@@ -4596,6 +4596,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importFileReadFailed => '선택한 파일을 읽을 수 없습니다';
 
   @override
+  String get importCleartextBlockedHint => '이 사이트는 HTTPS를 지원하지 않고 평문 통신 허용 목록에도 없어서 여기서 열 수 없습니다';
+
+  @override
   String get importReplaceExistingTitle => '수업 가져오기';
 
   @override
@@ -7844,6 +7847,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get serviceMsgUpdateCheckNetworkFailed =>
       'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '패키지 검증에 실패했습니다. 변조된 파일 설치를 방지하기 위해 이번 업데이트를 취소했습니다';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

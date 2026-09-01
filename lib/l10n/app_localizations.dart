@@ -8235,6 +8235,12 @@ abstract class AppLocalizations {
   /// **'无法读取所选文件'**
   String get importFileReadFailed;
 
+  /// No description provided for @importCleartextBlockedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开'**
+  String get importCleartextBlockedHint;
+
   /// No description provided for @importReplaceExistingTitle.
   ///
   /// In zh, this message translates to:
@@ -13856,6 +13862,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'网络异常，暂时无法检查更新'**
   String get serviceMsgUpdateCheckNetworkFailed;
+
+  /// No description provided for @serviceMsgUpdateDownloadHashMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'安装包校验失败，为防止安装被篡改的文件已取消本次更新'**
+  String get serviceMsgUpdateDownloadHashMismatch;
 
   /// No description provided for @serviceMsgUpdateDownloadUrlUntrusted.
   ///

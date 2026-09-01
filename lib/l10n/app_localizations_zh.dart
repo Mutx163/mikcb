@@ -4475,6 +4475,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFileReadFailed => '无法读取所选文件';
 
   @override
+  String get importCleartextBlockedHint => '该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开';
+
+  @override
   String get importReplaceExistingTitle => '导入课程';
 
   @override
@@ -7655,6 +7658,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get serviceMsgUpdateCheckNetworkFailed => '网络异常，暂时无法检查更新';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '安装包校验失败，为防止安装被篡改的文件已取消本次更新';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted => '更新下载地址未通过安全校验';
@@ -14842,6 +14849,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importFileReadFailed => '無法讀取所選文件';
 
   @override
+  String get importCleartextBlockedHint => '該站點暫不支持 HTTPS 訪問且未在明文白名單內，無法在此打開';
+
+  @override
   String get importReplaceExistingTitle => '匯入課程';
 
   @override
@@ -18054,6 +18064,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get serviceMsgUpdateCheckNetworkFailed =>
       'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '安裝包校驗失敗，為防止安裝被篡改的文件已取消本次更新';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
@@ -25253,6 +25267,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importFileReadFailed => '無法讀取所选文件';
 
   @override
+  String get importCleartextBlockedHint => '該站點暫不支援 HTTPS 存取且未在明文白名單內，無法在此開啟';
+
+  @override
   String get importReplaceExistingTitle => '匯入課程';
 
   @override
@@ -28465,6 +28482,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get serviceMsgUpdateCheckNetworkFailed =>
       'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadHashMismatch =>
+      '安裝包校驗失敗，為防止安裝被篡改的檔案已取消本次更新';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

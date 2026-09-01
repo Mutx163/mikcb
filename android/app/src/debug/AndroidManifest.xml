@@ -4,4 +4,10 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug builds relax cleartext via src/debug/res/xml/network_security_config.xml
+         (base-config cleartextTrafficPermitted=true). Do NOT set
+         android:usesCleartextTraffic here: when it coexists with
+         android:networkSecurityConfig the manifest attribute wins and would
+         override the NSC allowlist in release merges. -->
 </manifest>
