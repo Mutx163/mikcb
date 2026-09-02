@@ -3322,6 +3322,7 @@
   "customHolidayTypeVacation": "放假",
   "customHolidayTypeWorkday": "補班日",
   "customHolidayEmpty": "目前沒有自訂假日",
+  "customHolidayCorrupted": "自訂假日資料讀取異常，已暫停讀寫以防覆蓋丟失",
   "customHolidayNameRequired": "請輸入假日名稱",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {
@@ -3709,6 +3710,22 @@
   "statisticsCompareDetailTitle": "課表對比詳情",
   "statisticsCompareWeek": "當前週",
   "statisticsMoreTitle": "深度分析",
+  "statisticsMoreGroupTrend": "趨勢 · 分佈",
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
+  "statisticsMoreGroupPeople": "教室 · 教師 · 排行",
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
+  "statisticsNatureNoneRequired": "暫無必修",
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
+  "statisticsNatureNoneElective": "暫無選修",
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "早起鳥",
   "statisticsAchievementMorningPersonDescription": "早間課時佔比 ≥ 50%",
   "statisticsAchievementGapMasterName": "時間管理大師",
@@ -4410,6 +4427,7 @@
   },
   "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
   "serviceMsgUpdateDownloadHashMismatch": "安裝包校驗失敗，為防止安裝被篡改的檔案已取消本次更新",
+  "serviceMsgUpdateSha256UnverifiedRefused": "無法校驗安裝包完整性（缺少官方 SHA-256），已取消應用內更新，請前往發佈頁手動下載",
   "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
   "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
   "@serviceMsgUpdateDownloadHttpFailed": {

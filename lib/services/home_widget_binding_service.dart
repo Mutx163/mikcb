@@ -144,6 +144,15 @@ class HomeWidgetBindingService {
         return true;
       }
     } catch (e) {
+      // 与 setWidgetBinding 对齐：绑定卡片「数据不刷新」是新功能典型故障，
+      // 仅 appDebugLog 在 release 包不可观测，必须落 AppLogService。
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_snapshot_sync_failed',
+          AppLogMessages.homeWidgetSyncFailed,
+          extras: {'error': '$e', 'appWidgetId': appWidgetId},
+        ),
+      );
       appDebugLog('HomeWidget', '同步卡片专属快照失败：$e');
     }
     return false;
@@ -157,6 +166,13 @@ class HomeWidgetBindingService {
     } on MissingPluginException {
       // ignore
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_snapshot_clear_failed',
+          AppLogMessages.homeWidgetSyncFailed,
+          extras: {'error': '$e', 'appWidgetId': appWidgetId},
+        ),
+      );
       appDebugLog('HomeWidget', '清理卡片专属快照失败：$e');
     }
   }

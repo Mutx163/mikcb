@@ -3318,6 +3318,7 @@
   "customHolidayTypeVacation": "休日",
   "customHolidayTypeWorkday": "振替出勤",
   "customHolidayEmpty": "カスタム休日なし",
+  "customHolidayCorrupted": "カスタム休日データの読み込みに失敗しました。データ保護のため読み書きを停止しています",
   "customHolidayNameRequired": "休日名を入力してください",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {
@@ -3709,6 +3710,22 @@
   "statisticsCompareDetailTitle": "比較詳細",
   "statisticsCompareWeek": "現在の週",
   "statisticsMoreTitle": "詳細分析",
+  "statisticsMoreGroupTrend": "トレンド・分布",
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
+  "statisticsMoreGroupPeople": "教室・教員・ランキング",
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
+  "statisticsNatureNoneRequired": "必修なし",
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
+  "statisticsNatureNoneElective": "選択なし",
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "早起き鳥",
   "statisticsAchievementMorningPersonDescription": "午前の授業が5割以上",
   "statisticsAchievementGapMasterName": "時間管理の達人",
@@ -4410,6 +4427,7 @@
   },
   "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
   "serviceMsgUpdateDownloadHashMismatch": "パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、今回の更新を中止しました",
+  "serviceMsgUpdateSha256UnverifiedRefused": "パッケージの整合性を検証できないため（公式 SHA-256 なし）、アプリ内更新を中止しました。リリースページから手動でダウンロードしてください",
   "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
   "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
   "@serviceMsgUpdateDownloadHttpFailed": {

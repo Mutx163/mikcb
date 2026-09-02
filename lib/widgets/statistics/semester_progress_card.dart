@@ -131,11 +131,8 @@ class _ProgressFact extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: HyperosTypography.listTitle(context).copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: HyperosColors.primaryText(context),
-          ),
+          // 次级口径（% / 剩余 X 节）保留 18 号层级，只收口样式。
+          style: HyperosTypography.metricMedium(context),
         ),
         const SizedBox(height: 2),
         Text(
@@ -143,9 +140,7 @@ class _ProgressFact extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: HyperosTypography.listDetail(context).copyWith(
-            fontSize: HyperosMiuixTypography.footnote2,
-          ),
+          style: HyperosTypography.metricCaption(context),
         ),
       ],
     );

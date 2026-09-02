@@ -12,6 +12,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
   late TimetableSettings _draft;
   Future<void> _saveQueue = Future<void>.value();
   List<HolidayEntry> _customHolidays = [];
+  bool _customHolidaysCorrupted = false;
 
   @override
   void initState() {
@@ -23,10 +24,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
 
   Future<void> _loadCustomHolidays() async {
     final provider = _timetableProvider;
-    final entries = await provider.getCustomHolidays();
+    final entries = await provider.loadCustomHolidaysOrNull();
     if (mounted) {
       setState(() {
-        _customHolidays = entries;
+        // null = 存储损坏（service 已落 error 日志）：列表照常置空展示，
+        // 但用提示条区分「暂无」与「读失败」，避免用户误判、也解释为何
+        // 新增/编辑会被拒绝（写入链路遇损坏会抛 HolidayCustomSaveException）。
+        _customHolidaysCorrupted = entries == null;
+        _customHolidays = entries ?? const [];
       });
     }
   }
@@ -491,7 +496,13 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
           HyperosSectionLabel(text: l10n.customHolidayTitle),
           HyperosListGroup(
             children: [
-              if (_customHolidays.isEmpty)
+              if (_customHolidaysCorrupted)
+                HyperosNavTile(
+                  title: l10n.customHolidayCorrupted,
+                  enabled: false,
+                  showChevron: false,
+                )
+              else if (_customHolidays.isEmpty)
                 HyperosNavTile(
                   title: l10n.customHolidayEmpty,
                   enabled: false,

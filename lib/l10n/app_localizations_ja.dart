@@ -6241,6 +6241,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get customHolidayEmpty => 'カスタム休日なし';
 
   @override
+  String get customHolidayCorrupted =>
+      'カスタム休日データの読み込みに失敗しました。データ保護のため読み書きを停止しています';
+
+  @override
   String get customHolidayNameRequired => '休日名を入力してください';
 
   @override
@@ -6852,6 +6856,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get statisticsMoreTitle => '詳細分析';
+
+  @override
+  String get statisticsMoreGroupTrend => 'トレンド・分布';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室・教員・ランキング';
+
+  @override
+  String get statisticsNatureNoneRequired => '必修なし';
+
+  @override
+  String get statisticsNatureNoneElective => '選択なし';
 
   @override
   String get statisticsAchievementMorningPersonName => '早起き鳥';
@@ -7809,6 +7825,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get serviceMsgUpdateDownloadHashMismatch =>
       'パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、今回の更新を中止しました';
+
+  @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      'パッケージの整合性を検証できないため（公式 SHA-256 なし）、アプリ内更新を中止しました。リリースページから手動でダウンロードしてください';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

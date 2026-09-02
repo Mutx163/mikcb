@@ -7818,7 +7818,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       showAppToast(
         context,
         message: error.message != null
-            ? localizeServiceMessage(l10n, error.message! as String)
+            ? localizeServiceMessage(l10n, error.message!.toString())
             : AppLocalizations.of(context)!.deleteFailed,
         kind: AppToastKind.error,
       );
@@ -7882,7 +7882,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       showAppToast(
         context,
         message: error.message != null
-            ? localizeServiceMessage(l10n, error.message! as String)
+            ? localizeServiceMessage(l10n, error.message!.toString())
             : AppLocalizations.of(context)!.rescheduleFailed,
         kind: AppToastKind.error,
       );

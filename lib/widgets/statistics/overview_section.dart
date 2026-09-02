@@ -82,10 +82,7 @@ class _MetricCell extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              // 展示数字保持常规字重，层级只靠字号对比（用户明确不要加粗）。
-              style: HyperosTypography.listTitle(context).copyWith(
-                fontSize: 24,
-                height: 1,
+              style: HyperosTypography.metricLarge(context).copyWith(
                 color: highlight
                     ? HyperosColors.primary(context)
                     : HyperosColors.primaryText(context),
@@ -97,8 +94,7 @@ class _MetricCell extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(context).copyWith(
-                fontSize: HyperosMiuixTypography.footnote2,
+              style: HyperosTypography.metricCaption(context).copyWith(
                 color: highlight
                     ? HyperosColors.primaryText(context)
                     : HyperosColors.secondaryText(context),

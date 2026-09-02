@@ -11201,6 +11201,12 @@ abstract class AppLocalizations {
   /// **'暂无自定义假期'**
   String get customHolidayEmpty;
 
+  /// No description provided for @customHolidayCorrupted.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义假期数据读取异常，已暂停读写以防覆盖丢失'**
+  String get customHolidayCorrupted;
+
   /// No description provided for @customHolidayNameRequired.
   ///
   /// In zh, this message translates to:
@@ -12313,6 +12319,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'深度分析'**
   String get statisticsMoreTitle;
+
+  /// No description provided for @statisticsMoreGroupTrend.
+  ///
+  /// In zh, this message translates to:
+  /// **'趋势 · 分布'**
+  String get statisticsMoreGroupTrend;
+
+  /// No description provided for @statisticsMoreGroupPeople.
+  ///
+  /// In zh, this message translates to:
+  /// **'教室 · 教师 · 排行'**
+  String get statisticsMoreGroupPeople;
+
+  /// No description provided for @statisticsNatureNoneRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无必修'**
+  String get statisticsNatureNoneRequired;
+
+  /// No description provided for @statisticsNatureNoneElective.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无选修'**
+  String get statisticsNatureNoneElective;
 
   /// No description provided for @statisticsAchievementMorningPersonName.
   ///
@@ -13868,6 +13898,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'安装包校验失败，为防止安装被篡改的文件已取消本次更新'**
   String get serviceMsgUpdateDownloadHashMismatch;
+
+  /// No description provided for @serviceMsgUpdateSha256UnverifiedRefused.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法校验安装包完整性（缺少官方 SHA-256），已取消应用内更新，请前往发布页手动下载'**
+  String get serviceMsgUpdateSha256UnverifiedRefused;
 
   /// No description provided for @serviceMsgUpdateDownloadUrlUntrusted.
   ///
