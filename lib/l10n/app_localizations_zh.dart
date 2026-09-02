@@ -6752,6 +6752,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsMoreTitle => '深度分析';
 
   @override
+  String get statisticsMoreGroupTrend => '趋势 · 分布';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室 · 教师 · 排行';
+
+  @override
+  String get statisticsNatureNoneRequired => '暂无必修';
+
+  @override
+  String get statisticsNatureNoneElective => '暂无选修';
+
+  @override
   String get statisticsAchievementMorningPersonName => '早起鸟';
 
   @override
@@ -17131,6 +17143,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsMoreTitle => '深度分析';
+
+  @override
+  String get statisticsMoreGroupTrend => '趨勢 · 分佈';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室 · 教師 · 排行';
+
+  @override
+  String get statisticsNatureNoneRequired => '暫無必修';
+
+  @override
+  String get statisticsNatureNoneElective => '暫無選修';
 
   @override
   String get statisticsAchievementMorningPersonName => '早起鳥';
@@ -27556,6 +27580,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsMoreTitle => '深度分析';
+
+  @override
+  String get statisticsMoreGroupTrend => '趨勢 · 分佈';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室 · 教師 · 排行';
+
+  @override
+  String get statisticsNatureNoneRequired => '暫無必修';
+
+  @override
+  String get statisticsNatureNoneElective => '暫無選修';
 
   @override
   String get statisticsAchievementMorningPersonName => '早起鳥';

@@ -12320,6 +12320,30 @@ abstract class AppLocalizations {
   /// **'深度分析'**
   String get statisticsMoreTitle;
 
+  /// No description provided for @statisticsMoreGroupTrend.
+  ///
+  /// In zh, this message translates to:
+  /// **'趋势 · 分布'**
+  String get statisticsMoreGroupTrend;
+
+  /// No description provided for @statisticsMoreGroupPeople.
+  ///
+  /// In zh, this message translates to:
+  /// **'教室 · 教师 · 排行'**
+  String get statisticsMoreGroupPeople;
+
+  /// No description provided for @statisticsNatureNoneRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无必修'**
+  String get statisticsNatureNoneRequired;
+
+  /// No description provided for @statisticsNatureNoneElective.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无选修'**
+  String get statisticsNatureNoneElective;
+
   /// No description provided for @statisticsAchievementMorningPersonName.
   ///
   /// In zh, this message translates to:
