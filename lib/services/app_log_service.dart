@@ -48,9 +48,20 @@ class AppLogService {
     if (_initialized) {
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    _privacyAccepted = prefs.getBool(_acceptedPrivacyPolicyKey) ?? false;
-    _loggingEnabled = _readLoggingEnabledFromPrefs(prefs);
+    // 初始化必须吞掉自身异常：log()/warn() 在未初始化时会先走这里，而调用方
+    // 常以 unawaited 方式触发（如 HomeWidgetBindingService 的失败留痕）。测试
+    // 环境无 shared_preferences/path_provider 插件时 getInstance 会抛
+    // MissingPluginException——若不在此捕获，异步异常会沿 unawaited 链路逃逸，
+    // 打挂"当前正在跑"的任意一个测试（表现为 flaky，失败文件随机）。与类
+    // 注释的兜底原则一致：日志系统故障不能破坏业务流，最坏情况只是失去观测。
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _privacyAccepted = prefs.getBool(_acceptedPrivacyPolicyKey) ?? false;
+      _loggingEnabled = _readLoggingEnabledFromPrefs(prefs);
+    } catch (_) {
+      // 保持默认值（privacy=false、logging=false），后续 log() 会被
+      // _shouldRecord 直接过滤，不会产生新的写入路径。
+    }
     try {
       _packageInfo = await PackageInfo.fromPlatform();
     } catch (_) {

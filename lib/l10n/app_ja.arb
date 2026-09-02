@@ -3710,6 +3710,22 @@
   "statisticsCompareDetailTitle": "比較詳細",
   "statisticsCompareWeek": "現在の週",
   "statisticsMoreTitle": "詳細分析",
+  "statisticsMoreGroupTrend": "トレンド・分布",
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
+  "statisticsMoreGroupPeople": "教室・教員・ランキング",
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
+  "statisticsNatureNoneRequired": "必修なし",
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
+  "statisticsNatureNoneElective": "選択なし",
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "早起き鳥",
   "statisticsAchievementMorningPersonDescription": "午前の授業が5割以上",
   "statisticsAchievementGapMasterName": "時間管理の達人",
@@ -3829,7 +3845,6 @@
     }
   },
   "statisticsAchievementDone": "達成済み",
-  "statisticsWeekBusiestDay": "最も忙しい日",
   "statisticsWeekDailyHint": "タップで第 {week} 週の詳細",
   "@statisticsWeekDailyHint": {
     "placeholders": {

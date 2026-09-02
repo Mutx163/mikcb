@@ -7132,6 +7132,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsMoreTitle => 'Deep Dive';
 
   @override
+  String get statisticsMoreGroupTrend => 'Trends & Distribution';
+
+  @override
+  String get statisticsMoreGroupPeople => 'Rooms · Teachers · Ranking';
+
+  @override
+  String get statisticsNatureNoneRequired => 'No required courses';
+
+  @override
+  String get statisticsNatureNoneElective => 'No elective courses';
+
+  @override
   String get statisticsAchievementMorningPersonName => 'Morning Bird';
 
   @override
@@ -7346,9 +7358,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statisticsAchievementDone => 'Unlocked';
-
-  @override
-  String get statisticsWeekBusiestDay => 'Busiest Day';
 
   @override
   String statisticsWeekDailyHint(int week) {

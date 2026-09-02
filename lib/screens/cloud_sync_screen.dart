@@ -569,7 +569,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                 const HyperosIconBadge(
                   icon: Icons.tune_outlined,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: HyperosTokens.rowContentGap),
                 Expanded(
                   child: Text(
                     l10n.cloudSyncAdvancedTitle,

@@ -3947,6 +3947,22 @@
   "statisticsCompareDetailTitle": "Comparison Details",
   "statisticsCompareWeek": "Current week",
   "statisticsMoreTitle": "Deep Dive",
+  "statisticsMoreGroupTrend": "Trends & Distribution",
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
+  "statisticsMoreGroupPeople": "Rooms · Teachers · Ranking",
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
+  "statisticsNatureNoneRequired": "No required courses",
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
+  "statisticsNatureNoneElective": "No elective courses",
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "Morning Bird",
   "statisticsAchievementMorningPersonDescription": "50%+ morning sections",
   "statisticsAchievementGapMasterName": "Time Manager",
@@ -4066,7 +4082,6 @@
     }
   },
   "statisticsAchievementDone": "Unlocked",
-  "statisticsWeekBusiestDay": "Busiest Day",
   "statisticsWeekDailyHint": "Tap to view week {week} details",
   "@statisticsWeekDailyHint": {
     "placeholders": {

@@ -6858,6 +6858,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsMoreTitle => '詳細分析';
 
   @override
+  String get statisticsMoreGroupTrend => 'トレンド・分布';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室・教員・ランキング';
+
+  @override
+  String get statisticsNatureNoneRequired => '必修なし';
+
+  @override
+  String get statisticsNatureNoneElective => '選択なし';
+
+  @override
   String get statisticsAchievementMorningPersonName => '早起き鳥';
 
   @override
@@ -7062,9 +7074,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get statisticsAchievementDone => '達成済み';
-
-  @override
-  String get statisticsWeekBusiestDay => '最も忙しい日';
 
   @override
   String statisticsWeekDailyHint(int week) {

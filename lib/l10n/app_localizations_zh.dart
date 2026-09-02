@@ -6752,6 +6752,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsMoreTitle => '深度分析';
 
   @override
+  String get statisticsMoreGroupTrend => '趋势 · 分布';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室 · 教师 · 排行';
+
+  @override
+  String get statisticsNatureNoneRequired => '暂无必修';
+
+  @override
+  String get statisticsNatureNoneElective => '暂无选修';
+
+  @override
   String get statisticsAchievementMorningPersonName => '早起鸟';
 
   @override
@@ -6956,9 +6968,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statisticsAchievementDone => '已达成';
-
-  @override
-  String get statisticsWeekBusiestDay => '最忙的一天';
 
   @override
   String statisticsWeekDailyHint(int week) {
@@ -17133,6 +17142,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get statisticsMoreTitle => '深度分析';
 
   @override
+  String get statisticsMoreGroupTrend => '趨勢 · 分佈';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室 · 教師 · 排行';
+
+  @override
+  String get statisticsNatureNoneRequired => '暫無必修';
+
+  @override
+  String get statisticsNatureNoneElective => '暫無選修';
+
+  @override
   String get statisticsAchievementMorningPersonName => '早起鳥';
 
   @override
@@ -17337,9 +17358,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementDone => '已達成';
-
-  @override
-  String get statisticsWeekBusiestDay => '最忙的一天';
 
   @override
   String statisticsWeekDailyHint(int week) {
@@ -27558,6 +27576,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get statisticsMoreTitle => '深度分析';
 
   @override
+  String get statisticsMoreGroupTrend => '趨勢 · 分佈';
+
+  @override
+  String get statisticsMoreGroupPeople => '教室 · 教師 · 排行';
+
+  @override
+  String get statisticsNatureNoneRequired => '暫無必修';
+
+  @override
+  String get statisticsNatureNoneElective => '暫無選修';
+
+  @override
   String get statisticsAchievementMorningPersonName => '早起鳥';
 
   @override
@@ -27762,9 +27792,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementDone => '已達成';
-
-  @override
-  String get statisticsWeekBusiestDay => '最忙的一天';
 
   @override
   String statisticsWeekDailyHint(int week) {

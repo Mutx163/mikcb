@@ -3710,6 +3710,22 @@
   "statisticsCompareDetailTitle": "課表對比詳情",
   "statisticsCompareWeek": "當前週",
   "statisticsMoreTitle": "深度分析",
+  "statisticsMoreGroupTrend": "趨勢 · 分佈",
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
+  "statisticsMoreGroupPeople": "教室 · 教師 · 排行",
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
+  "statisticsNatureNoneRequired": "暫無必修",
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
+  "statisticsNatureNoneElective": "暫無選修",
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "早起鳥",
   "statisticsAchievementMorningPersonDescription": "早間課時佔比 ≥ 50%",
   "statisticsAchievementGapMasterName": "時間管理大師",
@@ -3829,7 +3845,6 @@
     }
   },
   "statisticsAchievementDone": "已達成",
-  "statisticsWeekBusiestDay": "最忙的一天",
   "statisticsWeekDailyHint": "點擊查看第 {week} 週詳情",
   "@statisticsWeekDailyHint": {
     "placeholders": {

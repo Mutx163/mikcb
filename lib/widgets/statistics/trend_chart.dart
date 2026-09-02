@@ -40,6 +40,10 @@ class TrendChart extends StatelessWidget {
               maxY: (maxY + 1).toDouble(),
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
+                  // Tooltip 面板底色与字色成对走亮暗 token：fl_chart
+                  // 默认面板恒为深色底，暗色下只改字色白字会消失（#84）。
+                  getTooltipColor: (touchedSpot) =>
+                      HyperosColors.inverseSurface(context),
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {
                       final week = spot.x.round();
@@ -49,7 +53,7 @@ class TrendChart extends StatelessWidget {
                           spot.y.round(),
                         ),
                         HyperosTypography.listDetail(context).copyWith(
-                          color: Colors.white,
+                          color: HyperosColors.onInverseSurface(context),
                           fontWeight: FontWeight.w500,
                         ),
                       );

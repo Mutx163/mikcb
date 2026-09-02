@@ -72,6 +72,10 @@ class _AchievementBadgeState extends State<AchievementBadge>
     final name = _achievementName(l10n, achievement.id);
     final accent = _achievementAccent(achievement.id);
     final unlocked = achievement.isUnlocked;
+    final lockedFill = _lockedFill(context, accent);
+    final lockedBorder = _lockedBorder(context, accent);
+    final lockedIcon = _lockedIcon(context, accent);
+    final unlockedIcon = HyperosColors.onAccent(context);
 
     final progressLabel = achievement.hasProgress
         ? (unlocked
@@ -103,26 +107,19 @@ class _AchievementBadgeState extends State<AchievementBadge>
                     width: AchievementBadge._medalSize,
                     height: AchievementBadge._medalSize,
                     decoration: BoxDecoration(
-                      color: unlocked
-                          ? accent
-                          : accent.withValues(alpha: 0.14),
+                      color: unlocked ? accent : lockedFill,
                       borderRadius: BorderRadius.circular(
                         AchievementBadge._medalRadius,
                       ),
                       border: unlocked
                           ? null
-                          : Border.all(
-                              color: accent.withValues(alpha: 0.28),
-                              width: 0.5,
-                            ),
+                          : Border.all(color: lockedBorder, width: 0.5),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       achievement.icon,
                       size: 20,
-                      color: unlocked
-                          ? Colors.white
-                          : accent.withValues(alpha: 0.55),
+                      color: unlocked ? unlockedIcon : lockedIcon,
                     ),
                   ),
                   if (!unlocked)
@@ -201,6 +198,10 @@ Future<void> showAchievementDetailSheet({
   final description = _achievementDescription(l10n, achievement.id);
   final detail = _achievementDetail(l10n, achievement.id);
   final unlocked = achievement.isUnlocked;
+  final lockedFill = _lockedFill(context, accent);
+  final lockedBorder = _lockedBorder(context, accent);
+  final lockedIcon = _lockedIcon(context, accent);
+  final unlockedIcon = HyperosColors.onAccent(context);
 
   final progress = achievement.hasProgress
       ? (achievement.progressCurrent! / achievement.progressTarget!)
@@ -224,24 +225,17 @@ Future<void> showAchievementDetailSheet({
                   width: 84,
                   height: 84,
                   decoration: BoxDecoration(
-                    color: unlocked
-                        ? accent
-                        : accent.withValues(alpha: 0.14),
+                    color: unlocked ? accent : lockedFill,
                     borderRadius: BorderRadius.circular(24),
                     border: unlocked
                         ? null
-                        : Border.all(
-                            color: accent.withValues(alpha: 0.28),
-                            width: 0.5,
-                          ),
+                        : Border.all(color: lockedBorder, width: 0.5),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     achievement.icon,
                     size: 40,
-                    color: unlocked
-                        ? Colors.white
-                        : accent.withValues(alpha: 0.55),
+                    color: unlocked ? unlockedIcon : lockedIcon,
                   ),
                 ),
               ),
@@ -327,6 +321,25 @@ Future<void> showAchievementDetailSheet({
   );
 }
 
+/// 锁定态徽章填充：亮色沿用 14% 淡彩；暗色卡片底是深灰（#2D2D2D），
+/// 14% 几乎不可见，提升到 26%（#84）。
+Color _lockedFill(BuildContext context, Color accent) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return accent.withValues(alpha: isDark ? 0.26 : 0.14);
+}
+
+/// 锁定态徽章描边：亮色 28%；暗色提至 44% 保持可辨识轮廓。
+Color _lockedBorder(BuildContext context, Color accent) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return accent.withValues(alpha: isDark ? 0.44 : 0.28);
+}
+
+/// 锁定态图标色：暗色下提高不透明度保持对比。
+Color _lockedIcon(BuildContext context, Color accent) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return accent.withValues(alpha: isDark ? 0.86 : 0.55);
+}
+
 Color _achievementAccent(String id) {
   return switch (id) {
     'early_bird' => HyperosIconColors.orange,
@@ -406,7 +419,7 @@ class AchievementGrid extends StatelessWidget {
   const AchievementGrid({super.key, required this.achievements});
 
   static const _columns = 4;
-  static const _columnSpacing = 8.0;
+  static const _columnSpacing = 12.0;
   static const _rowSpacing = 12.0;
 
   @override
