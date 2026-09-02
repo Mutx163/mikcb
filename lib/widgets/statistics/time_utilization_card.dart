@@ -4,6 +4,9 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
 
+/// 时间利用卡单行读数：图标 + 强调色 + 标签 + 读数。
+typedef _TimeRow = ({IconData icon, Color accent, String label, String value});
+
 /// 时间利用分析卡
 ///
 /// 7 项并列读数以纵向键值对列表呈现，行间用细分隔线区分，
@@ -24,64 +27,76 @@ class TimeUtilizationCard extends StatelessWidget {
       fontSize: HyperosMiuixTypography.footnote2,
     );
 
-    final rows = <(IconData, Color, String, String)>[
+    final rows = <_TimeRow>[
       (
-        Icons.wb_sunny_outlined,
-        HyperosIconColors.orange,
-        l10n.statisticsTimeEarliest,
-        stats.earliestStart,
+        icon: Icons.wb_sunny_outlined,
+        accent: HyperosIconColors.orange,
+        label: l10n.statisticsTimeEarliest,
+        value: stats.earliestStart,
       ),
       (
-        Icons.nights_stay_outlined,
-        HyperosIconColors.indigo,
-        l10n.statisticsTimeLatest,
-        stats.latestEnd,
+        icon: Icons.nights_stay_outlined,
+        accent: HyperosIconColors.indigo,
+        label: l10n.statisticsTimeLatest,
+        value: stats.latestEnd,
       ),
       (
-        Icons.free_breakfast_outlined,
-        HyperosIconColors.yellow,
-        l10n.statisticsTimeMorning,
-        '${stats.morningSections} ${l10n.statisticsSectionsUnit}',
+        icon: Icons.free_breakfast_outlined,
+        accent: HyperosIconColors.yellow,
+        label: l10n.statisticsTimeMorning,
+        value: '${stats.morningSections} ${l10n.statisticsSectionsUnit}',
       ),
       (
-        Icons.restaurant_outlined,
-        HyperosIconColors.teal,
-        l10n.statisticsTimeNoon,
-        '${stats.noonSections} ${l10n.statisticsSectionsUnit}',
+        icon: Icons.restaurant_outlined,
+        accent: HyperosIconColors.teal,
+        label: l10n.statisticsTimeNoon,
+        value: '${stats.noonSections} ${l10n.statisticsSectionsUnit}',
       ),
       (
-        Icons.bedtime_outlined,
-        HyperosIconColors.purple,
-        l10n.statisticsTimeEvening,
-        '${stats.eveningSections} ${l10n.statisticsSectionsUnit}',
+        icon: Icons.bedtime_outlined,
+        accent: HyperosIconColors.purple,
+        label: l10n.statisticsTimeEvening,
+        value: '${stats.eveningSections} ${l10n.statisticsSectionsUnit}',
       ),
       (
-        Icons.weekend_outlined,
-        HyperosIconColors.blue,
-        l10n.statisticsTimeWeekend,
-        '${stats.weekendSections} ${l10n.statisticsSectionsUnit}',
+        icon: Icons.weekend_outlined,
+        accent: HyperosIconColors.blue,
+        label: l10n.statisticsTimeWeekend,
+        value: '${stats.weekendSections} ${l10n.statisticsSectionsUnit}',
       ),
       (
-        Icons.hourglass_bottom_rounded,
-        HyperosIconColors.red,
-        l10n.statisticsTimeGap,
-        l10n.statisticsTimeGapValue(stats.maxDailyGapSections),
+        icon: Icons.hourglass_bottom_rounded,
+        accent: HyperosIconColors.red,
+        label: l10n.statisticsTimeGap,
+        value: l10n.statisticsTimeGapValue(stats.maxDailyGapSections),
       ),
     ];
 
-    Widget fact(IconData icon, Color accent, String label, String value) {
+    Widget fact(_TimeRow row) {
+      // earliestStart / latestEnd 兜底为空串时，纵向布局会出现空读数行，
+      // 统一回退到「暂无课程数据」文案。
+      final displayValue =
+          row.value.isEmpty ? l10n.statisticsNoData : row.value;
+
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: accent),
+            Icon(row.icon, size: 16, color: row.accent),
             const SizedBox(width: 6),
             Expanded(
-              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: labelStyle),
+              child: Text(
+                row.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: labelStyle,
+              ),
             ),
             const SizedBox(width: 6),
             Text(
-              value,
+              displayValue,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               // T2 弹窗/行内数据值
               style: HyperosTypography.listTitle(context).copyWith(
                 fontSize: HyperosMiuixTypography.footnote2,
@@ -112,11 +127,10 @@ class TimeUtilizationCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             for (var index = 0; index < rows.length; index++) ...[
-              if (index > 0)
-                const HyperosInsetDivider(indent: 0),
-              fact(rows[index].$1, rows[index].$2, rows[index].$3, rows[index].$4),
+              if (index > 0) const HyperosInsetDivider(indent: 0),
+              fact(rows[index]),
             ],
           ],
         ),
