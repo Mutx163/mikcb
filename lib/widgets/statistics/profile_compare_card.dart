@@ -31,7 +31,15 @@ class ProfileCompareEntry {
 class ProfileCompareCard extends StatelessWidget {
   final List<ProfileCompareEntry> entries;
 
-  const ProfileCompareCard({super.key, required this.entries});
+  /// 卡内标题行（徽章 + 课表对比）。作为二级页整页内容时传 false：
+  /// 页面标题已承担命名，卡内标题行会与页题重复。
+  final bool showHeader;
+
+  const ProfileCompareCard({
+    super.key,
+    required this.entries,
+    this.showHeader = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,22 +51,23 @@ class ProfileCompareCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: HyperosTokens.rowPadding(isLast: false),
-            child: Row(
-              children: [
-                const HyperosIconBadge(
-                  icon: Icons.compare_arrows_rounded,
-                  accent: HyperosIconColors.indigo,
-                ),
-                const SizedBox(width: HyperosTokens.rowContentGap),
-                Text(
-                  l10n.statisticsCompareTitle,
-                  style: HyperosTypography.listTitle(context),
-                ),
-              ],
+          if (showHeader)
+            Padding(
+              padding: HyperosTokens.rowPadding(isLast: false),
+              child: Row(
+                children: [
+                  const HyperosIconBadge(
+                    icon: Icons.compare_arrows_rounded,
+                    accent: HyperosIconColors.indigo,
+                  ),
+                  const SizedBox(width: HyperosTokens.rowContentGap),
+                  Text(
+                    l10n.statisticsCompareTitle,
+                    style: HyperosTypography.listTitle(context),
+                  ),
+                ],
+              ),
             ),
-          ),
           for (var i = 0; i < entries.length; i++) ...[
             HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
             _CompareRow(

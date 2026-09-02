@@ -4,7 +4,6 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../models/statistics_models.dart';
-import '../models/timetable_profile.dart';
 import '../providers/timetable_provider.dart';
 import '../services/statistics_service.dart';
 import '../services/statistics_share_service.dart';
@@ -15,7 +14,6 @@ import '../widgets/statistics/data_story_card.dart';
 import '../widgets/statistics/daily_chart.dart';
 import '../widgets/statistics/nature_ratio.dart';
 import '../widgets/statistics/overview_section.dart';
-import '../widgets/statistics/profile_compare_card.dart';
 import '../widgets/statistics/semester_progress_card.dart';
 import '../widgets/statistics/statistics_export_sheet.dart';
 import '../widgets/statistics/week_stats_view.dart';
@@ -258,19 +256,24 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
           child: NatureRatio(stats: semesterStats.natureStats),
         ),
         const HyperosSectionGap(),
-        _buildAnalysisEntries(context, l10n),
-        ..._buildProfileCompareSections(context, l10n, provider, semesterStats),
+        _buildAnalysisEntries(context, l10n, provider),
       ],
     );
   }
 
   /// 深度分析入口组（二级页）
   ///
-  /// 5 个入口一张标准行组卡（HyperosListGroup + HyperosListTile）。
+  /// 一张标准行组卡（HyperosListGroup + HyperosListTile）。
   /// 不折叠：组件库的 [HyperosAccordion] 是给文字内容用的（云同步
   /// 高级设置 / 实况调试 JSON），导航行组再叠「组头」必然与条目行
   /// 撞形态；且本块位于图表下方、本就在首屏之外，折叠无收益。
-  Widget _buildAnalysisEntries(BuildContext context, AppLocalizations l10n) {
+  ///
+  /// 课表对比并入本卡末位（存在其他课表时才显示），独立分区撤销。
+  Widget _buildAnalysisEntries(
+    BuildContext context,
+    AppLocalizations l10n,
+    TimetableProvider provider,
+  ) {
     void open(StatisticsAnalysisModule module) {
       Navigator.push(
         context,
@@ -280,6 +283,9 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
         ),
       );
     }
+
+    final hasOtherProfiles = provider.profiles
+        .any((p) => p.id != provider.activeProfile?.id);
 
     return HyperosSettingsBlock(
       title: l10n.statisticsMoreTitle,
@@ -315,68 +321,16 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             title: l10n.statisticsRankingTitle,
             onTap: () => open(StatisticsAnalysisModule.ranking),
           ),
+          if (hasOtherProfiles)
+            HyperosListTile(
+              icon: Icons.compare_arrows_rounded,
+              iconAccent: HyperosIconColors.indigo,
+              title: l10n.statisticsCompareTitle,
+              onTap: () => open(StatisticsAnalysisModule.compare),
+            ),
         ],
       ),
     );
-  }
-
-  ProfileCompareEntry _profileCompareEntry(
-    TimetableProfile profile,
-    int activeTotalSections,
-  ) {
-    final stats = StatisticsService.calculateSemester(
-      allCourses: profile.courses,
-      currentWeek: profile.currentWeek,
-      semesterWeekCount: profile.settings.semesterWeekCount,
-    );
-    return ProfileCompareEntry(
-      name: profile.name,
-      isActive: false,
-      currentWeek: profile.currentWeek,
-      totalSections: stats.totalSections,
-      totalCourses: stats.totalCourses,
-      requiredRatio: stats.natureStats.requiredRatio,
-      longestStreak: stats.longestStreak,
-      deltaSections: stats.totalSections - activeTotalSections,
-    );
-  }
-
-  /// 课表对比：当前课表 vs 其他课表（profiles）
-  List<Widget> _buildProfileCompareSections(
-    BuildContext context,
-    AppLocalizations l10n,
-    TimetableProvider provider,
-    SemesterStats semesterStats,
-  ) {
-    final active = provider.activeProfile;
-    final others = provider.profiles
-        .where((p) => p.id != active?.id)
-        .toList();
-    if (others.isEmpty) {
-      return const [];
-    }
-
-    final entries = <ProfileCompareEntry>[
-      ProfileCompareEntry(
-        name: active?.name ?? '',
-        isActive: true,
-        currentWeek: provider.currentWeek,
-        totalSections: semesterStats.totalSections,
-        totalCourses: semesterStats.totalCourses,
-        requiredRatio: semesterStats.natureStats.requiredRatio,
-        longestStreak: semesterStats.longestStreak,
-      ),
-      for (final profile in others)
-        _profileCompareEntry(profile, semesterStats.totalSections),
-    ];
-
-    return [
-      const HyperosSectionGap(),
-      HyperosSettingsBlock(
-        title: l10n.statisticsCompareTitle,
-        child: ProfileCompareCard(entries: entries),
-      ),
-    ];
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {

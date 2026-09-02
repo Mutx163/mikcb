@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
+import '../models/timetable_profile.dart';
 import '../providers/timetable_provider.dart';
 import '../services/statistics_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/statistics/course_ranking.dart';
+import '../widgets/statistics/profile_compare_card.dart';
 import '../widgets/statistics/heatmap_card.dart';
 import '../widgets/statistics/teacher_stats_card.dart';
 import '../widgets/statistics/time_utilization_card.dart';
@@ -15,7 +17,7 @@ import '../widgets/statistics/venue_stats_card.dart';
 import 'add_course_screen.dart';
 
 /// 深度分析二级页模块
-enum StatisticsAnalysisModule { trend, timeUtil, venue, teacher, ranking }
+enum StatisticsAnalysisModule { trend, timeUtil, venue, teacher, ranking, compare }
 
 /// 课程统计深度分析二级页：按 [module] 渲染对应分析模块。
 class StatisticsAnalysisScreen extends StatelessWidget {
@@ -71,6 +73,7 @@ class StatisticsAnalysisScreen extends StatelessWidget {
       StatisticsAnalysisModule.venue => l10n.statisticsVenueTitle,
       StatisticsAnalysisModule.teacher => l10n.statisticsTeacherTitle,
       StatisticsAnalysisModule.ranking => l10n.statisticsRankingTitle,
+      StatisticsAnalysisModule.compare => l10n.statisticsCompareTitle,
     };
   }
 
@@ -128,7 +131,60 @@ class StatisticsAnalysisScreen extends StatelessWidget {
                 _openCourseEdit(context, courseName),
           ),
         ];
+      case StatisticsAnalysisModule.compare:
+        final active = provider.activeProfile;
+        final others = provider.profiles
+            .where((p) => p.id != active?.id)
+            .toList();
+        final activeStats = StatisticsService.calculateSemester(
+          allCourses: courses,
+          currentWeek: currentWeek,
+          semesterWeekCount: semesterWeekCount,
+        );
+        return [
+          ProfileCompareCard(
+            showHeader: false,
+            entries: [
+              ProfileCompareEntry(
+                name: active?.name ?? '',
+                isActive: true,
+                currentWeek: currentWeek,
+                totalSections: activeStats.totalSections,
+                totalCourses: activeStats.totalCourses,
+                requiredRatio: activeStats.natureStats.requiredRatio,
+                longestStreak: activeStats.longestStreak,
+              ),
+              for (final profile in others)
+                _profileCompareEntry(
+                  profile,
+                  activeTotalSections: activeStats.totalSections,
+                ),
+            ],
+          ),
+        ];
     }
+  }
+
+  /// 其他课表的对比条目（isActive 恒 false，delta 相对当前课表）
+  ProfileCompareEntry _profileCompareEntry(
+    TimetableProfile profile, {
+    required int activeTotalSections,
+  }) {
+    final stats = StatisticsService.calculateSemester(
+      allCourses: profile.courses,
+      currentWeek: profile.currentWeek,
+      semesterWeekCount: profile.settings.semesterWeekCount,
+    );
+    return ProfileCompareEntry(
+      name: profile.name,
+      isActive: false,
+      currentWeek: profile.currentWeek,
+      totalSections: stats.totalSections,
+      totalCourses: stats.totalCourses,
+      requiredRatio: stats.natureStats.requiredRatio,
+      longestStreak: stats.longestStreak,
+      deltaSections: stats.totalSections - activeTotalSections,
+    );
   }
 
   void _openCourseEdit(BuildContext context, String courseName) {
