@@ -13869,6 +13869,12 @@ abstract class AppLocalizations {
   /// **'安装包校验失败，为防止安装被篡改的文件已取消本次更新'**
   String get serviceMsgUpdateDownloadHashMismatch;
 
+  /// No description provided for @serviceMsgUpdateSha256UnverifiedRefused.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法校验安装包完整性（缺少官方 SHA-256），已取消应用内更新，请前往发布页手动下载'**
+  String get serviceMsgUpdateSha256UnverifiedRefused;
+
   /// No description provided for @serviceMsgUpdateDownloadUrlUntrusted.
   ///
   /// In zh, this message translates to:

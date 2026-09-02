@@ -8097,6 +8097,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Package verification failed. The update was cancelled to prevent installing a tampered file.';
 
   @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      'Package integrity could not be verified (official SHA-256 missing). In-app update cancelled, please download it manually from the Releases page.';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
       'Update download URL failed security validation.';
 

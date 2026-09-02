@@ -317,6 +317,17 @@ class AppUpdateService {
       _log('拒绝不受信任的更新下载地址：$url');
       return 'update_download_url_untrusted';
     }
+    // 无官方 digest 可校验时拒绝在应用内安装：Release 页面回退链路构造的
+    // 下载地址拿不到 GitHub API asset digest，而第三方镜像前缀（ghfast.top
+    // 等）恰好多走这条路——镜像投毒最需要兜底的就是这里。此前为 null 时
+    // 直接跳过校验即安装，完整性校验对页面链路完全失效。拒绝后由 UI 引导
+    // 用户前往 Release 页面手动下载（浏览器下载由 GitHub 页面背书）。
+    // 纯空白的 digest 视同缺失（trim 归一化，防止走到下载末端才 mismatch）。
+    final normalizedSha256 = expectedApkSha256?.trim() ?? '';
+    if (normalizedSha256.isEmpty) {
+      _log('update_sha256_unverified_install_refused');
+      return 'update_sha256_unverified_install_refused';
+    }
     _log('开始下载更新：$url');
     HttpClient? client;
     IOSink? sink;
@@ -367,24 +378,21 @@ class AppUpdateService {
 
       _log('update_download_completed: ${(downloaded / 1024 / 1024).toStringAsFixed(1)} MB');
 
-      // 第二道防线：校验官方 SHA-256（GitHub API digest）。缺失时跳过，
-      // 行为与旧版一致；镜像链路的完整性由此兜底。
-      if (expectedApkSha256 != null && expectedApkSha256.isNotEmpty) {
-        final actual = await _computeFileSha256(file);
-        if (actual == null) {
-          _log('update_hash_compute_failed_rejected_cleaned');
-          await _deleteFileIfExists(file);
-          return 'update_download_hash_mismatch';
-        }
-        if (!_constantTimeEquals(actual, expectedApkSha256)) {
-          _log('update_sha256_mismatch_file_deleted');
-          await _deleteFileIfExists(file);
-          return 'update_download_hash_mismatch';
-        }
-        _log('update_sha256_verified');
-      } else {
-        _log('update_sha256_absent_verification_skipped');
+      // 第二道防线：官方 SHA-256 已在入口强制非空（无 digest 的下载在
+      // 入口即被拒绝），此处对下载产物做完整性核验，镜像链路的完整性
+      // 由此兜底。
+      final actual = await _computeFileSha256(file);
+      if (actual == null) {
+        _log('update_hash_compute_failed_rejected_cleaned');
+        await _deleteFileIfExists(file);
+        return 'update_download_hash_mismatch';
       }
+      if (!_constantTimeEquals(actual, normalizedSha256)) {
+        _log('update_sha256_mismatch_file_deleted');
+        await _deleteFileIfExists(file);
+        return 'update_download_hash_mismatch';
+      }
+      _log('update_sha256_verified');
 
       _log('update_installer_opening');
       final result = await _openInstaller(savePath);

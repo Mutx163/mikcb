@@ -7664,6 +7664,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '安装包校验失败，为防止安装被篡改的文件已取消本次更新';
 
   @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      '无法校验安装包完整性（缺少官方 SHA-256），已取消应用内更新，请前往发布页手动下载';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted => '更新下载地址未通过安全校验';
 
   @override
@@ -18068,6 +18072,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get serviceMsgUpdateDownloadHashMismatch =>
       '安裝包校驗失敗，為防止安裝被篡改的文件已取消本次更新';
+
+  @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      '無法校驗安裝包完整性（缺少官方 SHA-256），已取消應用內更新，請前往發佈頁手動下載';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
@@ -28486,6 +28494,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get serviceMsgUpdateDownloadHashMismatch =>
       '安裝包校驗失敗，為防止安裝被篡改的檔案已取消本次更新';
+
+  @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      '無法校驗安裝包完整性（缺少官方 SHA-256），已取消應用內更新，請前往發佈頁手動下載';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

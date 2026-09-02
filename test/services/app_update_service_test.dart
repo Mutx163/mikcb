@@ -487,6 +487,10 @@ void main() {
         }
       },
       controller,
+      // 看门狗：无官方 digest 的下载在入口即被拒绝，取消清理路径
+      // 需要一个合法 digest 才能走到下载阶段。
+      expectedApkSha256:
+          sha256.convert(<int>[1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]).toString(),
     );
 
     final result = await downloadFuture;
@@ -539,6 +543,8 @@ void main() {
           'http://${server.address.host}:${server.port}/app.apk',
           (_, _) {},
           controller,
+          // 响应开始后立刻取消，digest 永远不会被校验，仅需非空以过入口门。
+          expectedApkSha256: sha256.convert(<int>[1]).toString(),
         );
         await responseStarted.future.timeout(const Duration(seconds: 2));
         controller.cancel();
@@ -590,6 +596,7 @@ void main() {
         'http://${server.address.host}:${server.port}/app.apk',
         (_, _) {},
         null,
+        expectedApkSha256: sha256.convert(List<int>.filled(6, 7)).toString(),
       );
 
       expect(result, isNull);
@@ -1006,11 +1013,16 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  test('download skips hash verification when no expected digest', () async {
+  test('download refuses to install when no expected digest is available', () async {
+    // Release 页面回退链路（含第三方镜像前缀）拿不到 GitHub API digest；
+    // 无 digest 的 APK 一律拒绝在应用内安装（镜像投毒最需要兜底的路径），
+    // 由 UI 引导用户前往 Release 页面手动下载。
     final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
+    var requestCount = 0;
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     unawaited(() async {
       await for (final request in server) {
+        requestCount++;
         request.response.statusCode = 200;
         request.response.headers.contentType = ContentType.binary;
         request.response.add(List<int>.filled(6, 7));
@@ -1033,11 +1045,25 @@ void main() {
       null,
     );
 
-    expect(result, isNull);
-    expect(openedPath, isNotNull);
+    expect(result, 'update_sha256_unverified_install_refused');
+    expect(openedPath, isNull);
+    // 下载根本不应发起：拒绝发生在任何网络请求之前
+    expect(requestCount, 0);
+    expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
 
     await server.close(force: true);
     await tempDir.delete(recursive: true);
+  });
+
+  test('empty expected digest is also refused', () async {
+    final service = AppUpdateService();
+    final result = await service.downloadAndInstallUpdate(
+      'https://github.com/Mutx163/mikcb/releases/download/v1.4.0/mikcb-1.4.0-arm64-v8a.apk',
+      (_, _) {},
+      null,
+      expectedApkSha256: '   ',
+    );
+    expect(result, 'update_sha256_unverified_install_refused');
   });
 
   test('release info carries apk sha256 digest from github api', () async {

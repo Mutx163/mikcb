@@ -7854,6 +7854,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '패키지 검증에 실패했습니다. 변조된 파일 설치를 방지하기 위해 이번 업데이트를 취소했습니다';
 
   @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      '패키지 무결성을 검증할 수 없어(공식 SHA-256 없음) 앱 내 업데이트를 취소했습니다. 릴리스 페이지에서 수동으로 다운로드해 주세요';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
       'Update download URL failed security validation.';
 

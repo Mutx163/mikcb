@@ -7811,6 +7811,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'パッケージの検証に失敗しました。改ざんされたファイルのインストールを防ぐため、今回の更新を中止しました';
 
   @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      'パッケージの整合性を検証できないため（公式 SHA-256 なし）、アプリ内更新を中止しました。リリースページから手動でダウンロードしてください';
+
+  @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>
       'Update download URL failed security validation.';
 

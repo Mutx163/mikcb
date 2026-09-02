@@ -346,6 +346,8 @@ String localizeServiceMessage(
       );
     case 'update_download_hash_mismatch':
       return l10n.serviceMsgUpdateDownloadHashMismatch;
+    case 'update_sha256_unverified_install_refused':
+      return l10n.serviceMsgUpdateSha256UnverifiedRefused;
     case 'update_open_installer_failed':
       return l10n.serviceMsgUpdateOpenInstallerFailed(
         resolvedArgs['detail']?.toString() ?? '',
