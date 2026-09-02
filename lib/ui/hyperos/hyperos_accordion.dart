@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'widgets/adaptive_card.dart';
+import 'widgets/indicators.dart';
 import 'widgets/tiles.dart';
 
 class HyperosAccordionItem {
@@ -24,6 +25,12 @@ class HyperosAccordionItem {
 }
 
 /// Expandable sections inside a control card (replaces Forui [FAccordion]).
+///
+/// 组头是「分组标签」不是行：标题应传小节标签语音的文字（如
+/// [HyperosTypography.sectionLabel]，灰字无徽章），尾部展开指示用
+/// 组件库细 chevron 旋转（收起向下 / 展开向上），与导航行静态
+/// chevron 同形不同态；展开内容放交互行时传 [HyperosAccordionItem.insetChild]
+/// 为 false。
 class HyperosAccordion extends StatelessWidget {
   const HyperosAccordion({super.key, required this.items});
 
@@ -76,9 +83,11 @@ class _HyperosAccordionTileState extends State<_HyperosAccordionTile> {
             child: Row(
               children: [
                 Expanded(child: widget.item.title),
-                Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more,
-                  color: HyperosColors.actionIcon(context),
+                // 展开指示与全库行尾 chevron 同语音：细线灰 chevron，
+                // 收起转 90° 指向下、展开转回指向上（同形不同态）。
+                RotatedBox(
+                  quarterTurns: _expanded ? -1 : 1,
+                  child: const HyperosChevron(),
                 ),
               ],
             ),

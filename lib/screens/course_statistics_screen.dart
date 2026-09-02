@@ -269,11 +269,12 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
   /// 5 个入口按“趋势/分布”与“教室/教师/排行”折叠成 2 组，
   /// 默认收起，减少学期视图首屏长度（渐进式披露）。
   ///
-  /// 组头用中性分组图标（insights / groups），不与任一子项撞色撞形。
-  /// 子项是标准 [HyperosListTile] 跳转行：56dp 行壳、尾随 chevron、
-  /// 统一的延迟按压填充，与全 app 行组一致；`insetChild: false` 让
-  /// 子项边到边铺满卡片、与组头同一缩进，不再套两层内边距；行组包
-  /// [HyperosControlCardRows]，首尾行按下高亮才能跟随卡片圆角裁剪。
+  /// 层级按组件库的「字号 + 颜色」语音：组头是卡内小节标签
+  /// （[HyperosTypography.sectionLabel] 灰字、无徽章），子项是标准
+  /// [HyperosListTile] 跳转行（徽章 + 17sp 标题 + chevron）——灰字组织、
+  /// 白字条目，组头不再与子项撞成同一条行；`insetChild: false` 让
+  /// 子项边到边铺满卡片，行组包 [HyperosControlCardRows]，首尾行按下
+  /// 高亮跟随卡片圆角裁剪。
   Widget _buildAnalysisEntries(BuildContext context, AppLocalizations l10n) {
     void open(StatisticsAnalysisModule module) {
       Navigator.push(
@@ -293,19 +294,9 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
           items: [
             HyperosAccordionItem(
               insetChild: false,
-              title: Row(
-                children: [
-                  // 组头用中性分组语义图标，不与任一子项撞色撞形：
-                  // 折叠态「蓝/紫」只代表子项之首，展开后配色语言不一致。
-                  const HyperosIconBadge(icon: Icons.insights_rounded),
-                  const SizedBox(width: HyperosTokens.rowContentGap),
-                  Expanded(
-                    child: Text(
-                      l10n.statisticsMoreGroupTrend,
-                      style: HyperosTypography.listTitle(context),
-                    ),
-                  ),
-                ],
+              title: Text(
+                l10n.statisticsMoreGroupTrend,
+                style: HyperosTypography.sectionLabel(context),
               ),
               child: HyperosControlCardRows(
                 children: [
@@ -326,17 +317,9 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             ),
             HyperosAccordionItem(
               insetChild: false,
-              title: Row(
-                children: [
-                  const HyperosIconBadge(icon: Icons.groups_rounded),
-                  const SizedBox(width: HyperosTokens.rowContentGap),
-                  Expanded(
-                    child: Text(
-                      l10n.statisticsMoreGroupPeople,
-                      style: HyperosTypography.listTitle(context),
-                    ),
-                  ),
-                ],
+              title: Text(
+                l10n.statisticsMoreGroupPeople,
+                style: HyperosTypography.sectionLabel(context),
               ),
               child: HyperosControlCardRows(
                 children: [
