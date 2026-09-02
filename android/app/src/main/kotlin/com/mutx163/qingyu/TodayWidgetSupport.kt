@@ -693,17 +693,31 @@ object TodayWidgetSupport {
     }
 
     /**
-     * 状态芯片文字色：浅色模式下「深蓝底芯片」用白色，次级灰仅用于浅底芯片；
-     * gradient 风格全天使用半透明白（浅色 chip 本身就是白色系）；
-     * 深色模式下夜间芯片为浅蓝底，统一用近白文字保证对比度。
-     * 此前各 Provider 直接复用 secondaryTextColor——浅色模式下「深蓝底+灰字」
-     * 对比度不足，深色模式下「浅蓝底+灰字」几乎不可读。
+     * 状态芯片文字色：按芯片底色联动，与 [statusBackgroundRes] 的背景分支一一对应。
+     *
+     * - gradient 风格（全天）：半透明白芯片（#33FFFFFF / #22FFFFFF），用纯白文字，
+     *   对比度 3.6:1（strong）~ 4.1:1（dim）；
+     * - 深色模式：夜间芯片提亮为 #2C4A73 / #324561，统一近白 #E2E8F0，
+     *   对比度 ≥7:1；
+     * - 浅色模式（非 gradient）：strong 芯片浅蓝底 #E0EAFF 用品牌蓝 #1D4ED8（5.5:1），
+     *   dim 芯片浅灰底 #EEF2F7 用深灰 #334155（9.2:1）。
+     *
+     * 此前各 Provider 直接复用 secondaryTextColor——浅色模式下「浅底+灰字」
+     * 对比度不足，深色模式下「深蓝底+灰字」几乎不可读。
+     * [state] 决定浅色模式 strong/dim 芯片的文字分档，与背景资源保持一致。
      */
     fun statusChipTextColor(state: String, style: String, context: Context? = null): Int {
         return when {
-            style == "gradient" -> Color.parseColor("#CCFFFFFF")
-            else -> Color.WHITE
+            style == "gradient" -> Color.WHITE
+            context != null && isDarkMode(context) -> Color.parseColor("#E2E8F0")
+            isDimChipState(state) -> Color.parseColor("#334155")
+            else -> Color.parseColor("#1D4ED8")
         }
+    }
+
+    /** 与 [statusBackgroundRes] 的 dim 芯片分支保持一致的状态集合。 */
+    private fun isDimChipState(state: String): Boolean {
+        return state != "ongoing" && state != "upcoming" && state != "holiday"
     }
 
     fun statusText(context: Context, state: String): String {
