@@ -545,7 +545,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     unawaited(
       AppLogService.instance.error(
         'home_reveal_watchdog',
-        '启动 6s 首页仍未换入，看门狗已强制换入首页',
+        'home_reveal_watchdog: no home reveal after 6s startup watchdog, forcing reveal',
       ),
     );
     _revealHomeOnce();
