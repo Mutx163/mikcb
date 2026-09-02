@@ -6499,6 +6499,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customHolidayEmpty => 'No custom holidays';
 
   @override
+  String get customHolidayCorrupted =>
+      'Custom holiday data failed to load. Reads and writes are paused to prevent data loss.';
+
+  @override
   String get customHolidayNameRequired => 'Please enter a holiday name';
 
   @override
@@ -8095,6 +8099,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get serviceMsgUpdateDownloadHashMismatch =>
       'Package verification failed. The update was cancelled to prevent installing a tampered file.';
+
+  @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      'Package integrity could not be verified (official SHA-256 missing). In-app update cancelled, please download it manually from the Releases page.';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

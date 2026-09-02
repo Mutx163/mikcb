@@ -159,6 +159,11 @@ void _releaseFirstFrame({required bool forced}) {
   }
 }
 
+/// 看门狗强制换入首页的钩子：由 AppEntryScreen 状态注册（见
+/// _AppEntryScreenState.initState）。runApp 之前挂死时为空——此时尚无
+/// 自绘启动画面可卡住，首帧放行即回到系统画面，无需处理。
+void Function()? _forcedHomeRevealHook;
+
 Future<void> main() async {
   runZonedGuarded(
     () async {
@@ -199,6 +204,11 @@ Future<void> main() async {
         if (!_firstFrameReleased.isCompleted) {
           _releaseFirstFrame(forced: true);
         }
+        // 首帧放行 ≠ 首页换入：build 在 _homeRevealed 前恒渲染自绘启动
+        // 画面，若启动管线挂死（无异常、仅 await 永不返回），catch 分支
+        // 的降级换入同样不会触发——补一道强制换入，保证极端情况下仍能
+        // 进入主界面（正常路径已换入时钩子内部直接跳过）。
+        _forcedHomeRevealHook?.call();
       });
       unawaited(AppLogService.instance.initialize());
       // 预热诊断包名判定缓存：八宫格目录用它同步过滤调试/性能版专属
@@ -526,10 +536,28 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
   }
 
+  /// 看门狗强制换入：仅当首页既未换入也未排程时生效并留痕；正常启动
+  /// 路径先到时这里是空操作，不产生日志噪音。
+  void _forceRevealHomeFromWatchdog() {
+    if (_homeRevealed || _revealScheduled) {
+      return;
+    }
+    unawaited(
+      AppLogService.instance.error(
+        'home_reveal_watchdog',
+        '启动 6s 首页仍未换入，看门狗已强制换入首页',
+      ),
+    );
+    _revealHomeOnce();
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 注册启动看门狗的强制换入钩子（顶层看门狗在 runApp 前就已挂上，
+    // 无法直接持有状态，经全局钩子解耦）。
+    _forcedHomeRevealHook = _forceRevealHomeFromWatchdog;
     final provider = context.read<TimetableProvider>();
     FairMemoryService.instance.registerSnapshotProvider(() async {
       return <String, Object?>{
@@ -582,6 +610,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     if (!kReleaseMode) {
       DebugDeepLinkNavigator.detach();
     }
+    _forcedHomeRevealHook = null;
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

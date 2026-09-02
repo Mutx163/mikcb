@@ -6275,6 +6275,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get customHolidayEmpty => '사용자 정의 휴일 없음';
 
   @override
+  String get customHolidayCorrupted =>
+      '사용자 정의 휴일 데이터를 읽지 못했습니다. 데이터 보호를 위해 읽기/쓰기를 중지했습니다';
+
+  @override
   String get customHolidayNameRequired => '휴일 이름을 입력하세요';
 
   @override
@@ -7852,6 +7856,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get serviceMsgUpdateDownloadHashMismatch =>
       '패키지 검증에 실패했습니다. 변조된 파일 설치를 방지하기 위해 이번 업데이트를 취소했습니다';
+
+  @override
+  String get serviceMsgUpdateSha256UnverifiedRefused =>
+      '패키지 무결성을 검증할 수 없어(공식 SHA-256 없음) 앱 내 업데이트를 취소했습니다. 릴리스 페이지에서 수동으로 다운로드해 주세요';
 
   @override
   String get serviceMsgUpdateDownloadUrlUntrusted =>

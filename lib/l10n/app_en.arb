@@ -3555,6 +3555,7 @@
   "customHolidayTypeVacation": "Holiday",
   "customHolidayTypeWorkday": "Workday",
   "customHolidayEmpty": "No custom holidays",
+  "customHolidayCorrupted": "Custom holiday data failed to load. Reads and writes are paused to prevent data loss.",
   "customHolidayNameRequired": "Please enter a holiday name",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {
@@ -4647,6 +4648,7 @@
   },
   "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
   "serviceMsgUpdateDownloadHashMismatch": "Package verification failed. The update was cancelled to prevent installing a tampered file.",
+  "serviceMsgUpdateSha256UnverifiedRefused": "Package integrity could not be verified (official SHA-256 missing). In-app update cancelled, please download it manually from the Releases page.",
   "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
   "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
   "@serviceMsgUpdateDownloadHttpFailed": {

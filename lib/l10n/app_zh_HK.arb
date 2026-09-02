@@ -3322,6 +3322,7 @@
   "customHolidayTypeVacation": "放假",
   "customHolidayTypeWorkday": "調休補班",
   "customHolidayEmpty": "暫無自訂假期",
+  "customHolidayCorrupted": "自訂假期資料讀取異常，已暫停讀寫以防覆蓋丟失",
   "customHolidayNameRequired": "請輸入假期名稱",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {
@@ -4410,6 +4411,7 @@
   },
   "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
   "serviceMsgUpdateDownloadHashMismatch": "安裝包校驗失敗，為防止安裝被篡改的文件已取消本次更新",
+  "serviceMsgUpdateSha256UnverifiedRefused": "無法校驗安裝包完整性（缺少官方 SHA-256），已取消應用內更新，請前往發佈頁手動下載",
   "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
   "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
   "@serviceMsgUpdateDownloadHttpFailed": {

@@ -3318,6 +3318,7 @@
   "customHolidayTypeVacation": "휴일",
   "customHolidayTypeWorkday": "대체 근무",
   "customHolidayEmpty": "사용자 정의 휴일 없음",
+  "customHolidayCorrupted": "사용자 정의 휴일 데이터를 읽지 못했습니다. 데이터 보호를 위해 읽기/쓰기를 중지했습니다",
   "customHolidayNameRequired": "휴일 이름을 입력하세요",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {
@@ -4410,6 +4411,7 @@
   },
   "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
   "serviceMsgUpdateDownloadHashMismatch": "패키지 검증에 실패했습니다. 변조된 파일 설치를 방지하기 위해 이번 업데이트를 취소했습니다",
+  "serviceMsgUpdateSha256UnverifiedRefused": "패키지 무결성을 검증할 수 없어(공식 SHA-256 없음) 앱 내 업데이트를 취소했습니다. 릴리스 페이지에서 수동으로 다운로드해 주세요",
   "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
   "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
   "@serviceMsgUpdateDownloadHttpFailed": {
