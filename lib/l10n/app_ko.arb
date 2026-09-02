@@ -3829,7 +3829,6 @@
     }
   },
   "statisticsAchievementDone": "달성 완료",
-  "statisticsWeekBusiestDay": "가장 바쁜 날",
   "statisticsWeekDailyHint": "탭하여 {week}주차 세부 정보 보기",
   "@statisticsWeekDailyHint": {
     "placeholders": {

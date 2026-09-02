@@ -3829,7 +3829,6 @@
     }
   },
   "statisticsAchievementDone": "達成済み",
-  "statisticsWeekBusiestDay": "最も忙しい日",
   "statisticsWeekDailyHint": "タップで第 {week} 週の詳細",
   "@statisticsWeekDailyHint": {
     "placeholders": {

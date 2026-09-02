@@ -4082,7 +4082,6 @@
     }
   },
   "statisticsAchievementDone": "已达成",
-  "statisticsWeekBusiestDay": "最忙的一天",
   "statisticsWeekDailyHint": "点击查看第 {week} 周详情",
   "@statisticsWeekDailyHint": {
     "placeholders": {

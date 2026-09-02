@@ -12674,12 +12674,6 @@ abstract class AppLocalizations {
   /// **'已达成'**
   String get statisticsAchievementDone;
 
-  /// No description provided for @statisticsWeekBusiestDay.
-  ///
-  /// In zh, this message translates to:
-  /// **'最忙的一天'**
-  String get statisticsWeekBusiestDay;
-
   /// No description provided for @statisticsWeekDailyHint.
   ///
   /// In zh, this message translates to:

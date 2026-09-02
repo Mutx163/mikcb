@@ -7348,9 +7348,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsAchievementDone => 'Unlocked';
 
   @override
-  String get statisticsWeekBusiestDay => 'Busiest Day';
-
-  @override
   String statisticsWeekDailyHint(int week) {
     return 'Tap to view week $week details';
   }
