@@ -3,7 +3,7 @@ lib/domain/location_building_cluster_logic.dart:67
 lib/domain/time_scheme_logic.dart:3
 lib/l10n/holiday_name_localizer.dart:1
 lib/logging/app_log_messages.dart:2
-lib/main.dart:3
+lib/main.dart:4
 lib/models/course.dart:15
 lib/models/exam.dart:16
 lib/models/liquid_glass_tuning.dart:1
