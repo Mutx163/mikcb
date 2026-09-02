@@ -387,6 +387,41 @@ abstract final class HyperosTypography {
       color: HyperosColors.onSurfaceVariantSummary(context),
     );
   }
+
+  /// Statistics "big number" styles — canonical 24px metric ink (w500).
+  ///
+  /// 统计页三张头部卡片的大数字统一走这里，避免各处 copyWith(fontSize: 24)
+  /// 各自定义字重。等宽数字（tabular figures）保证多位数变化时位宽稳定。
+  static TextStyle metricLarge(BuildContext context) {
+    return TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w500,
+      height: 1,
+      color: HyperosColors.primaryText(context),
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+  }
+
+  /// Secondary metric level (18px, e.g. semester progress “%”/“剩余 X 节”).
+  static TextStyle metricMedium(BuildContext context) {
+    return TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w500,
+      height: 1.1,
+      color: HyperosColors.primaryText(context),
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+  }
+
+  /// Metric label under a big number (footnote2 / w400).
+  static TextStyle metricCaption(BuildContext context) {
+    return TextStyle(
+      fontSize: HyperosMiuixTypography.footnote2,
+      fontWeight: FontWeight.w400,
+      height: 1.4,
+      color: HyperosColors.secondaryText(context),
+    );
+  }
 }
 
 abstract final class HyperosTheme {
