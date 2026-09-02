@@ -44,7 +44,12 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
-        views.setTextColor(R.id.widget_mini_heading, secondaryColor)
+        views.setTextColor(
+            R.id.widget_mini_heading,
+            TodayWidgetSupport.statusChipTextColor(
+                snapshot?.state ?: "no_course", style, context
+            )
+        )
         views.setTextColor(R.id.widget_mini_week, secondaryColor)
         views.setTextColor(R.id.widget_mini_empty, secondaryColor)
         views.setTextColor(R.id.widget_mini_more, secondaryColor)

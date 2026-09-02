@@ -692,6 +692,20 @@ object TodayWidgetSupport {
         return Color.parseColor("#64748B")
     }
 
+    /**
+     * 状态芯片文字色：浅色模式下「深蓝底芯片」用白色，次级灰仅用于浅底芯片；
+     * gradient 风格全天使用半透明白（浅色 chip 本身就是白色系）；
+     * 深色模式下夜间芯片为浅蓝底，统一用近白文字保证对比度。
+     * 此前各 Provider 直接复用 secondaryTextColor——浅色模式下「深蓝底+灰字」
+     * 对比度不足，深色模式下「浅蓝底+灰字」几乎不可读。
+     */
+    fun statusChipTextColor(state: String, style: String, context: Context? = null): Int {
+        return when {
+            style == "gradient" -> Color.parseColor("#CCFFFFFF")
+            else -> Color.WHITE
+        }
+    }
+
     fun statusText(context: Context, state: String): String {
         return when (state) {
             "ongoing" -> context.getString(R.string.widget_status_ongoing)

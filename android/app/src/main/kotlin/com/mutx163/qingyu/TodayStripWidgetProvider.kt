@@ -72,7 +72,10 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes(displayState, style),
         )
-        views.setTextColor(R.id.widget_strip_status, secondaryColor)
+        views.setTextColor(
+            R.id.widget_strip_status,
+            TodayWidgetSupport.statusChipTextColor(displayState, style, context)
+        )
 
         // 主课程名（信息优先级最高，宽度不足时最后截断）
         views.setTextViewText(

@@ -69,7 +69,10 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes("upcoming", chrome.backgroundStyle),
         )
-        views.setTextColor(R.id.stats_week, secondaryColor)
+        views.setTextColor(
+            R.id.stats_week,
+            TodayWidgetSupport.statusChipTextColor("upcoming", chrome.backgroundStyle, context)
+        )
 
         if (snapshot == null) {
             views.setTextViewText(R.id.stats_sections, "--")

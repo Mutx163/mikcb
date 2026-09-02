@@ -75,7 +75,10 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes(displayState, style),
         )
-        views.setTextColor(R.id.widget_wide_status, secondaryColor)
+        views.setTextColor(
+            R.id.widget_wide_status,
+            TodayWidgetSupport.statusChipTextColor(displayState, style, context)
+        )
 
         views.setTextViewText(
             R.id.widget_wide_course,
