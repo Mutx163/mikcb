@@ -268,6 +268,10 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
   ///
   /// 5 个入口按“趋势/分布”与“教室/教师/排行”折叠成 2 组，
   /// 默认收起，减少学期视图首屏长度（渐进式披露）。
+  ///
+  /// 组头用中性分组图标（insights / groups），子项为无 chevron 的
+  /// 扁平跳转行，与组头同构；子项包在 [HyperosControlCardRows] 里，
+  /// 首尾行按下高亮才能跟随卡片圆角裁剪。
   Widget _buildAnalysisEntries(BuildContext context, AppLocalizations l10n) {
     void open(StatisticsAnalysisModule module) {
       Navigator.push(
@@ -279,17 +283,33 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
       );
     }
 
-    HyperosListTile tile({
+    Widget flatTile({
       required IconData icon,
       required Color iconAccent,
       required String title,
       required StatisticsAnalysisModule module,
     }) {
-      return HyperosListTile(
-        icon: icon,
-        iconAccent: iconAccent,
-        title: title,
+      // 展开子项与组头同构：仅「图标 + 单行文字」的扁平行，
+      // 不带 chevron / 56dp 行壳，避免同一张卡里两套行样式打架。
+      return InkWell(
         onTap: () => open(module),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              HyperosIconBadge(icon: icon, accent: iconAccent),
+              const SizedBox(width: HyperosTokens.rowContentGap),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: HyperosTypography.listTitle(context),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -302,10 +322,10 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             HyperosAccordionItem(
               title: Row(
                 children: [
-                  const HyperosIconBadge(
-                    icon: Icons.show_chart_rounded,
-                  ),
-                  const SizedBox(width: 16),
+                  // 组头用中性分组语义图标，不与任一子项撞色撞形：
+                  // 折叠态「蓝/紫」只代表子项之首，展开后配色语言不一致。
+                  const HyperosIconBadge(icon: Icons.insights_rounded),
+                  const SizedBox(width: HyperosTokens.rowContentGap),
                   Expanded(
                     child: Text(
                       l10n.statisticsMoreGroupTrend,
@@ -314,16 +334,15 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: HyperosControlCardRows(
                 children: [
-                  tile(
+                  flatTile(
                     icon: Icons.show_chart_rounded,
                     iconAccent: HyperosIconColors.blue,
                     title: l10n.statisticsTrendTitle,
                     module: StatisticsAnalysisModule.trend,
                   ),
-                  tile(
+                  flatTile(
                     icon: Icons.schedule_rounded,
                     iconAccent: HyperosIconColors.cyan,
                     title: l10n.statisticsTimeUtilTitle,
@@ -335,11 +354,8 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             HyperosAccordionItem(
               title: Row(
                 children: [
-                  const HyperosIconBadge(
-                    icon: Icons.leaderboard_rounded,
-                    accent: HyperosIconColors.purple,
-                  ),
-                  const SizedBox(width: 16),
+                  const HyperosIconBadge(icon: Icons.groups_rounded),
+                  const SizedBox(width: HyperosTokens.rowContentGap),
                   Expanded(
                     child: Text(
                       l10n.statisticsMoreGroupPeople,
@@ -348,22 +364,21 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: HyperosControlCardRows(
                 children: [
-                  tile(
+                  flatTile(
                     icon: Icons.location_city_rounded,
                     iconAccent: HyperosIconColors.purple,
                     title: l10n.statisticsVenueTitle,
                     module: StatisticsAnalysisModule.venue,
                   ),
-                  tile(
+                  flatTile(
                     icon: Icons.school_outlined,
                     iconAccent: HyperosIconColors.green,
                     title: l10n.statisticsTeacherTitle,
                     module: StatisticsAnalysisModule.teacher,
                   ),
-                  tile(
+                  flatTile(
                     icon: Icons.leaderboard_rounded,
                     iconAccent: HyperosIconColors.orange,
                     title: l10n.statisticsRankingTitle,

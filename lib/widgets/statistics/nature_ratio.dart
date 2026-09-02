@@ -75,6 +75,11 @@ class NatureRatio extends StatelessWidget {
         : stats.electiveCount == 0
             ? l10n.statisticsNatureNoneElective
             : null;
+    // 缺失态中心要放提示文案（英文/日/韩较长），孔径加大 4dp 防溢出；
+    // 正常态 radius 20 + 孔 28 = 直径 100 恰好贴合 100x100 容器，
+    // 修复原来 22+30=104 被裁 4dp 的问题。
+    final double radius = missingLabel != null ? 18.0 : 20.0;
+    final double centerRadius = missingLabel != null ? 32.0 : 28.0;
 
     return Stack(
       alignment: Alignment.center,
@@ -82,18 +87,18 @@ class NatureRatio extends StatelessWidget {
         PieChart(
           PieChartData(
             sectionsSpace: 2,
-            centerSpaceRadius: 30,
+            centerSpaceRadius: centerRadius,
             sections: [
               PieChartSectionData(
                 value: stats.requiredCount.toDouble(),
                 color: _requiredColor,
-                radius: 22,
+                radius: radius,
                 showTitle: false,
               ),
               PieChartSectionData(
                 value: stats.electiveCount.toDouble(),
                 color: _electiveColor,
-                radius: 22,
+                radius: radius,
                 showTitle: false,
               ),
               // fl_chart 对 value=0 的段不渲染弧线，纯色圆会被误读为
@@ -102,30 +107,35 @@ class NatureRatio extends StatelessWidget {
                 PieChartSectionData(
                   value: 1,
                   color: _requiredColor.withValues(alpha: 0.12),
-                  radius: 22,
+                  radius: radius,
                   showTitle: false,
                 ),
               if (stats.electiveCount == 0)
                 PieChartSectionData(
                   value: 1,
                   color: _electiveColor.withValues(alpha: 0.12),
-                  radius: 22,
+                  radius: radius,
                   showTitle: false,
                 ),
             ],
           ),
         ),
         if (missingLabel != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              missingLabel,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: HyperosTypography.listDetail(context).copyWith(
-                fontSize: HyperosMiuixTypography.footnote2,
-                color: HyperosColors.secondaryText(context),
-                height: 1.2,
+          // FittedBox 兜底：英文/日/韩文案较长，两行后仍可能超出中心孔，
+          // 等比缩小保证不压到环上。
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                missingLabel,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: HyperosTypography.listDetail(context).copyWith(
+                  fontSize: HyperosMiuixTypography.footnote2,
+                  color: HyperosColors.secondaryText(context),
+                  height: 1.2,
+                ),
               ),
             ),
           ),

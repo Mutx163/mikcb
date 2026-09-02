@@ -3710,13 +3710,21 @@
   "statisticsCompareWeek": "현재 주차",
   "statisticsMoreTitle": "심층 분석",
   "statisticsMoreGroupTrend": "추세 · 분포",
-  "@statisticsMoreGroupTrend": {},
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
   "statisticsMoreGroupPeople": "강의실 · 교수 · 순위",
-  "@statisticsMoreGroupPeople": {},
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
   "statisticsNatureNoneRequired": "필수 과목 없음",
-  "@statisticsNatureNoneRequired": {},
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
   "statisticsNatureNoneElective": "선택 과목 없음",
-  "@statisticsNatureNoneElective": {},
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "모닝 버드",
   "statisticsAchievementMorningPersonDescription": "오전 수업 50% 이상",
   "statisticsAchievementGapMasterName": "시간 관리 마스터",
