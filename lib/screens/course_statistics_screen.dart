@@ -304,7 +304,6 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                 children: [
                   const HyperosIconBadge(
                     icon: Icons.show_chart_rounded,
-                    accent: HyperosIconColors.blue,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
