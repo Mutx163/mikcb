@@ -501,6 +501,55 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Body'), findsOneWidget);
     });
+
+    testWidgets('insetChild toggles expanded content horizontal inset', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                HyperosAccordion(
+                  key: ValueKey('inset'),
+                  items: [
+                    HyperosAccordionItem(title: Text('A'), child: Text('A body')),
+                  ],
+                ),
+                HyperosAccordion(
+                  key: ValueKey('edge'),
+                  items: [
+                    HyperosAccordionItem(
+                      insetChild: false,
+                      title: Text('B'),
+                      child: Text('B body'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('A'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('B'));
+      await tester.pumpAndSettle();
+
+      double leftOf(Key accordionKey, String text) {
+        final accordionLeft = tester.getTopLeft(
+          find.byKey(accordionKey),
+        ).dx;
+        final bodyLeft = tester.getTopLeft(find.text(text)).dx;
+        return bodyLeft - accordionLeft;
+      }
+
+      // 默认内缩 16dp（文本/输入框等内容块）；insetChild false 边到边
+      // （交互行组自带行内边距与首尾行圆角）。
+      expect(leftOf(const ValueKey('inset'), 'A body'), 16.0);
+      expect(leftOf(const ValueKey('edge'), 'B body'), 0.0);
+    });
   });
 
   group('showHyperosRichSnackBar', () {

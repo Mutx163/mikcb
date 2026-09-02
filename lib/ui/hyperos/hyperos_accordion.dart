@@ -3,12 +3,24 @@ import 'package:flutter/material.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'widgets/adaptive_card.dart';
+import 'widgets/tiles.dart';
 
 class HyperosAccordionItem {
-  const HyperosAccordionItem({required this.title, required this.child});
+  const HyperosAccordionItem({
+    required this.title,
+    required this.child,
+    this.insetChild = true,
+  });
 
   final Widget title;
   final Widget child;
+
+  /// 展开内容是否套 [HyperosControlCardScope.defaultHorizontalPadding] 内边距。
+  ///
+  /// 默认 true，适配文本 / 输入框等内容块；放边到边的交互行
+  /// （[HyperosListTile] 等自带行内边距与首尾行圆角的行）时传 false，
+  /// 行组包 [HyperosControlCardRows] 让首尾行按压高亮跟随卡片圆角。
+  final bool insetChild;
 }
 
 /// Expandable sections inside a control card (replaces Forui [FAccordion]).
@@ -52,27 +64,31 @@ class _HyperosAccordionTileState extends State<_HyperosAccordionTile> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: HyperosTokens.rowPaddingUniform,
-              child: Row(
-                children: [
-                  Expanded(child: widget.item.title),
-                  Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    color: HyperosColors.actionIcon(context),
-                  ),
-                ],
-              ),
+        // 组头按压与全 app 行一致：HyperosPressableRow 的延迟灰色填充
+        // （滚动开始即取消、松手即清除，边到边填充由卡片圆角裁剪），
+        // 替代裸 InkWell 的 Material 水波纹高亮。
+        HyperosPressableRow(
+          onTap: () => setState(() => _expanded = !_expanded),
+          backgroundColor: HyperosColors.card(context),
+          highlightColor: HyperosColors.rowHighlight(context),
+          child: Padding(
+            padding: HyperosTokens.rowPaddingUniform,
+            child: Row(
+              children: [
+                Expanded(child: widget.item.title),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  color: HyperosColors.actionIcon(context),
+                ),
+              ],
             ),
           ),
         ),
         if (_expanded)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: widget.item.insetChild
+                ? const EdgeInsets.fromLTRB(16, 0, 16, 16)
+                : EdgeInsets.zero,
             child: widget.item.child,
           ),
       ],
