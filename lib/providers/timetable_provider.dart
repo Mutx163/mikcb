@@ -3382,6 +3382,13 @@ class TimetableProvider with ChangeNotifier {
     return await _holidayService.loadCustomHolidays() ?? const [];
   }
 
+  /// 读取自定义假期，数据损坏时返回 null（区别于「没有数据」的空列表）。
+  /// 供设置页区分「暂无」与「损坏」并给出提示条（getCustomHolidays 会把
+  /// 损坏兜底成空列表，用户会误以为没有数据，见 Issue #52 审核 S4）。
+  Future<List<HolidayEntry>?> loadCustomHolidaysOrNull() {
+    return _holidayService.loadCustomHolidays();
+  }
+
   /// 新增一条自定义假期
   Future<void> addCustomHoliday(HolidayEntry entry) async {
     await _holidayService.addCustomHoliday(entry);

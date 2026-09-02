@@ -406,7 +406,7 @@ class AchievementGrid extends StatelessWidget {
   const AchievementGrid({super.key, required this.achievements});
 
   static const _columns = 4;
-  static const _columnSpacing = 8.0;
+  static const _columnSpacing = 12.0;
   static const _rowSpacing = 12.0;
 
   @override

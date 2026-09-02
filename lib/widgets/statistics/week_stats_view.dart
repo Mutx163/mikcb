@@ -137,7 +137,8 @@ class _WeekSelector extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.statisticsWeekSelector(week),
-                    // 卡片标题回归常规体，靠字号(18)建立层级
+                    // 卡片标题回归常规体，靠字号(18)建立层级。
+                    // 注意：这里是标题文案而非展示数字，保持 w400 不动。
                     style: HyperosTypography.listTitle(context).copyWith(
                       fontSize: 18,
                       color: HyperosColors.primaryText(context),
@@ -275,10 +276,7 @@ class _WeekMetricCell extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              // 展示数字保持常规字重，层级只靠字号对比（用户明确不要加粗）。
-              style: HyperosTypography.listTitle(context).copyWith(
-                fontSize: 24,
-                height: 1,
+              style: HyperosTypography.metricLarge(context).copyWith(
                 color: highlight
                     ? HyperosColors.primary(context)
                     : HyperosColors.primaryText(context),
