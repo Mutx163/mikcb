@@ -6970,9 +6970,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsAchievementDone => '已达成';
 
   @override
-  String get statisticsWeekBusiestDay => '最忙的一天';
-
-  @override
   String statisticsWeekDailyHint(int week) {
     return '点击查看第 $week 周详情';
   }
@@ -17361,9 +17358,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementDone => '已達成';
-
-  @override
-  String get statisticsWeekBusiestDay => '最忙的一天';
 
   @override
   String statisticsWeekDailyHint(int week) {
@@ -27798,9 +27792,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementDone => '已達成';
-
-  @override
-  String get statisticsWeekBusiestDay => '最忙的一天';
 
   @override
   String statisticsWeekDailyHint(int week) {

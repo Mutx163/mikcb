@@ -55,11 +55,15 @@ class DailyChart extends StatelessWidget {
               barTouchData: BarTouchData(
                 enabled: true,
                 touchTooltipData: BarTouchTooltipData(
+                  // Tooltip 面板底色与字色成对走亮暗 token：fl_chart
+                  // 默认面板恒为深色底，暗色下只改字色白字会消失（#84）。
+                  getTooltipColor: (group) =>
+                      HyperosColors.inverseSurface(context),
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     return BarTooltipItem(
                       '${rod.toY.toStringAsFixed(1)} ${l10n.statisticsSectionsUnit}',
                       HyperosTypography.listDetail(context).copyWith(
-                        color: Colors.white,
+                        color: HyperosColors.onInverseSurface(context),
                         fontWeight: FontWeight.w500,
                       ),
                     );

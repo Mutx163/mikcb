@@ -126,7 +126,10 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
                 }
             }
         )
-        views.setTextColor(R.id.widget_status, secondaryTextColor)
+        views.setTextColor(
+            R.id.widget_status,
+            TodayWidgetSupport.statusChipTextColor(displayState, backgroundStyle, context)
+        )
         views.setTextColor(R.id.widget_course_name, primaryTextColor)
         views.setTextColor(R.id.widget_meta, secondaryTextColor)
         views.setInt(

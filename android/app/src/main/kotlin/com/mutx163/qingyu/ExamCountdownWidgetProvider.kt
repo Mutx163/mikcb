@@ -77,7 +77,14 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
                 style,
             ),
         )
-        views.setTextColor(R.id.exam_chip, secondaryColor)
+        views.setTextColor(
+            R.id.exam_chip,
+            TodayWidgetSupport.statusChipTextColor(
+                if (isExamOngoing) "ongoing" else "upcoming",
+                style,
+                context
+            )
+        )
 
         // 大字区：常规显示天数，今天考试显示"今天"，进行中显示结束时间，无数据显示占位。
         val endTimeText = snapshot?.nextExamEndTime.orEmpty()

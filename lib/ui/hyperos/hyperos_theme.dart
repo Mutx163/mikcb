@@ -223,6 +223,22 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.onPrimary;
   }
 
+  /// On-accent color for text/icons painted over saturated accent fills
+  /// (solid primary buttons, chart tooltip panels, unlocked achievement
+  /// badges, colored icon tiles).
+  ///
+  /// Light mode: white — accent fills (#3482FF and the HyperosIconColors
+  /// palette) are all dark enough for white ink (WCAG AA vs. #3482FF).
+  /// Dark mode: near-white (#F2F2F2, matches dark onSurface) so glassy or
+  /// luminous accent renders stay harmonious instead of pure-white glare.
+  /// Resolution is context-driven; never hardcode Colors.white for on-accent
+  /// ink (see issue #84).
+  static Color onAccent(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSurface
+        : HyperosMiuixLightColors.onPrimary;
+  }
+
   // --- Disabled role colors ---
 
   static Color disabledPrimary(BuildContext context) {

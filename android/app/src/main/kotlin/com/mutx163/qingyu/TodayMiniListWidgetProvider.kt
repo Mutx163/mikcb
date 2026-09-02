@@ -26,6 +26,9 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
         val style = snapshot?.backgroundStyle ?: "solid"
         val primaryColor = TodayWidgetSupport.primaryTextColor(style, context)
         val secondaryColor = TodayWidgetSupport.secondaryTextColor(style, context)
+        // 与其他 Provider 统一口径：考试进行中时芯片按 "ongoing" 渲染，
+        // 避免「考试中」被 dim 样式降级。
+        val displayState = snapshot?.let { TodayWidgetSupport.displayStatusState(it) } ?: "no_course"
 
         views.setInt(
             R.id.widget_mini_card,
@@ -44,14 +47,17 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
-        views.setTextColor(R.id.widget_mini_heading, secondaryColor)
+        views.setTextColor(
+            R.id.widget_mini_heading,
+            TodayWidgetSupport.statusChipTextColor(displayState, style, context)
+        )
         views.setTextColor(R.id.widget_mini_week, secondaryColor)
         views.setTextColor(R.id.widget_mini_empty, secondaryColor)
         views.setTextColor(R.id.widget_mini_more, secondaryColor)
         views.setInt(
             R.id.widget_mini_heading,
             "setBackgroundResource",
-            TodayWidgetSupport.statusBackgroundRes(snapshot?.state ?: "no_course", style)
+            TodayWidgetSupport.statusBackgroundRes(displayState, style)
         )
 
         val isShowingTomorrow = snapshot != null

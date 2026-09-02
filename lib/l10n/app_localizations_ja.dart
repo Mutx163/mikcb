@@ -7076,9 +7076,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsAchievementDone => '達成済み';
 
   @override
-  String get statisticsWeekBusiestDay => '最も忙しい日';
-
-  @override
   String statisticsWeekDailyHint(int week) {
     return 'タップで第 $week 週の詳細';
   }

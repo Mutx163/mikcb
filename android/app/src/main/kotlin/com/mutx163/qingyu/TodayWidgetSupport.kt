@@ -692,6 +692,40 @@ object TodayWidgetSupport {
         return Color.parseColor("#64748B")
     }
 
+    /**
+     * 状态芯片文字色：按芯片底色联动，与 [statusBackgroundRes] 共用 [isStrongChipState]
+     * 这一份状态事实来源。
+     *
+     * - gradient 风格（日夜同底）：夜间无独立资源、回落 [R.drawable.widget_today_bg_gradient_r16]
+     *   亮色青→蓝渐变，白色半透明芯片（#55FFFFFF / #40FFFFFF）日夜一致，
+     *   故文字统一深色 #0F172A，对比度 strong 6.2:1、dim 5.3:1（WCAG AA ≥4.5 达标）；
+     * - 深色模式（非 gradient）：夜间芯片 #FF2C4A73 / #FF324561，统一近白 #E2E8F0，
+     *   对比度 ≥7:1；
+     * - 浅色模式（非 gradient）：strong 芯片浅蓝底 #E0EAFF 用品牌蓝 #1D4ED8（5.5:1），
+     *   dim 芯片浅灰底 #EEF2F7 用深灰 #334155（9.2:1）。
+     *
+     * 此前各 Provider 直接复用 secondaryTextColor——浅色模式下「浅底+灰字」
+     * 对比度不足，深色模式下「深蓝底+灰字」几乎不可读。
+     * [state] 决定浅色模式 strong/dim 芯片的文字分档，与背景资源保持一致。
+     */
+    fun statusChipTextColor(state: String, style: String, context: Context? = null): Int {
+        return when {
+            style == "gradient" -> Color.parseColor("#0F172A")
+            context != null && isDarkMode(context) -> Color.parseColor("#E2E8F0")
+            !isStrongChipState(state) -> Color.parseColor("#334155")
+            else -> Color.parseColor("#1D4ED8")
+        }
+    }
+
+    /**
+     * strong 芯片状态集合：[statusBackgroundRes] 的 strong 分支与
+     * [statusChipTextColor] 的文字分档共用此判断，保证背景/文字联动只有一份事实来源。
+     */
+    fun isStrongChipState(state: String): Boolean {
+        return state == "ongoing" || state == "upcoming" || state == "holiday"
+    }
+
+
     fun statusText(context: Context, state: String): String {
         return when (state) {
             "ongoing" -> context.getString(R.string.widget_status_ongoing)
@@ -829,21 +863,12 @@ object TodayWidgetSupport {
     }
 
     fun statusBackgroundRes(state: String, style: String): Int {
-        return when (state) {
-            "ongoing", "upcoming", "holiday" -> {
-                if (style == "gradient") {
-                    R.drawable.widget_status_chip_light
-                } else {
-                    R.drawable.widget_status_chip_strong
-                }
-            }
-            else -> {
-                if (style == "gradient") {
-                    R.drawable.widget_status_chip_dim_light
-                } else {
-                    R.drawable.widget_status_chip_dim
-                }
-            }
+        val strong = isStrongChipState(state)
+        return when {
+            strong && style == "gradient" -> R.drawable.widget_status_chip_light
+            strong -> R.drawable.widget_status_chip_strong
+            style == "gradient" -> R.drawable.widget_status_chip_dim_light
+            else -> R.drawable.widget_status_chip_dim
         }
     }
 
