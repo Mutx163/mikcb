@@ -39,7 +39,11 @@ void main() {
     // 一致性校验 / 考试提醒单飞收敛属正当修复增长但未同步基线
     // （PR#39 的 4419 基于尚未含 #45 的旧 main），合并后实测 4433，
     // 按测试约定同步真实值。
-    const baselineLines = 4433;
+    // 4433→4440: PR#63（82f55c9d）Issue#52 审核 S4 新增
+    // loadCustomHolidaysOrNull 单调用点私有转发入口 +7，未同步基线；
+    // 与既有 getCustomHolidays 并存属过渡态，拆分归阶段 3 重构，
+    // 按测试约定同步真实值。
+    const baselineLines = 4440;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
