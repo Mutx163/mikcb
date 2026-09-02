@@ -265,6 +265,9 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
   }
 
   /// 深度分析入口组（二级页）
+  ///
+  /// 5 个入口按“趋势/分布”与“教室/教师/排行”折叠成 2 组，
+  /// 默认收起，减少学期视图首屏长度（渐进式披露）。
   Widget _buildAnalysisEntries(BuildContext context, AppLocalizations l10n) {
     void open(StatisticsAnalysisModule module) {
       Navigator.push(
@@ -276,41 +279,102 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
       );
     }
 
+    HyperosListTile tile({
+      required IconData icon,
+      required Color iconAccent,
+      required String title,
+      required StatisticsAnalysisModule module,
+    }) {
+      return HyperosListTile(
+        icon: icon,
+        iconAccent: iconAccent,
+        title: title,
+        onTap: () => open(module),
+      );
+    }
+
     return HyperosSettingsBlock(
       title: l10n.statisticsMoreTitle,
-      child: HyperosListGroup(
-        children: [
-          HyperosListTile(
-            icon: Icons.show_chart_rounded,
-            iconAccent: HyperosIconColors.blue,
-            title: l10n.statisticsTrendTitle,
-            onTap: () => open(StatisticsAnalysisModule.trend),
-          ),
-          HyperosListTile(
-            icon: Icons.schedule_rounded,
-            iconAccent: HyperosIconColors.cyan,
-            title: l10n.statisticsTimeUtilTitle,
-            onTap: () => open(StatisticsAnalysisModule.timeUtil),
-          ),
-          HyperosListTile(
-            icon: Icons.location_city_rounded,
-            iconAccent: HyperosIconColors.purple,
-            title: l10n.statisticsVenueTitle,
-            onTap: () => open(StatisticsAnalysisModule.venue),
-          ),
-          HyperosListTile(
-            icon: Icons.school_outlined,
-            iconAccent: HyperosIconColors.green,
-            title: l10n.statisticsTeacherTitle,
-            onTap: () => open(StatisticsAnalysisModule.teacher),
-          ),
-          HyperosListTile(
-            icon: Icons.leaderboard_rounded,
-            iconAccent: HyperosIconColors.orange,
-            title: l10n.statisticsRankingTitle,
-            onTap: () => open(StatisticsAnalysisModule.ranking),
-          ),
-        ],
+      child: HyperosControlCard(
+        edgeToEdge: true,
+        child: HyperosAccordion(
+          items: [
+            HyperosAccordionItem(
+              title: Row(
+                children: [
+                  const HyperosIconBadge(
+                    icon: Icons.show_chart_rounded,
+                    accent: HyperosIconColors.blue,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      l10n.statisticsMoreGroupTrend,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  tile(
+                    icon: Icons.show_chart_rounded,
+                    iconAccent: HyperosIconColors.blue,
+                    title: l10n.statisticsTrendTitle,
+                    module: StatisticsAnalysisModule.trend,
+                  ),
+                  tile(
+                    icon: Icons.schedule_rounded,
+                    iconAccent: HyperosIconColors.cyan,
+                    title: l10n.statisticsTimeUtilTitle,
+                    module: StatisticsAnalysisModule.timeUtil,
+                  ),
+                ],
+              ),
+            ),
+            HyperosAccordionItem(
+              title: Row(
+                children: [
+                  const HyperosIconBadge(
+                    icon: Icons.leaderboard_rounded,
+                    accent: HyperosIconColors.purple,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      l10n.statisticsMoreGroupPeople,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  tile(
+                    icon: Icons.location_city_rounded,
+                    iconAccent: HyperosIconColors.purple,
+                    title: l10n.statisticsVenueTitle,
+                    module: StatisticsAnalysisModule.venue,
+                  ),
+                  tile(
+                    icon: Icons.school_outlined,
+                    iconAccent: HyperosIconColors.green,
+                    title: l10n.statisticsTeacherTitle,
+                    module: StatisticsAnalysisModule.teacher,
+                  ),
+                  tile(
+                    icon: Icons.leaderboard_rounded,
+                    iconAccent: HyperosIconColors.orange,
+                    title: l10n.statisticsRankingTitle,
+                    module: StatisticsAnalysisModule.ranking,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

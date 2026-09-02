@@ -27,7 +27,7 @@ class NatureRatio extends StatelessWidget {
                   SizedBox(
                     width: 100,
                     height: 100,
-                    child: _buildDonutChart(),
+                    child: _buildDonutChart(context),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
@@ -67,26 +67,69 @@ class NatureRatio extends StatelessWidget {
     );
   }
 
-  Widget _buildDonutChart() {
-    return PieChart(
-      PieChartData(
-        sectionsSpace: 2,
-        centerSpaceRadius: 30,
-        sections: [
-          PieChartSectionData(
-            value: stats.requiredCount.toDouble(),
-            color: _requiredColor,
-            radius: 22,
-            showTitle: false,
+  Widget _buildDonutChart(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // 单侧缺失（必修=0 / 选修=0）时的中心提示文案，两侧对称。
+    final String? missingLabel = stats.requiredCount == 0
+        ? l10n.statisticsNatureNoneRequired
+        : stats.electiveCount == 0
+            ? l10n.statisticsNatureNoneElective
+            : null;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        PieChart(
+          PieChartData(
+            sectionsSpace: 2,
+            centerSpaceRadius: 30,
+            sections: [
+              PieChartSectionData(
+                value: stats.requiredCount.toDouble(),
+                color: _requiredColor,
+                radius: 22,
+                showTitle: false,
+              ),
+              PieChartSectionData(
+                value: stats.electiveCount.toDouble(),
+                color: _electiveColor,
+                radius: 22,
+                showTitle: false,
+              ),
+              // fl_chart 对 value=0 的段不渲染弧线，纯色圆会被误读为
+              // 100%：哪侧为 0 就在哪侧补一段极浅轨道段，让“空”可见。
+              if (stats.requiredCount == 0)
+                PieChartSectionData(
+                  value: 1,
+                  color: _requiredColor.withValues(alpha: 0.12),
+                  radius: 22,
+                  showTitle: false,
+                ),
+              if (stats.electiveCount == 0)
+                PieChartSectionData(
+                  value: 1,
+                  color: _electiveColor.withValues(alpha: 0.12),
+                  radius: 22,
+                  showTitle: false,
+                ),
+            ],
           ),
-          PieChartSectionData(
-            value: stats.electiveCount.toDouble(),
-            color: _electiveColor,
-            radius: 22,
-            showTitle: false,
+        ),
+        if (missingLabel != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              missingLabel,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: HyperosTypography.listDetail(context).copyWith(
+                fontSize: HyperosMiuixTypography.footnote2,
+                color: HyperosColors.secondaryText(context),
+                height: 1.2,
+              ),
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
