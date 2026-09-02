@@ -11,10 +11,20 @@ typedef _TimeRow = ({IconData icon, Color accent, String label, String value});
 ///
 /// 7 项并列读数以纵向键值对列表呈现，行间用细分隔线区分，
 /// 避免横向 Wrap 固定宽度造成的留白与列距不均问题。
+///
+/// [standalone] 用于深度分析独立二级页：卡内标题与页面大标题重复，
+/// 略去；读数从仪表盘嵌入的 11px 小字放大到正文/指标刻度，行距放宽，
+/// 避免整页只顶着一小条字、下方大片留白。
 class TimeUtilizationCard extends StatelessWidget {
   final TimeUtilizationStats stats;
 
-  const TimeUtilizationCard({super.key, required this.stats});
+  final bool standalone;
+
+  const TimeUtilizationCard({
+    super.key,
+    required this.stats,
+    this.standalone = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +33,25 @@ class TimeUtilizationCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final labelStyle = HyperosTypography.listDetail(context).copyWith(
-      fontSize: HyperosMiuixTypography.footnote2,
-    );
+    final labelStyle = standalone
+        ? HyperosTypography.listDetail(context).copyWith(
+            fontSize: HyperosMiuixTypography.body1,
+            color: HyperosColors.primaryText(context),
+          )
+        : HyperosTypography.listDetail(context).copyWith(
+            fontSize: HyperosMiuixTypography.footnote2,
+          );
+
+    final valueStyle = standalone
+        ? HyperosTypography.metricMedium(context)
+        : HyperosTypography.listTitle(context).copyWith(
+            fontSize: HyperosMiuixTypography.footnote2,
+            fontWeight: FontWeight.w600,
+            color: HyperosColors.primaryText(context),
+          );
+
+    final iconSize = standalone ? 22.0 : 16.0;
+    final rowGap = standalone ? 12.0 : 8.0;
 
     final rows = <_TimeRow>[
       (
@@ -79,10 +105,10 @@ class TimeUtilizationCard extends StatelessWidget {
           row.value.isEmpty ? l10n.statisticsNoData : row.value;
 
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: rowGap),
         child: Row(
           children: [
-            Icon(row.icon, size: 16, color: row.accent),
+            Icon(row.icon, size: iconSize, color: row.accent),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
@@ -97,12 +123,7 @@ class TimeUtilizationCard extends StatelessWidget {
               displayValue,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              // T2 弹窗/行内数据值
-              style: HyperosTypography.listTitle(context).copyWith(
-                fontSize: HyperosMiuixTypography.footnote2,
-                fontWeight: FontWeight.w600,
-                color: HyperosColors.primaryText(context),
-              ),
+              style: valueStyle,
             ),
           ],
         ),
@@ -114,20 +135,22 @@ class TimeUtilizationCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                const HyperosIconBadge(
-                  icon: Icons.schedule_rounded,
-                  accent: HyperosIconColors.cyan,
-                ),
-                const SizedBox(width: HyperosTokens.rowContentGap),
-                Text(
-                  l10n.statisticsTimeUtilTitle,
-                  style: HyperosTypography.listTitle(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+            if (!standalone) ...[
+              Row(
+                children: [
+                  const HyperosIconBadge(
+                    icon: Icons.schedule_rounded,
+                    accent: HyperosIconColors.cyan,
+                  ),
+                  const SizedBox(width: HyperosTokens.rowContentGap),
+                  Text(
+                    l10n.statisticsTimeUtilTitle,
+                    style: HyperosTypography.listTitle(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             for (var index = 0; index < rows.length; index++) ...[
               if (index > 0) const HyperosInsetDivider(indent: 0),
               fact(rows[index]),

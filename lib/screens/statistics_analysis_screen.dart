@@ -105,13 +105,14 @@ class StatisticsAnalysisScreen extends StatelessWidget {
           allCourses: courses,
           currentWeek: currentWeek,
         );
-        return [TimeUtilizationCard(stats: timeUtil)];
+        // 独立二级页：去卡内标题、读数放大，避免整页小字+大片留白。
+        return [TimeUtilizationCard(stats: timeUtil, standalone: true)];
       case StatisticsAnalysisModule.venue:
         final venue = StatisticsService.calculateVenueStats(
           allCourses: courses,
           currentWeek: currentWeek,
         );
-        return [VenueStatsCard(stats: venue)];
+        return [VenueStatsCard(stats: venue, standalone: true)];
       case StatisticsAnalysisModule.teacher:
         final teachers = StatisticsService.calculateTeacherStats(
           allCourses: courses,
