@@ -4082,7 +4082,6 @@
     }
   },
   "statisticsAchievementDone": "Unlocked",
-  "statisticsWeekBusiestDay": "Busiest Day",
   "statisticsWeekDailyHint": "Tap to view week {week} details",
   "@statisticsWeekDailyHint": {
     "placeholders": {

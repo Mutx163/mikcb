@@ -7117,9 +7117,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsAchievementDone => '달성 완료';
 
   @override
-  String get statisticsWeekBusiestDay => '가장 바쁜 날';
-
-  @override
   String statisticsWeekDailyHint(int week) {
     return '탭하여 $week주차 세부 정보 보기';
   }

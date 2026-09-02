@@ -707,7 +707,6 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `statisticsStoryFavoriteRoomTitle` | 最常去的教室 |
 | `statisticsVenueTopRooms` | 常去教室 |
 | `statisticsVenueVisits` | {count} 次 |
-| `statisticsWeekBusiestDay` | 最忙的一天 |
 | `stepLabel` | 步骤 {step} |
 | `supportConfirmedShort` | 已支持 |
 | `supportSaveShort` | 保存 |
@@ -984,7 +983,6 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `statisticsStoryFavoriteRoomTitle` | 最常去的教室 |
 | `statisticsVenueTopRooms` | 常去教室 |
 | `statisticsVenueVisits` | {count} 次 |
-| `statisticsWeekBusiestDay` | 最忙的一天 |
 | `supportConfirmedShort` | 已支持 |
 | `supportSaveShort` | 保存 |
 | `suspendedBadgeLabel` | 停 |

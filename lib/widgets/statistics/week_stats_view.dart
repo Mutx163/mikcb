@@ -11,7 +11,7 @@ import 'nature_ratio.dart';
 import 'time_utilization_card.dart';
 import 'weekly_comparison_card.dart';
 
-/// 周统计视图：周选择器 + 概览 + 小结 + 每日分布 + 必修/选修 + 时间利用 + 课程列表
+/// 周统计视图：周选择器 + 本周小结 + 每日分布 + 必修/选修 + 时间利用 + 课程列表
 class WeekStatsView extends StatelessWidget {
   final WeeklyStats stats;
   final int currentWeek; // 当前教学周（用于标记"本周"）
@@ -61,8 +61,6 @@ class WeekStatsView extends StatelessWidget {
           currentSemesterWeek: currentWeek,
           onWeekChanged: onWeekChanged,
         ),
-        const HyperosSectionGap(),
-        _WeekOverviewCard(stats: stats),
         const HyperosSectionGap(),
         WeeklyComparisonCard(
           comparison: comparison,
@@ -183,122 +181,6 @@ class _WeekSelector extends StatelessWidget {
     if (selected != null && selected != week) {
       onWeekChanged(selected);
     }
-  }
-}
-
-/// 周概览（单行四指标：数字在上、标签在下，细分隔线隔开）。
-///
-/// 与 [OverviewSection]（学期总览）同口径：24px 常规字重数字 + footnote2 小标签，
-/// 首格用主题色强调。
-class _WeekOverviewCard extends StatelessWidget {
-  final WeeklyStats stats;
-
-  const _WeekOverviewCard({required this.stats});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final divider = Container(
-      width: 1,
-      height: 28,
-      color: HyperosColors.dividerLine(context),
-    );
-
-    final busiestDay = stats.busiestDay;
-
-    return HyperosControlCard(
-      child: Row(
-        children: [
-          _WeekMetricCell(
-            value: '${stats.totalSections}',
-            label: l10n.statisticsSectionCount,
-            highlight: true,
-          ),
-          divider,
-          _WeekMetricCell(
-            value: '${stats.totalCourses}',
-            label: l10n.statisticsCourseCount,
-          ),
-          divider,
-          _WeekMetricCell(
-            // 紧凑格里放不下完整空态文案，用 — 占位（对齐本周小结卡口径）。
-            value: busiestDay != null ? _weekdayFullLabel(l10n, busiestDay) : '—',
-            label: l10n.statisticsWeekBusiestDay,
-          ),
-          divider,
-          _WeekMetricCell(
-            value:
-                '${stats.natureStats.requiredCount}:${stats.natureStats.electiveCount}',
-            label: l10n.statisticsNatureRatio,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _weekdayFullLabel(AppLocalizations l10n, int dayOfWeek) {
-    return switch (dayOfWeek) {
-      1 => l10n.weekdayShortMonday,
-      2 => l10n.weekdayShortTuesday,
-      3 => l10n.weekdayShortWednesday,
-      4 => l10n.weekdayShortThursday,
-      5 => l10n.weekdayShortFriday,
-      6 => l10n.weekdayShortSaturday,
-      7 => l10n.weekdayShortSunday,
-      _ => dayOfWeek.toString(),
-    };
-  }
-}
-
-class _WeekMetricCell extends StatelessWidget {
-  final String value;
-  final String label;
-
-  /// 首格数字用主题色（与学期总览卡的高亮口径一致）。
-  final bool highlight;
-
-  const _WeekMetricCell({
-    required this.value,
-    required this.label,
-    this.highlight = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.metricLarge(context).copyWith(
-                color: highlight
-                    ? HyperosColors.primary(context)
-                    : HyperosColors.primaryText(context),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(context).copyWith(
-                fontSize: HyperosMiuixTypography.footnote2,
-                color: highlight
-                    ? HyperosColors.primaryText(context)
-                    : HyperosColors.secondaryText(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

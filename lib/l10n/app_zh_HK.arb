@@ -3845,7 +3845,6 @@
     }
   },
   "statisticsAchievementDone": "已達成",
-  "statisticsWeekBusiestDay": "最忙的一天",
   "statisticsWeekDailyHint": "點擊查看第 {week} 週詳情",
   "@statisticsWeekDailyHint": {
     "placeholders": {
