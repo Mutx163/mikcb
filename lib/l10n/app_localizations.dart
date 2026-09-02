@@ -11201,6 +11201,12 @@ abstract class AppLocalizations {
   /// **'暂无自定义假期'**
   String get customHolidayEmpty;
 
+  /// No description provided for @customHolidayCorrupted.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义假期数据读取异常，已暂停读写以防覆盖丢失'**
+  String get customHolidayCorrupted;
+
   /// No description provided for @customHolidayNameRequired.
   ///
   /// In zh, this message translates to:

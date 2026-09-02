@@ -6241,6 +6241,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get customHolidayEmpty => 'カスタム休日なし';
 
   @override
+  String get customHolidayCorrupted =>
+      'カスタム休日データの読み込みに失敗しました。データ保護のため読み書きを停止しています';
+
+  @override
   String get customHolidayNameRequired => '休日名を入力してください';
 
   @override

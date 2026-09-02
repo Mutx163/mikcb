@@ -3569,6 +3569,7 @@
   "customHolidayTypeVacation": "假期",
   "customHolidayTypeWorkday": "调休上班",
   "customHolidayEmpty": "暂无自定义假期",
+  "customHolidayCorrupted": "自定义假期数据读取异常，已暂停读写以防覆盖丢失",
   "customHolidayNameRequired": "请输入假期名称",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {

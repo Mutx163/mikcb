@@ -6275,6 +6275,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get customHolidayEmpty => '사용자 정의 휴일 없음';
 
   @override
+  String get customHolidayCorrupted =>
+      '사용자 정의 휴일 데이터를 읽지 못했습니다. 데이터 보호를 위해 읽기/쓰기를 중지했습니다';
+
+  @override
   String get customHolidayNameRequired => '휴일 이름을 입력하세요';
 
   @override

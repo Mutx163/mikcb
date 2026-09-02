@@ -6137,6 +6137,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customHolidayEmpty => '暂无自定义假期';
 
   @override
+  String get customHolidayCorrupted => '自定义假期数据读取异常，已暂停读写以防覆盖丢失';
+
+  @override
   String get customHolidayNameRequired => '请输入假期名称';
 
   @override
@@ -16513,6 +16516,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get customHolidayEmpty => '暫無自訂假期';
+
+  @override
+  String get customHolidayCorrupted => '自訂假期資料讀取異常，已暫停讀寫以防覆蓋丟失';
 
   @override
   String get customHolidayNameRequired => '請輸入假期名稱';
@@ -26935,6 +26941,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get customHolidayEmpty => '目前沒有自訂假日';
+
+  @override
+  String get customHolidayCorrupted => '自訂假日資料讀取異常，已暫停讀寫以防覆蓋丟失';
 
   @override
   String get customHolidayNameRequired => '請輸入假日名稱';

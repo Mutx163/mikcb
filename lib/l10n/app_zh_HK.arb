@@ -3322,6 +3322,7 @@
   "customHolidayTypeVacation": "放假",
   "customHolidayTypeWorkday": "調休補班",
   "customHolidayEmpty": "暫無自訂假期",
+  "customHolidayCorrupted": "自訂假期資料讀取異常，已暫停讀寫以防覆蓋丟失",
   "customHolidayNameRequired": "請輸入假期名稱",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {

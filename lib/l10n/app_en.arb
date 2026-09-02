@@ -3555,6 +3555,7 @@
   "customHolidayTypeVacation": "Holiday",
   "customHolidayTypeWorkday": "Workday",
   "customHolidayEmpty": "No custom holidays",
+  "customHolidayCorrupted": "Custom holiday data failed to load. Reads and writes are paused to prevent data loss.",
   "customHolidayNameRequired": "Please enter a holiday name",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {

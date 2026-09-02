@@ -3318,6 +3318,7 @@
   "customHolidayTypeVacation": "휴일",
   "customHolidayTypeWorkday": "대체 근무",
   "customHolidayEmpty": "사용자 정의 휴일 없음",
+  "customHolidayCorrupted": "사용자 정의 휴일 데이터를 읽지 못했습니다. 데이터 보호를 위해 읽기/쓰기를 중지했습니다",
   "customHolidayNameRequired": "휴일 이름을 입력하세요",
   "customHolidayDateRange": "{start} ~ {end}",
   "@customHolidayDateRange": {

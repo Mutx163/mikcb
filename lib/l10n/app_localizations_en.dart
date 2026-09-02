@@ -6499,6 +6499,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customHolidayEmpty => 'No custom holidays';
 
   @override
+  String get customHolidayCorrupted =>
+      'Custom holiday data failed to load. Reads and writes are paused to prevent data loss.';
+
+  @override
   String get customHolidayNameRequired => 'Please enter a holiday name';
 
   @override
