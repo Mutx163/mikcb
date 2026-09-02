@@ -44,7 +44,6 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 0.5f,
         )
-        views.setTextColor(R.id.widget_medium_label, secondaryColor)
         views.setTextColor(R.id.widget_medium_title, primaryColor)
         views.setTextColor(R.id.widget_medium_time, primaryColor)
         views.setTextColor(R.id.widget_medium_meta, secondaryColor)
@@ -55,6 +54,10 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
         } else {
             "no_course"
         }
+        views.setTextColor(
+            R.id.widget_medium_label,
+            TodayWidgetSupport.statusChipTextColor(mediumStatusState, style, context)
+        )
         views.setInt(
             R.id.widget_medium_label,
             "setBackgroundResource",

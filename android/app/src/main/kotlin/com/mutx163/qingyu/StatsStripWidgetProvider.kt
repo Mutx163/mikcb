@@ -73,7 +73,10 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes("upcoming", chrome.backgroundStyle),
         )
-        views.setTextColor(R.id.stats_strip_week, secondaryColor)
+        views.setTextColor(
+            R.id.stats_strip_week,
+            TodayWidgetSupport.statusChipTextColor("upcoming", chrome.backgroundStyle, context)
+        )
 
         // 本周节数 + 环比
         if (snapshot == null) {

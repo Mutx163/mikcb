@@ -44,7 +44,6 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
-        views.setTextColor(R.id.widget_large_heading, secondaryColor)
         views.setTextColor(R.id.widget_large_week, secondaryColor)
         views.setTextColor(R.id.widget_large_title, primaryColor)
         views.setTextColor(R.id.widget_large_subtitle, secondaryColor)
@@ -55,6 +54,10 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
         } else {
             "no_course"
         }
+        views.setTextColor(
+            R.id.widget_large_heading,
+            TodayWidgetSupport.statusChipTextColor(largeStatusState, style, context)
+        )
         views.setInt(
             R.id.widget_large_heading,
             "setBackgroundResource",
