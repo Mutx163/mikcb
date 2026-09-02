@@ -143,7 +143,6 @@ class StatisticsAnalysisScreen extends StatelessWidget {
         );
         return [
           ProfileCompareCard(
-            showHeader: false,
             entries: [
               ProfileCompareEntry(
                 name: active?.name ?? '',

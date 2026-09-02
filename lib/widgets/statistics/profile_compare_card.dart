@@ -27,51 +27,28 @@ class ProfileCompareEntry {
   });
 }
 
-/// 课表对比卡：当前课表 vs 其他课表，点击行查看详情
+/// 课表对比卡：全部课表的关键指标直接平铺展示。
+///
+/// 无二次交互——曾经的「点行弹底部面板看详情」已移除，
+/// 周数 / 课程门数 / 节课 / 必修选修比 / 连续天数一屏尽览。
 class ProfileCompareCard extends StatelessWidget {
   final List<ProfileCompareEntry> entries;
 
-  /// 卡内标题行（徽章 + 课表对比）。作为二级页整页内容时传 false：
-  /// 页面标题已承担命名，卡内标题行会与页题重复。
-  final bool showHeader;
-
-  const ProfileCompareCard({
-    super.key,
-    required this.entries,
-    this.showHeader = true,
-  });
+  const ProfileCompareCard({super.key, required this.entries});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return HyperosControlCard(
       edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (showHeader)
-            Padding(
-              padding: HyperosTokens.rowPadding(isLast: false),
-              child: Row(
-                children: [
-                  const HyperosIconBadge(
-                    icon: Icons.compare_arrows_rounded,
-                    accent: HyperosIconColors.indigo,
-                  ),
-                  const SizedBox(width: HyperosTokens.rowContentGap),
-                  Text(
-                    l10n.statisticsCompareTitle,
-                    style: HyperosTypography.listTitle(context),
-                  ),
-                ],
-              ),
-            ),
           for (var i = 0; i < entries.length; i++) ...[
-            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
-            _CompareRow(
+            if (i > 0) const HyperosInsetDivider(indent: 16),
+            _ProfileCompareBlock(
               entry: entries[i],
+              isFirst: i == 0,
               isLast: i == entries.length - 1,
             ),
           ],
@@ -81,209 +58,166 @@ class ProfileCompareCard extends StatelessWidget {
   }
 }
 
-class _CompareRow extends StatelessWidget {
+class _ProfileCompareBlock extends StatelessWidget {
   final ProfileCompareEntry entry;
+  final bool isFirst;
   final bool isLast;
 
-  const _CompareRow({required this.entry, required this.isLast});
+  const _ProfileCompareBlock({
+    required this.entry,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final scope = HyperosListTileScope.maybeOf(context);
     final delta = entry.deltaSections;
 
-    return HyperosPressableRow(
-      onTap: () => _showDetail(context),
-      backgroundColor: HyperosColors.card(context),
-      highlightColor: HyperosColors.rowHighlight(context),
-      child: Padding(
-        padding: HyperosTokens.rowPadding(
-          isFirst: scope?.isFirst ?? true,
-          isLast: isLast,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: entry.isActive
-                    ? HyperosColors.primary(context)
-                    : HyperosColors.secondaryText(context).withValues(alpha: 0.4),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: HyperosTokens.rowContentGap),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          entry.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          // T1/T2：激活行 w600，非激活行回归常规体，
-                          // 用圆点颜色区分状态而不是全员加粗
-                          style: HyperosTypography.listTitle(context).copyWith(
-                            fontWeight: entry.isActive
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                      if (entry.isActive) ...[
-                        const SizedBox(width: 6),
-                        HyperosTag(
-                          label: l10n.statisticsCompareActive,
-                          backgroundColor: HyperosColors.primary(
-                            context,
-                          ).withValues(alpha: 0.12),
-                          textStyle: HyperosTypography.listDetail(context)
-                              .copyWith(
-                                fontSize: HyperosMiuixTypography.footnote2,
-                                // T1 轻强调：小号 Tag 用 w500
-                                fontWeight: FontWeight.w500,
-                                color: HyperosColors.primary(context),
-                              ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.statisticsWeekSelector(entry.currentWeek),
-                    style: HyperosTypography.listDetail(context).copyWith(
-                      fontSize: HyperosMiuixTypography.footnote2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${entry.totalSections}',
-                  // T2 行内数据值：主题色 + w600
-                  style: HyperosTypography.listTitle(context).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: entry.isActive
-                        ? HyperosColors.primary(context)
-                        : HyperosColors.primaryText(context),
-                  ),
+    return Padding(
+      padding: HyperosTokens.rowPadding(isFirst: isFirst, isLast: isLast),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: entry.isActive
+                      ? HyperosColors.primary(context)
+                      : HyperosColors.secondaryText(
+                          context,
+                        ).withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
                 ),
-                Text(
-                  l10n.statisticsSemesterLabelSections,
-                  style: HyperosTypography.listDetail(context),
-                ),
-                if (!entry.isActive && delta != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.statisticsCompareDelta(
-                      delta > 0 ? '+$delta' : '$delta',
-                    ),
-                    style: HyperosTypography.listDetail(context).copyWith(
-                      fontSize: HyperosMiuixTypography.footnote2,
-                      // 语义色已足够区分正负，字重回归常规
-                      color: delta > 0
-                          ? HyperosIconColors.red
-                          : (delta < 0
-                                ? HyperosIconColors.green
-                                : HyperosColors.secondaryText(context)),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: HyperosColors.actionIcon(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDetail(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    showHyperosSheet<void>(
-      context: context,
-      builder: (sheetContext) {
-        return HyperosSheet(
-          title: l10n.statisticsCompareDetailTitle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
+              ),
+              const SizedBox(width: HyperosTokens.rowContentGap),
+              Flexible(
+                child: Text(
                   entry.name,
-                  style: HyperosTypography.sheetTitle(sheetContext),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  // 激活行 w600，非激活行常规体，圆点颜色区分状态
+                  style: HyperosTypography.listTitle(context).copyWith(
+                    fontWeight: entry.isActive
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: l10n.statisticsWeekSelector(entry.currentWeek),
-                  value: l10n.statisticsCompareWeek,
-                ),
-                _DetailRow(
-                  label: l10n.statisticsCourseCount,
-                  value: '${entry.totalCourses}',
-                ),
-                _DetailRow(
-                  label: l10n.statisticsSemesterLabelSections,
-                  value: '${entry.totalSections}',
-                ),
-                _DetailRow(
-                  label: l10n.statisticsNatureRatio,
-                  value:
-                      '${(entry.requiredRatio * 100).round()}% / ${((1 - entry.requiredRatio) * 100).round()}%',
-                ),
-                _DetailRow(
-                  label: l10n.statisticsSemesterLabelDayStreak,
-                  value: '${entry.longestStreak}',
+              ),
+              if (entry.isActive) ...[
+                const SizedBox(width: 6),
+                HyperosTag(
+                  label: l10n.statisticsCompareActive,
+                  backgroundColor: HyperosColors.primary(
+                    context,
+                  ).withValues(alpha: 0.12),
+                  textStyle: HyperosTypography.listDetail(context).copyWith(
+                    fontSize: HyperosMiuixTypography.footnote2,
+                    fontWeight: FontWeight.w500,
+                    color: HyperosColors.primary(context),
+                  ),
                 ),
               ],
+              if (!entry.isActive && delta != null) ...[
+                const Spacer(),
+                Text(
+                  l10n.statisticsCompareDelta(delta > 0 ? '+$delta' : '$delta'),
+                  style: HyperosTypography.listDetail(context).copyWith(
+                    fontSize: HyperosMiuixTypography.footnote2,
+                    // 语义色已足够区分正负，字重回归常规
+                    color: delta > 0
+                        ? HyperosIconColors.red
+                        : (delta < 0
+                              ? HyperosIconColors.green
+                              : HyperosColors.secondaryText(context)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.statisticsWeekSelector(entry.currentWeek),
+            style: HyperosTypography.listDetail(context).copyWith(
+              fontSize: HyperosMiuixTypography.footnote2,
             ),
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _Stat(
+                value: '${entry.totalCourses}',
+                label: l10n.statisticsCourseCount,
+              ),
+              const SizedBox(width: 12),
+              _Stat(
+                value: '${entry.totalSections}',
+                label: l10n.statisticsSemesterLabelSections,
+                highlight: entry.isActive,
+              ),
+              const SizedBox(width: 12),
+              _Stat(
+                value:
+                    '${(entry.requiredRatio * 100).round()}% / '
+                    '${((1 - entry.requiredRatio) * 100).round()}%',
+                label: l10n.statisticsNatureRatio,
+              ),
+              const SizedBox(width: 12),
+              _Stat(
+                value: '${entry.longestStreak}',
+                label: l10n.statisticsSemesterLabelDayStreak,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  final String label;
+/// 指标列：数值在上（w600），小灰标签在下。
+class _Stat extends StatelessWidget {
   final String value;
+  final String label;
 
-  const _DetailRow({required this.label, required this.value});
+  /// 当前课表的节数用主题色轻强调
+  final bool highlight;
+
+  const _Stat({
+    required this.value,
+    required this.label,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          FittedBox(
+            fit: BoxFit.scaleDown,
             child: Text(
-              label,
-              style: HyperosTypography.listDetail(context),
+              value,
+              maxLines: 1,
+              style: HyperosTypography.listTitle(context).copyWith(
+                fontWeight: FontWeight.w600,
+                color: highlight
+                    ? HyperosColors.primary(context)
+                    : HyperosColors.primaryText(context),
+              ),
             ),
           ),
+          const SizedBox(height: 2),
           Text(
-            value,
-            // T2 弹窗数据值
-            style: HyperosTypography.listTitle(context).copyWith(
-              fontWeight: FontWeight.w600,
-              color: HyperosColors.primaryText(context),
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: HyperosTypography.listDetail(context).copyWith(
+              fontSize: HyperosMiuixTypography.footnote2,
             ),
           ),
         ],
