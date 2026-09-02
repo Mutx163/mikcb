@@ -149,6 +149,20 @@
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r\t' | base64 -d > android/app/upload-keystore.jks
             export ANDROID_KEYSTORE_PATH="app/upload-keystore.jks"
 
+            # 校验 keystore 可用性：base64 损坏 / storepass 不符 / 别名缺失
+            # 在这里立刻失败，避免长构建末端才爆或静默产出未签名 APK。
+            # set +x 防止 storepass 进入 trace 日志。
+            set +x
+            if ! keytool -list -keystore android/app/upload-keystore.jks \
+                 -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null \
+                 | grep -q "$ANDROID_KEY_ALIAS"; then
+              echo "ERROR: keystore 校验失败（base64 损坏、storepass 不符或别名 $ANDROID_KEY_ALIAS 缺失）" >&2
+              set -x
+              exit 1
+            fi
+            echo "keystore 校验通过（别名 $ANDROID_KEY_ALIAS 存在）"
+            set -x
+
             # ── flutter_tools included build 镜像注入（同 stage 内联，规避 429）──
             # includeBuild 的 flutter_tools/gradle 自带 settings.gradle.kts（仓库仅
             # google+mavenCentral），主构建 settings 的镜像覆盖不到它；CNB 出口对
@@ -206,4 +220,5 @@
             echo "失败信息: $CNB_BUILD_FAILED_MSG"
       endStages:
         - name: cleanup-artifacts
-          script: rm -rf dist build
+          # 一并清掉签名密钥落盘文件，不在构建容器工作区残留
+          script: rm -rf dist build android/app/upload-keystore.jks
