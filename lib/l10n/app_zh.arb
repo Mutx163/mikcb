@@ -3961,6 +3961,22 @@
   "statisticsCompareDetailTitle": "课表对比详情",
   "statisticsCompareWeek": "当前周",
   "statisticsMoreTitle": "深度分析",
+  "statisticsMoreGroupTrend": "趋势 · 分布",
+  "@statisticsMoreGroupTrend": {
+    "description": "Accordion group header: trend and distribution analysis entries"
+  },
+  "statisticsMoreGroupPeople": "教室 · 教师 · 排行",
+  "@statisticsMoreGroupPeople": {
+    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
+  },
+  "statisticsNatureNoneRequired": "暂无必修",
+  "@statisticsNatureNoneRequired": {
+    "description": "Donut chart center hint when required-course count is zero"
+  },
+  "statisticsNatureNoneElective": "暂无选修",
+  "@statisticsNatureNoneElective": {
+    "description": "Donut chart center hint when elective-course count is zero"
+  },
   "statisticsAchievementMorningPersonName": "早起鸟",
   "statisticsAchievementMorningPersonDescription": "早间课时占比 ≥ 50%",
   "statisticsAchievementGapMasterName": "时间管理大师",

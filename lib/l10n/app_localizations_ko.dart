@@ -6894,6 +6894,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsMoreTitle => '심층 분석';
 
   @override
+  String get statisticsMoreGroupTrend => '추세 · 분포';
+
+  @override
+  String get statisticsMoreGroupPeople => '강의실 · 교수 · 순위';
+
+  @override
+  String get statisticsNatureNoneRequired => '필수 과목 없음';
+
+  @override
+  String get statisticsNatureNoneElective => '선택 과목 없음';
+
+  @override
   String get statisticsAchievementMorningPersonName => '모닝 버드';
 
   @override
