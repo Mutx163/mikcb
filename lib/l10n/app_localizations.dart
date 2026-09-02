@@ -12320,25 +12320,25 @@ abstract class AppLocalizations {
   /// **'深度分析'**
   String get statisticsMoreTitle;
 
-  /// No description provided for @statisticsMoreGroupTrend.
+  /// Accordion group header: trend and distribution analysis entries
   ///
   /// In zh, this message translates to:
   /// **'趋势 · 分布'**
   String get statisticsMoreGroupTrend;
 
-  /// No description provided for @statisticsMoreGroupPeople.
+  /// Accordion group header: classroom, teacher and ranking analysis entries
   ///
   /// In zh, this message translates to:
   /// **'教室 · 教师 · 排行'**
   String get statisticsMoreGroupPeople;
 
-  /// No description provided for @statisticsNatureNoneRequired.
+  /// Donut chart center hint when required-course count is zero
   ///
   /// In zh, this message translates to:
   /// **'暂无必修'**
   String get statisticsNatureNoneRequired;
 
-  /// No description provided for @statisticsNatureNoneElective.
+  /// Donut chart center hint when elective-course count is zero
   ///
   /// In zh, this message translates to:
   /// **'暂无选修'**
