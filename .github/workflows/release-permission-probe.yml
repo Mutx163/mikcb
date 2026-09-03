@@ -2,26 +2,27 @@ name: Release Permission Probe
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   probe:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: Checkout tag
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: v2.1.1.5
-      - name: Replicate android-build release step exactly
+      - name: Matrix probe
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: Mutx163/mikcb
         run: |
           set -x
-          echo "dummy asset" > dist-fake.apk
-          echo "=== A: create with asset+target+prerelease+notes on throwaway tag ==="
-          gh release create probe-test4 dist-fake.apk --title probe-test4 --prerelease --notes-file docs/releases/v2.1.1.5.md --target f06c661b0bcf600dd3d328652ed405c699b5527a 2>&1 || echo "A_FAILED"
-          gh release delete probe-test4 --yes --cleanup-tag 2>&1 || true
-          echo "=== B: exact failing command on existing tag v2.1.1.5 ==="
-          gh release create v2.1.1.5 dist-fake.apk --title v2.1.1.5 --prerelease --notes-file docs/releases/v2.1.1.5.md --target f06c661b0bcf600dd3d328652ed405c699b5527a 2>&1 || echo "B_FAILED"
-          gh release delete v2.1.1.5 --yes 2>&1 || true
+          echo "C: gh release create minimal (no asset/target/notes)"
+          gh release create probe-c --title probe-c 2>&1 || echo "C_FAILED"
+          gh release delete probe-c --yes --cleanup-tag 2>&1 || true
+          echo "D: gh release create with asset only"
+          echo x > a.apk
+          gh release create probe-d a.apk 2>&1 || echo "D_FAILED"
+          gh release delete probe-d --yes --cleanup-tag 2>&1 || true
+          echo "E: gh release create with --target only"
+          gh release create probe-e --title probe-e --target f06c661b0bcf600dd3d328652ed405c699b5527a 2>&1 || echo "E_FAILED"
+          gh release delete probe-e --yes --cleanup-tag 2>&1 || true
+          echo "F: gh api with full body (prerelease+target+body, no asset)"
+          gh api repos/Mutx163/mikcb/releases -f tag_name=probe-f -f name=probe-f -F prerelease=true -f target_commitish=f06c661b0bcf600dd3d328652ed405c699b5527a -f body='notes' 2>&1 || echo "F_FAILED"
+          gh release delete probe-f --yes --cleanup-tag 2>&1 || true
