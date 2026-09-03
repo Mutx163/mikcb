@@ -24,6 +24,7 @@ import 'package:university_timetable/screens/location_time_match_screen.dart';
 import 'package:university_timetable/screens/memory_stats_screen.dart';
 import 'package:university_timetable/screens/open_source_licenses_screen.dart';
 import 'package:university_timetable/screens/schedule_date_rule_screen.dart';
+import 'package:university_timetable/screens/schedule_list_screen.dart';
 import 'package:university_timetable/screens/statistics_settings_screen.dart';
 import 'package:university_timetable/screens/support_creator_screen.dart';
 import 'package:university_timetable/screens/task_list_screen.dart';
@@ -69,6 +70,7 @@ final Map<String, WidgetBuilder> kInlineDockPages = {
   'statisticsSettings': (context) => const StatisticsSettingsScreen(),
   'locationTimeMatch': (context) => const LocationTimeMatchScreen(),
   'scheduleDateRule': (context) => const ScheduleDateRuleScreen(),
+  'scheduleList': (context) => const ScheduleListScreen(),
   'memoryStats': (context) => const MemoryStatsScreen(),
   // 软件更新页构造需要 PackageInfo：用 FutureBuilder 在内嵌壳内自取。
   'update': (context) => FutureBuilder(
@@ -100,6 +102,7 @@ final Map<String, Widget Function()> kHomeCatalogPages = {
   'courseConflictPage': () => const CourseConflictScreen(),
   'locationTimeMatchPage': () => const LocationTimeMatchScreen(),
   'scheduleDateRulePage': () => const ScheduleDateRuleScreen(),
+  'scheduleListPage': () => const ScheduleListScreen(),
   'icsExportPage': () => const IcsExportScreen(),
   'timeSchemesPage': () => const TimeSchemeManagementScreen(),
   'timetableProfilesPage': () => const TimetableProfilesScreen(),

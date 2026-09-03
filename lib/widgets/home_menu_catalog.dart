@@ -118,6 +118,14 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
         pushHomeMenuPage(context, homePage('addScheduleItemPage')),
   ),
   HomeMenuEntry(
+    id: 'scheduleList',
+    title: (l10n) => l10n.scheduleListTitle,
+    icon: Icons.view_agenda_outlined,
+    category: HomeMenuEntryCategory.features,
+    open: (context) =>
+        pushHomeMenuPage(context, homePage('scheduleListPage')),
+  ),
+  HomeMenuEntry(
     id: 'courseConflict',
     title: (l10n) => l10n.courseConflictDetailTitle,
     icon: Icons.rule_rounded,

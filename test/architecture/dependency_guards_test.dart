@@ -60,7 +60,12 @@ void main() {
     // 48→51：扇入检测原先只匹配相对路径 import，package:university_timetable/
     // 与 lib 根相对路径可绕过守卫（实际漏网 3 处：main.dart、class_reminder_sheet.dart、
     // home_menu_catalog.dart）。补漏后按真实扇入 51 设基线，后续只许下降。
-    const baselineFanIn = 51;
+    // 51→52：新增日程安排列表页 schedule_list_screen.dart（任务清单/考试安排的
+    // 同构管理页），与 add_schedule_item_screen 等兄弟页同样需要响应式读取
+    // scheduleItems 与 deleteScheduleItem，属正当的同形依赖；分组排序逻辑
+    // 已下沉纯 Dart domain（schedule_list_grouping），Provider 零改动，
+    // 按测试约定同步真实值。
+    const baselineFanIn = 52;
     final importers = libDartFiles()
         .where(
           (file) =>
