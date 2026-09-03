@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
+import 'hyperos_miuix_spec.dart';
+
 /// Temporary compatibility widget until all FHeaderAction usages are
 /// migrated to HyperosIconButton.
 class FHeaderAction extends StatelessWidget {
@@ -66,7 +68,13 @@ class ForuiCompatColors {
   Color get foreground => _t.colorScheme.onSurface;
   Color get mutedForeground => _t.colorScheme.onSurfaceVariant;
   Color get border => _t.dividerColor;
-  Color get muted => _t.colorScheme.onSurface.withValues(alpha: 0.6);
+  /// Forui 语义里 muted 是「弱化背景面板色」（mutedForeground 才是其上的
+  /// 文字墨水）。对齐 app 标准弱化表面（与表单字段填充同源）：
+  /// 浅色 #F0F0F0 / 深色 #434343。此前映射成 onSurface@60% 半透明黑墨水，
+  /// 被当背景用的地方（日程提示条、考试关联占位井）在浅色模式下渲染成黑块。
+  Color get muted => _t.brightness == Brightness.dark
+      ? HyperosMiuixDarkColors.secondaryVariant
+      : HyperosMiuixLightColors.secondaryVariant;
   Color get primary => _t.colorScheme.primary;
   Color get secondary => _t.colorScheme.secondary;
   Color get background => _t.colorScheme.surface;

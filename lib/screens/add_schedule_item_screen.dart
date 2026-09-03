@@ -224,7 +224,9 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _withSpacing([
                     _buildStartEndTimeLayout(l10n),
-                    _buildScheduleRangeHint(),
+                    if (_buildScheduleRangeHint()
+                        case final Widget scheduleRangeHint)
+                      scheduleRangeHint,
                     _buildColorSection(l10n),
                   ]),
                 ),
@@ -305,18 +307,22 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           value: dateValue,
           icon: dateIcon,
           onTap: onDatePress,
+          showChevron: false,
         ),
         const SizedBox(height: _fieldSpacing),
         HyperosPickerField(
           value: timeValue,
           icon: timeIcon,
           onTap: onTimePress,
+          showChevron: false,
         ),
       ],
     );
   }
 
-  Widget _buildScheduleRangeHint() {
+  /// 重复与跨日才有需要说明的事（切片展示/重复规则）；同日常规日程
+  /// 「结束须晚于开始」是常识且保存时有 toast 校验兜底，不渲染提示条。
+  Widget? _buildScheduleRangeHint() {
     final l10n = AppLocalizations.of(context)!;
     final theme = context.theme;
     if (_recurrence != ScheduleRecurrence.none) {
@@ -350,9 +356,9 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       );
     }
     final isCrossDay = _selectedEndDate.isAfter(_selectedStartDate);
-    final text = isCrossDay
-        ? l10n.scheduleCrossDayHint
-        : l10n.scheduleSingleDayHint;
+    if (!isCrossDay) {
+      return null;
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -364,15 +370,11 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            isCrossDay ? Icons.nights_stay_rounded : Icons.today_rounded,
-            size: 18,
-            color: theme.colors.primary,
-          ),
+          Icon(Icons.nights_stay_rounded, size: 18, color: theme.colors.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              text,
+              l10n.scheduleCrossDayHint,
               style: theme.typography.body.xs.copyWith(
                 color: theme.colors.mutedForeground,
                 fontWeight: FontWeight.w600,

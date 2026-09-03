@@ -100,6 +100,7 @@ class HyperosPickerField extends StatelessWidget {
     this.enabled = true,
     this.isPlaceholder = false,
     this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
+    this.showChevron = true,
   });
 
   /// 顶部标签；为 null 时仅渲染字段本体，用于组标签已由外部提供的场景。
@@ -113,6 +114,10 @@ class HyperosPickerField extends StatelessWidget {
   final bool enabled;
   final bool isPlaceholder;
   final double fontSize;
+
+  /// 尾部箭头开关。半宽紧凑字段（双列开始/结束对）可关闭，为长值文本
+  /// （如「下午 12:00」）让出宽度，避免省略号截断。
+  final bool showChevron;
 
   @override
   Widget build(BuildContext context) {
@@ -174,11 +179,12 @@ class HyperosPickerField extends StatelessWidget {
                         style: TextStyle(fontSize: fontSize, color: valueColor),
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
-                      color: canTap ? summary : disabled,
-                    ),
+                    if (showChevron)
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: canTap ? summary : disabled,
+                      ),
                   ],
                 ),
               ),
