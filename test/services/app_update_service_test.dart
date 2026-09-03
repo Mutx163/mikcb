@@ -1241,6 +1241,70 @@ void main() {
     );
   });
 
+  test('digest is merged from slower github api when gitcode wins race', () async {
+    const digest =
+        '8462404415ac3b4480ee5f8c893676054b82b90076b715203771246ae6a7ce96';
+    final client = MockClient((request) async {
+      if (request.url.host == 'api.gitcode.com') {
+        // GitCode 先返回，但正文没有内嵌摘要
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v2.1.1.4',
+              'name': 'v2.1.1.4',
+              'prerelease': false,
+              'body': 'v2.1.1.4',
+              'created_at': '2026-09-03T11:10:15+08:00',
+              'assets': const [
+                {
+                  'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
+                  'type': 'attach',
+                  'browser_download_url':
+                      'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+                },
+              ],
+            },
+          ]),
+          200,
+        );
+      }
+      if (request.url.host == 'api.github.com') {
+        // GitHub API 稍慢返回，携带官方 asset digest
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v2.1.1.4',
+              'name': 'v2.1.1.4',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/v2.1.1.4',
+              'assets': const [
+                {
+                  'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
+                  'browser_download_url': 'https://example.com/v2.1.1.4.apk',
+                  'digest': 'sha256:$digest',
+                },
+              ],
+              'updated_at': '2026-08-30T10:57:20Z',
+            },
+          ]),
+          200,
+        );
+      }
+      return http.Response('', 503);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(currentVersion: '2.1.1.3');
+
+    expect(result.hasRelease, isTrue);
+    expect(result.latestRelease?.version, '2.1.1.4');
+    expect(result.latestRelease?.gitcodeDownloadUrl, isNotNull);
+    // 竞争胜出的 GitCode 缺摘要，应从稍慢的 GitHub 策略补齐
+    expect(result.latestRelease?.expectedApkSha256, digest);
+  });
+
   test('gitcode channel falls back to constructed download url', () async {
     const release = AppReleaseInfo(
       version: '2.1.1.4',

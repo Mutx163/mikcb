@@ -272,10 +272,11 @@ class AppUpdateService {
 
     if (winner != null) {
       _log('竞争胜出，版本 ${winner.release!.version}');
-      return _buildCheckResult(
-        currentVersion: currentVersion,
-        release: winner.release!,
+      final release = await _mergeDigestFromOtherStrategies(
+        winner.release!,
+        outcomes: () => [apiOutcome, pageOutcome, gitcodeOutcome],
       );
+      return _buildCheckResult(currentVersion: currentVersion, release: release);
     }
 
     // 所有策略都没有结果，汇总错误信息
@@ -332,6 +333,47 @@ class AppUpdateService {
     if (a != null && a != 404) return a;
     if (b != null && b != 404) return b;
     return null;
+  }
+
+  /// GitCode 渠道的应用内安装依赖发行版携带的 SHA-256 摘要，而 GitCode API
+  /// 没有 asset digest，胜出策略是 GitCode 时正文也未必有摘要（旧版同步的
+  /// 发行版）。此时短暂等待其余策略返回，用同版本发行版携带的摘要补齐——
+  /// 各渠道上传的是同一份 APK，摘要天然一致。
+  Future<AppReleaseInfo> _mergeDigestFromOtherStrategies(
+    AppReleaseInfo winner, {
+    required List<_AppUpdateFetchOutcome?> Function() outcomes,
+  }) async {
+    if (winner.expectedApkSha256 != null) {
+      return winner;
+    }
+    const pollInterval = Duration(milliseconds: 120);
+    const deadline = Duration(milliseconds: 1600);
+    final watch = Stopwatch()..start();
+    while (watch.elapsed < deadline) {
+      for (final outcome in outcomes()) {
+        final candidate = outcome?.release;
+        if (candidate == null ||
+            candidate.version != winner.version ||
+            candidate.expectedApkSha256 == null) {
+          continue;
+        }
+        _log('同版本摘要已由其他策略补齐');
+        return AppReleaseInfo(
+          version: winner.version,
+          title: winner.title,
+          body: winner.body,
+          releaseUrl: winner.releaseUrl,
+          downloadUrl: winner.downloadUrl,
+          gitcodeDownloadUrl: winner.gitcodeDownloadUrl,
+          pgyerDownloadUrl: winner.pgyerDownloadUrl,
+          updatedAt: winner.updatedAt,
+          isPrerelease: winner.isPrerelease,
+          expectedApkSha256: candidate.expectedApkSha256,
+        );
+      }
+      await Future<void>.delayed(pollInterval);
+    }
+    return winner;
   }
 
   Future<String?> downloadAndInstallUpdate(
