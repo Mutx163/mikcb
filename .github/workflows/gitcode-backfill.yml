@@ -10,6 +10,11 @@ on:
         description: '要同步的 GitHub tag，如 v2.1.1.4'
         required: true
         type: string
+      skip_push:
+        description: '跳过代码推送（目标是 GitCode 镜像仓库时用，GitCode 自己同步代码）'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: gitcode-backfill-${{ inputs.tag }}
@@ -71,7 +76,7 @@ jobs:
 
   gitcode-push:
     name: Push code to GitCode
-    if: ${{ vars.GITCODE_USERNAME }}
+    if: ${{ vars.GITCODE_USERNAME && !inputs.skip_push }}
     needs: prepare
     permissions:
       contents: read
@@ -84,7 +89,7 @@ jobs:
 
   gitcode-release:
     name: Release APK on GitCode
-    if: ${{ vars.GITCODE_USERNAME }}
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && vars.GITCODE_USERNAME }}
     needs: [prepare, gitcode-push]
     permissions:
       actions: read
