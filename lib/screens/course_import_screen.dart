@@ -3881,6 +3881,9 @@ class _WarehouseAdapterWebLoginScreenState
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.title),
+      // 校名收进返回按钮那一行的小标题：可折叠大标题在网页场景永远不会被
+      // 滚动收起（滚动发生在 WebView 内部），只会常驻占用约一整行高度。
+      collapsibleLargeTitle: false,
       suffixes: [
         if (widget.macroRecord == null)
           FHeaderAction(
@@ -3932,43 +3935,15 @@ class _WarehouseAdapterWebLoginScreenState
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                     color: HyperosColors.card(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 模式标识 + 提示文字（紧凑单行）
-                        Row(
-                          children: [
-                            HyperosTag(
-                              label: _useDesktopMode ? '🖥️' : '📱',
-                              backgroundColor: HyperosColors.primary(
-                                context,
-                              ).withValues(alpha: 0.12),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _isUsingLocalDebugScript
-                                    ? l10n.warehouseLoginHintLocalDebug
-                                    : l10n.warehouseLoginHintImport,
-                                style: HyperosTypography.listDetail(context),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (_isUsingLocalDebugScript)
-                              HyperosTag(
-                                label: effectiveDebugScriptName,
-                                backgroundColor: HyperosColors.primary(
-                                  context,
-                                ).withValues(alpha: 0.12),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // URL 地址栏
+                        // URL 地址栏（压缩为单行：桌面/移动模式由头部切换按钮
+                        // 表达，本地调试脚本名由状态行 currentStatus 表达，
+                        // 不再常驻占一行提示）
                         Row(
                           children: [
                             Expanded(
