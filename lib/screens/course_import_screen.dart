@@ -3599,6 +3599,7 @@ class _WarehouseAdapterWebLoginScreenState
             if (_macroRecordingState == MacroRecordingState.recording) {
               _injectMacroRecorderJs();
             }
+            _injectImeScrollHelperJs();
             _requestLoginStateProbe();
           },
           onWebResourceError: (error) {
@@ -3873,7 +3874,7 @@ class _WarehouseAdapterWebLoginScreenState
         child: SizedBox(
           width: 1,
           height: 1,
-          child: WebViewWidget(controller: _controller),
+          child: _buildWebViewWidget(),
         ),
       );
     }
@@ -4017,7 +4018,7 @@ class _WarehouseAdapterWebLoginScreenState
                   ),
                   if (_loadingProgress < 100)
                     HyperosLinearProgress(value: _loadingProgress / 100),
-                  Expanded(child: WebViewWidget(controller: _controller)),
+                  Expanded(child: _buildWebViewWidget()),
                   if (_showImportScriptBar)
                     SafeArea(
                       top: false,
@@ -4086,6 +4087,59 @@ class _WarehouseAdapterWebLoginScreenState
     final target = Uri.tryParse(_currentUrl ?? widget.initialUrl);
     if (target != null) {
       await _controller.loadRequest(target);
+    }
+  }
+
+  /// 键盘弹出时网页不再收到 IME insets（见 initState 的
+  /// setInsetsForWebContentToIgnore），Chromium 因此不会像浏览器那样把聚焦的
+  /// 输入框滚动进可见区域。这里注入 focusin 兜底：输入框聚焦后，若其位于
+  /// 视口下部（键盘大致遮挡区域）就把自身滚动到视口中部，保证输入内容可见；
+  /// 页面整体不可滚动（如固定定位的教务登录页）时 scrollIntoView 静默无效。
+  /// 用 Hybrid Composition 承载 WebView。默认的 TLHC/虚拟屏实现在窗口
+  /// insets 变化（键盘弹出/收起）时可能留下内容缩放、裁切的失步画面
+  /// （新版 WebView + 高版本 Android 上更明显）；HC 是真实视图，insets
+  /// 按普通视图链路分发，配合 setInsetsForWebContentToIgnore 行为最稳定。
+  /// 登录导入页不是性能敏感场景，代价可接受。非 Android 平台回退默认实现。
+  Widget _buildWebViewWidget() {
+    final platform = _controller.platform;
+    if (platform is! AndroidWebViewController) {
+      return WebViewWidget(controller: _controller);
+    }
+    return WebViewWidget.fromPlatformCreationParams(
+      params: AndroidWebViewWidgetCreationParams(
+        controller: platform,
+        displayWithHybridComposition: true,
+      ),
+    );
+  }
+
+  Future<void> _injectImeScrollHelperJs() async {
+    try {
+      await _controller.runJavaScript('''
+(() => {
+  if (window.__qingyuImeScrollInstalled) return;
+  window.__qingyuImeScrollInstalled = true;
+  document.addEventListener('focusin', () => {
+    setTimeout(() => {
+      const el = document.activeElement;
+      if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight * 0.6) {
+        try { el.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) {}
+      }
+    }, 250);
+  }, true);
+})();
+''');
+    } catch (error) {
+      WarehouseImportSessionLog.instance.append(
+        message: 'ime scroll helper inject failed: $error',
+        level: 'debug',
+        extras: {
+          'schoolId': widget.school.id,
+          'adapterId': widget.adapter.adapterId,
+        },
+      );
     }
   }
 
