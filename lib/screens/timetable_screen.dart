@@ -40,7 +40,6 @@ import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
-import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
 import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
     show UndimmedBackdropCapture;

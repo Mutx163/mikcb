@@ -5,7 +5,6 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/frosted/liquid_glass_degradation.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'timetable_week_preview.dart';
 

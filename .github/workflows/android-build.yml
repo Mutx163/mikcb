@@ -307,11 +307,12 @@ jobs:
             gh release upload "${RELEASE_TAG}" "${RELEASE_APK}" --clobber
             gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" "${PRERELEASE_OPTION[@]}" "${RELEASE_NOTES_OPTION[@]}"
           else
+            # 不传 --target：tag 先于 CI 存在，该参数冗余；2026-09 起 GitHub 对
+            # integration 携带 target_commitish 的 release 创建一律 403
             gh release create "${RELEASE_TAG}" "${RELEASE_APK}" \
               --title "${RELEASE_TAG}" \
               "${PRERELEASE_OPTION[@]}" \
-              "${RELEASE_NOTES_OPTION[@]}" \
-              --target "${GITHUB_SHA}"
+              "${RELEASE_NOTES_OPTION[@]}"
           fi
 
   sync-releases-json:

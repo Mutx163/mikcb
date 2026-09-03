@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 /// Bottom sheet for picking the visible timetable week using HyperOS styling.
