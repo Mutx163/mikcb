@@ -3524,6 +3524,9 @@ class _WarehouseAdapterWebLoginScreenState
   @override
   void initState() {
     super.initState();
+    // 本页 WebView 是平台视图：玻璃的背景采集拿不到它的像素（采到黑/透明），
+    // 路由存续期间全局降级玻璃为实色，覆盖其上的全部弹窗、菜单与表单。
+    LiquidGlassDegradation.beginPlatformViewUnsafeSurface();
     _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
@@ -3674,6 +3677,7 @@ class _WarehouseAdapterWebLoginScreenState
     _importTimeoutTimer?.cancel();
     _addressController.dispose();
     _addressFocusNode.dispose();
+    LiquidGlassDegradation.endPlatformViewUnsafeSurface();
     super.dispose();
   }
 

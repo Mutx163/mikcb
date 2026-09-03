@@ -37,9 +37,28 @@ import 'package:flutter/material.dart';
 abstract final class LiquidGlassDegradation {
   /// Whether glass surfaces should downgrade to an opaque solid right now.
   static bool shouldDegrade(BuildContext context) =>
-      shouldDegradeFor(MediaQuery.of(context));
+      platformViewSurfaceUnsafe || shouldDegradeFor(MediaQuery.of(context));
 
   /// Pure core that does not depend on [BuildContext], for unit tests.
   static bool shouldDegradeFor(MediaQueryData mq) =>
       mq.disableAnimations || mq.highContrast;
+
+  static int _platformViewUnsafeDepth = 0;
+
+  /// Whether a route hosting a visible Android platform view (WebView) is
+  /// currently active. Glass captures cannot include platform view content —
+  /// sampled regions render black / transparent — so every glass surface
+  /// above it must fall back to its solid material. Counter-nested because
+  /// screens overlap during transitions and dialogs outlive order races.
+  static bool get platformViewSurfaceUnsafe => _platformViewUnsafeDepth > 0;
+
+  /// Marks the window unsafe for glass while a platform-view route is on top.
+  static void beginPlatformViewUnsafeSurface() => _platformViewUnsafeDepth++;
+
+  /// Ends the unsafe window; other overlapping marks keep it unsafe.
+  static void endPlatformViewUnsafeSurface() {
+    if (_platformViewUnsafeDepth > 0) {
+      _platformViewUnsafeDepth--;
+    }
+  }
 }
