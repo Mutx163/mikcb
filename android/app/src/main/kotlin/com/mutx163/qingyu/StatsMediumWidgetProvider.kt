@@ -90,15 +90,24 @@ class StatsMediumWidgetProvider : BaseQingyuWidgetProvider() {
             val done = snapshot.semesterDone.coerceIn(0, max)
             views.setProgressBar(R.id.stats_progress, max, done, false)
             // 顶部「已上 x / 共 y 节」与周数 chip 同行，窄宽度按档降级：
-            // 长句 → 短句 → 仅保留进度条。
+            // 长句 → 短句 → 纯数字 → 仅保留进度条。纯数字档是给 2 列宽
+            // （约150dp）的：「195/328 节」带单位仍会被 ellipsize 成
+            // 「195/32…」式假截断，去掉「节」并降到 10sp 才放得下。
             val progressText = when {
                 profile.widthDp >= 200 ->
                     context.getString(R.string.widget_stats_progress, done, snapshot.semesterTotal)
                 profile.isNarrow -> ""
-                else ->
+                profile.widthDp >= 165 ->
                     context.getString(R.string.widget_stats_progress_short, done, snapshot.semesterTotal)
+                else ->
+                    context.getString(R.string.widget_stats_progress_brief, done, snapshot.semesterTotal)
             }
             views.setTextViewText(R.id.stats_progress_text, progressText)
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.stats_progress_text,
+                if (profile.widthDp >= 165) 11f else 10f,
+            )
             views.setViewVisibility(
                 R.id.stats_progress_text,
                 if (progressText.isEmpty()) View.GONE else View.VISIBLE,
@@ -177,10 +186,14 @@ class StatsMediumWidgetProvider : BaseQingyuWidgetProvider() {
         TodayWidgetSupport.setTextSizeSp(
             views,
             R.id.stats_sections,
+            // 大字号档必须同时卡宽度：「本周 25 节」在 27sp 下约需 130dp+
+            // 内宽，2 列宽（约150dp，扣内边距后 ~110dp）放不下，会被
+            // ellipsize 成「本周 2…」（看着像「本周二」）。宽度不够时
+            // 回落小档——标题宁可小，也不许出现假截断。
             when {
                 profile.isShort -> 15f
-                heightDp >= 280 -> 27f
-                heightDp >= 220 -> 24f
+                heightDp >= 280 && profile.widthDp >= 180 -> 27f
+                heightDp >= 220 && profile.widthDp >= 160 -> 24f
                 profile.isWide -> 22f
                 else -> 20f
             },

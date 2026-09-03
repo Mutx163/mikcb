@@ -23,12 +23,14 @@
             android:layout_weight="1"
             android:orientation="horizontal">
 
+            <!-- 左栏顶对齐：状态胶囊与右栏表头同处一条顶线。此前
+                 center_vertical 让胶囊随内容块垂直居中下沉，与右栏
+                 顶部「表头/周数」上下错开约 8dp，顶线看起来没对齐。 -->
             <LinearLayout
                 android:id="@+id/widget_wide_left"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:gravity="center_vertical"
                 android:orientation="vertical">
 
                 <TextView
@@ -80,10 +82,13 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
+                <!-- paddingTop 与状态胶囊的 3dp 垂直内边距对齐，让表头
+                     文字与胶囊文字落在同一中线上。 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
+                    android:paddingTop="3dp"
                     android:orientation="horizontal">
 
                     <TextView

@@ -25,6 +25,7 @@
 
     <string name="widget_status_ongoing">正在上课</string>
     <string name="widget_status_upcoming">下一节课</string>
+    <string name="widget_upcoming_later">后续课程</string>
     <string name="widget_status_completed">今日已结束</string>
     <string name="widget_status_holiday">今日假期</string>
     <string name="widget_status_no_course">今日无课</string>
@@ -81,6 +82,7 @@
     <string name="widget_stats_vs_last_flat">与上周持平</string>
     <string name="widget_stats_progress">已上 %1$d / 共 %2$d 节</string>
     <string name="widget_stats_progress_short">%1$d/%2$d 节</string>
+    <string name="widget_stats_progress_brief">%1$d/%2$d</string>
     <string name="widget_stats_percent">已上 %1$d%%</string>
     <string name="widget_stats_daily">日均约 %1$s 节</string>
     <string name="widget_stats_delta_short_up">+%1$d 节</string>

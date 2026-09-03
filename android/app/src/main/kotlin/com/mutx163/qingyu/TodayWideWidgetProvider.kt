@@ -80,17 +80,15 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.statusChipTextColor(displayState, style, context)
         )
 
-        views.setTextViewText(
-            R.id.widget_wide_course,
-            when {
-                snapshot == null -> context.getString(R.string.widget_no_course_today)
-                isExamOngoing ->
-                    TodayWidgetSupport.examDisplayName(snapshot)
-                        ?: context.getString(R.string.widget_exam_fallback_name)
-                state == "holiday" -> snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
-                else -> TodayWidgetSupport.heroCourseName(context, snapshot)
-            }
-        )
+        val heroName = when {
+            snapshot == null -> context.getString(R.string.widget_no_course_today)
+            isExamOngoing ->
+                TodayWidgetSupport.examDisplayName(snapshot)
+                    ?: context.getString(R.string.widget_exam_fallback_name)
+            state == "holiday" -> snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+            else -> TodayWidgetSupport.heroCourseName(context, snapshot)
+        }
+        views.setTextViewText(R.id.widget_wide_course, heroName)
         views.setTextColor(R.id.widget_wide_course, primaryColor)
 
         val timePart = when {
@@ -129,7 +127,9 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         views.setTextViewText(
             R.id.widget_wide_right_label,
             if (isShowingTomorrow) {
-                context.getString(R.string.widget_tomorrow_courses)
+                // 不能再用「明日课程」：tomorrow 态左侧状态胶囊就是同一个
+                // 词，同一张卡上重复出现两次。
+                context.getString(R.string.widget_upcoming_later)
             } else {
                 context.getString(R.string.widget_status_upcoming)
             }
@@ -148,15 +148,14 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         // 右栏列宽实测：卡片左右内边距共 32dp，两栏等分后再扣掉 16dp 栏间距。
         val rightColumnWidthDp = (profile.widthDp - 48) / 2f
         // 一行课目的时间串约需 80dp 列宽才不被裁掉。
-        val showRightRows = rightColumnWidthDp >= 80f && !isSparseEnded
-        // 无行内容（结束态/列宽不足）时整栏收起，避免只留孤立表头，
-        // 同时把宽度让给左栏主信息。
-        val showRightColumn = showRightRows
-        val upcoming = if (snapshot == null || !showRightRows) {
+        val upcoming = if (snapshot == null || isSparseEnded || rightColumnWidthDp < 80f) {
             emptyList()
         } else {
             TodayWidgetSupport.secondaryCourses(snapshot, 2)
         }
+        // hero 之后没有可列内容（如明日仅 1 节）时也整栏收起：否则右上角
+        // 只剩一行孤立表头悬空，左栏还被压成半宽导致长课名「…」截断。
+        val showRightColumn = upcoming.isNotEmpty()
         bindRow(views, R.id.widget_wide_row_1, R.id.widget_wide_row_1_time, R.id.widget_wide_row_1_title, upcoming.getOrNull(0), secondaryColor, primaryColor)
         bindRow(views, R.id.widget_wide_row_2, R.id.widget_wide_row_2_time, R.id.widget_wide_row_2_title, upcoming.getOrNull(1), secondaryColor, primaryColor)
         views.setViewVisibility(
@@ -168,9 +167,12 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         // 配合弹性分布把卡面撑满。
         val tall = profile.heightDp >= 230
         TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_status, if (profile.isShort) 10f else 11f)
-        TodayWidgetSupport.setTextSizeSp(
-            views,
-            R.id.widget_wide_course,
+        // 主课名按内容估宽压字号：右栏可见时左栏只有半宽（约 (width-48)/2），
+        // 7 字以上的课名在 20~28sp 档必然「…」截断（CJK≈1em、半角≈0.55em）；
+        // 右栏收起时左栏全宽，按原档取值即可。下限 14sp 保住可读性。
+        val heroWidthDp = if (showRightColumn) rightColumnWidthDp else profile.widthDp - 32f
+        val heroEm = heroName.sumOf { ch -> if (ch.code > 0x2E7F) 1.0 else 0.55 }.coerceAtLeast(1.0)
+        val heroSize = minOf(
             when {
                 profile.isShort -> 17f
                 tall && profile.widthDp >= 320 -> 28f
@@ -178,7 +180,9 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
                 profile.widthDp >= 320 -> 22f
                 else -> 20f
             },
-        )
+            (heroWidthDp / heroEm).toFloat(),
+        ).coerceAtLeast(14f)
+        TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_course, heroSize)
         TodayWidgetSupport.setTextSizeSp(
             views,
             R.id.widget_wide_meta,

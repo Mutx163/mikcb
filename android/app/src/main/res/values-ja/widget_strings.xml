@@ -25,6 +25,7 @@
 
     <string name="widget_status_ongoing">授業中</string>
     <string name="widget_status_upcoming">次の授業</string>
+    <string name="widget_upcoming_later">この後の授業</string>
     <string name="widget_status_completed">今日は終了</string>
     <string name="widget_status_holiday">今日は休日</string>
     <string name="widget_status_no_course">今日は授業なし</string>

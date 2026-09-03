@@ -25,6 +25,7 @@
 
     <string name="widget_status_ongoing">수업 중</string>
     <string name="widget_status_upcoming">다음 수업</string>
+    <string name="widget_upcoming_later">이어지는 수업</string>
     <string name="widget_status_completed">오늘 종료</string>
     <string name="widget_status_holiday">오늘 휴일</string>
     <string name="widget_status_no_course">오늘 수업 없음</string>

@@ -25,6 +25,7 @@
 
     <string name="widget_status_ongoing">In class</string>
     <string name="widget_status_upcoming">Next class</string>
+    <string name="widget_upcoming_later">Up next</string>
     <string name="widget_status_completed">Done for today</string>
     <string name="widget_status_holiday">Holiday today</string>
     <string name="widget_status_no_course">No classes today</string>

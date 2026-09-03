@@ -25,6 +25,7 @@
 
     <string name="widget_status_ongoing">正在上課</string>
     <string name="widget_status_upcoming">下一節課</string>
+    <string name="widget_upcoming_later">後續課程</string>
     <string name="widget_status_completed">今日已結束</string>
     <string name="widget_status_holiday">今日假期</string>
     <string name="widget_status_no_course">今日無課</string>
