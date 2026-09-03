@@ -19,6 +19,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../models/course.dart';
 import '../models/time_scheme.dart';
@@ -3635,6 +3636,18 @@ class _WarehouseAdapterWebLoginScreenState
         ),
       )
       ..loadRequest(Uri.parse(widget.initialUrl));
+    // 键盘弹出时让网页布局保持与系统浏览器一致：Chromium WebView 收到 IME
+    // insets 后会压缩网页视口去"避开"键盘，强智等教务登录页的底部版权条
+    // （fixed 定位）会被顶到「登录」按钮上，导致按钮点不到。让网页内容忽略
+    // IME insets 后，键盘直接悬浮在网页上方，页面不再挤压变形。
+    final webviewPlatform = _controller.platform;
+    if (webviewPlatform is AndroidWebViewController) {
+      unawaited(
+        webviewPlatform.setInsetsForWebContentToIgnore(
+          <AndroidWebViewInsets>[AndroidWebViewInsets.ime],
+        ),
+      );
+    }
     _loadRememberedLogin();
 
     // 如果是自动录制模式，延迟一帧后自动开始录制
