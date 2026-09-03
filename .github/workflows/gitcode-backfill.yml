@@ -1,0 +1,100 @@
+name: GitCode Mirror Backfill
+
+# 手动把某个已发布 tag 同步到 GitCode 镜像仓库（真 APK + release notes）。
+# 用途：1) 发版链路联调；2) 补建历史 Release（正常发版的自动同步在 android-build.yml）。
+# 依赖 Variable GITCODE_USERNAME（不存在时同步 job 自动跳过）、可选 Variable GITCODE_REPOSITORY、Secret GITCODE_TOKEN。
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要同步的 GitHub tag，如 v2.1.1.4'
+        required: true
+        type: string
+
+concurrency:
+  group: gitcode-backfill-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare APK and release notes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+      body: ${{ steps.meta.outputs.body }}
+    steps:
+      - name: Checkout at tag
+        uses: actions/checkout@${CHECKOUT_PIN} # v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Download release APK from GitHub
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -ex
+          mkdir -p dist
+          gh release download "${{ inputs.tag }}" --repo "${{ github.repository }}" --pattern 'mikcb-*.apk' --dir dist
+          ls -lh dist
+
+      - name: Extract release notes and channel
+        id: meta
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -ex
+          TAG="${{ inputs.tag }}"
+          VERSION_NAME="${TAG#v}"
+          NOTES_FILE="docs/releases/v${VERSION_NAME}.md"
+          if [[ -f "${NOTES_FILE}" ]]; then
+            echo "body<<EOF" >> "$GITHUB_OUTPUT"
+            cat "${NOTES_FILE}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            gh release view "${TAG}" --repo "${{ github.repository }}" --json body --jq .body > /tmp/body.md
+            echo "body<<EOF" >> "$GITHUB_OUTPUT"
+            cat /tmp/body.md >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
+          PRERELEASE=$(gh release view "${TAG}" --repo "${{ github.repository }}" --json isPrerelease --jq .isPrerelease)
+          echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@${UPLOAD_PIN} # v7
+        with:
+          name: android-release-apk
+          path: dist/mikcb-*.apk
+
+  gitcode-push:
+    name: Push code to GitCode
+    if: ${{ vars.GITCODE_USERNAME }}
+    needs: prepare
+    permissions:
+      contents: read
+    uses: nvdacn/sync_to_gitcode/.github/workflows/PushToGitCode.yaml@${STG_PIN} # sync_to_gitcode@master
+    with:
+      default_branch: main
+      gitcode_username: ${{ vars.GITCODE_USERNAME }}
+    secrets:
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+
+  gitcode-release:
+    name: Release APK on GitCode
+    if: ${{ vars.GITCODE_USERNAME }}
+    needs: [prepare, gitcode-push]
+    permissions:
+      actions: read
+    uses: nvdacn/sync_to_gitcode/.github/workflows/CreateReleaseOnGitCode.yaml@${STG_PIN} # sync_to_gitcode@master
+    with:
+      artifact_name: android-release-apk
+      default_branch: main
+      tag_name: ${{ inputs.tag }}
+      body: ${{ needs.prepare.outputs.body }}
+      prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
+      file_name: 'mikcb-*.apk'
+    secrets:
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
