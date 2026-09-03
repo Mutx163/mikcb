@@ -9,13 +9,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Probe release create/delete on TAG ref
+      - name: Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: v2.1.1.5
+      - name: Replicate android-build release step exactly
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: Mutx163/mikcb
         run: |
           set -x
-          echo "GITHUB_REF=$GITHUB_REF SHA=$GITHUB_SHA"
-          gh api repos/Mutx163/mikcb/releases -f tag_name=probe-test3 -f name=probe-test3 2>&1 || echo "CREATE_FAILED"
-          gh release view probe-test3 2>&1 || true
-          gh release delete probe-test3 --yes --cleanup-tag 2>&1 || true
+          echo "dummy asset" > dist-fake.apk
+          echo "=== A: create with asset+target+prerelease+notes on throwaway tag ==="
+          gh release create probe-test4 dist-fake.apk --title probe-test4 --prerelease --notes-file docs/releases/v2.1.1.5.md --target f06c661b0bcf600dd3d328652ed405c699b5527a 2>&1 || echo "A_FAILED"
+          gh release delete probe-test4 --yes --cleanup-tag 2>&1 || true
+          echo "=== B: exact failing command on existing tag v2.1.1.5 ==="
+          gh release create v2.1.1.5 dist-fake.apk --title v2.1.1.5 --prerelease --notes-file docs/releases/v2.1.1.5.md --target f06c661b0bcf600dd3d328652ed405c699b5527a 2>&1 || echo "B_FAILED"
+          gh release delete v2.1.1.5 --yes 2>&1 || true
