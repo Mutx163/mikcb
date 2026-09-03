@@ -110,8 +110,9 @@ class HyperosRootPage extends StatelessWidget {
 /// [HyperosCollapsibleTopAppBar] (Miuix-style large-title collapse). Complex
 /// title widgets fall back to the nested frosted header.
 /// 内嵌宿主标记：由底栏内嵌壳提供。被包裹的 [HyperosSubpage] 隐藏
-/// 返回箭头——底栏点开的页没有「返回上一页」语义（坞常驻，系统返回
-/// 由宿主拦截收回页面）；普通推入的路由不包此标记，行为不变。
+/// 返回箭头——底栏点开的页没有「返回上一页」语义（坞常驻，页间切换
+/// 走底栏；系统返回不拦内嵌页，与日/周课表同口径直接退出应用）。
+/// 普通推入的路由不包此标记，行为不变。
 class HyperosSubpageNoBack extends InheritedWidget {
   const HyperosSubpageNoBack({super.key, required super.child});
 

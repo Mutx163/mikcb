@@ -790,8 +790,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           );
         }
         // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
-        // 玻璃坞常驻悬浮），仅未登记的流程页才推入新路由。系统返回
-        // 优先收回内嵌页而不是退出应用。
+        // 玻璃坞常驻悬浮），仅未登记的流程页才推入新路由。
         final inlineId = _dockInlinePageId;
         final inlineBuilder = inlineId == null ? null : inlineDockPageFor(inlineId);
         final Widget hostedContent = inlineBuilder == null
@@ -822,19 +821,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                   ),
                 ],
               );
-        return PopScope(
-          canPop: inlineId == null,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop && mounted && _dockInlinePageId != null) {
-              setState(() => _dockInlinePageId = null);
-            }
-          },
-          child: _wrapWithGlassDock(
-            hostedContent,
-            glassDockForm: true,
-            settings: settings,
-            l10n: l10n,
-          ),
+        // 系统返回不拦内嵌页：与日/周课表同口径，底栏任意状态（日/周
+        // 课表或内嵌页）按返回都直接退出应用（根路由 bubble → 系统退出）。
+        // 收回内嵌页走底栏切换（点 日/周 Tab 或其他页面条目）与圆钮再点。
+        return _wrapWithGlassDock(
+          hostedContent,
+          glassDockForm: true,
+          settings: settings,
+          l10n: l10n,
         );
       },
     );
@@ -6913,7 +6907,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// 触觉口径（恢复 3e41ac20）：真实切换（切视图/开页/换页/收页/推路由）
   /// 给一次触觉，重复点击当前 Tab 静音——日/周靠既有守卫；内嵌页再点
-  /// 当前页不再翻转收回（与 日/周 同口径，收页走切视图或系统返回）。
+  /// 当前页不再翻转收回（与 日/周 同口径，收页走切视图或圆钮再点）。
   void _handleDockTap(String id, TimetableSettings settings) {
     final leavingInlinePage =
         _dockInlinePageId != null &&
