@@ -1,0 +1,21 @@
+name: Release Permission Probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Probe release create/delete on TAG ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: Mutx163/mikcb
+        run: |
+          set -x
+          echo "GITHUB_REF=$GITHUB_REF SHA=$GITHUB_SHA"
+          gh api repos/Mutx163/mikcb/releases -f tag_name=probe-test3 -f name=probe-test3 2>&1 || echo "CREATE_FAILED"
+          gh release view probe-test3 2>&1 || true
+          gh release delete probe-test3 --yes --cleanup-tag 2>&1 || true
