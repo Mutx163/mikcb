@@ -3792,6 +3792,8 @@ class _WarehouseAdapterWebLoginScreenState
     final value = await showHyperosListPopup<String>(
       context: context,
       position: hyperosPopupPositionBelow(context, _webLoginMoreMenuKey),
+      // 悬在 WebView 上方：玻璃背景采集不到平台视图内容会渲染成黑块，用实色。
+      opaqueSurface: true,
       items: [
         HyperosPopupMenuItem(
           label: l10n.executeImportScriptAction,

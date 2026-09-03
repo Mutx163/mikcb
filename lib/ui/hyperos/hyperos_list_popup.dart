@@ -61,6 +61,11 @@ Future<T?> showHyperosListPopup<T>({
   required RelativeRect? position,
   required List<HyperosPopupMenuItem<T>> items,
   Color? foregroundColor,
+
+  /// Use a solid opaque surface instead of sampled glass. Glass popups read
+  /// as black when hovering an Android platform view (WebView), because the
+  /// backdrop capture cannot include the platform view's texture.
+  bool opaqueSurface = false,
 }) async {
   final appearance = FrostedAppearanceScope.of(context);
   if (position == null || items.isEmpty) {
@@ -79,6 +84,7 @@ Future<T?> showHyperosListPopup<T>({
           position: position,
           items: items,
           foregroundColor: foregroundColor,
+          opaqueSurface: opaqueSurface,
         ),
       );
     },
@@ -90,6 +96,7 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
     required this.position,
     required this.items,
     this.foregroundColor,
+    this.opaqueSurface = false,
   });
 
   final RelativeRect position;
@@ -98,6 +105,9 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
   /// Overrides the row label/icon color (e.g. wallpaper-aware chrome ink on
   /// the home screen); falls back to [HyperosColors.onSurface].
   final Color? foregroundColor;
+
+  /// Solid surface instead of sampled glass (see [showHyperosListPopup]).
+  final bool opaqueSurface;
 
   @override
   State<_HyperosListPopupBody<T>> createState() =>
@@ -265,6 +275,39 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                 builder: (context, _) {
                   final fraction = _fraction.value.clamp(0.0, 1.0);
                   final scale = 0.15 + 0.85 * fraction;
+                  final Widget panelChild = ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: 200,
+                      maxWidth: (screen.width - margin * 2).clamp(200.0, 364.0),
+                      maxHeight: maxHeight,
+                    ),
+                    child: SingleChildScrollView(
+                      child: IntrinsicWidth(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 0; i < widget.items.length; i++)
+                              _ListPopupTile(
+                                item: widget.items[i],
+                                foregroundColor: widget.foregroundColor,
+                                // Selecting an item pops the popup immediately
+                                // so the destination page can start its
+                                // transition right away; the exit animation
+                                // would otherwise delay navigation by 150ms.
+                                // (Scrim taps and the back key still play the
+                                // fade-out.)
+                                onTap: widget.items[i].enabled
+                                    ? () => Navigator.of(
+                                            context,
+                                          ).pop(widget.items[i].value)
+                                    : null,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
                   return Transform.scale(
                     scale: scale,
                     alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
@@ -272,46 +315,17 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     // surface every spring frame resamples the group capture
                     // and reads as whole-page flicker on open/close. The
                     // Miuix scale + alpha motion stays, without the clip.
-                    child: HyperosSelectPopupGlass(
-                      cornerRadius: cornerRadius,
-                      child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: 200,
-                            maxWidth: (screen.width - margin * 2).clamp(
-                              200.0,
-                              364.0,
-                            ),
-                            maxHeight: maxHeight,
+                    // 实色回退（opaqueSurface）：悬在 WebView 平台视图上方时，
+                    // 玻璃的背景采集读不到平台视图内容，会渲染成黑色面板。
+                    child: widget.opaqueSurface
+                        ? HyperosSolidPopupSurface(
+                            cornerRadius: cornerRadius,
+                            child: panelChild,
+                          )
+                        : HyperosSelectPopupGlass(
+                            cornerRadius: cornerRadius,
+                            child: panelChild,
                           ),
-                          child: SingleChildScrollView(
-                            child: IntrinsicWidth(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  for (var i = 0; i < widget.items.length; i++)
-                                    _ListPopupTile(
-                                      item: widget.items[i],
-                                      foregroundColor: widget.foregroundColor,
-                                      // Selecting an item pops the popup
-                                      // immediately so the destination page
-                                      // can start its transition right away;
-                                      // the exit animation would otherwise
-                                      // delay navigation by 150ms. (Scrim
-                                      // taps and the back key still play the
-                                      // fade-out.)
-                                      onTap: widget.items[i].enabled
-                                          ? () => Navigator.of(
-                                              context,
-                                            ).pop(widget.items[i].value)
-                                          : null,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ),
-                    ),
                   );
                 },
               ),

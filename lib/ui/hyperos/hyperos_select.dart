@@ -489,14 +489,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
 
     // Blur disabled → solid opaque surface.
     if (!useBlur) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: HyperosColors.surfaceContainer(context),
-          borderRadius: borderRadius,
-          boxShadow: _kPopupShadow,
-        ),
-        child: ClipRRect(borderRadius: borderRadius, child: child),
-      );
+      return HyperosSolidPopupSurface(cornerRadius: cornerRadius, child: child);
     }
 
     // Frosted / gaussian / translucent: use the same sigma and tint as every
@@ -528,12 +521,38 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     );
   }
 
+}
+
+/// Solid opaque popup surface — the shared fallback when backdrop blur is
+/// unavailable or unsafe. Over an Android platform view (WebView) the
+/// BackdropFilter / liquid-glass capture reads the platform view as black,
+/// so popups anchored above one must use this instead of sampled glass.
+class HyperosSolidPopupSurface extends StatelessWidget {
+  const HyperosSolidPopupSurface({
+    super.key,
+    required this.cornerRadius,
+    required this.child,
+  });
+
+  final double cornerRadius;
+  final Widget child;
+
   static const _kPopupShadow = [
-    BoxShadow(
-      color: Color(0x24000000),
-      blurRadius: 20,
-    ),
+    BoxShadow(color: Color(0x24000000), blurRadius: 20),
   ];
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(cornerRadius);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: HyperosColors.surfaceContainer(context),
+        borderRadius: borderRadius,
+        boxShadow: _kPopupShadow,
+      ),
+      child: ClipRRect(borderRadius: borderRadius, child: child),
+    );
+  }
 }
 
 /// Opens a HyperOS dialog-style bottom sheet for longer single-choice lists.
