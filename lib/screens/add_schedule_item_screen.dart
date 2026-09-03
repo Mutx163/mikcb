@@ -171,6 +171,8 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         child: HyperosListView(
           padding: const EdgeInsets.all(_pagePadding),
           children: [
+            _buildScheduleEnabledSection(l10n),
+            const SizedBox(height: _sectionSpacing),
             HyperosControlCard(
               title: l10n.scheduleInfoSectionTitle,
               child: HyperosControlCardInset(
@@ -299,30 +301,18 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           style: theme.typography.body.sm.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
-        _buildCompactPickerTile(
+        HyperosPickerField(
           value: dateValue,
           icon: dateIcon,
-          onPress: onDatePress,
+          onTap: onDatePress,
         ),
         const SizedBox(height: _fieldSpacing),
-        _buildCompactPickerTile(
+        HyperosPickerField(
           value: timeValue,
           icon: timeIcon,
-          onPress: onTimePress,
+          onTap: onTimePress,
         ),
       ],
-    );
-  }
-
-  Widget _buildCompactPickerTile({
-    required String value,
-    required IconData icon,
-    required VoidCallback onPress,
-  }) {
-    return HyperosChoiceTile(
-      prefix: Icon(icon, size: 18),
-      title: value,
-      onTap: onPress,
     );
   }
 
@@ -392,6 +382,20 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 启用日程开关独立成卡，置于「日程信息」上方。
+  Widget _buildScheduleEnabledSection(AppLocalizations l10n) {
+    return HyperosListGroup(
+      children: [
+        HyperosSwitchTile(
+          title: l10n.scheduleEnabledTitle,
+          subtitle: _enabled ? null : l10n.scheduleDisabledSubtitle,
+          value: _enabled,
+          onChanged: (value) => setState(() => _enabled = value),
+        ),
+      ],
     );
   }
 
@@ -485,14 +489,6 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: _fieldSpacing),
-            HyperosSwitchTile(
-              icon: Icons.pause_circle_outline_rounded,
-              title: l10n.scheduleEnabledTitle,
-              subtitle: _enabled ? null : l10n.scheduleDisabledSubtitle,
-              value: _enabled,
-              onChanged: (value) => setState(() => _enabled = value),
-            ),
           ],
         ),
       ),

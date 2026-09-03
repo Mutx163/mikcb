@@ -92,7 +92,7 @@ class HyperosTextField extends StatelessWidget {
 class HyperosPickerField extends StatelessWidget {
   const HyperosPickerField({
     super.key,
-    required this.label,
+    this.label,
     required this.value,
     required this.onTap,
     this.icon,
@@ -102,7 +102,8 @@ class HyperosPickerField extends StatelessWidget {
     this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
   });
 
-  final String label;
+  /// 顶部标签；为 null 时仅渲染字段本体，用于组标签已由外部提供的场景。
+  final String? label;
   final String value;
   final VoidCallback? onTap;
   final IconData? icon;
@@ -131,14 +132,16 @@ class HyperosPickerField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: fontSize,
-            color: canTap ? onSurface : disabled,
+        if (label != null) ...[
+          Text(
+            label!,
+            style: TextStyle(
+              fontSize: fontSize,
+              color: canTap ? onSurface : disabled,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+        ],
         Material(
           color: canTap ? fill : fill.withValues(alpha: 0.5),
           borderRadius: radius,
