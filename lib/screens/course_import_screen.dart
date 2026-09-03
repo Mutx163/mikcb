@@ -3603,6 +3603,7 @@ class _WarehouseAdapterWebLoginScreenState
               _injectMacroRecorderJs();
             }
             _injectImeScrollHelperJs();
+            _applyViewportOverrideJs();
             _requestLoginStateProbe();
           },
           onWebResourceError: (error) {
@@ -3651,6 +3652,10 @@ class _WarehouseAdapterWebLoginScreenState
           <AndroidWebViewInsets>[AndroidWebViewInsets.ime],
         ),
       );
+      // 插件默认 useWideViewPort=false：viewport meta 被忽略、布局视口锁死
+      // 设备宽度，桌面/移动切换只剩 UA 差异，页面渲染必然一模一样。恢复
+      // 标准 viewport 语义后，布局宽度才随 meta（及下方的 JS 改写）变化。
+      unawaited(webviewPlatform.setUseWideViewPort(true));
     }
     _loadRememberedLogin();
 
@@ -4092,6 +4097,48 @@ class _WarehouseAdapterWebLoginScreenState
         displayWithHybridComposition: true,
       ),
     );
+  }
+
+  /// 桌面/移动切换的另一半：浏览器的「桌面版网站」除了换 UA，还会把布局
+  /// 视口强制为宽屏并让页面自身的 viewport meta 失效，页面才按桌面版重排。
+  /// WebView 换 UA 不改布局视口，两种模式渲染完全相同。这里在每次页面加载
+  /// 后按模式改写 viewport meta 复刻该行为：桌面强制 width=1024（略宽于
+  /// Chrome 的 980，避免强智这类固定 1000px 模板出现横向滚动）；移动恢复
+  /// 页面原始 meta（无 meta 回退 device-width）。配合 initState 恢复的
+  /// useWideViewPort 才能生效。
+  Future<void> _applyViewportOverrideJs() async {
+    final desktop = _useDesktopMode;
+    try {
+      await _controller.runJavaScript('''
+(() => {
+  const KEY = '__qingyuOriginalViewport';
+  let meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'viewport');
+    (document.head || document.documentElement).appendChild(meta);
+  }
+  if (window[KEY] === undefined) {
+    window[KEY] = meta.getAttribute('content');
+  }
+  const content = $desktop
+      ? 'width=1024'
+      : (window[KEY] || 'width=device-width, initial-scale=1');
+  if (meta.getAttribute('content') !== content) {
+    meta.setAttribute('content', content);
+  }
+})();
+''');
+    } catch (error) {
+      WarehouseImportSessionLog.instance.append(
+        message: 'viewport override inject failed: $error',
+        level: 'debug',
+        extras: {
+          'schoolId': widget.school.id,
+          'adapterId': widget.adapter.adapterId,
+        },
+      );
+    }
   }
 
   Future<void> _injectImeScrollHelperJs() async {
