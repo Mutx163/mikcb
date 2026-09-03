@@ -5,7 +5,7 @@
 先记住 9 句话：
 
 - `push` / `pull_request` 会触发 CI 质量门禁。
-- 只有推送 `v*` tag 才会自动构建正式 APK 并创建 / 更新 GitHub Release。
+- 只有推送 `v*` tag 才会自动构建正式 APK 并创建 / 更新 GitHub Release，并同步 GitCode 镜像（需一次性配置，见第一节）。
 - **GitHub 预发布 / 正式，唯一由 pubspec 的 `version:` 是否含 `-` 决定；commit message 里的 `prerelease` 无效。**
 - 三位数版本和四位数版本都可以是正式版，也都可以是预发布版；关键看 pubspec 有没有 `-`。
 - 四位数版本可以先作为预发布发出，后面再原地转成正式版。
@@ -124,7 +124,7 @@
 当前仓库有四条 GitHub Actions 线：
 
 - [.github/workflows/ci.yml](../.github/workflows/ci.yml)：`push` / `pull_request` 时执行依赖安装、静态分析和测试。
-- [.github/workflows/android-build.yml](../.github/workflows/android-build.yml)：推送 `v*` tag 时先执行检查，再签名构建 `arm64-v8a` APK 并创建 / 更新 GitHub Release。
+- [.github/workflows/android-build.yml](../.github/workflows/android-build.yml)：推送 `v*` tag 时先执行检查，再签名构建 `arm64-v8a` APK 并创建 / 更新 GitHub Release，最后同步源码 / tag / APK 到 GitCode 镜像。
 - [.github/workflows/update-docs-releases.yml](../.github/workflows/update-docs-releases.yml)：GitHub Release 发布、编辑、撤销等事件后自动更新 `docs/releases/latest.json`，供应用内更新检查读取。
 - [.github/workflows/update-docs-schools.yml](../.github/workflows/update-docs-schools.yml)：每天定时（及手动）从 `qingyu_warehouse` 拉取 `root_index.yaml`，生成 `docs/schools.json`，供官网已适配学校列表读取。
 
@@ -144,6 +144,32 @@ release workflow 还会做这些事：
 - 用 tag 名覆盖 Android 最终产物的 `versionName`
 - 使用 `flutter build apk --release --flavor prod --target-platform android-arm64` 构建正式包
 - 创建或更新 GitHub Release
+- 同步源码、tag 与 APK 到 GitCode 镜像仓库（国内下载加速，需一次性配置，见下）
+
+### GitCode 镜像同步（国内下载加速）
+
+发版时 android-build.yml 会调用 [nvdacn/sync_to_gitcode](https://github.com/nvdacn/sync_to_gitcode) 的两个可复用工作流（已按 master HEAD `18b70112` SHA pin）：
+
+- `gitcode-push`：把 `main` 分支与全部 tag 同步到 GitCode 仓库；
+- `gitcode-release`：把本次构建产物 `mikcb-*.apk` 上传为 GitCode Release 附件，正文使用 `docs/releases/v版本号.md` 全文，预发布 / 正式状态沿用 pubspec `-` 判定（`pre` / `latest`）。
+
+触发条件与发版一致：仅当推送 `v*` tag 且构建发布（publish job）成功后执行；两个 Job 都带 `vars.GITCODE_USERNAME` 存在性门禁，变量不存在时自动跳过，Fork 仓库不会因此失败。
+
+启用前需要一次性配置（任一项缺失时同步静默跳过，不影响 GitHub 发版）：
+
+| 平台 | 配置 | 说明 |
+|------|------|------|
+| GitCode | 创建仓库 | 路径默认需与 GitHub 相同（`Mutx163/mikcb`）；不同则设 GitHub Variable `GITCODE_REPOSITORY` |
+| GitCode | [个人访问令牌](https://gitcode.com/setting/token-classic) | 需具备仓库写权限（推代码 + 创建/编辑 Release） |
+| GitHub | Secret `GITCODE_TOKEN` | 存 GitCode 令牌 |
+| GitHub | Variable `GITCODE_USERNAME` | GitCode 用户名；同时充当同步开关 |
+| GitHub | Variable `GITCODE_REPOSITORY`（可选） | 仅当 GitCode 仓库路径与 GitHub 不同时需要 |
+
+注意：
+
+- GitCode 仓库不会在 push 时自动创建，必须先在 GitCode 网页端建好空仓库。
+- 同步从配置后的第一个新 tag 开始；历史 Release 不会自动回填（重推旧 tag 会重跑完整发版流程，一般不建议）。
+- 首次同步会把 main 的全部历史与所有历史 tag 一起推到 GitCode。
 
 ## 二、先分清两套版本
 

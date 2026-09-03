@@ -59,6 +59,10 @@ jobs:
       MIN_APK_BYTES: 5242880
     permissions:
       contents: write
+    outputs:
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+      release_notes: ${{ steps.meta.outputs.release_notes }}
 
     steps:
       - name: Checkout
@@ -109,8 +113,13 @@ jobs:
             echo "release_body<<EOF" >> "$GITHUB_OUTPUT"
             echo "${RELEASE_BODY}" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
+            # 读取完整 release notes 用于 GitCode Release 正文
+            echo "release_notes<<EOF" >> "$GITHUB_OUTPUT"
+            cat "${RELEASE_NOTES_FILE}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
           else
             echo "release_body=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+            echo "release_notes=Automated release for ${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Prepare signing files
@@ -293,3 +302,36 @@ jobs:
               workflow_id: 'update-docs-releases.yml',
               ref: 'main',
             });
+
+  gitcode-push:
+    name: Sync code to GitCode
+    # 国内下载加速：把 main 分支与全部 tag 同步到 GitCode 镜像仓库（nvdacn/sync_to_gitcode 可复用工作流）
+    # vars.GITCODE_USERNAME 不存在时整个 Job 跳过，Fork 仓库未配置也不会失败
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && vars.GITCODE_USERNAME }}
+    needs: publish
+    permissions:
+      contents: read
+    uses: nvdacn/sync_to_gitcode/.github/workflows/PushToGitCode.yaml@18b70112d0e62260bc54085028e5510bbc6323b2 # sync_to_gitcode@master
+    with:
+      default_branch: main
+      gitcode_username: ${{ vars.GITCODE_USERNAME }}
+    secrets:
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+
+  gitcode-release:
+    name: Sync release to GitCode
+    # 把本次构建的 APK 作为 Release 附件同步到 GitCode，正文使用完整 release notes
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && vars.GITCODE_USERNAME }}
+    needs: [publish, gitcode-push]
+    permissions:
+      actions: read
+    uses: nvdacn/sync_to_gitcode/.github/workflows/CreateReleaseOnGitCode.yaml@18b70112d0e62260bc54085028e5510bbc6323b2 # sync_to_gitcode@master
+    with:
+      artifact_name: android-release-apk
+      default_branch: main
+      tag_name: ${{ needs.publish.outputs.release_tag }}
+      body: ${{ needs.publish.outputs.release_notes }}
+      prerelease: ${{ needs.publish.outputs.is_prerelease == 'true' }}
+      file_name: 'mikcb-*.apk'
+    secrets:
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
