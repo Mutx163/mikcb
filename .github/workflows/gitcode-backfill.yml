@@ -26,7 +26,7 @@ jobs:
       body: ${{ steps.meta.outputs.body }}
     steps:
       - name: Checkout at tag
-        uses: actions/checkout@${CHECKOUT_PIN} # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.tag }}
 
@@ -64,7 +64,7 @@ jobs:
           echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@${UPLOAD_PIN} # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: android-release-apk
           path: dist/mikcb-*.apk
@@ -75,7 +75,7 @@ jobs:
     needs: prepare
     permissions:
       contents: read
-    uses: nvdacn/sync_to_gitcode/.github/workflows/PushToGitCode.yaml@${STG_PIN} # sync_to_gitcode@master
+    uses: nvdacn/sync_to_gitcode/.github/workflows/PushToGitCode.yaml@18b70112d0e62260bc54085028e5510bbc6323b2 # sync_to_gitcode@master
     with:
       default_branch: main
       gitcode_username: ${{ vars.GITCODE_USERNAME }}
@@ -88,7 +88,7 @@ jobs:
     needs: [prepare, gitcode-push]
     permissions:
       actions: read
-    uses: nvdacn/sync_to_gitcode/.github/workflows/CreateReleaseOnGitCode.yaml@${STG_PIN} # sync_to_gitcode@master
+    uses: nvdacn/sync_to_gitcode/.github/workflows/CreateReleaseOnGitCode.yaml@18b70112d0e62260bc54085028e5510bbc6323b2 # sync_to_gitcode@master
     with:
       artifact_name: android-release-apk
       default_branch: main
