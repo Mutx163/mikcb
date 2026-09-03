@@ -4102,7 +4102,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Automatically show tomorrow\'s classes after today\'s classes end';
 
   @override
-  String get homeWidgetHeightAdjustTitle => 'Card height adjustment';
+  String get homeWidgetAppearanceTitle => 'Card appearance';
+
+  @override
+  String get homeWidgetHeightAdjustTitle => 'Card height';
+
+  @override
+  String get homeWidgetHeightAdjustHint =>
+      'Range -16 to 16; 0 is the default. Positive is taller than default, negative is shorter';
 
   @override
   String get defaultLabel => 'Default';

@@ -1912,7 +1912,9 @@
   "homeWidgetHideCompletedSubtitle": "아직 끝나지 않은 수업만 표시합니다",
   "homeWidgetShowTomorrowTitle": "수업 후 내일 수업 표시",
   "homeWidgetShowTomorrowSubtitle": "오늘 수업이 끝나면 내일 수업을 자동으로 표시합니다",
-  "homeWidgetHeightAdjustTitle": "카드 높이 미세 조정",
+  "homeWidgetAppearanceTitle": "카드 외관",
+  "homeWidgetHeightAdjustTitle": "카드 높이",
+  "homeWidgetHeightAdjustHint": "범위 -16~16, 0은 기본값입니다. 양수는 더 높게, 음수는 더 낮게",
   "defaultLabel": "기본",
   "higherByValue": "높게 {value}",
   "@higherByValue": {

@@ -1909,7 +1909,9 @@
   "widgetCountdownStyleTitle": "倒計時樣式",
   "homeWidgetHideCompletedTitle": "隱藏已上完課程",
   "homeWidgetHideCompletedSubtitle": "只顯示未結束的課程",
-  "homeWidgetHeightAdjustTitle": "卡片高度微調",
+  "homeWidgetAppearanceTitle": "卡片外觀",
+  "homeWidgetHeightAdjustTitle": "卡片高度",
+  "homeWidgetHeightAdjustHint": "範圍 -16 ~ 16，0 為預設檔：正數比預設更高，負數更矮",
   "defaultLabel": "預設",
   "higherByValue": "更高 {value}",
   "@higherByValue": {

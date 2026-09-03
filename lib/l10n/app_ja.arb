@@ -1912,7 +1912,9 @@
   "homeWidgetHideCompletedSubtitle": "終了していない授業のみ表示",
   "homeWidgetShowTomorrowTitle": "授業後に明日の授業を表示",
   "homeWidgetShowTomorrowSubtitle": "今日の授業終了後は明日の授業を自動表示",
-  "homeWidgetHeightAdjustTitle": "カード高さ微調整",
+  "homeWidgetAppearanceTitle": "カードの外観",
+  "homeWidgetHeightAdjustTitle": "カードの高さ",
+  "homeWidgetHeightAdjustHint": "範囲 -16〜16、0 はデフォルト。正数で高く、負数で低くなります",
   "defaultLabel": "デフォルト",
   "higherByValue": "高く{value}",
   "@higherByValue": {

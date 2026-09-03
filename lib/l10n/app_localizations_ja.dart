@@ -3926,7 +3926,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetShowTomorrowSubtitle => '今日の授業終了後は明日の授業を自動表示';
 
   @override
-  String get homeWidgetHeightAdjustTitle => 'カード高さ微調整';
+  String get homeWidgetAppearanceTitle => 'カードの外観';
+
+  @override
+  String get homeWidgetHeightAdjustTitle => 'カードの高さ';
+
+  @override
+  String get homeWidgetHeightAdjustHint => '範囲 -16〜16、0 はデフォルト。正数で高く、負数で低くなります';
 
   @override
   String get defaultLabel => 'デフォルト';

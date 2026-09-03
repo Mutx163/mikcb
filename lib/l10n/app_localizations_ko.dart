@@ -3949,7 +3949,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowTomorrowSubtitle => '오늘 수업이 끝나면 내일 수업을 자동으로 표시합니다';
 
   @override
-  String get homeWidgetHeightAdjustTitle => '카드 높이 미세 조정';
+  String get homeWidgetAppearanceTitle => '카드 외관';
+
+  @override
+  String get homeWidgetHeightAdjustTitle => '카드 높이';
+
+  @override
+  String get homeWidgetHeightAdjustHint =>
+      '범위 -16~16, 0은 기본값입니다. 양수는 더 높게, 음수는 더 낮게';
 
   @override
   String get defaultLabel => '기본';

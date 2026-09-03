@@ -320,17 +320,26 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          HyperosSectionLabel(text: l10n.homeWidgetHeightAdjustTitle),
+          HyperosSectionLabel(text: l10n.homeWidgetAppearanceTitle),
           HyperosListGroup(
             children: [
+              // 滑条与点开后的输入框共用同一参照系：相对默认档（-11）的
+              // 偏移，-16~+16，0 = 默认；存储值仍是绝对档位。行标题固定，
+              // 值标签（默认/更高 Ndp/更矮 Ndp）与输入框数字一一对应。
               HyperosSliderTile(
-                title: _widgetHeightAdjustmentLabel(l10n),
-                value: _draft.widgetHeightAdjustment,
-                min: _defaultWidgetHeightAdjustment - 16,
-                max: _defaultWidgetHeightAdjustment + 16,
+                title: l10n.homeWidgetHeightAdjustTitle,
+                valueLabel: _widgetHeightAdjustmentLabel(l10n),
+                value: _draft.widgetHeightAdjustment -
+                    _defaultWidgetHeightAdjustment,
+                min: -16,
+                max: 16,
                 divisions: 32,
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(widgetHeightAdjustment: value),
+                dialogHelper: l10n.homeWidgetHeightAdjustHint,
+                onChanged: (offset) => _updateDraft(
+                  _draft.copyWith(
+                    widgetHeightAdjustment:
+                        _defaultWidgetHeightAdjustment + offset,
+                  ),
                   debounce: true,
                 ),
               ),
@@ -471,19 +480,16 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
     }
   }
 
-  String _widgetHeightAdjustmentLabel(AppLocalizations l10n) {    if (_draft.widgetHeightAdjustment == _defaultWidgetHeightAdjustment) {
+  /// 「卡片高度」的值标签：与滑条/输入框同一参照系——相对默认档
+  /// （-11）的偏移，0 = 默认，正数比默认更高、负数更矮，带 dp 单位。
+  String _widgetHeightAdjustmentLabel(AppLocalizations l10n) {
+    final offset =
+        _draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment;
+    if (offset == 0) {
       return l10n.defaultLabel;
     }
-    if (_draft.widgetHeightAdjustment > _defaultWidgetHeightAdjustment) {
-      return l10n.higherByValue(
-        (_draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment)
-            .toStringAsFixed(0),
-      );
-    }
-    return l10n.lowerByValue(
-      (_defaultWidgetHeightAdjustment - _draft.widgetHeightAdjustment)
-          .toStringAsFixed(0),
-    );
+    final dpText = '${offset.abs().toStringAsFixed(0)}dp';
+    return offset > 0 ? l10n.higherByValue(dpText) : l10n.lowerByValue(dpText);
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {

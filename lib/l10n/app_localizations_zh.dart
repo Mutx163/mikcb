@@ -3852,7 +3852,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetShowTomorrowSubtitle => '今日课后自动显示明天课程';
 
   @override
-  String get homeWidgetHeightAdjustTitle => '卡片高度微调';
+  String get homeWidgetAppearanceTitle => '卡片外观';
+
+  @override
+  String get homeWidgetHeightAdjustTitle => '卡片高度';
+
+  @override
+  String get homeWidgetHeightAdjustHint => '范围 -16 ~ 16，0 为默认档：正数比默认更高，负数更矮';
 
   @override
   String get defaultLabel => '默认';
@@ -14278,7 +14284,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetShowTomorrowSubtitle => '今日課後自動顯示明天課程';
 
   @override
-  String get homeWidgetHeightAdjustTitle => '卡片高度微調';
+  String get homeWidgetAppearanceTitle => '卡片外觀';
+
+  @override
+  String get homeWidgetHeightAdjustTitle => '卡片高度';
+
+  @override
+  String get homeWidgetHeightAdjustHint => '範圍 -16 ~ 16，0 為預設檔：正數比預設更高，負數更矮';
 
   @override
   String get defaultLabel => '預設';
@@ -24747,7 +24759,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetShowTomorrowSubtitle => '今日課後自動顯示明天課程';
 
   @override
-  String get homeWidgetHeightAdjustTitle => '卡片高度微調';
+  String get homeWidgetAppearanceTitle => '卡片外觀';
+
+  @override
+  String get homeWidgetHeightAdjustTitle => '卡片高度';
+
+  @override
+  String get homeWidgetHeightAdjustHint => '範圍 -16 ~ 16，0 為預設檔：正數比預設更高，負數更矮';
 
   @override
   String get defaultLabel => '預設';

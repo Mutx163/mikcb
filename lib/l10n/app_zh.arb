@@ -2110,7 +2110,9 @@
   "homeWidgetHideCompletedSubtitle": "只显示未结束的课程",
   "homeWidgetShowTomorrowTitle": "课后显示明日课程",
   "homeWidgetShowTomorrowSubtitle": "今日课后自动显示明天课程",
-  "homeWidgetHeightAdjustTitle": "卡片高度微调",
+  "homeWidgetAppearanceTitle": "卡片外观",
+  "homeWidgetHeightAdjustTitle": "卡片高度",
+  "homeWidgetHeightAdjustHint": "范围 -16 ~ 16，0 为默认档：正数比默认更高，负数更矮",
   "defaultLabel": "默认",
   "higherByValue": "更高 {value}",
   "@higherByValue": {

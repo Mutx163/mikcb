@@ -2096,7 +2096,9 @@
   "homeWidgetHideCompletedSubtitle": "Show only classes that have not ended yet",
   "homeWidgetShowTomorrowTitle": "Show tomorrow's classes",
   "homeWidgetShowTomorrowSubtitle": "Automatically show tomorrow's classes after today's classes end",
-  "homeWidgetHeightAdjustTitle": "Card height adjustment",
+  "homeWidgetAppearanceTitle": "Card appearance",
+  "homeWidgetHeightAdjustTitle": "Card height",
+  "homeWidgetHeightAdjustHint": "Range -16 to 16; 0 is the default. Positive is taller than default, negative is shorter",
   "defaultLabel": "Default",
   "higherByValue": "Higher by {value}",
   "@higherByValue": {

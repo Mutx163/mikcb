@@ -7131,11 +7131,23 @@ abstract class AppLocalizations {
   /// **'今日课后自动显示明天课程'**
   String get homeWidgetShowTomorrowSubtitle;
 
+  /// No description provided for @homeWidgetAppearanceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'卡片外观'**
+  String get homeWidgetAppearanceTitle;
+
   /// No description provided for @homeWidgetHeightAdjustTitle.
   ///
   /// In zh, this message translates to:
-  /// **'卡片高度微调'**
+  /// **'卡片高度'**
   String get homeWidgetHeightAdjustTitle;
+
+  /// No description provided for @homeWidgetHeightAdjustHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'范围 -16 ~ 16，0 为默认档：正数比默认更高，负数更矮'**
+  String get homeWidgetHeightAdjustHint;
 
   /// No description provided for @defaultLabel.
   ///
