@@ -31,10 +31,11 @@ class ProfileCompareEntry {
 /// 最大需求宽度；右对齐让同一指标纵向可扫读——对比页的核心是
 /// 「同一列比大小」，不是每张课表一块的自我介绍。
 // 11px 中文「课程门数」恰占 44，44 列宽会把表头截成「课程…」——留出余量。
-const double _colCourses = 48; // 课程门数
-const double _colSections = 40; // 节课
-const double _colRatio = 64; // 必修 / 选修（必修占比）
-const double _colStreak = 36; // 天连续
+// 列定义：课程门数 48；节课 40；必修 / 选修（必修占比）64；天连续 36。
+const double _colCourses = 48;
+const double _colSections = 40;
+const double _colRatio = 64;
+const double _colStreak = 36;
 const double _colGap = 8;
 
 /// 课表对比卡：表格式平铺——指标做表头、课表做行，

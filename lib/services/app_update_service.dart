@@ -35,7 +35,8 @@ class AppReleaseInfo {
   final String body;
   final String releaseUrl;
   final String? downloadUrl;
-  final String? gitcodeDownloadUrl; // GitCode 发行版附件直链（国内直连渠道）
+  // GitCode 发行版附件直链（国内直连渠道）。
+  final String? gitcodeDownloadUrl;
   final String? pgyerDownloadUrl; // 蒲公英下载页面（来自蒲公英 API 时有值）
   final DateTime? updatedAt;
   final bool isPrerelease;
@@ -262,7 +263,7 @@ class AppUpdateService {
       ).then((outcome) {
         gitcodeOutcome = outcome;
         _log(
-          'GitCode API 完成，有结果: ${outcome.release != null}，状态码: ${outcome.statusCode}',
+          'GitCode API done, hit: ${outcome.release != null}, status: ${outcome.statusCode}',
         );
         return outcome;
       }),
@@ -357,7 +358,7 @@ class AppUpdateService {
             candidate.expectedApkSha256 == null) {
           continue;
         }
-        _log('同版本摘要已由其他策略补齐');
+        _log('digest already backfilled by sibling strategy');
         return AppReleaseInfo(
           version: winner.version,
           title: winner.title,
@@ -644,12 +645,12 @@ class AppUpdateService {
     required bool includePrerelease,
   }) async {
     try {
-      _log('请求 GitCode releases API');
+      _log('requesting GitCode releases API');
       final response = await _client
           .get(Uri.parse(gitcodeReleasesApiUrl), headers: _gitcodeApiHeaders)
           .timeout(_releaseApiRequestTimeout);
       if (response.statusCode != 200) {
-        _log('GitCode API 响应 ${response.statusCode}，跳过');
+        _log('GitCode API status ${response.statusCode}, skip');
         return _AppUpdateFetchOutcome(
           statusCode: response.statusCode,
           hadRetryableFailure: true,
@@ -696,7 +697,7 @@ class AppUpdateService {
       }
       final rawName = (picked['name'] as String?)?.trim() ?? '';
       final body = (picked['body'] as String?) ?? '';
-      _log('GitCode API 胜出候选：版本 $version');
+      _log('GitCode API wins candidate: version $version');
       return _AppUpdateFetchOutcome(
         release: AppReleaseInfo(
           version: version,
@@ -717,7 +718,7 @@ class AppUpdateService {
     } on TimeoutException {
       return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
     } catch (e) {
-      _log('GitCode API 异常：$e');
+      _log('GitCode API error: $e');
       return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
     }
   }
