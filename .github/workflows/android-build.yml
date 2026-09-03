@@ -63,6 +63,7 @@ jobs:
       release_tag: ${{ steps.meta.outputs.release_tag }}
       is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
       release_notes: ${{ steps.meta.outputs.release_notes }}
+      gitcode_body: ${{ steps.gitcode_body.outputs.body }}
 
     steps:
       - name: Checkout
@@ -224,6 +225,35 @@ jobs:
           cp "${APK_PATH}" "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
           ls -lh "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
+      - name: Compute APK checksum and GitCode release body
+        id: gitcode_body
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+          RELEASE_NOTES_FILE: ${{ steps.meta.outputs.release_notes_file }}
+        run: |
+          set -ex
+          RELEASE_APK="dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
+          SHA256=$(sha256sum "${RELEASE_APK}" | awk '{print $1}')
+          BODY_FILE="$(mktemp)"
+          if [[ -f "${RELEASE_NOTES_FILE}" ]]; then
+            cat "${RELEASE_NOTES_FILE}" >> "${BODY_FILE}"
+          else
+            echo "Automated release for ${RELEASE_TAG}" >> "${BODY_FILE}"
+          fi
+          # 应用内 GitCode 渠道的完整性校验依赖正文内嵌摘要（GitCode 无 asset digest）
+          {
+            echo ""
+            echo "---"
+            echo "SHA-256: ${SHA256}"
+          } >> "${BODY_FILE}"
+          {
+            echo "body<<EOF"
+            cat "${BODY_FILE}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload to pgyer
         # Secondary mirror only; network blips must not block GitHub Release.
         continue-on-error: true
@@ -330,7 +360,7 @@ jobs:
       artifact_name: android-release-apk
       default_branch: main
       tag_name: ${{ needs.publish.outputs.release_tag }}
-      body: ${{ needs.publish.outputs.release_notes }}
+      body: ${{ needs.publish.outputs.gitcode_body }}
       prerelease: ${{ needs.publish.outputs.is_prerelease == 'true' }}
       file_name: 'mikcb-*.apk'
     secrets:

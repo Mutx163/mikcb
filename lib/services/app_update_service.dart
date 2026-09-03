@@ -35,6 +35,7 @@ class AppReleaseInfo {
   final String body;
   final String releaseUrl;
   final String? downloadUrl;
+  final String? gitcodeDownloadUrl; // GitCode 发行版附件直链（国内直连渠道）
   final String? pgyerDownloadUrl; // 蒲公英下载页面（来自蒲公英 API 时有值）
   final DateTime? updatedAt;
   final bool isPrerelease;
@@ -49,6 +50,7 @@ class AppReleaseInfo {
     required this.body,
     required this.releaseUrl,
     required this.downloadUrl,
+    this.gitcodeDownloadUrl,
     this.pgyerDownloadUrl,
     required this.updatedAt,
     required this.isPrerelease,
@@ -147,6 +149,11 @@ class AppUpdateService {
   static const String releasesApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases';
   static const String releasesPageUrl = '$repositoryUrl/releases';
+
+  /// GitCode 镜像仓库（国内直连渠道）。发行版附件与 GitHub 同名同步。
+  static const String gitcodeRepositoryUrl = 'https://gitcode.com/mutx/qingyu';
+  static const String gitcodeReleasesApiUrl =
+      'https://api.gitcode.com/api/v5/repos/mutx/qingyu/releases';
   static const String defaultMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix;
   static const String downloadCancelledMessage = 'download_cancelled';
   static const Duration _releaseRequestTimeout = Duration(seconds: 4);
@@ -193,6 +200,11 @@ class AppUpdateService {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'User-Agent': 'mikcb-app',
   };
+  // GitCode releases API 对公开仓库免令牌可读（实测无需 PRIVATE-TOKEN）。
+  static const Map<String, String> _gitcodeApiHeaders = {
+    'Accept': 'application/json',
+    'User-Agent': 'mikcb-app',
+  };
 
   final http.Client _client;
   final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
@@ -218,9 +230,10 @@ class AppUpdateService {
   }) async {
     _log('开始检查更新（当前版本 $currentVersion，含预发布: $includePrerelease）');
 
-    // 两个策略并行竞争，谁先有结果用谁
+    // 三个策略并行竞争，谁先有结果用谁
     _AppUpdateFetchOutcome? apiOutcome;
     _AppUpdateFetchOutcome? pageOutcome;
+    _AppUpdateFetchOutcome? gitcodeOutcome;
 
     final result = await raceFutures<_AppUpdateFetchOutcome, _AppUpdateFetchOutcome>([
       _fetchFromGitHubApi(
@@ -244,6 +257,15 @@ class AppUpdateService {
         );
         return outcome;
       }),
+      _fetchFromGitCodeApi(
+        includePrerelease: includePrerelease,
+      ).then((outcome) {
+        gitcodeOutcome = outcome;
+        _log(
+          'GitCode API 完成，有结果: ${outcome.release != null}，状态码: ${outcome.statusCode}',
+        );
+        return outcome;
+      }),
     ], (outcome) => outcome.release != null ? outcome : null);
 
     final winner = result.winner;
@@ -256,15 +278,21 @@ class AppUpdateService {
       );
     }
 
-    // 两个策略都没有结果，汇总错误信息
+    // 所有策略都没有结果，汇总错误信息
     final saw404 =
-        (apiOutcome?.saw404 ?? false) || (pageOutcome?.saw404 ?? false);
+        (apiOutcome?.saw404 ?? false) ||
+        (pageOutcome?.saw404 ?? false) ||
+        (gitcodeOutcome?.saw404 ?? false);
     final hadRetryableFailure =
         (apiOutcome?.hadRetryableFailure ?? false) ||
-        (pageOutcome?.hadRetryableFailure ?? false);
+        (pageOutcome?.hadRetryableFailure ?? false) ||
+        (gitcodeOutcome?.hadRetryableFailure ?? false);
     final lastStatusCode = _pickLastNon404StatusCode(
-      apiOutcome?.statusCode,
-      pageOutcome?.statusCode,
+      _pickLastNon404StatusCode(
+        apiOutcome?.statusCode,
+        pageOutcome?.statusCode,
+      ),
+      gitcodeOutcome?.statusCode,
     );
 
     if (saw404 && !hadRetryableFailure && lastStatusCode == null) {
@@ -469,7 +497,10 @@ class AppUpdateService {
           .head(uri, headers: const {'User-Agent': 'mikcb-app'})
           .timeout(timeout);
 
-      if (response.statusCode == 405 || response.statusCode == 403) {
+      // GitCode 对 HEAD 返回 401，与 405/403 一样降级为 Range GET 探测。
+      if (response.statusCode == 405 ||
+          response.statusCode == 403 ||
+          response.statusCode == 401) {
         response = http.Response(
           '',
           await _probeRangeRequestStatusCode(uri, timeout: timeout),
@@ -538,7 +569,19 @@ class AppUpdateService {
     required AppUpdateDownloadSource source,
     required String mirrorUrlPrefix,
   }) {
-    if (channel == AppUpdateDownloadChannel.pgyer) {
+    if (channel == AppUpdateDownloadChannel.gitcode) {
+      // GitCode 渠道：直连发行版附件；缺失时按 APK 命名规律兜底构造
+      final gitcodeUrl = release?.gitcodeDownloadUrl;
+      if (gitcodeUrl != null && gitcodeUrl.isNotEmpty) {
+        return gitcodeUrl;
+      }
+      final version = release?.version.trim() ?? '';
+      if (version.isEmpty) return null;
+      return _constructGitcodeApkDownloadUrl(
+        tag: 'v$version',
+        version: version,
+      );
+    } else if (channel == AppUpdateDownloadChannel.pgyer) {
       // 蒲公英渠道：优先返回蒲公英下载页面，兜底用固定地址
       return release?.pgyerDownloadUrl ?? 'https://www.pgyer.com/qingyu';
     } else {
@@ -551,6 +594,119 @@ class AppUpdateService {
         mirrorUrlPrefix: mirrorUrlPrefix,
       );
     }
+  }
+
+  /// GitCode releases API（公开仓库免令牌）拉取发行版列表。
+  /// 与 GitHub 双策略并行竞争；国内网络环境下通常最先返回。
+  Future<_AppUpdateFetchOutcome> _fetchFromGitCodeApi({
+    required bool includePrerelease,
+  }) async {
+    try {
+      _log('请求 GitCode releases API');
+      final response = await _client
+          .get(Uri.parse(gitcodeReleasesApiUrl), headers: _gitcodeApiHeaders)
+          .timeout(_releaseApiRequestTimeout);
+      if (response.statusCode != 200) {
+        _log('GitCode API 响应 ${response.statusCode}，跳过');
+        return _AppUpdateFetchOutcome(
+          statusCode: response.statusCode,
+          hadRetryableFailure: true,
+        );
+      }
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is! List) {
+        return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+      }
+      final picked = _pickLatestEligibleRelease(
+        decoded,
+        includePrerelease: includePrerelease,
+      );
+      if (picked == null) {
+        return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+      }
+      final rawTag = (picked['tag_name'] as String?)?.trim() ?? '';
+      final version = _normalizeVersion(rawTag);
+      if (version.isEmpty) {
+        return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+      }
+      // 附件里找 APK（type=attach，排除 GitCode 自动生成的源码归档）；
+      // 找不到时按与 GitHub 一致的命名规律兜底构造。
+      String? gitcodeUrl;
+      for (final asset in picked['assets'] as List<dynamic>? ?? const []) {
+        if (asset is! Map) {
+          continue;
+        }
+        final name = ((asset['name'] as String?) ?? '').toLowerCase();
+        final type = ((asset['type'] as String?) ?? '').toLowerCase();
+        final url = asset['browser_download_url'] as String?;
+        final host = Uri.tryParse(url ?? '')?.host.toLowerCase() ?? '';
+        if (name.endsWith('.apk') &&
+            !name.contains('debug') &&
+            type != 'source' &&
+            (host == 'gitcode.com' || host.endsWith('.gitcode.com'))) {
+          gitcodeUrl = url;
+          break;
+        }
+      }
+      gitcodeUrl ??= _constructGitcodeApkDownloadUrl(tag: rawTag, version: version);
+      if (gitcodeUrl == null || gitcodeUrl.isEmpty) {
+        return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+      }
+      final rawName = (picked['name'] as String?)?.trim() ?? '';
+      final body = (picked['body'] as String?) ?? '';
+      _log('GitCode API 胜出候选：版本 $version');
+      return _AppUpdateFetchOutcome(
+        release: AppReleaseInfo(
+          version: version,
+          title: rawName.isNotEmpty ? rawName : version,
+          body: body,
+          releaseUrl:
+              '$gitcodeRepositoryUrl/releases/tag/${Uri.encodeComponent(rawTag)}',
+          downloadUrl: _constructApkDownloadUrl(rawTag, version),
+          gitcodeDownloadUrl: gitcodeUrl,
+          // GitCode 无官方 asset digest，用发行版正文内嵌的 SHA-256（CI 同步时写入）。
+          expectedApkSha256: _extractSha256FromBody(body),
+          updatedAt: DateTime.tryParse(
+            (picked['created_at'] as String?) ?? '',
+          )?.toLocal(),
+          isPrerelease: picked['prerelease'] as bool? ?? false,
+        ),
+      );
+    } on TimeoutException {
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    } catch (e) {
+      _log('GitCode API 异常：$e');
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    }
+  }
+
+  /// 按 tag + 版本号构造 GitCode 发行版 APK 直链。
+  /// 与 GitHub 侧命名规律一致：mikcb-{version}-arm64-v8a.apk。
+  static String? _constructGitcodeApkDownloadUrl({
+    required String tag,
+    required String version,
+  }) {
+    final tagWithoutPrefix = tag.trim().replaceFirst(RegExp(r'^[vV]'), '');
+    final normalizedVersion = version.trim();
+    if (tagWithoutPrefix.isEmpty || normalizedVersion.isEmpty) {
+      return null;
+    }
+    final fileName = 'mikcb-$normalizedVersion-arm64-v8a.apk';
+    return
+        '$gitcodeRepositoryUrl/releases/download/${Uri.encodeComponent(tag.trim())}/$fileName';
+  }
+
+  /// 从发行版正文中解析 CI 写入的 `SHA-256: <hex>` 行。
+  static String? _extractSha256FromBody(String body) {
+    final match = RegExp(
+      r'sha[\s-]?256(?:\s*[:：=]\s*|\s+)([0-9a-fA-F]{64})',
+      caseSensitive: false,
+    ).firstMatch(body);
+    final value = match?.group(1);
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value.toLowerCase();
   }
 
   Future<_AppUpdateFetchOutcome> _fetchFromReleasesPage({
@@ -795,15 +951,22 @@ class AppUpdateService {
     final apkDownload = _pickApkDownload(
       releaseJson['assets'] as List<dynamic>? ?? const [],
     );
+    final rawTag = (releaseJson['tag_name'] as String?)?.trim() ?? '';
+    final body = (releaseJson['body'] as String?)?.trim() ?? '';
     return AppReleaseInfo(
       version: latestVersion,
       title: (releaseJson['name'] as String?)?.trim().isNotEmpty == true
           ? (releaseJson['name'] as String).trim()
           : latestVersion,
-      body: (releaseJson['body'] as String?)?.trim() ?? '',
+      body: body,
       releaseUrl: (releaseJson['html_url'] as String?) ?? repositoryUrl,
       downloadUrl: apkDownload.downloadUrl,
-      expectedApkSha256: apkDownload.expectedApkSha256,
+      gitcodeDownloadUrl: _constructGitcodeApkDownloadUrl(
+        tag: rawTag.isNotEmpty ? rawTag : 'v$latestVersion',
+        version: latestVersion,
+      ),
+      expectedApkSha256:
+          apkDownload.expectedApkSha256 ?? _extractSha256FromBody(body),
       updatedAt: DateTime.tryParse(
         (releaseJson['updated_at'] as String?) ??
             (releaseJson['published_at'] as String?) ??
@@ -932,6 +1095,10 @@ class AppUpdateService {
         body: _extractReleaseBody(block),
         releaseUrl: _resolveGitHubUrl('/Mutx163/mikcb/releases/tag/$rawTag'),
         downloadUrl: downloadUrl,
+        gitcodeDownloadUrl: _constructGitcodeApkDownloadUrl(
+          tag: rawTag,
+          version: version,
+        ),
         updatedAt: _extractReleaseUpdatedAt(block),
         isPrerelease: isPrerelease,
       );

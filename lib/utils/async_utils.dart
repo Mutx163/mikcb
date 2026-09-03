@@ -130,6 +130,11 @@ bool isTrustedApkDownloadUrl(String url, {String? mirrorUrlPrefix}) {
     return true;
   }
 
+  // GitCode 发行版附件（国内直连渠道）。
+  if (hostMatches('gitcode.com')) {
+    return true;
+  }
+
   bool prefixHostMatches(String? prefix) {
     if (prefix == null || prefix.trim().isEmpty) {
       return false;

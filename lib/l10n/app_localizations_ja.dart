@@ -5816,6 +5816,34 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleDeletedHint => 'スケジュール削除済み';
 
   @override
+  String get scheduleListTitle => 'スケジュール';
+
+  @override
+  String get scheduleListEmptyTitle => 'スケジュールはありません';
+
+  @override
+  String get scheduleUpcomingSection => '今後の予定';
+
+  @override
+  String get schedulePastSection => '終了';
+
+  @override
+  String get schedulePausedSection => '一時停止中';
+
+  @override
+  String get scheduleOngoingLabel => '進行中';
+
+  @override
+  String scheduleTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String scheduleWeeklyWithDay(String day) {
+    return '毎週$day';
+  }
+
+  @override
   String get examListTitle => '試験スケジュール';
 
   @override
@@ -7418,6 +7446,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appUpdateDownloadChannelGithubDescription => 'GitHub plus mirrors';
+
+  @override
+  String get appUpdateDownloadChannelGitcode => 'GitCode ダウンロード';
+
+  @override
+  String get appUpdateDownloadChannelGitcodeDescription =>
+      'GitCodeリリースから直接ダウンロード（中国国内で高速）';
 
   @override
   String get holidayStatutoryLabel => '祝日';

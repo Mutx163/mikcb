@@ -5,7 +5,7 @@ import 'package:university_timetable/models/class_reminder.dart';
 
 enum AppUpdateDownloadSource { original, mirror }
 
-enum AppUpdateDownloadChannel { pgyer, github }
+enum AppUpdateDownloadChannel { pgyer, github, gitcode }
 
 enum AppUpdateMirrorPreset {
   ghfast,
@@ -655,12 +655,13 @@ extension AppUpdateDownloadChannelX on AppUpdateDownloadChannel {
   String get value => switch (this) {
     AppUpdateDownloadChannel.pgyer => 'pgyer',
     AppUpdateDownloadChannel.github => 'github',
+    AppUpdateDownloadChannel.gitcode => 'gitcode',
   };
 
   static AppUpdateDownloadChannel fromValue(String? value) {
     return AppUpdateDownloadChannel.values.firstWhere(
       (item) => item.value == value,
-      orElse: () => AppUpdateDownloadChannel.pgyer,
+      orElse: () => AppUpdateDownloadChannel.gitcode,
     );
   }
 }
@@ -1530,7 +1531,7 @@ class TimetableSettings {
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
     this.appUpdateDownloadSource = 'mirror',
-    this.appUpdateDownloadChannel = 'pgyer',
+    this.appUpdateDownloadChannel = 'gitcode',
     this.appUpdateUseSystemDownloader = false,
     this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
@@ -2138,7 +2139,7 @@ class TimetableSettings {
       appUpdateDownloadSource:
           json['appUpdateDownloadSource'] as String? ?? 'mirror',
       appUpdateDownloadChannel:
-          json['appUpdateDownloadChannel'] as String? ?? 'pgyer',
+          json['appUpdateDownloadChannel'] as String? ?? 'gitcode',
       appUpdateUseSystemDownloader:
           json['appUpdateUseSystemDownloader'] as bool? ?? false,
       appUpdateMirrorPreset: (rawAppUpdateMirrorPreset == null

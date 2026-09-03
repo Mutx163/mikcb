@@ -5715,6 +5715,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDeletedHint => '日程已删除';
 
   @override
+  String get scheduleListTitle => '日程安排';
+
+  @override
+  String get scheduleListEmptyTitle => '暂无日程';
+
+  @override
+  String get scheduleUpcomingSection => '即将到来';
+
+  @override
+  String get schedulePastSection => '已过期';
+
+  @override
+  String get schedulePausedSection => '已暂停';
+
+  @override
+  String get scheduleOngoingLabel => '进行中';
+
+  @override
+  String scheduleTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String scheduleWeeklyWithDay(String day) {
+    return '每周$day';
+  }
+
+  @override
   String get examListTitle => '考试安排';
 
   @override
@@ -7302,6 +7330,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 国内镜像';
+
+  @override
+  String get appUpdateDownloadChannelGitcode => 'GitCode 直连';
+
+  @override
+  String get appUpdateDownloadChannelGitcodeDescription =>
+      'GitCode 发行版直连下载，国内速度快';
 
   @override
   String get holidayStatutoryLabel => '法定节假日';
@@ -16105,6 +16140,34 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDeletedHint => '日程已刪除';
 
   @override
+  String get scheduleListTitle => '日程安排';
+
+  @override
+  String get scheduleListEmptyTitle => '暫無日程';
+
+  @override
+  String get scheduleUpcomingSection => '即將到來';
+
+  @override
+  String get schedulePastSection => '已過期';
+
+  @override
+  String get schedulePausedSection => '已暫停';
+
+  @override
+  String get scheduleOngoingLabel => '進行中';
+
+  @override
+  String scheduleTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String scheduleWeeklyWithDay(String day) {
+    return '每週$day';
+  }
+
+  @override
   String get examListTitle => '考試安排';
 
   @override
@@ -17692,6 +17755,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 國內镜像';
+
+  @override
+  String get appUpdateDownloadChannelGitcode => 'GitCode 直連';
+
+  @override
+  String get appUpdateDownloadChannelGitcodeDescription =>
+      'GitCode 發行版直連下載，國內速度快';
 
   @override
   String get holidayStatutoryLabel => '法定假日';
@@ -26539,6 +26609,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleDeletedHint => '日程已刪除';
 
   @override
+  String get scheduleListTitle => '日程安排';
+
+  @override
+  String get scheduleListEmptyTitle => '暫無日程';
+
+  @override
+  String get scheduleUpcomingSection => '即將到來';
+
+  @override
+  String get schedulePastSection => '已過期';
+
+  @override
+  String get schedulePausedSection => '已暫停';
+
+  @override
+  String get scheduleOngoingLabel => '進行中';
+
+  @override
+  String scheduleTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String scheduleWeeklyWithDay(String day) {
+    return '每週$day';
+  }
+
+  @override
   String get examListTitle => '考試安排';
 
   @override
@@ -28126,6 +28224,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 国内镜像';
+
+  @override
+  String get appUpdateDownloadChannelGitcode => 'GitCode 直連';
+
+  @override
+  String get appUpdateDownloadChannelGitcodeDescription =>
+      'GitCode 發行版直連下載，國內速度快';
 
   @override
   String get holidayStatutoryLabel => '法定假日';

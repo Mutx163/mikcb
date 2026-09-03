@@ -3337,6 +3337,31 @@
     }
   },
   "scheduleDeletedHint": "日程已删除",
+  "scheduleListTitle": "日程安排",
+  "scheduleListEmptyTitle": "暂无日程",
+  "scheduleUpcomingSection": "即将到来",
+  "schedulePastSection": "已过期",
+  "schedulePausedSection": "已暂停",
+  "scheduleOngoingLabel": "进行中",
+  "scheduleTimeRange": "{start} – {end}",
+  "@scheduleTimeRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWeeklyWithDay": "每周{day}",
+  "@scheduleWeeklyWithDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "examListTitle": "考试安排",
   "addExam": "添加考试",
   "editExam": "编辑考试",
@@ -4276,6 +4301,8 @@
   "appUpdateDownloadChannelGithub": "GitHub 下载",
   "appUpdateDownloadChannelPgyerDescription": "国内高速下载，推荐使用",
   "appUpdateDownloadChannelGithubDescription": "GitHub 原生 + 国内镜像",
+  "appUpdateDownloadChannelGitcode": "GitCode 直连",
+  "appUpdateDownloadChannelGitcodeDescription": "GitCode 发行版直连下载，国内速度快",
   "holidayStatutoryLabel": "法定节假日",
   "serviceMsgImportFileUnrecognized": "导入失败，文件内容无法识别",
   "serviceMsgImportUseOverwriteForFullBackup": "这是全部数据备份，请使用“覆盖当前课表”方式导入",

@@ -11,6 +11,7 @@ import 'package:http/testing.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
+import 'package:university_timetable/utils/async_utils.dart';
 
 class _CountingProbeClient extends http.BaseClient {
   final int totalBytes;
@@ -53,7 +54,8 @@ void main() {
     final requestedPaths = <String>[];
     final client = MockClient((request) async {
       requestedPaths.add(request.url.path);
-      if (request.url.path.endsWith('/releases')) {
+      if (request.url.host == 'api.github.com' &&
+          request.url.path.endsWith('/releases')) {
         // 模拟 GitHub API 稍慢
         await Future<void>.delayed(const Duration(milliseconds: 50));
         return http.Response(
@@ -93,7 +95,8 @@ void main() {
     'debug build with dash suffix is not treated as newer than release',
     () async {
       final client = MockClient((request) async {
-        if (request.url.path.endsWith('/releases')) {
+        if (request.url.host == 'api.github.com' &&
+            request.url.path.endsWith('/releases')) {
           return http.Response(
             jsonEncode([
               {
@@ -133,7 +136,8 @@ void main() {
     'include prerelease picks highest version even if not first in list',
     () async {
       final client = MockClient((request) async {
-        if (request.url.path.endsWith('/releases')) {
+        if (request.url.host == 'api.github.com' &&
+            request.url.path.endsWith('/releases')) {
           return http.Response(
             jsonEncode([
               {
@@ -186,7 +190,8 @@ void main() {
 
   test('dotted tag suffix matches pubspec prerelease format', () async {
     final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
+      if (request.url.host == 'api.github.com' &&
+          request.url.path.endsWith('/releases')) {
         return http.Response(
           jsonEncode([
             {
@@ -222,7 +227,8 @@ void main() {
     'include prerelease keeps numbered prerelease above base release',
     () async {
       final client = MockClient((request) async {
-        if (request.url.path.endsWith('/releases')) {
+        if (request.url.host == 'api.github.com' &&
+            request.url.path.endsWith('/releases')) {
           return http.Response(
             jsonEncode([
               {
@@ -277,7 +283,8 @@ void main() {
     'numbered prerelease still upgrades from base release when enabled',
     () async {
       final client = MockClient((request) async {
-        if (request.url.path.endsWith('/releases')) {
+        if (request.url.host == 'api.github.com' &&
+            request.url.path.endsWith('/releases')) {
           return http.Response(
             jsonEncode([
               {
@@ -329,7 +336,8 @@ void main() {
 
   test('include prerelease skips higher versions without apk assets', () async {
     final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
+      if (request.url.host == 'api.github.com' &&
+          request.url.path.endsWith('/releases')) {
         return http.Response(
           jsonEncode([
             {
@@ -394,7 +402,8 @@ void main() {
     'stable update skips newer release entries without apk assets',
     () async {
       final client = MockClient((request) async {
-        if (request.url.path.endsWith('/releases')) {
+        if (request.url.host == 'api.github.com' &&
+            request.url.path.endsWith('/releases')) {
           return http.Response(
             jsonEncode([
               {
@@ -1068,7 +1077,8 @@ void main() {
 
   test('release info carries apk sha256 digest from github api', () async {
     final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
+      if (request.url.host == 'api.github.com' &&
+          request.url.path.endsWith('/releases')) {
         return http.Response(
           jsonEncode([
             {
@@ -1102,7 +1112,8 @@ void main() {
 
   test('download url and digest come from the same apk asset', () async {
     final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
+      if (request.url.host == 'api.github.com' &&
+          request.url.path.endsWith('/releases')) {
         return http.Response(
           jsonEncode([
             {
@@ -1144,7 +1155,8 @@ void main() {
 
   test('release info has null digest when api omits it', () async {
     final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
+      if (request.url.host == 'api.github.com' &&
+          request.url.path.endsWith('/releases')) {
         return http.Response(
           jsonEncode([
             {
@@ -1172,5 +1184,99 @@ void main() {
     final result = await service.checkForUpdates(currentVersion: '1.3.0');
 
     expect(result.latestRelease?.expectedApkSha256, isNull);
+  });
+
+  test('gitcode api wins race when github is unreachable', () async {
+    const sha256Hex =
+        'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+    final client = MockClient((request) async {
+      if (request.url.host == 'api.gitcode.com') {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v2.1.1.4',
+              'name': 'v2.1.1.4',
+              'prerelease': false,
+              'body': 'v2.1.1.4\n\n---\nSHA-256: $sha256Hex',
+              'created_at': '2026-09-03T11:10:15+08:00',
+              'assets': const [
+                {
+                  'name': 'v2.1.1.4.zip',
+                  'type': 'source',
+                  'browser_download_url':
+                      'https://raw.gitcode.com/mutx/qingyu/archive/refs/heads/v2.1.1.4.zip',
+                },
+                {
+                  'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
+                  'type': 'attach',
+                  'browser_download_url':
+                      'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+                },
+              ],
+              'release_status': 'latest',
+            },
+          ]),
+          200,
+        );
+      }
+      // GitHub API / Release 页面全部不可达
+      return http.Response('', 503);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(currentVersion: '2.1.1.3');
+
+    expect(result.hasRelease, isTrue);
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '2.1.1.4');
+    expect(
+      result.latestRelease?.gitcodeDownloadUrl,
+      'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+    );
+    expect(result.latestRelease?.expectedApkSha256, sha256Hex);
+    // GitHub 直链仍然作为回退候选带回
+    expect(
+      result.latestRelease?.downloadUrl,
+      'https://github.com/Mutx163/mikcb/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+    );
+  });
+
+  test('gitcode channel falls back to constructed download url', () async {
+    const release = AppReleaseInfo(
+      version: '2.1.1.4',
+      title: 'v2.1.1.4',
+      body: '',
+      releaseUrl: 'https://gitcode.com/mutx/qingyu/releases/tag/v2.1.1.4',
+      downloadUrl: null,
+      updatedAt: null,
+      isPrerelease: false,
+    );
+    final service = AppUpdateService(client: MockClient((request) async {
+      return http.Response('', 404);
+    }));
+
+    expect(
+      service.getEffectiveDownloadUrl(
+        release: release,
+        channel: AppUpdateDownloadChannel.gitcode,
+        source: AppUpdateDownloadSource.original,
+        mirrorUrlPrefix: '',
+      ),
+      'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+    );
+  });
+
+  test('gitcode download urls are trusted and default channel is gitcode', () {
+    expect(
+      isTrustedApkDownloadUrl(
+        'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+      ),
+      isTrue,
+    );
+    expect(const TimetableSettings(sections: []).appUpdateDownloadChannel, 'gitcode');
+    expect(
+      AppUpdateDownloadChannelX.fromValue('gitcode').value,
+      'gitcode',
+    );
   });
 }

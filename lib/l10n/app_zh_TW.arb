@@ -2845,6 +2845,14 @@
     }
   },
   "scheduleDeletedHint": "日程已刪除",
+  "scheduleListTitle": "日程安排",
+  "scheduleListEmptyTitle": "暫無日程",
+  "scheduleUpcomingSection": "即將到來",
+  "schedulePastSection": "已過期",
+  "schedulePausedSection": "已暫停",
+  "scheduleOngoingLabel": "進行中",
+  "scheduleTimeRange": "{start} – {end}",
+  "scheduleWeeklyWithDay": "每週{day}",
   "backToTodayAction": "回到今天",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}節",
   "@courseWeekdaySectionSummary": {
@@ -4023,6 +4031,8 @@
   "appUpdateDownloadChannelGithub": "GitHub 下载",
   "appUpdateDownloadChannelPgyerDescription": "国内高速下载，推荐使用",
   "appUpdateDownloadChannelGithubDescription": "GitHub 原生 + 国内镜像",
+  "appUpdateDownloadChannelGitcode": "GitCode 直連",
+  "appUpdateDownloadChannelGitcodeDescription": "GitCode 發行版直連下載，國內速度快",
   "holidayStatutoryLabel": "法定假日",
   "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
   "serviceMsgImportUseOverwriteForFullBackup": "This is a full data backup. Please import using overwrite current timetable.",

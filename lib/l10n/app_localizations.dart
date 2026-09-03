@@ -10415,6 +10415,54 @@ abstract class AppLocalizations {
   /// **'日程已删除'**
   String get scheduleDeletedHint;
 
+  /// No description provided for @scheduleListTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'日程安排'**
+  String get scheduleListTitle;
+
+  /// No description provided for @scheduleListEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无日程'**
+  String get scheduleListEmptyTitle;
+
+  /// No description provided for @scheduleUpcomingSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'即将到来'**
+  String get scheduleUpcomingSection;
+
+  /// No description provided for @schedulePastSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'已过期'**
+  String get schedulePastSection;
+
+  /// No description provided for @schedulePausedSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get schedulePausedSection;
+
+  /// No description provided for @scheduleOngoingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'进行中'**
+  String get scheduleOngoingLabel;
+
+  /// No description provided for @scheduleTimeRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{start} – {end}'**
+  String scheduleTimeRange(String start, String end);
+
+  /// No description provided for @scheduleWeeklyWithDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'每周{day}'**
+  String scheduleWeeklyWithDay(String day);
+
   /// No description provided for @examListTitle.
   ///
   /// In zh, this message translates to:
@@ -13327,6 +13375,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'GitHub 原生 + 国内镜像'**
   String get appUpdateDownloadChannelGithubDescription;
+
+  /// No description provided for @appUpdateDownloadChannelGitcode.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitCode 直连'**
+  String get appUpdateDownloadChannelGitcode;
+
+  /// No description provided for @appUpdateDownloadChannelGitcodeDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitCode 发行版直连下载，国内速度快'**
+  String get appUpdateDownloadChannelGitcodeDescription;
 
   /// No description provided for @holidayStatutoryLabel.
   ///

@@ -6060,6 +6060,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDeletedHint => 'Schedule deleted';
 
   @override
+  String get scheduleListTitle => 'Schedule';
+
+  @override
+  String get scheduleListEmptyTitle => 'No schedules yet';
+
+  @override
+  String get scheduleUpcomingSection => 'Upcoming';
+
+  @override
+  String get schedulePastSection => 'Past';
+
+  @override
+  String get schedulePausedSection => 'Paused';
+
+  @override
+  String get scheduleOngoingLabel => 'Ongoing';
+
+  @override
+  String scheduleTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String scheduleWeeklyWithDay(String day) {
+    return 'Weekly on $day';
+  }
+
+  @override
   String get examListTitle => 'Exams';
 
   @override
@@ -7704,6 +7732,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdateDownloadChannelGithubDescription => 'GitHub plus mirrors';
+
+  @override
+  String get appUpdateDownloadChannelGitcode => 'GitCode direct';
+
+  @override
+  String get appUpdateDownloadChannelGitcodeDescription =>
+      'Download straight from GitCode releases, fast in China';
 
   @override
   String get holidayStatutoryLabel => 'Public holiday';

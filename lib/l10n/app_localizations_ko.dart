@@ -5847,6 +5847,34 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleDeletedHint => '일정이 삭제되었습니다';
 
   @override
+  String get scheduleListTitle => '일정';
+
+  @override
+  String get scheduleListEmptyTitle => '일정이 없습니다';
+
+  @override
+  String get scheduleUpcomingSection => '다가오는 일정';
+
+  @override
+  String get schedulePastSection => '지난 일정';
+
+  @override
+  String get schedulePausedSection => '일시 중지';
+
+  @override
+  String get scheduleOngoingLabel => '진행 중';
+
+  @override
+  String scheduleTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String scheduleWeeklyWithDay(String day) {
+    return '매주 $day';
+  }
+
+  @override
   String get examListTitle => '시험 일정';
 
   @override
@@ -7461,6 +7489,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appUpdateDownloadChannelGithubDescription => 'GitHub plus mirrors';
+
+  @override
+  String get appUpdateDownloadChannelGitcode => 'GitCode 다운로드';
+
+  @override
+  String get appUpdateDownloadChannelGitcodeDescription =>
+      'GitCode 릴리스에서 직접 다운로드, 중국에서 빠름';
 
   @override
   String get holidayStatutoryLabel => '공휴일';

@@ -219,6 +219,7 @@ String appUpdateDownloadChannelLabel(
 ) => switch (channel) {
   AppUpdateDownloadChannel.pgyer => l10n.appUpdateDownloadChannelPgyer,
   AppUpdateDownloadChannel.github => l10n.appUpdateDownloadChannelGithub,
+  AppUpdateDownloadChannel.gitcode => l10n.appUpdateDownloadChannelGitcode,
 };
 
 String appUpdateDownloadChannelDescription(
@@ -229,6 +230,8 @@ String appUpdateDownloadChannelDescription(
     l10n.appUpdateDownloadChannelPgyerDescription,
   AppUpdateDownloadChannel.github =>
     l10n.appUpdateDownloadChannelGithubDescription,
+  AppUpdateDownloadChannel.gitcode =>
+    l10n.appUpdateDownloadChannelGitcodeDescription,
 };
 
 String appUpdateMirrorPresetLabel(

@@ -8307,9 +8307,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       return true;
     }
 
-    final controller = AppUpdateDownloadController();
-    _homeDownloadController = controller;
-    _updatePromptController.beginInAppDownload();
     final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
       settings.appUpdateMirrorPreset,
     );
@@ -8317,21 +8314,49 @@ class _TimetableScreenState extends State<TimetableScreen>
       preset: mirrorPreset,
       customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
     );
-    final error = await _updateService.downloadAndInstallUpdate(
-      downloadUrl,
-      _updatePromptController.updateInAppProgress,
-      controller,
-      mirrorUrlPrefix: mirrorPrefix,
-      expectedApkSha256: release.expectedApkSha256,
-    );
-    if (!mounted) {
-      return true;
+    // 下载候选：GitCode 等首选直连失败后自动回退 GitHub 原始直链再试一次；
+    // 取消、不受信任地址、无摘要拒装、安装器打开失败不换源重试。
+    final candidates = <String>[downloadUrl];
+    final githubUrl = release.downloadUrl?.trim() ?? '';
+    if (githubUrl.isNotEmpty && githubUrl != downloadUrl) {
+      candidates.add(githubUrl);
     }
-    _homeDownloadController = null;
-    final wasCancelled = error == AppUpdateService.downloadCancelledMessage;
+    var cancelled = false;
+    for (var index = 0; index < candidates.length; index++) {
+      final candidate = candidates[index];
+      final controller = AppUpdateDownloadController();
+      _homeDownloadController = controller;
+      _updatePromptController.beginInAppDownload();
+      final error = await _updateService.downloadAndInstallUpdate(
+        candidate,
+        _updatePromptController.updateInAppProgress,
+        controller,
+        mirrorUrlPrefix: mirrorPrefix,
+        expectedApkSha256: release.expectedApkSha256,
+      );
+      if (!mounted) {
+        return true;
+      }
+      _homeDownloadController = null;
+      cancelled = error == AppUpdateService.downloadCancelledMessage;
+      if (error == null || cancelled) {
+        _updatePromptController.finishInAppDownload(
+          success: error == null,
+          cancelled: cancelled,
+        );
+        return true;
+      }
+      final notRetryable =
+          error.startsWith('update_download_url_untrusted') ||
+          error.startsWith('update_sha256_unverified_install_refused') ||
+          error.startsWith('update_open_installer_failed');
+      if (notRetryable || index == candidates.length - 1) {
+        break;
+      }
+    }
     _updatePromptController.finishInAppDownload(
-      success: error == null,
-      cancelled: wasCancelled,
+      success: false,
+      cancelled: cancelled,
     );
     return true;
   }

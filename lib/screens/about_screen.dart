@@ -936,6 +936,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                             effectiveDownloadUrl,
                             expectedApkSha256:
                                 release?.expectedApkSha256,
+                            fallbackUrl:
+                                downloadChannel ==
+                                    AppUpdateDownloadChannel.gitcode
+                                ? release?.downloadUrl
+                                : null,
                           );
                         }
                       }
@@ -1238,6 +1243,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<void> _downloadAndInstall(
     String url, {
     String? expectedApkSha256,
+    String? fallbackUrl,
+    bool isFallbackRetry = false,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final settings = context.read<TimetableProvider>().settings;
@@ -1287,6 +1294,25 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       if (error == AppUpdateService.downloadCancelledMessage) {
         _analytics.logEventLater(name: 'update_download_cancelled');
         showAppToast(context, message: l10n.aboutDownloadCancelled);
+        return;
+      }
+      // GitCode 直连失败时自动回退 GitHub 原始直链重试一次。取消、不受信任
+      // 地址、无摘要拒装、安装器打开失败换源也无解，不重试。
+      final normalizedFallback = fallbackUrl?.trim() ?? '';
+      final notRetryable =
+          error.startsWith('update_download_url_untrusted') ||
+          error.startsWith('update_sha256_unverified_install_refused') ||
+          error.startsWith('update_open_installer_failed');
+      if (!isFallbackRetry &&
+          !notRetryable &&
+          normalizedFallback.isNotEmpty &&
+          normalizedFallback != url) {
+        _analytics.logEventLater(name: 'update_download_fallback_to_github');
+        await _downloadAndInstall(
+          normalizedFallback,
+          expectedApkSha256: expectedApkSha256,
+          isFallbackRetry: true,
+        );
         return;
       }
       _analytics.logEventLater(name: 'update_download_failed');
