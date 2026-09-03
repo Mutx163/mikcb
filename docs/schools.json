@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-02T06:17:14+00:00",
+  "updatedAt": "2026-09-03T06:20:06+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 179,
-    "schools": 174,
+    "total": 182,
+    "schools": 177,
     "generic": 5
   },
   "schools": [
@@ -513,6 +513,13 @@
       "category": "school"
     },
     {
+      "id": "HNNU",
+      "name": "淮南师范学院",
+      "initial": "H",
+      "resourceFolder": "HNNU",
+      "category": "school"
+    },
+    {
       "id": "HBMU",
       "name": "湖北医药学院",
       "initial": "H",
@@ -737,6 +744,13 @@
       "category": "school"
     },
     {
+      "id": "NUIST",
+      "name": "南京信息工程大学",
+      "initial": "N",
+      "resourceFolder": "NUIST",
+      "category": "school"
+    },
+    {
       "id": "NJTECH",
       "name": "南京工业大学",
       "initial": "N",
@@ -818,6 +832,13 @@
       "name": "青岛黄海学院",
       "initial": "Q",
       "resourceFolder": "QDHHC",
+      "category": "school"
+    },
+    {
+      "id": "QHNU",
+      "name": "青海师范大学",
+      "initial": "Q",
+      "resourceFolder": "QHNU",
       "category": "school"
     },
     {
