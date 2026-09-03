@@ -12,6 +12,12 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
         fun updateAll(context: Context) {
             TodayCompactWidgetProvider().updateAll(context)
         }
+
+        // widget_meta 在布局里限 2 行（ellipsize=end）。base 已有两行时再追加
+        // 考试倒计时，第三行不会显示，Android 只会在第二行末尾补「…」，
+        // 看起来就像教室后面凭空多了省略号；只在还有空行时才追加。
+        fun metaWithExam(base: String, examText: String?): String =
+            if (examText == null || base.contains('\n')) base else "$base\n$examText"
     }
 
     override fun renderWidget(
@@ -91,7 +97,7 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
                         time
                     }
                     val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
-                    if (examText != null) "$base\n$examText" else base
+                    metaWithExam(base, examText)
                 }
                 state == "no_course" -> {
                     val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
@@ -122,7 +128,7 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
                         TodayWidgetSupport.compactMetaText(context, snapshot)
                     }
                     val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
-                    if (examText != null) "$base\n$examText" else base
+                    metaWithExam(base, examText)
                 }
             }
         )
