@@ -239,7 +239,6 @@ String appUpdateMirrorPresetLabel(
   AppUpdateMirrorPreset preset,
 ) => switch (preset) {
   AppUpdateMirrorPreset.ghfast => l10n.appUpdateMirrorPresetGhfast,
-  AppUpdateMirrorPreset.ghproxyCn => l10n.appUpdateMirrorPresetGhproxyCn,
   AppUpdateMirrorPreset.ghLlkk => l10n.appUpdateMirrorPresetGhLlkk,
   AppUpdateMirrorPreset.ghProxyCom => l10n.appUpdateMirrorPresetGhProxyCom,
   AppUpdateMirrorPreset.ghproxyNet => l10n.appUpdateMirrorPresetGhproxyNet,
@@ -251,7 +250,6 @@ String appUpdateMirrorPresetDescription(
   AppUpdateMirrorPreset preset,
 ) => switch (preset) {
   AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
-  AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
   AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
   AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
   AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,

@@ -68,7 +68,6 @@ Future<RaceResult<T>> raceFutures<S, T>(
 /// 所有内置镜像前缀（不含 custom）。
 const List<String> allBuiltinMirrorUrlPrefixes = [
   'https://ghfast.top/',
-  'https://ghproxy.cn/',
   'https://gh.llkk.cc/',
   'https://gh-proxy.com/',
   'https://ghproxy.net/',

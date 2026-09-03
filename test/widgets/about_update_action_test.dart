@@ -65,27 +65,27 @@ void main() {
         isSuccess: true,
         elapsed: Duration(milliseconds: 180),
       ),
-      AppUpdateMirrorPreset.ghproxyCn: const AppUpdateDownloadProbeResult(
+      AppUpdateMirrorPreset.ghLlkk: const AppUpdateDownloadProbeResult(
         isSuccess: true,
         elapsed: Duration(milliseconds: 90),
       ),
-      AppUpdateMirrorPreset.ghLlkk: const AppUpdateDownloadProbeResult(
+      AppUpdateMirrorPreset.ghProxyCom: const AppUpdateDownloadProbeResult(
         isSuccess: false,
         elapsed: Duration(milliseconds: 40),
         message: 'HTTP 502',
       ),
     });
 
-    expect(recommended, AppUpdateMirrorPreset.ghproxyCn);
+    expect(recommended, AppUpdateMirrorPreset.ghLlkk);
   });
 
   test('fallback mirror skips the current preset', () {
     final fallback = resolveMirrorFallbackPreset(
-      currentPreset: AppUpdateMirrorPreset.ghproxyCn,
+      currentPreset: AppUpdateMirrorPreset.ghLlkk,
       availablePresets: const [
-        AppUpdateMirrorPreset.ghproxyCn,
-        AppUpdateMirrorPreset.ghfast,
         AppUpdateMirrorPreset.ghLlkk,
+        AppUpdateMirrorPreset.ghfast,
+        AppUpdateMirrorPreset.ghProxyCom,
       ],
     );
 

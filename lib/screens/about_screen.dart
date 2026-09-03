@@ -1148,13 +1148,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         ),
       ),
       MapEntry(
-        AppUpdateMirrorPreset.ghproxyCn,
-        resolveAppUpdateMirrorUrlPrefix(
-          preset: AppUpdateMirrorPreset.ghproxyCn,
-          customUrlPrefix: customMirrorUrlPrefix,
-        ),
-      ),
-      MapEntry(
         AppUpdateMirrorPreset.ghLlkk,
         resolveAppUpdateMirrorUrlPrefix(
           preset: AppUpdateMirrorPreset.ghLlkk,
@@ -1905,13 +1898,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
           AppUpdateMirrorPreset.ghfast,
           resolveAppUpdateMirrorUrlPrefix(
             preset: AppUpdateMirrorPreset.ghfast,
-            customUrlPrefix: customMirrorUrlPrefix ?? '',
-          ),
-        ),
-        MapEntry(
-          AppUpdateMirrorPreset.ghproxyCn,
-          resolveAppUpdateMirrorUrlPrefix(
-            preset: AppUpdateMirrorPreset.ghproxyCn,
             customUrlPrefix: customMirrorUrlPrefix ?? '',
           ),
         ),

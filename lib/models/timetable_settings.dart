@@ -9,7 +9,6 @@ enum AppUpdateDownloadChannel { pgyer, github, gitcode }
 
 enum AppUpdateMirrorPreset {
   ghfast,
-  ghproxyCn,
   ghLlkk,
   ghProxyCom,
   ghproxyNet,
@@ -246,7 +245,6 @@ enum MiuiIslandExpandedIconMode { appIcon, customImage, hidden }
 enum LiveBeforeClassQuickAction { none, silent, doNotDisturb, both }
 
 const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
-const String ghproxyCnMirrorUrlPrefix = 'https://ghproxy.cn/';
 const String ghLlkkMirrorUrlPrefix = 'https://gh.llkk.cc/';
 const String ghProxyComMirrorUrlPrefix = 'https://gh-proxy.com/';
 const String ghproxyNetMirrorUrlPrefix = 'https://ghproxy.net/';
@@ -669,7 +667,6 @@ extension AppUpdateDownloadChannelX on AppUpdateDownloadChannel {
 extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
   String get value => switch (this) {
     AppUpdateMirrorPreset.ghfast => 'ghfast',
-    AppUpdateMirrorPreset.ghproxyCn => 'ghproxy_cn',
     AppUpdateMirrorPreset.ghLlkk => 'gh_llkk',
     AppUpdateMirrorPreset.ghProxyCom => 'gh_proxy_com',
     AppUpdateMirrorPreset.ghproxyNet => 'ghproxy_net',
@@ -691,10 +688,6 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
         normalized ==
             _normalizeMirrorUrlPrefixValue(defaultAppUpdateMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghfast;
-    }
-    if (normalized ==
-        _normalizeMirrorUrlPrefixValue(ghproxyCnMirrorUrlPrefix)) {
-      return AppUpdateMirrorPreset.ghproxyCn;
     }
     if (normalized == _normalizeMirrorUrlPrefixValue(ghLlkkMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghLlkk;
@@ -718,7 +711,6 @@ String resolveAppUpdateMirrorUrlPrefix({
   final normalizedCustomUrlPrefix = customUrlPrefix.trim();
   return switch (preset) {
     AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
-    AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,

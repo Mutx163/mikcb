@@ -465,13 +465,6 @@ void main() {
     );
     expect(
       resolveAppUpdateMirrorUrlPrefix(
-        preset: AppUpdateMirrorPreset.ghproxyCn,
-        customUrlPrefix: 'https://custom.example.com/',
-      ),
-      ghproxyCnMirrorUrlPrefix,
-    );
-    expect(
-      resolveAppUpdateMirrorUrlPrefix(
         preset: AppUpdateMirrorPreset.custom,
         customUrlPrefix: 'https://custom.example.com/',
       ),
