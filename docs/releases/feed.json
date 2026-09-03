@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-03T12:52:54.428Z",
+  "generatedAt": "2026-09-03T14:47:59.758Z",
   "releaseCount": 98,
   "releases": [
     {
-      "channelLabel": "预发布",
+      "channelLabel": "正式版",
       "version": "2.1.1.7",
       "title": "v2.1.1.7",
-      "prerelease": true,
+      "prerelease": false,
       "publishedAt": "2026-09-03T12:52:21Z",
       "description": "新增 日程安排列表页：课程、考试、自定义日程三类时间实体有了统一浏览管理面，不用再回课表格子里逐个翻找。 · 新增 GitCode 国内直连更新渠道并设为默认：检查更新同时向多个渠道并发查询择优，国内下载更快更稳；下载失败自动回退 GitHub 直链重试，关于页测速同步支持新渠道。 · 新增 统计页环形图对称空态：暂无数据时给出引导而非空白；深度分析入口与课…",
       "highlights": [
