@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-03T06:20:06+00:00",
+  "updatedAt": "2026-09-04T06:24:16+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 182,
-    "schools": 177,
+    "total": 188,
+    "schools": 183,
     "generic": 5
   },
   "schools": [
@@ -233,6 +233,13 @@
       "category": "school"
     },
     {
+      "id": "DLUTCI",
+      "name": "大连工程学院",
+      "initial": "D",
+      "resourceFolder": "DLUTCI",
+      "category": "school"
+    },
+    {
       "id": "DLMU",
       "name": "大连海事大学",
       "initial": "D",
@@ -335,6 +342,13 @@
       "name": "广州航海学院",
       "initial": "G",
       "resourceFolder": "GZMTU",
+      "category": "school"
+    },
+    {
+      "id": "GXMU",
+      "name": "广西医科大学",
+      "initial": "G",
+      "resourceFolder": "GXMU",
       "category": "school"
     },
     {
@@ -482,6 +496,13 @@
       "name": "河南师范大学",
       "initial": "H",
       "resourceFolder": "HNSF",
+      "category": "school"
+    },
+    {
+      "id": "HPU",
+      "name": "河南理工大学",
+      "initial": "H",
+      "resourceFolder": "HPU",
       "category": "school"
     },
     {
@@ -793,6 +814,13 @@
       "category": "school"
     },
     {
+      "id": "NCHU",
+      "name": "南昌航空大学",
+      "initial": "N",
+      "resourceFolder": "NCHU",
+      "category": "school"
+    },
+    {
       "id": "STCNCHU",
       "name": "南昌航空大学科技学院",
       "initial": "N",
@@ -804,6 +832,13 @@
       "name": "南通大学",
       "initial": "N",
       "resourceFolder": "NTU",
+      "category": "school"
+    },
+    {
+      "id": "NYNU",
+      "name": "南阳师范学院",
+      "initial": "N",
+      "resourceFolder": "NYNU",
       "category": "school"
     },
     {
@@ -1049,6 +1084,13 @@
       "name": "武汉理工大学",
       "initial": "W",
       "resourceFolder": "WHUT",
+      "category": "school"
+    },
+    {
+      "id": "WUST",
+      "name": "武汉科技大学",
+      "initial": "W",
+      "resourceFolder": "WUST",
       "category": "school"
     },
     {
