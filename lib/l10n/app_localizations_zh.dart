@@ -9123,6 +9123,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade => '超级岛：升级后快照失效';
 
   @override
+  String get logCatLiveUpdateSnapshotSalvagedAfterUpgrade => '超级岛：升级后快照校验通过已保留';
+
+  @override
   String get logCatLiveUpdatePayloadSelected => '超级岛：已选负载';
 
   @override
@@ -19608,6 +19611,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade => '超級島：升級後快照失效';
 
   @override
+  String get logCatLiveUpdateSnapshotSalvagedAfterUpgrade => '超級島：升級後快照校驗通過已保留';
+
+  @override
   String get logCatLiveUpdatePayloadSelected => '超級島：已選負載';
 
   @override
@@ -30091,6 +30097,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade => '超级岛：升级后快照失效';
+
+  @override
+  String get logCatLiveUpdateSnapshotSalvagedAfterUpgrade => '超级岛：升级后快照校验通过已保留';
 
   @override
   String get logCatLiveUpdatePayloadSelected => '超级岛：已选负载';

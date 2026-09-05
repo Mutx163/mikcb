@@ -5314,6 +5314,7 @@
   "logCatLiveUpdateRescheduleScheduled": "超級島：已調度",
   "logCatLiveUpdateSnapshotParseFailed": "超級島：快照解析失敗",
   "logCatLiveUpdateSnapshotInvalidatedAfterUpgrade": "超級島：升級後快照失效",
+  "logCatLiveUpdateSnapshotSalvagedAfterUpgrade": "超級島：升級後快照校驗通過已保留",
   "logCatLiveUpdatePayloadSelected": "超級島：已選負載",
   "logCatLiveUpdateSchedulerStartFailed": "超級島：調度啟動失敗",
   "logCatLiveUpdateStartRequested": "超級島：請求啟動",

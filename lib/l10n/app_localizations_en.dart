@@ -9667,6 +9667,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'live island: snapshot invalidated after upgrade';
 
   @override
+  String get logCatLiveUpdateSnapshotSalvagedAfterUpgrade =>
+      'live island: snapshot kept after upgrade';
+
+  @override
   String get logCatLiveUpdatePayloadSelected => 'live island: payload selected';
 
   @override

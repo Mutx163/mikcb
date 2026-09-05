@@ -320,6 +320,8 @@ abstract final class AppLogMessageLocalizer {
         l10n.logCatLiveUpdateSnapshotParseFailed,
       'log_cat_live_update_snapshot_invalidated_after_upgrade' =>
         l10n.logCatLiveUpdateSnapshotInvalidatedAfterUpgrade,
+      'log_cat_live_update_snapshot_salvaged_after_upgrade' =>
+        l10n.logCatLiveUpdateSnapshotSalvagedAfterUpgrade,
       'log_cat_live_update_payload_selected' =>
         l10n.logCatLiveUpdatePayloadSelected,
       'log_cat_live_update_scheduler_start_failed' =>

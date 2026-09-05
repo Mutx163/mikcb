@@ -1280,22 +1280,56 @@ object LiveUpdateScheduler {
         storedSnapshotVersion: String?,
         currentVersion: String?,
     ) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .remove(KEY_SNAPSHOT_JSON)
-            .remove(KEY_SNAPSHOT_VERSION)
-            .apply()
-        cancelScheduledAlarm(context)
-        context.stopService(Intent(context, LiveUpdateService::class.java))
-        UmengDiagnosticReporter.record(
-            context = context.applicationContext,
-            category = "live_update_snapshot_invalidated_after_upgrade",
-            message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_INVALIDATED,
-            extras = mapOf(
-                "storedSnapshotVersion" to (storedSnapshotVersion ?: "missing"),
-                "currentVersion" to (currentVersion ?: "unknown"),
+        // 版本令牌不匹配只说明"旧版写入"，不代表新版解析器读不懂：先尝试解析旧
+        // JSON，通过则保留数据、仅刷新版本令牌——升级后闹钟/Worker 可立即用旧快照
+        // 恢复上岛，无需等用户打开 App 重新同步（此前直接清空导致升级后空转）。
+        // 解析失败（格式真漂移）才维持原样作废，保留格式漂移安全性。
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val salvaged = if (currentVersion != null) {
+            prefs.getString(KEY_SNAPSHOT_JSON, null)?.let { raw ->
+                try {
+                    parseSnapshot(JSONObject(raw))
+                } catch (e: Exception) {
+                    Log.w(TAG, DiagnosticLogMessages.LOG_PARSE_SNAPSHOT_FAILED, e)
+                    null
+                }
+            }
+        } else {
+            // 版本令牌解析失败时无法回写有效令牌，保持旧路径（作废），
+            // 避免 loadSnapshot 反复进入失效分支。
+            null
+        }
+        if (salvaged != null) {
+            prefs.edit().putString(KEY_SNAPSHOT_VERSION, currentVersion).apply()
+            UmengDiagnosticReporter.record(
+                context = context.applicationContext,
+                category = "live_update_snapshot_salvaged_after_upgrade",
+                message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_SALVAGED,
+                extras = mapOf(
+                    "storedSnapshotVersion" to (storedSnapshotVersion ?: "missing"),
+                    "currentVersion" to (currentVersion ?: "unknown"),
+                )
             )
-        )
+            // 外层 loadSnapshot 正常返回快照，reschedule 继续执行：闹钟与上岛自恢复。
+        } else {
+            prefs.edit()
+                .remove(KEY_SNAPSHOT_JSON)
+                .remove(KEY_SNAPSHOT_VERSION)
+                .apply()
+            cancelScheduledAlarm(context)
+            context.stopService(Intent(context, LiveUpdateService::class.java))
+            UmengDiagnosticReporter.record(
+                context = context.applicationContext,
+                category = "live_update_snapshot_invalidated_after_upgrade",
+                message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_INVALIDATED,
+                extras = mapOf(
+                    "storedSnapshotVersion" to (storedSnapshotVersion ?: "missing"),
+                    "currentVersion" to (currentVersion ?: "unknown"),
+                )
+            )
+        }
+        // 升级后兜底 Worker 必须在位：UPDATE 策略幂等。
+        LiveUpdateRefreshWorker.ensureScheduled(context)
     }
 
     private fun resolveAppVersionToken(context: Context): String? {

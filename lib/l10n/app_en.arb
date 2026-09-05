@@ -5551,6 +5551,7 @@
   "logCatLiveUpdateRescheduleScheduled": "live island: reschedule scheduled",
   "logCatLiveUpdateSnapshotParseFailed": "live island: snapshot parse failed",
   "logCatLiveUpdateSnapshotInvalidatedAfterUpgrade": "live island: snapshot invalidated after upgrade",
+  "logCatLiveUpdateSnapshotSalvagedAfterUpgrade": "live island: snapshot kept after upgrade",
   "logCatLiveUpdatePayloadSelected": "live island: payload selected",
   "logCatLiveUpdateSchedulerStartFailed": "live island: scheduler start failed",
   "logCatLiveUpdateStartRequested": "live island: start requested",

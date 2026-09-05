@@ -19,6 +19,7 @@ object DiagnosticLogMessages {
     const val LIVE_UPDATE_STOPPED_NO_ACTIVE_SELECTION = "当前无应显示课程，已停止超级岛服务"
     const val LIVE_UPDATE_SNAPSHOT_PARSE_FAILED = "解析超级岛课表快照失败"
     const val LIVE_UPDATE_SNAPSHOT_INVALIDATED = "应用版本变更后已作废过期快照"
+    const val LIVE_UPDATE_SNAPSHOT_SALVAGED = "应用版本变更后快照解析通过，已保留"
     const val LIVE_UPDATE_PAYLOAD_SELECTED = "调度器已为原生服务选定超级岛负载"
     const val LIVE_UPDATE_SCHEDULER_START_FAILED = "调度器启动超级岛服务失败"
     const val LIVE_UPDATE_FGS_RETRY_SCHEDULED = "前台服务启动被拒，已排退避重试"

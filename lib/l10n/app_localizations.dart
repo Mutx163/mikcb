@@ -16518,6 +16518,12 @@ abstract class AppLocalizations {
   /// **'超级岛：升级后快照失效'**
   String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade;
 
+  /// No description provided for @logCatLiveUpdateSnapshotSalvagedAfterUpgrade.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：升级后快照校验通过已保留'**
+  String get logCatLiveUpdateSnapshotSalvagedAfterUpgrade;
+
   /// No description provided for @logCatLiveUpdatePayloadSelected.
   ///
   /// In zh, this message translates to:

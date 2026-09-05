@@ -274,6 +274,8 @@ const Map<String, String> appLogCategoryLabels = {
       'log_cat_live_update_snapshot_parse_failed',
   'live_update_snapshot_invalidated_after_upgrade':
       'log_cat_live_update_snapshot_invalidated_after_upgrade',
+  'live_update_snapshot_salvaged_after_upgrade':
+      'log_cat_live_update_snapshot_salvaged_after_upgrade',
   'live_update_payload_selected': 'log_cat_live_update_payload_selected',
   'live_update_scheduler_start_failed':
       'log_cat_live_update_scheduler_start_failed',

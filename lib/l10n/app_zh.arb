@@ -5584,6 +5584,7 @@
   "logCatLiveUpdateRescheduleScheduled": "超级岛：已调度",
   "logCatLiveUpdateSnapshotParseFailed": "超级岛：快照解析失败",
   "logCatLiveUpdateSnapshotInvalidatedAfterUpgrade": "超级岛：升级后快照失效",
+  "logCatLiveUpdateSnapshotSalvagedAfterUpgrade": "超级岛：升级后快照校验通过已保留",
   "logCatLiveUpdatePayloadSelected": "超级岛：已选负载",
   "logCatLiveUpdateSchedulerStartFailed": "超级岛：调度启动失败",
   "logCatLiveUpdateStartRequested": "超级岛：请求启动",
