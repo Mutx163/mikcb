@@ -2243,6 +2243,7 @@ object LiveUpdateScheduler {
                 message = DiagnosticLogMessages.LIVE_UPDATE_SCHEDULER_START_FAILED,
                 throwable = e,
                 dedupeKey = "live_update_scheduler_start_failed",
+                bypassThrottle = true,
                 extras = mapOf(
                     "courseName" to payload.currentCourse.name,
                     "stage" to payload.stage,

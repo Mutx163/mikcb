@@ -77,12 +77,15 @@ object UmengDiagnosticReporter {
         throwable: Throwable? = null,
         stackTrace: String? = null,
         dedupeKey: String = category,
+        // FGS 启动被拒这类低频高危事件必须全程留痕（退避重试的每次失败都要可见），
+        // 不受 2 分钟节流窗口约束；常规高频事件仍走节流。
+        bypassThrottle: Boolean = false,
         extras: Map<String, Any?> = emptyMap(),
     ) {
         if (!isLiveDiagnosticsEnabled(context) || !hasPrivacyConsent(context)) {
             return
         }
-        if (shouldThrottle(dedupeKey)) {
+        if (!bypassThrottle && shouldThrottle(dedupeKey)) {
             return
         }
 
@@ -361,6 +364,8 @@ object UmengDiagnosticReporter {
                 ),
             "lastTaskRemovedAt" to lastTaskRemovedAt.takeIf { it > 0L },
             "processImportance" to resolveProcessImportance(context),
+            // HyperOS/MIUI 自启动开关无公开查询 API（powerkeeper/securitycenter 均为私有），
+            // unknown 为硬编码占位而非取值失败；接入真实查询需专项调研私有接口。
             "autoStartStatus" to "unknown",
             "liveEnableBeforeClass" to settings?.optBoolean("liveEnableBeforeClass"),
             "liveEnableDuringClass" to settings?.optBoolean("liveEnableDuringClass"),
@@ -474,6 +479,10 @@ object UmengDiagnosticReporter {
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE -> "visible"
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE -> "service"
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED -> "cached"
+                // 230 = IMPORTANCE_TOP_SLEEPING：设备息屏前的 top 进程（UI 曾在前台、
+                // 设备休眠后系统保留的中间态），是 FGS 后台启动被拒的高危态。
+                // 用数字字面量映射，规避弃用符号在各 compileSdk 下的可用性差异。
+                230 -> "top_sleeping"
                 null -> "unknown"
                 else -> currentProcess.importance.toString()
             }
