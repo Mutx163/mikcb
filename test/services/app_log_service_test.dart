@@ -12,7 +12,7 @@ void main() {
 
   test('initialize tolerates corrupted timetable settings json', () async {
     SharedPreferences.setMockInitialValues({
-      'flutter.timetable_settings': '{bad-json',
+      'timetable_settings': '{bad-json',
     });
 
     await expectLater(AppLogService.instance.initialize(), completes);
@@ -33,7 +33,7 @@ void main() {
     });
 
     SharedPreferences.setMockInitialValues({
-      'flutter.accepted_privacy_policy': true,
+      'accepted_privacy_policy': true,
     });
     await AppLogService.instance.initialize();
     await AppLogService.instance.updatePrivacyAccepted(true);

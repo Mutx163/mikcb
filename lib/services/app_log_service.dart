@@ -22,11 +22,13 @@ class AppLogService {
 
   static final AppLogService instance = AppLogService._internal();
 
-  static const String _acceptedPrivacyPolicyKey =
-      'flutter.accepted_privacy_policy';
-  static const String _timetableSettingsKey = 'flutter.timetable_settings';
-  static const String _profilesKey = 'flutter.timetable_profiles';
-  static const String _activeProfileIdKey = 'flutter.active_timetable_profile_id';
+  // 注意：shared_preferences 在 Android 侧会自动叠加 'flutter.' 前缀，这里必须写
+  // 裸 key，与 StorageService 的写入 key 同源；手写 'flutter.' 会变成
+  // flutter.flutter.* 双前缀，永远读不到数据（历史 bug，2026-09 修复）。
+  static const String _acceptedPrivacyPolicyKey = 'accepted_privacy_policy';
+  static const String _timetableSettingsKey = 'timetable_settings';
+  static const String _profilesKey = 'timetable_profiles';
+  static const String _activeProfileIdKey = 'active_timetable_profile_id';
   static const int _maxLogBytes = 512 * 1024;
   static const String _logFileName = 'app_runtime.log';
   static const String _logTitleKey = AppLogMessages.logExportTitle;
