@@ -1,6 +1,7 @@
 package com.mutx163.qingyu
 
 import android.app.ActivityManager
+import android.app.AppOpsManager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -364,9 +365,9 @@ object UmengDiagnosticReporter {
                 ),
             "lastTaskRemovedAt" to lastTaskRemovedAt.takeIf { it > 0L },
             "processImportance" to resolveProcessImportance(context),
-            // HyperOS/MIUI 自启动开关无公开查询 API（powerkeeper/securitycenter 均为私有），
-            // unknown 为硬编码占位而非取值失败；接入真实查询需专项调研私有接口。
-            "autoStartStatus" to "unknown",
+            // 复用引导页的 AppOps 反射检测（OP_AUTO_START）；仅当厂商接口与
+            // 电池优化推断都无法给出确定值时才报 unknown。
+            "autoStartStatus" to resolveAutoStartStatus(context),
             "liveEnableBeforeClass" to settings?.optBoolean("liveEnableBeforeClass"),
             "liveEnableDuringClass" to settings?.optBoolean("liveEnableDuringClass"),
             "liveEnableBeforeEnd" to settings?.optBoolean("liveEnableBeforeEnd"),
@@ -466,6 +467,58 @@ object UmengDiagnosticReporter {
             powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
         } catch (_: Exception) {
             false
+        }
+    }
+
+    /// 自启动状态三态：allowed / denied / unknown。
+    /// 检测链与引导页（MainActivity.isAutoStartEnabled）同源：先 AppOps 反射
+    /// （小米/OPPO/Vivo/一加 OP_AUTO_START=10008），再电池优化间接推断；
+    /// 两者都无法给确定值时返回 unknown（引导页对 unknown 乐观视为开启）。
+    fun resolveAutoStartStatus(context: Context): String {
+        val appOpsResult = checkAutoStartViaAppOps(context)
+        if (appOpsResult != null) return if (appOpsResult) "allowed" else "denied"
+        val batteryResult = checkAutoStartViaBattery(context)
+        if (batteryResult != null) return if (batteryResult) "allowed" else "denied"
+        return "unknown"
+    }
+
+    /** 通过 AppOps 反射检测自启动状态；不适用时返回 null。 */
+    private fun checkAutoStartViaAppOps(context: Context): Boolean? {
+        return try {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val method = AppOpsManager::class.java.getMethod(
+                "checkOpNoThrow",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                String::class.java,
+            )
+            // OP_AUTO_START = 10008 (小米/OPPO/Vivo 等厂商通用)
+            val result = method.invoke(
+                appOps,
+                10008,
+                android.os.Process.myUid(),
+                context.packageName,
+            ) as Int
+            when (result) {
+                AppOpsManager.MODE_ALLOWED -> true
+                AppOpsManager.MODE_IGNORED,
+                AppOpsManager.MODE_ERRORED,
+                -> false
+                else -> null // MODE_DEFAULT 等，说明此 OP 不适用于当前设备
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** 通过电池优化状态间接推断；无法推断时返回 null。 */
+    private fun checkAutoStartViaBattery(context: Context): Boolean? {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            powerManager?.isIgnoringBatteryOptimizations(context.packageName)
+        } catch (_: Exception) {
+            null
         }
     }
 

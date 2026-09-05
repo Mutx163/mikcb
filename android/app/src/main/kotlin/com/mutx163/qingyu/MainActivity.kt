@@ -6,7 +6,6 @@ import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
 import android.Manifest
 import android.app.ActivityManager
-import android.app.AppOpsManager
 import android.app.AlarmManager
 import android.app.DownloadManager
 import android.app.NotificationChannel
@@ -1903,60 +1902,9 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isAutoStartEnabled(): Boolean {
-        // 1. 尝试 AppOps 反射检测（小米/OPPO/Vivo/一加 等）
-        val appOpsResult = checkAutoStartViaAppOps()
-        if (appOpsResult != null) return appOpsResult
-
-        // 2. 回退到电池优化检测（三星/华为/荣耀/通用）
-        val batteryResult = checkAutoStartViaBattery()
-        if (batteryResult != null) return batteryResult
-
-        // 3. 兜底：乐观默认
-        return true
-    }
-
-    /**
-     * 通过 AppOps 反射检测自启动状态。
-     * 适用：小米 (MIUI)、OPPO (ColorOS)、Vivo、一加 (OxygenOS) 等。
-     * 不适用时返回 null（如 Pixel 等原生 Android）。
-     */
-    private fun checkAutoStartViaAppOps(): Boolean? {
-        return try {
-            val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-            val method = AppOpsManager::class.java.getMethod(
-                "checkOpNoThrow",
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                String::class.java
-            )
-            // OP_AUTO_START = 10008 (小米/OPPO/Vivo 等厂商通用)
-            val result = method.invoke(
-                appOps, 10008, android.os.Process.myUid(), packageName
-            ) as Int
-            when (result) {
-                AppOpsManager.MODE_ALLOWED -> true
-                AppOpsManager.MODE_IGNORED,
-                AppOpsManager.MODE_ERRORED -> false
-                else -> null // MODE_DEFAULT 等，说明此 OP 不适用于当前设备
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    /**
-     * 通过电池优化状态间接推断。
-     * 适用：三星（sleeping apps）、华为/荣耀（EMUI）等使用电池策略限制后台的厂商。
-     * 对于 Pixel 等原生设备也适用（但通常不需要自启动权限）。
-     */
-    private fun checkAutoStartViaBattery(): Boolean? {
-        return try {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
-            val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
-            powerManager?.isIgnoringBatteryOptimizations(packageName)
-        } catch (_: Exception) {
-            null
-        }
+        // 检测逻辑统一下沉到 UmengDiagnosticReporter.resolveAutoStartStatus：
+        // 引导页与诊断上下文共用同一实现，unknown（无法确定）仍乐观视为开启。
+        return UmengDiagnosticReporter.resolveAutoStartStatus(this) != "denied"
     }
 
     private fun isKeepAliveAccessibilityEnabled(): Boolean {
