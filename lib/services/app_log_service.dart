@@ -50,6 +50,10 @@ class AppLogService {
     if (_initialized) {
       return;
     }
+    // 同步置位防并发重入：启动期多个 info() 调用会各自触发 initialize，
+    // 若等 await 完成后再置位，同一冷启动会记出多条 app_logger_initialized
+    // （2026-09 日志卫生审计：一次冷启动 ×3）。
+    _initialized = true;
     // 初始化必须吞掉自身异常：log()/warn() 在未初始化时会先走这里，而调用方
     // 常以 unawaited 方式触发（如 HomeWidgetBindingService 的失败留痕）。测试
     // 环境无 shared_preferences/path_provider 插件时 getInstance 会抛
@@ -69,9 +73,9 @@ class AppLogService {
     } catch (_) {
       _packageInfo = null;
     }
-    _initialized = true;
     if (_loggingEnabled) {
-      await info(
+      // 工程自证事件，debug 档即可：每个 engine 初始化各记一条，不该占 info。
+      await debug(
         'app_logger_initialized',
         AppLogMessages.appLoggerInitialized,
         extras: {
@@ -99,14 +103,14 @@ class AppLogService {
   Future<void> updateLoggingEnabled(bool value) async {
     final previous = _loggingEnabled;
     _loggingEnabled = value;
-    if (!value) {
+    if (!value || previous) {
+      // 关闭无迁移可记；状态未变化时 RemainsEnabled 无信息量
+      // （2026-09 日志卫生审计：每次冷启动重复 ×2）。
       return;
     }
     await info(
       'app_log_recording_enabled',
-      previous
-          ? AppLogMessages.appLogRecordingRemainsEnabled
-          : AppLogMessages.appLogRecordingEnabled,
+      AppLogMessages.appLogRecordingEnabled,
       extras: {'previous': previous},
     );
   }

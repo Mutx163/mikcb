@@ -135,10 +135,16 @@ object UmengDiagnosticReporter {
     }
 
     fun setLiveDiagnosticsEnabled(context: Context, enabled: Boolean) {
-        context.getSharedPreferences(NATIVE_PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
+        val prefs = context.getSharedPreferences(NATIVE_PREFS_NAME, Context.MODE_PRIVATE)
+        // 状态未变化不记录（每次冷启动会收到重复的开启调用，
+        // 2026-09 日志卫生审计：同一秒内 ×2）。
+        val changed = prefs.getBoolean(KEY_LIVE_DIAGNOSTICS_ENABLED, false) != enabled
+        prefs.edit()
             .putBoolean(KEY_LIVE_DIAGNOSTICS_ENABLED, enabled)
             .apply()
+        if (!changed) {
+            return
+        }
         if (enabled) {
             appendToLocalFile(
                 context = context,
