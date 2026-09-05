@@ -1,7 +1,52 @@
 {
-  "generatedAt": "2026-09-03T11:20:22.584Z",
-  "releaseCount": 97,
+  "generatedAt": "2026-09-05T04:35:07.419Z",
+  "releaseCount": 98,
   "releases": [
+    {
+      "channelLabel": "正式版",
+      "version": "2.1.1.7",
+      "title": "v2.1.1.7",
+      "prerelease": false,
+      "publishedAt": "2026-09-03T12:52:21Z",
+      "description": "新增 日程安排列表页：课程、考试、自定义日程三类时间实体有了统一浏览管理面，不用再回课表格子里逐个翻找。 · 新增 GitCode 国内直连更新渠道并设为默认：检查更新同时向多个渠道并发查询择优，国内下载更快更稳；下载失败自动回退 GitHub 直链重试，关于页测速同步支持新渠道。 · 新增 统计页环形图对称空态：暂无数据时给出引导而非空白；深度分析入口与课…",
+      "highlights": [
+        {
+          "type": "新增",
+          "text": "新增 日程安排列表页：课程、考试、自定义日程三类时间实体有了统一浏览管理面，不用再回课表格子里逐个翻找。"
+        },
+        {
+          "type": "新增",
+          "text": "新增 GitCode 国内直连更新渠道并设为默认：检查更新同时向多个渠道并发查询择优，国内下载更快更稳；下载失败自动回退 GitHub 直链重试，关于页测速同步支持新渠道。"
+        },
+        {
+          "type": "新增",
+          "text": "新增 统计页环形图对称空态：暂无数据时给出引导而非空白；深度分析入口与课表对比整合为一张入口卡，页面更聚焦。"
+        },
+        {
+          "type": "优化",
+          "text": "优化 统计页课表对比：改为表格式布局（指标做列、课表做行），二级页直接平铺全部指标不再点行弹窗；名字列不再随内容漂移，表头不再截断。"
+        },
+        {
+          "type": "优化",
+          "text": "优化 统计页深度分析二级页：改为独立整页模式，读数字号放大到正文刻度，消除整页小字加大片留白；组头改为卡内小节标签，层次更清晰。"
+        },
+        {
+          "type": "优化",
+          "text": "优化 时间利用卡：改纵向键值对列表，去掉固定宽度留白，空读数有兜底。"
+        },
+        {
+          "type": "优化",
+          "text": "优化 统计页排版：大数字统一字重，tooltip 与成就徽章亮暗对比度自适应，成就网格间距放宽。"
+        },
+        {
+          "type": "优化",
+          "text": "优化 周视图：移除与主视图重复的概览卡，信息不再出现两遍。"
+        }
+      ],
+      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.1.7",
+      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.1.7/mikcb-2.1.1.7-arm64-v8a.apk",
+      "assetName": "mikcb-2.1.1.7-arm64-v8a.apk"
+    },
     {
       "channelLabel": "正式版",
       "version": "2.1.1.4",
@@ -272,35 +317,6 @@
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.5",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.5/mikcb-2.0.5.5-arm64-v8a.apk",
       "assetName": "mikcb-2.0.5.5-arm64-v8a.apk"
-    },
-    {
-      "channelLabel": "预发布",
-      "version": "2.0.5.4",
-      "title": "v2.0.5.4",
-      "prerelease": true,
-      "publishedAt": "2026-07-21T04:02:20Z",
-      "description": "课程统计「生成主图分享」：修复长图导出时高度被截成一屏的问题，完整长图可正确测量与生成 · 考试提醒：仅展示本机已计划的提醒内容，通知标题与正文更可靠 · 考试提醒：考试名称为空时，默认标题随系统语言显示",
-      "highlights": [
-        {
-          "type": "优化",
-          "text": "课程统计「生成主图分享」：修复长图导出时高度被截成一屏的问题，完整长图可正确测量与生成"
-        },
-        {
-          "type": "优化",
-          "text": "考试提醒：仅展示本机已计划的提醒内容，通知标题与正文更可靠"
-        },
-        {
-          "type": "优化",
-          "text": "考试提醒：考试名称为空时，默认标题随系统语言显示"
-        },
-        {
-          "type": "优化",
-          "text": "考试提醒：修改或调整关联课程后自动刷新提醒内容，减少通知中地点等信息过期"
-        }
-      ],
-      "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.0.5.4",
-      "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.0.5.4/mikcb-2.0.5.4-arm64-v8a.apk",
-      "assetName": "mikcb-2.0.5.4-arm64-v8a.apk"
     }
   ]
 }
