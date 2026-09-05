@@ -21,6 +21,8 @@ object DiagnosticLogMessages {
     const val LIVE_UPDATE_SNAPSHOT_INVALIDATED = "应用版本变更后已作废过期快照"
     const val LIVE_UPDATE_PAYLOAD_SELECTED = "调度器已为原生服务选定超级岛负载"
     const val LIVE_UPDATE_SCHEDULER_START_FAILED = "调度器启动超级岛服务失败"
+    const val LIVE_UPDATE_FGS_RETRY_SCHEDULED = "前台服务启动被拒，已排退避重试"
+    const val LIVE_UPDATE_FGS_START_GAVE_UP = "前台服务重试耗尽，已降级为普通通知"
 
     const val LIVE_UPDATE_START_REQUESTED = "Flutter 请求启动超级岛"
     const val LIVE_UPDATE_START_FAILED_CHANNEL = "通过 Flutter 方法通道启动超级岛服务失败"
@@ -28,6 +30,7 @@ object DiagnosticLogMessages {
     const val LIVE_UPDATE_SERVICE_MISSING_PAYLOAD = "超级岛服务重启时缺少完整负载"
     const val LIVE_UPDATE_SERVICE_STARTED = "超级岛服务已启动"
     const val LIVE_UPDATE_SERVICE_START_FAILED = "初始化超级岛服务负载或通知失败"
+    const val LIVE_UPDATE_SERVICE_FGS_START_DENIED = "服务内 startForeground 调用被系统拒绝"
     const val LIVE_UPDATE_TASK_REMOVED = "超级岛服务活跃时任务被移除"
     const val LIVE_UPDATE_TASK_REMOVED_RESUMED = "任务被移除但当前超级岛已立即恢复"
     const val LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION = "课前快捷操作已触发"
@@ -71,6 +74,7 @@ object DiagnosticLogMessages {
     const val LOG_BUILD_ROUNDED_LAUNCHER_ICON_FAILED = "构建圆角启动图标失败"
     const val LOG_FGS_START_BLOCKED = "前台服务启动被阻止，回退为仅调度"
     const val LOG_LIVE_UPDATE_REFRESH_WORKER_FAILED = "超级岛刷新 Worker 失败"
+    const val LOG_POST_FALLBACK_NOTIFICATION_FAILED = "发送降级普通通知失败"
 
     // 金标联盟公平运行内存
     const val FAIR_MEMORY_EVENT_RECEIVED = "收到公平运行内存广播"

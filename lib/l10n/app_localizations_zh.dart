@@ -9144,6 +9144,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logCatLiveUpdateServiceStartFailed => '超级岛：服务启动失败';
 
   @override
+  String get logCatLiveUpdateServiceFgsStartDenied =>
+      '超级岛：服务内 startForeground 被拒';
+
+  @override
+  String get logCatLiveUpdateFgsRetryScheduled => '超级岛：前台服务被拒，已排退避重试';
+
+  @override
+  String get logCatLiveUpdateFgsStartGaveUp => '超级岛：重试耗尽，已降级为普通通知';
+
+  @override
   String get logCatLiveUpdateTaskRemoved => '超级岛：任务被移除';
 
   @override
@@ -19619,6 +19629,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logCatLiveUpdateServiceStartFailed => '超級島：服務啟動失敗';
 
   @override
+  String get logCatLiveUpdateServiceFgsStartDenied =>
+      '超級島：服務內 startForeground 被拒';
+
+  @override
+  String get logCatLiveUpdateFgsRetryScheduled => '超級島：前台服務被拒，已排退避重試';
+
+  @override
+  String get logCatLiveUpdateFgsStartGaveUp => '超級島：重試耗盡，已降級為普通通知';
+
+  @override
   String get logCatLiveUpdateTaskRemoved => '超級島：任務被移除';
 
   @override
@@ -30092,6 +30112,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logCatLiveUpdateServiceStartFailed => '超级岛：服务启动失败';
+
+  @override
+  String get logCatLiveUpdateServiceFgsStartDenied =>
+      '超级岛：服务内 startForeground 被拒';
+
+  @override
+  String get logCatLiveUpdateFgsRetryScheduled => '超级岛：前台服务被拒，已排退避重试';
+
+  @override
+  String get logCatLiveUpdateFgsStartGaveUp => '超级岛：重试耗尽，已降级为普通通知';
 
   @override
   String get logCatLiveUpdateTaskRemoved => '超级岛：任务被移除';

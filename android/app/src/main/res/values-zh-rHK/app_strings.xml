@@ -19,6 +19,7 @@
     <string name="notification_exam_reminder_default_body">你有一場即將開始的考試</string>
 
     <string name="notification_course_reminder_title">課程提醒: %1$s</string>
+    <string name="notification_fgs_fallback_text">超級島未能啟動，已改用普通通知提醒</string>
     <string name="notification_preparing_reminder">正在準備課程提醒</string>
     <string name="action_enable_silent">開啟靜音</string>
     <string name="action_enable_dnd">開啟免打擾</string>

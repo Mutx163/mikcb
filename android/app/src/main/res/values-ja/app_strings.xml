@@ -19,6 +19,7 @@
     <string name="notification_exam_reminder_default_body">まもなく試験があります</string>
 
     <string name="notification_course_reminder_title">授業リマインダー: %1$s</string>
+    <string name="notification_fgs_fallback_text">ライブアイランドを開始できなかったため、通常の通知でお知らせします</string>
     <string name="notification_preparing_reminder">授業リマインダーを準備中</string>
     <string name="action_enable_silent">ミュート</string>
     <string name="action_enable_dnd">おやすみモード</string>

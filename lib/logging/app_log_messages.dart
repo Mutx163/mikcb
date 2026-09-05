@@ -284,6 +284,10 @@ const Map<String, String> appLogCategoryLabels = {
   'live_update_service_started': 'log_cat_live_update_service_started',
   'live_update_service_start_failed':
       'log_cat_live_update_service_start_failed',
+  'live_update_service_fgs_start_denied':
+      'log_cat_live_update_service_fgs_start_denied',
+  'live_update_fgs_retry_scheduled': 'log_cat_live_update_fgs_retry_scheduled',
+  'live_update_fgs_start_gave_up': 'log_cat_live_update_fgs_start_gave_up',
   'live_update_task_removed': 'log_cat_live_update_task_removed',
   'live_update_task_removed_resumed':
       'log_cat_live_update_task_removed_resumed',

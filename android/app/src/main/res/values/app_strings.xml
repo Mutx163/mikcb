@@ -21,6 +21,7 @@
 
     <!-- Live update / super island -->
     <string name="notification_course_reminder_title">课程提醒: %1$s</string>
+    <string name="notification_fgs_fallback_text">超级岛未能启动，已改用普通通知提醒</string>
     <string name="notification_preparing_reminder">正在准备课程提醒</string>
     <string name="action_enable_silent">打开静音</string>
     <string name="action_enable_dnd">打开免打扰</string>

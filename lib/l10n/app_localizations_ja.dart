@@ -9402,6 +9402,18 @@ class AppLocalizationsJa extends AppLocalizations {
       'live island: service start failed';
 
   @override
+  String get logCatLiveUpdateServiceFgsStartDenied =>
+      'live island: startForeground denied inside service';
+
+  @override
+  String get logCatLiveUpdateFgsRetryScheduled =>
+      'live island: FGS start denied, backoff retry scheduled';
+
+  @override
+  String get logCatLiveUpdateFgsStartGaveUp =>
+      'live island: FGS retries exhausted, fell back to standard notification';
+
+  @override
   String get logCatLiveUpdateTaskRemoved => 'live island: task removed';
 
   @override

@@ -19,6 +19,7 @@
     <string name="notification_exam_reminder_default_body">You have an upcoming exam</string>
 
     <string name="notification_course_reminder_title">Class reminder: %1$s</string>
+    <string name="notification_fgs_fallback_text">Live Island could not start; a standard reminder is shown instead.</string>
     <string name="notification_preparing_reminder">Preparing class reminder</string>
     <string name="action_enable_silent">Mute</string>
     <string name="action_enable_dnd">Do not disturb</string>

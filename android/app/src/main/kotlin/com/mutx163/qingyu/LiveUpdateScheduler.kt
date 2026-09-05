@@ -1,6 +1,9 @@
 package com.mutx163.qingyu
 
 import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -706,6 +709,35 @@ private fun parseIntList(raw: Any?): List<Int>? {
     }
 }
 
+/** FGS 后台启动被拒后的重试参数：指数退避（60s→120s→240s→…），封顶 15 分钟；
+ *  超过次数上限后放弃本次 FGS 拉起、降级为普通通知，链条交由下一课节闹钟自愈。 */
+private const val FGS_RETRY_BASE_DELAY_MILLIS = 60_000L
+private const val FGS_RETRY_MAX_DELAY_MILLIS = 15 * 60_000L
+const val FGS_RETRY_MAX_ATTEMPTS = 3
+
+/// 第 [attempt] 次重试（从 1 计）前的退避时长；纯函数，单测与调度共用。
+fun liveSchedulerFgsRetryDelayMillis(attempt: Int): Long =
+    (FGS_RETRY_BASE_DELAY_MILLIS shl (attempt - 1).coerceAtMost(4))
+        .coerceAtMost(FGS_RETRY_MAX_DELAY_MILLIS)
+
+/// [LiveUpdateScheduler.rescheduleDetailed] 的结果：调用方据其决定超级岛的生死。
+enum class LiveUpdateRescheduleOutcome {
+    /// 本次已成功拉起/刷新前台服务。
+    STARTED,
+
+    /// 拉起被拒，退避重试闹钟已排（岛必须保持，等重试送达新负载）。
+    RETRY_PENDING,
+
+    /// 当前无活跃课节，已排下一次课节闹钟（岛应停止）。
+    SCHEDULED,
+
+    /// 无快照/假期/无后续课节（岛应停止）。
+    IDLE,
+
+    /// 测试会话接管调度（岛保持现状）。
+    SUSPENDED,
+}
+
 object LiveUpdateScheduler {
     private const val TAG = "LiveUpdateScheduler"
     private const val PREFS_NAME = "live_update_scheduler"
@@ -714,9 +746,11 @@ object LiveUpdateScheduler {
     private const val KEY_SUSPEND_UNTIL_MILLIS = "suspend_until_millis"
     private const val REQUEST_CODE_TRIGGER = 2002
 
-    /** Retry delay when an in-window foreground-service start is blocked;
-     *  the exact alarm callback grants a temporary FGS-start exemption. */
-    private const val FGS_RETRY_DELAY_MILLIS = 60_000L
+    private const val KEY_FGS_RETRY_COUNT = "fgs_retry_count"
+    private const val KEY_FGS_LAST_ATTEMPT_MILLIS = "fgs_last_attempt_millis"
+    private const val FALLBACK_NOTIFICATION_TAG = "live_update_fallback"
+    private const val FALLBACK_NOTIFICATION_ID = 3002
+    private const val FALLBACK_NOTIFICATION_REQUEST_CODE = 3003
 
     /** Upper bound for the week lookahead scan so a corrupt/huge endWeek
      *  cannot make [findNextSelection] loop over thousands of weeks. */
@@ -936,24 +970,35 @@ object LiveUpdateScheduler {
         return buildServiceIntent(context, payload)
     }
 
+    // 兼容旧布尔语义：仅当本次成功拉起前台服务时为 true。
     fun reschedule(
         context: Context,
         allowImmediateStart: Boolean,
         stopStaleSessions: Boolean = false,
     ): Boolean {
+        return rescheduleDetailed(context, allowImmediateStart, stopStaleSessions) ==
+            LiveUpdateRescheduleOutcome.STARTED
+    }
+
+    // 重排调度并返回结构化结果；岛的生死由结果决定（详见 [LiveUpdateRescheduleOutcome]）。
+    fun rescheduleDetailed(
+        context: Context,
+        allowImmediateStart: Boolean,
+        stopStaleSessions: Boolean = false,
+    ): LiveUpdateRescheduleOutcome {
         cancelScheduledAlarm(context)
         val suspendUntil = suspendedUntilMillis(context)
         if (suspendUntil > System.currentTimeMillis()) {
             // A live-update test session owns the island right now; defer any
             // scheduler-driven start/stop so it cannot overwrite the test.
             scheduleAlarm(context, suspendUntil)
-            return false
+            return LiveUpdateRescheduleOutcome.SUSPENDED
         }
         val snapshot = loadSnapshot(context) ?: run {
             if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
             }
-            return false
+            return LiveUpdateRescheduleOutcome.IDLE
         }
         if (stopStaleSessions && snapshot.semesterStartMillis == null) {
             stopRunningLiveUpdate(context)
@@ -962,7 +1007,7 @@ object LiveUpdateScheduler {
                 category = "live_update_semester_start_missing",
                 message = DiagnosticLogMessages.LIVE_UPDATE_SEMESTER_START_MISSING,
             )
-            return false
+            return LiveUpdateRescheduleOutcome.IDLE
         }
         // Check if today is a holiday (uses both legacy isHoliday flag and full date list)
         val nowCalendar = Calendar.getInstance()
@@ -977,7 +1022,7 @@ object LiveUpdateScheduler {
                 category = "live_update_reschedule_holiday",
                 message = DiagnosticLogMessages.LIVE_UPDATE_RESCHEDULE_HOLIDAY,
             )
-            return false
+            return LiveUpdateRescheduleOutcome.IDLE
         }
         val now = System.currentTimeMillis()
         val activeSelection = findActiveSelection(context, snapshot, now)
@@ -992,19 +1037,67 @@ object LiveUpdateScheduler {
                         "stage" to activeSelection.stage,
                     )
                 )
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val attempts = prefs.getInt(KEY_FGS_RETRY_COUNT, 0)
+                val lastAttemptAt = prefs.getLong(KEY_FGS_LAST_ATTEMPT_MILLIS, 0L)
+                // 退避窗口内不重复尝试：ticker 每秒会重入本函数，若无此闸，
+                // 保持岛的同时会演变成每秒一次的 startForegroundService 风暴。
+                // 本函数开头已 cancel 旧闹钟，必须把退避重试闹钟补排回来。
+                if (attempts > 0 &&
+                    now - lastAttemptAt < liveSchedulerFgsRetryDelayMillis(attempts)
+                ) {
+                    scheduleAlarm(
+                        context,
+                        lastAttemptAt + liveSchedulerFgsRetryDelayMillis(attempts),
+                    )
+                    return LiveUpdateRescheduleOutcome.RETRY_PENDING
+                }
                 val started = startForegroundService(
                     context,
                     selectionToPayload(snapshot, activeSelection),
                 )
-                if (!started) {
-                    // FGS start can be blocked in the background. Schedule an
-                    // exact alarm retry: its broadcast grants a temporary
-                    // FGS-start exemption, so the session is not lost.
-                    scheduleAlarm(context, now + FGS_RETRY_DELAY_MILLIS)
+                if (started) {
+                    prefs.edit().putInt(KEY_FGS_RETRY_COUNT, 0).apply()
+                    return LiveUpdateRescheduleOutcome.STARTED
                 }
-                return started
-            }
-            if (stopStaleSessions) {
+                // FGS start can be blocked in the background（A 类：ContextImpl 拒绝，
+                // 服务根本没起来）。旧实现固定 60s 无限重试，且假设"闹钟广播授予临时
+                // 豁免"——在 HyperOS 3 (sdkInt>=36) 上实测不成立。改为指数退避 +
+                // 次数上限，耗尽后降级为普通通知，本课节提醒不丢。
+                val nextAttempt = attempts + 1
+                prefs.edit()
+                    .putInt(KEY_FGS_RETRY_COUNT, nextAttempt)
+                    .putLong(KEY_FGS_LAST_ATTEMPT_MILLIS, now)
+                    .apply()
+                if (nextAttempt <= FGS_RETRY_MAX_ATTEMPTS) {
+                    val backoff = liveSchedulerFgsRetryDelayMillis(nextAttempt)
+                    UmengDiagnosticReporter.record(
+                        context = context.applicationContext,
+                        category = "live_update_fgs_retry_scheduled",
+                        message = DiagnosticLogMessages.LIVE_UPDATE_FGS_RETRY_SCHEDULED,
+                        extras = mapOf(
+                            "courseName" to activeSelection.currentCourse.name,
+                            "attempt" to nextAttempt,
+                            "backoffMillis" to backoff,
+                        )
+                    )
+                    scheduleAlarm(context, now + backoff)
+                    return LiveUpdateRescheduleOutcome.RETRY_PENDING
+                }
+                // 退避耗尽：放弃本次 FGS，降级普通通知；计数复位，继续走下方
+                // 下一课节闹钟调度（返回 SCHEDULED/IDLE，岛由调用方停止）。
+                prefs.edit().putInt(KEY_FGS_RETRY_COUNT, 0).apply()
+                UmengDiagnosticReporter.record(
+                    context = context.applicationContext,
+                    category = "live_update_fgs_start_gave_up",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_FGS_START_GAVE_UP,
+                    extras = mapOf(
+                        "courseName" to activeSelection.currentCourse.name,
+                        "stage" to activeSelection.stage,
+                    )
+                )
+                postFallbackNotification(context, activeSelection)
+            } else if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
                 UmengDiagnosticReporter.record(
                     context = context.applicationContext,
@@ -1019,7 +1112,8 @@ object LiveUpdateScheduler {
         BeforeClassQuickActionRestore.restoreIfClassEnded(context)
         applyDueAutoQuickAction(context, snapshot, now)
 
-        val nextSelection = findNextSelection(context, snapshot, now) ?: return false
+        val nextSelection = findNextSelection(context, snapshot, now) ?:
+            return LiveUpdateRescheduleOutcome.IDLE
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_reschedule_scheduled",
@@ -1031,7 +1125,58 @@ object LiveUpdateScheduler {
             )
         )
         scheduleAlarm(context, nextSelection.triggerAtMillis)
-        return false
+        return LiveUpdateRescheduleOutcome.SCHEDULED
+    }
+
+    /** FGS 反复被拒后的兜底：以普通（非前台服务）通知把本课节提醒送达用户。 */
+    private fun postFallbackNotification(context: Context, selection: ScheduledSelection) {
+        try {
+            val manager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                    ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // 与 LiveUpdateService.CHANNEL_ID 同渠道；渠道已存在时本调用为幂等 no-op。
+                manager.createNotificationChannel(
+                    NotificationChannel(
+                        LiveUpdateService.CHANNEL_ID,
+                        context.getString(R.string.notification_channel_live_update_name),
+                        NotificationManager.IMPORTANCE_LOW,
+                    ).apply {
+                        description = context.getString(
+                            R.string.notification_channel_live_update_desc,
+                        )
+                    },
+                )
+            }
+            val contentIntent = PendingIntent.getActivity(
+                context,
+                FALLBACK_NOTIFICATION_REQUEST_CODE,
+                context.packageManager.getLaunchIntentForPackage(context.packageName),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, LiveUpdateService.CHANNEL_ID)
+            } else {
+                Notification.Builder(context)
+            }
+                .setContentTitle(
+                    context.getString(
+                        R.string.notification_course_reminder_title,
+                        selection.currentCourse.name,
+                    ),
+                )
+                .setContentText(context.getString(R.string.notification_fgs_fallback_text))
+                .setSmallIcon(R.drawable.ic_course)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+            manager.notify(
+                FALLBACK_NOTIFICATION_TAG,
+                FALLBACK_NOTIFICATION_ID,
+                builder.build(),
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_POST_FALLBACK_NOTIFICATION_FAILED, e)
+        }
     }
 
     /**

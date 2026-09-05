@@ -40,7 +40,8 @@ import kotlin.math.ceil
 class LiveUpdateService : Service() {
     companion object {
         private const val TAG = "LiveUpdateService"
-        private const val CHANNEL_ID = "live_update_channel"
+        // 供 LiveUpdateScheduler 的降级普通通知复用同一渠道（跨文件需 internal）。
+        internal const val CHANNEL_ID = "live_update_channel"
         private const val NOTIFICATION_ID = 2001
         private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
         private const val PREFS_NAME = "native_runtime_prefs"
@@ -328,7 +329,35 @@ class LiveUpdateService : Service() {
                 return quickActionResult
             }
 
-            startForegroundSafely(intent)
+            try {
+                startForegroundSafely(intent)
+            } catch (e: Exception) {
+                // B 类失败：ContextImpl.startForegroundService 已放行（A 类未触发），
+                // 服务进程已创建，但 startForeground() 执行时前台豁免窗口已失效——
+                // 与 A 类（后台禁止起服务）是两套系统限制，单独留痕，不混入下方
+                // live_update_service_start_failed（那里还混着 payload 解析/通知构建失败）。
+                hasStartedForeground = false
+                markServiceStopped(getString(R.string.stop_service_start_failed))
+                UmengDiagnosticReporter.report(
+                    context = applicationContext,
+                    category = "live_update_service_fgs_start_denied",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_FGS_START_DENIED,
+                    throwable = e,
+                    dedupeKey = "live_update_service_fgs_start_denied",
+                    bypassThrottle = true,
+                    extras = mapOf(
+                        "intentIsNull" to (intent == null),
+                        "hasCourseName" to (!intent?.getStringExtra("courseName").isNullOrBlank()),
+                        "hasStage" to (!intent?.getStringExtra("stage").isNullOrBlank()),
+                    ),
+                )
+                // 无条件自愈：排下一次课节闹钟（B 类时立即重拉大概率再被拒）。
+                // stopSelf 后 onDestroy 在 validateAgainstSchedule=true 时会再调一次
+                // onLiveUpdateStopped，reschedule 幂等（先 cancel 再排），仅多一条事件。
+                LiveUpdateScheduler.onLiveUpdateStopped(applicationContext)
+                stopSelf()
+                return START_NOT_STICKY
+            }
 
             if (!hasCompleteLivePayload(intent)) {
                 UmengDiagnosticReporter.record(
@@ -343,16 +372,25 @@ class LiveUpdateService : Service() {
                         "hasEndAtMillis" to ((intent?.getLongExtra("endAtMillis", 0L) ?: 0L) > 0L),
                     )
                 )
-                val resumed = LiveUpdateScheduler.reschedule(
+                val outcome = LiveUpdateScheduler.rescheduleDetailed(
                     applicationContext,
                     allowImmediateStart = true,
                     stopStaleSessions = true,
                 )
-                if (!resumed) {
-                    stopAndRemoveNotification()
-                    return START_NOT_STICKY
+                return when (outcome) {
+                    // 新负载已送达，或退避重试闹钟已排（重试会补全 payload）：保持服务
+                    LiveUpdateRescheduleOutcome.STARTED,
+                    LiveUpdateRescheduleOutcome.RETRY_PENDING,
+                    LiveUpdateRescheduleOutcome.SUSPENDED,
+                    -> START_STICKY
+                    // 无活跃课节/已排下一课节：岛已无内容可展示，停服自愈
+                    LiveUpdateRescheduleOutcome.SCHEDULED,
+                    LiveUpdateRescheduleOutcome.IDLE,
+                    -> {
+                        stopAndRemoveNotification()
+                        START_NOT_STICKY
+                    }
                 }
-                return START_STICKY
             }
 
             courseName = sanitizeTextExtra(intent?.getStringExtra("courseName"))
@@ -540,25 +578,33 @@ class LiveUpdateService : Service() {
                 "keepAliveAccessibilityEnabled" to keepAliveAccessibilityEnabled,
             )
         )
-        val resumed = LiveUpdateScheduler.reschedule(
+        val outcome = LiveUpdateScheduler.rescheduleDetailed(
             applicationContext,
             allowImmediateStart = true,
             stopStaleSessions = validateAgainstSchedule,
         )
-        if (!resumed) {
-            stopAndRemoveNotification()
-        } else {
-            UmengDiagnosticReporter.record(
-                context = applicationContext,
-                category = "live_update_task_removed_resumed",
-                message = DiagnosticLogMessages.LIVE_UPDATE_TASK_REMOVED_RESUMED,
-                extras = mapOf(
-                    "courseName" to courseName,
-                    "stage" to activityStage,
-                    "keepAliveExperimentEnabled" to keepAliveExperimentEnabled,
-                    "keepAliveAccessibilityEnabled" to keepAliveAccessibilityEnabled,
+        when (outcome) {
+            // 岛保持：新负载已送达（STARTED）或退避重试闹钟已排（RETRY_PENDING）
+            LiveUpdateRescheduleOutcome.STARTED,
+            LiveUpdateRescheduleOutcome.RETRY_PENDING,
+            LiveUpdateRescheduleOutcome.SUSPENDED,
+            -> {
+                UmengDiagnosticReporter.record(
+                    context = applicationContext,
+                    category = "live_update_task_removed_resumed",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_TASK_REMOVED_RESUMED,
+                    extras = mapOf(
+                        "courseName" to courseName,
+                        "stage" to activityStage,
+                        "keepAliveExperimentEnabled" to keepAliveExperimentEnabled,
+                        "keepAliveAccessibilityEnabled" to keepAliveAccessibilityEnabled,
+                    )
                 )
-            )
+            }
+            // 已排下一课节/无后续课节：岛应随任务移除而停止
+            LiveUpdateRescheduleOutcome.SCHEDULED,
+            LiveUpdateRescheduleOutcome.IDLE,
+            -> stopAndRemoveNotification()
         }
         super.onTaskRemoved(rootIntent)
     }
@@ -931,13 +977,16 @@ class LiveUpdateService : Service() {
                 if (validateAgainstSchedule &&
                     !LiveUpdateScheduler.hasActiveLiveSelection(applicationContext, now)
                 ) {
-                    if (!LiveUpdateScheduler.reschedule(
-                            applicationContext,
-                            allowImmediateStart = true,
-                            stopStaleSessions = true,
-                        )
-                    ) {
-                        stopAndRemoveNotification()
+                    when (LiveUpdateScheduler.rescheduleDetailed(
+                        applicationContext,
+                        allowImmediateStart = true,
+                        stopStaleSessions = true,
+                    )) {
+                        LiveUpdateRescheduleOutcome.SCHEDULED,
+                        LiveUpdateRescheduleOutcome.IDLE,
+                        -> stopAndRemoveNotification()
+                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
+                        else -> {}
                     }
                     return
                 }
@@ -945,25 +994,31 @@ class LiveUpdateService : Service() {
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
                 ) {
-                    if (!LiveUpdateScheduler.reschedule(
-                            applicationContext,
-                            allowImmediateStart = true,
-                            stopStaleSessions = validateAgainstSchedule,
-                        )
-                    ) {
-                        stopAndRemoveNotification()
+                    when (LiveUpdateScheduler.rescheduleDetailed(
+                        applicationContext,
+                        allowImmediateStart = true,
+                        stopStaleSessions = validateAgainstSchedule,
+                    )) {
+                        LiveUpdateRescheduleOutcome.SCHEDULED,
+                        LiveUpdateRescheduleOutcome.IDLE,
+                        -> stopAndRemoveNotification()
+                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
+                        else -> {}
                     }
                     return
                 }
 
                 if (stage == null) {
-                    if (!LiveUpdateScheduler.reschedule(
-                            applicationContext,
-                            allowImmediateStart = true,
-                            stopStaleSessions = validateAgainstSchedule,
-                        )
-                    ) {
-                        stopAndRemoveNotification()
+                    when (LiveUpdateScheduler.rescheduleDetailed(
+                        applicationContext,
+                        allowImmediateStart = true,
+                        stopStaleSessions = validateAgainstSchedule,
+                    )) {
+                        LiveUpdateRescheduleOutcome.SCHEDULED,
+                        LiveUpdateRescheduleOutcome.IDLE,
+                        -> stopAndRemoveNotification()
+                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
+                        else -> {}
                     }
                     return
                 }
@@ -972,26 +1027,32 @@ class LiveUpdateService : Service() {
                 // the correct displaySettings for the new stage.
                 if (lastTickerStage != null && stage != lastTickerStage) {
                     lastTickerStage = stage
-                    if (!LiveUpdateScheduler.reschedule(
-                            applicationContext,
-                            allowImmediateStart = true,
-                            stopStaleSessions = validateAgainstSchedule,
-                        )
-                    ) {
-                        stopAndRemoveNotification()
+                    when (LiveUpdateScheduler.rescheduleDetailed(
+                        applicationContext,
+                        allowImmediateStart = true,
+                        stopStaleSessions = validateAgainstSchedule,
+                    )) {
+                        LiveUpdateRescheduleOutcome.SCHEDULED,
+                        LiveUpdateRescheduleOutcome.IDLE,
+                        -> stopAndRemoveNotification()
+                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
+                        else -> {}
                     }
                     return
                 }
                 lastTickerStage = stage
 
                 if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
-                    if (!LiveUpdateScheduler.reschedule(
-                            applicationContext,
-                            allowImmediateStart = true,
-                            stopStaleSessions = validateAgainstSchedule,
-                        )
-                    ) {
-                        stopAndRemoveNotification()
+                    when (LiveUpdateScheduler.rescheduleDetailed(
+                        applicationContext,
+                        allowImmediateStart = true,
+                        stopStaleSessions = validateAgainstSchedule,
+                    )) {
+                        LiveUpdateRescheduleOutcome.SCHEDULED,
+                        LiveUpdateRescheduleOutcome.IDLE,
+                        -> stopAndRemoveNotification()
+                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
+                        else -> {}
                     }
                     return
                 }

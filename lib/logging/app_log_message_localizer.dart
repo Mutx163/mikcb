@@ -332,6 +332,12 @@ abstract final class AppLogMessageLocalizer {
         l10n.logCatLiveUpdateServiceMissingPayload,
       'log_cat_live_update_service_started' =>
         l10n.logCatLiveUpdateServiceStarted,
+      'log_cat_live_update_service_fgs_start_denied' =>
+        l10n.logCatLiveUpdateServiceFgsStartDenied,
+      'log_cat_live_update_fgs_retry_scheduled' =>
+        l10n.logCatLiveUpdateFgsRetryScheduled,
+      'log_cat_live_update_fgs_start_gave_up' =>
+        l10n.logCatLiveUpdateFgsStartGaveUp,
       'log_cat_live_update_service_start_failed' =>
         l10n.logCatLiveUpdateServiceStartFailed,
       'log_cat_live_update_task_removed' => l10n.logCatLiveUpdateTaskRemoved,

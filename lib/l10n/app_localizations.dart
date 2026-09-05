@@ -16560,6 +16560,24 @@ abstract class AppLocalizations {
   /// **'超级岛：服务启动失败'**
   String get logCatLiveUpdateServiceStartFailed;
 
+  /// No description provided for @logCatLiveUpdateServiceFgsStartDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：服务内 startForeground 被拒'**
+  String get logCatLiveUpdateServiceFgsStartDenied;
+
+  /// No description provided for @logCatLiveUpdateFgsRetryScheduled.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：前台服务被拒，已排退避重试'**
+  String get logCatLiveUpdateFgsRetryScheduled;
+
+  /// No description provided for @logCatLiveUpdateFgsStartGaveUp.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：重试耗尽，已降级为普通通知'**
+  String get logCatLiveUpdateFgsStartGaveUp;
+
   /// No description provided for @logCatLiveUpdateTaskRemoved.
   ///
   /// In zh, this message translates to:

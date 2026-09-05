@@ -10,6 +10,16 @@ import java.util.TimeZone
 
 class LiveUpdateSchedulerLogicTest {
     @Test
+    fun fgsRetryBackoffGrowsExponentiallyAndCapsAtFifteenMinutes() {
+        assertEquals(60_000L, liveSchedulerFgsRetryDelayMillis(1))
+        assertEquals(120_000L, liveSchedulerFgsRetryDelayMillis(2))
+        assertEquals(240_000L, liveSchedulerFgsRetryDelayMillis(3))
+        assertEquals(480_000L, liveSchedulerFgsRetryDelayMillis(4))
+        assertEquals(900_000L, liveSchedulerFgsRetryDelayMillis(5))
+        assertEquals(900_000L, liveSchedulerFgsRetryDelayMillis(99))
+    }
+
+    @Test
     fun legacyHolidayFlagActiveOnlyOnMatchingDate() {
         assertFalse(
             liveSchedulerIsLegacyHolidayFlagActive(
