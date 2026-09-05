@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-04T06:24:16+00:00",
+  "updatedAt": "2026-09-05T06:12:12+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 188,
-    "schools": 183,
+    "total": 189,
+    "schools": 184,
     "generic": 5
   },
   "schools": [
@@ -713,6 +713,13 @@
       "name": "临沂大学",
       "initial": "L",
       "resourceFolder": "LYU",
+      "category": "school"
+    },
+    {
+      "id": "LZU",
+      "name": "兰州大学",
+      "initial": "L",
+      "resourceFolder": "LZU",
       "category": "school"
     },
     {
