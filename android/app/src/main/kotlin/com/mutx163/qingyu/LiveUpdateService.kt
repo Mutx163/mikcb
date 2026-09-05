@@ -43,6 +43,9 @@ class LiveUpdateService : Service() {
         // 供 LiveUpdateScheduler 的降级普通通知复用同一渠道（跨文件需 internal）。
         internal const val CHANNEL_ID = "live_update_channel"
         private const val NOTIFICATION_ID = 2001
+        // service_started 是状态迁移事件：仅 停止→运行 或负载变化 时记录。
+        // 同签名去重跨 onStartCommand 复用（一次打开 App 有多个启动入口）。
+        private var lastStartedLogSignature: String? = null
         private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
         private const val PREFS_NAME = "native_runtime_prefs"
         private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
@@ -161,6 +164,8 @@ class LiveUpdateService : Service() {
             isServiceRunning = false
             lastStopReason = reason
             lastDebugUpdatedAtMillis = System.currentTimeMillis()
+            // 停止后同负载再启动应重新记录（状态迁移恢复）。
+            lastStartedLogSignature = null
         }
 
         private fun hasNotificationPermissionCompat(context: Context): Boolean {
@@ -479,14 +484,21 @@ class LiveUpdateService : Service() {
             lastRemainingText = "-1"
             lastProgressUnits = -1
             lastCriticalTimeText = ""
+            val wasRunning = isServiceRunning
             markServiceRunning()
 
-            UmengDiagnosticReporter.record(
-                context = applicationContext,
-                category = "live_update_service_started",
-                message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_STARTED,
-                extras = mapOf(
-                    "courseName" to courseName,
+            // 一次打开 App 有多个启动入口（Flutter startLiveUpdate /
+            // syncSnapshot→reschedule / 测试路径）各自投递 payload，若每次
+            // onStartCommand 都记录，同一动作会被放大 2~4 条（2026-09 日志
+            // 卫生审计）。仅在 停止→运行 或负载变化 时记录。
+            val startedLogSignature = "$courseName|$activityStage|$startAtMillis"
+            if (!wasRunning || startedLogSignature != lastStartedLogSignature) {
+                UmengDiagnosticReporter.record(
+                    context = applicationContext,
+                    category = "live_update_service_started",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_STARTED,
+                    extras = mapOf(
+                        "courseName" to courseName,
                     "stage" to activityStage,
                     "startAtMillis" to startAtMillis,
                     "endAtMillis" to endAtMillis,
@@ -504,8 +516,10 @@ class LiveUpdateService : Service() {
                     "hasMiuiIslandLabelLogoPath" to (!miuiIslandLabelLogoPath.isNullOrBlank()),
                     "miuiIslandLabelLogoCornerRadius" to miuiIslandLabelLogoCornerRadius,
                     "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
+                    ),
                 )
-            )
+                lastStartedLogSignature = startedLogSignature
+            }
 
             val initialText = computeRemainingText(System.currentTimeMillis())
             lastRemainingText = initialText
