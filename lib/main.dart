@@ -1284,6 +1284,8 @@ class _AppRouteLogObserver extends NavigatorObserver {
     if (name != null && name.isNotEmpty) {
       return name;
     }
-    return route.runtimeType.toString();
+    // 无名路由统一记 <unnamed>：runtimeType（HyperosPageRoute<void>）
+    // 对排查没有信息量，只会制造噪音（2026-09 日志卫生审计）。
+    return '<unnamed>';
   }
 }
