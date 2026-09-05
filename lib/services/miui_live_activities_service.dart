@@ -571,6 +571,8 @@ class MiuiLiveActivitiesService {
       await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_settings_synced',
+        // 常规同步不是警告：reportDiagnostic 无 error 时默认 warn，
+        // 显式降为 info（2026-09 日志卫生审计）。
         AppLogMessages.liveUpdateSettingsSynced(
           beforeClass: settings.liveEnableBeforeClass,
           duringClass: settings.liveEnableDuringClass,
@@ -581,6 +583,7 @@ class MiuiLiveActivitiesService {
           courseName: settings.liveShowCourseName,
           location: settings.liveShowLocation,
         ),
+        level: DiagnosticLogLevels.info,
       );
       return true;
     } catch (e, stackTrace) {
