@@ -628,11 +628,23 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   }
 
   Future<void> _showFullColorPalette() async {
+    // 与 _pickDate/_pickTime 同口径：关闭调色盘后焦点恢复会复弹键盘。
+    FocusManager.instance.primaryFocus?.unfocus();
     final result = await showCoursePaletteSheet(
       context,
       initialColorHex: _selectedColor,
       previewText: _titleController.text.trim(),
     );
+    if (!mounted) {
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
 
     if (result == null) {
       return;
@@ -657,12 +669,25 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
   Future<void> _pickDate({required bool isStart}) async {
     final current = isStart ? _selectedStartDate : _selectedEndDate;
+    // 滚轮弹层自身无文本框，先收起键盘；弹层 pop 时路由焦点恢复会把
+    // 先前聚焦的输入框重新顶出输入法，故关闭后再兜底收一次。
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showMiuixDatePickerSheet(
       context,
       initialDate: current,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100, 12, 31),
     );
+    if (!mounted) {
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
     if (picked == null) {
       return;
     }
@@ -688,11 +713,24 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   Future<void> _pickTime({required bool isStart}) async {
     final l10n = AppLocalizations.of(context)!;
     final current = isStart ? _startTime : _endTime;
+    // 同 _pickDate：先收键盘，弹层关闭后再兜底收一次，防止焦点恢复
+    // 把标题/地点等输入框的输入法重新拉起。
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showMiuixTimePickerSheet(
       context,
       initialTime: current,
       title: isStart ? l10n.selectStartTimeTitle : l10n.selectEndTimeTitle,
     );
+    if (!mounted) {
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
     if (picked == null) {
       return;
     }
