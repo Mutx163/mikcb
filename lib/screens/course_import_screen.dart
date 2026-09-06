@@ -3524,9 +3524,14 @@ class _WarehouseAdapterWebLoginScreenState
   @override
   void initState() {
     super.initState();
-    // 本页 WebView 是平台视图：玻璃的背景采集拿不到它的像素（采到黑/透明），
-    // 路由存续期间全局降级玻璃为实色，覆盖其上的全部弹窗、菜单与表单。
-    LiquidGlassDegradation.beginPlatformViewUnsafeSurface();
+    // 可见登录页的 WebView 是平台视图：玻璃的背景采集拿不到它的像素（采到
+    // 黑/透明），路由存续期间全局降级玻璃为实色，覆盖其上的全部弹窗、菜单
+    // 与表单。下拉快捷导入的 runInBackground 实例挂在 Offstage 1×1 里，paint
+    // 整棵跳过、平台视图不进合成帧，玻璃背后仍是纯 Flutter 内容——置位闸门
+    // 只会让首页玻璃白白陪葬降级，故仅可见页置位。
+    if (!widget.runInBackground) {
+      LiquidGlassDegradation.beginPlatformViewUnsafeSurface();
+    }
     _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
@@ -3682,7 +3687,11 @@ class _WarehouseAdapterWebLoginScreenState
     _importTimeoutTimer?.cancel();
     _addressController.dispose();
     _addressFocusNode.dispose();
-    LiquidGlassDegradation.endPlatformViewUnsafeSurface();
+    // 与 initState 的置位对称：runInBackground 实例从未置位，不得复位别人
+    // 的计数（endPlatformViewUnsafeSurface 虽有下限守卫，仍不应虚减）。
+    if (!widget.runInBackground) {
+      LiquidGlassDegradation.endPlatformViewUnsafeSurface();
+    }
     super.dispose();
   }
 
