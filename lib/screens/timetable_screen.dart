@@ -1296,7 +1296,11 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final controller = _dayViewPageController;
-    if (controller == null || !controller.hasClients) {
+    // positions.length != 1 → subtree-replacement frame: position/page reads
+    // would throw until the outgoing PageView detaches at end-of-frame.
+    if (controller == null ||
+        !controller.hasClients ||
+        controller.positions.length != 1) {
       return;
     }
     // A live drag / fling owns the pager: selection commit is deferred to
@@ -1311,7 +1315,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       week,
       _displayedDayForWeek(week),
     );
-    final currentPage = controller.page?.round() ?? controller.initialPage;
+    final currentPage =
+        controllerPageOrNull(controller)?.round() ?? controller.initialPage;
     if (currentPage == targetPage) {
       return;
     }
@@ -1340,19 +1345,20 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
-    final currentPage = controller.page?.round() ?? controller.initialPage;
+    final currentPage =
+        controllerPageOrNull(controller)?.round() ?? controller.initialPage;
     if (currentPage == targetPage) {
       return;
     }
     _isSyncingDayViewPage = true;
     try {
-      if (animate) {
+      if (animate && controller.positions.length == 1) {
         await controller.animateToPage(
           targetPage,
           duration: _weekSlideDuration,
           curve: Curves.easeOutCubic,
         );
-      } else {
+      } else if (controller.positions.length == 1) {
         controller.jumpToPage(targetPage);
       }
     } finally {
@@ -1489,7 +1495,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final controller = _dayViewPageController;
-    if (controller == null || !controller.hasClients) {
+    if (controller == null ||
+        !controller.hasClients ||
+        controller.positions.length != 1) {
       return;
     }
     // A ScrollEnd fires at the end of *every* activity, including the frame
@@ -1505,14 +1513,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       _scheduleDayViewSettleRetry(provider, settings);
       return;
     }
-    final page = controller.page?.round();
+    final page = controllerPageOrNull(controller)?.round();
     if (page == null) {
       return;
     }
     final target = _dayViewTargetForPage(settings, page);
     if (kDebugMode) {
       debugPrint(
-        '[DayPager] settle: rawPage=${controller.page?.toStringAsFixed(3)} '
+        '[DayPager] settle: rawPage=${controllerPageOrNull(controller)?.toStringAsFixed(3)} '
         '-> page=$page week=${target.week} day=${target.dayOfWeek} '
         'alreadySelected=${_selectedWeekForDayView == target.week && _selectedDayOfWeek == target.dayOfWeek}',
       );
@@ -1555,7 +1563,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         return;
       }
       final controller = _dayViewPageController;
-      if (controller == null || !controller.hasClients) {
+      if (controller == null ||
+          !controller.hasClients ||
+          controller.positions.length != 1) {
         return;
       }
       if (controller.position.isScrollingNotifier.value) {
@@ -1581,7 +1591,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final controller = _dayViewPageController;
-    if (controller == null || !controller.hasClients) {
+    if (controller == null ||
+        !controller.hasClients ||
+        controller.positions.length != 1) {
       return;
     }
     _weekdayBarDragScale = _visibleDayNumbers(settings).length.toDouble();
@@ -2312,7 +2324,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (!controller.hasClients) {
         return controller.initialPage.toDouble();
       }
-      return controller.page ?? controller.initialPage.toDouble();
+      return controllerPageOrNull(controller) ??
+          controller.initialPage.toDouble();
     }
 
     return Container(
@@ -2436,9 +2449,9 @@ class _TimetableScreenState extends State<TimetableScreen>
           return AnimatedBuilder(
             animation: controller,
             builder: (context, child) {
-              final rawPage = controller.hasClients
-                  ? (controller.page ?? controller.initialPage.toDouble())
-                  : controller.initialPage.toDouble();
+              final rawPage =
+                  controllerPageOrNull(controller) ??
+                  controller.initialPage.toDouble();
               // Weekday position within the bar's week: the pager is
               // globally continuous, so subtract the week's page offset.
               final rawDayPosition = rawPage - (week - 1) * visibleDays.length;
@@ -7196,7 +7209,12 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     _isSyncingWeekPage = true;
     try {
-      if (animatePage) {
+      if (_weekPageController.positions.length != 1) {
+        // Subtree-replacement frame: the outgoing PageView position is still
+        // attached, so animateTo/jumpTo (positions.single) would throw.
+        // Skip the scroll; the replacement tree already shows the target week.
+        _pendingSettledWeek = targetWeek;
+      } else if (animatePage) {
         await _weekPageController.animateToPage(
           targetWeek - 1,
           duration: (targetWeek - _visibleWeek).abs() == 1
@@ -7204,11 +7222,12 @@ class _TimetableScreenState extends State<TimetableScreen>
               : const Duration(milliseconds: 360),
           curve: Curves.easeOutCubic,
         );
+        _pendingSettledWeek = targetWeek;
       } else {
         // Day-view boundary swipes already provide the horizontal motion.
         _weekPageController.jumpToPage(targetWeek - 1);
+        _pendingSettledWeek = targetWeek;
       }
-      _pendingSettledWeek = targetWeek;
     } finally {
       _isSyncingWeekPage = false;
     }
@@ -7290,7 +7309,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         });
       }
 
-      if (!_weekPageController.hasClients) {
+      if (_weekPageController.positions.length != 1) {
+        // Subtree-replacement frame: jumpToPage (positions.single) would
+        // throw while the outgoing PageView position is still attached.
         return;
       }
       final currentPage =
@@ -7306,11 +7327,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   int _resolveSettledWeek(TimetableProvider provider, {int? fallbackWeek}) {
     final maxWeek = provider.settings.semesterWeekCount;
-    if (_weekPageController.hasClients) {
-      final page = _weekPageController.page;
-      if (page != null) {
-        return _clampWeek(page.round() + 1, maxWeek);
-      }
+    final page = controllerPageOrNull(_weekPageController);
+    if (page != null) {
+      return _clampWeek(page.round() + 1, maxWeek);
     }
     if (_lastObservedWeekPage != null) {
       return _clampWeek(_lastObservedWeekPage! + 1, maxWeek);

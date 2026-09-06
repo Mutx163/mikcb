@@ -437,4 +437,92 @@ void main() {
       },
     );
   });
+
+  group('controllerPageOrNull', () {
+    const pagerChildren = [Text('a'), Text('b'), Text('c')];
+
+    testWidgets('reads the live page with a single attached PageView', (
+      tester,
+    ) async {
+      final controller = PageController(initialPage: 1);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SizedBox(
+            height: 200,
+            child: PageView(controller: controller, children: pagerChildren),
+          ),
+        ),
+      );
+      expect(controllerPageOrNull(controller), 1.0);
+      controller.dispose();
+    });
+
+    test('returns null before any PageView attached', () {
+      final controller = PageController(initialPage: 3);
+      expect(controllerPageOrNull(controller), isNull);
+    });
+
+    testWidgets(
+      'returns null in the subtree-replacement double-attach frame instead of asserting',
+      (tester) async {
+        // Setting a wallpaper flips hasBackdrop / useHomePreblur gates, which
+        // wrap or rebuild the home stack around the week pager. The outgoing
+        // PageView element deactivates immediately but its scroll position
+        // only detaches at end-of-frame unmount (ScrollableState.dispose),
+        // so the fresh PageView attaches while the stale one is still
+        // attached: positions.length == 2 for that whole frame. This mirrors
+        // that window by swapping in a two-pager tree and probing mid-build.
+        final controller = PageController(initialPage: 1);
+        Widget singlePager() => SizedBox(
+          height: 200,
+          child: PageView(controller: controller, children: pagerChildren),
+        );
+
+        await tester.pumpWidget(MaterialApp(home: singlePager()));
+        expect(controllerPageOrNull(controller), 1.0);
+
+        Object? directPageError;
+        double? pageViaHelper;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Column(
+              children: [
+                SizedBox(
+                  height: 200,
+                  child: PageView(
+                    controller: controller,
+                    children: pagerChildren,
+                  ),
+                ),
+                // Built after the fresh PageView attached, so this reads in
+                // the same double-attach frame the wallpaper layers hit.
+                Builder(
+                  builder: (context) {
+                    try {
+                      controller.page;
+                    } catch (error) {
+                      directPageError = error;
+                    }
+                    pageViaHelper = controllerPageOrNull(controller);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // The legacy read asserts in this frame — the reported wallpaper
+        // crash. The tolerant read returns null so callers can fall back to
+        // the controller's initialPage for the one transitional frame.
+        expect(directPageError, isA<AssertionError>());
+        expect(pageViaHelper, isNull);
+
+        // After the frame finalizes, the outgoing position detaches and the
+        // surviving pager's page reads normally again.
+        expect(controllerPageOrNull(controller), 1.0);
+        controller.dispose();
+      },
+    );
+  });
 }

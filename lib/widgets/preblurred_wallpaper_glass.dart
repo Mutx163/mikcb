@@ -874,9 +874,8 @@ class _RenderPreblurredFill extends RenderBox {
     if (controller == null || index == null) {
       return 0;
     }
-    final page = controller.hasClients
-        ? (controller.page ?? controller.initialPage.toDouble())
-        : controller.initialPage.toDouble();
+    final page =
+        controllerPageOrNull(controller) ?? controller.initialPage.toDouble();
     return (index - page) * _screenSize.width;
   }
 

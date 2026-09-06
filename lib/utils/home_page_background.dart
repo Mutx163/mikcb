@@ -320,6 +320,23 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
 /// so the continuous glass band meets the weekday bar without a 1鈥?px seam.
 const homePageHeaderContentHeight = 46.0;
 
+/// The pager's live page, or null when it cannot be read safely.
+///
+/// Wallpaper toggles (first wallpaper set, follow-the-pager switch, blur
+/// gates) swap conditional Stack children and can wrap the whole home stack
+/// in [PreblurredWallpaperScope], rebuilding the week pager in place. The old
+/// PageView element is deactivated immediately but its scroll position only
+/// detaches at end-of-frame unmount, so the fresh PageView attaches while the
+/// stale one is still attached — `positions.length == 2` for that one frame.
+/// [PageController.page] asserts in that window; callers fall back to
+/// [PageController.initialPage] until the replacement tree settles.
+double? controllerPageOrNull(PageController controller) {
+  if (!controller.hasClients || controller.positions.length != 1) {
+    return null;
+  }
+  return controller.page;
+}
+
 /// Full-screen wallpaper strip driven by a week [PageController].
 ///
 /// Each page paints the same cover image at full-screen size. Translating the
@@ -353,9 +370,9 @@ class HomePageSlidingBackdropLayer extends StatelessWidget {
           if (!pageWidth.isFinite || pageWidth <= 0) {
             return const SizedBox.shrink();
           }
-          final rawPage = controller.hasClients
-              ? (controller.page ?? controller.initialPage.toDouble())
-              : controller.initialPage.toDouble();
+          final rawPage =
+              controllerPageOrNull(controller) ??
+              controller.initialPage.toDouble();
           final first = math.max(0, rawPage.floor() - 1);
           final last = math.min(pageCount - 1, rawPage.ceil() + 1);
           return Stack(
