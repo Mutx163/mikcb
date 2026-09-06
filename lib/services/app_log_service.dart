@@ -34,6 +34,8 @@ class AppLogService {
   static const String _logTitleKey = AppLogMessages.logExportTitle;
 
   bool _initialized = false;
+  // 并发初始化去重：所有触发方共享同一个初始化 Future（见 initialize 注释）。
+  Future<void>? _initFuture;
   bool _privacyAccepted = false;
   bool _loggingEnabled = false;
   // 连续写失败计数：日志写失败本身被本类的 catch 吞掉（日志不能破坏
@@ -46,14 +48,15 @@ class AppLogService {
   final StreamController<void> _logChangeController =
       StreamController<void>.broadcast();
 
-  Future<void> initialize() async {
-    if (_initialized) {
-      return;
-    }
-    // 同步置位防并发重入：启动期多个 info() 调用会各自触发 initialize，
-    // 若等 await 完成后再置位，同一冷启动会记出多条 app_logger_initialized
-    // （2026-09 日志卫生审计：一次冷启动 ×3）。
-    _initialized = true;
+  Future<void> initialize() {
+    // 并发触发共享同一 Future：既消除重复的 app_logger_initialized（2026-09
+    // 日志卫生审计：一次冷启动 ×3），又让窗口期并发日志等待初始化完成后按
+    // 已加载的开关判定。此前的「同步置位 _initialized」方案虽能去重，但会让
+    // 窗口期日志在开关加载前就被 _shouldRecord 静默丢弃，故改为共享 Future。
+    return _initFuture ??= _doInitialize();
+  }
+
+  Future<void> _doInitialize() async {
     // 初始化必须吞掉自身异常：log()/warn() 在未初始化时会先走这里，而调用方
     // 常以 unawaited 方式触发（如 HomeWidgetBindingService 的失败留痕）。测试
     // 环境无 shared_preferences/path_provider 插件时 getInstance 会抛
@@ -73,6 +76,9 @@ class AppLogService {
     } catch (_) {
       _packageInfo = null;
     }
+    // 必须在自证事件之前置位：debug() 也会走 log()，此刻若仍视为未初始化，
+    // 会递归等待自身 _initFuture 死锁；置位后窗口期日志按已加载开关直接判定。
+    _initialized = true;
     if (_loggingEnabled) {
       // 工程自证事件，debug 档即可：每个 engine 初始化各记一条，不该占 info。
       await debug(
@@ -394,6 +400,7 @@ class AppLogService {
   @visibleForTesting
   void resetForTesting() {
     _initialized = false;
+    _initFuture = null;
     _privacyAccepted = false;
     _loggingEnabled = false;
     _packageInfo = null;
