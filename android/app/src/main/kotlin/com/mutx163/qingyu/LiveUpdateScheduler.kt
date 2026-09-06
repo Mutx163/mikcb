@@ -998,6 +998,7 @@ object LiveUpdateScheduler {
             if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
             }
+            resetFgsRetryCountIfNoActiveClass(context)
             return LiveUpdateRescheduleOutcome.IDLE
         }
         if (stopStaleSessions && snapshot.semesterStartMillis == null) {
@@ -1007,6 +1008,7 @@ object LiveUpdateScheduler {
                 category = "live_update_semester_start_missing",
                 message = DiagnosticLogMessages.LIVE_UPDATE_SEMESTER_START_MISSING,
             )
+            resetFgsRetryCountIfNoActiveClass(context)
             return LiveUpdateRescheduleOutcome.IDLE
         }
         // Check if today is a holiday (uses both legacy isHoliday flag and full date list)
@@ -1022,10 +1024,16 @@ object LiveUpdateScheduler {
                 category = "live_update_reschedule_holiday",
                 message = DiagnosticLogMessages.LIVE_UPDATE_RESCHEDULE_HOLIDAY,
             )
+            resetFgsRetryCountIfNoActiveClass(context)
             return LiveUpdateRescheduleOutcome.IDLE
         }
         val now = System.currentTimeMillis()
         val activeSelection = findActiveSelection(context, snapshot, now)
+        if (activeSelection == null) {
+            // 课节已结束/未开始：本课节的退避计数失去意义，复位，避免残留计数
+            // 让下一课节继承缩短的重试预算、甚至首次被拒即放弃（2026-09 审计修复）。
+            resetFgsRetryCountIfNoActiveClass(context)
+        }
         if (allowImmediateStart) {
             if (activeSelection != null) {
                 UmengDiagnosticReporter.record(
@@ -1126,6 +1134,15 @@ object LiveUpdateScheduler {
         )
         scheduleAlarm(context, nextSelection.triggerAtMillis)
         return LiveUpdateRescheduleOutcome.SCHEDULED
+    }
+
+    /** 课节已不存在时清除残留的 FGS 退避计数：计数是每课节语义，跨课节残留
+     *  会让下一课节继承缩短的重试预算、甚至首次被拒即放弃；已为 0 时不写盘。 */
+    private fun resetFgsRetryCountIfNoActiveClass(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (prefs.getInt(KEY_FGS_RETRY_COUNT, 0) != 0) {
+            prefs.edit().putInt(KEY_FGS_RETRY_COUNT, 0).apply()
+        }
     }
 
     /** FGS 反复被拒后的兜底：以普通（非前台服务）通知把本课节提醒送达用户。 */
