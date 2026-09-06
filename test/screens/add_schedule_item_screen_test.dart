@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -77,5 +78,39 @@ void main() {
     expect(find.text('开学日期'), findsNothing);
 
     expect(focusedEditables(tester), isEmpty);
+  });
+
+  testWidgets('编辑跨天日程时提示条写明连续区间首尾时刻', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final provider = await createInitializedTestProvider(tester);
+
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day + 5);
+    final end = DateTime(today.year, today.month, today.day + 8);
+    final item = ScheduleItem(
+      id: 'cross-day-edit',
+      title: '军训',
+      startDate: start,
+      endDate: end,
+      startTime: '08:00',
+      endTime: '18:00',
+      createdAt: today,
+      updatedAt: today,
+    );
+
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: AddScheduleItemScreen(scheduleItem: item),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('连续进行到'), findsOneWidget);
+    expect(find.textContaining('把重复改为「每天」'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/schedule_item.dart';
@@ -123,6 +124,47 @@ void main() {
     const weekdayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     expect(
       find.text('每周${weekdayLabels[today.weekday - 1]}'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('跨天日程时间行带首尾日期，消除「每天同时段」歧义', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final provider = await createInitializedTestProvider(tester);
+
+    final today = ScheduleItem.dateOnly(DateTime.now());
+    final start = today.add(const Duration(days: 5));
+    final end = today.add(const Duration(days: 8));
+    await runRealAsync(tester, () async {
+      await provider.addScheduleItem(
+        _item(
+          id: 'list-cross-day',
+          title: '军训',
+          startDate: start,
+          endDate: end,
+          startTime: '08:00',
+          endTime: '18:00',
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const ScheduleListScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final dayFormat = DateFormat.MMMd('zh');
+    expect(
+      find.text(
+        '${dayFormat.format(start)} 08:00 – ${dayFormat.format(end)} 18:00',
+      ),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

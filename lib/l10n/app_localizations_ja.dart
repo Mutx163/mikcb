@@ -5802,7 +5802,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleSingleDayHint => '同日終了の場合、終了時間は開始時間より後である必要があります';
 
   @override
-  String get scheduleCrossDayHint => '日跨ぎスケジュールは当日のスライスで日別ビューに表示';
+  String scheduleCrossDaySpanHint(Object start, Object end) {
+    return '$start から $end まで連続で実行され、日別ビューでは当日ごとにスライス表示されます。毎日同じ時間帯にするには「毎日」の繰り返しを利用してください。';
+  }
 
   @override
   String get scheduleSavedHint => 'スケジュール追加済み';

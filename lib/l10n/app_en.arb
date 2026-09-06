@@ -3312,7 +3312,7 @@
   "scheduleTimeRangeInvalid": "End time must be later than the start time",
   "scheduleDateRangeInvalid": "End date cannot be earlier than the start date",
   "scheduleSingleDayHint": "For same-day schedules, the end time must be later than the start time",
-  "scheduleCrossDayHint": "Cross-day schedules are sliced into the corresponding day view automatically",
+  "scheduleCrossDaySpanHint": "Runs continuously from {start} to {end} and is sliced into each day in the day view. For the same time slot every day, use the Daily repeat instead.",
   "scheduleSavedHint": "Schedule added",
   "scheduleUpdatedHint": "Schedule updated",
   "crossDayBadgeLabel": "Cross-day",

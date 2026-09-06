@@ -3326,7 +3326,13 @@
   "scheduleTimeRangeInvalid": "结束时间必须晚于开始时间",
   "scheduleDateRangeInvalid": "结束日期不能早于开始日期",
   "scheduleSingleDayHint": "同日结束时，结束时间必须晚于开始时间",
-  "scheduleCrossDayHint": "跨日日程会按当天切片显示在日视图里",
+    "scheduleCrossDaySpanHint": "从 {start} 连续进行到 {end}，日视图会按当天切片显示；想要每天同时段，请把重复改为「每天」。",
+  "@scheduleCrossDaySpanHint": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
   "scheduleSavedHint": "日程已添加",
   "scheduleUpdatedHint": "日程已更新",
   "crossDayBadgeLabel": "跨日",

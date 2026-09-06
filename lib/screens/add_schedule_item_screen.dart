@@ -374,7 +374,12 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              l10n.scheduleCrossDayHint,
+              l10n.scheduleCrossDaySpanHint(
+                '${_formatCompactDateLabel(context, _selectedStartDate)} '
+                '${_formatTimeLabel(context, _startTime)}',
+                '${_formatCompactDateLabel(context, _selectedEndDate)} '
+                '${_formatTimeLabel(context, _endTime)}',
+              ),
               style: theme.typography.body.xs.copyWith(
                 color: theme.colors.mutedForeground,
                 fontWeight: FontWeight.w600,

@@ -3122,7 +3122,7 @@
   "scheduleTimeRangeInvalid": "終了時間は開始時間より後である必要があります",
   "scheduleDateRangeInvalid": "終了日は開始日より前にすることはできません",
   "scheduleSingleDayHint": "同日終了の場合、終了時間は開始時間より後である必要があります",
-  "scheduleCrossDayHint": "日跨ぎスケジュールは当日のスライスで日別ビューに表示",
+  "scheduleCrossDaySpanHint": "{start} から {end} まで連続で実行され、日別ビューでは当日ごとにスライス表示されます。毎日同じ時間帯にするには「毎日」の繰り返しを利用してください。",
   "scheduleSavedHint": "スケジュール追加済み",
   "scheduleUpdatedHint": "スケジュール更新済み",
   "crossDayBadgeLabel": "日跨ぎ",

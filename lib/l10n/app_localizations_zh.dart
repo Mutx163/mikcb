@@ -5701,7 +5701,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleSingleDayHint => '同日结束时，结束时间必须晚于开始时间';
 
   @override
-  String get scheduleCrossDayHint => '跨日日程会按当天切片显示在日视图里';
+  String scheduleCrossDaySpanHint(Object start, Object end) {
+    return '从 $start 连续进行到 $end，日视图会按当天切片显示；想要每天同时段，请把重复改为「每天」。';
+  }
 
   @override
   String get scheduleSavedHint => '日程已添加';
@@ -16145,7 +16147,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleSingleDayHint => '同日結束時，結束時間必須晚於開始時間';
 
   @override
-  String get scheduleCrossDayHint => '跨日日程會按當天切片顯示在日視圖時間線裡';
+  String scheduleCrossDaySpanHint(Object start, Object end) {
+    return '從 $start 連續進行到 $end，日視圖會按當天切片顯示；想要每天同時段，請把重複改為「每天」。';
+  }
 
   @override
   String get scheduleSavedHint => '日程已新增';
@@ -26633,7 +26637,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleSingleDayHint => '同日結束時，結束時間必須晚於開始時間';
 
   @override
-  String get scheduleCrossDayHint => '跨日日程會按當天切片顯示在日視圖時間軸裡';
+  String scheduleCrossDaySpanHint(Object start, Object end) {
+    return '從 $start 連續進行到 $end，日視圖會按當天切片顯示；想要每天同時段，請把重複改為「每天」。';
+  }
 
   @override
   String get scheduleSavedHint => '日程已新增';

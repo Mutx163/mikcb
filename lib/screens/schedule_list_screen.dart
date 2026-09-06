@@ -238,7 +238,7 @@ class _ScheduleListRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   _ScheduleMetaLine(
                     icon: Icons.schedule_rounded,
-                    text: l10n.scheduleTimeRange(item.startTime, item.endTime),
+                    text: _timeLabel(l10n, item),
                     color: mutedPrimary,
                     emphasis: !dimmed,
                   ),
@@ -300,6 +300,25 @@ class _ScheduleListRow extends StatelessWidget {
       ),
       ScheduleRecurrence.none => null,
     };
+  }
+
+  /// 时间行：同日日程「09:00 – 10:00」；跨天单次日程时刻各自带日期
+  /// （「9月11日 08:00 – 9月14日 18:00」），否则一对时刻读起来像
+  /// 「每天 08:00–18:00」，与连续区间语义相悖（用户反馈歧义）。
+  String _timeLabel(AppLocalizations l10n, ScheduleItem item) {
+    final isCrossDay =
+        !item.isRecurring &&
+        ScheduleItem.dateOnly(item.endDate).isAfter(
+          ScheduleItem.dateOnly(item.startDate),
+        );
+    if (!isCrossDay) {
+      return l10n.scheduleTimeRange(item.startTime, item.endTime);
+    }
+    final formatter = DateFormat.MMMd(l10n.localeName);
+    return l10n.scheduleTimeRange(
+      '${formatter.format(item.startDate)} ${item.startTime}',
+      '${formatter.format(item.endDate)} ${item.endTime}',
+    );
   }
 
   String _dateLabel(AppLocalizations l10n, ScheduleListEntry entry) {

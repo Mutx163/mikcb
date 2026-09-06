@@ -6046,8 +6046,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'For same-day schedules, the end time must be later than the start time';
 
   @override
-  String get scheduleCrossDayHint =>
-      'Cross-day schedules are sliced into the corresponding day view automatically';
+  String scheduleCrossDaySpanHint(Object start, Object end) {
+    return 'Runs continuously from $start to $end and is sliced into each day in the day view. For the same time slot every day, use the Daily repeat instead.';
+  }
 
   @override
   String get scheduleSavedHint => 'Schedule added';

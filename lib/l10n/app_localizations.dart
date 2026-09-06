@@ -10391,11 +10391,11 @@ abstract class AppLocalizations {
   /// **'同日结束时，结束时间必须晚于开始时间'**
   String get scheduleSingleDayHint;
 
-  /// No description provided for @scheduleCrossDayHint.
+  /// No description provided for @scheduleCrossDaySpanHint.
   ///
   /// In zh, this message translates to:
-  /// **'跨日日程会按当天切片显示在日视图里'**
-  String get scheduleCrossDayHint;
+  /// **'从 {start} 连续进行到 {end}，日视图会按当天切片显示；想要每天同时段，请把重复改为「每天」。'**
+  String scheduleCrossDaySpanHint(Object start, Object end);
 
   /// No description provided for @scheduleSavedHint.
   ///

@@ -5834,7 +5834,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleSingleDayHint => '같은 날 종료 시 종료 시간은 시작 시간보다 나중이어야 합니다';
 
   @override
-  String get scheduleCrossDayHint => '날짜 초과 일정은 당일 슬라이스로 일간 뷰에 표시됩니다';
+  String scheduleCrossDaySpanHint(Object start, Object end) {
+    return '$start부터 $end까지 연속으로 진행되며, 일간 뷰에서는 당일 단위로 표시됩니다. 매일 같은 시간대를 원하면 \'매일\' 반복을 사용하세요.';
+  }
 
   @override
   String get scheduleSavedHint => '일정이 추가되었습니다';
