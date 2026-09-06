@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-05T06:12:12+00:00",
+  "updatedAt": "2026-09-06T06:24:34+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 189,
-    "schools": 184,
+    "total": 190,
+    "schools": 185,
     "generic": 5
   },
   "schools": [
@@ -244,6 +244,13 @@
       "name": "大连海事大学",
       "initial": "D",
       "resourceFolder": "DLMU",
+      "category": "school"
+    },
+    {
+      "id": "DZU",
+      "name": "德州学院",
+      "initial": "D",
+      "resourceFolder": "DZU",
       "category": "school"
     },
     {
