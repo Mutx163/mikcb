@@ -558,6 +558,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncKeepLocalAction => '保留本机';
 
   @override
+  String get cloudSyncConflictFirstSyncTitle => '本机与云端数据不一致';
+
+  @override
+  String get cloudSyncConflictFirstSyncBody =>
+      '云端已有数据，与本机不一致。选「保留本机」会上传本机数据覆盖云端；选「使用云端」会下载云端数据替换本机。';
+
+  @override
+  String get cloudSyncKeepLocalBackupAction => '以本机为准备份';
+
+  @override
   String get cloudSyncAccountSectionTitle => '云账号';
 
   @override
@@ -11003,6 +11013,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncKeepLocalAction => '保留本機';
+
+  @override
+  String get cloudSyncConflictFirstSyncTitle => '本機與雲端資料不一致';
+
+  @override
+  String get cloudSyncConflictFirstSyncBody =>
+      '雲端已有資料，與本機不一致。選「保留本機」會上傳本機資料覆蓋雲端；選「使用雲端」會下載雲端資料替換本機。';
+
+  @override
+  String get cloudSyncKeepLocalBackupAction => '以本機為準備份';
 
   @override
   String get cloudSyncAccountSectionTitle => '雲端帳號';
@@ -21493,6 +21513,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncKeepLocalAction => '保留本機';
+
+  @override
+  String get cloudSyncConflictFirstSyncTitle => '本機與雲端資料不一致';
+
+  @override
+  String get cloudSyncConflictFirstSyncBody =>
+      '雲端已有資料，與本機不一致。選「保留本機」會上傳本機資料覆蓋雲端；選「使用雲端」會下載雲端資料替換本機。';
+
+  @override
+  String get cloudSyncKeepLocalBackupAction => '以本機為準備份';
 
   @override
   String get cloudSyncAccountSectionTitle => '雲端帳號';

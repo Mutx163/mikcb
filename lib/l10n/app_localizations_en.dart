@@ -594,6 +594,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncKeepLocalAction => 'Keep local';
 
   @override
+  String get cloudSyncConflictFirstSyncTitle => 'Device and cloud data differ';
+
+  @override
+  String get cloudSyncConflictFirstSyncBody =>
+      'The cloud already contains data that differs from this device. Keep local uploads this device\'s data and overwrites the cloud; Use cloud downloads the cloud data and replaces this device.';
+
+  @override
+  String get cloudSyncKeepLocalBackupAction => 'Back up local data';
+
+  @override
   String get cloudSyncAccountSectionTitle => 'Cloud account';
 
   @override

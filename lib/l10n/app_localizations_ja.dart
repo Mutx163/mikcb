@@ -571,6 +571,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncKeepLocalAction => 'ローカルを保持';
 
   @override
+  String get cloudSyncConflictFirstSyncTitle => '端末とクラウドのデータが一致しません';
+
+  @override
+  String get cloudSyncConflictFirstSyncBody =>
+      'クラウドには端末と異なるデータが既にあります。「ローカルを保持」は端末のデータをアップロードしてクラウドを上書きし、「クラウドを使用」はクラウドのデータをダウンロードして端末を置き換えます。';
+
+  @override
+  String get cloudSyncKeepLocalBackupAction => 'ローカル優先でバックアップ';
+
+  @override
   String get cloudSyncAccountSectionTitle => 'クラウドアカウント';
 
   @override

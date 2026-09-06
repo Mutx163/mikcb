@@ -1131,12 +1131,32 @@ class SyncConflictInfo {
   final String localHash;
   final String remoteHash;
 
+  /// 首次同步分歧（基线哈希双空）触发的冲突。此场景本地谈不上「新的修改」，
+  /// UI 需换用解释性文案，避免新用户误以为同步出错。
+  final bool isFirstSyncDivergence;
+
+  /// 本机快照是否含用户亲手沉淀的数据。
+  final bool localHasUserData;
+
   const SyncConflictInfo({
     required this.localExportedAt,
     required this.remoteExportedAt,
     required this.localHash,
     required this.remoteHash,
+    this.isFirstSyncDivergence = false,
+    this.localHasUserData = false,
   });
+}
+
+/// 手动拉取遇到冲突时的预决策：返回 null 表示交由冲突弹窗让用户选边。
+///
+/// 与 [webdavBackgroundPullShouldCancel] 的口径对齐：本机没有用户亲手沉淀的
+/// 数据时没有需要保护的本地内容（典型：全新设备首次同步），无论首次分歧
+/// 还是常规分歧都直接以云端为准，不为空壳快照弹「选边」对话框。
+SyncConflictChoice? resolveManualPullConflictChoice({
+  required bool localHasUserData,
+}) {
+  return localHasUserData ? null : SyncConflictChoice.keepRemote;
 }
 
 SyncConflictChoice resolveSyncConflictAutomatically(SyncConflictInfo info) {

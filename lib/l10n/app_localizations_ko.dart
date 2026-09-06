@@ -568,6 +568,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncKeepLocalAction => '로컬 유지';
 
   @override
+  String get cloudSyncConflictFirstSyncTitle => '기기와 클라우드 데이터가 일치하지 않습니다';
+
+  @override
+  String get cloudSyncConflictFirstSyncBody =>
+      '클라우드에 이미 기기와 다른 데이터가 있습니다. 로컬 유지를 선택하면 기기 데이터를 업로드해 클라우드를 덮어쓰고, 클라우드 사용을 선택하면 클라우드 데이터를 내려받아 기기를 대체합니다.';
+
+  @override
+  String get cloudSyncKeepLocalBackupAction => '로컬 기준 백업';
+
+  @override
   String get cloudSyncAccountSectionTitle => '클라우드 계정';
 
   @override

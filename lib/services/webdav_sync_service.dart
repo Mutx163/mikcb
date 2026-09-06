@@ -921,15 +921,31 @@ class WebdavSyncService {
             message: 'local_changes_pending_sync',
           );
         }
+        // 基线双空时冲突函数只可能由首次同步分歧触发（两侧变更分支都要求
+        // 对应基线非空），据此给 UI 区分「首次分歧」与「常规冲突」文案。
+        final isFirstSyncDivergence =
+            config.lastUploadedLocalHash == null &&
+            config.lastAppliedRemoteHash == null;
         final conflict = SyncConflictInfo(
           localExportedAt: localSnapshot.exportedAt,
           remoteExportedAt: remoteMeta.exportedAt,
           localHash: localSnapshot.contentSha256,
           remoteHash: remoteMeta.contentSha256,
+          isFirstSyncDivergence: isFirstSyncDivergence,
+          localHasUserData: localSnapshot.hasUserAuthoredData,
         );
-        final choice = allowConflictPrompt && conflictHandler != null
-            ? await conflictHandler!(conflict)
-            : resolveSyncConflictForBackground(conflict);
+        final SyncConflictChoice? choice;
+        if (allowConflictPrompt && conflictHandler != null) {
+          // 手动路径同样不为空壳本机弹「选边」窗：没有可保护的本地内容，
+          // 与后台拉取口径一致，直接以云端为准。
+          choice =
+              resolveManualPullConflictChoice(
+                localHasUserData: localSnapshot.hasUserAuthoredData,
+              ) ??
+              await conflictHandler!(conflict);
+        } else {
+          choice = resolveSyncConflictForBackground(conflict);
+        }
         switch (choice) {
           case SyncConflictChoice.keepLocal:
             return uploadSnapshot(provider: provider, configOverride: config);

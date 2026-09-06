@@ -1136,6 +1136,24 @@ abstract class AppLocalizations {
   /// **'保留本机'**
   String get cloudSyncKeepLocalAction;
 
+  /// No description provided for @cloudSyncConflictFirstSyncTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机与云端数据不一致'**
+  String get cloudSyncConflictFirstSyncTitle;
+
+  /// No description provided for @cloudSyncConflictFirstSyncBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'云端已有数据，与本机不一致。选「保留本机」会上传本机数据覆盖云端；选「使用云端」会下载云端数据替换本机。'**
+  String get cloudSyncConflictFirstSyncBody;
+
+  /// No description provided for @cloudSyncKeepLocalBackupAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'以本机为准备份'**
+  String get cloudSyncKeepLocalBackupAction;
+
   /// No description provided for @cloudSyncAccountSectionTitle.
   ///
   /// In zh, this message translates to:

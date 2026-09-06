@@ -152,10 +152,16 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       return SyncConflictChoice.cancel;
     }
     final l10n = AppLocalizations.of(context)!;
+    // 首次同步分歧时本地谈不上「新的修改」，常规冲突文案会误导用户，
+    // 换成解释云端现状与两个动作后果的版本。
     final choice = await showHyperosDialog<SyncConflictChoice>(
       context: context,
-      title: l10n.cloudSyncConflictTitle,
-      message: l10n.cloudSyncConflictBody,
+      title: info.isFirstSyncDivergence
+          ? l10n.cloudSyncConflictFirstSyncTitle
+          : l10n.cloudSyncConflictTitle,
+      message: info.isFirstSyncDivergence
+          ? l10n.cloudSyncConflictFirstSyncBody
+          : l10n.cloudSyncConflictBody,
       actions: [
         HyperosDialogAction(
           label: l10n.cancelAction,
@@ -455,11 +461,22 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         return;
       }
       final l10n = AppLocalizations.of(context)!;
+      if (result.kind == WebdavSyncResultKind.cancelled) {
+        // 手动同步的取消只可能来自冲突弹窗放弃选边：补一条「以本机为准」
+        // 的直达出路，避免用户反复取消后误以为同步坏了还得自己试出备份绕路。
+        showAppToastWithAction(
+          context,
+          message: l10n.cloudSyncResultCancelled,
+          actionLabel: l10n.cloudSyncKeepLocalBackupAction,
+          kind: AppToastKind.success,
+          onAction: () => unawaited(_createManualBackup()),
+        );
+        return;
+      }
       final message = switch (result.kind) {
         WebdavSyncResultKind.uploaded => l10n.cloudSyncResultUploaded,
         WebdavSyncResultKind.downloaded => l10n.cloudSyncResultDownloaded,
         WebdavSyncResultKind.upToDate => l10n.cloudSyncResultUpToDate,
-        WebdavSyncResultKind.cancelled => l10n.cloudSyncResultCancelled,
         WebdavSyncResultKind.failed => l10n.cloudSyncResultFailed(
           CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
         ),

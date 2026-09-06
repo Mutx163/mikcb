@@ -221,6 +221,28 @@ void main() {
     );
   });
 
+  test('manual pull conflict keeps remote without prompt when local is empty', () {
+    expect(
+      resolveManualPullConflictChoice(localHasUserData: false),
+      SyncConflictChoice.keepRemote,
+    );
+  });
+
+  test('manual pull conflict defers to prompt when local has user data', () {
+    expect(resolveManualPullConflictChoice(localHasUserData: true), isNull);
+  });
+
+  test('sync conflict info flags default to regular conflict', () {
+    final info = SyncConflictInfo(
+      localExportedAt: DateTime.utc(2026, 7, 5, 13),
+      remoteExportedAt: DateTime.utc(2026, 7, 5, 12),
+      localHash: 'local',
+      remoteHash: 'remote',
+    );
+    expect(info.isFirstSyncDivergence, isFalse);
+    expect(info.localHasUserData, isFalse);
+  });
+
   test('backup index recovery aborts when index and listing both fail', () {
     final action = decideWebdavBackupIndexRecovery(
       indexResult: const WebdavGetBytesResult.failed('index_timeout'),
