@@ -627,35 +627,46 @@ class _AddExamScreenState extends State<AddExamScreen> {
     );
   }
 
+  /// 弹层前收起键盘：viewInsets 会把弹层可用高度压到小于内容导致整列
+  /// 溢出；弹层 pop 时路由焦点恢复会复弹输入法，关闭后再兜底收一次
+  /// （与日程表单页 _pickDate/_pickTime 同口径）。
+  Future<T?> _pickWithKeyboardDismiss<T>(Future<T?> Function() show) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final picked = await show();
+    if (!mounted) {
+      return null;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+    return picked;
+  }
+
   Future<void> _pickDate(BuildContext context) async {
     final provider = context.read<TimetableProvider>();
     final semesterStart = provider.semesterStartDate;
     final settings = provider.settings;
 
-    if (semesterStart == null) {
-      // 没有设置开学日期，回退到标准日历选择器
-      final picked = await showMiuixDatePickerSheet(
-        context,
-        initialDate: _selectedDate,
-        firstDate: DateTime.now().subtract(const Duration(days: 365)),
-        lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      );
-      if (picked != null) {
-        setState(() {
-          _selectedDate = picked;
-          _hasSelectedDate = true;
-        });
-      }
-      return;
-    }
-
-    // 有开学日期，显示周次选择器
-    final picked = await _showWeekPicker(
-      context,
-      semesterStart,
-      settings,
-      provider: provider,
-      currentDate: _selectedDate,
+    final picked = await _pickWithKeyboardDismiss(
+      () => semesterStart == null
+          // 没有设置开学日期，回退到标准日历选择器
+          ? showMiuixDatePickerSheet(
+              context,
+              initialDate: _selectedDate,
+              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+              lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+            )
+          : _showWeekPicker(
+              context,
+              semesterStart,
+              settings,
+              provider: provider,
+              currentDate: _selectedDate,
+            ),
     );
     if (picked != null) {
       setState(() {
@@ -685,7 +696,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     int selectedWeek = initialWeek;
     // 已选日期有值时默认选中对应星期，否则不选中
-    final int? selectedDayOfWeek = _hasSelectedDate ? currentDate?.weekday : null;
+    final int? selectedDayOfWeek = _hasSelectedDate
+        ? currentDate?.weekday
+        : null;
 
     // 滚动控制器，初始偏移指向已选周次
     final initialOffset = ((initialWeek - 1) * 56.0 - 100.0).clamp(
@@ -817,7 +830,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                   const SizedBox(height: 12),
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: MediaQuery.sizeOf(ctx).height * 0.42,
+                      maxHeight: _weekListMaxHeight(ctx),
                     ),
                     child: SingleChildScrollView(
                       controller: scrollController,
@@ -899,6 +912,24 @@ class _AddExamScreenState extends State<AddExamScreen> {
     return result;
   }
 
+  /// 周次列表高度上限：常规为屏高 42%；showHyperosSheet 只按 viewInsets
+  /// 把弹层整体抬高、不压缩内容，键盘收起动画期间可用高度会小于
+  /// 「标题 + 日历按钮 + 星期行 + 描述 + 内外边距」的固定部分 + 42%，
+  /// 必须为固定部分让位（留 280 基数），否则 HyperosSheet 整列底部溢出。
+  double _weekListMaxHeight(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final ratioCap = mediaQuery.size.height * 0.42;
+    final keyboardAwareCap =
+        mediaQuery.size.height -
+        mediaQuery.viewInsets.bottom -
+        mediaQuery.padding.bottom -
+        280.0;
+    if (keyboardAwareCap >= ratioCap) {
+      return ratioCap;
+    }
+    return keyboardAwareCap.clamp(120.0, ratioCap);
+  }
+
   bool _isCurrentWeek(
     int week,
     DateTime semesterStart,
@@ -912,10 +943,12 @@ class _AddExamScreenState extends State<AddExamScreen> {
   Future<void> _pickTime({required bool isStart}) async {
     final l10n = AppLocalizations.of(context)!;
     final initial = isStart ? _startTime : _endTime;
-    final picked = await showMiuixTimePickerSheet(
-      context,
-      initialTime: initial,
-      title: isStart ? l10n.selectStartTimeTitle : l10n.selectEndTimeTitle,
+    final picked = await _pickWithKeyboardDismiss(
+      () => showMiuixTimePickerSheet(
+        context,
+        initialTime: initial,
+        title: isStart ? l10n.selectStartTimeTitle : l10n.selectEndTimeTitle,
+      ),
     );
     if (picked != null) {
       setState(() {
