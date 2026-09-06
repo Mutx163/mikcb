@@ -5702,7 +5702,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
-    return '从 $start 连续进行到 $end，日视图会按当天切片显示；想要每天同时段，请把重复改为「每天」。';
+    return '从 $start 持续到 $end';
   }
 
   @override
@@ -16148,7 +16148,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
-    return '從 $start 連續進行到 $end，日視圖會按當天切片顯示；想要每天同時段，請把重複改為「每天」。';
+    return '從 $start 持續到 $end';
   }
 
   @override
@@ -26638,7 +26638,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
-    return '從 $start 連續進行到 $end，日視圖會按當天切片顯示；想要每天同時段，請把重複改為「每天」。';
+    return '從 $start 持續到 $end';
   }
 
   @override

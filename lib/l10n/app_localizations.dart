@@ -10394,7 +10394,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleCrossDaySpanHint.
   ///
   /// In zh, this message translates to:
-  /// **'从 {start} 连续进行到 {end}，日视图会按当天切片显示；想要每天同时段，请把重复改为「每天」。'**
+  /// **'从 {start} 持续到 {end}'**
   String scheduleCrossDaySpanHint(Object start, Object end);
 
   /// No description provided for @scheduleSavedHint.

@@ -320,75 +320,37 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     );
   }
 
-  /// 重复与跨日才有需要说明的事（切片展示/重复规则）；同日常规日程
-  /// 「结束须晚于开始」是常识且保存时有 toast 校验兜底，不渲染提示条。
+  /// 重复与跨日才有需要说明的事（重复规则/连续起止）；同日常规日程
+  /// 「结束须晚于开始」是常识且保存时有 toast 校验兜底，不渲染提示。
+  /// 样式为表单弱化小字（与「日程外观」标签同款），不套描边容器。
   Widget? _buildScheduleRangeHint() {
     final l10n = AppLocalizations.of(context)!;
     final theme = context.theme;
+    final hintStyle = theme.typography.body.xs.copyWith(
+      color: theme.colors.mutedForeground,
+      fontWeight: FontWeight.w600,
+      height: 1.35,
+    );
     if (_recurrence != ScheduleRecurrence.none) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colors.muted,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colors.border),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.repeat_rounded, size: 18, color: theme.colors.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _recurrence == ScheduleRecurrence.weekly
-                    ? l10n.scheduleRepeatWeeklyHint
-                    : l10n.scheduleRepeatEndDateHint,
-                style: theme.typography.body.xs.copyWith(
-                  color: theme.colors.mutedForeground,
-                  fontWeight: FontWeight.w600,
-                  height: 1.35,
-                ),
-              ),
-            ),
-          ],
-        ),
+      return Text(
+        _recurrence == ScheduleRecurrence.weekly
+            ? l10n.scheduleRepeatWeeklyHint
+            : l10n.scheduleRepeatEndDateHint,
+        style: hintStyle,
       );
     }
     final isCrossDay = _selectedEndDate.isAfter(_selectedStartDate);
     if (!isCrossDay) {
       return null;
     }
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colors.muted,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colors.border),
+    return Text(
+      l10n.scheduleCrossDaySpanHint(
+        '${_formatCompactDateLabel(context, _selectedStartDate)} '
+        '${_formatTimeLabel(context, _startTime)}',
+        '${_formatCompactDateLabel(context, _selectedEndDate)} '
+        '${_formatTimeLabel(context, _endTime)}',
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.nights_stay_rounded, size: 18, color: theme.colors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              l10n.scheduleCrossDaySpanHint(
-                '${_formatCompactDateLabel(context, _selectedStartDate)} '
-                '${_formatTimeLabel(context, _startTime)}',
-                '${_formatCompactDateLabel(context, _selectedEndDate)} '
-                '${_formatTimeLabel(context, _endTime)}',
-              ),
-              style: theme.typography.body.xs.copyWith(
-                color: theme.colors.mutedForeground,
-                fontWeight: FontWeight.w600,
-                height: 1.35,
-              ),
-            ),
-          ),
-        ],
-      ),
+      style: hintStyle,
     );
   }
 

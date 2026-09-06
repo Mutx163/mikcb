@@ -5835,7 +5835,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
-    return '$start부터 $end까지 연속으로 진행되며, 일간 뷰에서는 당일 단위로 표시됩니다. 매일 같은 시간대를 원하면 \'매일\' 반복을 사용하세요.';
+    return '$start부터 $end까지 연속으로 진행됩니다';
   }
 
   @override

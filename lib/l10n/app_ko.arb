@@ -3122,7 +3122,7 @@
   "scheduleTimeRangeInvalid": "종료 시간은 시작 시간보다 나중이어야 합니다",
   "scheduleDateRangeInvalid": "종료일은 시작일보다 이전일 수 없습니다",
   "scheduleSingleDayHint": "같은 날 종료 시 종료 시간은 시작 시간보다 나중이어야 합니다",
-  "scheduleCrossDaySpanHint": "{start}부터 {end}까지 연속으로 진행되며, 일간 뷰에서는 당일 단위로 표시됩니다. 매일 같은 시간대를 원하면 '매일' 반복을 사용하세요.",
+  "scheduleCrossDaySpanHint": "{start}부터 {end}까지 연속으로 진행됩니다",
   "scheduleSavedHint": "일정이 추가되었습니다",
   "scheduleUpdatedHint": "일정이 업데이트되었습니다",
   "crossDayBadgeLabel": "날짜 초과",

@@ -2834,7 +2834,7 @@
   "scheduleTimeRangeInvalid": "結束時間必須晚於開始時間",
   "scheduleDateRangeInvalid": "結束日期不能早於開始日期",
   "scheduleSingleDayHint": "同日結束時，結束時間必須晚於開始時間",
-  "scheduleCrossDaySpanHint": "從 {start} 連續進行到 {end}，日視圖會按當天切片顯示；想要每天同時段，請把重複改為「每天」。",
+  "scheduleCrossDaySpanHint": "從 {start} 持續到 {end}",
   "scheduleSavedHint": "日程已新增",
   "scheduleUpdatedHint": "日程已更新",
   "crossDayBadgeLabel": "跨日",

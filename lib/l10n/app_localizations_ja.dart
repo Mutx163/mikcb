@@ -5803,7 +5803,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
-    return '$start から $end まで連続で実行され、日別ビューでは当日ごとにスライス表示されます。毎日同じ時間帯にするには「毎日」の繰り返しを利用してください。';
+    return '$start から $end まで継続します';
   }
 
   @override

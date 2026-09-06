@@ -6047,7 +6047,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
-    return 'Runs continuously from $start to $end and is sliced into each day in the day view. For the same time slot every day, use the Daily repeat instead.';
+    return 'Runs continuously from $start to $end';
   }
 
   @override

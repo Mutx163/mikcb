@@ -109,8 +109,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('连续进行到'), findsOneWidget);
-    expect(find.textContaining('把重复改为「每天」'), findsOneWidget);
+    // 一句话短文案；且不再渲染描边提示条（旧样式图标不应存在）。
+    expect(find.textContaining('持续到'), findsOneWidget);
+    expect(find.byIcon(Icons.nights_stay_rounded), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
