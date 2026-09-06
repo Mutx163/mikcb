@@ -7387,6 +7387,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     await _showAddCourseSheet();
   }
 
+  /// 添加课程表单的初始星期：日视图跟随选中日，其余跟随今天。
+  /// 添加弹层（三宫格）与列表态菜单的二级直开共用同一口径。
+  int get _addCourseInitialDayOfWeek =>
+      _isDayView && _selectedDayOfWeek != null
+      ? _selectedDayOfWeek!
+      : DateTime.now().weekday;
+
   void _editCourse(Course course) {
     final provider = context.read<TimetableProvider>();
     final group = provider.courseGroupForCourse(course);
@@ -7418,9 +7425,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showAddCourseSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final initialDayOfWeek = _isDayView && _selectedDayOfWeek != null
-        ? _selectedDayOfWeek!
-        : DateTime.now().weekday;
+    final initialDayOfWeek = _addCourseInitialDayOfWeek;
     await showHomeHyperosSheet<void>(
       context: context,
       builder: (sheetContext) {
@@ -8062,7 +8067,30 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 这两项依赖首页宿主上下文：添加课程要带日视图选中日期弹层，
       // 更新入口要先做版本检查再进详情页。其余全部走目录分发。
       case 'addCourse':
+        // 列表态菜单走不到这里（父行是展开开关，只回传子项 id）；
+        // 八宫格形态与未知 id 兜底仍开三宫格添加弹层。
         await _navigateToAddCourse(context);
+      case kAddCourseSubmenuCourseId:
+        await Navigator.of(context).push<void>(
+          HyperosPageRoute<void>(
+            builder: (_) => AddCourseScreen(
+              initialWeek: _visibleWeek,
+              initialDayOfWeek: _addCourseInitialDayOfWeek,
+            ),
+          ),
+        );
+      case kAddCourseSubmenuScheduleId:
+        await Navigator.of(context).push<void>(
+          HyperosPageRoute<void>(
+            builder: (_) => AddScheduleItemScreen(
+              initialDate: _resolveAddScheduleInitialDate(provider),
+            ),
+          ),
+        );
+      case kAddCourseSubmenuExamId:
+        await Navigator.of(context).push<void>(
+          HyperosPageRoute<void>(builder: (_) => const AddExamScreen()),
+        );
       case 'update':
         await _openTopMenuUpdatePage();
       default:

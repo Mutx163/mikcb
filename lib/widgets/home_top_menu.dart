@@ -65,7 +65,10 @@ Future<void> pushHomeMenuPage(BuildContext context, Widget page) {
 /// [entries] 与八宫格共享同一份自定义排列（`resolveHomeGridMenuEntries`
 /// 的结果）；相邻条目分类变化时插入 8dp 分组间隔，自定义排列后分组
 /// 仍然自然。返回被点条目的 [HomeMenuEntry.id]，由调用方经目录分发
-/// 导航（与八宫格形态同一条回传路径）。
+/// 导航（与八宫格形态同一条回传路径）。「添加课程」入口例外：它挂
+/// [kAddCourseSubmenu]（HyperOS 相册「视图」式二级列表，收起显示展开
+/// 箭头，点开浮出 添加课程/添加日程/添加考试），宿主按子项 id 直开
+/// 对应页面，与三宫格添加弹层同一组目的地。
 ///
 /// [anchorKey] must be the key of the top-right "more" button; the popup is
 /// positioned just below it via [hyperosPopupPositionBelow].
@@ -97,10 +100,32 @@ Future<String?> showHomeTopMenuSheet(
           gapBefore:
               index > 0 &&
               entries[index].category != entries[index - 1].category,
+          children: entries[index].id == 'addCourse'
+              ? kAddCourseSubmenu(l10n)
+              : const [],
         ),
     ],
   );
 }
+
+/// 列表态菜单「添加课程」入口的三个二级动作 id（宿主分发用）。
+const String kAddCourseSubmenuCourseId = 'addCourse:course';
+const String kAddCourseSubmenuScheduleId = 'addCourse:schedule';
+const String kAddCourseSubmenuExamId = 'addCourse:exam';
+
+/// 「添加课程」入口的二级列表内容：三宫格添加弹层的同组目的地，
+/// 标签复用弹层按钮文案（无新串）。
+List<HyperosPopupMenuItem<String>> kAddCourseSubmenu(AppLocalizations l10n) => [
+  HyperosPopupMenuItem(
+    label: l10n.addCourseTitle,
+    value: kAddCourseSubmenuCourseId,
+  ),
+  HyperosPopupMenuItem(
+    label: l10n.addScheduleAction,
+    value: kAddCourseSubmenuScheduleId,
+  ),
+  HyperosPopupMenuItem(label: l10n.addExam, value: kAddCourseSubmenuExamId),
+];
 
 double _maxMenuTitleHeight({
   required List<String> titles,

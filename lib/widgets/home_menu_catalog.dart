@@ -10,7 +10,14 @@ import 'package:university_timetable/widgets/home_top_menu.dart';
 import 'package:university_timetable/widgets/profile_quick_switch_sheet.dart';
 
 export 'home_top_menu.dart'
-    show HomeMenuEntry, HomeMenuEntryCategory, homeMenuEntryCategoryLabel;
+    show
+        HomeMenuEntry,
+        HomeMenuEntryCategory,
+        homeMenuEntryCategoryLabel,
+        kAddCourseSubmenu,
+        kAddCourseSubmenuCourseId,
+        kAddCourseSubmenuScheduleId,
+        kAddCourseSubmenuExamId;
 
 // 拆分迁移的内嵌页注册表与导航壳：原样再导出，所有既有 import
 // home_menu_catalog.dart 的调用方（timetable_screen 等）无须改动。
