@@ -921,15 +921,23 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                             ),
                             child: card,
                           );
-                    // 高度因子揭示（玻璃面外侧）：裁剪窗口从父行顶边向下
-                    // 生长，父行位置全程不动；底缘圆角在窗口到达卡底时
-                    // 露出，t=1 时窗口即完整卡。
-                    card = ClipRect(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        heightFactor: t,
-                        child: card,
+                    // 揭示裁剪（玻璃面外侧、整卡盒子内）：裁剪窗口从父
+                    // 行顶边向下生长，父行位置全程不动；t=1 时窗口即完
+                    // 整卡。与选择弹窗同款 ClipPath（复用
+                    // SelectPopupRevealClipper）：盒子始终是整卡尺寸、玻
+                    // 璃作为「不溢出」的子项被路径裁剪。旧实现用
+                    // ClipRect+Align(heightFactor)——玻璃每帧都渲染在
+                    // Align 布局边界之外（溢出子项），再被逐帧变化的裁剪
+                    // 窗口裁剪，真机上揭示首帧顶缘仍闪横贯亮带（溢出子项
+                    // × 逐帧裁剪 × 背景捕获的合成边界伪影；同玻璃在选择
+                    // 弹窗的整卡 ClipPath 揭示下无此现象）。
+                    card = ClipPath(
+                      clipper: SelectPopupRevealClipper(
+                        progress: t,
+                        showBelow: true,
+                        cornerRadius: cornerRadius,
                       ),
+                      child: card,
                     );
                     if (_alpha.value < 1) {
                       card = Opacity(opacity: _alpha.value, child: card);

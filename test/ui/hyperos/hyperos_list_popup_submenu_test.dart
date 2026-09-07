@@ -202,20 +202,22 @@ void main() {
       expect(glasses.first.useAncestorGroupCapture, isFalse);
       expect(glasses.last.useAncestorGroupCapture, isTrue);
 
-      // 揭示窗口（heightFactor<1 且直接包着玻璃面的 Align）严格小于
-      // 玻璃面高度。
-      final windowFinder = find.byWidgetPredicate(
-        (w) =>
-            w is Align &&
-            w.heightFactor != null &&
-            w.child is HyperosSelectPopupGlass,
-      );
+      // 揭示窗（整卡尺寸的 ClipPath，内挂 SelectPopupRevealClipper）
+      // 盒子与玻璃面同高：玻璃是「不溢出」的子项，被逐帧生长的路径裁剪
+      // ——溢出式揭示（ClipRect+Align(heightFactor) 让玻璃每帧渲染在
+      // Align 边界之外）在真机上会出揭示首帧顶缘横贯亮带。
+      final windowFinder = find.ancestor(
+        of: find.byType(HyperosSelectPopupGlass).last,
+        matching: find.byWidgetPredicate(
+          (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
+        ),
+      ).first;
       final window = tester.renderObject<RenderBox>(windowFinder);
       final glass = tester.renderObject<RenderBox>(
         find.byType(HyperosSelectPopupGlass).last,
       );
-      expect(window.size.height, greaterThan(0));
-      expect(window.size.height, lessThan(glass.size.height));
+      expect(window.size.height, glass.size.height);
+      expect(window.size.width, glass.size.width);
 
       await tester.pumpAndSettle();
       // 展开完成后玻璃面高度与中段一致：动画没有改玻璃面的布局尺寸
@@ -343,7 +345,12 @@ void main() {
       expect(origin, isNotNull);
       final cardRect = tester.getRect(
         find
-            .ancestor(of: find.text('子项一'), matching: find.byType(ClipRect))
+            .ancestor(
+              of: find.text('子项一'),
+              matching: find.byWidgetPredicate(
+                (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
+              ),
+            )
             .first,
       );
       expect(origin!.dx, closeTo(cardRect.left, 0.5));
@@ -423,7 +430,12 @@ void main() {
       // 未收缩卡高 = 7 行 × 56 + 分隔块 ≈ 400.75，安全区只有 336。
       final cardRect = tester.getRect(
         find
-            .ancestor(of: find.text('子项0'), matching: find.byType(ClipRect))
+            .ancestor(
+              of: find.text('子项0'),
+              matching: find.byWidgetPredicate(
+                (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
+              ),
+            )
             .first,
       );
       const safeTop = 12.0;
