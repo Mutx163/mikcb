@@ -7,6 +7,10 @@ import 'package:university_timetable/widgets/home_top_menu.dart';
 
 import '../../helpers_test_app.dart';
 
+/// 与 hyperos_list_popup.dart 的 _panelReplayShrink 同值：测试里直接
+/// 复算回放终值（源文件里是私有常量）。
+const _panelReplayShrinkForTest = 0.05;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -49,27 +53,33 @@ void main() {
       WidgetTester tester, {
       required List<HyperosPopupMenuItem<String>> items,
       FrostedAppearance appearance = gaussianAppearance,
+      bool pageCaptureScope = false,
     }) async {
       final opened = <Future<String?>?>[];
+      final Widget host = FrostedAppearanceScope(
+        appearance: appearance,
+        child: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              opened.add(
+                showHyperosListPopup<String>(
+                  context: context,
+                  position: const RelativeRect.fromLTRB(200, 80, 24, 200),
+                  items: items,
+                ),
+              );
+            },
+            child: const Text('open'),
+          ),
+        ),
+      );
       await tester.pumpWidget(
         TestApp(
-          home: FrostedAppearanceScope(
-            appearance: appearance,
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  opened.add(
-                    showHyperosListPopup<String>(
-                      context: context,
-                      position: const RelativeRect.fromLTRB(200, 80, 24, 200),
-                      items: items,
-                    ),
-                  );
-                },
-                child: const Text('open'),
-              ),
-            ),
-          ),
+          // 捕获作用域挂在宿主根部（与首页根部同构）：弹窗从中解析
+          // 整页捕获边界，液态子卡据此折射背后页面。
+          home: pageCaptureScope
+              ? PopupPageCaptureScope(child: host)
+              : host,
         ),
       );
       await tester.tap(find.text('open'));
@@ -221,7 +231,8 @@ void main() {
     ) async {
       // 液态外观下子卡走「磨砂底 + 液态面」的共享组采样路径，垫层随
       // 弹窗挂载（高斯/实底环境无 grouped 消费者，不插，见
-      // liquid_glass_consistency_test 的无冗余垫层断言）。
+      // liquid_glass_consistency_test 的无冗余垫层断言）。宿主未挂捕获
+      // 作用域 → 无页面捕获图，退回该路径。
       await pumpPopup(
         tester,
         items: items,
@@ -229,7 +240,36 @@ void main() {
       );
 
       expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
+      final cardGlass = tester
+          .widgetList<HyperosSelectPopupGlass>(
+            find.byType(HyperosSelectPopupGlass),
+          )
+          .last;
+      expect(cardGlass.pageCapture, isNull);
       expect(find.text('普通项'), findsOneWidget);
+    });
+
+    testWidgets('宿主挂捕获作用域时子卡玻璃拿到页面捕获图', (tester) async {
+      await pumpPopup(
+        tester,
+        items: items,
+        appearance: liquidAppearance,
+        pageCaptureScope: true,
+      );
+
+      await tester.tap(find.text('视图父项'));
+      await tester.pumpAndSettle();
+
+      final glasses = tester
+          .widgetList<HyperosSelectPopupGlass>(
+            find.byType(HyperosSelectPopupGlass),
+          )
+          .toList();
+      expect(glasses.length, 2);
+      // 主面板不取页面捕获（它的自有采样源本来就不经过其他玻璃）。
+      expect(glasses.first.pageCapture, isNull);
+      // 二级子卡玻璃拿到整页捕获图：折射的是背后的首页本身。
+      expect(glasses.last.pageCapture, isNotNull);
     });
 
     testWidgets('无二级子项的弹窗不挂捕获垫层', (tester) async {
@@ -243,6 +283,36 @@ void main() {
       );
 
       expect(find.byType(UndimmedBackdropCapture), findsNothing);
+    });
+
+    testWidgets('二级展开时主面板沿锚点角回放缩小，收起复原', (tester) async {
+      await pumpPopup(tester, items: items);
+
+      final panelScaleFinder = find.byWidgetPredicate(
+        (w) => w is Transform && w.child is KeyedSubtree,
+      );
+      // 收起态主面板满尺寸（弹出弹簧已 settle；弹簧容差内有浮点尾数）。
+      double panelScale() => tester
+          .widget<Transform>(panelScaleFinder)
+          .transform
+          .storage[0];
+      expect(panelScale(), closeTo(1.0, 0.0001));
+
+      await tester.tap(find.text('视图父项'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60)); // 动画中段
+      final midScale = panelScale();
+      expect(midScale, lessThan(1.0));
+      expect(midScale, greaterThan(0.9));
+
+      await tester.pumpAndSettle();
+      // 展开态面板停在回放后的尺寸（让位给子卡，直到收起才复原）。
+      expect(panelScale(), closeTo(1 - _panelReplayShrinkForTest, 0.001));
+
+      // 再点父行收起后复原（回放随 _expand 逆放）。
+      await tester.tap(find.text('视图父项').first);
+      await tester.pumpAndSettle();
+      expect(panelScale(), closeTo(1.0, 0.0001));
     });
   });
 

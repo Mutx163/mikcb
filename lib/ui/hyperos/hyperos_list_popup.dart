@@ -1,7 +1,9 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui show Image;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
@@ -10,6 +12,56 @@ import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart'
     show UndimmedBackdropCapture;
+
+/// 宿主页面根级的页面捕获作用域：给锚定弹窗的二级子卡提供「弹窗背后
+/// 页面」的同步截图来源（RenderRepaintBoundary.toImageSync）。
+///
+/// 液态玻璃面的自有采样捕获点在它自己的绘制位置——浮在主面板玻璃上面
+/// 的子卡会把主面板玻璃的输出再采样一遍（玻璃叠玻璃，读感浑浊）。把
+/// 整页预捕获成 [ui.Image] 直接喂给子卡玻璃的 shader（LiquidGlass 的
+/// captureImage 通道），子卡取到的就是背后的首页内容本身，与一级弹窗
+/// 同源。挂在页面根部的捕获边界同时承担整页重绘隔离，代价可忽略。
+class PopupPageCaptureScope extends StatefulWidget {
+  const PopupPageCaptureScope({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<PopupPageCaptureScope> createState() => _PopupPageCaptureScopeState();
+}
+
+class _PopupPageCaptureScopeState extends State<PopupPageCaptureScope> {
+  final GlobalKey _boundaryKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupPageCaptureData(
+      boundaryKey: _boundaryKey,
+      child: RepaintBoundary(key: _boundaryKey, child: widget.child),
+    );
+  }
+}
+
+/// [PopupPageCaptureScope] 发布的数据。
+class PopupPageCaptureData extends InheritedWidget {
+  const PopupPageCaptureData({
+    super.key,
+    required this.boundaryKey,
+    required super.child,
+  });
+
+  /// 宿主页面捕获边界的 key（[RepaintBoundary] 根）。
+  final GlobalKey boundaryKey;
+
+  /// 解析宿主页面的捕获边界；宿主未挂作用域时返回 null（二级子卡退回
+  /// 共享组磨砂底采样）。
+  static PopupPageCaptureData? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PopupPageCaptureData>();
+
+  @override
+  bool updateShouldNotify(PopupPageCaptureData oldWidget) =>
+      boundaryKey != oldWidget.boundaryKey;
+}
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
@@ -67,6 +119,11 @@ const _listPopupExitDuration = Duration(milliseconds: 150);
 /// Submenu reveal/collapse duration (HyperOS gallery menu pace).
 const _submenuRevealDuration = Duration(milliseconds: 200);
 
+/// 二级子卡展开时主面板沿锚点角回放的幅度（1.0 缩到 1-0.05）。弹出时
+/// 面板从锚点角向左展开，展开子卡时向锚点角缩回一点，读作「面板让位
+/// 退后、子卡浮前」，与系统相册的层级退让同语感。
+const _panelReplayShrink = 0.05;
+
 /// Air above/below the hairline separating the submenu parent row from its
 /// children (Miuix divider sits in whitespace, not flush against rows).
 const _submenuDividerVerticalPadding = 4.0;
@@ -95,6 +152,10 @@ Future<T?> showHyperosListPopup<T>({
     return Future.value();
   }
 
+  // 二级子卡的页面捕获来源：宿主页面根部的捕获边界。宿主未挂
+  // [PopupPageCaptureScope] 时为 null，子卡退回共享组磨砂底采样。
+  final pageBoundaryKey = PopupPageCaptureData.maybeOf(context)?.boundaryKey;
+
   return showGeneralDialog<T>(
     context: context,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -108,6 +169,7 @@ Future<T?> showHyperosListPopup<T>({
           items: items,
           foregroundColor: foregroundColor,
           opaqueSurface: opaqueSurface,
+          pageBoundaryKey: pageBoundaryKey,
         ),
       );
     },
@@ -120,6 +182,7 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
     required this.items,
     this.foregroundColor,
     this.opaqueSurface = false,
+    this.pageBoundaryKey,
   });
 
   final RelativeRect position;
@@ -131,6 +194,10 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
 
   /// Solid surface instead of sampled glass (see [showHyperosListPopup]).
   final bool opaqueSurface;
+
+  /// 宿主页面捕获边界（[PopupPageCaptureScope]）；null 表示宿主未提供，
+  /// 液态子卡退回共享组磨砂底采样。
+  final GlobalKey? pageBoundaryKey;
 
   @override
   State<_HyperosListPopupBody<T>> createState() =>
@@ -180,6 +247,36 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   late final bool _hasSubmenu = widget.items.any(
     (item) => item.children.isNotEmpty,
   );
+
+  /// 宿主页面的同步捕获图（液态子卡的折射背景）与它的屏幕空间原点。
+  /// 页面在模态弹窗期间静止，首次展开时捕一份复用到弹窗关闭。
+  ui.Image? _pageCapture;
+  Offset _pageCaptureOrigin = Offset.zero;
+
+  /// 展开二级子卡前同步捕获宿主页面。液态玻璃的自有采样必然把浮在
+  /// 采样点之前的主面板玻璃算进背景（玻璃叠玻璃）；预捕获整页图直接
+  /// 喂给子卡 shader，子卡取到的才是背后的首页内容。捕获失败（宿主
+  /// 未挂作用域、边界未布局等）保持 null，子卡退回共享组磨砂底。
+  void _ensurePageCapture() {
+    if (_pageCapture != null) return;
+    final key = widget.pageBoundaryKey;
+    if (key == null) return;
+    final boundary = key.currentContext?.findRenderObject();
+    if (boundary is! RenderRepaintBoundary ||
+        !boundary.hasSize ||
+        boundary.size.isEmpty) {
+      return;
+    }
+    try {
+      _pageCapture = boundary.toImageSync(
+        pixelRatio: MediaQuery.devicePixelRatioOf(context),
+      );
+      _pageCaptureOrigin = boundary.localToGlobal(Offset.zero);
+    } catch (_) {
+      _pageCapture?.dispose();
+      _pageCapture = null;
+    }
+  }
 
   /// Plays the exit animation (fade + shrink, [MiuixListPopupDefaults]
   /// alphaExit spec) and only then pops the route with [result].
@@ -235,11 +332,13 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     _alpha.dispose();
     _expand.dispose();
     _panelScroll.dispose();
+    _pageCapture?.dispose();
+    _pageCapture = null;
     super.dispose();
   }
 
   /// HyperOS 相册「视图」式二级列表：点父行展开/收起（浮层卡 + 主面板
-  /// 压暗），不回传父行 value。
+  /// 压暗 + 主面板沿锚点角回放一小段弹出动画），不回传父行 value。
   void _toggleSubmenu(int index) {
     setState(() {
       if (_expandedIndex == index) {
@@ -248,6 +347,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
       } else {
         _expandedIndex = index;
         _lastSubmenuIndex = index;
+        // 液态子卡需要页面捕获图；磨砂/实底分支走共享组/实底，不采。
+        if (HyperosSelectPopupGlass.liquidSurfaceActive(context)) {
+          _ensurePageCapture();
+        }
         _expand.forward(from: 0);
       }
     });
@@ -409,10 +512,18 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     )
                   : null,
               child: AnimatedBuilder(
-                animation: _fraction,
+                // 展开态主面板要跟着 _expand 回放缩放，与子卡揭示同步。
+                animation: Listenable.merge([_fraction, _expand]),
                 builder: (context, _) {
                   final fraction = _fraction.value.clamp(0.0, 1.0);
-                  final scale = 0.15 + 0.85 * fraction;
+                  // 弹出动画（锚点角 0.15→1 弹簧）× 展开回放：子卡展开
+                  // 时面板沿弹出方向反向缩回一点（向右变小），收起时
+                  // 随 _expand 逆放回 1。锚点对齐沿用弹出动画的角。
+                  final replay =
+                      1 -
+                      _panelReplayShrink *
+                          Curves.fastOutSlowIn.transform(_expand.value);
+                  final scale = (0.15 + 0.85 * fraction) * replay;
                   final Widget panelChild = ConstrainedBox(
                     constraints: BoxConstraints(
                       minWidth: 200,
@@ -521,8 +632,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             // 面板/Transform 边界截断；宽度用 _panelKey 读主面板实测尺寸
             // 做 min=max 约束，两卡严格同宽；关窗时不随主面板弹簧缩放，
             // 只走 _alpha 淡出（展开只会发生在弹簧结束后）。玻璃按
-            // useAncestorGroupCapture 同源采样遮罩下的页面（不再玻璃叠
-            // 玻璃），揭示窗口裁在玻璃面外侧（玻璃面布局全程不变）。
+            // useAncestorGroupCapture 同源采样：液态激活时优先折射宿主
+            // 页面捕获图（背后首页本身），无捕获图退回共享组磨砂底；
+            // 都不再把主面板玻璃的输出采一遍。揭示窗口裁在玻璃面外侧
+            // （玻璃面布局全程不变）。
             if (_lastSubmenuIndex != null)
               Positioned(
                 top: _submenuCardTopGlobal(
@@ -606,9 +719,13 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                           )
                         : HyperosSelectPopupGlass(
                             cornerRadius: cornerRadius,
-                            // 同源采样：取遮罩下的页面内容，不再把主面板
-                            // 玻璃的输出叠加采样一遍（双重玻璃浑浊）。
+                            // 同源采样：液态激活时优先折射宿主页面捕获图
+                            // （背后首页本身，与一级弹窗同源）；无捕获图
+                            // 退回共享组磨砂底挡板，均不再把主面板玻璃的
+                            // 输出叠加采样一遍（双重玻璃浑浊）。
                             useAncestorGroupCapture: true,
+                            pageCapture: _pageCapture,
+                            pageCaptureOrigin: _pageCaptureOrigin,
                             child: card,
                           );
                     // 高度因子揭示（玻璃面外侧）：裁剪窗口从父行顶边向下

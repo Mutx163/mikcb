@@ -7,6 +7,14 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+// LiquidGlass 被包主入口刻意隐藏（"Impeller-only"）：它正是 AdaptiveGlass
+// premium 路径的底层实现。这里只在 supportsRealRefraction 为真时走
+// LiquidGlass.withOwnLayer（captureImage 通道 AdaptiveGlass 未透出），
+// 引擎不支持 shader filter 时仍走 AdaptiveGlass 的回退路径，不会踩
+// Skia 下静默渲染为空的坑。
+// ignore: implementation_imports
+import 'package:liquid_glass_widgets/src/renderer/liquid_glass.dart'
+    show LiquidGlass;
 
 import '../../../models/liquid_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
@@ -144,6 +152,15 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     /// page is handled by [UndimmedBackdropCapture] / [UndimmedBackdropLayer]
     /// where needed.
     this.useAncestorBackdropGroup = false,
+
+    /// 宿主页面的同步捕获图（PopupPageCaptureScope 提供）。非空且引擎支持
+    /// 真折射时，玻璃 shader 直接以它为背景纹理（LiquidGlass 的
+    /// captureImage 通道），绕过实时合成器采样——浮在另一块玻璃上面的面
+    /// （二级子卡）因此折射的是背后的页面本身，而不是下方玻璃的输出。
+    this.captureImage,
+
+    /// [captureImage] 的屏幕空间逻辑像素原点（捕获边界的全局位置）。
+    this.captureOriginInScreenSpace = Offset.zero,
     this.maxThickness,
     super.key,
   });
@@ -157,6 +174,8 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
   final bool contentLegibilityFill;
   final HyperosLiquidGlassLayerMode? layerMode;
   final bool useAncestorBackdropGroup;
+  final ui.Image? captureImage;
+  final Offset captureOriginInScreenSpace;
 
   /// Caps effective [LiquidGlassSettings.thickness] so a narrow isolated
   /// strip (e.g. the 40dp preview weekday-only band) does not let the
@@ -213,6 +232,8 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     final clipBehavior = widget.clipBehavior;
     final glassColor = widget.glassColor;
     final contentLegibilityFill = widget.contentLegibilityFill;
+    final captureImage = widget.captureImage;
+    final captureOriginInScreenSpace = widget.captureOriginInScreenSpace;
     final child = widget.child;
 
     final brightness = Theme.of(context).brightness;
@@ -260,6 +281,28 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     final useMinimal =
         resolvedLayerMode == HyperosLiquidGlassLayerMode.fake ||
         !HyperosLiquidGlassSurface.supportsRealRefraction;
+
+    // 页面捕获路径：整页 toImageSync 成 ui.Image 直接喂给玻璃 shader
+    // （uBackgroundTexture），绕过实时合成器采样。玻璃叠玻璃的场景
+    // （二级子卡浮在主面板玻璃上）自有采样必然把下方玻璃的输出算进
+    // 背景，预捕获的页面图让玻璃真正折射背后页面。仅真折射引擎可用；
+    // AdaptiveGlass 不透出 capture 通道，这里按它的 premium 路径同口径
+    // 直接组合 LiquidGlass.withOwnLayer。
+    if (captureImage != null &&
+        HyperosLiquidGlassSurface.supportsRealRefraction) {
+      return LiquidGlass.withOwnLayer(
+        shape: shape,
+        settings: settings,
+        // 深色下阴影被背景吸收（与 AdaptiveGlass 自有层路径同口径）。
+        shadows: brightness == Brightness.dark
+            ? const <BoxShadow>[]
+            : settings.effectiveShadow,
+        clipBehavior: clipBehavior,
+        captureImage: captureImage,
+        captureOriginInScreenSpace: captureOriginInScreenSpace,
+        child: surfacedChild,
+      );
+    }
 
     return AdaptiveGlass(
       shape: shape,

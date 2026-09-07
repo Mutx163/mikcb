@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
+import 'dart:ui' as ui show Image;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -457,10 +458,20 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     required this.cornerRadius,
     required this.child,
     this.useAncestorGroupCapture = false,
+    this.pageCapture,
+    this.pageCaptureOrigin = Offset.zero,
   });
 
   final double cornerRadius;
   final Widget child;
+
+  /// 宿主页面的同步捕获图（PopupPageCaptureScope 提供）。非空且引擎支持
+  /// 真折射时，液态面直接折射背后的首页——取色与一级弹窗同源，且不
+  /// 经过主面板玻璃；为空时退回磨砂底挡板方案。
+  final ui.Image? pageCapture;
+
+  /// [pageCapture] 的屏幕空间逻辑像素原点。
+  final Offset pageCaptureOrigin;
 
   /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
   ///
@@ -493,6 +504,19 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     final useLiquidGlass = liquidSurfaceActive(context);
 
     if (useLiquidGlass) {
+      // 页面捕获可用 → 液态面直接折射背后的首页（captureImage 通道），
+      // 不再需要磨砂底挡板。
+      if (useAncestorGroupCapture &&
+          pageCapture != null &&
+          HyperosLiquidGlassSurface.supportsRealRefraction) {
+        return HyperosLiquidGlassSurface(
+          role: HyperosLiquidGlassRole.modal,
+          borderRadius: cornerRadius,
+          captureImage: pageCapture,
+          captureOriginInScreenSpace: pageCaptureOrigin,
+          child: child,
+        );
+      }
       final surface = HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.modal,
         borderRadius: cornerRadius,
