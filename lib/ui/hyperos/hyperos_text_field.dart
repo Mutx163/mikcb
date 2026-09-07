@@ -47,6 +47,12 @@ class HyperosTextField extends StatelessWidget {
     final effectiveLabel = label ?? hint ?? '';
     final useLabelAsPlaceholder = label == null && hint != null;
     final resolvedColor = Theme.of(context).colorScheme;
+    final miuixDefaults = MiuixTextFieldDefaults.textFieldColors(context);
+    // 未激活（占位/浮动）标签：Miuix 默认 onSecondaryContainer（亮色 #A9A9A9）
+    // 在 secondaryContainer（#F0F0F0）底上对比度仅约 2.1:1，与背景过近。
+    // 改用全局次级文字色 onSurfaceVariantSummary，与 HyperosPickerField 的
+    // 占位文字保持同一色阶。
+    final labelColor = HyperosColors.onSurfaceVariantSummary(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,6 +74,11 @@ class HyperosTextField extends StatelessWidget {
           textInputAction: textInputAction,
           obscureText: obscureText,
           autofocus: autofocus,
+          colors: MiuixTextFieldColors(
+            backgroundColor: miuixDefaults.backgroundColor,
+            labelColor: labelColor,
+            borderColor: miuixDefaults.borderColor,
+          ),
         ),
         if (helper != null && helper!.isNotEmpty) ...[
           const SizedBox(height: 6),
