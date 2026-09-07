@@ -244,4 +244,112 @@ adapters:
     );
     expect(script, scriptBody);
   });
+
+  test('gitcode host builds contents API uri with github raw fallback', () {
+    const gitcodeSource = WarehouseRepositorySource(
+      owner: 'mutx',
+      repo: 'qingyu_warehouse',
+      host: WarehouseRepositoryHost.gitcode,
+    );
+
+    expect(
+      gitcodeSource.buildFileUri('index/root_index.yaml').toString(),
+      'https://api.gitcode.com/api/v5/repos/mutx/qingyu_warehouse/contents/index/root_index.yaml?ref=main',
+    );
+    expect(
+      gitcodeSource.buildGitHubRawFileUri('index/root_index.yaml').toString(),
+      'https://raw.githubusercontent.com/mutx/qingyu_warehouse/main/index/root_index.yaml',
+    );
+    expect(
+      WarehouseRepositorySource.fromGitHubUrl(
+        'https://gitcode.com/mutx/qingyu_warehouse',
+      ).host,
+      WarehouseRepositoryHost.gitcode,
+    );
+  });
+
+  test('fromSettings derives preferGitCode from download channel', () {
+    // 默认渠道就是 gitcode。
+    expect(
+      WarehouseFetchOptions.fromSettings(
+        const TimetableSettings(sections: []),
+      ).preferGitCode,
+      isTrue,
+    );
+    expect(
+      WarehouseFetchOptions.fromSettings(
+        const TimetableSettings(sections: []).copyWith(
+          appUpdateDownloadChannel: 'github',
+        ),
+      ).preferGitCode,
+      isFalse,
+    );
+  });
+
+  test('preferGitCode fetches root index via GitCode contents API', () async {
+    const rootYaml = '''
+schools:
+  - id: "CQU"
+    name: "重庆大学"
+    initial: "C"
+    resource_folder: "CQU"
+''';
+    final apiBody = jsonEncode({
+      'type': 'file',
+      'encoding': 'base64',
+      'size': utf8.encode(rootYaml).length,
+      'name': 'root_index.yaml',
+      'path': 'index/root_index.yaml',
+      'content': base64Encode(utf8.encode(rootYaml)),
+    });
+
+    final client = _FakeClient({
+      'https://api.gitcode.com/api/v5/repos/Mutx163/qingyu_warehouse/contents/index/root_index.yaml?ref=main':
+          http.Response.bytes(utf8.encode(apiBody), 200),
+    });
+    final service = WarehouseRepositoryService(client: client);
+    final source = WarehouseRepositorySource.fromGitHubUrl(
+      'https://github.com/Mutx163/qingyu_warehouse',
+    );
+    const options = WarehouseFetchOptions(
+      downloadSource: AppUpdateDownloadSource.mirror,
+      mirrorPreset: AppUpdateMirrorPreset.ghfast,
+      customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
+      preferGitCode: true,
+    );
+
+    final rootIndex = await service.fetchRootIndex(source, options: options);
+    expect(rootIndex.schools, hasLength(1));
+    expect(rootIndex.schools.first.name, '重庆大学');
+  });
+
+  test('preferGitCode falls back to GitHub raw when GitCode API fails',
+      () async {
+    const rootYaml = '''
+schools:
+  - id: "CQU"
+    name: "重庆大学"
+    initial: "C"
+    resource_folder: "CQU"
+''';
+
+    // GitCode API 无响应（_FakeClient 默认 404），应回退到 GitHub raw。
+    final client = _FakeClient({
+      'https://raw.githubusercontent.com/Mutx163/qingyu_warehouse/main/index/root_index.yaml':
+          http.Response.bytes(utf8.encode(rootYaml), 200),
+    });
+    final service = WarehouseRepositoryService(client: client);
+    final source = WarehouseRepositorySource.fromGitHubUrl(
+      'https://github.com/Mutx163/qingyu_warehouse',
+    );
+    const options = WarehouseFetchOptions(
+      downloadSource: AppUpdateDownloadSource.original,
+      mirrorPreset: AppUpdateMirrorPreset.ghfast,
+      customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
+      preferGitCode: true,
+    );
+
+    final rootIndex = await service.fetchRootIndex(source, options: options);
+    expect(rootIndex.schools, hasLength(1));
+  });
 }

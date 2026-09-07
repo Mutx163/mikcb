@@ -7,16 +7,34 @@ class WarehouseRepositoryException implements Exception {
   String toString() => 'WarehouseRepositoryException: $message';
 }
 
+/// 适配仓宿主：GitHub（raw.githubusercontent 直链）或 GitCode（v5 contents API）。
+enum WarehouseRepositoryHost { github, gitcode }
+
 class WarehouseRepositorySource {
   final String owner;
   final String repo;
   final String branch;
+  final WarehouseRepositoryHost host;
 
   const WarehouseRepositorySource({
     required this.owner,
     required this.repo,
     this.branch = 'main',
+    this.host = WarehouseRepositoryHost.github,
   });
+
+  /// 返回切换宿主后的源（其余字段保持不变）。
+  WarehouseRepositorySource withHost(WarehouseRepositoryHost newHost) {
+    if (newHost == host) {
+      return this;
+    }
+    return WarehouseRepositorySource(
+      owner: owner,
+      repo: repo,
+      branch: branch,
+      host: newHost,
+    );
+  }
 
   factory WarehouseRepositorySource.fromGitHubUrl(
     String url, {
@@ -55,6 +73,22 @@ class WarehouseRepositorySource {
       );
     }
 
+    // GitCode 仓库页（国内直连渠道，拉取走 v5 contents API）。
+    if (uri.host == 'gitcode.com' || uri.host == 'raw.gitcode.com') {
+      final segments = uri.pathSegments
+          .where((item) => item.isNotEmpty)
+          .toList();
+      if (segments.length < 2) {
+        throw const WarehouseRepositoryException('incomplete_github_repo_url');
+      }
+      return WarehouseRepositorySource(
+        owner: segments[0],
+        repo: segments[1],
+        branch: branch,
+        host: WarehouseRepositoryHost.gitcode,
+      );
+    }
+
     throw const WarehouseRepositoryException('github_only_supported');
   }
 
@@ -66,6 +100,32 @@ class WarehouseRepositorySource {
       'https://raw.githubusercontent.com/$owner/$repo/$branch/$normalizedPath',
     );
   }
+
+  /// GitHub 侧原始文件地址：GitCode 主渠道失败时的回退目标。
+  Uri buildGitHubRawFileUri(String relativePath) => buildRawFileUri(relativePath);
+
+  /// GitCode v5 contents API（Gitee 兼容，免令牌可读，返回 base64 JSON）。
+  /// GitCode 没有 GitHub 那样的 raw 直链（/raw/ 返回的是网页预览），
+  /// 所以文件内容统一从 API 取。
+  Uri buildGitCodeContentsUri(String relativePath) {
+    final normalizedPath = relativePath.startsWith('/')
+        ? relativePath.substring(1)
+        : relativePath;
+    final encodedPath = normalizedPath
+        .split('/')
+        .map(Uri.encodeComponent)
+        .join('/');
+    return Uri.parse(
+      'https://api.gitcode.com/api/v5/repos/$owner/$repo/contents/'
+      '$encodedPath?ref=${Uri.encodeQueryComponent(branch)}',
+    );
+  }
+
+  /// 按宿主返回主拉取地址。
+  Uri buildFileUri(String relativePath) => switch (host) {
+    WarehouseRepositoryHost.github => buildRawFileUri(relativePath),
+    WarehouseRepositoryHost.gitcode => buildGitCodeContentsUri(relativePath),
+  };
 
   String get repositoryUrl => 'https://github.com/$owner/$repo';
 }

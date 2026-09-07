@@ -15,10 +15,16 @@ class WarehouseFetchOptions {
   final AppUpdateMirrorPreset mirrorPreset;
   final String customMirrorUrlPrefix;
 
+  /// 更新界面下载渠道是否选择了 GitCode。
+  /// 为 true 时教务适配仓的拉取同步走 GitCode（v5 contents API，国内直连，
+  /// 无需镜像前缀），失败时自动回退 GitHub raw 与镜像候选。
+  final bool preferGitCode;
+
   const WarehouseFetchOptions({
     required this.downloadSource,
     required this.mirrorPreset,
     required this.customMirrorUrlPrefix,
+    this.preferGitCode = false,
   });
 
   factory WarehouseFetchOptions.fromSettings(TimetableSettings settings) {
@@ -30,6 +36,9 @@ class WarehouseFetchOptions {
         settings.appUpdateMirrorPreset,
       ),
       customMirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+      preferGitCode:
+          AppUpdateDownloadChannelX.fromValue(settings.appUpdateDownloadChannel) ==
+          AppUpdateDownloadChannel.gitcode,
     );
   }
 }
@@ -50,7 +59,8 @@ class WarehouseRepositoryService {
   }) async {
     _log('获取学校列表...');
     final content = await _fetchText(
-      source.buildRawFileUri('index/root_index.yaml'),
+      source,
+      'index/root_index.yaml',
       options: options,
     );
     final maps = _parseYamlListMaps(content, topLevelKey: 'schools');
@@ -84,7 +94,8 @@ class WarehouseRepositoryService {
     _log('获取 ${school.name} 适配器列表...');
     final path = 'resources/${school.resourceFolder}/adapters.yaml';
     final content = await _fetchText(
-      source.buildRawFileUri(path),
+      source,
+      path,
       options: options,
     );
     final maps = _parseYamlListMaps(content, topLevelKey: 'adapters');
@@ -122,7 +133,7 @@ class WarehouseRepositoryService {
     WarehouseFetchOptions? options,
   }) async {
     final path = 'resources/${school.resourceFolder}/${adapter.assetJsPath}';
-    final bytes = await _fetchBytes(source.buildRawFileUri(path), options: options);
+    final bytes = await _fetchBytes(source, path, options: options);
     // Integrity gate: when the index declares a SHA-256 for the script, the
     // fetched bytes must match before the script is ever handed to WebView.
     // This closes the mirror-fallback / custom-prefix supply chain where a
@@ -141,12 +152,19 @@ class WarehouseRepositoryService {
     return utf8.decode(bytes);
   }
 
-  Future<String> _fetchText(Uri uri, {WarehouseFetchOptions? options}) async {
-    return utf8.decode(await _fetchBytes(uri, options: options));
+  Future<String> _fetchText(
+    WarehouseRepositorySource source,
+    String relativePath, {
+    WarehouseFetchOptions? options,
+  }) async {
+    return utf8.decode(
+      await _fetchBytes(source, relativePath, options: options),
+    );
   }
 
   Future<List<int>> _fetchBytes(
-    Uri uri, {
+    WarehouseRepositorySource source,
+    String relativePath, {
     WarehouseFetchOptions? options,
   }) async {
     final effectiveOptions =
@@ -156,29 +174,44 @@ class WarehouseRepositoryService {
           mirrorPreset: AppUpdateMirrorPreset.ghfast,
           customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
         );
-    final candidates = _buildCandidateUris(uri, effectiveOptions);
-    _log('请求 $uri,候选 ${candidates.length} 个');
-
-    // Prefer the official raw URL first so a poisoned mirror cannot win a race.
-    // Fall back to remaining candidates only when the primary fetch fails.
+    final effectiveSource = effectiveOptions.preferGitCode
+        ? source.withHost(WarehouseRepositoryHost.gitcode)
+        : source;
+    final primaryUri = effectiveSource.buildFileUri(relativePath);
     final orderedCandidates = <Uri>[
-      uri,
-      ...candidates.where((candidate) => candidate != uri),
+      primaryUri,
+      ..._buildFallbackUris(
+        effectiveSource,
+        relativePath,
+        effectiveOptions,
+        primaryUri,
+      ),
     ];
+    _log('请求 $primaryUri,候选 ${orderedCandidates.length} 个');
+
+    // Prefer the primary URL first so a poisoned mirror cannot win a race.
+    // Fall back to remaining candidates only when the primary fetch fails.
     Object? lastError;
     for (final candidate in orderedCandidates) {
       try {
         final response = await _client.get(
           candidate,
-          headers: const {
-            'Accept': 'text/plain, */*',
+          headers: {
+            'Accept': candidate.host == 'api.gitcode.com'
+                ? 'application/json'
+                : 'text/plain, */*',
             'User-Agent': 'mikcb-warehouse-client',
           },
         );
         if (response.statusCode == 200) {
-          return response.bodyBytes;
+          try {
+            return _decodeCandidateBytes(candidate, response.bodyBytes);
+          } catch (error) {
+            lastError = error;
+          }
+        } else {
+          lastError = StateError('http_${response.statusCode}');
         }
-        lastError = StateError('http_${response.statusCode}');
       } catch (error) {
         lastError = error;
       }
@@ -190,6 +223,46 @@ class WarehouseRepositoryService {
       lastError,
       candidatesCount: candidatesCount,
     );
+  }
+
+  /// GitCode contents API 返回 base64 JSON；其余候选直接就是文件字节。
+  List<int> _decodeCandidateBytes(Uri uri, List<int> bodyBytes) {
+    if (uri.host != 'api.gitcode.com') {
+      return bodyBytes;
+    }
+    final Object? decoded = jsonDecode(utf8.decode(bodyBytes));
+    if (decoded is! Map<String, dynamic>) {
+      throw StateError('gitcode_contents_invalid_payload');
+    }
+    final base64Content = decoded['content'];
+    if (base64Content is! String || base64Content.isEmpty) {
+      throw StateError('gitcode_contents_missing_content');
+    }
+    return base64Decode(base64Content.replaceAll(RegExp(r'\s'), ''));
+  }
+
+  /// 主地址之外的候选：GitCode 失败时回退 GitHub raw（含镜像前缀加速）。
+  List<Uri> _buildFallbackUris(
+    WarehouseRepositorySource source,
+    String relativePath,
+    WarehouseFetchOptions options,
+    Uri primaryUri,
+  ) {
+    final fallbacks = <Uri>[];
+    void addUnique(Uri uri) {
+      if (uri != primaryUri && !fallbacks.contains(uri)) {
+        fallbacks.add(uri);
+      }
+    }
+
+    final githubRawUri = source.buildGitHubRawFileUri(relativePath);
+    if (source.host == WarehouseRepositoryHost.gitcode) {
+      addUnique(githubRawUri);
+    }
+    for (final uri in _buildCandidateUris(githubRawUri, options)) {
+      addUnique(uri);
+    }
+    return fallbacks;
   }
 
   WarehouseRepositoryException _buildFetchError(
