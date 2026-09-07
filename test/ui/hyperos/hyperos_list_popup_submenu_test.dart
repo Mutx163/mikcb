@@ -378,14 +378,23 @@ void main() {
       await tester.drag(find.text('首项'), const Offset(0, -60));
       await tester.pumpAndSettle();
 
+      // 展开前记录父行位置与滚动偏移。浮层卡接管的是父行「展开瞬间的
+      // 原位」——展开后面板向锚点角回放缩放 0.95、父行视觉后退属于让位
+      // 设计，缩放后的面板行不能当基准。滚动偏移必须跨重挂保留。
+      final rowBefore = tester.getRect(find.text('视图父项').first);
+      double scrollOffset() =>
+          tester.state<ScrollableState>(find.byType(Scrollable).first)
+              .position.pixels;
+      final offsetBefore = scrollOffset();
+
       await tester.tap(find.text('视图父项'));
       await tester.pumpAndSettle();
 
-      // Stack 里主面板在前、浮层卡在后：.first 是面板父行，.last 是卡内副本。
-      final panelRow = tester.getRect(find.text('视图父项').first);
+      expect(scrollOffset(), closeTo(offsetBefore, 0.5));
+      // Stack 里主面板在前、浮层卡在后：.last 是卡内父行副本。
       final cardRow = tester.getRect(find.text('视图父项').last);
-      expect(cardRow.left, closeTo(panelRow.left, 0.5));
-      expect(cardRow.top, closeTo(panelRow.top, 0.5));
+      expect(cardRow.left, closeTo(rowBefore.left, 0.5));
+      expect(cardRow.top, closeTo(rowBefore.top, 0.5));
     });
 
     testWidgets('卡高超过安全区时收缩卡高，不溢出屏底', (tester) async {

@@ -241,6 +241,17 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   /// 情况下父行可能被滚过视口顶部）。
   final ScrollController _panelScroll = ScrollController();
 
+  /// 主面板内容子树的复用键：展开重挂玻璃面（[_expandSession]）时，
+  /// 挂着它的子树经 GlobalKey 原样迁入新玻璃，滚动位置等全部 State
+  /// 跨重挂保留——否则滚动偏移静默丢回 0，面板视觉跳回顶部，浮层卡
+  /// 又按「展开瞬间应停的位置」锚定，两处父行错开数百像素。
+  final GlobalKey _panelContentKey = GlobalKey();
+
+  /// 展开瞬间的主面板滚动偏移：重挂过渡帧 controller 可能短暂持有
+  /// 双 position（旧 position 尚 detach、新视图已挂），锚定取此值而非
+  /// 猜 0（内容偏移既已保留，过渡帧与稳定态同值）。
+  double _panelScrollAtExpand = 0;
+
   /// 主面板玻璃面（Transform 内）的定位键：浮层卡按它的实测宽度做
   /// min=max 宽度约束，保证两卡严格同宽。
   final GlobalKey _panelKey = GlobalKey();
@@ -252,8 +263,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   /// 「已无缩放绘制过、再遇双轴缩放」时会冻结几何矩阵（matteTransform
   /// 返回旧快照），live 采样的 shader uniform 拿未缩放矩形导致边缘错位
   /// （实测等比回放时圆角错位亮带）。重挂让玻璃面首帧直接画在缩放中，
-  /// 冻结快照保持 null，等比回放全程按 live 变换计算。副作用：面板
-  /// 滚动位置重置——展开态本就禁用滚动，且常见菜单不溢出，可忽略。
+  /// 冻结快照保持 null，等比回放全程按 live 变换计算。内容子树经
+  /// [_panelContentKey] 迁移复用，滚动位置不再随重挂丢失。
   int _expandSession = 0;
 
   /// 菜单里是否挂了二级子列表。有才需要在遮罩后插共享组捕获垫层
@@ -397,7 +408,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         if (HyperosSelectPopupGlass.liquidSurfaceActive(context)) {
           _ensurePageCapture();
         }
-        // 重挂面板玻璃 + 起跳过 0：见 _expandSession 与 _submenuRevealFrom。
+        // 先记下展开瞬间的滚动偏移（重挂过渡帧的锚定基准，见
+        // _currentPanelScrollOffset），再重挂面板玻璃 + 起跳过 0：
+        // 见 _expandSession 与 _submenuRevealFrom。
+        _panelScrollAtExpand = _currentPanelScrollOffset();
         _expandSession++;
         _expand.forward(from: _submenuRevealFrom);
       }
@@ -416,6 +430,16 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     return top;
   }
 
+  /// 面板当前滚动偏移。重挂过渡帧 controller 可能短暂持有双 position
+  /// （旧 position 尚 detach、新视图已挂），此时取展开瞬间保存的偏移
+  /// ——内容子树经 [_panelContentKey] 复用，偏移本身不丢，过渡帧与
+  /// 稳定态同值；稳定态单 position 正常读。
+  double _currentPanelScrollOffset() {
+    if (!_panelScroll.hasClients) return 0;
+    if (_panelScroll.positions.length != 1) return _panelScrollAtExpand;
+    return _panelScroll.offset;
+  }
+
   /// 收起态内容总高（与 build 里的 estimatedHeight 同一口径，抽出复用）。
   double get _panelEstimatedHeight => widget.items.fold<double>(
     0,
@@ -431,6 +455,20 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
       HyperosMiuixBasicComponent.minHeight * (1 + item.children.length) +
       _submenuDividerBlock;
 
+  /// 浮层卡实际布局高度：内容高超过安全区时收缩到安全区高（子项转为
+  /// 卡内滚动）。[_submenuCardTopGlobal] 的 max(safeTop, maxTop) 在
+  /// maxTop < safeTop（父行贴近菜单末尾的小屏）时会把卡推回 safeTop，
+  /// 卡身若仍按内容高布局，底部照旧溢出屏外——锚定与布局必须用同一
+  /// 个收缩后的高度。
+  double _submenuCardLaidOutHeight(
+    HyperosPopupMenuItem<dynamic> item, {
+    required double safeTop,
+    required double safeBottom,
+  }) {
+    final double available = math.max(0, safeBottom - safeTop);
+    return math.min(_submenuCardHeight(item), available);
+  }
+
   /// 浮层卡的全局纵向位置：面板顶 + 父行面板内偏移 − 面板已滚过的量，
   /// 屏幕安全区越界时上收（极小屏 + 父行贴近菜单末尾时卡片退成指向式
   /// 气泡，优先保证子项全部可见可点）。卡片在全屏 Stack 定位（命中测试
@@ -442,14 +480,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   }) {
     final index = _lastSubmenuIndex!;
     final item = widget.items[index];
-    // 重挂过渡帧（[_expandSession] 自增当帧）旧滚动位置尚未 detach、
-    // 新视图已挂上，positions 可能短暂为 2——新视图从 0 起，取 0 与
-    // 重挂后的视觉位置一致；稳定态单 position 正常读。
-    final scrollOffset = _panelScroll.positions.length == 1
-        ? _panelScroll.offset
-        : 0.0;
+    final scrollOffset = _currentPanelScrollOffset();
     final raw = top + _rowTopInPanel(index) - scrollOffset;
-    final maxTop = safeBottom - _submenuCardHeight(item);
+    final maxTop =
+        safeBottom - _submenuCardLaidOutHeight(
+          item,
+          safeTop: safeTop,
+          safeBottom: safeBottom,
+        );
     if (raw > maxTop) {
       return math.max(safeTop, maxTop);
     }
@@ -620,33 +658,40 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                       maxWidth: (screen.width - margin * 2).clamp(200.0, 364.0),
                       maxHeight: maxHeight,
                     ),
-                    child: SingleChildScrollView(
-                      controller: _panelScroll,
-                      child: IntrinsicWidth(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var i = 0; i < widget.items.length; i++)
-                              _ListPopupTile(
-                                item: widget.items[i],
-                                foregroundColor: widget.foregroundColor,
-                                expanded: _expandedIndex == i,
-                                // Selecting an item pops the popup immediately
-                                // so the destination page can start its
-                                // transition right away; the exit animation
-                                // would otherwise delay navigation by 150ms.
-                                // (Scrim taps and the back key still play the
-                                // fade-out.) 有子列表的行改为展开开关，不回传。
-                                onTap: !widget.items[i].enabled
-                                    ? null
-                                    : widget.items[i].children.isNotEmpty
-                                    ? () => _toggleSubmenu(i)
-                                    : () => Navigator.of(
-                                        context,
-                                      ).pop(widget.items[i].value),
-                              ),
-                          ],
+                    // GlobalKey 复用子树：玻璃面按 _expandSession 重挂时，
+                    // 这段内容原样迁入新玻璃（Scrollable State 随元素迁
+                    // 移），滚动位置跨重挂保留——面板视觉不跳顶，浮层卡
+                    // 与面板父行的算术对位也不被重挂打破。
+                    child: KeyedSubtree(
+                      key: _panelContentKey,
+                      child: SingleChildScrollView(
+                        controller: _panelScroll,
+                        child: IntrinsicWidth(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (var i = 0; i < widget.items.length; i++)
+                                _ListPopupTile(
+                                  item: widget.items[i],
+                                  foregroundColor: widget.foregroundColor,
+                                  expanded: _expandedIndex == i,
+                                  // Selecting an item pops the popup immediately
+                                  // so the destination page can start its
+                                  // transition right away; the exit animation
+                                  // would otherwise delay navigation by 150ms.
+                                  // (Scrim taps and the back key still play the
+                                  // fade-out.) 有子列表的行改为展开开关，不回传。
+                                  onTap: !widget.items[i].enabled
+                                      ? null
+                                      : widget.items[i].children.isNotEmpty
+                                      ? () => _toggleSubmenu(i)
+                                      : () => Navigator.of(
+                                          context,
+                                        ).pop(widget.items[i].value),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -755,7 +800,16 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                       return const SizedBox.shrink();
                     }
                     final item = widget.items[_lastSubmenuIndex!];
-                    final cardHeight = _submenuCardHeight(item);
+                    // 卡高超过安全区时收缩到安全区高（锚定同用收缩值，见
+                    // _submenuCardLaidOutHeight），超高部分的子项转为卡内
+                    // 滚动——否则极小屏/横屏下卡底溢出屏外不可点。
+                    final fullCardHeight = _submenuCardHeight(item);
+                    final cardHeight = _submenuCardLaidOutHeight(
+                      item,
+                      safeTop: safeTop,
+                      safeBottom: safeBottom,
+                    );
+                    final cardOverflows = cardHeight < fullCardHeight;
                     // 玻璃面按完整内容尺寸稳定布局，揭示窗口裁在玻璃面
                     // 外侧（见下方 ClipRect）。旧实现把揭示放在玻璃内侧
                     // （Align heightFactor 包着玻璃），玻璃面布局高度逐帧
@@ -793,16 +847,41 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                                     .withValues(alpha: 0.15),
                               ),
                             ),
-                            for (final child in item.children)
-                              _ListPopupTile(
-                                item: child,
-                                foregroundColor: widget.foregroundColor,
-                                includeGroupGap: false,
-                                onTap: child.enabled
-                                    ? () =>
-                                        Navigator.of(context).pop(child.value)
-                                    : null,
-                              ),
+                            if (cardOverflows)
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (final child in item.children)
+                                        _ListPopupTile(
+                                          item: child,
+                                          foregroundColor:
+                                              widget.foregroundColor,
+                                          includeGroupGap: false,
+                                          onTap: child.enabled
+                                              ? () => Navigator.of(
+                                                  context,
+                                                ).pop(child.value)
+                                              : null,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              for (final child in item.children)
+                                _ListPopupTile(
+                                  item: child,
+                                  foregroundColor: widget.foregroundColor,
+                                  includeGroupGap: false,
+                                  onTap: child.enabled
+                                      ? () =>
+                                          Navigator.of(context).pop(child.value)
+                                      : null,
+                                ),
                           ],
                         ),
                       ),
