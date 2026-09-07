@@ -182,30 +182,23 @@ void main() {
       expect(find.text('视图父项'), findsNothing);
     });
 
-    testWidgets('揭示动画只动外层裁剪窗口，玻璃面全程按完整卡高布局', (
+    testWidgets('首次展开首帧：卡宽与面板同宽（紧约束），揭示窗盒同宽', (
       tester,
     ) async {
-      await pumpPopup(tester, items: items);
+      // 首次展开的子卡构建期面板渲染对象尚未 layout（重挂当帧
+      // hasSize=false），宽度曾回退松约束 200..364——真机液态路径下首帧
+      // 卡身被拉到上界附近，顶缘揭示带横贯大半屏幕（用户描述「闪现横条
+      // 到左边，左边剩余空隙与二级右侧空隙一样」）；再展开时宽度已缓存
+      // 故不闪。回归锁：面板宽度在弹窗打开当帧预热缓存后，首帧卡宽与
+      // 揭示窗盒宽都必须等于面板宽。
+      await pumpPopup(tester, items: items, appearance: liquidAppearance);
 
       await tester.tap(find.text('视图父项'));
-      await tester.pump(); // 处理点按，启动展开动画
-      await tester.pump(const Duration(milliseconds: 60)); // 动画中段
+      await tester.pump(); // 展开首帧（构建 + 市局 + 绘制）
 
-      // 主面板与二级子卡各一块玻璃面（树序：面板在前、子卡在后）。
-      final glasses = tester
-          .widgetList<HyperosSelectPopupGlass>(
-            find.byType(HyperosSelectPopupGlass),
-          )
-          .toList();
-      expect(glasses.length, 2);
-      // 子卡同源采样（遮罩下的页面），主面板保持自有采样。
-      expect(glasses.first.useAncestorGroupCapture, isFalse);
-      expect(glasses.last.useAncestorGroupCapture, isTrue);
-
-      // 揭示窗（整卡尺寸的 ClipPath，内挂 SelectPopupRevealClipper）
-      // 盒子与玻璃面同高：玻璃是「不溢出」的子项，被逐帧生长的路径裁剪
-      // ——溢出式揭示（ClipRect+Align(heightFactor) 让玻璃每帧渲染在
-      // Align 边界之外）在真机上会出揭示首帧顶缘横贯亮带。
+      final glass = tester.renderObject<RenderBox>(
+        find.byType(HyperosSelectPopupGlass).last,
+      );
       final windowFinder = find.ancestor(
         of: find.byType(HyperosSelectPopupGlass).last,
         matching: find.byWidgetPredicate(
@@ -213,15 +206,16 @@ void main() {
         ),
       ).first;
       final window = tester.renderObject<RenderBox>(windowFinder);
-      final glass = tester.renderObject<RenderBox>(
-        find.byType(HyperosSelectPopupGlass).last,
+      expect(window.size.width, closeTo(glass.size.width, 0.5));
+
+      await tester.pump(const Duration(milliseconds: 60)); // 动画中段
+      // 揭示窗盒子全程与玻璃面同宽同高（玻璃不溢出不重采样）。
+      expect(
+        tester.renderObject<RenderBox>(windowFinder).size,
+        glass.size,
       );
-      expect(window.size.height, glass.size.height);
-      expect(window.size.width, glass.size.width);
 
       await tester.pumpAndSettle();
-      // 展开完成后玻璃面高度与中段一致：动画没有改玻璃面的布局尺寸
-      // （旧实现逐帧改玻璃高度，头部几帧超椭圆退化导致顶边闪烁）。
       final settled = tester.renderObject<RenderBox>(
         find.byType(HyperosSelectPopupGlass).last,
       );

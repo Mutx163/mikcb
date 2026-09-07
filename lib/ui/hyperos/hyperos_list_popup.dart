@@ -379,6 +379,23 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     // 弹窗一打开就预热整页捕获（有二级子项且液态面激活时）：把
     // toImageSync 的整页栅格化从首次展开当帧挪走，见 _warmPageCapture。
     _warmPageCapture();
+    // 弹窗打开当帧就实测面板宽度并缓存：首次展开的子卡构建期面板渲染
+    // 对象尚未 layout（重挂当帧 hasSize=false），没有这份缓存就只能回退
+    // 松约束（200..364）——真机液态路径下首帧卡身会被拉到上界附近，
+    // 顶缘揭示带横贯大半屏幕（「首次展开闪横条、再展开不闪」的根因：
+    // 再展开时宽度已缓存、约束为紧）。
+    _schedulePanelWidthMeasure();
+  }
+
+  /// 帧末实测主面板宽度并缓存（幂等，宽度在弹窗生命周期内恒定）。
+  void _schedulePanelWidthMeasure() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final renderBox = _panelKey.currentContext?.findRenderObject();
+      if (renderBox is RenderBox && renderBox.hasSize) {
+        _panelMeasuredWidth = renderBox.size.width;
+      }
+    });
   }
 
   @override
@@ -530,7 +547,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     }
     final width = _panelMeasuredWidth;
     if (width == null || width <= 0) {
-      return const BoxConstraints(minWidth: 200, maxWidth: 364);
+      // 兜底也必须是紧约束：上界放开时子行里的 Expanded 会把卡身拉满
+      // 上界，首帧顶缘揭示带横贯大半屏幕（真机「首次展开闪横条」）。
+      // 宁可一帧偏窄（暗底模糊，不可辨）也不放开上界。
+      return const BoxConstraints(minWidth: 200, maxWidth: 200);
     }
     return BoxConstraints(minWidth: width, maxWidth: width);
   }
