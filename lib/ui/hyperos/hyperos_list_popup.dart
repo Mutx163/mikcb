@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui show Image;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -11,7 +11,10 @@ import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart'
-    show UndimmedBackdropCapture;
+    show
+        HyperosLiquidGlassRole,
+        HyperosLiquidGlassSurface,
+        UndimmedBackdropCapture;
 
 /// 宿主页面根级的页面捕获作用域：给锚定弹窗的二级子卡提供「弹窗背后
 /// 页面」的同步截图来源（RenderRepaintBoundary.toImageSync）。
@@ -263,6 +266,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   /// 采样点之前的主面板玻璃算进背景（玻璃叠玻璃）；预捕获整页图直接
   /// 喂给子卡 shader，子卡取到的才是背后的首页内容。捕获失败（宿主
   /// 未挂作用域、边界未布局等）保持 null，子卡退回共享组磨砂底。
+  ///
+  /// 捕获图按面板同一材质的 blur **预先模糊**：包内 capture 分支直接
+  /// 把整页图喂给折射 shader，live 路径的 BackdropFilterLayer 背景模糊
+  /// pass 被跳过——不预模糊的话页面文字会几乎清晰地透进子卡（真机
+  /// 实测一排排幽灵行）。sigma 与 live 同源（同一 settingsForRole），
+  /// 捕获图是物理像素，需乘 devicePixelRatio。
   void _ensurePageCapture() {
     if (_pageCapture != null) return;
     final key = widget.pageBoundaryKey;
@@ -273,14 +282,52 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         boundary.size.isEmpty) {
       return;
     }
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final ui.Image raw;
     try {
-      _pageCapture = boundary.toImageSync(
-        pixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
-      _pageCaptureOrigin = boundary.localToGlobal(Offset.zero);
+      raw = boundary.toImageSync(pixelRatio: dpr);
     } catch (_) {
-      _pageCapture?.dispose();
-      _pageCapture = null;
+      return; // 无捕获 → 子卡退回共享组磨砂底。
+    }
+    _pageCaptureOrigin = boundary.localToGlobal(Offset.zero);
+    final blurred = _preblurCapture(raw, dpr);
+    _pageCapture = blurred ?? raw;
+    if (blurred != null) {
+      raw.dispose(); // 原图已烘进模糊图，立即释放。
+    }
+  }
+
+  /// 按面板同一材质的 blur 把捕获图预模糊；失败返回 null（调用方直接
+  /// 用原图）。sigma 是逻辑像素、捕获图是物理像素，需乘 devicePixelRatio。
+  ui.Image? _preblurCapture(ui.Image raw, double dpr) {
+    try {
+      final settings = HyperosLiquidGlassSurface.settingsForRole(
+        role: HyperosLiquidGlassRole.modal,
+        brightness: Theme.of(context).brightness,
+        tuning: FrostedAppearanceScope.of(context).liquidGlassTuning,
+      );
+      final sigma = settings.effectiveBlur * dpr;
+      if (sigma <= 0.5) {
+        return null;
+      }
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawImage(
+        raw,
+        ui.Offset.zero,
+        ui.Paint()
+          ..imageFilter = ui.ImageFilter.blur(
+            sigmaX: sigma,
+            sigmaY: sigma,
+            tileMode: ui.TileMode.clamp,
+          ),
+      );
+      final picture = recorder.endRecording();
+      final blurred = picture.toImageSync(raw.width, raw.height);
+      picture.dispose();
+      return blurred;
+    } catch (_) {
+      return null;
     }
   }
 
