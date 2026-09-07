@@ -2646,7 +2646,16 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     // Auto-fit week grid has no vertical Scrollable; use a vertical-only drag
     // that does not claim the arena until the gesture is clearly vertical.
-    if (settings.timetableAutoFitSectionHeight && !_isDayView) {
+    //
+    // 玻璃坞形态会给周课表注入底部滚动余量（_glassDockContentScrollInset
+    // > 0），网格变成可滚动的 SingleChildScrollView——此时若仍挂原始拖拽
+    // 探测器，任何竖向下拉都会不计滚动位置地累计下拉进度，「还没滑动到
+    // 顶部」就打开下拉 → 提前触发快捷导入（更新）。有余量的场景统一交给
+    // 上方的 NotificationListener / OverscrollNotification（自带 atTop
+    // 位置判定，回到顶部才开始计下拉）。
+    if (settings.timetableAutoFitSectionHeight &&
+        !_isDayView &&
+        _glassDockContentScrollInset(settings) <= 0) {
       surface = _HomePullVerticalDragDetector(
         enabled: !_isHomePullQuickImportRunning,
         onPullUpdate: _updateHomePullDragDistance,
