@@ -10,18 +10,38 @@ class WarehouseRepositoryException implements Exception {
 /// 适配仓宿主：GitHub（raw.githubusercontent 直链）或 GitCode（v5 contents API）。
 enum WarehouseRepositoryHost { github, gitcode }
 
+/// 轻屿教务适配仓默认源。
+/// GitCode 镜像（mutx/qingyu_warehouse）与 GitHub 主仓（Mutx163/qingyu_warehouse）
+/// 命名空间不同，gitcodeOwner 需单独指定；更新渠道选 GitCode 时用它直连拉取。
+const WarehouseRepositorySource defaultQingyuWarehouseSource =
+    WarehouseRepositorySource(
+  owner: 'Mutx163',
+  repo: 'qingyu_warehouse',
+  gitcodeOwner: 'mutx',
+);
+
 class WarehouseRepositorySource {
   final String owner;
   final String repo;
   final String branch;
   final WarehouseRepositoryHost host;
 
+  /// GitCode 侧命名空间与 GitHub 不同时的覆盖（如 GitHub Mutx163 → GitCode mutx）。
+  /// host 为 gitcode 时优先生效；为空则沿用 owner/repo。
+  final String? gitcodeOwner;
+  final String? gitcodeRepo;
+
   const WarehouseRepositorySource({
     required this.owner,
     required this.repo,
     this.branch = 'main',
     this.host = WarehouseRepositoryHost.github,
+    this.gitcodeOwner,
+    this.gitcodeRepo,
   });
+
+  String get _gitcodeEffectiveOwner => gitcodeOwner ?? owner;
+  String get _gitcodeEffectiveRepo => gitcodeRepo ?? repo;
 
   /// 返回切换宿主后的源（其余字段保持不变）。
   WarehouseRepositorySource withHost(WarehouseRepositoryHost newHost) {
@@ -33,12 +53,16 @@ class WarehouseRepositorySource {
       repo: repo,
       branch: branch,
       host: newHost,
+      gitcodeOwner: gitcodeOwner,
+      gitcodeRepo: gitcodeRepo,
     );
   }
 
   factory WarehouseRepositorySource.fromGitHubUrl(
     String url, {
     String branch = 'main',
+    String? gitcodeOwner,
+    String? gitcodeRepo,
   }) {
     final uri = Uri.tryParse(url.trim());
     if (uri == null || uri.host.isEmpty) {
@@ -56,6 +80,8 @@ class WarehouseRepositorySource {
         owner: segments[0],
         repo: segments[1],
         branch: branch,
+        gitcodeOwner: gitcodeOwner,
+        gitcodeRepo: gitcodeRepo,
       );
     }
 
@@ -70,6 +96,8 @@ class WarehouseRepositorySource {
         owner: segments[0],
         repo: segments[1],
         branch: segments[2],
+        gitcodeOwner: gitcodeOwner,
+        gitcodeRepo: gitcodeRepo,
       );
     }
 
@@ -116,7 +144,8 @@ class WarehouseRepositorySource {
         .map(Uri.encodeComponent)
         .join('/');
     return Uri.parse(
-      'https://api.gitcode.com/api/v5/repos/$owner/$repo/contents/'
+      'https://api.gitcode.com/api/v5/repos/'
+      '$_gitcodeEffectiveOwner/$_gitcodeEffectiveRepo/contents/'
       '$encodedPath?ref=${Uri.encodeQueryComponent(branch)}',
     );
   }

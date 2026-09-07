@@ -2090,10 +2090,8 @@ class ContributorsScreen extends StatefulWidget {
 }
 
 class _ContributorsScreenState extends State<ContributorsScreen> {
-  static final WarehouseRepositorySource _warehouseSource =
-      WarehouseRepositorySource.fromGitHubUrl(
-        'https://github.com/Mutx163/qingyu_warehouse',
-      );
+  static const WarehouseRepositorySource _warehouseSource =
+      defaultQingyuWarehouseSource;
   static const String _maintainersCacheKey = 'warehouse_maintainers_cache_v1';
 
   final WarehouseRepositoryService _repositoryService =

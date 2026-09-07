@@ -1543,9 +1543,7 @@ Future<bool> runHomePullWarehouseQuickImport(
 
   final settings = context.read<TimetableProvider>().settings;
   final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
-  final source = WarehouseRepositorySource.fromGitHubUrl(
-    'https://github.com/Mutx163/qingyu_warehouse',
-  );
+  const source = defaultQingyuWarehouseSource;
   final selectedMacro = macro;
   final completer = Completer<bool>();
   var sessionFinished = false;
@@ -1634,10 +1632,8 @@ class WarehouseCourseImportScreen extends StatefulWidget {
 
 class _WarehouseCourseImportScreenState
     extends State<WarehouseCourseImportScreen> {
-  static final WarehouseRepositorySource _defaultSource =
-      WarehouseRepositorySource.fromGitHubUrl(
-        'https://github.com/Mutx163/qingyu_warehouse',
-      );
+  static const WarehouseRepositorySource _defaultSource =
+      defaultQingyuWarehouseSource;
 
   final WarehouseRepositoryService _repositoryService =
       WarehouseRepositoryService();
@@ -2171,7 +2167,7 @@ class WarehouseCustomDebugRecordsScreen extends StatefulWidget {
 class _WarehouseCustomDebugRecordsScreenState
     extends State<WarehouseCustomDebugRecordsScreen> {
   static const WarehouseRepositorySource _customSource =
-      WarehouseRepositorySource(owner: 'Mutx163', repo: 'qingyu_warehouse');
+      defaultQingyuWarehouseSource;
 
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();

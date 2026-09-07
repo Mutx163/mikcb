@@ -268,6 +268,29 @@ adapters:
     );
   });
 
+  test('default source maps GitHub Mutx163 to GitCode mutx namespace', () {
+    // GitHub 主仓 raw 直链不变。
+    expect(
+      defaultQingyuWarehouseSource
+          .buildGitHubRawFileUri('index/root_index.yaml')
+          .toString(),
+      'https://raw.githubusercontent.com/Mutx163/qingyu_warehouse/main/index/root_index.yaml',
+    );
+    // GitCode contents API 用 mutx 命名空间（实测 Mutx163 会 404 Project not found）。
+    expect(
+      defaultQingyuWarehouseSource
+          .withHost(WarehouseRepositoryHost.gitcode)
+          .buildFileUri('index/root_index.yaml')
+          .toString(),
+      'https://api.gitcode.com/api/v5/repos/mutx/qingyu_warehouse/contents/index/root_index.yaml?ref=main',
+    );
+    // 切回 GitHub 宿主后仍走 GitHub 主仓名。
+    expect(
+      defaultQingyuWarehouseSource.withHost(WarehouseRepositoryHost.github).host,
+      WarehouseRepositoryHost.github,
+    );
+  });
+
   test('fromSettings derives preferGitCode from download channel', () {
     // 默认渠道就是 gitcode。
     expect(
@@ -304,13 +327,12 @@ schools:
     });
 
     final client = _FakeClient({
-      'https://api.gitcode.com/api/v5/repos/Mutx163/qingyu_warehouse/contents/index/root_index.yaml?ref=main':
+      // 命名空间覆盖：GitHub Mutx163 → GitCode mutx。
+      'https://api.gitcode.com/api/v5/repos/mutx/qingyu_warehouse/contents/index/root_index.yaml?ref=main':
           http.Response.bytes(utf8.encode(apiBody), 200),
     });
     final service = WarehouseRepositoryService(client: client);
-    final source = WarehouseRepositorySource.fromGitHubUrl(
-      'https://github.com/Mutx163/qingyu_warehouse',
-    );
+    const source = defaultQingyuWarehouseSource;
     const options = WarehouseFetchOptions(
       downloadSource: AppUpdateDownloadSource.mirror,
       mirrorPreset: AppUpdateMirrorPreset.ghfast,
