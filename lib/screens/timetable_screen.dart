@@ -6,7 +6,10 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 
-import 'package:animations/animations.dart';
+// OpenContainer 用 vendored 优化版(lib/widgets/open_container.dart):
+// 上游在转场每帧重调 openBuilder/closedBuilder,日视图课程详情的
+// container transform 变成每帧整页 rebuild(见该文件头注释)。
+import 'package:university_timetable/widgets/open_container.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
     show Drag, VelocityTracker, kMinFlingVelocity;
