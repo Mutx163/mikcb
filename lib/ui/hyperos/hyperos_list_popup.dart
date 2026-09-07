@@ -122,16 +122,18 @@ const _listPopupExitDuration = Duration(milliseconds: 150);
 /// Submenu reveal/collapse duration (HyperOS gallery menu pace).
 const _submenuRevealDuration = Duration(milliseconds: 200);
 
-/// 二级子卡展开时主面板沿锚点角回放的幅度（宽度缩到 1-0.05）。弹出时
-/// 面板从锚点角向左展开，展开子卡时向锚点角缩回一点，读作「面板让位
-/// 退后、子卡浮前」，与系统相册的层级退让同语感。
-///
-/// 刻意只缩 X 轴：liquid_glass 包把「双轴同时缩小」识别为 CupertinoSheet
-/// 推压并冻结几何矩阵（_hasScale），live 采样的 shader uniform 会拿
-/// 未缩放矩形，远离锚点的边缘出现错位亮带（实测圆角怪异）；单轴变换
-/// 不触发冻结，按 live 变换处理，几何全程正确——单轴回退也正是
-/// 「向右回放」的本意。
+/// 二级子卡展开时主面板沿锚点角等比回放的幅度（缩到 1-0.05）。弹出时
+/// 面板从锚点角向左展开，展开子卡时向锚点角等比缩回一点，读作「面板
+/// 让位退后、子卡浮前」，与系统相册的层级退让同语感。
 const _panelReplayShrink = 0.05;
+
+/// 展开动画的起跳值（0..1）。刻意不从 0 起跳：每次展开都会重挂面板
+/// 玻璃（[_expandSession]），配合第一帧就带一点缩放，玻璃面的首次
+/// 绘制直接落在缩放中——liquid_glass 包只有在「先无缩放绘制过、再遇
+/// 双轴缩放」时才冻结几何矩阵（快照为 null 时不冻结），等比回放才能
+/// 全程按 live 变换计算 uniform。对子卡揭示的影响仅是第一帧多出约 3%
+/// 高度，肉眼不可辨。
+const _submenuRevealFrom = 0.12;
 
 /// Air above/below the hairline separating the submenu parent row from its
 /// children (Miuix divider sits in whitespace, not flush against rows).
@@ -249,6 +251,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   /// Guards re-entrant dismissal (tap outside + back key racing the exit).
   bool _dismissing = false;
 
+  /// 面板玻璃的展开会话键：每次展开自增并重挂玻璃面。liquid_glass 包在
+  /// 「已无缩放绘制过、再遇双轴缩放」时会冻结几何矩阵（matteTransform
+  /// 返回旧快照），live 采样的 shader uniform 拿未缩放矩形导致边缘错位
+  /// （实测等比回放时圆角错位亮带）。重挂让玻璃面首帧直接画在缩放中，
+  /// 冻结快照保持 null，等比回放全程按 live 变换计算。副作用：面板
+  /// 滚动位置重置——展开态本就禁用滚动，且常见菜单不溢出，可忽略。
+  int _expandSession = 0;
+
   /// 菜单里是否挂了二级子列表。有才需要在遮罩后插共享组捕获垫层
   /// （二级子卡的玻璃按共享组采样，见 [HyperosSelectPopupGlass]
   /// 的 [HyperosSelectPopupGlass.useAncestorGroupCapture]）；无子列表
@@ -293,7 +303,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     final blurred = _preblurCapture(raw, dpr);
     _pageCapture = blurred ?? raw;
     if (blurred != null) {
-      raw.dispose(); // 原图已烘进模糊图，立即释放。
+      // 模糊图的栅格化是异步的：原图纹理必须活到模糊图首次被合成之后。
+      // 立即释放会让 shader 采样到已失效的纹理——真机表现为子卡完全
+      // 透明。延后一帧（此时模糊图已栅格化并上屏）再释放。
+      WidgetsBinding.instance.addPostFrameCallback((_) => raw.dispose());
     }
   }
 
@@ -391,7 +404,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   }
 
   /// HyperOS 相册「视图」式二级列表：点父行展开/收起（浮层卡 + 主面板
-  /// 压暗 + 主面板沿锚点角回放一小段弹出动画），不回传父行 value。
+  /// 压暗 + 主面板沿锚点角等比回放一小段弹出动画），不回传父行 value。
   void _toggleSubmenu(int index) {
     setState(() {
       if (_expandedIndex == index) {
@@ -404,7 +417,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         if (HyperosSelectPopupGlass.liquidSurfaceActive(context)) {
           _ensurePageCapture();
         }
-        _expand.forward(from: 0);
+        // 重挂面板玻璃 + 起跳过 0：见 _expandSession 与 _submenuRevealFrom。
+        _expandSession++;
+        _expand.forward(from: _submenuRevealFrom);
       }
     });
   }
@@ -456,12 +471,18 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     return math.max(safeTop, raw);
   }
 
-  /// 主面板实测宽度 → 浮层卡宽度约束（min=max 严格同宽）。面板已布局
-  /// （展开只会在弹窗完全出现后发生）；未挂载时兜底 200..364。
+  /// 主面板实测宽度 → 浮层卡宽度约束（min=max 严格同宽）。宽度按帧
+  /// 缓存：展开会重挂面板玻璃（[_expandSession]），重挂当帧的构建期
+  /// 新渲染对象尚未 layout（hasSize=false），此时沿用上次实测宽度，
+  /// 避免构建期断言与卡宽跳变；未挂载时兜底 200..364。
+  double? _panelMeasuredWidth;
+
   BoxConstraints _submenuCardWidthConstraints() {
-    final renderBox =
-        _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    final width = renderBox?.size.width;
+    final renderBox = _panelKey.currentContext?.findRenderObject();
+    if (renderBox is RenderBox && renderBox.hasSize) {
+      _panelMeasuredWidth = renderBox.size.width;
+    }
+    final width = _panelMeasuredWidth;
     if (width == null || width <= 0) {
       return const BoxConstraints(minWidth: 200, maxWidth: 364);
     }
@@ -570,14 +591,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                 builder: (context, _) {
                   final fraction = _fraction.value.clamp(0.0, 1.0);
                   // 弹出动画（锚点角 0.15→1 弹簧）× 展开回放：子卡展开
-                  // 时面板沿弹出方向水平缩回一点（向右变小），收起时
-                  // 随 _expand 逆放回 1。锚点对齐沿用弹出动画的角；回放
-                  // 只走 X 轴（原因见 _panelReplayShrink 的说明）。
+                  // 时面板沿锚点角等比缩回一点，收起时随 _expand 逆放回
+                  // 1。锚点对齐沿用弹出动画的角。等比回放的几何正确性由
+                  // _expandSession 重挂 + _submenuRevealFrom 起跳保证。
                   final replay =
                       1 -
                       _panelReplayShrink *
                           Curves.fastOutSlowIn.transform(_expand.value);
-                  final entrance = 0.15 + 0.85 * fraction;
+                  final scale = (0.15 + 0.85 * fraction) * replay;
                   final Widget panelChild = ConstrainedBox(
                     constraints: BoxConstraints(
                       minWidth: 200,
@@ -656,8 +677,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     ],
                   );
                   return Transform.scale(
-                    scaleX: entrance * replay,
-                    scaleY: entrance,
+                    scale: scale,
                     alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
                     // No reveal clip around the glass: clipping the backdrop
                     // surface every spring frame resamples the group capture
@@ -667,15 +687,20 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     // 玻璃的背景采集读不到平台视图内容，会渲染成黑色面板。
                     child: KeyedSubtree(
                       key: _panelKey,
-                      child: widget.opaqueSurface
-                          ? HyperosSolidPopupSurface(
-                              cornerRadius: cornerRadius,
-                              child: dimmedPanelChild,
-                            )
-                          : HyperosSelectPopupGlass(
-                              cornerRadius: cornerRadius,
-                              child: dimmedPanelChild,
-                            ),
+                      child: KeyedSubtree(
+                        // 展开会话键（见 _expandSession）：每次展开重挂
+                        // 玻璃面，首帧即画在缩放中，包内冻结快照保持空。
+                        key: ValueKey<int>(_expandSession),
+                        child: widget.opaqueSurface
+                            ? HyperosSolidPopupSurface(
+                                cornerRadius: cornerRadius,
+                                child: dimmedPanelChild,
+                              )
+                            : HyperosSelectPopupGlass(
+                                cornerRadius: cornerRadius,
+                                child: dimmedPanelChild,
+                              ),
+                      ),
                     ),
                   );
                 },
