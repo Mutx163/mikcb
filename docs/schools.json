@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-06T06:24:34+00:00",
+  "updatedAt": "2026-09-07T06:32:39+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 190,
-    "schools": 185,
+    "total": 192,
+    "schools": 187,
     "generic": 5
   },
   "schools": [
@@ -83,6 +83,13 @@
       "name": "常州机电职业技术学院",
       "initial": "C",
       "resourceFolder": "CZIMT",
+      "category": "school"
+    },
+    {
+      "id": "CDUTCM",
+      "name": "成都中医药大学",
+      "initial": "C",
+      "resourceFolder": "CDUTCM",
       "category": "school"
     },
     {
@@ -755,6 +762,13 @@
       "name": "辽宁科技大学",
       "initial": "L",
       "resourceFolder": "USTL",
+      "category": "school"
+    },
+    {
+      "id": "MYSY",
+      "name": "绵阳师范学院",
+      "initial": "M",
+      "resourceFolder": "MYSY",
       "category": "school"
     },
     {
