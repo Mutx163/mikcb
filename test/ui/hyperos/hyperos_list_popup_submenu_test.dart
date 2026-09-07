@@ -182,7 +182,7 @@ void main() {
       expect(find.text('视图父项'), findsNothing);
     });
 
-    testWidgets('揭示动画只动外层裁剪窗口，玻璃面全程按完整卡高布局', (
+    testWidgets('揭示为锚点缩放入场（无裁剪窗），玻璃面全程按完整卡高布局', (
       tester,
     ) async {
       await pumpPopup(tester, items: items);
@@ -202,26 +202,26 @@ void main() {
       expect(glasses.first.useAncestorGroupCapture, isFalse);
       expect(glasses.last.useAncestorGroupCapture, isTrue);
 
-      // 揭示窗（整卡尺寸的 ClipPath，内挂 SelectPopupRevealClipper）
-      // 盒子与玻璃面同高：玻璃是「不溢出」的子项，被逐帧生长的路径裁剪
-      // ——溢出式揭示（ClipRect+Align(heightFactor) 让玻璃每帧渲染在
-      // Align 边界之外）在真机上会出揭示首帧顶缘横贯亮带。
-      final windowFinder = find.ancestor(
-        of: find.byType(HyperosSelectPopupGlass).last,
-        matching: find.byWidgetPredicate(
-          (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
-        ),
-      ).first;
-      final window = tester.renderObject<RenderBox>(windowFinder);
+      // 揭示 = 整卡 Transform.scale 入场（0.86 → 1.0，锚点角对齐），
+      // 不存在任何裁剪窗：逐帧变化的裁剪 × 玻璃背景捕获在真机上会闪
+      // 横贯亮带（磨砂/液态均复现）。缩放不能换成淡入——alpha<1 会把
+      // 卡隔离进离屏层，玻璃 live 采样读到空背景整卡变透明。
+      final revealFinder = find.byKey(const ValueKey('submenuReveal'));
+      final revealWidget = tester.widget<Transform>(revealFinder);
+      final midScale = revealWidget.transform.storage[0];
+      expect(midScale, greaterThan(0.86));
+      expect(midScale, lessThan(0.999));
+
       final glass = tester.renderObject<RenderBox>(
         find.byType(HyperosSelectPopupGlass).last,
       );
-      expect(window.size.height, glass.size.height);
-      expect(window.size.width, glass.size.width);
 
       await tester.pumpAndSettle();
-      // 展开完成后玻璃面高度与中段一致：动画没有改玻璃面的布局尺寸
-      // （旧实现逐帧改玻璃高度，头部几帧超椭圆退化导致顶边闪烁）。
+      // 稳态缩放回到 1，且玻璃面高度与中段一致：动画没有改玻璃面的布
+      // 局尺寸（旧实现逐帧改玻璃高度，头部几帧超椭圆退化顶边闪烁）。
+      final settledScale =
+          tester.widget<Transform>(revealFinder).transform.storage[0];
+      expect(settledScale, closeTo(1.0, 0.0001));
       final settled = tester.renderObject<RenderBox>(
         find.byType(HyperosSelectPopupGlass).last,
       );
@@ -344,14 +344,7 @@ void main() {
       final origin = cardGlass.pageAlignedOrigin;
       expect(origin, isNotNull);
       final cardRect = tester.getRect(
-        find
-            .ancestor(
-              of: find.text('子项一'),
-              matching: find.byWidgetPredicate(
-                (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
-              ),
-            )
-            .first,
+        find.byKey(const ValueKey('submenuReveal')),
       );
       expect(origin!.dx, closeTo(cardRect.left, 0.5));
       expect(origin.dy, closeTo(cardRect.top, 0.5));
@@ -429,14 +422,7 @@ void main() {
 
       // 未收缩卡高 = 7 行 × 56 + 分隔块 ≈ 400.75，安全区只有 336。
       final cardRect = tester.getRect(
-        find
-            .ancestor(
-              of: find.text('子项0'),
-              matching: find.byWidgetPredicate(
-                (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
-              ),
-            )
-            .first,
+        find.byKey(const ValueKey('submenuReveal')),
       );
       const safeTop = 12.0;
       const safeBottom = 360.0 - 12.0;

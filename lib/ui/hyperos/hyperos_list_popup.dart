@@ -921,22 +921,20 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                             ),
                             child: card,
                           );
-                    // 揭示裁剪（玻璃面外侧、整卡盒子内）：裁剪窗口从父
-                    // 行顶边向下生长，父行位置全程不动；t=1 时窗口即完
-                    // 整卡。与选择弹窗同款 ClipPath（复用
-                    // SelectPopupRevealClipper）：盒子始终是整卡尺寸、玻
-                    // 璃作为「不溢出」的子项被路径裁剪。旧实现用
-                    // ClipRect+Align(heightFactor)——玻璃每帧都渲染在
-                    // Align 布局边界之外（溢出子项），再被逐帧变化的裁剪
-                    // 窗口裁剪，真机上揭示首帧顶缘仍闪横贯亮带（溢出子项
-                    // × 逐帧裁剪 × 背景捕获的合成边界伪影；同玻璃在选择
-                    // 弹窗的整卡 ClipPath 揭示下无此现象）。
-                    card = ClipPath(
-                      clipper: SelectPopupRevealClipper(
-                        progress: t,
-                        showBelow: true,
-                        cornerRadius: cornerRadius,
-                      ),
+                    // 锚点缩放入场（与主面板弹出同语）：整卡沿锚点角从
+                    // 0.86 长到 1.0，不裁剪、不淡入。裁剪窗（ClipRect/
+                    // ClipPath 皆然）逐帧变化 × 玻璃背景捕获在真机上会
+                    // 闪横贯亮带（磨砂/液态均复现，引擎合成边界伪影）；
+                    // Transform 缩放不裁剪任何东西，与主面板弹簧同款，
+                    // 玻璃全程 live 采样稳定边界。淡入也不可用：alpha<1
+                    // 会把卡隔离进离屏层，玻璃采样读到空背景整卡变透明
+                    // （选择弹窗入场注释已验证）。首帧即带缩放（
+                    // _submenuRevealFrom 起跳）避开包内几何冻结，与面板
+                    // 的 _expandSession 重挂同一配方。
+                    card = Transform.scale(
+                      key: const ValueKey('submenuReveal'),
+                      scale: 0.86 + 0.14 * t,
+                      alignment: Alignment(originX * 2 - 1, -1),
                       child: card,
                     );
                     if (_alpha.value < 1) {
