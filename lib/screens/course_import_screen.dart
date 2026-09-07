@@ -2025,6 +2025,17 @@ class _WarehouseCourseImportScreenState
                             subtitle: isSearching
                                 ? l10n.searchSchoolSuggestion
                                 : null,
+                            // 搜索无结果时给出反馈入口，而不是干巴巴的空态：点击后
+                            // 打开「缺少学校？」引导（含去反馈页提交 Issue 的渠道提示）。
+                            action: isSearching
+                                ? HyperosButton(
+                                    label:
+                                        l10n.warehouseFeedbackMissingSchoolTitle,
+                                    variant: HyperosButtonVariant.secondary,
+                                    dense: true,
+                                    onPressed: _openMissingSchoolFeedbackGuide,
+                                  )
+                                : null,
                           ),
                         ),
                       );

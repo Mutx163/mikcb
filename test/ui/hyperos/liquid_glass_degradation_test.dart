@@ -64,6 +64,34 @@ void main() {
     });
   });
 
+  group('platform-view gate is reactive via LiquidGlassDegradationScope', () {
+    testWidgets('begin degrades and end restores glass on the next frame', (
+      tester,
+    ) async {
+      // Reset the global gate so this test is order-independent within the file.
+      LiquidGlassDegradation.platformViewUnsafeDepthNotifier.value = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LiquidGlassDegradationScope(
+            notifier: LiquidGlassDegradation.platformViewUnsafeDepthNotifier,
+            child: const _DegradationProbe(),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('glass'), findsOneWidget);
+
+      LiquidGlassDegradation.beginPlatformViewUnsafeSurface();
+      await tester.pump();
+      expect(find.text('degraded'), findsOneWidget);
+
+      LiquidGlassDegradation.endPlatformViewUnsafeSurface();
+      await tester.pump();
+      expect(find.text('glass'), findsOneWidget);
+    });
+  });
+
   group('liquid glass surfaces downgrade under system degradation', () {
     const liquidAppearance = FrostedAppearance(
       sheetBlurSigma: 15,
@@ -132,4 +160,14 @@ void main() {
       expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
     });
   });
+}
+
+class _DegradationProbe extends StatelessWidget {
+  const _DegradationProbe();
+
+  @override
+  Widget build(BuildContext context) {
+    final degraded = LiquidGlassDegradation.shouldDegrade(context);
+    return Text(degraded ? 'degraded' : 'glass');
+  }
 }

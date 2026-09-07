@@ -435,7 +435,15 @@ class MyApp extends StatelessWidget {
                           child: Scaffold(
                             backgroundColor: Colors.transparent,
                             resizeToAvoidBottomInset: false,
-                            body: MiuixFontWeightScope(child: child!),
+                            // 平台视图玻璃闸门以 InheritedNotifier 挂在所有路由
+                            // 之上：WebView 路由 begin/end 闸门时，依赖它的全部
+                            // 玻璃表面在下一帧重建，导入返回后首页玻璃立即恢复
+                            // （而不是等下一次任意重建才恢复）。
+                            body: LiquidGlassDegradationScope(
+                              notifier: LiquidGlassDegradation
+                                  .platformViewUnsafeDepthNotifier,
+                              child: MiuixFontWeightScope(child: child!),
+                            ),
                           ),
                         ),
                       ),

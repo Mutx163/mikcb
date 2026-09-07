@@ -15,8 +15,9 @@ import '../helpers_test_app.dart';
 
 /// 闸门契约：可见登录页的 WebView 是平台视图，置位全局玻璃降级；下拉快捷
 /// 导入的 runInBackground 实例挂在 Offstage 1×1 里、paint 整棵跳过，平台视图
-/// 不进合成帧，必须**不**置位——否则首页下拉导入期间玻璃全部陪葬降级，且
-/// dispose 在帧末执行、闸门归零无通知，玻璃恢复还要等下一次任意重建。
+/// 不进合成帧，必须**不**置位——否则首页下拉导入期间玻璃全部陪葬降级。
+/// 闸门为响应式（LiquidGlassDegradationScope）：dispose 在帧末归零时通知依赖
+/// 的玻璃表面重建，导入返回首页后玻璃立即恢复。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
