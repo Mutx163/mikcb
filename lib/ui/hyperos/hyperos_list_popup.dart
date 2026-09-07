@@ -11,10 +11,7 @@ import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart'
-    show
-        HyperosLiquidGlassRole,
-        HyperosLiquidGlassSurface,
-        UndimmedBackdropCapture;
+    show UndimmedBackdropCapture;
 
 /// 宿主页面根级的页面捕获作用域：给锚定弹窗的二级子卡提供「弹窗背后
 /// 页面」的同步截图来源（RenderRepaintBoundary.toImageSync）。
@@ -267,21 +264,17 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     (item) => item.children.isNotEmpty,
   );
 
-  /// 宿主页面的同步捕获图（液态子卡的折射背景）与它的屏幕空间原点。
-  /// 页面在模态弹窗期间静止，首次展开时捕一份复用到弹窗关闭。
+  /// 宿主页面的整页快照（不透明，含页面自身内容）+ 它的全局逻辑原点
+  /// 与逻辑尺寸。页面在模态弹窗期间静止，首次展开时捕一份复用到关闭。
+  /// 快照作为子卡玻璃面下的不透明垫底（见 _PopupPageSnapshotUnderlay）：
+  /// 玻璃面是标准组件 live 采样垫底输出，模糊/折射/材质全走与一级
+  /// 相同的链路，垫底只负责挡住主面板玻璃、对齐取样源亮度。
   ui.Image? _pageCapture;
   Offset _pageCaptureOrigin = Offset.zero;
+  Size _pageCaptureSize = Size.zero;
 
-  /// 展开二级子卡前同步捕获宿主页面。液态玻璃的自有采样必然把浮在
-  /// 采样点之前的主面板玻璃算进背景（玻璃叠玻璃）；预捕获整页图直接
-  /// 喂给子卡 shader，子卡取到的才是背后的首页内容。捕获失败（宿主
-  /// 未挂作用域、边界未布局等）保持 null，子卡退回共享组磨砂底。
-  ///
-  /// 捕获图按面板同一材质的 blur **预先模糊**：包内 capture 分支直接
-  /// 把整页图喂给折射 shader，live 路径的 BackdropFilterLayer 背景模糊
-  /// pass 被跳过——不预模糊的话页面文字会几乎清晰地透进子卡（真机
-  /// 实测一排排幽灵行）。sigma 与 live 同源（同一 settingsForRole），
-  /// 捕获图是物理像素，需乘 devicePixelRatio。
+  /// 展开二级子卡前同步捕获宿主页面整页。捕获失败（宿主未挂作用域、
+  /// 边界未布局、toImageSync 异常等）保持 null，子卡退回共享组磨砂底。
   void _ensurePageCapture() {
     if (_pageCapture != null) return;
     final key = widget.pageBoundaryKey;
@@ -292,64 +285,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         boundary.size.isEmpty) {
       return;
     }
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final ui.Image raw;
     try {
-      raw = boundary.toImageSync(pixelRatio: dpr);
+      _pageCapture = boundary.toImageSync(
+        pixelRatio: MediaQuery.devicePixelRatioOf(context),
+      );
+      _pageCaptureOrigin = boundary.localToGlobal(Offset.zero);
+      _pageCaptureSize = boundary.size;
     } catch (_) {
-      return; // 无捕获 → 子卡退回共享组磨砂底。
-    }
-    _pageCaptureOrigin = boundary.localToGlobal(Offset.zero);
-    final blurred = _preblurCapture(raw, dpr);
-    _pageCapture = blurred ?? raw;
-    if (blurred != null) {
-      // 模糊图的栅格化是异步的：原图纹理必须活到模糊图首次被合成之后。
-      // 立即释放会让 shader 采样到已失效的纹理——真机表现为子卡完全
-      // 透明。延后一帧（此时模糊图已栅格化并上屏）再释放。
-      WidgetsBinding.instance.addPostFrameCallback((_) => raw.dispose());
-    }
-  }
-
-  /// 按面板同一材质的 blur 把捕获图预模糊；失败返回 null（调用方直接
-  /// 用原图）。sigma 是逻辑像素、捕获图是物理像素，需乘 devicePixelRatio。
-  ui.Image? _preblurCapture(ui.Image raw, double dpr) {
-    try {
-      final settings = HyperosLiquidGlassSurface.settingsForRole(
-        role: HyperosLiquidGlassRole.modal,
-        brightness: Theme.of(context).brightness,
-        tuning: FrostedAppearanceScope.of(context).liquidGlassTuning,
-      );
-      final sigma = settings.effectiveBlur * dpr;
-      if (sigma <= 0.5) {
-        return null;
-      }
-      final recorder = ui.PictureRecorder();
-      final canvas = ui.Canvas(recorder);
-      canvas.drawImage(
-        raw,
-        ui.Offset.zero,
-        ui.Paint()
-          ..imageFilter = ui.ImageFilter.blur(
-            sigmaX: sigma,
-            sigmaY: sigma,
-            tileMode: ui.TileMode.clamp,
-          ),
-      );
-      // 叠上与弹窗遮罩同色的压暗层：面板 live 采样的输入是「页面+遮罩」，
-      // 捕获图不同叠这层就比一级弹窗的取样源亮一档——周围场景全被压暗
-      // 时，子卡透出的却是未压暗的页面，读作透明窗口而不是玻璃物体
-      // （真机回测「非常透明、和一级不一样」）。均匀遮罩与模糊可交换，
-      // 叠加顺序不影响结果。
-      canvas.drawRect(
-        ui.Rect.fromLTWH(0, 0, raw.width.toDouble(), raw.height.toDouble()),
-        ui.Paint()..color = HyperosBlurredHeader.modalBarrierColor(context),
-      );
-      final picture = recorder.endRecording();
-      final blurred = picture.toImageSync(raw.width, raw.height);
-      picture.dispose();
-      return blurred;
-    } catch (_) {
-      return null;
+      _pageCapture = null;
     }
   }
 
@@ -471,7 +414,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   }) {
     final index = _lastSubmenuIndex!;
     final item = widget.items[index];
-    final scrollOffset = _panelScroll.hasClients ? _panelScroll.offset : 0.0;
+    // 重挂过渡帧（[_expandSession] 自增当帧）旧滚动位置尚未 detach、
+    // 新视图已挂上，positions 可能短暂为 2——新视图从 0 起，取 0 与
+    // 重挂后的视觉位置一致；稳定态单 position 正常读。
+    final scrollOffset = _panelScroll.positions.length == 1
+        ? _panelScroll.offset
+        : 0.0;
     final raw = top + _rowTopInPanel(index) - scrollOffset;
     final maxTop = safeBottom - _submenuCardHeight(item);
     if (raw > maxTop) {
@@ -540,6 +488,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     // Left-aligned if anchor is on the left half, right-aligned otherwise.
     final isRightAligned = anchorRight > screen.width / 2;
     final originX = isRightAligned ? 1.0 : 0.0;
+    // 二级子卡的全局原点（与子卡 Positioned 的 left/right 约束同一口
+    // 径）：页面快照垫底按它对齐「卡片在页面坐标系中的位置」。
+    final cardLeft = isRightAligned
+        ? screen.width -
+            (screen.width - anchorRight).clamp(margin, screen.width - margin)
+        : anchorLeft.clamp(margin, screen.width - margin);
 
     return PopScope(
       canPop: false,
@@ -808,13 +762,32 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                           )
                         : HyperosSelectPopupGlass(
                             cornerRadius: cornerRadius,
-                            // 同源采样：液态激活时优先折射宿主页面捕获图
-                            // （背后首页本身，与一级弹窗同源）；无捕获图
-                            // 退回共享组磨砂底挡板，均不再把主面板玻璃的
-                            // 输出叠加采样一遍（双重玻璃浑浊）。
+                            // 同源采样：不透明整页快照垫底挡住主面板玻璃，
+                            // 玻璃面是标准组件（与一级同链路的 live 采样），
+                            // 透出的就是背后首页本身。
                             useAncestorGroupCapture: true,
-                            pageCapture: _pageCapture,
-                            pageCaptureOrigin: _pageCaptureOrigin,
+                            pageCapture: _pageCapture == null
+                                ? null
+                                : PopupPageCapture(
+                                    image: _pageCapture!,
+                                    origin: _pageCaptureOrigin,
+                                    size: _pageCaptureSize,
+                                    scrimColor:
+                                        HyperosBlurredHeader.modalBarrierColor(
+                                          context,
+                                        ),
+                                  ),
+                            // 卡片全局原点：快照垫底按它对齐「卡片在页
+                            // 面坐标系中的位置」（仅在展开分支求值，
+                            // _lastSubmenuIndex 必非空）。
+                            pageAlignedOrigin: Offset(
+                              cardLeft,
+                              _submenuCardTopGlobal(
+                                top: top,
+                                safeTop: safeTop,
+                                safeBottom: safeBottom,
+                              ),
+                            ),
                             child: card,
                           );
                     // 高度因子揭示（玻璃面外侧）：裁剪窗口从父行顶边向下

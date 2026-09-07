@@ -445,6 +445,83 @@ class SelectPopupRevealClipper extends CustomClipper<Path> {
   }
 }
 
+/// 宿主页面的整页同步快照（PopupPageCaptureScope 捕获、发布给锚定
+/// 弹窗的二级子卡用）。
+class PopupPageCapture {
+  const PopupPageCapture({
+    required this.image,
+    required this.origin,
+    required this.size,
+    required this.scrimColor,
+  });
+
+  /// 整页快照（物理像素）。
+  final ui.Image image;
+
+  /// 快照左上角的全局逻辑坐标（捕获边界在屏幕上的位置）。
+  final Offset origin;
+
+  /// 快照的逻辑尺寸（= 捕获边界的布局尺寸）。
+  final Size size;
+
+  /// 与弹窗遮罩同色的压暗层：面板 live 采样的是「页面+遮罩」，垫底
+  /// 快照叠同一层后子卡与一级的取样源完全同亮度。
+  final Color scrimColor;
+}
+
+/// 页面快照垫底层：把整页快照按卡片在页面坐标系中的位置平移绘制并叠
+/// 遮罩，不透明——玻璃面 live 采样它，主面板玻璃被挡在垫底之外。
+class _PopupPageSnapshotUnderlay extends StatelessWidget {
+  const _PopupPageSnapshotUnderlay({
+    required this.capture,
+    required this.localOrigin,
+  });
+
+  final PopupPageCapture capture;
+
+  /// 卡片原点在快照坐标系中的位置（卡片全局原点 − 快照原点）。
+  final Offset localOrigin;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _PageSnapshotPainter(capture, localOrigin));
+  }
+}
+
+class _PageSnapshotPainter extends CustomPainter {
+  const _PageSnapshotPainter(this.capture, this.localOrigin);
+
+  final PopupPageCapture capture;
+  final Offset localOrigin;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 先铺快照（按卡片在页面坐标系中的位置对齐），再叠遮罩压暗层；
+    // 垫底不透明，玻璃面 live 采样它，主面板玻璃被完全挡住。
+    final dst = (Offset.zero - localOrigin) & capture.size;
+    canvas.drawImageRect(
+      capture.image,
+      Rect.fromLTWH(
+        0,
+        0,
+        capture.image.width.toDouble(),
+        capture.image.height.toDouble(),
+      ),
+      dst,
+      Paint(),
+    );
+    canvas.drawRect(dst, Paint()..color = capture.scrimColor);
+  }
+
+  @override
+  bool shouldRepaint(_PageSnapshotPainter oldDelegate) =>
+      oldDelegate.capture.image != capture.image ||
+      oldDelegate.capture.origin != capture.origin ||
+      oldDelegate.capture.size != capture.size ||
+      oldDelegate.capture.scrimColor != capture.scrimColor ||
+      oldDelegate.localOrigin != localOrigin;
+}
+
 /// Glass background for the select popup.
 ///
 /// Renders the appropriate surface based on [FrostedGlassMode]:
@@ -459,19 +536,20 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     required this.child,
     this.useAncestorGroupCapture = false,
     this.pageCapture,
-    this.pageCaptureOrigin = Offset.zero,
+    this.pageAlignedOrigin,
   });
 
   final double cornerRadius;
   final Widget child;
 
-  /// 宿主页面的同步捕获图（PopupPageCaptureScope 提供）。非空且引擎支持
-  /// 真折射时，液态面直接折射背后的首页——取色与一级弹窗同源，且不
-  /// 经过主面板玻璃；为空时退回磨砂底挡板方案。
-  final ui.Image? pageCapture;
+  /// 宿主页面的同步快照（PopupPageCaptureScope 提供）。非空且液态玻璃
+  /// 激活时，先垫一层不透明的快照（页面+遮罩，与一级的取样源同亮度）
+  /// 挡住主面板玻璃，玻璃面本身是标准组件 live 采样垫底输出——模糊/
+  /// 折射/材质全走与一级完全相同的链路；为空时退回磨砂底挡板方案。
+  final PopupPageCapture? pageCapture;
 
-  /// [pageCapture] 的屏幕空间逻辑像素原点。
-  final Offset pageCaptureOrigin;
+  /// 本面左上角在页面坐标系（全局逻辑坐标）中的位置，用于对齐快照。
+  final Offset? pageAlignedOrigin;
 
   /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
   ///
@@ -504,17 +582,39 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     final useLiquidGlass = liquidSurfaceActive(context);
 
     if (useLiquidGlass) {
-      // 页面捕获可用 → 液态面直接折射背后的首页（captureImage 通道），
-      // 不再需要磨砂底挡板。
+      // 局部变量承载可空字段，构建期内空检查可提升（公共字段无法隐式
+      // 提升）。
+      final pageCapture = this.pageCapture;
+      final pageAlignedOrigin = this.pageAlignedOrigin;
+      // 页面快照可用 → 垫一层不透明快照（页面+遮罩，与一级的取样源同
+      // 亮度）挡住主面板玻璃，玻璃面用标准组件 live 采样垫底输出：
+      // 模糊 pass、折射、tint/whiten/rim 全部与一级弹窗同一链路，玻璃
+      // 观感由此保证；自定义部分只有一张快照图，不是玻璃。
       if (useAncestorGroupCapture &&
           pageCapture != null &&
-          HyperosLiquidGlassSurface.supportsRealRefraction) {
-        return HyperosLiquidGlassSurface(
-          role: HyperosLiquidGlassRole.modal,
-          borderRadius: cornerRadius,
-          captureImage: pageCapture,
-          captureOriginInScreenSpace: pageCaptureOrigin,
-          child: child,
+          pageAlignedOrigin != null) {
+        return Stack(
+          fit: StackFit.passthrough,
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: _PopupPageSnapshotUnderlay(
+                  capture: pageCapture,
+                  localOrigin: pageAlignedOrigin - pageCapture.origin,
+                ),
+              ),
+            ),
+            HyperosLiquidGlassSurface(
+              role: HyperosLiquidGlassRole.modal,
+              borderRadius: cornerRadius,
+              // Sample the same undimmed modal capture as every other popup.
+              useAncestorBackdropGroup: true,
+              instantUnderlay: true,
+              child: child,
+            ),
+          ],
         );
       }
       final surface = HyperosLiquidGlassSurface(
