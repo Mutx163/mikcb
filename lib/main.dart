@@ -1212,7 +1212,14 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   Widget build(BuildContext context) {
     // 启动品牌 = 自绘启动画面（图标/文字全走应用自己的渲染）；存储与课表
     // 初始化完成后由 _revealHomeOnce 换入正常界面。
-    return _homeRevealed ? const TimetableScreen() : const AppStartupSplash();
+    // 页面捕获作用域包在 TimetableScreen 元素之外：首页右上角菜单的
+    // 二级子卡液态玻璃要折射「弹窗背后的首页」，而菜单是从 State 方法
+    // 用 Screen 自身 context 打开的——作用域必须挂在该 context 的上方
+    // 才能被解析到（挂在 build 返回树里会永远找不到）。捕获边界包住
+    // 整页（含玻璃坞）。
+    return _homeRevealed
+        ? const PopupPageCaptureScope(child: TimetableScreen())
+        : const AppStartupSplash();
   }
 }
 

@@ -781,15 +781,11 @@ class _TimetableScreenState extends State<TimetableScreen>
               )
             : homeStack;
         if (!glassDockForm) {
-          // 页面捕获作用域：首页右上角菜单的二级子卡液态玻璃要折射
-          // 「弹窗背后的首页」，捕获边界包住整页（含玻璃坞）。
-          return PopupPageCaptureScope(
-            child: _wrapWithGlassDock(
-              dockContent,
-              glassDockForm: false,
-              settings: settings,
-              l10n: l10n,
-            ),
+          return _wrapWithGlassDock(
+            dockContent,
+            glassDockForm: false,
+            settings: settings,
+            l10n: l10n,
           );
         }
         // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
@@ -827,13 +823,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 系统返回不拦内嵌页：与日/周课表同口径，底栏任意状态（日/周
         // 课表或内嵌页）按返回都直接退出应用（根路由 bubble → 系统退出）。
         // 收回内嵌页走底栏切换（点 日/周 Tab 或其他页面条目）与圆钮再点。
-        return PopupPageCaptureScope(
-          child: _wrapWithGlassDock(
-            hostedContent,
-            glassDockForm: true,
-            settings: settings,
-            l10n: l10n,
-          ),
+        return _wrapWithGlassDock(
+          hostedContent,
+          glassDockForm: true,
+          settings: settings,
+          l10n: l10n,
         );
       },
     );

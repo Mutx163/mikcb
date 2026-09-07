@@ -285,7 +285,7 @@ void main() {
       expect(find.byType(UndimmedBackdropCapture), findsNothing);
     });
 
-    testWidgets('二级展开时主面板沿锚点角回放缩小，收起复原', (tester) async {
+    testWidgets('二级展开时主面板沿锚点角水平回放缩小，收起复原', (tester) async {
       await pumpPopup(tester, items: items);
 
       final panelScaleFinder = find.byWidgetPredicate(

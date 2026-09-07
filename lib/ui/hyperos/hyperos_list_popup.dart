@@ -119,9 +119,15 @@ const _listPopupExitDuration = Duration(milliseconds: 150);
 /// Submenu reveal/collapse duration (HyperOS gallery menu pace).
 const _submenuRevealDuration = Duration(milliseconds: 200);
 
-/// 二级子卡展开时主面板沿锚点角回放的幅度（1.0 缩到 1-0.05）。弹出时
+/// 二级子卡展开时主面板沿锚点角回放的幅度（宽度缩到 1-0.05）。弹出时
 /// 面板从锚点角向左展开，展开子卡时向锚点角缩回一点，读作「面板让位
 /// 退后、子卡浮前」，与系统相册的层级退让同语感。
+///
+/// 刻意只缩 X 轴：liquid_glass 包把「双轴同时缩小」识别为 CupertinoSheet
+/// 推压并冻结几何矩阵（_hasScale），live 采样的 shader uniform 会拿
+/// 未缩放矩形，远离锚点的边缘出现错位亮带（实测圆角怪异）；单轴变换
+/// 不触发冻结，按 live 变换处理，几何全程正确——单轴回退也正是
+/// 「向右回放」的本意。
 const _panelReplayShrink = 0.05;
 
 /// Air above/below the hairline separating the submenu parent row from its
@@ -517,13 +523,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                 builder: (context, _) {
                   final fraction = _fraction.value.clamp(0.0, 1.0);
                   // 弹出动画（锚点角 0.15→1 弹簧）× 展开回放：子卡展开
-                  // 时面板沿弹出方向反向缩回一点（向右变小），收起时
-                  // 随 _expand 逆放回 1。锚点对齐沿用弹出动画的角。
+                  // 时面板沿弹出方向水平缩回一点（向右变小），收起时
+                  // 随 _expand 逆放回 1。锚点对齐沿用弹出动画的角；回放
+                  // 只走 X 轴（原因见 _panelReplayShrink 的说明）。
                   final replay =
                       1 -
                       _panelReplayShrink *
                           Curves.fastOutSlowIn.transform(_expand.value);
-                  final scale = (0.15 + 0.85 * fraction) * replay;
+                  final entrance = 0.15 + 0.85 * fraction;
                   final Widget panelChild = ConstrainedBox(
                     constraints: BoxConstraints(
                       minWidth: 200,
@@ -602,7 +609,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     ],
                   );
                   return Transform.scale(
-                    scale: scale,
+                    scaleX: entrance * replay,
+                    scaleY: entrance,
                     alignment: Alignment(originX * 2 - 1, localOriginY * 2 - 1),
                     // No reveal clip around the glass: clipping the backdrop
                     // surface every spring frame resamples the group capture
