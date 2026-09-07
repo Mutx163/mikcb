@@ -265,16 +265,34 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   );
 
   /// 宿主页面的整页快照（不透明，含页面自身内容）+ 它的全局逻辑原点
-  /// 与逻辑尺寸。页面在模态弹窗期间静止，首次展开时捕一份复用到关闭。
-  /// 快照作为子卡玻璃面下的不透明垫底（见 _PopupPageSnapshotUnderlay）：
-  /// 玻璃面是标准组件 live 采样垫底输出，模糊/折射/材质全走与一级
-  /// 相同的链路，垫底只负责挡住主面板玻璃、对齐取样源亮度。
+  /// 与逻辑尺寸。页面在模态弹窗期间静止，弹窗打开时捕一份复用到关闭
+  /// （见 [_warmPageCapture]，勿推迟到首次展开当帧）。快照作为子卡
+  /// 玻璃面下的不透明垫底（见 _PopupPageSnapshotUnderlay）：玻璃面是
+  /// 标准组件 live 采样垫底输出，模糊/折射/材质全走与一级相同的链路，
+  /// 垫底只负责挡住主面板玻璃、对齐取样源亮度。
   ui.Image? _pageCapture;
   Offset _pageCaptureOrigin = Offset.zero;
   Size _pageCaptureSize = Size.zero;
 
-  /// 展开二级子卡前同步捕获宿主页面整页。捕获失败（宿主未挂作用域、
-  /// 边界未布局、toImageSync 异常等）保持 null，子卡退回共享组磨砂底。
+  /// 弹窗打开当帧预热整页捕获（挂在 didChangeDependencies）。必须与
+  /// 二级展开首帧错开：toImageSync 会在栅格线程同步栅格化整页边界，
+  /// 而首次展开当帧恰好是子卡玻璃面（快照垫底 + 双 BackdropFilter
+  /// 链）第一次在揭示窗口下合成——整页栅格化与揭示首帧的背景捕获在
+  /// 栅格线程上争抢，实测真机表现为子卡顶缘一条横贯卡宽的亮带，随
+  /// 揭示动画结束才消失，且仅每次弹窗会话的首次展开出现（快照已缓存
+  /// 的再展开无此现象）。弹窗期间页面静止，打开时捕获与展开时捕获
+  /// 内容完全一致，提前预热即可把这次栅格化从揭示帧挪走。捕获失败
+  /// （宿主未挂作用域、边界未布局、toImageSync 异常等）保持 null，
+  /// 子卡退回共享组磨砂底，且展开时仍会再试一次（[_ensurePageCapture]）。
+  void _warmPageCapture() {
+    if (_pageCapture != null) return;
+    if (!_hasSubmenu) return;
+    if (!HyperosSelectPopupGlass.liquidSurfaceActive(context)) return;
+    _ensurePageCapture();
+  }
+
+  /// 确保宿主页面整页快照可用（幂等）。常规路径由 [_warmPageCapture]
+  /// 在弹窗打开时调用；此处仅作展开时的兜底重试。
   void _ensurePageCapture() {
     if (_pageCapture != null) return;
     final key = widget.pageBoundaryKey;
@@ -345,6 +363,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 弹窗一打开就预热整页捕获（有二级子项且液态面激活时）：把
+    // toImageSync 的整页栅格化从首次展开当帧挪走，见 _warmPageCapture。
+    _warmPageCapture();
+  }
+
+  @override
   void dispose() {
     _fraction.dispose();
     _alpha.dispose();
@@ -366,6 +392,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         _expandedIndex = index;
         _lastSubmenuIndex = index;
         // 液态子卡需要页面捕获图；磨砂/实底分支走共享组/实底，不采。
+        // 常规已在弹窗打开时预热（_warmPageCapture），这里只兜底重试，
+        // 避免整页栅格化落在揭示首帧（真机亮带问题，见预热方法注释）。
         if (HyperosSelectPopupGlass.liquidSurfaceActive(context)) {
           _ensurePageCapture();
         }
