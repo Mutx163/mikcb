@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
+    show UndimmedBackdropCapture;
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 import '../../helpers_test_app.dart';
@@ -14,6 +16,15 @@ void main() {
     sheetTintAlpha: 0.7,
     sheetBarrierAlpha: 0.2,
     glassMode: FrostedGlassMode.gaussian,
+  );
+
+  // 液态玻璃外观：用于验证共享组捕获垫层随液态子卡一起挂载（测试机
+  // 无 shader，液态面自动走包内轻量回退，不影响树结构断言）。
+  const liquidAppearance = FrostedAppearance(
+    sheetBlurSigma: 15,
+    sheetTintAlpha: 0.7,
+    sheetBarrierAlpha: 0.2,
+    glassMode: FrostedGlassMode.liquidGlass,
   );
 
   group('hyperos list popup submenu', () {
@@ -37,12 +48,13 @@ void main() {
     Future<List<Future<String?>?>> pumpPopup(
       WidgetTester tester, {
       required List<HyperosPopupMenuItem<String>> items,
+      FrostedAppearance appearance = gaussianAppearance,
     }) async {
       final opened = <Future<String?>?>[];
       await tester.pumpWidget(
         TestApp(
           home: FrostedAppearanceScope(
-            appearance: gaussianAppearance,
+            appearance: appearance,
             child: Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () {
@@ -158,6 +170,79 @@ void main() {
 
       expect(find.text('普通项'), findsNothing);
       expect(find.text('视图父项'), findsNothing);
+    });
+
+    testWidgets('揭示动画只动外层裁剪窗口，玻璃面全程按完整卡高布局', (
+      tester,
+    ) async {
+      await pumpPopup(tester, items: items);
+
+      await tester.tap(find.text('视图父项'));
+      await tester.pump(); // 处理点按，启动展开动画
+      await tester.pump(const Duration(milliseconds: 60)); // 动画中段
+
+      // 主面板与二级子卡各一块玻璃面（树序：面板在前、子卡在后）。
+      final glasses = tester
+          .widgetList<HyperosSelectPopupGlass>(
+            find.byType(HyperosSelectPopupGlass),
+          )
+          .toList();
+      expect(glasses.length, 2);
+      // 子卡同源采样（遮罩下的页面），主面板保持自有采样。
+      expect(glasses.first.useAncestorGroupCapture, isFalse);
+      expect(glasses.last.useAncestorGroupCapture, isTrue);
+
+      // 揭示窗口（heightFactor<1 且直接包着玻璃面的 Align）严格小于
+      // 玻璃面高度。
+      final windowFinder = find.byWidgetPredicate(
+        (w) =>
+            w is Align &&
+            w.heightFactor != null &&
+            w.child is HyperosSelectPopupGlass,
+      );
+      final window = tester.renderObject<RenderBox>(windowFinder);
+      final glass = tester.renderObject<RenderBox>(
+        find.byType(HyperosSelectPopupGlass).last,
+      );
+      expect(window.size.height, greaterThan(0));
+      expect(window.size.height, lessThan(glass.size.height));
+
+      await tester.pumpAndSettle();
+      // 展开完成后玻璃面高度与中段一致：动画没有改玻璃面的布局尺寸
+      // （旧实现逐帧改玻璃高度，头部几帧超椭圆退化导致顶边闪烁）。
+      final settled = tester.renderObject<RenderBox>(
+        find.byType(HyperosSelectPopupGlass).last,
+      );
+      expect(settled.size.height, glass.size.height);
+    });
+
+    testWidgets('有二级子项的弹窗挂共享组捕获垫层，子卡取遮罩下页面', (
+      tester,
+    ) async {
+      // 液态外观下子卡走「磨砂底 + 液态面」的共享组采样路径，垫层随
+      // 弹窗挂载（高斯/实底环境无 grouped 消费者，不插，见
+      // liquid_glass_consistency_test 的无冗余垫层断言）。
+      await pumpPopup(
+        tester,
+        items: items,
+        appearance: liquidAppearance,
+      );
+
+      expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
+      expect(find.text('普通项'), findsOneWidget);
+    });
+
+    testWidgets('无二级子项的弹窗不挂捕获垫层', (tester) async {
+      await pumpPopup(
+        tester,
+        items: const [
+          HyperosPopupMenuItem(label: '普通项', value: 'a'),
+          HyperosPopupMenuItem(label: '尾项', value: 'c'),
+        ],
+        appearance: liquidAppearance,
+      );
+
+      expect(find.byType(UndimmedBackdropCapture), findsNothing);
     });
   });
 

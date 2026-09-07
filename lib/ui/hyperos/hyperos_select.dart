@@ -456,14 +456,33 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     super.key,
     required this.cornerRadius,
     required this.child,
+    this.useAncestorGroupCapture = false,
   });
 
   final double cornerRadius;
   final Widget child;
 
+  /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
+  ///
+  /// 液态玻璃面自带一次「自有层」背景捕获，采样点是它在绘制顺序里的
+  /// 位置——二级子卡排在主面板之后，采到的输入必然包含主面板玻璃的
+  /// 输出，玻璃叠玻璃再模糊/折射一遍，读感浑浊。置真后先铺一层共享组
+  /// 捕获（弹窗遮罩下的页面，与主面板玻璃同源）的磨砂底把下方玻璃挡在
+  /// 外面，液态玻璃再贴着这层底折射。磨砂/高斯分支本就按 grouped 采样
+  /// 共享捕获，此参数对它无额外影响。
+  final bool useAncestorGroupCapture;
+
+  /// 当前外观下弹窗是否走液态玻璃面（与 [build] 分支同一口径，供调用方
+  /// 判断是否需要准备共享组捕获垫层）。
+  static bool liquidSurfaceActive(BuildContext context) {
+    final appearance = FrostedAppearanceScope.of(context);
+    return appearance.glassMode == FrostedGlassMode.liquidGlass &&
+        appearance.liquidGlassPopupEnabled &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final appearance = FrostedAppearanceScope.of(context);
     final borderRadius = BorderRadius.circular(cornerRadius);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
@@ -471,19 +490,44 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     // platform BackdropFilter capability. Otherwise anchored popups become
     // solid surfaces on desktop while sheets and headers keep their glass.
     // 「液态玻璃作用范围 → 下拉选择弹窗」关闭时回退磨砂/实底材质。
-    final useLiquidGlass =
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassPopupEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
+    final useLiquidGlass = liquidSurfaceActive(context);
 
     if (useLiquidGlass) {
-      return HyperosLiquidGlassSurface(
+      final surface = HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.modal,
         borderRadius: cornerRadius,
         // Sample the same undimmed modal capture as every other popup.
         useAncestorBackdropGroup: true,
         instantUnderlay: true,
         child: child,
+      );
+      if (!useAncestorGroupCapture) {
+        return surface;
+      }
+      // 磨砂底：共享组捕获（遮罩下的页面）+ 常规磨砂参数，把主面板玻璃
+      // 的输出挡在液态玻璃的采样输入之外。ClipRRect 只圆底垫的角；液态
+      // 玻璃面保持不裁，浅色模式的外阴影才能画到卡外。
+      final sigma = HyperosBlurredHeader.blurSigmaOf(context);
+      final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+      return Stack(
+        fit: StackFit.passthrough,
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: borderRadius,
+              child: BackdropFilter.grouped(
+                filter: ImageFilter.blur(
+                  sigmaX: sigma,
+                  sigmaY: sigma,
+                  tileMode: TileMode.clamp,
+                ),
+                child: ColoredBox(color: tint),
+              ),
+            ),
+          ),
+          surface,
+        ],
       );
     }
 

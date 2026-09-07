@@ -8,6 +8,8 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
+import 'liquid/hyperos_liquid_glass_surface.dart'
+    show UndimmedBackdropCapture;
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
@@ -170,6 +172,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
 
   /// Guards re-entrant dismissal (tap outside + back key racing the exit).
   bool _dismissing = false;
+
+  /// 菜单里是否挂了二级子列表。有才需要在遮罩后插共享组捕获垫层
+  /// （二级子卡的玻璃按共享组采样，见 [HyperosSelectPopupGlass]
+  /// 的 [HyperosSelectPopupGlass.useAncestorGroupCapture]）；无子列表
+  /// 的菜单没有 grouped 消费者，不插，保持零多余全屏 pass。
+  late final bool _hasSubmenu = widget.items.any(
+    (item) => item.children.isNotEmpty,
+  );
 
   /// Plays the exit animation (fade + shrink, [MiuixListPopupDefaults]
   /// alphaExit spec) and only then pops the route with [result].
@@ -362,8 +372,15 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // 原 UndimmedBackdropCapture 垫层已移除：树内无 grouped 过滤器，
-            // 垫层采样无消费者，纯多余全屏 pass。
+            // 共享组捕获垫层（遮罩之后、主面板之前）：组内首个 grouped
+            // 过滤器的捕获点决定采样内容——二级子卡的玻璃由此采到
+            // 「遮罩下的页面」（与主面板玻璃同源），而不是把主面板玻璃
+            // 的输出再采样一遍。仅当有二级子项且采样面可用时才付这层
+            // 全屏 pass（其余情况树内没有 grouped 消费者）。
+            if (_hasSubmenu &&
+                (HyperosBlurredHeader.backdropBlurEnabled(context) ||
+                    HyperosSelectPopupGlass.liquidSurfaceActive(context)))
+              const Positioned.fill(child: UndimmedBackdropCapture()),
             // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
             GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -503,7 +520,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             // 「视图」的形态）。与主面板平级放在全屏 Stack：命中测试不被
             // 面板/Transform 边界截断；宽度用 _panelKey 读主面板实测尺寸
             // 做 min=max 约束，两卡严格同宽；关窗时不随主面板弹簧缩放，
-            // 只走 _alpha 淡出（展开只会发生在弹簧结束后）。
+            // 只走 _alpha 淡出（展开只会发生在弹簧结束后）。玻璃按
+            // useAncestorGroupCapture 同源采样遮罩下的页面（不再玻璃叠
+            // 玻璃），揭示窗口裁在玻璃面外侧（玻璃面布局全程不变）。
             if (_lastSubmenuIndex != null)
               Positioned(
                 top: _submenuCardTopGlobal(
@@ -529,76 +548,83 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                     }
                     final item = widget.items[_lastSubmenuIndex!];
                     final cardHeight = _submenuCardHeight(item);
-                    Widget card = ClipRect(
-                      // 高度因子揭示：卡自身始终按完整内容高度排版，仅裁出
-                      // 顶部 t 段——展开时底缘向下生长（圆角随动），父行
-                      // 位置全程不动。
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        heightFactor: t,
-                        child: ConstrainedBox(
-                          constraints: _submenuCardWidthConstraints(),
-                          child: SizedBox(
-                            height: cardHeight,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _ListPopupTile(
-                                  item: item,
-                                  foregroundColor: widget.foregroundColor,
-                                  expanded: true,
-                                  // 卡内不带分组间隔：顶边就是面板里
-                                  // 的原行位。
-                                  includeGroupGap: false,
-                                  onTap: () =>
-                                      _toggleSubmenu(_lastSubmenuIndex!),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: HyperosMiuixDropdown
-                                        .insideHorizontalPadding,
-                                    vertical: _submenuDividerVerticalPadding,
-                                  ),
-                                  child: Container(
-                                    height: HyperosMiuixDivider.thickness,
-                                    color:
-                                        (widget.foregroundColor ??
-                                                HyperosColors.onSurface(
-                                                  context,
-                                                ))
-                                            .withValues(alpha: 0.15),
-                                  ),
-                                ),
-                                for (final child in item.children)
-                                  _ListPopupTile(
-                                    item: child,
-                                    foregroundColor: widget.foregroundColor,
-                                    includeGroupGap: false,
-                                    onTap: child.enabled
-                                        ? () => Navigator.of(
-                                            context,
-                                          ).pop(child.value)
-                                        : null,
-                                  ),
-                              ],
+                    // 玻璃面按完整内容尺寸稳定布局，揭示窗口裁在玻璃面
+                    // 外侧（见下方 ClipRect）。旧实现把揭示放在玻璃内侧
+                    // （Align heightFactor 包着玻璃），玻璃面布局高度逐帧
+                    // 从 0 长到全高：头几帧高度小于 2×圆角时超椭圆形状退
+                    // 化、玻璃逐帧重采样，顶边会闪一下；现在第一帧起就是
+                    // 完整圆角形状（从圆角开始显示），动画只动裁剪窗口。
+                    Widget card = ConstrainedBox(
+                      constraints: _submenuCardWidthConstraints(),
+                      child: SizedBox(
+                        height: cardHeight,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _ListPopupTile(
+                              item: item,
+                              foregroundColor: widget.foregroundColor,
+                              expanded: true,
+                              // 卡内不带分组间隔：顶边就是面板里
+                              // 的原行位。
+                              includeGroupGap: false,
+                              onTap: () =>
+                                  _toggleSubmenu(_lastSubmenuIndex!),
                             ),
-                          ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: HyperosMiuixDropdown
+                                    .insideHorizontalPadding,
+                                vertical: _submenuDividerVerticalPadding,
+                              ),
+                              child: Container(
+                                height: HyperosMiuixDivider.thickness,
+                                color: (widget.foregroundColor ??
+                                        HyperosColors.onSurface(context))
+                                    .withValues(alpha: 0.15),
+                              ),
+                            ),
+                            for (final child in item.children)
+                              _ListPopupTile(
+                                item: child,
+                                foregroundColor: widget.foregroundColor,
+                                includeGroupGap: false,
+                                onTap: child.enabled
+                                    ? () =>
+                                        Navigator.of(context).pop(child.value)
+                                    : null,
+                              ),
+                          ],
                         ),
                       ),
                     );
-                    if (_alpha.value < 1) {
-                      card = Opacity(opacity: _alpha.value, child: card);
-                    }
-                    return widget.opaqueSurface
+                    card = widget.opaqueSurface
                         ? HyperosSolidPopupSurface(
                             cornerRadius: cornerRadius,
                             child: card,
                           )
                         : HyperosSelectPopupGlass(
                             cornerRadius: cornerRadius,
+                            // 同源采样：取遮罩下的页面内容，不再把主面板
+                            // 玻璃的输出叠加采样一遍（双重玻璃浑浊）。
+                            useAncestorGroupCapture: true,
                             child: card,
                           );
+                    // 高度因子揭示（玻璃面外侧）：裁剪窗口从父行顶边向下
+                    // 生长，父行位置全程不动；底缘圆角在窗口到达卡底时
+                    // 露出，t=1 时窗口即完整卡。
+                    card = ClipRect(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        heightFactor: t,
+                        child: card,
+                      ),
+                    );
+                    if (_alpha.value < 1) {
+                      card = Opacity(opacity: _alpha.value, child: card);
+                    }
+                    return card;
                   },
                 ),
               ),
