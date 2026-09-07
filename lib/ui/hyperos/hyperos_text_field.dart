@@ -48,9 +48,16 @@ class HyperosTextField extends StatelessWidget {
     final useLabelAsPlaceholder = label == null && hint != null;
     final resolvedColor = Theme.of(context).colorScheme;
     final miuixDefaults = MiuixTextFieldDefaults.textFieldColors(context);
-    // 未激活（占位/浮动）标签：Miuix 默认 onSecondaryContainer 与底色对比度
-    // 仅约 2.1:1，次级文字色仍偏浅，用专门的 70% 黑/白（见 textFieldLabel）。
-    final labelColor = HyperosColors.textFieldLabel(context);
+    // 框体填充：Miuix 默认 secondaryContainer（亮 #F0F0F0）与 mikcb 页面背景
+    // settingsBackground（#F2F2F2）只差约 2 个灰阶，未激活时整个框融进页面。
+    // 亮色降一级用 secondary（#E6E6E6）让框立出来；暗色页面背景 #242424 与
+    // secondaryContainer（#434343）本就对比充分，维持不变。标签/占位文字与
+    // 聚焦边框保持 Miuix 默认配色。
+    final fieldColors = MiuixTextFieldColors(
+      backgroundColor: HyperosColors.textFieldContainer(context),
+      labelColor: miuixDefaults.labelColor,
+      borderColor: miuixDefaults.borderColor,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,11 +79,7 @@ class HyperosTextField extends StatelessWidget {
           textInputAction: textInputAction,
           obscureText: obscureText,
           autofocus: autofocus,
-          colors: MiuixTextFieldColors(
-            backgroundColor: miuixDefaults.backgroundColor,
-            labelColor: labelColor,
-            borderColor: miuixDefaults.borderColor,
-          ),
+          colors: fieldColors,
         ),
         if (helper != null && helper!.isNotEmpty) ...[
           const SizedBox(height: 6),
