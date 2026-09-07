@@ -261,6 +261,15 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
         resolvedLayerMode == HyperosLiquidGlassLayerMode.fake ||
         !HyperosLiquidGlassSurface.supportsRealRefraction;
 
+    // 弹出面板以弹簧缩放入场（0.15→1、ratio 0.82 必有过冲 ~1.1%）：过冲
+    // 帧把玻璃纹理放大到超出 RepaintBoundary 的布局边界，Impeller 在纹理
+    // 边缘硬裁出「顶切」闪斑——弹窗打开必闪一下的来源。给弹窗角色预留
+    // 纹理扩边（_ScaleSafeRepaintBoundary 的 clipExpansion 通道，包官方
+    // 建议 12dp 覆盖 480px 面 5% 缩放），其余角色不缩放、不预留。
+    final clipExpansion = role == HyperosLiquidGlassRole.modal
+        ? const EdgeInsets.all(12)
+        : EdgeInsets.zero;
+
     return AdaptiveGlass(
       shape: shape,
       // sharedLayer: inherit settings from the ancestor LiquidGlassLayer
@@ -269,6 +278,7 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       quality: useMinimal ? GlassQuality.minimal : GlassQuality.premium,
       useOwnLayer: !useShared,
       clipBehavior: clipBehavior,
+      clipExpansion: clipExpansion,
       child: surfacedChild,
     );
   }
