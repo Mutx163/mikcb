@@ -335,6 +335,15 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             tileMode: ui.TileMode.clamp,
           ),
       );
+      // 叠上与弹窗遮罩同色的压暗层：面板 live 采样的输入是「页面+遮罩」，
+      // 捕获图不同叠这层就比一级弹窗的取样源亮一档——周围场景全被压暗
+      // 时，子卡透出的却是未压暗的页面，读作透明窗口而不是玻璃物体
+      // （真机回测「非常透明、和一级不一样」）。均匀遮罩与模糊可交换，
+      // 叠加顺序不影响结果。
+      canvas.drawRect(
+        ui.Rect.fromLTWH(0, 0, raw.width.toDouble(), raw.height.toDouble()),
+        ui.Paint()..color = HyperosBlurredHeader.modalBarrierColor(context),
+      );
       final picture = recorder.endRecording();
       final blurred = picture.toImageSync(raw.width, raw.height);
       picture.dispose();
