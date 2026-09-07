@@ -941,23 +941,38 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                             ),
                             child: card,
                           );
-                    // 揭示裁剪（玻璃面外侧、整卡盒子内）：裁剪窗口从父
-                    // 行顶边向下生长，父行位置全程不动；t=1 时窗口即完
-                    // 整卡。与选择弹窗同款 ClipPath（复用
-                    // SelectPopupRevealClipper）：盒子始终是整卡尺寸、玻
-                    // 璃作为「不溢出」的子项被路径裁剪。旧实现用
-                    // ClipRect+Align(heightFactor)——玻璃每帧都渲染在
-                    // Align 布局边界之外（溢出子项），再被逐帧变化的裁剪
-                    // 窗口裁剪，真机上揭示首帧顶缘仍闪横贯亮带（溢出子项
-                    // × 逐帧裁剪 × 背景捕获的合成边界伪影；同玻璃在选择
-                    // 弹窗的整卡 ClipPath 揭示下无此现象）。
-                    card = ClipPath(
-                      clipper: SelectPopupRevealClipper(
-                        progress: t,
-                        showBelow: true,
-                        cornerRadius: cornerRadius,
-                      ),
-                      child: card,
+                    // 顶缘折射供源带 + 揭示裁剪：子卡浮在主面板文字行上
+                    // 方，玻璃顶缘的折射取样会把上方面板行的文字镜像进卡
+                    // 内顶带，且揭示期间面板正等比回放、上方文字随之移动，
+                    // 读作「字体反射闪动」。在卡顶上方（揭示裁剪窗之外）
+                    // 铺一条与遮罩同色的实色带盖住面板文字——顶缘折射取
+                    // 样到的就是这条平坦暗带，与压暗后的面板行同族色、无
+                    // 缝。揭示裁剪（玻璃面外侧、整卡盒子内）：裁剪窗口从
+                    // 父行顶边向下生长，父行位置全程不动；t=1 时窗口即完
+                    // 整卡（复用选择弹窗同款 SelectPopupRevealClipper）。
+                    card = Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: -16,
+                          right: -16,
+                          top: -16,
+                          bottom: 0,
+                          child: ColoredBox(
+                            color: HyperosBlurredHeader.modalBarrierColor(
+                              context,
+                            ),
+                          ),
+                        ),
+                        ClipPath(
+                          clipper: SelectPopupRevealClipper(
+                            progress: t,
+                            showBelow: true,
+                            cornerRadius: cornerRadius,
+                          ),
+                          child: card,
+                        ),
+                      ],
                     );
                     if (_alpha.value < 1) {
                       card = Opacity(opacity: _alpha.value, child: card);
