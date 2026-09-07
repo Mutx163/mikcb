@@ -178,6 +178,19 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.onSurfaceVariantSummary;
   }
 
+  /// 输入框未激活（占位/浮动标签）文字色。
+  ///
+  /// Miuix 默认 onSecondaryContainer（亮 #A9A9A9）在 secondaryContainer
+  /// （#F0F0F0）底上对比度仅约 2.1:1，与背景过近；全局次级文字色
+  /// onSurfaceVariantSummary（约 #606060）仍被反馈偏浅。实测改为 70%
+  /// 黑/白：叠加在输入框底色上约 #484848 / #C6C6C6，对比度约 8:1，
+  /// 同时与正文（亮色纯黑 / 暗色 90% 白）保持可分辨。
+  static Color textFieldLabel(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? const Color(0xB3FFFFFF)
+        : const Color(0xB3000000);
+  }
+
   static Color onSurfaceVariantActions(BuildContext context) {
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.onSurfaceVariantActions
