@@ -462,6 +462,29 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   /// 避免构建期断言与卡宽跳变；未挂载时兜底 200..364。
   double? _panelMeasuredWidth;
 
+  /// 页面快照垫底的全局对齐原点 = 卡片真实左上角。右对齐时 [cardLeft]
+  /// 是「卡片右缘」（Positioned 只给 right），必须减去卡宽才是左上角；
+  /// 卡宽与卡身 ConstrainedBox 同源（[_panelMeasuredWidth]，未实测帧
+  /// 用最小宽 200 兜底——仅重挂首帧，垫底暗底模糊，一帧偏差不可辨）。
+  /// 错一个卡宽会让垫底几乎完全盖不住主面板玻璃（玻璃叠玻璃浑浊复发）。
+  Offset _submenuCardUnderlayOrigin({
+    required double cardLeft,
+    required bool isRightAligned,
+    required double top,
+    required double safeTop,
+    required double safeBottom,
+  }) {
+    final width = _panelMeasuredWidth ?? 200.0;
+    return Offset(
+      isRightAligned ? cardLeft - width : cardLeft,
+      _submenuCardTopGlobal(
+        top: top,
+        safeTop: safeTop,
+        safeBottom: safeBottom,
+      ),
+    );
+  }
+
   BoxConstraints _submenuCardWidthConstraints() {
     final renderBox = _panelKey.currentContext?.findRenderObject();
     if (renderBox is RenderBox && renderBox.hasSize) {
@@ -516,8 +539,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     // Left-aligned if anchor is on the left half, right-aligned otherwise.
     final isRightAligned = anchorRight > screen.width / 2;
     final originX = isRightAligned ? 1.0 : 0.0;
-    // 二级子卡的全局原点（与子卡 Positioned 的 left/right 约束同一口
-    // 径）：页面快照垫底按它对齐「卡片在页面坐标系中的位置」。
+    // 二级子卡的定位基点（与子卡 Positioned 的 left/right 约束同一口
+    // 径）。注意语义：右对齐时 Positioned 只给 right，这是「卡片右缘」，
+    // 不是左缘——快照垫底对齐见 _submenuCardUnderlayOrigin。
     final cardLeft = isRightAligned
         ? screen.width -
             (screen.width - anchorRight).clamp(margin, screen.width - margin)
@@ -807,14 +831,14 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                                   ),
                             // 卡片全局原点：快照垫底按它对齐「卡片在页
                             // 面坐标系中的位置」（仅在展开分支求值，
-                            // _lastSubmenuIndex 必非空）。
-                            pageAlignedOrigin: Offset(
-                              cardLeft,
-                              _submenuCardTopGlobal(
-                                top: top,
-                                safeTop: safeTop,
-                                safeBottom: safeBottom,
-                              ),
+                            // _lastSubmenuIndex 必非空）。右对齐时必须从
+                            // 右缘减卡宽，见 _submenuCardUnderlayOrigin。
+                            pageAlignedOrigin: _submenuCardUnderlayOrigin(
+                              cardLeft: cardLeft,
+                              isRightAligned: isRightAligned,
+                              top: top,
+                              safeTop: safeTop,
+                              safeBottom: safeBottom,
                             ),
                             child: card,
                           );

@@ -314,6 +314,115 @@ void main() {
       await tester.pumpAndSettle();
       expect(panelScale(), closeTo(1.0, 0.0001));
     });
+
+    testWidgets('右对齐弹窗：页面快照垫底原点对齐卡片真实左上角', (tester) async {
+      // 420 逻辑宽窄屏 + 右上角锚点 = 首页「⋮」形态。右对齐时 Positioned
+      // 只给 right（右缘），cardLeft 常量算出的是「卡片右缘」；快照垫底
+      // 按它当左上角对齐会错位整整一个卡宽（垫底盖不住主面板玻璃，玻璃
+      // 叠玻璃复发）。回归锁：垫底原点必须等于卡片渲染框的真实 topLeft。
+      tester.view.physicalSize = const Size(1260, 2772); // 420×924 逻辑
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      await pumpPopup(
+        tester,
+        items: items,
+        appearance: liquidAppearance,
+        pageCaptureScope: true,
+      );
+
+      await tester.tap(find.text('视图父项'));
+      await tester.pumpAndSettle();
+
+      final cardGlass = tester
+          .widgetList<HyperosSelectPopupGlass>(
+            find.byType(HyperosSelectPopupGlass),
+          )
+          .last;
+      final origin = cardGlass.pageAlignedOrigin;
+      expect(origin, isNotNull);
+      final cardRect = tester.getRect(
+        find
+            .ancestor(of: find.text('子项一'), matching: find.byType(ClipRect))
+            .first,
+      );
+      expect(origin!.dx, closeTo(cardRect.left, 0.5));
+      expect(origin.dy, closeTo(cardRect.top, 0.5));
+    });
+
+    testWidgets('长菜单滚动后展开：卡内父行与面板父行同位', (tester) async {
+      // 展开会重挂面板玻璃（_expandSession），滚动位置曾随之静默丢回 0，
+      // 浮层卡按「展开瞬间应停的位置」锚定——重挂后两处父行各说各话。
+      // 回归锁：展开后卡内父行副本必须与面板父行逐像素同位。
+      tester.view.physicalSize = const Size(1260, 1200); // 420×400 逻辑
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      final longItems = <HyperosPopupMenuItem<String>>[
+        const HyperosPopupMenuItem(label: '首项', value: 'first'),
+        const HyperosPopupMenuItem(
+          label: '视图父项',
+          value: 'parent',
+          children: [
+            HyperosPopupMenuItem(label: '子项一', value: 'child:1'),
+            HyperosPopupMenuItem(label: '子项二', value: 'child:2'),
+          ],
+        ),
+        for (var i = 0; i < 12; i++)
+          HyperosPopupMenuItem(label: '填充项$i', value: 'fill:$i'),
+      ];
+
+      await pumpPopup(tester, items: longItems);
+
+      // 面板可滚动（14 行 ≈ 784 高 > 视口 308）：下滚 60 让父行贴视口上部。
+      await tester.drag(find.text('首项'), const Offset(0, -60));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('视图父项'));
+      await tester.pumpAndSettle();
+
+      // Stack 里主面板在前、浮层卡在后：.first 是面板父行，.last 是卡内副本。
+      final panelRow = tester.getRect(find.text('视图父项').first);
+      final cardRow = tester.getRect(find.text('视图父项').last);
+      expect(cardRow.left, closeTo(panelRow.left, 0.5));
+      expect(cardRow.top, closeTo(panelRow.top, 0.5));
+    });
+
+    testWidgets('卡高超过安全区时收缩卡高，不溢出屏底', (tester) async {
+      // _submenuCardTopGlobal 的 max(safeTop, maxTop) 在「卡高 > 可用高」
+      // 时把卡推回 safeTop，底部照旧溢出。回归锁：卡必须整体落在安全区
+      // 内（超高时收缩自身高度，子项改为卡内滚动）。
+      tester.view.physicalSize = const Size(1260, 1080); // 420×360 逻辑
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      final tallItems = <HyperosPopupMenuItem<String>>[
+        HyperosPopupMenuItem(
+          label: '视图父项',
+          value: 'parent',
+          children: [
+            for (var i = 0; i < 6; i++)
+              HyperosPopupMenuItem(label: '子项$i', value: 'child:$i'),
+          ],
+        ),
+      ];
+
+      await pumpPopup(tester, items: tallItems);
+      await tester.tap(find.text('视图父项'));
+      await tester.pumpAndSettle();
+
+      // 未收缩卡高 = 7 行 × 56 + 分隔块 ≈ 400.75，安全区只有 336。
+      final cardRect = tester.getRect(
+        find
+            .ancestor(of: find.text('子项0'), matching: find.byType(ClipRect))
+            .first,
+      );
+      const safeTop = 12.0;
+      const safeBottom = 360.0 - 12.0;
+      expect(cardRect.top, greaterThanOrEqualTo(safeTop - 0.1));
+      expect(cardRect.bottom, lessThanOrEqualTo(safeBottom + 0.1));
+      expect(cardRect.height, lessThanOrEqualTo(safeBottom - safeTop + 0.1));
+    });
   });
 
   group('home top menu add-course submenu wiring', () {
