@@ -656,6 +656,13 @@ extension AppUpdateDownloadChannelX on AppUpdateDownloadChannel {
     AppUpdateDownloadChannel.gitcode => 'gitcode',
   };
 
+  /// 该渠道是否属于国内源：GitCode 直连与蒲公英都是国内可直连的渠道。
+  /// 教务适配仓、鸣谢名单等同步 API 据此优先走 GitCode 镜像（失败自动
+  /// 回退 GitHub raw）；GitHub 渠道保持直连 GitHub 主仓不变。
+  bool get preferGitCodeSync =>
+      this == AppUpdateDownloadChannel.gitcode ||
+      this == AppUpdateDownloadChannel.pgyer;
+
   static AppUpdateDownloadChannel fromValue(String? value) {
     return AppUpdateDownloadChannel.values.firstWhere(
       (item) => item.value == value,

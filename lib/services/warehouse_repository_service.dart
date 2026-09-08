@@ -15,7 +15,7 @@ class WarehouseFetchOptions {
   final AppUpdateMirrorPreset mirrorPreset;
   final String customMirrorUrlPrefix;
 
-  /// 更新界面下载渠道是否选择了 GitCode。
+  /// 更新界面下载渠道是否选择了国内源（GitCode 直连或蒲公英）。
   /// 为 true 时教务适配仓的拉取同步走 GitCode（v5 contents API，国内直连，
   /// 无需镜像前缀），失败时自动回退 GitHub raw 与镜像候选。
   final bool preferGitCode;
@@ -36,9 +36,9 @@ class WarehouseFetchOptions {
         settings.appUpdateMirrorPreset,
       ),
       customMirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-      preferGitCode:
-          AppUpdateDownloadChannelX.fromValue(settings.appUpdateDownloadChannel) ==
-          AppUpdateDownloadChannel.gitcode,
+      preferGitCode: AppUpdateDownloadChannelX.fromValue(
+        settings.appUpdateDownloadChannel,
+      ).preferGitCodeSync,
     );
   }
 }

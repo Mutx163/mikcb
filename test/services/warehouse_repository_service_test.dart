@@ -299,6 +299,15 @@ adapters:
       ).preferGitCode,
       isTrue,
     );
+    // 蒲公英同为国内源，同步 API 也应优先 GitCode 镜像。
+    expect(
+      WarehouseFetchOptions.fromSettings(
+        const TimetableSettings(sections: []).copyWith(
+          appUpdateDownloadChannel: 'pgyer',
+        ),
+      ).preferGitCode,
+      isTrue,
+    );
     expect(
       WarehouseFetchOptions.fromSettings(
         const TimetableSettings(sections: []).copyWith(
