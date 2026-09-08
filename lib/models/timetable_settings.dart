@@ -34,6 +34,9 @@ enum AppFontMode {
 }
 
 enum ForuiTheme {
+  /// 小米原色（HyperOS/Miuix 规范主蓝 #3482FF）：App 原本的开箱配色，
+  /// 作为预设之一保留，同时是默认值。
+  miui,
   neutral,
   zinc,
   slate,
@@ -52,6 +55,7 @@ extension ForuiThemeX on ForuiTheme {
   /// Representative brand hex for this forui theme; synced into [TimetableSettings.themeSeedColor]
   /// and used to seed the Material ColorScheme so Material accents follow the forui theme.
   String get seedHex => switch (this) {
+    ForuiTheme.miui => '#3482FF',
     ForuiTheme.neutral => '#171717',
     ForuiTheme.zinc => '#18181B',
     ForuiTheme.slate => '#0F172B',
@@ -1523,8 +1527,8 @@ class TimetableSettings {
     this.liveTimeCorrectionSeconds = 0,
     this.liveBeforeClassQuickAction = LiveBeforeClassQuickAction.none,
     this.liveBeforeClassQuickActionAutoMinutes = 0,
-    this.themeSeedColor = '#2563EB',
-    this.foruiTheme = ForuiTheme.blue,
+    this.themeSeedColor = '#3482FF',
+    this.foruiTheme = ForuiTheme.miui,
     this.timetablePageBackgroundColor = '#F8FAFC',
     this.homePageBackgroundFill = HomePageBackgroundFill.color,
     this.homePageBackgroundImagePath,

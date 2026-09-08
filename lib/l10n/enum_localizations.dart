@@ -296,6 +296,7 @@ String courseCardSurfaceStyleLabel(
 
 String foruiThemeLabel(AppLocalizations l10n, ForuiTheme theme) =>
     switch (theme) {
+      ForuiTheme.miui => l10n.foruiThemeMiuix,
       ForuiTheme.neutral => l10n.foruiThemeNeutral,
       ForuiTheme.zinc => l10n.foruiThemeZinc,
       ForuiTheme.slate => l10n.foruiThemeSlate,

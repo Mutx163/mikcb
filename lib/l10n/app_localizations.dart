@@ -11848,6 +11848,12 @@ abstract class AppLocalizations {
   /// **'中性灰'**
   String get foruiThemeNeutral;
 
+  /// No description provided for @foruiThemeMiuix.
+  ///
+  /// In zh, this message translates to:
+  /// **'小米原色'**
+  String get foruiThemeMiuix;
+
   /// No description provided for @foruiThemeZinc.
   ///
   /// In zh, this message translates to:

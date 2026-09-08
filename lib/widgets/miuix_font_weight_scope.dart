@@ -122,12 +122,13 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
   }
 }
 
-/// 用主题 seed 覆盖包默认色板中的强调色三件套。
+/// 用主题 seed 覆盖包默认色板中的强调色。
 ///
-/// 只动 primary/onPrimary/secondary（Miuix 组件的选中态、开关开启色、
-/// 选择器高亮都由这三者派生）；surface/文本墨水等中性角色保持 HyperOS
-/// 规范色不变。seed 经 [resolveThemeSeedAccent] 解析（缺失/不可读返回
-/// null → 保持包默认色）。
+/// 只动 primary/onPrimary（Miuix 组件的选中态、开关**开启**色、选择器
+/// 高亮都由 primary 派生）；**不动 secondary**——MiuixSwitch 关闭轨道、
+/// 次级装饰用的是 secondary，保持包默认色，避免「关着也是主题色」。
+/// surface/文本墨水等中性角色也保持 HyperOS 规范色不变。seed 经
+/// [resolveThemeSeedAccent] 解析（缺失/不可读返回 null → 保持包默认）。
 MiuixColors? _seededMiuixColors(MiuixColors base, BuildContext context) {
   final accent = resolveThemeSeedAccent(
     ThemeSeedScope.maybeOf(context)?.seedHex,
@@ -137,5 +138,6 @@ MiuixColors? _seededMiuixColors(MiuixColors base, BuildContext context) {
     return null;
   }
   final ink = onAccentInk(accent);
-  return base.copy(primary: accent, onPrimary: ink, secondary: accent);
+  // 只动 primary/onPrimary；secondary 保持包默认（关态轨道等次级强调）。
+  return base.copy(primary: accent, onPrimary: ink);
 }

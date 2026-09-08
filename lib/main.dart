@@ -82,8 +82,9 @@ ThemeData _appThemeData(
             brightness: brightness,
           ).copyWith(
             primary: seedAccent,
+            // 只把 primary 设为主题色；secondary 保留 fromSeed 派生色，
+            // 避免开关/次级强调组件也被刷成主题色。
             onPrimary: onAccentInk(seedAccent),
-            secondary: seedAccent,
           ),
   );
   final fontFamily = fontSpec.fontFamily;

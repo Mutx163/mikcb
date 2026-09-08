@@ -6634,6 +6634,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get foruiThemeNeutral => '뉴트럴';
 
   @override
+  String get foruiThemeMiuix => '샤오미 블루';
+
+  @override
   String get foruiThemeZinc => '징크';
 
   @override

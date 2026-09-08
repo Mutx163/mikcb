@@ -6598,6 +6598,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get foruiThemeNeutral => 'ニュートラル';
 
   @override
+  String get foruiThemeMiuix => 'オリジナルMIUIブルー';
+
+  @override
   String get foruiThemeZinc => 'ジンク';
 
   @override

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/utils/theme_seed_accent.dart';
+import 'package:university_timetable/widgets/miuix_font_weight_scope.dart';
 
 /// 主题 seed 接入的回归锚点：八宫格/弹窗/全局强调色统一口径。
 void main() {
@@ -188,9 +190,42 @@ void main() {
       expect(result, const Color(0xFF3482FF));
     });
 
-    testWidgets('浅色近黑 seed 也原样（黑底白字按钮）', (tester) async {
+    testWidgets('浅色近黑 seed 也原样（可读），黑底白字按钮', (tester) async {
       final s = await surfaceWithSeed(tester, '#171717');
       expect(s, const Color(0xFF171717));
+    });
+  });
+
+  group('Miuix 开关色：只有开启轨道才是主题色', () {
+    testWidgets('开轨道=主题色，关轨道保持包默认 secondary 不被污染', (tester) async {
+      late MiuixColors colors;
+      late MiuixSwitchColors switchColors;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+          home: ThemeSeedScope(
+            seedHex: '#FCC800',
+            child: MiuixFontWeightScope(
+              child: Builder(
+                builder: (context) {
+                  colors = MiuixTheme.of(context).colors;
+                  switchColors =
+                      MiuixSwitchDefaults.switchColors(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      final base = MiuixThemeData.of(Brightness.light).colors;
+      // 开态轨道是主题色：亮黄 #FCC800。
+      expect(switchColors.checkedTrackColor, const Color(0xFFFCC800));
+      // 关态轨道保持包默认 secondary——MiuixSwitch 关色用 secondary，
+      // 若被刷成主题色会「关着也是黄的」。
+      expect(colors.secondary, base.secondary);
+      expect(switchColors.uncheckedTrackColor, base.secondary);
+      expect(switchColors.uncheckedTrackColor, isNot(colors.primary));
     });
   });
 }
