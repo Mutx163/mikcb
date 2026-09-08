@@ -5,7 +5,7 @@ import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/utils/hex_color.dart';
+import 'package:university_timetable/utils/theme_seed_accent.dart';
 
 /// 八宫格候选入口的分类（编辑器分组展示用；也是列表弹窗的分组依据）。
 enum HomeMenuEntryCategory { features, data, preferences, about }
@@ -152,14 +152,11 @@ double _maxMenuTitleHeight({
 /// seed（深色模式的近黑灰、浅色模式的亮黄）回落为玻璃墨色（自动黑白），
 /// 与课表玻璃卡「彩色墨回落自动黑白」口径一致。
 Color resolveHomeGridMenuAccent(BuildContext context, String? themeSeedHex) {
-  final accent = parseHexColorOrFallback(
+  final accent = resolveThemeSeedAccent(
     themeSeedHex,
-    fallback: Theme.of(context).colorScheme.primary,
+    Theme.of(context).brightness,
   );
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final luminance = accent.computeLuminance();
-  final readable = isDark ? luminance >= 0.08 : luminance <= 0.60;
-  return readable ? accent : context.theme.colors.foreground;
+  return accent ?? context.theme.colors.foreground;
 }
 
 /// 首页右上角「更多」菜单的八宫格形态——v2.0.5.5 已发布版本的底部弹层：

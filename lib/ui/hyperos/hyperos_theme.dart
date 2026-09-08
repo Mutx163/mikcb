@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../utils/theme_seed_accent.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_radius.dart';
 import 'hyperos_tokens.dart';
@@ -61,10 +62,34 @@ abstract final class HyperosColors {
   // --- PR3: 新增语义颜色 ---
 
   /// Primary accent color (buttons, active indicators).
+  ///
+  /// 跟随用户主题 seed（`TimetableSettings.themeSeedColor`，经根部的
+  /// [ThemeSeedScope] 下发）：seed 不可读时回落墨色（自动黑白），与八宫格
+  /// 瓷贴、课表玻璃卡的「彩色墨回落自动黑白」口径一致。无 seed（未挂
+  /// scope 或解析失败）时维持 Miuix 固定蓝。
   static Color primary(BuildContext context) {
-    return _brightness(context) == Brightness.dark
+    final fallback = _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.primary
         : HyperosMiuixLightColors.primary;
+    final scope = ThemeSeedScope.maybeOf(context);
+    // 未挂 ThemeSeedScope（测试、预览等早期路径）：维持 Miuix 固定蓝，
+    // 保证既有行为与测试断言不因接入主题色而改变。
+    if (scope == null) {
+      return fallback;
+    }
+    final accent = resolveThemeSeedAccent(
+      scope.seedHex,
+      Theme.of(context).brightness,
+    );
+    // seed 缺失/不可读（深色模式近黑灰、浅色模式亮黄）→ 墨色回落（自动黑白）。
+    return accent ?? _inkFallback(context);
+  }
+
+  /// seed 不可读时的墨色回落：深色模式白墨、浅色模式黑墨。
+  static Color _inkFallback(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onBackground
+        : HyperosTokens.primaryText;
   }
 
   /// Surface container for sheets, popups, toolbars.
@@ -142,10 +167,12 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.secondary;
   }
 
+  /// On-primary ink（主按钮/实底强调色上的文字与图标）。
+  ///
+  /// seed 接入后不再是固定白：按 [primary] 实际亮度自动取黑/白墨，
+  /// 亮黄等高亮度 seed 上保持可读。无固定蓝兜底需求——[primary] 恒有值。
   static Color onPrimary(BuildContext context) {
-    return _brightness(context) == Brightness.dark
-        ? HyperosMiuixDarkColors.onPrimary
-        : HyperosMiuixLightColors.onPrimary;
+    return onAccentInk(primary(context));
   }
 
   static Color onSecondary(BuildContext context) {

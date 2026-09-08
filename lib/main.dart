@@ -27,6 +27,7 @@ import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
 import 'utils/home_startup_visual_primer.dart';
+import 'utils/theme_seed_accent.dart';
 import 'widgets/app_startup_splash.dart';
 import 'widgets/home_menu_route_catalog.dart';
 import 'widgets/miuix_font_weight_scope.dart';
@@ -62,11 +63,27 @@ ThemeMode _themeModeFromSettings(AppThemeMode mode) {
 ThemeData _appThemeData(
   Brightness brightness, {
   required AppFontSpec fontSpec,
+  String? themeSeedHex,
 }) {
+  // 主题色接入：seed 可读时播种 Material colorScheme——`colorScheme.primary`
+  // 的全部消费点（添加弹层三宫格按钮、课表快速切换、更新提示弹层等）随之
+  // 跟随主题色；container/onSurface 等辅助角色由 fromSeed 按 seed 派生。
+  // seed 缺失或不可读时不播种，维持既有默认值（测试与启动早期路径不变）。
+  final seedAccent = resolveThemeSeedAccent(themeSeedHex, brightness);
   final theme = ThemeData(
     brightness: brightness,
     useMaterial3: true,
     pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+    colorScheme: seedAccent == null
+        ? null
+        : ColorScheme.fromSeed(
+            seedColor: seedAccent,
+            brightness: brightness,
+          ).copyWith(
+            primary: seedAccent,
+            onPrimary: onAccentInk(seedAccent),
+            secondary: seedAccent,
+          ),
   );
   final fontFamily = fontSpec.fontFamily;
   if (fontFamily == null || fontFamily.isEmpty) {
@@ -384,12 +401,18 @@ class MyApp extends StatelessWidget {
       child:
           Selector<
             TimetableProvider,
-            ({AppFontMode fontMode, AppThemeMode themeMode, String localeTag})
+            ({
+              AppFontMode fontMode,
+              AppThemeMode themeMode,
+              String localeTag,
+              String? themeSeed,
+            })
           >(
             selector: (_, p) => (
               fontMode: p.settings.appFontMode,
               themeMode: p.settings.appThemeMode,
               localeTag: p.settings.appLocaleTag,
+              themeSeed: p.settings.themeSeedColor,
             ),
             builder: (context, settings, child) {
               final fontSpec = settings.fontMode.fontSpec;
@@ -409,8 +432,16 @@ class MyApp extends StatelessWidget {
                 supportedLocales: AppLocalizations.supportedLocales,
                 locale: _localeFromSettings(settings.localeTag),
                 themeMode: _themeModeFromSettings(settings.themeMode),
-                theme: _appThemeData(Brightness.light, fontSpec: fontSpec),
-                darkTheme: _appThemeData(Brightness.dark, fontSpec: fontSpec),
+                theme: _appThemeData(
+                  Brightness.light,
+                  fontSpec: fontSpec,
+                  themeSeedHex: settings.themeSeed,
+                ),
+                darkTheme: _appThemeData(
+                  Brightness.dark,
+                  fontSpec: fontSpec,
+                  themeSeedHex: settings.themeSeed,
+                ),
                 // Android VIEW deep links (mikcb-debug://...) are also delivered
                 // as Flutter pushNamed routes. We navigate via MethodChannel +
                 // DebugDeepLinkNavigator; swallow unknown platform routes so
@@ -423,26 +454,29 @@ class MyApp extends StatelessWidget {
                   if (!kReleaseMode) BlackBox.journeyObserver,
                 ],
                 builder: (context, child) {
-                  final frostedAppearance = context
-                      .watch<TimetableProvider>()
-                      .settings
-                      .frostedAppearance;
+                  final settings = context.watch<TimetableProvider>().settings;
+                  final frostedAppearance = settings.frostedAppearance;
                   return BlackBoxOverlayHost(
                     child: HyperosMotionHost(
                       child: FrostedAppearanceScope(
                         appearance: frostedAppearance,
-                        child: ScaffoldMessenger(
-                          child: Scaffold(
-                            backgroundColor: Colors.transparent,
-                            resizeToAvoidBottomInset: false,
-                            // 平台视图玻璃闸门以 InheritedNotifier 挂在所有路由
-                            // 之上：WebView 路由 begin/end 闸门时，依赖它的全部
-                            // 玻璃表面在下一帧重建，导入返回后首页玻璃立即恢复
-                            // （而不是等下一次任意重建才恢复）。
-                            body: LiquidGlassDegradationScope(
-                              notifier: LiquidGlassDegradation
-                                  .platformViewUnsafeDepthNotifier,
-                              child: MiuixFontWeightScope(child: child!),
+                        child: ThemeSeedScope(
+                          // 根部下发主题 seed：HyperosColors.primary 等静态
+                          // 取色入口经它读取；seed 变化时依赖组件精准重建。
+                          seedHex: settings.themeSeedColor,
+                          child: ScaffoldMessenger(
+                            child: Scaffold(
+                              backgroundColor: Colors.transparent,
+                              resizeToAvoidBottomInset: false,
+                              // 平台视图玻璃闸门以 InheritedNotifier 挂在所有路由
+                              // 之上：WebView 路由 begin/end 闸门时，依赖它的全部
+                              // 玻璃表面在下一帧重建，导入返回后首页玻璃立即恢复
+                              // （而不是等下一次任意重建才恢复）。
+                              body: LiquidGlassDegradationScope(
+                                notifier: LiquidGlassDegradation
+                                    .platformViewUnsafeDepthNotifier,
+                                child: MiuixFontWeightScope(child: child!),
+                              ),
                             ),
                           ),
                         ),

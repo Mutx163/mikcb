@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 
+import '../utils/theme_seed_accent.dart';
+
 /// 读取 Android 系统字体粗细增量（`Configuration.fontWeightAdjustment`）。
 ///
 /// Android 12+ 返回该增量；低版本、未定义或非 Android 返回 null，交由调用方
@@ -90,8 +92,15 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
     final existing = MiuixTheme.maybeOf(context);
     final baseTheme =
         existing ?? MiuixThemeData.of(Theme.of(context).brightness);
+    // 主题色接入：根部 Miuix 色板强调色跟随 seed（MiuixSwitch 开启色、
+    // Miuix 日期/时间/数字/颜色选择器高亮等包内组件全部受益）。嵌套的
+    // 显式 Miuix 主题（showcase 演示）保持自带色板不被覆盖；seed 缺失或
+    // 不可读时维持包默认色。回落墨水由 onAccentInk 按实际强调色亮度取黑白。
+    final seededColors = existing == null
+        ? _seededMiuixColors(baseTheme.colors, context)
+        : null;
     final data = MiuixThemeData(
-      colors: baseTheme.colors,
+      colors: seededColors ?? baseTheme.colors,
       brightness: baseTheme.brightness,
       textStyles: applyFontWeightDelta(defaultTextStyles(), delta),
       fontWeightAdjustment: delta,
@@ -111,4 +120,22 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
 
     return MiuixTheme(data: data, child: child);
   }
+}
+
+/// 用主题 seed 覆盖包默认色板中的强调色三件套。
+///
+/// 只动 primary/onPrimary/secondary（Miuix 组件的选中态、开关开启色、
+/// 选择器高亮都由这三者派生）；surface/文本墨水等中性角色保持 HyperOS
+/// 规范色不变。seed 经 [resolveThemeSeedAccent] 解析（缺失/不可读返回
+/// null → 保持包默认色）。
+MiuixColors? _seededMiuixColors(MiuixColors base, BuildContext context) {
+  final accent = resolveThemeSeedAccent(
+    ThemeSeedScope.maybeOf(context)?.seedHex,
+    Theme.of(context).brightness,
+  );
+  if (accent == null) {
+    return null;
+  }
+  final ink = onAccentInk(accent);
+  return base.copy(primary: accent, onPrimary: ink, secondary: accent);
 }
