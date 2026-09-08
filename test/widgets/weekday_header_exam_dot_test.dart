@@ -24,6 +24,16 @@ import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import '../helpers_test_app.dart';
 
+/// 本周一 0 点。provider 激活课表时按开学时间对齐日历周（2026-08-31
+/// 口径），屏幕显示周 = 今天所在周；学期起点必须取本周一才能保证
+/// 「今天」恒在第 1 周内、红点恒落在第一格。取一次快照供 setUp 与
+/// 考试构造共用，避免两处 DateTime.now() 跨午夜抖动。
+final DateTime _startOfCurrentTestWeek = () {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  return today.subtract(Duration(days: today.weekday - 1));
+}();
+
 void _seedInitializedPrefs(TimetableSettings settings) {
   final now = DateTime(2026, 4, 12);
   final profile = TimetableProfile(
@@ -52,13 +62,16 @@ void main() {
 
   setUp(() {
     StorageService().resetForTesting();
-    // 学期开始日固定为周一 2026-08-31：_dateForWeekDay 把 semesterStart 归一
-    // 到周一，第 1 周第 1 天即当天，红点落在第一格。该日期非"今天"（无 2dp
-    // today 底边框），加上 opaque 模式的 0.5dp 分隔线，正是真机报溢出的
-    // 33.5dp 最紧场景。
+    // 学期开始日取本周一：provider 激活课表时按开学时间对齐日历周，
+    // 屏幕显示周 = 今天所在周。此前写死 2026-08-31，现实日期跨过第 1 周
+    // （9-7 起）后屏幕落在第 2 周，weekday-header-1-1 不复存在、测试恒挂
+    // （CI 2026-09-08 实录）。取本周一保证红点恒落第一格；若当天恰为
+    // 周一，格子额外带 2dp today 底边框——基础内容恒 28dp、红点是悬浮
+    // 层，不改变 33.5dp 预算下的溢出结论。opaque 模式的 0.5dp 分隔线
+    // 仍是真机报溢出的最紧场景。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
-        semesterStartDate: DateTime(2026, 8, 31),
+        semesterStartDate: _startOfCurrentTestWeek,
         semesterWeekCount: 20,
       ),
     );
@@ -103,7 +116,13 @@ void main() {
           id: 'exam-1',
           courseId: 'course-1',
           name: '高等数学期末考试',
-          dateTime: DateTime(2026, 8, 31, 8, 30),
+          dateTime: DateTime(
+            _startOfCurrentTestWeek.year,
+            _startOfCurrentTestWeek.month,
+            _startOfCurrentTestWeek.day,
+            8,
+            30,
+          ),
           startTime: '08:30',
           endTime: '10:30',
           location: 'A-301',

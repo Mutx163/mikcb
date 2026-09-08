@@ -403,7 +403,7 @@ void main() {
     expect(find.text('离散数学'), findsWidgets);
   });
 
-  testWidgets('add content sheet includes schedule entry', (tester) async {
+  testWidgets('add submenu includes schedule entry', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 2800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -424,18 +424,19 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpFiniteFrames(tester, count: 4);
+    // 列表态右上角菜单的「添加课程」是「视图」式二级展开父行：点开浮出
+    // 子卡（父行原位重复 + 添加课程/添加日程/添加考试），点子行由宿主
+    // 直开对应页面，不再经过「添加内容」三宫格弹层（该弹层仅八宫格/
+    // 底栏圆钮保留）。
     await tester.tap(find.text('添加课程'));
-    // The anchored menu plays its 150ms exit animation before popping; wait
-    // for it plus the add-content sheet slide-in before tapping its entries.
-    await _pumpFiniteFrames(tester);
-    tester.takeException();
+    await _pumpFiniteFrames(tester, count: 12);
     tester.takeException();
 
-    expect(find.text('添加内容'), findsOneWidget);
     expect(find.text('添加日程'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.event_note_rounded));
-    await _pumpTimetableFrame(tester);
+    await tester.tap(find.text('添加日程'));
+    await tester.pump();
+    await _pumpFiniteFrames(tester, count: 14);
     while (tester.takeException() != null) {}
 
     expect(find.byType(AddScheduleItemScreen), findsOneWidget);
@@ -2634,14 +2635,15 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpFiniteFrames(tester, count: 4);
+    // 二级展开父行 → 子行「添加课程」由宿主直开 AddCourseScreen
+    // （initialDayOfWeek 跟随日视图选中日），不再经过「添加内容」弹层。
     await tester.tap(find.text('添加课程'));
-    // The anchored menu plays its 150ms exit animation before popping; wait
-    // for it plus the add-content sheet slide-in before tapping its entries.
-    await _pumpFiniteFrames(tester);
+    await _pumpFiniteFrames(tester, count: 12);
+    tester.takeException();
 
-    expect(find.text('添加内容'), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.view_week_rounded));
+    // 展开态「添加课程」共三处：主面板父行、卡内父行、卡内子行，
+    // .last 命中卡内子行。
+    await tester.tap(find.text('添加课程').last);
     await tester.pump();
     await _pumpFiniteFrames(tester, count: 12);
 
