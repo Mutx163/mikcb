@@ -124,6 +124,11 @@ const _submenuRevealDuration = Duration(milliseconds: 200);
 /// 让位退后、子卡浮前」，与系统相册的层级退让同语感。
 const _panelReplayShrink = 0.05;
 
+/// 展开态主面板压暗强度（占遮罩色的比例）：只取全值的一半，让背景→
+/// 主面板→二级子卡呈三级亮度——背景只吃全屏遮罩，主面板再叠半强度
+/// 暗层，子卡全亮不压暗；全值会把主面板压得离背景过远、层级过跳。
+const _panelDimFraction = 0.5;
+
 /// 展开动画的起跳值（0..1）。刻意不从 0 起跳：每次展开都会重挂面板
 /// 玻璃（[_expandSession]），配合第一帧就带一点缩放，玻璃面的首次
 /// 绘制直接落在缩放中——liquid_glass 包只有在「先无缩放绘制过、再遇
@@ -716,9 +721,11 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                       ),
                     ),
                   );
-                  // 展开态：主面板整面压暗（对齐系统相册的「父卡退后」），
-                  // 暗层吸收点按=收起子列表；面板行不再可点（滚动也随之
-                  // 停用，保证浮层卡与锚定行的算术对位不被滚动打破）。
+                  // 展开态：主面板整面压暗但只取遮罩色一半强度（对齐
+                  // 系统相册的「父卡退后」，见 _panelDimFraction——背景/
+                  // 主面板/子卡构成三级亮度）；暗层吸收点按=收起子列表；
+                  // 面板行不再可点（滚动也随之停用，保证浮层卡与锚定行
+                  // 的算术对位不被滚动打破）。
                   final Widget dimmedPanelChild = Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -747,7 +754,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                                       context,
                                     );
                                 return ColoredBox(
-                                  color: base.withValues(alpha: base.a * t),
+                                  color: base.withValues(
+                                    alpha: base.a * _panelDimFraction * t,
+                                  ),
                                 );
                               },
                             ),
