@@ -89,7 +89,27 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             else -> TodayWidgetSupport.heroCourseName(context, snapshot)
         }
         views.setTextViewText(R.id.widget_wide_course, heroName)
-        views.setTextColor(R.id.widget_wide_course, primaryColor)
+        // 课程色贯穿：主课色条 + 文字（档位关闭时恒回落中性色）。
+        val accentCourse = when {
+            snapshot == null || isExamOngoing || state == "holiday" -> null
+            isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
+            else -> snapshot.highlightedCourse
+        }
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            R.id.widget_wide_course_accent,
+            TodayWidgetSupport.accentBar(snapshot, accentCourse, style, context),
+        )
+        views.setTextColor(
+            R.id.widget_wide_course,
+            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
+                ?: primaryColor,
+        )
+        views.setTextColor(
+            R.id.widget_wide_status,
+            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
+                ?: TodayWidgetSupport.statusChipTextColor(displayState, style, context),
+        )
 
         val timePart = when {
             snapshot == null -> context.getString(R.string.widget_tap_to_open)
@@ -156,8 +176,32 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         // hero 之后没有可列内容（如明日仅 1 节）时也整栏收起：否则右上角
         // 只剩一行孤立表头悬空，左栏还被压成半宽导致长课名「…」截断。
         val showRightColumn = upcoming.isNotEmpty()
-        bindRow(views, R.id.widget_wide_row_1, R.id.widget_wide_row_1_time, R.id.widget_wide_row_1_title, upcoming.getOrNull(0), secondaryColor, primaryColor)
-        bindRow(views, R.id.widget_wide_row_2, R.id.widget_wide_row_2_time, R.id.widget_wide_row_2_title, upcoming.getOrNull(1), secondaryColor, primaryColor)
+        bindRow(
+            views,
+            R.id.widget_wide_row_1,
+            R.id.widget_wide_row_1_time,
+            R.id.widget_wide_row_1_title,
+            upcoming.getOrNull(0),
+            secondaryColor,
+            primaryColor,
+            R.id.widget_wide_row_1_accent,
+            snapshot,
+            style,
+            context,
+        )
+        bindRow(
+            views,
+            R.id.widget_wide_row_2,
+            R.id.widget_wide_row_2_time,
+            R.id.widget_wide_row_2_title,
+            upcoming.getOrNull(1),
+            secondaryColor,
+            primaryColor,
+            R.id.widget_wide_row_2_accent,
+            snapshot,
+            style,
+            context,
+        )
         views.setViewVisibility(
             R.id.widget_wide_right,
             if (showRightColumn) View.VISIBLE else View.GONE,
@@ -221,15 +265,29 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         course: TodayWidgetCourseInfo?,
         secondaryColor: Int,
         primaryColor: Int,
+        accentBarId: Int,
+        snapshot: TodayWidgetSnapshotInfo?,
+        style: String,
+        context: Context,
     ) {
         if (course == null) {
             views.setViewVisibility(rowId, View.GONE)
+            TodayWidgetSupport.applyAccentBar(views, accentBarId, null)
             return
         }
         views.setViewVisibility(rowId, View.VISIBLE)
         views.setTextViewText(timeId, course.startTime + " - " + course.endTime)
         views.setTextViewText(titleId, course.name)
         views.setTextColor(timeId, secondaryColor)
-        views.setTextColor(titleId, primaryColor)
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            accentBarId,
+            TodayWidgetSupport.accentBar(snapshot, course, style, context),
+        )
+        views.setTextColor(
+            titleId,
+            TodayWidgetSupport.accentText(snapshot, course, style, context)
+                ?: primaryColor,
+        )
     }
 }

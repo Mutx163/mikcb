@@ -69,9 +69,9 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             views.setViewVisibility(R.id.widget_mini_empty, View.VISIBLE)
             views.setViewVisibility(R.id.widget_mini_more, View.GONE)
             views.setTextViewText(R.id.widget_mini_empty, context.getString(R.string.widget_open_app_sync))
-            bindRow(views, 0, null, primaryColor, secondaryColor, false, style)
-            bindRow(views, 1, null, primaryColor, secondaryColor, false, style)
-            bindRow(views, 2, null, primaryColor, secondaryColor, false, style)
+            bindRow(views, 0, null, primaryColor, secondaryColor, false, style, snapshot = snapshot, context = context)
+            bindRow(views, 1, null, primaryColor, secondaryColor, false, style, snapshot = snapshot, context = context)
+            bindRow(views, 2, null, primaryColor, secondaryColor, false, style, snapshot = snapshot, context = context)
         } else {
             views.setTextViewText(
                 R.id.widget_mini_heading,
@@ -140,6 +140,8 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 secondaryColor,
                 isShowingTomorrow,
                 style,
+                snapshot = snapshot,
+                context = context,
             )
             bindRow(
                 views,
@@ -149,6 +151,8 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 secondaryColor,
                 false,
                 style,
+                snapshot = snapshot,
+                context = context,
             )
             bindRow(
                 views,
@@ -158,6 +162,19 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 secondaryColor,
                 false,
                 style,
+                snapshot = snapshot,
+                context = context,
+            )
+            // 状态胶囊文字跟随首行（主角课）课程色：与色条同一门课，
+            // 关闭档/缺色时回落到状态色。
+            views.setTextColor(
+                R.id.widget_mini_heading,
+                TodayWidgetSupport.accentText(
+                    snapshot,
+                    rows.firstOrNull(),
+                    style,
+                    context,
+                ) ?: TodayWidgetSupport.statusChipTextColor(displayState, style, context),
             )
         }
 
@@ -198,6 +215,8 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
         isHighlighted: Boolean,
         style: String,
         countdown: String? = null,
+        snapshot: TodayWidgetSnapshotInfo? = null,
+        context: Context? = null,
     ) {
         val rowIds = arrayOf(
             Triple(R.id.widget_mini_row_1, R.id.widget_mini_row_1_time, R.id.widget_mini_row_1_title),
@@ -220,7 +239,30 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             }
         )
         views.setTextColor(timeId, if (isHighlighted) primaryColor else secondaryColor)
-        views.setTextColor(titleId, primaryColor)
+        // 课程色贯穿：每行前加课程色竖条，档位允许时课程名也换课程色。
+        val barId = when (index) {
+            0 -> R.id.widget_mini_row_1_accent
+            1 -> R.id.widget_mini_row_2_accent
+            else -> R.id.widget_mini_row_3_accent
+        }
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            barId,
+            if (context == null) {
+                null
+            } else {
+                TodayWidgetSupport.accentBar(snapshot, course, style, context)
+            },
+        )
+        views.setTextColor(
+            titleId,
+            if (context == null) {
+                primaryColor
+            } else {
+                TodayWidgetSupport.accentText(snapshot, course, style, context)
+                    ?: primaryColor
+            },
+        )
         TodayWidgetSupport.setTextSizeSp(views, timeId, 9f)
         TodayWidgetSupport.setTextSizeSp(views, titleId, 11f)
         views.setTextViewText(

@@ -3959,6 +3959,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetShowTomorrowSubtitle => '오늘 수업이 끝나면 내일 수업을 자동으로 표시합니다';
 
   @override
+  String get homeWidgetCourseAccentTitle => '수업 색상';
+
+  @override
+  String get homeWidgetCourseAccentSubtitle =>
+      '끄면 기존 색으로 돌아가고, 색 막대만 넣거나 과목명과 상태까지 색을 입힐 수 있습니다';
+
+  @override
+  String get widgetCourseAccentModeOff => '끄기';
+
+  @override
+  String get widgetCourseAccentModeBar => '색 막대만';
+
+  @override
+  String get widgetCourseAccentModeBarAndText => '색 막대 + 글자';
+
+  @override
   String get homeWidgetAppearanceTitle => '카드 외관';
 
   @override

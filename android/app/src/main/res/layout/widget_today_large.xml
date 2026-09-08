@@ -91,23 +91,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_large_row_1_time"
-                android:layout_width="wrap_content"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/widget_large_row_1_accent"
+                android:layout_width="3dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:background="@android:color/transparent"
+                android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="08:00 - 09:35"
-                android:textSize="11sp" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_large_row_1_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:text="高等数学 · 一教C104"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/widget_large_row_1_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="08:00 - 09:35"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_large_row_1_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="高等数学 · 一教C104"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -115,23 +129,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_large_row_2_time"
-                android:layout_width="wrap_content"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/widget_large_row_2_accent"
+                android:layout_width="3dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:background="@android:color/transparent"
+                android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="10:10 - 11:45"
-                android:textSize="11sp" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_large_row_2_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:text="大学英语"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/widget_large_row_2_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10:10 - 11:45"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_large_row_2_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="大学英语"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -139,23 +167,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_large_row_3_time"
-                android:layout_width="wrap_content"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/widget_large_row_3_accent"
+                android:layout_width="3dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:background="@android:color/transparent"
+                android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="13:30 - 15:05"
-                android:textSize="11sp" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_large_row_3_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:text="程序设计基础"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/widget_large_row_3_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="13:30 - 15:05"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_large_row_3_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="程序设计基础"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -163,46 +205,74 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_large_row_4_time"
-                android:layout_width="wrap_content"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/widget_large_row_4_accent"
+                android:layout_width="3dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:background="@android:color/transparent"
+                android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="15:20 - 16:55"
-                android:textSize="11sp" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_large_row_4_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:text="思想道德与法治"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/widget_large_row_4_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:20 - 16:55"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_large_row_4_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="思想道德与法治"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/widget_large_row_5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_large_row_5_time"
-                android:layout_width="wrap_content"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/widget_large_row_5_accent"
+                android:layout_width="3dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:background="@android:color/transparent"
+                android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="18:30 - 20:05"
-                android:textSize="11sp" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_large_row_5_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:text="工程制图"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/widget_large_row_5_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="18:30 - 20:05"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_large_row_5_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="工程制图"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 

@@ -112,6 +112,11 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<String> _getKnownVersions() {
     // AssetManifest 解析失败时的回退版本列表，按倒序排列（最新在前）
     return [
+      'v2.1.1.9',
+      'v2.1.1.8',
+      'v2.1.1.7',
+      'v2.1.1.6',
+      'v2.1.1.5',
       'v2.1.1.4',
       'v2.1.1.3',
       'v2.1.1.2',

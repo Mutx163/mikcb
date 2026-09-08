@@ -7149,6 +7149,36 @@ abstract class AppLocalizations {
   /// **'今日课后自动显示明天课程'**
   String get homeWidgetShowTomorrowSubtitle;
 
+  /// No description provided for @homeWidgetCourseAccentTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程颜色'**
+  String get homeWidgetCourseAccentTitle;
+
+  /// No description provided for @homeWidgetCourseAccentSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭回到经典配色；也可只加色条，或让课程名与状态一并上色'**
+  String get homeWidgetCourseAccentSubtitle;
+
+  /// No description provided for @widgetCourseAccentModeOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭'**
+  String get widgetCourseAccentModeOff;
+
+  /// No description provided for @widgetCourseAccentModeBar.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅色条'**
+  String get widgetCourseAccentModeBar;
+
+  /// No description provided for @widgetCourseAccentModeBarAndText.
+  ///
+  /// In zh, this message translates to:
+  /// **'色条 + 文字'**
+  String get widgetCourseAccentModeBarAndText;
+
   /// No description provided for @homeWidgetAppearanceTitle.
   ///
   /// In zh, this message translates to:
