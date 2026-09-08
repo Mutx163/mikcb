@@ -213,13 +213,7 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: HyperosTypography.sheetTitle(context),
               ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.versionLabel(release.version),
-                textAlign: TextAlign.center,
-                style: HyperosTypography.listDetail(context),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               MiuixText(
                 release.title,
                 style: textStyles.title4,
@@ -228,15 +222,34 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 10),
-              MiuixText(
-                '${l10n.aboutCurrentVersionLabel}: $currentVersion  ->  '
-                '${l10n.aboutLatestVersionLabel}: ${release.version}',
-                style: textStyles.body2,
-                color: colors.onSurfaceSecondary,
-                textAlign: TextAlign.center,
+              const SizedBox(height: 6),
+              // 版本过渡压缩为一行：旧版本弱化、新版本主题色强调，
+              // 替代原先「版本 x」+「当前版本 -> 最新版本」两行重复信息。
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  MiuixText(
+                    currentVersion,
+                    style: textStyles.body2,
+                    color: colors.onSurfaceSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  MiuixText(
+                    '→',
+                    style: textStyles.body2,
+                    color: colors.onSurfaceVariantSummary,
+                  ),
+                  const SizedBox(width: 6),
+                  MiuixText(
+                    release.version,
+                    style: textStyles.body2,
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
+              // 更新说明左对齐并放宽行高，长文本不再居中堆叠。
               MiuixText(
                 _summarizeReleaseBody(
                   release.body,
@@ -244,9 +257,9 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                 ),
                 style: textStyles.body2,
                 color: colors.onSurfaceSecondary,
-                maxLines: 3,
+                height: 1.45,
+                maxLines: 4,
                 overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
               ),
               if (hasProgress) ...[
                 const SizedBox(height: 18),
@@ -475,8 +488,9 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
         .split('\n')
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty && !line.startsWith('#'))
-        .take(3)
-        .join(' ');
+        .map((line) => line.replaceFirst(RegExp(r'^[-*•]\s+'), ''))
+        .take(4)
+        .join('\n');
     return lines.isEmpty ? fallback : lines;
   }
 }
