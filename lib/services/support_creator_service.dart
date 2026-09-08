@@ -165,13 +165,14 @@ class SupportCreatorService {
         final data = await _fetchDonorData(_gitcodeDonorsUrl);
         appDebugLog(
           'SupportCreator',
-          'GitCode 主候选命中，总耗时 ${sw.elapsedMilliseconds}ms',
+          'GitCode primary candidate hit in ${sw.elapsedMilliseconds}ms',
         );
         return data;
       } catch (error) {
         appDebugLog(
           'SupportCreator',
-          'GitCode 主候选失败，回退 GitHub raw 与镜像候选：$error',
+          'GitCode primary candidate failed, '
+              'falling back to GitHub raw and mirror pool: $error',
         );
       }
     }

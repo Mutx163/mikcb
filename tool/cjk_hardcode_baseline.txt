@@ -56,7 +56,7 @@ lib/services/partner_timetable_service.dart:1
 lib/services/spreadsheet_import_service.dart:83
 lib/services/stats_widget_service.dart:8
 lib/services/storage_service.dart:2
-lib/services/support_creator_service.dart:7
+lib/services/support_creator_service.dart:6
 lib/services/warehouse_repository_service.dart:4
 lib/services/webdav_sync_service.dart:1
 lib/utils/course_color_palette.dart:19
