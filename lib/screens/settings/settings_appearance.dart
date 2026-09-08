@@ -27,10 +27,22 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     super.initState();
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
+    // 订阅 provider：主题管理页/撤销等其他入口直接改 provider.settings 时，
+    // 本页草稿立即跟随，避免本页 snapshot 在 dispose 时把旧主题整体回写
+    // （曾导致「主题管理页切换主题无效且与外面不同步」）。
+    _timetableProvider.addListener(_onTimetableChanged);
+  }
+
+  void _onTimetableChanged() {
+    if (!mounted) return;
+    setState(() {
+      _draft = _timetableProvider.settings;
+    });
   }
 
   @override
   void dispose() {
+    _timetableProvider.removeListener(_onTimetableChanged);
     if (_autoSaveTimer?.isActive ?? false) {
       _autoSaveTimer?.cancel();
       _enqueuePersist(_draft);
