@@ -209,6 +209,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               items: {
                 for (final v in ForuiTheme.values) foruiThemeLabel(l10n, v): v,
               },
+              // 弹窗每项：色圆点 + 名称（小米风格选择器）。
+              itemPrefixBuilder: (ForuiTheme v) =>
+                  HyperosColorDot(color: _colorFromHex(v.seedHex)),
               value: _draft.foruiTheme,
               onChanged: (value) {
                 _updateDraft(

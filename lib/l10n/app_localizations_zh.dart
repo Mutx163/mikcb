@@ -6490,7 +6490,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get foruiThemeNeutral => '中性灰';
 
   @override
-  String get foruiThemeMiuix => '小米原色';
+  String get foruiThemeMiuix => '默认';
 
   @override
   String get foruiThemeZinc => '锌灰';
@@ -16969,7 +16969,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get foruiThemeNeutral => '中性灰';
 
   @override
-  String get foruiThemeMiuix => '小米原色';
+  String get foruiThemeMiuix => '默認';
 
   @override
   String get foruiThemeZinc => '鋅灰';
@@ -27492,7 +27492,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get foruiThemeNeutral => '中性灰';
 
   @override
-  String get foruiThemeMiuix => '小米原色';
+  String get foruiThemeMiuix => '默認';
 
   @override
   String get foruiThemeZinc => '鋅灰';

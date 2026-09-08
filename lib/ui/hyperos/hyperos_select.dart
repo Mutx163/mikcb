@@ -108,6 +108,7 @@ Future<T?> showHyperosSelectPopup<T>({
   required Map<String, T> items,
   required T? currentValue,
   TextStyle? Function(T value)? itemTitleStyleBuilder,
+  Widget? Function(T value)? itemPrefixBuilder,
 }) async {
   final appearance = FrostedAppearanceScope.of(context);
   final entries = items.entries.toList(growable: false);
@@ -131,6 +132,7 @@ Future<T?> showHyperosSelectPopup<T>({
           entries: entries,
           currentValue: currentValue,
           itemTitleStyleBuilder: itemTitleStyleBuilder,
+          itemPrefixBuilder: itemPrefixBuilder,
         ),
       );
     },
@@ -143,12 +145,14 @@ class _HyperosSelectPopupBody<T> extends StatefulWidget {
     required this.entries,
     required this.currentValue,
     required this.itemTitleStyleBuilder,
+    this.itemPrefixBuilder,
   });
 
   final Rect anchorRect;
   final List<MapEntry<String, T>> entries;
   final T? currentValue;
   final TextStyle? Function(T value)? itemTitleStyleBuilder;
+  final Widget? Function(T value)? itemPrefixBuilder;
 
   @override
   State<_HyperosSelectPopupBody<T>> createState() =>
@@ -318,6 +322,9 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
                               isFirstInPopup: i == 0,
                               isLastInPopup: i == widget.entries.length - 1,
                               titleStyle: widget.itemTitleStyleBuilder?.call(
+                                entry.value,
+                              ),
+                              prefix: widget.itemPrefixBuilder?.call(
                                 entry.value,
                               ),
                               forceHighlighted: _isCommitting && isSelected,
@@ -741,6 +748,7 @@ Future<T?> showHyperosSelectSheet<T>({
   String? description,
   required String cancelLabel,
   TextStyle? Function(T value)? itemTitleStyleBuilder,
+  Widget? Function(T value)? itemPrefixBuilder,
 }) {
   final entries = items.entries.toList(growable: false);
   final resolvedCancelLabel = cancelLabel;
@@ -785,6 +793,7 @@ Future<T?> showHyperosSelectSheet<T>({
                 entries: entries,
                 currentValue: currentValue,
                 itemTitleStyleBuilder: itemTitleStyleBuilder,
+                itemPrefixBuilder: itemPrefixBuilder,
                 onSelected: (value) => Navigator.of(sheetContext).pop(value),
               ),
             ),
@@ -810,6 +819,7 @@ class _AutoScrollChoiceList<T> extends StatefulWidget {
     required this.currentValue,
     required this.onSelected,
     this.itemTitleStyleBuilder,
+    this.itemPrefixBuilder,
     this.variant = HyperosChoiceVariant.dialog,
   });
 
@@ -817,6 +827,7 @@ class _AutoScrollChoiceList<T> extends StatefulWidget {
   final T? currentValue;
   final ValueChanged<T> onSelected;
   final TextStyle? Function(T value)? itemTitleStyleBuilder;
+  final Widget? Function(T value)? itemPrefixBuilder;
   final HyperosChoiceVariant variant;
 
   @override
@@ -876,6 +887,9 @@ class _AutoScrollChoiceListState<T> extends State<_AutoScrollChoiceList<T>> {
                     highlightSelectedText: true,
                     variant: widget.variant,
                     titleStyle: widget.itemTitleStyleBuilder?.call(
+                      widget.entries[i].value,
+                    ),
+                    prefix: widget.itemPrefixBuilder?.call(
                       widget.entries[i].value,
                     ),
                     onTap: () => widget.onSelected(widget.entries[i].value),
@@ -976,6 +990,7 @@ class HyperosSelectTile<T> extends StatefulWidget {
     this.sheetItemThreshold = 6,
     this.enabled = true,
     this.itemTitleStyleBuilder,
+    this.itemPrefixBuilder,
   });
 
   final String label;
@@ -996,6 +1011,7 @@ class HyperosSelectTile<T> extends StatefulWidget {
   /// Per-option title style override. Lets callers render each option in its
   /// own font (e.g. the font picker previews the actual typeface per entry).
   final TextStyle? Function(T value)? itemTitleStyleBuilder;
+  final Widget? Function(T value)? itemPrefixBuilder;
 
   @override
   State<HyperosSelectTile<T>> createState() => _HyperosSelectTileState<T>();
@@ -1029,6 +1045,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           currentValue: widget.value,
           cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
           itemTitleStyleBuilder: widget.itemTitleStyleBuilder,
+          itemPrefixBuilder: widget.itemPrefixBuilder,
         );
       } else {
         selected = await showHyperosSelectPopup<T>(
@@ -1037,6 +1054,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           items: widget.items,
           currentValue: widget.value,
           itemTitleStyleBuilder: widget.itemTitleStyleBuilder,
+          itemPrefixBuilder: widget.itemPrefixBuilder,
         );
       }
     } finally {

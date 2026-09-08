@@ -579,9 +579,7 @@ class HyperosChoiceTile extends StatelessWidget {
 
     final rowChild = Row(
       children: [
-        if (prefix != null &&
-            variant != HyperosChoiceVariant.popup &&
-            variant != HyperosChoiceVariant.dialog) ...[
+        if (prefix != null) ...[
           prefix!,
           const SizedBox(width: HyperosTokens.rowContentGap),
         ],

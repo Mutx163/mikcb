@@ -11851,7 +11851,7 @@ abstract class AppLocalizations {
   /// No description provided for @foruiThemeMiuix.
   ///
   /// In zh, this message translates to:
-  /// **'小米原色'**
+  /// **'默认'**
   String get foruiThemeMiuix;
 
   /// No description provided for @foruiThemeZinc.
