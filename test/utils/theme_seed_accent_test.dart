@@ -45,6 +45,37 @@ void main() {
     });
   });
 
+  group('resolveThemeSeedSurface', () {
+    test('浅色亮黄保留原值（与前景可读回落不同）', () {
+      final s = resolveThemeSeedSurface('#FCC800', Brightness.light)!;
+      expect(s, const Color(0xFFFCC800));
+    });
+
+    test('深色近黑向白提亮到可辨识强调面', () {
+      final s = resolveThemeSeedSurface('#171717', Brightness.dark)!;
+      expect(s, isNot(const Color(0xFF171717)));
+      expect(s, isNot(Colors.white));
+      expect(s.computeLuminance(), greaterThan(0.2));
+      // 同色在浅色下原样（黑底白字按钮天然可读）。
+      expect(
+        resolveThemeSeedSurface('#171717', Brightness.light),
+        const Color(0xFF171717),
+      );
+    });
+
+    test('深色可读蓝原样返回', () {
+      expect(
+        resolveThemeSeedSurface('#1447E6', Brightness.dark),
+        const Color(0xFF1447E6),
+      );
+    });
+
+    test('null / 非法 hex → null', () {
+      expect(resolveThemeSeedSurface(null, Brightness.light), isNull);
+      expect(resolveThemeSeedSurface('nope', Brightness.dark), isNull);
+    });
+  });
+
   group('HyperosColors.primary 经 ThemeSeedScope 跟随 seed', () {
     Future<Color> primaryWithSeed(WidgetTester tester, String? seedHex,
         {Brightness brightness = Brightness.light}) async {
@@ -107,6 +138,62 @@ void main() {
       await tester.tap(find.byType(FilledButton));
       await tester.pump();
       expect(builder.count, 2);
+    });
+  });
+
+  group('HyperosColors.primarySurface（表面强调色）', () {
+    Future<Color> surfaceWithSeed(WidgetTester tester, String? seedHex,
+        {Brightness brightness = Brightness.light}) async {
+      late Color result;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: brightness, useMaterial3: true),
+          home: ThemeSeedScope(
+            seedHex: seedHex,
+            child: Builder(
+              builder: (context) {
+                result = HyperosColors.primarySurface(context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      return result;
+    }
+
+    testWidgets('浅色亮黄 seed → 黄底原色（不像 primary 那样回落墨色）', (tester) async {
+      final s = await surfaceWithSeed(tester, '#FCC800');
+      expect(s, const Color(0xFFFCC800)); // surface 保留亮黄（不与 primary 的墨色回落混同）
+    });
+
+    testWidgets('深色近黑 seed → 向白提亮的强调面（不是黑也不是固定蓝）', (tester) async {
+      final s = await surfaceWithSeed(tester, '#171717',
+          brightness: Brightness.dark);
+      expect(s, isNot(const Color(0xFF277AF7))); // 非固定暗蓝
+      expect(s, isNot(const Color(0xFF171717))); // 非原黑
+      expect(s.computeLuminance(), greaterThan(0.2));
+    });
+
+    testWidgets('未挂 scope → 维持 Miuix 固定蓝', (tester) async {
+      late Color result;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+          home: Builder(
+            builder: (context) {
+              result = HyperosColors.primarySurface(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(result, const Color(0xFF3482FF));
+    });
+
+    testWidgets('浅色近黑 seed 也原样（黑底白字按钮）', (tester) async {
+      final s = await surfaceWithSeed(tester, '#171717');
+      expect(s, const Color(0xFF171717));
     });
   });
 }

@@ -36,6 +36,25 @@ Color onAccentInk(Color accent) {
   return accent.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 }
 
+/// 表面强调色（按钮底色、选中井等「承载面」）的解析口径。
+///
+/// 与 [resolveThemeSeedAccent] 相反，这里所见即所得：浅色模式下亮黄等
+/// 高亮度 seed 也保留原色——承载面有 [onAccentInk] 自动黑白墨水兜底文字
+/// 对比，不必像前景强调色那样回落墨色（否则选亮黄主题按钮却变黑）。
+/// 深色模式下近黑 seed（中性灰/锌灰/石板灰）会向白提亮到可辨识的强调面，
+/// 避免按钮融进暗底。缺失/非法 hex 返回 null，由调用方回落固定蓝。
+Color? resolveThemeSeedSurface(String? seedHex, Brightness brightness) {
+  final seed = tryParseHexColor(seedHex);
+  if (seed == null) {
+    return null;
+  }
+  final isDark = brightness == Brightness.dark;
+  if (isDark && seed.computeLuminance() < 0.08) {
+    return Color.lerp(seed, Colors.white, 0.45);
+  }
+  return seed;
+}
+
 /// 把当前主题 seed 暴露给整棵组件树的 InheritedWidget。
 ///
 /// 挂在 `MaterialApp.builder`（根 Navigator 之上），`HyperosColors` 等

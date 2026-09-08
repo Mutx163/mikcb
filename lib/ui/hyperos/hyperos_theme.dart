@@ -85,6 +85,28 @@ abstract final class HyperosColors {
     return accent ?? _inkFallback(context);
   }
 
+  /// 表面强调色（按钮底色、选中井等承载面）：所见即所得跟随 seed。
+  ///
+  /// 与 [primary] 的区分：承载面上铺 [onPrimary] 的黑白墨兜底文字对比，
+  /// 所以浅色模式亮黄等 seed 也直接保留原色（选亮黄主题按钮就是黄底
+  /// 黑字，而不是回落成黑按钮），深色模式近黑 seed 由
+  /// [resolveThemeSeedSurface] 向白提亮避免融进暗底。未挂 scope 维持
+  /// Miuix 固定蓝。
+  static Color primarySurface(BuildContext context) {
+    final fallback = _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.primary
+        : HyperosMiuixLightColors.primary;
+    final scope = ThemeSeedScope.maybeOf(context);
+    if (scope == null) {
+      return fallback;
+    }
+    return resolveThemeSeedSurface(
+          scope.seedHex,
+          Theme.of(context).brightness,
+        ) ??
+        fallback;
+  }
+
   /// seed 不可读时的墨色回落：深色模式白墨、浅色模式黑墨。
   static Color _inkFallback(BuildContext context) {
     return _brightness(context) == Brightness.dark

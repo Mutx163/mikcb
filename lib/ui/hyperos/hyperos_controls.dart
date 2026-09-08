@@ -8,6 +8,7 @@ import 'hyperos_radius.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_text_field.dart';
 import 'hyperos_theme.dart';
+import '../../utils/theme_seed_accent.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 
@@ -655,11 +656,14 @@ class HyperosButton extends StatelessWidget {
     final enabled = onPressed != null && !loading;
     final onFrostedPanel = HyperosFrostedPanelScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // 表面强调色：所选主题色所见即所得（浅色亮黄也保留原色），墨水按实际
+    // 底亮度自动黑白，避免“选黄色主题按钮却变黑”。
+    final primarySurfaceColor = HyperosColors.primarySurface(context);
 
     final (bg, fg, disabledBg, disabledFg) = switch (variant) {
       HyperosButtonVariant.primary => (
-        HyperosColors.primary(context),
-        HyperosColors.onPrimary(context),
+        primarySurfaceColor,
+        onAccentInk(primarySurfaceColor),
         HyperosColors.disabledPrimaryButton(context),
         HyperosColors.disabledOnPrimaryButton(context),
       ),
