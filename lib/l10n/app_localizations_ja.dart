@@ -3936,6 +3936,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetShowTomorrowSubtitle => '今日の授業終了後は明日の授業を自動表示';
 
   @override
+  String get homeWidgetCourseAccentTitle => '授業の色';
+
+  @override
+  String get homeWidgetCourseAccentSubtitle =>
+      'オフで従来の配色に戻ります。色バーのみ、または授業名とステータスも色付けできます';
+
+  @override
+  String get widgetCourseAccentModeOff => 'オフ';
+
+  @override
+  String get widgetCourseAccentModeBar => '色バーのみ';
+
+  @override
+  String get widgetCourseAccentModeBarAndText => '色バー + 文字';
+
+  @override
   String get homeWidgetAppearanceTitle => 'カードの外観';
 
   @override

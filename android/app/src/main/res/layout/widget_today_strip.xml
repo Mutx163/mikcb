@@ -37,6 +37,18 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
+            <!-- 课程色竖条：默认隐藏，开启「课程色」后由 provider 上色亮出。
+                 用 LinearLayout 而非裸 View/ImageButton：部分 ROM 的 RemoteViews
+                 白名单不含 View/Space，会被静默拒载。 -->
+            <LinearLayout
+                android:id="@+id/widget_strip_course_accent"
+                android:layout_width="3dp"
+                android:layout_height="14dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="10dp"
+                android:background="@android:color/transparent"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/widget_strip_course"
                 android:layout_width="0dp"

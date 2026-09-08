@@ -132,11 +132,33 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
                 }
             }
         )
+        // 课程色贯穿：色条 + 课程名/状态胶囊文字（档位由快照决定，关闭档
+        // 恒为 null → 沿用中性色，与加色前逐像素一致）。
+        val accentCourse = when {
+            snapshot == null -> null
+            isExamOngoing || state == "holiday" -> null
+            isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
+            else -> snapshot.highlightedCourse
+        }
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            R.id.widget_course_name_accent,
+            TodayWidgetSupport.accentBar(snapshot, accentCourse, backgroundStyle, context),
+        )
         views.setTextColor(
             R.id.widget_status,
-            TodayWidgetSupport.statusChipTextColor(displayState, backgroundStyle, context)
+            TodayWidgetSupport.accentText(snapshot, accentCourse, backgroundStyle, context)
+                ?: TodayWidgetSupport.statusChipTextColor(
+                    displayState,
+                    backgroundStyle,
+                    context,
+                )
         )
-        views.setTextColor(R.id.widget_course_name, primaryTextColor)
+        views.setTextColor(
+            R.id.widget_course_name,
+            TodayWidgetSupport.accentText(snapshot, accentCourse, backgroundStyle, context)
+                ?: primaryTextColor,
+        )
         views.setTextColor(R.id.widget_meta, secondaryTextColor)
         views.setInt(
             R.id.widget_status,

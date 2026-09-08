@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.View
 import android.widget.RemoteViews
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,6 +21,8 @@ data class TodayWidgetCourseInfo(
     val location: String,
     val startTime: String,
     val endTime: String,
+    /** 课程颜色（#RRGGBB）；空串 = 老快照/无颜色，整条课程色链路静默回落。 */
+    val colorHex: String = "",
 )
 
 data class TodayWidgetSnapshotInfo(
@@ -27,6 +30,8 @@ data class TodayWidgetSnapshotInfo(
     val currentWeek: Int,
     val state: String,
     val backgroundStyle: String,
+    /** 课程色贯穿档位，与 Dart 侧 WidgetCourseAccentMode 同名取值。 */
+    val courseAccentMode: WidgetCourseAccentMode = WidgetCourseAccentMode.BAR_AND_TEXT,
     val showLocation: Boolean,
     val showCountdown: Boolean,
     val countdownTextStyle: String,
@@ -80,6 +85,8 @@ internal data class WidgetSourceCourse(
     val customWeeks: List<Int>?,
     val suspendedWeeks: List<Int>?,
     val courseNature: String = "required",
+    /** 课程颜色（#RRGGBB），实时计算通路的颜色来源。 */
+    val color: String = "",
 ) {
     /** 节数 = 结束节 - 开始节 + 1（对齐 Course.sectionCount）。 */
     val sectionCount: Int get() = endSection - startSection + 1
@@ -121,6 +128,7 @@ internal data class WidgetSourceCourse(
             location = location,
             startTime = startTime,
             endTime = endTime,
+            colorHex = color,
         )
     }
 }
@@ -452,6 +460,12 @@ object TodayWidgetSupport {
             currentWeek = currentWeek,
             state = state,
             backgroundStyle = settingsJson.optString("widgetBackgroundStyle", "solid"),
+            courseAccentMode = WidgetCourseAccentMode.fromValue(
+                settingsJson.optString(
+                    "widgetCourseAccentMode",
+                    WidgetCourseAccentMode.BAR_AND_TEXT.value,
+                ),
+            ),
             showLocation = settingsJson.optBoolean("widgetShowLocation", true),
             showCountdown = effectiveShowCountdown,
             countdownTextStyle = settingsJson.optString("widgetCountdownTextStyle", "smart"),
@@ -725,6 +739,64 @@ object TodayWidgetSupport {
         return state == "ongoing" || state == "upcoming" || state == "holiday"
     }
 
+
+    /**
+     * 课程色贯穿的两件产物：色条颜色与文字颜色。
+     *
+     * 档位关闭（[WidgetCourseAccentMode.OFF]）时两者都返回 null，provider 直接
+     * 沿用原有中性色 → 与加色之前的观感逐像素一致；[WidgetCourseAccentMode.BAR]
+     * 只给色条、字回落中性色。
+     */
+    internal fun accentBar(
+        snapshot: TodayWidgetSnapshotInfo?,
+        course: TodayWidgetCourseInfo?,
+        style: String,
+        context: Context,
+    ): Int? {
+        if (snapshot == null) return null
+        if (!snapshot.courseAccentMode.showsBar) return null
+        val hex = course?.colorHex ?: return null
+        if (hex.isBlank()) return null
+        return CourseWidgetAccent.accentBarArgb(
+            colorHex = hex,
+            backgroundStyle = style,
+            darkMode = isDarkMode(context),
+        )
+    }
+
+    internal fun accentText(
+        snapshot: TodayWidgetSnapshotInfo?,
+        course: TodayWidgetCourseInfo?,
+        style: String,
+        context: Context,
+    ): Int? {
+        if (snapshot == null) return null
+        if (!snapshot.courseAccentMode.showsText) return null
+        val hex = course?.colorHex ?: return null
+        if (hex.isBlank()) return null
+        return CourseWidgetAccent.accentTextArgb(
+            colorHex = hex,
+            backgroundStyle = style,
+            darkMode = isDarkMode(context),
+        )
+    }
+
+    /**
+     * 上色或隐藏课程色条：无课程色 / 档位关闭时隐藏，避免残留一根灰条。
+     * [barId] 指向的必须是白名单 LinearLayout（部分 ROM 拒载裸 View）。
+     */
+    internal fun applyAccentBar(
+        views: RemoteViews,
+        barId: Int,
+        color: Int?,
+    ) {
+        if (color == null) {
+            views.setViewVisibility(barId, View.GONE)
+            return
+        }
+        views.setViewVisibility(barId, View.VISIBLE)
+        views.setInt(barId, "setBackgroundColor", color)
+    }
 
     fun statusText(context: Context, state: String): String {
         return when (state) {
@@ -1135,6 +1207,9 @@ object TodayWidgetSupport {
             currentWeek = json.optInt("currentWeek", 1),
             state = json.optString("state", "no_course"),
             backgroundStyle = json.optString("backgroundStyle", "solid"),
+            courseAccentMode = WidgetCourseAccentMode.fromValue(
+                json.optString("courseAccentMode"),
+            ),
             showLocation = json.optBoolean("showLocation", true),
             showCountdown = json.optBoolean("showCountdown", true),
             countdownTextStyle = json.optString("countdownTextStyle", "smart"),
@@ -1188,7 +1263,26 @@ object TodayWidgetSupport {
             location = json.optString("location"),
             startTime = json.optString("startTime"),
             endTime = json.optString("endTime"),
+            colorHex = sanitizeColorField(json.optString("color")),
         )
+    }
+
+    /**
+     * 课程色字段归一：只接受 #RRGGBB / RRGGBB，其余（空、"null"、长度不符）
+     * 一律空串。渲染侧约定空串 = 无课程色，色条不画、文字回落中性色，
+     * 老快照与第三方数据源缺色时天然安全。
+     */
+    internal fun sanitizeColorField(value: String?): String {
+        val raw = value?.trim().orEmpty()
+        if (raw.isEmpty() || raw.equals("null", ignoreCase = true)) return ""
+        val hex = if (raw.startsWith("#")) raw.substring(1) else raw
+        if (hex.length != 6) return ""
+        return try {
+            Integer.parseInt(hex, 16)
+            "#${hex.uppercase()}"
+        } catch (_: NumberFormatException) {
+            ""
+        }
     }
 
     /**
@@ -1335,6 +1429,7 @@ object TodayWidgetSupport {
                             }
                         },
                         courseNature = item.optString("courseNature", "required"),
+                        color = sanitizeColorField(item.optString("color")),
                     )
                 )
             }

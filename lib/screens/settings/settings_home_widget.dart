@@ -238,6 +238,20 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
                   _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
                 },
               ),
+              // 课程色贯穿：一个三档总开关（关闭 / 仅色条 / 色条+文字），
+              // 不做成多个独立开关——「回到之前的样子」必须一次点到位。
+              HyperosSelectTile<WidgetCourseAccentMode>(
+                label: l10n.homeWidgetCourseAccentTitle,
+                subtitle: l10n.homeWidgetCourseAccentSubtitle,
+                items: {
+                  for (final v in WidgetCourseAccentMode.values)
+                    widgetCourseAccentModeLabel(l10n, v): v,
+                },
+                value: _draft.widgetCourseAccentMode,
+                onChanged: (value) {
+                  _updateDraft(_draft.copyWith(widgetCourseAccentMode: value));
+                },
+              ),
               HyperosSwitchTile(
                 title: l10n.homeWidgetShowLocationTitle,
                 subtitle: l10n.homeWidgetShowLocationSubtitle,

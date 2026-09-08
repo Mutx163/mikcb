@@ -1,6 +1,7 @@
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
+import '../utils/widget_course_accent.dart';
 
 enum HomeWidgetSnapshotState { noCourse, upcoming, ongoing, completed, holiday }
 
@@ -74,6 +75,9 @@ class HomeWidgetSnapshot {
   final int generatedAtMillis;
   final HomeWidgetSnapshotState state;
   final WidgetBackgroundStyle backgroundStyle;
+
+  /// 课程色贯穿档位（关闭 / 只加色条 / 色条+文字）。
+  final WidgetCourseAccentMode courseAccentMode;
   final bool showLocation;
   final bool showCountdown;
   final String countdownTextStyle;
@@ -104,6 +108,7 @@ class HomeWidgetSnapshot {
     required this.generatedAtMillis,
     required this.state,
     required this.backgroundStyle,
+    required this.courseAccentMode,
     required this.showLocation,
     required this.showCountdown,
     required this.countdownTextStyle,
@@ -136,6 +141,7 @@ class HomeWidgetSnapshot {
       'generatedAtMillis': generatedAtMillis,
       'state': state.value,
       'backgroundStyle': backgroundStyle.value,
+      'courseAccentMode': courseAccentMode.value,
       'showLocation': showLocation,
       'showCountdown': showCountdown,
       'countdownTextStyle': countdownTextStyle,
@@ -204,6 +210,7 @@ class HomeWidgetSnapshotService {
         generatedAtMillis: now.millisecondsSinceEpoch,
         state: HomeWidgetSnapshotState.holiday,
         backgroundStyle: settings.widgetBackgroundStyle,
+        courseAccentMode: settings.widgetCourseAccentMode,
         showLocation: settings.widgetShowLocation,
         showCountdown: false,
         countdownTextStyle: countdownTextStyle,
@@ -278,6 +285,7 @@ class HomeWidgetSnapshotService {
       generatedAtMillis: now.millisecondsSinceEpoch,
       state: state,
       backgroundStyle: settings.widgetBackgroundStyle,
+      courseAccentMode: settings.widgetCourseAccentMode,
       showLocation: settings.widgetShowLocation,
       showCountdown: effectiveShowCountdown,
       countdownTextStyle: countdownTextStyle,

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/home_widget_snapshot_service.dart';
+import 'package:university_timetable/utils/widget_course_accent.dart';
 
 void main() {
   test(
@@ -183,6 +184,76 @@ void main() {
       expect(first.toJson()['generatedAtMillis'], isNotNull);
       expect(first.toDedupJson().containsKey('generatedAtMillis'), isFalse);
       expect(first.toDedupJson(), second.toDedupJson());
+    },
+  );
+
+  test(
+    'snapshot carries the course accent mode and the course color hex',
+    () {
+      const service = HomeWidgetSnapshotService();
+      for (final mode in WidgetCourseAccentMode.values) {
+        final settings = TimetableSettings.defaults().copyWith(
+          widgetCourseAccentMode: mode,
+        );
+        final now = DateTime(2026, 3, 27, 8);
+        final snapshot = service.build(
+          profileId: 'profile-1',
+          profileName: '默认课表',
+          currentWeek: 6,
+          settings: settings,
+          todayCourses: [
+            Course(
+              id: 'first',
+              name: '高等数学',
+              teacher: '张老师',
+              location: 'A101',
+              dayOfWeek: now.weekday,
+              startSection: 1,
+              endSection: 2,
+              startTime: '08:00',
+              endTime: '09:35',
+              color: '#22C55E',
+            ),
+          ],
+          now: now,
+        );
+
+        expect(snapshot.courseAccentMode, mode);
+        expect(
+          snapshot.toJson()['courseAccentMode'],
+          mode.value,
+          reason: 'Kotlin 侧按这个键判档位，键名不能漂',
+        );
+        expect(snapshot.todayCourses.single.color, '#22C55E');
+        expect(
+          snapshot.toJson()['todayCourses'],
+          isA<List<dynamic>>(),
+        );
+        final firstCourse =
+            (snapshot.toJson()['todayCourses'] as List).first
+                as Map<String, dynamic>;
+        expect(
+          firstCourse['color'],
+          '#22C55E',
+          reason: 'Kotlin parseCourse 读不到 color 就画不出色条',
+        );
+      }
+
+      // 假期分支同样要带档位与颜色：否则「今天放假」时桌面观感会跳变。
+      final holiday = service.build(
+        profileId: 'profile-1',
+        profileName: '默认课表',
+        currentWeek: 6,
+        settings: TimetableSettings.defaults().copyWith(
+          widgetCourseAccentMode: WidgetCourseAccentMode.bar,
+        ),
+        todayCourses: const [],
+        now: DateTime(2026, 3, 27, 8),
+        isHoliday: true,
+        holidayName: '清明',
+      );
+      expect(holiday.courseAccentMode, WidgetCourseAccentMode.bar);
+      expect(holiday.toJson()['courseAccentMode'], 'bar');
     },
   );
 }

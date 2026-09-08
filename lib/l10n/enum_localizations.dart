@@ -3,6 +3,7 @@ import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import '../models/timetable_settings.dart';
+import '../utils/widget_course_accent.dart';
 import 'app_localizations.dart';
 
 String courseNatureLabel(AppLocalizations l10n, CourseNature nature) =>
@@ -40,6 +41,16 @@ String widgetBackgroundStyleLabel(
   WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
   WidgetBackgroundStyle.solid => l10n.widgetBackgroundStyleSolid,
   WidgetBackgroundStyle.gradient => l10n.widgetBackgroundStyleGradient,
+};
+
+/// 小组件「课程颜色」三档：关闭 / 仅色条 / 色条 + 文字。
+String widgetCourseAccentModeLabel(
+  AppLocalizations l10n,
+  WidgetCourseAccentMode mode,
+) => switch (mode) {
+  WidgetCourseAccentMode.off => l10n.widgetCourseAccentModeOff,
+  WidgetCourseAccentMode.bar => l10n.widgetCourseAccentModeBar,
+  WidgetCourseAccentMode.barAndText => l10n.widgetCourseAccentModeBarAndText,
 };
 
 String appThemeModeLabel(AppLocalizations l10n, AppThemeMode mode) =>

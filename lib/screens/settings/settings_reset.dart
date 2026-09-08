@@ -120,6 +120,7 @@ TimetableSettings applySettingsReset(
     ),
     SettingsResetScope.homeWidget => current.copyWith(
       widgetBackgroundStyle: d.widgetBackgroundStyle,
+      widgetCourseAccentMode: d.widgetCourseAccentMode,
       widgetShowLocation: d.widgetShowLocation,
       widgetShowCountdown: d.widgetShowCountdown,
       widgetHideCompletedCourses: d.widgetHideCompletedCourses,

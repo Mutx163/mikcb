@@ -3862,6 +3862,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetShowTomorrowSubtitle => '今日课后自动显示明天课程';
 
   @override
+  String get homeWidgetCourseAccentTitle => '课程颜色';
+
+  @override
+  String get homeWidgetCourseAccentSubtitle => '关闭回到经典配色；也可只加色条，或让课程名与状态一并上色';
+
+  @override
+  String get widgetCourseAccentModeOff => '关闭';
+
+  @override
+  String get widgetCourseAccentModeBar => '仅色条';
+
+  @override
+  String get widgetCourseAccentModeBarAndText => '色条 + 文字';
+
+  @override
   String get homeWidgetAppearanceTitle => '卡片外观';
 
   @override
@@ -14322,6 +14337,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetShowTomorrowSubtitle => '今日課後自動顯示明天課程';
+
+  @override
+  String get homeWidgetCourseAccentTitle => '課程顏色';
+
+  @override
+  String get homeWidgetCourseAccentSubtitle => '關閉回到經典配色；也可只加色條，或讓課程名與狀態一併上色';
+
+  @override
+  String get widgetCourseAccentModeOff => '關閉';
+
+  @override
+  String get widgetCourseAccentModeBar => '僅色條';
+
+  @override
+  String get widgetCourseAccentModeBarAndText => '色條 + 文字';
 
   @override
   String get homeWidgetAppearanceTitle => '卡片外觀';
@@ -24827,6 +24857,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetShowTomorrowSubtitle => '今日課後自動顯示明天課程';
+
+  @override
+  String get homeWidgetCourseAccentTitle => '課程顏色';
+
+  @override
+  String get homeWidgetCourseAccentSubtitle => '關閉回到經典配色；也可只加色條，或讓課程名與狀態一併上色';
+
+  @override
+  String get widgetCourseAccentModeOff => '關閉';
+
+  @override
+  String get widgetCourseAccentModeBar => '僅色條';
+
+  @override
+  String get widgetCourseAccentModeBarAndText => '色條 + 文字';
 
   @override
   String get homeWidgetAppearanceTitle => '卡片外觀';
