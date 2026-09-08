@@ -119,4 +119,90 @@ void main() {
 
     expect(data.subtitleNote, isNull);
   });
+
+  test(
+    'fetchDonors 下载渠道选 GitCode（preferGitCode）时优先命中 GitCode contents API（base64 解码）',
+    () async {
+      final envelope = jsonEncode({
+        'encoding': 'base64',
+        'content': base64Encode(
+          utf8.encode(
+            jsonEncode({
+              'donors': [
+                {'name': 'GitCode Donor'},
+              ],
+            }),
+          ),
+        ),
+      });
+      final client = MockClient((request) async {
+        if (request.url.host == 'api.gitcode.com') {
+          return http.Response(
+            envelope,
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }
+        // 其余候选（GitHub raw / 镜像）一律失败，GitCode 必须胜出。
+        return http.Response('unavailable', 503);
+      });
+
+      final service = SupportCreatorService(client: client);
+      final data = await service.fetchDonors(preferGitCode: true);
+
+      expect(data.donors.single.name, 'GitCode Donor');
+    },
+  );
+
+  test('fetchDonors preferGitCode 时 GitCode 失败自动回退 GitHub raw', () async {
+    final client = MockClient((request) async {
+      if (request.url.host == 'api.gitcode.com') {
+        return http.Response('not found', 404);
+      }
+      return http.Response(
+        jsonEncode({
+          'donors': [
+            {'name': 'Fallback Donor'},
+          ],
+        }),
+        200,
+      );
+    });
+
+    final service = SupportCreatorService(client: client);
+    final data = await service.fetchDonors(preferGitCode: true);
+
+    expect(data.donors.single.name, 'Fallback Donor');
+  });
+
+  test('fetchDonors 未选 preferGitCode 时不会请求 GitCode 候选', () async {
+    final requestedHosts = <String>[];
+    final client = MockClient((request) async {
+      requestedHosts.add(request.url.host);
+      if (request.url.host == 'api.gitcode.com') {
+        return http.Response(
+          jsonEncode({
+            'donors': [
+              {'name': 'ShouldNotWin'},
+            ],
+          }),
+          200,
+        );
+      }
+      return http.Response(
+        jsonEncode({
+          'donors': [
+            {'name': 'Plain Donor'},
+          ],
+        }),
+        200,
+      );
+    });
+
+    final service = SupportCreatorService(client: client);
+    final data = await service.fetchDonors();
+
+    expect(data.donors.single.name, 'Plain Donor');
+    expect(requestedHosts, isNot(contains('api.gitcode.com')));
+  });
 }

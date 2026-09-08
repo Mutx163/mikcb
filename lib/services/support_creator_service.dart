@@ -139,30 +139,45 @@ class SupportCreatorService {
   static const String _donorsUrl =
       'https://raw.githubusercontent.com/Mutx163/mikcb/main/docs/donors.json';
 
+  /// GitCode 国内直连镜像（v5 contents API，免令牌可读，返回 base64 JSON）：
+  /// 下载渠道选 GitCode 时作为主候选，域名/命名空间与 GitHub 主仓一致
+  /// （镜像与 main 全量同步）；失败时回退 GitHub raw 与镜像前缀候选。
+  static const String _gitcodeDonorsUrl =
+      'https://api.gitcode.com/api/v5/repos/mutx/qingyu/contents/docs/donors.json?ref=main';
+
   final http.Client _client;
 
   SupportCreatorService({http.Client? client})
     : _client = client ?? createAppHttpClient();
 
-  Future<SupportDonorData> fetchDonors({String? mirrorUrlPrefix}) async {
+  Future<SupportDonorData> fetchDonors({
+    String? mirrorUrlPrefix,
+    bool preferGitCode = false,
+  }) async {
     final normalizedMirrorPrefix = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
-    final candidateUrls = buildMirrorCandidateUrls(
-      _donorsUrl,
-      selectedMirrorPrefix: normalizedMirrorPrefix,
-    );
+    final candidateUrls = <String>[
+      // GitCode 国内直连（下载渠道选 GitCode 时纳入主候选）：v5 contents API
+      // 免令牌、返回 base64 JSON，命中即胜出，无需绕道镜像前缀。
+      if (preferGitCode) _gitcodeDonorsUrl,
+      ...buildMirrorCandidateUrls(
+        _donorsUrl,
+        selectedMirrorPrefix: normalizedMirrorPrefix,
+      ),
+    ];
 
     final sw = Stopwatch()..start();
     appDebugLog(
       'SupportCreator',
-      'fetchDonors 开始，候选 ${candidateUrls.length} 个',
+      'fetchDonors 开始，候选 ${candidateUrls.length} 个，'
+      'preferGitCode=$preferGitCode',
     );
     for (var i = 0; i < candidateUrls.length; i++) {
       appDebugLog('SupportCreator', '候选 $i：${candidateUrls[i]}');
     }
 
-    final result = await raceFutures<http.Response, SupportDonorData>(
-      candidateUrls.map((candidateUrl) {
-        return _client
+    final result = await raceFutures<(http.Response, String), SupportDonorData>(
+      candidateUrls.map((candidateUrl) async {
+        final response = await _client
             .get(
               Uri.parse(candidateUrl),
               headers: const {
@@ -171,21 +186,32 @@ class SupportCreatorService {
               },
             )
             .timeout(const Duration(seconds: 6));
-      }).toList(),
-      (response) {
+        return (response, candidateUrl);
+      }).toList(growable: false),
+      (entry) {
+        final response = entry.$1;
+        final candidateUrl = entry.$2;
         appDebugLog(
           'SupportCreator',
-          '收到响应 ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms',
+          '收到响应 ${response.statusCode}（$candidateUrl），'
+          '耗时 ${sw.elapsedMilliseconds}ms',
         );
-        if (response.statusCode != 200) return null;
+        if (response.statusCode != 200) {
+          return null;
+        }
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         if (decoded is! Map) {
           appDebugLog('SupportCreator', '响应不是 Map 格式');
           return null;
         }
-        final data = SupportDonorData.fromJson(
-          Map<String, dynamic>.from(decoded),
-        );
+        final rawMap = _isGitCodeContentsUrl(candidateUrl)
+            ? _decodeGitCodeContentsPayload(decoded)
+            : Map<String, dynamic>.from(decoded);
+        if (rawMap == null) {
+          appDebugLog('SupportCreator', 'GitCode base64 内容解码失败');
+          return null;
+        }
+        final data = SupportDonorData.fromJson(rawMap);
         appDebugLog('SupportCreator', '解析成功，${data.donors.length} 位捐赠者');
         return data;
       },
@@ -203,6 +229,35 @@ class SupportCreatorService {
         'detail': '$lastError',
       }),
     );
+  }
+
+  /// 是否为 GitCode v5 contents API 候选（命中后需 base64 解码再解析 JSON）。
+  static bool _isGitCodeContentsUrl(String url) =>
+      Uri.tryParse(url)?.host == 'api.gitcode.com';
+
+  /// GitCode contents API（Gitee 兼容）返回 base64 信封 `{content: '<base64>'}`。
+  /// 取 content 解码回原始文件字节，按 UTF-8 还原文件文本后再解析 JSON，
+  /// 语义与 GitHub raw 直读完全对齐；失败返回 null 让调用方回退其他候选。
+  static Map<String, dynamic>? _decodeGitCodeContentsPayload(
+    Map<dynamic, dynamic> decoded,
+  ) {
+    final base64Content = decoded['content'];
+    if (base64Content is! String || base64Content.isEmpty) {
+      return null;
+    }
+    final String innerJson;
+    try {
+      innerJson = utf8.decode(
+        base64Decode(base64Content.replaceAll(RegExp(r'\s'), '')),
+      );
+    } catch (_) {
+      return null;
+    }
+    final Object? inner = jsonDecode(innerJson);
+    if (inner is! Map) {
+      return null;
+    }
+    return Map<String, dynamic>.from(inner);
   }
 
   Future<bool> saveAssetImageToGallery({

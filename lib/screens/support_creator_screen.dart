@@ -745,7 +745,17 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       preset: AppUpdateMirrorPresetX.fromValue(settings.appUpdateMirrorPreset),
       customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
     );
-    return _service.fetchDonors(mirrorUrlPrefix: mirrorUrlPrefix);
+    // 与教务适配仓同一规则：下载渠道选 GitCode 时，名单直连国内镜像（v5
+    // contents API），失败自动回退 GitHub raw 与镜像候选。
+    final preferGitCode =
+        AppUpdateDownloadChannelX.fromValue(
+          settings.appUpdateDownloadChannel,
+        ) ==
+        AppUpdateDownloadChannel.gitcode;
+    return _service.fetchDonors(
+      mirrorUrlPrefix: mirrorUrlPrefix,
+      preferGitCode: preferGitCode,
+    );
   }
 }
 
