@@ -2423,11 +2423,11 @@
   "warehouseImportExecutionLogShareSubject": "경屿 시간표 - 시간표 가져오기 실행 로그",
   "warehouseImportExecutionLogEmpty": "가져오기 실행 기록이 아직 없습니다. 교무 웹페이지를 열고 가져오기 스크립트를 실행한 뒤 다시 확인하세요.",
   "warehouseRootLoadFailedTitle": "적응 저장소를 일시적으로 읽을 수 없습니다",
-  "searchSchoolHint": "학교 이름, 이니셜 또는 코드로 검색",
+  "searchSchoolHint": "학교 또는 어댑터 이름 검색",
   "clearSearchTooltip": "비우기",
-  "noMatchingSchools": "일치하는 학교가 없습니다",
+  "noMatchingSchools": "일치하는 학교 또는 어댑터가 없습니다",
   "noAvailableSchools": "사용 가능한 학교가 없습니다",
-  "searchSchoolSuggestion": "학교 정식명칭, 이니셜 또는 저장소의 학교 코드를 시도해 보세요.",
+  "searchSchoolSuggestion": "학교 정식명칭, 어댑터 이름(예: WakeUp) 또는 저장소의 학교 코드를 시도해 보세요.",
   "deleteDebugRecordTitle": "디버그 레코드 삭제",
   "deleteDebugRecordMessage": "\"{name}\"을(를) 삭제하시겠습니까? 삭제 후 이미 가져온 수업에는 영향을 주지 않습니다",
   "@deleteDebugRecordMessage": {
@@ -2553,6 +2553,14 @@
   "quickImportUnknownError": "알 수 없는 오류가 발생했습니다",
   "recentSchoolLabel": "최근 사용",
   "warehouseSchoolTapHint": "탭하여 어댑터를 선택하고 가져오기",
+  "warehouseMatchedAdaptersLabel": "일치하는 어댑터: {names}",
+  "@warehouseMatchedAdaptersLabel": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "warehouseAdaptersLoadFailedTitle": "어댑터 목록을 불러올 수 없습니다",
   "stopRecordingTooltip": "녹화 중지",
   "startRecordingTooltip": "동작 녹화",

@@ -4843,19 +4843,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get warehouseRootLoadFailedTitle => '적응 저장소를 일시적으로 읽을 수 없습니다';
 
   @override
-  String get searchSchoolHint => '학교 이름, 이니셜 또는 코드로 검색';
+  String get searchSchoolHint => '학교 또는 어댑터 이름 검색';
 
   @override
   String get clearSearchTooltip => '비우기';
 
   @override
-  String get noMatchingSchools => '일치하는 학교가 없습니다';
+  String get noMatchingSchools => '일치하는 학교 또는 어댑터가 없습니다';
 
   @override
   String get noAvailableSchools => '사용 가능한 학교가 없습니다';
 
   @override
-  String get searchSchoolSuggestion => '학교 정식명칭, 이니셜 또는 저장소의 학교 코드를 시도해 보세요.';
+  String get searchSchoolSuggestion =>
+      '학교 정식명칭, 어댑터 이름(예: WakeUp) 또는 저장소의 학교 코드를 시도해 보세요.';
 
   @override
   String get deleteDebugRecordTitle => '디버그 레코드 삭제';
@@ -5066,6 +5067,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get warehouseSchoolTapHint => '탭하여 어댑터를 선택하고 가져오기';
+
+  @override
+  String warehouseMatchedAdaptersLabel(String names) {
+    return '일치하는 어댑터: $names';
+  }
 
   @override
   String get warehouseAdaptersLoadFailedTitle => '어댑터 목록을 불러올 수 없습니다';

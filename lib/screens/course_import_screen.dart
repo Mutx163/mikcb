@@ -1645,6 +1645,10 @@ class _WarehouseCourseImportScreenState
   late Future<WarehouseRootIndex> _rootIndexFuture;
   List<String> _recentSchoolIds = const [];
   String _searchQuery = '';
+
+  /// 「按适配器（脚本）名称搜索」的全局索引；拉取失败或旧版适配仓没有该
+  /// 索引时为 null，搜索退化为仅按学校名称/ID/首字母/代码匹配。
+  WarehouseSearchIndex? _searchIndex;
   WarehouseFetchOptions _currentFetchOptions() {
     final settings = context.read<TimetableProvider>().settings;
     return WarehouseFetchOptions.fromSettings(settings);
@@ -1658,6 +1662,7 @@ class _WarehouseCourseImportScreenState
       options: _currentFetchOptions(),
     );
     _loadRecentSchoolIds();
+    _fetchSearchIndex();
   }
 
   @override
@@ -1672,6 +1677,23 @@ class _WarehouseCourseImportScreenState
     setState(() {
       _recentSchoolIds = ids;
     });
+  }
+
+  /// 拉取全局脚本名索引（一次请求覆盖全部学校），到货后刷新列表让
+  /// 正在输入的搜索立即生效；失败静默降级（404 = 旧版适配仓没有该索引）。
+  Future<void> _fetchSearchIndex() async {
+    try {
+      final index = await _repositoryService.fetchSearchIndex(
+        _defaultSource,
+        options: _currentFetchOptions(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _searchIndex = index;
+      });
+    } catch (_) {
+      // 保持 _searchIndex 为 null：搜索仍按学校名称/ID/首字母/代码匹配。
+    }
   }
 
   Future<void> _handleMoreAction(_WarehouseImportMenuAction action) async {
@@ -2000,9 +2022,14 @@ class _WarehouseCourseImportScreenState
                         if (initialCompare != 0) return initialCompare;
                         return left.name.compareTo(right.name);
                       });
-                    final filteredSchools = _filterSchools(
+                    final keyword = _searchQuery.trim();
+                    final adapterMatches =
+                        _searchIndex?.matchedAdapterNamesBySchool(keyword) ??
+                        const <String, List<String>>{};
+                    final filteredSchools = filterWarehouseSchools(
                       allSchools,
                       _searchQuery,
+                      adapterMatches: adapterMatches,
                     );
                     final beans = _schoolsToBeans(
                       filteredSchools,
@@ -2107,9 +2134,11 @@ class _WarehouseCourseImportScreenState
                                     ),
                                     title: bean.school.name,
                                     subtitle: Text(
-                                      bean.isRecent
-                                          ? l10n.recentSchoolLabel
-                                          : l10n.warehouseSchoolTapHint,
+                                      _schoolRowSubtitle(
+                                        bean,
+                                        adapterMatches,
+                                        l10n,
+                                      ),
                                     ),
                                     trailing: const HyperosChevron(),
                                     onTap: () =>
@@ -2148,22 +2177,20 @@ class _WarehouseCourseImportScreenState
     }
   }
 
-  List<WarehouseSchoolEntry> _filterSchools(
-    List<WarehouseSchoolEntry> schools,
-    String query,
+  /// 搜索行副标题：按脚本名命中时回显命中的适配器名（说明这所学校为什么
+  /// 出现，如「通用工具与服务」下的 WakeUp 口令导入）；其余保持原提示。
+  String _schoolRowSubtitle(
+    _WarehouseSchoolBean bean,
+    Map<String, List<String>> adapterMatches,
+    AppLocalizations l10n,
   ) {
-    final keyword = query.trim().toLowerCase();
-    if (keyword.isEmpty) {
-      return schools;
+    final matched = adapterMatches[bean.school.id];
+    if (matched != null && matched.isNotEmpty) {
+      return l10n.warehouseMatchedAdaptersLabel(matched.join('、'));
     }
-    return schools
-        .where((school) {
-          return school.name.toLowerCase().contains(keyword) ||
-              school.id.toLowerCase().contains(keyword) ||
-              school.initial.toLowerCase().contains(keyword) ||
-              school.resourceFolder.toLowerCase().contains(keyword);
-        })
-        .toList(growable: false);
+    return bean.isRecent
+        ? l10n.recentSchoolLabel
+        : l10n.warehouseSchoolTapHint;
   }
 }
 

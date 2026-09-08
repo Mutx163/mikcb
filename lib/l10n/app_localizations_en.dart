@@ -5032,20 +5032,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unable to read the adapter repository right now';
 
   @override
-  String get searchSchoolHint => 'Search school name, initials, or code';
+  String get searchSchoolHint => 'Search schools or adapter names';
 
   @override
   String get clearSearchTooltip => 'Clear';
 
   @override
-  String get noMatchingSchools => 'No matching school found';
+  String get noMatchingSchools => 'No matching school or adapter found';
 
   @override
   String get noAvailableSchools => 'No schools available yet';
 
   @override
   String get searchSchoolSuggestion =>
-      'Try the full school name, initials, or the school code used in the repository.';
+      'Try the full school name, an adapter name (e.g. WakeUp), or the school code used in the repository.';
 
   @override
   String get deleteDebugRecordTitle => 'Delete debug record';
@@ -5264,6 +5264,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get warehouseSchoolTapHint => 'Tap to choose an adapter and import';
+
+  @override
+  String warehouseMatchedAdaptersLabel(String names) {
+    return 'Matching adapters: $names';
+  }
 
   @override
   String get warehouseAdaptersLoadFailedTitle => 'Could not load adapter list';

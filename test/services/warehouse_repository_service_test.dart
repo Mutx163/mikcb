@@ -383,4 +383,83 @@ schools:
     final rootIndex = await service.fetchRootIndex(source, options: options);
     expect(rootIndex.schools, hasLength(1));
   });
+
+  test('fetch search index parses adapters per school', () async {
+    const searchIndexYaml = '''
+# index/search_index.yaml
+# 由 scripts/build_search_index.py 自动生成，请勿手动编辑。
+version_id: "IDX_713836364e98a319"
+schools:
+  - id: "GLOBAL_TOOLS"
+    adapters:
+      - adapter_id: "WakeUp"
+        adapter_name: "WakeUp课程表分享口令导入(支持新版)"
+      - adapter_id: "StarLink"
+        adapter_name: "星链课表分享码导入"
+  - id: "CQU"
+    adapters:
+      - adapter_id: "CQU"
+        adapter_name: "重庆大学教务"
+''';
+    final client = _FakeClient({
+      'https://raw.githubusercontent.com/Mutx163/qingyu_warehouse/main/index/search_index.yaml':
+          http.Response.bytes(utf8.encode(searchIndexYaml), 200),
+    });
+    final service = WarehouseRepositoryService(client: client);
+    final source = WarehouseRepositorySource.fromGitHubUrl(
+      'https://github.com/Mutx163/qingyu_warehouse',
+    );
+
+    final searchIndex = await service.fetchSearchIndex(source);
+    expect(searchIndex.versionId, 'IDX_713836364e98a319');
+    expect(searchIndex.schools, hasLength(2));
+    final globalTools = searchIndex.schools.first;
+    expect(globalTools.id, 'GLOBAL_TOOLS');
+    expect(
+      globalTools.matchedAdapterNames('wakeup'),
+      ['WakeUp课程表分享口令导入(支持新版)'],
+    );
+  });
+
+  test('fetch search index missing (legacy repo) throws repository exception',
+      () async {
+    // _FakeClient 对未知 URL 返回 404：旧版适配仓没有全局搜索索引，
+    // 调用方（教务导入页）捕获后降级为仅按学校字段搜索。
+    final client = _FakeClient(const {});
+    final service = WarehouseRepositoryService(client: client);
+    final source = WarehouseRepositorySource.fromGitHubUrl(
+      'https://github.com/Mutx163/qingyu_warehouse',
+    );
+
+    await expectLater(
+      service.fetchSearchIndex(source),
+      throwsA(isA<WarehouseRepositoryException>()),
+    );
+  });
+
+  test('search index parser tolerates blanks, comments and loose quoting', () {
+    const yaml = '''
+# 顶部注释
+version_id: IDX_plain
+schools:
+  - id: CQU
+    adapters:
+      # 注释穿插
+      - adapter_id: CQU_01
+        adapter_name: 重庆大学教务
+
+      - adapter_id: "PARTIAL"
+  - id: "EMPTY"
+
+next_top_level:
+  - id: "IGNORED"
+''';
+    final index = parseWarehouseSearchIndexYaml(yaml);
+    expect(index.versionId, 'IDX_plain');
+    expect(index.schools, hasLength(1));
+    final school = index.schools.single;
+    expect(school.id, 'CQU');
+    // 没有名称的条目仍保留（展示时回退用 ID），不完整学校被跳过
+    expect(school.adapters.map((a) => a.adapterId), ['CQU_01', 'PARTIAL']);
+  });
 }

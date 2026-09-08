@@ -126,6 +126,22 @@ class WarehouseRepositoryService {
     return WarehouseAdaptersIndex(adapters: adapters);
   }
 
+  /// 拉取教务导入「按适配器（脚本）名称搜索」的全局索引。
+  /// 旧版适配仓没有该文件（404）或网络失败时抛 WarehouseRepositoryException，
+  /// 调用方捕获后降级为仅按学校字段搜索，不影响正常流程。
+  Future<WarehouseSearchIndex> fetchSearchIndex(
+    WarehouseRepositorySource source, {
+    WarehouseFetchOptions? options,
+  }) async {
+    _log('获取适配器搜索索引...');
+    final content = await _fetchText(
+      source,
+      'index/search_index.yaml',
+      options: options,
+    );
+    return parseWarehouseSearchIndexYaml(content);
+  }
+
   Future<String> fetchAdapterScript(
     WarehouseRepositorySource source, {
     required WarehouseSchoolEntry school,
@@ -301,6 +317,112 @@ class WarehouseRepositoryService {
     );
     return urls.map(Uri.parse).toList();
   }
+}
+
+/// 解析 index/search_index.yaml（scripts/build_search_index.py 的确定性输出）。
+/// 宽松解析：跳过注释/空行与不完整条目；version_id 缺失记空串，
+/// 手工编辑或旧格式文件也能尽量可用。
+WarehouseSearchIndex parseWarehouseSearchIndexYaml(String content) {
+  final lines = content.split(RegExp(r'\r?\n'));
+  var versionId = '';
+  final schools = <WarehouseSearchSchoolEntry>[];
+  var inSchools = false;
+  WarehouseSearchSchoolEntry? currentSchool;
+  var inAdapters = false;
+  WarehouseSearchAdapterEntry? currentAdapter;
+
+  void flushAdapter() {
+    final adapter = currentAdapter;
+    final school = currentSchool;
+    if (adapter != null && adapter.adapterId.isNotEmpty && school != null) {
+      school.adapters.add(adapter);
+    }
+    currentAdapter = null;
+  }
+
+  void flushSchool() {
+    flushAdapter();
+    final school = currentSchool;
+    if (school != null &&
+        school.id.isNotEmpty &&
+        school.adapters.isNotEmpty) {
+      schools.add(
+        WarehouseSearchSchoolEntry(id: school.id, adapters: school.adapters),
+      );
+    }
+    currentSchool = null;
+    inAdapters = false;
+  }
+
+  for (final rawLine in lines) {
+    final normalizedLine = rawLine.replaceAll('\t', '  ');
+    final trimmed = normalizedLine.trim();
+    if (trimmed.isEmpty || trimmed.startsWith('#')) {
+      continue;
+    }
+    final indent = normalizedLine.length - normalizedLine.trimLeft().length;
+
+    if (indent == 0) {
+      final entry = _parseYamlPair(trimmed);
+      if (entry != null && entry.key == 'version_id') {
+        versionId = entry.value;
+        continue;
+      }
+      if (trimmed == 'schools:') {
+        inSchools = true;
+      } else if (inSchools) {
+        // 下一个顶层键：schools 列表结束
+        flushSchool();
+        inSchools = false;
+      }
+      continue;
+    }
+    if (!inSchools) {
+      continue;
+    }
+
+    if (indent == 2 && trimmed.startsWith('- ')) {
+      flushSchool();
+      final entry = _parseYamlPair(trimmed.substring(2).trim());
+      final id = entry != null && entry.key == 'id' ? entry.value : '';
+      currentSchool = WarehouseSearchSchoolEntry(id: id, adapters: []);
+      continue;
+    }
+    final school = currentSchool;
+    if (school == null) {
+      continue;
+    }
+
+    if (trimmed == 'adapters:') {
+      inAdapters = true;
+      continue;
+    }
+    if (!inAdapters) {
+      continue;
+    }
+
+    if (trimmed.startsWith('- ')) {
+      flushAdapter();
+      final entry = _parseYamlPair(trimmed.substring(2).trim());
+      if (entry != null && entry.key == 'adapter_id') {
+        currentAdapter = WarehouseSearchAdapterEntry(
+          adapterId: entry.value,
+          adapterName: '',
+        );
+      }
+      continue;
+    }
+    final entry = _parseYamlPair(trimmed);
+    final adapter = currentAdapter;
+    if (entry != null && entry.key == 'adapter_name' && adapter != null) {
+      currentAdapter = WarehouseSearchAdapterEntry(
+        adapterId: adapter.adapterId,
+        adapterName: entry.value,
+      );
+    }
+  }
+  flushSchool();
+  return WarehouseSearchIndex(versionId: versionId, schools: schools);
 }
 
 List<Map<String, String>> _parseYamlListMaps(

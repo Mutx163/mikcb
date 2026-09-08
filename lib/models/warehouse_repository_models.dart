@@ -209,3 +209,98 @@ class WarehouseAdaptersIndex {
 
   const WarehouseAdaptersIndex({required this.adapters});
 }
+
+/// 教务导入「按适配器（脚本）名称搜索」全局索引的适配器条目。
+/// 仅含搜索所需的 ID 与名称，来自 index/search_index.yaml（仓库
+/// scripts/build_search_index.py 聚合全部学校的 adapters.yaml 生成）。
+class WarehouseSearchAdapterEntry {
+  final String adapterId;
+  final String adapterName;
+
+  const WarehouseSearchAdapterEntry({
+    required this.adapterId,
+    required this.adapterName,
+  });
+}
+
+/// 搜索索引中一所学校的适配器清单。
+class WarehouseSearchSchoolEntry {
+  final String id;
+  final List<WarehouseSearchAdapterEntry> adapters;
+
+  const WarehouseSearchSchoolEntry({required this.id, required this.adapters});
+
+  /// 关键词命中的适配器显示名（保持索引顺序；名称为空时回退用 ID 展示），
+  /// 大小写不敏感。适配器 ID（如 WakeUp）与名称（如 WakeUp课程表分享口令导入）
+  /// 都参与匹配。
+  List<String> matchedAdapterNames(String keyword) {
+    final normalized = keyword.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return const [];
+    }
+    final names = <String>[];
+    for (final adapter in adapters) {
+      final displayName = adapter.adapterName.isNotEmpty
+          ? adapter.adapterName
+          : adapter.adapterId;
+      if (displayName.toLowerCase().contains(normalized) ||
+          adapter.adapterId.toLowerCase().contains(normalized)) {
+        names.add(displayName);
+      }
+    }
+    return List.unmodifiable(names);
+  }
+}
+
+/// index/search_index.yaml 的解析结果。
+class WarehouseSearchIndex {
+  final String versionId;
+  final List<WarehouseSearchSchoolEntry> schools;
+
+  const WarehouseSearchIndex({required this.versionId, required this.schools});
+
+  /// 关键词命中的适配器显示名，按学校 id 分组（仅含非空命中）。
+  /// 教务导入搜索用它把「按脚本名命中」的学校也带出来，并回显命中的脚本名。
+  Map<String, List<String>> matchedAdapterNamesBySchool(String keyword) {
+    final normalized = keyword.trim();
+    if (normalized.isEmpty) {
+      return const {};
+    }
+    final matches = <String, List<String>>{};
+    for (final school in schools) {
+      final names = school.matchedAdapterNames(normalized);
+      if (names.isNotEmpty) {
+        matches[school.id] = names;
+      }
+    }
+    return Map.unmodifiable(matches);
+  }
+}
+
+/// 教务导入学校搜索：命中学校名称/ID/首字母/资源目录，或搜索索引中任一
+/// 适配器名称/ID。[adapterMatches] 是
+/// WarehouseSearchIndex.matchedAdapterNamesBySchool 的结果；传空表（旧版
+/// 适配仓没有全局搜索索引时）行为与仅按学校字段搜索完全一致。
+List<WarehouseSchoolEntry> filterWarehouseSchools(
+  List<WarehouseSchoolEntry> schools,
+  String query, {
+  Map<String, List<String>> adapterMatches = const {},
+}) {
+  final keyword = query.trim().toLowerCase();
+  if (keyword.isEmpty) {
+    return schools;
+  }
+  return schools
+      .where((school) {
+        final bool fieldMatch =
+            school.name.toLowerCase().contains(keyword) ||
+            school.id.toLowerCase().contains(keyword) ||
+            school.initial.toLowerCase().contains(keyword) ||
+            school.resourceFolder.toLowerCase().contains(keyword);
+        if (fieldMatch) {
+          return true;
+        }
+        return adapterMatches[school.id]?.isNotEmpty ?? false;
+      })
+      .toList(growable: false);
+}

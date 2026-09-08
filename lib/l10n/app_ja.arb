@@ -2423,11 +2423,11 @@
   "warehouseImportExecutionLogShareSubject": "軽屿時間割 - 時間割インポート実行ログ",
   "warehouseImportExecutionLogEmpty": "インポート実行記録はまだありません。教務ページを開き、インポートスクリプトを実行してから再度確認してください。",
   "warehouseRootLoadFailedTitle": "適応倉庫を一時的に読み込めません",
-  "searchSchoolHint": "学校名、頭文字またはコードで検索",
+  "searchSchoolHint": "学校名またはアダプター名で検索",
   "clearSearchTooltip": "クリア",
-  "noMatchingSchools": "一致する学校が見つかりません",
+  "noMatchingSchools": "一致する学校またはアダプターが見つかりません",
   "noAvailableSchools": "利用可能な学校がありません",
-  "searchSchoolSuggestion": "学校の正式名称、頭文字または倉庫の学校コードをお試しください。",
+  "searchSchoolSuggestion": "学校の正式名称、アダプター名（例：WakeUp）または学校コードをお試しください。",
   "deleteDebugRecordTitle": "デバッグレコード削除",
   "deleteDebugRecordMessage": "「{name}」を削除しますか？削除後もインポート済みの授業には影響しません",
   "@deleteDebugRecordMessage": {
@@ -2553,6 +2553,14 @@
   "quickImportUnknownError": "不明なエラーが発生しました",
   "recentSchoolLabel": "最近使用",
   "warehouseSchoolTapHint": "タップしてアダプタを選びインポート",
+  "warehouseMatchedAdaptersLabel": "一致するアダプター：{names}",
+  "@warehouseMatchedAdaptersLabel": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "warehouseAdaptersLoadFailedTitle": "アダプタ一覧を読み込めません",
   "stopRecordingTooltip": "録画停止",
   "startRecordingTooltip": "操作を録画",

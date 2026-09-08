@@ -4815,19 +4815,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get warehouseRootLoadFailedTitle => '適応倉庫を一時的に読み込めません';
 
   @override
-  String get searchSchoolHint => '学校名、頭文字またはコードで検索';
+  String get searchSchoolHint => '学校名またはアダプター名で検索';
 
   @override
   String get clearSearchTooltip => 'クリア';
 
   @override
-  String get noMatchingSchools => '一致する学校が見つかりません';
+  String get noMatchingSchools => '一致する学校またはアダプターが見つかりません';
 
   @override
   String get noAvailableSchools => '利用可能な学校がありません';
 
   @override
-  String get searchSchoolSuggestion => '学校の正式名称、頭文字または倉庫の学校コードをお試しください。';
+  String get searchSchoolSuggestion =>
+      '学校の正式名称、アダプター名（例：WakeUp）または学校コードをお試しください。';
 
   @override
   String get deleteDebugRecordTitle => 'デバッグレコード削除';
@@ -5037,6 +5038,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get warehouseSchoolTapHint => 'タップしてアダプタを選びインポート';
+
+  @override
+  String warehouseMatchedAdaptersLabel(String names) {
+    return '一致するアダプター：$names';
+  }
 
   @override
   String get warehouseAdaptersLoadFailedTitle => 'アダプタ一覧を読み込めません';

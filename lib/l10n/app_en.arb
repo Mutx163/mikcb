@@ -2613,11 +2613,11 @@
   "warehouseImportExecutionLogShareSubject": "Qingyu Timetable - Import execution log",
   "warehouseImportExecutionLogEmpty": "No import execution records yet. Open the academic-system page, run the import script, then check again.",
   "warehouseRootLoadFailedTitle": "Unable to read the adapter repository right now",
-  "searchSchoolHint": "Search school name, initials, or code",
+  "searchSchoolHint": "Search schools or adapter names",
   "clearSearchTooltip": "Clear",
-  "noMatchingSchools": "No matching school found",
+  "noMatchingSchools": "No matching school or adapter found",
   "noAvailableSchools": "No schools available yet",
-  "searchSchoolSuggestion": "Try the full school name, initials, or the school code used in the repository.",
+  "searchSchoolSuggestion": "Try the full school name, an adapter name (e.g. WakeUp), or the school code used in the repository.",
   "deleteDebugRecordTitle": "Delete debug record",
   "deleteDebugRecordMessage": "Delete \"{name}\"? This will not affect courses that have already been imported",
   "@deleteDebugRecordMessage": {
@@ -2743,6 +2743,14 @@
   "quickImportUnknownError": "An unknown error occurred",
   "recentSchoolLabel": "Recently used",
   "warehouseSchoolTapHint": "Tap to choose an adapter and import",
+  "warehouseMatchedAdaptersLabel": "Matching adapters: {names}",
+  "@warehouseMatchedAdaptersLabel": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "warehouseAdaptersLoadFailedTitle": "Could not load adapter list",
   "stopRecordingTooltip": "Stop recording",
   "startRecordingTooltip": "Record actions",

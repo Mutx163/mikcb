@@ -2627,11 +2627,11 @@
   "warehouseImportExecutionLogShareSubject": "轻屿课表 - 课表导入执行日志",
   "warehouseImportExecutionLogEmpty": "暂无导入执行记录。请先打开教务网页并执行导入脚本，再回来查看。",
   "warehouseRootLoadFailedTitle": "暂时无法读取适配仓",
-  "searchSchoolHint": "搜索学校名称、首字母或代码",
+  "searchSchoolHint": "搜索学校或适配器名称",
   "clearSearchTooltip": "清空",
-  "noMatchingSchools": "没有找到匹配的学校",
+  "noMatchingSchools": "没有找到匹配的学校或适配器",
   "noAvailableSchools": "暂无可用学校",
-  "searchSchoolSuggestion": "试试学校全称、首字母或仓库里的学校代码",
+  "searchSchoolSuggestion": "试试学校全称、适配器名称（如 WakeUp）或学校代码",
   "deleteDebugRecordTitle": "删除调试记录",
   "deleteDebugRecordMessage": "确认删除“{name}”？删除后不会影响已经导入的课程",
   "@deleteDebugRecordMessage": {
@@ -2757,6 +2757,14 @@
   "quickImportUnknownError": "发生未知错误",
   "recentSchoolLabel": "最近使用",
   "warehouseSchoolTapHint": "点击进入，选择适配器导入",
+  "warehouseMatchedAdaptersLabel": "匹配适配器：{names}",
+  "@warehouseMatchedAdaptersLabel": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "warehouseAdaptersLoadFailedTitle": "暂时无法读取适配器列表",
   "stopRecordingTooltip": "停止录制",
   "startRecordingTooltip": "录制操作",

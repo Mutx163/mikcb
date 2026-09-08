@@ -8656,7 +8656,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchSchoolHint.
   ///
   /// In zh, this message translates to:
-  /// **'搜索学校名称、首字母或代码'**
+  /// **'搜索学校或适配器名称'**
   String get searchSchoolHint;
 
   /// No description provided for @clearSearchTooltip.
@@ -8668,7 +8668,7 @@ abstract class AppLocalizations {
   /// No description provided for @noMatchingSchools.
   ///
   /// In zh, this message translates to:
-  /// **'没有找到匹配的学校'**
+  /// **'没有找到匹配的学校或适配器'**
   String get noMatchingSchools;
 
   /// No description provided for @noAvailableSchools.
@@ -8680,7 +8680,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchSchoolSuggestion.
   ///
   /// In zh, this message translates to:
-  /// **'试试学校全称、首字母或仓库里的学校代码'**
+  /// **'试试学校全称、适配器名称（如 WakeUp）或学校代码'**
   String get searchSchoolSuggestion;
 
   /// No description provided for @deleteDebugRecordTitle.
@@ -9060,6 +9060,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'点击进入，选择适配器导入'**
   String get warehouseSchoolTapHint;
+
+  /// No description provided for @warehouseMatchedAdaptersLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'匹配适配器：{names}'**
+  String warehouseMatchedAdaptersLabel(String names);
 
   /// No description provided for @warehouseAdaptersLoadFailedTitle.
   ///

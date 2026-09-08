@@ -2420,11 +2420,11 @@
   "warehouseImportExecutionLogShareSubject": "輕嶼課表 - 課表匯入執行日誌",
   "warehouseImportExecutionLogEmpty": "暫無匯入執行記錄。請先開啟教務網頁並執行匯入腳本，再回來查看。",
   "warehouseRootLoadFailedTitle": "暫時無法讀取適配倉",
-  "searchSchoolHint": "搜索學校名稱、首字母或代碼",
+  "searchSchoolHint": "搜尋學校或適配器名稱",
   "clearSearchTooltip": "清空",
-  "noMatchingSchools": "没有找到匹配的學校",
+  "noMatchingSchools": "没有找到匹配的學校或適配器",
   "noAvailableSchools": "暫無可用學校",
-  "searchSchoolSuggestion": "試試學校全稱、首字母或倉庫裡的學校代碼",
+  "searchSchoolSuggestion": "試試學校全稱、適配器名稱（如 WakeUp）或學校代碼",
   "deleteDebugRecordTitle": "刪除偵錯記錄",
   "deleteDebugRecordMessage": "確認刪除“{name}”？刪除後不會蠅响已經匯入的課程",
   "@deleteDebugRecordMessage": {
@@ -2550,6 +2550,14 @@
   "quickImportUnknownError": "發生未知錯誤",
   "recentSchoolLabel": "最近使用",
   "warehouseSchoolTapHint": "點擊進入，選擇適配器匯入",
+  "warehouseMatchedAdaptersLabel": "匹配適配器：{names}",
+  "@warehouseMatchedAdaptersLabel": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "warehouseAdaptersLoadFailedTitle": "暫時無法讀取適配器列表",
   "stopRecordingTooltip": "停止錄製",
   "startRecordingTooltip": "錄製操作",

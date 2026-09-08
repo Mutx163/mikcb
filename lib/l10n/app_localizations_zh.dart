@@ -4718,19 +4718,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get warehouseRootLoadFailedTitle => '暂时无法读取适配仓';
 
   @override
-  String get searchSchoolHint => '搜索学校名称、首字母或代码';
+  String get searchSchoolHint => '搜索学校或适配器名称';
 
   @override
   String get clearSearchTooltip => '清空';
 
   @override
-  String get noMatchingSchools => '没有找到匹配的学校';
+  String get noMatchingSchools => '没有找到匹配的学校或适配器';
 
   @override
   String get noAvailableSchools => '暂无可用学校';
 
   @override
-  String get searchSchoolSuggestion => '试试学校全称、首字母或仓库里的学校代码';
+  String get searchSchoolSuggestion => '试试学校全称、适配器名称（如 WakeUp）或学校代码';
 
   @override
   String get deleteDebugRecordTitle => '删除调试记录';
@@ -4938,6 +4938,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get warehouseSchoolTapHint => '点击进入，选择适配器导入';
+
+  @override
+  String warehouseMatchedAdaptersLabel(String names) {
+    return '匹配适配器：$names';
+  }
 
   @override
   String get warehouseAdaptersLoadFailedTitle => '暂时无法读取适配器列表';
@@ -15174,19 +15179,19 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get warehouseRootLoadFailedTitle => '暫時無法讀取適配倉';
 
   @override
-  String get searchSchoolHint => '搜索學校名稱、首字母或代碼';
+  String get searchSchoolHint => '搜尋學校或適配器名稱';
 
   @override
   String get clearSearchTooltip => '清空';
 
   @override
-  String get noMatchingSchools => '没有找到匹配的學校';
+  String get noMatchingSchools => '没有找到匹配的學校或適配器';
 
   @override
   String get noAvailableSchools => '暫無可用學校';
 
   @override
-  String get searchSchoolSuggestion => '試試學校全稱、首字母或倉庫裡的學校代碼';
+  String get searchSchoolSuggestion => '試試學校全稱、適配器名稱（如 WakeUp）或學校代碼';
 
   @override
   String get deleteDebugRecordTitle => '刪除偵錯記錄';
@@ -15394,6 +15399,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get warehouseSchoolTapHint => '點擊進入，選擇適配器匯入';
+
+  @override
+  String warehouseMatchedAdaptersLabel(String names) {
+    return '匹配適配器：$names';
+  }
 
   @override
   String get warehouseAdaptersLoadFailedTitle => '暫時無法讀取適配器列表';
@@ -25674,19 +25684,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get warehouseRootLoadFailedTitle => '暫時無法讀取適配倉';
 
   @override
-  String get searchSchoolHint => '搜索学校名稱、首字母或代码';
+  String get searchSchoolHint => '搜尋學校或適配器名稱';
 
   @override
   String get clearSearchTooltip => '清空';
 
   @override
-  String get noMatchingSchools => '没有找到匹配的学校';
+  String get noMatchingSchools => '沒有找到匹配的學校或適配器';
 
   @override
   String get noAvailableSchools => '暫無可用学校';
 
   @override
-  String get searchSchoolSuggestion => '試試学校全稱、首字母或倉庫裡的学校代码';
+  String get searchSchoolSuggestion => '試試學校全稱、適配器名稱（如 WakeUp）或學校代碼';
 
   @override
   String get deleteDebugRecordTitle => '刪除偵錯記錄';
@@ -25894,6 +25904,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get warehouseSchoolTapHint => '點擊進入，選擇適配器匯入';
+
+  @override
+  String warehouseMatchedAdaptersLabel(String names) {
+    return '符合適配器：$names';
+  }
 
   @override
   String get warehouseAdaptersLoadFailedTitle => '暫時無法讀取適配器列表';
