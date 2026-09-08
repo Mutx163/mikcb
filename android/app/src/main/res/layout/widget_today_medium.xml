@@ -24,15 +24,33 @@
         android:textSize="11sp"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widget_medium_title"
+    <!-- 课程色竖条与主课名同排：默认隐藏，开启「课程颜色」后由 provider
+         上色亮出。与 compact 的 widget_course_name_accent 同构。 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:maxLines="2"
-        android:text="高等数学"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/widget_medium_title_accent"
+            android:layout_width="3dp"
+            android:layout_height="17dp"
+            android:layout_marginEnd="6dp"
+            android:background="@android:color/transparent"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_medium_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="2"
+            android:text="高等数学"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/widget_medium_time"
