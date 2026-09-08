@@ -135,7 +135,9 @@ void main() {
           ),
         ),
       });
+      final requestedHosts = <String>[];
       final client = MockClient((request) async {
+        requestedHosts.add(request.url.host);
         if (request.url.host == 'api.gitcode.com') {
           return http.Response(
             envelope,
@@ -143,7 +145,6 @@ void main() {
             headers: {'content-type': 'application/json; charset=utf-8'},
           );
         }
-        // 其余候选（GitHub raw / 镜像）一律失败，GitCode 必须胜出。
         return http.Response('unavailable', 503);
       });
 
@@ -151,6 +152,8 @@ void main() {
       final data = await service.fetchDonors(preferGitCode: true);
 
       expect(data.donors.single.name, 'GitCode Donor');
+      // 主候选先行：GitCode 成功时不应再请求 GitHub raw / 镜像候选。
+      expect(requestedHosts, ['api.gitcode.com']);
     },
   );
 

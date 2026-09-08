@@ -140,8 +140,8 @@ class SupportCreatorService {
       'https://raw.githubusercontent.com/Mutx163/mikcb/main/docs/donors.json';
 
   /// GitCode 国内直连镜像（v5 contents API，免令牌可读，返回 base64 JSON）：
-  /// 下载渠道选 GitCode 时作为主候选，域名/命名空间与 GitHub 主仓一致
-  /// （镜像与 main 全量同步）；失败时回退 GitHub raw 与镜像前缀候选。
+  /// 下载渠道选国内源（GitCode/蒲公英）时作为主候选先行，成功即用、不再
+  /// 请求 GitHub 候选；失败时才回退 GitHub raw 与镜像前缀竞速池。
   static const String _gitcodeDonorsUrl =
       'https://api.gitcode.com/api/v5/repos/mutx/qingyu/contents/docs/donors.json?ref=main';
 
@@ -155,17 +155,32 @@ class SupportCreatorService {
     bool preferGitCode = false,
   }) async {
     final normalizedMirrorPrefix = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
-    final candidateUrls = <String>[
-      // GitCode 国内直连（下载渠道选 GitCode 时纳入主候选）：v5 contents API
-      // 免令牌、返回 base64 JSON，命中即胜出，无需绕道镜像前缀。
-      if (preferGitCode) _gitcodeDonorsUrl,
-      ...buildMirrorCandidateUrls(
-        _donorsUrl,
-        selectedMirrorPrefix: normalizedMirrorPrefix,
-      ),
-    ];
-
     final sw = Stopwatch()..start();
+
+    // 与教务适配仓同一规则：下载渠道选国内源（GitCode/蒲公英）时，GitCode
+    // 主候选先行——成功直接采用、不再请求 GitHub 候选；仅失败才回退
+    // GitHub raw 与镜像竞速池，避免「优先国内」被更快的 GitHub 镜像截胡。
+    if (preferGitCode) {
+      try {
+        final data = await _fetchDonorData(_gitcodeDonorsUrl);
+        appDebugLog(
+          'SupportCreator',
+          'GitCode 主候选命中，总耗时 ${sw.elapsedMilliseconds}ms',
+        );
+        return data;
+      } catch (error) {
+        appDebugLog(
+          'SupportCreator',
+          'GitCode 主候选失败，回退 GitHub raw 与镜像候选：$error',
+        );
+      }
+    }
+
+    final candidateUrls = buildMirrorCandidateUrls(
+      _donorsUrl,
+      selectedMirrorPrefix: normalizedMirrorPrefix,
+    );
+
     appDebugLog(
       'SupportCreator',
       'fetchDonors 开始，候选 ${candidateUrls.length} 个，'
@@ -175,46 +190,16 @@ class SupportCreatorService {
       appDebugLog('SupportCreator', '候选 $i：${candidateUrls[i]}');
     }
 
-    final result = await raceFutures<(http.Response, String), SupportDonorData>(
+    final result = await raceFutures<SupportDonorData, SupportDonorData>(
       candidateUrls.map((candidateUrl) async {
-        final response = await _client
-            .get(
-              Uri.parse(candidateUrl),
-              headers: const {
-                'Accept': 'application/json',
-                'User-Agent': 'mikcb-app',
-              },
-            )
-            .timeout(const Duration(seconds: 6));
-        return (response, candidateUrl);
-      }).toList(growable: false),
-      (entry) {
-        final response = entry.$1;
-        final candidateUrl = entry.$2;
+        final data = await _fetchDonorData(candidateUrl);
         appDebugLog(
           'SupportCreator',
-          '收到响应 ${response.statusCode}（$candidateUrl），'
-          '耗时 ${sw.elapsedMilliseconds}ms',
+          '候选命中（$candidateUrl），耗时 ${sw.elapsedMilliseconds}ms',
         );
-        if (response.statusCode != 200) {
-          return null;
-        }
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-        if (decoded is! Map) {
-          appDebugLog('SupportCreator', '响应不是 Map 格式');
-          return null;
-        }
-        final rawMap = _isGitCodeContentsUrl(candidateUrl)
-            ? _decodeGitCodeContentsPayload(decoded)
-            : Map<String, dynamic>.from(decoded);
-        if (rawMap == null) {
-          appDebugLog('SupportCreator', 'GitCode base64 内容解码失败');
-          return null;
-        }
-        final data = SupportDonorData.fromJson(rawMap);
-        appDebugLog('SupportCreator', '解析成功，${data.donors.length} 位捐赠者');
         return data;
-      },
+      }).toList(growable: false),
+      (data) => data,
     );
 
     if (result.winner != null) {
@@ -229,6 +214,36 @@ class SupportCreatorService {
         'detail': '$lastError',
       }),
     );
+  }
+
+  /// 从单个候选地址拉取并解析名单（GitCode v5 contents 走 base64 解码），
+  /// 失败抛错由调用方决定是否回退。
+  Future<SupportDonorData> _fetchDonorData(String candidateUrl) async {
+    final response = await _client
+        .get(
+          Uri.parse(candidateUrl),
+          headers: const {
+            'Accept': 'application/json',
+            'User-Agent': 'mikcb-app',
+          },
+        )
+        .timeout(const Duration(seconds: 6));
+    if (response.statusCode != 200) {
+      throw StateError('http_${response.statusCode}');
+    }
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! Map) {
+      throw StateError('donors_payload_not_map');
+    }
+    final rawMap = _isGitCodeContentsUrl(candidateUrl)
+        ? _decodeGitCodeContentsPayload(decoded)
+        : Map<String, dynamic>.from(decoded);
+    if (rawMap == null) {
+      throw StateError('gitcode_contents_decode_failed');
+    }
+    final data = SupportDonorData.fromJson(rawMap);
+    appDebugLog('SupportCreator', '解析成功，${data.donors.length} 位捐赠者');
+    return data;
   }
 
   /// 是否为 GitCode v5 contents API 候选（命中后需 base64 解码再解析 JSON）。
