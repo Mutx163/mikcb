@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-07T06:32:39+00:00",
+  "updatedAt": "2026-09-08T06:25:02+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 192,
-    "schools": 187,
+    "total": 202,
+    "schools": 197,
     "generic": 5
   },
   "schools": [
@@ -51,10 +51,24 @@
       "category": "school"
     },
     {
+      "id": "AEPU",
+      "name": "安徽电气工程职业技术学院",
+      "initial": "A",
+      "resourceFolder": "AEPU",
+      "category": "school"
+    },
+    {
       "id": "AUFE",
       "name": "安徽财经大学",
       "initial": "A",
       "resourceFolder": "AUFE",
+      "category": "school"
+    },
+    {
+      "id": "BTBU",
+      "name": "北京工商大学",
+      "initial": "B",
+      "resourceFolder": "BTBU",
       "category": "school"
     },
     {
@@ -69,6 +83,13 @@
       "name": "北方工业大学",
       "initial": "B",
       "resourceFolder": "NCUT",
+      "category": "school"
+    },
+    {
+      "id": "BBGU",
+      "name": "北部湾大学",
+      "initial": "B",
+      "resourceFolder": "BBGU",
       "category": "school"
     },
     {
@@ -174,6 +195,13 @@
       "name": "重庆电子科技职业大学",
       "initial": "C",
       "resourceFolder": "CQUET",
+      "category": "school"
+    },
+    {
+      "id": "CQEPC",
+      "name": "重庆航天职业技术学院",
+      "initial": "C",
+      "resourceFolder": "CQEPC",
       "category": "school"
     },
     {
@@ -436,6 +464,13 @@
       "category": "school"
     },
     {
+      "id": "SCNU",
+      "name": "华南师范大学",
+      "initial": "H",
+      "resourceFolder": "SCNU",
+      "category": "school"
+    },
+    {
       "id": "SCUT",
       "name": "华南理工大学",
       "initial": "H",
@@ -524,6 +559,13 @@
       "name": "河南科技大学",
       "initial": "H",
       "resourceFolder": "HAUST",
+      "category": "school"
+    },
+    {
+      "id": "HIST",
+      "name": "河南科技学院",
+      "initial": "H",
+      "resourceFolder": "HIST",
       "category": "school"
     },
     {
@@ -744,6 +786,13 @@
       "category": "school"
     },
     {
+      "id": "LIT",
+      "name": "洛阳理工学院",
+      "initial": "L",
+      "resourceFolder": "LIT",
+      "category": "school"
+    },
+    {
       "id": "LCUDCC",
       "name": "聊城大学东昌学院",
       "initial": "L",
@@ -776,6 +825,20 @@
       "name": "茂名职业技术学院",
       "initial": "M",
       "resourceFolder": "MMPT",
+      "category": "school"
+    },
+    {
+      "id": "MKU",
+      "name": "闽南科技学院",
+      "initial": "M",
+      "resourceFolder": "MKU",
+      "category": "school"
+    },
+    {
+      "id": "MASU",
+      "name": "马鞍山学院",
+      "initial": "M",
+      "resourceFolder": "MASU",
       "category": "school"
     },
     {
@@ -832,6 +895,13 @@
       "name": "南京邮电大学",
       "initial": "N",
       "resourceFolder": "NJUPT",
+      "category": "school"
+    },
+    {
+      "id": "SUSTECH",
+      "name": "南方科技大学",
+      "initial": "N",
+      "resourceFolder": "SUSTECH",
       "category": "school"
     },
     {
