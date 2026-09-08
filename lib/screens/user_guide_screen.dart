@@ -739,9 +739,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               ],
               selectedHex: settings.foruiTheme.seedHex,
               onSelectedHex: _applyForuiThemeSeed,
-              // 尽量两行放完且各行数量相等（当前 10 色 → 5×2），
-              // 避免自动流式换行的「上 6 下 4」参差排布。
+              // 尽量两行放完且各行数量接近相等（11 色 → 6×2 末行 5），
+              // 避免自动流式换行的参差排布；chipSize 44 为「小米原色」等
+              // 四字名称留余量（42 会截字）。
               columns: (ForuiTheme.values.length + 1) ~/ 2,
+              chipSize: 44,
               colorParser: (hex) => parseHexColorOrFallback(
                 hex,
                 fallback: HyperosIconColors.blue,

@@ -80,16 +80,20 @@ class HyperosColorChip extends StatelessWidget {
       children: [
         chip,
         const SizedBox(height: 4),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 11,
-            height: 1.1,
-            color: selected
-                ? HyperosColors.primary(context)
-                : HyperosColors.onSurfaceVariantActions(context),
+        SizedBox(
+          width: size,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.1,
+              color: selected
+                  ? HyperosColors.primary(context)
+                  : HyperosColors.onSurfaceVariantActions(context),
+            ),
           ),
         ),
       ],
