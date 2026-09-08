@@ -15,12 +15,17 @@ class HyperosColorChip extends StatelessWidget {
     required this.onTap,
     this.size = 42,
     this.radius,
+    this.label,
   });
 
   final Color color;
   final bool selected;
   final VoidCallback onTap;
   final double size;
+
+  /// 色块下方的可选名称（主题名等）。用于区分肉眼几乎相同的近黑色 seed
+  /// （中性灰/锌灰/石板灰）——仅靠色块三个摆在一起无法辨认。
+  final String? label;
 
   /// Defaults to [HyperosRadius.chipRadius] for [size].
   final double? radius;
@@ -32,7 +37,7 @@ class HyperosColorChip extends StatelessWidget {
         ? HyperosColors.onSurface(context)
         : HyperosColors.outline(context);
 
-    return Material(
+    final Widget chip = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
@@ -65,6 +70,29 @@ class HyperosColorChip extends StatelessWidget {
               : null,
         ),
       ),
+    );
+    final label = this.label;
+    if (label == null) {
+      return chip;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        chip,
+        const SizedBox(height: 4),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.1,
+            color: selected
+                ? HyperosColors.primary(context)
+                : HyperosColors.onSurfaceVariantActions(context),
+          ),
+        ),
+      ],
     );
   }
 
@@ -138,6 +166,7 @@ class HyperosHexColorChipGroup extends StatelessWidget {
     this.distributeHorizontally = true,
     this.columns,
     this.chipSize = 42,
+    this.labels,
   });
 
   final List<String> colorHexes;
@@ -154,6 +183,10 @@ class HyperosHexColorChipGroup extends StatelessWidget {
   /// See [HyperosColorChipGroup.chipSize].
   final double chipSize;
 
+  /// 与 [colorHexes] 等长（或 null）的每个色块名称；非空时色块下方
+  /// 显示名字，用于区分肉眼几乎相同的深色 seed（中性灰/锌灰/石墨灰）。
+  final List<String>? labels;
+
   @override
   Widget build(BuildContext context) {
     return _hyperosColorChipLayout(
@@ -163,12 +196,13 @@ class HyperosHexColorChipGroup extends StatelessWidget {
       runSpacing: runSpacing,
       distributeHorizontally: distributeHorizontally,
       children: [
-        for (final hex in colorHexes)
+        for (final (index, hex) in colorHexes.indexed)
           HyperosColorChip(
             color: colorParser(hex),
             selected: hex.toUpperCase() == selectedHex.toUpperCase(),
             onTap: () => onSelectedHex(hex),
             size: chipSize,
+            label: labels != null ? labels![index] : null,
           ),
       ],
     );

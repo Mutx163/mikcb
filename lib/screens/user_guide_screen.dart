@@ -731,6 +731,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           child: HyperosControlCardInset(
             child: HyperosHexColorChipGroup(
               colorHexes: [for (final theme in ForuiTheme.values) theme.seedHex],
+              // 名字跟随色块：中性灰/锌灰/石板灰三个深色 seed 色块肉眼几乎
+              // 无法区分，带名字才能分辨。
+              labels: [
+                for (final theme in ForuiTheme.values)
+                  foruiThemeLabel(l10n, theme),
+              ],
               selectedHex: settings.foruiTheme.seedHex,
               onSelectedHex: _applyForuiThemeSeed,
               // 尽量两行放完且各行数量相等（当前 10 色 → 5×2），
