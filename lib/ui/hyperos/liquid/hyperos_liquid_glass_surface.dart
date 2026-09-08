@@ -140,6 +140,11 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     /// Overrides the role default layer strategy when non-null.
     this.layerMode,
 
+    /// 折射厚度缩放（0..1）：非空且 <1 时，材质 thickness 按该比例缩放。
+    /// 用于入场动画——厚度从近零生长到满值，玻璃「凝固」入场，边缘折射
+    /// 对周边文字的镜像随厚度减弱，揭示完成后回到完整观感。
+    this.thicknessFactor,
+
     /// Kept for API compatibility; backdrop-group sampling of the undimmed
     /// page is handled by [UndimmedBackdropCapture] / [UndimmedBackdropLayer]
     /// where needed.
@@ -162,6 +167,9 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
   /// strip (e.g. the 40dp preview weekday-only band) does not let the
   /// thickness-wide edge rim-light flood the whole bar. Null = no cap.
   final double? maxThickness;
+
+  /// 折射厚度缩放（0..1），见构造参数文档。null = 不缩放。
+  final double? thicknessFactor;
 
   /// Whether this device can run real liquid-glass refraction shaders.
   ///
@@ -240,6 +248,15 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     final cap = widget.maxThickness;
     if (cap != null && cap > 0 && settings.thickness > cap) {
       settings = settings.copyWith(thickness: math.min(settings.thickness, cap));
+    }
+    // 折射厚度缩放（入场「凝固」动画）：厚度按比例衰减，边缘折射对周边
+    // 内容的取样镜像随之减弱；厚度变化触发包内几何重建，入场 200ms 内
+    // 每帧重建一次 SDF matte，成本可接受。
+    final factor = widget.thicknessFactor;
+    if (factor != null && factor < 1) {
+      settings = settings.copyWith(
+        thickness: math.max(0, settings.thickness * factor),
+      );
     }
 
     final glassChild = contentLegibilityFill

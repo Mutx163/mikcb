@@ -537,6 +537,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     this.useAncestorGroupCapture = false,
     this.pageCapture,
     this.pageAlignedOrigin,
+    this.thicknessFactor,
   });
 
   final double cornerRadius;
@@ -550,6 +551,12 @@ class HyperosSelectPopupGlass extends StatelessWidget {
 
   /// 本面左上角在页面坐标系（全局逻辑坐标）中的位置，用于对齐快照。
   final Offset? pageAlignedOrigin;
+
+  /// 折射厚度缩放（0..1）：液态面按完整厚度的该比例渲染。二级子卡揭示
+  /// 期间传揭示进度——厚度从近零生长到满值，顶缘折射对上方面板文字的
+  /// 镜像随揭示减弱直至压暗接管，消除「字体反射」闪动。null/1 = 完整
+  /// 厚度。
+  final double? thicknessFactor;
 
   /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
   ///
@@ -612,6 +619,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
               // Sample the same undimmed modal capture as every other popup.
               useAncestorBackdropGroup: true,
               instantUnderlay: true,
+              thicknessFactor: thicknessFactor,
               child: child,
             ),
           ],
@@ -623,6 +631,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         // Sample the same undimmed modal capture as every other popup.
         useAncestorBackdropGroup: true,
         instantUnderlay: true,
+        thicknessFactor: thicknessFactor,
         child: child,
       );
       if (!useAncestorGroupCapture) {
