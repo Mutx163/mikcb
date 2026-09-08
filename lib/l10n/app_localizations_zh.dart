@@ -5100,7 +5100,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuOverviewTitle => '课程总览';
 
   @override
-  String get homeMenuAddCourseTitle => '添加课程';
+  String get homeMenuAddCourseTitle => '添加内容';
 
   @override
   String get homeMenuImportTitle => '导入课程';
@@ -10276,7 +10276,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockButtonBackToWeekLabel => '回本周 / 今天';
 
   @override
-  String get glassDockExtraButtonSemanticLabel => '添加课程';
+  String get glassDockExtraButtonSemanticLabel => '添加内容';
 
   @override
   String get homeMenuStyleLabel => '右上角菜单样式';
@@ -15561,7 +15561,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuOverviewTitle => '課程總覽';
 
   @override
-  String get homeMenuAddCourseTitle => '新增課程';
+  String get homeMenuAddCourseTitle => '新增內容';
 
   @override
   String get homeMenuImportTitle => '匯入課程';
@@ -20781,7 +20781,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
-  String get glassDockExtraButtonSemanticLabel => '新增課程';
+  String get glassDockExtraButtonSemanticLabel => '新增內容';
 
   @override
   String get homeMenuStyleLabel => '右上角選單樣式';
@@ -26066,7 +26066,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuOverviewTitle => '課程總覽';
 
   @override
-  String get homeMenuAddCourseTitle => '新增課程';
+  String get homeMenuAddCourseTitle => '新增內容';
 
   @override
   String get homeMenuImportTitle => '匯入課程';
@@ -31286,7 +31286,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
 
   @override
-  String get glassDockExtraButtonSemanticLabel => '新增課程';
+  String get glassDockExtraButtonSemanticLabel => '新增內容';
 
   @override
   String get homeMenuStyleLabel => '右上角選單樣式';

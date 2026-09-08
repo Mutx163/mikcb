@@ -5229,7 +5229,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuOverviewTitle => '수업 전체보기';
 
   @override
-  String get homeMenuAddCourseTitle => '수업 추가';
+  String get homeMenuAddCourseTitle => '콘텐츠 추가';
 
   @override
   String get homeMenuImportTitle => '수업 가져오기';
@@ -10612,7 +10612,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockButtonBackToWeekLabel => '이번 주로 / 오늘';
 
   @override
-  String get glassDockExtraButtonSemanticLabel => '수업 추가';
+  String get glassDockExtraButtonSemanticLabel => '콘텐츠 추가';
 
   @override
   String get homeMenuStyleLabel => '오른쪽 위 메뉴 스타일';

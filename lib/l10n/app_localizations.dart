@@ -9364,7 +9364,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeMenuAddCourseTitle.
   ///
   /// In zh, this message translates to:
-  /// **'添加课程'**
+  /// **'添加内容'**
   String get homeMenuAddCourseTitle;
 
   /// No description provided for @homeMenuImportTitle.
@@ -18682,7 +18682,7 @@ abstract class AppLocalizations {
   /// No description provided for @glassDockExtraButtonSemanticLabel.
   ///
   /// In zh, this message translates to:
-  /// **'添加课程'**
+  /// **'添加内容'**
   String get glassDockExtraButtonSemanticLabel;
 
   /// No description provided for @homeMenuStyleLabel.
