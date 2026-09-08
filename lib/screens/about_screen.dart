@@ -31,6 +31,7 @@ import '../widgets/app_dialogs.dart';
 import '../services/warehouse_repository_service.dart';
 import 'feedback_screen.dart';
 import 'log_viewer_entry.dart';
+import 'support_creator_screen.dart';
 
 enum AboutUpdatePrimaryAction {
   openReleasePage,
@@ -288,10 +289,27 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
           const HyperosSectionGap(),
-          // 支持与更新：反馈、版本、日志
+          // 支持与更新：请喝咖啡、反馈、版本、日志
           HyperosSectionLabel(text: l10n.aboutSupportUpdatesSectionTitle),
           HyperosListGroup(
             children: [
+              _AboutEntryTile(
+                icon: Icons.free_breakfast_rounded,
+                iconAccent: HyperosIconColors.yellow,
+                title: l10n.homeMenuCoffeeTitle,
+                subtitle: l10n.supportHeroTitle,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    HyperosPageRoute(
+                      settings: const RouteSettings(
+                        name: '/about/support-creator',
+                      ),
+                      builder: (_) => const SupportCreatorScreen(),
+                    ),
+                  );
+                },
+              ),
               _AboutEntryTile(
                 icon: Icons.chat_bubble_outline_rounded,
                 iconAccent: HyperosIconColors.green,
