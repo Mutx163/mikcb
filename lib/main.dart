@@ -68,7 +68,8 @@ ThemeData _appThemeData(
   // 主题色接入：seed 可读时播种 Material colorScheme——`colorScheme.primary`
   // 的全部消费点（添加弹层三宫格按钮、课表快速切换、更新提示弹层等）随之
   // 跟随主题色；container/onSurface 等辅助角色由 fromSeed 按 seed 派生。
-  // seed 缺失或不可读时不播种，维持既有默认值（测试与启动早期路径不变）。
+  // seed 缺失或不可解析时不播种，保持既有默认值（测试与启动早期路径不变）；
+  // 浅色模式亮黄也可播种（所见即所得）。
   final seedAccent = resolveThemeSeedAccent(themeSeedHex, brightness);
   final theme = ThemeData(
     brightness: brightness,

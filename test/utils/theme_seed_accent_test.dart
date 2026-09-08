@@ -13,10 +13,10 @@ void main() {
       expect(dark, const Color(0xFF1447E6));
     });
 
-    test('浅色模式高亮 seed（亮黄）不可读 → null', () {
+    test('浅色高亮 seed（亮黄）原样返回——所见尽可能', () {
       expect(
         resolveThemeSeedAccent('#FCC800', Brightness.light),
-        isNull,
+        const Color(0xFFFCC800),
       );
     });
 
@@ -102,12 +102,9 @@ void main() {
       expect(c, const Color(0xFF1447E6));
     });
 
-    testWidgets('不可读 seed → 回落墨色（非固定蓝）', (tester) async {
+    testWidgets('浅色亮黄 seed → primary 即亮黄（所见即所得）', (tester) async {
       final c = await primaryWithSeed(tester, '#FCC800');
-      expect(c, isNot(const Color(0xFF3482FF))); // 未回落到固定蓝
-      expect(c, isNot(const Color(0xFFFCC800))); // 也未保留亮黄
-      // 浅色模式墨色落在较暗侧。
-      expect(c.computeLuminance(), lessThan(0.5));
+      expect(c, const Color(0xFFFCC800));
     });
 
     testWidgets('未挂 ThemeSeedScope → 维持 Miuix 固定蓝', (tester) async {
@@ -162,9 +159,9 @@ void main() {
       return result;
     }
 
-    testWidgets('浅色亮黄 seed → 黄底原色（不像 primary 那样回落墨色）', (tester) async {
+    testWidgets('浅色亮黄 seed → surface 保留亮黄（所见即所得）', (tester) async {
       final s = await surfaceWithSeed(tester, '#FCC800');
-      expect(s, const Color(0xFFFCC800)); // surface 保留亮黄（不与 primary 的墨色回落混同）
+      expect(s, const Color(0xFFFCC800));
     });
 
     testWidgets('深色近黑 seed → 向白提亮的强调面（不是黑也不是固定蓝）', (tester) async {

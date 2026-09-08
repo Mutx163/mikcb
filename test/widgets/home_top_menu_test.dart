@@ -367,7 +367,7 @@ void main() {
   });
 
   testWidgets(
-    'grid menu tile icons fall back to chrome ink for unreadable seeds',
+    'grid menu tile icons keep the bright seed as-is (所见即所得)',
     (tester) async {
       final anchorKey = GlobalKey();
 
@@ -385,7 +385,7 @@ void main() {
                       entries: resolveHomeGridMenuEntries(
                         TimetableSettings.defaults(),
                       ),
-                      // 亮黄在浅色磨砂瓷贴上不可读，回落玻璃墨色。
+                      // 用户选了亮黄主题就要看到亮黄：不做浅色可读回落。
                       themeSeedHex: '#FCC800',
                     );
                   },
@@ -400,14 +400,11 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      final iconContext = tester.element(
-        find.byIcon(Icons.system_update_alt_rounded),
-      );
       expect(
         tester
             .widget<Icon>(find.byIcon(Icons.system_update_alt_rounded))
             .color,
-        Theme.of(iconContext).colorScheme.onSurface,
+        const Color(0xFFFCC800),
       );
     },
   );

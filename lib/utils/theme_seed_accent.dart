@@ -10,23 +10,28 @@ import 'hex_color.dart';
 /// （`colorScheme.primary`，含添加弹层三宫格按钮）、根部 Miuix 色板
 /// （MiuixSwitch 开启色与 Miuix 选择器高亮）。
 ///
-/// 可读性回落与八宫格 `resolveHomeGridMenuAccent` 同口径：磨砂/瓷贴上
-/// 不可读的 seed（深色模式的近黑灰、浅色模式的亮黄）回落为玻璃墨色
-/// （自动黑白），与课表玻璃卡「彩色墨回落自动黑白」一致。
+/// 回落仅在深色模式的近黑 seed（中性灰/锌灰/石板灰，luminance < 0.08）
+/// 发生：黑与深色底几乎同色、等于主题色没显示，回落墨色兜底；浅色模式
+/// 所见即所得，与八宫格 `resolveHomeGridMenuAccent` 同口径。
 
-/// 解析 seed hex 为强调色；不可读或缺失时返回 null，由调用方回落。
+/// 解析 seed hex 为强调色；缺失或非法时返回 null，由调用方回落。
 ///
-/// 阈值与 `resolveHomeGridMenuAccent` 一致：深色模式要求 luminance >= 0.08，
-/// 浅色模式要求 <= 0.60。
+/// 所见即所得：只要 seed 合法就原样返回——用户选亮黄主题就要看到
+/// 亮黄，不做「浅色可读性」回落（此前浅色模式亮度 > 0.60 会回落墨色，
+/// 导致选了黄色主题 UI 却是黑的，不符合「设置什么就是什么」）。唯一
+/// 例外是深色模式近黑 seed（中性灰/锌灰/石板灰 luminance < 0.08）：
+/// 黑与深色底几乎同色、等于主题色没显示，此时回落 null 让墨色兜底
+/// 可读；同色在浅色模式原样返回（黑墨白字天然可读）。
 Color? resolveThemeSeedAccent(String? seedHex, Brightness brightness) {
   final seed = tryParseHexColor(seedHex);
   if (seed == null) {
     return null;
   }
-  final isDark = brightness == Brightness.dark;
-  final luminance = seed.computeLuminance();
-  final readable = isDark ? luminance >= 0.08 : luminance <= 0.60;
-  return readable ? seed : null;
+  if (brightness == Brightness.dark &&
+      seed.computeLuminance() < 0.08) {
+    return null;
+  }
+  return seed;
 }
 
 /// 按强调色实际亮度选择其上的墨水（黑/白）。

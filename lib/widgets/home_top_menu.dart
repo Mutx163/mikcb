@@ -148,9 +148,9 @@ double _maxMenuTitleHeight({
 }
 
 /// 八宫格瓷贴的主题强调色：跟随用户主题 seed（`themeSeedColor`），
-/// 让图标与井底色随预设主题/自定义主题色一起换色。磨砂瓷贴上不可读的
-/// seed（深色模式的近黑灰、浅色模式的亮黄）回落为玻璃墨色（自动黑白），
-/// 与课表玻璃卡「彩色墨回落自动黑白」口径一致。
+/// 让图标与井底色随预设主题/自定义主题色一起换色。浅色模式所见即所得
+/// （选亮黄主题图标就是亮黄）；唯一回落是深色模式的近黑 seed（中性灰/
+/// 锌灰/石板灰）——黑与深色底几乎同色，回落玻璃墨色保证可辨识。
 Color resolveHomeGridMenuAccent(BuildContext context, String? themeSeedHex) {
   final accent = resolveThemeSeedAccent(
     themeSeedHex,

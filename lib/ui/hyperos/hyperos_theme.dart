@@ -63,10 +63,11 @@ abstract final class HyperosColors {
 
   /// Primary accent color (buttons, active indicators).
   ///
-  /// 跟随用户主题 seed（`TimetableSettings.themeSeedColor`，经根部的
-  /// [ThemeSeedScope] 下发）：seed 不可读时回落墨色（自动黑白），与八宫格
-  /// 瓷贴、课表玻璃卡的「彩色墨回落自动黑白」口径一致。无 seed（未挂
-  /// scope 或解析失败）时维持 Miuix 固定蓝。
+  /// 跟随用户设置（`TimetableSettings.themeSeedColor`，经根部
+  /// [ThemeSeedScope] 下发）：所见即所得，亮黄等浅色主题原样返回；唯一
+  /// 例外是深色模式下近黑 seed（中性灰/锌灰/石板灰）——黑与深色底几乎
+  /// 同色等于主题色没显示，所以回落墨色（自动黑白）保证可辨识。
+  /// 无 seed（未挂 scope 或解析失败）时保持 Miuix 固定蓝。
   static Color primary(BuildContext context) {
     final fallback = _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.primary
@@ -81,17 +82,16 @@ abstract final class HyperosColors {
       scope.seedHex,
       Theme.of(context).brightness,
     );
-    // seed 缺失/不可读（深色模式近黑灰、浅色模式亮黄）→ 墨色回落（自动黑白）。
+    // 深色模式近黑 seed → 墨色回落（自动黑白）；浅色模式所见即所得。
     return accent ?? _inkFallback(context);
   }
 
-  /// 表面强调色（按钮底色、选中井等承载面）：所见即所得跟随 seed。
+  /// 表面强调色（按钮底色、选中井等承载面）。
   ///
-  /// 与 [primary] 的区分：承载面上铺 [onPrimary] 的黑白墨兜底文字对比，
-  /// 所以浅色模式亮黄等 seed 也直接保留原色（选亮黄主题按钮就是黄底
-  /// 黑字，而不是回落成黑按钮），深色模式近黑 seed 由
-  /// [resolveThemeSeedSurface] 向白提亮避免融进暗底。未挂 scope 维持
-  /// Miuix 固定蓝。
+  /// 与 [primary] 一样所见即所得（浅色亮黄就是黄底黑字的按钮）；区别在
+  /// 深色模式下：[primary] 对近黑 seed 回落墨色（前景文字用），[surface]
+  /// 由 [resolveThemeSeedSurface] 向白提亮成可辨识的强调面避免按钮在
+  /// 暗底上消失。未挂 scope 保持 Miuix 固定蓝。
   static Color primarySurface(BuildContext context) {
     final fallback = _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.primary
