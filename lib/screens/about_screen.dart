@@ -2096,6 +2096,17 @@ class ReleaseNotesMarkdown extends StatelessWidget {
         fontFamily: 'monospace',
         fontSize: (body.fontSize ?? 14) - 1,
       ),
+      // markdown `---`（GitCode 正文里更新日志与 SHA-256 之间的分隔）默认按
+      // flutter_markdown 内建值渲染成 5px 粗线，视觉上像一条大黑杠。统一换成
+      // MIUI 规范的 0.75px 发丝线，与卡内其他分隔线一致。
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            width: HyperosMiuixDivider.thickness,
+            color: HyperosColors.dividerLine(context),
+          ),
+        ),
+      ),
     );
   }
 }
