@@ -1225,8 +1225,8 @@ class TimetableSettings {
   final bool glassDockShowWeekTab;
 
   /// 玻璃坞独立圆形按钮（extraButton）打开的入口 id。
-  /// 默认 'addCourse' 走首页添加内容弹层；其余 id 由八宫格目录分发，
-  /// 未知/不可见 id 运行时回退添加内容弹层。结构 Tab（day/week/settings）
+  /// 默认 'addCourse' 走首页添加弹层；其余 id 由八宫格目录分发，
+  /// 未知/不可见 id 运行时回退添加弹层。结构 Tab（day/week/settings）
   /// 不允许作为按钮目标，由 UI 层过滤。圆钮可另选自定义图标：
   /// [glassDockButtonIconName] 存 Miuix 扩展图标名（小驼峰），null =
   /// 按功能自动（addCourse 显示加号，其余显示目录图标）。

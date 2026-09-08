@@ -424,11 +424,11 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpFiniteFrames(tester, count: 4);
-    // 列表态右上角菜单的「添加课程」是「视图」式二级展开父行：点开浮出
+    // 列表态右上角菜单的「添加」是「视图」式二级展开父行：点开浮出
     // 子卡（父行原位重复 + 添加课程/添加日程/添加考试），点子行由宿主
-    // 直开对应页面，不再经过「添加内容」三宫格弹层（该弹层仅八宫格/
+    // 直开对应页面，不再经过「添加」三宫格弹层（该弹层仅八宫格/
     // 底栏圆钮保留）。
-    await tester.tap(find.text('添加课程'));
+    await tester.tap(find.text('添加'));
     await _pumpFiniteFrames(tester, count: 12);
     tester.takeException();
 
@@ -2636,12 +2636,12 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpFiniteFrames(tester, count: 4);
     // 二级展开父行 → 子行「添加课程」由宿主直开 AddCourseScreen
-    // （initialDayOfWeek 跟随日视图选中日），不再经过「添加内容」弹层。
-    await tester.tap(find.text('添加课程'));
+    // （initialDayOfWeek 跟随日视图选中日），不再经过「添加」弹层。
+    await tester.tap(find.text('添加'));
     await _pumpFiniteFrames(tester, count: 12);
     tester.takeException();
 
-    // 展开态「添加课程」共三处：主面板父行、卡内父行、卡内子行，
+    // 展开态父行「添加」（主面板 + 卡内副本），子行「添加课程」仅一处，
     // .last 命中卡内子行。
     await tester.tap(find.text('添加课程').last);
     await tester.pump();

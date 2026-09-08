@@ -5200,7 +5200,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuOverviewTitle => '授業一覧';
 
   @override
-  String get homeMenuAddCourseTitle => 'コンテンツ追加';
+  String get homeMenuAddCourseTitle => '追加';
 
   @override
   String get homeMenuImportTitle => '授業インポート';
@@ -5388,7 +5388,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetTargetTodayWide42 => '今日ワイド 4×2';
 
   @override
-  String get addCourseSheetTitle => 'コンテンツ追加';
+  String get addCourseSheetTitle => '追加';
 
   @override
   String get addCourseSheetSubtitle =>
@@ -10567,7 +10567,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockButtonBackToWeekLabel => '今週へ戻る / 今日';
 
   @override
-  String get glassDockExtraButtonSemanticLabel => 'コンテンツ追加';
+  String get glassDockExtraButtonSemanticLabel => '追加';
 
   @override
   String get homeMenuStyleLabel => '右上メニューのスタイル';

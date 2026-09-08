@@ -6889,7 +6889,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return const Icon(Icons.add_rounded);
   }
 
-  /// 圆钮点击分发：addCourse/空走添加内容弹层；内嵌注册页在首页栈内
+  /// 圆钮点击分发：addCourse/空走添加弹层；内嵌注册页在首页栈内
   /// 切换（坞常驻，再点同钮收回）；其余目录条目普通推入。
   void _handleRoundButtonTap(TimetableSettings settings) {
     final id = settings.glassDockButtonEntryId;

@@ -492,23 +492,23 @@ void main() {
       return opened;
     }
 
-    testWidgets('「添加内容」行挂二级列表，其余行没有展开箭头', (tester) async {
+    testWidgets('「添加」行挂二级列表，其余行没有展开箭头', (tester) async {
       await pumpMenu(tester);
 
-      expect(find.text('添加内容'), findsOneWidget);
+      expect(find.text('添加'), findsOneWidget);
       expect(find.text('添加课程'), findsNothing);
       expect(find.text('课表设置'), findsOneWidget);
-      // 收起态只有添加内容行有箭头。
+      // 收起态只有添加行有箭头。
       expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       expect(find.text('添加日程'), findsNothing);
       expect(find.text('添加考试'), findsNothing);
 
-      await tester.tap(find.text('添加内容'));
+      await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
-      // 主面板父行 + 卡内父行副本（父行改名「添加内容」，与添加弹层标题
-      // 同名）；子项首项「添加课程」标签复用弹层按钮文案，仅 1 处。
-      expect(find.text('添加内容'), findsNWidgets(2));
+      // 主面板父行 + 卡内父行副本（父行「添加」，与弹层标题同名）；
+      // 子项首项「添加课程」标签复用弹层按钮文案，仅 1 处。
+      expect(find.text('添加'), findsNWidgets(2));
       expect(find.text('添加课程'), findsOneWidget);
       expect(find.text('添加日程'), findsOneWidget);
       expect(find.text('添加考试'), findsOneWidget);
@@ -519,7 +519,7 @@ void main() {
     testWidgets('点「添加考试」子项回传宿主分发 id', (tester) async {
       final opened = await pumpMenu(tester);
 
-      await tester.tap(find.text('添加内容'));
+      await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('添加考试'));

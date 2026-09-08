@@ -5430,7 +5430,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuOverviewTitle => 'Course overview';
 
   @override
-  String get homeMenuAddCourseTitle => 'Add content';
+  String get homeMenuAddCourseTitle => 'Add';
 
   @override
   String get homeMenuImportTitle => 'Import courses';
@@ -5621,7 +5621,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetTargetTodayWide42 => 'Today wide 4×2';
 
   @override
-  String get addCourseSheetTitle => 'Add Content';
+  String get addCourseSheetTitle => 'Add';
 
   @override
   String get addCourseSheetSubtitle =>
@@ -10877,7 +10877,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockButtonBackToWeekLabel => 'Back to this week / today';
 
   @override
-  String get glassDockExtraButtonSemanticLabel => 'Add content';
+  String get glassDockExtraButtonSemanticLabel => 'Add';
 
   @override
   String get homeMenuStyleLabel => 'Top-right menu style';
