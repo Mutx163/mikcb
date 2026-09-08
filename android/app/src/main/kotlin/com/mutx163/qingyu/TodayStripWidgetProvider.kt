@@ -90,7 +90,27 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
                 else -> TodayWidgetSupport.heroCourseName(context, snapshot)
             }
         )
-        views.setTextColor(R.id.widget_strip_course, primaryColor)
+        // 课程色贯穿：主课色条 + 文字（档位关闭时恒回落中性色）。
+        val accentCourse = when {
+            snapshot == null || isExamOngoing || state == "holiday" -> null
+            isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
+            else -> snapshot.highlightedCourse
+        }
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            R.id.widget_strip_course_accent,
+            TodayWidgetSupport.accentBar(snapshot, accentCourse, style, context),
+        )
+        views.setTextColor(
+            R.id.widget_strip_course,
+            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
+                ?: primaryColor,
+        )
+        views.setTextColor(
+            R.id.widget_strip_status,
+            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
+                ?: TodayWidgetSupport.statusChipTextColor(displayState, style, context),
+        )
 
         // 时间 / 倒计时
         val metaText = when {

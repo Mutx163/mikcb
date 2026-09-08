@@ -72,7 +72,7 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
             views.setViewVisibility(R.id.widget_large_empty, View.VISIBLE)
             views.setTextViewText(R.id.widget_large_empty, context.getString(R.string.widget_tap_to_open))
             views.setViewVisibility(R.id.widget_large_exam, View.GONE)
-            setCourseRows(views, emptyList(), primaryColor, secondaryColor)
+            setCourseRows(views, emptyList(), primaryColor, secondaryColor, null, null, style)
         } else {
             val isExamOngoing = TodayWidgetSupport.isExamOngoing(snapshot)
             val isShowingTomorrow = TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
@@ -142,7 +142,10 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                         )
                 },
                 primaryColor,
-                secondaryColor
+                secondaryColor,
+                snapshot,
+                context,
+                style,
             )
         }
 
@@ -184,6 +187,9 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
         courses: List<TodayWidgetCourseInfo>,
         primaryColor: Int,
         secondaryColor: Int,
+        snapshot: TodayWidgetSnapshotInfo?,
+        context: Context?,
+        style: String,
     ) {
         val rowIds = arrayOf(
             Triple(R.id.widget_large_row_1, R.id.widget_large_row_1_time, R.id.widget_large_row_1_title),
@@ -195,12 +201,37 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
         rowIds.forEachIndexed { index, triple ->
             val (rowId, timeId, titleId) = triple
             val course = courses.getOrNull(index)
+            val accentBarId = when (index) {
+                0 -> R.id.widget_large_row_1_accent
+                1 -> R.id.widget_large_row_2_accent
+                2 -> R.id.widget_large_row_3_accent
+                3 -> R.id.widget_large_row_4_accent
+                else -> R.id.widget_large_row_5_accent
+            }
             if (course == null) {
                 views.setViewVisibility(rowId, View.GONE)
+                TodayWidgetSupport.applyAccentBar(views, accentBarId, null)
             } else {
                 views.setViewVisibility(rowId, View.VISIBLE)
                 views.setTextColor(timeId, secondaryColor)
-                views.setTextColor(titleId, primaryColor)
+                TodayWidgetSupport.applyAccentBar(
+                    views,
+                    accentBarId,
+                    if (context == null) {
+                        null
+                    } else {
+                        TodayWidgetSupport.accentBar(snapshot, course, style, context)
+                    },
+                )
+                views.setTextColor(
+                    titleId,
+                    if (context == null) {
+                        primaryColor
+                    } else {
+                        TodayWidgetSupport.accentText(snapshot, course, style, context)
+                            ?: primaryColor
+                    },
+                )
                 views.setTextViewText(timeId, "${course.startTime} - ${course.endTime}")
                 val title = if (course.location.isNotBlank()) {
                     "${course.name} · ${course.location}"

@@ -4112,6 +4112,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Automatically show tomorrow\'s classes after today\'s classes end';
 
   @override
+  String get homeWidgetCourseAccentTitle => 'Course colors';
+
+  @override
+  String get homeWidgetCourseAccentSubtitle =>
+      'Off restores the classic look; add bars only, or tint course names and status too';
+
+  @override
+  String get widgetCourseAccentModeOff => 'Off';
+
+  @override
+  String get widgetCourseAccentModeBar => 'Bars only';
+
+  @override
+  String get widgetCourseAccentModeBarAndText => 'Bars + text';
+
+  @override
   String get homeWidgetAppearanceTitle => 'Card appearance';
 
   @override

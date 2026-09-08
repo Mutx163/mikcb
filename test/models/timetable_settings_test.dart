@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/utils/widget_course_accent.dart';
 
 void main() {
   test('defaults include semester week count and preserve it in json', () {
@@ -418,6 +419,29 @@ void main() {
     expect(duringEnd.showCourseName, isFalse);
     expect(duringEnd.showLocation, isFalse);
     expect(duringEnd.countdownTextStyle, LiveCountdownTextStyle.minuteSecondCn);
+  });
+
+  test('widget course accent mode survives json round trip', () {
+    for (final mode in WidgetCourseAccentMode.values) {
+      final settings = TimetableSettings.defaults().copyWith(
+        widgetCourseAccentMode: mode,
+      );
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(restored.widgetCourseAccentMode, mode);
+      expect(settings.toJson()['widgetCourseAccentMode'], mode.value);
+    }
+  });
+
+  test('widget course accent mode defaults to bars + text', () {
+    expect(
+      TimetableSettings.defaults().widgetCourseAccentMode,
+      WidgetCourseAccentMode.barAndText,
+    );
+    // 老档案没有这个字段：按「开启」兼容，避免升级后观感倒退。
+    expect(
+      TimetableSettings.fromJson(<String, dynamic>{}).widgetCourseAccentMode,
+      WidgetCourseAccentMode.barAndText,
+    );
   });
 
   test('legacy spacing mode migrates to numeric card gap', () {

@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/services/home_widget_binding_service.dart';
 import 'package:university_timetable/services/home_widget_snapshot_service.dart';
 
@@ -38,6 +39,7 @@ void main() {
       generatedAtMillis: 1700000000000,
       state: HomeWidgetSnapshotState.noCourse,
       backgroundStyle: WidgetBackgroundStyle.solid,
+      courseAccentMode: WidgetCourseAccentMode.barAndText,
       showLocation: true,
       showCountdown: false,
       countdownTextStyle: 'smart',

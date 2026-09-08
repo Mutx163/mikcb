@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
 
 enum AppUpdateDownloadSource { original, mirror }
@@ -1188,6 +1189,9 @@ class TimetableSettings {
   final double timetableCourseCardGap;
   final TimetableCourseSpacingMode timetableCourseSpacingMode;
   final WidgetBackgroundStyle widgetBackgroundStyle;
+
+  /// 课程色贯穿档位：关闭 / 只加色条 / 色条+文字。
+  final WidgetCourseAccentMode widgetCourseAccentMode;
   final bool widgetShowLocation;
   final bool widgetShowCountdown;
   final bool widgetHideCompletedCourses;
@@ -1423,6 +1427,7 @@ class TimetableSettings {
     this.timetableCourseCardGap = 1.25,
     this.timetableCourseSpacingMode = TimetableCourseSpacingMode.narrow,
     this.widgetBackgroundStyle = WidgetBackgroundStyle.solid,
+    this.widgetCourseAccentMode = WidgetCourseAccentMode.barAndText,
     this.widgetShowLocation = true,
     this.widgetShowCountdown = true,
     this.widgetHideCompletedCourses = false,
@@ -1621,6 +1626,7 @@ class TimetableSettings {
       'timetableCourseCardGap': timetableCourseCardGap,
       'timetableCourseSpacingMode': timetableCourseSpacingMode.value,
       'widgetBackgroundStyle': widgetBackgroundStyle.value,
+      'widgetCourseAccentMode': widgetCourseAccentMode.value,
       'widgetShowLocation': widgetShowLocation,
       'widgetShowCountdown': widgetShowCountdown,
       'widgetHideCompletedCourses': widgetHideCompletedCourses,
@@ -1887,6 +1893,9 @@ class TimetableSettings {
       ),
       widgetBackgroundStyle: WidgetBackgroundStyleX.fromValue(
         json['widgetBackgroundStyle'] as String?,
+      ),
+      widgetCourseAccentMode: WidgetCourseAccentModeX.fromValue(
+        json['widgetCourseAccentMode'] as String?,
       ),
       widgetShowLocation: json['widgetShowLocation'] as bool? ?? true,
       widgetShowCountdown: json['widgetShowCountdown'] as bool? ?? true,
@@ -2293,6 +2302,7 @@ class TimetableSettings {
     double? timetableCourseCardGap,
     TimetableCourseSpacingMode? timetableCourseSpacingMode,
     WidgetBackgroundStyle? widgetBackgroundStyle,
+    WidgetCourseAccentMode? widgetCourseAccentMode,
     bool? widgetShowLocation,
     bool? widgetShowCountdown,
     bool? widgetHideCompletedCourses,
@@ -2501,6 +2511,8 @@ class TimetableSettings {
           timetableCourseSpacingMode ?? this.timetableCourseSpacingMode,
       widgetBackgroundStyle:
           widgetBackgroundStyle ?? this.widgetBackgroundStyle,
+      widgetCourseAccentMode:
+          widgetCourseAccentMode ?? this.widgetCourseAccentMode,
       widgetShowLocation: widgetShowLocation ?? this.widgetShowLocation,
       widgetShowCountdown: widgetShowCountdown ?? this.widgetShowCountdown,
       widgetHideCompletedCourses:

@@ -44,7 +44,24 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 0.5f,
         )
-        views.setTextColor(R.id.widget_medium_title, primaryColor)
+        // 课程色贯穿：主卡课程名左侧色条 + 课程名文字（档位关闭时恒回落中性色）。
+        val accentCourse = if (snapshot == null || TodayWidgetSupport.isExamOngoing(snapshot)) {
+            null
+        } else if (TodayWidgetSupport.isShowingTomorrowCourses(snapshot)) {
+            snapshot.tomorrowCourses.firstOrNull()
+        } else {
+            snapshot.highlightedCourse
+        }
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            R.id.widget_medium_title_accent,
+            TodayWidgetSupport.accentBar(snapshot, accentCourse, style, context),
+        )
+        views.setTextColor(
+            R.id.widget_medium_title,
+            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
+                ?: primaryColor,
+        )
         views.setTextColor(R.id.widget_medium_time, primaryColor)
         views.setTextColor(R.id.widget_medium_meta, secondaryColor)
         views.setTextColor(R.id.widget_medium_exam, secondaryColor)
@@ -56,7 +73,12 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
         }
         views.setTextColor(
             R.id.widget_medium_label,
-            TodayWidgetSupport.statusChipTextColor(mediumStatusState, style, context)
+            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
+                ?: TodayWidgetSupport.statusChipTextColor(
+                    mediumStatusState,
+                    style,
+                    context,
+                )
         )
         views.setInt(
             R.id.widget_medium_label,
@@ -72,6 +94,9 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             views.setTextViewText(R.id.widget_medium_footer, context.getString(R.string.widget_tap_to_open))
             views.setViewVisibility(R.id.widget_medium_exam, View.GONE)
             setRowVisibility(views, false, false, false)
+            TodayWidgetSupport.applyAccentBar(views, R.id.widget_medium_row_1_accent, null)
+            TodayWidgetSupport.applyAccentBar(views, R.id.widget_medium_row_2_accent, null)
+            TodayWidgetSupport.applyAccentBar(views, R.id.widget_medium_row_3_accent, null)
         } else {
             val isExamOngoing = TodayWidgetSupport.isExamOngoing(snapshot)
             val isShowingTomorrow = TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
@@ -131,9 +156,9 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot,
                 TodayWidgetSupport.mediumVisibleRows(profile)
             )
-            bindRow(views, 0, secondaryCourses.getOrNull(0), primaryColor, secondaryColor)
-            bindRow(views, 1, secondaryCourses.getOrNull(1), primaryColor, secondaryColor)
-            bindRow(views, 2, secondaryCourses.getOrNull(2), primaryColor, secondaryColor)
+            bindRow(views, 0, secondaryCourses.getOrNull(0), primaryColor, secondaryColor, snapshot, context, style)
+            bindRow(views, 1, secondaryCourses.getOrNull(1), primaryColor, secondaryColor, snapshot, context, style)
+            bindRow(views, 2, secondaryCourses.getOrNull(2), primaryColor, secondaryColor, snapshot, context, style)
         }
 
         TodayWidgetSupport.setTextSizeSp(
@@ -177,6 +202,9 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
         course: TodayWidgetCourseInfo?,
         primaryColor: Int,
         secondaryColor: Int,
+        snapshot: TodayWidgetSnapshotInfo? = null,
+        context: Context? = null,
+        style: String = "solid",
     ) {
         val rowIds = arrayOf(
             Triple(R.id.widget_medium_row_1, R.id.widget_medium_row_1_time, R.id.widget_medium_row_1_title),
@@ -190,7 +218,29 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
         }
         views.setViewVisibility(rowId, View.VISIBLE)
         views.setTextColor(timeId, secondaryColor)
-        views.setTextColor(titleId, primaryColor)
+        val barId = when (index) {
+            0 -> R.id.widget_medium_row_1_accent
+            1 -> R.id.widget_medium_row_2_accent
+            else -> R.id.widget_medium_row_3_accent
+        }
+        TodayWidgetSupport.applyAccentBar(
+            views,
+            barId,
+            if (context == null) {
+                null
+            } else {
+                TodayWidgetSupport.accentBar(snapshot, course, style, context)
+            },
+        )
+        views.setTextColor(
+            titleId,
+            if (context == null) {
+                primaryColor
+            } else {
+                TodayWidgetSupport.accentText(snapshot, course, style, context)
+                    ?: primaryColor
+            },
+        )
         views.setTextViewText(timeId, "${course.startTime} - ${course.endTime}")
         views.setTextViewText(titleId, course.name)
     }

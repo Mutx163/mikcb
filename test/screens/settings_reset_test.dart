@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/utils/widget_course_accent.dart';
 
 /// 「恢复默认」必须只动本页字段。这些用例守的是两件事：
 /// 1. 目标字段确实回到默认；
@@ -50,6 +51,7 @@ void main() {
       // 小组件
       widgetShowLocation: false,
       widgetShowCountdown: false,
+      widgetCourseAccentMode: WidgetCourseAccentMode.off,
       // 不属于任何恢复作用域的东西
       semesterWeekCount: 24,
       liveEnableLocalDiagnostics: true,
@@ -215,6 +217,7 @@ void main() {
 
     expect(result.widgetShowLocation, defaults.widgetShowLocation);
     expect(result.widgetShowCountdown, defaults.widgetShowCountdown);
+    expect(result.widgetCourseAccentMode, defaults.widgetCourseAccentMode);
 
     final dirty = dirtySettings();
     expect(result.courseCardFontSize, dirty.courseCardFontSize);
