@@ -191,14 +191,10 @@ class _ScheduleListRow extends StatelessWidget {
       child: Padding(
         padding: hyperosChevronRowPadding(context),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: HyperosIconBadge(
-                icon: Icons.event_available_rounded,
-                accent: badgeColor,
-              ),
+            HyperosIconBadge(
+              icon: Icons.event_available_rounded,
+              accent: badgeColor,
             ),
             const SizedBox(width: HyperosTokens.rowContentGap),
             Expanded(
@@ -208,7 +204,7 @@ class _ScheduleListRow extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
+                      Flexible(
                         child: Text(
                           item.title.trim().isEmpty
                               ? l10n.scheduleBadgeLabel
@@ -227,21 +223,17 @@ class _ScheduleListRow extends StatelessWidget {
                           child: HyperosTag(label: recurrenceBadge),
                         ),
                       ],
+                      if (entry.ongoing) ...[
+                        const SizedBox(width: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: _OngoingBadge(dimmed: dimmed),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _ScheduleMetaLine(
-                    icon: Icons.event_outlined,
-                    text: _dateLabel(l10n, entry),
-                    color: mutedSecondary,
-                  ),
-                  const SizedBox(height: 4),
-                  _ScheduleMetaLine(
-                    icon: Icons.schedule_rounded,
-                    text: _timeLabel(l10n, item),
-                    color: mutedPrimary,
-                    emphasis: !dimmed,
-                  ),
+                  _buildScheduleMetaRow(context, l10n, entry, mutedSecondary),
                   if (location != null && location.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     _ScheduleMetaLine(
@@ -262,12 +254,9 @@ class _ScheduleListRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: HyperosTokens.titleChevronGap),
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Opacity(
-                opacity: dimmed ? 0.45 : 1,
-                child: const HyperosChevron(),
-              ),
+            Opacity(
+              opacity: dimmed ? 0.45 : 1,
+              child: const HyperosChevron(),
             ),
           ],
         ),
@@ -302,16 +291,96 @@ class _ScheduleListRow extends StatelessWidget {
     };
   }
 
+  /// 元信息行：常规日程合并为「日期 · 时刻」单行灰字（参考样式）；
+  /// 跨天单次日程的时刻标签已带首尾日期，单独成行避免与日期段重复。
+  Widget _buildScheduleMetaRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScheduleListEntry entry,
+    Color color,
+  ) {
+    final item = entry.item;
+    if (_isCrossDayRange(item)) {
+      return _ScheduleMetaLine(
+        icon: Icons.event_outlined,
+        text: _timeLabel(l10n, item),
+        color: color,
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          child: _metaSegment(
+            context,
+            Icons.event_outlined,
+            _dateLabel(l10n, entry),
+            color,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text(
+            '·',
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: color,
+            ),
+          ),
+        ),
+        Flexible(
+          child: _metaSegment(
+            context,
+            Icons.schedule_rounded,
+            _timeLabel(l10n, item),
+            color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _metaSegment(
+    BuildContext context,
+    IconData icon,
+    String text,
+    Color color,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(icon, size: 14, color: color.withValues(alpha: 0.85)),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: color,
+              height: 1.25,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _isCrossDayRange(ScheduleItem item) {
+    return !item.isRecurring &&
+        ScheduleItem.dateOnly(item.endDate).isAfter(
+          ScheduleItem.dateOnly(item.startDate),
+        );
+  }
+
   /// 时间行：同日日程「09:00 – 10:00」；跨天单次日程时刻各自带日期
   /// （「9月11日 08:00 – 9月14日 18:00」），否则一对时刻读起来像
   /// 「每天 08:00–18:00」，与连续区间语义相悖（用户反馈歧义）。
   String _timeLabel(AppLocalizations l10n, ScheduleItem item) {
-    final isCrossDay =
-        !item.isRecurring &&
-        ScheduleItem.dateOnly(item.endDate).isAfter(
-          ScheduleItem.dateOnly(item.startDate),
-        );
-    if (!isCrossDay) {
+    if (!_isCrossDayRange(item)) {
       return l10n.scheduleTimeRange(item.startTime, item.endTime);
     }
     final formatter = DateFormat.MMMd(l10n.localeName);
@@ -324,14 +393,6 @@ class _ScheduleListRow extends StatelessWidget {
   String _dateLabel(AppLocalizations l10n, ScheduleListEntry entry) {
     final item = entry.item;
     final formatter = DateFormat.MMMd(l10n.localeName);
-    if (entry.ongoing) {
-      // 跨天进行中：区间整体覆盖今天，展示起止日而非单日。
-      final range = l10n.scheduleTimeRange(
-        formatter.format(item.startDate),
-        formatter.format(item.endDate),
-      );
-      return '${l10n.scheduleOngoingLabel} · $range';
-    }
     // 已过期行的下次发生日为空，回退展示结束日期（最近一次相关日）。
     final date = entry.nextDate ?? ScheduleItem.dateOnly(item.endDate);
     final dayLabel = formatter.format(date);
@@ -339,7 +400,8 @@ class _ScheduleListRow extends StatelessWidget {
         !item.isRecurring &&
         ScheduleItem.dateOnly(item.endDate).isAfter(date);
     if (endsLater) {
-      // 未来开始的跨天日程：提前暴露完整区间。
+      // 跨天日程：提前暴露完整区间（进行中的行同样落到这里，
+      // 起点是过去的开始日；「进行中」状态由标题旁徽标承载）。
       return l10n.scheduleTimeRange(dayLabel, formatter.format(item.endDate));
     }
     return '$dayLabel ${_weekdayLabel(l10n, date.weekday)}';
@@ -363,13 +425,11 @@ class _ScheduleMetaLine extends StatelessWidget {
     required this.icon,
     required this.text,
     required this.color,
-    this.emphasis = false,
   });
 
   final IconData icon;
   final String text;
   final Color color;
-  final bool emphasis;
 
   @override
   Widget build(BuildContext context) {
@@ -384,21 +444,61 @@ class _ScheduleMetaLine extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style:
-                (emphasis
-                        ? HyperosTypography.listTitle(context)
-                        : HyperosTypography.listDetail(context))
-                    .copyWith(
-                      color: color,
-                      fontSize: emphasis ? 15 : null,
-                      fontWeight: emphasis ? FontWeight.w600 : FontWeight.w400,
-                      height: 1.25,
-                    ),
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: color,
+              height: 1.25,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 「进行中」状态徽标：绿点 + 绿字胶囊，紧贴标题展示（参考样式）。
+class _OngoingBadge extends StatelessWidget {
+  const _OngoingBadge({this.dimmed = false});
+
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    const green = HyperosIconColors.green;
+    return Opacity(
+      opacity: dimmed ? 0.45 : 1,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: green.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: green,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              l10n.scheduleOngoingLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.2,
+                fontWeight: FontWeight.w600,
+                color: green,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

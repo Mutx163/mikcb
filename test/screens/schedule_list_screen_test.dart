@@ -169,4 +169,86 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('进行中日程：标题旁渲染徽标，日期行不再内嵌「进行中」前缀', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final provider = await createInitializedTestProvider(tester);
+
+    final today = ScheduleItem.dateOnly(DateTime.now());
+    final start = today.subtract(const Duration(days: 2));
+    final end = today.add(const Duration(days: 2));
+    await runRealAsync(tester, () async {
+      await provider.addScheduleItem(
+        _item(
+          id: 'list-ongoing',
+          title: '夏令营',
+          startDate: start,
+          endDate: end,
+          startTime: '08:00',
+          endTime: '18:00',
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const ScheduleListScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 「进行中」由标题旁的绿点胶囊徽标承载。
+    expect(find.text('进行中'), findsOneWidget);
+    // 旧样式（日期行内嵌前缀）不应再出现。
+    expect(find.textContaining('进行中 ·'), findsNothing);
+    // 跨天日程：元信息单行只保留带首尾日期的时刻段（日期已内嵌消歧）。
+    final dayFormat = DateFormat.MMMd('zh');
+    expect(
+      find.text(
+        '${dayFormat.format(start)} 08:00 – ${dayFormat.format(end)} 18:00',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('单日日程元信息合并为「日期 · 时刻」一行', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final provider = await createInitializedTestProvider(tester);
+
+    final today = ScheduleItem.dateOnly(DateTime.now());
+    final date = today.add(const Duration(days: 3));
+    await runRealAsync(tester, () async {
+      await provider.addScheduleItem(
+        _item(id: 'list-single-day', title: '牙医', startDate: date),
+      );
+    });
+
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const ScheduleListScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 日期段与时刻段是同一元信息行里的两个相邻文本。
+    const weekdayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    final dayFormat = DateFormat.MMMd('zh');
+    expect(
+      find.text(
+        '${dayFormat.format(date)} ${weekdayLabels[date.weekday - 1]}',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('09:00 – 10:00'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
