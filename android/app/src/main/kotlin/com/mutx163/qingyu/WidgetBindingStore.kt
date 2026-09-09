@@ -11,8 +11,18 @@ import android.content.Context
  * - 绑定值是 profile id（TA 课表为固定 id `partner-imported`）。课表被删或
  *   TA 解绑后该 id 不再存在，渲染侧按「跟随当前课表」回落；绑定记录保留，
  *   同名 id 重新出现（重新导入 TA）时自动恢复生效。
+ * - 哨兵 id `couple-merged` = 情侣课表（我的+TA 合并视图）：不是真实课表，
+ *   渲染/刷新按 [COUPLE_MERGED_BINDING_ID] 特判（TodayWidgetSupport 实时
+ *   合并计算 + Flutter 推送的专属快照兜底）。与 Dart 侧
+ *   kHomeWidgetCoupleMergedBindingId 必须保持一致。
  */
 object WidgetBindingStore {
+
+    /** TA 课表（partnerImported）在 profiles 里的固定 id，与 Dart 侧一致。 */
+    const val PARTNER_PROFILE_ID = "partner-imported"
+
+    /** 情侣课表（合并视图）绑定哨兵，与 Dart 侧 kHomeWidgetCoupleMergedBindingId 一致。 */
+    const val COUPLE_MERGED_BINDING_ID = "couple-merged"
     private const val PREFS_NAME = "home_widget_prefs"
     private const val KEY_PREFIX = "widget_binding_"
 

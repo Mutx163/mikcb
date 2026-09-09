@@ -96,6 +96,24 @@ object HomeWidgetStorage {
         val nextTriggerAtMillis = buildList {
             add(TodayWidgetSupport.findNextRefreshAtMillis(context, nowMillis))
             for ((_, profileId) in WidgetBindingStore.allBindings(context)) {
+                if (profileId == WidgetBindingStore.COUPLE_MERGED_BINDING_ID) {
+                    // 情侣合并视图：刷新点=我的当前课表+TA 课表（按周偏移平移
+                    // 后）并集；状态/倒计时也按合并快照判定，TA 课开课倒计时
+                    // 才能逐分钟走字。
+                    val coupleSource =
+                        TodayWidgetSupport.buildCoupleMergedSource(context) ?: continue
+                    add(
+                        TodayWidgetSupport.findNextRefreshAtMillis(
+                            context,
+                            nowMillis,
+                            profileJson = coupleSource.myProfileJson,
+                            coursesOverride = coupleSource.mergedCourses,
+                            snapshotOverride = TodayWidgetSupport
+                                .buildCoupleMergedSnapshotFromFlutterState(context, nowMillis),
+                        ),
+                    )
+                    continue
+                }
                 val profileJson =
                     TodayWidgetSupport.readProfileJsonById(context, profileId) ?: continue
                 add(TodayWidgetSupport.findNextRefreshAtMillis(context, nowMillis, profileJson))

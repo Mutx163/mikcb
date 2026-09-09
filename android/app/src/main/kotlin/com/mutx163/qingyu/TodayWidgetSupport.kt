@@ -58,6 +58,12 @@ data class TodayWidgetSnapshotInfo(
     val tomorrowDayOfWeek: Int = 0,
 )
 
+/** TA 绑定信息：周偏移（已钳制）+ 情侣三色（空值回落默认色板）。 */
+internal data class WidgetPartnerBindingInfo(
+    val weekOffset: Int,
+    val colors: WidgetCoupleMergeLogic.CoupleColors,
+)
+
 data class TodayWidgetSizeProfile(
     val widthDp: Int,
     val heightDp: Int,
@@ -139,6 +145,8 @@ object TodayWidgetSupport {
     private const val KEY_ACTIVE_PROFILE_ID = "flutter.active_timetable_profile_id"
     private const val KEY_CUSTOM_HOLIDAYS = "flutter.custom_holidays"
     private const val KEY_HOLIDAY_DATA_PREFIX = "flutter.holiday_data_"
+    /** TA 绑定（周偏移 + 情侣三色），与 Dart partner_timetable_binding 同源。 */
+    private const val KEY_PARTNER_BINDING = "flutter.partner_timetable_binding"
 
     /** 无档案可读时的外观兜底，必须与 TimetableSettings 默认值一致。 */
     const val DEFAULT_CORNER_RADIUS_DP = 22
@@ -186,6 +194,25 @@ object TodayWidgetSupport {
     fun readSnapshotForWidget(context: Context, appWidgetId: Int): TodayWidgetSnapshotInfo? {
         val boundProfileId = WidgetBindingStore.getBoundProfileId(context, appWidgetId)
         if (boundProfileId != null) {
+            if (boundProfileId == WidgetBindingStore.COUPLE_MERGED_BINDING_ID) {
+                // 情侣课表（合并视图）：按「我的当前课表 + TA 课表（按周偏移平移、
+                // 去重同行程、三色着色）」实时计算，与 TA 课表绑定同级的实时性；
+                // TA 解绑/无数据时回落 Flutter 为该卡片推送的专属快照，再回落
+                // 「跟随当前课表」。
+                val couple = buildCoupleMergedSnapshotFromFlutterState(context)
+                if (couple != null) {
+                    return couple
+                }
+                val couplePayload = HomeWidgetStorage.getWidgetSnapshotJson(context, appWidgetId)
+                if (couplePayload != null) {
+                    try {
+                        return parseSnapshot(context, JSONObject(couplePayload))
+                    } catch (_: Exception) {
+                        // fall through
+                    }
+                }
+                return readSnapshot(context)
+            }
             val profileJson = readProfileJsonById(context, boundProfileId)
             if (profileJson != null) {
                 val computed = buildSnapshotFromFlutterState(context, profileJson = profileJson)
@@ -496,10 +523,110 @@ object TodayWidgetSupport {
         )
     }
 
-    fun findNextRefreshAtMillis(
+    // —— 情侣课表（合并视图）绑定卡片的实时计算 ——
+
+    /** 情侣合并视图数据源：我的当前课表 + 合并后的课程全集（我的周次坐标）。 */
+    internal data class CoupleMergedSource(
+        val myProfileJson: JSONObject,
+        val mergedCourses: List<WidgetSourceCourse>,
+    )
+
+    /**
+     * 读取 TA 绑定（weekOffset + 情侣三色），与 Dart PartnerTimetableBinding.fromJson
+     * 同字段同默认值；未导入 TA（无绑定 JSON）时返回 null。
+     */
+    internal fun readPartnerBinding(context: Context): WidgetPartnerBindingInfo? {
+        val raw = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_PARTNER_BINDING, null) ?: return null
+        return try {
+            val json = JSONObject(raw)
+            WidgetPartnerBindingInfo(
+                weekOffset = WidgetCoupleMergeLogic.clampWeekOffset(json.optInt("weekOffset", 0)),
+                colors = WidgetCoupleMergeLogic.CoupleColors(
+                    mine = sanitizeNullableField(json.optString("mineColorHex"))
+                        ?: WidgetCoupleMergeLogic.MINE_COLOR_DEFAULT,
+                    partner = sanitizeNullableField(json.optString("partnerColorHex"))
+                        ?: WidgetCoupleMergeLogic.PARTNER_COLOR_DEFAULT,
+                    together = sanitizeNullableField(json.optString("togetherColorHex"))
+                        ?: WidgetCoupleMergeLogic.TOGETHER_COLOR_DEFAULT,
+                ),
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 情侣合并视图数据源：我的当前课表 + TA 课表（按周偏移平移到我的周次坐标、
+     * 去重同行程、情侣三色着色）。无我的课表 / TA 解绑 / 无绑定信息时返回 null，
+     * 调用方按绑定失效回落。
+     */
+    internal fun buildCoupleMergedSource(
+        context: Context,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): CoupleMergedSource? {
+        val myProfile = readActiveProfileJson(context) ?: return null
+        val partnerProfile =
+            readProfileJsonById(context, WidgetBindingStore.PARTNER_PROFILE_ID) ?: return null
+        val binding = readPartnerBinding(context) ?: return null
+        val mine = parseSourceCourses(myProfile.optJSONArray("courses"))
+        val partnerShifted =
+            parseSourceCourses(partnerProfile.optJSONArray("courses"))
+                .map { WidgetCoupleMergeLogic.shiftPartnerCourseToMyWeeks(it, binding.weekOffset) }
+        val merged = WidgetCoupleMergeLogic.mergeCoupleCourses(mine, partnerShifted, binding.colors)
+        return CoupleMergedSource(myProfileJson = myProfile, mergedCourses = merged)
+    }
+
+    /**
+     * 情侣合并视图快照：把合并课程全集写回「我的当前课表」的拷贝后复用单课表
+     * 实时计算核心——学期/节假日/考试/外观/倒计时语义全部继承我方口径，课程
+     * 过滤（今天/明天、周次、停课、隐藏已结束）对合并后的同一份列表统一生效。
+     */
+    fun buildCoupleMergedSnapshotFromFlutterState(
+        context: Context,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): TodayWidgetSnapshotInfo? {
+        val source = buildCoupleMergedSource(context, nowMillis) ?: return null
+        val profile = JSONObject(source.myProfileJson.toString())
+        profile.put("courses", coupleMergedCoursesToJson(source.mergedCourses))
+        return buildSnapshotFromFlutterState(context, nowMillis, profileJson = profile)
+    }
+
+    /** 合并课程序列化：字段与 [parseSourceCourses] 一一对应，round-trip 无损。 */
+    private fun coupleMergedCoursesToJson(courses: List<WidgetSourceCourse>): JSONArray {
+        val array = JSONArray()
+        for (course in courses) {
+            array.put(
+                JSONObject().apply {
+                    put("id", course.id)
+                    put("name", course.name)
+                    if (course.shortName != null) put("shortName", course.shortName)
+                    put("location", course.location)
+                    put("startTime", course.startTime)
+                    put("endTime", course.endTime)
+                    put("dayOfWeek", course.dayOfWeek)
+                    put("startSection", course.startSection)
+                    put("endSection", course.endSection)
+                    put("startWeek", course.startWeek)
+                    put("endWeek", course.endWeek)
+                    put("isOddWeek", course.isOddWeek)
+                    put("isEvenWeek", course.isEvenWeek)
+                    if (course.customWeeks != null) put("customWeeks", JSONArray(course.customWeeks))
+                    if (course.suspendedWeeks != null) put("suspendedWeeks", JSONArray(course.suspendedWeeks))
+                    put("courseNature", course.courseNature)
+                    put("color", course.color)
+                },
+            )
+        }
+        return array
+    }
+
+    internal fun findNextRefreshAtMillis(
         context: Context,
         nowMillis: Long = System.currentTimeMillis(),
         profileJson: JSONObject? = null,
+        coursesOverride: List<WidgetSourceCourse>? = null,
+        snapshotOverride: TodayWidgetSnapshotInfo? = null,
     ): Long? {
         val profile = profileJson ?: readActiveProfileJson(context) ?: return null
         val settingsJson = profile.optJSONObject("settings") ?: JSONObject()
@@ -544,7 +671,8 @@ object TodayWidgetSupport {
         val weekday = Calendar.getInstance().apply {
             timeInMillis = nowMillis
         }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
-        val todayCourses = parseSourceCourses(profile.optJSONArray("courses"))
+        val todayCourses = (coursesOverride
+            ?: parseSourceCourses(profile.optJSONArray("courses")))
             .filter { it.dayOfWeek == weekday && it.isInWeek(currentWeek) }
             .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
 
@@ -567,7 +695,8 @@ object TodayWidgetSupport {
             }
         }
         // Refresh at next exam start/end so "今天考试" flips to "考试中" on time.
-        val snapshotForExam = buildSnapshotFromFlutterState(context, nowMillis, profileJson = profile)
+        val snapshotForExam = snapshotOverride
+            ?: buildSnapshotFromFlutterState(context, nowMillis, profileJson = profile)
         val examStart = snapshotForExam?.nextExamStartTime
             ?.takeIf { it.isNotBlank() }
             ?.let { buildCourseDateTimeMillis(nowMillis, it) }
