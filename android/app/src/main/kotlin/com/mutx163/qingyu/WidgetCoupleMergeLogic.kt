@@ -60,28 +60,49 @@ internal object WidgetCoupleMergeLogic {
 
     /**
      * 合并我的与 TA（已平移到我的周次坐标）的课程全集：
-     * - 我的课程：命中首个同行程 TA 课 → together 色，否则 mine 色；
-     * - TA 课程：被同行程消费的丢弃（与 App 内覆盖层一样不再重复出现），
+     * - 同行程配对只在「双方在 [myWeek] 周都有效」的课程之间发生（与 Dart
+     *   isTogetherClass 的周要求一致）：周窗口不重叠时我的课不会被
+     *   误染成「一起」，我的停课周也不会把 TA 的同程课吞掉；
+     * - 我的课程：命中（本周可配对的）TA 课 → together 色；本周有效但未命中
+     *   → mine 色；不在本周有效的课保留原色（本周不显示，渲染层按周过滤）；
+     * - TA 课程：被（本周配对）同行程消费的丢弃（与 App 内覆盖层一致），
      *   其余以 partner 色追加；
-     * - 天/周次过滤与排序仍由调用方（快照组装核心）统一处理。
+     * - 天/周次显示过滤仍由渲染层统一处理，这里始终返回完整列表（不丢任何
+     *   一方课程），跨周边界也能正确渲染。
      */
     fun mergeCoupleCourses(
         mine: List<WidgetSourceCourse>,
         partnerShifted: List<WidgetSourceCourse>,
         colors: CoupleColors = CoupleColors(),
+        myWeek: Int? = null,
     ): List<WidgetSourceCourse> {
+        // 配对时的有效性：双方在 myWeek 各自周内有效（isInWeek 排除停课，
+        // 与 Dart isActiveInWeek 语义一致）。
+        val mineActive = if (myWeek != null) mine.filter { it.isInWeek(myWeek) } else mine
+        val partnerActive =
+            if (myWeek != null) partnerShifted.filter { it.isInWeek(myWeek) } else partnerShifted
         val usedPartnerIds = mutableSetOf<String>()
-        val merged = mutableListOf<WidgetSourceCourse>()
-        for (course in mine) {
-            val togetherPartner = partnerShifted.firstOrNull { candidate ->
+        val togetherMineIds = mutableSetOf<String>()
+        // 第一步：在双方本周有效的子集内配对，得出消费集合。
+        for (course in mineActive) {
+            val togetherPartner = partnerActive.firstOrNull { candidate ->
                 isTogetherClass(course, candidate)
             }
             if (togetherPartner != null) {
                 usedPartnerIds += togetherPartner.id
+                togetherMineIds += course.id
             }
-            merged += course.copy(
-                color = if (togetherPartner != null) colors.together else colors.mine,
-            )
+        }
+        // 第二步：渲染完整列表——本周有效的我的课着 mine/together 色，
+        // 本周无效的课保留原色（本周不显示，避免误着色）。
+        val merged = mutableListOf<WidgetSourceCourse>()
+        for (course in mine) {
+            val color = when {
+                course.id in togetherMineIds -> colors.together
+                myWeek == null || course.isInWeek(myWeek) -> colors.mine
+                else -> course.color
+            }
+            merged += course.copy(color = color)
         }
         for (course in partnerShifted) {
             if (course.id in usedPartnerIds) continue

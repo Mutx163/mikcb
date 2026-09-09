@@ -20,6 +20,7 @@ Course _course({
   String endTime = '09:40',
   int? startWeek,
   int? endWeek,
+  List<int>? suspendedWeeks,
 }) {
   return Course(
     id: id,
@@ -33,6 +34,7 @@ Course _course({
     endTime: endTime,
     startWeek: startWeek ?? 1,
     endWeek: endWeek ?? 20,
+    suspendedWeeks: suspendedWeeks,
   );
 }
 
@@ -221,6 +223,43 @@ void main() {
         provider.buildHomeWidgetSnapshotForCouple(now: _mondayNoon),
         isNull,
       );
+    });
+
+    test('周窗口不重叠：TA 独有周保留 TA 课（第 4 周我结课、TA 有课）', () async {
+      // 我的课 1-3 周；TA 同名同节次课 4-8 周（offset=0：我的第 4 周 = TA 第 4 周）。
+      final provider = await providerWithPartner([
+        _course(id: 'p-math', name: 'A-高数', startWeek: 4, endWeek: 8),
+      ]);
+      await provider.addCourse(_course(
+        id: 'a-mon', name: 'A-高数', startWeek: 1, endWeek: 3,
+      ));
+
+      final snapshot = provider.buildHomeWidgetSnapshotForCouple(
+        now: _mondayNoon, // 学期第 4 周
+      );
+      expect(snapshot, isNotNull);
+      // 我的课已结课，只剩 TA 课，且必须保留（不能被当成同行程消费掉）。
+      expect(snapshot!.todayCourses.map((course) => course.name), ['A-高数']);
+      expect(snapshot.todayCourses.single.id, 'p-math');
+      expect(snapshot.todayCourses.single.color, '#E91E63');
+    });
+
+    test('我的停课周：TA 同课不被吞并、以 TA 色保留', () async {
+      final provider = await providerWithPartner([
+        _course(id: 'p-math', name: 'A-高数'),
+      ]);
+      // 我的高数第 4 周停课。
+      await provider.addCourse(_course(
+        id: 'a-mon', name: 'A-高数', suspendedWeeks: [4],
+      ));
+
+      final snapshot = provider.buildHomeWidgetSnapshotForCouple(
+        now: _mondayNoon, // 学期第 4 周
+      );
+      expect(snapshot, isNotNull);
+      // 我的课停课不出现在快照；TA 同课应单独保留并以 TA 色显示。
+      expect(snapshot!.todayCourses.map((course) => course.id), ['p-math']);
+      expect(snapshot.todayCourses.single.color, '#E91E63');
     });
   });
 }

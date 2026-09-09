@@ -172,4 +172,66 @@ class WidgetCoupleMergeLogicTest {
         assertEquals(WidgetCoupleMergeLogic.PARTNER_COLOR_DEFAULT, merged.first { it.id == "p2" }.color)
         assertTrue(merged.none { it.id == "p1" })
     }
+
+    @Test
+    fun mergeWithMyWeekKeepsCoursesSeparateWhenWeeksDoNotOverlap() {
+        // 我的课 1-10 周，TA（已平移）5-15 周，同天同节同名。
+        val mine = listOf(course("a", startWeek = 1, endWeek = 10))
+        val partnerShifted = listOf(course("p", startWeek = 5, endWeek = 15))
+        val colors = WidgetCoupleMergeLogic.CoupleColors(
+            mine = "#0000FF",
+            partner = "#FF0000",
+            together = "#FF00FF",
+        )
+
+        // 第 3 周：我的课有效、TA 课不在该周 → 不配对，我的课保持我方色，
+        // TA 课也保留（供 TA 独有的周次显示）。
+        val mergedWeek3 = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine, partnerShifted, colors, myWeek = 3,
+        )
+        assertEquals("#0000FF", mergedWeek3.first { it.id == "a" }.color)
+        assertEquals("#FF0000", mergedWeek3.first { it.id == "p" }.color)
+
+        // 第 6 周：双方均有效 → 配对，我的课着一起色，TA 课被消费。
+        val mergedWeek6 = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine, partnerShifted, colors, myWeek = 6,
+        )
+        assertEquals("#FF00FF", mergedWeek6.first { it.id == "a" }.color)
+        assertTrue(mergedWeek6.none { it.id == "p" })
+
+        // 第 12 周：我的课已结课、TA 课独有 → 双方都不参与，我的课（不在
+        // 周内但列表保留）保留原色（渲染层按周过滤后不会显示它），TA 课保留
+        // 以 partner 色供 TA 独有周次显示。
+        val mergedWeek12 = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine, partnerShifted, colors, myWeek = 12,
+        )
+        assertEquals("", mergedWeek12.first { it.id == "a" }.color)
+        assertEquals("#FF0000", mergedWeek12.first { it.id == "p" }.color)
+    }
+
+    @Test
+    fun mergeDoesNotConsumePartnerWhenMyCourseSuspendedThatWeek() {
+        // 我的课第 3 周停课，TA 同课不停。
+        val mine = listOf(course("h", suspendedWeeks = listOf(3)))
+        val partnerShifted = listOf(course("p"))
+        val colors = WidgetCoupleMergeLogic.CoupleColors(
+            mine = "#0000FF",
+            partner = "#FF0000",
+            together = "#FF00FF",
+        )
+
+        // 第 3 周：我的课停课 → 不参与配对，TA 课必须保留（粉色显示）。
+        val week3 = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine, partnerShifted, colors, myWeek = 3,
+        )
+        assertEquals("#FF0000", week3.first { it.id == "p" }.color)
+        assertTrue(week3.first { it.id == "p" }.isInWeek(3))
+
+        // 第 4 周：我的课恢复 → 正常配对成一起课。
+        val week4 = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine, partnerShifted, colors, myWeek = 4,
+        )
+        assertEquals("#FF00FF", week4.first { it.id == "h" }.color)
+        assertTrue(week4.none { it.id == "p" })
+    }
 }

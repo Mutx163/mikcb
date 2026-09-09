@@ -569,11 +569,25 @@ object TodayWidgetSupport {
         val partnerProfile =
             readProfileJsonById(context, WidgetBindingStore.PARTNER_PROFILE_ID) ?: return null
         val binding = readPartnerBinding(context) ?: return null
+        // 配对需要「我的当前周」（与快照核心的 scheduleWeek 同一口径：日历周、
+        // 不按 semesterWeekCount 钳制），保证同行程配对只发生在双方本周都有效的
+        // 课程之间，与 Dart 侧逐周合并的行为一致。
+        val mySettings = myProfile.optJSONObject("settings") ?: JSONObject()
+        val myWeek = liveSchedulerCalculateCalendarWeekForDate(
+            semesterStartMillis = mySettings.optLong("semesterStartDate").takeIf { it > 0L },
+            currentWeek = myProfile.optInt("currentWeek", 1).coerceAtLeast(1),
+            dateMillis = nowMillis,
+        )
         val mine = parseSourceCourses(myProfile.optJSONArray("courses"))
         val partnerShifted =
             parseSourceCourses(partnerProfile.optJSONArray("courses"))
                 .map { WidgetCoupleMergeLogic.shiftPartnerCourseToMyWeeks(it, binding.weekOffset) }
-        val merged = WidgetCoupleMergeLogic.mergeCoupleCourses(mine, partnerShifted, binding.colors)
+        val merged = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine,
+            partnerShifted,
+            binding.colors,
+            myWeek = myWeek,
+        )
         return CoupleMergedSource(myProfileJson = myProfile, mergedCourses = merged)
     }
 
