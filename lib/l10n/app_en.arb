@@ -690,6 +690,8 @@
   "fullExportSubtitle": "Export the current timetable, or export all timetables, time schemes, and the current selection",
   "exportCurrentTimetable": "Export Current Timetable",
   "exportAllData": "Export All Data",
+  "exportTimeTemplate": "Export Time Templates",
+  "dataTransferTimeSchemeShareText": "This is a time template file from Qingyu Timetable. Import it to restore the time templates",
   "fullImportTitle": "Import",
   "fullImportSubtitle": "When importing, you can overwrite the current timetable or import it as a new timetable. Export your backup first if possible",
   "chooseFileAndImport": "Choose File and Import",
@@ -1103,6 +1105,20 @@
   "appLogsRecordingPausedHint": "Recording is off. The entries below are historical logs only; no new logs will be added",
   "timeSchemeTitle": "Time Schemes",
   "newSchemeTooltip": "Create Scheme",
+  "shareTimeSchemeAction": "Share",
+  "shareTimeSchemeTitle": "Share Time Template",
+  "shareTimeSchemeViaSystem": "Share as File",
+  "shareTimeSchemeViaQr": "Share via QR Code",
+  "timeSchemeShareText": "This is a time template ({name}) from Qingyu Timetable. Import it to use it",
+  "@timeSchemeShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeShareSubject": "Qingyu Timetable · Time Template",
+  "timeSchemeSummary": "{sections} sections · {profiles} timetables · {courses} course entries · {overrideCourses} override entries",
   "timeSchemeSummary": "{sections} sections · {profiles} timetables · {courses} course entries · {overrideCourses} override entries",
   "@timeSchemeSummary": {
     "placeholders": {
@@ -6210,3 +6226,4 @@
   "classAlarmDaySeparator": ", ",
   "classAlarmDetailSeparator": "; "
 }
+

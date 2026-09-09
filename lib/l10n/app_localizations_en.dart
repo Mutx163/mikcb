@@ -1435,6 +1435,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportAllData => 'Export All Data';
 
   @override
+  String get exportTimeTemplate => 'Export Time Templates';
+
+  @override
+  String get dataTransferTimeSchemeShareText =>
+      'This is a time template file from Qingyu Timetable. Import it to restore the time templates';
+
+  @override
   String get fullImportTitle => 'Import';
 
   @override
@@ -2173,6 +2180,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newSchemeTooltip => 'Create Scheme';
+
+  @override
+  String get shareTimeSchemeAction => 'Share';
+
+  @override
+  String get shareTimeSchemeTitle => 'Share Time Template';
+
+  @override
+  String get shareTimeSchemeViaSystem => 'Share as File';
+
+  @override
+  String get shareTimeSchemeViaQr => 'Share via QR Code';
+
+  @override
+  String timeSchemeShareText(String name) {
+    return 'This is a time template ($name) from Qingyu Timetable. Import it to use it';
+  }
+
+  @override
+  String get timeSchemeShareSubject => 'Qingyu Timetable · Time Template';
 
   @override
   String timeSchemeSummary(

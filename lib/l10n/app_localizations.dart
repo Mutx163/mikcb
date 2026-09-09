@@ -2588,6 +2588,18 @@ abstract class AppLocalizations {
   /// **'导出全部数据'**
   String get exportAllData;
 
+  /// No description provided for @exportTimeTemplate.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出时间模板'**
+  String get exportTimeTemplate;
+
+  /// No description provided for @dataTransferTimeSchemeShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表的时间模板分享文件，导入后即可恢复使用'**
+  String get dataTransferTimeSchemeShareText;
+
   /// No description provided for @fullImportTitle.
   ///
   /// In zh, this message translates to:
@@ -3844,6 +3856,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'新建模板'**
   String get newSchemeTooltip;
+
+  /// No description provided for @shareTimeSchemeAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享'**
+  String get shareTimeSchemeAction;
+
+  /// No description provided for @shareTimeSchemeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享时间模板'**
+  String get shareTimeSchemeTitle;
+
+  /// No description provided for @shareTimeSchemeViaSystem.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统分享文件'**
+  String get shareTimeSchemeViaSystem;
+
+  /// No description provided for @shareTimeSchemeViaQr.
+  ///
+  /// In zh, this message translates to:
+  /// **'二维码分享'**
+  String get shareTimeSchemeViaQr;
+
+  /// No description provided for @timeSchemeShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表的时间模板（{name}），导入后即可使用'**
+  String timeSchemeShareText(String name);
+
+  /// No description provided for @timeSchemeShareSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表 · 时间模板'**
+  String get timeSchemeShareSubject;
 
   /// No description provided for @timeSchemeSummary.
   ///

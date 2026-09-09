@@ -557,6 +557,8 @@
   "fullExportSubtitle": "現在の時間割、または全時間割・テンプレート・選択状態を一括エクスポート",
   "exportCurrentTimetable": "現在の時間割をエクスポート",
   "exportAllData": "全データをエクスポート",
+  "exportTimeTemplate": "時間テンプレートを書き出す",
+  "dataTransferTimeSchemeShareText": "これは軽嶼課表の時間テンプレート共有ファイルです。インポートして復元できます",
   "fullImportTitle": "完全インポート",
   "fullImportSubtitle": "インポート時に現在の時間割を上書きするか、新しい時間割としてインポート可能，事前にバックアップを推奨",
   "chooseFileAndImport": "ファイルを選択してインポート",
@@ -998,6 +1000,19 @@
   "appLogsClearFailed": "アプリログのクリアに失敗しました",
   "timeSchemeTitle": "時間テンプレート",
   "newSchemeTooltip": "新規テンプレート",
+  "shareTimeSchemeAction": "共有",
+  "shareTimeSchemeTitle": "時間テンプレートを共有",
+  "shareTimeSchemeViaSystem": "ファイルとして共有",
+  "shareTimeSchemeViaQr": "QRコードで共有",
+  "timeSchemeShareText": "これは軽嶼課表の時間テンプレート（{name}）です。インポートしてすぐに利用できます",
+  "@timeSchemeShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeShareSubject": "軽嶼課表・時間テンプレート",
   "timeSchemeSummary": "{sections}時限・{profiles}個の時間割・{courses}件の授業・{overrideCourses}件の副テンプレート",
   "@timeSchemeSummary": {
     "placeholders": {
@@ -6205,5 +6220,17 @@
   "classAlarmCourseConfirmMessage": "システム時計に毎週{weekday} {time} の繰り返しアラームを作成します（授業開始の{lead}分前に鳴動、対象週：{weeks}）。休日や休講週でも鳴ります。削除はシステム時計で行ってください。",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
-  "classAlarmDetailSeparator": "；"
+  "classAlarmDetailSeparator": "；",
+  "liveExpandedDetailGroupTitle": "展開詳細",
+  "liveExpandedDetailHiddenCaption": "非表示",
+  "resetExpandedDetailDefaultAction": "既定の順序と表示に戻す",
+  "liveExpandedDetailFieldStage": "段階",
+  "liveExpandedDetailFieldShortName": "短縮名",
+  "liveExpandedDetailFieldProgress": "進捗状況",
+  "liveExpandedDetailFieldStatus": "状態",
+  "liveExpandedDetailFieldTime": "時間",
+  "liveExpandedDetailFieldLocation": "場所",
+  "liveExpandedDetailFieldTeacher": "先生",
+  "liveExpandedDetailFieldNext": "次の授業",
+  "liveExpandedDetailFieldNote": "メモ"
 }

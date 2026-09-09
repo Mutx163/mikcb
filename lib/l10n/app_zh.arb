@@ -696,6 +696,8 @@
   "fullExportSubtitle": "支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态",
   "exportCurrentTimetable": "导出当前课表",
   "exportAllData": "导出全部数据",
+  "exportTimeTemplate": "导出时间模板",
+  "dataTransferTimeSchemeShareText": "这是轻屿课表的时间模板分享文件，导入后即可恢复使用",
   "fullImportTitle": "完整导入",
   "fullImportSubtitle": "导入时可以选择覆盖当前课表，或直接导入为一个新课表，建议先导出自己的备份",
   "chooseFileAndImport": "选择文件并导入",
@@ -1140,6 +1142,20 @@
   "appLogsRecordingPausedHint": "记录已关闭，下方为历史日志，关闭后不再新增",
   "timeSchemeTitle": "时间模板",
   "newSchemeTooltip": "新建模板",
+  "shareTimeSchemeAction": "分享",
+  "shareTimeSchemeTitle": "分享时间模板",
+  "shareTimeSchemeViaSystem": "系统分享文件",
+  "shareTimeSchemeViaQr": "二维码分享",
+  "timeSchemeShareText": "这是轻屿课表的时间模板（{name}），导入后即可使用",
+  "@timeSchemeShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeShareSubject": "轻屿课表 · 时间模板",
+  "timeSchemeSummary": "{sections} 节 · {profiles} 个课表 · {courses} 节课程 · {overrideCourses} 节副时间表",
   "timeSchemeSummary": "{sections} 节 · {profiles} 个课表 · {courses} 节课程 · {overrideCourses} 节副时间表",
   "@timeSchemeSummary": {
     "placeholders": {
@@ -6259,3 +6275,4 @@
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；"
 }
+

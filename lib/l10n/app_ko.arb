@@ -557,6 +557,8 @@
   "fullExportSubtitle": "현재 시간표 또는 모든 시간표, 시간 템플릿, 현재 선택 상태를 한 번에 내보낼 수 있습니다",
   "exportCurrentTimetable": "현재 시간표 내보내기",
   "exportAllData": "모든 데이터 내보내기",
+  "exportTimeTemplate": "시간 템플릿 내보내기",
+  "dataTransferTimeSchemeShareText": "청여 시간표의 시간 템플릿 공유 파일입니다. 가져오면 복원할 수 있습니다",
   "fullImportTitle": "전체 가져오기",
   "fullImportSubtitle": "가져오기 시 현재 시간표를 덮어쓰거나 새 시간표로 가져올 수 있습니다. 먼저 백업을 권장합니다",
   "chooseFileAndImport": "파일 선택 및 가져오기",
@@ -998,6 +1000,19 @@
   "appLogsClearFailed": "앱 로그 비우기 실패",
   "timeSchemeTitle": "시간 템플릿",
   "newSchemeTooltip": "새 템플릿",
+  "shareTimeSchemeAction": "공유",
+  "shareTimeSchemeTitle": "시간 템플릿 공유",
+  "shareTimeSchemeViaSystem": "파일로 공유",
+  "shareTimeSchemeViaQr": "QR 코드로 공유",
+  "timeSchemeShareText": "청여 시간표의 시간 템플릿({name})입니다. 가져오면 바로 사용할 수 있습니다",
+  "@timeSchemeShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeShareSubject": "청유 시간표 · 시간 템플릿",
   "timeSchemeSummary": "{sections}교시 · {profiles}개 시간표 · {courses}건 수업 · {overrideCourses}건 부 템플릿",
   "@timeSchemeSummary": {
     "placeholders": {
@@ -6205,5 +6220,17 @@
   "classAlarmCourseConfirmMessage": "시스템 시계에 매주 {weekday} {time} 반복 알람을 만듭니다(수업 {lead}분 전 울림, 대상 주차: {weeks}). 휴일·휴강 주에도 울리니 삭제는 시스템 시계에서 해주세요.",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": ", ",
-  "classAlarmDetailSeparator": "; "
+  "classAlarmDetailSeparator": "; ",
+  "liveExpandedDetailGroupTitle": "펼침 상세",
+  "liveExpandedDetailHiddenCaption": "숨김",
+  "resetExpandedDetailDefaultAction": "기본 순서와 표시로 복원",
+  "liveExpandedDetailFieldStage": "단계",
+  "liveExpandedDetailFieldShortName": "짧은 이름",
+  "liveExpandedDetailFieldProgress": "진행 상황",
+  "liveExpandedDetailFieldStatus": "상태",
+  "liveExpandedDetailFieldTime": "시간",
+  "liveExpandedDetailFieldLocation": "장소",
+  "liveExpandedDetailFieldTeacher": "선생님",
+  "liveExpandedDetailFieldNext": "다음 수업",
+  "liveExpandedDetailFieldNote": "메모"
 }

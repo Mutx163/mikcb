@@ -1347,6 +1347,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportAllData => '导出全部数据';
 
   @override
+  String get exportTimeTemplate => '导出时间模板';
+
+  @override
+  String get dataTransferTimeSchemeShareText => '这是轻屿课表的时间模板分享文件，导入后即可恢复使用';
+
+  @override
   String get fullImportTitle => '完整导入';
 
   @override
@@ -2052,6 +2058,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get newSchemeTooltip => '新建模板';
+
+  @override
+  String get shareTimeSchemeAction => '分享';
+
+  @override
+  String get shareTimeSchemeTitle => '分享时间模板';
+
+  @override
+  String get shareTimeSchemeViaSystem => '系统分享文件';
+
+  @override
+  String get shareTimeSchemeViaQr => '二维码分享';
+
+  @override
+  String timeSchemeShareText(String name) {
+    return '这是轻屿课表的时间模板（$name），导入后即可使用';
+  }
+
+  @override
+  String get timeSchemeShareSubject => '轻屿课表 · 时间模板';
 
   @override
   String timeSchemeSummary(
@@ -11821,6 +11847,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get exportAllData => '匯出全部資料';
 
   @override
+  String get exportTimeTemplate => '匯出時間範本';
+
+  @override
+  String get dataTransferTimeSchemeShareText => '這是輕嶼課表的時間範本分享檔案，匯入後即可恢復使用';
+
+  @override
   String get fullImportTitle => '完整匯入';
 
   @override
@@ -12526,6 +12558,26 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get newSchemeTooltip => '新建範本';
+
+  @override
+  String get shareTimeSchemeAction => '分享';
+
+  @override
+  String get shareTimeSchemeTitle => '分享時間範本';
+
+  @override
+  String get shareTimeSchemeViaSystem => '系統分享檔案';
+
+  @override
+  String get shareTimeSchemeViaQr => '二維碼分享';
+
+  @override
+  String timeSchemeShareText(String name) {
+    return '這是輕嶼課表的時間範本（$name），匯入後即可使用';
+  }
+
+  @override
+  String get timeSchemeShareSubject => '輕嶼課表・時間範本';
 
   @override
   String timeSchemeSummary(
@@ -22338,6 +22390,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get exportAllData => '匯出全部資料';
 
   @override
+  String get exportTimeTemplate => '匯出時間範本';
+
+  @override
+  String get dataTransferTimeSchemeShareText => '這是輕嶼課表的時間範本分享檔案，匯入後即可恢復使用';
+
+  @override
   String get fullImportTitle => '完整匯入';
 
   @override
@@ -23043,6 +23101,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get newSchemeTooltip => '新建範本';
+
+  @override
+  String get shareTimeSchemeAction => '分享';
+
+  @override
+  String get shareTimeSchemeTitle => '分享時間範本';
+
+  @override
+  String get shareTimeSchemeViaSystem => '系統分享檔案';
+
+  @override
+  String get shareTimeSchemeViaQr => '二維碼分享';
+
+  @override
+  String timeSchemeShareText(String name) {
+    return '這是輕嶼課表的時間範本（$name），匯入後即可使用';
+  }
+
+  @override
+  String get timeSchemeShareSubject => '輕嶼課表・時間範本';
 
   @override
   String timeSchemeSummary(

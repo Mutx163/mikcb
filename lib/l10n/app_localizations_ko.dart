@@ -1378,6 +1378,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exportAllData => '모든 데이터 내보내기';
 
   @override
+  String get exportTimeTemplate => '시간 템플릿 내보내기';
+
+  @override
+  String get dataTransferTimeSchemeShareText =>
+      '청여 시간표의 시간 템플릿 공유 파일입니다. 가져오면 복원할 수 있습니다';
+
+  @override
   String get fullImportTitle => '전체 가져오기';
 
   @override
@@ -2095,6 +2102,26 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get newSchemeTooltip => '새 템플릿';
+
+  @override
+  String get shareTimeSchemeAction => '공유';
+
+  @override
+  String get shareTimeSchemeTitle => '시간 템플릿 공유';
+
+  @override
+  String get shareTimeSchemeViaSystem => '파일로 공유';
+
+  @override
+  String get shareTimeSchemeViaQr => 'QR 코드로 공유';
+
+  @override
+  String timeSchemeShareText(String name) {
+    return '청여 시간표의 시간 템플릿($name)입니다. 가져오면 바로 사용할 수 있습니다';
+  }
+
+  @override
+  String get timeSchemeShareSubject => '청유 시간표 · 시간 템플릿';
 
   @override
   String timeSchemeSummary(

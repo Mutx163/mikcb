@@ -556,6 +556,8 @@
   "fullExportSubtitle": "支持匯出目前課表，或一次匯出全部課表、時間範本和目前選中狀態",
   "exportCurrentTimetable": "匯出目前課表",
   "exportAllData": "匯出全部資料",
+  "exportTimeTemplate": "匯出時間範本",
+  "dataTransferTimeSchemeShareText": "這是輕嶼課表的時間範本分享檔案，匯入後即可恢復使用",
   "fullImportTitle": "完整匯入",
   "fullImportSubtitle": "匯入時可以選擇覆蓋目前課表，或直接匯入為一個新課表，建議先匯出自己的備份",
   "chooseFileAndImport": "選擇檔案並匯入",
@@ -997,6 +999,20 @@
   "appLogsClearFailed": "清空應用日誌失敗",
   "timeSchemeTitle": "時間範本",
   "newSchemeTooltip": "新建範本",
+  "shareTimeSchemeAction": "分享",
+  "shareTimeSchemeTitle": "分享時間範本",
+  "shareTimeSchemeViaSystem": "系統分享檔案",
+  "shareTimeSchemeViaQr": "二維碼分享",
+  "timeSchemeShareText": "這是輕嶼課表的時間範本（{name}），匯入後即可使用",
+  "@timeSchemeShareText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeShareSubject": "輕嶼課表・時間範本",
+  "timeSchemeSummary": "{sections} 節 · {profiles} 個課表 · {courses} 節課程 · {overrideCourses} 節副時間表",
   "timeSchemeSummary": "{sections} 節 · {profiles} 個課表 · {courses} 節課程 · {overrideCourses} 節副時間表",
   "@timeSchemeSummary": {
     "placeholders": {
@@ -6207,3 +6223,4 @@
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；"
 }
+

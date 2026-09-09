@@ -1374,6 +1374,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exportAllData => '全データをエクスポート';
 
   @override
+  String get exportTimeTemplate => '時間テンプレートを書き出す';
+
+  @override
+  String get dataTransferTimeSchemeShareText =>
+      'これは軽嶼課表の時間テンプレート共有ファイルです。インポートして復元できます';
+
+  @override
   String get fullImportTitle => '完全インポート';
 
   @override
@@ -2085,6 +2092,26 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get newSchemeTooltip => '新規テンプレート';
+
+  @override
+  String get shareTimeSchemeAction => '共有';
+
+  @override
+  String get shareTimeSchemeTitle => '時間テンプレートを共有';
+
+  @override
+  String get shareTimeSchemeViaSystem => 'ファイルとして共有';
+
+  @override
+  String get shareTimeSchemeViaQr => 'QRコードで共有';
+
+  @override
+  String timeSchemeShareText(String name) {
+    return 'これは軽嶼課表の時間テンプレート（$name）です。インポートしてすぐに利用できます';
+  }
+
+  @override
+  String get timeSchemeShareSubject => '軽嶼課表・時間テンプレート';
 
   @override
   String timeSchemeSummary(
