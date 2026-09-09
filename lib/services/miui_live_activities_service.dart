@@ -320,6 +320,7 @@ class MiuiLiveActivitiesService {
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
+    List<String>? expandedDetailFields,
     LiveBeforeClassQuickAction beforeClassQuickAction =
         LiveBeforeClassQuickAction.none,
     int beforeClassQuickActionAutoMinutes = 0,
@@ -368,6 +369,7 @@ class MiuiLiveActivitiesService {
         miuiIslandLabelLogoCornerRadius: miuiIslandLabelLogoCornerRadius,
         miuiIslandExpandedIconMode: miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: miuiIslandExpandedIconPath,
+        expandedDetailFields: expandedDetailFields,
         beforeClassQuickAction: beforeClassQuickAction,
         beforeClassQuickActionAutoMinutes: beforeClassQuickActionAutoMinutes,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
@@ -465,6 +467,7 @@ class MiuiLiveActivitiesService {
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
+    List<String>? expandedDetailFields,
     LiveBeforeClassQuickAction beforeClassQuickAction =
         LiveBeforeClassQuickAction.none,
     int beforeClassQuickActionAutoMinutes = 0,
@@ -515,6 +518,7 @@ class MiuiLiveActivitiesService {
         'miuiIslandLabelLogoCornerRadius': miuiIslandLabelLogoCornerRadius,
         'miuiIslandExpandedIconMode': miuiIslandExpandedIconMode.value,
         'miuiIslandExpandedIconPath': miuiIslandExpandedIconPath,
+        'expandedDetailFields': expandedDetailFields,
       },
       'currentCourse': {
         'name': currentCourse.name,
@@ -690,6 +694,7 @@ class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
+    List<String>? expandedDetailFields,
     LiveBeforeClassQuickAction beforeClassQuickAction =
         LiveBeforeClassQuickAction.none,
     int beforeClassQuickActionAutoMinutes = 0,

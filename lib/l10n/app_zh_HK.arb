@@ -6221,6 +6221,18 @@
   "classAlarmCourseConfirmMessage": "將在系統時鐘創建每週{weekday} {time} 的重複鬧鐘（比上課提前{lead}分鐘響鈴；上課週次：{weeks}）。假期與非上課週仍會響鈴，刪除需在系統時鐘中完成。",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
-  "classAlarmDetailSeparator": "；"
+  "classAlarmDetailSeparator": "；",
+  "liveExpandedDetailGroupTitle": "展開詳情",
+  "liveExpandedDetailHiddenCaption": "已隱藏",
+  "resetExpandedDetailDefaultAction": "恢復預設順序與顯示",
+  "liveExpandedDetailFieldStage": "階段",
+  "liveExpandedDetailFieldShortName": "課程簡稱",
+  "liveExpandedDetailFieldProgress": "進度",
+  "liveExpandedDetailFieldStatus": "狀態",
+  "liveExpandedDetailFieldTime": "上課時間",
+  "liveExpandedDetailFieldLocation": "地點",
+  "liveExpandedDetailFieldTeacher": "老師",
+  "liveExpandedDetailFieldNext": "下節課",
+  "liveExpandedDetailFieldNote": "備註"
 }
 

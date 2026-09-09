@@ -1182,5 +1182,84 @@ void main() {
         LiveBeforeClassQuickAction.none,
       );
     });
+
+    test('live expanded detail fields default null and round-trip as null', () {
+      final settings = TimetableSettings.defaults();
+      expect(settings.liveExpandedDetailFields, isNull);
+      expect(settings.liveDuringEndExpandedDetailFields, isNull);
+      expect(settings.beforeClassDisplaySettings.expandedDetailFields, isNull);
+
+      final json = settings.toJson();
+      expect(json['liveExpandedDetailFields'], isNull);
+      expect(json['liveDuringEndExpandedDetailFields'], isNull);
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.liveExpandedDetailFields, isNull);
+      expect(restored.liveDuringEndExpandedDetailFields, isNull);
+    });
+
+    test('live expanded detail fields custom order round-trips', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        liveExpandedDetailFields: const ['note', 'teacher', 'location'],
+        liveDuringEndExpandedDetailFields: const <String>[],
+        liveDuringEndFollowBeforeClass: false,
+      );
+      expect(
+        settings.beforeClassDisplaySettings.expandedDetailFields,
+        [
+          LiveExpandedDetailField.note,
+          LiveExpandedDetailField.teacher,
+          LiveExpandedDetailField.location,
+        ],
+      );
+      // 空列表 = 全部隐藏，且不被归一化为 null。
+      expect(
+        settings.duringEndDisplaySettings.expandedDetailFields,
+        isEmpty,
+      );
+
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(restored.liveExpandedDetailFields, ['note', 'teacher', 'location']);
+      expect(restored.liveDuringEndExpandedDetailFields, isEmpty);
+      expect(
+        restored.beforeClassDisplaySettings.expandedDetailFields,
+        hasLength(3),
+      );
+    });
+
+    test('duringEnd expanded fields fall back to before-class when unset', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        liveExpandedDetailFields: const ['time', 'teacher'],
+        liveDuringEndFollowBeforeClass: false,
+      );
+      expect(
+        settings.duringEndDisplaySettings.expandedDetailFields,
+        [
+          LiveExpandedDetailField.time,
+          LiveExpandedDetailField.teacher,
+        ],
+      );
+      // 跟随开关打开时整组使用 beforeClass 展开字段
+      final following = settings.copyWith(liveDuringEndFollowBeforeClass: true);
+      expect(
+        following.duringEndDisplaySettings.expandedDetailFields,
+        [
+          LiveExpandedDetailField.time,
+          LiveExpandedDetailField.teacher,
+        ],
+      );
+    });
+
+    test('live expanded detail fields reset clears to null', () {
+      final customized = TimetableSettings.defaults().copyWith(
+        liveExpandedDetailFields: const ['note'],
+      );
+      final display = customized.beforeClassDisplaySettings;
+      final cleared = customized.copyWithBeforeClassDisplaySettings(
+        display.copyWith(clearExpandedDetailFields: true),
+        clearExpandedDetailFields: true,
+      );
+      expect(cleared.liveExpandedDetailFields, isNull);
+      expect(cleared.beforeClassDisplaySettings.expandedDetailFields, isNull);
+    });
   });
 }

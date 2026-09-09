@@ -32,6 +32,7 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.util.Log
 import android.util.TypedValue
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.util.Calendar
@@ -274,6 +275,7 @@ class LiveUpdateService : Service() {
     private var miuiIslandLabelLogoCornerRadius = 8f
     private var miuiIslandExpandedIconMode = "app_icon"
     private var miuiIslandExpandedIconPath: String? = null
+    private var expandedDetailFields: List<String>? = null
     private var startAtMillis = 0L
     private var endAtMillis = 0L
     private var beforeClassLeadMillis = 0L
@@ -444,6 +446,7 @@ class LiveUpdateService : Service() {
                 intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
             miuiIslandExpandedIconPath =
                 intent?.getStringExtra("miuiIslandExpandedIconPath")?.takeIf { it.isNotBlank() }
+            expandedDetailFields = intent?.getStringArrayListExtra("expandedDetailFields")
             beforeClassLeadMillis =
                 intent?.getLongExtra("beforeClassLeadMillis", 0L)
                     ?.coerceAtLeast(0L)
@@ -767,6 +770,15 @@ class LiveUpdateService : Service() {
             BeforeClassQuickActionRestore.cancelDoNotDisturbMode(applicationContext)
         }
         if (!applied) {
+            // 后台服务 startActivity 在 Android 10+ 常被系统直接拦掉，不做任何提示的
+            // 话用户点「取消」就像没反应；先给一条立即可见的 Toast 再尝试引导授权。
+            showQuickActionFailureToast(
+                if (quickAction == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB) {
+                    R.string.quick_action_dnd_failed
+                } else {
+                    R.string.quick_action_silent_failed
+                },
+            )
             if (quickAction == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB) {
                 openNotificationPolicyAccessSettings()
             } else {
@@ -862,6 +874,7 @@ class LiveUpdateService : Service() {
                 restoreAtMillis,
             )
             if (!enabled) {
+                showQuickActionFailureToast(R.string.quick_action_dnd_failed)
                 openNotificationPolicyAccessSettings()
             }
             enabled
@@ -871,6 +884,7 @@ class LiveUpdateService : Service() {
                 restoreAtMillis,
             )
             if (!enabled) {
+                showQuickActionFailureToast(R.string.quick_action_silent_failed)
                 openSoundSettings()
             }
             enabled
@@ -928,6 +942,14 @@ class LiveUpdateService : Service() {
 
     private fun restoreBeforeClassQuickActionIfClassEnded() {
         BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
+    }
+
+    private fun showQuickActionFailureToast(messageRes: Int) {
+        try {
+            Toast.makeText(applicationContext, getString(messageRes), Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_OPEN_SETTINGS_INTENT_FAILED, e)
+        }
     }
 
     private fun openNotificationPolicyAccessSettings() {
@@ -1706,6 +1728,47 @@ class LiveUpdateService : Service() {
         }
     }
 
+    /**
+     * 展开通知的详情行构建器：按 [order] 逐个字段输出已格式化的行。
+     * order 为 null 时由调用方传入默认顺序（保持历史行为）；字段值空缺时自动跳过。
+     * 空的 order 即「全部隐藏」。
+     */
+    private fun expandedDetailLineList(
+        order: List<String>,
+        stageTitle: String?,
+        shortNameLabel: String?,
+        progressNextText: String?,
+        progressFinalText: String?,
+        showProgressBlock: Boolean,
+        statusText: String?,
+        timeRangeText: String,
+        locationText: String,
+        teacherText: String,
+        nextText: String,
+        noteText: String,
+    ): List<String> {
+        val lines = mutableListOf<String>()
+        for (key in order) {
+            when (key) {
+                "stage" -> stageTitle?.takeIf { it.isNotBlank() }?.let(lines::add)
+                "shortName" -> shortNameLabel?.takeIf { it.isNotBlank() }?.let(lines::add)
+                "progress" -> {
+                    if (showProgressBlock) {
+                        progressNextText?.takeIf { it.isNotBlank() }?.let(lines::add)
+                        progressFinalText?.takeIf { it.isNotBlank() }?.let(lines::add)
+                    }
+                }
+                "status" -> statusText?.takeIf { it.isNotBlank() }?.let(lines::add)
+                "time" -> timeRangeText.takeIf { it.isNotBlank() }?.let(lines::add)
+                "location" -> locationText.takeIf { it.isNotBlank() }?.let(lines::add)
+                "teacher" -> teacherText.takeIf { it.isNotBlank() }?.let(lines::add)
+                "next" -> nextText.takeIf { it.isNotBlank() }?.let(lines::add)
+                "note" -> noteText.takeIf { it.isNotBlank() }?.let(lines::add)
+            }
+        }
+        return lines
+    }
+
     private fun buildRoundedLauncherIcon(targetSizePx: Int, cornerRadiusPx: Float): Icon? {
         val size = targetSizePx.coerceAtLeast(1)
         return try {
@@ -1836,27 +1899,27 @@ class LiveUpdateService : Service() {
         }
 
         val expandedDetailText = buildString {
-            append(stageTitle)
-            if (shortNameLabel != null) {
-                append("\n").append(getString(R.string.detail_short_name, shortNameLabel))
-            }
-            if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
-                if (classProgress.nextMilestoneDisplayText != null) {
-                    append("\n").append(
-                        getString(R.string.detail_next_milestone, classProgress.nextMilestoneDisplayText)
-                    )
-                }
-                append("\n").append(
-                    getString(R.string.detail_final_dismiss, classProgress.finalDismissDisplayText)
-                )
-            } else if (detailStatusText != null) {
-                append("\n").append(getString(R.string.detail_status, detailStatusText))
-            }
-            if (timeRangeText.isNotBlank()) append("\n").append(getString(R.string.detail_time, timeRangeText))
-            if (location.isNotBlank()) append("\n").append(getString(R.string.label_location, location))
-            if (teacher.isNotBlank()) append("\n").append(getString(R.string.detail_teacher, teacher))
-            if (nextName.isNotBlank()) append("\n").append(getString(R.string.detail_next_course, nextName))
-            if (note.isNotBlank()) append("\n").append(getString(R.string.detail_note, note))
+            val order = expandedDetailFields ?: listOf(
+                "stage", "shortName", "progress", "status",
+                "time", "location", "teacher", "next", "note",
+            )
+            append(
+                expandedDetailLineList(
+                    order = order,
+                    stageTitle = stageTitle,
+                    shortNameLabel = shortNameLabel,
+                    progressNextText = classProgress?.nextMilestoneDisplayText,
+                    progressFinalText = classProgress?.finalDismissDisplayText,
+                    showProgressBlock =
+                        (isDuringClass || isEndingSoon) && classProgress != null && showCountdown,
+                    statusText = detailStatusText,
+                    timeRangeText = timeRangeText,
+                    locationText = location,
+                    teacherText = teacher,
+                    nextText = nextName,
+                    noteText = note,
+                ).joinToString("\n"),
+            )
         }
 
         val promotedContentText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
@@ -1873,21 +1936,27 @@ class LiveUpdateService : Service() {
             ).filterNotNull().joinToString(" · ")
         }
         val promotedExpandedDetailText = buildString {
-            if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
-                if (classProgress.nextMilestoneDisplayText != null) {
-                    append(getString(R.string.detail_next_milestone, classProgress.nextMilestoneDisplayText))
-                    append("\n")
-                }
-                append(getString(R.string.detail_final_dismiss, classProgress.finalDismissDisplayText))
-            } else if (detailStatusText != null) {
-                append(getString(R.string.detail_status, detailStatusText))
-            }
-            if (timeRangeText.isNotBlank()) append("\n").append(getString(R.string.detail_time, timeRangeText))
-            if (location.isNotBlank()) append("\n").append(getString(R.string.label_location, location))
-            if (teacher.isNotBlank()) append("\n").append(getString(R.string.detail_teacher, teacher))
-            if (shortNameLabel != null) append("\n").append(getString(R.string.detail_short_name, shortNameLabel))
-            if (nextName.isNotBlank()) append("\n").append(getString(R.string.detail_next_course, nextName))
-            if (note.isNotBlank()) append("\n").append(getString(R.string.detail_note, note))
+            val order = expandedDetailFields ?: listOf(
+                "progress", "status", "time", "location",
+                "teacher", "shortName", "next", "note",
+            )
+            append(
+                expandedDetailLineList(
+                    order = order,
+                    stageTitle = null,
+                    shortNameLabel = shortNameLabel,
+                    progressNextText = classProgress?.nextMilestoneDisplayText,
+                    progressFinalText = classProgress?.finalDismissDisplayText,
+                    showProgressBlock =
+                        (isDuringClass || isEndingSoon) && classProgress != null && showCountdown,
+                    statusText = detailStatusText,
+                    timeRangeText = timeRangeText,
+                    locationText = location,
+                    teacherText = teacher,
+                    nextText = nextName,
+                    noteText = note,
+                ).joinToString("\n"),
+            )
         }
 
         val contentText = if (!showStandardNotification) {
@@ -2062,10 +2131,19 @@ class LiveUpdateService : Service() {
                     )
             )
         } else {
+            // 展开详情字段被全部关掉时 notificationExpandedText 会是空串；
+            // BigTextStyle 收到空正文会出现「能展开但无内容」的怪通知，回退
+            // summaryText → contentText → title 保证始终有一行可读文本。
+            val bigTextFallback =
+                notificationExpandedText.ifBlank {
+                    summaryText.ifBlank {
+                        notificationContentText.ifBlank { notificationTitle }
+                    }
+                }
             builder.setStyle(
                 Notification.BigTextStyle()
                     .setBigContentTitle(notificationTitle)
-                    .bigText(notificationExpandedText)
+                    .bigText(bigTextFallback)
                     .setSummaryText(if (showStandardNotification) summaryText else "")
             )
         }

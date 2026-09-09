@@ -11110,4 +11110,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get classAlarmDetailSeparator => '; ';
+
+  @override
+  String get liveExpandedDetailGroupTitle => 'Expanded details';
+
+  @override
+  String get liveExpandedDetailHiddenCaption => 'Hidden';
+
+  @override
+  String get resetExpandedDetailDefaultAction =>
+      'Restore default order and visibility';
+
+  @override
+  String get liveExpandedDetailFieldStage => 'Stage';
+
+  @override
+  String get liveExpandedDetailFieldShortName => 'Short name';
+
+  @override
+  String get liveExpandedDetailFieldProgress => 'Progress';
+
+  @override
+  String get liveExpandedDetailFieldStatus => 'Status';
+
+  @override
+  String get liveExpandedDetailFieldTime => 'Class time';
+
+  @override
+  String get liveExpandedDetailFieldLocation => 'Location';
+
+  @override
+  String get liveExpandedDetailFieldTeacher => 'Teacher';
+
+  @override
+  String get liveExpandedDetailFieldNext => 'Next class';
+
+  @override
+  String get liveExpandedDetailFieldNote => 'Notes';
 }

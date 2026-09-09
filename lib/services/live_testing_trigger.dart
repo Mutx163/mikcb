@@ -321,6 +321,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
           displaySettings.miuiIslandLabelLogoCornerRadius,
       miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
+      expandedDetailFields: displaySettings.expandedDetailFields
+          ?.map((field) => field.value)
+          .toList(),
       beforeClassQuickAction: isBeforeClass
           ? settings.liveBeforeClassQuickAction
           : LiveBeforeClassQuickAction.none,

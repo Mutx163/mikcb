@@ -6224,6 +6224,18 @@
   "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, ringing {lead} minutes before this class starts (active weeks: {weeks}). It keeps ringing during holidays and off-weeks; delete it in the system clock.",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": ", ",
-  "classAlarmDetailSeparator": "; "
+  "classAlarmDetailSeparator": "; ",
+  "liveExpandedDetailGroupTitle": "Expanded details",
+  "liveExpandedDetailHiddenCaption": "Hidden",
+  "resetExpandedDetailDefaultAction": "Restore default order and visibility",
+  "liveExpandedDetailFieldStage": "Stage",
+  "liveExpandedDetailFieldShortName": "Short name",
+  "liveExpandedDetailFieldProgress": "Progress",
+  "liveExpandedDetailFieldStatus": "Status",
+  "liveExpandedDetailFieldTime": "Class time",
+  "liveExpandedDetailFieldLocation": "Location",
+  "liveExpandedDetailFieldTeacher": "Teacher",
+  "liveExpandedDetailFieldNext": "Next class",
+  "liveExpandedDetailFieldNote": "Notes"
 }
 

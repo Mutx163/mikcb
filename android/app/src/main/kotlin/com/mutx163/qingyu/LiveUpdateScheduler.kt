@@ -550,6 +550,8 @@ private data class NativeLiveSettings(
     val liveDuringEndMiuiIslandLabelLogoCornerRadius: Float,
     val liveDuringEndMiuiIslandExpandedIconMode: String,
     val liveDuringEndMiuiIslandExpandedIconPath: String?,
+    val liveExpandedDetailFields: List<String>?,
+    val liveDuringEndExpandedDetailFields: List<String>?,
     val liveShowBeforeClassMinutes: Int,
     val liveClassReminderStartMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
@@ -668,6 +670,7 @@ private data class LiveUpdatePayload(
     val miuiIslandLabelLogoCornerRadius: Float,
     val miuiIslandExpandedIconMode: String,
     val miuiIslandExpandedIconPath: String?,
+    val expandedDetailFields: List<String>?,
     val beforeClassQuickAction: String,
     val beforeClassQuickActionAutoLeadMillis: Long,
     val progressBreakOffsetsMillis: LongArray,
@@ -686,6 +689,19 @@ private fun normalizeNullableText(value: String?): String? {
 }
 
 private fun normalizeText(value: String?): String = normalizeNullableText(value) ?: ""
+
+/** 解析展开详情字段列表；null/未知类型 → null（全显示），空列表 → 空列表（全隐藏）。 */
+internal fun parseExpandedDetailFields(raw: Any?): List<String>? {
+    return when (raw) {
+        is JSONArray -> buildList {
+            for (index in 0 until raw.length()) {
+                raw.optString(index).takeIf { it.isNotEmpty() }?.let(::add)
+            }
+        }
+        is List<*> -> raw.mapNotNull { it as? String }.filter { it.isNotEmpty() }
+        else -> null
+    }
+}
 
 private fun parseIntList(raw: Any?): List<Int>? {
     return when (raw) {
@@ -952,6 +968,8 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandExpandedIconMode"] as? String ?: "app_icon",
             miuiIslandExpandedIconPath =
                 islandConfig["miuiIslandExpandedIconPath"] as? String,
+            expandedDetailFields =
+                parseExpandedDetailFields(islandConfig["expandedDetailFields"]),
             beforeClassQuickAction =
                 data["beforeClassQuickAction"] as? String ?: "none",
             beforeClassQuickActionAutoLeadMillis =
@@ -1476,6 +1494,8 @@ object LiveUpdateScheduler {
                 settingsJson.optString("liveMiuiIslandExpandedIconMode", "app_icon"),
             liveMiuiIslandExpandedIconPath =
                 settingsJson.optString("liveMiuiIslandExpandedIconPath").takeIf { it.isNotBlank() },
+            liveExpandedDetailFields =
+                parseExpandedDetailFields(settingsJson.optJSONArray("liveExpandedDetailFields")),
             liveDuringEndMiuiIslandLabelStyle =
                 settingsJson.optString(
                     "liveDuringEndMiuiIslandLabelStyle",
@@ -1536,6 +1556,10 @@ object LiveUpdateScheduler {
                     .takeIf { it.isNotBlank() }
                     ?: settingsJson.optString("liveMiuiIslandExpandedIconPath")
                         .takeIf { it.isNotBlank() },
+            liveDuringEndExpandedDetailFields =
+                parseExpandedDetailFields(
+                    settingsJson.optJSONArray("liveDuringEndExpandedDetailFields"),
+                ) ?: parseExpandedDetailFields(settingsJson.optJSONArray("liveExpandedDetailFields")),
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveClassReminderStartMinutes =
                 settingsJson.optInt("liveClassReminderStartMinutes", 0),
@@ -1668,6 +1692,10 @@ object LiveUpdateScheduler {
             )
             putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
             putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
+            putStringArrayListExtra(
+                "expandedDetailFields",
+                payload.expandedDetailFields?.let { ArrayList(it) },
+            )
             putExtra("beforeClassQuickAction", payload.beforeClassQuickAction)
             putExtra(
                 "quickActionAutoLeadMillis",
@@ -2045,6 +2073,13 @@ object LiveUpdateScheduler {
         } else {
             snapshot.settings.liveDuringEndMiuiIslandExpandedIconPath
         }
+        val expandedDetailFields = if (isBeforeClass) {
+            snapshot.settings.liveExpandedDetailFields
+        } else if (followBeforeClass) {
+            snapshot.settings.liveExpandedDetailFields
+        } else {
+            snapshot.settings.liveDuringEndExpandedDetailFields
+        }
 
         return LiveUpdatePayload(
             currentCourse = selection.currentCourse,
@@ -2095,6 +2130,7 @@ object LiveUpdateScheduler {
             miuiIslandLabelLogoCornerRadius = miuiIslandLabelLogoCornerRadius,
             miuiIslandExpandedIconMode = miuiIslandExpandedIconMode,
             miuiIslandExpandedIconPath = miuiIslandExpandedIconPath,
+            expandedDetailFields = expandedDetailFields,
             beforeClassQuickAction = snapshot.settings.liveBeforeClassQuickAction,
             beforeClassQuickActionAutoLeadMillis =
                 snapshot.settings.liveBeforeClassQuickActionAutoMinutes * 60_000L,

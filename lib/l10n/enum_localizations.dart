@@ -180,6 +180,21 @@ String liveBeforeClassQuickActionLabel(
   LiveBeforeClassQuickAction.both => l10n.liveBeforeClassQuickActionBoth,
 };
 
+String liveExpandedDetailFieldLabel(
+  AppLocalizations l10n,
+  LiveExpandedDetailField field,
+) => switch (field) {
+  LiveExpandedDetailField.stage => l10n.liveExpandedDetailFieldStage,
+  LiveExpandedDetailField.shortName => l10n.liveExpandedDetailFieldShortName,
+  LiveExpandedDetailField.progress => l10n.liveExpandedDetailFieldProgress,
+  LiveExpandedDetailField.status => l10n.liveExpandedDetailFieldStatus,
+  LiveExpandedDetailField.time => l10n.liveExpandedDetailFieldTime,
+  LiveExpandedDetailField.location => l10n.liveExpandedDetailFieldLocation,
+  LiveExpandedDetailField.teacher => l10n.liveExpandedDetailFieldTeacher,
+  LiveExpandedDetailField.nextCourse => l10n.liveExpandedDetailFieldNext,
+  LiveExpandedDetailField.note => l10n.liveExpandedDetailFieldNote,
+};
+
 String courseCardVerticalAlignLabel(
   AppLocalizations l10n,
   CourseCardVerticalAlign align,

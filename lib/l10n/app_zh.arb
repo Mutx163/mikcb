@@ -6273,6 +6273,18 @@
   "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
-  "classAlarmDetailSeparator": "；"
+  "classAlarmDetailSeparator": "；",
+  "liveExpandedDetailGroupTitle": "展开详情",
+  "liveExpandedDetailHiddenCaption": "已隐藏",
+  "resetExpandedDetailDefaultAction": "恢复默认顺序与显示",
+  "liveExpandedDetailFieldStage": "阶段",
+  "liveExpandedDetailFieldShortName": "课程简称",
+  "liveExpandedDetailFieldProgress": "进度",
+  "liveExpandedDetailFieldStatus": "状态",
+  "liveExpandedDetailFieldTime": "上课时间",
+  "liveExpandedDetailFieldLocation": "地点",
+  "liveExpandedDetailFieldTeacher": "老师",
+  "liveExpandedDetailFieldNext": "下节课",
+  "liveExpandedDetailFieldNote": "备注"
 }
 

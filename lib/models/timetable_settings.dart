@@ -254,6 +254,15 @@ const String ghLlkkMirrorUrlPrefix = 'https://gh.llkk.cc/';
 const String ghProxyComMirrorUrlPrefix = 'https://gh-proxy.com/';
 const String ghproxyNetMirrorUrlPrefix = 'https://ghproxy.net/';
 
+List<String>? _safeStringList(dynamic raw) {
+  if (raw is! List) return null;
+  final out = <String>[];
+  for (final item in raw) {
+    if (item is String) out.add(item);
+  }
+  return out;
+}
+
 String _normalizeAppLocaleTag(String? value) {
   final normalized = (value ?? '').trim();
   if (normalized.isEmpty || normalized == 'system') {
@@ -733,6 +742,51 @@ String resolveAppUpdateMirrorUrlPrefix({
   };
 }
 
+/// 超级岛/焦点通知展开态里可逐字段控制显示与顺序的详细信息字段。
+///
+/// 值的字符串（value）与原生 `LiveUpdateService` 构造展开文本时使用的 key
+/// 一一对应：stage / shortName / progress / status / time / location /
+/// teacher / next / note。
+enum LiveExpandedDetailField {
+  stage('stage'),
+  shortName('shortName'),
+  progress('progress'),
+  status('status'),
+  time('time'),
+  location('location'),
+  teacher('teacher'),
+  nextCourse('next'),
+  note('note');
+
+  const LiveExpandedDetailField(this.value);
+
+  final String value;
+}
+
+/// 反序列化展开详情字段列表。
+///
+/// - 非 List（未设置/老数据）→ null：代表「全部显示」，向后兼容。
+/// - List（含空列表）→ 对应的字段顺序列表：空列表代表「全部隐藏」。
+List<LiveExpandedDetailField>? parseLiveExpandedDetailFields(dynamic raw) {
+  if (raw is! List) return null;
+  final result = <LiveExpandedDetailField>[];
+  for (final item in raw) {
+    if (item is! String) continue;
+    for (final field in LiveExpandedDetailField.values) {
+      if (field.value == item) {
+        result.add(field);
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+/// 转储设置列表为原始字符串列表（null 保持 null）。
+List<String>? encodeLiveExpandedDetailFields(
+  List<LiveExpandedDetailField>? fields,
+) => fields == null ? null : [for (final f in fields) f.value];
+
 class LiveDisplaySettings {
   final bool showCourseName;
   final bool showLocation;
@@ -756,6 +810,9 @@ class LiveDisplaySettings {
   final MiuiIslandExpandedIconMode miuiIslandExpandedIconMode;
   final String? miuiIslandExpandedIconPath;
 
+  /// 展开态详情字段（可见 + 顺序）；null = 全部显示（默认/老数据）。
+  final List<LiveExpandedDetailField>? expandedDetailFields;
+
   const LiveDisplaySettings({
     required this.showCourseName,
     required this.showLocation,
@@ -778,6 +835,7 @@ class LiveDisplaySettings {
     required this.miuiIslandLabelLogoCornerRadius,
     required this.miuiIslandExpandedIconMode,
     required this.miuiIslandExpandedIconPath,
+    this.expandedDetailFields,
   });
 
   LiveDisplaySettings copyWith({
@@ -804,6 +862,8 @@ class LiveDisplaySettings {
     MiuiIslandExpandedIconMode? miuiIslandExpandedIconMode,
     String? miuiIslandExpandedIconPath,
     bool clearMiuiIslandExpandedIconPath = false,
+    List<LiveExpandedDetailField>? expandedDetailFields,
+    bool clearExpandedDetailFields = false,
   }) {
     return LiveDisplaySettings(
       showCourseName: showCourseName ?? this.showCourseName,
@@ -843,6 +903,9 @@ class LiveDisplaySettings {
       miuiIslandExpandedIconPath: clearMiuiIslandExpandedIconPath
           ? null
           : miuiIslandExpandedIconPath ?? this.miuiIslandExpandedIconPath,
+      expandedDetailFields: clearExpandedDetailFields
+          ? null
+          : expandedDetailFields ?? this.expandedDetailFields,
     );
   }
 }
@@ -1295,6 +1358,10 @@ class TimetableSettings {
   final double liveMiuiIslandLabelLogoCornerRadius;
   final MiuiIslandExpandedIconMode liveMiuiIslandExpandedIconMode;
   final String? liveMiuiIslandExpandedIconPath;
+
+  /// 展开态详情字段（可见+顺序）；null = 全部显示。存原始字符串以便原生透传。
+  final List<String>? liveExpandedDetailFields;
+  final List<String>? liveDuringEndExpandedDetailFields;
   final MiuiIslandLabelStyle liveDuringEndMiuiIslandLabelStyle;
   final MiuiIslandLabelContent liveDuringEndMiuiIslandLabelContent;
   final String liveDuringEndMiuiIslandLabelFontColor;
@@ -1521,6 +1588,8 @@ class TimetableSettings {
     this.liveDuringEndMiuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     this.liveDuringEndMiuiIslandExpandedIconPath,
+    this.liveExpandedDetailFields,
+    this.liveDuringEndExpandedDetailFields,
     this.liveShowBeforeClassMinutes = 20,
     this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
@@ -1706,6 +1775,8 @@ class TimetableSettings {
           liveMiuiIslandLabelLogoCornerRadius,
       'liveMiuiIslandExpandedIconMode': liveMiuiIslandExpandedIconMode.value,
       'liveMiuiIslandExpandedIconPath': liveMiuiIslandExpandedIconPath,
+      'liveExpandedDetailFields': liveExpandedDetailFields,
+      'liveDuringEndExpandedDetailFields': liveDuringEndExpandedDetailFields,
       'liveDuringEndMiuiIslandLabelStyle':
           liveDuringEndMiuiIslandLabelStyle.value,
       'liveDuringEndMiuiIslandLabelContent':
@@ -2114,6 +2185,10 @@ class TimetableSettings {
       liveDuringEndMiuiIslandExpandedIconPath:
           json['liveDuringEndMiuiIslandExpandedIconPath'] as String? ??
           json['liveMiuiIslandExpandedIconPath'] as String?,
+      liveExpandedDetailFields: _safeStringList(json['liveExpandedDetailFields']),
+      liveDuringEndExpandedDetailFields:
+          _safeStringList(json['liveDuringEndExpandedDetailFields']) ??
+              _safeStringList(json['liveExpandedDetailFields']),
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:
@@ -2394,6 +2469,10 @@ class TimetableSettings {
     MiuiIslandExpandedIconMode? liveDuringEndMiuiIslandExpandedIconMode,
     String? liveDuringEndMiuiIslandExpandedIconPath,
     bool clearLiveDuringEndMiuiIslandExpandedIconPath = false,
+    List<String>? liveExpandedDetailFields,
+    bool clearLiveExpandedDetailFields = false,
+    List<String>? liveDuringEndExpandedDetailFields,
+    bool clearLiveDuringEndExpandedDetailFields = false,
     int? liveShowBeforeClassMinutes,
     int? liveClassReminderStartMinutes,
     int? liveEndSecondsCountdownThreshold,
@@ -2694,6 +2773,13 @@ class TimetableSettings {
           ? null
           : liveDuringEndMiuiIslandExpandedIconPath ??
                 this.liveDuringEndMiuiIslandExpandedIconPath,
+      liveExpandedDetailFields: clearLiveExpandedDetailFields
+          ? null
+          : liveExpandedDetailFields ?? this.liveExpandedDetailFields,
+      liveDuringEndExpandedDetailFields: clearLiveDuringEndExpandedDetailFields
+          ? null
+          : liveDuringEndExpandedDetailFields ??
+                this.liveDuringEndExpandedDetailFields,
       liveShowBeforeClassMinutes:
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
       liveClassReminderStartMinutes:
@@ -2872,6 +2958,8 @@ class TimetableSettings {
     miuiIslandLabelLogoCornerRadius: liveMiuiIslandLabelLogoCornerRadius,
     miuiIslandExpandedIconMode: liveMiuiIslandExpandedIconMode,
     miuiIslandExpandedIconPath: liveMiuiIslandExpandedIconPath,
+    expandedDetailFields:
+        parseLiveExpandedDetailFields(liveExpandedDetailFields),
   );
 
   LiveDisplaySettings get duringEndDisplaySettings =>
@@ -2901,12 +2989,16 @@ class TimetableSettings {
               liveDuringEndMiuiIslandLabelLogoCornerRadius,
           miuiIslandExpandedIconMode: liveDuringEndMiuiIslandExpandedIconMode,
           miuiIslandExpandedIconPath: liveDuringEndMiuiIslandExpandedIconPath,
+          expandedDetailFields: parseLiveExpandedDetailFields(
+            liveDuringEndExpandedDetailFields ?? liveExpandedDetailFields,
+          ),
         );
 
   TimetableSettings copyWithBeforeClassDisplaySettings(
     LiveDisplaySettings settings, {
     bool clearExpandedIconPath = false,
     bool clearLabelLogoPath = false,
+    bool clearExpandedDetailFields = false,
   }) {
     return copyWith(
       liveShowCourseName: settings.showCourseName,
@@ -2933,6 +3025,9 @@ class TimetableSettings {
       liveMiuiIslandExpandedIconMode: settings.miuiIslandExpandedIconMode,
       liveMiuiIslandExpandedIconPath: settings.miuiIslandExpandedIconPath,
       clearLiveMiuiIslandExpandedIconPath: clearExpandedIconPath,
+      clearLiveExpandedDetailFields: clearExpandedDetailFields,
+      liveExpandedDetailFields:
+          encodeLiveExpandedDetailFields(settings.expandedDetailFields),
     );
   }
 
@@ -2940,6 +3035,7 @@ class TimetableSettings {
     LiveDisplaySettings settings, {
     bool clearExpandedIconPath = false,
     bool clearLabelLogoPath = false,
+    bool clearExpandedDetailFields = false,
   }) {
     return copyWith(
       liveDuringEndShowCourseName: settings.showCourseName,
@@ -2971,6 +3067,9 @@ class TimetableSettings {
       liveDuringEndMiuiIslandExpandedIconPath:
           settings.miuiIslandExpandedIconPath,
       clearLiveDuringEndMiuiIslandExpandedIconPath: clearExpandedIconPath,
+      clearLiveDuringEndExpandedDetailFields: clearExpandedDetailFields,
+      liveDuringEndExpandedDetailFields:
+          encodeLiveExpandedDetailFields(settings.expandedDetailFields),
     );
   }
 

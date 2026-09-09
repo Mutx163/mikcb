@@ -10839,4 +10839,40 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get classAlarmDetailSeparator => '; ';
+
+  @override
+  String get liveExpandedDetailGroupTitle => '펼침 상세';
+
+  @override
+  String get liveExpandedDetailHiddenCaption => '숨김';
+
+  @override
+  String get resetExpandedDetailDefaultAction => '기본 순서와 표시로 복원';
+
+  @override
+  String get liveExpandedDetailFieldStage => '단계';
+
+  @override
+  String get liveExpandedDetailFieldShortName => '짧은 이름';
+
+  @override
+  String get liveExpandedDetailFieldProgress => '진행 상황';
+
+  @override
+  String get liveExpandedDetailFieldStatus => '상태';
+
+  @override
+  String get liveExpandedDetailFieldTime => '시간';
+
+  @override
+  String get liveExpandedDetailFieldLocation => '장소';
+
+  @override
+  String get liveExpandedDetailFieldTeacher => '선생님';
+
+  @override
+  String get liveExpandedDetailFieldNext => '다음 수업';
+
+  @override
+  String get liveExpandedDetailFieldNote => '메모';
 }

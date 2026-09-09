@@ -10501,6 +10501,42 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get classAlarmDetailSeparator => '；';
+
+  @override
+  String get liveExpandedDetailGroupTitle => '展开详情';
+
+  @override
+  String get liveExpandedDetailHiddenCaption => '已隐藏';
+
+  @override
+  String get resetExpandedDetailDefaultAction => '恢复默认顺序与显示';
+
+  @override
+  String get liveExpandedDetailFieldStage => '阶段';
+
+  @override
+  String get liveExpandedDetailFieldShortName => '课程简称';
+
+  @override
+  String get liveExpandedDetailFieldProgress => '进度';
+
+  @override
+  String get liveExpandedDetailFieldStatus => '状态';
+
+  @override
+  String get liveExpandedDetailFieldTime => '上课时间';
+
+  @override
+  String get liveExpandedDetailFieldLocation => '地点';
+
+  @override
+  String get liveExpandedDetailFieldTeacher => '老师';
+
+  @override
+  String get liveExpandedDetailFieldNext => '下节课';
+
+  @override
+  String get liveExpandedDetailFieldNote => '备注';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21044,6 +21080,42 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get classAlarmDetailSeparator => '；';
+
+  @override
+  String get liveExpandedDetailGroupTitle => '展開詳情';
+
+  @override
+  String get liveExpandedDetailHiddenCaption => '已隱藏';
+
+  @override
+  String get resetExpandedDetailDefaultAction => '恢復預設順序與顯示';
+
+  @override
+  String get liveExpandedDetailFieldStage => '階段';
+
+  @override
+  String get liveExpandedDetailFieldShortName => '課程簡稱';
+
+  @override
+  String get liveExpandedDetailFieldProgress => '進度';
+
+  @override
+  String get liveExpandedDetailFieldStatus => '狀態';
+
+  @override
+  String get liveExpandedDetailFieldTime => '上課時間';
+
+  @override
+  String get liveExpandedDetailFieldLocation => '地點';
+
+  @override
+  String get liveExpandedDetailFieldTeacher => '老師';
+
+  @override
+  String get liveExpandedDetailFieldNext => '下節課';
+
+  @override
+  String get liveExpandedDetailFieldNote => '備註';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -31587,4 +31659,40 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get classAlarmDetailSeparator => '；';
+
+  @override
+  String get liveExpandedDetailGroupTitle => '展開詳情';
+
+  @override
+  String get liveExpandedDetailHiddenCaption => '已隱藏';
+
+  @override
+  String get resetExpandedDetailDefaultAction => '恢復預設順序與顯示';
+
+  @override
+  String get liveExpandedDetailFieldStage => '階段';
+
+  @override
+  String get liveExpandedDetailFieldShortName => '課程簡稱';
+
+  @override
+  String get liveExpandedDetailFieldProgress => '進度';
+
+  @override
+  String get liveExpandedDetailFieldStatus => '狀態';
+
+  @override
+  String get liveExpandedDetailFieldTime => '上課時間';
+
+  @override
+  String get liveExpandedDetailFieldLocation => '地點';
+
+  @override
+  String get liveExpandedDetailFieldTeacher => '老師';
+
+  @override
+  String get liveExpandedDetailFieldNext => '下節課';
+
+  @override
+  String get liveExpandedDetailFieldNote => '備註';
 }

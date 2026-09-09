@@ -929,6 +929,9 @@ Future<void> _liveUpdateActivityBody(
           displaySettings.miuiIslandLabelLogoCornerRadius,
       miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
+      expandedDetailFields: displaySettings.expandedDetailFields
+          ?.map((field) => field.value)
+          .toList(),
       beforeClassQuickAction: settings.liveBeforeClassQuickAction,
       beforeClassQuickActionAutoMinutes:
           settings.liveBeforeClassQuickActionAutoMinutes,

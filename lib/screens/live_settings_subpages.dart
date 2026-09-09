@@ -758,6 +758,27 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ],
         ),
       ),
+      const HyperosSectionGap(),
+      HyperosSectionLabel(text: l10n.liveExpandedDetailGroupTitle),
+      HyperosListGroup(
+        children: [
+          ..._buildExpandedDetailRows(display, l10n),
+        ],
+      ),
+      if (display.expandedDetailFields != null) ...[const HyperosSectionGap(),
+        HyperosListGroup(
+          children: [
+            HyperosActionTile(
+              icon: Icons.restore_rounded,
+              title: l10n.resetExpandedDetailDefaultAction,
+              onTap: () => _updateDisplay(
+                display.copyWith(clearExpandedDetailFields: true),
+                clearExpandedDetailFields: true,
+              ),
+            ),
+          ],
+        ),
+      ],
     ];
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -813,19 +834,93 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     bool debounce = false,
     bool clearExpandedIconPath = false,
     bool clearLabelLogoPath = false,
+    bool clearExpandedDetailFields = false,
   }) {
     final nextSettings = widget.forDuringEnd
         ? _draft.copyWithDuringEndDisplaySettings(
             next,
             clearExpandedIconPath: clearExpandedIconPath,
             clearLabelLogoPath: clearLabelLogoPath,
+            clearExpandedDetailFields: clearExpandedDetailFields,
           )
         : _draft.copyWithBeforeClassDisplaySettings(
             next,
             clearExpandedIconPath: clearExpandedIconPath,
             clearLabelLogoPath: clearLabelLogoPath,
+            clearExpandedDetailFields: clearExpandedDetailFields,
           );
     _updateDraft(nextSettings, debounce: debounce);
+  }
+
+  /// 展开详情当前工作顺序（默认 = 全部字段默认顺序）。
+  List<LiveExpandedDetailField> _expandedFieldWorkOrder(
+    LiveDisplaySettings display,
+  ) =>
+      display.expandedDetailFields == null
+          ? List.of(LiveExpandedDetailField.values)
+          : List.of(display.expandedDetailFields!);
+
+  List<Widget> _buildExpandedDetailRows(
+    LiveDisplaySettings display,
+    AppLocalizations l10n,
+  ) {
+    final enabledList = _expandedFieldWorkOrder(display);
+    final disabledList = <LiveExpandedDetailField>[
+      for (final field in LiveExpandedDetailField.values)
+        if (!enabledList.contains(field)) field,
+    ];
+    final allFields = [...enabledList, ...disabledList];
+    final hasHiddenSection = disabledList.isNotEmpty;
+    final rows = <Widget>[];
+    for (var i = 0; i < allFields.length; i++) {
+      if (hasHiddenSection && i == enabledList.length) {
+        rows.add(_HiddenFieldsCaption(title: l10n.liveExpandedDetailHiddenCaption));
+      }
+      final field = allFields[i];
+      rows.add(
+        _ExpandedDetailFieldRow(
+          key: ValueKey(field),
+          title: liveExpandedDetailFieldLabel(l10n, field),
+          enabled: i < enabledList.length,
+          canMoveUp: i > 0 && i < enabledList.length,
+          canMoveDown: i < enabledList.length - 1,
+          onToggle: (_) => _toggleExpandedDetailField(display, field),
+          onMoveUp: i > 0 && i < enabledList.length
+              ? () => _moveExpandedDetailField(display, i, -1)
+              : null,
+          onMoveDown: i < enabledList.length - 1
+              ? () => _moveExpandedDetailField(display, i, 1)
+              : null,
+        ),
+      );
+    }
+    return rows;
+  }
+
+  void _toggleExpandedDetailField(
+    LiveDisplaySettings display,
+    LiveExpandedDetailField field,
+  ) {
+    final work = _expandedFieldWorkOrder(display);
+    if (work.contains(field)) {
+      work.remove(field);
+    } else {
+      work.add(field);
+    }
+    _updateDisplay(display.copyWith(expandedDetailFields: work));
+  }
+
+  void _moveExpandedDetailField(
+    LiveDisplaySettings display,
+    int index,
+    int delta,
+  ) {
+    final work = _expandedFieldWorkOrder(display);
+    final target = index + delta;
+    if (target < 0 || target >= work.length) return;
+    final field = work.removeAt(index);
+    work.insert(target, field);
+    _updateDisplay(display.copyWith(expandedDetailFields: work));
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
@@ -1259,4 +1354,119 @@ class _ImagePreview extends StatelessWidget {
 
 Color _parseColor(String hexColor) {
   return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
+}
+
+/// 展开详情字段列表中「已隐藏」区块的标题行。
+class _HiddenFieldsCaption extends StatelessWidget {
+  const _HiddenFieldsCaption({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: hyperosRowPadding(context),
+      child: SizedBox(
+        height: HyperosTokens.listRowMinHeight,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            title,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: HyperosColors.secondaryText(context),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 展开详情字段的一行：上下箭头调整顺序 + 标题 + 显示开关。
+class _ExpandedDetailFieldRow extends StatelessWidget {
+  const _ExpandedDetailFieldRow({
+    super.key,
+    required this.title,
+    required this.enabled,
+    required this.onToggle,
+    this.canMoveUp = false,
+    this.canMoveDown = false,
+    this.onMoveUp,
+    this.onMoveDown,
+  });
+
+  final String title;
+  final bool enabled;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = HyperosColors.primaryText(context);
+    final secondary = HyperosColors.secondaryText(context);
+    final arrowColor = enabled ? secondary : secondary.withValues(alpha: 0.35);
+    return Padding(
+      padding: hyperosRowPadding(context),
+      child: SizedBox(
+        height: HyperosTokens.listRowMinHeight,
+        child: Row(
+          children: [
+            _ReorderArrowButton(
+              icon: Icons.keyboard_arrow_up_rounded,
+              enabled: canMoveUp,
+              color: arrowColor,
+              onTap: onMoveUp,
+            ),
+            _ReorderArrowButton(
+              icon: Icons.keyboard_arrow_down_rounded,
+              enabled: canMoveDown,
+              color: arrowColor,
+              onTap: onMoveDown,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: HyperosTypography.listTitle(context).copyWith(
+                  color: enabled ? primary : primary.withValues(alpha: 0.45),
+                ),
+              ),
+            ),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            HyperosSwitch(value: enabled, onChanged: onToggle),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReorderArrowButton extends StatelessWidget {
+  const _ReorderArrowButton({
+    required this.icon,
+    required this.enabled,
+    required this.color,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: enabled ? onTap : null,
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+      icon: Icon(icon, size: 20, color: color),
+    );
+  }
 }

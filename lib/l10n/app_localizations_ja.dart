@@ -10795,4 +10795,40 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get classAlarmDetailSeparator => '；';
+
+  @override
+  String get liveExpandedDetailGroupTitle => '展開詳細';
+
+  @override
+  String get liveExpandedDetailHiddenCaption => '非表示';
+
+  @override
+  String get resetExpandedDetailDefaultAction => '既定の順序と表示に戻す';
+
+  @override
+  String get liveExpandedDetailFieldStage => '段階';
+
+  @override
+  String get liveExpandedDetailFieldShortName => '短縮名';
+
+  @override
+  String get liveExpandedDetailFieldProgress => '進捗状況';
+
+  @override
+  String get liveExpandedDetailFieldStatus => '状態';
+
+  @override
+  String get liveExpandedDetailFieldTime => '時間';
+
+  @override
+  String get liveExpandedDetailFieldLocation => '場所';
+
+  @override
+  String get liveExpandedDetailFieldTeacher => '先生';
+
+  @override
+  String get liveExpandedDetailFieldNext => '次の授業';
+
+  @override
+  String get liveExpandedDetailFieldNote => 'メモ';
 }

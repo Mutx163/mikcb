@@ -19091,6 +19091,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'；'**
   String get classAlarmDetailSeparator;
+
+  /// No description provided for @liveExpandedDetailGroupTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开详情'**
+  String get liveExpandedDetailGroupTitle;
+
+  /// No description provided for @liveExpandedDetailHiddenCaption.
+  ///
+  /// In zh, this message translates to:
+  /// **'已隐藏'**
+  String get liveExpandedDetailHiddenCaption;
+
+  /// No description provided for @resetExpandedDetailDefaultAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认顺序与显示'**
+  String get resetExpandedDetailDefaultAction;
+
+  /// No description provided for @liveExpandedDetailFieldStage.
+  ///
+  /// In zh, this message translates to:
+  /// **'阶段'**
+  String get liveExpandedDetailFieldStage;
+
+  /// No description provided for @liveExpandedDetailFieldShortName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程简称'**
+  String get liveExpandedDetailFieldShortName;
+
+  /// No description provided for @liveExpandedDetailFieldProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'进度'**
+  String get liveExpandedDetailFieldProgress;
+
+  /// No description provided for @liveExpandedDetailFieldStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态'**
+  String get liveExpandedDetailFieldStatus;
+
+  /// No description provided for @liveExpandedDetailFieldTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课时间'**
+  String get liveExpandedDetailFieldTime;
+
+  /// No description provided for @liveExpandedDetailFieldLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点'**
+  String get liveExpandedDetailFieldLocation;
+
+  /// No description provided for @liveExpandedDetailFieldTeacher.
+  ///
+  /// In zh, this message translates to:
+  /// **'老师'**
+  String get liveExpandedDetailFieldTeacher;
+
+  /// No description provided for @liveExpandedDetailFieldNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下节课'**
+  String get liveExpandedDetailFieldNext;
+
+  /// No description provided for @liveExpandedDetailFieldNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'备注'**
+  String get liveExpandedDetailFieldNote;
 }
 
 class _AppLocalizationsDelegate

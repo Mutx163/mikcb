@@ -10,6 +10,29 @@ import java.util.TimeZone
 
 class LiveUpdateSchedulerLogicTest {
     @Test
+    fun parseExpandedDetailFieldsNullMeansShowAll() {
+        assertNull(parseExpandedDetailFields(null))
+        assertNull(parseExpandedDetailFields("not-a-list"))
+    }
+
+    @Test
+    fun parseExpandedDetailFieldsEmptyListMeansHideAll() {
+        assertEquals(emptyList<String>(), parseExpandedDetailFields(emptyList<String>()))
+    }
+
+    @Test
+    fun parseExpandedDetailFieldsKeepsOrderAndDropsBlank() {
+        assertEquals(
+            listOf("note", "teacher", "location"),
+            parseExpandedDetailFields(listOf("note", "", "teacher", "location")),
+        )
+        assertEquals(
+            listOf("stage", "next"),
+            parseExpandedDetailFields(listOf("stage", "next")),
+        )
+    }
+
+    @Test
     fun fgsRetryBackoffGrowsExponentiallyAndCapsAtFifteenMinutes() {
         assertEquals(60_000L, liveSchedulerFgsRetryDelayMillis(1))
         assertEquals(120_000L, liveSchedulerFgsRetryDelayMillis(2))
