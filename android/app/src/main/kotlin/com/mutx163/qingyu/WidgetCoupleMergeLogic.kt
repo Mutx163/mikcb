@@ -110,4 +110,42 @@ internal object WidgetCoupleMergeLogic {
         }
         return merged
     }
+
+    /**
+     * 按「星期几 → 该日所属教学周」分天配对着色后拼接完整列表。
+     *
+     * 快照会同时展示今天与明天；跨教学周时（如周日→下周一）两天的
+     * together/TA 消费结果不同，不能只用今天周烘焙整表颜色。Dart 侧
+     * `_liveCoupleMergedDayCourses` 也是按目标日的 week 合并。
+     * 同行程配对本就要求同一天，分天 [mergeCoupleCourses] 与全表合并
+     * 在同一周时等价。
+     *
+     * @param dayWeeks 星期几（1=周一…7=周日，与 [WidgetSourceCourse.dayOfWeek]
+     *   同口径）→ 配对用的教学周；未出现的星期回落 [defaultWeek]。
+     * @param defaultWeek 无 dayWeeks 命中时的配对周；null 与
+     *   [mergeCoupleCourses] 的 myWeek=null 一致（不过滤周有效性）。
+     */
+    fun mergeCoupleCoursesForDays(
+        mine: List<WidgetSourceCourse>,
+        partnerShifted: List<WidgetSourceCourse>,
+        colors: CoupleColors = CoupleColors(),
+        defaultWeek: Int? = null,
+        dayWeeks: Map<Int, Int>,
+    ): List<WidgetSourceCourse> {
+        val days = LinkedHashSet<Int>().apply {
+            mine.forEach { add(it.dayOfWeek) }
+            partnerShifted.forEach { add(it.dayOfWeek) }
+        }
+        val merged = mutableListOf<WidgetSourceCourse>()
+        for (day in days) {
+            val week = dayWeeks[day] ?: defaultWeek
+            merged += mergeCoupleCourses(
+                mine = mine.filter { it.dayOfWeek == day },
+                partnerShifted = partnerShifted.filter { it.dayOfWeek == day },
+                colors = colors,
+                myWeek = week,
+            )
+        }
+        return merged
+    }
 }

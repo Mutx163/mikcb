@@ -573,20 +573,42 @@ object TodayWidgetSupport {
         // 不按 semesterWeekCount 钳制），保证同行程配对只发生在双方本周都有效的
         // 课程之间，与 Dart 侧逐周合并的行为一致。
         val mySettings = myProfile.optJSONObject("settings") ?: JSONObject()
+        val semesterStartMillis = mySettings.optLong("semesterStartDate").takeIf { it > 0L }
+        val fallbackWeek = myProfile.optInt("currentWeek", 1).coerceAtLeast(1)
         val myWeek = liveSchedulerCalculateCalendarWeekForDate(
-            semesterStartMillis = mySettings.optLong("semesterStartDate").takeIf { it > 0L },
-            currentWeek = myProfile.optInt("currentWeek", 1).coerceAtLeast(1),
+            semesterStartMillis = semesterStartMillis,
+            currentWeek = fallbackWeek,
             dateMillis = nowMillis,
+        )
+        // 快照会同时展示今天/明天；跨教学周时（周日→周一）配对必须按
+        // 各自日历周分别进行，否则「明天」沿用今天一起/TA 消费结果，
+        // 与 Dart _liveCoupleMergedDayCourses 逐日合并不一致。
+        val todayWeekday = Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+        }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
+        val tomorrowCal = Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+        val tomorrowWeek = liveSchedulerCalculateCalendarWeekForDate(
+            semesterStartMillis = semesterStartMillis,
+            currentWeek = fallbackWeek,
+            dateMillis = tomorrowCal.timeInMillis,
+        )
+        val dayWeeks = mapOf(
+            todayWeekday to myWeek,
+            tomorrowCal.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday) to tomorrowWeek,
         )
         val mine = parseSourceCourses(myProfile.optJSONArray("courses"))
         val partnerShifted =
             parseSourceCourses(partnerProfile.optJSONArray("courses"))
                 .map { WidgetCoupleMergeLogic.shiftPartnerCourseToMyWeeks(it, binding.weekOffset) }
-        val merged = WidgetCoupleMergeLogic.mergeCoupleCourses(
-            mine,
-            partnerShifted,
-            binding.colors,
-            myWeek = myWeek,
+        val merged = WidgetCoupleMergeLogic.mergeCoupleCoursesForDays(
+            mine = mine,
+            partnerShifted = partnerShifted,
+            colors = binding.colors,
+            defaultWeek = myWeek,
+            dayWeeks = dayWeeks,
         )
         return CoupleMergedSource(myProfileJson = myProfile, mergedCourses = merged)
     }

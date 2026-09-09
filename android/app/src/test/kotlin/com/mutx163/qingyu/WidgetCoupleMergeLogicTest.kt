@@ -234,4 +234,89 @@ class WidgetCoupleMergeLogicTest {
         assertEquals("#FF00FF", week4.first { it.id == "h" }.color)
         assertTrue(week4.none { it.id == "p" })
     }
+
+    @Test
+    fun mergeForDaysColorsTomorrowWithItsOwnWeek() {
+        // 我的高数：周一，1-20 周全上；TA 高数（已平移）：仅第 4 周。
+        // 今天=周日第 3 周（day 7），明天=周一第 4 周（day 1）。
+        val mine = listOf(course("a", dayOfWeek = 1, startWeek = 1, endWeek = 20))
+        val partnerShifted = listOf(
+            course("p", dayOfWeek = 1, startWeek = 4, endWeek = 4),
+        )
+        val colors = WidgetCoupleMergeLogic.CoupleColors(
+            mine = "#0000FF",
+            partner = "#FF0000",
+            together = "#FF00FF",
+        )
+
+        val merged = WidgetCoupleMergeLogic.mergeCoupleCoursesForDays(
+            mine = mine,
+            partnerShifted = partnerShifted,
+            colors = colors,
+            defaultWeek = 3,
+            dayWeeks = mapOf(7 to 3, 1 to 4),
+        )
+
+        // 周一按第 4 周配对：一起课，TA 被消费。
+        assertEquals("#FF00FF", merged.first { it.id == "a" }.color)
+        assertTrue(merged.none { it.id == "p" })
+    }
+
+    @Test
+    fun mergeForDaysKeepsMineColorWhenPartnerOnlyActiveOnTodayWeek() {
+        // 课都在周一；今天=周日第 3 周、明天=周一第 4 周。
+        // TA（已平移）只在第 3 周：若错用今天周配对会一起色并吞掉 TA，
+        // 明天列表必须按第 4 周——我的课我方色、TA 保留（周过滤会丢掉它）。
+        val mine = listOf(
+            course("a", dayOfWeek = 1, startWeek = 1, endWeek = 20),
+        )
+        val partnerShifted = listOf(
+            course("p", dayOfWeek = 1, startWeek = 3, endWeek = 3),
+        )
+        val colors = WidgetCoupleMergeLogic.CoupleColors(
+            mine = "#0000FF",
+            partner = "#FF0000",
+            together = "#FF00FF",
+        )
+
+        val merged = WidgetCoupleMergeLogic.mergeCoupleCoursesForDays(
+            mine = mine,
+            partnerShifted = partnerShifted,
+            colors = colors,
+            defaultWeek = 4,
+            dayWeeks = mapOf(7 to 3, 1 to 4),
+        )
+
+        // 周一按第 4 周：TA 不在该周，我的课必须是我方色而非一起色。
+        assertEquals("#0000FF", merged.first { it.id == "a" }.color)
+        // TA 课不在第 4 周有效，merge 仍追加（渲染层按周过滤），颜色为 partner。
+        assertEquals("#FF0000", merged.first { it.id == "p" }.color)
+    }
+
+    @Test
+    fun mergeForDaysSameWeekEqualsFullMerge() {
+        val mine = listOf(
+            course("a", dayOfWeek = 1),
+            course("b", dayOfWeek = 2),
+        )
+        val partnerShifted = listOf(
+            course("p", dayOfWeek = 1, startSection = 1, endSection = 2),
+        )
+        val colors = WidgetCoupleMergeLogic.CoupleColors()
+
+        val byDay = WidgetCoupleMergeLogic.mergeCoupleCoursesForDays(
+            mine = mine,
+            partnerShifted = partnerShifted,
+            colors = colors,
+            defaultWeek = 5,
+            dayWeeks = mapOf(1 to 5, 2 to 5),
+        )
+        val full = WidgetCoupleMergeLogic.mergeCoupleCourses(
+            mine, partnerShifted, colors, myWeek = 5,
+        )
+        assertEquals(
+            full.map { it.id to it.color }.toSet(),
+            byDay.map { it.id to it.color }.toSet(),
+        )
+    }
 }
