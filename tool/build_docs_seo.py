@@ -226,7 +226,6 @@ def site_header(prefix: str) -> str:
       <a href="{prefix}schools.html">适配学校</a>
       <a href="{prefix}releases/">更新</a>
       <a href="{home}#faq">常见问题</a>
-      <a href="https://docs.163366.xyz/docs/">文档</a>
       <a href="{home}#download">下载</a>
     </nav>
     <div class="nav-actions">
