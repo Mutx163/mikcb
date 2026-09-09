@@ -1,0 +1,60 @@
+---
+title: 架构概览
+description: 轻屿课表的技术栈、分层结构与超级岛的实现路径。
+---
+
+## 技术栈
+
+| 层 | 选型 |
+| --- | --- |
+| UI 框架 | Flutter 3.44.8（最低 3.44.2 / Dart 3.12.2） |
+| 状态管理 | Provider |
+| 本地存储 | SharedPreferences |
+| HyperOS 风格组件 | flutter_miuix |
+| 液态玻璃界面 | liquid_glass_widgets |
+| 统计图表 | fl_chart |
+| 二维码传输 | mobile_scanner / fountain_codes |
+| 原生能力 | Android Notification、Foreground Service、AlarmClock |
+| 构建与发布 | GitHub Actions / GitHub Releases |
+
+平台侧：compileSdk 36 / targetSdk 36 / minSdk 26，JDK 17，Gradle 8.14，Kotlin 2.2.20。
+
+## 分层结构
+
+```
+Flutter UI（课程表页 / 日视图 / 设置 / 统计）
+        ↓
+Provider（课表状态、超级岛控制器、设置）
+        ↓
+Services（存储、同步、导入解析、MiuiLiveActivitiesService）
+        ↓
+Platform（Android 原生：通知、前台服务、小组件、超级岛）
+```
+
+平台通信通过 MethodChannel 完成，`MiuiLiveActivitiesService` 是 Flutter 侧与原生超级岛能力之间的桥。
+
+## 超级岛实现要点
+
+超级岛本质是 Android 焦点通知（promoted ongoing），小米 / HyperOS 在其上做了系统级展示。
+
+- 由原生侧维护通知渠道与焦点通知状态
+- Flutter 侧按当前课表与当前时间计算「课前 / 课中 / 下课」三阶段
+- 阶段变化通过 MethodChannel 下发到原生刷新通知
+- 通知与超级岛跟随当前课表切换，考试安排同样进入提醒链路
+
+机型识别走 `getLiveUpdateDebugStatus()['environment']['isXiaomiFamilyDevice']`，与原生判定同源。
+
+<Callout type="info">
+  超级岛的显示分区有约定：摄像头左侧是通知 smallIcon，不承载文本；右侧是整条 critical text。改动预览组件时需要同步原生实现。
+</Callout>
+
+## 数据模型
+
+课程的核心字段包括名称、简称、教师、地点、星期、起止节次、起止时间、颜色、周次范围、单双周标记与备注。
+
+持久化以 SharedPreferences 为主，备份导出为明文文件，WebDAV 同步在此基础上增加历史快照。
+
+## 相关
+
+- [参与贡献](/docs/dev/contributing)：环境准备与开发约定
+- 更细的实现记录在仓库 `docs/architecture/` 与 `docs/reference/`

@@ -1,0 +1,54 @@
+---
+title: 参与贡献
+description: 开发环境、构建命令、代码约定与提交流程。
+---
+
+## 环境准备
+
+版本真源是仓库根的 `.fvmrc`。当前稳定版 Flutter **3.44.8**，最低支持 3.44.2 / Dart 3.12.2。
+
+| 工具 | 版本 |
+| --- | --- |
+| Flutter | 3.44.8 |
+| Dart SDK | `>=3.12.2 <4.0.0` |
+| JDK | 17 |
+| Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
+| Gradle | 8.14 |
+| Kotlin | 2.2.20 |
+
+## 常用命令
+
+```bash
+flutter pub get
+flutter run -d android --flavor dev      # 本地开发
+flutter test                              # 测试
+flutter analyze --no-fatal-infos          # 静态分析
+flutter build apk --release --flavor prod --target-platform android-arm64
+```
+
+<Callout type="warn">
+  在本仓库跑 `flutter test` 需要绕开本地代理，否则 flutter_tester 的本机 WebSocket 会被拦截，报 `Invalid WebSocket upgrade request`。这与代码无关，官方模板同样会失败。
+</Callout>
+
+## 代码约定
+
+- 静态分析基线为 0 error、0 warning
+- 界面文案统一走 l10n（ARB 文件），新增文案需同步各语言
+- 应用支持简体中文、繁体中文（台湾 / 香港）、英文、日文、韩文
+- 修改超级岛规则时，需同步原生实现、预览组件与对应测试
+
+## 提交与 PR
+
+- 提交信息用中文，说明改了什么与为什么
+- 小步提交，避免把无关文件一起提交
+- 仓库是共享工作区，常有并行开发，提交前确认只暂存自己负责的路径
+
+更完整的约定见仓库的 [CONTRIBUTING.md](https://github.com/Mutx163/mikcb/blob/main/CONTRIBUTING.md) 与 [行为准则](https://github.com/Mutx163/mikcb/blob/main/CODE_OF_CONDUCT.md)。
+
+## 参与学校适配
+
+教务适配在独立仓库 [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)。需要网页调试、抓包或 JavaScript 基础，欢迎为自己学校补充适配脚本。
+
+## 文档贡献
+
+本站内容在仓库 `site/content/docs` 下，使用 MDX 编写。修改后提交 PR 即可；构建与上线步骤见[构建与部署](/docs/dev/deployment)。

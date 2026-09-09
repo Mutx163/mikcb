@@ -1,0 +1,67 @@
+---
+title: 快速开始
+description: 下载安装轻屿课表，完成权限配置并建立第一张课表。
+---
+
+## 下载与安装
+
+- 正式包发布在 [GitHub Releases](https://github.com/Mutx163/mikcb/releases)，当前以 `arm64-v8a` 为主
+- 也可以从[官网](https://163366.xyz)下载最新版本
+- 系统要求：Android 8.0（API 26）及以上，重点适配小米 / HyperOS 设备
+
+应用为 GPL-3.0 开源，无需注册账号，也没有广告。
+
+## 首次启动建议开启的权限
+
+如果你主要使用超级岛或实时通知，建议在系统设置里同时打开：
+
+<Steps>
+<Step>
+**通知权限**：Android 13+ 需要显式授予，否则收不到课前提醒。
+</Step>
+<Step>
+**自启动**：保证重启后提醒链路能自动恢复。
+</Step>
+<Step>
+**电池无限制**：避免系统后台冻结导致提醒延迟或丢失。
+</Step>
+<Step>
+**焦点通知 / promoted ongoing 权限**：超级岛显示的前置条件。
+</Step>
+</Steps>
+
+<Callout type="warn">
+  不同 MIUI / HyperOS 版本的入口名称差异较大。若找不到某一项，可在系统设置中搜索「自启动」「电池优化」「焦点通知」。
+</Callout>
+
+## 建立第一张课表
+
+有三种方式，按推荐顺序：
+
+<Cards>
+  <Card title="教务系统导入" href="/docs/guide/import">
+    学校已适配时最快，网页登录后自动抓取
+  </Card>
+  <Card title="ICS 导入" href="/docs/guide/import">
+    从其他课表应用导出的 .ics 文件
+  </Card>
+  <Card title="手动添加" href="/docs/guide/import">
+    课程不多时直接录入
+  </Card>
+</Cards>
+
+## 设置时间模板
+
+导入或录入课程前，建议先按学校作息配置节次时间：
+
+1. 进入设置中的**时间模板**
+2. 按本校作息调整每节课的起止时间
+3. 保存后，课表的行高与提醒时间会按新模板计算
+
+时间模板会影响提醒的触发时刻。如果模板与实际作息不符，课前提醒会整体偏移。
+
+## 下一步
+
+- [导入与迁移](/docs/guide/import)：把已有课表搬进来
+- [超级岛与提醒](/docs/guide/super-island)：让锁屏显示下一节课
+- [桌面小组件](/docs/guide/widget)：不打开应用也能看

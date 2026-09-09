@@ -1,0 +1,93 @@
+---
+title: 构建与部署
+description: 本地构建、静态导出验证，以及 Cloudflare Pages 上线步骤。
+---
+
+本站是独立的 Next.js + Fumadocs 应用，产物为纯静态文件，不依赖 Node 运行时服务器。
+
+## 本地开发
+
+在仓库根目录进入 `site/`：
+
+```bash
+cd site
+pnpm install
+pnpm dev
+```
+
+开发服务器默认在 `http://localhost:3000`。修改 `content/docs/` 下的 MDX 后会热更新。
+
+## 静态构建
+
+```bash
+cd site
+pnpm build
+```
+
+`next.config.mjs` 已开启 `output: 'export'`，构建结果写入 `site/out/`。产物特点：
+
+- 每个页面都有对应的 `.html` 与同名 `.txt`（纯文本，便于 AI agent 抓取）
+- 全文搜索索引在 `out/api/search/`，浏览器端计算，无需服务端
+- 可直接丢到任意静态托管（Cloudflare Pages、Nginx、GitHub Pages 等）
+
+本地预览导出结果：
+
+```bash
+# 任意静态服务器即可，例如：
+npx serve site/out
+```
+
+<Callout type="warn">
+  Cloudflare Pages 构建时必须设置环境变量 `NODE_VERSION=22`。Fumadocs 要求 Node ≥ 22，而 Pages 默认 Node 版本偏低，不设会直接构建失败。
+</Callout>
+
+## 上线到 Cloudflare Pages
+
+目标域名：`docs.163366.xyz`。
+
+<Steps>
+<Step>
+在 Cloudflare Pages 中新建项目，连接 GitHub 仓库 `Mutx163/mikcb`。
+</Step>
+<Step>
+配置构建：
+
+| 项 | 值 |
+| --- | --- |
+| 构建命令 | `cd site && pnpm i && pnpm build` |
+| 输出目录 | `site/out` |
+| 环境变量 `NODE_VERSION` | `22` |
+
+仓库根不是 Node 项目，因此命令里必须先 `cd site`。
+</Step>
+<Step>
+部署完成后，在 Pages 项目的自定义域中添加 `docs.163366.xyz`，按提示完成 DNS。
+</Step>
+</Steps>
+
+之后主分支上对 `site/` 的推送会自动触发重新构建与发布。
+
+## 维护本站时的已知坑
+
+改这个站之前建议先读一遍，都是实际踩过的：
+
+1. **`fumadocs-mdx` 15 生成的 `.source/` 没有 `index.ts`**  
+   从 `@/.source/server` 导入，不要写 `@/.source`。
+
+2. **MDX 里的裸 `<` 会被当成 JSX 标签**  
+   例如版本区间 `>=3.12.2 <4.0.0`，`<4.0.0` 要用反引号包住，或改写为 `&lt;`。
+
+3. **`Step` / `Steps` 不在默认 MDX 组件里**  
+   已在根目录 `mdx-components.tsx` 手动注册；新增同类组件时同样要挂进去。
+
+4. **pnpm 11 默认不跑依赖的构建脚本**  
+   `esbuild` 等需要构建产物的包，已在 `pnpm-workspace.yaml` 的 `allowBuilds` 中放行。新增需要 postinstall 的依赖时同步更新该文件。
+
+5. **`.source/`、`.next/`、`out/` 不要提交**  
+   已由 `site/.gitignore` 排除；`out/` 由 Cloudflare 在构建机上生成。
+
+## 相关
+
+- 内容目录：仓库 `site/content/docs/`
+- 贡献约定：[参与贡献](/docs/dev/contributing)
+- 站点仓库入口：[GitHub](https://github.com/Mutx163/mikcb)

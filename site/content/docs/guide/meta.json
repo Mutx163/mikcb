@@ -1,0 +1,15 @@
+{
+  "title": "使用指南",
+  "root": true,
+  "defaultOpen": true,
+  "pages": [
+    "quick-start",
+    "import",
+    "interface",
+    "statistics",
+    "widget",
+    "super-island",
+    "sync-backup",
+    "troubleshooting"
+  ]
+}
