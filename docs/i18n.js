@@ -1,10 +1,12 @@
 /**
  * 官网多语言：与 App 对齐（简体中文 / 繁體香港 / 繁體台灣 / English / 日本語 / 한국어）
- * - 默认：localStorage 记忆 > 浏览器语言匹配 > 简体中文
+ * - 默认：localStorage 记忆 > 浏览器中文语言 > 简体中文（不因英文系统自动切成 English）
  * - 右上角语言切换器由本脚本注入 .nav-actions 或 body
  */
 (function initSiteI18n() {
   const STORAGE_KEY = "mikcb-site-locale";
+  // 与部署版本联动，避免旧 CDN/浏览器缓存缺新文案键
+  const I18N_VERSION = "20260909-hero-docs";
   const DEFAULT_LOCALE = "zh-CN";
   const SUPPORTED = [
     { id: "zh-CN", htmlLang: "zh-CN", ogLocale: "zh_CN", nativeName: "简体中文" },
@@ -88,6 +90,7 @@
       /* ignore */
     }
 
+    // 浏览器语言只用于匹配中文变体；en/ja/ko 仍可用切换器手动选择
     const candidates = [];
     if (Array.isArray(navigator.languages)) {
       candidates.push(...navigator.languages);
@@ -96,9 +99,9 @@
       candidates.push(navigator.language);
     }
     for (const candidate of candidates) {
-      const matched = matchSupportedLocale(candidate);
-      if (matched) {
-        return matched;
+      const tag = matchSupportedLocale(candidate);
+      if (tag && /^zh/i.test(tag)) {
+        return tag;
       }
     }
     return DEFAULT_LOCALE;
@@ -107,7 +110,10 @@
   function t(key, vars) {
     const dict = catalogs[currentLocale] || catalogs[DEFAULT_LOCALE] || {};
     const fallback = catalogs[DEFAULT_LOCALE] || {};
-    let text = dict[key] ?? fallback[key] ?? key;
+    let text = dict[key] ?? fallback[key];
+    if (text == null) {
+      return null;
+    }
     if (vars && typeof vars === "object") {
       Object.keys(vars).forEach((name) => {
         text = text.replaceAll(`{${name}}`, String(vars[name]));
@@ -133,7 +139,10 @@
       const attrName = trimmed.slice(0, colonIndex).trim();
       const messageKey = trimmed.slice(colonIndex + 1).trim();
       if (attrName && messageKey) {
-        element.setAttribute(attrName, t(messageKey));
+        const value = t(messageKey);
+        if (value != null && value !== "") {
+          element.setAttribute(attrName, value);
+        }
       }
     });
   }
@@ -141,11 +150,18 @@
   function applyElement(element) {
     const htmlKey = element.getAttribute("data-i18n-html");
     if (htmlKey) {
-      element.innerHTML = t(htmlKey);
+      const html = t(htmlKey);
+      if (html != null && html !== "") {
+        element.innerHTML = html;
+      }
     }
     const textKey = element.getAttribute("data-i18n");
     if (textKey) {
-      element.textContent = t(textKey);
+      const text = t(textKey);
+      // 缺键时保留 HTML 内置中文兜底，不要把键名写进页面
+      if (text != null && text !== "") {
+        element.textContent = text;
+      }
     }
     const placeholderKey = element.getAttribute("data-i18n-placeholder");
     if (placeholderKey && "placeholder" in element) {
@@ -344,7 +360,9 @@
     if (catalogs[localeId]) {
       return catalogs[localeId];
     }
-    const response = await fetch(`./i18n/${localeId}.json`, { cache: "force-cache" });
+    const response = await fetch(`./i18n/${localeId}.json?v=${I18N_VERSION}`, {
+      cache: "force-cache",
+    });
     if (!response.ok) {
       throw new Error(`i18n load failed: ${localeId} HTTP ${response.status}`);
     }
