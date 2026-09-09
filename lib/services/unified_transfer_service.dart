@@ -53,6 +53,7 @@ class UnifiedTransferService {
     TransferChannel channel = TransferChannel.file,
     TransferScope scope = TransferScope.currentTimetable,
     Iterable<String> selectedCourseIds = const [],
+    Iterable<String> selectedTimeSchemeIds = const [],
   }) {
     final selected = selectedCourseIds.toSet();
     final sourceCourses = scope == TransferScope.weekTimetable
@@ -94,6 +95,7 @@ class UnifiedTransferService {
       provider: provider,
       scope: scope,
       courses: courses,
+      selectedTimeSchemeIds: selectedTimeSchemeIds,
     );
 
     return _dataTransferService.buildTransferPackage(
@@ -124,13 +126,20 @@ class UnifiedTransferService {
     required TimetableProvider provider,
     required TransferScope scope,
     required List<Course> courses,
+    Iterable<String> selectedTimeSchemeIds = const [],
   }) {
     if (scope == TransferScope.timeTemplate) {
+      final selected = selectedTimeSchemeIds.toSet();
+      final schemes = selected.isEmpty
+          ? provider.timeSchemes.toList()
+          : provider.timeSchemes
+                .where((scheme) => selected.contains(scheme.id))
+                .toList();
       return (
         scheduleItems: const [],
         scheduleDateRules: const [],
         locationTimeGroups: const [],
-        timeSchemes: provider.timeSchemes.toList(),
+        timeSchemes: schemes,
       );
     }
 

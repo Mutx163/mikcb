@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/data_transfer_screen.dart';
 import 'package:university_timetable/screens/ics_export_screen.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../helpers_test_app.dart';
 
@@ -152,11 +154,70 @@ void main() {
     expect(find.text('选择课程、考试和日程，生成 ICS 日历并分享'), findsOneWidget);
     expect(find.byIcon(Icons.event_outlined), findsNothing);
   });
+
+  testWidgets('Backup & Migration exports the time template when schemes exist', (
+    tester,
+  ) async {
+    final TimetableProvider provider = _FakeTimetableProviderWithSchemes(
+      _testProfile(),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: DataTransferScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final button = find.widgetWithText(HyperosButton, '导出时间模板');
+    expect(button, findsOneWidget);
+    final widget = tester.widget<HyperosButton>(button);
+    expect(widget.onPressed, isNotNull);
+  });
+
+  testWidgets('Backup & Migration disables the time export without schemes', (
+    tester,
+  ) async {
+    final provider = _testProvider();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: DataTransferScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final button = find.widgetWithText(HyperosButton, '导出时间模板');
+    expect(button, findsOneWidget);
+    final widget = tester.widget<HyperosButton>(button);
+    expect(widget.onPressed, isNull);
+  });
 }
 
-TimetableProvider _testProvider() {
+TimeScheme _testScheme() {
+  return TimeScheme(
+    id: 'widget-share-scheme',
+    name: '测试作息',
+    sections: const [
+      SectionTime(startTime: '08:00', endTime: '08:45'),
+    ],
+    createdAt: DateTime(2026),
+    updatedAt: DateTime(2026),
+  );
+}
+
+class _FakeTimetableProviderWithSchemes extends _FakeTimetableProvider {
+  _FakeTimetableProviderWithSchemes(super.profile);
+
+  @override
+  List<TimeScheme> get timeSchemes => [_testScheme()];
+}
+
+TimetableProfile _testProfile() {
   final now = DateTime(2026, 2);
-  final profile = TimetableProfile(
+  return TimetableProfile(
     id: 'ics-widget-profile',
     name: '测试课表',
     courses: [
@@ -181,7 +242,10 @@ TimetableProvider _testProvider() {
     createdAt: now,
     lastUsedAt: now,
   );
-  return _FakeTimetableProvider(profile);
+}
+
+TimetableProvider _testProvider() {
+  return _FakeTimetableProvider(_testProfile());
 }
 
 class _FakeTimetableProvider extends TimetableProvider {

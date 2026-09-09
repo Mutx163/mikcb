@@ -306,4 +306,79 @@ void main() {
       );
     },
   );
+
+  test(
+    'timeTemplate scope with selectedTimeSchemeIds keeps only the chosen scheme',
+    () async {
+      final provider = await createProvider();
+      final morning = await provider.createTimeScheme(
+        name: '夏季作息',
+        sections: const [
+          SectionTime(startTime: '08:00', endTime: '08:45'),
+          SectionTime(startTime: '08:55', endTime: '09:40'),
+        ],
+      );
+      final evening = await provider.createTimeScheme(
+        name: '冬季作息',
+        sections: const [
+          SectionTime(startTime: '19:00', endTime: '19:45'),
+        ],
+      );
+      await provider.addCourse(
+        Course(
+          id: 'shared-scheme-course',
+          name: '跨设备课程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 1,
+          startTime: '08:00',
+          endTime: '08:45',
+        ),
+      );
+
+      final package = UnifiedTransferService().buildCurrentPackage(
+        provider: provider,
+        scope: TransferScope.timeTemplate,
+        selectedTimeSchemeIds: [morning.id],
+      );
+
+      expect(package.courses, isEmpty);
+      expect(package.tasks, isEmpty);
+      expect(package.exams, isEmpty);
+      expect(package.settings, isNull);
+      expect(package.currentWeek, isNull);
+      expect(package.timeSchemes.map((scheme) => scheme.id), [morning.id]);
+      expect(
+        package.timeSchemes.map((scheme) => scheme.id),
+        isNot(contains(evening.id)),
+      );
+    },
+  );
+
+  test(
+    'timeTemplate scope without selection shares every time scheme',
+    () async {
+      final provider = await createProvider();
+      final first = await provider.createTimeScheme(
+        name: '模板一',
+        sections: const [SectionTime(startTime: '09:00', endTime: '09:45')],
+      );
+      final second = await provider.createTimeScheme(
+        name: '模板二',
+        sections: const [SectionTime(startTime: '14:00', endTime: '14:45')],
+      );
+
+      final package = UnifiedTransferService().buildCurrentPackage(
+        provider: provider,
+        scope: TransferScope.timeTemplate,
+      );
+
+      expect(package.timeSchemes.map((scheme) => scheme.id), containsAll([
+        first.id,
+        second.id,
+      ]));
+    },
+  );
 }

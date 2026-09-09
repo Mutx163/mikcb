@@ -67,6 +67,13 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                     variant: HyperosButtonVariant.secondary,
                     onPressed: _isExporting ? null : _exportFullData,
                   ),
+                  HyperosButton(
+                    label: l10n.exportTimeTemplate,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: _isExporting || provider.timeSchemes.isEmpty
+                        ? null
+                        : _exportTimeTemplate,
+                  ),
                 ],
               ),
             ),
@@ -282,9 +289,11 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     TransferPackage package, {
     required String shareText,
     required String shareSubject,
+    String? filenamePrefix,
   }) async {
     final now = DateTime.now();
-    final prefix = package.isFullBackup ? 'mikcb-full-backup' : 'mikcb-backup';
+    final prefix = filenamePrefix ??
+        (package.isFullBackup ? 'mikcb-full-backup' : 'mikcb-backup');
     final filename =
         '$prefix-${now.year}${now.month.toString().padLeft(2, '0')}'
         '${now.day.toString().padLeft(2, '0')}-'
@@ -307,6 +316,36 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   void _openIcsExport() {
     HyperosNavigation.pushWidget<void>(context, const IcsExportScreen());
+  }
+
+  /// 导出当前时间模板（作息时间）为分享文件并走系统分享。
+  /// 与「导出当前课表」解耦：只含时间模板、不含课程，便于把作息单独发给别人。
+  Future<void> _exportTimeTemplate() async {
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isExporting = true;
+    });
+    try {
+      final package = _transferService.buildCurrentPackage(
+        provider: provider,
+        scope: TransferScope.timeTemplate,
+      );
+      await _shareTransferPackage(
+        package,
+        shareText: l10n.dataTransferTimeSchemeShareText,
+        shareSubject: l10n.timeSchemeShareSubject,
+        filenamePrefix: 'mikcb-timescheme',
+      );
+    } catch (error) {
+      _showTransferSendError(l10n, error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
+      }
+    }
   }
 
   Future<void> _exportFullData() async {

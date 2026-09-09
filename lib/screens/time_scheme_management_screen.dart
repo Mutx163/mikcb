@@ -4,15 +4,23 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
+import 'package:share_plus/share_plus.dart';
+
 import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/data_transfer_service.dart';
+import '../services/qr_transfer/qr_transfer_codec.dart';
+import '../services/qr_transfer/qr_transfer_session.dart';
+import '../services/transfer_package.dart';
+import '../services/unified_transfer_service.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/miuix_time_picker_sheet.dart';
 import '../widgets/time_scheme_quick_generate_sheet.dart';
 import 'location_time_match_screen.dart';
+import 'qr_transfer_send_screen.dart';
 import 'schedule_date_rule_screen.dart';
 
 class TimeSchemeManagementScreen extends StatefulWidget {
@@ -323,6 +331,10 @@ class _TimeSchemeManagementScreenState
                         value: 'duplicate',
                       ),
                       HyperosPopupMenuItem(
+                        label: l10n.shareTimeSchemeAction,
+                        value: 'share',
+                      ),
+                      HyperosPopupMenuItem(
                         label: l10n.deleteAction,
                         value: 'delete',
                         destructive: true,
@@ -357,6 +369,9 @@ class _TimeSchemeManagementScreenState
                           kind: AppToastKind.success,
                         );
                       }
+                      break;
+                    case 'share':
+                      await _shareTimeScheme(context, scheme);
                       break;
                     case 'delete':
                       await _deleteScheme(context, scheme);
@@ -531,6 +546,144 @@ class _TimeSchemeManagementScreenState
       message: l10n.appliedTimeSchemeMessage(scheme.name),
       kind: AppToastKind.success,
     );
+  }
+
+  /// 分享单个时间模板：弹窗选择「系统分享 / 二维码分享」。
+  Future<void> _shareTimeScheme(
+    BuildContext context,
+    TimeScheme scheme,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final choice = await showHyperosDialog<String>(
+      context: context,
+      title: l10n.shareTimeSchemeTitle,
+      // 说明文字用主文本墨色：默认 message 样式是次级灰，液态玻璃弹窗
+      // 通透材质上几乎不可见（与数据备份页同口径）。
+      body: Text(
+        scheme.name,
+        textAlign: TextAlign.center,
+        style: HyperosTypography.listDetail(context).copyWith(
+          color: HyperosColors.primaryText(context),
+        ),
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context),
+        ),
+        HyperosDialogAction(
+          label: l10n.shareTimeSchemeViaQr,
+          onPressed: () => Navigator.pop(context, 'qr'),
+        ),
+        HyperosDialogAction(
+          label: l10n.shareTimeSchemeViaSystem,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context, 'system'),
+        ),
+      ],
+    );
+    if (!context.mounted || choice == null) {
+      return;
+    }
+    switch (choice) {
+      case 'system':
+        await _shareTimeSchemeAsFile(context, scheme);
+        break;
+      case 'qr':
+        await _shareTimeSchemeAsQr(context, scheme);
+        break;
+    }
+  }
+
+  /// 系统分享单个时间模板：打包只含该模板的 .mikcb 文件。
+  Future<void> _shareTimeSchemeAsFile(
+    BuildContext context,
+    TimeScheme scheme,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    try {
+      final package = UnifiedTransferService().buildCurrentPackage(
+        provider: provider,
+        scope: TransferScope.timeTemplate,
+        selectedTimeSchemeIds: [scheme.id],
+      );
+      final now = DateTime.now();
+      final filename =
+          'mikcb-timescheme-${now.year}${now.month.toString().padLeft(2, '0')}'
+          '${now.day.toString().padLeft(2, '0')}-${now.hour.toString().padLeft(2, '0')}'
+          '${now.minute.toString().padLeft(2, '0')}.${DataTransferService.fileExtension}';
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              package.encodeBytes(),
+              mimeType: 'application/json',
+              name: filename,
+            ),
+          ],
+          text: l10n.timeSchemeShareText(scheme.name),
+          subject: l10n.timeSchemeShareSubject,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.sendFailedWithError(localizeServiceError(l10n, error)),
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
+  /// 二维码分享单个时间模板：复用全屏二维码流发送页。
+  Future<void> _shareTimeSchemeAsQr(
+    BuildContext context,
+    TimeScheme scheme,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    try {
+      final package = UnifiedTransferService().buildCurrentPackage(
+        provider: provider,
+        channel: TransferChannel.qr,
+        scope: TransferScope.timeTemplate,
+        selectedTimeSchemeIds: [scheme.id],
+      );
+      final bytes = package.encodeBytes();
+      try {
+        QrTransferEncoder.preflight(bytes);
+      } on QrTransferLimitException {
+        if (context.mounted) {
+          showAppToast(
+            context,
+            message: l10n.qrTransferResourceLimit,
+            kind: AppToastKind.error,
+          );
+        }
+        return;
+      }
+      if (!context.mounted) {
+        return;
+      }
+      await HyperosNavigation.pushWidget<void>(
+        context,
+        QrTransferSendScreen(
+          payloadBytes: bytes,
+          title: l10n.shareTimeSchemeTitle,
+        ),
+      );
+    } catch (error) {
+      if (context.mounted) {
+        showAppToast(
+          context,
+          message: l10n.sendFailedWithError(localizeServiceError(l10n, error)),
+          kind: AppToastKind.error,
+        );
+      }
+    }
   }
 
   _TimeSchemeUsageSummary _buildUsageSummary(
