@@ -26,6 +26,8 @@
     <string name="action_cancel_silent">무음 해제</string>
     <string name="action_cancel_dnd">방해 금지 해제</string>
     <string name="action_close">닫기</string>
+    <string name="quick_action_silent_failed">무음 모드를 변경할 수 없습니다. 시스템 소리 설정에서 권한을 확인하세요</string>
+    <string name="quick_action_dnd_failed">방해 금지 모드를 변경할 수 없습니다. 시스템 설정에서 방해 금지 접근 권한을 허용하세요</string>
 
     <string name="prefix_until_class_start">수업 시작까지 </string>
     <string name="prefix_until_class_end">수업 종료까지 </string>

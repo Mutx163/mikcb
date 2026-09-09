@@ -1,5 +1,6 @@
 package com.mutx163.qingyu
 
+import android.app.NotificationManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -107,6 +108,23 @@ class LiveUpdateServiceLogicTest {
         assertTrue(allActive.dndCancel)
         assertFalse(allActive.silentEnable)
         assertFalse(allActive.dndEnable)
+    }
+
+    @Test
+    fun ringerSuppressingDndFilters() {
+        // 完全静音与「仅允许闹钟」会把铃声模式强制压成静音，取消静音前必须先解除
+        assertTrue(
+            dndFilterSuppressesRinger(NotificationManager.INTERRUPTION_FILTER_NONE)
+        )
+        assertTrue(
+            dndFilterSuppressesRinger(NotificationManager.INTERRUPTION_FILTER_ALARMS)
+        )
+        assertFalse(
+            dndFilterSuppressesRinger(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+        )
+        assertFalse(
+            dndFilterSuppressesRinger(NotificationManager.INTERRUPTION_FILTER_ALL)
+        )
     }
 
     @Test

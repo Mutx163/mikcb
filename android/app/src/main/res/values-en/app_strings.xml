@@ -26,6 +26,8 @@
     <string name="action_cancel_silent">Unmute</string>
     <string name="action_cancel_dnd">Turn off DND</string>
     <string name="action_close">Close</string>
+    <string name="quick_action_silent_failed">Could not change silent mode - check the system sound settings</string>
+    <string name="quick_action_dnd_failed">Could not change Do Not Disturb - grant Do Not Disturb access in system settings</string>
 
     <string name="prefix_until_class_start">Starts in </string>
     <string name="prefix_until_class_end">Ends in </string>

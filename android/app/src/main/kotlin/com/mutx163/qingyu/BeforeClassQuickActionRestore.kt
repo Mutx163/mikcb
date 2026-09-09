@@ -39,7 +39,9 @@ internal object BeforeClassQuickActionRestore {
             // restore would write back SILENT forever.
             markPending(context, restoreAtMillis, ACTION_SILENT)
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            true
+            // setRingerMode 在缺 MODIFY_AUDIO_SETTINGS 权限时会被框架静默丢弃（不抛
+            // 异常、不生效），必须回读校验，否则「静音」按钮点了毫无反应却当成功。
+            audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
         } catch (e: SecurityException) {
             if (!silentAccessDeniedWarnedOnce) {
                 silentAccessDeniedWarnedOnce = true
@@ -135,6 +137,15 @@ internal object BeforeClassQuickActionRestore {
         return audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
     }
 
+    /** 当前勿扰档位是否会把铃声模式强制压成静音（完全静音 / 仅允许闹钟）。 */
+    private fun dndCurrentlySuppressesRinger(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false
+        }
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        return dndFilterSuppressesRinger(manager.currentInterruptionFilter)
+    }
+
     /** Whether Do Not Disturb is currently on at any level (regardless of who set it). */
     fun isDoNotDisturbModeActive(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
@@ -164,9 +175,22 @@ internal object BeforeClassQuickActionRestore {
             AudioManager.RINGER_MODE_NORMAL
         }
         return try {
+            // 完全静音/仅允许闹钟这两个勿扰档位会把铃声模式强制压成静音：只要勿扰
+            // 还在，写入 NORMAL 会被 ZenModeHelper 立刻覆盖回静音，用户点「取消静音」
+            // 便毫无反应。勿扰是本应用开的就先一并解除，再恢复铃声。
+            if (dndCurrentlySuppressesRinger(context) &&
+                prefs.getBoolean(KEY_APPLIED_DND, false)
+            ) {
+                cancelDoNotDisturbMode(context)
+            }
             audioManager.ringerMode = target
-            clearAppliedFlagAndMaybeClearPending(context, KEY_APPLIED_SILENT)
-            true
+            val applied = audioManager.ringerMode == target
+            if (applied) {
+                clearAppliedFlagAndMaybeClearPending(context, KEY_APPLIED_SILENT)
+            } else {
+                Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_SILENT_MODE_FAILED)
+            }
+            applied
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_SILENT_MODE_FAILED, e)
             false
@@ -269,7 +293,9 @@ internal object BeforeClassQuickActionRestore {
         )
         return try {
             audioManager.ringerMode = savedMode
-            true
+            // 同 enableSilentMode：写入被框架静默丢弃时不能当成功，否则 pending
+            // 状态会被清掉，下课后手机永远停在静音。
+            audioManager.ringerMode == savedMode
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_SILENT_MODE_FAILED, e)
             false
@@ -380,6 +406,13 @@ internal fun beforeClassQuickActionShouldRestoreAfterClassEnd(
 /** Which quick-action buttons the before-class notification should show,
  *  derived from the configured action and the live ringer/DND state: a mode
  *  that is already on gets a cancel button so one tap toggles it back off. */
+/** 完全静音与「仅允许闹钟」两档勿扰会把铃声模式强制压成静音（ZenModeHelper
+ *  .applyZenToRingerMode），其余档位（如仅优先）不影响铃声模式。 */
+internal fun dndFilterSuppressesRinger(interruptionFilter: Int): Boolean {
+    return interruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE ||
+        interruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS
+}
+
 internal data class BeforeClassQuickActionButtons(
     val silentEnable: Boolean = false,
     val silentCancel: Boolean = false,

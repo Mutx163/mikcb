@@ -28,6 +28,8 @@
     <string name="action_cancel_silent">取消静音</string>
     <string name="action_cancel_dnd">取消免打扰</string>
     <string name="action_close">关闭</string>
+    <string name="quick_action_silent_failed">无法切换静音，请在系统声音设置中确认授权</string>
+    <string name="quick_action_dnd_failed">无法切换免打扰，请在系统设置中授予勿扰模式访问权限</string>
 
     <string name="prefix_until_class_start">距上课</string>
     <string name="prefix_until_class_end">距下课</string>
