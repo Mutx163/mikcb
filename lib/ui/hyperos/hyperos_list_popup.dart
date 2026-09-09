@@ -10,8 +10,7 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart'
-    show UndimmedBackdropCapture;
+import 'liquid/hyperos_liquid_glass_surface.dart' show UndimmedBackdropCapture;
 
 /// 宿主页面根级的页面捕获作用域：给锚定弹窗的二级子卡提供「弹窗背后
 /// 页面」的同步截图来源（RenderRepaintBoundary.toImageSync）。
@@ -203,6 +202,10 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
 
   /// Overrides the row label/icon color (e.g. wallpaper-aware chrome ink on
   /// the home screen); falls back to [HyperosColors.onSurface].
+  ///
+  /// Ignored on solid surfaces (blur off / degradation / [opaqueSurface]):
+  /// the wallpaper no longer shows through, so wallpaper-aware ink (white
+  /// on a light panel) would be unreadable — rows use the theme ink instead.
   final Color? foregroundColor;
 
   /// Solid surface instead of sampled glass (see [showHyperosListPopup]).
@@ -505,7 +508,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     final scrollOffset = _currentPanelScrollOffset();
     final raw = top + _rowTopInPanel(index) - scrollOffset;
     final maxTop =
-        safeBottom - _submenuCardLaidOutHeight(
+        safeBottom -
+        _submenuCardLaidOutHeight(
           item,
           safeTop: safeTop,
           safeBottom: safeBottom,
@@ -537,11 +541,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     final width = _panelMeasuredWidth ?? 200.0;
     return Offset(
       isRightAligned ? cardLeft - width : cardLeft,
-      _submenuCardTopGlobal(
-        top: top,
-        safeTop: safeTop,
-        safeBottom: safeBottom,
-      ),
+      _submenuCardTopGlobal(top: top, safeTop: safeTop, safeBottom: safeBottom),
     );
   }
 
@@ -565,6 +565,19 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     final screen = MediaQuery.sizeOf(context);
     const margin = 12.0;
     const cornerRadius = HyperosMiuixDropdown.popupCornerRadius;
+
+    // 实底面板（blur 总开关关 / 系统降级 / WebView 强制实底）不再透出
+    // 壁纸，调用方为透明玻璃准备的壁纸感知墨色（如首页按壁纸亮度翻出
+    // 的白墨）写在浅色实底上不可读（白字白板，用户只剩角标可见）——
+    // 统一回退 null，行走内置的主题墨色兜底。判定与面板材质分支同序，
+    // 见 [HyperosSelectPopupGlass.solidSurfaceActive]。
+    final Color? effectiveForeground =
+        HyperosSelectPopupGlass.solidSurfaceActive(
+          context,
+          opaqueSurface: widget.opaqueSurface,
+        )
+        ? null
+        : widget.foregroundColor;
 
     // Resolve anchor position from RelativeRect.
     final anchorLeft = widget.position.left;
@@ -607,7 +620,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     // 不是左缘——快照垫底对齐见 _submenuCardUnderlayOrigin。
     final cardLeft = isRightAligned
         ? screen.width -
-            (screen.width - anchorRight).clamp(margin, screen.width - margin)
+              (screen.width - anchorRight).clamp(margin, screen.width - margin)
         : anchorLeft.clamp(margin, screen.width - margin);
 
     return PopScope(
@@ -699,7 +712,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               for (var i = 0; i < widget.items.length; i++)
                                 _ListPopupTile(
                                   item: widget.items[i],
-                                  foregroundColor: widget.foregroundColor,
+                                  foregroundColor: effectiveForeground,
                                   expanded: _expandedIndex == i,
                                   // Selecting an item pops the popup immediately
                                   // so the destination page can start its
@@ -855,13 +868,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                           children: [
                             _ListPopupTile(
                               item: item,
-                              foregroundColor: widget.foregroundColor,
+                              foregroundColor: effectiveForeground,
                               expanded: true,
                               // 卡内不带分组间隔：顶边就是面板里
                               // 的原行位。
                               includeGroupGap: false,
-                              onTap: () =>
-                                  _toggleSubmenu(_lastSubmenuIndex!),
+                              onTap: () => _toggleSubmenu(_lastSubmenuIndex!),
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(
@@ -871,9 +883,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               ),
                               child: Container(
                                 height: HyperosMiuixDivider.thickness,
-                                color: (widget.foregroundColor ??
-                                        HyperosColors.onSurface(context))
-                                    .withValues(alpha: 0.15),
+                                color:
+                                    (effectiveForeground ??
+                                            HyperosColors.onSurface(context))
+                                        .withValues(alpha: 0.15),
                               ),
                             ),
                             if (cardOverflows)
@@ -887,8 +900,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                                       for (final child in item.children)
                                         _ListPopupTile(
                                           item: child,
-                                          foregroundColor:
-                                              widget.foregroundColor,
+                                          foregroundColor: effectiveForeground,
                                           includeGroupGap: false,
                                           onTap: child.enabled
                                               ? () => Navigator.of(
@@ -904,11 +916,12 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               for (final child in item.children)
                                 _ListPopupTile(
                                   item: child,
-                                  foregroundColor: widget.foregroundColor,
+                                  foregroundColor: effectiveForeground,
                                   includeGroupGap: false,
                                   onTap: child.enabled
-                                      ? () =>
-                                          Navigator.of(context).pop(child.value)
+                                      ? () => Navigator.of(
+                                          context,
+                                        ).pop(child.value)
                                       : null,
                                 ),
                           ],

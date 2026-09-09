@@ -584,6 +584,26 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         !LiquidGlassDegradation.shouldDegrade(context);
   }
 
+  /// 当前外观下弹窗是否走不透明实底面（[HyperosSolidPopupSurface]）。
+  ///
+  /// 判定与 [build] 的材质分支同序：调用方强制实底（WebView 场景）→
+  /// 实底；液态玻璃激活 → 液态面（自带模糊，不受 blur 总开关约束）；
+  /// 否则 blur 总开关关闭或系统降级 → 实底。调用方（如列表弹窗的墨色
+  /// 选择）据此把「为透明玻璃准备的壁纸感知墨色」重置为主题墨——实底
+  /// 不再透出壁纸，浅色实底上的白墨不可读。
+  static bool solidSurfaceActive(
+    BuildContext context, {
+    bool opaqueSurface = false,
+  }) {
+    if (opaqueSurface) {
+      return true;
+    }
+    if (liquidSurfaceActive(context)) {
+      return false;
+    }
+    return !HyperosBlurredHeader.backdropBlurEnabled(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(cornerRadius);
@@ -704,7 +724,6 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Solid opaque popup surface — the shared fallback when backdrop blur is

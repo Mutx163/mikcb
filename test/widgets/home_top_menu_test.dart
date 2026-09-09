@@ -12,70 +12,63 @@ import '../helpers_test_app.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-    'home action menu renders resolved entries as Miuix list rows '
-    'without per-row blur',
-    (tester) async {
-      final anchorKey = GlobalKey();
-      final entries = resolveHomeGridMenuEntries(
-        TimetableSettings.defaults(),
-      );
+  testWidgets('home action menu renders resolved entries as Miuix list rows '
+      'without per-row blur', (tester) async {
+    final anchorKey = GlobalKey();
+    final entries = resolveHomeGridMenuEntries(TimetableSettings.defaults());
 
-      await tester.pumpWidget(
-        TestApp(
-          home: Builder(
-            builder: (context) {
-              return Center(
-                child: ElevatedButton(
-                  key: anchorKey,
-                  onPressed: () {
-                    showHomeTopMenuSheet(
-                      context,
-                      hasAvailableUpdate: true,
-                      entries: entries,
-                      anchorKey: anchorKey,
-                    );
-                  },
-                  child: const Text('Open'),
-                ),
-              );
-            },
-          ),
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return Center(
+              child: ElevatedButton(
+                key: anchorKey,
+                onPressed: () {
+                  showHomeTopMenuSheet(
+                    context,
+                    hasAvailableUpdate: true,
+                    entries: entries,
+                    anchorKey: anchorKey,
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            );
+          },
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
 
-      // 与八宫格共享同一份自定义排列（默认 8 项，任务清单不在其中）。
-      // The anchored popup owns exactly one glass surface — no row adds its
-      // own blur while the list moves.
-      expect(find.byType(HyperosPressableRow), findsNWidgets(8));
-      expect(find.byType(MiuixBadge), findsOneWidget);
-      expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
+    // 与八宫格共享同一份自定义排列（默认 8 项，任务清单不在其中）。
+    // The anchored popup owns exactly one glass surface — no row adds its
+    // own blur while the list moves.
+    expect(find.byType(HyperosPressableRow), findsNWidgets(8));
+    expect(find.byType(MiuixBadge), findsOneWidget);
+    expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
 
-      for (final title in const [
-        '软件更新',
-        '课程总览',
-        '课程统计',
-        '添加',
-        '考试安排',
-        '导入课程',
-        '课表设置',
-        '请喝咖啡',
-      ]) {
-        expect(find.text(title), findsOneWidget);
-      }
-      expect(find.text('任务清单'), findsNothing);
-    },
-  );
+    for (final title in const [
+      '软件更新',
+      '课程总览',
+      '课程统计',
+      '添加',
+      '考试安排',
+      '导入课程',
+      '课表设置',
+      '请喝咖啡',
+    ]) {
+      expect(find.text(title), findsOneWidget);
+    }
+    expect(find.text('任务清单'), findsNothing);
+  });
 
   testWidgets('home action menu rows remain tappable', (tester) async {
     final anchorKey = GlobalKey();
     late Future<String?> menuResult;
-    final entries = resolveHomeGridMenuEntries(
-      TimetableSettings.defaults(),
-    );
+    final entries = resolveHomeGridMenuEntries(TimetableSettings.defaults());
 
     await tester.pumpWidget(
       TestApp(
@@ -162,62 +155,61 @@ void main() {
     },
   );
 
-  testWidgets(
-    'liquid menu anchors its single popup with legibility fill',
-    (tester) async {
-      final anchorKey = GlobalKey();
-      const liquidAppearance = FrostedAppearance(
-        sheetBlurSigma: 15,
-        sheetTintAlpha: 0.7,
-        sheetBarrierAlpha: 0.2,
-        glassMode: FrostedGlassMode.liquidGlass,
-      );
+  testWidgets('liquid menu anchors its single popup with legibility fill', (
+    tester,
+  ) async {
+    final anchorKey = GlobalKey();
+    const liquidAppearance = FrostedAppearance(
+      sheetBlurSigma: 15,
+      sheetTintAlpha: 0.7,
+      sheetBarrierAlpha: 0.2,
+      glassMode: FrostedGlassMode.liquidGlass,
+    );
 
-      await tester.pumpWidget(
-        TestApp(
-          home: FrostedAppearanceScope(
-            appearance: liquidAppearance,
-            // Keep the appearance scope above this nested navigator so the
-            // dialog route can resolve the same liquid-glass settings as the
-            // page chrome. The outer TestApp navigator would otherwise place
-            // the dialog above this scope.
-            child: Navigator(
-              onGenerateRoute: (_) => MaterialPageRoute(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    key: anchorKey,
-                    onPressed: () {
-                      showHomeTopMenuSheet(
-                        context,
-                        hasAvailableUpdate: false,
-                        entries: resolveHomeGridMenuEntries(
-                          TimetableSettings.defaults(),
-                        ),
-                        anchorKey: anchorKey,
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
+    await tester.pumpWidget(
+      TestApp(
+        home: FrostedAppearanceScope(
+          appearance: liquidAppearance,
+          // Keep the appearance scope above this nested navigator so the
+          // dialog route can resolve the same liquid-glass settings as the
+          // page chrome. The outer TestApp navigator would otherwise place
+          // the dialog above this scope.
+          child: Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  key: anchorKey,
+                  onPressed: () {
+                    showHomeTopMenuSheet(
+                      context,
+                      hasAvailableUpdate: false,
+                      entries: resolveHomeGridMenuEntries(
+                        TimetableSettings.defaults(),
+                      ),
+                      anchorKey: anchorKey,
+                    );
+                  },
+                  child: const Text('Open'),
                 ),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
 
-      final outerGlass = tester.widget<HyperosLiquidGlassSurface>(
-        find.byType(HyperosLiquidGlassSurface),
-      );
-      expect(outerGlass.role, HyperosLiquidGlassRole.modal);
-      // 152cd9b4 起弹窗与 Sheet 的液态玻璃不再叠加可读性衬底，保持通透材质
-      // 与首页标题/星期栏统一（选择弹窗同为 contentLegibilityFill=false）。
-      expect(outerGlass.contentLegibilityFill, isFalse);
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
-    },
-  );
+    final outerGlass = tester.widget<HyperosLiquidGlassSurface>(
+      find.byType(HyperosLiquidGlassSurface),
+    );
+    expect(outerGlass.role, HyperosLiquidGlassRole.modal);
+    // 152cd9b4 起弹窗与 Sheet 的液态玻璃不再叠加可读性衬底，保持通透材质
+    // 与首页标题/星期栏统一（选择弹窗同为 contentLegibilityFill=false）。
+    expect(outerGlass.contentLegibilityFill, isFalse);
+    expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+  });
 
   testWidgets('grid menu renders default eight tiles without tasks entry', (
     tester,
@@ -359,34 +351,80 @@ void main() {
 
     // 可读的主题 seed 直接作为瓷贴图标色（默认蓝）。
     expect(
-      tester
-          .widget<Icon>(find.byIcon(Icons.system_update_alt_rounded))
-          .color,
+      tester.widget<Icon>(find.byIcon(Icons.system_update_alt_rounded)).color,
       const Color(0xFF1447E6),
     );
   });
 
-  testWidgets(
-    'grid menu tile icons keep the bright seed as-is (所见即所得)',
-    (tester) async {
-      final anchorKey = GlobalKey();
+  testWidgets('grid menu tile icons keep the bright seed as-is (所见即所得)', (
+    tester,
+  ) async {
+    final anchorKey = GlobalKey();
 
-      await tester.pumpWidget(
-        TestApp(
-          home: Builder(
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return Center(
+              child: ElevatedButton(
+                key: anchorKey,
+                onPressed: () {
+                  showHomeTopGridMenuSheet(
+                    context,
+                    hasAvailableUpdate: false,
+                    entries: resolveHomeGridMenuEntries(
+                      TimetableSettings.defaults(),
+                    ),
+                    // 用户选了亮黄主题就要看到亮黄：不做浅色可读回落。
+                    themeSeedHex: '#FCC800',
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.system_update_alt_rounded)).color,
+      const Color(0xFFFCC800),
+    );
+  });
+
+  testWidgets('home action menu rows fall back to theme ink on solid surfaces '
+      '(blur off): wallpaper-aware white ink must not vanish on the '
+      'opaque light panel', (tester) async {
+    final anchorKey = GlobalKey();
+    final entries = resolveHomeGridMenuEntries(TimetableSettings.defaults());
+
+    await tester.pumpWidget(
+      TestApp(
+        home: FrostedAppearanceScope(
+          appearance: const FrostedAppearance(
+            sheetBlurSigma: 15,
+            sheetTintAlpha: 0.7,
+            sheetBarrierAlpha: 0.2,
+            // 实体卡片档：弹窗面板退化为不透明 surfaceContainer。
+            blurEnabled: false,
+          ),
+          child: Builder(
             builder: (context) {
               return Center(
                 child: ElevatedButton(
                   key: anchorKey,
                   onPressed: () {
-                    showHomeTopGridMenuSheet(
+                    showHomeTopMenuSheet(
                       context,
-                      hasAvailableUpdate: false,
-                      entries: resolveHomeGridMenuEntries(
-                        TimetableSettings.defaults(),
-                      ),
-                      // 用户选了亮黄主题就要看到亮黄：不做浅色可读回落。
-                      themeSeedHex: '#FCC800',
+                      hasAvailableUpdate: true,
+                      entries: entries,
+                      anchorKey: anchorKey,
+                      // 模拟首页有壁纸时传入的壁纸感知白墨。
+                      foregroundColor: Colors.white,
                     );
                   },
                   child: const Text('Open'),
@@ -395,17 +433,19 @@ void main() {
             },
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
 
-      expect(
-        tester
-            .widget<Icon>(find.byIcon(Icons.system_update_alt_rounded))
-            .color,
-        const Color(0xFFFCC800),
-      );
-    },
-  );
+    // 实底面上白墨必须被重置为主题墨（浅色 → onSurface 纯黑），
+    // 否则行文字隐身，只剩自带上色的更新角标可见。
+    final label = tester.widget<Text>(find.text('软件更新'));
+    expect(label.style?.color, isNot(Colors.white));
+    expect(
+      label.style?.color,
+      HyperosColors.onSurface(tester.element(find.text('软件更新'))),
+    );
+  });
 }
