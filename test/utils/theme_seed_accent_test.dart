@@ -228,6 +228,153 @@ void main() {
       expect(switchColors.uncheckedTrackColor, isNot(colors.primary));
     });
   });
+
+  group('resolveThemeSeedDisabled：禁用/被屏蔽态 = 对应颜色浅色', () {
+    test('浅色绿 seed → 浅绿（非包默认浅蓝）', () {
+      final c =
+          resolveThemeSeedDisabled(const Color(0xFF5CA502), Brightness.light)!;
+      expect(c, Color.lerp(const Color(0xFF5CA502), Colors.white, 0.7));
+      expect(c, isNot(const Color(0xFFC2D9FF)));
+      expect(c.r, greaterThan(c.b)); // 暖绿色浅底，非冷蓝
+    });
+
+    test('深色绿 seed → 深绿（非包默认暗蓝）', () {
+      final c =
+          resolveThemeSeedDisabled(const Color(0xFF5CA502), Brightness.dark)!;
+      expect(c, Color.lerp(const Color(0xFF5CA502), const Color(0xFF242424), 0.7));
+      expect(c, isNot(const Color(0xFF253E64)));
+      expect(c.g, greaterThan(c.b));
+    });
+
+    test('accent 为 null → null（调用方回落包默认）', () {
+      expect(resolveThemeSeedDisabled(null, Brightness.light), isNull);
+      expect(resolveThemeSeedDisabledInk(null, Brightness.dark), isNull);
+    });
+  });
+
+  group('resolveThemeSeedDisabledInk：禁用底上的墨水', () {
+    test('浅色近白；深色为比禁用底更亮的强调色混色', () {
+      expect(
+        resolveThemeSeedDisabledInk(const Color(0xFF5CA502), Brightness.light),
+        const Color(0xFFFCFCFC),
+      );
+      final track =
+          resolveThemeSeedDisabled(const Color(0xFF5CA502), Brightness.dark)!;
+      final ink =
+          resolveThemeSeedDisabledInk(const Color(0xFF5CA502), Brightness.dark)!;
+      expect(ink, Color.lerp(const Color(0xFF5CA502), const Color(0xFF242424), 0.35));
+      // 深色墨水比 0.7 混色的禁用底更亮：被屏蔽 thumb 压在底上可见。
+      expect(ink.computeLuminance(), greaterThan(track.computeLuminance()));
+    });
+  });
+
+  group('Miuix 被屏蔽开关（disabled）：开启侧轨道 = 主题色浅色状态', () {
+    testWidgets('屏蔽开关开/关两侧轨道均为绿浅色，可操作关轨道仍中性', (tester) async {
+      late MiuixColors colors;
+      late MiuixSwitchColors switchColors;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+          home: ThemeSeedScope(
+            seedHex: '#5CA502', // 绿色，对应线上截图的场景
+            child: MiuixFontWeightScope(
+              child: Builder(
+                builder: (context) {
+                  colors = MiuixTheme.of(context).colors;
+                  switchColors =
+                      MiuixSwitchDefaults.switchColors(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      final base = MiuixThemeData.of(Brightness.light).colors;
+      // 被屏蔽开关（开态）轨道 = 绿浅色，而非包默认浅蓝 #C2D9FF。
+      expect(
+        switchColors.disabledCheckedTrackColor,
+        Color.lerp(const Color(0xFF5CA502), Colors.white, 0.7),
+      );
+      expect(switchColors.disabledCheckedTrackColor, isNot(base.disabledPrimary));
+      // 开态被屏蔽 thumb = 近白墨水。
+      expect(switchColors.disabledCheckedThumbColor, const Color(0xFFFCFCFC));
+      // 仍可操作的关闭轨道保持中性规范色（正常关着不是主题色）。
+      expect(switchColors.uncheckedTrackColor, base.secondary);
+      // 被屏蔽的关闭侧轨道 = 绿浅色（与开侧同口径），而非中性灰。
+      expect(
+        switchColors.disabledUncheckedTrackColor,
+        Color.lerp(const Color(0xFF5CA502), Colors.white, 0.7),
+      );
+      expect(
+        switchColors.disabledUncheckedTrackColor,
+        isNot(base.disabledSecondary),
+      );
+      // 禁用滑杆底色同步跟随 seed（非包默认浅蓝）。
+      expect(colors.disabledPrimarySlider, isNot(base.disabledPrimarySlider));
+    });
+  });
+
+  group('HyperosColors.disabled 家族跟随 seed（浅色状态）', () {
+    testWidgets('浅色绿 seed → disabledPrimary 为绿浅色', (tester) async {
+      late Color result;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+          home: ThemeSeedScope(
+            seedHex: '#5CA502',
+            child: Builder(
+              builder: (context) {
+                result = HyperosColors.disabledPrimary(context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      expect(result, Color.lerp(const Color(0xFF5CA502), Colors.white, 0.7));
+      expect(result, isNot(const Color(0xFFC2D9FF)));
+    });
+
+    testWidgets('未挂 ThemeSeedScope → 维持 Miuix 固定浅蓝', (tester) async {
+      late Color result;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+          home: Builder(
+            builder: (context) {
+              result = HyperosColors.disabledPrimary(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(result, const Color(0xFFC2D9FF));
+    });
+
+    testWidgets('深色绿 seed → disabledOnPrimary 为绿暗色且亮于禁用底',
+        (tester) async {
+      late Color ink;
+      late Color track;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
+          home: ThemeSeedScope(
+            seedHex: '#5CA502',
+            child: Builder(
+              builder: (context) {
+                ink = HyperosColors.disabledOnPrimary(context);
+                track = HyperosColors.disabledPrimary(context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      expect(ink, isNot(const Color(0xFF677993))); // 非包默认灰蓝
+      expect(ink.computeLuminance(), greaterThan(track.computeLuminance()));
+    });
+  });
 }
 
 class _ScopeBuilder {

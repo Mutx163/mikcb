@@ -125,10 +125,14 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
 /// 用主题 seed 覆盖包默认色板中的强调色。
 ///
 /// 只动 primary/onPrimary（Miuix 组件的选中态、开关**开启**色、选择器
-/// 高亮都由 primary 派生）；**不动 secondary**——MiuixSwitch 关闭轨道、
-/// 次级装饰用的是 secondary，保持包默认色，避免「关着也是主题色」。
-/// surface/文本墨水等中性角色也保持 HyperOS 规范色不变。seed 经
-/// [resolveThemeSeedAccent] 解析（缺失/不可读返回 null → 保持包默认）。
+/// 高亮都由 primary 派生）与 disabled 家族（**被屏蔽**开关的轨道、禁用
+/// 按钮/滑杆底色 = 强调色的浅色状态，见 [resolveThemeSeedDisabled]：开启
+/// 侧走 disabledPrimary、关闭侧走 disabledSecondary，因此绿/黄主题下被
+/// 屏蔽开关的关闭态轨道是浅绿/浅黄而非中性灰）；
+/// **不动启用态的 secondary**——仍可操作的开关其关闭轨道保持中性规范色，
+/// 避免「正常关着也是主题色」。surface/文本墨水等中性角色也保持 HyperOS
+/// 规范色不变。seed 经 [resolveThemeSeedAccent] 解析（缺失/不可读返回
+/// null → 保持包默认）。
 MiuixColors? _seededMiuixColors(MiuixColors base, BuildContext context) {
   final accent = resolveThemeSeedAccent(
     ThemeSeedScope.maybeOf(context)?.seedHex,
@@ -137,7 +141,23 @@ MiuixColors? _seededMiuixColors(MiuixColors base, BuildContext context) {
   if (accent == null) {
     return null;
   }
+  final brightness = Theme.of(context).brightness;
   final ink = onAccentInk(accent);
-  // 只动 primary/onPrimary；secondary 保持包默认（关态轨道等次级强调）。
-  return base.copy(primary: accent, onPrimary: ink);
+  // 被屏蔽（disabled）态跟随主题色：对应颜色的浅色状态，否则选了绿主题
+  // 「被屏蔽的开关」仍显示包默认浅蓝 #C2D9FF（开侧）/ 中性灰（关侧）。
+  final disabled = resolveThemeSeedDisabled(accent, brightness);
+  final disabledInk = resolveThemeSeedDisabledInk(accent, brightness);
+  // 只动 primary/onPrimary 与 disabled 家族（含关闭侧的 disabledSecondary）；
+  // 启用态 secondary 保持包默认（可操作开关的关闭轨道）。
+  return base.copy(
+    primary: accent,
+    onPrimary: ink,
+    disabledPrimary: disabled,
+    disabledOnPrimary: disabledInk,
+    disabledSecondary: disabled,
+    disabledOnSecondary: disabledInk,
+    disabledPrimaryButton: disabled,
+    disabledOnPrimaryButton: disabledInk,
+    disabledPrimarySlider: disabled,
+  );
 }

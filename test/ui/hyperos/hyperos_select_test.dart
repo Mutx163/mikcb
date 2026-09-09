@@ -289,6 +289,29 @@ void main() {
         expect(rect.top, greaterThanOrEqualTo(0));
       }
     });
+    testWidgets('select tile popup renders per-option color dots via itemPrefixBuilder', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosSelectTile<String>(
+            label: 'Theme preset',
+            items: const {'Light': 'light', 'Dark': 'dark'},
+            value: 'light',
+            useSheetForPopup: true,
+            itemPrefixBuilder: (value) =>
+                const HyperosColorDot(color: HyperosIconColors.blue),
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Theme preset'));
+      await tester.pumpAndSettle();
+
+      // 每项一个色点（Light/Dark），共两个。
+      expect(find.byType(HyperosColorDot), findsNWidgets(2));
+    });
   });
 
   group('showHyperosSelectSheet', () {
@@ -434,6 +457,27 @@ void main() {
       expect(rowShell, findsWidgets);
       final shellRect = tester.getRect(rowShell.first);
       expect(shellRect.width, cardWidth);
+    });
+    testWidgets('dialog variant with explicit prefix still shows color dots', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosChoiceTile(
+              title: 'Theme',
+              prefix: const HyperosColorDot(color: HyperosIconColors.blue),
+              selected: true,
+              variant: HyperosChoiceVariant.dialog,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Popup/dialog 选项行也显示显式 prefix（色圆点）：设置页「预设主题」
+      // 弹窗就靠 itemPrefixBuilder 渲染每个主题色，回归防线。
+      expect(find.byType(HyperosColorDot), findsOneWidget);
     });
   });
 

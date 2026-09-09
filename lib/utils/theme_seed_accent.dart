@@ -60,6 +60,41 @@ Color? resolveThemeSeedSurface(String? seedHex, Brightness brightness) {
   return seed;
 }
 
+/// 禁用/被屏蔽状态的底色：对应颜色的**浅色状态**。
+///
+/// Miuix/HyperOS 包默认的 disabled 家族是固定浅蓝（浅色 #C2D9FF / 深色
+/// #253E64）：用户选了绿/黄主题后，被屏蔽开关的开启侧轨道、禁用按钮与
+/// 滑杆底色仍显示蓝色。本规则由主题强调色派生「浅色状态」：浅色模式向白
+/// 混 0.7，深色模式向暗底 #242424 混 0.7——与包默认对默认蓝自身的派生
+/// 比例一致（#3482FF→#C2D9FF、#277AF7→#253E64 均 ≈ lerp(目标, 0.7)），
+/// 蓝色 seed ≈ 包默认，其他 seed 得到对应颜色的浅色。[accent] 为 null
+/// （无 seed/不可读）返回 null，调用方回落包默认。
+Color? resolveThemeSeedDisabled(Color? accent, Brightness brightness) {
+  if (accent == null) {
+    return null;
+  }
+  return Color.lerp(
+    accent,
+    brightness == Brightness.dark ? const Color(0xFF242424) : Colors.white,
+    0.7,
+  );
+}
+
+/// 禁用底色上的墨水（被屏蔽开关的 thumb、禁用按钮文字）：
+///
+/// 浅色模式用近白 thumb（浅色浅底 + 白 thumb 即 MiUI 观感，与主题色相
+/// 无关）；深色模式把 accent 向暗底混 0.35——比 0.7 的禁用底更亮，保证
+/// 被屏蔽 thumb/文字压在禁用底上仍可见。[accent] 为 null 返回 null，
+/// 调用方保持包默认。
+Color? resolveThemeSeedDisabledInk(Color? accent, Brightness brightness) {
+  if (accent == null) {
+    return null;
+  }
+  return brightness == Brightness.dark
+      ? Color.lerp(accent, const Color(0xFF242424), 0.35)
+      : const Color(0xFFFCFCFC);
+}
+
 /// 把当前主题 seed 暴露给整棵组件树的 InheritedWidget。
 ///
 /// 挂在 `MaterialApp.builder`（根 Navigator 之上），`HyperosColors` 等

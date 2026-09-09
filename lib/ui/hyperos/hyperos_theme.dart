@@ -301,44 +301,98 @@ abstract final class HyperosColors {
   }
 
   // --- Disabled role colors ---
+  //
+  // disabled **primary 家族**跟随主题 seed：被屏蔽（disabled）态 = 对应颜色
+  // 的浅色状态（浅色模式向白混 0.7 / 深色模式向暗底混 0.7，见
+  // [resolveThemeSeedDisabled]），否则选了绿/黄主题后，被屏蔽开关的开启侧
+  // 轨道、禁用按钮/滑杆仍显示 Miuix 固定浅蓝。secondary 家族（关态轨道）
+  // 保持中性规范色不动，避免「关着也是主题色」。
 
+  /// 当前 seed 的强调色（未挂 [ThemeSeedScope] 或解析失败 → null），
+  /// 供 disabled 家族访问器派生浅色状态。
+  static Color? _seededAccent(BuildContext context) {
+    final scope = ThemeSeedScope.maybeOf(context);
+    if (scope == null) {
+      return null;
+    }
+    return resolveThemeSeedAccent(scope.seedHex, _brightness(context));
+  }
+
+  /// 被屏蔽开关（开启侧）轨道 / 禁用底色：seed 强调色的浅色状态；无 seed
+  /// 时保持 Miuix 固定蓝（浅色 #C2D9FF / 深色 #253E64）。
   static Color disabledPrimary(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabled(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledPrimary
         : HyperosMiuixLightColors.disabledPrimary;
   }
 
+  /// 被屏蔽开关（关闭侧）轨道：seed 强调色的浅色状态（绿主题 → 浅绿）；
+  /// 无 seed 时保持 Miuix 规范色。
   static Color disabledSecondary(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabled(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledSecondary
         : HyperosMiuixLightColors.disabledSecondary;
   }
 
+  /// 被屏蔽（开启侧）thumb 墨水：浅色模式近白；深色模式为比禁用底更亮的
+  /// 强调色混色（见 [resolveThemeSeedDisabledInk]）；无 seed 时保持包默认。
   static Color disabledOnPrimary(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabledInk(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledOnPrimary
         : HyperosMiuixLightColors.disabledOnPrimary;
   }
 
+  /// 被屏蔽开关（关闭侧）thumb 墨水：与 [disabledOnPrimary] 同口径。
   static Color disabledOnSecondary(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabledInk(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledOnSecondary
         : HyperosMiuixLightColors.disabledOnSecondary;
   }
 
+  /// 禁用主色按钮底色：与 [disabledPrimary] 同口径（seed 浅色状态）。
   static Color disabledPrimaryButton(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabled(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledPrimaryButton
         : HyperosMiuixLightColors.disabledPrimaryButton;
   }
 
+  /// 禁用主色按钮文字墨水：与 [disabledOnPrimary] 同口径。
   static Color disabledOnPrimaryButton(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabledInk(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledOnPrimaryButton
         : HyperosMiuixLightColors.disabledOnPrimaryButton;
   }
 
+  /// 禁用滑杆底色：与 [disabledPrimary] 同口径（seed 浅色状态）。
   static Color disabledPrimarySlider(BuildContext context) {
+    final accent = _seededAccent(context);
+    if (accent != null) {
+      return resolveThemeSeedDisabled(accent, _brightness(context))!;
+    }
     return _brightness(context) == Brightness.dark
         ? HyperosMiuixDarkColors.disabledPrimarySlider
         : HyperosMiuixLightColors.disabledPrimarySlider;
