@@ -390,7 +390,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   }
 
   /// 「各卡片绑定管理」：列出桌面上真实存在的今日课程卡片，
-  /// 逐张选择显示哪个课表（跟随当前课表 / 我的课表 / TA的课表）。
+  /// 逐张选择显示哪个课表（跟随当前课表 / 我的课表 / 情侣课表 / TA的课表）。
   Widget _buildWidgetBindingSection(AppLocalizations l10n) {
     if (_widgetInstances.isEmpty) {
       return Column(
@@ -437,8 +437,13 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
                 items: {
                   l10n.homeWidgetBindingFollowActive: _followActiveValue,
                   for (final profile in normalProfiles) profile.name: profile.id,
-                  if (partnerProfile != null)
+                  // 情侣课表（我的+TA 合并视图）排在 TA 课表前面：它是情侣
+                  // 功能的主视图；两者都只在已导入 TA 课表时出现。
+                  if (partnerProfile != null) ...{
+                    l10n.homeWidgetBindingCoupleMerged:
+                        kHomeWidgetCoupleMergedBindingId,
                     partnerProfile.name: partnerProfile.id,
+                  },
                 },
                 value: instance.boundProfileId ?? _followActiveValue,
                 onChanged: (profileId) => _setWidgetBinding(

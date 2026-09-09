@@ -12,11 +12,12 @@ enum WidgetLaunchOutcome {
   /// 已切到卡片绑定的普通课表。
   switchedProfile,
 
-  /// 已打开情侣覆盖层（绑定的是 TA 课表；不真的切过去——考试提醒、
-  /// 超级岛等都挂在「当前课表」上，switchProfile 明确禁止切到 TA 课表）。
+  /// 已打开情侣覆盖层（绑定的是 TA 课表或情侣课表合并视图；不真的切过去——
+  /// 考试提醒、超级岛等都挂在「当前课表」上，switchProfile 明确禁止切到
+  /// TA 课表）。
   partnerOverlay,
 
-  /// 绑定的 TA 课表已解绑/被删 → 回落普通打开。
+  /// 绑定的 TA 课表已解绑/被删（或情侣课表已无 TA 数据）→ 回落普通打开。
   bindingMissing,
 }
 
@@ -26,7 +27,7 @@ enum WidgetLaunchOutcome {
 /// 启动流程 drain，热启动经 miui_live 通道 onWidgetLaunchReceived 通知），
 /// 这里按该卡片的绑定档案分流：
 /// - 普通课表 → `switchProfile` 直达
-/// - TA 课表 → 保持当前课表，只打开情侣覆盖层
+/// - TA 课表 / 情侣课表（合并视图哨兵）→ 保持当前课表，只打开情侣覆盖层
 /// - 未绑定 / 绑定已失效 → 与现在一样普通打开
 class WidgetLaunchRouter {
   const WidgetLaunchRouter._();
@@ -65,7 +66,10 @@ class WidgetLaunchRouter {
       return WidgetLaunchOutcome.none;
     }
 
-    if (boundProfileId == PartnerTimetableService.partnerProfileId) {
+    final isPartnerViewBinding = boundProfileId ==
+        PartnerTimetableService.partnerProfileId ||
+        boundProfileId == kHomeWidgetCoupleMergedBindingId;
+    if (isPartnerViewBinding) {
       if (!provider.hasPartnerBinding || provider.partnerProfile == null) {
         return WidgetLaunchOutcome.bindingMissing;
       }

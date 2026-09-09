@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/home_widget_binding_service.dart';
 import 'package:university_timetable/services/miui_live_activities_service.dart';
 import 'package:university_timetable/services/partner_timetable_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -161,5 +162,55 @@ void main() {
     expect(provider.settings.coupleTimetableOverlayEnabled, isTrue);
     expect(popToRootCalls, 1);
     expect(WidgetLaunchRouter.coupleOverlayRequestTick.value, greaterThan(0));
+  });
+
+  test('绑定情侣课表（合并视图）→ partnerOverlay：与 TA 绑定同分流', () async {
+    final provider = await createProvider();
+    final before = provider.activeProfileId;
+
+    final backup = provider.dataTransferService.buildBackupJson(
+      profileName: 'TA的课表',
+      courses: [
+        Course(
+          id: 'c1',
+          name: '高数',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      ],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+    );
+    await provider.importPartnerTimetable(backup);
+
+    pendingWidgetId = 38;
+    bindings[38] = kHomeWidgetCoupleMergedBindingId;
+    final outcome = await WidgetLaunchRouter.handleWith(
+      provider: provider,
+      onRequestPopToRoot: () => popToRootCalls++,
+    );
+
+    expect(outcome, WidgetLaunchOutcome.partnerOverlay);
+    expect(provider.activeProfileId, before);
+    expect(provider.settings.coupleTimetableOverlayEnabled, isTrue);
+    expect(popToRootCalls, 1);
+  });
+
+  test('绑定情侣课表但 TA 已解绑 → bindingMissing', () async {
+    final provider = await createProvider();
+    final before = provider.activeProfileId;
+
+    pendingWidgetId = 39;
+    bindings[39] = kHomeWidgetCoupleMergedBindingId;
+    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+
+    expect(outcome, WidgetLaunchOutcome.bindingMissing);
+    expect(provider.activeProfileId, before);
+    expect(popToRootCalls, 0);
   });
 }

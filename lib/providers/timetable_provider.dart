@@ -4283,6 +4283,11 @@ class TimetableProvider with ChangeNotifier {
     DateTime? now,
   }) => _liveBuildHomeWidgetSnapshotForProfile(this, profile, now: now);
 
+  /// 情侣课表（我的+TA 合并视图）绑定卡片的专属快照；TA 解绑/无课表时
+  /// 返回 null（调用方清掉专属快照回落「跟随当前课表」）。
+  HomeWidgetSnapshot? buildHomeWidgetSnapshotForCouple({DateTime? now}) =>
+      _liveBuildCoupleMergedHomeWidgetSnapshot(this, now: now);
+
   void suspendLiveActivitySyncFor(Duration duration) {
     _liveActivitySuspendedUntil = DateTime.now().add(duration);
   }
@@ -4369,6 +4374,9 @@ class TimetableProvider with ChangeNotifier {
       _partnerBinding = result.binding;
       notifyUserDataChangedForSync();
       notifyListeners();
+      // TA 数据变了：绑定 TA 课表/情侣课表的桌面卡片立即重推专属快照，
+      // 不等下一次课程边界（scheduleSnapshot 与我方课表无关，跳过）。
+      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
       return result;
     });
   }
@@ -4390,6 +4398,9 @@ class TimetableProvider with ChangeNotifier {
       await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
       notifyUserDataChangedForSync();
       notifyListeners();
+      // 周偏移改变 TA 课的对应周次：情侣绑定卡片立即重推（同上跳过
+      // scheduleSnapshot）。
+      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
     });
   }
 
@@ -4413,6 +4424,8 @@ class TimetableProvider with ChangeNotifier {
       await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
       notifyUserDataChangedForSync();
       notifyListeners();
+      // 情侣三色改变 TA/一起课的着色：情侣绑定卡片立即重推。
+      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
     });
   }
 
@@ -4435,6 +4448,8 @@ class TimetableProvider with ChangeNotifier {
       }
       notifyUserDataChangedForSync();
       notifyListeners();
+      // TA 解绑：TA/情侣绑定卡片的专属快照随本次同步清理回落。
+      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
     });
   }
 }

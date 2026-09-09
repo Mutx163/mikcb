@@ -474,4 +474,76 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('已导入 TA 课时各卡片绑定提供「情侣课表」选项', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final provider = await createInitializedTestProvider(tester);
+    final backup = provider.dataTransferService.buildBackupJson(
+      profileName: 'TA的课表',
+      courses: [
+        Course(
+          id: 'c1',
+          name: '高数',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      ],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+    );
+    // 导入走真实异步：存储链路含平台通道 IO，FakeAsync 下会永久挂起。
+    await runRealAsync(tester, () => provider.importPartnerTimetable(backup));
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(homeWidgetChannel, (call) async {
+      if (call.method == 'listTodayWidgetInstances') {
+        return [
+          {'appWidgetId': 21, 'widgetType': 'compact', 'boundProfileId': null},
+        ];
+      }
+      return null;
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableSettingsScreen()),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    final homeList = find.byType(HyperosListView).first;
+    await tester.scrollUntilVisible(
+      find.text('桌面小组件'),
+      200,
+      scrollable: _scrollableUnder(homeList),
+    );
+    await tester.tap(find.text('桌面小组件'));
+    await tester.pumpAndSettle();
+
+    final widgetList = find.byType(HyperosListView).last;
+    await tester.scrollUntilVisible(
+      find.text('各卡片绑定管理'),
+      200,
+      scrollable: _scrollableUnder(widgetList),
+    );
+    await tester.scrollUntilVisible(
+      find.text('跟随当前课表'),
+      200,
+      scrollable: _scrollableUnder(widgetList),
+    );
+
+    // 点开绑定选择：应同时提供「情侣课表」（合并视图）与「TA的课表」。
+    await tester.tap(find.text('跟随当前课表'));
+    await tester.pumpAndSettle();
+    expect(find.text('情侣课表'), findsOneWidget);
+    expect(find.text('TA的课表'), findsOneWidget);
+  });
 }

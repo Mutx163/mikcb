@@ -544,9 +544,173 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshotForProfile(
   );
 }
 
+/// 情侣合并视图某一天的课程：我的当前课表为主表（沿用 active 路径的
+/// 地点规则/别名解析），叠加 TA 课表按周偏移映射后的同天课程；同行程
+/// （同时段、同名、双方各自周次有效）按我的那份去重（与 App 内情侣
+/// 覆盖层同口径），其余 TA 课程追加，全部按情侣三色（我/TA/一起）着色
+/// 后按起始节次排序。TA 未绑定或课表不存在时返回空列表。
+List<Course> _liveCoupleMergedDayCourses(
+  TimetableProvider host, {
+  required int dayOfWeek,
+  required int myWeek,
+}) {
+  final partnerProfile = host.partnerProfile;
+  final binding = host.partnerBinding;
+  if (partnerProfile == null || binding == null) {
+    return const <Course>[];
+  }
+  final partnerWeek = CoupleTimetableLogic.partnerWeekForMyWeek(
+    myWeek,
+    binding.weekOffset,
+  );
+  final mine = host
+      .getActiveCoursesForDay(dayOfWeek, week: myWeek)
+      .map(host.resolveCourseDisplayName)
+      .toList(growable: false);
+  final partner =
+      partnerProfile.courses.where((course) => course.dayOfWeek == dayOfWeek && course.isActiveInWeek(partnerWeek)).toList()
+        ..sort((a, b) => a.startSection.compareTo(b.startSection));
+  String colorFor(CoupleCourseKind kind) =>
+      CoupleTimetableLogic.colorHexForKind(
+        kind,
+        mineColorHex: binding.mineColorHex,
+        partnerColorHex: binding.partnerColorHex,
+        togetherColorHex: binding.togetherColorHex,
+      );
+  final merged = <Course>[];
+  final usedPartnerIds = <String>{};
+  for (final course in mine) {
+    var hasTogetherPartner = false;
+    for (final candidate in partner) {
+      if (CoupleTimetableLogic.isTogetherClass(
+        course,
+        candidate,
+        week: myWeek,
+        partnerWeekOffset: binding.weekOffset,
+      )) {
+        hasTogetherPartner = true;
+        usedPartnerIds.add(candidate.id);
+        break;
+      }
+    }
+    merged.add(
+      course.copyWith(
+        color: colorFor(
+          hasTogetherPartner ? CoupleCourseKind.together : CoupleCourseKind.mine,
+        ),
+      ),
+    );
+  }
+  for (final course in partner) {
+    if (usedPartnerIds.contains(course.id)) {
+      continue;
+    }
+    merged.add(course.copyWith(color: colorFor(CoupleCourseKind.partner)));
+  }
+  return merged..sort((a, b) {
+    final bySection = a.startSection.compareTo(b.startSection);
+    if (bySection != 0) {
+      return bySection;
+    }
+    return a.startTime.compareTo(b.startTime);
+  });
+}
+
+/// TA 侧某天「含停课」的原始课程数：与 active 路径的 originalTodayCount
+/// 同口径（isInWeek 含停课），供快照区分「没课」与「课全停了」。
+int _livePartnerOriginalCourseCount(
+  TimetableProvider host, {
+  required int dayOfWeek,
+  required int myWeek,
+}) {
+  final partnerProfile = host.partnerProfile;
+  final binding = host.partnerBinding;
+  if (partnerProfile == null || binding == null) {
+    return 0;
+  }
+  final partnerWeek = CoupleTimetableLogic.partnerWeekForMyWeek(
+    myWeek,
+    binding.weekOffset,
+  );
+  return partnerProfile.courses
+      .where(
+        (course) =>
+            course.dayOfWeek == dayOfWeek && course.isInWeek(partnerWeek),
+      )
+      .length;
+}
+
+/// 情侣课表（合并视图）绑定卡片的快照：学期/节假日/考试/外观/周次标签
+/// 全部锚定我方（与 App 内情侣覆盖层一致——考试提醒、超级岛等都挂在
+/// 「当前课表」上），课程为 [_liveCoupleMergedDayCourses] 的合并结果。
+/// TA 解绑或课表不存在时返回 null，调用方清掉专属快照即回落「跟随当前
+/// 课表」。
+HomeWidgetSnapshot? _liveBuildCoupleMergedHomeWidgetSnapshot(
+  TimetableProvider host, {
+  DateTime? now,
+}) {
+  final myProfile = host.activeProfile;
+  if (myProfile == null ||
+      !host.hasPartnerBinding ||
+      host.partnerProfile == null) {
+    return null;
+  }
+
+  final currentTime = now ?? DateTime.now();
+  // Must use calendar week (no semesterWeekCount clamp), same as active path.
+  final targetWeek = host._calculateCalendarWeekForDate(currentTime);
+  final originalTodayCount =
+      host.getCoursesForDay(currentTime.weekday, week: targetWeek).length +
+      _livePartnerOriginalCourseCount(
+        host,
+        dayOfWeek: currentTime.weekday,
+        myWeek: targetWeek,
+      );
+  final todayIsHoliday = host.isHoliday(currentTime);
+  final todayCourses = todayIsHoliday
+      ? const <Course>[]
+      : _liveCoupleMergedDayCourses(
+          host,
+          dayOfWeek: currentTime.weekday,
+          myWeek: targetWeek,
+        );
+
+  final tomorrow = currentTime.add(const Duration(days: 1));
+  final tomorrowWeek = host._calculateCalendarWeekForDate(tomorrow);
+  final tomorrowIsHoliday = host.isHoliday(tomorrow);
+  final tomorrowCourses = tomorrowIsHoliday
+      ? const <Course>[]
+      : _liveCoupleMergedDayCourses(
+          host,
+          dayOfWeek: tomorrow.weekday,
+          myWeek: tomorrowWeek,
+        );
+
+  final holidayEntry = host.getHolidayForDate(currentTime);
+
+  return host._homeWidgetSnapshotService.build(
+    profileId: kHomeWidgetCoupleMergedBindingId,
+    profileName: myProfile.name,
+    currentWeek: targetWeek,
+    settings: host._settings,
+    todayCourses: todayCourses,
+    now: currentTime,
+    countdownLeadMinutes: host._settings.widgetCountdownLeadMinutes,
+    countdownTextStyle: host._settings.widgetCountdownTextStyle.value,
+    nextExam: host.getNextExam(),
+    isHoliday: todayIsHoliday,
+    holidayName: todayIsHoliday ? holidayEntry?.name : null,
+    tomorrowCourses: tomorrowCourses,
+    tomorrowWeek: tomorrowWeek,
+    tomorrowDayOfWeek: tomorrow.weekday,
+    showTomorrowCourses: host._settings.widgetShowTomorrowCourses,
+    originalTodayCourseCount: todayIsHoliday ? 0 : originalTodayCount,
+  );
+}
+
 /// 为所有绑定了非当前课表的卡片同步专属快照，返回这些卡片的刷新触发点
-/// （与当前课表的触发点取并集用）。绑定课表已消失时清掉专属快照，
-/// 渲染侧会回落「跟随当前课表」。
+/// （与当前课表的触发点取并集用）。绑定课表已消失（含情侣课表 TA 解绑）
+/// 时清掉专属快照，渲染侧会回落「跟随当前课表」。
 Future<Set<int>> _liveSyncBoundWidgetSnapshots(
   TimetableProvider host,
   DateTime now,
@@ -562,15 +726,21 @@ Future<Set<int>> _liveSyncBoundWidgetSnapshots(
   final triggers = <int>{};
   for (final instance in boundInstances) {
     final appWidgetId = instance.appWidgetId;
-    final profile = host._profiles
-        .where((candidate) => candidate.id == instance.boundProfileId)
-        .firstOrNull;
-    if (profile == null) {
+    final isCoupleBinding =
+        instance.boundProfileId == kHomeWidgetCoupleMergedBindingId;
+    final profile = isCoupleBinding
+        ? null
+        : host._profiles
+            .where((candidate) => candidate.id == instance.boundProfileId)
+            .firstOrNull;
+    if (profile == null && !isCoupleBinding) {
       await host._homeWidgetBindingService.clearWidgetSnapshot(appWidgetId);
       host._lastWidgetSnapshotSignatures.remove(appWidgetId);
       continue;
     }
-    final snapshot = host.buildHomeWidgetSnapshotForProfile(profile, now: now);
+    final snapshot = isCoupleBinding
+        ? host.buildHomeWidgetSnapshotForCouple(now: now)
+        : host.buildHomeWidgetSnapshotForProfile(profile!, now: now);
     if (snapshot == null) {
       await host._homeWidgetBindingService.clearWidgetSnapshot(appWidgetId);
       host._lastWidgetSnapshotSignatures.remove(appWidgetId);
@@ -587,19 +757,28 @@ Future<Set<int>> _liveSyncBoundWidgetSnapshots(
       }
     }
     if (snapshot.state != HomeWidgetSnapshotState.holiday) {
-      triggers.addAll(
-        host._homeWidgetSnapshotService.buildRefreshTriggers(
-          todayCourses: profile.courses
+      final triggerCourses = isCoupleBinding
+          ? _liveCoupleMergedDayCourses(
+              host,
+              dayOfWeek: now.weekday,
+              myWeek: snapshot.currentWeek,
+            )
+          : profile!.courses
               .where(
                 (course) =>
                     course.dayOfWeek == now.weekday &&
                     course.isActiveInWeek(snapshot.currentWeek),
               )
-              .toList(growable: false),
+              .toList(growable: false);
+      triggers.addAll(
+        host._homeWidgetSnapshotService.buildRefreshTriggers(
+          todayCourses: triggerCourses,
           now: now,
           showCountdown: snapshot.showCountdown,
           state: snapshot.state.value,
-          countdownLeadMinutes: profile.settings.widgetCountdownLeadMinutes,
+          countdownLeadMinutes: isCoupleBinding
+              ? host._settings.widgetCountdownLeadMinutes
+              : profile!.settings.widgetCountdownLeadMinutes,
         ),
       );
     }

@@ -8,6 +8,15 @@ import '../logging/app_log_messages.dart';
 import 'app_log_service.dart';
 import 'home_widget_snapshot_service.dart';
 
+/// 情侣课表（我的+TA 合并视图）绑定的哨兵 id。
+///
+/// 与 TA 课表的固定 profile id（`partner-imported`）不同：情侣课表不是一张
+/// 真实课表（没有对应 profile），而是「我的当前课表 + TA 课表（按周偏移
+/// 映射）」的合并渲染，快照由各端按此哨兵特判构建；TA 解绑后该绑定回落
+/// 「跟随当前课表」，与普通绑定失效同语义。必须与 Kotlin 侧
+/// `WidgetBindingStore.COUPLE_MERGED_BINDING_ID` 保持一致。
+const String kHomeWidgetCoupleMergedBindingId = 'couple-merged';
+
 /// 今日课程类卡片的类型标识（与原生 resolveWidgetProvider/todayWidgetProviders 对齐）。
 enum HomeWidgetType {
   compact('compact'),
