@@ -3235,7 +3235,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      'オフにすると、ポップアップ、ホームのぼかし領域、「今週に戻る」ボタンは半透明の背景のみとなり、ぼかしサンプリングをしなくなります';
+      'オフにするとぼかしサンプリングを停止します：ポップアップは不透明な単色面になり、ホームのぼかし領域と「今週に戻る」ボタンは半透明の背景を保ちます';
 
   @override
   String get frostedSheetPreviewOpenAction => 'プレビューパネルを開く';

@@ -3180,7 +3180,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊';
+      '关闭后不再采样模糊：弹窗变为不透明纯色底，首页模糊区域与「回本周」按钮保留半透明底色';
 
   @override
   String get frostedSheetPreviewOpenAction => '打开预览面板';
@@ -13661,7 +13661,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      '關閉後，彈窗、首頁模糊區域與「回到本週」按鈕僅保留半透明底色，不再取樣模糊';
+      '關閉後不再取樣模糊：彈窗變為不透明純色底，首頁模糊區域與「回到本週」按鈕保留半透明底色';
 
   @override
   String get frostedSheetPreviewOpenAction => '開啟預覽面板';
@@ -24184,7 +24184,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      '關閉後，彈窗、首頁模糊區域與「回到本週」按鈕僅保留半透明底色，不再取樣模糊';
+      '關閉後不再取樣模糊：彈窗變為不透明純色底，首頁模糊區域與「回到本週」按鈕保留半透明底色';
 
   @override
   String get frostedSheetPreviewOpenAction => '開啟預覽面板';

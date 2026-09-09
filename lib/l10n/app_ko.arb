@@ -6036,7 +6036,7 @@
   "liveMiuiLabelOffsetXTitle": "왼쪽 텍스트 가로 오프셋",
   "liveMiuiLabelOffsetYTitle": "왼쪽 텍스트 세로 오프셋",
   "frostedSheetSectionSubtitle": "홈 팝업 패널의 가우시안 블러 강도와 성에 유리 밝기를 조절합니다. 슬라이더가 오른쪽일수록 흰 성에 유리 층이 뚜렷해집니다",
-  "frostedBlurEnabledSubtitle": "끄면 팝업, 홈 블러 영역, '이번 주로' 버튼이 반투명 배경만 남고 블러 샘플링을 하지 않습니다",
+  "frostedBlurEnabledSubtitle": "끄면 블러 샘플링이 중지됩니다: 팝업은 불투명한 단색 배경이 되고, 홈 블러 영역과 '이번 주로' 버튼은 반투명 배경을 유지합니다",
   "frostedSheetTintLabel": "성에 유리 밝기",
   "homePageBackgroundFillLabel": "배경 채우기",
   "homePageBackgroundFillColor": "단색",

@@ -6015,7 +6015,7 @@
   "liveMiuiLabelOffsetXTitle": "左側文字水平偏移",
   "liveMiuiLabelOffsetYTitle": "左側文字垂直偏移",
   "frostedSheetSectionSubtitle": "調整首頁彈出面板的高斯模糊強度與磨砂亮度，滑桿越靠右，白色磨砂層越明顯",
-  "frostedBlurEnabledSubtitle": "關閉後，彈窗、首頁模糊區域與「回到本週」按鈕僅保留半透明底色，不再取樣模糊",
+  "frostedBlurEnabledSubtitle": "關閉後不再取樣模糊：彈窗變為不透明純色底，首頁模糊區域與「回到本週」按鈕保留半透明底色",
   "frostedSheetTintLabel": "磨砂亮度",
   "homePageBackgroundFillLabel": "背景填充",
   "homePageBackgroundFillColor": "純色",

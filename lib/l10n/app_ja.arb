@@ -6036,7 +6036,7 @@
   "liveMiuiLabelOffsetXTitle": "左テキストの水平オフセット",
   "liveMiuiLabelOffsetYTitle": "左テキストの垂直オフセット",
   "frostedSheetSectionSubtitle": "ホームのポップアップパネルのガウスぼかし強度とすりガラスの明るさを調整します。スライダーが右ほど白いすりガラス層が目立ちます",
-  "frostedBlurEnabledSubtitle": "オフにすると、ポップアップ、ホームのぼかし領域、「今週に戻る」ボタンは半透明の背景のみとなり、ぼかしサンプリングをしなくなります",
+  "frostedBlurEnabledSubtitle": "オフにするとぼかしサンプリングを停止します：ポップアップは不透明な単色面になり、ホームのぼかし領域と「今週に戻る」ボタンは半透明の背景を保ちます",
   "frostedSheetTintLabel": "すりガラスの明るさ",
   "homePageBackgroundFillLabel": "背景の塗りつぶし",
   "homePageBackgroundFillColor": "単色",

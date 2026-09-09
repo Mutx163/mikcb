@@ -5880,7 +5880,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedBlurEnabledSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊'**
+  /// **'关闭后不再采样模糊：弹窗变为不透明纯色底，首页模糊区域与「回本周」按钮保留半透明底色'**
   String get frostedBlurEnabledSubtitle;
 
   /// No description provided for @frostedSheetPreviewOpenAction.

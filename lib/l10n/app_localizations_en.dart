@@ -3375,7 +3375,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      'When off, sheets and home frosted areas keep tint only, without backdrop blur';
+      'When off, blur sampling stops: sheets and menus turn fully opaque, while home frosted areas and the back-to-week button stay translucent';
 
   @override
   String get frostedSheetPreviewOpenAction => 'Open Preview Panel';

@@ -3250,7 +3250,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      '끄면 팝업, 홈 블러 영역, \'이번 주로\' 버튼이 반투명 배경만 남고 블러 샘플링을 하지 않습니다';
+      '끄면 블러 샘플링이 중지됩니다: 팝업은 불투명한 단색 배경이 되고, 홈 블러 영역과 \'이번 주로\' 버튼은 반투명 배경을 유지합니다';
 
   @override
   String get frostedSheetPreviewOpenAction => '미리보기 패널 열기';
