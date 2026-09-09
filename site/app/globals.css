@@ -6,4 +6,76 @@
   --font-sans:
     system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --docs-blue: #3482ff;
+  --docs-teal: #2dd4bf;
+  --docs-violet: #a78bfa;
+  --docs-grad: linear-gradient(120deg, #4f9dff 0%, #2dd4bf 52%, #a78bfa 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* 首页 hero：柔和氛围底，不抢 Fumadocs 主题 */
+.docs-hero-atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.docs-hero-atmosphere::before,
+.docs-hero-atmosphere::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  opacity: 0.45;
+}
+
+.docs-hero-atmosphere::before {
+  width: min(52vw, 520px);
+  height: min(52vw, 520px);
+  top: -12%;
+  left: 12%;
+  background: radial-gradient(circle, rgba(52, 130, 255, 0.55), transparent 70%);
+}
+
+.docs-hero-atmosphere::after {
+  width: min(48vw, 480px);
+  height: min(48vw, 480px);
+  top: 4%;
+  right: 8%;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.35), transparent 70%);
+}
+
+.dark .docs-hero-atmosphere::before {
+  opacity: 0.55;
+}
+
+.dark .docs-hero-atmosphere::after {
+  opacity: 0.4;
+}
+
+.docs-grad-text {
+  background: var(--docs-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.docs-reveal {
+  animation: docs-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes docs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

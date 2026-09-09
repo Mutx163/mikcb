@@ -15,6 +15,14 @@ export function baseOptions(): BaseLayoutProps {
     githubUrl: siteConfig.githubUrl,
     links: [
       {
+        text: '使用指南',
+        url: '/docs/guide/quick-start',
+      },
+      {
+        text: '开发者',
+        url: '/docs/dev/architecture',
+      },
+      {
         text: '官网与下载',
         url: siteConfig.websiteUrl,
       },
