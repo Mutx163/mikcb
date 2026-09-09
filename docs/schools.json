@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-08T06:25:02+00:00",
+  "updatedAt": "2026-09-09T06:31:02+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 202,
-    "schools": 197,
+    "total": 205,
+    "schools": 200,
     "generic": 5
   },
   "schools": [
@@ -370,6 +370,13 @@
       "name": "广东轻工职业技术大学",
       "initial": "G",
       "resourceFolder": "GDIPU",
+      "category": "school"
+    },
+    {
+      "id": "HUALIXY",
+      "name": "广州华立学院",
+      "initial": "G",
+      "resourceFolder": "HUALIXY",
       "category": "school"
     },
     {
@@ -1269,6 +1276,13 @@
       "category": "school"
     },
     {
+      "id": "XAUAT",
+      "name": "西安建筑科技大学",
+      "initial": "X",
+      "resourceFolder": "XAUAT",
+      "category": "school"
+    },
+    {
       "id": "XAWL",
       "name": "西安文理学院",
       "initial": "X",
@@ -1322,6 +1336,13 @@
       "name": "中南民族大学",
       "initial": "Z",
       "resourceFolder": "SCUEC",
+      "category": "school"
+    },
+    {
+      "id": "CUG",
+      "name": "中国地质大学（武汉）",
+      "initial": "Z",
+      "resourceFolder": "CUG",
       "category": "school"
     },
     {
