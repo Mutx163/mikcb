@@ -5934,7 +5934,7 @@
   "frostedGlassModeFrosted": "Classic Frosted",
   "frostedGlassModeLiquid": "Liquid Glass",
   "frostedGlassModeGaussian": "Gaussian Blur",
-  "frostedGlassModeTranslucent": "Translucent",
+  "frostedGlassModeSolid": "Solid cards",
   "frostedLiquidGlassHint": "Liquid glass requires a high-performance device",
   "advancedMaterialTitle": "Advanced Material",
   "advancedMaterialEntrySubtitle": "Liquid glass parameter tuning",

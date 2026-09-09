@@ -5973,7 +5973,7 @@
   "frostedGlassModeFrosted": "经典磨砂",
   "frostedGlassModeLiquid": "液态玻璃",
   "frostedGlassModeGaussian": "高斯模糊",
-  "frostedGlassModeTranslucent": "半透明",
+  "frostedGlassModeSolid": "实体卡片",
   "frostedLiquidGlassHint": "液态玻璃需要高性能设备支持",
   "advancedMaterialTitle": "高级材质",
   "advancedMaterialEntrySubtitle": "液态玻璃参数微调",

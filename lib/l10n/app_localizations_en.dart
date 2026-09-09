@@ -10300,7 +10300,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeGaussian => 'Gaussian Blur';
 
   @override
-  String get frostedGlassModeTranslucent => 'Translucent';
+  String get frostedGlassModeSolid => 'Solid cards';
 
   @override
   String get frostedLiquidGlassHint =>

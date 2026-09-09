@@ -272,7 +272,6 @@ String frostedGlassModeLabel(AppLocalizations l10n, FrostedGlassMode mode) =>
       FrostedGlassMode.frosted => l10n.frostedGlassModeFrosted,
       FrostedGlassMode.liquidGlass => l10n.frostedGlassModeLiquid,
       FrostedGlassMode.gaussian => l10n.frostedGlassModeGaussian,
-      FrostedGlassMode.translucent => l10n.frostedGlassModeTranslucent,
     };
 
 String liquidGlassPresetLabel(

@@ -10053,7 +10053,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeGaussian => '가우시안 블러';
 
   @override
-  String get frostedGlassModeTranslucent => '반투명';
+  String get frostedGlassModeSolid => '솔리드 카드';
 
   @override
   String get frostedLiquidGlassHint => '리퀴드 글래스는 고성능 기기가 필요합니다';

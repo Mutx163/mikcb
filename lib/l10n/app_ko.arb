@@ -5704,7 +5704,7 @@
   "frostedGlassModeFrosted": "클래식 프로스트",
   "frostedGlassModeLiquid": "리퀴드 글래스",
   "frostedGlassModeGaussian": "가우시안 블러",
-  "frostedGlassModeTranslucent": "반투명",
+  "frostedGlassModeSolid": "솔리드 카드",
   "frostedSheetSectionTitle": "프로스트 글래스",
   "frostedSheetBlurLabel": "블러 강도",
   "frostedBlurEnabledTitle": "블러 활성화",

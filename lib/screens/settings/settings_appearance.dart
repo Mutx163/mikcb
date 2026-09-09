@@ -244,22 +244,21 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             title: l10n.frostedSheetSectionTitle,
             child: HyperosListGroup(
               children: [
-                HyperosSelectTile<FrostedGlassMode>(
+                // 玻璃模式三档，与引导页「视觉效果」同一映射（见
+                // [glassModeChoiceOf] / [applyGlassModeChoice]）：此前
+                // 经典磨砂/高斯模糊/半透明三档渲染链路完全相同，只有
+                // 「高斯模糊」多露出两个滑杆，四个名字里三个长一个样，
+                // 用户无从选起；独立的「启用模糊」开关并入「实体卡片」。
+                HyperosSelectTile<GlassModeChoice>(
                   label: l10n.frostedGlassModeLabel,
                   items: {
-                    for (final mode in FrostedGlassMode.values)
-                      frostedGlassModeLabel(l10n, mode): mode,
+                    l10n.frostedGlassModeSolid: GlassModeChoice.solid,
+                    l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
+                    l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
                   },
-                  value: _draft.frostedGlassMode,
+                  value: glassModeChoiceOf(_draft),
                   onChanged: (value) {
-                    _updateDraft(_draft.copyWith(frostedGlassMode: value));
-                  },
-                ),
-                HyperosSwitchTile(
-                  title: l10n.frostedBlurEnabledTitle,
-                  value: _draft.frostedBlurEnabled,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(frostedBlurEnabled: value));
+                    _updateDraft(applyGlassModeChoice(_draft, value));
                   },
                 ),
                 Padding(
@@ -296,7 +295,12 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                       });
                     },
                   ),
-                if (_draft.frostedGlassMode == FrostedGlassMode.gaussian) ...[
+                // 高斯模糊档(开模糊 + 非液态)露出强度/亮度滑杆。按
+                // 「开模糊且非液态」判定而非 == gaussian：存量 frosted
+                // 默认档用户现在同样落在这一档，需要能看到滑杆。
+                if (_draft.frostedBlurEnabled &&
+                    _draft.frostedGlassMode !=
+                        FrostedGlassMode.liquidGlass) ...[
                   HyperosSliderTile(
                     title: l10n.frostedSheetBlurLabel,
                     value: _draft.frostedSheetBlurSigma,

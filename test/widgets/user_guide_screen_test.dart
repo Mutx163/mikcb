@@ -87,10 +87,12 @@ void main() {
     // (regression: M3 seed purple rendered as near-black fills).
     const hyperosPrimary = Color(0xFF3482FF);
     final badge = tester.widget<Container>(
-      find.ancestor(
-        of: find.byIcon(Icons.school_rounded),
-        matching: find.byType(Container),
-      ).first,
+      find
+          .ancestor(
+            of: find.byIcon(Icons.school_rounded),
+            matching: find.byType(Container),
+          )
+          .first,
     );
     final badgeColor = (badge.decoration! as BoxDecoration).color;
     expect(badgeColor, hyperosPrimary);
@@ -396,6 +398,8 @@ void main() {
 
     await tapEffect('实体卡片');
     expect(provider.settings.frostedBlurEnabled, isFalse);
+    // 实体卡片同时把玻璃模式归位非液态：液态面不受模糊总开关约束。
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.frosted);
   });
 
   testWidgets('personalize theme mode and seed color persist', (tester) async {
@@ -432,9 +436,7 @@ void main() {
 
     // 主题色色板：选一个非默认主题（默认 blue）。
     // 色板为 HyperosColorChip，按 ForuiTheme.values 顺序排列。
-    final target = ForuiTheme.values
-        .where((t) => t != ForuiTheme.blue)
-        .first;
+    final target = ForuiTheme.values.where((t) => t != ForuiTheme.blue).first;
     final dotFinder = find.byType(HyperosColorChip);
     await tester.dragUntilVisible(
       dotFinder.last,
@@ -453,10 +455,7 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(provider.settings.foruiTheme, target);
-    expect(
-      provider.settings.themeSeedColor,
-      target.seedHex,
-    );
+    expect(provider.settings.themeSeedColor, target.seedHex);
   });
 
   testWidgets('welcome page shows import and restore when callbacks provided', (

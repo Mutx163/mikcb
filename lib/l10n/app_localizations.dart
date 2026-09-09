@@ -17587,11 +17587,11 @@ abstract class AppLocalizations {
   /// **'高斯模糊'**
   String get frostedGlassModeGaussian;
 
-  /// No description provided for @frostedGlassModeTranslucent.
+  /// No description provided for @frostedGlassModeSolid.
   ///
   /// In zh, this message translates to:
-  /// **'半透明'**
-  String get frostedGlassModeTranslucent;
+  /// **'实体卡片'**
+  String get frostedGlassModeSolid;
 
   /// No description provided for @frostedLiquidGlassHint.
   ///

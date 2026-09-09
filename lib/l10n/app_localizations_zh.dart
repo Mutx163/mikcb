@@ -9723,7 +9723,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
-  String get frostedGlassModeTranslucent => '半透明';
+  String get frostedGlassModeSolid => '实体卡片';
 
   @override
   String get frostedLiquidGlassHint => '液态玻璃需要高性能设备支持';
@@ -20246,7 +20246,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
-  String get frostedGlassModeTranslucent => '半透明';
+  String get frostedGlassModeSolid => '實體卡片';
 
   @override
   String get frostedLiquidGlassHint => '液態玻璃需要高效能裝置';
@@ -30769,7 +30769,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
-  String get frostedGlassModeTranslucent => '半透明';
+  String get frostedGlassModeSolid => '實體卡片';
 
   @override
   String get frostedLiquidGlassHint => '液態玻璃需要高效能裝置支援';

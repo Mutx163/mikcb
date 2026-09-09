@@ -5701,7 +5701,7 @@
   "frostedGlassModeFrosted": "經典磨砂",
   "frostedGlassModeLiquid": "液態玻璃",
   "frostedGlassModeGaussian": "高斯模糊",
-  "frostedGlassModeTranslucent": "半透明",
+  "frostedGlassModeSolid": "實體卡片",
   "frostedSheetSectionTitle": "磨砂玻璃",
   "frostedSheetBlurLabel": "模糊強度",
   "frostedBlurEnabledTitle": "啟用模糊",

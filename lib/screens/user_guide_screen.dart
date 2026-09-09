@@ -278,9 +278,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               const SizedBox(width: 8),
               Text(
                 _buildPageTitle(l10n),
-                style: HyperosTypography.sectionDescription(context).copyWith(
-                  color: HyperosColors.primary(context),
-                ),
+                style: HyperosTypography.sectionDescription(
+                  context,
+                ).copyWith(color: HyperosColors.primary(context)),
               ),
             ],
           ),
@@ -353,7 +353,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.welcomeAppName, style: HyperosTypography.title(context)),
+              Text(
+                l10n.welcomeAppName,
+                style: HyperosTypography.title(context),
+              ),
               const SizedBox(height: 8),
               Text(
                 l10n.welcomeSubtitle,
@@ -654,7 +657,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
-          child: Text(l10n.guidePersonalizeSubtitle, style: _guideMutedBodyStyle()),
+          child: Text(
+            l10n.guidePersonalizeSubtitle,
+            style: _guideMutedBodyStyle(),
+          ),
         ),
         // 菜单样式卡：8833fcd 八宫格唯一化时随设置收敛移除；应用户要求
         // 与「首页与导航」的菜单形态选择器一同恢复。
@@ -668,12 +674,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   title: l10n.homeMenuStyleList,
                   summary: l10n.homeMenuStyleListSubtitle,
                   selected: settings.homeMenuStyle == HomeMenuStyle.list,
-                  onTap: () =>
-                      _updateSettings(
-                        _currentSettings.copyWith(
-                          homeMenuStyle: HomeMenuStyle.list,
-                        ),
-                      ),
+                  onTap: () => _updateSettings(
+                    _currentSettings.copyWith(
+                      homeMenuStyle: HomeMenuStyle.list,
+                    ),
+                  ),
                 ),
                 _guideOptionRow(
                   context,
@@ -681,12 +686,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   summary: l10n.homeMenuStyleGridSubtitle,
                   selected: settings.homeMenuStyle == HomeMenuStyle.grid,
                   showDivider: true,
-                  onTap: () =>
-                      _updateSettings(
-                        _currentSettings.copyWith(
-                          homeMenuStyle: HomeMenuStyle.grid,
-                        ),
-                      ),
+                  onTap: () => _updateSettings(
+                    _currentSettings.copyWith(
+                      homeMenuStyle: HomeMenuStyle.grid,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -721,7 +725,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   appThemeModeLabel(l10n, mode),
               ],
               selectedIndex: AppThemeMode.values.indexOf(settings.appThemeMode),
-              onChanged: (index) => _applyAppThemeMode(AppThemeMode.values[index]),
+              onChanged: (index) =>
+                  _applyAppThemeMode(AppThemeMode.values[index]),
             ),
           ),
         ),
@@ -730,7 +735,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           title: l10n.guidePersonalizeSeedColorTitle,
           child: HyperosControlCardInset(
             child: HyperosHexColorChipGroup(
-              colorHexes: [for (final theme in ForuiTheme.values) theme.seedHex],
+              colorHexes: [
+                for (final theme in ForuiTheme.values) theme.seedHex,
+              ],
               // 名字跟随色块：中性灰/锌灰/石板灰三个深色 seed 色块肉眼几乎
               // 无法区分，带名字才能分辨。
               labels: [
@@ -780,10 +787,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     _applyForuiTheme(theme);
   }
 
-  /// 视觉效果三档与设置字段的映射：
+  /// 视觉效果三档与设置字段的映射（与设置页玻璃模式三档同语义）：
   /// - 高斯模糊 → 开模糊 + gaussian 模式；
   /// - 液态玻璃 → 开模糊 + liquidGlass 模式；
-  /// - 实体卡片 → 直接关闭模糊总开关（所有表面回落实体卡片）。
+  /// - 实体卡片 → 关闭模糊总开关并把玻璃模式归位 frosted（所有表面
+  ///   回落实体卡片；液态面不受模糊总开关约束，必须显式脱离液态档）。
   void _applyVisualEffect(_GuideVisualEffect effect) {
     switch (effect) {
       case _GuideVisualEffect.gaussian:
@@ -801,7 +809,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         );
       case _GuideVisualEffect.solid:
-        _updateSettings(_currentSettings.copyWith(frostedBlurEnabled: false));
+        _updateSettings(
+          _currentSettings.copyWith(
+            frostedBlurEnabled: false,
+            frostedGlassMode: FrostedGlassMode.frosted,
+          ),
+        );
     }
   }
 
@@ -927,10 +940,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
           child: Text(
             step,
-            style: HyperosTypography.listDetail(context).copyWith(
-              fontSize: 11,
-              color: HyperosColors.primary(context),
-            ),
+            style: HyperosTypography.listDetail(
+              context,
+            ).copyWith(fontSize: 11, color: HyperosColors.primary(context)),
           ),
         ),
         const SizedBox(width: 10),
@@ -1151,12 +1163,14 @@ _GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
   return _GuideVisualEffect.gaussian;
 }
 
-String _guideVisualEffectLabel(AppLocalizations l10n, _GuideVisualEffect effect) =>
-    switch (effect) {
-      _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
-      _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
-      _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
-    };
+String _guideVisualEffectLabel(
+  AppLocalizations l10n,
+  _GuideVisualEffect effect,
+) => switch (effect) {
+  _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
+  _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
+  _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
+};
 
 String _guideVisualEffectDescription(
   AppLocalizations l10n,

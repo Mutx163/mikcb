@@ -5704,7 +5704,7 @@
   "frostedGlassModeFrosted": "クラシックフロスト",
   "frostedGlassModeLiquid": "リキッドガラス",
   "frostedGlassModeGaussian": "ガウスぼかし",
-  "frostedGlassModeTranslucent": "半透明",
+  "frostedGlassModeSolid": "ソリッドカード",
   "frostedSheetSectionTitle": "フロストガラス",
   "frostedSheetBlurLabel": "ぼかし強度",
   "frostedBlurEnabledTitle": "ぼかしを有効にする",

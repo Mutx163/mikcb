@@ -24,17 +24,18 @@ const kDefaultLiquidGlassPickerButtonsEnabled = true;
 /// User-tunable frosted glass appearance for home sheets and related surfaces.
 /// Glass-surface rendering mode for frosted/Wallpaper-backgrounded sheets and cards.
 enum FrostedGlassMode {
-  /// Standard frosted glass (backdrop blur + milky tint overlay).
+  /// 非液态磨砂的内部中性值：模型默认值、存量数据兜底（旧 translucent /
+  /// gaussian 值经 [FrostedGlassModeX.fromValue] 归一，渲染完全等价）、
+  /// 以及设置页「实体卡片」档的存储落点。渲染上与 [gaussian] 走同一条
+  /// BackdropFilter + tint 链路，设置页不再作为独立档位暴露。
   frosted,
 
   /// Liquid-glass refraction (depth-based real-time shader).
   liquidGlass,
 
-  /// Pure gaussian blur with minimal tint (thin, clear look).
+  /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
+  /// 标记用户显式选择过该档。
   gaussian,
-
-  /// Mist transparent frost — very light blur, almost clear.
-  translucent,
 }
 
 extension FrostedGlassModeX on FrostedGlassMode {
@@ -82,7 +83,6 @@ class FrostedAppearance {
 
   /// Global backdrop blur master switch.
   final bool blurEnabled;
-
 
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;

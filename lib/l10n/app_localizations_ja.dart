@@ -10008,7 +10008,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeGaussian => 'ガウスぼかし';
 
   @override
-  String get frostedGlassModeTranslucent => '半透明';
+  String get frostedGlassModeSolid => 'ソリッドカード';
 
   @override
   String get frostedLiquidGlassHint => 'リキッドガラスには高性能デバイスが必要です';
