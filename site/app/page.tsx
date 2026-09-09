@@ -54,6 +54,7 @@ const guideLinks = [
   { title: '超级岛与提醒', description: '分阶段提醒与上课闹钟', href: '/docs/guide/super-island' },
   { title: '同步与备份', description: 'WebDAV、快照与换机', href: '/docs/guide/sync-backup' },
   { title: '故障排查', description: '权限、通知与数据恢复', href: '/docs/guide/troubleshooting' },
+  { title: 'AI 适配教务', description: '给自己学校做导入适配', href: '/docs/dev/jiaowu-adapter' },
 ] as const;
 
 const toneMap = {

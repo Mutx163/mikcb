@@ -2,5 +2,5 @@
   "title": "开发者文档",
   "root": true,
   "defaultOpen": true,
-  "pages": ["architecture", "contributing", "deployment"]
+  "pages": ["architecture", "contributing", "jiaowu-adapter", "deployment"]
 }

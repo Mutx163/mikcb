@@ -1,0 +1,119 @@
+---
+title: AI 协作适配教务
+description: 用 AI 给自己的学校做教务课表导入适配：流程、安全红线、可复制的启动指令与 skill 位置。
+---
+
+很多同学想把**自己学校**接进轻屿课表，却卡在「不会写抓包脚本」。现在可以用 AI 协作完成一次完整适配。
+
+完整执行规范固定在教务仓库：
+
+- **仓库**：[Mutx163/qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)
+- **Skill 原文**：[`.agents/skills/jiaowu-adapter/SKILL.md`](https://github.com/Mutx163/qingyu_warehouse/blob/main/.agents/skills/jiaowu-adapter/SKILL.md)
+- 国内网络：可改用 GitCode 镜像 [gitcode.com/mutx/qingyu_warehouse](https://gitcode.com/mutx/qingyu_warehouse) 拉取（Issue / PR 仍走 GitHub）
+
+本站这一页是**入口与协作约定**；细节以仓库 skill 为准。
+
+## 你和 AI 怎么分工
+
+| 角色 | 负责 |
+| --- | --- |
+| **你** | 在浏览器里登录教务系统；复制控制台输出；确认课表是否正确 |
+| **AI** | 识别平台、抄参考脚本骨架、探测接口、写适配脚本、本地校验、准备 PR |
+
+<Callout type="warn">
+  **安全红线（全程不可破）**
+
+  1. **永远不要**把账号、密码、验证码、Cookie、Token 发给 AI。
+  2. 登录只由你自己在浏览器完成；AI 只在**你已登录的页签**里复用会话。
+  3. 探测 / 测试结果只输出到**页面控制台**给你复制回传，**不要发到任何远程地址**。
+  4. 会话失效时，只提示重新登录，不代登、不索要凭证。
+</Callout>
+
+## 标准流程（和 skill 一致）
+
+```text
+Step 0  打开教务入口 → 你接管登录 → 确认会话有效
+Step 1  识别平台（强智 / 正方 / 青果 / URP / 超星 …）
+Step 2  读仓库内同平台参考脚本（只当骨架）
+Step 3  在你已登录的页签探测真实接口
+Step 4  写 resources/<SCHOOL_ID>/*.js
+Step 5  注入 mock + 脚本，对照真实课表逐条比对
+Step 6  本地校验（node --check + 上游兼容测试）
+Step 7  提交并推 fork，向 Mutx163/qingyu_warehouse 开 PR
+```
+
+铁律：**参考脚本只当骨架**。URL、学期参数、解析选择器、周次文案一律以目标校实测为准。
+
+## 推荐启动指令（可直接复制）
+
+把下面整段发给你的 AI Agent（Claude Code / Cursor / 其它带浏览器或控制台协作的助手均可）。替换 `【学校名称】` 即可。
+
+```text
+我要给我的学校做轻屿课表（教务课表导入）的适配。
+
+先拿到流程文档：在 GitHub 搜索仓库 qingyu_warehouse（作者 Mutx163），
+国内网络搜不到就去 GitCode 搜同名仓库，读取里面的
+.agents/skills/jiaowu-adapter/SKILL.md，然后严格按它执行。
+两处都找不到就直接回我「需要 skill 原文」，我把内容贴给你。
+
+目标学校：【学校名称】
+
+教务入口：请你自己搜索「【学校名称】教务系统」确认官方入口网址，
+把找到的网址先发给我确认，确认后再打开。
+
+第一步只做这一件事：打开教务网站后就停下来等我，
+不要做任何登录操作，也不要向我要账号密码或验证码——
+我会在你打开的页面里自己登录。
+登录成功后我回复「已登录」，你再继续后面的流程
+（识别平台 → 探测接口 → 写脚本 → 注入测试 → 本地校验 → 提交）。
+
+如果你没有浏览器控制能力，就提示我在本机浏览器打开教务网站并登录，
+我登录好后告诉你继续。
+
+后续规则：
+- 会话失效时只提示我重新登录，不索要、不操作我的账号密码
+- 探测和测试代码只在我已登录的页面里运行，
+  结果只输出到页面控制台给我复制回传，不发送到任何远程地址
+- 完成后按 skill 的发布步骤提交
+  （推到自己的 fork 并向 Mutx163/qingyu_warehouse 开 PR）
+```
+
+<Callout type="info">
+  如果 AI 回复「需要 skill 原文」，把仓库里的
+  [SKILL.md](https://github.com/Mutx163/qingyu_warehouse/blob/main/.agents/skills/jiaowu-adapter/SKILL.md)
+  全文粘贴过去即可；或本地克隆仓库后让 AI 直接读文件。
+</Callout>
+
+## 执行环境：模式 A / 模式 B
+
+| 模式 | AI 能力 | 你怎么做 |
+| --- | --- | --- |
+| **A** | 有浏览器控制 | 在打开的页签里登录；探测与 mock 由 AI 注入，你只复制控制台 JSON |
+| **B** | 只有代码能力 | 你自己在已登录页签 F12 粘贴 AI 给的片段，把输出贴回对话 |
+
+若教务只对校内网开放，AI 的浏览器连不上，自动退回模式 B。
+
+## 你登录后通常会被要求做的事
+
+1. 在打开的教务页签里完成登录（含验证码 / 统一身份认证）。
+2. 回复 AI：「已登录」。
+3. 若 AI 给出探测脚本：在控制台运行后，把打印的 JSON 复制回传。
+4. 若进入注入测试：按顺序粘贴 **mock 桥接 → 完整适配脚本 → 读 `__TEST_STATE__`**，对照教务真实课表检查课程名、教师、地点、星期、节次、单双周。
+5. 全对后再谈提交 PR；发现问题就继续修脚本重测。
+
+## 发布后怎么验证
+
+PR 合并到 `Mutx163/qingyu_warehouse` 的 `main` 后：
+
+1. 打开轻屿课表 → 导入 → 教务系统导入。
+2. 学校列表里找到你的学校，登录教务并导入。
+3. 核对周视图与通知里的课程信息；有问题开 [Issue](https://github.com/Mutx163/mikcb/issues) 或回 PR 讨论。
+
+更细的桥接 API、平台识别表、探测片段与 mock 模板，见仓库 skill 与
+[docs/SCRIPT_API.md](https://github.com/Mutx163/qingyu_warehouse/blob/main/docs/SCRIPT_API.md)。
+
+## 相关
+
+- 应用内导入路径：[导入与迁移](/docs/guide/import)
+- 贡献环境与仓库约定：[参与贡献](/docs/dev/contributing)
+- 适配仓库：[qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)
