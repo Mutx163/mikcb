@@ -3452,29 +3452,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageBackgroundScopeHeader => 'Top bar';
 
   @override
-  String get homePageHeaderBlurTitle => 'Top bar blur';
+  String get homePageHeaderBlurTitle => 'Top bar glass';
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      'Frost the title row; includes the status bar when that scope is enabled';
+      'Glass material follows the glass mode in Appearance; when off, the top bar shows the wallpaper directly (status bar included)';
 
   @override
-  String get homePageWeekdayBarBlurTitle => 'Info bar blur';
+  String get homePageWeekdayBarBlurTitle => 'Info bar glass';
 
   @override
   String get homePageWeekdayBarBlurSubtitle =>
-      'Frost the week and weekday row over the background image';
-
-  @override
-  String get homePageTimeColumnBlurTitle => 'Time column blur';
-
-  @override
-  String get homePageTimeColumnBlurSubtitle =>
-      'Frost the left section/time column over the background image';
-
-  @override
-  String get homePageRegionBlurSectionSubtitle =>
-      'Works with a background image. Blur strength follows sheet frosted-glass settings';
+      'Glass material follows the glass mode in Appearance; when off, the info bar shows the wallpaper directly';
 
   @override
   String get homePagePickImageAction => 'Choose image';
@@ -4184,6 +4173,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetBindingFollowActive => 'Follow current timetable';
+
+  @override
+  String get homeWidgetBindingCoupleMerged => 'Couple timetable';
 
   @override
   String get homeWidgetBindingEmpty =>

@@ -3323,29 +3323,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBackgroundScopeHeader => '상단 바';
 
   @override
-  String get homePageHeaderBlurTitle => '상단 바 가우시안 블러';
+  String get homePageHeaderBlurTitle => '상단 바 유리';
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      '제목 표시줄(경屿 시간표) 영역을 흐리게 합니다. \'상태 표시줄\'을 선택하면 상태 표시줄도 함께 흐리게 합니다';
+      '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 상단 바(상태 표시줄 포함)에 배경화면이 그대로 표시됩니다';
 
   @override
-  String get homePageWeekdayBarBlurTitle => '정보 바 가우시안 블러';
+  String get homePageWeekdayBarBlurTitle => '정보 바 유리';
 
   @override
   String get homePageWeekdayBarBlurSubtitle =>
-      '주차와 요일 정보 바를 흐리게 하고 아래 배경 이미지를 비춥니다';
-
-  @override
-  String get homePageTimeColumnBlurTitle => '시간 열 가우시안 블러';
-
-  @override
-  String get homePageTimeColumnBlurSubtitle =>
-      '왼쪽 교시·시간 열을 흐리게 하고 아래 배경 이미지를 비춥니다';
-
-  @override
-  String get homePageRegionBlurSectionSubtitle =>
-      '배경 이미지와 함께 사용해야 합니다. 블러 강도는 \'팝업 성에 유리\' 설정을 따릅니다';
+      '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 정보 바에 배경화면이 그대로 표시됩니다';
 
   @override
   String get homePagePickImageAction => '이미지 선택';
@@ -4030,6 +4019,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeWidgetBindingFollowActive => '현재 시간표 따르기';
+
+  @override
+  String get homeWidgetBindingCoupleMerged => '커플 시간표';
 
   @override
   String get homeWidgetBindingEmpty =>

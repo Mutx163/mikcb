@@ -3251,25 +3251,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundScopeHeader => '顶栏';
 
   @override
-  String get homePageHeaderBlurTitle => '顶栏高斯模糊';
+  String get homePageHeaderBlurTitle => '顶栏玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏';
+  String get homePageHeaderBlurSubtitle => '玻璃材质跟随外观的玻璃模式；关闭后顶栏直接透出壁纸（含状态栏）';
 
   @override
-  String get homePageWeekdayBarBlurTitle => '信息栏高斯模糊';
+  String get homePageWeekdayBarBlurTitle => '信息栏玻璃';
 
   @override
-  String get homePageWeekdayBarBlurSubtitle => '模糊周次与星期信息栏，透出下方背景图';
-
-  @override
-  String get homePageTimeColumnBlurTitle => '时间栏高斯模糊';
-
-  @override
-  String get homePageTimeColumnBlurSubtitle => '模糊左侧节次/时间列，透出下方背景图';
-
-  @override
-  String get homePageRegionBlurSectionSubtitle => '需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置';
+  String get homePageWeekdayBarBlurSubtitle => '玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸';
 
   @override
   String get homePagePickImageAction => '选择图片';
@@ -3931,6 +3922,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeWidgetBindingFollowActive => '跟随当前课表';
+
+  @override
+  String get homeWidgetBindingCoupleMerged => '情侣课表';
 
   @override
   String get homeWidgetBindingEmpty => '桌面上还没有今日课程卡片，先添加一张再回来绑定';
@@ -13731,25 +13725,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBackgroundScopeHeader => '頂欄';
 
   @override
-  String get homePageHeaderBlurTitle => '頂欄高斯模糊';
+  String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '模糊標題欄（輕嶼課表）區域；勾選「狀態列」時一併模糊狀態列';
+  String get homePageHeaderBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後頂欄直接透出壁紙（含狀態列）';
 
   @override
-  String get homePageWeekdayBarBlurTitle => '資訊欄高斯模糊';
+  String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
 
   @override
-  String get homePageWeekdayBarBlurSubtitle => '模糊週次與星期資訊欄，透出下方背景圖';
-
-  @override
-  String get homePageTimeColumnBlurTitle => '時間欄高斯模糊';
-
-  @override
-  String get homePageTimeColumnBlurSubtitle => '模糊左側節次/時間列，透出下方背景圖';
-
-  @override
-  String get homePageRegionBlurSectionSubtitle => '需搭配背景圖使用；模糊強度跟隨「彈窗磨砂玻璃」設定';
+  String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
 
   @override
   String get homePagePickImageAction => '選擇圖片';
@@ -14411,6 +14396,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetBindingFollowActive => '跟隨目前課表';
+
+  @override
+  String get homeWidgetBindingCoupleMerged => '情侶課表';
 
   @override
   String get homeWidgetBindingEmpty => '桌面上還沒有今日課程卡片，先新增一張再返嚟綁定';
@@ -24254,25 +24242,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBackgroundScopeHeader => '頂欄';
 
   @override
-  String get homePageHeaderBlurTitle => '頂欄高斯模糊';
+  String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '模糊標題欄（輕嶼課表）區域；勾選「狀態列」時一併模糊狀態列';
+  String get homePageHeaderBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後頂欄直接透出壁紙（含狀態列）';
 
   @override
-  String get homePageWeekdayBarBlurTitle => '資訊欄高斯模糊';
+  String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
 
   @override
-  String get homePageWeekdayBarBlurSubtitle => '模糊週次與星期資訊欄，透出下方背景圖';
-
-  @override
-  String get homePageTimeColumnBlurTitle => '時間欄高斯模糊';
-
-  @override
-  String get homePageTimeColumnBlurSubtitle => '模糊左側節次/時間列，透出下方背景圖';
-
-  @override
-  String get homePageRegionBlurSectionSubtitle => '需搭配背景圖使用；模糊強度跟隨「彈窗磨砂玻璃」設定';
+  String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
 
   @override
   String get homePagePickImageAction => '選擇圖片';
@@ -24934,6 +24913,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetBindingFollowActive => '跟隨目前課表';
+
+  @override
+  String get homeWidgetBindingCoupleMerged => '情侶課表';
 
   @override
   String get homeWidgetBindingEmpty => '桌面上還沒有今日課程卡片，先新增一張再回來綁定';

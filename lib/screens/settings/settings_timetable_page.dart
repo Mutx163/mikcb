@@ -328,8 +328,13 @@ class _TimetablePageSettingsScreenState
                   value,
                 ),
               ),
+              // 两个「玻璃」开关只决定铬带是否铺玻璃（材质跟随外观的
+              // 玻璃模式：高斯磨砂/液态玻璃/实体卡片下半透明底），不再
+              // 自称「高斯模糊」——那会把全局玻璃模式与区域开关搅成
+              // 矛盾组合。关闭 = 该区域直接透出壁纸（无玻璃）。
               HyperosSwitchTile(
                 title: l10n.homePageHeaderBlurTitle,
+                subtitle: l10n.homePageHeaderBlurSubtitle,
                 value: _draft.homePageHeaderBlurEnabled,
                 onChanged: (value) {
                   _updateDraft(
@@ -339,6 +344,7 @@ class _TimetablePageSettingsScreenState
               ),
               HyperosSwitchTile(
                 title: l10n.homePageWeekdayBarBlurTitle,
+                subtitle: l10n.homePageWeekdayBarBlurSubtitle,
                 value: _draft.homePageWeekdayBarBlurEnabled,
                 onChanged: (value) {
                   _updateDraft(

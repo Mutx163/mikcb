@@ -3307,27 +3307,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBackgroundScopeHeader => 'トップバー';
 
   @override
-  String get homePageHeaderBlurTitle => 'トップバーのガウスぼかし';
+  String get homePageHeaderBlurTitle => 'トップバーガラス';
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      'タイトルバー（軽屿時間割）領域をぼかします。「ステータスバー」にチェックするとステータスバーも一緒にぼかします';
+      'ガラス素材は外観のガラスモードに従います。オフのままではトップバー（ステータスバー含む）に壁紙を直接表示します';
 
   @override
-  String get homePageWeekdayBarBlurTitle => '情報バーのガウスぼかし';
+  String get homePageWeekdayBarBlurTitle => '情報バーガラス';
 
   @override
-  String get homePageWeekdayBarBlurSubtitle => '週次と曜日の情報バーをぼかし、下の背景画像を透かします';
-
-  @override
-  String get homePageTimeColumnBlurTitle => '時間列のガウスぼかし';
-
-  @override
-  String get homePageTimeColumnBlurSubtitle => '左の節次・時間列をぼかし、下の背景画像を透かします';
-
-  @override
-  String get homePageRegionBlurSectionSubtitle =>
-      '背景画像と組み合わせて使用します。ぼかし強度は「ポップアップのすりガラス」設定に連動します';
+  String get homePageWeekdayBarBlurSubtitle =>
+      'ガラス素材は外観のガラスモードに従います。オフのままでは情報バーに壁紙を直接表示します';
 
   @override
   String get homePagePickImageAction => '画像を選択';
@@ -4006,6 +3997,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeWidgetBindingFollowActive => '現在の時間割に従う';
+
+  @override
+  String get homeWidgetBindingCoupleMerged => 'ペア時間割';
 
   @override
   String get homeWidgetBindingEmpty =>

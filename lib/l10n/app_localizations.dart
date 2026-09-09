@@ -6018,44 +6018,26 @@ abstract class AppLocalizations {
   /// No description provided for @homePageHeaderBlurTitle.
   ///
   /// In zh, this message translates to:
-  /// **'顶栏高斯模糊'**
+  /// **'顶栏玻璃'**
   String get homePageHeaderBlurTitle;
 
   /// No description provided for @homePageHeaderBlurSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏'**
+  /// **'玻璃材质跟随外观的玻璃模式；关闭后顶栏直接透出壁纸（含状态栏）'**
   String get homePageHeaderBlurSubtitle;
 
   /// No description provided for @homePageWeekdayBarBlurTitle.
   ///
   /// In zh, this message translates to:
-  /// **'信息栏高斯模糊'**
+  /// **'信息栏玻璃'**
   String get homePageWeekdayBarBlurTitle;
 
   /// No description provided for @homePageWeekdayBarBlurSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'模糊周次与星期信息栏，透出下方背景图'**
+  /// **'玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸'**
   String get homePageWeekdayBarBlurSubtitle;
-
-  /// No description provided for @homePageTimeColumnBlurTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'时间栏高斯模糊'**
-  String get homePageTimeColumnBlurTitle;
-
-  /// No description provided for @homePageTimeColumnBlurSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'模糊左侧节次/时间列，透出下方背景图'**
-  String get homePageTimeColumnBlurSubtitle;
-
-  /// No description provided for @homePageRegionBlurSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置'**
-  String get homePageRegionBlurSectionSubtitle;
 
   /// No description provided for @homePagePickImageAction.
   ///
@@ -7268,6 +7250,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'跟随当前课表'**
   String get homeWidgetBindingFollowActive;
+
+  /// No description provided for @homeWidgetBindingCoupleMerged.
+  ///
+  /// In zh, this message translates to:
+  /// **'情侣课表'**
+  String get homeWidgetBindingCoupleMerged;
 
   /// No description provided for @homeWidgetBindingEmpty.
   ///
