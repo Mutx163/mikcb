@@ -690,9 +690,49 @@ private fun normalizeNullableText(value: String?): String? {
 
 private fun normalizeText(value: String?): String = normalizeNullableText(value) ?: ""
 
-/** 解析展开详情字段列表；null/未知类型 → null（全显示），空列表 → 空列表（全隐藏）。 */
-internal fun parseExpandedDetailFields(raw: Any?): List<String>? {
-    return when (raw) {
+/**
+ * 展开详情默认行序（非提升态：状态栏通知展开）。
+ *
+ * 这是 **历史固定顺序**，也是快照缺失/老版本 APK 时的兜底；设置页的
+ * 「展开详情」只是在这条顺序上做显隐与调序，默认值必须与它逐字一致，
+ * 否则「加了自定义功能以后展开态长得和以前不一样」。
+ * 改这里等于改所有缺省用户的展开态，务必同步 LiveUpdateService 的
+ * `expandedDetailDefaultOrder` 与设置枚举 [LiveExpandedDetailField] 顺序。
+ */
+internal val EXPANDED_DETAIL_DEFAULT_ORDER: List<String> = listOf(
+    "stage", "shortName", "progress", "status",
+    "time", "location", "teacher", "next", "note",
+)
+
+/**
+ * 提升态（超级岛展开）默认行序：与 [EXPANDED_DETAIL_DEFAULT_ORDER] 同一套
+ * 字段，但历史默认不含 stage 首行、且 progress 在 status 之前的顺序略有
+ * 不同。同样必须与 LiveUpdateService 逐字一致。
+ */
+internal val PROMOTED_EXPANDED_DETAIL_DEFAULT_ORDER: List<String> = listOf(
+    "progress", "status", "time", "location",
+    "teacher", "shortName", "next", "note",
+)
+
+/**
+ * 解析展开详情字段列表。
+ *
+ * 语义：
+ * - 快照/Intent **没有这个 key**（null / 未知类型）→ 返回 [EXPANDED_DETAIL_DEFAULT_ORDER]
+ *   等价的全显示顺序，让老快照保持历史展开态；
+ * - 显式空数组 → 空列表 = 全隐藏（用户真的把每一项都关了）；
+ * - 数组里只认识部分字段 → 保持用户给的顺序，末尾补上没提到的字段，
+ *   避免字段新增/传输截断后整块详情凭空消失。
+ *
+ * 注意：**不要返回 null**。原生下拉的 `expandedDetailFields ?: listOf(...)`
+ * 兜底两处默认顺序不同（非提升态 9 行、提升态 8 行且无 stage），一旦把
+ * 一个「未读快照」也解析成那个顺序，那些从未进过设置页的用户在课中看到
+ * 的超级岛展开态就会被换成非提升态顺序（多出阶段行、进度换成状态行），
+ * 即 issue 里「展开态长得和之前不一样」。用本函数的返回值覆盖请求顺序，
+ * 下拉顺序只影响字段完整缺失的极端情形。
+ */
+internal fun parseExpandedDetailFields(raw: Any?): List<String> {
+    val declared = when (raw) {
         is JSONArray -> buildList {
             for (index in 0 until raw.length()) {
                 raw.optString(index).takeIf { it.isNotEmpty() }?.let(::add)
@@ -700,7 +740,34 @@ internal fun parseExpandedDetailFields(raw: Any?): List<String>? {
         }
         is List<*> -> raw.mapNotNull { it as? String }.filter { it.isNotEmpty() }
         else -> null
+    } ?: return EXPANDED_DETAIL_DEFAULT_ORDER
+    return completeExpandedDetailOrder(declared)
+}
+
+/**
+ * 补齐 [declared] 里没有的字段：保持用户顺序，未知/重复项丢弃，末尾按默认
+ * 顺序补全。空列表原样保留（全隐藏由设置页的「全关」表达）。
+ */
+internal fun completeExpandedDetailOrder(
+    declared: List<String>,
+    defaults: List<String> = EXPANDED_DETAIL_DEFAULT_ORDER,
+): List<String> {
+    if (declared.isEmpty()) {
+        return declared
     }
+    val known = defaults.toSet()
+    val result = ArrayList<String>(defaults.size)
+    for (key in declared) {
+        if (key in known && key !in result) {
+            result += key
+        }
+    }
+    for (key in defaults) {
+        if (key !in result) {
+            result += key
+        }
+    }
+    return result
 }
 
 private fun parseIntList(raw: Any?): List<Int>? {
@@ -1556,10 +1623,13 @@ object LiveUpdateScheduler {
                     .takeIf { it.isNotBlank() }
                     ?: settingsJson.optString("liveMiuiIslandExpandedIconPath")
                         .takeIf { it.isNotBlank() },
+            // 课中/下课档未单独设置时回退课前档；两处都缺失 parse 会返回
+            // 默认全显示顺序，因此 `?:` 只在课中档为 null 时生效（永不 null）。
             liveDuringEndExpandedDetailFields =
                 parseExpandedDetailFields(
-                    settingsJson.optJSONArray("liveDuringEndExpandedDetailFields"),
-                ) ?: parseExpandedDetailFields(settingsJson.optJSONArray("liveExpandedDetailFields")),
+                    settingsJson.optJSONArray("liveDuringEndExpandedDetailFields")
+                        ?: settingsJson.optJSONArray("liveExpandedDetailFields"),
+                ),
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveClassReminderStartMinutes =
                 settingsJson.optInt("liveClassReminderStartMinutes", 0),

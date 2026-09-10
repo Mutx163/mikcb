@@ -1,6 +1,7 @@
 # 超级岛「展开状态详细信息」自定义 — 设计方案
 
 > 日期：2026-09-09　|　状态：已实施（方案 A + 一期顺带完成排序）
+> 追加修订 2026-09-10：修复「未读快照导致展开态变更」与设置页 UI 规范化，见 §11。
 > 目标：让用户自定义超级岛/焦点通知**展开态**（大卡片）里显示哪些详细信息、按什么顺序显示。
 
 ---
@@ -167,3 +168,65 @@ live_island_preview.dart:19 现注释明确「展开态不在此预览范围内�
 3. 展开态 location 独立开关，不跟随折叠态 showLocation（与方案 §3 现状一致）。
 4. Kotlin 空文本兜底未额外实现：全关后 setBigContentTitle 仍显示阶段标题。
 5. 定向验证：flutter analyze 0 issues；timetable_settings_test 53 例全过（含新增 4 例序列化/双档/重置）；LiveUpdateSchedulerLogicTest 含 parseExpandedDetailFields 3 例。
+
+
+---
+
+## 11. 追加修订（2026-09-10）
+
+用户反馈两点：设置 UI 不像本软件、不好用；加了功能后展开态和以前不一样。定位结果与处理如下。
+
+### 11.1 展开态回归（真 bug，已修）
+
+- **根因**：`parseExpandedDetailFields(raw)` 在 `raw == null`（快照里没有
+  `liveExpandedDetailFields` 这个 key）时返回 `null`，语义是「用户没自定义」。
+  但 `NightlySnapshot` 里存在**两份默认顺序**：
+  - `buildNotification` 兜底：非提升态 `stage, shortName, progress, status, time, location, teacher, next, note`；
+  - `buildNotification` 兜底：提升态 `progress, status, time, location, teacher, shortName, next, note`。
+  同时 `parseSnapshot` 把 `liveDuringEndExpandedDetailFields` 默认为
+  `parse("liveDuringEnd...") ?: parse("live...")`，即课中档为 `null` 时**镜像**成了课前档的
+  `null`（而不是「未设置」）。于是「从未进过设置页」的用户，课中提升态请求顺序
+  被按 `expandedDetailFields` 提供了 9 字段默认顺序，展开态多出阶段行、进度行被
+  状态行顶掉——和加功能之前长得不一样。
+- **修复**：
+  - 新增 `EXPANDED_DETAIL_DEFAULT_ORDER` / `PROMOTED_EXPANDED_DETAIL_DEFAULT_ORDER`
+    两个内部常量，`parseExpandedDetailFields` 在 key 缺失时返回**全显示历史顺序**
+    的副本，不再返回 `null`；
+  - `parseExpandedDetailFields` 对「只认识部分字段」的输入做补齐（保留用户顺序，
+    未知/重复项丢弃，末尾按默认顺序补全），空数组仍表示全隐藏；
+  - `parseSnapshot` 的课中档回退改为先合并 JSON 键再解析，去掉依赖 `null` 的
+    elvis 语义；
+  - `LiveUpdateService.buildNotification` 两处 `?: listOf(...)` 内联列表改为
+    具名常量，消除「两处默认顺序不同」的隐患。
+- **回归测试**：`LiveUpdateSchedulerLogicTest` 的 4 例改为断言
+  「缺失 key → 历史默认顺序」「显式空数组 → 全隐藏」「部分列表 → 补全」；
+  新增 Flutter 侧枚举顺序与原生默认顺序一致性断言。
+
+### 11.2 设置页 UI 规范化（已改）
+
+原实现的两个毛刺：
+
+1. 行首放了两个 `IconButton` 上/下箭头——不是本项目的控件语言，且箭头在
+   隐藏分组里还留着，让人误以为能拖。
+2. 用 `Theme.of(context).dividerColor` / `colorScheme.primary` 画边框和
+   选中态（`_ColorDot`、`_ImagePreview`），走的是 Material 主题而不是
+   HyperOS 卡片/分隔线色。
+
+改法：
+
+- 已显示区改为 `ReorderableListView`（`onReorderItem`，与「首页八宫格编辑器」
+  `settings_home_menu_editor.dart` 同一套交互）+ 行首拖动手柄；
+  隐藏区紧随其后、只有开关，中间用 `HyperosInsetDivider(indent: 0)` 分隔；
+- 手柄外加 `Semantics` 自定义动作「上移 / 下移」，TalkBack 下不依赖拖拽；
+- 顶部加一行只读说明（`HyperosListTile` 新增可选 `subtitle`，无 `onTap`
+  时不再画 chevron），说明「长按拖动排序」以及 Android 16 课中由系统绘制
+  展开态、本设置不生效；
+- 展开详情的所有行统一走 `hyperosListRowShell` + `HyperosSwitch`
+  （此前手搓 `SizedBox(height: listRowMinHeight)`）；
+- 新增文案 5 条 × 6 语言（zh / zh_HK / zh_TW / en / ja / ko），并同步生成
+  `app_localizations*.dart`。
+
+### 11.3 仍未做
+
+- 展开态实时预览（`live_island_preview.dart` 仍只画摘要态胶囊），与 §5.4 一致；
+- 展开态字段的拖拽排序只作用于「已显示」区，隐藏区顺序保持不动。

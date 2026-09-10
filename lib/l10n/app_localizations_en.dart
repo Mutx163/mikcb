@@ -11197,6 +11197,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveExpandedDetailGroupTitle => 'Expanded details';
 
   @override
+  String get liveExpandedDetailMoveUpAction => 'Move up';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => 'Move down';
+
+  @override
+  String get liveExpandedDetailSubtitle => 'Drag to reorder, use the switch to show or hide';
+
+  @override
+  String get liveExpandedDetailHint => 'Progress only appears during class. On Android 16 during class the expanded view is drawn by the system and ignores this setting.';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => 'Reorder';
+
+  @override
   String get liveExpandedDetailHiddenCaption => 'Hidden';
 
   @override

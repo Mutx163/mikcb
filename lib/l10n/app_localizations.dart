@@ -19260,6 +19260,36 @@ abstract class AppLocalizations {
   /// **'已隐藏'**
   String get liveExpandedDetailHiddenCaption;
 
+  /// No description provided for @liveExpandedDetailMoveUpAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'上移'**
+  String get liveExpandedDetailMoveUpAction;
+
+  /// No description provided for @liveExpandedDetailMoveDownAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'下移'**
+  String get liveExpandedDetailMoveDownAction;
+
+  /// No description provided for @liveExpandedDetailSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'长按拖动调整顺序，开关控制是否显示'**
+  String get liveExpandedDetailSubtitle;
+
+  /// No description provided for @liveExpandedDetailHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效'**
+  String get liveExpandedDetailHint;
+
+  /// No description provided for @liveExpandedDetailReorderHandleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动排序'**
+  String get liveExpandedDetailReorderHandleLabel;
+
   /// No description provided for @resetExpandedDetailDefaultAction.
   ///
   /// In zh, this message translates to:

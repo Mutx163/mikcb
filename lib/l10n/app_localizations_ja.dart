@@ -10876,6 +10876,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveExpandedDetailGroupTitle => '展開詳細';
 
   @override
+  String get liveExpandedDetailMoveUpAction => '上へ移動';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下へ移動';
+
+  @override
+  String get liveExpandedDetailSubtitle => '長押しで並べ替え、スイッチで表示を切り替え';
+
+  @override
+  String get liveExpandedDetailHint => '「進捗」は授業中のみ表示されます。Android 16 の授業中は展開表示をシステムが描画するため、この設定は反映されません。';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '並べ替え';
+
+  @override
   String get liveExpandedDetailHiddenCaption => '非表示';
 
   @override

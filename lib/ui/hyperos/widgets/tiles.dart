@@ -266,11 +266,15 @@ Widget _hyperosTrailingDetails(BuildContext context, String details) {
 }
 
 /// Navigation row: colored icon badge, title, optional detail, chevron.
+///
+/// [subtitle] renders a two-line row and is meant for read-only explanations
+/// inside a [HyperosListGroup] (pass no [onTap] so no chevron shows).
 class HyperosListTile extends StatelessWidget {
   const HyperosListTile({
     super.key,
     this.icon,
     required this.title,
+    this.subtitle,
     this.onTap,
     this.onLongPress,
     this.details,
@@ -279,6 +283,7 @@ class HyperosListTile extends StatelessWidget {
 
   final IconData? icon;
   final String title;
+  final String? subtitle;
   final String? details;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -290,9 +295,14 @@ class HyperosListTile extends StatelessWidget {
     final highlightColor = HyperosColors.rowHighlight(context);
     final enabled = onTap != null || onLongPress != null;
     final primaryText = HyperosColors.primaryText(context);
+    final secondaryText = HyperosColors.secondaryText(context);
+    final actionable = onTap != null || onLongPress != null;
 
     final row = hyperosListRowShell(
       padding: hyperosChevronRowPadding(context),
+      minHeight: subtitle == null
+          ? null
+          : HyperosTokens.listRowTwoLineMinHeight,
       child: Row(
         children: [
           // 行首图标可选：设置 hub 一级入口卡带图标；二级页选项行按
@@ -305,24 +315,55 @@ class HyperosListTile extends StatelessWidget {
             const SizedBox(width: HyperosTokens.rowContentGap),
           ],
           Expanded(
-            child: Text(
-              title,
-              style: HyperosTypography.listTitle(context).copyWith(
-                color: enabled
-                    ? primaryText
-                    : primaryText.withValues(alpha: 0.45),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: subtitle == null
+                ? Text(
+                    title,
+                    style: HyperosTypography.listTitle(context).copyWith(
+                      color: enabled
+                          ? primaryText
+                          : primaryText.withValues(alpha: 0.45),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: HyperosTypography.listTitle(context).copyWith(
+                          color: enabled
+                              ? primaryText
+                              : primaryText.withValues(alpha: 0.45),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: HyperosTokens.titleCaptionGap),
+                      Text(
+                        subtitle!,
+                        style: HyperosTypography.listDetail(context).copyWith(
+                          color: enabled
+                              ? secondaryText
+                              : secondaryText.withValues(alpha: 0.45),
+                        ),
+                        softWrap: true,
+                      ),
+                    ],
+                  ),
           ),
-          if (details != null) ...[
-            const SizedBox(width: 6),
-            _hyperosTrailingDetails(context, details!),
-            const SizedBox(width: HyperosTokens.detailChevronGap),
-          ] else
-            const SizedBox(width: HyperosTokens.titleChevronGap),
-          Opacity(opacity: enabled ? 1 : 0.45, child: const HyperosChevron()),
+          // 纯说明行（无 onTap）不画 chevron，避免看起来可点进去。
+          if (actionable) ...[
+            if (details != null) ...[
+              const SizedBox(width: 6),
+              _hyperosTrailingDetails(context, details!),
+              const SizedBox(width: HyperosTokens.detailChevronGap),
+            ] else
+              const SizedBox(width: HyperosTokens.titleChevronGap),
+            Opacity(opacity: enabled ? 1 : 0.45, child: const HyperosChevron()),
+          ],
         ],
       ),
     );

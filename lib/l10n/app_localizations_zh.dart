@@ -10583,6 +10583,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailGroupTitle => '展开详情';
 
   @override
+  String get liveExpandedDetailMoveUpAction => '上移';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下移';
+
+  @override
+  String get liveExpandedDetailSubtitle => '长按拖动调整顺序，开关控制是否显示';
+
+  @override
+  String get liveExpandedDetailHint => '「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '拖动排序';
+
+  @override
   String get liveExpandedDetailHiddenCaption => '已隐藏';
 
   @override
@@ -10619,6 +10634,22 @@ class AppLocalizationsZh extends AppLocalizations {
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
 class AppLocalizationsZhHk extends AppLocalizationsZh {
   AppLocalizationsZhHk() : super('zh_HK');
+
+  @override
+  String get liveExpandedDetailMoveUpAction => '上移';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下移';
+
+  @override
+  String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制係咪顯示';
+
+  @override
+  String get liveExpandedDetailHint =>
+      '「進度」只在課中顯示；Android 16 且課中帶進度條時展開態由系統繪製，本設定唔生效';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '拖動排序';
 
   @override
   String get appTitle => '輕嶼課表';
@@ -21275,6 +21306,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
 class AppLocalizationsZhTw extends AppLocalizationsZh {
   AppLocalizationsZhTw() : super('zh_TW');
+
+  @override
+  String get liveExpandedDetailMoveUpAction => '上移';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下移';
+
+  @override
+  String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制是否顯示';
+
+  @override
+  String get liveExpandedDetailHint =>
+      '「進度」只在課中顯示；Android 16 且課中帶進度條時展開態由系統繪製，本設定不生效';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '拖動排序';
 
   @override
   String get appTitle => '輕嶼課表';

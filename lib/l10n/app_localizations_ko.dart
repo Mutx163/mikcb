@@ -10920,6 +10920,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveExpandedDetailGroupTitle => '펼침 상세';
 
   @override
+  String get liveExpandedDetailMoveUpAction => '위로 이동';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '아래로 이동';
+
+  @override
+  String get liveExpandedDetailSubtitle => '길게 눌러 순서 변경, 스위치로 표시 여부 전환';
+
+  @override
+  String get liveExpandedDetailHint => '「진행」은 수업 중에만 표시됩니다. Android 16 수업 중에는 펼친 화면을 시스템이 그리므로 이 설정이 적용되지 않습니다.';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '순서 변경';
+
+  @override
   String get liveExpandedDetailHiddenCaption => '숨김';
 
   @override
