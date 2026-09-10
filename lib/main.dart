@@ -51,6 +51,7 @@ import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
+import 'ui/hyperos/soft_glass/soft_glass_refraction.dart';
 import 'ui/hyperos_motion_bridge.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
@@ -417,6 +418,9 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
       BundledAssets.warmUp(),
       AndroidAnimationScaleService.ensureInitialized(),
       FrostedBlurService.probeNativeSupport(),
+      // 柔光玻璃折射 shader：提前装载，避免首帧底栏先闪一下无折射的素高斯。
+      // 内部自行吞掉「后端不支持 / 资源装载失败」，不影响启动。
+      SoftGlassRefraction.warmUp(),
     ]);
     configureHyperosMotionFromAndroid();
     if (!kReleaseMode) {

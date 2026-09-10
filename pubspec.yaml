@@ -72,3 +72,7 @@ flutter:
     - docs/releases/
     - assets/lan_edit/
     - assets/templates/
+  # 柔光玻璃的折射透镜。只在 Impeller 后端生效（ImageFilter.shader 的限制），
+  # 其余后端由 SoftGlassRefraction 自动退回纯高斯路径。
+  shaders:
+    - shaders/soft_glass_refraction.frag

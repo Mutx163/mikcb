@@ -6664,9 +6664,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     // 浮钮与药丸显式同源材质：stock 实验态传包官方底栏默认，
     // 自定义态走 sheetSettingsFor / frosted 回退（与 bar 内部一致）。
+    // 柔光底栏下圆钮改走 SoftGlassSurface，与药丸同一套雾面材质。
     LiquidGlassSettings? dockBtnSettings;
     GlassQuality? dockBtnQuality;
-    if (_kStockDockGlass) {
+    final dockStyle = settings.glassDockStyle;
+    if (dockStyle == DockGlassStyle.soft) {
+      // 柔光路径不用液态 settings。
+    } else if (_kStockDockGlass) {
       dockBtnSettings = MikcbLiquidGlassTokens.stockBottomBarGlass;
       dockBtnQuality = null; // 包原版自适应质量
     } else {
@@ -6709,9 +6713,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                 final lum = _dockInlinePageId != null ? null : _wallpaperBodyLuminance; // 内嵌页表态只看主题
                 final isDarkTheme =
                     Theme.of(context).brightness == Brightness.dark;
-                final ink = (lum != null ? lum < 0.45 : isDarkTheme)
-                    ? Colors.white.withValues(alpha: 0.9)
-                    : Colors.black.withValues(alpha: 0.75);
+                final inkIsLight = (lum != null ? lum < 0.45 : isDarkTheme);
+                // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
+                final ink = dockStyle == DockGlassStyle.soft
+                    ? (inkIsLight
+                        ? Colors.white.withValues(alpha: 0.92)
+                        : Colors.black.withValues(alpha: 0.80))
+                    : (inkIsLight
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : Colors.black.withValues(alpha: 0.75));
                 return Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -6730,6 +6740,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                           l10n: l10n,
                           settings: dockBtnSettings,
                           quality: dockBtnQuality,
+                          softGlass: dockStyle == DockGlassStyle.soft,
+                          softDark: inkIsLight,
                         ),
                       ],
                     ],
@@ -6787,6 +6799,32 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
     // （'day'/'week' 视图动作 + 目录任意条目，含设置页）。
     final dockIds = resolveGlassDockActionIds(settings);
+    // 柔光玻璃底栏（Hyper-PiliPlus SoftGlass 形态）：与液态折射自由切换。
+    //
+    // 布局用 Stacked（图标上、文字下）：5 槽 + maxWidth 272 时 Horizontal
+    // 会把「日课表」挤成一个字。极性：仅明确暗壁纸才用深灰玻璃，中等
+    // 亮度壁纸走乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料）。
+    if (settings.glassDockStyle == DockGlassStyle.soft) {
+      final softDark = wallpaperLuminance != null
+          ? wallpaperLuminance < 0.35
+          : isDark;
+      return SoftGlassTabBar(
+        tabs: [
+          for (final id in dockIds)
+            SoftGlassTab(
+              icon: Icon(glassDockActionIcon(id)),
+              label: glassDockActionLabel(l10n, id),
+            ),
+        ],
+        selectedIndex: _dockSelectedIndex(dockIds),
+        onTabSelected: (index) => _handleDockTap(dockIds[index], settings),
+        selectedColor: softDark ? Colors.white : Colors.black,
+        // 不再单独衰减未选中墨色：原版 selected / unselected 同色，
+        // 选中态只靠字重 + 指示器区分。
+        blurEnabled: appearance.blurEnabled,
+        polarity: softDark ? SoftGlassPolarity.dark : SoftGlassPolarity.light,
+      );
+    }
     return GlassTabBar.bottom(
       tabs: [
         for (final id in dockIds) _dockTabForId(id, l10n),
@@ -6834,12 +6872,50 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 材质与药丸显式同源（_wrapWithGlassDock 传入 stockBottomBarGlass），
   /// useOwnLayer:true + isStationary:true 保证 minimal 回退时仍保留
   /// BackdropFilter 模糊——与药丸 frosted 回退一致，消除“两种材质”断层。
+  /// 柔光底栏下改用 SoftGlassSurface，与柔光药丸同一套雾面材质。
   Widget _buildDockMergeSlot({
     required Color ink,
     required AppLocalizations l10n,
     required LiquidGlassSettings? settings,
     required GlassQuality? quality,
+    bool softGlass = false,
+    bool softDark = false,
   }) {
+    final icon = _roundButtonIcon(
+      context.read<TimetableProvider>().settings,
+    );
+    void onTap() => _handleRoundButtonTap(
+      context.read<TimetableProvider>().settings,
+    );
+    final label = l10n.glassDockExtraButtonSemanticLabel;
+    if (softGlass) {
+      return SizedBox(
+        width: 56,
+        height: 56,
+        child: Semantics(
+          button: true,
+          label: label,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: SoftGlassSurface(
+                polarity: softDark
+                    ? SoftGlassPolarity.dark
+                    : SoftGlassPolarity.light,
+                child: Center(
+                  child: IconTheme.merge(
+                    data: IconThemeData(color: ink, size: 22),
+                    child: icon,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     // 材质断层根因：此前此处以 useOwnLayer:false 渲染（LiquidGlass.grouped），
     // 但坞层 Row 树外没有任何 LiquidGlassLayer/BluetoothGroup 祖先，
     // Impeller 下 grouped 在无层时直接回退为固色无玻璃——看起来像一块
@@ -6853,13 +6929,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       width: 56,
       height: 56,
       child: GlassButton(
-        icon: _roundButtonIcon(
-          context.read<TimetableProvider>().settings,
-        ),
-        onTap: () => _handleRoundButtonTap(
-          context.read<TimetableProvider>().settings,
-        ),
-        label: l10n.glassDockExtraButtonSemanticLabel,
+        icon: icon,
+        onTap: onTap,
+        label: label,
         iconSize: 22,
         iconColor: ink,
         settings: settings,

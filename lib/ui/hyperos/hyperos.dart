@@ -37,3 +37,5 @@ export 'hyperos_tooltip.dart';
 export 'hyperos_home_pull.dart';
 export 'hyperos_widgets.dart';
 export 'frosted/liquid_glass_degradation.dart';
+export 'soft_glass/soft_glass_surface.dart';
+export 'soft_glass/soft_glass_tab_bar.dart';
