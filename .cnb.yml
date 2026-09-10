@@ -11,8 +11,21 @@
 # 将 Flutter 升级到 .fvmrc 指定的 3.44.8（Dart 3.12.8），
 # 满足 pubspec.yaml 的 sdk >=3.12.2 约束。
 .flutter-env: &flutter-env
+  # 源分支又被推送时终止本次构建：同一分支连续 push 会排队多条内容相同的流水线，
+  # 旧的那几条结果与最新 commit 无关，却照常按 5min 粒度冻结核时。开启后只有最新的
+  # 那条继续跑，避免为过期的 commit 付费。
+  # 安全性：只终止「已被更新的 commit 取代」的构建，不会让最新 commit 漏跑。
+  breakIfModify: true
   runner:
-    cpus: 8                        # 默认 8 核 16G，Android 构建足够
+    cpus: 8                        # 8 核 16G，与 main 上验证过门禁的规格一致。
+                                   # 不要为了省核时往下调：runner 内存 = cpus x 2GiB，
+                                   # 而 android/gradle.properties 固定了
+                                   #   org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G -XX:ReservedCodeCacheSize=256m
+                                   # Gradle JVM 至少需要 ~5.3G，加上 JVM 自身开销要 6G 以上。
+                                   # cpus:1 只有 2G，gradle-jvm-tests 必被 OOM killer 杀掉 ——
+                                   # 那是把「配额不足」换成「内存不足」，配额恢复后照样红。
+                                   # 真要省核时，靠下面的 breakIfModify 与 gradle-jvm-tests 的
+                                   # ifModify 跳过，而不是砍规格。
   docker:
     build:
       dockerfile: ./Dockerfile
@@ -69,8 +82,28 @@
 # 2) Gradle wrapper distribution 从 services.gradle.org 下载时会因 SSL 握手
 #    失败，需替换为腾讯云镜像。
 # （幂等：已注入则跳过）。
+# 核时优化：本 stage 实测 635s，占整条流水线（818s）的 ~78%，且只覆盖
+# android/app/src/test 下的纯 JVM 单测（JUnit + java.util，不依赖 Dart/Flutter
+# 产物）。变更只落在文档/站点（site/**）、docs/** 与编排文件（.mdx/meta.json）时
+# 跳过它，可为每次文档类推送省下约 1.4 核时。
+#
+# 语义：ifModify 命中 = 存在至少一个变更文件同时满足全部 pattern，故用
+# "**" 打底 + 若干 "!(...)" 表达「有任何非文档文件变更才执行」。
+#   "**"                            命中任意变更文件
+#   "!(site/**)" "!(docs/**)"       排除站点与文档目录
+#   "!(**/*.mdx)" "!(**/meta.json)" 排除任意位置的文档与编排文件
+#
+# 注：只在本 stage 做跳过，不要给 ci/pr-check 两条 pipeline 加同样的
+# ifModify —— 那样纯文档 PR 会整条流水线被跳过、stage 全部置 skipped，
+# PR 状态检查反而拿不到成功结果。
 .jvm-test-stages: &jvm-test-stages
   - name: gradle-jvm-tests
+    ifModify:
+      - "**"
+      - "!(site/**)"
+      - "!(**/*.mdx)"
+      - "!(**/meta.json)"
+      - "!(docs/**)"
     script: |
       set -eu
 
@@ -119,9 +152,46 @@
 # 3. v* 标签 → 构建发布 APK 并挂到 Release
 # ═════════════════════════════════════════════════════════════
 "$":
+  # ── @NPC 事件（issue/PR 评论里 @NPC 触发）──────────────────
+  # 重要：NPC 与 push/PR **不共用配额桶**。按 docs /zh/build/npc.md「计费口径」，
+  # NPC 视作开发场景，消耗「云原生开发-CPU」（免费 1600 核时/月）；push/PR 门禁
+  # 消耗「云原生构建-CPU」（免费 160 核时/月）。
+  #
+  # 实测佐证（2026-09-10 01:57）：同一分钟内 push / pull_request 两条 1 核流水线
+  # 都在 Prepare 被判「构建-CPU 不足 0.08 核时」而 error，紧接着的
+  # pull_request.comment@npc 却以 8 核（需 0.67 核时）正常跑完 ——
+  # 说明给 NPC 降核**救不了**门禁，两个桶互不相通。
+  #
+  # 因此这里只显式声明事件、保持默认规格，不再压 cpus：
+  # NPC 容器要跑 node + git + 工具链，2G 内存下容易被 OOM，降核得不偿失。
+  # 若日后要省的是「云原生开发」用量，应单独评估，不要混入门禁的配额问题。
+  #
+  # 注意：不要给这两个事件加 ifModify —— 命中跳过会让整条流水线置 skipped，
+  # NPC 拿不到执行结果、评论也不会被回复（与 a630933f 撤回 pipeline 级
+  # ifModify 是同一个坑）。
+  issue.comment@npc:
+    - name: npc-issue
+      docker:
+        image: cnbcool/default-npc:latest
+      stages:
+        - name: npc go
+          type: npc:go
+
+  pull_request.comment@npc:
+    - name: npc-pr
+      docker:
+        image: cnbcool/default-npc:latest
+      stages:
+        - name: npc go
+          type: npc:go
+
   tag_push:
     - name: release-apk
       <<: *flutter-env
+      # 继承锚点的 8 核 16G。签名 APK 要跑 Gradle + Flutter AOT，内存需求与
+      # gradle-jvm-tests 同量级，不能再往下压。tag_push 低频（实测 10 天内 13 次），
+      # 为发布成功率保留规格是划算的；配额不足时它会失败，但这是发布动作，
+      # 宁可明确失败也不要静默降级成不可用的产物。
       imports:
         # 签名密钥存放在独立密钥仓库（CNB Web 界面维护，禁止 clone/push），
         # 仅为 tag_push 发布流水线注入；push/PR 门禁不接触任何密钥

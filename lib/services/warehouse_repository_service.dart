@@ -133,7 +133,7 @@ class WarehouseRepositoryService {
     WarehouseRepositorySource source, {
     WarehouseFetchOptions? options,
   }) async {
-    _log('获取适配器搜索索引...');
+    _log('fetching adapter search index...');
     final content = await _fetchText(
       source,
       'index/search_index.yaml',
