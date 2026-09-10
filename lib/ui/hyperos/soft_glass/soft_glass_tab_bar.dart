@@ -492,7 +492,14 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
                       final pressScale = 1 +
                           (SoftGlassTokens.pressedScale - 1) * _press.value;
                       final originX = _transformOriginX(_velocity, stretch);
+                      // 指示器左右各外溢 IndicatorHorizontalOverflow(3dp)：原版是
+                      // Compose 的 offset，容器不裁剪，这 3dp 能正常露出来。
+                      // Flutter 的 Stack 默认 Clip.hardEdge，会把外溢部分切平——
+                      // 结果就是滑块停在**首槽 / 末槽**时，那一端由圆帽变成一条竖直
+                      // 切边（中间槽位看不出来，因为外溢落在内容区内）。必须显式
+                      // Clip.none；外层 SoftGlassSurface 的 ClipRRect 仍按胶囊裁切。
                       return Stack(
+                        clipBehavior: Clip.none,
                         children: [
                           Positioned(
                             left: indicatorLeft(pos),
